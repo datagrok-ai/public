@@ -2,244 +2,232 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {TwinPviewer} from './viewers/twin-p-viewer';
-import {TreeBrowser} from './tree';
+import {DataLoader} from './utils/data-loader';
 import {Subscription} from 'rxjs';
-import {
-  DataLoader,
-  JsonType,
-  PdbType,
-  NumsType,
-  ObsPtmType,
-} from './utils/data-loader';
-import {DataLoaderFiles} from './utils/data-loader-files';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
-import {RegionSelectorViewer} from './viewers/vd-regions-viewer';
-
-// import {WebLogo} from '@datagrok-libraries/bio';
 
 
 export class MolecularLiabilityBrowser {
-  dataLoader: DataLoader = null;
+  dataLoader: DataLoader;
+
+  // uriParser: HTMLAnchorElement;
+  baseUri: string = '/apps/MolecularLiabilityBrowser/MolecularLiabilityBrowser/';
+  urlParams: URLSearchParams = null;
+
+  antigenDf: DG.DataFrame = null;
+  antigenName: string = null;
+  schemeName: string = 'chothia';
+  schemeChoices: string[] = ['imgt', 'chothia', 'kabat'];
+
+  refDf: DG.DataFrame = null; // from file ptm_in_cdr.d42
+  hChainDf: DG.DataFrame = null;
+  lChainDf: DG.DataFrame = null;
+
+  vids: string[] = null;
+  vidsObsPTMs: string[] = null;
+
+  allVids: DG.Column = null;
+  allIds: DG.Column = null;
+  idMapping: { [key: string]: string []; };
+
+  subs: Subscription[] = [];
+
+  mlbView: DG.TableView = null;
+  antigenInput: DG.InputBase = null;
+  antigenPopup: HTMLElement = null;
+  schemeInput: DG.InputBase = null;
+
 
   constructor(dataLoader: DataLoader) {
     this.dataLoader = dataLoader;
   }
 
-  mlbTable: DG.DataFrame;
-  vids: string[];
-  vidsObsPTMs: string[];
-  allVids: DG.Column;
-  allIds: DG.Column;
-  idMapping: { [key: string]: string[]; };
+  async init(urlParams: URLSearchParams) {
+    try {
+      this.urlParams = urlParams;
 
-  mlbView: DG.TableView;
-  vIdInput: DG.InputBase;
-  filterIcon: HTMLElement;
-  filterIcon2: HTMLElement;
-  selectionClearIcon: HTMLElement;
-  queryIdIcon: HTMLElement;
-  queryAntigenIcon: HTMLElement;
-  hideShowIcon: HTMLElement;
-  hideShowIcon2: HTMLElement;
-  treesIcon: HTMLElement;
+      this.antigenDf = await this.dataLoader.listAntigens();
+      this.antigenName = this.urlParams.get('antigen') || this.antigenDf.col('antigen').get(0);
 
-  regionsViewer: RegionSelectorViewer;
-  twinPviewer: TwinPviewer;
-  //compostionPviewer: CompostionPviewer;
+      this.schemeName = this.urlParams.get('scheme') || this.schemeChoices[0];
 
-  subs: Subscription[] = [];
+      await this.loadMlbDf();
+      await this.setView();
 
-  private changeVid = async (silent: boolean = false): Promise<void> => {
-    if (!this.vids.includes(this.vIdInput.value)) {
-      Object.keys(this.idMapping).every((vid) => {
-        if (this.idMapping[vid].includes(this.vIdInput.value)) {
-          this.vIdInput.value = vid;
-          return false;
-        }
-        return true;
+      this.vids = await this.dataLoader.getVids();
+      this.vidsObsPTMs = await this.dataLoader.getObservedPtmVids();
+
+      // this.mlbView = grok.shell.addTableView(this.mlbDf);
+    } finally {
+      grok.events.onViewRemoved.subscribe((v) => {
+        if (v.type === DG.VIEW_TYPE.TABLE_VIEW && (v as DG.TableView).dataFrame.id === this.mlbDf.id)
+          this.subs.forEach((s) => s.unsubscribe());
       });
-
-      if (!this.vids.includes(this.vIdInput.value)) {
-        grok.shell.warning('No PDB data data for associated v id');
-        return;
-      }
     }
-
-    // #region Commented to replace from RepertoireBrowser
-    // this.mlbView.path = `/Table/${this.vIdInput.value}`;
-    //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
-    // const pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
-    // #endregion
-
-    // #region Code from RepertoireBrowser
-    this.mlbView.path = `/Table/${this.vIdInput.value}`;
-    //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
-    const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
-
-    ////////////////////////////////////////////////////
-    const jsonStr: JsonType = await this.dataLoader.load_example(this.vIdInput.value);
-
-    const pdbStr: PdbType = (await this.dataLoader.load_pdb(this.vIdInput.value));
-
-    const jsonNums: NumsType = await this.dataLoader.realNums;
-
-    let jsonStrObsPtm: ObsPtmType = null;
-    if (this.vidsObsPTMs.includes(this.vIdInput.value))
-      jsonStrObsPtm = await this.dataLoader.load_obsPtm(this.vIdInput.value);
-    ////////////////////////////////////////////////////
-    // #region
-
-    const hNumberingStr = jsonNums.heavy_numbering;
-    const lNumberingStr = jsonNums.light_numbering;
-
-    const hNumbering = [];
-    const lNumbering = [];
-
-    for (let i = 0; i < hNumberingStr.length; i++)
-      hNumbering.push(parseInt(hNumberingStr[i].replaceAll(' ', '')));
-
-    for (let i = 0; i < lNumberingStr.length; i++)
-      lNumbering.push(parseInt(lNumberingStr[i].replaceAll(' ', '')));
-
-    jsonStr['map_H'] = hNumbering;
-    jsonStr['map_L'] = lNumbering;
-
-    if (!this.twinPviewer) {
-      this.twinPviewer = new TwinPviewer(this.dataLoader);
-      this.twinPviewer.init(jsonStr, pdbStr, jsonStrObsPtm);
-    } else {
-      this.twinPviewer.reset(jsonStr, pdbStr, jsonStrObsPtm);
-    }
-
-    await this.twinPviewer.show(this.mlbView);
-    await this.twinPviewer.open(this.mlbView);
-
-    pi.close();
-  };
-
-  setPropertiesFilters(): void {
-    //external data load
-    const pf = this.dataLoader.filterProperties;
-
-    //this.mlbView.grid.columns.byName('CDR Clothia').visible = false;
-
-    //bands on plots for properties
-    for (let i = 0; i < pf.names.length; i++) {
-      this.mlbTable.col(pf.names[i])!.setTag(
-        '.default-filter', '{ "min": ' + pf.yellowLeft[i] + ', "max": ' + pf.yellowRight[i] + ' }');
-      // this.mlbTable.col(pf.names[i])!.setTag('.default-filter', JSON.stringify(
-      //   {
-      //     min: pf.yellowLeft[i],
-      //     max: pf.yellowRight[i]
-      //   }));
-      this.mlbTable.col(pf.names[i])!.setTag('.charts', JSON.stringify([
-        {
-          title: 'BandYellowLeft', type: 'band',
-          rule: `${pf.redLeft[i]}-${pf.yellowLeft[i]}`,
-          color: '#FFD700', opacity: 15
-        },
-        {
-          title: 'BandYellowRight', type: 'band',
-          rule: `${pf.yellowRight[i]}-${pf.redRight[i]}`,
-          color: '#FFD700', opacity: 15
-        },
-        {title: 'BandRedLeft', type: 'band', rule: `< ${pf.redLeft[i]}`, color: '#DC143C', opacity: 15},
-        {title: 'BandRedRight', type: 'band', rule: `> ${pf.redRight[i]}`, color: '#DC143C', opacity: 15},
-        {
-          'title': 'TAP metrics', 'type': 'spline',
-          'color': '#7570B3', 'width': 1, 'normalize-y': true, 'visible': true,
-          'x': pf.plotsX[i], 'y': pf.plotsY[i],
-        }
-      ]));
-
-      // this.mlbTable.col(pf.names[i])!.setTag('.charts', '[' +
-      //   '{"type": "band", "title":"BandYellowLeft", "rule" : "' +
-      //   pf.redLeft[i] + '-' + pf.yellowLeft[i] + '", "color": "#FFD700", "opacity": 15},' +
-      //   '{"type": "band", "title":"BandYellowRight", "rule" : "' +
-      //   pf.yellowRight[i] + '-' + pf.redRight[i] + '", "color": "#FFD700", "opacity": 15}, ' +
-      //   '{"type": "band", "title":"BandRedLeft", "rule" : "< ' + pf.redLeft[i] +
-      //   '", "color": "#DC143C", "opacity": 15}, ' +
-      //   '{"type": "band", "title":"BandRedRight", "rule" : "> ' + pf.redRight[i] +
-      //   '", "color": "#DC143C", "opacity": 15},' +
-      //   '{ "type": "spline", "title": "TAP metrics", "y" : [' +
-      //   pf.plotsY[i].toString() + '], "color": "#7570B3", "width": 1, "x" : [' +
-      //   pf.plotsX[i].toString() + '], "normalize-y": true, "visible": true}' +
-      //   ']');
-    }
-
-    const filterList: { type: string, column?: string, label?: string }[] = [];
-
-    for (const pfName of pf.names) {
-      // this.mlbTable.columns.byName(pfName).width = 150;
-      this.mlbView.grid.col(pfName).width = 150;
-      filterList.push({type: 'histogram', column: pfName});
-    }
-    filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter'});
-    filterList.push({type: DG.FILTER_TYPE.MULTI_VALUE, column: 'antigen list', label: 'antigen id'});
-    filterList.push({type: DG.FILTER_TYPE.MULTI_VALUE, column: 'antigen gene symbol', label: 'antigen gene symbol'});
-
-    const filterView = this.mlbView.filters({filters: filterList});
-
-    grok.events.onTooltipShown.subscribe((args) => {
-      if (args.args.context instanceof DG.Column) {
-        switch (args.args.context.name) {
-        case 'cdr_length':
-          args.args.element.innerHTML = pf.tooltips[0];
-          break;
-
-        case 'surface_cdr_hydrophobicity':
-          args.args.element.innerHTML = pf.tooltips[1];
-          break;
-
-        case 'positive_cdr_charge':
-          args.args.element.innerHTML = pf.tooltips[2];
-          break;
-
-        case 'negative_cdr_charge':
-          args.args.element.innerHTML = pf.tooltips[3];
-          break;
-
-        case 'sfvcsp':
-          args.args.element.innerHTML = pf.tooltips[4];
-          break;
-
-        default:
-          break;
-        }
-      }
-    });
   }
 
-  async setView(): Promise<void> {
-    this.mlbView = grok.shell.addTableView(this.mlbTable);
+  setAntigenInput(agDf: DG.DataFrame): DG.InputBase {
+    this.antigenInput = ui.stringInput('AG', this.antigenName, null, {tabindex: '1'} as unknown);
 
-    grok.shell.windows.showProperties = false;
-    grok.shell.windows.showHelp = false;
+    const agCol: DG.Column = agDf.col('antigen');
+    const gsCol: DG.Column = agDf.col('antigen_gene_symbol');
+    const agDfGrid: DG.Grid = agDf.plot.grid({
+      allowEdit: false,
+      allowRowSelection: false,
+      allowRowResizing: false,
+      allowRowReordering: false,
+      allowColReordering: false,
+      allowBlockSelection: false,
+      showRowHeader: false,
+    });
+    const idGCol: DG.GridColumn = agDfGrid.col('id');
+    const agGCol: DG.GridColumn = agDfGrid.col('antigen');
+    const ncbiGCol: DG.GridColumn = agDfGrid.col('antigen_ncbi_id');
+    const gsGCol: DG.GridColumn = agDfGrid.col('antigen_gene_symbol');
+    agGCol.name = 'Antigen';
+    agGCol.width = 90;
+    gsGCol.name = 'Gene symbol';
+    gsGCol.width = 120;
+    idGCol.visible = false;
+    ncbiGCol.visible = false;
+    agDfGrid.root.style.setProperty('width', '220px');
+    this.antigenPopup = ui.div([agDfGrid.root], {tabindex: '2'} as unknown);
+
+    agDf.onCurrentRowChanged.subscribe(() => {
+      this.antigenPopup.hidden = true;
+
+      const antigenName: string = agCol.get(agDf.currentRow.idx);
+      window.setTimeout(this.onAntigenChanged.bind(this), 10, antigenName);
+    });
+
+    this.antigenInput.root.addEventListener('input', (event: Event) => {
+      /* Here we should filter dataframe with antigens */
+      agDf.filter.init((iRow: number) => {
+        return agCol.get(iRow).includes(this.antigenInput.value) || gsCol.get(iRow).includes(this.antigenInput.value);
+      });
+    });
+    // this.agInput.root.addEventListener('focusout', (event: FocusEvent) => {
+    //   let k = 11;
+    //   agDfGrid.root.focus();
+    // });
+    // this.agInput.root.addEventListener('keydown', (event: KeyboardEvent) => {
+    //   if (event.code === '\t') {
+    //     let k = 11;
+    //   }
+    // });
+
+    this.antigenInput.root.addEventListener('mousedown', (event: MouseEvent) => {
+      this.antigenPopup.hidden = false;
+      ui.showPopup(this.antigenPopup, this.antigenInput.root);
+    });
+
+    return this.antigenInput;
+  }
+
+  setSchemeInput(): DG.InputBase {
+    this.schemeInput = ui.choiceInput('Scheme', this.schemeName, this.schemeChoices, () => {
+      // this.regionsViewer.setScheme(this.schemeInput.value);
+      this.onSchemeChanged(this.schemeInput.value);
+    });
+
+    return this.schemeInput;
+  }
+
+  setRibbonPanels(): void {
     this.mlbView.ribbonMenu.clear();
 
+    this.setAntigenInput(this.antigenDf);
+    this.setSchemeInput();
+
+    this.mlbView.setRibbonPanels([
+      [this.antigenInput.root],
+      [this.schemeInput.root],
+      [],
+    ]);
+  }
+
+  static prepareDataMlbDf(df: DG.DataFrame, hChainDf: DG.DataFrame, lChainDf: DG.DataFrame): DG.DataFrame {
+    for (const column of df.columns)
+      column.name = column.name.replaceAll('_', ' ');
+
+    // TODO: Obsolete filtering by antigen
+    const mlbColumnsToMultiValue = ['antigen list', 'antigen ncbi id', 'antigen gene symbol'];
+    for (const column of df.columns) {
+      if (mlbColumnsToMultiValue.includes(column.name))
+        column.setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ',');
+    }
+
+    // TODO: Load chains sequences
+    console.debug(`hChainDf: ${hChainDf.rowCount} rows, lChainDf: ${lChainDf.rowCount} rows`);
+    [{name: 'Heavy', df: hChainDf}, {name: 'Light', df: lChainDf}].forEach((chain) => {
+      const seqCol = this.mergeSequenceColumns(chain.df, chain.name);
+      grok.data.joinTables(
+        df, chain.df,
+        ['v id'], ['Id'],
+        (df.columns as DG.ColumnList).names(), [seqCol.name],
+        DG.JOIN_TYPE.LEFT, true);
+
+      // crutch, because grok.data.joinTables() loses right table columns tags
+      df.col(seqCol.name).setTag('positionNames', chain.df.col(seqCol.name).getTag('positionNames'));
+    });
+
+    return df;
+  }
+
+  /** Builds multiple alignment sequences from monomers in positions
+   *  as virtual (calculated) column in source DataFrame.
+   * @param {DG.DataFrame} df  DataFrame with ANARCI results
+   * @param {string} chain  Name of chain (used for result column name)
+   * @param {number} startingColumnIndex  The first column with positions
+   * @return {DG.Column}
+   */
+  static mergeSequenceColumns(df: DG.DataFrame, chain: string, startingColumnIndex?: number) {
+    const positionRegExp = /^\d+[A-Z]*$/g;
+    const columns: DG.ColumnList = df.columns;
+
+    // All positions schemes contains position '1'
+    const positionNames = startingColumnIndex !== void 0 ? columns.names().slice(startingColumnIndex) :
+      columns.names().slice(columns.names().indexOf('1'));
+
+    const positionColumns = positionNames.filter((v: string) => v.match(positionRegExp) !== null);
+    const seqCol = columns.addNewVirtual(
+      `${chain} chain sequence`,
+      (i: number) => positionColumns.map((v) => df.get(v, i)).join('')
+    );
+    seqCol.semType = Aminoacids.SemTypeMultipleAlignment;
+
+    const positionNamesTxt = positionNames.join(', '); /* Spaces are for word wrap */
+    seqCol.setTag('positionNames', positionNamesTxt);
+
+    return seqCol;
+  }
+
+  private _mlbDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
+
+  get mlbDf(): DG.DataFrame {
+    return this._mlbDf;
+  }
+
+  async setMlbDf(value: DG.DataFrame): Promise<void> {
+    await this.destroyView();
+    this._mlbDf = value;
+    await this.buildView();
+  }
+
+  /** Sets controls' layout. Called once from init(). */
+  setView(): void {
+    grok.shell.windows.showProperties = false;
+    grok.shell.windows.showHelp = false;
+    this.setRibbonPanels();
+
     this.mlbView.name = 'Molecular Liability Browser';
-    // for (const column of this.mlbTable.columns)
-    //   column.name = column.name.replaceAll('_', ' ');
-    for (const column of this.mlbTable.columns) {
+    for (const column of this.mlbDf.columns) {
       const gridColumn: DG.GridColumn = this.mlbView.grid.columns.byName(column.name);
       gridColumn.name = column.name.replaceAll('_', ' ');
     }
 
     this.mlbView.grid.columns.byName('v id')!.width = 120;
     this.mlbView.grid.columns.byName('v id')!.cellType = 'html';
-
-    // Leonid instructed to hide the columns
-    const mlbColumnsToHide = [].concat(...[
-      ['cdr length', 'surface cdr hydrophobicity', 'positive cdr charge', 'negative cdr charge', 'sfvcsp'],
-      ['antigen list', 'antigen ncbi id', 'antigen gene symbol'],
-      ['Heavy chain sequence', 'Light chain sequence']
-    ]);
-    for (let colI = 0; colI < this.mlbView.grid.columns.length; colI++) {
-      const gridColumn: DG.GridColumn = this.mlbView.grid.columns.byIndex(colI);
-      if (gridColumn.column !== null && mlbColumnsToHide.includes(gridColumn.column.name))
-        gridColumn.visible = false;
-    }
 
     //table visual polishing
 
@@ -261,8 +249,8 @@ export class MolecularLiabilityBrowser {
         if (this.vids.includes(gc.cell.value.toString())) {
           gc.style.element = ui.divV(
             [ui.link(gc.cell.value.toString(), () => {
-              this.vIdInput.value = gc.cell.value;
-              this.changeVid();
+              // this.vIdInput.value = gc.cell.value;
+              // this.changeVid();
             })],
             {style: {position: 'absolute', top: 'calc(50% - 8px)', left: '5px'}});
         } else {
@@ -273,327 +261,101 @@ export class MolecularLiabilityBrowser {
     });
   }
 
-  setVidInput(): void {
-    this.vIdInput = ui.stringInput('VID', '');
-    this.vIdInput.value = this.vids[0];
+  private async destroyView(): Promise<void> {
+    // DG.TableView.dataFrame cannot be null
+    // if (this.mlbView !== null)
+    //    this.mlbView.dataFrame = null;
 
-    this.vIdInput.root.addEventListener('keyup', (event) => {
-      if (event.key === 'Enter')
-        this.changeVid();
-    });
+    this.idMapping = {};
+    this.allIds = null;
+    this.allVids = null;
   }
 
-  // setFilterIcon(): void {
-  //   this.filterIcon = ui.tooltip.bind(ui.iconFA('filter', () => {
-  //     const a = this.mlbTable;
-  //     a.rows.select((row) => this.vids.includes(row['v id'].toString()));
-  //     grok.functions.call('CmdSelectionToFilter');
-  //   }), 'filter data for 3D view');
-  // }
+  private async buildView(): Promise<void> {
+    this.allVids = this.mlbDf.col('v id')!;
+    this.allIds = this.mlbDf.col('gdb id mappings');
 
-  setFilterIcon2(): void {
-    this.filterIcon2 = ui.tooltip.bind(ui.iconFA('filter', () => {
-      const a = this.mlbTable;
-      a.rows.select((row) => this.vidsObsPTMs.includes(row['v id'].toString()));
-      grok.functions.call('CmdSelectionToFilter');
-    }), 'Filter data with observed PTMs');
-  }
-
-  setSelectionClearIcon(): void {
-    this.selectionClearIcon = ui.tooltip.bind(ui.iconFA('broom', () => {
-      this.mlbTable.rows.select((i) => false);
-    }), 'Selection clear');
-  }
-
-  setQueryIdIcon(): void {
-    this.queryIdIcon = ui.tooltip.bind(ui.iconFA('layer-group', () => {
-      //get all possible IDs
-      const allIds = this.mlbTable.col('v id')!.toList().concat(
-        this.mlbTable.col('gdb id mappings')!.toList().map((x) => x.replaceAll(' ', '').split(',')).flat());
-
-      const idInput = ui.textInput('', '');
-      //@ts-ignore
-      idInput.input.placeholder = 'Paste your IDs here...';
-      idInput.input.style.resize = 'none';
-
-      ui.dialog({title: 'Filter by IDs'})
-        .add(ui.box(idInput.input))
-        .onOK(() => {
-          const query = idInput.stringValue.replaceAll(' ', '').split(',');
-          const missing = query.filter((id) => !allIds.includes(id));
-
-          if (missing.length > 0) {
-            for (let i = 0; i < missing.length; i++)
-              grok.shell.warning(missing[i] + ' not found in the base');
-          }
-
-          this.mlbTable.rows.filter((row) => {
-            const additionalIds = row['gdb id mappings'].replaceAll(' ', '').split(',');
-            let idsIntersect = false;
-            for (let i = 0; i < additionalIds.length; i++) {
-              if (query.includes(additionalIds[i])) {
-                idsIntersect = true;
-                break;
-              }
-            }
-            return query.includes(row['v id']) || idsIntersect;
-          });
-          this.mlbTable.filter.fireChanged();
-        })
-        .show();
-    }), 'Filter by multiple id query');
-  }
-
-  setQueryAntigenIcon(): void {
-    function QueryAntigenIconHandler() {
-      const agIds = this.mlbTable.col('antigen list').toList()
-        .map((x) => x.replaceAll(' ', '').split(',')).flat();
-      const agNcbiIds = this.mlbTable.col('antigen ncbi id').toList()
-        .map((x) => x.replaceAll(' ', '').split(',')).flat();
-      const geneSymbols = this.mlbTable.col('antigen gene symbol').toList()
-        .map((x) => x.replaceAll(' ', '').split(',')).flat();
-      const allIds = [].concat(agIds, agNcbiIds, geneSymbols);
-
-      const txtInput = ui.textInput('', '');
-      //@ts-ignore
-      txtInput.input.placeholder = 'Paste antigen id or gene symbol here ...';
-      txtInput.input.style.resize = 'none';
-
-      ui.dialog({title: 'Filter by antigen id / antigen gene symbol'})
-        .add(ui.box(txtInput.input))
-        .onOK(() => {
-          const query = txtInput.stringValue.replaceAll(' ', '').split(',').filter((v) => v != '');
-          const missing = query.filter((id) => !allIds.includes(id));
-
-          if (missing.length > 0) {
-            for (let i = 0; i < missing.length; i++)
-              grok.shell.warning(`Value '${missing[i]}' not found in the base.`);
-          }
-
-          if (query.length > 0) {
-            this.mlbTable.rows.filter((row) => {
-              const rowIds = [].concat(
-                row['antigen gene symbol'].replace(' ', '').split(','),
-                row['antigen ncbi id'].replace(' ', '').split(','),
-                row['antigen list'].replace(' ', '').split(',')
-              ).filter((v) => v != '');
-              return rowIds.some((rowId) => query.includes(rowId));
-            });
-          } else {
-            this.mlbTable.rows.filter((row) => true);
-          }
-          this.mlbTable.filter.fireChanged();
-        })
-        .show();
-    }
-
-    this.queryAntigenIcon = ui.tooltip.bind(
-      ui.iconFA('key', QueryAntigenIconHandler.bind(this)), 'Filter by antigen id / antigen gene symbol query');
-  }
-
-  setHideShowIcon(): void {
-    this.hideShowIcon = ui.tooltip.bind(ui.iconFA('eye', () => {
-      if (this.hideShowIcon.classList.value.includes('fa-eye-slash'))
-        grok.events.fireCustomEvent('showAllDock', null);
-      else
-        grok.events.fireCustomEvent('closeAllDock', null);
-    }), 'show structure');
-    this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
-
-    grok.events.onCustomEvent('closeAllDock').subscribe((v) => {
-      this.twinPviewer.close(this.mlbView);
-      this.hideShowIcon.classList.value = 'grok-icon fal fa-eye-slash';
-    });
-
-    grok.events.onCustomEvent('showAllDock').subscribe((v) => {
-      this.twinPviewer.open(this.mlbView);
-      this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
-    });
-  }
-
-  /** Calculate common positions sequence names for both Heavy and Light chains.
-   * This is a draft.
-   * @param {string[]} heavyPositions
-   * @param {string[]} lightPositions
-   */
-  mergeSequencePositionsForImgt(heavyPositions: string[], lightPositions: string[]) {
-    const res: string[] = [];
-    let heavyI = 0;
-    let lightI = 0;
-    const positionRe = /^(\d+)([A-Z]*)$/g;
-
-    while (heavyI < heavyPositions.length && lightI < lightPositions.length) {
-      const heavyPositionName: string = heavyPositions[heavyI];
-      const lightPositionName: string = lightPositions[lightI];
-      const heavyPosM: RegExpMatchArray = heavyPositionName.match(positionRe);
-      const lightPosM: RegExpMatchArray = lightPositionName.match(positionRe);
-
-      const heavyPosNumber: number = parseInt(heavyPosM[0]);
-      const lightPosNumber: number = parseInt(lightPosM[0]);
-
-      const heavyPosPostfix: string = heavyPosM[1];
-      const lightPosPostfix: string = lightPosM[1];
-
-      if (heavyPosNumber == lightPosNumber) {
-        if (heavyPosPostfix == lightPosPostfix) {
-          res.push(heavyPositionName);
-          heavyI++;
-          lightI++;
-        }
-      }
-    }
-  }
-
-  /** Builds multiple alignment sequences from monomers in positions
-   *  as virtual (calculated) column in source DataFrame.
-   * @param {DG.DataFrame} df  DataFrame with ANARCI results
-   * @param {string} chain  Name of chain (used for result column name)
-   * @param {number} startingColumnIndex  The first column with positions
-   * @return {DG.Column}
-   */
-  mergeSequenceColumns(df: DG.DataFrame, chain: string, startingColumnIndex?: number) {
-    const positionRegExp = /^\d+[A-Z]*$/g;
-    const columns: DG.ColumnList = df.columns;
-
-    // All positions schemes contains position '1'
-    const positionNames = startingColumnIndex !== void 0 ? columns.names().slice(startingColumnIndex) :
-      columns.names().slice(columns.names().indexOf('1'));
-
-    const positionColumns = positionNames.filter((v: string) => v.match(positionRegExp) !== null);
-    const seqCol = columns.addNewVirtual(
-      `${chain} chain sequence`,
-      (i: number) => positionColumns.map((v) => df.get(v, i)).join('')
-    );
-    seqCol.semType = Aminoacids.SemTypeMultipleAlignment;
-
-    const positionNamesTxt = positionNames.join(', '); /* Spaces are for word wrap */
-    seqCol.setTag('positionNames', positionNamesTxt);
-
-    return seqCol;
-  }
-
-  addLogoViewer(table: DG.DataFrame, seqCol: DG.Column, dockType: DG.DOCK_TYPE, node?: DG.DockNode) {
-    // Hide heavy & light chains amino acid sequences visually
-    this.mlbView.grid.columns.byName(seqCol.name).visible = false;
-
-    // const webLogo: WebLogo = new WebLogo();
-    const logo = this.mlbView.addViewer('WebLogo', {sequenceColumnName: seqCol.name});
-    return this.mlbView.dockManager.dock(logo, dockType, node, `${seqCol.name} chain`, 0.22);
-  }
-
-  onMLBGridCurrentRowChanged(args: any) {
-    this.vIdInput.value = this.mlbTable.currentRow['v id'];
-    this.changeVid(true);
-  }
-
-  async init(urlVid) {
-    const pi = DG.TaskBarProgressIndicator.create('Loading data...');
-
-    // #region Commented due to using code from RepertoireBrowser
-    // const vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
-    // #endregion
-
-    ////////////////////////////////////////////////////
-    this.mlbTable = await this.dataLoader.load_mlbDf();
-
-    for (const column of this.mlbTable.columns)
-      column.name = column.name.replaceAll('_', ' ');
-
-    const mlbColumnsToMultiValue = ['antigen list', 'antigen ncbi id', 'antigen gene symbol'];
-    for (const column of this.mlbTable.columns) {
-      if (mlbColumnsToMultiValue.includes(column.name))
-        column.setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ',');
-    }
-
-    // let vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
-    this.vids = await this.dataLoader.getVids();
-    this.vidsObsPTMs = await this.dataLoader.getObservedPtmVids();
-    ////////////////////////////////////////////////////
-
-    // #region Code from RepertoireBrowser till pi.close()
-    const referenceDf = await this.dataLoader.refDf;
-
-    const tempDf = referenceDf.clone(null, ['v_id']);
-    (tempDf.columns as DG.ColumnList).addNewInt('index').init((i) => i);
-    const indexes = (this.mlbTable.clone(null, ['v id'])
-      .join(tempDf, ['v id'], ['v_id'], [], ['index'], 'left', false)
-      .getCol('index').getRawData() as Int32Array);
-    // #endregion
-
-    //#region -- Build columns with multiple alignments --
-    /* Firstly get positions list for every chain.
-       Secondly merge them to common positions sequence.
-       Thirdly build sequences by common po
-     */
-    const hChainDf = await this.dataLoader.load_hChainDf();
-    const lChainDf = await this.dataLoader.load_lChainDf();
-    [{name: 'Heavy', df: hChainDf}, {name: 'Light', df: lChainDf}].forEach((chain) => {
-      const seqCol = this.mergeSequenceColumns(chain.df, chain.name);
-      grok.data.joinTables(
-        this.mlbTable, chain.df,
-        ['v id'], ['Id'],
-        (this.mlbTable.columns as DG.ColumnList).names(), [seqCol.name],
-        DG.JOIN_TYPE.LEFT, true);
-
-      // crutch, because grok.data.joinTables() loses right table columns tags
-      this.mlbTable.col(seqCol.name).setTag('positionNames', chain.df.col(seqCol.name).getTag('positionNames'));
-    });
-    //#endregion -- Build columns with multiple alignments --
-
-    pi.close();
-
-    grok.events.onViewRemoved.subscribe((v) => {
-      if (v.type === DG.VIEW_TYPE.TABLE_VIEW && (v as DG.TableView).dataFrame.id === this.mlbTable.id)
-        this.subs.forEach((s) => s.unsubscribe());
-    });
-
-    await this.setView();
-
-
-    // const hNode = this.addLogoViewer(hChainDf, 'Heavy', DG.DOCK_TYPE.TOP);
-    // this.addLogoViewer(lChainDf, 'Light', DG.DOCK_TYPE.DOWN, hNode);
-
-    this.allVids = this.mlbTable.col('v id')!;
-    this.allIds = this.mlbTable.col('gdb id mappings')!;
     this.idMapping = {};
     for (let i = 0; i < this.allVids.length; i++)
       this.idMapping[this.allVids.get(i)] = this.allIds.get(i).replaceAll(' ', '').split(',');
 
-    if (this.mlbView) {
-      this.regionsViewer = new RegionSelectorViewer();
-      await this.regionsViewer.init(this.mlbView);
-    }
+    if (this.mlbView === null)
+      this.mlbView = grok.shell.addTableView(this.mlbDf);
+    else
+      this.mlbView.dataFrame = this.mlbDf;
 
-    const dfTree: DG.DataFrame = await this.dataLoader.load_treeDf();
-    if (dfTree) {
-      const treeBrowser = new TreeBrowser();
-      await treeBrowser.init(dfTree, this.mlbView);
-    }
+    this.updateView();
+  }
 
-    this.setVidInput();
-    //this.setFilterIcon();
-    this.setFilterIcon2();
-    this.setQueryIdIcon();
-    this.setQueryAntigenIcon();
-    this.setSelectionClearIcon();
-    this.setHideShowIcon();
+  /** Restores column hiding, sets view path after dataFrame replacement. */
+  updateView() {
+    const urlParamsTxt = Array.from(this.urlParams.entries())
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
 
-    this.mlbView.setRibbonPanels([
-      [this.vIdInput.root],
-      [this.filterIcon, this.filterIcon2, this.queryIdIcon, this.queryAntigenIcon],
-      [this.selectionClearIcon],
-      [this.hideShowIcon, this.hideShowIcon2],
+    this.mlbView.path = `${this.baseUri}?${urlParamsTxt}`;
+
+    // Leonid instructed to hide the columns
+    const mlbColumnsToHide = [].concat(...[
+      ['cdr length', 'surface cdr hydrophobicity', 'positive cdr charge', 'negative cdr charge', 'SFvCSP'],
+      ['antigen list', 'antigen ncbi id', 'antigen gene symbol'],
+      ['Heavy chain sequence', 'Light chain sequence']
     ]);
+    for (let colI = 0; colI < this.mlbView.grid.columns.length; colI++) {
+      const gridColumn: DG.GridColumn = this.mlbView.grid.columns.byIndex(colI);
+      if (gridColumn.column !== null && mlbColumnsToHide.includes(gridColumn.column.name))
+        gridColumn.visible = false;
+    }
+  }
 
-    if (urlVid != null)
-      this.vIdInput.value = urlVid;
+  async onAntigenChanged(antigenName: string): Promise<void> {
+    this.antigenName = antigenName;
 
-    this.changeVid();
-    this.setPropertiesFilters();
+    // Preventing firing the event
+    if (this.antigenInput.value != this.antigenName)
+      this.antigenInput.value = this.antigenName;
 
-    this.mlbTable.onFilterChanged.subscribe((_) => {
-      // this.compostionPviewer.do(this.mlbView);
-    });
-    this.mlbTable.onCurrentRowChanged.subscribe(this.onMLBGridCurrentRowChanged.bind(this));
+    this.urlParams.set('antigen', this.antigenName);
+
+    window.setTimeout(async () => { await this.loadMlbDf(); }, 10);
+
+    // const treeDf: DG.DataFrame = await this.dataLoader.getTreeByAntigen(this.antigenName);
+    // this.treeBrowser.treeDf = treeDf;
+  }
+
+  onSchemeChanged(schemeName: string): void {
+    this.schemeName = schemeName;
+
+    // Preventing firing the event
+    if (this.schemeInput.value != this.schemeName)
+      this.schemeInput.value = this.schemeName;
+
+    this.urlParams.set('scheme', this.schemeName);
+
+    window.setTimeout(async () => { await this.loadMlbDf(); }, 10);
+  }
+
+  /** Loads MLB data and sets prepared DataFrame */
+  async loadMlbDf(): Promise<void> {
+    const pi = DG.TaskBarProgressIndicator.create('Loading data...');
+    try {
+      // let mlbDf: DG.DataFrame;
+      // let hChainDf: DG.DataFrame;
+      // let lChainDf: DG.DataFrame;
+
+      const t1 = Date.now();
+      const [mlbDf, hChainDf, lChainDf]: [DG.DataFrame, DG.DataFrame, DG.DataFrame] = (await Promise.all([
+        this.dataLoader.getMlbByAntigen(this.antigenName),
+        this.dataLoader.getAnarci(this.schemeName, 'heavy', this.antigenName),
+        this.dataLoader.getAnarci(this.schemeName, 'light', this.antigenName),
+      ]));
+      const t2 = Date.now();
+      console.debug(`MolecularLiabilityBrowser.loadMlbDf() load duration ${((t2 - t1) / 1000).toString()} s`);
+
+      await this.setMlbDf(MolecularLiabilityBrowser.prepareDataMlbDf(mlbDf, hChainDf, lChainDf));
+      const t3 = Date.now();
+      console.debug(`MolecularLiabilityBrowser.loadMlbDf() prepare ${((t3 - t2) / 1000).toString()} s`);
+    } finally {
+      pi.close();
+    }
   }
 }

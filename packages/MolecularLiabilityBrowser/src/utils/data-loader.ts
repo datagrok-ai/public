@@ -68,16 +68,28 @@ export abstract class DataLoader {
   abstract init();
 
   protected async check_files(files: { [name: string]: string }): Promise<void> {
-    const errorsFiles: string[] = [];
-    for (const filePath of Object.values(files)) {
-      if (!(await _package.files.exists(filePath)))
-        errorsFiles.push(filePath);
-    }
-    if (errorsFiles.length > 0)
-      throw new Error(`Files errors:\n ${errorsFiles.join('\n')}`);
+    // for (const filePath of Object.values(files)) {
+    //   if (!(await _package.files.exists(filePath)))
+    //     fileErrors.push(filePath);
+    // }
+    const fileNames = Object.values(files);
+    const fileErrors: string[] = (await Promise.all(
+      fileNames.map((filePath) => { return _package.files.exists(filePath); })
+    ).then((exists) => fileNames.filter((v, i) => !exists[i])));
+
+    if (fileErrors.length > 0)
+      throw new Error(`Files errors:\n ${fileErrors.join('\n')}`);
   }
 
   abstract getVids(): Promise<string[]>;
+
+  abstract listAntigens(): Promise<DG.DataFrame>;
+
+  abstract getMlbByAntigen(antigen: string): Promise<DG.DataFrame>;
+
+  abstract getTreeByAntigen(antigen: string): Promise<DG.DataFrame>;
+
+  abstract getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame>;
 
   abstract getObservedPtmVids(): Promise<string[]>;
 

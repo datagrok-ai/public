@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {_package} from '../package';
 import {
   CdrMapType,
@@ -12,6 +13,8 @@ import {
 } from './data-loader';
 
 export class DataLoaderFiles extends DataLoader {
+  private _pName: string = 'MolecularLiabilityBrowser';
+
   private _files = {
     filterProps: 'properties.json',
     mutcodes: 'mutcodes.json',
@@ -47,19 +50,63 @@ export class DataLoaderFiles extends DataLoader {
   get realNums(): NumsType { return this._realNums; }
 
   async init() {
-    await this.check_files(this._files);
+    const t1 = Date.now();
+    // Check files disabled while too much time consuming
+    // await this.check_files(this._files);
+    const t2 = Date.now();
 
-    this._filterProperties = JSON.parse(await _package.files.readAsText(this._files.filterProps));
-    this._mutcodes = JSON.parse(await _package.files.readAsText(this._files.mutcodes));
-    this._ptmMap = JSON.parse(await _package.files.readAsText(this._files.ptm_map));
-    this._cdrMap = JSON.parse(await _package.files.readAsText(this._files.cdr_map));
-    this._refDf = (await _package.files.readBinaryDataFrames(this._files.ptm_in_cdr))[0];
-    this._realNums = JSON.parse(await _package.files.readAsText(this._files.realNums));
+    await Promise.all([
+      _package.files.readAsText(this._files.filterProps).then(
+        (v) => this._filterProperties = JSON.parse(v)
+      ),
+      _package.files.readAsText(this._files.mutcodes).then(
+        (v) => this._mutcodes = JSON.parse(v)
+      ),
+      _package.files.readAsText(this._files.ptm_map).then(
+        (v) => this._ptmMap = JSON.parse(v)
+      ),
+      _package.files.readAsText(this._files.cdr_map).then(
+        (v) => this._cdrMap = JSON.parse(v)
+      ),
+      _package.files.readBinaryDataFrames(this._files.ptm_in_cdr).then(
+        (dfList) => this._refDf = dfList[0]
+      ),
+      _package.files.readAsText(this._files.realNums).then(
+        (v) => this._realNums = JSON.parse(v)
+      )]);
+    const t3 = Date.now();
+
+    console.debug(`DataLoaderFiles check_files ${((t2 - t1) / 1000).toString()} s`);
+    console.debug(`DataLoaderFiles preload_files ${((t3 - t2) / 1000).toString()} s`);
   }
 
   async getVids(): Promise<string[]> {
     const res: string[] = ['VR000000008', 'VR000000043', 'VR000000044'];
     return Promise.resolve(res);
+  }
+
+  async listAntigens(): Promise<DG.DataFrame> {
+    const df: DG.DataFrame = await grok.functions.call(`${this._pName}:listAntigens`);
+    return df;
+  }
+
+  async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {
+    const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getMlbByAntigen`, {antigen: antigen});
+    return df;
+  }
+
+  async getTreeByAntigen(antigen: string): Promise<DG.DataFrame> {
+    const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getTreeByAntigen`, {antigen: antigen});
+    return df;
+  }
+
+  async getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame> {
+    // There is a problem with using underscore symbols in query names.
+    const scheme2: string = scheme.charAt(0).toUpperCase() + scheme.slice(1);
+    const chain2: string = chain.charAt(0).toUpperCase() + chain.slice(1);
+    const df: DG.DataFrame = await grok.functions.call(
+      `${this._pName}:getAnarci${scheme2}${chain2}`, {antigen: antigen});
+    return df;
   }
 
   async getObservedPtmVids(): Promise<string[]> {
