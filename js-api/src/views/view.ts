@@ -306,6 +306,9 @@ export class View extends ViewBase {
     api.grok_View_Set_HelpUrl(this.dart, url);
   }
 
+  /** Contains auxiliary information */
+  get temp(): object { return api.grok_View_Get_Temp(this.dart); }
+
   /** 
    * Loads previously saved view layout. Only applicable to certain views, such as {@link TableView}.
    *  See also {@link saveLayout}
