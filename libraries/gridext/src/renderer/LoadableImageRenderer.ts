@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as GridUtils from '../utils/GridUtils';
 import * as TextUtils from '../utils/TextUtils';
+import * as MathUtils from '../utils/MathUtils';
 import {GridCellRendererEx} from "./GridCellRendererEx";
 import {PinnedColumn} from "../pinned/PinnedColumn";
 
@@ -9,6 +10,7 @@ class ImageRequest {
     this.m_strIdImage = strIdImage;
     this.m_nW = nW;
     this.m_nH = nH;
+    this.m_bError = false;
   }
 
   isMatch(strIdImage : string, nW : number, nH : number) : boolean {
@@ -16,13 +18,23 @@ class ImageRequest {
     return b;
   }
 
+  isError() : boolean {
+    return this.m_bError;
+  }
+
+  setError(bError : boolean) : void {
+    this.m_bError = bError;
+  }
+
   private m_strIdImage : string;
   private m_nW : number;
   private m_nH : number;
+  private m_bError : boolean;
 }
 
 
 function paintImageReady(g : CanvasRenderingContext2D, grid : DG.Grid, strColName : string, strIdImageReady : string, imgReady : any, fnValueToImageId : Function, nXOffset : number) : void {
+  const bError = imgReady === null;
   let cellGridTmp: DG.GridCell;
   let obVal = null;
   let strVal = null;
@@ -39,10 +51,35 @@ function paintImageReady(g : CanvasRenderingContext2D, grid : DG.Grid, strColNam
   obVal = cellGridTmp.cell.value;
   strVal = fnValueToImageId(obVal);
   if (strVal === strIdImageReady) {
-    const rc = cellGridTmp.bounds;
-    const nX = isNaN(nXOffset) ? rc.x : nXOffset;
-    const nW = isNaN(nXOffset) ? rc.width : g.canvas.width;
-    g.drawImage(imgReady, nX, rc.y, nW, rc.height);
+    if(bError) {
+      g.font = cellGridTmp.style.font === null ? "10px Dialog" : cellGridTmp.style.font;
+      const rc = cellGridTmp.bounds;
+      const nX = isNaN(nXOffset) ? rc.x : nXOffset;
+      const nW = isNaN(nXOffset) ? rc.width : g.canvas.width;
+      g.fillStyle = 'white';
+      g.fillRect(nX, rc.y, nW, rc.height);
+
+      const str = TextUtils.trimText('Error', g, nW);
+
+      const tm = g.measureText(str);
+      let nWLabel = tm.width;
+
+      const nAscent = Math.abs(tm.actualBoundingBoxAscent);
+      const nDescent = tm.actualBoundingBoxDescent;
+      const nHFont = nAscent + nDescent;
+
+      g.fillStyle = 'red';
+      g.textAlign = 'start';
+      const nXX = nX + ((nW - nWLabel) >> 1);
+      const nYY = rc.y + Math.floor((rc.height + nHFont) / 2);
+      g.fillText(str, nXX, nYY);
+    }
+    else {
+      const rc = cellGridTmp.bounds;
+      const nX = isNaN(nXOffset) ? rc.x : nXOffset;
+      const nW = isNaN(nXOffset) ? rc.width : g.canvas.width;
+      g.drawImage(imgReady, nX, rc.y, nW, rc.height);
+    }
   }
  }
 }
@@ -54,7 +91,7 @@ export class LoadableImageRenderer extends GridCellRendererEx {
   }
 
   valueToImageId(obValue : any) : string | null {
-    return obValue === undefined ? null : obValue.toString();
+    return obValue === undefined || obValue === null ? null : obValue.toString();
   }
 
   createImage(strImageId : string, nWImage : number, nHImage : number, fnImageRadyCallback : any) : void {
@@ -74,6 +111,16 @@ export class LoadableImageRenderer extends GridCellRendererEx {
   }
 
   private onResize(colGridOrPinned : DG.GridColumn | PinnedColumn, grid: DG.Grid, nWCol : number, nHRow : number, bAdjusting : boolean) : void {
+
+    if(!MathUtils.isStrictInt(nWCol)) {
+      console.error('Image width is not an integer: ' + nWCol + " Will be converted to " + Math.floor(nWCol));
+      nWCol = Math.floor(nWCol);
+    }
+
+    if(!MathUtils.isStrictInt(nHRow)) {
+      console.error('Image height is not an integer: ' + nHRow + " Will be converted to " + Math.floor(nHRow));
+      nHRow = Math.floor(nHRow);
+    }
 
     this.m_bCellsAdjusting = bAdjusting;
     if(bAdjusting) {
@@ -137,12 +184,13 @@ export class LoadableImageRenderer extends GridCellRendererEx {
       const rendererThis = this;
       this.createImage(strImageId, nWCol, nHRow, (strrIdImage : string, imgNew : any) => {
           if(imgNew === null) {
-            rendererThis.m_mapImages.delete(strrIdImage);
-            return;
+            const req = rendererThis.m_mapImages.get(strrIdImage);
+            req.setError(true);
+            //return;
           }
-
-          rendererThis.m_mapImages.set(strrIdImage, imgNew);
-
+          else {
+            rendererThis.m_mapImages.set(strrIdImage, imgNew);
+          }
           if(eCanVasSource === null) {
             return;
           }
@@ -165,10 +213,22 @@ export class LoadableImageRenderer extends GridCellRendererEx {
 
   render(g: CanvasRenderingContext2D, nX: number, nY: number, nW: number, nH: number, value: any, context: any): void {
 
+    if(!MathUtils.isStrictInt(nW)) {
+      console.error('Image width is not an integer: ' + nW + " Will be converted to " + Math.floor(nW));
+      nW = Math.floor(nW);
+    }
+
+    if(!MathUtils.isStrictInt(nH)) {
+      console.error('Image height is not an integer: ' + nH + " Will be converted to " + Math.floor(nH));
+      nH = Math.floor(nH);
+    }
+
     const cellGrid: DG.GridCell = value;
     const obValue = cellGrid.cell.value;
     const strImageId = this.valueToImageId(obValue);
     if (strImageId === null || strImageId === undefined || strImageId == '') {
+      g.fillStyle = 'white';
+      g.fillRect(nX, nY, nW, nH);
       return;
     }
 
@@ -180,7 +240,23 @@ export class LoadableImageRenderer extends GridCellRendererEx {
       }
     }
 
-    let str = this.m_bCellsAdjusting ? "Updating..." : "Loading...";
+    g.fillStyle = "Gray";
+    let str = '';
+    if(this.m_bCellsAdjusting) {
+      str = 'Updating...';
+    }
+    else {
+      const req = this.m_mapImages.get(strImageId);
+      if(req instanceof ImageRequest && req.isError()) {
+        str = 'Error';
+        g.fillStyle = "red";
+      }
+      else {
+        str = 'Loading...';
+      }
+    }
+
+    //let str = this.m_bCellsAdjusting ? "Updating..." : "Loading...";
 
     g.font = cellGrid.style.font === null ? "10px Dialog" : cellGrid.style.font;
     str = TextUtils.trimText(str, g, nW);
@@ -193,7 +269,7 @@ export class LoadableImageRenderer extends GridCellRendererEx {
     const nHFont = nAscent + nDescent;
 
     g.textAlign = 'start';
-    g.fillStyle = "Gray";
+
     const nXX = nX + ((nW - nWLabel) >> 1);
     const nYY = nY + Math.floor((nH + nHFont) / 2);
     g.fillText(str, nXX, nYY);
@@ -223,14 +299,15 @@ export class LoadableImageRenderer extends GridCellRendererEx {
     //console.log('Sending request : ' + strImageId + " " + nW + " " + nH + " " + nXOffset);
     this.createImage(strImageId, nW, nH, (strIdImageReady: string, imgReady: any) => {
       if (imgReady === null) {
-        rendererThis.m_mapImages.delete(strIdImageReady);
-        return;
+        const request = rendererThis.m_mapImages.get(strIdImageReady);
+        request.setError(true);
+        //return;
+      }
+      else {
+        //console.log('Request Ready: ' + strImageId + " " + nW + " " + nH);
+        rendererThis.m_mapImages.set(strIdImageReady, imgReady);
       }
 
-      //console.log('Request Ready: ' + strImageId + " " + nW + " " + nH);
-
-      rendererThis.m_mapImages.set(strIdImageReady, imgReady);
-      //const eCanvas = grid.canvas;
       const graphics = eCanvasTmp.getContext("2d");
       if (graphics === null) {
         return;
