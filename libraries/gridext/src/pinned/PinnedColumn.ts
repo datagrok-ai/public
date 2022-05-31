@@ -130,17 +130,15 @@ export class PinnedColumn {
   private m_handlerMouseMove : any;
 
   constructor(colGrid : DG.GridColumn) {
-    if (colGrid.cellType === 'html') {
-      throw new Error("HTML columns cannot be pinned.");
-    }
 
     const grid = getGrid(colGrid);
     if(grid === null) {
       throw new Error("Column '" + colGrid.name + "' is not attached to the grid.");
     }
 
-    if(PinnedUtils.isPinnedColumn(colGrid))
-      throw new Error("Column '" + colGrid.name + "' is already pinned.");
+    if(!PinnedUtils.isPinnableColumn(colGrid)) {
+      throw new Error("Column '" + colGrid.name + "' cannot be pinned. It either pinned or HTML.");
+    }
 
     const dart = DG.toDart(grid);
 
