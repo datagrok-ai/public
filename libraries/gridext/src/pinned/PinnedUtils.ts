@@ -77,6 +77,23 @@ export function isPinnedColumn(colGrid : DG.GridColumn) : boolean {
   return false;
 }
 
+export function isPinnableColumn(colGrid : DG.GridColumn) : boolean {
+  const b = isPinnedColumn(colGrid);
+  if(b) {
+    return false;
+  }
+
+  if(colGrid.cellType === "html") {
+    const renderer = GridUtils.getGridColumnRenderer(colGrid);
+    if(!(renderer instanceof GridCellRendererEx)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
 export function handleContextMenu(args : any, fnMenuCallback : Function) : void {
   const grid = args.args.context;
   if (!(grid instanceof DG.Grid)) {
@@ -100,14 +117,11 @@ export function handleContextMenu(args : any, fnMenuCallback : Function) : void 
     return;
 
   const colGrid = cell.gridColumn;
-  if(colGrid.cellType === "html") {
-    const renderer = GridUtils.getGridColumnRenderer(colGrid);
-    if(!(renderer instanceof GridCellRendererEx)) {
-      return;
-    }
+  if(!isPinnableColumn(colGrid)) {
+    return;
   }
 
-  if (!isPinnedColumn(colGrid) && (cell.isTableCell || cell.isColHeader) && (elem === grid.canvas || elem === grid.overlay)) {
+  if ((cell.isTableCell || cell.isColHeader) && (elem === grid.canvas || elem === grid.overlay)) {
     const menu = args.args.menu;
     fnMenuCallback(menu, colGrid, grid);
     e.preventDefault();
