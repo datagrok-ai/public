@@ -1,5 +1,5 @@
 --name: year
---connection: Mdolotov:PPSCDM_1
+--connection: Demo:test_queries:PostgresNetCDM
 SELECT 
     stratum_1 AS year, 
     count_value AS countValue

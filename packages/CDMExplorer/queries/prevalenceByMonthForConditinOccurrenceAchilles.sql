@@ -1,5 +1,5 @@
 --name: PrevalenceByMonthForConditionOccurrenceAchilles
---connection: Mdolotov:PPSCDM_1
+--connection: Demo:test_queries:PostgresNetCDM
 --input: string conceptId
 SELECT 
   concept_id                                                AS concept_id,
@@ -14,17 +14,17 @@ FROM
      CAST(stratum_2 AS INT) stratum_2,
      count_value count_value_num
    FROM
-     results_pps_prostate_cancer_v2038.achilles_results WHERE analysis_id = 402 GROUP BY analysis_id, stratum_1, stratum_2, count_value) num
+     cdm_synthea_results_results WHERE analysis_id = 402 GROUP BY analysis_id, stratum_1, stratum_2, count_value) num
   INNER JOIN
   (SELECT
      CAST(stratum_1 AS INT) stratum_1_denom,
      count_value count_value_denom
    FROM
-     results_pps_prostate_cancer_v2038.achilles_results WHERE analysis_id = 117 GROUP BY analysis_id, stratum_1, count_value) denom
+     cdm_synthea_results_results WHERE analysis_id = 117 GROUP BY analysis_id, stratum_1, count_value) denom
     ON num.stratum_2 = denom.stratum_1_denom
   --calendar year
   INNER JOIN
-  cdm_pps_prostate_cancer_v2038.concept c1
+  cdm_synthea_1.concept c1
 ON num.stratum_1_num = c1.concept_id
 limit 1000000000) t
 WHERE t.concept_id = 200962

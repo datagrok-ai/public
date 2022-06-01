@@ -1,5 +1,5 @@
 --name: ByTypeForConditionOccurrenceAchilles
---connection: Mdolotov:PPSCDM_1
+--connection: Demo:test_queries:PostgresNetCDM
 --input: string conceptId
 SELECT
   c1.concept_id         AS condition_concept_id,
@@ -7,9 +7,9 @@ SELECT
   c2.concept_group_id   AS concept_id,
   c2.concept_group_name AS concept_name,
   sum(ar1.count_value)  AS count_value
-FROM results_pps_prostate_cancer_v2038.achilles_results ar1
+FROM cdm_synthea_results.achilles_results ar1
 INNER JOIN
-cdm_pps_prostate_cancer_v2038.concept c1
+cdm_synthea_1.concept c1
 ON ar1.stratum_1 = CAST(c1.concept_id AS VARCHAR(255))
 INNER JOIN
 (
@@ -29,7 +29,7 @@ CONCAT(
   WHEN (concept_name LIKE 'Inpatient%' OR concept_name LIKE 'Outpatient%' ) AND (concept_name NOT LIKE '%primary%' AND concept_name NOT LIKE '%1st position%') THEN 'Secondary diagnosis'
   ELSE '' END
 ) AS concept_group_name
-FROM cdm_pps_prostate_cancer_v2038.concept
+FROM cdm_synthea_1.concept
 WHERE lower(vocabulary_id) = 'condition type'
 
 ) c2

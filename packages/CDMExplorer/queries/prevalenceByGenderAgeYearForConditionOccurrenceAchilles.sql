@@ -1,5 +1,5 @@
 --name: PrevalenceByGenderAgeYearForConditionOccurrenceAchilles
---connection: Mdolotov:PPSCDM_1
+--connection: Demo:test_queries:PostgresNetCDM
 --input: string conceptId
 SELECT
   c1.concept_id                                                          AS concept_id,
@@ -23,13 +23,13 @@ FROM (
          denom.count_value AS denom_count_value
        FROM (
               SELECT *
-              FROM results_pps_prostate_cancer_v2038.achilles_results
+              FROM cdm_synthea_results.achilles_results
               WHERE analysis_id = 404
                     AND stratum_3 IN ('8507', '8532')
             ) num
          INNER JOIN (
                       SELECT *
-                      FROM results_pps_prostate_cancer_v2038.achilles_results
+                      FROM cdm_synthea_results.achilles_results
                       WHERE analysis_id = 116
                             AND stratum_2 IN ('8507', '8532')
                     ) denom
@@ -37,9 +37,9 @@ FROM (
               AND num.stratum_3 = denom.stratum_2
               AND num.stratum_4 = denom.stratum_3
      ) tmp
-  INNER JOIN cdm_pps_prostate_cancer_v2038.concept c1
+  INNER JOIN cdm_synthea_1.concept c1
 ON CAST(num_stratum_1 AS INT) = c1.concept_id
-INNER JOIN cdm_pps_prostate_cancer_v2038.concept c2
+INNER JOIN cdm_synthea_1.concept c2
 ON CAST(num_stratum_3 AS INT) = c2.concept_id
 WHERE c1.concept_id = @conceptId
 ORDER BY c1.concept_id,

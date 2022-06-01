@@ -5,8 +5,10 @@ import { updateDivInnerHTML } from '../utils';
 import { convertColToString, joinCohorts } from '../preprocessing/data-preparation';
 import { PERSON_ID } from '../constants';
 import $ from "cash-dom";
+import { cohorts } from '../cohorts';
+import { CDMViewBase } from '../model/cdmViewBase';
 
-export class TimelinesView extends DG.ViewBase {
+export class TimelinesView extends CDMViewBase {
 
     links = {
         'Condition Occurrence': { key: PERSON_ID, start: 'condition_start_date', end: 'condition_end_date', event: 'condition' },
@@ -27,18 +29,16 @@ export class TimelinesView extends DG.ViewBase {
     selectedOptions: string[] = [];
     selectedDataframes: any;
     timelinesDiv = ui.box();
-    filtersDiv = ui.box();
     resultTables: DG.DataFrame;
-    filterColumns = [];
-    filters: any;
+    domainsMultichoice: DG.InputBase;
 
     constructor(name) {
         super({});
         this.name = name;
-        this.createView();
     }
 
     async createView(): Promise<void> {
+        ui.setUpdateIndicator(this.root, true);
         Promise.all([
             grok.data.query(`CDM:conditionOccurrence`),
             grok.data.query(`CDM:drugExposure`)
@@ -46,46 +46,20 @@ export class TimelinesView extends DG.ViewBase {
             this.dataframes = dataframes;
             this.dataframes.forEach(df => {
                 convertColToString(df, PERSON_ID);
-                joinCohorts(df);
-            })
+            });
             this.selectedOptions = ['Drug Exposure'];
-            let multiChoiceOptions = ui.multiChoiceInput('', this.selectedOptions as any, ['Drug Exposure', 'Condition Occurrence']);
-            multiChoiceOptions.onChanged((v) => {
-                this.selectedOptions = multiChoiceOptions.value;
+            this.domainsMultichoice = ui.multiChoiceInput('', this.selectedOptions as any, ['Drug Exposure', 'Condition Occurrence']);
+            this.domainsMultichoice.onChanged((v) => {
+                this.selectedOptions = this.domainsMultichoice.value;
                 this.updateTimelinesPlot();
             });
-            let customTitle = {
-                style: {
-                    'color': 'var(--grey-6)',
-                    'margin-top': '8px',
-                    'font-size': '16px',
-                }
-            };
-
-            let viewerTitle = {
-                style: {
-                    'color': 'var(--grey-6)',
-                    'margin': '12px 0px 6px 12px',
-                    'font-size': '16px',
-                }
-            };
 
             this.root.className = 'grok-view ui-box';
             this.append(ui.splitH([
-                ui.splitV([
-                    ui.box(ui.panel([
-                        ui.divText('Events', customTitle),
-                        multiChoiceOptions.root
-                    ]), { style: { maxHeight: '130px' } }),
-                    ui.box(
-                        ui.divText('Filters', viewerTitle), { style: { maxHeight: '40px' } }),
-                    this.filtersDiv
-                ], { style: { maxWidth: '250px', } }),
                 this.timelinesDiv
             ]))
-
+            ui.setUpdateIndicator(this.root, false);
             this.updateTimelinesPlot();
-
         })
     }
 
@@ -115,9 +89,13 @@ export class TimelinesView extends DG.ViewBase {
     }
 
     private updateTimelinesPlot() {
+        ui.setUpdateIndicator(this.timelinesDiv, true);
         this.updateTimelinesTables();
         if (this.resultTables) {
-            this.filterColumns = this.resultTables.columns.names().filter(it => !['domain', 'rowNum', 'key', 'start', 'end', 'event'].includes(it))
+            grok.data.linkTables(cohorts.cohortsPivoted, this.resultTables,
+                [ PERSON_ID ], [ 'key' ],
+                [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
+            //grok.shell.addTableView(this.resultTables);
             this.resultTables.plot.fromType(DG.VIEWER.TIMELINES, {
                 paramOptions: JSON.stringify(this.options),
             }).then((v: any) => {
@@ -132,27 +110,26 @@ export class TimelinesView extends DG.ViewBase {
                 $(v.root).css('position', 'relative')
                 v.zoomState = [[0, 10], [0, 10], [90, 100], [90, 100]];
                 v.render();
-                this.updateTimelinesDivs(v.root, this.getFilters());
+                this.updateTimelinesDivs(v.root);
             });
         } else {
-            this.updateTimelinesDivs('', '');
+            this.updateTimelinesDivs('');
         }
 
     }
 
 
-    private getFilters() {
-        let chart = DG.Viewer.fromType('Filters', this.resultTables, {
-            'columnNames': this.filterColumns,
-            'showContextMenu': true,
-        }).root;
-        chart.style.overflowY = 'scroll';
-        return chart
+    private updateTimelinesDivs(timelinesContent: any) {
+        ui.setUpdateIndicator(this.timelinesDiv, false);
+        updateDivInnerHTML(this.timelinesDiv, timelinesContent);
     }
 
-    private updateTimelinesDivs(timelinesContent: any, filtersContent: any) {
-        updateDivInnerHTML(this.timelinesDiv, timelinesContent);
-        updateDivInnerHTML(this.filtersDiv, filtersContent);
+    override async propertyPanel() {
+
+        let acc = this.createAccWithTitle(this.name);
+        acc.addPane('Domain', () => this.domainsMultichoice.root, true);
+
+        return acc.root;
     }
 
 

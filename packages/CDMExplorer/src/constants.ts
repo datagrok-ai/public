@@ -1,5 +1,7 @@
 import * as DG from "datagrok-api/dg";
 
+export const VIEWS = [];
+
 export const PERSON_ID = 'person_id';
 
 export const conceptColumnNames = {
