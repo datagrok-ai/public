@@ -2,10 +2,10 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import * as ui from 'datagrok-api/ui';
 import {MonomerLibrary} from '../monomer-library';
-import {PeptidesController} from '../peptides';
 
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
+import {PeptidesModel} from '../model';
 
 export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): void {
   if (grid.temp['containsBarchart'])
@@ -45,7 +45,7 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): voi
     ) {
       if (!cell.isColHeader) {
         const monomerLib = cell.cell.dataFrame.temp[MonomerLibrary.id];
-        PeptidesController.chemPalette.showTooltip(cell, x, y, monomerLib);
+        PeptidesModel.chemPalette.showTooltip(cell, x, y, monomerLib);
       } else if (barchart.currentBarPart) {
         let elements: HTMLElement[] = [];
         elements = elements.concat([ui.divText(barchart.currentBarPart.aaName)]);
@@ -92,7 +92,7 @@ export class StackedBarChart extends DG.JsViewer {
   barStats: {[Key: string]: type.BarChart.BarStatsObject[]} = {};
   selected: type.BarChart.BarPart[] = [];
   aggregatedSelectedTables: type.DataFrameDict = {};
-  controller!: PeptidesController;
+  controller!: PeptidesModel;
   isSameBarClicked: boolean = false;
   _previousClickedBarPart: type.BarChart.BarPart | null = null;
 
@@ -129,8 +129,8 @@ export class StackedBarChart extends DG.JsViewer {
   // Stream subscriptions
   async onTableAttached(): Promise<void> {
     this.init();
-    this.controller = await PeptidesController.getInstance(this.dataFrame);
-    this.controller.init(this.dataFrame);
+    this.controller = await PeptidesModel.getInstance(this.dataFrame);
+    // this.controller.init(this.dataFrame);
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.computeData()));
       this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.computeData()));
@@ -236,7 +236,7 @@ export class StackedBarChart extends DG.JsViewer {
       const sBarHeight = h * obj['count'] / this.max;
       const gapSize = sBarHeight * innerMargin;
       const verticalShift = (this.max - sum) / this.max;
-      const [color, aarOuter] = PeptidesController.chemPalette.getColorAAPivot(obj['name']);
+      const [color, aarOuter] = PeptidesModel.chemPalette.getColorAAPivot(obj['name']);
       const textSize = g.measureText(aarOuter);
       const fontSize = 11;
       const leftMargin = (w - (aarOuter.length > 1 ? fontSize : textSize.width - 8)) / 2;
@@ -252,7 +252,7 @@ export class StackedBarChart extends DG.JsViewer {
       if (textSize.width <= subBartHeight) {
         const origTransform = g.getTransform();
 
-        if (color != PeptidesController.chemPalette.undefinedColor) {
+        if (color != PeptidesModel.chemPalette.undefinedColor) {
           g.fillRect(x + xStart, y + yStart, barWidth, subBartHeight);
           g.fillStyle = 'black';
         } else

@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {PeptidesController} from '../peptides';
 import * as C from '../utils/constants';
+import {PeptidesModel} from '../model';
 
 /**
  * 3D representation widget of peptide molecule.
@@ -67,7 +67,7 @@ export async function peptideMoleculeWidget(pep: string, currentTable: DG.DataFr
 export function getMolecule(pep: string, separator: string): string {
   const split = pep.split(separator);
   const mols = [];
-  const chemPalette = PeptidesController.chemPalette;
+  const chemPalette = PeptidesModel.chemPalette;
   for (let i = 1; i < split.length - 1; i++) {
     if (split[i] in chemPalette.AASmiles) {
       const aar = chemPalette.AASmiles[split[i]];

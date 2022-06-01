@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {PeptidesController} from '../peptides';
 import * as C from '../utils/constants';
+import {PeptidesModel} from '../model';
 
 let IS_PROPERTY_CHANGING = false;
 
@@ -12,7 +12,7 @@ export class SARViewerBase extends DG.JsViewer {
   tempName!: string;
   viewerGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
-  controller!: PeptidesController;
+  model!: PeptidesModel;
   scaling: string;
   bidirectionalAnalysis: boolean;
   showSubstitution: boolean;
@@ -36,9 +36,10 @@ export class SARViewerBase extends DG.JsViewer {
     super.onTableAttached();
     this.dataFrame.temp[this.tempName] ??= this;
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
-    this.controller = await PeptidesController.getInstance(this.dataFrame);
-    this.controller.init(this.dataFrame);
+    this.model = await PeptidesModel.getInstance(this.dataFrame);
+    // this.model.init(this.dataFrame);
     await this.requestDataUpdate();
+    this.helpUrl = '/help/domains/bio/peptides.md';
   }
 
   detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
@@ -56,7 +57,7 @@ export class SARViewerBase extends DG.JsViewer {
   }
 
   async requestDataUpdate(): Promise<void> {
-    await this.controller.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis,
+    await this.model.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis,
       this.activityLimit, this.maxSubstitutions, this.showSubstitution);
   }
 
@@ -100,9 +101,9 @@ export class SARViewer extends SARViewerBase {
 
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
-    this.viewerGrid = this.controller.sarGrid;
+    this.viewerGrid = this.model._sarGrid;
 
-    this.subs.push(this.controller.onSARGridChanged.subscribe((data) => {
+    this.subs.push(this.model.onSARGridChanged.subscribe((data) => {
       this.viewerGrid = data;
       this.render();
     }));
@@ -111,7 +112,7 @@ export class SARViewer extends SARViewerBase {
     this.render();
   }
 
-  isInitialized(): DG.Grid {return this.controller.sarGrid;}
+  isInitialized(): DG.Grid {return this.model._sarGrid;}
 
   //1. debouncing in rxjs; 2. flags?
   async onPropertyChanged(property: DG.Property): Promise<void> {
@@ -120,7 +121,7 @@ export class SARViewer extends SARViewerBase {
 
     await super.onPropertyChanged(property);
     IS_PROPERTY_CHANGING = true;
-    this.controller.syncProperties(true);
+    this.model.syncProperties(true);
     IS_PROPERTY_CHANGING = false;
   }
 }
@@ -139,9 +140,9 @@ export class SARViewerVertical extends SARViewerBase {
 
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
-    this.viewerGrid = this.controller.sarVGrid;
+    this.viewerGrid = this.model._sarVGrid;
 
-    this.subs.push(this.controller.onSARVGridChanged.subscribe((data) => {
+    this.subs.push(this.model.onSARVGridChanged.subscribe((data) => {
       this.viewerGrid = data;
       this.render();
     }));
@@ -150,7 +151,7 @@ export class SARViewerVertical extends SARViewerBase {
     this.render();
   }
 
-  isInitialized(): DG.Grid {return this.controller.sarVGrid;}
+  isInitialized(): DG.Grid {return this.model._sarVGrid;}
 
   async onPropertyChanged(property: DG.Property): Promise<void> {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)
@@ -158,7 +159,7 @@ export class SARViewerVertical extends SARViewerBase {
 
     await super.onPropertyChanged(property);
     IS_PROPERTY_CHANGING = true;
-    this.controller.syncProperties(false);
+    this.model.syncProperties(false);
     IS_PROPERTY_CHANGING = false;
   }
 }
