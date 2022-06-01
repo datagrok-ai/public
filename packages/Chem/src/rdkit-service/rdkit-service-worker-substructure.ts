@@ -2,17 +2,25 @@ import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {isMolBlock} from '../utils/chem-utils';
 import {RDModule} from "../rdkit-api";
 
+interface InitMoleculesStructuresResult {
+  molIdxToHash: string[];
+  hashToMolblock: {
+      [_: string]: any;
+  }
+}
+
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   readonly _patternFpLength = 2048;
+  readonly _patternFpUint8Length = 256;
 
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
 
-  initMoleculesStructures(dict: string[], normalizeCoordinates: boolean) {
+  initMoleculesStructures(dict: string[], normalizeCoordinates: boolean): InitMoleculesStructuresResult {
     this.freeMoleculesStructures();
     if (dict.length === 0)
-      return;
+      return {molIdxToHash: [], hashToMolblock: {}};
     this._rdKitMols = [];
 
     const hashToMolblock: {[_:string] : any} = {};
@@ -65,10 +73,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           if (queryMol && queryMol.is_valid()) {
             if (patternFps) {
               const fpRdKit = queryMol.get_pattern_fp_as_uint8array(this._patternFpLength);
-              for (let i = 0; i < patternFps.length; ++i) {
-                if (patternFps[i].every((el, index) => (el & fpRdKit[i]) == fpRdKit[i]))
-                  if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
-                    matches.push(i);
+              checkEl: for (let i = 0; i < patternFps.length; ++i) {
+                for (let j = 0; j < this._patternFpUint8Length; ++j)
+                  if ((patternFps[i][j] & fpRdKit[j]) != fpRdKit[j])
+                    continue checkEl;
+
+                if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
+                  matches.push(i);
               }
             } else {
               for (let i = 0; i < this._rdKitMols!.length; ++i)

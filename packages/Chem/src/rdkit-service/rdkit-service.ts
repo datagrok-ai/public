@@ -1,6 +1,7 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Fingerprint} from '../utils/chem-common';
+import { BitSet } from 'datagrok-api/dg';
 
 export class RdKitService {
   workerCount: number;
@@ -61,7 +62,6 @@ export class RdKitService {
     return this._initParallelWorkers(dict, (i: number, segment: any) =>
       this.parallelWorkers[i].initMoleculesStructures(segment, normalizeCoordinates, usePatternFingerprints),
     (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
-      item = item || {molIdxToHash: [], hashToMolblock: {}};
       return {
         molIdxToHash: [...acc.molIdxToHash, ...item.molIdxToHash],
         hashToMolblock: {...acc.hashToMolblock, ...item.hashToMolblock},
@@ -69,7 +69,7 @@ export class RdKitService {
     }, {molIdxToHash: [], hashToMolblock: {}}));
   }
 
-  async searchSubstructure(query: string, querySmarts: string, patternFgs: Uint8Array[]): Promise<any> {
+  async searchSubstructure(query: string, querySmarts: string, patternFgs: Uint8Array[]): Promise<number[]> {
     const t = this;
     return this._doParallel(
       (i: number, nWorkers: number) => {
@@ -79,6 +79,7 @@ export class RdKitService {
       },
       (data: any) => {
         for (let k = 0; k < data.length; ++k) {
+          // check for parse neccessity
           data[k] = JSON.parse(data[k]);
           data[k] = data[k].map((a: number) => a + t.segmentLength * k);
         }

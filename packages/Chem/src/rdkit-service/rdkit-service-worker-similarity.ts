@@ -12,7 +12,7 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
 
   getFingerprints(fingerprintType: Fingerprint) {
     if (this._rdKitMols === null)
-      return;
+      return [];
 
     let fps: Uint8Array[];
       try {
@@ -29,8 +29,8 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
     } catch (e) {
       // nothing to do, bit is already 0
     }
-    return fps!.map((e: any) => {
-      return {data: e, length: e.length};
+    return fps!.map((el: any) => {
+      return {data: el, length: el.length};
     });
   }
 }

@@ -199,22 +199,16 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //name: searchSubstructure
 //input: column molStringsColumn
 //input: string molString
-//input: bool substructLibrary
 //input: string molStringSmarts
 //output: column result
 export async function searchSubstructure(
-      molStringsColumn: DG.Column, molString: string,
-      substructLibrary: boolean, molStringSmarts: string) : Promise<DG.Column<any>> {
+  molStringsColumn: DG.Column, molString: string, molStringSmarts: string) : Promise<DG.Column<any>> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
-  assure.notNull(substructLibrary, 'substructLibrary');
   assure.notNull(molStringSmarts, 'molStringSmarts');
 
   try {
-    const result =
-      substructLibrary ?
-        await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts) :
-        chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
+    const result = await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts);
     return DG.Column.fromList('object', 'bitset', [result]); // TODO: should return a bitset itself
   } catch (e: any) {
     console.error('Chem | In substructureSearch: ' + e.toString());

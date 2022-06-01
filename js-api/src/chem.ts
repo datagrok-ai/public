@@ -362,15 +362,10 @@ export namespace chem {
    * @param settings
    * @returns {Promise<BitSet>}
    * */
-  export async function searchSubstructure(column: Column, pattern: string = '', settings: {
-    substructLibrary?: boolean;
-  } = {}): Promise<BitSet> {
-
+  export async function searchSubstructure(column: Column, pattern: string = ''): Promise<BitSet> {
     return (await grok.functions.call('Chem:searchSubstructure', {
       'molStringsColumn': column,
       'molString': pattern,
-      'substructLibrary':
-        (settings?.hasOwnProperty('substructLibrary') && settings.substructLibrary),
       'molStringSmarts': ''
     })).get(0);
   }
@@ -462,10 +457,8 @@ export namespace chem {
    * @param settings
    * @returns {Promise<BitSet>}
    * */
-  export async function substructureSearch(column: Column, molecule: string = '', settings: {
-    substructLibrary: boolean;
-  }): Promise<BitSet> {
-    return searchSubstructure(column, molecule, settings);
+  export async function substructureSearch(column: Column, molecule: string = ''): Promise<BitSet> {
+    return searchSubstructure(column, molecule);
   }
 
   /**
