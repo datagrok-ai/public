@@ -339,7 +339,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     tempValue = additionalModsDf.currentCell.value;
   });
 
-  additionalModsDf.onValuesChanged.subscribe(async (_) => {
+  DG.debounce(additionalModsDf.onValuesChanged, 10).subscribe(async (_) => {
     grok.dapi.users.current().then((user) => {
       if (!ADMIN_USERS.includes(user.firstName + ' ' + user.lastName))
         return grok.shell.warning('You don\'t have permission for this action');
@@ -363,11 +363,16 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
         ui.dialog('Enter Extinction Coefficient Value')
           .add(extCoefChoiceInput)
           .onOK(() => {
-            additionalModsDf.set(COL_NAMES.EXTINCTION_COEFFICIENT, rowIndex, String(extCoefChoiceInput.value));
+            const col = additionalModsDf.getCol(COL_NAMES.EXTINCTION_COEFFICIENT);
+            col.set(rowIndex, String(extCoefChoiceInput.value), false);
+            additionaModifsGrid.invalidate();
           })
           .show();
-      } else
-        additionalModsDf.set(COL_NAMES.EXTINCTION_COEFFICIENT, rowIndex, 'Base');
+      } else {
+        const col = additionalModsDf.getCol(COL_NAMES.EXTINCTION_COEFFICIENT);
+        col.set(rowIndex, 'Base', false);
+        additionaModifsGrid.invalidate();
+      }
     }
 
     await grok.dapi.userDataStorage.postValue(
@@ -379,7 +384,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
         molecularWeight: additionalModsDf.col(COL_NAMES.MOLECULAR_WEIGHT)!.get(rowIndex),
         extinctionCoefficient: additionalModsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.get(rowIndex),
         baseModification: additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)!.get(rowIndex),
-        changeLogs: additionalModsDf.col(COL_NAMES.CHANGE_LOGS)!.get(rowIndex),
+        changeLogs: additionalModsDf.col('~' + COL_NAMES.CHANGE_LOGS)!.get(rowIndex),
       }),
       CURRENT_USER,
     );
