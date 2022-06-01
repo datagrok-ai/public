@@ -10,7 +10,8 @@ select t.date::date, count(t.id) as user_count from (
 	where @date(e.event_time)
 	and (u.login = any(@users) or @users = ARRAY['all'])
 ) t
-group by t.date::date;
+group by t.date::date
+order by t.date::date;
 --end
 
 --name: UniqueSessions
