@@ -26,7 +26,7 @@ export abstract class UaQueryViewer extends UaViewer{
     this.init();
   }
 
-  setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement | null) {
+  setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement) {
     let filter = {...this.filter, ...this.staticFilter}
 
     grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
@@ -49,7 +49,7 @@ export abstract class UaQueryViewer extends UaViewer{
 
       tableIcon.style.marginLeft = '8px';
 
-      nameDiv?.append(tableIcon);
+      nameDiv.append(tableIcon);
 
       host.appendChild(viewer);
       host.removeChild(loader);
