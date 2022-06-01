@@ -1,7 +1,7 @@
 import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
 import {_testSearchSubstructure,
-  _testSearchSubstructureAllParameters,
-  _testSearchSubstructureSARSmall, loadFileAsText} from './utils';
+  _testSearchSubstructureSARSmall,
+  loadFileAsText} from './utils';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -20,8 +20,15 @@ const testSubstructure = 'C1CC1';
 
 category('chem', () => {
   test('searchSubstructure.sar-small', async () => {
-    await _testSearchSubstructureAllParameters(
-      _testSearchSubstructureSARSmall);
+    await _testSearchSubstructureSARSmall();
+  });
+
+  test('searchSustructureColWithoutDf', async () => {
+    const col = DG.Column.fromStrings('smiles', [
+      'CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1C4CC4',
+      'Fc1cc2C(=O)C(=CN(C3CC3)c2cc1N4CCNCC4)c5oc(COc6ccccc6)nn5',
+    ]);
+    await grok.chem.searchSubstructure(col, 'C1CC1');
   });
 
   test('searchSustructureColWithoutDf', async () => {
@@ -86,40 +93,6 @@ category('chem', () => {
     df.columns.add(col);
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
     await _testSearchSubstructure(df, 'smiles1', testSubstructure, [1, 4]);
-  });
-
-  test('searchSustructurePerformanceWithoutLibrary', async () => {
-    const df = grok.data.demo.molecules(10000);
-
-    const startTime = performance.now();
-    await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'c1ccccc1')!;
-    const midTime1 = performance.now();
-    for (let i = 0; i < 3; i++)
-      await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'c1ccccc1')!;
-    const midTime2 = performance.now();
-    await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'C1CC1')!;
-    const endTime = performance.now();
-
-    console.log(`first Call to WithoutLibrary took ${midTime1 - startTime} milliseconds`);
-    console.log(`loop Call to WithoutLibrary took ${midTime2 - midTime1} milliseconds`);
-    console.log(`last Call to WithoutLibrary took ${endTime - midTime2} milliseconds`);
-  });
-
-  test('searchSustructurePerformanceWithLibrary', async () => {
-    const df = grok.data.demo.molecules(10000);
-
-    const startTime = performance.now();
-    await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'c1ccccc1', {substructLibrary: true})!;
-    const midTime1 = performance.now();
-    for (let i = 0; i < 3; i++)
-      await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'c1ccccc1', {substructLibrary: true})!;
-    const midTime2 = performance.now();
-    await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'C1CC1', {substructLibrary: true})!;
-    const endTime = performance.now();
-
-    console.log(`first Call to WithLibrary took ${midTime1 - startTime} milliseconds`);
-    console.log(`loop Call to WithLibrary took ${midTime2 - midTime1} milliseconds`);
-    console.log(`last Call to WithLibrary took ${endTime - midTime2} milliseconds`);
   });
 
   test('findSimilar.sar-small', async () => {
@@ -311,3 +284,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
     await _testDiversitySearchViewerOpen();
   });
 });
+function async() {
+  throw new Error('Function not implemented.');
+}
+

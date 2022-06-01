@@ -21,24 +21,14 @@ export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
     expect(bitsetArray[i] === '0', true);
 }
 
-export async function _testSearchSubstructureSARSmall(params: any | null = null) {
+export async function _testSearchSubstructureSARSmall() {
   const file = await loadFileAsText('sar-small.csv');
-
-  // await grok.functions.call('Chem:initChem');
   const df = DG.DataFrame.fromCsv(file);
   const col = df.columns.byIndex(0);
-  const bitset: DG.BitSet = (params !== null) ?
-    (await grok.chem.searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', params)) :
-    (await grok.chem.searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'));
+  const bitset: DG.BitSet = await grok.chem.searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
   const countDataframe = col.length;
   const countResult = bitset.trueCount;
   expect(countDataframe, 200);
   expect(countResult, 90);
 }
 
-export async function _testSearchSubstructureAllParameters(foo: any) {
-  await foo({substructLibrary: false});
-  await foo({substructLibrary: true});
-  await foo({});
-  await foo();
-}

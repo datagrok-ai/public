@@ -11,14 +11,9 @@ import {
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {assure} from '@datagrok-libraries/utils/src/test';
-import { ColumnColorHelper } from 'datagrok-api/dg';
 
 const enum FING_COL_TAGS{
   invalidatedForVersion = '.invalideted.for.version',
-  morganFingerprintsColumnName = '.morgan.fingerprints.column.name',
-  morganFingerprintsColumnVersion = '.morgan.fingerprints.column.version',
-  patternFingerprintsColumnName = '.pattern.fingerprints.column.name',
-  patternFingerprintsColumnVersion = '.pattern.fingerprints.column.version',
 }
 
 function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: BitArray[],
@@ -87,11 +82,7 @@ async function _invalidate(molCol: DG.Column) {
   }
 }
 
-async function getFingerprintsAsBitarrays(...args: [DG.Column, Fingerprint?, boolean?]) {
-  return (await getMorganFingerprints(...args)).map(el => rdKitFingerprintToBitArray(el));
-}
-
-async function getMorganFingerprints(
+async function getUint8ArrayFingerprints(
   molCol: DG.Column, fingerprintsType: Fingerprint = Fingerprint.Morgan, endSection = true): Promise<Uint8Array[]> {
   await chemBeginCriticalSection();
   const colNameTag = '.' + fingerprintsType + '.Column';
@@ -99,34 +90,32 @@ async function getMorganFingerprints(
 
   try {
     const fingerprintColumnName = molCol.getTag(colNameTag) ?? '~' + molCol.name + fingerprintsType + 'Fingerprints';
-    // delete
-    const sameVersion = () =>
-      molCol.getTag(colNameTag) != null &&
-      molCol.getTag(colVerTag) == String(molCol.version);
 
-    if (sameVersion()) {
+    if (molCol.getTag(colNameTag) &&
+        molCol.getTag(colVerTag) == String(molCol.version)) {
       const fingCol = molCol.dataFrame.columns.byName(fingerprintColumnName);
       return fingCol.toList();
     } else {
       await _invalidate(molCol);
       const fingerprints = await (await getRdKitService()).getFingerprints(fingerprintsType);
+      if (molCol.dataFrame) {
+        const df = molCol.dataFrame;
+        const newCol: DG.Column<Uint8Array> = df.columns.names().includes(fingerprintColumnName) ?
+          df.columns.byName(fingerprintColumnName) :
+          DG.Column.fromType(DG.COLUMN_TYPE.BYTE_ARRAY, fingerprintColumnName, fingerprints.length);
 
-      const df = molCol.dataFrame;
-      const newCol: DG.Column<Uint8Array> = df.columns.names().includes(fingerprintColumnName) ?
-        df.columns.byName(fingerprintColumnName) :
-        DG.Column.fromType(DG.COLUMN_TYPE.BYTE_ARRAY, fingerprintColumnName, fingerprints.length);
+        for (let i = 0; i < fingerprints.length; ++i)
+          newCol.set(i, fingerprints[i]);
 
-      for (let i = 0; i < fingerprints.length; ++i)
-        newCol.set(i, fingerprints[i]);
+        if (df.columns.names().includes(fingerprintColumnName))
+          df.columns.replace(fingerprintColumnName, newCol);
+        else
+          df.columns.add(newCol);
 
-      if (df.columns.names().includes(fingerprintColumnName))
-        df.columns.replace(fingerprintColumnName, newCol);
-      else
-        df.columns.add(newCol);
-
-      molCol.setTag(colNameTag, fingerprintColumnName);
-      molCol.setTag(colVerTag, String(molCol.version + 2));
-      molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
+        molCol.setTag(colNameTag, fingerprintColumnName);
+        molCol.setTag(colVerTag, String(molCol.version + 2));
+        molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
+      }
       return fingerprints;
     }
   } finally {
@@ -135,16 +124,16 @@ async function getMorganFingerprints(
   }
 }
 
-// molStringsColumn and molString can be anything  RDKit supports:
-// smiles, cxsmiles, molblock, v3Kmolblock, and inchi;
-// see https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h
+export async function chemGetFingerprints(...args: [DG.Column, Fingerprint?, boolean?]): Promise<BitArray[]> {
+  return (await getUint8ArrayFingerprints(...args)).map(el => rdKitFingerprintToBitArray(el));
+}
 
 export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolString = '')
       : Promise<DG.Column | null> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(queryMolString, 'queryMolString');
 
-  const fingerprints = await getFingerprintsAsBitarrays(molStringsColumn)!;
+  const fingerprints = await chemGetFingerprints(molStringsColumn)!;
 
   return queryMolString.length != 0 ?
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
@@ -156,38 +145,9 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(queryMolString, 'queryMolString');
 
-  const fingerprints = await getFingerprintsAsBitarrays(molStringsColumn)!;
+  const fingerprints = await chemGetFingerprints(molStringsColumn)!;
   return queryMolString.length != 0 ?
     _chemFindSimilar(molStringsColumn, fingerprints, queryMolString, settings) : null;
-}
-
-export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molString: string): DG.BitSet {
-  const len = molStringsColumn.length;
-  const result = DG.BitSet.create(len);
-  if (molString.length == 0)
-    return result;
-  let subMol = null;
-  try {
-    subMol = getRdKitModule().get_mol(molString);
-    for (let i = 0; i < len; ++i) {
-      const item = molStringsColumn.get(i);
-      let mol = null;
-      try {
-        mol = getRdKitModule().get_mol(item);
-        const match = mol.get_substruct_match(subMol);
-        if (match !== '{}')
-          result.set(i, true, false);
-      } catch (e) {
-        console.error('Possibly a malformed molString: `' + item + '`');
-        // Explicitly won't rethrow
-      } finally {
-        mol?.delete();
-      }
-    }
-    return result;
-  } finally {
-    subMol?.delete();
-  }
 }
 
 export async function chemSubstructureSearchLibrary(
@@ -195,7 +155,7 @@ export async function chemSubstructureSearchLibrary(
   try {
     const result = DG.BitSet.create(molStringsColumn.length);
     if (molString.length != 0) {
-      const patternFps: Uint8Array[] = await getMorganFingerprints(molStringsColumn, Fingerprint.Pattern);
+      const patternFps: Uint8Array[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern);
       const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts, patternFps);
       for (const match of matches)
         result.set(match, true, false);
@@ -228,19 +188,3 @@ export function chemGetFingerprint(molString: string, fingerprint: Fingerprint):
   }
 }
 
-export async function chemGetFingerprints(molStringsColumn: DG.Column, fingerprint: Fingerprint): Promise<BitArray[]> {
-  const len = molStringsColumn.length;
-  let fingerprints: BitArray[] = [];
-  const fallbackCountForSyncExecution = 150;
-  if (len <= fallbackCountForSyncExecution) {
-    for (let i = 0; i < len; ++i) {
-      try {
-        fingerprints.push(chemGetFingerprint(molStringsColumn.get(i), fingerprint));
-      } catch {
-        fingerprints.push(new BitArray(defaultMorganFpLength));
-      }
-    }
-  } else
-    fingerprints = await getFingerprintsAsBitarrays(molStringsColumn, fingerprint)!;
-  return fingerprints;
-}
