@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Meta information for @datagrok scope",
   "dependencies": {
     "@babel/runtime": "^7.16.0",
@@ -596,6 +596,9 @@
         },
         "0.7.3": {
           "datagrok-api": "^0.151.0"
+        },
+        "0.8.3": {
+          "datagrok-api": "^1.0.0"
         }
       },
       "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)"
