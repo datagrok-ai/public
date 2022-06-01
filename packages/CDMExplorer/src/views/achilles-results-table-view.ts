@@ -1,51 +1,44 @@
 import * as grok from 'datagrok-api/grok';
-import * as DG from "datagrok-api/dg";
+import * as DG from 'datagrok-api/dg';
 import * as ui from "datagrok-api/ui";
-import { updateDivInnerHTML } from '../utils';
+import { addView, sortObject, updateDivInnerHTML } from '../utils';
+import { convertColToInt, convertColToString, dynamicComparedToBaseline, joinCohorts } from '../preprocessing/data-preparation';
+import { PERSON_ID, VIEWS } from '../constants';
+import { cohorts } from '../cohorts';
 
-export class   AchillesResultsView extends DG.ViewBase {
-
-    analysesNames: string [] = [];
-    categoriesNames: string [] = [];
-    resultsDiv = ui.box();
-    analysesChoicesDiv = ui.div();
-    stratumCount = 5;
-
-    constructor(name) {
-        super({});
-        this.name = name;
-        this.createView();
-    }
-
-    async createView(): Promise<void> {
-
-        grok.data.query(`CDM:achillesAnalysis`)
+export function achillesResultsTableView(): void {
+    const stratumCount = 5;
+    const achillesResultsView = DG.TableView.create(DG.DataFrame.create());
+    achillesResultsView.name = 'Achilles Results';
+    VIEWS.push(addView(achillesResultsView));
+    ui.setUpdateIndicator(achillesResultsView.root, true);
+    grok.data.query(`CDM:achillesAnalysis`)
             .then((analysisDf: DG.DataFrame) => {
-               this.categoriesNames = analysisDf.col('category').categories;
-               let categoriesChoices = ui.choiceInput('Category', '', this.categoriesNames);
+               const analysesChoicesDiv = ui.div();
+               const categoriesNames = analysisDf.col('category').categories;
+               let categoriesChoices = ui.choiceInput('Category', '', categoriesNames);
                categoriesChoices.input.style.width = '150px';
+
                categoriesChoices.onChanged(() => {
-                this.analysesNames = analysisDf
+               const analysesNames = analysisDf
                   .groupBy(['category', 'analysis_name'])
                   .where({category: `${categoriesChoices.value}`})
                   .aggregate()
                   .col('analysis_name').categories;
-                let analysesChoices = ui.choiceInput('Analysis', '', this.analysesNames);
+                let analysesChoices = ui.choiceInput('Analysis', '', analysesNames);
                 analysesChoices.input.style.width = '150px';
-                analysesChoices.onChanged(async (v) => {
 
+                analysesChoices.onChanged(async (v) => {
+                    ui.setUpdateIndicator(achillesResultsView.root, true);
                     const selectedAnalysisDf = analysisDf
                     .groupBy(analysisDf.columns.names())
                     .where({category: categoriesChoices.value, analysis_name: analysesChoices.value})
                     .aggregate();
-
                     const analysisId = selectedAnalysisDf.get('analysis_id', 0);
-
                     const resultsDf: DG.DataFrame = await grok.data.query(`CDM:achillesAnalysisByIds`, {analysis_id: analysisId });
-
                     let conceptIds = '';
                     let exisitngStratums = 0;
-                    for (let i = 1; i <= this.stratumCount; i++){
+                    for (let i = 1; i <= stratumCount; i++){
                         if (selectedAnalysisDf.col(`stratum_${i}_name`).isNone(0)) {
                             resultsDf.columns.remove(`stratum_${i}`);
                         } else {
@@ -58,10 +51,9 @@ export class   AchillesResultsView extends DG.ViewBase {
                             }
                         }
                     }
-
                     let conceptNamesDf: DG.DataFrame = null;
                     if (conceptIds)
-                      conceptNamesDf = await grok.data.query(`CDM:conceptsByIds`, {ids: conceptIds});
+                      conceptNamesDf = await grok.data.query(`CDM:conceptsByIds`, {ids: `in(${conceptIds})`});
                     for (let i = 1; i <= exisitngStratums; i++){
                         if (resultsDf.col(`stratum_${i}_num`)) {
                             resultsDf.join(conceptNamesDf,
@@ -74,20 +66,17 @@ export class   AchillesResultsView extends DG.ViewBase {
                             resultsDf.col(`stratum_${i}`).name = selectedAnalysisDf.get(`stratum_${i}_name`, 0);
                         }
                     }
-                    const view = grok.shell.addTableView(resultsDf);
-                    view.name = `${analysesChoices.value}`;
+                    ui.setUpdateIndicator(achillesResultsView.root, false);
+                    achillesResultsView.dataFrame = resultsDf;
                 });
-                updateDivInnerHTML(this.analysesChoicesDiv, analysesChoices.root);
+                updateDivInnerHTML(analysesChoicesDiv, analysesChoices.root);
                })
-
-               this.setRibbonPanels([
+               ui.setUpdateIndicator(achillesResultsView.root, false);
+               achillesResultsView.setRibbonPanels([
                 [
                     categoriesChoices.root,
-                    this.analysesChoicesDiv
+                    analysesChoicesDiv
                 ],
-              ]); 
-              this.root.append(this.resultsDiv);
+              ]);
             });
-    }
-
 }

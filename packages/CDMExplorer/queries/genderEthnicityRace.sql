@@ -1,5 +1,5 @@
 --name: GenderEthnicityRace
---connection: Mdolotov:PPSCDM_1
+--connection: Demo:test_queries:PostgresNetCDM
 SELECT
   ar1.analysis_id AS analysisId,
   c1.concept_id   AS conceptId,

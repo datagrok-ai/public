@@ -1,5 +1,5 @@
 --name: measurement
---connection: Mdolotov:PPSCDM_1
+--connection: Demo:test_queries:PostgresNetCDM
 select t1.*, t2.concept_name as measurement
 from cdm_pps_prostate_cancer_v2038.measurement t1
 join cdm_pps_prostate_cancer_v2038.concept t2
