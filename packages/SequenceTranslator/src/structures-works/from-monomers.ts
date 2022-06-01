@@ -2,8 +2,9 @@ import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIO
 import {isValidSequence} from './sequence-codes-tools';
 import {getNucleotidesMol} from './mol-transformations';
 
-export function sequenceToMolV3000(sequence: string, inverted: boolean = false, oclRender: boolean = false): string {
-  const obj = getObjectWithCodesAndSmiles(sequence);
+export function sequenceToMolV3000(sequence: string, inverted: boolean = false, oclRender: boolean = false,
+  format: string): string {
+  const obj = getObjectWithCodesAndSmiles(sequence, format);
   let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
   let i = 0;
   const smilesCodes:string[] = [];
@@ -38,8 +39,8 @@ export function sequenceToMolV3000(sequence: string, inverted: boolean = false, 
   return getNucleotidesMol(smilesCodes, oclRender);
 }
 
-export function sequenceToSmiles(sequence: string, inverted: boolean = false): string {
-  const obj = getObjectWithCodesAndSmiles(sequence);
+export function sequenceToSmiles(sequence: string, inverted: boolean = false, format: string): string {
+  const obj = getObjectWithCodesAndSmiles(sequence, format);
   let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
   let i = 0;
   let smiles = '';
@@ -82,19 +83,26 @@ export function sequenceToSmiles(sequence: string, inverted: boolean = false): s
     smiles.slice(0, smiles.length - stadardPhosphateLinkSmiles.length + 1);
 }
 
-function getObjectWithCodesAndSmiles(sequence: string) {
+function getObjectWithCodesAndSmiles(sequence: string, format: string) {
   const obj: { [code: string]: string } = {};
-  for (const synthesizer of Object.keys(map)) {
-    for (const technology of Object.keys(map[synthesizer])) {
-      for (const code of Object.keys(map[synthesizer][technology]))
-        obj[code] = map[synthesizer][technology][code].SMILES;
+  if (format == null) {
+    for (const synthesizer of Object.keys(map)) {
+      for (const technology of Object.keys(map[synthesizer])) {
+        for (const code of Object.keys(map[synthesizer][technology]))
+          obj[code] = map[synthesizer][technology][code].SMILES;
+      }
+    }
+  } else {
+    for (const technology of Object.keys(map[format])) {
+      for (const code of Object.keys(map[format][technology]))
+        obj[code] = map[format][technology][code].SMILES;
     }
   }
   // TODO: create object based from synthesizer type to avoid key(codes) duplicates
-  const output = isValidSequence(sequence);
-  if (output.synthesizer == SYNTHESIZERS.MERMADE_12)
+  const output = isValidSequence(sequence, format);
+  if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12))
     obj['g'] = map[SYNTHESIZERS.MERMADE_12][TECHNOLOGIES.SI_RNA]['g'].SMILES;
-  else if (output.synthesizer == SYNTHESIZERS.AXOLABS)
+  else if (output.synthesizer!.includes(SYNTHESIZERS.AXOLABS))
     obj['g'] = map[SYNTHESIZERS.AXOLABS][TECHNOLOGIES.SI_RNA]['g'].SMILES;
   return obj;
 }
