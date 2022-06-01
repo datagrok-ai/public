@@ -7,7 +7,8 @@ import $ from 'cash-dom';
 import {defineAxolabsPattern} from './defineAxolabsPattern';
 import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
 import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-monomers';
-import {convertSequence, undefinedInputSequence, isValidSequence} from './structures-works/sequence-codes-tools';
+import {convertSequence, undefinedInputSequence, isValidSequence, getFormat} from
+  './structures-works/sequence-codes-tools';
 import {map, COL_NAMES, MODIFICATIONS} from './structures-works/map';
 import {SALTS_CSV} from './salts';
 import {USERS_CSV} from './users';
@@ -29,14 +30,16 @@ export function sequenceTranslator(): void {
   windows.showToolbox = false;
   windows.showHelp = false;
 
-  function updateTableAndMolecule(sequence: string): void {
+  function updateTableAndMolecule(sequence: string, inputFormat: string): void {
     moleculeSvgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
     let errorsExist = false;
     try {
       sequence = sequence.replace(/\s/g, '');
-      const output = isValidSequence(sequence);
+      const output = isValidSequence(sequence, inputFormat);
+      // if (inputFormat != null)
+      output.synthesizer = [inputFormat];
       const outputSequenceObj = convertSequence(sequence, output);
       const tableRows = [];
 
@@ -88,13 +91,13 @@ export function sequenceTranslator(): void {
             [item.key, item.value], ['Code', 'Sequence']).root,
         ]),
       );
-      semTypeOfInputSequence.textContent = 'Detected input type: ' + outputSequenceObj.type;
 
       if (outputSequenceObj.type != undefinedInputSequence && outputSequenceObj.Error != undefinedInputSequence) {
         const canvas = ui.canvas(300, 170);
         canvas.addEventListener('click', () => {
           const canv = ui.canvas($(window).width(), $(window).height());
-          const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true);
+          const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true,
+          output.synthesizer![0]);
           // @ts-ignore
           OCL.StructureView.drawMolecule(canv, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
           ui.dialog('Molecule: ' + inputSequenceField.value)
@@ -103,7 +106,8 @@ export function sequenceTranslator(): void {
         });
         $(canvas).on('mouseover', () => $(canvas).css('cursor', 'zoom-in'));
         $(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
-        const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true);
+        const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true,
+        output.synthesizer![0]);
         // @ts-ignore
         OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
         moleculeSvgDiv.append(canvas);
@@ -114,10 +118,14 @@ export function sequenceTranslator(): void {
     }
   }
 
-  const semTypeOfInputSequence = ui.divText('');
+  const inputFormat = ui.choiceInput(
+    'Input format: ', 'Janssen GCRS Codes', Object.keys(map), (format: string) => {
+      updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''), format);
+    });
   const moleculeSvgDiv = ui.block([]);
   const outputTableDiv = ui.div([]);
-  const inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => updateTableAndMolecule(sequence));
+  const inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => updateTableAndMolecule(sequence,
+    inputFormat.value));
 
   const asoDf = DG.DataFrame.fromObjects([
     {'Name': '2\'MOE-5Me-rU', 'BioSpring': '5', 'Janssen GCRS': 'moeT'},
@@ -156,12 +164,11 @@ export function sequenceTranslator(): void {
   );
 
   const overhangModificationsGrid = DG.Viewer.grid(
-    DG.DataFrame.fromObjects([
-      {'Name': '(invabasic)'},
-      {'Name': '(GalNAc-2-JNJ)'},
+    DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
     ])!, {showRowHeader: false, showCellTooltip: false},
   );
-  updateTableAndMolecule(defaultInput);
+  updateTableAndMolecule(defaultInput, inputFormat.value);
 
   const appMainDescription = ui.info([
     ui.divText('How to convert one sequence:', {style: {'font-weight': 'bolder'}}),
@@ -193,7 +200,7 @@ export function sequenceTranslator(): void {
                 inputSequenceField.root,
               ], 'input-base'),
             ], 'inputSequence'),
-            semTypeOfInputSequence,
+            ui.div([inputFormat], {style: {padding: '5px 0'}}),
             ui.block([
               ui.h1('Output'),
               outputTableDiv,
@@ -218,14 +225,15 @@ export function sequenceTranslator(): void {
 
   const topPanel = [
     ui.iconFA('download', () => {
-      const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''));
+      const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false, inputFormat.value);
       const element = document.createElement('a');
       element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
       element.setAttribute('download', inputSequenceField.value.replace(/\s/g, '') + '.mol');
       element.click();
     }, 'Save .mol file'),
     ui.iconFA('copy', () => {
-      navigator.clipboard.writeText(sequenceToSmiles(inputSequenceField.value.replace(/\s/g, '')))
+      navigator.clipboard.writeText(
+        sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''), false, inputFormat.value))
         .then(() => grok.shell.info(sequenceWasCopied));
     }, 'Copy SMILES'),
     switchInput.root,
@@ -248,9 +256,10 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   const typeColumn = table.col(COL_NAMES.TYPE)!;
   let result = '';
   for (let i = 0; i < table.rowCount; i++) {
+    const format = getFormat(structureColumn.get(i));
     result += (typeColumn.get(i) == 'SS') ?
-      sequenceToMolV3000(structureColumn.get(i), false, true) + '\n' + `>  <Sequence>\nSense Strand\n\n` :
-      sequenceToMolV3000(structureColumn.get(i), true, true) + '\n' + `>  <Sequence>\nAnti Sense\n\n`;
+      sequenceToMolV3000(structureColumn.get(i), false, true, format!) + '\n' + `>  <Sequence>\nSense Strand\n\n` :
+      sequenceToMolV3000(structureColumn.get(i), true, true, format!) + '\n' + `>  <Sequence>\nAnti Sense\n\n`;
     for (const col of table.columns) {
       if (col.name != COL_NAMES.SEQUENCE)
         result += `>  <${col.name}>\n${col.get(i)}\n\n`;

@@ -1,10 +1,13 @@
 import * as ui from 'datagrok-api/ui';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 import {linkV3000} from '../structures-works/mol-transformations';
+import {getFormat} from '../structures-works/sequence-codes-tools';
 
 export function saveSdf(as: string, ss: string, oneEntity: boolean, fit3dx: boolean) {
-  const molSS = sequenceToMolV3000(ss);
-  const molAS = sequenceToMolV3000(as, true);
+  const formatAs = getFormat(as);
+  const formatSs = getFormat(ss);
+  const molSS = sequenceToMolV3000(ss, false, false, formatSs!);
+  const molAS = sequenceToMolV3000(as, true, false, formatAs!);
   let result: string;
   if (oneEntity)
     result = linkV3000([molSS, molAS], true, !fit3dx) + '\n\n$$$$\n';
