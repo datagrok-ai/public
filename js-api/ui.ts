@@ -649,7 +649,7 @@ export namespace input {
 }
 
 
-export function intInput(name: string, value: number, onValueChanged: Function | null = null): InputBase<number | null> {
+export function intInput(name: string, value: number | null, onValueChanged: Function | null = null): InputBase<number | null> {
   return new InputBase(api.grok_IntInput(name, value), onValueChanged);
 }
 
@@ -669,7 +669,7 @@ export function searchInput(name: string, value: string, onValueChanged: Functio
   return new InputBase(api.grok_SearchInput(name, value), onValueChanged);
 }
 
-export function floatInput(name: string, value: number, onValueChanged: Function | null = null): InputBase<number | null> {
+export function floatInput(name: string, value: number | null, onValueChanged: Function | null = null): InputBase<number | null> {
   return new InputBase(api.grok_FloatInput(name, value), onValueChanged);
 }
 
@@ -698,7 +698,7 @@ export function columnsInput(name: string, table: DataFrame, onValueChanged: (co
   return new InputBase(api.grok_ColumnsInput(name, table.dart, options?.available, options?.checked), onValueChanged);
 }
 
-export function tableInput(name: string, table: DataFrame, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase<DataFrame | null> {
+export function tableInput(name: string, table: DataFrame | null, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase<DataFrame | null> {
   return new InputBase(api.grok_TableInput(name, table, tables), onValueChanged);
 }
 
