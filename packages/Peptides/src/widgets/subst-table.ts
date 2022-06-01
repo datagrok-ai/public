@@ -1,26 +1,28 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {PeptidesController} from '../peptides';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
+import {PeptidesModel} from '../model';
 
 export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widget> {
-  const controller = await PeptidesController.getInstance(table);
-  controller.init(table);
-  const substInfo = controller.getSubstitutions();
-  const currentCell = controller.getCurrentAARandPos();
-  // const substTable: DG.DataFrame = DG.DataFrame.create();
+  const model = await PeptidesModel.getInstance(table);
+  const substInfo = model.substitutionsInfo;
+  const currentCell = model.getCurrentAARandPos();
 
   if (currentCell.aar === currentCell.pos)
     return new DG.Widget(ui.label('No substitution table generated'));
 
-  const substitutionsMap = substInfo.get(currentCell.aar!)!.get(currentCell.pos!)! as Map<number, type.UTypedArray>;
+  const substitutionsMap =
+    substInfo.get(currentCell.aar)?.get(currentCell.pos) as Map<number, type.UTypedArray> | undefined;
+  if (typeof substitutionsMap === 'undefined')
+    return new DG.Widget(ui.label('No substitution table generated'));
+
   const substitutionsArray: string[] = [];
   const deltaArray: number[] = [];
   const substitutedToArray: string[] = [];
   const alignedSeqCol = table.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE);
   const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-  const posCol = table.getCol(currentCell.pos!);
+  const posCol = table.getCol(currentCell.pos);
   for (const [referenceIdx, indexArray] of substitutionsMap.entries()) {
     const baseSequence = alignedSeqCol.get(referenceIdx);
     const baseActivity = activityScaledCol.get(referenceIdx);
@@ -37,16 +39,15 @@ export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widge
   const substTable =
     DG.DataFrame.fromColumns([substCol, DG.Column.fromList('double', 'Delta', deltaArray), hiddenSubstToAarCol]);
 
-  const grid = substTable.plot.grid();
   const aminoToInput = ui.stringInput('Substituted to:', '', () => {
     const substitutedToAar = aminoToInput.stringValue;
     if (substitutedToAar != '')
-      substTable.filter.init((idx) => hiddenSubstToAarCol.get(idx) === substitutedToAar, false);
+      substTable.filter.init((idx) => hiddenSubstToAarCol.get(idx) === substitutedToAar);
     else
       substTable.filter.setAll(true);
-    grid.invalidate();
   });
 
+  const grid = substTable.plot.grid();
   grid.props.allowEdit = false;
   const gridRoot = grid.root;
   gridRoot.style.width = 'auto';
