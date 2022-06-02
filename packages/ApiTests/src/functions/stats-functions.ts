@@ -54,6 +54,16 @@ category('Statistical functions', () => {
     'MissingValueCount([null, null, null])': 3,
   }));
 
+  test('Percentile', () => check({
+    'Percentile([10, 9, 8, 7, 6, 5, 4, 3, 2, 1], 0.25)': 3,
+    'Percentile([1, 2, 3, 4], 0.25)': 2,
+    'Percentile([1, 2, 3, 4], 0.40)': 2,
+    'Percentile([1, 2, 3, 4], 0.75)': 4,
+    'Percentile([1, 2, null, 3, 4], 0.25)': 2,
+    'Percentile([null], 0.4)': undefined,
+    'Percentile([], 0.4)': undefined,
+  }));
+
   test('Q1', () => check({
     'Q1([-5, -3, -1, 0, 1, 3, 5])': -3,
     'Q1([5, -5, 1, -1, 3, -3, 0])': -3,
