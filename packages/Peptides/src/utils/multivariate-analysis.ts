@@ -13,6 +13,7 @@ export async function callMVA(
   const activityCol = await _scaleColumn(currentDf.getCol(options['activityColumnName']), options['scaling']);
   const encDf = _encodeSequences(sequencesCol);
 
+  //TODO: is it correct? Is it needed?
   _insertColumns(
     currentDf,
     [DG.Column.fromList('double', C.COLUMNS_NAMES.ACTIVITY_SCALED, activityCol.toList())],

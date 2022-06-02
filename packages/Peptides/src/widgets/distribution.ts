@@ -32,7 +32,8 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
 
   const getContent = (): HTMLDivElement => {
-    const hist = getDistributionPlot(table, C.COLUMNS_NAMES.ACTIVITY_SCALED, C.COLUMNS_NAMES.SPLIT_COL).root;
+    const valueColName = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!.name;
+    const hist = getDistributionPlot(table, valueColName, C.COLUMNS_NAMES.SPLIT_COL).root;
 
     hist.style.width = 'auto';
     elements.push(hist);

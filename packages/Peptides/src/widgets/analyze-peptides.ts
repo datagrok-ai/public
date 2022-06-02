@@ -70,13 +70,16 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
   const startBtn = ui.button('Launch SAR', async () => {
     const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
     if (activityColumnChoice.value?.type === DG.TYPE.FLOAT) {
-      const activityColumn: string = activityColumnChoice.value.name;
+      const activityColumnName: string = activityColumnChoice.value.name;
 
       //prepare new DF
-      const newDf = currentDf.clone(currentDf.filter, [col.name, activityColumn]);
-      newDf.getCol(activityColumn).name = C.COLUMNS_NAMES.ACTIVITY;
+      const newDf = currentDf.clone(currentDf.filter, [col.name, activityColumnName]);
+      const activityCol = newDf.getCol(activityColumnName);
+      activityCol.name = C.COLUMNS_NAMES.ACTIVITY;
+      activityCol.semType = C.SEM_TYPES.ACTIVITY;
       newDf.getCol(col.name).name = C.COLUMNS_NAMES.ALIGNED_SEQUENCE;
       const activityScaledCol = tempDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+      activityScaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
       newDf.columns.add(activityScaledCol);
       newDf.name = 'Peptides analysis';
       newDf.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;

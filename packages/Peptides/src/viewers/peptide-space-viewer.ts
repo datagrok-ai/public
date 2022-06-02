@@ -49,8 +49,9 @@ export class PeptideSpaceViewer extends DG.JsViewer {
       const viewerHost = ui.waitBox(async () => {
         await computeWeights(this.dataFrame, this.method, this.measure, this.cyclesCount);
 
+        const colorColName = this.dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!.name;
         const viewerOptions = {
-          x: '~X', y: '~Y', color: C.COLUMNS_NAMES.ACTIVITY_SCALED ?? '~MW', size: '~MW', title: 'Peptide Space',
+          x: '~X', y: '~Y', color: colorColName ?? '~MW', size: '~MW', title: 'Peptide Space',
           showYSelector: false, showXSelector: false, showColorSelector: false, showSizeSelector: false,
           zoomAndFilter: 'no action', axesFollowFilter: false,
         };
@@ -72,7 +73,8 @@ export async function computeWeights(
   const pi = DG.TaskBarProgressIndicator.create('Creating embedding...');
   try {
     const axesNames = ['~X', '~Y', '~MW'];
-    const columnData = (col ?? table.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE)).toList()
+    col ??= table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
+    const columnData = col.toList()
       .map((v) => AlignedSequenceEncoder.clean(v));
 
     const embcols = await createDimensinalityReducingWorker(

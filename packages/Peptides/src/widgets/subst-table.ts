@@ -20,8 +20,10 @@ export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widge
   const substitutionsArray: string[] = [];
   const deltaArray: number[] = [];
   const substitutedToArray: string[] = [];
-  const alignedSeqCol = table.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE);
-  const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  // const alignedSeqCol = table.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE);
+  // const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  const alignedSeqCol = table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
+  const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
   const posCol = table.getCol(currentCell.pos);
   for (const [referenceIdx, indexArray] of substitutionsMap.entries()) {
     const baseSequence = alignedSeqCol.get(referenceIdx);

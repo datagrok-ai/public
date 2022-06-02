@@ -70,10 +70,12 @@ export class SARViewerBase extends DG.JsViewer {
     const propName = property.name;
 
     if (propName === 'scaling' && typeof this.dataFrame !== 'undefined') {
-      const minActivity = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY).stats.min;
+      const activityCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY)!;
+      // const minActivity = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY).stats.min;
+      const minActivity = activityCol.stats.min;
       if (minActivity && minActivity <= 0 && this.scaling !== 'none') {
         grok.shell.warning(`Could not apply ${this.scaling}: ` +
-          `activity column ${C.COLUMNS_NAMES.ACTIVITY} contains zero or negative values, falling back to 'none'.`);
+          `activity column ${activityCol.name} contains zero or negative values, falling back to 'none'.`);
         property.set(this, 'none');
         return;
       }

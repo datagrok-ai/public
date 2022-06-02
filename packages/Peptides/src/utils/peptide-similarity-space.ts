@@ -43,8 +43,8 @@ export async function createPeptideSimilaritySpaceViewer(
   const pi = DG.TaskBarProgressIndicator.create('Creating embedding...');
 
   const axesNames = ['~X', '~Y', '~MW'];
-  const columnData = (col ?? table.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE)).toList()
-    .map((v) => AlignedSequenceEncoder.clean(v));
+  col ??= table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
+  const columnData = col.toList().map((v) => AlignedSequenceEncoder.clean(v));
 
   const embcols = await createDimensinalityReducingWorker(
     {data: columnData, metric: measure as StringMetrics}, method, {cycles: cyclesCount});
@@ -78,8 +78,9 @@ export async function createPeptideSimilaritySpaceViewer(
       table.columns.insert(newCol);
   }
 
+  const colorColName = table.columns.bySemType(C.SEM_TYPES.ACTIVITY)?.name ?? '~MW';
   const viewerOptions = {
-    x: '~X', y: '~Y', color: C.COLUMNS_NAMES.ACTIVITY ?? '~MW', size: '~MW', title: 'Peptide Space',
+    x: '~X', y: '~Y', color: colorColName, size: '~MW', title: 'Peptide Space',
     showYSelector: false, showXSelector: false, showColorSelector: false, showSizeSelector: false,
   };
   const viewer = table.plot.scatter(viewerOptions);
