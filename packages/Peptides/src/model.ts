@@ -161,12 +161,13 @@ export class PeptidesModel {
     const positionColumns = splitSeqDf.columns.names();
     const renderColNames: string[] = splitSeqDf.columns.names();
 
-    splitSeqDf.columns.add(this._dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY));
+    const activityCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY)!;
+    splitSeqDf.columns.add(activityCol);
 
     this.joinDataFrames(positionColumns, splitSeqDf);
 
     for (const dfCol of this._dataFrame.columns) {
-      if (splitSeqDf.col(dfCol.name) && dfCol.name != C.COLUMNS_NAMES.ACTIVITY)
+      if (positionColumns.includes(dfCol.name))
         setAARRenderer(dfCol, this._sourceGrid);
     }
 
@@ -179,7 +180,7 @@ export class PeptidesModel {
       .add('med', C.COLUMNS_NAMES.ACTIVITY_SCALED, C.COLUMNS_NAMES.ACTIVITY_SCALED)
       .aggregate();
 
-    const peptidesCount = splitSeqDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).length;
+    const peptidesCount = splitSeqDf.rowCount;
 
     let matrixDf = splitSeqDf.unpivot(
       [C.COLUMNS_NAMES.ACTIVITY_SCALED], positionColumns, C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
@@ -227,17 +228,20 @@ export class PeptidesModel {
 
     this.postProcessGrids(this._sourceGrid, invalidIndexes, sarGrid, sarVGrid);
 
-    if (this.dataFrame.tags[C.TAGS.AAR] !== '' && this.dataFrame.tags[C.TAGS.POSITION] !== '') {
+    const currentAAR = this.dataFrame.tags[C.TAGS.AAR];
+    const currentPos = this.dataFrame.tags[C.TAGS.POSITION];
+    if (currentAAR !== currentPos) {
       const sarDf = sarGrid.dataFrame;
       const rowCount = sarDf.rowCount;
       let index = -1;
+      const aarCol = sarDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
       for (let i = 0; i < rowCount; i++) {
-        if (sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === this.dataFrame.tags[C.TAGS.AAR]) {
+        if (aarCol.get(i) === currentAAR) {
           index = i;
           break;
         }
       }
-      sarDf.currentCell = sarDf.cell(index, this.dataFrame.tags[C.TAGS.POSITION]);
+      sarDf.currentCell = sarDf.cell(index, currentPos);
     }
 
     //TODO: return class instead
@@ -246,7 +250,8 @@ export class PeptidesModel {
 
   //TODO: move to controller?
   calcSubstitutions(): void {
-    const activityValues: DG.Column<number> = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    // const activityValues: DG.Column<number> = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const activityValues: DG.Column<number> = this.dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
     const columnList: DG.Column<string>[] = this.dataFrame.columns.bySemTypeAll(C.SEM_TYPES.AMINO_ACIDS);
     const nCols = columnList.length;
     if (nCols == 0)
@@ -366,6 +371,7 @@ export class PeptidesModel {
       activityScaling, df, df.temp[C.COLUMNS_NAMES.ACTIVITY]);
     //TODO: make another func
     const scaledCol = scaledDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    scaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
     splitSeqDf.columns.add(scaledCol);
     const oldScaledCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     df.columns.replace(oldScaledCol, scaledCol);
@@ -396,9 +402,11 @@ export class PeptidesModel {
     let pvalues: Float32Array = new Float32Array(matrixDf.rowCount).fill(1);
     const mdCol: DG.Column = matrixDf.columns.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     const pValCol: DG.Column = matrixDf.columns.addNewFloat(C.COLUMNS_NAMES.P_VALUE);
+    const aarCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    const posCol = matrixDf.getCol(C.COLUMNS_NAMES.POSITION);
     for (let i = 0; i < matrixDf.rowCount; i++) {
-      const position = matrixDf.get(C.COLUMNS_NAMES.POSITION, i);
-      const aar = matrixDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i);
+      const position = posCol.get(i);
+      const aar = aarCol.get(i);
 
       splitSeqDf.rows.select((row) => row[position] === aar);
       const currentActivity: number[] = splitSeqDf
@@ -456,17 +464,17 @@ export class PeptidesModel {
 
     let tempStats: DG.Stats;
     const maxAtPos: {[index: string]: number} = {};
-    for (const pos of sequenceDf.getCol(C.COLUMNS_NAMES.POSITION).categories) {
-      tempStats = DG.Stats.fromColumn(
-        sequenceDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE),
-        DG.BitSet.create(sequenceDf.rowCount, (i) => sequenceDf.get(C.COLUMNS_NAMES.POSITION, i) === pos),
-      );
+    const posColCategories = sequenceDf.getCol(C.COLUMNS_NAMES.POSITION).categories;
+    const mdCol = sequenceDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
+    const posCol = sequenceDf.getCol(C.COLUMNS_NAMES.POSITION);
+    const rowCount = sequenceDf.rowCount;
+    for (const pos of posColCategories) {
+      tempStats = DG.Stats.fromColumn(mdCol, DG.BitSet.create(rowCount, (i) => posCol.get(i) === pos));
       maxAtPos[pos] = twoColorMode ?
         (tempStats.max > Math.abs(tempStats.min) ? tempStats.max : tempStats.min) :
         tempStats.max;
     }
-    sequenceDf = sequenceDf.clone(DG.BitSet.create(sequenceDf.rowCount, (i) =>
-      sequenceDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, i) === maxAtPos[sequenceDf.get(C.COLUMNS_NAMES.POSITION, i)]));
+    sequenceDf = sequenceDf.clone(DG.BitSet.create(rowCount, (i) => mdCol.get(i) === maxAtPos[posCol.get(i)]));
 
     return sequenceDf;
   }
@@ -478,14 +486,15 @@ export class PeptidesModel {
 
     const sarVGrid = sequenceDf.plot.grid();
     sarVGrid.sort([C.COLUMNS_NAMES.POSITION]);
-    sarVGrid.col(C.COLUMNS_NAMES.P_VALUE)!.format = 'four digits after comma';
-    sarVGrid.col(C.COLUMNS_NAMES.P_VALUE)!.name = 'P-Value';
+    const pValGridCol = sarVGrid.col(C.COLUMNS_NAMES.P_VALUE)!;
+    pValGridCol.format = 'four digits after comma';
+    pValGridCol.name = 'P-Value';
 
-    let tempCol = matrixDf.columns.byName(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    let tempCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
     if (tempCol)
       setAARRenderer(tempCol, sarGrid);
 
-    tempCol = sequenceDf.columns.byName(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    tempCol = sequenceDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
     if (tempCol)
       setAARRenderer(tempCol, sarGrid);
 
@@ -498,6 +507,7 @@ export class PeptidesModel {
     isSubstitutionOn: boolean,
   ): void {
     const mdCol = statsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
+    //decompose into two different renering funcs
     const cellRendererAction = (args: DG.GridCellRenderArgs): void => {
       const canvasContext = args.g;
       const bound = args.bounds;
@@ -582,7 +592,7 @@ export class PeptidesModel {
     sarVGrid.onCellRender.subscribe(cellRendererAction);
   }
 
-  //TODO: move out
+  //FIXME: doesn't work at all
   setTooltips(
     renderColNames: string[], statsDf: DG.DataFrame, peptidesCount: number, sarGrid: DG.Grid, sarVGrid: DG.Grid,
     sourceDf: DG.DataFrame,
@@ -631,12 +641,13 @@ export class PeptidesModel {
     const sarDf = this._sarGrid.dataFrame;
     const sarVDf = this._sarVGrid.dataFrame;
 
+    //rework, it doesn't even get into isVertical clause
     const getAARandPosition = (isVertical = false): [string, string] => {
       let aar : string;
       let position: string;
       if (isVertical) {
         const currentRowIdx = sarVDf.currentRowIdx;
-        aar = sarVDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, currentRowIdx);
+        aar = sarVDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, currentRowIdx);
         position = sarVDf.get(C.COLUMNS_NAMES.POSITION, currentRowIdx);
       } else {
         aar = sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, sarDf.currentRowIdx);
@@ -796,7 +807,7 @@ export class PeptidesModel {
 
   modifyOrCreateSplitCol(aar: string, position: string): void {
     const df = this.dataFrame;
-    this.splitCol = df.col(C.COLUMNS_NAMES.SPLIT_COL) ??df.columns.addNew(C.COLUMNS_NAMES.SPLIT_COL, 'string');
+    this.splitCol = df.col(C.COLUMNS_NAMES.SPLIT_COL) ?? df.columns.addNew(C.COLUMNS_NAMES.SPLIT_COL, 'string');
 
     if (aar === C.CATEGORIES.ALL && position === C.CATEGORIES.ALL) {
       this.splitCol.init(() => C.CATEGORIES.ALL);
@@ -813,7 +824,7 @@ export class PeptidesModel {
 
     colorMap[C.CATEGORIES.OTHER] = DG.Color.blue;
     colorMap[aarLabel] = DG.Color.orange;
-    df.getCol(C.COLUMNS_NAMES.SPLIT_COL).colors.setCategorical(colorMap);
+    this.splitCol.colors.setCategorical(colorMap);
   }
 
   static async scaleActivity(
@@ -981,7 +992,8 @@ export class PeptidesModel {
     this.isInitialized = true;
     //calculate initial stats
     const stats = new FilteringStatistics();
-    const activityScaledCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    // const activityScaledCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const activityScaledCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
     stats.setData(activityScaledCol.getRawData() as Float32Array);
     stats.setMask(this.dataFrame.selection);
     this.dataFrame.temp[C.STATS] = stats;
