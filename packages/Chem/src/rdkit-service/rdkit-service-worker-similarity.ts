@@ -14,14 +14,16 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
     if (this._rdKitMols === null)
       return [];
 
-    let fps: Uint8Array[];
+    const fps: Uint8Array[] = [];
       try {
         switch (fingerprintType) {
           case Fingerprint.Morgan:
-            fps = this._rdKitMols.map(el => el.get_morgan_fp_as_uint8array(this._fpRadius, this._fpLength));
+            for (let i = 0; i < this._rdKitMols.length; ++i)
+              fps.push(this._rdKitMols[i].get_pattern_fp_as_uint8array());
             break;
           case Fingerprint.Pattern:
-            fps = this._rdKitMols.map(el => el.get_pattern_fp_as_uint8array());
+            for (let i = 0; i < this._rdKitMols.length; ++i)
+              fps.push(this._rdKitMols[i].get_morgan_fp_as_uint8array(this._fpRadius, this._fpLength));
             break;
         default:
           throw Error('Unknown fingerprint type: ' + fingerprintType);
