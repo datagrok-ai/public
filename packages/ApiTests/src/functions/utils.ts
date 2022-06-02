@@ -7,9 +7,9 @@ export async function check(cases: {[expression: string]: any}): Promise<void> {
     const result = await grok.functions.eval(expression);
     if (Array.isArray(expected))
       expectArray(result, expected);
-    else if (typeof expected === 'object')
+    else if (typeof expected === 'object' && expected !== null)
       expectObject(result, expected);
-    else if (typeof expected === 'number' && !Number.isInteger(expected))
+    else if (typeof expected === 'number' && Number.isFinite(expected) && !Number.isInteger(expected))
       expectFloat(result, expected);
     else
       expect(result, expected);
