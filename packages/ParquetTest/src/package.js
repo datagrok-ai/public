@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { tableFromIPC, tableFromArrays, tableToIPC} from 'apache-arrow';
-import { readParquet, writeParquet, WriterPropertiesBuilder, Compression } from './arrow1';
+import { default as init, readParquet, writeParquet, WriterPropertiesBuilder, Compression } from './arrow1';
 
 export const _package = new DG.Package();
 
@@ -15,10 +15,18 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
+
+//tags: init
+export async function parquetInit() {
+  await init(_package.webRoot + 'dist/arrow1_bg.wasm');
+}
+
+
 //name: saveAsParquet
 //description: Save as Parquet
 //tags: fileExporter
 export function saveAsParquet(){
+
   let table = grok.shell.t;
   let column_names = table.columns.names();
   //let arrays = table.columns.toList();
@@ -29,4 +37,5 @@ export function saveAsParquet(){
   const arrowUint8Array = tableToIPC(res, "stream");
   const writerProperties = new WriterPropertiesBuilder().setCompression(Compression.SNAPPY).build();
   const parquetUint8Array = writeParquet(arrowUint8Array, writerProperties);
+  DG.Utils.download(table.name + '.parquet', parquetUint8Array);
 } 
