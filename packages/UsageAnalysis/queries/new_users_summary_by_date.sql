@@ -6,7 +6,7 @@ select t.date::date, count(t.id) as user_count from (
 	from events e
 	inner join users_sessions s on e.session_id = s.id
 	inner join users u on u.id = s.user_id
-	WHERE DATE(joined) BETWEEN (current_timestamp - (CONCAT(@days, ' day'))::interval)
+	WHERE DATE(e.event_time) BETWEEN (current_timestamp - (CONCAT(@days, ' day'))::interval)
     AND (current_timestamp - interval '0 day')
 ) t
 group by t.date::date
