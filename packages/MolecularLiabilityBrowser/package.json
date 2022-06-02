@@ -17,7 +17,7 @@
     "css/vd-regions-viewer.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^1.0.0",
+    "@datagrok-libraries/bio": "^1.0.0 <1.0.2",
     "@datagrok/bio": "^1.0.0",
     "@deck.gl/core": "^8.7.5",
     "@deck.gl/layers": "^8.7.5",
