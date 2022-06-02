@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Meta information for @datagrok scope",
   "dependencies": {
     "@babel/runtime": "^7.16.0",
@@ -1050,6 +1050,14 @@
         }
       },
       "description": "BiostructureViewer is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "parquettest": {
+      "dependencies": {
+        "0.0.1": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": ""
     }
   }
 }
