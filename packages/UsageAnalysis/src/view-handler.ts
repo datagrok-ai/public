@@ -106,11 +106,8 @@ export class ViewHandler {
 
     onCurrentViewChanged(grok.shell.v, params);
 
-    let propertyPanelInitializationSubscription = grok.events.onEvent('d4-current-object-changed').subscribe((_) => {
-      propertyPanelInitializationSubscription.unsubscribe();
-      if (grok.shell.v instanceof UaView)
-        grok.shell.v.handleUrlParams(params);
-    });
+    if (grok.shell.v instanceof UaView)
+      grok.shell.v.handleUrlParams(params);
 
     grok.events.onEvent('d4-current-view-changed').subscribe(() => onCurrentViewChanged(grok.shell.v, this.urlParams));
   }
