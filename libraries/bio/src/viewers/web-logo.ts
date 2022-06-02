@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import wu from 'wu';
 import * as rxjs from 'rxjs';
 
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
@@ -189,7 +190,7 @@ export class WebLogo extends DG.JsViewer {
       if (this.dataFrame && this.seqCol && monomer) {
         ui.tooltip.showRowGroup(this.dataFrame, (iRow) => {
           const seq = this.seqCol!.get(iRow);
-          const mSeq = seq ? seq[this.startPosition + jPos] : null;
+          const mSeq = seq ? this.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
           return mSeq === monomer && this.dataFrame.filter.get(iRow);
         }, args.x + 16, args.y + 16);
       } else {
@@ -208,7 +209,7 @@ export class WebLogo extends DG.JsViewer {
       if (this.dataFrame && this.seqCol && monomer) {
         this.dataFrame.selection.init((iRow) => {
           const seq = this.seqCol!.get(iRow);
-          const mSeq = seq ? seq[this.startPosition + jPos] : null;
+          const mSeq = seq ? this.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
           return mSeq === monomer && this.dataFrame.filter.get(iRow);
         });
       }
@@ -240,7 +241,7 @@ export class WebLogo extends DG.JsViewer {
         this.sequenceColumnName = this.seqCol ? this.seqCol.name : null;
       }
       if (this.seqCol) {
-        const maxLength = Math.max(...this.seqCol.categories.map((s) => s.length));
+        const maxLength = Math.max(...this.seqCol.categories.map((s) => this.splitSeqToMonomers(s).length));
 
         // Get position names from data column tag 'positionNames'
         const positionNamesTxt = this.seqCol.getTag('positionNames');
@@ -352,15 +353,15 @@ export class WebLogo extends DG.JsViewer {
       if (!s) {
         s = this._nullSequence();
         ++this.rowsNull;
-      } else {
-        for (let jPos = 0; jPos < this.Length; jPos++) {
-          const pmInfo = this.positions[jPos].freq;
-          const m: string = s[this.startPosition + jPos] || '-';
-          if (!(m in pmInfo))
-            pmInfo[m] = new PositionMonomerInfo();
+      }
 
-          pmInfo[m].count++;
-        }
+      const seq_m: string[] = this.splitSeqToMonomers(s);
+      for (let jPos = 0; jPos < this.Length; jPos++) {
+        const pmInfo = this.positions[jPos].freq;
+        const m: string = seq_m[this.startPosition + jPos] || '-';
+        if (!(m in pmInfo))
+          pmInfo[m] = new PositionMonomerInfo();
+        pmInfo[m].count++;
       }
     }
 
@@ -576,15 +577,15 @@ export class WebLogo extends DG.JsViewer {
     if (res === null) {
       // The alphabet of nucleotides is a smaller set, so we check it first.
       const alphabet = {...Nucleotides.Names, ...{'-': 'gap'}};
-      res = DG.Detector.sampleCategories(seqCol, (s) => {
-        return !s || (s.length > minLength && s.split('').every((n) => n in alphabet));
+      res = DG.Detector.sampleCategories(seqCol, (seq) => {
+        return !seq || (seq.length > minLength && this.splitSeqToMonomers(seq).every((n) => n in alphabet));
       }, 1) ? NucleotidesPalettes.Chromatogram : null;
     }
     if (res === null) {
       // And then check for amino acid's alphabet.
       const alphabet = {...Aminoacids.Names, ...{'-': 'gap'}};
-      res = DG.Detector.sampleCategories(seqCol, (s) => {
-        return !s || (s.length > minLength && s.split('').every((n) => n in alphabet));
+      res = DG.Detector.sampleCategories(seqCol, (seq) => {
+        return !seq || (seq.length > minLength && this.splitSeqToMonomers(seq).every((n) => n in alphabet));
       }, 1) ? AminoacidsPalettes.GrokGroups : null;
     }
     return res;
@@ -596,8 +597,7 @@ export class WebLogo extends DG.JsViewer {
    * @return {DG.Column} The column we were looking for or null
    */
   private pickUpSeqCol(dataFrame: DG.DataFrame): DG.Column | null {
-    let res: DG.Column | null = dataFrame.columns.toList()
-      .find((c: DG.Column) => c.semType == 'alignedSequence') || null;
+    let res: DG.Column | null = dataFrame.columns.bySemType('alignedSequence');
 
     if (res == null) {
       for (const col of dataFrame.columns) {
@@ -610,4 +610,35 @@ export class WebLogo extends DG.JsViewer {
     }
     return res;
   }
+
+  private static splitRe = /\[(\w+)\]|(\w)|(-)/g;
+
+  private splitSeqToMonomers(seq: string): string[] {
+    // TODO: Use sequence separator
+    const res: string[] = wu(seq.matchAll(WebLogo.splitRe)).map((ma) => {
+      let m_res: string;
+      const m = ma[0];
+      if (m.length > 1) {
+        if (m in WebLogo.aaSynonyms) {
+          m_res = WebLogo.aaSynonyms[m];
+        } else {
+          m_res = '';
+          console.debug(`Long monomer '${m}' has not a short synonym.`);
+        }
+      } else {
+        m_res = m;
+      }
+      return m_res;
+    }).toArray();
+
+    return res;
+  }
+
+  /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
+  private static aaSynonyms: { [name: string]: string } = {
+    '[MeNle]': 'L', // Nle - norleucine
+    '[MeA]': 'A',
+    '[MeG]': 'G',
+    '[MeF]': 'F',
+  };
 }
