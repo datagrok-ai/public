@@ -78,6 +78,12 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
     }
   }
 
+  const saliValsWithoutInfinity = saliVals.filter(it => it !== Infinity);
+  const saliMin = Math.min(...saliValsWithoutInfinity);
+  const saliMax = Math.max(...saliValsWithoutInfinity);
+  const saliOpacityCoef = 0.8/(saliMax - saliMin);
+
+
   const neighboursCount = new Array(dim).fill(0);
   const similarityCount = new Array(dim).fill(0);
   const saliCount = new Array(dim).fill(0);
@@ -95,7 +101,7 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
     }
   }
 
-  const sali = DG.Column.fromList('double', `sali_${colNameInd}`, saliCount);
+  const sali: DG.Column = DG.Column.fromList('double', `sali_${colNameInd}`, saliCount);
 
   df.columns.add(sali);
 
@@ -114,7 +120,7 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
   })) as DG.ScatterPlotViewer;
 
   const canvas = (sp.getInfo() as any)['canvas'];
-  const linesRes = createLines(n1, n2, smiles, activities);
+  const linesRes = createLines(n1, n2, smiles, activities, saliVals);
   const tooltips: any = {};
 
   linesRes.linesDf.onCurrentCellChanged.subscribe(() => {
@@ -154,7 +160,7 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
   listCliffsLink.style.position = 'absolute';
   listCliffsLink.style.top = '10px';
   listCliffsLink.style.right = '10px';
-  view.root.append(listCliffsLink);
+  sp.root.append(listCliffsLink);
 
   let timer: NodeJS.Timeout;
   canvas.addEventListener('mousemove', function(event : MouseEvent) {
@@ -224,7 +230,7 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
   sp.onEvent('d4-before-draw-scene')
     .subscribe((_) => {
       const lines = renderLines(sp,
-        `${axes[0]}_${colNameInd}`, `${axes[1]}_${colNameInd}`, linesRes);
+        `${axes[0]}_${colNameInd}`, `${axes[1]}_${colNameInd}`, linesRes, saliVals, saliOpacityCoef, saliMin);
       if (zoom) {
         const currentLine = lines[linesRes.linesDf.currentRowIdx];
         setTimeout(()=> {
@@ -259,7 +265,7 @@ function checkCursorOnLine(event: any, canvas: any, lines: ILine[]): ILine | nul
 }
 
 function renderLines(sp: DG.ScatterPlotViewer,
-  xAxis: string, yAxis: string, linesRes: IRenderedLines ): ILine [] {
+  xAxis: string, yAxis: string, linesRes: IRenderedLines, saliVals: number[], saliOpacityCoef: number, saliMin: number): ILine [] {
   const lines = linesRes.lines;
   const canvas = sp.getInfo()['canvas'];
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
@@ -272,7 +278,9 @@ function renderLines(sp: DG.ScatterPlotViewer,
     lines[i].b = [pointTo.x, pointTo.y];
     const line = new Path2D();
     line.moveTo(lines[i].a[0], lines[i].a[1]);
-    ctx.strokeStyle = lines[i].selected ? 'yellow' : 'green';
+    const color = lines[i].selected ? '255,255,0' : '0,128,0';
+    const opacity = saliVals[i] === Infinity ? 1 : 0.2 + (saliVals[i] - saliMin)*saliOpacityCoef;
+    ctx.strokeStyle = `rgba(${color},${opacity})`;
     ctx.lineWidth = lines[i].id === linesRes.linesDf.currentRowIdx ? 3 : 1;
     line.lineTo(lines[i].b[0], lines[i].b[1]);
     ctx.stroke(line);
@@ -281,7 +289,7 @@ function renderLines(sp: DG.ScatterPlotViewer,
 }
 
 
-function createLines(n1: number[], n2: number[], smiles: DG.Column, activities: DG.Column) : IRenderedLines {
+function createLines(n1: number[], n2: number[], smiles: DG.Column, activities: DG.Column, saliVals: number[]) : IRenderedLines {
   const lines: ILine[] = [];
   for (let i = 0; i < n1.length; i++) {
     const num1 = n1[i];
@@ -294,6 +302,7 @@ function createLines(n1: number[], n2: number[], smiles: DG.Column, activities: 
   linesDf.columns.addNewFloat('act_diff')
     .init((i) => Math.abs(activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1])));
   linesDf.columns.addNewInt('line_index').init((i) => i);
+  linesDf.columns.addNewFloat('sali').init((i) => saliVals[i]);
   linesDf.col('1_smiles')!.tags[DG.TAGS.UNITS] = 'smiles';
   linesDf.col('2_smiles')!.tags[DG.TAGS.UNITS] = 'smiles';
   linesDf.col('1_smiles')!.semType = DG.SEMTYPE.MOLECULE;
