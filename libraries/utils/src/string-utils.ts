@@ -18,4 +18,8 @@ export class StringUtils {
       options?: { auto?: boolean, idx?: number, render?: Function, choices?: string[] }): string {
     return api.grok_Utils_GetUniqueName(initialName, existingNames, options?.auto, options?.idx, options?.render, options?.choices);
   }
+
+  static isEmpty(s: string | null): boolean {
+    return s == null || s == '';
+  }
 }
