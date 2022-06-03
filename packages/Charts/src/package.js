@@ -9,10 +9,9 @@ import { WordCloudViewer } from './word-cloud-viewer.js';
 import './timelines/styles.css';
 
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from "datagrok-api/dg";
+import * as DG from 'datagrok-api/dg';
 
-export let _package = new DG.Package();
+export const _package = new DG.Package();
 
 //name: test
 //input: string s
@@ -23,14 +22,14 @@ export function test(s) {
 
 //name: timelinesViewerDemo
 export function timelinesViewerDemo() {
-  let adverseEvents = DG.DataFrame.fromCsv(
+  const adverseEvents = DG.DataFrame.fromCsv(
     `USUBJID, AESTDY, AEENDY, SEX, AGE
     s1, 10/02/2018, 10/09/2018, F, 48
     s2, 10/04/2018, 10/07/2018, M, 51
     s3, 10/02/2018, 10/05/2018, F, 39
     s4, 10/07/2018, 10/08/2018, M, 43`);
 
-  let view = grok.shell.addTableView(adverseEvents);
+  const view = grok.shell.addTableView(adverseEvents);
   view.addViewer('TimelinesViewer');
 }
 
@@ -43,7 +42,7 @@ export function _RadarViewer() {
 
 //name: radarViewerDemo
 export function radarViewerDemo() {
-  let view = grok.shell.addTableView(grok.data.demo.demog(100));
+  const view = grok.shell.addTableView(grok.data.demo.demog(100));
   view.addViewer('RadarViewer');
 }
 
@@ -92,7 +91,7 @@ export function _WordCloudViewer() {
 //tags: autostart
 export function init() {
   grok.shell.registerViewer('TimelinesViewer', 'Creates TimelinesViewer viewer', () => new TimelinesViewer());
-  grok.events.onContextMenu.subscribe(args => {
+  grok.events.onContextMenu.subscribe((args) => {
     if (args.args.context instanceof TimelinesViewer) {
       args.args.menu.item('Reset View', () => {
         args.args.context.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];

@@ -19,8 +19,10 @@
     "link-api": "npm link datagrok-api",
     "charts-local": "webpack && grok publish local --rebuild --release",
     "release-charts": "grok publish --rebuild --release",
-    "build-charts": "webpack",
+    "build-charts": "webpack && grok publish",
     "build": "webpack",
+    "lint": "eslint src",
+    "lint-fix": "eslint src --fix",
     "debug-charts-dev": "grok publish dev --rebuild",
     "release-charts-dev": "grok publish dev --rebuild --release",
     "debug-charts-public": "grok publish public --rebuild",
@@ -34,6 +36,8 @@
   ],
   "devDependencies": {
     "css-loader": "^5.2.7",
+    "eslint": "^8.16.0",
+    "eslint-config-google": "^0.14.0",
     "style-loader": "^2.0.0",
     "webpack-cli": "^4.9.2"
   }
