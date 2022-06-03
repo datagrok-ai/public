@@ -1,38 +1,19 @@
 class ChemPackageDetectors extends DG.Package {
-  static sValidSmilesChar = [
-    /* 000^@ */ 0, /* 001^A */ 0, /* 002^B */ 0, /* 003^C */ 0, /* 004^D */ 0, 
-    /* 005^E */ 0, /* 006^F */ 0, /* 007^G */ 0, /* 008^H */ 0, /* 009^I */ 0, 
-    /* 010^J */ 0, /* 011^K */ 0, /* 012^L */ 0, /* 013^M */ 0, /* 014^N */ 0, 
-    /* 015^O */ 0, /* 016^P */ 0, /* 017^Q */ 0, /* 018^R */ 0, /* 019^S */ 0, 
-    /* 020^T */ 0, /* 021^U */ 0, /* 022^V */ 0, /* 023^W */ 0, /* 024^X */ 0, 
-    /* 025^Y */ 0, /* 026^Z */ 0, /* 027^[ */ 0, /* 028^\ */ 0, /* 029^] */ 0, 
-    /* 030^^ */ 0, /* 031^_ */ 0, /* 032   */ 0, /* 033 ! */ 0, /* 034 " */ 0, 
-    /* 035 # */ 1, /* 036 $ */ 1, /* 037 % */ 1, /* 038 & */ 0, /* 039 ' */ 0, 
-    /* 040 ( */ 1, /* 041 ) */ 1, /* 042 * */ 0, /* 043 + */ 1, /* 044 , */ 0, 
-    /* 045 - */ 1, /* 046 . */ 1, /* 047 / */ 1, /* 048 0 */ 1, /* 049 1 */ 1, 
-    /* 050 2 */ 1, /* 051 3 */ 1, /* 052 4 */ 1, /* 053 5 */ 1, /* 054 6 */ 1, 
-    /* 055 7 */ 1, /* 056 8 */ 1, /* 057 9 */ 1, /* 058 : */ 1, /* 059 ; */ 0, 
-    /* 060 < */ 0, /* 061 = */ 1, /* 062 > */ 0, /* 063 ? */ 0, /* 064 @ */ 1, 
-    /* 065 A */ 1, /* 066 B */ 1, /* 067 C */ 1, /* 068 D */ 1, /* 069 E */ 1, 
-    /* 070 F */ 1, /* 071 G */ 1, /* 072 H */ 1, /* 073 I */ 1, /* 074 J */ 1, 
-    /* 075 K */ 1, /* 076 L */ 1, /* 077 M */ 1, /* 078 N */ 1, /* 079 O */ 1, 
-    /* 080 P */ 1, /* 081 Q */ 1, /* 082 R */ 1, /* 083 S */ 1, /* 084 T */ 1, 
-    /* 085 U */ 1, /* 086 V */ 1, /* 087 W */ 1, /* 088 X */ 1, /* 089 Y */ 1, 
-    /* 090 Z */ 1, /* 091 [ */ 1, /* 092 \ */ 1, /* 093 ] */ 1, /* 094 ^ */ 0, 
-    /* 095 _ */ 0, /* 096 ` */ 0, /* 097 a */ 1, /* 098 b */ 1, /* 099 c */ 1, 
-    /* 100 d */ 1, /* 101 e */ 1, /* 102 f */ 1, /* 103 g */ 1, /* 104 h */ 1, 
-    /* 105 i */ 1, /* 106 j */ 1, /* 107 k */ 1, /* 108 l */ 1, /* 109 m */ 1, 
-    /* 110 n */ 1, /* 111 o */ 1, /* 112 p */ 1, /* 113 q */ 1, /* 114 r */ 1, 
-    /* 115 s */ 1, /* 116 t */ 1, /* 117 u */ 1, /* 118 v */ 1, /* 119 w */ 1, 
-    /* 120 x */ 1, /* 121 y */ 1, /* 122 z */ 1, /* 123 { */ 0, /* 124 | */ 0, 
-    /* 125 } */ 0, /* 126 ~ */ 0, /* 127^H */ 0,
-       0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-       0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-       0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-       0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  ];
+  static sValidSmilesChar = Uint32Array.from(
+    Buffer.from('AAAAABzX/+T////8f///4AAAAAAAAAAAAAAAAAAAAAA', 'base64'));
 
-  static sValidFirstSmilesChar = ['(', 'B', 'C', 'D', 'F', 'I', 'N', 'O', 'P', 'S', '[', 'c', 'n', 'o'];
+  static sValidFirstSmilesChar = Uint32Array.from(
+    Buffer.from('AAAAAACAAAA6Q5AQEAMQAAAAAAAAAAAAAAAAAAAAAAA', 'base64'));
+
+  static validChar(char) {
+    const pos = char.charCodeAt(0);
+    return (this.sValidSmilesChar[Math.floor(pos / 0x20)] & (1 << (pos & 0x1f))) != 0;
+  }
+
+  static validFstChar(char) {
+    const pos = char.charCodeAt(0);
+    return (this.sValidFirstSmilesChar[Math.floor(pos / 0x20)] & (1 << (pos & 0x1f))) != 0;
+  }
 
   //tags: semTypeDetector
   //input: column col
@@ -40,10 +21,10 @@ class ChemPackageDetectors extends DG.Package {
   detectRDSmiles(col) {
     if (col.type !== DG.TYPE.STRING)
       return null;
-
-    if (col.toList().every((el) => el && el.length > 0 &&
-      ChemPackageDetectors.sValidFirstSmilesChar.includes(el[0]) &&
-      el.split('').every((sChar) => ChemPackageDetectors.sValidSmilesChar[sChar.charCodeAt(0)]) == 1)) {
+    console.log('hmmm');
+    if (col.toList().every((el) => el && el.length > 1 &&
+      ChemPackageDetectors.validFstChar[el[0]] &&
+      el.split('').every((sChar) => ChemPackageDetectors.validChar[sChar]))) {
       col.semType = DG.SEMTYPE.MOLECULE;
 
       // smiles or molblock?
@@ -53,7 +34,5 @@ class ChemPackageDetectors extends DG.Package {
 
       return col.semType;
     }
-
-    return null;
   }
 }
