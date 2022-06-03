@@ -5,10 +5,10 @@
 	"version": "0.0.31",
 	"description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
 	"repository": {
-    "type": "git",
-    "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/Ketcher"
-  },
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/Ketcher"
+	},
 	"dependencies": {
 		"@types/react": "^17.0.39",
 		"@types/react-dom": "^17.0.9",
