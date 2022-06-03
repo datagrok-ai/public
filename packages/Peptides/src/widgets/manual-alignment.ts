@@ -6,13 +6,11 @@ import $ from 'cash-dom';
 import '../styles.css';
 import {PeptidesModel} from '../model';
 
-/**
- * Manual sequence alignment widget.
+/** Manual sequence alignment widget.
  *
- * @param {DG.Column} alignedSequenceCol Aligned sequence column.
- * @param {DG.DataFrame} currentDf Working table.
- * @return {DG.Widget} Widget for manual sequence alignment.
- */
+ * @param {DG.Column} alignedSequenceCol Aligned sequence column
+ * @param {DG.DataFrame} currentDf Working table
+ * @return {DG.Widget} Widget for manual sequence alignment */
 export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, currentDf: DG.DataFrame): DG.Widget {
   const sequenceInput = ui.textInput('', alignedSequenceCol.get(currentDf.currentRowIdx));
   $(sequenceInput.root).addClass('pep-textinput');
@@ -33,7 +31,6 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, cur
     grok.shell.o = temp;
 
     const peptidesController = await PeptidesModel.getInstance(currentDf);
-    // peptidesController.init(currentDf);
     peptidesController.updateDefault();
   });
 

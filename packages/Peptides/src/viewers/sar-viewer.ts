@@ -114,7 +114,7 @@ export class SARViewer extends SARViewerBase {
     this.render();
   }
 
-  isInitialized(): DG.Grid {return this.model._sarGrid;}
+  isInitialized(): DG.Grid {return this.model?._sarGrid;}
 
   //1. debouncing in rxjs; 2. flags?
   async onPropertyChanged(property: DG.Property): Promise<void> {
@@ -153,7 +153,7 @@ export class SARViewerVertical extends SARViewerBase {
     this.render();
   }
 
-  isInitialized(): DG.Grid {return this.model._sarVGrid;}
+  isInitialized(): DG.Grid {return this.model?._sarVGrid;}
 
   async onPropertyChanged(property: DG.Property): Promise<void> {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)

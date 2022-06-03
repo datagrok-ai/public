@@ -11,7 +11,7 @@ import {MonomerLibrary} from './monomer-library';
 import * as C from './utils/constants';
 import * as type from './utils/types';
 import {FilteringStatistics} from './utils/filtering-statistics';
-import {getTypedArrayConstructor, stringToBool} from './utils/misc';
+import {getSeparator, getTypedArrayConstructor, stringToBool} from './utils/misc';
 import {_package} from './package';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
@@ -46,6 +46,7 @@ export class PeptidesModel {
 
   substitutionsInfo: type.SubstitutionsInfo = new Map();
   isInitialized: boolean = false;
+  currentView!: DG.TableView;
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
@@ -55,9 +56,9 @@ export class PeptidesModel {
     this.init();
   }
 
-  static async getInstance(dataFrame: DG.DataFrame): Promise<PeptidesModel> {
+  static async getInstance(dataFrame: DG.DataFrame, dgPackage?: DG.Package): Promise<PeptidesModel> {
     if (dataFrame.temp[MonomerLibrary.id] === null) {
-      const sdf = await _package.files.readAsText('HELMMonomers_June10.sdf');
+      const sdf = await (dgPackage ?? _package).files.readAsText('HELMMonomers_June10.sdf');
       dataFrame.temp[MonomerLibrary.id] ??= new MonomerLibrary(sdf);
     }
     dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel(dataFrame);
@@ -336,11 +337,14 @@ export class PeptidesModel {
 
   joinDataFrames(positionColumns: string[], splitSeqDf: DG.DataFrame): void {
     // append splitSeqDf columns to source table and make sure columns are not added more than once
+    const name = this._dataFrame.name;
     const dfColsSet = new Set(this._dataFrame.columns.names());
     if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
       this._dataFrame.join(splitSeqDf, [C.COLUMNS_NAMES.ACTIVITY], [C.COLUMNS_NAMES.ACTIVITY],
         this._dataFrame.columns.names(), positionColumns, 'inner', true);
     }
+    this._dataFrame.name = name;
+    this.currentView.name = name;
   }
 
   sortSourceGrid(sourceGrid: DG.Grid): void {
@@ -859,8 +863,8 @@ export class PeptidesModel {
     return [tempDf, newColName];
   }
 
-  static splitAlignedPeptides(peptideColumn: DG.Column, filter: boolean = true): [DG.DataFrame, number[]] {
-    const separator = peptideColumn.tags[C.TAGS.SEPARATOR];
+  static splitAlignedPeptides(peptideColumn: DG.Column<string>, filter: boolean = true): [DG.DataFrame, number[]] {
+    const separator = peptideColumn.tags[C.TAGS.SEPARATOR] ?? getSeparator(peptideColumn);
     const splitPeptidesArray: string[][] = [];
     let currentSplitPeptide: string[];
     let modeMonomerCount = 0;
@@ -961,12 +965,7 @@ export class PeptidesModel {
       targetViewer.props.set(property.name, property.get(sourceViewer));
   }
 
-  // modifyOrCreateSplitCol(aar: string, position: string, notify: boolean = true): void {
-  //   this.modifyOrCreateSplitCol(aar, position);
-  //   if (notify)
-  //     this.fireBitsetChanged();
-  // }
-
+  //TODO: move to viewer
   setSARGridCellAt(aar: string, position: string): void {
     const sarDf = this._sarGrid.dataFrame;
     const aarCol = sarDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
@@ -999,10 +998,10 @@ export class PeptidesModel {
     this.dataFrame.temp[C.STATS] = stats;
 
     //set up views
-    let currentView = grok.shell.v as DG.TableView;
-    if (currentView.dataFrame.tags['isPeptidesAnalysis'] !== 'true')
-      currentView = grok.shell.addTableView(this.dataFrame);
-    const sourceGrid = currentView.grid;
+    // this.currentView = grok.shell.v as DG.TableView;
+    // if (this.currentView?.dataFrame?.tags[C.PEPTIDES_ANALYSIS] !== 'true')
+    this.currentView = grok.shell.addTableView(this.dataFrame);
+    const sourceGrid = this.currentView.grid;
     sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED];
     sourceGrid.columns.setOrder([this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
 
@@ -1027,7 +1026,7 @@ export class PeptidesModel {
     const options = {scaling: this.dataFrame.tags['scaling']};
     await this.updateData(this.dataFrame.tags['scaling'], sourceGrid, false, 1, 2, false, false);
 
-    const dockManager = currentView.dockManager;
+    const dockManager = this.currentView.dockManager;
 
     const sarViewer =
       await this.dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
