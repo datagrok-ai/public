@@ -17,7 +17,7 @@ export async function initDrugBank() {
 //output: widget result
 //condition: true
 export async function drugBankSubstructureSearchPanel(mol: string) {
-  return await drugBankSearchWidget(mol, 'substructure', dbdf);
+  return drugBankSearchWidget(mol, 'substructure', dbdf);
 }
 
 //name: DrugBank Similarity Search
@@ -26,5 +26,5 @@ export async function drugBankSubstructureSearchPanel(mol: string) {
 //output: widget result
 //condition: true
 export async function drugBankSimilaritySearchPanel(mol: string) {
-  return await drugBankSearchWidget(mol, 'similarity', dbdf);
+  return drugBankSearchWidget(mol, 'similarity', dbdf);
 }
