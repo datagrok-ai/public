@@ -13,16 +13,17 @@ import {Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
 import Sketcher = chem.Sketcher;
 import wu from 'wu';
+import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
 export class SubstructureFilter extends DG.Filter {
   sketcher: Sketcher = new Sketcher();
   bitset: DG.BitSet | null = null;
-  loader = ui.loader();
+  loader: HTMLDivElement = ui.loader();
   readonly WHITE_MOL = '\n  0  0  0  0  0  0  0  0  0  0999 V2000\nM  END\n';
   onSketcherChangedSubs?: Subscription;
 
-  get calculating(): boolean { return this.loader.style == 'block'; }
-  set calculating(value: boolean) { this.loader.style = value ? 'block' : 'none'; }
+  get calculating(): boolean { return this.loader.style.display == 'initial'; }
+  set calculating(value: boolean) { this.loader.style.display = value ? 'initial' : 'none'; }
 
   get filterSummary(): string {
     return this.sketcher.getSmiles();
@@ -41,9 +42,6 @@ export class SubstructureFilter extends DG.Filter {
     initRdKitService(); // No await
     this.root = ui.divV([]);
     this.calculating = false;
-    this.loader.style.position = 'absolute';
-    this.loader.style.right = '60px';
-    this.loader.style.top = '4px';
     this.root.appendChild(this.sketcher.root);
     this.root.appendChild(this.loader);
   }
@@ -132,8 +130,11 @@ export class SubstructureFilter extends DG.Filter {
     else {
       this.calculating = true;
       try {
-        this.bitset = await chemSubstructureSearchLibrary(
-          this.column!, this.sketcher.getMolFile(), await this.sketcher.getSmarts());
+        const smarts = await this.sketcher.getSmarts();
+        if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
+          return;
+
+        this.bitset = await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts);
         this.calculating = false;
         this.dataFrame?.rows.requestFilter();
       } finally {

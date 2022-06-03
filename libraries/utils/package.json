@@ -9,7 +9,7 @@
   "dependencies": {
     "@types/node": "^14.14.37",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^0.151.0",
+    "datagrok-api": "^1.0",
     "dts-bundle": "^0.7.3",
     "exceljs": "^4.3.0",
     "node-fetch": "^2.6.0",
