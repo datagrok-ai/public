@@ -21,9 +21,8 @@ export class SubstructureFilter extends DG.Filter {
   readonly WHITE_MOL = '\n  0  0  0  0  0  0  0  0  0  0999 V2000\nM  END\n';
   onSketcherChangedSubs?: Subscription;
 
-  _indicateProgress(on = true) {
-    this.loader.style.display = on ? 'block' : 'none';
-  }
+  get calculating(): boolean { return this.loader.style == 'block'; }
+  set calculating(value: boolean) { this.loader.style = value ? 'block' : 'none'; }
 
   get filterSummary(): string {
     return this.sketcher.getSmiles();
@@ -33,16 +32,20 @@ export class SubstructureFilter extends DG.Filter {
     return super.isFiltering && !this.sketcher?.getMolFile()?.endsWith(this.WHITE_MOL);
   }
 
+  get isReadyToApplyFilter(): boolean {
+    return !this.calculating && this.bitset != null;
+  }
+
   constructor() {
     super();
     initRdKitService(); // No await
     this.root = ui.divV([]);
-    this._indicateProgress(false);
+    this.calculating = false;
     this.loader.style.position = 'absolute';
     this.loader.style.right = '60px';
     this.loader.style.top = '4px';
     this.root.appendChild(this.sketcher.root);
-    this.root.firstChild!.firstChild!.firstChild!.appendChild(this.loader);
+    this.root.appendChild(this.loader);
   }
 
   get _debounceTime(): number {
@@ -105,11 +108,17 @@ export class SubstructureFilter extends DG.Filter {
     super.applyState(state);
     if (state.molBlock)
       this.sketcher.setMolFile(state.molBlock);
-    //
-    // if (state.molBlock)
-    //   setTimeout(() => this._onSketchChanged(), 1000);
+
+    let that = this;
+    if (state.molBlock)
+      setTimeout(function() { that._onSketchChanged(); }, 1000);
   }
 
+  /**
+   * Performs the actual filtering
+   * When the results are ready, triggers `rows.requestFilter`, which in turn triggers `applyFilter`
+   * that would simply apply the bitset synchronously.
+   */
   async _onSketchChanged(): Promise<void> {
     if (!this.isFiltering) {
       if (this.column?.temp['chem-scaffold-filter'])
@@ -121,13 +130,14 @@ export class SubstructureFilter extends DG.Filter {
       return;
     }
     else {
-      this._indicateProgress();
+      this.calculating = true;
       try {
         this.bitset = await chemSubstructureSearchLibrary(
           this.column!, this.sketcher.getMolFile(), await this.sketcher.getSmarts());
+        this.calculating = false;
         this.dataFrame?.rows.requestFilter();
       } finally {
-        this._indicateProgress(false);
+        this.calculating = false;
       }
     }
   }

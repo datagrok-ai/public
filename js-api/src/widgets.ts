@@ -293,6 +293,9 @@ export abstract class Filter extends Widget {
     return !(this.root.parentElement?.classList?.contains('d4-filter-disabled') == true);
   }
 
+  /** Whether a filter is ready to apply the filtering mask synchronously. */
+  get isReadyToApplyFilter(): boolean { return true; }
+
   /** Override to provide short filter summary that might be shown on viewers or in the property panel. */
   abstract get filterSummary(): string;
 
@@ -321,7 +324,7 @@ export abstract class Filter extends Widget {
   attach(dataFrame: DataFrame): void {
     this.dataFrame = dataFrame;
     this.subs.push(this.dataFrame.onRowsFiltering
-      .pipe(filter((_) => this.isFiltering))
+      .pipe(filter((_) => this.isFiltering && this.isReadyToApplyFilter))
       .subscribe((_) => {
         this.applyFilter();
         this.dataFrame!.rows.filters.push(`${this.columnName}: ${this.filterSummary}`);

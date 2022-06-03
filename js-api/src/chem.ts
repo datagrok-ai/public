@@ -145,6 +145,7 @@ export namespace chem {
 
     setSmiles(x: string) {
       this._smiles = x;
+      this._molFile = convert(x, 'smiles', 'mol');
       if (this.sketcher != null)
         this.sketcher!.smiles = x;
       this.updateExtSketcherContent(this.extSketcherDiv);
@@ -156,6 +157,7 @@ export namespace chem {
 
     setMolFile(x: string) {
       this._molFile = x;
+      this._smiles = convert(x, 'mol', 'smiles');
       if (this.sketcher != null)
         this.sketcher!.molFile = x;
       this.updateExtSketcherContent(this.extSketcherDiv);
@@ -179,7 +181,7 @@ export namespace chem {
     }
 
     async getSmarts(): Promise<string> {
-      return this.sketcher!.getSmarts();
+      return this.sketcher ? await this.sketcher.getSmarts() : '';
     }
 
     setChangeListenerCallback(callback: () => void) {
@@ -234,16 +236,17 @@ export namespace chem {
       if (!this.isEmpty && extSketcherDiv.parentElement) {
         const width = extSketcherDiv.parentElement!.clientWidth;
         const height = width / 2;
-        let renderFunc = Func.find({ tags: [ 'molRenderer' ] });
-        if (renderFunc.length == 0) {
-          this._updateExtSketcherInnerHTML(svgMol(this.getMolFile(), width, height));
-        }
-        renderFunc![ 0 ]
-          .apply({ molStr: this.getMolFile(), width: width, height: height })
-          .then((molDiv) => {
-            this._updateExtSketcherInnerHTML(molDiv);
+        ui.empty(this.extSketcherDiv);
+        let canvas = ui.canvas(width, height);
+        canvas.style.height = '100%';
+        canvas.style.width = '100%';
+        canvasMol(0, 0, width, height, canvas, this.getMolFile())
+          .then((_) => {
+            ui.empty(this.extSketcherDiv);
+            this.extSketcherDiv.append(canvas);
           });
       }
+
       let sketchLink = ui.button('Sketch', () => this.updateExtSketcherContent(extSketcherDiv));
       sketchLink.style.paddingLeft = '0px';
       sketchLink.style.marginLeft = '0px';
