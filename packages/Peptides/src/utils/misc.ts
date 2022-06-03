@@ -6,15 +6,16 @@ export function stringToBool(str: string): boolean {
   return str === 'true' ? true : false;
 }
 
-export function getSeparator(col: DG.Column): string {
+export function getSeparator(col: DG.Column<string>): string {
   const separator = col.tags[C.TAGS.SEPARATOR];
   if (separator)
     return separator as string;
 
-  const defaultSeparators = ['-', ' '];
+  const defaultSeparators = ['.', '-', ' '];
   const categories = col.categories;
+  const catLen = categories.length;
   for (const potentialSeparator of defaultSeparators) {
-    if (categories.filter((sequence) => sequence.includes(potentialSeparator)).length)
+    if (categories.filter((sequence) => sequence.includes(potentialSeparator)).length == catLen)
       return potentialSeparator;
   }
   return separator as string ?? '';
