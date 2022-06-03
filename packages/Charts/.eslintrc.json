@@ -1,0 +1,40 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": [
+    "google"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 12,
+    "sourceType": "module"
+  },
+  "rules": {
+    "indent": [
+      "error",
+      2
+    ],
+    "max-len": [
+      "error",
+      120
+    ],
+    "require-jsdoc": "off",
+    "valid-jsdoc": "off",
+    "spaced-comment": "off",
+    "linebreak-style": "off",
+    "object-curly-spacing": "off",
+    "curly": [
+      "error",
+      "multi-or-nest"
+    ],
+    "brace-style": [
+      "error",
+      "1tbs",
+      {
+        "allowSingleLine": true
+      }
+    ],
+    "block-spacing": 2
+  }
+}

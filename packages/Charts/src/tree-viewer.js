@@ -1,19 +1,19 @@
-import * as echarts from 'echarts';
 import { EChartViewer, Utils } from './echart-viewer';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 export class TreeViewer extends EChartViewer {
-
   constructor() {
     super();
-    
+
     this.initCommonProperties();
     this.layout = this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'] });
     this.orient = this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'] });
     this.expandAndCollapse = this.bool('expandAndCollapse', true);
     this.animationDuration = this.int('animationDuration', 750);
     this.edgeShape = this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'] });
-    this.symbol = this.string('symbol', 'emptyCircle', { choices: ['circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none'] });
+    this.symbol = this.string('symbol', 'emptyCircle', { choices: [
+      'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
+    ] });
     this.symbolSize = this.int('symbolSize', 7);
 
     this.legendColors = ['#beb0de', '#deb2b0', '#6495ed', '#b0c4de', '#ffc0cb'];
@@ -21,7 +21,7 @@ export class TreeViewer extends EChartViewer {
     this.option = {
       tooltip: {
         trigger: 'item',
-        triggerOn: 'mousemove'
+        triggerOn: 'mousemove',
       },
       legend: {
         top: '2%',
@@ -37,31 +37,31 @@ export class TreeViewer extends EChartViewer {
             position: 'left',
             verticalAlign: 'middle',
             align: 'right',
-            fontSize: 9
+            fontSize: 9,
           },
 
           leaves: {
             label: {
               position: 'right',
               verticalAlign: 'middle',
-              align: 'left'
-            }
+              align: 'left',
+            },
           },
-        }
-      ]
+        },
+      ],
     };
 
     this.onPropertyChanged(null);
   }
 
   setForestOpts() {
-    let treeOptions = this.option.series[0];
+    const treeOptions = this.option.series[0];
     this.option.series.length = 0;
 
-    for (let i of this.dataFrame.filter.getSelectedIndexes()) {
-      let tree = this.parseNwk(this.newickCol.get(i));
-      let name = `tree-${i}`;
-      let color = this.legendColors[i % this.legendColors.length];
+    for (const i of this.dataFrame.filter.getSelectedIndexes()) {
+      const tree = this.parseNwk(this.newickCol.get(i));
+      const name = `tree-${i}`;
+      const color = this.legendColors[i % this.legendColors.length];
 
       this.option.series.push({
         ...treeOptions,
@@ -87,24 +87,25 @@ export class TreeViewer extends EChartViewer {
   }
 
   parseNwk(s) {
-    return {name: 'A', children: [{name: 'B', value: 123}, {name: 'C', children: [{name: 'D', value: 456}, {name: 'E', value: 789}]}]};
+    return { name: 'A', children: [
+      { name: 'B', value: 123 }, { name: 'C', children: [{ name: 'D', value: 456 }, { name: 'E', value: 789 },
+      ] }] };
   }
 
   updateSeriesData() {
     this.newickCol = this.dataFrame.columns.bySemType('newick');
-    if (this.newickCol) {
+    if (this.newickCol)
       this.setForestOpts();
-    } else {
-      this.option.series[0].data = [ Utils.toTree(this.dataFrame, ['sex', 'race', 'dis_pop'], this.dataFrame.filter) ];
-    }
+    else
+      this.option.series[0].data = [Utils.toTree(this.dataFrame, ['sex', 'race', 'dis_pop'], this.dataFrame.filter)];
   }
 
   onPropertyChanged(p, render = true) {
-    let properties = p !== null ? [p] : this.props.getProperties();
-    let isForest = this.option.series.length > 1;
+    const properties = p !== null ? [p] : this.props.getProperties();
+    const isForest = this.option.series.length > 1;
 
-    for (let p of properties) {
-      for (let chart of this.option.series) {
+    for (const p of properties) {
+      for (const chart of this.option.series) {
         if (isForest && p.name === 'orient') continue;
         chart[p.name] = p.get(this);
       }

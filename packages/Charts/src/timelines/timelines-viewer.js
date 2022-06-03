@@ -23,11 +23,12 @@ export class TimelinesViewer extends EChartViewer {
     this.markerPosition = this.string('markerPosition', 'main line',
       { choices: ['main line', 'above main line', 'scatter'] });
     this.lineWidth = this.int('lineWidth', 3);
-    this.dateFormat = this.string('dateFormat');  // TODO: add an extendable dropdown
+    this.dateFormat = this.string('dateFormat'); // TODO: add an extendable dropdown
     this.axisPointer = this.string('axisPointer', 'shadow',
       { choices: ['cross', 'line', 'shadow', 'none'] });
     this.showZoomSliders = this.bool('showZoomSliders', true);
-    this.legendVisibility = this.string('legendVisibility', VISIBILITY_MODE.AUTO, { choices: Object.values(VISIBILITY_MODE) });
+    this.legendVisibility = this.string('legendVisibility', VISIBILITY_MODE.AUTO,
+      { choices: Object.values(VISIBILITY_MODE) });
 
     this.splitByRegexps = [/^USUBJID$/, /id/i];
     this.colorByRegexps = [/^([A-Z]{2}(TERM|TEST|TRT|VAL)|(ACT)?ARM|MIDS(TYPE)?|VISIT)$/, /event/i];
@@ -56,7 +57,7 @@ export class TimelinesViewer extends EChartViewer {
         this.chart.getOption().dataZoom.forEach((z, i) => {
           this.zoomState[i][0] = z.start;
           this.zoomState[i][1] = z.end;
-          if(z.type === 'slider' && Object.keys(z).includes('yAxisIndex')){
+          if (z.type === 'slider' && Object.keys(z).includes('yAxisIndex')) {
             this.lineWidth = z.end - z.start < 60 ? z.end - z.start < 30 ? 3 : 2 : 1;
             this.markerSize = z.end - z.start < 60 ? z.end - z.start < 30 ? 6 : 4 : 3;
           }
@@ -67,8 +68,9 @@ export class TimelinesViewer extends EChartViewer {
         this.count = 0;
       });
 
-      this.chart.on('click', params => this.dataFrame.selection.handleClick((i) => {
-        if (params.componentType === 'yAxis') return this.getStrValue(this.columnData.splitByColumnName, i) === params.value;
+      this.chart.on('click', (params) => this.dataFrame.selection.handleClick((i) => {
+        if (params.componentType === 'yAxis')
+          return this.getStrValue(this.columnData.splitByColumnName, i) === params.value;
         if (params.componentType === 'series') {
           return params.value[0] === this.getStrValue(this.columnData.splitByColumnName, i) &&
                  this.isSameDate(params.value[1], this.getSafeValue(this.columnData.startColumnName, i)) &&
@@ -77,7 +79,7 @@ export class TimelinesViewer extends EChartViewer {
         return false;
       }, params.event.event));
 
-      this.chart.on('mouseover', params => this.getTooltip(params));
+      this.chart.on('mouseover', (params) => this.getTooltip(params));
 
       this.chart.on('mouseout', () => ui.tooltip.hide());
 
@@ -93,9 +95,9 @@ export class TimelinesViewer extends EChartViewer {
 
   onPropertyChanged(property) {
     if (!this.initialized) return;
-    if (property.name === 'axisPointer') {
+    if (property.name === 'axisPointer')
       this.option.tooltip.axisPointer.type = property.get(this);
-    } else if (property.name === 'showZoomSliders') {
+    else if (property.name === 'showZoomSliders') {
       this.option.dataZoom.forEach((z) => {
         if (z.type === 'slider') z.show = this.showZoomSliders;
       });
@@ -114,9 +116,9 @@ export class TimelinesViewer extends EChartViewer {
           this.colorMap = null;
         }
       }
-    } else if (property.name === 'legendVisibility' && this.colorByColumnName) {
+    } else if (property.name === 'legendVisibility' && this.colorByColumnName)
       this.switchLegendVisibility(property.get(this));
-    }
+
     this.render();
   }
 
@@ -128,16 +130,17 @@ export class TimelinesViewer extends EChartViewer {
     const x = params.event.event.x + this.tooltipOffset;
     const y = params.event.event.y + this.tooltipOffset;
     if (this.showEventInTooltip) {
-      let tooltipContent = params.componentType === 'yAxis' ? ui.div(`${params.value}`) :
+      const tooltipContent = params.componentType === 'yAxis' ? ui.div(`${params.value}`) :
         ui.divV([ui.div(`key: ${params.value[0]}`),
-        ui.div(`event: ${params.value[4]}`),
-        ui.div(`start: ${this.formatDate(params.value[1])}`),
-        ui.div(`end: ${this.formatDate(params.value[2])}`),
-        ])
+          ui.div(`event: ${params.value[4]}`),
+          ui.div(`start: ${this.formatDate(params.value[1])}`),
+          ui.div(`end: ${this.formatDate(params.value[2])}`),
+        ]);
       ui.tooltip.show(tooltipContent, x, y);
     } else {
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-        if (params.componentType === 'yAxis') return this.getStrValue(this.columnData.splitByColumnName, i) === params.value;
+        if (params.componentType === 'yAxis')
+          return this.getStrValue(this.columnData.splitByColumnName, i) === params.value;
         if (params.componentType === 'series') {
           return params.value[0] === this.getStrValue(this.columnData.splitByColumnName, i) &&
             this.isSameDate(params.value[1], this.getSafeValue(this.columnData.startColumnName, i)) &&
@@ -160,7 +163,7 @@ export class TimelinesViewer extends EChartViewer {
 
     const columns = this.dataFrame.columns.toList();
 
-    const strColumns = columns.filter(col => col.type === DG.COLUMN_TYPE.STRING)
+    const strColumns = columns.filter((col) => col.type === DG.COLUMN_TYPE.STRING)
       .sort((a, b) => a.categories.length - b.categories.length);
 
     const numColumns = [...this.dataFrame.columns.numerical].sort((a, b) => a.stats.avg - b.stats.avg);
@@ -173,12 +176,19 @@ export class TimelinesViewer extends EChartViewer {
 
     this.splitByColumnName = (this.findColumn(columns, this.splitByRegexps) || strColumns[strColumns.length - 1]).name;
     this.startColumnName = (this.findColumn(columns, this.startRegexps, numericalTypes) || numColumns[0]).name;
-    this.endColumnName = (this.findColumn(columns, this.endRegexps, numericalTypes) || numColumns[numColumns.length - 1]).name;
-    this.colorByColumnName = (this.findColumn(columns, this.colorByRegexps, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
+    this.endColumnName = (this.findColumn(columns, this.endRegexps, numericalTypes) ||
+      numColumns[numColumns.length - 1]).name;
+    this.colorByColumnName = (this.findColumn(columns, this.colorByRegexps, [DG.COLUMN_TYPE.STRING]) ||
+      strColumns[0]).name;
     this.eventColumnName = (this.findColumn(columns, this.eventRegexps, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
 
-    const columnPropNames = ['splitByColumnName', 'startColumnName', 'endColumnName', 'colorByColumnName', 'eventColumnName'];
-    const columnNames = [this.splitByColumnName, this.startColumnName, this.endColumnName, this.colorByColumnName, this.eventColumnName];
+    const columnPropNames = [
+      'splitByColumnName', 'startColumnName', 'endColumnName', 'colorByColumnName', 'eventColumnName',
+    ];
+
+    const columnNames = [
+      this.splitByColumnName, this.startColumnName, this.endColumnName, this.colorByColumnName, this.eventColumnName,
+    ];
 
     this.columnData = columnPropNames.reduce((map, v, i) => {
       const column = this.dataFrame.getCol(columnNames[i]);
@@ -193,7 +203,7 @@ export class TimelinesViewer extends EChartViewer {
           return null;
         this.columnData['eventsColumnNames'][columnName] = this.getColumnData(column);
       }
-    }  
+    }
 
     this.colorMap = this.getColorMap(this.columnData.colorByColumnName.categories);
     this.updateLegend(this.columnData.colorByColumnName.column);
@@ -209,12 +219,12 @@ export class TimelinesViewer extends EChartViewer {
         if (curSubj === prev[0] &&
             prev[1] && prev[2] && prev[1] !== prev[2] &&
             api.value(1) < prev[2]) {
-              overlap = true;
-              if (prevSubj !== curSubj) {
-                this.count = 0;
-                prevSubj = curSubj;
-              }
-            }
+          overlap = true;
+          if (prevSubj !== curSubj) {
+            this.count = 0;
+            prevSubj = curSubj;
+          }
+        }
       }
 
       const categoryIndex = api.value(0);
@@ -222,18 +232,18 @@ export class TimelinesViewer extends EChartViewer {
       const end = api.coord([api.value(2), categoryIndex]);
       const width = end[0] - start[0];
 
-      let group = {
+      const group = {
         type: 'group',
-        children: []
+        children: [],
       };
 
       if (isNaN(api.value(1)) || isNaN(api.value(2)) || this.markerSize > width) {
-        const xPos = shift => isNaN(start[0]) ? end[0] : start[0] - shift;
-        const yPos = shift => end[1] - (this.markerPosition === 'main line' ? shift :
+        const xPos = (shift) => isNaN(start[0]) ? end[0] : start[0] - shift;
+        const yPos = (shift) => end[1] - (this.markerPosition === 'main line' ? shift :
           this.markerPosition === 'above main line' ? Math.max(this.markerSize, this.lineWidth) + shift :
-          ((params.dataIndex % 2) * 2 - 1)*(this.markerSize * 3));
+            ((params.dataIndex % 2) * 2 - 1)*(this.markerSize * 3));
 
-        let marker = {
+        const marker = {
           type: this.marker,
           shape: this.marker === 'circle' ? {
             cx: xPos(0),
@@ -248,13 +258,13 @@ export class TimelinesViewer extends EChartViewer {
             x: xPos(this.markerSize / 2),
             y: yPos(this.markerSize / 2),
             width: this.markerSize,
-            height: this.markerSize
+            height: this.markerSize,
           },
           style: {
-            fill: api.value(5) ? this.selectionColor
-              : this.colorMap ? this.colorMap[isNaN(api.value(3)) ? this.data[params.dataIndex][3][0] : api.value(3)]
-              : this.defaultColor,
-          }
+            fill: api.value(5) ? this.selectionColor :
+              this.colorMap ? this.colorMap[isNaN(api.value(3)) ? this.data[params.dataIndex][3][0] : api.value(3)] :
+                this.defaultColor,
+          },
         };
 
         if (this.marker === 'diamond') {
@@ -280,12 +290,12 @@ export class TimelinesViewer extends EChartViewer {
           x: start[0],
           y: start[1] - this.lineWidth / 2,
           width: width,
-          height: this.lineWidth
+          height: this.lineWidth,
         }, {
           x: params.coordSys.x,
           y: params.coordSys.y,
           width: params.coordSys.width,
-          height: params.coordSys.height
+          height: params.coordSys.height,
         });
 
         if (overlap) {
@@ -302,10 +312,10 @@ export class TimelinesViewer extends EChartViewer {
           transition: ['shape'],
           shape: rectShape,
           style: {
-            fill: api.value(5) ? this.selectionColor
-              : this.colorMap ? this.colorMap[isNaN(api.value(3)) ? this.data[params.dataIndex][3][0] : api.value(3)]
-              : this.defaultColor,
-          }
+            fill: api.value(5) ? this.selectionColor :
+              this.colorMap ? this.colorMap[isNaN(api.value(3)) ? this.data[params.dataIndex][3][0] : api.value(3)] :
+                this.defaultColor,
+          },
         });
       }
 
@@ -318,10 +328,10 @@ export class TimelinesViewer extends EChartViewer {
   /** Find a column based on provided name patterns and types.
    * The list of patterns should be sorted by priority in descending order. */
   findColumn(columns, regexps, types = []) {
-    if (types.length) {
+    if (types.length)
       columns = columns.filter((c) => types.includes(c.type));
-    }
-    for (let regex of regexps) {
+
+    for (const regex of regexps) {
       const column = columns.find((c) => c.name.match(regex));
       if (column) return column;
     }
@@ -381,11 +391,10 @@ export class TimelinesViewer extends EChartViewer {
   switchLegendVisibility(mode) {
     const { column, categories } = this.columnData.colorByColumnName;
     const autoShow = column.matches(DG.TYPE.CATEGORICAL) && categories.length < 100;
-    if (mode === VISIBILITY_MODE.ALWAYS || (mode === VISIBILITY_MODE.AUTO && autoShow)) {
+    if (mode === VISIBILITY_MODE.ALWAYS || (mode === VISIBILITY_MODE.AUTO && autoShow))
       this.showLegend();
-    } else {
+    else
       this.hideLegend();
-    }
   }
 
   getStrValue(columnData, idx) {
@@ -400,11 +409,11 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   isSameDate(x, y) {
-    if (x instanceof Date && y instanceof Date) {
+    if (x instanceof Date && y instanceof Date)
       return x.getTime() === y.getTime();
-    } else if ((typeof x === typeof y && typeof x === 'number') || (x == null || y == null)) {
+    else if ((typeof x === typeof y && typeof x === 'number') || (x == null || y == null))
       return x === y;
-    }
+
     grok.shell.warning('The columns of different types cannot be used for representing dates.');
   }
 
@@ -418,7 +427,7 @@ export class TimelinesViewer extends EChartViewer {
 
   getSeriesData() {
     this.data.length = 0;
-    let tempObj = {};
+    const tempObj = {};
 
     const colorCategories = this.columnData.colorByColumnName?.categories;
     const colorBuf = this.columnData.colorByColumnName?.data;
@@ -429,7 +438,8 @@ export class TimelinesViewer extends EChartViewer {
     const eventColumns = this.columnData.eventsColumnNames ? Object.keys(this.columnData.eventsColumnNames)
       .map((columnName) => this.columnData.eventsColumnNames[columnName].column) : [];
 
-    if ([startColumn, endColumn, ...eventColumns].some((column) => column ? column.type !== DG.COLUMN_TYPE.DATE_TIME : false))
+    if ([startColumn, endColumn, ...eventColumns].some((column) =>
+      column ? column.type !== DG.COLUMN_TYPE.DATE_TIME : false))
       this.removeTimeOptions();
     else
       this.addTimeOptions();
@@ -448,9 +458,8 @@ export class TimelinesViewer extends EChartViewer {
           if (key in tempObj) {
             tempObj[key][3].push(color);
             tempObj[key][4].push(columnName);
-          } else {
+          } else
             tempObj[key] = [id, start, end, [color], [columnName], this.dataFrame.selection.get(i)];
-          }
         }
       }
       if (startColumn && endColumn) {
@@ -466,9 +475,8 @@ export class TimelinesViewer extends EChartViewer {
         if (key in tempObj) {
           tempObj[key][3].push(color);
           tempObj[key][4].push(event);
-        } else {
+        } else
           tempObj[key] = [id, start, end, [color], [event], this.dataFrame.selection.get(i)];
-        }
       }
     }
 
@@ -486,9 +494,9 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   addTimeOptions() {
-    if (this.dateFormat === null) {
+    if (this.dateFormat === null)
       this.props.dateFormat = this.defaultDateFormat;
-    }
+
     this.option.xAxis = {
       type: 'time',
       boundaryGap: ['5%', '5%'],

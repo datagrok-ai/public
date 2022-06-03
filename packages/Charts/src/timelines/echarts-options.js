@@ -45,12 +45,12 @@ export const options = {
       type: 'slider',
       yAxisIndex: 0,
       width: 10,
-    }
+    },
   ],
   series: [
     {
       type: 'custom',
-      progressive: 0,   // Disable progressive rendering
+      progressive: 0, // Disable progressive rendering
       encode: { x: [1, 2], y: 0 },
     },
   ],
