@@ -14,5 +14,5 @@ This package implements [custom file exporters](https://datagrok.ai/help/develop
 
 See also:
 
-* [apache/arrow] (https://github.com/apache/arrow/tree/4b3f4677b995cb7263e4a4e65daf00189f638617)
-* [Parquet API Documentation] (https://kylebarron.dev/parquet-wasm/modules/bundler_arrow1.html)
+* [apache/arrow](https://github.com/apache/arrow/tree/4b3f4677b995cb7263e4a4e65daf00189f638617)
+* [Parquet API Documentation](https://kylebarron.dev/parquet-wasm/modules/bundler_arrow1.html)
