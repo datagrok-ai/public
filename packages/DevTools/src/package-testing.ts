@@ -57,12 +57,12 @@ async function collectTests(packageName?: string): Promise<IPackageTests[]>  {
     await f.package.load({ file: f.options.file });
     const allPackageTests = f.package.getModule(f.options.file).tests;
     let testsWithPackNameAndActFlag: { [cat: string]: IPackageTest[] } = {};
-    Object.keys(allPackageTests).forEach((cat) => {
-      let catTests: IPackageTest[] = [];
-      allPackageTests[cat].tests.forEach((t) => catTests.push({test: t, active: false, packageName: f.package.name}))
-      testsWithPackNameAndActFlag[cat] = catTests;
-    })
     if (allPackageTests) {
+      Object.keys(allPackageTests).forEach((cat) => {
+        let catTests: IPackageTest[] = [];
+        allPackageTests[cat].tests.forEach((t) => catTests.push({test: t, active: false, packageName: f.package.name}));
+        testsWithPackNameAndActFlag[cat] = catTests;
+      });
       packagesTestsList.push({friendlyName: f.package.friendlyName, categories: testsWithPackNameAndActFlag});
     }
   }
