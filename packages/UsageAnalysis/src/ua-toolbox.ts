@@ -20,7 +20,7 @@ export class UaToolbox {
     let dateInput = ui.stringInput('Date', date);
     dateInput.addPatternMenu('datetime');
     dateInput.setTooltip('Set the date period');
-    let usersInput = await ChoiceInput.construct(async () => (await grok.dapi.groups.list()).map((u) => u.name));
+    let usersInput = await ChoiceInput.construct();
     
     let filterStream = new BehaviorSubject(new UaFilter({
       date: date,
