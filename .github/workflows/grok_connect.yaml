@@ -41,10 +41,6 @@ jobs:
     if: needs.build.outputs.version != ''
     environment: Prod
     runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [ 'amd64', 'arm64' ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -57,41 +53,82 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Get cache
-        if: github.ref == 'refs/heads/master'
-        id: cache
-        run: echo "::set-output name=image::type=registry,ref=datagrok/grok_connect:cache,mode=max"
-      - name: Set output
-        if: github.ref != 'refs/heads/master'
-        id: output
+      - name: Set buildx parameters
+        id: param
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           branch=$(echo ${GITHUB_REF#refs/heads/})
           echo "::set-output name=commit_sha::${commit_sha}"
           echo "::set-output name=branch::${branch}"
-          echo "::set-output name=image::type=docker,dest=/tmp/grok_connect_${{ needs.build.outputs.version }}-${commit_sha}-${{ github.run_id }}-${{ github.run_attempt }}.tar"
+          if [[ ${{ github.ref }} != 'refs/heads/master' ]]; then
+            platform='linux/amd64'
+            echo "::set-output name=platform::${platform]"
+            tar="grok_connect_${{ needs.build.outputs.version }}-$(echo ${platform#linux/})-${commit_sha}-${{ github.run_id }}-${{ github.run_attempt }}.tar"
+            echo "::set-output name=tar::/tmp/${tar}"
+            echo "::set-output name=dest::type=docker,dest=${tar}"
+
+            platform_add='linux/arm64'
+            echo "::set-output name=platform_add::${platform_add}"
+            tar_add="grok_connect_${{ needs.build.outputs.version }}-$(echo ${platform_add#linux/})-${commit_sha}-${{ github.run_id }}-${{ github.run_attempt }}.tar"
+            echo "::set-output name=tar_add::${tar_add}"
+            echo "::set-output name=dest_add::type=docker,dest=/tmp/${tar_add}"
+          else
+            echo "::set-output name=cache_to::type=registry,ref=datagrok/grok_connect:cache,mode=max"
+            echo "::set-output name=platform::linux/amd64,linux/arm64"
+          fi
+
+      - uses: hadolint/hadolint-action@v2.0.0
+        with:
+          dockerfile: ./connectors/Dockerfile
+          failure-threshold: error
 
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
           context: ./connectors
-          platforms: linux/${{ matrix.arch }}
+          platforms: ${{ steps.param.outputs.platform }}
           push: ${{ github.ref == 'refs/heads/master' }}
           tags: datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}
           cache-from: type=registry,ref=datagrok/grok_connect:cache
-          cache-to: ${{ steps.cache.outputs.image }}
-          outputs: ${{ steps.output.outputs.image }}
+          cache-to: ${{ steps.param.outputs.cache_to }}
+          outputs: ${{ steps.param.outputs.dest }}
           build-args: |
-            BRANCH=${{ steps.output.outputs.branch }}
+            BRANCH=${{ steps.param.outputs.branch }}
             COMMIT_PUBLIC=${{ github.sha }}
           labels: |
-            BRANCH=${{ steps.output.outputs.branch }}
+            BRANCH=${{ steps.param.outputs.branch }}
             COMMIT_PUBLIC=${{ github.sha }}
 
       - name: Upload Artifact
         if: github.ref != 'refs/heads/master'
         uses: actions/upload-artifact@v2
         with:
-          name: grok_connect_${{ needs.build.outputs.version }}-${{ matrix.arch }}-${{ steps.output.outputs.commit_sha }}-${{ github.run_id }}-${{ github.run_attempt }}.tar
-          path: /tmp/grok_connect_${{ needs.build.outputs.version }}-${{ steps.output.outputs.commit_sha }}-${{ github.run_id }}-${{ github.run_attempt }}.tar
+          name: ${{ steps.param.outputs.tar }}
+          path: /tmp/${{ steps.param.outputs.tar }}
+          retention-days: 7
+
+      - name: Build and push additional platform
+        uses: docker/build-push-action@v3
+        if: steps.param.outputs.platform_add != '' && steps.param.outputs.dest_add != ''
+        with:
+          context: ./connectors
+          platforms: ${{ steps.param.outputs.platform_add }}
+          push: ${{ github.ref == 'refs/heads/master' }}
+          tags: datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}
+          cache-from: type=registry,ref=datagrok/grok_connect:cache
+          cache-to: ${{ steps.param.outputs.cache_to }}
+          outputs: ${{ steps.param.outputs.dest_add }}
+          build-args: |
+            BRANCH=${{ steps.param.outputs.branch }}
+            COMMIT_PUBLIC=${{ github.sha }}
+          labels: |
+            BRANCH=${{ steps.param.outputs.branch }}
+            COMMIT_PUBLIC=${{ github.sha }}
+
+      - name: Upload Artifact
+        if: github.ref != 'refs/heads/master' && steps.param.outputs.tar_add != ''
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.param.outputs.tar_add }}
+          path: /tmp/${{ steps.param.outputs.tar_add }}
           retention-days: 7
