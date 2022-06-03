@@ -240,6 +240,8 @@ export const TAGS = {
   CELL_RENDERER: 'cell.renderer',
   UNITS: 'units',  // see DG.UNITS
 
+  FRIENDLY_NAME: 'friendlyName',
+
   CHEM: {
     SCAFFOLD: 'chem-scaffold'
   }
