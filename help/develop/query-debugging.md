@@ -5,6 +5,7 @@
 
 To debug and troubleshoot the database queries, use the built-in tool
 that allows you to see the following information about the query:
+
 - Column/Rows - the number of columns and rows in the requested table
 - Query - the resulting query string with substituted parameters
 - Params array - the array of query parameters
@@ -15,6 +16,7 @@ that allows you to see the following information about the query:
 - Memory - the used and free JVM memory
 
 You can find this information by doing the following:
+
 - Open the Datagrok inspector by pressing Alt+I (or Tools | Dev | Inspector)
 - Enable 'Debug Queries' on the 'Debug' pane. You might close the inspector now.
 - Execute the query you want to profile

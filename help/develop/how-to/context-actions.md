@@ -6,7 +6,7 @@ To register a context-specific action that would get offered to a user when righ
 on the item or expanding the **Actions** pane, add the following tags to the function:
 
 * `meta.action`: Text to be shown
-* `input`: Has to be exactly one input, annotated with `semType`. 
+* `input`: Has to be exactly one input, annotated with `semType`.
 
 The following example registers a **Use as filter** action for molecules:
 
@@ -29,7 +29,7 @@ export function useAsSubstructureFilter(mol: string): void {
 
 This is the end result (note the **Use as Filter** action in the right panel):
 
-![](context-actions.png)
+![The custom context action for cells with molecules](context-actions.png)
 
 See also:
 
