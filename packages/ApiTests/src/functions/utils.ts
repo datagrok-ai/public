@@ -15,3 +15,13 @@ export async function check(cases: {[expression: string]: any}): Promise<void> {
       expect(result, expected);
   }
 }
+
+export async function checkRandomInt(cases: {[expression: string]: [number, number]}): Promise<void> {
+  const iterationCount = 10;
+  for (const [expression, [a, b]] of Object.entries(cases)) {
+    for (let i = 0; i < iterationCount; i++) {
+      const x = await grok.functions.eval(expression);
+      expect((a < b) ? (a <= x && x < b) : (b <= x && x < a), true);
+    }
+  }
+}
