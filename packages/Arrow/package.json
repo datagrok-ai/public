@@ -1,7 +1,7 @@
 {
-	"name": "parquettest",
+	"name": "arrow",
 	"beta": true,
-	"friendlyName": "ParquetTest",
+	"friendlyName": "Arrow",
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
