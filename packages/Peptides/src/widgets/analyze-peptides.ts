@@ -5,20 +5,16 @@ import '../styles.css';
 import * as C from '../utils/constants';
 import {getSeparator} from '../utils/misc';
 import {PeptidesModel} from '../model';
+import {_package} from '../package';
 
-/**
- * Peptide analysis widget.
+/** Peptide analysis widget.
  *
- * @export
- * @param {DG.Column} col Aligned sequence column.
- * @param {DG.TableView} view Working view.
- * @param {DG.Grid} tableGrid Working table grid.
- * @param {DG.DataFrame} currentDf Working table.
- * @return {Promise<DG.Widget>} Widget containing peptide analysis.
- */
+ * @param {DG.DataFrame} currentDf Working table
+ * @param {DG.Column} col Aligned sequence column
+ * @return {Promise<DG.Widget>} Widget containing peptide analysis */
 export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Column): Promise<DG.Widget> {
   let tempCol = null;
-  let tempDf: DG.DataFrame;
+  let scaledDf: DG.DataFrame;
   let newScaledColName: string;
   const separator = getSeparator(col);
   col.tags[C.TAGS.SEPARATOR] ??= separator;
@@ -34,10 +30,10 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
     async (currentMethod: string): Promise<void> => {
       const currentActivityCol = activityColumnChoice.value?.name;
 
-      [tempDf, newScaledColName] = await PeptidesModel.scaleActivity(
+      [scaledDf, newScaledColName] = await PeptidesModel.scaleActivity(
         currentMethod, currentDf, currentActivityCol, true);
 
-      const hist = tempDf.plot.histogram({
+      const hist = scaledDf.plot.histogram({
         filteringEnabled: false,
         valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
         legendVisibility: 'Never',
@@ -56,58 +52,16 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
       DG.Stats.fromColumn(activityColumnChoice.value!, currentDf.filter).min > 0;
     activityScalingMethod.fireChanged();
   };
-  const activityColumnChoice = ui.columnInput(
-    'Activity',
-    currentDf,
-    defaultColumn,
-    activityScalingMethodState,
-  );
+  const activityColumnChoice = ui.columnInput('Activity', currentDf, defaultColumn, activityScalingMethodState);
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
   const inputsList = [activityColumnChoice, activityScalingMethod];
 
   const startBtn = ui.button('Launch SAR', async () => {
-    const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
-    if (activityColumnChoice.value?.type === DG.TYPE.FLOAT) {
-      const activityColumnName: string = activityColumnChoice.value.name;
-
-      //prepare new DF
-      const newDf = currentDf.clone(currentDf.filter, [col.name, activityColumnName]);
-      const activityCol = newDf.getCol(activityColumnName);
-      activityCol.name = C.COLUMNS_NAMES.ACTIVITY;
-      activityCol.semType = C.SEM_TYPES.ACTIVITY;
-      newDf.getCol(col.name).name = C.COLUMNS_NAMES.ALIGNED_SEQUENCE;
-      const activityScaledCol = tempDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-      activityScaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
-      newDf.columns.add(activityScaledCol);
-      newDf.name = 'Peptides analysis';
-      newDf.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
-      newDf.tags['isPeptidesAnalysis'] = 'true';
-
-      const model = await PeptidesModel.getInstance(newDf);
-      // await model.init(newDf);
-    } else
-      grok.shell.error('The activity column must be of floating point number type!');
-    progress.close();
+    await startAnalysis(activityColumnChoice.value, col, currentDf, scaledDf, newScaledColName);
   });
   startBtn.style.alignSelf = 'center';
-
-  // const startMVABtn = ui.button('Launch MVA', async () => {
-  //   if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
-  //     const progress = DG.TaskBarProgressIndicator.create('Loading MVA...');
-
-  //     const options: {[key: string]: string} = {
-  //       'activityColumnName': activityColumnChoice.value.name,
-  //       'scaling': activityScalingMethod.value,
-  //     };
-
-  //     await callMVA(tableGrid, view, currentDf, options, col);
-
-  //     progress.close();
-  //   } else
-  //     grok.shell.error('The activity column must be of floating point number type!');
-  // });
 
   const viewer = await currentDf.plot.fromType('WebLogo');
   viewer.root.style.setProperty('height', '130px');
@@ -121,4 +75,32 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
       ], {style: {height: 'unset'}}),
     ]),
   );
+}
+
+export async function startAnalysis(
+  activityColumn: DG.Column<number> | null, alignedSeqCol: DG.Column<string>, currentDf: DG.DataFrame,
+  scaledDf: DG.DataFrame, newScaledColName: string, dgPackage?: DG.Package): Promise<PeptidesModel | null> {
+  const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
+  let model = null;
+  if (activityColumn?.type === DG.TYPE.FLOAT) {
+    const activityColumnName: string = activityColumn.name;
+
+    //prepare new DF
+    const newDf = currentDf.clone(currentDf.filter, [alignedSeqCol.name, activityColumnName]);
+    const activityCol = newDf.getCol(activityColumnName);
+    activityCol.name = C.COLUMNS_NAMES.ACTIVITY;
+    activityCol.semType = C.SEM_TYPES.ACTIVITY;
+    newDf.getCol(alignedSeqCol.name).name = C.COLUMNS_NAMES.ALIGNED_SEQUENCE;
+    const activityScaledCol = scaledDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    activityScaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
+    newDf.columns.add(activityScaledCol);
+    newDf.name = 'Peptides analysis';
+    newDf.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
+    newDf.tags[C.PEPTIDES_ANALYSIS] = 'true';
+
+    model = await PeptidesModel.getInstance(newDf, dgPackage ?? _package);
+  } else
+    grok.shell.error('The activity column must be of floating point number type!');
+  progress.close();
+  return model;
 }
