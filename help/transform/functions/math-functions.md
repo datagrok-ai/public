@@ -180,7 +180,7 @@ Returns the greatest integer no greater than `x`.
 
 ```javascript
 Floor(3.5)     // 3
-Floor(-3.5)    // 4
+Floor(-3.5)    // -4
 ```
 
 ## <a name="greater"></a>Greater(`x`, `y`)
@@ -197,7 +197,7 @@ Greater(5, 4)    // true
 Returns the natural logarithm of `x`.
 
 ```javascript
-Ln(0)    // 0
+Ln(1)    // 0
 Ln(E)    // 1
 ```
 
@@ -341,6 +341,7 @@ RandBetween(5, 7)    // Randomly returns 5 or 6
 ## <a name="rnd"></a>Rnd(`limit`)
 
 Returns a random integer number within the range from 0, inclusive, to `n`, exclusive.
+The absolute value is taken if the number is negative.
 
 ```javascript
 Rnd(2)    // Randomly returns 0 or 1

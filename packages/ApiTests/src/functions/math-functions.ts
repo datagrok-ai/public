@@ -1,5 +1,5 @@
 import {category, test} from '@datagrok-libraries/utils/src/test';
-import {check} from './utils';
+import {check, checkRandomInt} from './utils';
 
 
 category('Math functions', () => {
@@ -165,6 +165,20 @@ category('Math functions', () => {
     'Pow(7, 1)': 7,
     'Pow(2, 3)': 8,
     'Pow(2, -2)': 0.25,
+  }));
+
+  test('RandBetween', () => checkRandomInt({
+    'RandBetween(5, 7)': [5, 7],
+    'RandBetween(-2, 2)': [-2, 2],
+    'RandBetween(0, 35)': [0, 35],
+    'RandBetween(-100, -50)': [-100, -50],
+    'RandBetween(1, 2)': [1, 2],
+  }));
+
+  test('Rnd', () => checkRandomInt({
+    'Rnd(80)': [0, 80],
+    'Rnd(2)': [0, 2],
+    'Rnd(-2)': [0, 2],
   }));
 
   test('Round', () => check({
