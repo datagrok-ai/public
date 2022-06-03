@@ -460,8 +460,8 @@ export class GroupsDataSource extends HttpDataSource<Group> {
   }
 
   /** Looking for groups with similar name */
-  getGroupsLookup(name: string): Promise<Group> {
-    return api.grok_Dapi_Get_GroupsLookup(name);
+  async getGroupsLookup(name: string): Promise<Group[]> {
+    return toJs(await api.grok_Dapi_Get_GroupsLookup(name));
   }
 }
 
