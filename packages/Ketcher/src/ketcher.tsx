@@ -16,6 +16,7 @@ let sketcherId = 0;
 export class KetcherSketcher extends grok.chem.SketcherBase {
   declare _ketcher: Ketcher;
   declare _molFile: string;
+  declare _smiles: string;
 
   constructor() {
     super();
@@ -32,16 +33,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       onInit: (ketcher: Ketcher) => {
         this._ketcher = ketcher;
         (this._ketcher.editor as any).subscribe("change", (e: any) => {
-
-          try {
-            this._ketcher.getMolfile().then((molfile) => {
-              this._molFile = molfile;
-            });
-          } catch (ex) {
-            console.log(ex);
-          }
           this.onChanged.next(null);
         });
+        this._ketcher.editor.zoom(0.5);
       },
     };
 
@@ -68,31 +62,19 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.onChanged.next(null);
   }
 
-  async smilesToMol(smiles: string): Promise<string> {
-    return await grok.functions.call("Chem:convertMolecule", {
-      molecule: smiles,
-      from: "smiles",
-      to: "molblock",
-    });
-  }
-
-  detach() {
-    super.detach();
-  }
 
   async getSmiles(): Promise<string> {
     return await this._ketcher?.getSmiles();
   }
 
   setSmiles(smiles: string) {
-    this.smilesToMol(smiles).then((molBlock) => {
+    this._smiles = smiles;
       try {
-        this._ketcher?.setMolecule(molBlock).then(() => {});
+        this._ketcher?.setMolecule(smiles).then(() => {});
       } catch (e) {
         console.log(e);
         return;
       }
-    });
   }
 
   async getMolFile(): Promise<string> {
@@ -114,11 +96,19 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
-    return this._molFile;
+    return this._smiles;
   }
 
   set smiles(smiles) {
-    this.smilesToMol(smiles).then((molFile) => this.setMolFile(molFile));
+    this.setSmiles(smiles);
+  }
+
+  get molFile() {
+    return this._molFile;
+  }
+
+  set molFile(molfile: string) {
+    this.setMolFile(molfile);
   }
 
   async getSmarts(): Promise<string> {
@@ -129,11 +119,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.smiles = s;
   }
 
-  get molFile() {
-    return this._molFile;
+  detach() {
+    super.detach();
   }
 
-  set molFile(molfile: string) {
-    this.setMolFile(molfile);
-  }
 }
