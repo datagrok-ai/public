@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import { tableFromIPC, tableFromArrays, tableToIPC} from 'apache-arrow';
 import { default as init, readParquet, writeParquet, WriterPropertiesBuilder, Compression } from './arrow1';
-//import { readFileSync } from 'fs-extra';
+import { Buffer } from 'buffer';
 export const _package = new DG.Package();
 
 
@@ -35,7 +35,7 @@ export function parquetFileHandler(bytes) {
 //tags: file-handler
 //meta.ext: feather
 export function featherFileHandler(bytes) {
-  //const arrow = readFileSync(bytes);
+  const arrow = Buffer.from(bytes);
   const table = tableFromIPC(arrow).toArray();
   return grok.shell.addTableView(DG.DataFrame.fromObjects(table));
 }
