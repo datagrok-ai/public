@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, test, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package-test';
 import {startAnalysis} from '../widgets/analyze-peptides';
@@ -38,7 +38,7 @@ category('Core', () => {
     expect(model instanceof PeptidesModel, true);
     model?.setSARGridCellAt('D', '11');
     if (model != null)
-      grok.shell.closeTable(model.dataFrame);
+      grok.shell.closeTable(model._dataFrame);
   });
 
   test('Start analysis: сomplex', async () => {
@@ -58,6 +58,6 @@ category('Core', () => {
     expect(model instanceof PeptidesModel, true);
     model?.setSARGridCellAt('-', '13');
     if (model != null)
-      grok.shell.closeTable(model.dataFrame);
+      grok.shell.closeTable(model._dataFrame);
   });
 });
