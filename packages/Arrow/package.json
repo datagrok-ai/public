@@ -32,7 +32,10 @@
 		"debug-parquettest-dev": "grok publish dev --rebuild",
 		"release-parquettest-dev": "grok publish dev --rebuild --release",
 		"debug-parquettest-local": "grok publish local --rebuild",
-		"release-parquettest-local": "grok publish local --rebuild --release"
+		"release-parquettest-local": "grok publish local --rebuild --release",
+		"test": "set HOST=dev && jest",
+		"test-dev": "set HOST=dev && jest",
+		"test-local": "set HOST=localhost && jest"
 	},
 	"canEdit": [
 		"Developers"
