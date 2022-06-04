@@ -4,7 +4,12 @@ const packageName = path.parse(require('./package.json').name).name.toLowerCase(
 module.exports = {
   mode: 'development',
   entry: {
-    package: ['./src/arrow1_bg.wasm','./src/package.js']
+    package: ['./src/arrow1_bg.wasm','./src/package.js'],
+    test: {
+      filename: 'package-test.js',
+      library: {type: 'var', name: `${packageName}_test`},
+      import: './src/package-test.js',
+    },
   },
   resolve: {
     fallback: { "url": false },
@@ -47,9 +52,9 @@ module.exports = {
   },
   resolve: {
     fallback:{
-      "path": false,
       "fs": false,
-      "util": false
+      "path": false,
+      "util": false,
     }
   }
 };
