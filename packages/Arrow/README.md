@@ -12,6 +12,12 @@ This package implements [custom file exporters](https://datagrok.ai/help/develop
 
 ![](../../packages/Arrow/FileExporters.gif)
 
+# File handlers
+
+This package implements [custom file handlers](https://datagrok.ai/help/develop/how-to/file-handlers) for parquet and feather file types. This is how it looks in action:
+
+![](../../packages/Arrow/FileHandlers.gif)
+
 See also:
 
 * [apache/arrow](https://github.com/apache/arrow/tree/4b3f4677b995cb7263e4a4e65daf00189f638617)
