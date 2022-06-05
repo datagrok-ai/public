@@ -1,4 +1,4 @@
-let api = <any>window;
+const api = <any>window;
 
 export function tryParseJson(s: string): any {
   try {
@@ -15,8 +15,9 @@ export class StringUtils {
    * Otherwise, tries [choices], and if the names are taken already, returns a string in a form of 'initialName (i)'.
    */
   static getUniqueName(initialName: string, existingNames: string[],
-      options?: { auto?: boolean, idx?: number, render?: Function, choices?: string[] }): string {
-    return api.grok_Utils_GetUniqueName(initialName, existingNames, options?.auto, options?.idx, options?.render, options?.choices);
+    options?: { auto?: boolean, idx?: number, render?: Function, choices?: string[] }): string {
+    return api.grok_Utils_GetUniqueName(
+      initialName, existingNames, options?.auto, options?.idx, options?.render, options?.choices);
   }
 
   static isEmpty(s: string | null): boolean {

@@ -4,7 +4,7 @@
     "access": "public"
   },
   "fullName": "Utils",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Common utilities",
   "dependencies": {
     "@types/node": "^14.14.37",
@@ -29,6 +29,8 @@
     "link": "npm link",
     "link-api": "npm link datagrok-api",
     "link-all": "npm link datagrok-api",
-    "build": "tsc"
+    "build": "tsc",
+    "lint": "eslint \"./src/**/*.ts\"",
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
   }
 }
