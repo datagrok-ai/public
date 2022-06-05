@@ -44,13 +44,13 @@ category('Chem: Widgets', async () => {
 
   // Test smiles, mol2000, mol3000; Compare with existing mol string; Test copy feature
   test('molfile', async () => {
+    const expectedStr = (await utils.loadFileAsText('tests/molfile.sdf')).replaceAll('\r', '').trim();
     const panelElements = getPanelElements(molStr);
-    const expectedStr = await utils.loadFileAsText('tests/molfile.sdf');
-    expect($(panelElements[2].input).val() as string, expectedStr);
+    const panelStr = ($(panelElements[2].input).val() as string).replaceAll('\r', '').trim();
+    expect(panelStr, expectedStr);
 
-    //NotAllowedError: Document is not focused.
     $(panelElements[0]).trigger('click');
-    const clipboardStr = (await navigator.clipboard.readText()).replaceAll('\r', '');
+    const clipboardStr = (await navigator.clipboard.readText()).replaceAll('\r', '').trim();
     expect(clipboardStr, expectedStr);
 
     molfileWidget(molStr);
