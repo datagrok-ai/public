@@ -154,4 +154,9 @@ category('Chem: Widgets', async () => {
     await delay(100);
     expect(df.filter.trueCount, 700);
   });
+
+  test('gasteiger-partion-charges', async () => {
+    const parameters = {mol: molStr, contours: 10};
+    await grok.functions.call('Chem:GasteigerPartialCharges', parameters);
+  });
 });
