@@ -16,7 +16,7 @@ export class AminoacidsPalettes extends SeqPaletteBase {
         [['N', 'Q', 'H'], 'magenta'],
         [['D', 'E'], 'red'],
         [['K', 'R'], 'all_blue'],
-      ]);
+      ], false, AminoacidsPalettes);
     }
     return this.lesk;
   }
@@ -32,7 +32,7 @@ export class AminoacidsPalettes extends SeqPaletteBase {
         [['R', 'H', 'K'], 'light_blue'],
         [['D', 'E'], 'dark_blue'],
         [['S', 'T', 'N', 'Q'], 'orange'],
-      ]);
+      ], false, AminoacidsPalettes);
     }
     return this.grokGroups;
   }
@@ -41,7 +41,7 @@ export class AminoacidsPalettes extends SeqPaletteBase {
 
   public static get RasMol(): SeqPalette {
     if (this.rasMol === void 0) {
-      this.rasMol = {
+      this.rasMol = new AminoacidsPalettes({
         // http://acces.ens-lyon.fr/biotic/rastop/help/colour.htm
         'D': '#E60A0A', // asp, aspartic acid, asp
         'E': '#E60A0A', // glu, glutamic acid
@@ -64,7 +64,7 @@ export class AminoacidsPalettes extends SeqPaletteBase {
         'H': '#8282D2', // his, histidine
         'P': '#DC9682', // pro, proline
         'others': '#BEA06E',
-      };
+      });
     }
     return this.rasMol;
   }
@@ -217,7 +217,7 @@ export class Aminoacids {
     if (monomer.length == 1 || monomer[1] == '(') {
       const amino = monomer[0]?.toUpperCase()!;
       return amino in chemPaletteInstance ?
-        [chemPaletteInstance[amino], amino, innerMonomer, 1] :
+        [chemPaletteInstance.get(amino), amino, innerMonomer, 1] :
         [this.undefinedColor, outerMonomer, innerMonomer, 1];
     }
 
@@ -225,7 +225,7 @@ export class Aminoacids {
       if (monomer.length == 2 || monomer[2] == '(') {
         const amino = monomer[1]?.toUpperCase()!;
         return amino in chemPaletteInstance ?
-          [chemPaletteInstance[amino], amino, innerMonomer, 2] :
+          [chemPaletteInstance.get(amino), amino, innerMonomer, 2] :
           [this.undefinedColor, outerMonomer, innerMonomer, 2];
       }
     }
@@ -234,7 +234,7 @@ export class Aminoacids {
       if (monomer.length == 3 || monomer[3] == '(') {
         const amino = this.AAFullNames[monomer.substring(0, 3)];
         return amino in chemPaletteInstance ?
-          [chemPaletteInstance[amino], amino, innerMonomer, 3] :
+          [chemPaletteInstance.get(amino), amino, innerMonomer, 3] :
           [this.undefinedColor, outerMonomer, innerMonomer, 3];
       }
     }
@@ -244,7 +244,7 @@ export class Aminoacids {
         if (monomer.length == 4 || monomer[4] == '(') {
           const amino = this.AAFullNames[monomer.substring(1, 3)];
           return amino in chemPaletteInstance ?
-            [chemPaletteInstance[amino], amino, innerMonomer, 4] :
+            [chemPaletteInstance.get(amino), amino, innerMonomer, 4] :
             [this.undefinedColor, outerMonomer, innerMonomer, 4];
         }
       }

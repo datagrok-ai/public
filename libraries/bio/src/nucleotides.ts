@@ -10,13 +10,13 @@ export class NucleotidesPalettes extends SeqPaletteBase {
 
   public static get Chromatogram(): SeqPalette {
     if (this.chromatogram === void 0) {
-      this.chromatogram = {
+      this.chromatogram = new NucleotidesPalettes({
         'A': 'green',
         'C': 'blue',
         'G': 'black', // orange ?
         'T': 'red', 'U': 'red',
         'others': 'gray',
-      };
+      });
     }
     return this.chromatogram;
   }

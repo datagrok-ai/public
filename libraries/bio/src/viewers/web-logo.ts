@@ -5,13 +5,12 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-
+import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
+import {vectorLength, vectorDotProduct} from '@datagrok-libraries/utils/src/vector-operations';
 import {Aminoacids, AminoacidsPalettes} from '../aminoacids';
 import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
+import {UnknownSeqPalette, UnknownSeqPalettes} from '../unknown';
 import {SeqPalette} from '../seq-palettes';
-
-// Using color schemes from chem-palette
 
 declare module 'datagrok-api/src/grid' {
   interface Rect {
@@ -24,6 +23,8 @@ declare global {
     getCursorPosition(event: MouseEvent): DG.Point;
   }
 }
+
+type MonomerFreqs = { [m: string]: number };
 
 HTMLCanvasElement.prototype.getCursorPosition = function(event: MouseEvent): DG.Point {
   const rect = this.getBoundingClientRect();
@@ -63,6 +64,7 @@ export class PositionInfo {
     this.rowCount = 0;
   }
 }
+
 
 export class WebLogo extends DG.JsViewer {
   public static residuesSet = 'nucleotides';
@@ -190,7 +192,7 @@ export class WebLogo extends DG.JsViewer {
       if (this.dataFrame && this.seqCol && monomer) {
         ui.tooltip.showRowGroup(this.dataFrame, (iRow) => {
           const seq = this.seqCol!.get(iRow);
-          const mSeq = seq ? this.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
+          const mSeq = seq ? WebLogo.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
           return mSeq === monomer && this.dataFrame.filter.get(iRow);
         }, args.x + 16, args.y + 16);
       } else {
@@ -209,7 +211,7 @@ export class WebLogo extends DG.JsViewer {
       if (this.dataFrame && this.seqCol && monomer) {
         this.dataFrame.selection.init((iRow) => {
           const seq = this.seqCol!.get(iRow);
-          const mSeq = seq ? this.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
+          const mSeq = seq ? WebLogo.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
           return mSeq === monomer && this.dataFrame.filter.get(iRow);
         });
       }
@@ -241,7 +243,7 @@ export class WebLogo extends DG.JsViewer {
         this.sequenceColumnName = this.seqCol ? this.seqCol.name : null;
       }
       if (this.seqCol) {
-        const maxLength = Math.max(...this.seqCol.categories.map((s) => this.splitSeqToMonomers(s).length));
+        const maxLength = Math.max(...this.seqCol.categories.map((s) => WebLogo.splitSeqToMonomers(s).length));
 
         // Get position names from data column tag 'positionNames'
         const positionNamesTxt = this.seqCol.getTag('positionNames');
@@ -254,7 +256,7 @@ export class WebLogo extends DG.JsViewer {
         this.endPosition = this.endPositionName && this.positionNames ?
           this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
 
-        this.cp = this.pickUpPalette(this.seqCol);
+        this.cp = WebLogo.pickUpPalette(this.seqCol);
       } else {
         this.cp = null;
         this.positionNames = [];
@@ -355,10 +357,10 @@ export class WebLogo extends DG.JsViewer {
         ++this.rowsNull;
       }
 
-      const seq_m: string[] = this.splitSeqToMonomers(s);
+      const seqM: string[] = WebLogo.splitSeqToMonomers(s);
       for (let jPos = 0; jPos < this.Length; jPos++) {
         const pmInfo = this.positions[jPos].freq;
-        const m: string = seq_m[this.startPosition + jPos] || '-';
+        const m: string = seqM[this.startPosition + jPos] || '-';
         if (!(m in pmInfo))
           pmInfo[m] = new PositionMonomerInfo();
         pmInfo[m].count++;
@@ -469,7 +471,7 @@ export class WebLogo extends DG.JsViewer {
           g.strokeStyle = 'lightgray';
           g.lineWidth = 1;
           g.rect(b.left, b.top, b.width, b.height);
-          g.fillStyle = this.cp[monomer] ?? this.cp['other'];
+          g.fillStyle = this.cp.get(monomer) ?? this.cp.get('other');
           g.textAlign = 'left';
           g.font = fontStyle;
           //g.fillRect(b.left, b.top, b.width, b.height);
@@ -564,7 +566,7 @@ export class WebLogo extends DG.JsViewer {
    * @param {number}  minLength minimum length of sequence to detect palette (empty strings are allowed)
    * @return {SeqPalette} Palette corresponding to the alphabet of the sequences in the column
    */
-  private pickUpPalette(seqCol: DG.Column, minLength: number = 0): SeqPalette | null {
+  public static pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPalette {
     let res: SeqPalette | null = null;
     switch (seqCol.semType) {
     case Aminoacids.SemTypeMultipleAlignment:
@@ -574,21 +576,70 @@ export class WebLogo extends DG.JsViewer {
       res = NucleotidesPalettes.Chromatogram;
       break;
     }
-    if (res === null) {
-      // The alphabet of nucleotides is a smaller set, so we check it first.
-      const alphabet = {...Nucleotides.Names, ...{'-': 'gap'}};
-      res = DG.Detector.sampleCategories(seqCol, (seq) => {
-        return !seq || (seq.length > minLength && this.splitSeqToMonomers(seq).every((n) => n in alphabet));
-      }, 1) ? NucleotidesPalettes.Chromatogram : null;
-    }
-    if (res === null) {
-      // And then check for amino acid's alphabet.
-      const alphabet = {...Aminoacids.Names, ...{'-': 'gap'}};
-      res = DG.Detector.sampleCategories(seqCol, (seq) => {
-        return !seq || (seq.length > minLength && this.splitSeqToMonomers(seq).every((n) => n in alphabet));
-      }, 1) ? AminoacidsPalettes.GrokGroups : null;
+    const alphabetFreqs: MonomerFreqs = WebLogo.getAlphabetFreqs(seqCol);
+
+    const alphabetCandidates: [Set<string>, SeqPalette][] = [
+      [new Set(Object.keys(Nucleotides.Names)), NucleotidesPalettes.Chromatogram],
+      [new Set(Object.keys(Aminoacids.Names)), AminoacidsPalettes.GrokGroups],
+    ];
+    // Calculate likelihoods for alphabet_candidates
+    const alphabetCandidatesSim: number[] = alphabetCandidates.map(
+      (c) => WebLogo.getAlphabetSimilarity(alphabetFreqs, c[0]));
+    const maxCos = Math.max(...alphabetCandidatesSim);
+    if (maxCos > 0.6)
+      res = alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][1];
+    else
+      res = UnknownSeqPalettes.Color;
+
+    // if (res === null) {
+    //   // The alphabet of nucleotides is a smaller set, so we check it first.
+    //   const alphabet = {...Nucleotides.Names, ...{'-': 'gap'}};
+    //   res = DG.Detector.sampleCategories(seqCol, (seq) => {
+    //     return !seq || (seq.length > minLength && this.splitSeqToMonomers(seq).every((n) => n in alphabet));
+    //   }, 1) ? NucleotidesPalettes.Chromatogram : null;
+    // }
+    // if (res === null) {
+    //   // And then check for amino acid's alphabet.
+    //   const alphabet = {...Aminoacids.Names, ...{'-': 'gap'}};
+    //   res = DG.Detector.sampleCategories(seqCol, (seq) => {
+    //     return !seq || (seq.length > minLength && this.splitSeqToMonomers(seq).every((n) => n in alphabet));
+    //   }, 1) ? AminoacidsPalettes.GrokGroups : null;
+    // }
+    // if (res === null) {
+    //   res = UnknownSeqPalettes.Color;
+    // }
+    return res;
+  }
+
+  public static getAlphabetFreqs(seqCol: DG.Column): MonomerFreqs {
+    const res: MonomerFreqs = {};
+    for (const seq of seqCol.categories) {
+      for (const m of WebLogo.splitSeqToMonomers(seq)) {
+        if (!(m in res))
+          res[m] = 0;
+        res[m] += 1;
+      }
     }
     return res;
+  }
+
+  public static getAlphabetSimilarity(freq: MonomerFreqs, alphabet: Set<string>, gapSymbol: string = '-'): number {
+    const keys = new Set<string>([...new Set(Object.keys(freq)), ...alphabet]);
+    keys.delete(gapSymbol);
+
+    const freqA: number[] = [];
+    const alphabetA: number[] = [];
+    let len: number = 0;
+    for (const m of keys) {
+      freqA.push(m in freq ? freq[m] : 0);
+      alphabetA.push(alphabet.has(m) ? 1 : 0);
+      len += 1;
+    }
+    /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
+    const freqV: Vector = new Vector(freqA);
+    const alphabetV: Vector = new Vector(alphabetA);
+    const cos: number = vectorDotProduct(freqV, alphabetV) / (vectorLength(freqV) * vectorLength(alphabetV));
+    return cos;
   }
 
   /** First try to find column with semType 'alignedSequence'.
@@ -598,11 +649,10 @@ export class WebLogo extends DG.JsViewer {
    */
   private pickUpSeqCol(dataFrame: DG.DataFrame): DG.Column | null {
     let res: DG.Column | null = dataFrame.columns.bySemType('alignedSequence');
-
     if (res == null) {
       for (const col of dataFrame.columns) {
-        const cp = this.pickUpPalette(col as DG.Column, 5);
-        if (cp !== null) {
+        const cp = WebLogo.pickUpPalette(col as DG.Column, 5);
+        if (cp !== null && !(cp instanceof UnknownSeqPalette)) {
           res = col;
           break;
         }
@@ -613,22 +663,22 @@ export class WebLogo extends DG.JsViewer {
 
   private static splitRe = /\[(\w+)\]|(\w)|(-)/g;
 
-  private splitSeqToMonomers(seq: string): string[] {
+  public static splitSeqToMonomers(seq: string): string[] {
     // TODO: Use sequence separator
-    const res: string[] = wu(seq.matchAll(WebLogo.splitRe)).map((ma) => {
-      let m_res: string;
+    const res: string[] = wu(seq.toString().matchAll(WebLogo.splitRe)).map((ma) => {
+      let mRes: string;
       const m = ma[0];
       if (m.length > 1) {
         if (m in WebLogo.aaSynonyms) {
-          m_res = WebLogo.aaSynonyms[m];
+          mRes = WebLogo.aaSynonyms[m];
         } else {
-          m_res = '';
+          mRes = '';
           console.debug(`Long monomer '${m}' has not a short synonym.`);
         }
       } else {
-        m_res = m;
+        mRes = m;
       }
-      return m_res;
+      return mRes;
     }).toArray();
 
     return res;
