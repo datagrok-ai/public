@@ -3,17 +3,22 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export interface SeqPalette {
-  /**
-   * @param {string} m Monomer character
-   * @return {string} Color
+  // There are too much problem with indexer property in typescript.
+  // /**
+  //  * @param {string} m Monomer character
+  //  * @return {string} Color
+  //  */
+  // [m: string]: string;
+  /** Monomer color
+   * @param {string} m Monomer
    */
-  [m: string]: string;
+  get(m: string): string;
 }
 
-export class SeqPaletteBase {
+export class SeqPaletteBase implements SeqPalette {
   /** Palette with shades of primary colors
    */
-  private static colourPalette: { [key: string]: string[] } = {
+  public static colourPalette: { [key: string]: string[] } = {
     'orange': ['rgb(255,187,120)', 'rgb(245,167,100)', 'rgb(235,137,70)', 'rgb(205, 111, 71)'],
     'all_green': ['rgb(44,160,44)', 'rgb(74,160,74)', 'rgb(23,103,57)', 'rgb(30,110,96)', 'rgb(60,131,95)',
       'rgb(24,110,79)', 'rgb(152,223,138)', 'rgb(182, 223, 138)', 'rgb(152, 193, 138)'],
@@ -36,7 +41,9 @@ export class SeqPaletteBase {
     'white': ['rgb(230,230,230)'],
   };
 
-  protected static makePalette(dt: [string[], string][], simplified = false) {
+  protected static makePalette(dt: [string[], string][],
+    simplified = false, PaletteType: typeof SeqPaletteBase = SeqPaletteBase
+  ) {
     const palette: { [key: string]: string } = {};
     dt.forEach((cp) => {
       const objList = cp[0];
@@ -45,6 +52,16 @@ export class SeqPaletteBase {
         palette[obj] = this.colourPalette[colour][simplified ? 0 : ind];
       });
     });
-    return palette;
+    return new PaletteType(palette);
+  }
+
+  private _palette: { [m: string]: string };
+
+  constructor(palette: { [m: string]: string }) {
+    this._palette = palette;
+  }
+
+  public get(m: string): string {
+    return this._palette[m];
   }
 }
