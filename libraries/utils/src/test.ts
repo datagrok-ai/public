@@ -1,6 +1,11 @@
-import * as grok from "datagrok-api/grok";
+import * as grok from 'datagrok-api/grok';
 
-export let tests: {[key: string]: {tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>, beforeStatus?: string, afterStatus?: string}} = {};
+export const tests: {
+  [key: string]: {
+    tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>,
+    beforeStatus?: string, afterStatus?: string
+  }
+} = {};
 
 export let currentCategory: string;
 
@@ -8,13 +13,13 @@ export namespace assure {
 
   export function notNull(value: any, name?: string) {
     if (value == null)
-      throw `${name == null ? 'Value' : name} not defined`;
+      throw new Error(`${name == null ? 'Value' : name} not defined`);
   }
 }
 
 export interface TestOptions {
-  timeout? : number;
-  unhandledExceptionTimeout? : number;
+  timeout?: number;
+  unhandledExceptionTimeout?: number;
 }
 
 export class Test {
@@ -40,7 +45,7 @@ export class Test {
           reject(e);
         }
         if (!(await assertNoError(options!.unhandledExceptionTimeout!)))
-          reject(`Unhandled exception during test: ${grok.shell.lastError}`);
+          reject(new Error(`Unhandled exception during test: ${grok.shell.lastError}`));
         resolve(result);
       });
     };
@@ -77,7 +82,7 @@ export function expectFloat(actual: number, expected: number, tolerance = 0.001)
     throw new Error(`Expected ${expected}, got ${actual} (tolerance = ${tolerance})`);
 }
 
-export function expectObject(actual: {[key: string]: any}, expected: {[key: string]: any}) {
+export function expectObject(actual: { [key: string]: any }, expected: { [key: string]: any }) {
   for (const [expectedKey, expectedValue] of Object.entries(expected)) {
     if (!actual.hasOwnProperty(expectedKey))
       throw new Error(`Expected property "${expectedKey}" not found`);
@@ -97,18 +102,17 @@ export function expectArray(actual: any[], expected: any[]) {
   const expectedLength = expected.length;
 
   if (actualLength != expectedLength) {
-      throw new Error(`Arrays are of different length: actual array length is ${actualLength} ` +
-        `and expected array length is ${expectedLength}`);
+    throw new Error(`Arrays are of different length: actual array length is ${actualLength} ` +
+      `and expected array length is ${expectedLength}`);
   }
 
   for (let i = 0; i < actualLength; i++) {
-    if (actual[i] instanceof Array && expected[i] instanceof Array) {
+    if (actual[i] instanceof Array && expected[i] instanceof Array)
       expectArray(actual[i], expected[i]);
-    } else if (actual[i] instanceof Object && expected[i] instanceof Object) {
+    else if (actual[i] instanceof Object && expected[i] instanceof Object)
       expectObject(actual[i], expected[i]);
-    } else if (actual[i] != expected[i]) { 
-      throw new Error(`Expected ${expected[i]} at position ${i}, got ${actual[i]}`);   
-    }
+    else if (actual[i] != expected[i])
+      throw new Error(`Expected ${expected[i]} at position ${i}, got ${actual[i]}`);
   }
 }
 
@@ -133,8 +137,8 @@ export function after(after: () => Promise<void>): void {
 }
 
 
-export async function runTests(options?: {category?: string, test?: string}) {
-  let results: { category?: string, name?: string, success: boolean, result: string}[] = [];
+export async function runTests(options?: { category?: string, test?: string }) {
+  const results: { category?: string, name?: string, success: boolean, result: string }[] = [];
 
   for (const [key, value] of Object.entries(tests)) {
     if (options?.category != undefined) {
@@ -147,13 +151,12 @@ export async function runTests(options?: {category?: string, test?: string}) {
     } catch (x: any) {
       value.beforeStatus = x.toString();
     }
-    let t = value.tests ?? [];
-    let res = [];
-    for(let i = 0; i < t.length; i++) {
+    const t = value.tests ?? [];
+    const res = [];
+    for (let i = 0; i < t.length; i++)
       res.push(await execTest(t[i], options?.test));
-    }
 
-    let data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
+    const data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
     try {
       if (value.after)
         await value.after();
@@ -187,5 +190,5 @@ async function execTest(t: Test, predicate: string | undefined) {
 
 /** Waits [ms] milliseconds */
 export async function delay(ms: number) {
-  await new Promise(r => setTimeout(r, ms));
+  await new Promise((r) => setTimeout(r, ms));
 }

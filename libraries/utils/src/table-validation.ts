@@ -1,7 +1,7 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from "datagrok-api/dg";
+import * as DG from 'datagrok-api/dg';
 
 interface Rule {
   column: string;
@@ -16,7 +16,7 @@ interface RuleSet {
 }
 
 // @ts-ignore
-let ruleSet: RuleSet = {
+const ruleSet: RuleSet = {
   name: 'SDTM DM rules',
   rules: [
     {
@@ -43,25 +43,26 @@ let ruleSet: RuleSet = {
 };
 
 /** Returns error message, or null if valid. */
-function validateCell(cell: any, ruleset: RuleSet) : string | null {
-  let name = cell.column.name.toLowerCase();
+function validateCell(cell: any, ruleset: RuleSet): string | null {
+  const name = cell.column.name.toLowerCase();
 
-  for (let rule of ruleset.rules)
+  for (const rule of ruleset.rules) {
     if (rule.column == name) {
       rule.matcher = rule.matcher ?? DG.ValueMatcher.forColumn(cell.column, rule.pattern);
-      let error = rule.matcher.validate(cell.value);
+      const error = rule.matcher.validate(cell.value);
       if (error !== null)
         return error;
     }
+  }
 
   return null;
 }
 
-function main() : void {
+function main(): void {
   console.log('foo');
 }
 
-let cell = {column: { name: 'age' }, value: 999 };
+const cell = {column: {name: 'age'}, value: 999};
 validateCell(cell, ruleSet);
 
 console.log('ddd');
