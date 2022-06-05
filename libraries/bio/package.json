@@ -8,7 +8,7 @@
   "version": "2.0.0",
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/utils": ">=0.0.22",
+    "@datagrok-libraries/utils": "^0.4.2",
     "@types/wu": "latest",
     "cash-dom": "latest",
     "datagrok-api": "^1.1.5",
