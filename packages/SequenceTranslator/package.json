@@ -13,7 +13,7 @@
     "@types/react": "latest",
     "datagrok-api": "^1.0.0",
     "datagrok-tools": "^4.1.2",
-    "npm": "^7.11.2",
+    "npm": "^8.11.0",
     "save-svg-as-png": "^1.4.17",
     "ts-loader": "latest",
     "typescript": "latest",
