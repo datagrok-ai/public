@@ -12,6 +12,7 @@ import * as utils from './utils';
 import $ from 'cash-dom';
 import { _package } from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+import { getDescriptorsSingle } from '../descriptors/descriptors-calculation';
 
 
 category('Chem: Widgets', async () => {
@@ -22,7 +23,7 @@ category('Chem: Widgets', async () => {
     await chemCommonRdKit.initRdKitModuleLocal();
   });
 
-  //Test smiles, mol2000, mol3000; Check results for testing example
+  //TODO: Test mol2000, mol3000
   test('drug-likeness', async () => {
     const dl = assessDruglikeness(molStr);
     const expectedDescription = await utils.loadFileAsText('tests/drug-likeness.json');
@@ -33,7 +34,7 @@ category('Chem: Widgets', async () => {
     drugLikenessWidget(molStr);
   });
 
-  //Test smiles, mol2000, mol3000; Check results for testing example
+  //TODO: Test mol2000, mol3000
   test('identifiers', async () => {
     const idMap = await getIdMap(molStr);
     const expectedIdMap = await utils.loadFileAsText('tests/identifiers.json');
@@ -42,7 +43,7 @@ category('Chem: Widgets', async () => {
     await identifiersWidget(molStr);
   });
 
-  // Test smiles, mol2000, mol3000; Compare with existing mol string; Test copy feature
+  //TODO: Test mol2000, mol3000
   test('molfile', async () => {
     const expectedStr = (await utils.loadFileAsText('tests/molfile.sdf')).replaceAll('\r', '').trim();
     const panelElements = getPanelElements(molStr);
@@ -56,7 +57,7 @@ category('Chem: Widgets', async () => {
     molfileWidget(molStr);
   });
 
-  //Test smiles, mol2000, mol3000;Compare the calculated values
+  //TODO: Test mol2000, mol3000;
   test('properties', async () => {
     const propertiesMap = getPropertiesMap(molStr);
     const expectedPropertiesMap = await utils.loadFileAsText('tests/properties.json');
@@ -65,7 +66,7 @@ category('Chem: Widgets', async () => {
     propertiesWidget(molStr);
   });
 
-  //Test smiles, mol2000, mol3000; Compare the found substructures; Visual test required
+  //TODO: Test mol2000, mol3000; Visual test required; Unstable
   test('structural-alerts', async () => {
     const structuralAlerts = await getStructuralAlerts(molStr);
     const expectedStructuralAlerts = [1029, 1229];
@@ -76,17 +77,17 @@ category('Chem: Widgets', async () => {
     await structuralAlertsWidget(molStr);
   });
 
-  //Test smiles, mol2000, mol3000; Check if image is returned; Visual test required
+  //TODO: Test mol2000, mol3000; Check if image is returned; Visual test required
   test('structure-2d', async () => {
     await grok.functions.call('structure2d', {smiles: molStr});
   });
 
-  //Test smiles, mol2000, mol3000; Visual test required
+  //TODO: Test mol2000, mol3000; Visual test required
   test('structure-3d', async () => {
     await grok.functions.call('structure3d', {smiles: molStr});
   });
 
-  //Test smiles, mol2000, mol3000; Check results for testing example
+  //TODO: Test mol2000, mol3000
   test('toxicity', async () => {
     const risks = getRisks(molStr);
     const expectedRisks = {
@@ -100,6 +101,7 @@ category('Chem: Widgets', async () => {
     toxicityWidget(molStr);
   });
 
+  //TODO: Test smiles, mol2000, mol3000;
   test('substructure-filter-manual', async () => {
     const df = grok.data.demo.molecules(1000);
     await grok.data.detectSemanticTypes(df);
@@ -119,6 +121,7 @@ category('Chem: Widgets', async () => {
       .show();
   });
 
+  //TODO: fix, Test smiles, mol2000, mol3000;
   test('substructure-filter-panel', async () => {
     const df = DG.DataFrame.fromColumns([grok.data.demo.molecules(1000).columns.byIndex(0)]);
     const view = grok.shell.addTableView(df);
@@ -155,8 +158,14 @@ category('Chem: Widgets', async () => {
     expect(df.filter.trueCount, 700);
   });
 
+  //TODO: Test mol2000, mol3000;
   test('gasteiger-partion-charges', async () => {
     const parameters = {mol: molStr, contours: 10};
     await grok.functions.call('Chem:GasteigerPartialCharges', parameters);
+  });
+
+  //TODO: Test mol2000, mol3000; Compare the calculated values
+  test('chem-descriptors', async () => {
+    getDescriptorsSingle(molStr);
   });
 });
