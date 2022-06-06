@@ -35,11 +35,11 @@ export async function drugBankSimilaritySearchPanel(mol: string) {
 //connection: DrugBank
 //input: string id
 //output: string smiles { semType: Molecule }
-export async function drugNameMolecule(id:string){
-  const drug_name = id.slice(3);
-  for (var i = 0; i < dbdf.rowCount; i++){
-    if (dbdf.get('SYNONYMS', i).toLowerCase().includes(drug_name)){
-      return  dbdf.get('Smiles', i);
+export async function drugNameMolecule(id: string) {
+  const drugName = id.slice(3);
+  for (var i = 0; i < dbdf.rowCount; i++) {
+    if (dbdf.get('SYNONYMS', i).toLowerCase().includes(drugName)) {
+      return dbdf.get('Smiles', i);
     }
   }
 }
