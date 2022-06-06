@@ -1,4 +1,4 @@
-import {toJs} from "./wrappers";
+import {toJs} from './wrappers';
 
 let api = <any>window;
 
@@ -95,4 +95,18 @@ export abstract class FormulaLinesHelper {
   static setDefaults(item: FormulaLine): FormulaLine { return toJs(api.grok_FormulaLineHelper_SetDefaultParams(item)); }
 
   static getMeta(item: FormulaLine): FormulaLineMeta { return toJs(api.grok_FormulaLineHelper_GetMeta(item)); }
+}
+
+export class StringUtils {
+  public static hashCode(s: string): number {
+    let hash: number = 0;
+    if (s.length === 0)
+      return hash;
+    for (let i: number = 0; i < s.length; i++) {
+      const chr: number = s.charCodeAt(i);
+      hash = ((hash << 5) - hash) + chr;
+      hash |= 0; // Convert to 32bit integer
+    }
+    return hash;
+  }
 }
