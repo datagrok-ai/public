@@ -15,34 +15,6 @@ category('chem', () => {
       _testSearchSubstructureSARSmall);
   });
 
-  test('testDetector', async () => {
-    const df = DG.DataFrame.fromCsv(await loadFileAsText('sar-small.csv'));
-    await grok.data.detectSemanticTypes(df);
-    expect(df.columns.byName('smiles').semType, DG.SEMTYPE.MOLECULE);
-
-    const df2 = DG.DataFrame.fromCsv(`smiles
-      O=C1CN=C(c2ccccc2N1)C3CCCCC3
-      CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
-      CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
-      CC(C)CCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
-      O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
-      O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
-      CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
-    await grok.data.detectSemanticTypes(df2);
-    expect(df2.columns.byName('smiles').semType, DG.SEMTYPE.MOLECULE);
-
-    const df3 = DG.DataFrame.fromCsv(`smiles
-      O=C1CN=C(c2ccccc2N1)C3CCCCC3
-      CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
-      not a smiles molecule
-      CC(C)CCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
-      O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
-      O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
-      CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
-    await grok.data.detectSemanticTypes(df3);
-    expect(df3.columns.byName('smiles').semType, null);
-  });
-
   //Number of molecules is smaller than a number of threads
   test('searchSustructure.5_rows', async () => {
     const targetSmiles = [
