@@ -60,7 +60,9 @@ export function installPinnedColumns(grid : DG.Grid) : void {
 
   for(let n=0;n<arColsToPin.length; ++n) {
     colGrid = arColsToPin[n];
-    new PinnedColumn(colGrid);
+    if(isPinnableColumn(colGrid)) {
+      new PinnedColumn(colGrid);
+    }
   }
 }
 
