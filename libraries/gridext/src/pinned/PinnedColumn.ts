@@ -116,7 +116,7 @@ export class PinnedColumn {
 
   private m_colGrid : DG.GridColumn | null;
   private m_root : HTMLCanvasElement | null;
-  private m_observerResize : ResizeObserver | null;
+  //private m_observerResize : ResizeObserver | null;
   private m_observerResizeGrid : ResizeObserver | null;
   private m_handlerVScroll : any;
   private m_handlerRowsFiltering : any;
@@ -191,16 +191,17 @@ export class PinnedColumn {
 
 
     //OnResize Row header
-    const headerThis = this;
+    const headerThis = this;/*
     this.m_observerResize = new ResizeObserver(entries => {
-      const g = eCanvasThis.getContext('2d');
+      const g = headerThis.m_root.getContext('2d');
       for (let entry of entries) {
         headerThis.paint(g, grid);
       }
     });
 
-    this.m_observerResize.observe(eCanvasThis);
 
+
+    this.m_observerResize.observe(headerThis.m_root);*/
 
     //OnResize Row header
     this.m_observerResizeGrid = new ResizeObserver(entries => {
@@ -209,6 +210,14 @@ export class PinnedColumn {
       if(!bCurrent)
         return;
 
+      //eCanvasThis.style.height = grid.root.style.height;
+/*
+      const eCanvasNew = ui.canvas(nW, grid.root.offsetHeight);
+      if(headerThis.m_root.parentNode !== null) {
+        headerThis.m_root.parentNode.replaceChild(eCanvasNew, headerThis.m_root);
+        headerThis.m_root = eCanvasNew;
+      }*/
+      //headerThis.m_root.height = grid.root.offsetHeight;
       const g = eCanvasThis.getContext('2d');
       for (let entry of entries) {
         headerThis.paint(g, grid);
@@ -282,9 +291,7 @@ export class PinnedColumn {
 
       let nRowGrid = bAddToSel ? -1 : PinnedColumn.hitTestRows(eCanvasThis, grid, eMouse, true, undefined);
       if (nRowGrid >= 0) {
-        const options : any = grid.getOptions(true);
-        const nHRows = options.look.rowHeight;
-
+        const nHRows = GridUtils.getGridRowHeight(grid);
         nResizeRowGridDragging = nRowGrid;
         nYResizeDraggingAnchor = eMouse.clientY;
         nHResizeRowsBeforeDrag = nHRows;
@@ -553,12 +560,12 @@ export class PinnedColumn {
       this.m_observerResizeGrid.disconnect();
       this.m_observerResizeGrid = null;
     }
-
+/*my changes
     if(this.m_observerResize !== null) {
       this.m_observerResize.disconnect();
       this.m_observerResize = null;
     }
-
+    */
     this.m_handlerVScroll.unsubscribe();
     this.m_handlerVScroll = null;
 
@@ -652,9 +659,10 @@ export class PinnedColumn {
     }
     const dframe = grid.dataFrame;
     const nW = this.m_root.offsetWidth;
+    const nH = this.m_root.offsetHeight;
 
     g.fillStyle = "white";
-    g.fillRect(0,0, this.m_root.offsetWidth, this.m_root.offsetHeight);
+    g.fillRect(0,0, nW, nH);
 
     if(this.m_colGrid.name === null)
       return;
@@ -663,9 +671,10 @@ export class PinnedColumn {
     if(bitsetFilter.falseCount === dframe.rowCount)
       return;
 
-
+    const options : any = grid.getOptions(true);
+    g.font = options.colHeaderFont == null || options.colHeaderFont === undefined ? "bold 13px Roboto, Roboto Local" : options.colHeaderFont;
     let str = TextUtils.trimText(this.m_colGrid.name, g, nW);
-    g.font = "bold 13px Roboto, Roboto Local";
+
     const tm = g.measureText(str);
     const nWLabel = tm.width;
 
@@ -675,13 +684,13 @@ export class PinnedColumn {
 
     let nX = 0;
     let nY = 0;
-    const nH = GridUtils.getGridColumnHeaderHeight(grid);
+    const nHCH = GridUtils.getGridColumnHeaderHeight(grid);
     g.translate(0,0);
     g.textAlign = 'start';
     g.fillStyle = "Black";
     const nXX = nX + ((nW - nWLabel) >> 1);
-    const nYY = nY + nH-2;
-    //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nH);
+    const nYY = nY + nHCH-2;
+    //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nHCH);
     g.fillText(str, nXX, nYY);
 
 
@@ -695,9 +704,9 @@ export class PinnedColumn {
     const nRowMin = Math.floor(scrollV.min);
     let nRowMax = Math.ceil(scrollV.max);
 
-    let nHH = grid.root.offsetHeight - nH;//GridUtils.getColumnHeaderHeight(grid);//.style.height;
+    let nHH = grid.root.offsetHeight - nHCH;//GridUtils.getColumnHeaderHeight(grid);//.style.height;
     const nHRow = GridUtils.getGridRowHeight(grid);
-    let nRCount = Math.round(nHH/nHRow) +1;
+    const nRCount = Math.round(nHH/nHRow) +1;
     nRowMax = nRowMin + nRCount;
 
     if(nRowMax >= nGridRowCount)
@@ -705,7 +714,7 @@ export class PinnedColumn {
 
     //console.log(nRowMin + " " + nRowMax);
 
-    const nYOffset = nH;//GridUtils.getColumnHeaderHeight(grid);
+    const nYOffset = nHCH;//GridUtils.getColumnHeaderHeight(grid);
     const nHRowGrid = nHRow;//GridUtils.getRowHeight(grid);
     let cellRH = null;
 
@@ -733,17 +742,20 @@ export class PinnedColumn {
         renderer = cellRH.renderer;
       }
 
-      try{renderer.render(g, 0, nY, nW, nHRowGrid, cellRH, cellRH.style);}
-      catch(e) {
-        throw e;
+
+      if(nW > 0 && nHRowGrid > 0) { //to address a bug caused either DG or client app
+        try {
+         renderer.render(g, 0, nY, nW, nHRowGrid, cellRH, cellRH.style);
+        } catch(e) {
+           throw e;
+        }
       }
 
-      const options : any = grid.getOptions(true);
       if(options.look.showRowGridlines) {
         g.strokeStyle = "Gainsboro";
         g.beginPath();
         g.moveTo(0, nY + nHRowGrid);
-        g.lineTo(this.m_root.offsetWidth - 1, nY + nHRowGrid);
+        g.lineTo(nW - 1, nY + nHRowGrid);
         g.stroke();
       }
 
