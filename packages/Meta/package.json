@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "description": "Meta information for @datagrok scope",
   "dependencies": {
     "@babel/runtime": "^7.16.0",
@@ -1024,7 +1024,10 @@
     "molecular-liability-browser": {
       "dependencies": {
         "0.0.8": {},
-        "0.0.7": {}
+        "0.0.7": {},
+        "0.0.9": {
+          "datagrok-api": "^1.1.5"
+        }
       },
       "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
     },
