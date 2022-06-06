@@ -7,13 +7,16 @@ import {PeptidesModel} from '../model';
 export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widget> {
   const model = await PeptidesModel.getInstance(table);
   const substInfo = model.substitutionsInfo;
-  const currentCell = model.getCurrentAARandPos();
+  // const currentCell = model.getCurrentAARandPos();
+  const currentCell = model.currentSelection;
+  const pos = Object.keys(currentCell)[0];
+  const aar = Object.values(currentCell)[0][0];
 
   if (currentCell.aar === currentCell.pos)
     return new DG.Widget(ui.label('No substitution table generated'));
 
   const substitutionsMap =
-    substInfo.get(currentCell.aar)?.get(currentCell.pos) as Map<number, type.UTypedArray> | undefined;
+    substInfo.get(aar)?.get(pos) as Map<number, type.UTypedArray> | undefined;
   if (typeof substitutionsMap === 'undefined')
     return new DG.Widget(ui.label('No substitution table generated'));
 
@@ -24,7 +27,7 @@ export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widge
   // const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const alignedSeqCol = table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
   const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
-  const posCol = table.getCol(currentCell.pos);
+  const posCol = table.getCol(pos);
   for (const [referenceIdx, indexArray] of substitutionsMap.entries()) {
     const baseSequence = alignedSeqCol.get(referenceIdx);
     const baseActivity = activityScaledCol.get(referenceIdx);

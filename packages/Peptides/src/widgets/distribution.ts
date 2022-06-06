@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {FilteringStatistics} from '../utils/filtering-statistics';
+import * as type from '../utils/types';
 
 export function getDistributionPlot(df: DG.DataFrame, valueCol: string, splitCol: string): DG.Viewer {
   return df.plot.histogram({
@@ -21,11 +22,22 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   const splitCol = table.col(C.COLUMNS_NAMES.SPLIT_COL);
   if (!splitCol)
     return new DG.Widget(ui.divText('No distribution'));
-  let [aarStr, otherStr] = splitCol.categories;
-  if (typeof otherStr === 'undefined')
-    [aarStr, otherStr] = [otherStr, aarStr];
-  const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, aarStr));
-  const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, otherStr));
+  // let [aarStr, otherStr] = splitCol.categories;
+  // if (typeof otherStr === 'undefined')
+  //   [aarStr, otherStr] = [otherStr, aarStr];
+  // const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, aarStr));
+  // const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, otherStr));
+  const selectionObject: type.SelectionObject = JSON.parse(table.tags[C.TAGS.SELECTION]);
+  const keys = Object.keys(selectionObject);
+  const currentColor = DG.Color.toHtml(DG.Color.orange);
+  const otherColor = DG.Color.toHtml(DG.Color.blue);
+  let aarStr = 'All';
+  let otherStr = ''
+  if (keys.length) {
+    const key0 = keys[0];
+    aarStr = `${key0}: ${selectionObject[key0][0]}`;
+    otherStr = 'Other';
+  }
 
   const currentLabel = ui.label(aarStr, {style: {color: currentColor}});
   const otherLabel = ui.label(otherStr, {style: {color: otherColor}});

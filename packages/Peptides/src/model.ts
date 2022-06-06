@@ -41,12 +41,14 @@ export class PeptidesModel {
   _sarVGrid!: DG.Grid;
   _sourceGrid!: DG.Grid;
   _dataFrame: DG.DataFrame;
-  splitCol!: DG.Column;
+  splitCol!: DG.Column<boolean>;
   stackedBarchart!: StackedBarChart;
 
   substitutionsInfo: type.SubstitutionsInfo = new Map();
   isInitialized: boolean = false;
   currentView!: DG.TableView;
+
+  _currentSelection!: type.SelectionObject;
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
@@ -74,6 +76,14 @@ export class PeptidesModel {
   get onSARVGridChanged(): Observable<DG.Grid> {return this._sarVGridSubject.asObservable();}
 
   get onSubstTableChanged(): Observable<type.SubstitutionsInfo> {return this._substitutionTableSubject.asObservable();}
+
+  get currentSelection(): type.SelectionObject {
+    return this._currentSelection ?? JSON.parse(this._dataFrame.tags[C.TAGS.SELECTION]) ?? {};
+  }
+  set currentSelection(selection: type.SelectionObject) {
+    this._currentSelection = selection;
+    this._dataFrame.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
+  }
 
   updateProperties(): void {
     this._activityScaling = this._dataFrame.tags['scaling'];
@@ -221,14 +231,17 @@ export class PeptidesModel {
 
     this.setInteractionCallback();
 
-    this.modifyOrCreateSplitCol(C.CATEGORIES.ALL, C.CATEGORIES.ALL);
+    // this.modifyOrCreateSplitCol(C.CATEGORIES.ALL, C.CATEGORIES.ALL);
+    this.modifyOrCreateSplitCol('', '');
 
     this.setBitsetCallback();
 
     this.postProcessGrids(this._sourceGrid, invalidIndexes, sarGrid, sarVGrid);
 
-    const currentAAR = this._dataFrame.tags[C.TAGS.AAR];
-    const currentPos = this._dataFrame.tags[C.TAGS.POSITION];
+    // const currentAAR = this._dataFrame.tags[C.TAGS.AAR];
+    // const currentPos = this._dataFrame.tags[C.TAGS.POSITION];
+    const [currentPos, currentAAR] =
+      Object.entries(this.currentSelection)[0]?.map(v => v instanceof Array ? v[0] : v) ?? ['', ''];
     if (currentAAR !== currentPos) {
       const sarDf = sarGrid.dataFrame;
       const rowCount = sarDf.rowCount;
@@ -660,15 +673,19 @@ export class PeptidesModel {
       if (!sarDf.currentCol || (!sarDf.currentCell.value && !isNegativeRowIndex))
         return;
       this.syncGrids(false, sarDf, sarVDf);
-      let aar: string = C.CATEGORIES.ALL;
-      let position: string = C.CATEGORIES.ALL;
-      if (!isNegativeRowIndex) {
+      let aar: string = '';// C.CATEGORIES.ALL;
+      let position: string = '';// C.CATEGORIES.ALL;
+      // if (!isNegativeRowIndex) {
+      //   [aar, position] = getAARandPosition();
+      //   // this._dataFrame.tags[C.TAGS.AAR] = aar;
+      //   // this._dataFrame.tags[C.TAGS.POSITION] = position;
+      //   this.setCurrentSelectionSingle(aar, position);
+      // } else
+      //   // this._dataFrame.tags[C.TAGS.AAR] = this._dataFrame.tags[C.TAGS.POSITION] = '';
+      if (!isNegativeRowIndex)
         [aar, position] = getAARandPosition();
-        this._dataFrame.tags[C.TAGS.AAR] = aar;
-        this._dataFrame.tags[C.TAGS.POSITION] = position;
-      } else
-        this._dataFrame.tags[C.TAGS.AAR] = this._dataFrame.tags[C.TAGS.POSITION] = '';
 
+      this.setCurrentSelectionSingle(aar, position);
       this.modifyOrCreateSplitCol(aar, position);
       this.fireBitsetChanged();
       this.invalidateGrids();
@@ -680,6 +697,14 @@ export class PeptidesModel {
         return;
       this.syncGrids(true, sarDf, sarVDf);
     });
+  }
+
+  setCurrentSelectionSingle(aar: string, position: string): type.SelectionObject {
+    const tempSelectionObject: type.SelectionObject = {};
+    if (aar != position)
+      tempSelectionObject[aar] = [position];
+    this.currentSelection = tempSelectionObject;
+    return this.currentSelection;
   }
 
   invalidateGrids(): void {
@@ -698,10 +723,11 @@ export class PeptidesModel {
 
     const changeBitset = (currentBitset: DG.BitSet, previousBitset: DG.BitSet): void => {
       previousBitset.setAll(!this._filterMode, false);
-      currentBitset.init((i) => {
-        const currentCategory = this.splitCol.get(i);
-        return currentCategory !== C.CATEGORIES.OTHER && currentCategory !== C.CATEGORIES.ALL;
-      }, false);
+      // currentBitset.init((i) => {
+      //   const currentCategory = this.splitCol.get(i);
+      //   return currentCategory !== C.CATEGORIES.OTHER && currentCategory !== C.CATEGORIES.ALL;
+      // }, false);
+      currentBitset.init(i => this.splitCol.get(i), false);
     };
 
     const recalculateStatistics =
@@ -805,24 +831,27 @@ export class PeptidesModel {
 
   modifyOrCreateSplitCol(aar: string, position: string): void {
     const df = this._dataFrame;
-    this.splitCol = df.col(C.COLUMNS_NAMES.SPLIT_COL) ?? df.columns.addNew(C.COLUMNS_NAMES.SPLIT_COL, 'string');
+    this.splitCol = df.col(C.COLUMNS_NAMES.SPLIT_COL) ?? df.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
 
-    if (aar === C.CATEGORIES.ALL && position === C.CATEGORIES.ALL) {
-      this.splitCol.init(() => C.CATEGORIES.ALL);
+    if (aar == position) {
+      this.splitCol.init(() => true);
       return;
     }
 
-    const aarLabel = `${aar === '-' ? 'Gap' : aar} : ${position}`;
-    this.splitCol.init((i) => this.getSplitColValueAt(i, aar, position, aarLabel));
+    // const aarLabel = `${aar === '-' ? 'Gap' : aar} : ${position}`;
+    // this.splitCol.init((i) => this.getSplitColValueAt(i, aar, position, aarLabel));
+    const posCol: DG.Column<string> = this._dataFrame.getCol(position);
+    this.splitCol.init(i => posCol.get(i) == aar);
 
-    this.splitCol.setCategoryOrder([aarLabel]);
+    // this.splitCol.setCategoryOrder([aarLabel]);
+    this.splitCol.setCategoryOrder(['true']);
     this.splitCol.compact();
 
-    const colorMap: {[index: string]: string | number} = {};
+    // const colorMap: {[index: string]: string | number} = {};
 
-    colorMap[C.CATEGORIES.OTHER] = DG.Color.blue;
-    colorMap[aarLabel] = DG.Color.orange;
-    this.splitCol.colors.setCategorical(colorMap);
+    // colorMap[C.CATEGORIES.OTHER] = DG.Color.blue;
+    // colorMap[aarLabel] = DG.Color.orange;
+    // this.splitCol.colors.setCategorical(colorMap);
   }
 
   static async scaleActivity(
@@ -921,9 +950,9 @@ export class PeptidesModel {
     ];
   }
 
-  getCurrentAARandPos(): {aar: string, pos: string} {
-    return {aar: this._dataFrame.getTag(C.TAGS.AAR) ?? 'All', pos: this._dataFrame.getTag(C.TAGS.POSITION) ?? 'All'};
-  }
+  // getCurrentAARandPos(): {aar: string, pos: string} {
+  //   return {aar: this._dataFrame.getTag(C.TAGS.AAR) ?? 'All', pos: this._dataFrame.getTag(C.TAGS.POSITION) ?? 'All'};
+  // }
 
   syncProperties(isSourceSAR = true): void {
     const sarViewer = this._dataFrame.temp['sarViewer'];
