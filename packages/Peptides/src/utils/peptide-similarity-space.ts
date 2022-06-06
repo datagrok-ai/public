@@ -7,6 +7,7 @@ import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encod
 import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {
   createDimensinalityReducingWorker,
+  IReduceDimensionalityResult
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
@@ -46,9 +47,10 @@ export async function createPeptideSimilaritySpaceViewer(
   col ??= table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
   const columnData = col.toList().map((v) => AlignedSequenceEncoder.clean(v));
 
-  const embcols = await createDimensinalityReducingWorker(
+  const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(
     {data: columnData, metric: measure as StringMetrics}, method, {cycles: cyclesCount});
 
+  const embcols = reduceDimRes.embedding;
   const columns = Array.from(
     embcols as Coordinates, (v: Float32Array, k) => DG.Column.fromFloat32Array(axesNames[k], v));
 
