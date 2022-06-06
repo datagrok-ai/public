@@ -4,7 +4,7 @@
     "access": "public"
   },
   "fullName": "DG Grid Extensions",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "description": "DG Grid Extensions",
   "dependencies": {
     "@types/node": "^14.14.37",
