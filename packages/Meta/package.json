@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "Meta information for @datagrok scope",
   "dependencies": {
     "@babel/runtime": "^7.16.0",
@@ -396,6 +396,9 @@
         },
         "0.8.14": {
           "datagrok-api": "^0.148.6"
+        },
+        "0.8.15": {
+          "datagrok-api": "^1.0.0"
         }
       },
       "description": "Provides advanced tools for analyzing collections of peptides."
