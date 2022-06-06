@@ -2,7 +2,7 @@
   "name": "@datagrok/bio",
   "beta": false,
   "friendlyName": "Bio",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
   "repository": {
     "type": "git",
@@ -10,7 +10,8 @@
     "directory": "packages/Bio"
   },
   "dependencies": {
-    "@datagrok-libraries/bio": "^1.0.2",
+    "@datagrok-libraries/bio": "^2.0.1",
+    "@datagrok-libraries/utils": "^0.4.2",
     "cash-dom": "latest",
     "datagrok-api": "^1.1.5",
     "dayjs": "latest",
@@ -18,10 +19,15 @@
     "typescript": "^4.4.2"
   },
   "devDependencies": {
+    "@types/jest": "^27.0.0",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
     "eslint-config-google": "latest",
+    "jest": "^27.0.0",
+    "jest-html-reporter": "^3.5.0",
+    "puppeteer": "latest",
+    "ts-jest": "^27.0.0",
     "webpack": "latest",
     "webpack-cli": "latest"
   },
@@ -39,7 +45,9 @@
     "debug-sequences1-local": "grok publish local --rebuild",
     "release-sequences1-local": "grok publish local --rebuild --release",
     "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix",
+    "test": "jest",
+    "test-local": "set HOST=localhost && jest"
   },
   "canEdit": [
     "Developers"
