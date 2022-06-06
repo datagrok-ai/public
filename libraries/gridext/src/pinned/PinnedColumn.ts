@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as GridUtils from '../utils/GridUtils';
 import * as TextUtils from '../utils/TextUtils';
+import {ColorUtils} from '../utils/ColorUtils';
 import * as rxjs from 'rxjs';
 import { GridCellRendererEx} from "../renderer/GridCellRendererEx";
 import * as PinnedUtils from "./PinnedUtils";
@@ -110,8 +111,8 @@ export class PinnedColumn {
 
   private static MIN_ROW_HEIGHT = 20;
   private static MAX_ROW_HEIGHT = 500;
-  private static SELECTION_COLOR = DG.Color.toRgb(DG.Color.colSelection);// "rgba(237, 220, 88, 0.15)";
-  private static ACTIVE_CELL_COLOR = DG.Color.toRgb(DG.Color.currentRow);// "rgba(153, 237, 82, 0.35)";
+  private static SELECTION_COLOR = ColorUtils.toRgb(ColorUtils.colSelection); //"rgba(237, 220, 88, 0.15)";
+  private static ACTIVE_CELL_COLOR = ColorUtils.toRgb(ColorUtils.currentRow); //"rgba(153, 237, 82, 0.25)";
   private static Y_RESIZE_SENSITIVITY = 2;
 
   private m_colGrid : DG.GridColumn | null;
