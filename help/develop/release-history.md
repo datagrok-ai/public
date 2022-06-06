@@ -1,6 +1,51 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-06 Dev build 1.1.7
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.1.7`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Closes #654: Chem: ability to import mol files V3000 
+* Closes #640: How to switch Structure Search to categorical filter 
+* Code cleanup. 
+* Closes #637: [Filter Panel] \- the history of Structure Search fields 
+* #604: Chem: "Use as Substructure Filter" action for molecules \- WIP 
+* Ability to specify actions for semantic types as JS functions 
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules 
+* Dockerfile datagrok multiarch 
+* The modification of the formula is not propagated to other calculated columns #666 
+* Buildx Docker images 
+* Docker buildx multiplatform 
+* Heatmap: add max columns property instead of hardcoded value 
+* Fix buildx script 
+* Resolves #669 JS API: add View.temp object to store auxiliary information 
+* Docker Buildx disable cache 
+* Docker Buildx multiplatform: one platform at a time 
+* Docker datagrok new image 
+* Docker buildx scan images 
+* Docker buildx log the tar archive 
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- plenty of fixes and improvements 
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- progress indicator, better interactivity 
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- CSS improvements 
+* Docker Buildx cache push by flag 
+* JS API: grok.dapi.groups.getGroupsLookup 
+* Closes #681: Friendly names for columns 
+* Added a beta user 
+* Do not tag latest without push 
+* Datagrok elasticsearch configuration 
+* Fixing issues with drugNameMolecule function 
+* Issue #673: InChi-based sketcher structure query integration 
+* Chem: filtering using Ketcher sketcher 
+
+
 # 2022-05-27 Dev build 1.1.5
 
 ## Latest Docker Images
