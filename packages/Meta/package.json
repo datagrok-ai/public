@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Meta information for @datagrok scope",
   "dependencies": {
     "@babel/runtime": "^7.16.0",
@@ -824,6 +824,9 @@
           "datagrok-api": "^1.1.5"
         },
         "1.0.2": {
+          "datagrok-api": "^1.1.5"
+        },
+        "1.0.3": {
           "datagrok-api": "^1.1.5"
         }
       },
