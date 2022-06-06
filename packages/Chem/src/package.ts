@@ -262,7 +262,8 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
       similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
   return new Promise<void>(async (resolve, _) => {
-    const embeddings = await chemSpace(smiles, methodName, similarityMetric, ['Embed_X', 'Embed_Y']);
+    const chemSpaceRes = await chemSpace(smiles, methodName, similarityMetric, ['Embed_X', 'Embed_Y']);
+    const embeddings = chemSpaceRes.coordinates;
     const cols = table.columns as DG.ColumnList;
     for (const col of embeddings)
       cols.add(col);
