@@ -757,12 +757,19 @@ export class PinnedColumn {
         renderer = cellRH.renderer;
       }
 
+      if(renderer === null || renderer === undefined) {
+        console.error("Could find renderer for pinned column " + this.m_colGrid.name + " row "  + nRG);
+        continue;
+      }
+
 
       if(nW > 0 && nHRowGrid > 0) { //to address a bug caused either DG or client app
         try {
          renderer.render(g, 0, nY, nW, nHRowGrid, cellRH, cellRH.style);
         } catch(e) {
-           throw e;
+          console.error("Could not paint cell for pinned column " + this.m_colGrid.name + " row "  + nRG);
+          continue;
+           //throw e;
         }
       }
 
