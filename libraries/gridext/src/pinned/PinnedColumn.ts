@@ -8,7 +8,7 @@ import * as rxjs from 'rxjs';
 import { GridCellRendererEx} from "../renderer/GridCellRendererEx";
 import * as PinnedUtils from "./PinnedUtils";
 import {TableView} from "datagrok-api/dg";
-
+/*
 const hSubscriber  = grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewLayout) => {
   const view : DG.TableView = layout.view as TableView;
   const itViewers = view.viewers;
@@ -24,7 +24,7 @@ const hSubscriber  = grok.events.onViewLayoutApplied.subscribe((layout : DG.View
     PinnedUtils.installPinnedColumns(viewer as DG.Grid);
   }
 });
-
+*/
 
 function getRenderer(cell : DG.GridCell) : GridCellRendererEx | DG.GridCellRenderer {
   const colGrid = cell.gridColumn;
@@ -123,6 +123,7 @@ export class PinnedColumn {
   private m_handlerRowsFiltering : any;
   private m_handlerCurrRow : any;
   private m_handlerSel : any;
+  //private m_handlerFilter : any;
   private m_handlerRowsResized : any;
   private m_handlerRowsSorted : any;
   private m_handlerMouseDown : any;
@@ -252,6 +253,14 @@ export class PinnedColumn {
         headerThis.paint(g, grid);
       }
     );
+
+/*
+    this.m_handlerFilter = dframe.onRowsFiltered.subscribe((e : any) => {
+        const g = eCanvasThis.getContext('2d');
+        headerThis.paint(g, grid);
+      }
+    );
+*/
 
     this.m_handlerRowsResized = grid.onRowsResized.subscribe((e : any) => {
         const g = eCanvasThis.getContext('2d');
