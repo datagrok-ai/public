@@ -356,9 +356,14 @@ export class Rect {
   }
 
   fit(width: number, height: number): Rect {
-    return width / height > this.width / this.height 
-      ? this.fromCenterSize(this.midX, this.midY, this.width, height * (this.width / width)) 
-      : this.fromCenterSize(this.midX, this.midY, width * (this.height / height), this.height) 
+    return width / height > this.width / this.height
+      ? this.fromCenterSize(this.midX, this.midY, this.width, height * (this.width / width))
+      : this.fromCenterSize(this.midX, this.midY, width * (this.height / height), this.height)
+  }
+
+  /** Checks if this Rect contains the point (x; y) inside */
+  contains(x: number, y: number): boolean {
+    return this.left <= x && x <= this.right && this.top <= y && y <= this.bottom;
   }
 }
 
