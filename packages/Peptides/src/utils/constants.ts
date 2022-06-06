@@ -18,6 +18,7 @@ export enum TAGS {
   AAR = 'AAR',
   POSITION = 'Pos',
   SEPARATOR = 'monomer-separator',
+  SELECTION = 'selection',
 }
 
 export enum SEM_TYPES {
