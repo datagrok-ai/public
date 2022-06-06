@@ -16,6 +16,11 @@ export function findPinnedColumnByRoot(eCanvas : HTMLCanvasElement, grid : DG.Gr
   return null;
 }
 
+export function addPinnedColumn(colGrid : DG.GridColumn) : PinnedColumn {
+  const colPinned = new PinnedColumn(colGrid);
+  return colPinned;
+}
+
 export function closeAllPinnedColumns(grid : DG.Grid) : void {
   const dart = DG.toDart(grid);
   let colPinned = null;
