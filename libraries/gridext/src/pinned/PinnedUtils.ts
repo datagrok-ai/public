@@ -88,6 +88,19 @@ export function isPinnableColumn(colGrid : DG.GridColumn) : boolean {
     return false;
   }
 
+  let grid : DG.Grid | null = colGrid.grid;
+  if(!(grid instanceof DG.Grid)) {
+    grid = GridUtils.getInstalledGridForColumn(colGrid);
+
+    if(!(grid instanceof DG.Grid)) {
+      return false;
+    }
+  }
+
+  if(grid.canvas.offsetWidth <= colGrid.width) {
+    return false;
+  }
+
   if(colGrid.cellType === "html") {
     const renderer = GridUtils.getGridColumnRenderer(colGrid);
     if(!(renderer instanceof GridCellRendererEx)) {

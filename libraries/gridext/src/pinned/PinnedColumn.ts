@@ -172,6 +172,9 @@ export class PinnedColumn {
     grid.canvas.style.left = (grid.canvas.offsetLeft + nW).toString() + "px";
     grid.overlay.style.left= (grid.overlay.offsetLeft + nW).toString() + "px";
 
+    grid.canvas.style.width = (grid.canvas.offsetWidth - nW).toString() + "px";
+    grid.overlay.style.width= (grid.overlay.offsetWidth - nW).toString() + "px";
+
     const eCanvasThis = ui.canvas(nW, 2500);
 
     if(grid.canvas.parentNode === null)
@@ -645,6 +648,8 @@ export class PinnedColumn {
 
     grid.canvas.style.left = (grid.canvas.offsetLeft - this.m_root.offsetWidth).toString() + "px";
     grid.overlay.style.left= (grid.overlay.offsetLeft - this.m_root.offsetWidth).toString() + "px";
+    grid.canvas.style.width = (grid.canvas.offsetWidth + this.m_root.offsetWidth).toString() + "px";
+    grid.overlay.style.width= (grid.overlay.offsetWidth + this.m_root.offsetWidth).toString() + "px";
 
     if(this.m_root.parentNode !== null)
      this.m_root.parentNode.removeChild(this.m_root);
