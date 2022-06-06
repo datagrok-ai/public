@@ -6,6 +6,7 @@ import * as chemSearches from '../chem-searches';
 import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {findMCS} from '../scripts-api';
 import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
+import { Matrix } from '@datagrok-libraries/utils/src/type-declarations';
 
 const options = {
   'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
@@ -38,7 +39,7 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
   const colNameInd = df.columns.names().filter((it) => it.includes(axes[0])).length + 1;
 
   const {distance, coordinates} = await chemSpace(smiles, methodName, 'Tanimoto',
-    axes.map((it) => `${it}_${colNameInd}`), (options as any)[methodName], true);
+    axes.map((it) => `${it}_${colNameInd}`), (options as any)[methodName]);
 
   for (const col of coordinates)
     df.columns.add(col);
@@ -320,7 +321,7 @@ async function getSimilaritiesMarix(dim: number, smiles: DG.Column, dfSmiles: DG
   return simArr;
 }
 
-function getSimilaritiesMarixFromDistances(dim: number, distances: [], simArr: DG.Column[])
+function getSimilaritiesMarixFromDistances(dim: number, distances: Matrix, simArr: DG.Column[])
   : DG.Column[] {
   for (let i = 0; i < dim - 1; ++i) {
     const similarityArr = [];
