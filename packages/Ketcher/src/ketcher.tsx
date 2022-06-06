@@ -15,8 +15,6 @@ let sketcherId = 0;
 
 export class KetcherSketcher extends grok.chem.SketcherBase {
   declare _ketcher: Ketcher;
-  declare _molFile: string;
-  declare _smiles: string;
 
   constructor() {
     super();
@@ -32,7 +30,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
       onInit: (ketcher: Ketcher) => {
         this._ketcher = ketcher;
-        (this._ketcher.editor as any).subscribe("change", (e: any) => {
+        (this._ketcher.editor as any).subscribe("change", async (e: any) => {
+          await this.setSmilesSmartsMolfile();
           this.onChanged.next(null);
         });
         this._ketcher.editor.zoom(0.5);
@@ -56,43 +55,13 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   async init() {
-    this._molFile = "";
     let id = `ketcher-${sketcherId++}`;
     this.root.id = id;
     this.onChanged.next(null);
   }
 
-
-  async getSmiles(): Promise<string> {
-    return await this._ketcher?.getSmiles();
-  }
-
-  setSmiles(smiles: string) {
-    this._smiles = smiles;
-      try {
-        this._ketcher?.setMolecule(smiles).then(() => {});
-      } catch (e) {
-        console.log(e);
-        return;
-      }
-  }
-
-  async getMolFile(): Promise<string> {
-    return await this._ketcher?.getMolfile();
-  }
-
-  setMolFile(molfile: string) {
-    this._molFile = molfile;
-    try {
-      this._ketcher?.setMolecule(molfile).then(() => {});
-    } catch (e) {
-      console.log(e);
-      return;
-    }
-  }
-
   get supportedExportFormats() {
-    return ["smiles", "mol"];
+    return ["smiles", "mol", "smarts"];
   }
 
   get smiles() {
@@ -103,6 +72,18 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.setSmiles(smiles);
   }
 
+  async getSmiles(): Promise<string> {
+    return await this._ketcher?.getSmiles();
+  }
+
+  async setSmiles(smiles: string) {
+    this.setKetcherMolecule(smiles);
+  }
+
+  async getMolFile(): Promise<string> {
+    return await this._ketcher?.getMolfile();
+  }
+
   get molFile() {
     return this._molFile;
   }
@@ -111,12 +92,39 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.setMolFile(molfile);
   }
 
-  async getSmarts(): Promise<string> {
-    return this.smiles;
+  async setMolFile(molfile: string) {
+    this.setKetcherMolecule(molfile);
   }
 
-  setSmarts(s: string) {
-    this.smiles = s;
+  get smarts() {
+    return this._smarts;
+  }
+
+  set smarts(smarts: string) {
+    this.setSmarts(smarts);
+  }
+
+  async getSmarts(): Promise<string> {
+    return this._smarts;
+  }
+
+  async setSmarts(smarts: string) {
+    this.setKetcherMolecule(smarts);
+  }
+
+  setKetcherMolecule(molecule: string) {
+    try {
+      this._ketcher?.setMolecule(molecule);
+    } catch (e) {
+      console.log(e);
+      return;
+    }
+  }
+
+  async setSmilesSmartsMolfile(){
+    this._smiles = await this.getSmiles();
+    this._molFile = await this.getMolFile();
+    this._smarts = await this.getSmarts();
   }
 
   detach() {
