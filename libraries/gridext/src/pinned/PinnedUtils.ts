@@ -52,7 +52,7 @@ export function installPinnedColumns(grid : DG.Grid) : void {
 
   arColsToPin.sort((colOne, colTwo) => {
     if(colOne.settings.idxPinned === colTwo.settings.idxPinned) {
-      throw new Error("Pinned indices cannot be equal for different columns");
+      return 0;//throw new Error("Pinned indices cannot be equal for different columns");
     }
 
     return colOne.settings.idxPinned < colTwo.settings.idxPinned ? -1 : 1;
