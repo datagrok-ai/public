@@ -1,3 +1,4 @@
+import { Matrix } from '@datagrok-libraries/utils/src/type-declarations';
 import {ValidTypes} from '../typed-metrics';
 
 /**
@@ -7,10 +8,15 @@ import {ValidTypes} from '../typed-metrics';
  * @param {string} method A method of dimensionality reduction.
  * @param options - key-value pairs
  * @param returnDistanceMatrix
- * @return {Promise<unknown>} Resulting embedding.
+ * @return {Promise<IReduceDimensionalityResult>} Resulting embedding and distance matrix.
  */
+export interface IReduceDimensionalityResult {
+  distance: Matrix;
+  embedding: Matrix;
+}
+
 export function createDimensinalityReducingWorker(dataMetric: ValidTypes, method: string,
-      options?: any, returnDistanceMatrix?: boolean): Promise<unknown> {
+      options?: any): Promise<IReduceDimensionalityResult> {
 
   return new Promise(function(resolve) {
     const worker = new Worker(new URL('./dimensionality-reducer', import.meta.url));
@@ -21,7 +27,7 @@ export function createDimensinalityReducingWorker(dataMetric: ValidTypes, method
       options: options,
     });
     worker.onmessage = ({data: {distance, embedding}}) => {
-      returnDistanceMatrix ? resolve({distance: distance, embedding: embedding}) : resolve(embedding);
+     resolve({distance: distance, embedding: embedding});
     };
   });
 }
