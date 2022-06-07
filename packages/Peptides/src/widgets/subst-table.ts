@@ -12,7 +12,7 @@ export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widge
   const pos = Object.keys(currentCell)[0];
   const aar = currentCell[pos][0];
 
-  if (currentCell.aar === currentCell.pos)
+  if (aar === pos)
     return new DG.Widget(ui.label('No substitution table generated'));
 
   const substitutionsMap =
