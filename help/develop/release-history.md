@@ -1,6 +1,23 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-07 Dev build 1.1.8
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.1.8`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Removed debug printout. 
+* Closes #576: Changing the order of values of categorical columns is not reflected in the filter panel 
+* Remove COMPOSE_PROFILES 
+
+
 # 2022-06-06 Dev build 1.1.7
 
 ## Latest Docker Images
