@@ -38,19 +38,12 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
     };
 
-    let host = ui.div([], { style: { width: "700px", height: "500px" } });
+    let host = ui.div([], { style: { width: "500px", height: "400px" } });
+    host.style.setProperty('overflow', 'hidden', 'important');
 
     let component = React.createElement(Editor, props, null);
     ReactDOM.render(component, host);
-    let sketcherConentDiv = document.querySelectorAll(
-      "div.ui-div > div.grok-sketcher.ui-box"
-    );
-    if (sketcherConentDiv[0]) {
-      sketcherConentDiv[0].setAttribute(
-        "style",
-        "width: fit-content; height: fit-content;"
-      );
-    }
+
     this.root.appendChild(host);
   }
 
