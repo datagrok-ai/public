@@ -53,7 +53,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return {molIdxToHash, hashToMolblock};
   }
 
-  searchSubstructure(queryMolString: string, querySmarts: string, patternFps: Uint8Array[]): string {
+  searchSubstructure(queryMolString: string, querySmarts: string, patternFps?: Uint8Array[]): string {
     const matches: number[] = [];
     if (this._rdKitMols) {
       try {
@@ -73,7 +73,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           if (queryMol && queryMol.is_valid()) {
             if (patternFps) {
               const fpRdKit = queryMol.get_pattern_fp_as_uint8array(this._patternFpLength);
-              checkEl: for (let i = 0; i < patternFps.length; ++i) {
+              checkEl:
+              for (let i = 0; i < patternFps.length; ++i) {
                 for (let j = 0; j < this._patternFpUint8Length; ++j)
                   if ((patternFps[i][j] & fpRdKit[j]) != fpRdKit[j])
                     continue checkEl;
