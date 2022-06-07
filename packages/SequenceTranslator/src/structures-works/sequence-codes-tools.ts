@@ -90,7 +90,7 @@ export function getFormat(sequence: string): string | null {
   return possibleSynthesizers[0];
 }
 
-export function isValidSequence(sequence: string, format: string): {
+export function isValidSequence(sequence: string, format: string | null): {
   indexOfFirstNotValidChar: number,
   synthesizer: string[] | null,
   technology: string[] | null
@@ -293,7 +293,7 @@ export function convertSequence(sequence: string, output: {
       GCRS: siRnaBioSpringToGcrs(sequence),
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.AXOLABS) && output.technology!.includes(TECHNOLOGIES.SI_RNA)) {
+  if (output.synthesizer!.includes(SYNTHESIZERS.AXOLABS)) {
     return {
       type: SYNTHESIZERS.AXOLABS + ' ' + TECHNOLOGIES.SI_RNA,
       Nucleotides: siRnaAxolabsToNucleotides(sequence),
