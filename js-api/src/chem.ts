@@ -165,7 +165,7 @@ export namespace chem {
 
     get isEmpty(): boolean {
       return (this.getSmiles() == null || this.getSmiles() == '') &&
-        (this.getMolFile() == null || this.getMolFile() == '');
+        (this.getMolFile() == null || this.getMolFile() == '' || this.getMolFile().split("\n")[3].trimLeft()[0] === '0');
     }
 
     /** Sets the molecule, supports either SMILES or MOLBLOCK formats */
