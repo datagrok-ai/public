@@ -82,40 +82,56 @@ async function _invalidate(molCol: DG.Column) {
   }
 }
 
-async function getUint8ArrayFingerprints(
-  molCol: DG.Column, fingerprintsType: Fingerprint = Fingerprint.Morgan, endSection = true): Promise<Uint8Array[]> {
-  await chemBeginCriticalSection();
+function checkForFingerprintsColumn(col: DG.Column, fingerprintsType: Fingerprint): Uint8Array[] | null {
   const colNameTag = '.' + fingerprintsType + '.Column';
   const colVerTag = '.' + fingerprintsType + '.Version';
 
-  try {
-    const fingerprintColumnName = molCol.getTag(colNameTag) ?? '~' + molCol.name + fingerprintsType + 'Fingerprints';
-
-    if (molCol.getTag(colNameTag) &&
-        molCol.getTag(colVerTag) == String(molCol.version)) {
-      const fingCol = molCol.dataFrame.columns.byName(fingerprintColumnName);
+  if (col.getTag(colNameTag) &&
+      col.getTag(colVerTag) == String(col.version) &&
+      col.dataFrame) {
+    const fingCol = col.dataFrame.columns.byName(col.getTag(colNameTag));
+    if (fingCol)
       return fingCol.toList();
-    } else {
+  }
+  return null;
+}
+
+function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[], fingerprintsType: Fingerprint): void {
+  const colNameTag = '.' + fingerprintsType + '.Column';
+  const colVerTag = '.' + fingerprintsType + '.Version';
+  if (col.dataFrame) {
+    const fingerprintColumnName = col.getTag(colNameTag) ??
+      '~' + col.name + fingerprintsType + 'Fingerprints';
+    const df = col.dataFrame;
+    const newCol: DG.Column<Uint8Array> = df.columns.names().includes(fingerprintColumnName) ?
+      df.columns.byName(fingerprintColumnName) :
+      DG.Column.fromType(DG.COLUMN_TYPE.BYTE_ARRAY, fingerprintColumnName, fgs.length);
+
+    for (let i = 0; i < fgs.length; ++i)
+      newCol.set(i, fgs[i]);
+
+    if (df.columns.names().includes(fingerprintColumnName))
+      df.columns.replace(fingerprintColumnName, newCol);
+    else
+      df.columns.add(newCol);
+
+    col.setTag(colNameTag, fingerprintColumnName);
+    col.setTag(colVerTag, String(col.version + 2));
+    col.setTag(FING_COL_TAGS.invalidatedForVersion, String(col.version + 1));
+  }
+}
+
+async function getUint8ArrayFingerprints(
+  molCol: DG.Column, fingerprintsType: Fingerprint = Fingerprint.Morgan, endSection = true): Promise<Uint8Array[]> {
+  await chemBeginCriticalSection();
+  try {
+    const fgsCheck = checkForFingerprintsColumn(molCol, fingerprintsType);
+    if (fgsCheck)
+      return fgsCheck;
+    else {
       await _invalidate(molCol);
       const fingerprints = await (await getRdKitService()).getFingerprints(fingerprintsType);
-      if (molCol.dataFrame) {
-        const df = molCol.dataFrame;
-        const newCol: DG.Column<Uint8Array> = df.columns.names().includes(fingerprintColumnName) ?
-          df.columns.byName(fingerprintColumnName) :
-          DG.Column.fromType(DG.COLUMN_TYPE.BYTE_ARRAY, fingerprintColumnName, fingerprints.length);
-
-        for (let i = 0; i < fingerprints.length; ++i)
-          newCol.set(i, fingerprints[i]);
-
-        if (df.columns.names().includes(fingerprintColumnName))
-          df.columns.replace(fingerprintColumnName, newCol);
-        else
-          df.columns.add(newCol);
-
-        molCol.setTag(colNameTag, fingerprintColumnName);
-        molCol.setTag(colVerTag, String(molCol.version + 2));
-        molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
-      }
+      saveFingerprintsToCol(molCol, fingerprints, fingerprintsType);
       return fingerprints;
     }
   } finally {
@@ -151,12 +167,15 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 }
 
 export async function chemSubstructureSearchLibrary(
-  molStringsColumn: DG.Column, molString: string, molStringSmarts: string): Promise<DG.BitSet> {
+  molStringsColumn: DG.Column, molString: string, molStringSmarts: string, usePatternFingerprints = false)
+  : Promise<DG.BitSet> {
   try {
     const result = DG.BitSet.create(molStringsColumn.length);
     if (molString.length != 0) {
-      const patternFps: Uint8Array[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern);
-      const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts, patternFps);
+      const matches = usePatternFingerprints ?
+        await (await getRdKitService()).searchSubstructure(molString, molStringSmarts) :
+        await (await getRdKitService()).searchSubstructure(molString, molStringSmarts,
+          await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern));
       for (const match of matches)
         result.set(match, true, false);
     }
