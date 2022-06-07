@@ -28,14 +28,20 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   // const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, aarStr));
   // const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, otherStr));
   const selectionObject: type.SelectionObject = JSON.parse(table.tags[C.TAGS.SELECTION]);
-  const keys = Object.keys(selectionObject);
+  const positions = Object.keys(selectionObject);
   const currentColor = DG.Color.toHtml(DG.Color.orange);
   const otherColor = DG.Color.toHtml(DG.Color.blue);
   let aarStr = 'All';
   let otherStr = ''
-  if (keys.length) {
-    const key0 = keys[0];
-    aarStr = `${key0}: ${selectionObject[key0][0]}`;
+  if (positions.length) {
+    aarStr = '';
+    for (const position of positions) {
+      aarStr += `${position}: {`;
+      for (const aar of selectionObject[position])
+        aarStr += `${aar}, `;
+      aarStr = aarStr.slice(0, aarStr.length - 2);
+      aarStr += '}';
+    }
     otherStr = 'Other';
   }
 
