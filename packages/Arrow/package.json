@@ -1,51 +1,51 @@
 {
-	"name": "arrow",
-	"beta": true,
-	"friendlyName": "Arrow",
-	"version": "0.0.1",
-	"description": "",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/Arrow"
-	},
-	"dependencies": {
-		"@datagrok-libraries/utils": "latest",
-		"apache-arrow": "^8.0.0",
-		"cash-dom": "latest",
-		"datagrok-api": "latest",
-		"dayjs": "latest",
-		"file-loader": "^6.2.0",
-		"parquet-wasm": "^0.3.1"
-	},
-	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest"
-	},
-	"browser": {
-		"fs": false,
-		"path": false,
-		"os": false,
-		"crypto": false
-	},
-	"scripts": {
-		"link-all": "",
-		"debug-parquettest": "webpack && grok publish ",
-		"release-parquettest": "webpack && grok publish --release",
-		"build-parquettest": "webpack",
-		"build": "webpack",
-		"debug-parquettest-dev": "grok publish dev --rebuild",
-		"release-parquettest-dev": "grok publish dev --rebuild --release",
-		"debug-parquettest-local": "grok publish local --rebuild",
-		"release-parquettest-local": "grok publish local --rebuild --release",
-		"test": "set HOST=dev && jest",
-		"test-dev": "set HOST=dev && jest",
-		"test-local": "set HOST=localhost && jest"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	]
+  "name": "arrow",
+  "beta": true,
+  "friendlyName": "Arrow",
+  "version": "0.0.1",
+  "description": "Arrow is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides us with the opportunity to work with parquet and feather file formats.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Arrow"
+  },
+  "dependencies": {
+    "@datagrok-libraries/utils": "latest",
+    "apache-arrow": "^8.0.0",
+    "cash-dom": "latest",
+    "datagrok-api": "latest",
+    "dayjs": "latest",
+    "file-loader": "^6.2.0",
+    "parquet-wasm": "^0.3.1"
+  },
+  "devDependencies": {
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "browser": {
+    "fs": false,
+    "path": false,
+    "os": false,
+    "crypto": false
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-parquettest": "webpack && grok publish ",
+    "release-parquettest": "webpack && grok publish --release",
+    "build-parquettest": "webpack",
+    "build": "webpack",
+    "debug-parquettest-dev": "grok publish dev --rebuild",
+    "release-parquettest-dev": "grok publish dev --rebuild --release",
+    "debug-parquettest-local": "grok publish local --rebuild",
+    "release-parquettest-local": "grok publish local --rebuild --release",
+    "test": "set HOST=dev && jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }

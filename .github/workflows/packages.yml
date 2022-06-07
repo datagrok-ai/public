@@ -106,11 +106,15 @@ jobs:
       - uses: actions/checkout@v2
         with:
           token: ${{ secrets.WRITE_TOKEN }}
-      - name: Check package has repository property
+      - name: Check package properties
         working-directory: packages/${{ matrix.package }}
         run: |
           if [ -z "$(jq '. | select( has("repository") == true ).repository' package.json)" ]; then
             echo "::error title=${{ matrix.package }}: failed properties check::Add repository property to ${{ matrix.package }}/package.json"
+            exit 1
+          fi
+          if [[ "$(jq '.name' package.json | sed -E 's/(^"|"$)//g')" != "@datagrok/"* ]]; then
+            echo "::error title=${{ matrix.package }}: failed properties check::Package should be in '@datagrok' scope. Change package name to '@datagrok/<name>' in ${{ matrix.package }}/package.json"
             exit 1
           fi
       - name: Run datagrok stand
