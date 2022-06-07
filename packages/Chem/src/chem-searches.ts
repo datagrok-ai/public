@@ -172,10 +172,14 @@ export async function chemSubstructureSearchLibrary(
   try {
     const result = DG.BitSet.create(molStringsColumn.length);
     if (molString.length != 0) {
-      const matches = usePatternFingerprints ?
-        await (await getRdKitService()).searchSubstructure(molString, molStringSmarts) :
-        await (await getRdKitService()).searchSubstructure(molString, molStringSmarts,
+      let matches: number[];
+      if (usePatternFingerprints) {
+        matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts,
           await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern));
+      } else {
+        await _invalidate(molStringsColumn);
+        matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
+      }
       for (const match of matches)
         result.set(match, true, false);
     }
