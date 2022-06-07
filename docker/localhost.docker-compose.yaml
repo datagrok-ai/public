@@ -95,7 +95,6 @@ services:
         \"adminPassword\": \"admin\",
         \"adminDevKey\": \"admin\"
       }"
-#      GROK_COMPONENTS: "${COMPOSE_PROFILES:?err}"
     ports:
       - "8080:8080/tcp"
     networks:
