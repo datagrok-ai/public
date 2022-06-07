@@ -225,7 +225,7 @@ export class PinnedColumn {
       //headerThis.m_root.height = grid.root.offsetHeight;
       const g = eCanvasThis.getContext('2d');
       for (let entry of entries) {
-        headerThis.paint(g, grid);
+        setTimeout(()=> {headerThis.paint(g, grid);}, 500);
       }
     });
 
@@ -724,7 +724,6 @@ export class PinnedColumn {
     const nYOffset = nHCH;
     const nHRowGrid = nHRow;
     let cellRH = null;
-
 
     let nRowTable = -1;
     nY = -1;
