@@ -19,7 +19,6 @@ export class SubstructureFilter extends DG.Filter {
   sketcher: Sketcher = new Sketcher();
   bitset: DG.BitSet | null = null;
   loader: HTMLDivElement = ui.loader();
-  readonly WHITE_MOL = '\n  0  0  0  0  0  0  0  0  0  0999 V2000\nM  END\n';
   onSketcherChangedSubs?: Subscription;
 
   get calculating(): boolean { return this.loader.style.display == 'initial'; }
@@ -30,7 +29,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get isFiltering(): boolean {
-    return super.isFiltering && !this.sketcher?.getMolFile()?.endsWith(this.WHITE_MOL);
+    return super.isFiltering && !(this.sketcher?.getMolFile().split("\n")[3].trimLeft()[0] === '0');
   }
 
   get isReadyToApplyFilter(): boolean {
