@@ -4,10 +4,10 @@
 	"version": "0.0.4",
 	"description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
 	"repository": {
-    "type": "git",
-    "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/PowerGrid"
-  },
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/PowerGrid"
+	},
 	"dependencies": {
 		"cash-dom": "latest",
 		"dayjs": "latest"
