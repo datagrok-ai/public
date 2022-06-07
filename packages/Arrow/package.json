@@ -4,6 +4,11 @@
 	"friendlyName": "Arrow",
 	"version": "0.0.1",
 	"description": "",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/BiostructureViewer"
+	},
 	"dependencies": {
 		"@datagrok-libraries/utils": "latest",
 		"apache-arrow": "^8.0.0",
