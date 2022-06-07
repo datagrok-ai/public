@@ -684,8 +684,9 @@ export class PinnedColumn {
 
     const bitsetFilter = dframe.filter;
     if(bitsetFilter.falseCount === dframe.rowCount)
-      return;
+      return; //everything is filtered
 
+    //column Header
     const options : any = grid.getOptions(true);
     g.font = options.colHeaderFont == null || options.colHeaderFont === undefined ? "bold 13px Roboto, Roboto Local" : options.colHeaderFont;
     let str = TextUtils.trimText(this.m_colGrid.name, g, nW);
@@ -708,36 +709,26 @@ export class PinnedColumn {
     //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nHCH);
     g.fillText(str, nXX, nYY);
 
-
+    //Regular cells
     const nRowCurrent =  dframe.currentRow.idx;
     const bitsetSel = dframe.selection;
 
-    const nGridRowCount = dframe.filter.trueCount;
-    const nGridfalseCount = dframe.filter.falseCount;
+    const arRowsMinMax = [-1,-1];
+    GridUtils.fillVisibleViewportRows(arRowsMinMax, grid);
+    const nRowMin = arRowsMinMax[0];
+    const nRowMax = arRowsMinMax[1];
 
-    const scrollV = grid.vertScroll;
-    const nRowMin = Math.floor(scrollV.min);
-    let nRowMax = Math.ceil(scrollV.max);
-
-    let nHH = grid.root.offsetHeight - nHCH;//GridUtils.getColumnHeaderHeight(grid);//.style.height;
-    const nHRow = GridUtils.getGridRowHeight(grid);
-    const nRCount = Math.round(nHH/nHRow) +1;
-    nRowMax = nRowMin + nRCount;
-
-    if(nRowMax >= nGridRowCount)
-      nRowMax = nGridRowCount -1;
 
     //console.log(nRowMin + " " + nRowMax);
-
-    const nYOffset = nHCH;//GridUtils.getColumnHeaderHeight(grid);
-    const nHRowGrid = nHRow;//GridUtils.getRowHeight(grid);
+    const nHRow = GridUtils.getGridRowHeight(grid);
+    const nYOffset = nHCH;
+    const nHRowGrid = nHRow;
     let cellRH = null;
 
 
     let nRowTable = -1;
     nY = -1;
     let bSel = false;
-    let bFiltered = false;
     for(let nRG=nRowMin; nRG<=nRowMax; ++nRG)
     {
       try{cellRH = grid.cell(this.m_colGrid.name, nRG);}
@@ -754,7 +745,11 @@ export class PinnedColumn {
 
       let renderer : any = GridUtils.getGridColumnRenderer(cellRH.gridColumn);
       if(renderer === null) {
-        renderer = cellRH.renderer;
+        try{renderer = cellRH.renderer;}
+        catch(e) {
+          console.error("Could obtain renderer for DG cell. DG bug " + this.m_colGrid.name + " row "  + nRG);
+          continue;
+        }
       }
 
       if(renderer === null || renderer === undefined) {
