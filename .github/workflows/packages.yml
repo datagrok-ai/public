@@ -106,6 +106,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           token: ${{ secrets.WRITE_TOKEN }}
+      - name: Check package has repository property
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          if [ -z "$(jq '. | select( has("repository") == true ).repository' package.json)" ]; then
+            echo "::error title=${{ matrix.package }}: failed properties check::Add repository property to ${{ matrix.package }}/package.json"
+            exit 1
+          fi
       - name: Run datagrok stand
         id: datagrok-image
         if: ${{ matrix.test == 'true' }}
@@ -203,6 +210,8 @@ jobs:
           mkdir gh-cache
           echo "$(jq .name package.json | sed -E -e 's/(^"|"$)//g' -e 's,@datagrok/,,g')" >> gh-cache/${{ matrix.package }}.name.txt
           echo "$(jq .description package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.description.txt
+          echo "$(jq '. | select( has("repository") == true ).repository' package.json)" >> gh-cache/${{ matrix.package }}.repository.txt
+          echo "$(jq '. | select( has("category") == true ).category' package.json)" >> gh-cache/${{ matrix.package }}.category.txt
           echo "$(jq .version package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.version.txt
           echo "${deps}" >> gh-cache/${{ matrix.package }}.dependencies.txt
           echo "::set-output name=push::yes"
@@ -217,6 +226,8 @@ jobs:
             packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.description.txt
             packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.version.txt
             packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.dependencies.txt
+            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.repository.txt
+            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.category.txt
           retention-days: 1
       - name: Commit package-lock.json
         id: git
@@ -312,7 +323,9 @@ jobs:
             name=$(cat ${path}/${package}.name.txt)
             description="$(cat ${path}/${package}.description.txt)"
             version=$(cat ${path}/${package}.version.txt)
-            grok_args=(add --package "${name}" --description "${description}" --ver "${version}")
+            repository=$(cat ${path}/${package}.repository.txt)
+            category=$(cat ${path}/${package}.category.txt)
+            grok_args=(add --package "${name}" --description "${description}" --ver "${version}" --category "${category}" --repository "${repository}")
             dependencies=$(cat ${path}/${package}.dependencies.txt)
             if [ -z "${dependencies}" ]; then
                bin/grok-meta.js "${grok_args[@]}"
