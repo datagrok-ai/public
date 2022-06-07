@@ -3,12 +3,14 @@ class ChemPackageDetectors extends DG.Package {
 
   static sValidFirstSmilesChar = new Uint32Array([0, 256, 134857308, 573448, 0, 0, 0, 0]);
 
+  static numberOfMolsToCheck = 10;
+
   static validChar(char) {
     const pos = char.charCodeAt(0);
     return (ChemPackageDetectors.sValidSmilesChar[Math.floor(pos / 0x20)] & (1 << (pos & 0x1f))) != 0;
   }
 
-  static validFstChar(char) {
+  static validFirstChar(char) {
     const pos = char.charCodeAt(0);
     return (ChemPackageDetectors.sValidFirstSmilesChar[Math.floor(pos / 0x20)] & (1 << (pos & 0x1f))) != 0;
   }
@@ -20,18 +22,46 @@ class ChemPackageDetectors extends DG.Package {
     if (col.type !== DG.TYPE.STRING)
       return null;
     // return DG.SEMTYPE.MOLECULE;
-    if (col.toList().every((el) => el && el.length > 1 &&
-        ChemPackageDetectors.validFstChar(el[0]) &&
-        el.split('').every((sChar) => ChemPackageDetectors.validChar(sChar)))) {
-      grok.functions.call('Chem:checkSmilesValidity', {col: col}).then((validPerc) => {
-        if (validPerc > 0.79) {
-          col.semType = DG.SEMTYPE.MOLECULE;
-          // smiles or molblock?
-          const str = col.length > 0 ? col.get(0) : null;
-          col.tags[DG.TAGS.UNITS] = (str !== null && str.includes('M  END')) ?
-            DG.UNITS.Molecule.MOLBLOCK : DG.UNITS.Molecule.SMILES;
-        }
-      });
+    for (let i = 0; i < col.length; ++i) {
+      const el = col.get(i);
+      if (el && el.length > 0) {
+        if (!ChemPackageDetectors.validFirstChar(el[0]))
+          return null;
+        for (let j = 1; j < el.length; ++j)
+          if (!ChemPackageDetectors.validChar(el[j]))
+            return null;
+      }
     }
+
+    let molStrings = [];
+    if (col.length <= ChemPackageDetectors.numberOfMolsToCheck)
+      molStrings = col.toList().filter(el => el);
+    else {
+      const inc = Math.floor(col.length / ChemPackageDetectors.numberOfMolsToCheck);
+      for (let i = 0; i < col.length; i += inc) {
+        let el = col.get(i);
+        if (el)
+          molStrings.push(el);
+        else {
+          for (let j = 0; j < Math.min(inc, 5) && i + j < col.length; ++j) {
+            el = col.get(i + j);
+            if (el) {
+              molStrings.push(el);
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    grok.functions.call('Chem:checkSmilesValidity', {molStrings: molStrings}).then((validPerc) => {
+      if (validPerc > 0.79) {
+        col.semType = DG.SEMTYPE.MOLECULE;
+        // smiles or molblock?
+        const str = col.length > 0 ? col.get(0) : null;
+        col.tags[DG.TAGS.UNITS] = (str !== null && str.includes('M  END')) ?
+          DG.UNITS.Molecule.MOLBLOCK : DG.UNITS.Molecule.SMILES;
+      }
+    });
   }
 }

@@ -152,24 +152,22 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
 }
 
 //name: checkSmilesValidity
-//input: column col
+//input: list molStrings
 //output: double perc
-export async function checkSmilesValidity(col: DG.Column): Promise<number> {
-  if (col.length == 0)
+export async function checkSmilesValidity(molStrings: string[]): Promise<number> {
+  if (molStrings.length == 0)
     return 0;
   let valid = 0;
   let invalid = 0;
-  const inc = col.length < 20 ? 1 : Math.floor(col.length / 20);
-  for (let i = 0; i < col.length; i += inc) {
+  for (let i = 0; i < molStrings.length; i++) {
     try {
-      getRdKitModule().get_mol(col.get(i));
+      getRdKitModule().get_mol(molStrings[i]).delete();
       valid += 1;
     } catch (e) {
       invalid += 1;
     }
   }
-  const perc = valid / (valid + invalid);
-  return perc;
+  return valid / (valid + invalid);
 }
 
 //name: getMorganFingerprint
