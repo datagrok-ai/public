@@ -844,7 +844,7 @@ export class PeptidesModel {
     this.splitCol.init(i => posCol.get(i) == aar);
 
     // this.splitCol.setCategoryOrder([aarLabel]);
-    this.splitCol.setCategoryOrder(['true']);
+    // this.splitCol.setCategoryOrder(['true']);
     this.splitCol.compact();
 
     // const colorMap: {[index: string]: string | number} = {};

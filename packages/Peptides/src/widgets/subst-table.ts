@@ -10,7 +10,7 @@ export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widge
   // const currentCell = model.getCurrentAARandPos();
   const currentCell = model.currentSelection;
   const pos = Object.keys(currentCell)[0];
-  const aar = Object.values(currentCell)[0][0];
+  const aar = currentCell[pos][0];
 
   if (currentCell.aar === currentCell.pos)
     return new DG.Widget(ui.label('No substitution table generated'));
