@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-07 Dev build 1.1.9
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.1.9`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chem: changed logic of empty molecule check 
+* OligoBatchCalculator: fix of not valid data in additional modifications table 
+* SequenceTranslator: fix of conversion 
+* SequenceTranslator: fix of sequenceToSmiles tests 
+
+
 # 2022-06-07 Dev build 1.1.8
 
 ## Latest Docker Images
