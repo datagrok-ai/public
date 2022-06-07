@@ -702,7 +702,7 @@ export class PeptidesModel {
   setCurrentSelectionSingle(aar: string, position: string): type.SelectionObject {
     const tempSelectionObject: type.SelectionObject = {};
     if (aar != position)
-      tempSelectionObject[aar] = [position];
+      tempSelectionObject[position] = [aar];
     this.currentSelection = tempSelectionObject;
     return this.currentSelection;
   }
