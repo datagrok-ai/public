@@ -30,16 +30,17 @@ export function sequenceTranslator(): void {
   windows.showToolbox = false;
   windows.showHelp = false;
 
-  function updateTableAndMolecule(sequence: string, inputFormat: string): void {
+  function updateTableAndMolecule(sequence: string, inputFormat: string, isSet: boolean): void {
     moleculeSvgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
     let errorsExist = false;
     try {
       sequence = sequence.replace(/\s/g, '');
-      const output = isValidSequence(sequence, inputFormat);
-      // if (inputFormat != null)
-      output.synthesizer = [inputFormat];
+      const output = isValidSequence(sequence, null);
+      if (isSet)
+        output.synthesizer = [inputFormat];
+      inputFormatChoiceInput.value = output.synthesizer;
       const outputSequenceObj = convertSequence(sequence, output);
       const tableRows = [];
 
@@ -118,14 +119,14 @@ export function sequenceTranslator(): void {
     }
   }
 
-  const inputFormat = ui.choiceInput(
+  const inputFormatChoiceInput = ui.choiceInput(
     'Input format: ', 'Janssen GCRS Codes', Object.keys(map), (format: string) => {
-      updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''), format);
+      updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''), format, true);
     });
   const moleculeSvgDiv = ui.block([]);
   const outputTableDiv = ui.div([]);
   const inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => updateTableAndMolecule(sequence,
-    inputFormat.value));
+    inputFormatChoiceInput.value, false));
 
   const asoDf = DG.DataFrame.fromObjects([
     {'Name': '2\'MOE-5Me-rU', 'BioSpring': '5', 'Janssen GCRS': 'moeT'},
@@ -168,7 +169,7 @@ export function sequenceTranslator(): void {
       DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
     ])!, {showRowHeader: false, showCellTooltip: false},
   );
-  updateTableAndMolecule(defaultInput, inputFormat.value);
+  updateTableAndMolecule(defaultInput, inputFormatChoiceInput.value, true);
 
   const appMainDescription = ui.info([
     ui.divText('How to convert one sequence:', {style: {'font-weight': 'bolder'}}),
@@ -200,7 +201,7 @@ export function sequenceTranslator(): void {
                 inputSequenceField.root,
               ], 'input-base'),
             ], 'inputSequence'),
-            ui.div([inputFormat], {style: {padding: '5px 0'}}),
+            ui.div([inputFormatChoiceInput], {style: {padding: '5px 0'}}),
             ui.block([
               ui.h1('Output'),
               outputTableDiv,
@@ -225,7 +226,8 @@ export function sequenceTranslator(): void {
 
   const topPanel = [
     ui.iconFA('download', () => {
-      const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false, inputFormat.value);
+      const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false,
+        inputFormatChoiceInput.value);
       const element = document.createElement('a');
       element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
       element.setAttribute('download', inputSequenceField.value.replace(/\s/g, '') + '.mol');
@@ -233,7 +235,7 @@ export function sequenceTranslator(): void {
     }, 'Save .mol file'),
     ui.iconFA('copy', () => {
       navigator.clipboard.writeText(
-        sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''), false, inputFormat.value))
+        sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''), false, inputFormatChoiceInput.value))
         .then(() => grok.shell.info(sequenceWasCopied));
     }, 'Copy SMILES'),
     switchInput.root,
