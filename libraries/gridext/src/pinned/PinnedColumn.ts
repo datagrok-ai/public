@@ -814,22 +814,24 @@ export class PinnedColumn {
       const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
       const nHRowGrid = GridUtils.getGridRowHeight(grid);
 
-      const scroll = grid.vertScroll;
-      const nRowMin = scroll.min;
-      let nRowMax = Math.min(Math.floor(scroll.max) +1,  grid.dataFrame.rowCount -1);
+      const arMinMaxRows = [-1,-1];
+      GridUtils.fillVisibleViewportRows(arMinMaxRows, grid);
+      const nRowMin = arMinMaxRows[0];
+      const nRowMax = arMinMaxRows[1];
+
       const nYMouseOnHeader = e.clientY - nY;
 
       let nYBorder = -1;
       let nYDiff = -1;
 
-      for(let nRow=nRowMin+1; nRow<= nRowMax; ++nRow)
+      for(let nRow=nRowMin; nRow<= nRowMax; ++nRow)
       {
-        nYBorder = nHHeaderCols + (nRow - nRowMin)*nHRowGrid;
+        nYBorder = nHHeaderCols + (nRow - nRowMin+1)*nHRowGrid;
         nYDiff = nYMouseOnHeader - nYBorder;
 
         if(bBorder && Math.abs(nYDiff) <= PinnedColumn.Y_RESIZE_SENSITIVITY)
         {
-          return nRow -1;
+          return nRow;
         }
 
         if(!bBorder && nYBorder - nHRowGrid <= nYMouseOnHeader && nYMouseOnHeader <= nYBorder) {
@@ -839,7 +841,7 @@ export class PinnedColumn {
             arXYOnCell[1] = nYMouseOnHeader - nYBorder + nHRowGrid;
           }
 
-          return nRow - 1;
+          return nRow;
         }
       }
     }
