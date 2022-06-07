@@ -128,7 +128,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   additionalAbbreviations.forEach((key, i) => additionalWeightsObj[key] = additionalWeights[i]);
   additionalAbbreviations.forEach((key, i) => {
     if (extinctionCoefficients[i] != 'Base')
-      extinctionCoeffsObj[key] = extinctionCoefficients[i];
+      extinctionCoeffsObj[key] = (extinctionCoefficients[i] == null) ? 1 : extinctionCoefficients[i];
   });
   const mainGrid = DG.Viewer.grid(DG.DataFrame.create(), {'showRowHeader': false});
 
