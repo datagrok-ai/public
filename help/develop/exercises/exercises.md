@@ -3,12 +3,12 @@
 
 # Exercises
 
-These programming exercises designed to help developers get proficient with the Datagrok platform. The exercises are
+These programming exercises are designed to help developers get proficient with the Datagrok platform. The exercises are
 organized as progressive steps, with tasks of increasing complexity built on top of the previously completed steps.
 
 During this course, we will be building support for handling DNA nucleotide sequences. Let that not scare you, think of
-them as regular strings that can only contain characters `G`, `A`, `C`, and `T` (and now you know the origins of the "
-Gattaca" movie name). We will start with writing standalone functions, then automatically recognizing nucleotide
+them as regular strings that can only contain characters `G`, `A`, `C`, and `T` (and now you know the origins of the
+"Gattaca" movie name). We will start with writing standalone functions, then automatically recognizing nucleotide
 sequences in the imported data, and then going all the way to custom visualizations, relational databases querying,
 predictive models, integration with the external utilities, data augmentation, and custom applications.
 
@@ -54,12 +54,13 @@ predictive models, integration with the external utilities, data augmentation, a
 Prerequisites: basic JavaScript knowledge.
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
-   [these instructions](../develop.md#development)
+   [these instructions](../how-to/set-up-environment.md)
 2. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by
-   running `grok config`. User icon (at the lower left corner) / Summary / Developer key...
+   running `grok config`. Open [https://dev.datagrok.ai/u](https://dev.datagrok.ai/u), click on `Developer key`,
+   copy the `grok` command and execute it to add the key to your config
 3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions)
    `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence`
-4. Upload it to the server: `grok publish dev --rebuild` (see other options [here](../develop.md#deployment-modes))
+4. Upload it to the server: run `webpack` and `grok publish dev` (see other options [here](../develop.md#deployment-modes))
 5. Launch the platform and run the package's `info()` function using different methods:
 
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
@@ -128,7 +129,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    iterate [on `column.categories`](https://datagrok.ai/help/develop/advanced/data-frame#work-with-categories)
    . Full Datagrok Column type API could be found [here](https://datagrok.ai/help/develop/dataframe#dgcolumn).
 
-4. Upload your package to `dev.datagrok.ai` using `grok publish dev --rebuild`
+4. Upload your package to `dev.datagrok.ai` using `grok publish dev`
    command. When everything is done correctly, the `detectors.js` file will get loaded by the platform automatically,
    and the
    `detectNucleotides` function will be executed against every column in a newly added table.
@@ -669,7 +670,7 @@ First, let's explore how scripting viewer works.
     }
     ```
 
-5. Deploy the package as usual with `grok publish dev --rebuild`. In [Datagrok](https://public.datagrok.ai), navigate to
+5. Deploy the package as usual with `grok publish dev`. In [Datagrok](https://public.datagrok.ai), navigate to
    a file with nucleotide sequences from `"Demo files"`, such as `sars-cov-2.csv`. Verify you get the desired result, it
    should look similar to this:
    ![exercises-custom-cell-renderer](exercises-custom-cell-renderer.png)
