@@ -32,7 +32,7 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   const currentColor = DG.Color.toHtml(DG.Color.orange);
   const otherColor = DG.Color.toHtml(DG.Color.blue);
   let aarStr = 'All';
-  let otherStr = ''
+  let otherStr = '';
   if (positions.length) {
     aarStr = '';
     for (const position of positions) {
@@ -40,8 +40,9 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
       for (const aar of selectionObject[position])
         aarStr += `${aar}, `;
       aarStr = aarStr.slice(0, aarStr.length - 2);
-      aarStr += '}';
+      aarStr += '}; ';
     }
+    aarStr = aarStr.slice(0, aarStr.length - 2);
     otherStr = 'Other';
   }
 
