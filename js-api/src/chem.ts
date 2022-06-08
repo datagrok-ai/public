@@ -116,6 +116,7 @@ export namespace chem {
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
+    selectedSketcherName?: string = '';
 
     /** Whether the currently drawn molecule becomes the current object as you sketch it */
     syncCurrentObject: boolean = true;
@@ -283,6 +284,7 @@ export namespace chem {
         let funcs = Func.find({ tags: [ 'moleculeSketcher' ] });
         let fr = funcs.find(e => e.friendlyName == sname || e.name == sname)
           ?? funcs.find(e => e.name == DEFAULT_SKETCHER);
+        this.selectedSketcherName = fr?.friendlyName;
 
         $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
@@ -342,7 +344,7 @@ export namespace chem {
           .endGroup()
           .separator()
           .items(funcs.map((f) => f.friendlyName), (name: string) => this.setSketcher(name),
-            { isChecked: (item) => item === sname, toString: item => item })
+            { isChecked: (item) => item === this.selectedSketcherName, toString: item => item })
           .show();
       });
       $(optionsIcon).addClass('d4-input-options');
@@ -392,6 +394,7 @@ export namespace chem {
 
       let funcs = Func.find({tags: ['moleculeSketcher']});
       let f = funcs.find(e => e.friendlyName == name || e.name == name);
+      this.selectedSketcherName = f?.friendlyName;
 
       grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, f!.friendlyName, true);
 
