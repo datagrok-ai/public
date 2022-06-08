@@ -1,3 +1,6 @@
 upload.keys.json
 node_modules/
 dist/
+
+# Emitted *.js files
+src/**/*.js

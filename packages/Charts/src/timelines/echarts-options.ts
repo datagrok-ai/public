@@ -56,12 +56,6 @@ export const options = {
   ],
 };
 
-export function deepCopy(object) {
+export function deepCopy(object: {}): {} {
   return JSON.parse(JSON.stringify(object));
 }
-
-export const VISIBILITY_MODE = {
-  ALWAYS: 'Always',
-  AUTO: 'Auto',
-  NEVER: 'Never',
-};

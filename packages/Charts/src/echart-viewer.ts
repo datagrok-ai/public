@@ -1,14 +1,12 @@
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import * as echarts from 'echarts';
 
 
 export class Utils {
-  /** @param {DataFrame} dataFrame
-   * @param {String[]} splitByColumnNames
-   * @param {DG.BitSet} rowMask
-   * @param {Function} visitNode
-   * @return {Object} */
-  static toTree(dataFrame, splitByColumnNames, rowMask, visitNode = null) {
-    const data = {
+  static toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[],
+    rowMask: DG.BitSet, visitNode: ((arg0: treeDataType) => void) | null = null): treeDataType {
+    const data: treeDataType = {
       name: 'All',
       value: 0,
       path: null,
@@ -23,7 +21,7 @@ export class Utils {
 
     const countCol = aggregated.columns.byName('count');
     const columns = aggregated.columns.byNames(splitByColumnNames);
-    const parentNodes = columns.map((_) => null);
+    const parentNodes: (treeDataType | null)[] = columns.map((_) => null);
 
     for (let i = 0; i < aggregated.rowCount; i++) {
       const idx = i === 0 ? 0 : columns.findIndex((col) => col.get(i) !== col.get(i - 1));
@@ -32,22 +30,22 @@ export class Utils {
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
         const name = columns[colIdx].getString(i);
-        const node = {
+        const node: treeDataType = {
           name: name,
-          path: parentNode.path == null ? name : parentNode.path + ' | ' + name,
+          path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
           value: 0,
         };
         parentNodes[colIdx] = node;
 
-        if (!parentNode.children)
-          parentNode.children = [];
-        parentNode.children.push(node);
+        if (!parentNode!.children)
+          parentNode!.children = [];
+        parentNode!.children.push(node);
         if (visitNode !== null)
           visitNode(node);
       }
 
       for (let i = 0; i < parentNodes.length; i++)
-        parentNodes[i].value += value;
+        parentNodes[i]!.value += value;
       data.value += value;
     }
 
@@ -56,25 +54,20 @@ export class Utils {
     return data;
   }
 
-  static toForest(dataFrame, splitByColumnNames, rowMask) {
+  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet) {
     const tree = Utils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 10);
     return tree.children;
   }
 
-  /**
-   * @param {DataFrame} dataFrame
-   * @param {String[]} columnNames
-   * @param {String[]} objectKeys
-   * @return {Object[]}
-   */
-  static mapRowsToObjects(dataFrame, columnNames, objectKeys = null) {
+  static mapRowsToObjects(dataFrame: DG.DataFrame, columnNames: string[],
+    objectKeys: string[] | null = null): {[key: string]: any}[] {
     const columns = dataFrame.columns.byNames(columnNames);
     if (objectKeys === null)
       objectKeys = columnNames;
 
     const result = [];
     for (let i = 0; i < dataFrame.rowCount; i++) {
-      const object = {};
+      const object: {[key: string]: any} = {};
       for (let j = 0; j < columns.length; j++)
         object[objectKeys[j]] = columns[j].get(i);
       result.push(object);
@@ -86,20 +79,32 @@ export class Utils {
    * @param {String[]} columnNames
    * @param {String} path - pipe-separated values
    */
-  static pathToPattern(columnNames, path) {
+  static pathToPattern(columnNames: string[], path: string): {[key: string]: string} {
     const values = path.split(' | ');
-    const pattern = {};
+    const pattern: {[key: string]: string} = {};
     for (let i = 0; i < columnNames.length; i++)
       pattern[columnNames[i]] = values[i];
     return pattern;
   }
 }
 
+type treeDataType = {name: string, value: number, path: null | string, children?: treeDataType[]};
+
 
 export class EChartViewer extends DG.JsViewer {
+  chart: echarts.ECharts;
+  option: any;
+
+  top?: string;
+  left?: string;
+  bottom?: string;
+  right?: string;
+  animationDuration?: number;
+  animationDurationUpdate?: number;
+
   constructor() {
     super();
-    const chartDiv = ui.div(null, { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
+    const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.chart = echarts.init(chartDiv);
     this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
@@ -125,7 +130,7 @@ export class EChartViewer extends DG.JsViewer {
 
   prepareOption() {}
 
-  onPropertyChanged(p, render = true) {
+  onPropertyChanged(p: DG.Property | null, render: boolean = true) {
     const properties = p !== null ? [p] : this.props.getProperties();
 
     for (const p of properties)
@@ -138,5 +143,9 @@ export class EChartViewer extends DG.JsViewer {
   render() {
     this.option.series[0].data = this.getSeriesData();
     this.chart.setOption(this.option);
+  }
+
+  getSeriesData() {
+    throw new Error('Method not implemented.');
   }
 }

@@ -1,24 +1,17 @@
-import {TreeViewer} from './tree-viewer.js';
-import {TreeMapViewer} from './tree-map-viewer.js';
-import {SunburstViewer} from './sunburst-viewer.js';
-import {RadarViewer} from './radar-viewer.js';
-import {TimelinesViewer} from './timelines/timelines-viewer.js';
-import {SankeyViewer} from './sankey-viewer.js';
-import {ChordViewer} from './chord-viewer.js';
-import { WordCloudViewer } from './word-cloud-viewer.js';
+import {TreeViewer} from './tree-viewer';
+import {TreeMapViewer} from './tree-map-viewer';
+import {SunburstViewer} from './sunburst-viewer';
+import {RadarViewer} from './radar-viewer';
+import {TimelinesViewer} from './timelines/timelines-viewer';
+import {SankeyViewer} from './sankey-viewer';
+import {ChordViewer} from './chord-viewer';
+import { WordCloudViewer } from './word-cloud-viewer';
 import './timelines/styles.css';
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
-
-//name: test
-//input: string s
-export function test(s) {
-  grok.shell.info(_package.webRoot);
-}
-
 
 //name: timelinesViewerDemo
 export function timelinesViewerDemo() {

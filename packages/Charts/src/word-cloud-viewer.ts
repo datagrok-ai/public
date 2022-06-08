@@ -2,9 +2,25 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as echarts from 'echarts';
 import 'echarts-wordcloud';
+import $ from 'cash-dom';
 
 
 export class WordCloudViewer extends DG.JsViewer {
+  strColumnName: string;
+  shape: string;
+  minTextSize: number;
+  minRotationDegree: number;
+  maxRotationDegree: number;
+  roationStep: number;
+  gridSize: number;
+  drawOutOfBound: boolean;
+  fontFamily: string;
+  bold: boolean;
+  strColumns: DG.Column[];
+  initialized: boolean;
+  chart: any; //echarts.EChartsType
+  maxTextSize: any;
+
   constructor() {
     super();
 
@@ -60,11 +76,11 @@ export class WordCloudViewer extends DG.JsViewer {
     this.render();
   }
 
-  onPropertyChanged(property) {
+  onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
     if (this.initialized && this.testColumns()) {
       if (property.name === 'columnColumnName')
-        this.strColumnName = property.get();
+        this.strColumnName = property.get(this);
 
       this.render();
     }
@@ -83,14 +99,14 @@ export class WordCloudViewer extends DG.JsViewer {
     $(this.root).empty();
 
     const margin = { top: 10, right: 10, bottom: 10, left: 10 };
-    const width = this.root.parentElement.clientWidth - margin.left - margin.right;
-    const height = this.root.parentElement.clientHeight - margin.top - margin.bottom;
+    const width = this.root.parentElement!.clientWidth - margin.left - margin.right;
+    const height = this.root.parentElement!.clientHeight - margin.top - margin.bottom;
     const strColumn = this.dataFrame.getCol(this.strColumnName);
     const words = strColumn.categories;
-    const data = [];
+    const data: echarts.SeriesOption[] = [];
     const table = this.dataFrame;
 
-    words.forEach((w) => data.push({
+    words.forEach((w) => data.push(<echarts.SeriesOption>{
       name: w,
       value: strColumn.toList().filter((row) => row === w).length,
       textStyle: {
@@ -136,12 +152,12 @@ export class WordCloudViewer extends DG.JsViewer {
     });
 
     this.chart
-      .on('mouseover', (d) => ui.tooltip.showRowGroup(table, (i) => {
+      .on('mouseover', (d: echarts.SeriesOption) => ui.tooltip.showRowGroup(table, (i) => {
         console.log(d);
         return d.name === strColumn.get(i);
       }, 10, 10))
       .on('mouseout', () => ui.tooltip.hide())
-      .on('mousedown', (d) => {
+      .on('mousedown', (d: echarts.SeriesOption) => {
         table.selection.handleClick((i) => {
           return d.name === strColumn.get(i);
         }, d);
