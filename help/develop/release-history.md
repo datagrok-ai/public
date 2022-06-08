@@ -1,6 +1,30 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-08 Dev build 1.2.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.2.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Dev: Beta users and test track (WIP)
+* SequenceTranslator: update JS API version 
+* Fixed Datlas tests 
+* Changes made to grid row header are not saved with layout #528 
+* Sidebar icons harmonization 
+* Error searching non-existent layout #670 
+* Closes #694: Selected/filtered rows: "Save as column" action 
+* New viewer icons 
+* Closes #678: Memory consumption is constantly increasing if a view with filters panel is duplicated 
+* Closes #87 Charts: migrate to TypeScript 
+
+
 # 2022-06-08 Dev build 1.2.0
 
 ## Latest Docker Images
