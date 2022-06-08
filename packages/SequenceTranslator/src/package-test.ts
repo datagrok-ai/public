@@ -3,7 +3,7 @@ import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 import './tests/smiles-tests';
 
 export const _package = new DG.Package();
-export {tests}
+export {tests};
 
 //name: test
 //output: dataframe result
