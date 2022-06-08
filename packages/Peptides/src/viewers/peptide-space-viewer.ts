@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 
 import {getSequenceMolecularWeight} from '../utils/molecular-measure';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-import {createDimensinalityReducingWorker, IReduceDimensionalityResult 
+import {createDimensinalityReducingWorker, IReduceDimensionalityResult,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';

@@ -4,7 +4,7 @@ import {expect} from '@datagrok-libraries/utils/src/test';
 import {PeptideSimilaritySpaceWidget, createPeptideSimilaritySpaceViewer} from '../utils/peptide-similarity-space';
 import {
   createDimensinalityReducingWorker,
-  IReduceDimensionalityResult
+  IReduceDimensionalityResult,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {runKalign} from '../utils/multiple-sequence-alignment';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
@@ -52,7 +52,7 @@ export async function _testDimensionalityReducer(
   try {
     const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(
       {data: columnData, metric: measure as StringMetrics}, method, {cycles: cyclesCount});
-      embcols = reduceDimRes.embedding;
+    embcols = reduceDimRes.embedding;
   } catch (error) {
     noException = false;
   }

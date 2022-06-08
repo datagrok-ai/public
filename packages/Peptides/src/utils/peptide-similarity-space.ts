@@ -7,7 +7,7 @@ import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encod
 import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {
   createDimensinalityReducingWorker,
-  IReduceDimensionalityResult
+  IReduceDimensionalityResult,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
