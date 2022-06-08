@@ -46,5 +46,6 @@
 		"release-widgets-core": "grok publish core --rebuild --release",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix"
-	}
+	},
+  "category": "Visualizations"
 }

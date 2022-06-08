@@ -12,5 +12,6 @@
     "css/enamine_store.css"
   ],
   "canEdit": [ "Developers" ],
-  "canView": [ "All users" ]
+  "canView": [ "All users" ],
+	"category": "Cheminformatics"
 }

@@ -18,5 +18,6 @@
     "sequence-cell-renderer/sequence-cell-renderer.js"
   ],
   "canEdit": [ "Developers" ],
-  "canView": [ "All users" ]
+  "canView": [ "All users" ],
+  "category": "Bioinformatics"
 }

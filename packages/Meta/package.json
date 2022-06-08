@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.24",
+  "version": "1.0.25",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -80,7 +80,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/DevTools"
       },
-      "category": "\"Dev\""
+      "category": "Development"
     },
     "sqlite": {
       "dependencies": {
@@ -108,7 +108,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/SQLite"
-      }
+      },
+      "category": "Development"
     },
     "demo-scripts": {
       "dependencies": {
@@ -144,7 +145,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Tutorials"
-      }
+      },
+      "category": "Development"
     },
     "chem": {
       "dependencies": {
@@ -235,7 +237,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Chem"
-      }
+      },
+      "category": "Cheminformatics"
     },
     "demo": {
       "dependencies": {
@@ -312,7 +315,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/SequenceTranslator"
-      }
+      },
+      "category": "Bioinformatics"
     },
     "power-pack": {
       "dependencies": {
@@ -356,7 +360,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/PowerPack"
       },
-      "category": "\"Dev\""
+      "category": "Development"
     },
     "clinical-case": {
       "dependencies": {
@@ -375,7 +379,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/ClinicalCase"
-      }
+      },
+      "category": "Health"
     },
     "pubchem-api": {
       "dependencies": {
@@ -394,7 +399,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/PubChemApi"
-      }
+      },
+      "category": "Cheminformatics"
     },
     "peptides": {
       "dependencies": {
@@ -464,7 +470,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Peptides"
-      }
+      },
+      "category": "Cheminformatics"
     },
     "ca-marvin": {
       "dependencies": {
@@ -481,7 +488,8 @@
           "datagrok-api": "^0.151.6"
         }
       },
-      "description": "caMarvin is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+      "description": "caMarvin is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+      "category": "Cheminformatics"
     },
     "oligo-batch-calculator": {
       "dependencies": {
@@ -503,7 +511,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/OligoBatchCalculator"
-      }
+      },
+      "category": "Bioinformatics"
     },
     "drug-bank": {
       "dependencies": {
@@ -522,7 +531,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/DrugBank"
-      }
+      },
+      "category": "Health"
     },
     "grok-scripts": {
       "dependencies": {
@@ -538,7 +548,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/GrokScripts"
-      }
+      },
+      "category": "Development"
     },
     "api-tests": {
       "dependencies": {
@@ -557,7 +568,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/ApiTests"
-      }
+      },
+      "category": "Development"
     },
     "api-samples": {
       "dependencies": {
@@ -575,7 +587,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/ApiSamples"
       },
-      "category": "\"Dev\""
+      "category": "Development"
     },
     "usage-analysis": {
       "dependencies": {
@@ -591,7 +603,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/UsageAnalysis"
-      }
+      },
+      "category": "Analyze"
     },
     "multiplot": {
       "dependencies": {
@@ -604,7 +617,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/MultiPlot"
-      }
+      },
+      "category": "Visualizations"
     },
     "sdtm": {
       "dependencies": {
@@ -631,7 +645,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Impute"
-      }
+      },
+      "category": "Machine Learning"
     },
     "nlp": {
       "dependencies": {
@@ -650,7 +665,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/NLP"
-      }
+      },
+      "category": "Machine Learning"
     },
     "charpy": {
       "dependencies": {
@@ -663,7 +679,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/ChaRPy"
-      }
+      },
+      "category": "Visualizations"
     },
     "compute": {
       "dependencies": {
@@ -730,7 +747,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Compute"
-      }
+      },
+      "category": "Machine Learning"
     },
     "seldon": {
       "dependencies": {
@@ -743,7 +761,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Seldon"
-      }
+      },
+      "category": "Machine Learning"
     },
     "chembl": {
       "dependencies": {
@@ -766,7 +785,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Chembl"
-      }
+      },
+      "category": "Cheminformatics"
     },
     "widgets": {
       "dependencies": {
@@ -779,7 +799,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Widgets"
-      }
+      },
+      "category": "Visualizations"
     },
     "charts": {
       "dependencies": {
@@ -816,7 +837,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Charts"
-      }
+      },
+      "category": "Visualizations"
     },
     "bio-signals": {
       "dependencies": {
@@ -835,7 +857,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/BioSignals"
-      }
+      },
+      "category": "Bioinformatics"
     },
     "dsp": {
       "dependencies": {
@@ -849,7 +872,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/DSP"
-      }
+      },
+      "category": "Bioinformatics"
     },
     "chembl-browser": {
       "dependencies": {
@@ -860,7 +884,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/ChemblBrowser"
-      }
+      },
+      "category": "Cheminformatics"
     },
     "discovery": {
       "dependencies": {
@@ -908,7 +933,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/MultiForm"
-      }
+      },
+      "category": "Visualizations"
     },
     "tensorflow-dev": {
       "dependencies": {
@@ -921,7 +947,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/TensorFlow.js"
-      }
+      },
+      "category": "Machine Learning"
     },
     "schemas-demo": {
       "dependencies": {
@@ -948,7 +975,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/ChemblAPI"
-      }
+      },
+      "category": "Cheminformatics"
     },
     "notebooks": {
       "dependencies": {
@@ -970,7 +998,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Notebooks"
-      }
+      },
+      "category": "Development"
     },
     "custom-ml": {
       "dependencies": {
@@ -986,7 +1015,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/CustomML"
-      }
+      },
+      "category": "Machine Learning"
     },
     "phylotree-viewer": {
       "dependencies": {
@@ -1008,7 +1038,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/PhyloTreeViewer"
-      }
+      },
+      "category": "Visualizations"
     },
     "ketcher": {
       "dependencies": {
@@ -1024,7 +1055,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Ketcher"
-      }
+      },
+      "category": "Cheminformatics"
     },
     "bio": {
       "dependencies": {
@@ -1046,7 +1078,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Bio"
-      }
+      },
+      "category": "Bioinformatics"
     },
     "viewers": {
       "dependencies": {
@@ -1062,7 +1095,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Viewers"
-      }
+      },
+      "category": "Visualizations"
     },
     "sunburst": {
       "dependencies": {
@@ -1081,7 +1115,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Sunburst"
-      }
+      },
+      "category": "Visualizations"
     },
     "repertoire-browser": {
       "dependencies": {
@@ -1097,7 +1132,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/RepertoireBrowser"
-      }
+      },
+      "category": "Bioinformatics"
     },
     "vdj-tools": {
       "dependencies": {
@@ -1108,7 +1144,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/VDJtools"
-      }
+      },
+      "category": "Bioinformatics"
     },
     "ngl-viewer": {
       "dependencies": {
@@ -1124,7 +1161,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/NglViewer"
-      }
+      },
+      "category": "Bioinformatics"
     },
     "swaggers": {
       "dependencies": {
@@ -1140,7 +1178,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Swaggers"
-      }
+      },
+      "category": "Development"
     },
     "covid": {
       "dependencies": {
@@ -1167,7 +1206,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Tika"
-      }
+      },
+      "category": "Development"
     },
     "spgi": {
       "dependencies": {
@@ -1183,7 +1223,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/SPGi"
-      }
+      },
+      "category": "Cheminformatics"
     },
     "leaflet": {
       "dependencies": {
@@ -1199,7 +1240,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Leaflet"
-      }
+      },
+      "category": "Visualizations"
     },
     "sequence": {
       "dependencies": {
@@ -1215,7 +1257,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Sequence"
-      }
+      },
+      "category": "Bioinformatics"
     },
     "pedometer": {
       "dependencies": {
@@ -1231,7 +1274,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Pedometer"
-      }
+      },
+      "category": "Development"
     },
     "cli": {
       "dependencies": {
@@ -1258,7 +1302,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/EnamineStore"
-      }
+      },
+      "category": "Cheminformatics"
     },
     "chemspace": {
       "dependencies": {
@@ -1274,7 +1319,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Chemspace"
-      }
+      },
+      "category": "Cheminformatics"
     },
     "file-editors": {
       "dependencies": {
@@ -1285,7 +1331,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/PdfViewer"
-      }
+      },
+      "category": "Development"
     },
     "grokopenchemlib": {
       "dependencies": {
@@ -1306,7 +1353,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/HitTriage"
-      }
+      },
+      "category": "Cheminformatics"
     },
     "power-grid": {
       "dependencies": {
@@ -1319,7 +1367,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/PowerGrid"
-      }
+      },
+      "category": "Development"
     },
     "molecular-liability-browser": {
       "dependencies": {
@@ -1366,7 +1415,8 @@
           "datagrok-api": "^0.148.0"
         }
       },
-      "description": ""
+      "description": "",
+      "category": "Health"
     },
     "biostructureviewer": {
       "dependencies": {
@@ -1379,7 +1429,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/BiostructureViewer"
-      }
+      },
+      "category": "Bioinformatics"
     },
     "arrow": {
       "dependencies": {
@@ -1391,8 +1442,9 @@
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/BiostructureViewer"
-      }
+        "directory": "packages/Arrow"
+      },
+      "category": "Development"
     }
   }
 }

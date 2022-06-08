@@ -68,5 +68,6 @@
   ],
   "canView": [
     "All users"
-  ]
+  ],
+	"category": "Cheminformatics"
 }

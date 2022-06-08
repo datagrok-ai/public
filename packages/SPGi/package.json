@@ -15,5 +15,6 @@
     "css/spgi.css"
   ],
   "canEdit": [ "Developers" ],
-  "canView": [ "All users" ]
+  "canView": [ "All users" ],
+	"category": "Cheminformatics"
 }

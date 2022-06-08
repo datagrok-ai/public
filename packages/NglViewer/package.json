@@ -13,5 +13,6 @@
     "common/ngl_viewer/ngl.js"
   ],
   "canEdit": [ "Developers" ],
-  "canView": [ "All users" ]
+  "canView": [ "All users" ],
+  "category": "Bioinformatics"
 }
