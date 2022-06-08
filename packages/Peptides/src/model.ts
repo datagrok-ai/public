@@ -28,6 +28,7 @@ export class PeptidesModel {
   _isUpdating: boolean = false;
   _isSubstInitialized = false;
   isBitsetChangedInitialized = false;
+  isCellChanging = false;
 
   //viewer properties
   _filterMode!: boolean;
@@ -84,6 +85,11 @@ export class PeptidesModel {
   set currentSelection(selection: type.SelectionObject) {
     this._currentSelection = selection;
     this._dataFrame.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
+
+    this.modifyOrCreateSplitCol();
+    this.fireBitsetChanged();
+    this.invalidateGrids();
+    grok.shell.o = this._dataFrame;
   }
 
   updateProperties(): void {
@@ -232,30 +238,11 @@ export class PeptidesModel {
 
     this.setInteractionCallback();
 
-    // this.modifyOrCreateSplitCol('', '');
     this.modifyOrCreateSplitCol();
 
     this.setBitsetCallback();
 
     this.postProcessGrids(this._sourceGrid, invalidIndexes, sarGrid, sarVGrid);
-
-    // const currentAAR = this._dataFrame.tags[C.TAGS.AAR];
-    // const currentPos = this._dataFrame.tags[C.TAGS.POSITION];
-    const [currentPos, currentAAR] =
-      Object.entries(this.currentSelection)[0]?.map(v => v instanceof Array ? v[0] : v) ?? ['', ''];
-    if (currentAAR !== currentPos) {
-      const sarDf = sarGrid.dataFrame;
-      const rowCount = sarDf.rowCount;
-      let index = -1;
-      const aarCol = sarDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
-      for (let i = 0; i < rowCount; i++) {
-        if (aarCol.get(i) === currentAAR) {
-          index = i;
-          break;
-        }
-      }
-      sarDf.currentCell = sarDf.cell(index, currentPos);
-    }
 
     //TODO: return class instead
     return [sarGrid, sarVGrid, statsDf];
@@ -667,90 +654,63 @@ export class PeptidesModel {
     const sarDf = this._sarGrid.dataFrame;
     const sarVDf = this._sarVGrid.dataFrame;
 
-    //rework, it doesn't even get into isVertical clause
-    const getAARandPosition = (isVertical = false): [string, string] => {
-      let aar : string;
-      let position: string;
-      if (isVertical) {
-        const currentRowIdx = sarVDf.currentRowIdx;
-        aar = sarVDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, currentRowIdx);
-        position = sarVDf.get(C.COLUMNS_NAMES.POSITION, currentRowIdx);
-      } else {
-        aar = sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, sarDf.currentRowIdx);
-        position = sarDf.currentCol.name;
-      }
-      return [aar, position];
+    const chooseAction = (aar: string, position: string, isAltPressed: boolean) => {
+      isAltPressed ? this.modifyCurrentSelection(aar, position) : this.initCurrentSelection(aar, position);
     };
 
-    this._sarGrid.onCurrentCellChanged.subscribe((gc) => {
-      // const isNegativeRowIndex = sarDf.currentRowIdx === -1;
-      // if (!sarDf.currentCol || (!sarDf.currentCell.value && !isNegativeRowIndex))
-      //   return;
-      // this.syncGrids(false, sarDf, sarVDf);
-      // let aar: string = '';// C.CATEGORIES.ALL;
-      // let position: string = '';// C.CATEGORIES.ALL;
-      // if (!isNegativeRowIndex) {
-      //   [aar, position] = getAARandPosition();
-      //   // this._dataFrame.tags[C.TAGS.AAR] = aar;
-      //   // this._dataFrame.tags[C.TAGS.POSITION] = position;
-      //   this.setCurrentSelectionSingle(aar, position);
-      // } else
-      //   // this._dataFrame.tags[C.TAGS.AAR] = this._dataFrame.tags[C.TAGS.POSITION] = '';
-      // if (!isNegativeRowIndex)
-      //   [aar, position] = getAARandPosition();
-
-      // this.setCurrentSelectionSingle(aar, position);
-      // this.modifyOrCreateSplitCol(aar, position);
-      this.modifyOrCreateSplitCol();
-      this.fireBitsetChanged();
-      this.invalidateGrids();
-      grok.shell.o = this._dataFrame;
-      console.warn('Current cell changed');
-    });
-
-    const sarGridRoot = this._sarGrid.root;
-    sarGridRoot.addEventListener('click', ev => {
-      const isNegativeRowIndex = sarDf.currentRowIdx === -1;
-      if (!sarDf.currentCol || (!sarDf.currentCell.value && !isNegativeRowIndex))
+    const gridCellValidation = (gc: DG.GridCell | null) => !gc || !gc.tableColumn || gc.tableRowIndex == null ||
+      gc.tableRowIndex == -1;
+    this._sarGrid.root.addEventListener('click', (ev) => {
+      const gridCell = this._sarGrid.hitTest(ev.offsetX, ev.offsetY);
+      if (gridCellValidation(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)
         return;
-      this.syncGrids(false, sarDf, sarVDf);
-      let aar: string = '';// C.CATEGORIES.ALL;
-      let position: string = '';// C.CATEGORIES.ALL;
-      if (!isNegativeRowIndex)
-        [aar, position] = getAARandPosition();
-      ev.altKey ? this.modifyCurrentSelection(aar, position) : this.initCurrentSelection(aar, position);
 
-      console.warn('Grid clicked');
+      const position = gridCell!.tableColumn!.name;
+      const aar = sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, gridCell!.tableRowIndex!);
+      chooseAction(aar, position, ev.altKey);
     });
 
-    this._sarVGrid.onCurrentCellChanged.subscribe((gc) => {
-      if (!sarVDf.currentCol || sarVDf.currentRowIdx === -1)
+    this._sarVGrid.root.addEventListener('click', (ev) => {
+      const gridCell = this._sarVGrid.hitTest(ev.offsetX, ev.offsetY);
+      if (gridCellValidation(gridCell) || gridCell!.tableColumn!.name != C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return;
-      this.syncGrids(true, sarDf, sarVDf);
+
+      const tableRowIdx = gridCell!.tableRowIndex!;
+      const position = sarVDf.get(C.COLUMNS_NAMES.POSITION, tableRowIdx);
+      const aar = sarVDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIdx);
+      chooseAction(aar, position, ev.altKey);
     });
+
+    const cellChanged = (table: DG.DataFrame) => {
+      if (this.isCellChanging)
+        return;
+      this.isCellChanging = true;
+      table.currentRowIdx = -1;
+      this.isCellChanging = false;
+    };
+    this._sarGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(sarDf));
+    this._sarVGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(sarVDf));
   }
 
   modifyCurrentSelection(aar: string, position: string): void {
-    if (!this.currentSelection.hasOwnProperty(position)) {
-      this.currentSelection[position] = [aar];
-      return;
-    }
-    const aarIndex = this.currentSelection[position].indexOf(aar);
-    if (aarIndex == -1)
-      this.currentSelection[position].push(aar);
+    const tempSelection = this.currentSelection;
+    if (!tempSelection.hasOwnProperty(position))
+      tempSelection[position] = [aar];
     else {
-      this.currentSelection[position].splice(aarIndex, 1);
-      if (this.currentSelection[position].length == 0)
-        delete this.currentSelection[position];
+      const tempSelectionAt = tempSelection[position];
+      const aarIndex = tempSelectionAt.indexOf(aar);
+      aarIndex == -1 ? tempSelectionAt.push(aar) :
+        tempSelectionAt.length == 1 ? delete tempSelection[position] :
+          tempSelectionAt.splice(aarIndex, 1);
     }
-    this._dataFrame.tags[C.TAGS.SELECTION] = JSON.stringify(this._currentSelection);
+
+    this.currentSelection = tempSelection;
   }
 
   initCurrentSelection(aar: string, position: string): void {
-    const tempSelectionObject: type.SelectionObject = {};
-    if (aar != position)
-      tempSelectionObject[position] = [aar];
-    this.currentSelection = tempSelectionObject;
+    const tempSelection: type.SelectionObject = {};
+    tempSelection[position] = [aar];
+    this.currentSelection = tempSelection;
   }
 
   invalidateGrids(): void {
@@ -773,7 +733,7 @@ export class PeptidesModel {
       //   const currentCategory = this.splitCol.get(i);
       //   return currentCategory !== C.CATEGORIES.OTHER && currentCategory !== C.CATEGORIES.ALL;
       // }, false);
-      currentBitset.init(i => this.splitCol.get(i), false);
+      currentBitset.init((i) => this.splitCol.get(i), false);
     };
 
     const recalculateStatistics =
@@ -819,57 +779,6 @@ export class PeptidesModel {
     sarVGrid.props.allowEdit = false;
   }
 
-  //TODO: refactor, use this.sarDf and accept aar & position as parameters
-  syncGrids(sourceVertical: boolean, sarDf: DG.DataFrame, sarVDf: DG.DataFrame): void {
-    let otherColName: string;
-    let otherRowIndex: number;
-    const otherDf = sourceVertical ? sarDf : sarVDf;
-
-    if (otherDf.temp[C.FLAGS.CELL_CHANGING])
-      return;
-
-    //on vertical SAR viewer click
-    if (sourceVertical) {
-      const currentRowIdx = sarVDf.currentRowIdx;
-      const currentColName = sarVDf.currentCol.name;
-      if (currentColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
-        return;
-
-      otherColName = sarVDf.get(C.COLUMNS_NAMES.POSITION, currentRowIdx);
-      const otherRowName: string = sarVDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, currentRowIdx);
-      otherRowIndex = -1;
-      const rows = otherDf.rowCount;
-      for (let i = 0; i < rows; i++) {
-        if (otherDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === otherRowName) {
-          otherRowIndex = i;
-          break;
-        }
-      }
-    //on SAR viewer click
-    } else {
-      otherColName = C.COLUMNS_NAMES.MEAN_DIFFERENCE;
-      const otherPos: string = sarDf.currentCol.name;
-      if (otherPos === C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)
-        return;
-
-      const otherAAR: string =
-        sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, sarDf.currentRowIdx);
-      otherRowIndex = -1;
-      for (let i = 0; i < sarVDf.rowCount; i++) {
-        if (
-          sarVDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === otherAAR &&
-          sarVDf.get(C.COLUMNS_NAMES.POSITION, i) === otherPos
-        ) {
-          otherRowIndex = i;
-          break;
-        }
-      }
-    }
-    otherDf.temp[C.FLAGS.CELL_CHANGING] = true;
-    otherDf.currentCell = otherDf.cell(otherRowIndex, otherColName);
-    otherDf.temp[C.FLAGS.CELL_CHANGING] = false;
-  }
-
   getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
     const currentAAR = this._dataFrame.get(position, index) as string;
     return currentAAR === aar ? aarLabel : C.CATEGORIES.OTHER;
@@ -880,18 +789,12 @@ export class PeptidesModel {
     const df = this._dataFrame;
     this.splitCol = df.col(C.COLUMNS_NAMES.SPLIT_COL) ?? df.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
 
-    // if (aar == position) {
-    //   this.splitCol.init(() => true);
-    //   return;
-    // }
     const positionList = Object.keys(this.currentSelection);
     if (positionList.length == 0) {
       this.splitCol.init(() => true);
       return;
     }
 
-    // const posCol: DG.Column<string> = this._dataFrame.getCol(position);
-    // this.splitCol.init(i => posCol.get(i) == aar);
     //TODO: move out
     const splitColInit = (i: number) => {
       for (const position of positionList) {
@@ -901,7 +804,7 @@ export class PeptidesModel {
       }
       return false;
     };
-    this.splitCol.init(i => splitColInit(i))
+    this.splitCol.init((i) => splitColInit(i));
 
     this.splitCol.compact();
   }
@@ -1001,10 +904,6 @@ export class PeptidesModel {
       invalidIndexes,
     ];
   }
-
-  // getCurrentAARandPos(): {aar: string, pos: string} {
-  //   return {aar: this._dataFrame.getTag(C.TAGS.AAR) ?? 'All', pos: this._dataFrame.getTag(C.TAGS.POSITION) ?? 'All'};
-  // }
 
   syncProperties(isSourceSAR = true): void {
     const sarViewer = this._dataFrame.temp['sarViewer'];
