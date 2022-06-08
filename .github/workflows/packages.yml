@@ -215,7 +215,7 @@ jobs:
           echo "$(jq .name package.json | sed -E -e 's/(^"|"$)//g' -e 's,@datagrok/,,g')" >> gh-cache/${{ matrix.package }}.name.txt
           echo "$(jq .description package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.description.txt
           echo "$(jq '. | select( has("repository") == true ).repository' package.json)" >> gh-cache/${{ matrix.package }}.repository.txt
-          echo "$(jq '. | select( has("category") == true ).category' package.json)" >> gh-cache/${{ matrix.package }}.category.txt
+          echo "$(jq '. | select( has("category") == true ).category' package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.category.txt
           echo "$(jq .version package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.version.txt
           echo "${deps}" >> gh-cache/${{ matrix.package }}.dependencies.txt
           echo "::set-output name=push::yes"
