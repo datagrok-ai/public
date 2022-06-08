@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -69,6 +69,9 @@
         },
         "1.3.4": {
           "datagrok-api": "^1.0.0"
+        },
+        "1.3.5": {
+          "datagrok-api": "^1.0.0"
         }
       },
       "description": "DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. Its purpose is to simplify and assist in the development of platform extensions. This is achieved through familiarizing developers with Datagrok's [object](https://datagrok.ai/help/overview/objects) model and providing them with reproducible code snippets that fit their data. This approach allows to explore the key functionality from the interface, learn by example, jump to the [documentation](https://datagrok.ai/help/) or [API](https://datagrok.ai/js-api/) reference in one click, and much more. It also helps focus on the problem you are trying to solve: you can interact with your data from the outset while some of the program's building blocks are generated for you.",
@@ -76,7 +79,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/DevTools"
-      }
+      },
+      "category": "\"Dev\""
     },
     "sqlite": {
       "dependencies": {
@@ -341,6 +345,9 @@
         },
         "1.0.0": {
           "datagrok-api": "^1.0.0"
+        },
+        "1.0.1": {
+          "datagrok-api": "^1.0.0"
         }
       },
       "description": "Commonly used platform enhancements",
@@ -348,7 +355,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/PowerPack"
-      }
+      },
+      "category": "\"Dev\""
     },
     "clinical-case": {
       "dependencies": {
@@ -558,14 +566,16 @@
         },
         "1.0.2": {
           "datagrok-api": "^0.151.6"
-        }
+        },
+        "1.0.3": {}
       },
       "description": "API Samples",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/ApiSamples"
-      }
+      },
+      "category": "\"Dev\""
     },
     "usage-analysis": {
       "dependencies": {
