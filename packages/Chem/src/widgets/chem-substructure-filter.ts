@@ -29,7 +29,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get isFiltering(): boolean {
-    return super.isFiltering && !(this.sketcher?.getMolFile().split("\n")[3].trimLeft()[0] === '0');
+    return super.isFiltering && (!!this.sketcher?.getMolFile() && !(this.sketcher?.getMolFile().split("\n")[3].trimStart()[0] === '0'));
   }
 
   get isReadyToApplyFilter(): boolean {
