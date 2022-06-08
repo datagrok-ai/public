@@ -23,13 +23,13 @@
 * Concepts
 * Rendering (canvas/svg, alignment, highlighting, options)
 * Sketchers
-* Fingerprints 
+* Fingerprints
 * Substructure search
 * Similarity search
 * Public datasets (Chembl, Drugbank, )
-* Predictive modeling (chemprop) 
+* Predictive modeling (chemprop)
 * RDKit cartridge
-* Use existing tools (activity cliffs, similarity/diversity browsers) 
+* Use existing tools (activity cliffs, similarity/diversity browsers)
 * Explain all points above
 
 ## Machine learning track
@@ -37,6 +37,6 @@
 * Use the built-in model builder
 * Custom ML models
 
+See also:
 
-See also
 * [JavaScript API](../js-api.md)
