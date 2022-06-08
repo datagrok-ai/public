@@ -1,6 +1,31 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-08 Dev build 1.2.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.2.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Closes #405: Switching table for a viewer: column selection dropdown/dialog in properties panel is not updated 
+* Row number is not clickable after applying saved layout #679 
+* Closes #687: Filters: ESC should toggle all filters on/off 
+* Closes #608: [Filer panel] Substructure search improvements 
+* Fix new datagrok image 
+* GtHub actions: Fix category for Mets 
+* Chem: fixed empty molecule check 
+* Make CloseAll aware of ignoreCloseAll 
+* Wiki: fix documentation using markdownlint 
+* JS-API: fixed check marks in sketcher menu 
+* #691: getColumnSeparator function intial 
+
+
 # 2022-06-07 Dev build 1.1.9
 
 ## Latest Docker Images
