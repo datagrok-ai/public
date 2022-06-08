@@ -38,5 +38,6 @@
 		"debug-powergrid-public": "grok publish public --rebuild",
 		"release-powergrid-public": "grok publish public --rebuild --release",
 		"debug-powergrid-local": "grok publish local --rebuild"
-	}
+	},
+  "category": "Development"
 }

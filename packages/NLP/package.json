@@ -32,5 +32,6 @@
 		"release-nlp-localhost": "webpack && grok publish localhost --release"
 	},
 	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+	"canView": [ "All users" ],
+	"category": "Machine Learning"
 }

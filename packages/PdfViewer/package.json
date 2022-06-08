@@ -14,5 +14,6 @@
     "js/pdf.worker.js"
   ],
   "canEdit": [ "Developers" ],
-  "canView": [ "All users" ]
+  "canView": [ "All users" ],
+  "category": "Development"
 }

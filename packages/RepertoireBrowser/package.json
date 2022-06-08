@@ -52,5 +52,6 @@
 	],
 	"canView": [
 		"All users"
-	]
+	],
+  "category": "Bioinformatics"
 }

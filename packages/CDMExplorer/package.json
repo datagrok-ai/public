@@ -23,5 +23,6 @@
 		"datagrok-api": "^0.148.0",
 		"webpack": "latest",
 		"webpack-cli": "latest"
-	}
+	},
+  "category": "Health"
 }

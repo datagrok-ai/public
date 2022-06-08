@@ -22,5 +22,6 @@
     "release-chemblbrowser-public": "grok publish public --rebuild --release",
     "debug-chemblbrowser-localhost": "grok publish localhost --rebuild",
     "release-chemblbrowser-localhost": "grok publish localhost --rebuild --release"
-  }
+  },
+	"category": "Cheminformatics"
 }

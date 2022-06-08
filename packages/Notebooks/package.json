@@ -55,5 +55,6 @@
     "upload-deploy": "datagrok-upload http://localhost:8082 deploy rebuild"
   },
   "canEdit": [ "Developers" ],
-  "canView": [ "All users" ]
+  "canView": [ "All users" ],
+  "category": "Development"
 }

@@ -37,5 +37,6 @@
 		"release-viewers-localhost": "grok publish localhost --rebuild --release"
 	},
 	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+	"canView": [ "All users" ],
+  "category": "Visualizations"
 }
