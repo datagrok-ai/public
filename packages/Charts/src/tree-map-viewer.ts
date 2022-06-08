@@ -8,7 +8,7 @@ export class TreeMapViewer extends EChartViewer {
 
     this.option = {
       tooltip: {
-        formatter: function(info) {
+        formatter: function(info: { [key: string]: any }) {
           const treePathInfo = info.treePathInfo;
           const treePath = [];
 
@@ -28,7 +28,7 @@ export class TreeMapViewer extends EChartViewer {
     };
 
     this.onPropertyChanged(null);
-    this.chart.on('click', (params) => {
+    this.chart.on('click', (params: { [key: string]: any }) => {
       console.log(params);
       const pattern = Utils.pathToPattern(this.getColumnNames(), params.data.path);
       this.dataFrame.rows.match(pattern).select();

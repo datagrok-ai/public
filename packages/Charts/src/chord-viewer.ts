@@ -1,4 +1,6 @@
+import * as DG from 'datagrok-api/dg';
 import { EChartViewer, Utils } from './echart-viewer';
+
 
 export class ChordViewer extends EChartViewer {
   constructor() {
@@ -43,7 +45,7 @@ export class ChordViewer extends EChartViewer {
     const nodes = [];
 
     const categories = Array.from(new Set(fromCol.categories.concat(toCol.categories)));
-    const map = {};
+    const map: { [key: string]: any } = {};
     categories.forEach((cat, ind) => map[cat] = {id: ind, value: 0});
     const rowCount = this.dataFrame.rowCount;
     for (let i = 0; i < rowCount; i++) {
@@ -53,7 +55,7 @@ export class ChordViewer extends EChartViewer {
 
     const min = 1; const max = rowCount * 2;
     const minSize = 5; const maxSize = 150;
-    const scale = (n) => maxSize*(n - min)/(max - min) + minSize;
+    const scale = (n: number) => maxSize*(n - min)/(max - min) + minSize;
 
     for (const name of categories) {
       nodes.push({

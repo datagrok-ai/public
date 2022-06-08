@@ -3,13 +3,20 @@ const path = require('path');
 module.exports = {
   mode: 'production',
   entry: {
-    package: './src/package.js'
+    package: './src/package.ts'
+  },
+  resolve: {
+    extensions: ['.js', '.json', '.ts'],
   },
   module: {
     rules: [
       {
         test: /\.css$/i,
         use: ['style-loader', 'css-loader'],
+      },
+      {
+        test: /\.ts$/,
+        loader: 'ts-loader',
       },
     ]
   },

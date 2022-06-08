@@ -1,7 +1,17 @@
+import * as DG from 'datagrok-api/dg';
 import { EChartViewer, Utils } from './echart-viewer';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 export class TreeViewer extends EChartViewer {
+  layout: string;
+  orient: string;
+  expandAndCollapse: boolean;
+  edgeShape: string;
+  symbol: string;
+  symbolSize: number;
+  legendColors: string[];
+  newickCol: DG.Column | null = null;
+
   constructor() {
     super();
 
@@ -59,7 +69,7 @@ export class TreeViewer extends EChartViewer {
     this.option.series.length = 0;
 
     for (const i of this.dataFrame.filter.getSelectedIndexes()) {
-      const tree = this.parseNwk(this.newickCol.get(i));
+      const tree = this.parseNwk(this.newickCol!.get(i));
       const name = `tree-${i}`;
       const color = this.legendColors[i % this.legendColors.length];
 
@@ -86,7 +96,7 @@ export class TreeViewer extends EChartViewer {
     }
   }
 
-  parseNwk(s) {
+  parseNwk(s: string) {
     return { name: 'A', children: [
       { name: 'B', value: 123 }, { name: 'C', children: [{ name: 'D', value: 456 }, { name: 'E', value: 789 },
       ] }] };
@@ -100,7 +110,7 @@ export class TreeViewer extends EChartViewer {
       this.option.series[0].data = [Utils.toTree(this.dataFrame, ['sex', 'race', 'dis_pop'], this.dataFrame.filter)];
   }
 
-  onPropertyChanged(p, render = true) {
+  onPropertyChanged(p: DG.Property | null, render: boolean = true) {
     const properties = p !== null ? [p] : this.props.getProperties();
     const isForest = this.option.series.length > 1;
 
