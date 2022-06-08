@@ -4,39 +4,51 @@ import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
 
+//TODO: get rid of await?
 export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widget> {
   const model = await PeptidesModel.getInstance(table);
   const substInfo = model.substitutionsInfo;
-  // const currentCell = model.getCurrentAARandPos();
   const currentCell = model.currentSelection;
-  const pos = Object.keys(currentCell)[0];
-  const aar = currentCell[pos][0];
+  const positions = Object.keys(currentCell);
 
-  if (aar === pos)
-    return new DG.Widget(ui.label('No substitution table generated'));
-
-  const substitutionsMap =
-    substInfo.get(aar)?.get(pos) as Map<number, type.UTypedArray> | undefined;
-  if (typeof substitutionsMap === 'undefined')
+  if (!positions.length)
     return new DG.Widget(ui.label('No substitution table generated'));
 
   const substitutionsArray: string[] = [];
   const deltaArray: number[] = [];
   const substitutedToArray: string[] = [];
-  // const alignedSeqCol = table.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE);
-  // const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const alignedSeqCol = table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
   const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
-  const posCol = table.getCol(pos);
-  for (const [referenceIdx, indexArray] of substitutionsMap.entries()) {
-    const baseSequence = alignedSeqCol.get(referenceIdx);
-    const baseActivity = activityScaledCol.get(referenceIdx);
-    for (const subIdx of indexArray) {
-      substitutionsArray.push(`${baseSequence}#${alignedSeqCol.get(subIdx)}`);
-      deltaArray.push(baseActivity - activityScaledCol.get(subIdx));
-      substitutedToArray.push(posCol.get(subIdx));
+  const seenIndexes = new Map<number, number[]>();
+
+  for (const pos of positions) {
+    for (const aar of currentCell[pos]) {
+      const substitutionsMap = substInfo.get(aar)?.get(pos) as Map<number, type.UTypedArray> | undefined;
+      if (typeof substitutionsMap === 'undefined')
+        continue;
+
+      const posCol = table.getCol(pos);
+      for (const [referenceIdx, indexArray] of substitutionsMap.entries()) {
+        const forbiddentIndexes = seenIndexes.has(referenceIdx) ? seenIndexes.get(referenceIdx)! : [];    
+        const baseSequence = alignedSeqCol.get(referenceIdx);
+        const baseActivity = activityScaledCol.get(referenceIdx);
+
+        for (const subIdx of indexArray) {
+          if (forbiddentIndexes.includes(subIdx))
+            continue;
+
+          if (!seenIndexes.has(subIdx))
+            seenIndexes.set(subIdx, []);
+
+          seenIndexes.get(subIdx)!.push(referenceIdx);
+          substitutionsArray.push(`${baseSequence}#${alignedSeqCol.get(subIdx)}`);
+          deltaArray.push(baseActivity - activityScaledCol.get(subIdx));
+          substitutedToArray.push(posCol.get(subIdx));
+        }
+      }
     }
   }
+
   const substCol = DG.Column.fromStrings('Substiutions', substitutionsArray);
   substCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE_DIFFERENCE;
   const toColName = '~to';
