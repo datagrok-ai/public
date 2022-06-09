@@ -70,7 +70,7 @@ export class PtmFilter extends DG.Filter {
     super.attach(dataFrame);
 
     const tempDf = this.referenceDf.clone(null, ['v_id']);
-    (tempDf.columns as DG.ColumnList).addNewInt('index').init((i) => i);
+    tempDf.columns.addNewInt('index').init((i) => i);
     this.indexes = (dataFrame.clone(null, ['v id']).join(tempDf, ['v id'], ['v_id'], [], ['index'], 'left', false)
       .getCol('index').getRawData() as Int32Array);
 
@@ -124,11 +124,23 @@ export class PtmFilter extends DG.Filter {
       this.chainType = chainTypeInput.stringValue as ChainTypeType;
       this.dataFrame.rows.requestFilter();
     });
+    const ptmInputLabel = ui.label('PTM');
+    ptmInputLabel.style.marginTop = '5px';
     //@ts-ignore: method api is wrong
     const ptmInput = ui.multiChoiceInput('PTM', this.ptmInputValue, this.ptmKeys, () => {
       this.ptmInputValue = ptmInput.value;
       this.dataFrame.rows.requestFilter();
     });
+    ptmInput.root.style.width = 'max-content';
+    const ptmInputCash = $(ptmInput.root);
+    ptmInputCash.find('.ui-input-multi-choice-checks > div > input.ui-input-editor[type="checkbox"]')
+      .each((_i, element) => {
+        element.style.margin = '0';
+      });
+    ptmInputCash.find('.ui-input-multi-choice-checks > div').each((_i, element) => {
+      ui.tooltip.bind(element, `${element.lastChild.textContent}`);
+    });
+    ptmInputCash.children().first().remove();
     const cdrInput = ui.choiceInput('CDR', this.currentCdr, this.cdrKeys, () => {
       this.currentCdr = cdrInput.stringValue === 'None' ?
         'max' : this.cdrMap[this.normalizedCDRMap[`${this.chainType} ${cdrInput.stringValue}`]];
@@ -136,9 +148,16 @@ export class PtmFilter extends DG.Filter {
     });
 
     const probabilityHeader = ui.divText(this.getProbabilityText());
+    probabilityHeader.style.marginTop = '5px';
+    probabilityHeader.style.marginBottom = '5px';
     const probabilityInput = ui.rangeSlider(0, 1, this.cMin, this.cMax);
+
+    const rsMin = ui.inlineText(['0']);
+    rsMin.style.marginRight = '5px';
+    const rsMax = ui.inlineText(['1']);
+    rsMax.style.marginLeft = '5px';
     const probabilityHost = ui.divV([
-      probabilityHeader, ui.divH([ui.inlineText(['0']), probabilityInput.root, ui.inlineText(['1'])])]);
+      probabilityHeader, ui.divH([rsMin, probabilityInput.root, rsMax])]);
 
     probabilityInput.onValuesChanged.subscribe((_) => {
       this.cMin = parseFloat(probabilityInput.min.toFixed(3));
@@ -148,7 +167,7 @@ export class PtmFilter extends DG.Filter {
     });
     $(probabilityInput.root).children('*').height('17px').css('max-width', '265px');
 
-    this.root = ui.divV([chainTypeInput.root, cdrInput.root, ptmInput.root, probabilityHost]);
+    this.root = ui.divV([chainTypeInput.root, cdrInput.root, ptmInputLabel, ptmInput.root, probabilityHost]);
     this.root.style.margin = '10px';
   }
 
