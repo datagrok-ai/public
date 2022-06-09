@@ -82,7 +82,7 @@ export class WebLogo extends DG.JsViewer {
 
   private axisHeight: number = 12;
 
-  private seqCol: DG.Column | null = null;
+  private seqCol: DG.Column<string> | null = null;
   // private maxLength: number = 100;
   private positions: PositionInfo[] = [];
 
@@ -102,6 +102,7 @@ export class WebLogo extends DG.JsViewer {
   public verticalAlignment: string | null;
   public horizontalAlignment: string | null;
   public fitArea: boolean;
+  public shrinkEmptyTail: boolean;
 
   private positionNames: string[] = [];
 
@@ -138,8 +139,8 @@ export class WebLogo extends DG.JsViewer {
       {choices: ['top', 'middle', 'bottom']});
     this.horizontalAlignment = this.string('horizontalAlignment', 'center',
       {choices: ['left', 'center', 'right']});
-    this.fitArea = this.bool('fitArea', true,
-      {});
+    this.fitArea = this.bool('fitArea', true);
+    this.shrinkEmptyTail = this.bool('shrinkEmptyTail', true);
   }
 
   private async init(): Promise<void> {
@@ -192,8 +193,8 @@ export class WebLogo extends DG.JsViewer {
       if (this.dataFrame && this.seqCol && monomer) {
         ui.tooltip.showRowGroup(this.dataFrame, (iRow) => {
           const seq = this.seqCol!.get(iRow);
-          const mSeq = seq ? WebLogo.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
-          return mSeq === monomer && this.dataFrame.filter.get(iRow);
+          const seqM = seq ? WebLogo.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
+          return seqM === monomer && this.dataFrame.filter.get(iRow);
         }, args.x + 16, args.y + 16);
       } else {
         ui.tooltip.hide();
@@ -211,8 +212,8 @@ export class WebLogo extends DG.JsViewer {
       if (this.dataFrame && this.seqCol && monomer) {
         this.dataFrame.selection.init((iRow) => {
           const seq = this.seqCol!.get(iRow);
-          const mSeq = seq ? WebLogo.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
-          return mSeq === monomer && this.dataFrame.filter.get(iRow);
+          const seqM = seq ? WebLogo.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
+          return seqM === monomer && this.dataFrame.filter.get(iRow);
         });
       }
     }));
@@ -243,28 +244,45 @@ export class WebLogo extends DG.JsViewer {
         this.sequenceColumnName = this.seqCol ? this.seqCol.name : null;
       }
       if (this.seqCol) {
-        const maxLength = Math.max(...this.seqCol.categories.map((s) => WebLogo.splitSeqToMonomers(s).length));
-
-        // Get position names from data column tag 'positionNames'
-        const positionNamesTxt = this.seqCol.getTag('positionNames');
-        // Fallback if 'positionNames' tag is not provided
-        this.positionNames = positionNamesTxt ? positionNamesTxt.split(', ').map((n) => n.trim()) :
-          [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`);
-
-        this.startPosition = this.startPositionName && this.positionNames ?
-          this.positionNames.indexOf(this.startPositionName) : 0;
-        this.endPosition = this.endPositionName && this.positionNames ?
-          this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
-
+        this.updatePositions();
         this.cp = WebLogo.pickUpPalette(this.seqCol);
       } else {
-        this.cp = null;
         this.positionNames = [];
         this.startPosition = -1;
         this.endPosition = -1;
+        this.cp = null;
       }
     }
     this.render();
+  }
+
+  private updatePositions(): void {
+    if (!this.seqCol)
+      return;
+
+    let categories: (string | null) [];
+    if (this.shrinkEmptyTail) {
+      const indices: Int32Array = this.dataFrame.filter.getSelectedIndexes();
+      categories = Array.from(new Set(
+        Array.from(Array(indices.length).keys()).map((i: number) => this.seqCol!.get(indices[i]))));
+    } else {
+      categories = this.seqCol.categories;
+    }
+    const maxLength = categories.length > 0 ? Math.max(...categories.map(
+      (s) => s !== null ? WebLogo.splitSeqToMonomers(s).length : 0)) : 0;
+
+    // Get position names from data column tag 'positionNames'
+    const positionNamesTxt = this.seqCol.getTag('positionNames');
+    // Fallback if 'positionNames' tag is not provided
+    this.positionNames = positionNamesTxt ? positionNamesTxt.split(', ').map((n) => n.trim()) :
+      [...Array(maxLength).keys()].map((jPos) => `${jPos + 1}`);
+
+    this.startPosition = (this.startPositionName && this.positionNames &&
+      this.positionNames.includes(this.startPositionName)) ?
+      this.positionNames.indexOf(this.startPositionName) : 0;
+    this.endPosition = (this.endPositionName && this.positionNames &&
+      this.positionNames.includes(this.endPositionName)) ?
+      this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
   }
 
   public override onPropertyChanged(property: DG.Property): void {
@@ -306,6 +324,10 @@ export class WebLogo extends DG.JsViewer {
     case 'fitArea':
       this.render(true);
       break;
+    case 'shrinkEmptyTail':
+      this.updatePositions();
+      this.render(true);
+      break;
     }
   }
 
@@ -315,7 +337,10 @@ export class WebLogo extends DG.JsViewer {
 
     if (this.dataFrame !== void 0) {
       this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
-      this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
+      this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
+        this.updatePositions();
+        this.render();
+      }));
     }
 
     await this.init();
@@ -329,8 +354,7 @@ export class WebLogo extends DG.JsViewer {
   }
 
   protected _calculate() {
-    if (!this.canvas || !this.host || !this.seqCol || !this.dataFrame ||
-      this.startPosition === -1 || this.endPosition === -1)
+    if (!this.canvas || !this.host || !this.seqCol || !this.dataFrame)
       return;
 
     this.calcSize();
@@ -420,8 +444,7 @@ export class WebLogo extends DG.JsViewer {
       }
     }
 
-    if (!this.canvas || !this.seqCol || !this.dataFrame || !this.cp ||
-      this.startPosition === -1 || this.endPosition === -1)
+    if (!this.canvas || !this.seqCol || !this.dataFrame || !this.cp)
       return;
 
     const g = this.canvas.getContext('2d');
@@ -430,14 +453,14 @@ export class WebLogo extends DG.JsViewer {
     if (recalc)
       this._calculate();
 
-    // let rowCount = this.rowsMasked;
-    // if (!this.considerNullSequences)
-    //   rowCount -= this.rowsNull;
-
     g.resetTransform();
     g.fillStyle = 'white';
     g.fillRect(0, 0, this.canvas.width, this.canvas.height);
     g.textBaseline = this.textBaseline;
+
+    // Prevents division by zero on Length = 0
+    if (this.startPosition === -1 || this.endPosition === -1)
+      return;
 
     //#region Plot positionNames
     g.resetTransform();
@@ -576,7 +599,7 @@ export class WebLogo extends DG.JsViewer {
       res = NucleotidesPalettes.Chromatogram;
       break;
     }
-    const alphabetFreqs: MonomerFreqs = WebLogo.getAlphabetFreqs(seqCol);
+    const alphabetFreqs: MonomerFreqs = WebLogo.getAlphabetFreqs(seqCol, minLength);
 
     const alphabetCandidates: [Set<string>, SeqPalette][] = [
       [new Set(Object.keys(Nucleotides.Names)), NucleotidesPalettes.Chromatogram],
@@ -586,7 +609,7 @@ export class WebLogo extends DG.JsViewer {
     const alphabetCandidatesSim: number[] = alphabetCandidates.map(
       (c) => WebLogo.getAlphabetSimilarity(alphabetFreqs, c[0]));
     const maxCos = Math.max(...alphabetCandidatesSim);
-    if (maxCos > 0.6)
+    if (maxCos > 0.65)
       res = alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][1];
     else
       res = UnknownSeqPalettes.Color;
@@ -611,13 +634,16 @@ export class WebLogo extends DG.JsViewer {
     return res;
   }
 
-  public static getAlphabetFreqs(seqCol: DG.Column): MonomerFreqs {
+  public static getAlphabetFreqs(seqCol: DG.Column, minLength: number = 0): MonomerFreqs {
     const res: MonomerFreqs = {};
     for (const seq of seqCol.categories) {
-      for (const m of WebLogo.splitSeqToMonomers(seq)) {
-        if (!(m in res))
-          res[m] = 0;
-        res[m] += 1;
+      const mSeq: string[] = WebLogo.splitSeqToMonomers(seq);
+      if (mSeq.length > minLength) {
+        for (const m of mSeq) {
+          if (!(m in res))
+            res[m] = 0;
+          res[m] += 1;
+        }
       }
     }
     return res;
@@ -629,11 +655,9 @@ export class WebLogo extends DG.JsViewer {
 
     const freqA: number[] = [];
     const alphabetA: number[] = [];
-    let len: number = 0;
     for (const m of keys) {
       freqA.push(m in freq ? freq[m] : 0);
       alphabetA.push(alphabet.has(m) ? 1 : 0);
-      len += 1;
     }
     /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
     const freqV: Vector = new Vector(freqA);
