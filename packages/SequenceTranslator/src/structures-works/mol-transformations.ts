@@ -93,7 +93,7 @@ export function getNucleotidesMol(smilesCodes: string[], oclRender: boolean = fa
   return linkV3000(molBlocks, false, oclRender);
 }
 
-export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oclRender: boolean = false) {
+export function linkV3000(molBlocks: string[], twoChains: boolean = false, oclRender: boolean = false) {
   let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
   macroMolBlock += '  0  0  0  0  0  0            999 V3000\n';
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
@@ -103,10 +103,9 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
   const collection: number [] = [];
   let natom = 0;
   let nbond = 0;
-  let sequenceShift = 0;
   let xShift = 0;
 
-  if (twoMolecules && molBlocks.length > 1)
+  if (twoChains && molBlocks.length > 1)
     molBlocks[1] = invertNucleotidesV3000(molBlocks[1]);
 
   for (let i = 0; i < molBlocks.length; i++) {
@@ -114,13 +113,23 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
       .replaceAll('-\nM  V30 ', '').replaceAll(' )', ')');
     const numbers = extractAtomsBondsNumbersV3000(molBlocks[i]);
     const coordinates = extractAtomDataV3000(molBlocks[i]);
+
+    if (twoChains) {
+      const xShiftRight = Math.min(...coordinates.x);
+      const yShift = i == 0 ? Math.min(...coordinates.y) - 1 : Math.max(...coordinates.y) + 1;
+      for (let j = 0; j < coordinates.x.length; j++)
+        coordinates.x[j] -= xShiftRight;
+      for (let j = 0; j < coordinates.y.length; j++)
+        coordinates.y[j] -= yShift;
+    }
+
     let indexAtoms = molBlocks[i].indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms coordinates
     indexAtoms = molBlocks[i].indexOf('\n', indexAtoms);
     let index = indexAtoms;
     let indexEnd = indexAtoms;
 
     for (let j = 0; j < numbers.natom; j++) {
-      if (coordinates.atomIndex[j] != 1 || i == 0 || twoMolecules) {
+      if (coordinates.atomIndex[j] != 1 || i == 0 || twoChains) {
         //rewrite atom number
         index = molBlocks[i].indexOf('V30', index) + 4;
         indexEnd = molBlocks[i].indexOf(' ', index);
@@ -132,13 +141,17 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
         index = molBlocks[i].indexOf(' ', index) + 1;
         indexEnd = molBlocks[i].indexOf(' ', index);
 
-        const totalShift = xShift - coordinates.x[0];
-        let coordinate = Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd)) + totalShift))/10000;
+        const totalShift = twoChains ? 0 : xShift - coordinates.x[0];
+        let coordinate = twoChains ?
+          Math.round(10000*coordinates.x[j])/10000 :
+          Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd)) + totalShift))/10000;
         molBlocks[i] = molBlocks[i].slice(0, index) + coordinate + molBlocks[i].slice(indexEnd);
 
         index = molBlocks[i].indexOf(' ', index) + 1;
         indexEnd = molBlocks[i].indexOf(' ', index);
-        coordinate = Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd)) + sequenceShift))/10000;
+        coordinate = twoChains ?
+          Math.round(10000*coordinates.y[j])/10000 :
+          Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd))))/10000;
         molBlocks[i] = molBlocks[i].slice(0, index) + coordinate + molBlocks[i].slice(indexEnd);
 
         index = molBlocks[i].indexOf('\n', index) + 1;
@@ -194,10 +207,9 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
       indexCollection = molBlocks[i].indexOf('M  V30 MDLV30/STEABS ATOMS=(', indexCollection);
     }
 
-    natom += twoMolecules ? numbers.natom : numbers.natom - 1;
+    natom += twoChains ? numbers.natom : numbers.natom - 1;
     nbond += numbers.nbond;
-    xShift += twoMolecules ? 0 : coordinates.x[numbers.natom - 1] - coordinates.x[0];
-    sequenceShift += twoMolecules ? -7 : 0;
+    xShift += twoChains ? 0 : coordinates.x[numbers.natom - 1] - coordinates.x[0];
   }
 
   const entries = 4;
@@ -224,7 +236,7 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
   }
 
   //generate file
-  twoMolecules? natom : natom++;
+  twoChains? natom : natom++;
   macroMolBlock += 'M  V30 COUNTS ' + natom + ' ' + nbond + ' 0 0 0\n';
   macroMolBlock += 'M  V30 BEGIN ATOM\n';
   macroMolBlock += atomBlock;
