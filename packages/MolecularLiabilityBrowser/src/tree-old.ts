@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
 import {TreeAnalyzer, PhylocanvasTreeNode} from './utils/tree-stats';
 
-export class TreeBrowser {// extends DG.JsViewer {
+export class TreeBrowserOld {// extends DG.JsViewer {
   static treeGridColumnsNameMapping = {
     totalLeaves: {name: 'Leaves', dType: 'int'},
     leavesIntersected: {name: 'Intersected', dType: 'int'},
@@ -139,9 +139,9 @@ export class TreeBrowser {// extends DG.JsViewer {
   onTreeGridCellTooltip(cell: DG.GridCell, x: number, y: number) {
     if (cell.isColHeader) {
       const msg = {
-        [TreeBrowser.treeGridColumnsNameMapping.totalLeaves.name]: 'Total tree leaves',
-        [TreeBrowser.treeGridColumnsNameMapping.leavesIntersected.name]: 'Tree leaves found also in the main taible',
-        [TreeBrowser.treeGridColumnsNameMapping.totalSubtreeLength.name]: 'Tree height',
+        [TreeBrowserOld.treeGridColumnsNameMapping.totalLeaves.name]: 'Total tree leaves',
+        [TreeBrowserOld.treeGridColumnsNameMapping.leavesIntersected.name]: 'Tree leaves found also in the main taible',
+        [TreeBrowserOld.treeGridColumnsNameMapping.totalSubtreeLength.name]: 'Tree height',
       };
       ui.tooltip.show(msg[cell.tableColumn.name] ?? cell.tableColumn.name, x, y);
       return true;
@@ -165,7 +165,7 @@ export class TreeBrowser {// extends DG.JsViewer {
     const df = DG.DataFrame.fromColumns(baseColumnNames.map((v) => this.dataFrame.col(v)));
 
     for (const k of Object.keys(stats)) {
-      const col = TreeBrowser.treeGridColumnsNameMapping[k];
+      const col = TreeBrowserOld.treeGridColumnsNameMapping[k];
       (df.columns as DG.ColumnList).add(DG.Column.fromList(col.dType, col.name, stats[k]));
     }
 

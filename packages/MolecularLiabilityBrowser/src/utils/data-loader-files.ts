@@ -9,8 +9,10 @@ import {
   MutcodesDataType,
   NumsType,
   ObsPtmType,
-  PtmMapType
+  PtmMapType,
+  catchToLog,
 } from './data-loader';
+
 
 export class DataLoaderFiles extends DataLoader {
   private _pName: string = 'MolecularLiabilityBrowser';
@@ -86,8 +88,10 @@ export class DataLoaderFiles extends DataLoader {
   }
 
   async listAntigens(): Promise<DG.DataFrame> {
-    const df: DG.DataFrame = await grok.functions.call(`${this._pName}:listAntigens`);
-    return df;
+    return catchToLog<Promise<DG.DataFrame>>('MLB database access error: ', async () => {
+      const df: DG.DataFrame = await grok.functions.call(`${this._pName}:listAntigens`);
+      return df;
+    });
   }
 
   async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {

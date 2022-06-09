@@ -7,6 +7,7 @@ import {DataLoader} from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
 import {VdRegion, VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {MolecularLiabilityBrowser} from './molecular-liability-browser';
+import {TreeBrowser} from './mlb-tree';
 
 // import {DataLoaderDb} from './utils/data-loader-db';
 
@@ -65,4 +66,12 @@ export async function MolecularLiabilityBrowserApp() {
 //output: viewer result
 export function vdRegionViewer() {
   return new VdRegionsViewer();
+}
+
+//name: MlbTree
+//description: Molecular Liability Browser clone tree viewer
+//tags: viewer, panel
+//output: viewer result
+export function MlbTreeViewer() {
+  return new TreeBrowser();
 }

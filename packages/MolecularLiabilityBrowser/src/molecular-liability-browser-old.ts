@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {TwinPviewer} from './viewers/twin-p-viewer';
-import {TreeBrowser} from './tree';
+import {TreeBrowserOld} from './tree-old';
 import {Subscription} from 'rxjs';
 import {
   DataLoader,
@@ -561,12 +561,12 @@ export class MolecularLiabilityBrowserOld {
 
     if (this.mlbView) {
       this.regionsViewer = new VdRegionsViewer();
-      await this.regionsViewer.init(this.mlbView);
+      await this.regionsViewer.init();
     }
 
     const dfTree: DG.DataFrame = await this.dataLoader.load_treeDf();
     if (dfTree) {
-      const treeBrowser = new TreeBrowser();
+      const treeBrowser = new TreeBrowserOld();
       await treeBrowser.init(dfTree, this.mlbView);
     }
 
