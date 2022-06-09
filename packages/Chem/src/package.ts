@@ -166,7 +166,7 @@ export async function checkSmilesValidity(molStrings: string[], minPerc: number)
       getRdKitModule().get_mol(molStrings[i]).delete();
       valid += 1;
     } finally {
-      if (valid > minValid)
+      if (valid >= minValid)
         return true;
     }
   }
