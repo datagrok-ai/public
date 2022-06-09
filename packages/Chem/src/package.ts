@@ -158,7 +158,7 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
 export function getMorganFingerprint(molString: string): DG.BitSet {
   const bitArray = chemSearches.chemGetFingerprint(molString, Fingerprint.Morgan);
   //@ts-ignore
-  return DG.BitSet.fromBytes(bitArray.getRawData(), bitArray.length);
+  return DG.BitSet.fromBytes(bitArray.getRawData().buffer, bitArray.length);
 }
 
 //name: getSimilarities
