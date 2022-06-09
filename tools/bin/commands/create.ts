@@ -72,7 +72,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
             '@types/jest': '^27.0.0'
           }, ts ? {
             'ts-jest': '^27.0.0',
-            'puppeteer': 'latest'
+            'puppeteer': '^13.7.0'
           } : {});
           Object.assign(_package.scripts, {
             'test': 'jest',
