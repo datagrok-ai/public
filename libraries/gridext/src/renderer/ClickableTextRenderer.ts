@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as GridUtils from '../utils/GridUtils';
-import * as TextUtils from '../utils/TextUtils';
+import * as RendUtils from './RendUtils';
 import {GridCellRendererEx} from "./GridCellRendererEx";
 
 function isNullText(cell : DG.Cell) : boolean {
@@ -16,11 +16,15 @@ export class ClickableTextRenderer extends GridCellRendererEx {
     if (str === null) {
       return;
     }
-    str = TextUtils.trimText(str, g, nW);
+
+    //str = TextUtils.trimText(str, g, nW);
     const strFont : string  = style.font;
+    /*
     if (strFont !== null && strFont !== undefined && strFont !== '') {
       g.font = strFont;
-    }
+    }*/
+    RendUtils.renderXYCenteredText(str, g, nX, nY, nW, nH, strFont, 'DodgerBlue');
+    /*
     let tm = g.measureText(str);
     const nWLabel = Math.round(tm.width);
     const nYInset = 2;
@@ -39,7 +43,7 @@ export class ClickableTextRenderer extends GridCellRendererEx {
     g.textAlign = 'start';
     g.fillStyle = 'DodgerBlue';
     g.fillText(str, nXX, nYY - nHFont + nYInset);
-    g.textBaseline = strBaseOld;
+    g.textBaseline = strBaseOld;*/
   }
 
   isClickable(cellGrid : DG.GridCell, nXOnCell : number, nYOnCell : number) : boolean {

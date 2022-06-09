@@ -7,7 +7,7 @@ import {ColorUtils} from '../utils/ColorUtils';
 import * as rxjs from 'rxjs';
 import { GridCellRendererEx} from "../renderer/GridCellRendererEx";
 import * as PinnedUtils from "./PinnedUtils";
-import {TableView} from "datagrok-api/dg";
+//import {TableView} from "datagrok-api/dg";
 /*
 const hSubscriber  = grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewLayout) => {
   const view : DG.TableView = layout.view as TableView;
