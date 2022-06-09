@@ -15,6 +15,8 @@ declare let DG: any;
 declare let ui: any;
 let api = <any>window;
 
+export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
+
 export class ObjectPropertyBag {
   source: any;
 
@@ -1489,8 +1491,8 @@ export class TreeViewNode {
 /** A slider that lets user control both min and max values. */
 export class RangeSlider extends DartWidget {
 
-  static create(vertical: boolean = false): RangeSlider {
-    return toJs(api.grok_RangeSlider(vertical));
+  static create(vertical: boolean = false, style: RangeSliderStyle = 'barbell'): RangeSlider {
+    return toJs(api.grok_RangeSlider(style, vertical));
   }
 
   /** Minimum range value. */
@@ -1512,7 +1514,7 @@ export class RangeSlider extends DartWidget {
    * @param {number} max */
   setValues(minRange: number, maxRange: number, min: number, max: number): void {
     api.grok_RangeSlider_SetValues(this.dart, minRange, maxRange, min, max);
-  };
+  }
 
   /** @returns {Observable} */
   get onValuesChanged(): Observable<any> {

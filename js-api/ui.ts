@@ -6,7 +6,7 @@
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
 import {VirtualView} from './src/views/view';
-import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider} from './src/widgets';
+import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider, RangeSliderStyle} from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
@@ -530,8 +530,8 @@ export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: b
   return api.grok_UI_ShowPopup(element, anchor, vertical);
 }
 
-export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical: boolean = false): RangeSlider {
-  let rs = RangeSlider.create(vertical);
+export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical: boolean = false, style: RangeSliderStyle = 'barbell'): RangeSlider {
+  let rs = RangeSlider.create(vertical, style);
   rs.setValues(minRange, maxRange, min, max);
   return rs;
 }
