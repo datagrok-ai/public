@@ -44,7 +44,7 @@ export class MolecularLiabilityBrowser {
   mlbView: DG.TableView = null;
   regionsViewer: VdRegionsViewer = null;
   treeBrowser: TreeBrowser = null;
-  // twinPviewer: TwinPviewer;
+  twinPviewer: TwinPviewer;
 
   antigenInput: DG.InputBase = null;
   antigenPopup: HTMLElement = null;
@@ -72,15 +72,16 @@ export class MolecularLiabilityBrowser {
       this.schemeName = this.schemeChoices.includes(this.urlParams.get('scheme')) ? this.urlParams.get('scheme') :
         this.schemeChoices[0];
 
-      await this.loadData();
-      await this.setView();
-      await this.setViewFilters();
-      // await this.setViewTwinPViewer();
-
       [this.vids, this.vidsObsPTMs] = (await Promise.all([
         this.dataLoader.getVids(),
         this.dataLoader.getObservedPtmVids()
       ]));
+
+      await this.loadData();
+      await this.setView();
+      await this.setViewFilters();
+      await this.setViewTwinPViewer();
+
     } finally {
       grok.events.onViewRemoved.subscribe((v) => {
         if (v.type === DG.VIEW_TYPE.TABLE_VIEW && (v as DG.TableView).dataFrame.id === this.mlbDf.id)
@@ -156,25 +157,25 @@ export class MolecularLiabilityBrowser {
     return this.schemeInput;
   }
 
-  // setHideShowIcon(): void {
-  //   this.hideShowIcon = ui.tooltip.bind(ui.iconFA('eye', () => {
-  //     if (this.hideShowIcon.classList.value.includes('fa-eye-slash'))
-  //       grok.events.fireCustomEvent('showAllDock', null);
-  //     else
-  //       grok.events.fireCustomEvent('closeAllDock', null);
-  //   }), 'show structure');
-  //   this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
-  //
-  //   grok.events.onCustomEvent('closeAllDock').subscribe((v) => {
-  //     this.twinPviewer.close(this.mlbView);
-  //     this.hideShowIcon.classList.value = 'grok-icon fal fa-eye-slash';
-  //   });
-  //
-  //   grok.events.onCustomEvent('showAllDock').subscribe((v) => {
-  //     this.twinPviewer.open(this.mlbView);
-  //     this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
-  //   });
-  // }
+  setHideShowIcon(): void {
+    this.hideShowIcon = ui.tooltip.bind(ui.iconFA('eye', () => {
+      if (this.hideShowIcon.classList.value.includes('fa-eye-slash'))
+        grok.events.fireCustomEvent('showAllDock', null);
+      else
+        grok.events.fireCustomEvent('closeAllDock', null);
+    }), 'show structure');
+    this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
+
+    grok.events.onCustomEvent('closeAllDock').subscribe((v) => {
+      this.twinPviewer.close(this.mlbView);
+      this.hideShowIcon.classList.value = 'grok-icon fal fa-eye-slash';
+    });
+
+    grok.events.onCustomEvent('showAllDock').subscribe((v) => {
+      this.twinPviewer.open(this.mlbView);
+      this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
+    });
+  }
 
 
   setRibbonPanels(): void {
@@ -182,11 +183,13 @@ export class MolecularLiabilityBrowser {
 
     this.setAntigenInput(this.antigenDf);
     this.setSchemeInput();
+    this.setHideShowIcon();
 
     this.mlbView.setRibbonPanels([
       [this.antigenInput.root],
       [this.schemeInput.root],
       [],
+      [this.hideShowIcon],
     ]);
   }
 
@@ -352,8 +355,8 @@ export class MolecularLiabilityBrowser {
         if (this.vids.includes(gc.cell.value.toString())) {
           gc.style.element = ui.divV(
             [ui.link(gc.cell.value.toString(), () => {
-              // this.vIdInput.value = gc.cell.value;
-              // this.changeVid();
+              this.vid = gc.cell.value;
+              this.changeVid();
             })],
             {style: {position: 'absolute', top: 'calc(50% - 8px)', left: '5px'}});
         } else {
@@ -410,23 +413,26 @@ export class MolecularLiabilityBrowser {
     });
   }
 
-  // async setViewTwinPViewer(): Promise<void> {
-  //   const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
-  //     await Promise.all([
-  //       this.dataLoader.load_example(this.vid),
-  //       this.dataLoader.load_pdb(this.vid),
-  //       this.dataLoader.realNums,
-  //       ((): Promise<ObsPtmType> => {
-  //         let res: Promise<ObsPtmType> = null;
-  //         if (this.vidsObsPTMs.includes(this.vid))
-  //           res = this.dataLoader.load_obsPtm(this.vid);
-  //         return res;
-  //       })()
-  //     ]));
-  //
-  //   this.twinPviewer = new TwinPviewer(this.dataLoader);
-  //   this.twinPviewer.init(jsonStr, pdbStr, jsonStrObsPtm);
-  // }
+  async setViewTwinPViewer(): Promise<void> {
+    const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
+      await Promise.all([
+        this.dataLoader.load_example(this.vid),
+        this.dataLoader.load_pdb(this.vid),
+        this.dataLoader.realNums,
+        ((): Promise<ObsPtmType> => {
+          let res: Promise<ObsPtmType> = null;
+          if (this.vidsObsPTMs.includes(this.vid))
+            res = this.dataLoader.load_obsPtm(this.vid);
+          return res;
+        })()
+      ]));
+
+    this.twinPviewer = new TwinPviewer(this.dataLoader);
+    this.twinPviewer.init(jsonStr, pdbStr, jsonStrObsPtm);
+
+    await this.twinPviewer.show(this.mlbView);
+    await this.twinPviewer.open(this.mlbView);
+  }
 
   async destroyView(): Promise<void> {
     console.debug('MolecularLiabilityBrowser.destroyView()');
@@ -449,9 +455,12 @@ export class MolecularLiabilityBrowser {
     for (let i = 0; i < this.allVids.length; i++)
       this.idMapping[this.allVids.get(i)] = this.allIds.get(i).replaceAll(' ', '').split(',');
 
-    if (this.mlbView === null) this.mlbView = grok.shell.addTableView(this.mlbDf);
-    else
+    if (this.mlbView === null) {
+      this.mlbView = grok.shell.addTableView(this.mlbDf);
+      // this.mlbView = grok.shell.addView();
+    } else {
       this.mlbView.dataFrame = this.mlbDf;
+    }
 
     if (this.treeBrowser === null) {
       this.treeBrowser = (await this.treeDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
@@ -473,6 +482,8 @@ export class MolecularLiabilityBrowser {
     }
 
     this.updateView();
+
+    this.mlbDf.onCurrentRowChanged.subscribe(this.onMLBGridCurrentRowChanged.bind(this));
   }
 
   /** Restores column hiding, sets view path after dataFrame replacement. */
@@ -494,6 +505,11 @@ export class MolecularLiabilityBrowser {
       if (gridColumn.column !== null && mlbColumnsToHide.includes(gridColumn.column.name))
         gridColumn.visible = false;
     }
+  }
+
+  onMLBGridCurrentRowChanged(args: any) {
+    this.vid = this.mlbDf.currentRow['v id'];
+    window.setTimeout(async () => { await this.changeVid(true); }, 10);
   }
 
   onAntigenChanged(antigenName: string): void {
@@ -523,13 +539,13 @@ export class MolecularLiabilityBrowser {
     window.setTimeout(async () => { await this.loadData(); }, 10);
   }
 
-  // onVidChanged(vid: string): void {
-  //   this.vid = vid;
-  //
-  //   this.urlParams.set('vid', this.vid);
-  //
-  //   window.setTimeout(async () => { await this.changeVid(); }, 10);
-  // }
+  onVidChanged(vid: string): void {
+    this.vid = vid;
+
+    this.urlParams.set('vid', this.vid);
+
+    window.setTimeout(async () => { await this.changeVid(); }, 10);
+  }
 
   /** Loads MLB data and sets prepared DataFrame */
   async loadData(): Promise<void> {
@@ -563,58 +579,58 @@ export class MolecularLiabilityBrowser {
 
   // --
 
-  // async changeVid(silent: boolean = false): Promise<void> {
-  //   if (!this.vids.includes(this.vid)) {
-  //     Object.keys(this.idMapping).every((vid) => {
-  //       if (this.idMapping[vid].includes(this.vid)) {
-  //         this.vid = vid;
-  //         return false;
-  //       }
-  //       return true;
-  //     });
-  //
-  //     if (!this.vids.includes(this.vid)) {
-  //       grok.shell.warning('No PDB data data for associated v id');
-  //       return;
-  //     }
-  //   }
-  //
-  //   // this.mlbView.path = `/Table/${this.vIdInput.value}`;
-  //   //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
-  //   const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
-  //
-  //   const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
-  //     await Promise.all([
-  //       this.dataLoader.load_example(this.vid),
-  //       this.dataLoader.load_pdb(this.vid),
-  //       this.dataLoader.realNums,
-  //       ((): Promise<ObsPtmType> => {
-  //         let res: Promise<ObsPtmType> = null;
-  //         if (this.vidsObsPTMs.includes(this.vid))
-  //           res = this.dataLoader.load_obsPtm(this.vid);
-  //         return res;
-  //       })()
-  //     ]));
-  //
-  //   const hNumberingStr = jsonNums.heavy_numbering;
-  //   const lNumberingStr = jsonNums.light_numbering;
-  //
-  //   const hNumbering = [];
-  //   const lNumbering = [];
-  //
-  //   for (let i = 0; i < hNumberingStr.length; i++)
-  //     hNumbering.push(parseInt(hNumberingStr[i].replaceAll(' ', '')));
-  //
-  //   for (let i = 0; i < lNumberingStr.length; i++)
-  //     lNumbering.push(parseInt(lNumberingStr[i].replaceAll(' ', '')));
-  //
-  //   jsonStr['map_H'] = hNumbering;
-  //   jsonStr['map_L'] = lNumbering;
-  //
-  //   await this.twinPviewer.reset(jsonStr, pdbStr, jsonStrObsPtm);
-  //   await this.twinPviewer.show(this.mlbView);
-  //   await this.twinPviewer.open(this.mlbView);
-  //
-  //   pi.close();
-  // };
+  async changeVid(silent: boolean = false): Promise<void> {
+    if (!this.vids.includes(this.vid)) {
+      Object.keys(this.idMapping).every((vid) => {
+        if (this.idMapping[vid].includes(this.vid)) {
+          this.vid = vid;
+          return false;
+        }
+        return true;
+      });
+
+      if (!this.vids.includes(this.vid)) {
+        grok.shell.warning('No PDB data data for associated v id');
+        return;
+      }
+    }
+
+    // this.mlbView.path = `/Table/${this.vIdInput.value}`;
+    //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
+    const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
+
+    const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
+      await Promise.all([
+        this.dataLoader.load_example(this.vid),
+        this.dataLoader.load_pdb(this.vid),
+        this.dataLoader.realNums,
+        ((): Promise<ObsPtmType> => {
+          let res: Promise<ObsPtmType> = null;
+          if (this.vidsObsPTMs.includes(this.vid))
+            res = this.dataLoader.load_obsPtm(this.vid);
+          return res;
+        })()
+      ]));
+
+    const hNumberingStr = jsonNums.heavy_numbering;
+    const lNumberingStr = jsonNums.light_numbering;
+
+    const hNumbering = [];
+    const lNumbering = [];
+
+    for (let i = 0; i < hNumberingStr.length; i++)
+      hNumbering.push(parseInt(hNumberingStr[i].replaceAll(' ', '')));
+
+    for (let i = 0; i < lNumberingStr.length; i++)
+      lNumbering.push(parseInt(lNumberingStr[i].replaceAll(' ', '')));
+
+    jsonStr['map_H'] = hNumbering;
+    jsonStr['map_L'] = lNumbering;
+
+    await this.twinPviewer.reset(jsonStr, pdbStr, jsonStrObsPtm);
+    await this.twinPviewer.show(this.mlbView);
+    await this.twinPviewer.open(this.mlbView);
+
+    pi.close();
+  };
 }
