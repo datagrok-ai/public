@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {_package} from '../package';
 import {
+  catchToLog,
   CdrMapType,
   DataLoader,
   FilterPropertiesType,
@@ -66,8 +67,10 @@ export class DataLoaderDb extends DataLoader {
   }
 
   async listAntigens(): Promise<DG.DataFrame> {
-    const df: DG.DataFrame = await grok.functions.call(`${this._pName}:listAntigens`);
-    return df;
+    return catchToLog<Promise<DG.DataFrame>>('MLB database access error: ', async () => {
+      const df: DG.DataFrame = await grok.functions.call(`${this._pName}:listAntigens`);
+      return df;
+    });
   }
 
   async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {

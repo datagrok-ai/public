@@ -50,6 +50,23 @@ export interface ObsPtmType {
   L: any;
 }
 
+export function catchToLog<T>(prefix: string, func: () => T): T {
+  try {
+    const res: T = func();
+    if (res instanceof Promise) {
+      return res.catch((ex) => {
+        console.error(prefix + ex.toString());
+        throw (ex);
+      }) as unknown as T;
+    } else {
+      return res;
+    }
+  } catch (ex: any) {
+    console.error(prefix + ex.toString());
+    throw (ex);
+  }
+}
+
 export abstract class DataLoader {
   /** Properties for filters
    */
