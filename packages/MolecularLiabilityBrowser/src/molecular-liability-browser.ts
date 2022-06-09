@@ -246,9 +246,9 @@ export class MolecularLiabilityBrowser {
         {title: 'BandRedLeft', type: 'band', rule: `< ${pf.redLeft[i]}`, color: '#DC143C', opacity: 15},
         {title: 'BandRedRight', type: 'band', rule: `> ${pf.redRight[i]}`, color: '#DC143C', opacity: 15},
         {
-          title: 'TAP metrics', type: 'spline',
-          color: '#7570B3', width: 1, normalizeY: true, visible: true,
-          x: pf.plotsX[i], y: pf.plotsY[i],
+          'title': 'TAP metrics', 'type': 'spline',
+          'color': '#7570B3', 'width': 1, 'normalize-y': true, 'visible': true,
+          'x': pf.plotsX[i], 'y': pf.plotsY[i],
         }
       ]));
     }
