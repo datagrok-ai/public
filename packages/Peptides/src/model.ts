@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-
+//allowRowSelection?
 import {Subject, Observable} from 'rxjs';
 import {addViewerToHeader, StackedBarChart} from './viewers/stacked-barchart-viewer';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
@@ -69,6 +69,8 @@ export class PeptidesModel {
   }
 
   static get modelName(): string {return PeptidesModel._modelName;}
+
+  static get chemPalette(): typeof ChemPalette {return ChemPalette;}
 
   get onStatsDataFrameChanged(): Observable<DG.DataFrame> {return this._statsDataFrameSubject.asObservable();}
 
@@ -914,24 +916,6 @@ export class PeptidesModel {
     for (const property of properties)
       targetViewer.props.set(property.name, property.get(sourceViewer));
   }
-
-  //TODO: move to viewer
-  setSARGridCellAt(aar: string, position: string): void {
-    const sarDf = this._sarGrid.dataFrame;
-    const aarCol = sarDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
-    const aarColLen = aarCol.length;
-    let index = -1;
-    for (let i = 0; i < aarColLen; i++) {
-      if (aarCol.get(i) === aar) {
-        index = i;
-        break;
-      }
-    }
-    position = position === C.CATEGORIES.ALL ? C.COLUMNS_NAMES.AMINO_ACID_RESIDUE : position;
-    sarDf.currentCell = sarDf.cell(index, position);
-  }
-
-  static get chemPalette(): typeof ChemPalette {return ChemPalette;}
 
   /** Class initializer */
   async init(): Promise<void> {
