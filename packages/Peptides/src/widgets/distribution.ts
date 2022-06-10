@@ -18,32 +18,35 @@ export function getDistributionPlot(df: DG.DataFrame, valueCol: string, splitCol
   });
 }
 
+const allLabel = 'All';
+
 export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   const splitCol = table.col(C.COLUMNS_NAMES.SPLIT_COL);
   if (!splitCol)
     return new DG.Widget(ui.divText('No distribution'));
-  // let [aarStr, otherStr] = splitCol.categories;
-  // if (typeof otherStr === 'undefined')
-  //   [aarStr, otherStr] = [otherStr, aarStr];
-  // const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, aarStr));
-  // const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, otherStr));
+
   const selectionObject: type.SelectionObject = JSON.parse(table.tags[C.TAGS.SELECTION]);
   const positions = Object.keys(selectionObject);
-  const currentColor = DG.Color.toHtml(DG.Color.orange);
+  let currentColor = DG.Color.toHtml(DG.Color.blue);
   const otherColor = DG.Color.toHtml(DG.Color.blue);
-  let aarStr = 'All';
+  let aarStr = allLabel;
   let otherStr = '';
+
   if (positions.length) {
     aarStr = '';
+
     for (const position of positions) {
       aarStr += `${position}: {`;
+
       for (const aar of selectionObject[position])
         aarStr += `${aar}, `;
+  
       aarStr = aarStr.slice(0, aarStr.length - 2);
       aarStr += '}; ';
     }
     aarStr = aarStr.slice(0, aarStr.length - 2);
     otherStr = 'Other';
+    currentColor = DG.Color.toHtml(DG.Color.orange);
   }
 
   const currentLabel = ui.label(aarStr, {style: {color: currentColor}});
@@ -53,12 +56,11 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   const getContent = (): HTMLDivElement => {
     const valueColName = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!.name;
     const hist = getDistributionPlot(table, valueColName, C.COLUMNS_NAMES.SPLIT_COL).root;
-
     hist.style.width = 'auto';
     elements.push(hist);
-
     const stats = (table.temp[C.STATS] as FilteringStatistics).result;
-    if (stats) {
+
+    if (stats && aarStr != allLabel) {
       const tableMap: StringDictionary = {
         'Statistics:': '',
         'Count': stats.count.toString(),
