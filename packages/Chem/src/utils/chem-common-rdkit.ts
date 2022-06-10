@@ -12,7 +12,7 @@ import {RDModule, RDMol} from "../rdkit-api";
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
 export let _webRoot: string | null;
-let moduleInitialized = false;
+export let moduleInitialized = false;
 
 export function setRdKitWebRoot(webRootValue: string): void {
   _webRoot = webRootValue;
