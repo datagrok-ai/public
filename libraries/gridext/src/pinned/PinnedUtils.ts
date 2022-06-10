@@ -3,6 +3,18 @@ import * as GridUtils from '../utils/GridUtils';
 import {PinnedColumn} from "./PinnedColumn";
 import {GridCellRendererEx} from "../renderer/GridCellRendererEx";
 
+
+function getGrid(colGrid : DG.GridColumn) : DG.Grid | null {
+  let grid : DG.Grid | null = colGrid.grid;
+  if( grid === null) {
+    grid = GridUtils.getInstalledGridForColumn(colGrid);
+    if(grid instanceof DG.Grid)
+      return grid;
+  }
+
+  return grid;
+}
+
 export function findPinnedColumnByRoot(eCanvas : HTMLCanvasElement, grid : DG.Grid) : PinnedColumn | null {
   const dart = DG.toDart(grid);
   let colPinned = null;
@@ -47,7 +59,7 @@ export function installPinnedColumns(grid : DG.Grid) : void {
 
   for(let nCol=0;nCol<lstCols.length; ++nCol) {
     colGrid = lstCols.byIndex(nCol);
-    if(colGrid === null)
+    if(colGrid === null || GridUtils.isRowHeader(colGrid))
       continue;
 
     settings = colGrid.settings;
@@ -72,8 +84,11 @@ export function installPinnedColumns(grid : DG.Grid) : void {
   }
 }
 
+
+
+
 export function isPinnedColumn(colGrid : DG.GridColumn) : boolean {
-  const grid = colGrid.grid;
+  const grid = getGrid(colGrid);
   const dart = DG.toDart(grid);
 
   if(dart.m_arRowHeaders === undefined)
@@ -97,7 +112,7 @@ export function isPinnableColumn(colGrid : DG.GridColumn) : boolean {
   }
 
 
-  let grid : DG.Grid | null = colGrid.grid;
+  let grid : DG.Grid | null = getGrid(colGrid);
   if(!(grid instanceof DG.Grid)) {
     grid = GridUtils.getInstalledGridForColumn(colGrid);
 
