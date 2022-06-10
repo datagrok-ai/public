@@ -491,8 +491,8 @@ export class PeptidesModel {
     const sarVGrid = sequenceDf.plot.grid();
     sarVGrid.sort([C.COLUMNS_NAMES.POSITION]);
     const pValGridCol = sarVGrid.col(C.COLUMNS_NAMES.P_VALUE)!;
-    pValGridCol.format = 'four digits after comma';
-    pValGridCol.name = 'P-Value';
+    pValGridCol.format = 'three digits after comma';
+    pValGridCol.name = 'P-value';
 
     let tempCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
     if (tempCol)
@@ -793,7 +793,7 @@ export class PeptidesModel {
 
     const positionList = Object.keys(this.currentSelection);
     if (positionList.length == 0) {
-      this.splitCol.init(() => true);
+      this.splitCol.init(() => false);
       return;
     }
 
