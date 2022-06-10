@@ -16,6 +16,8 @@ import {_package} from './package';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {setAARRenderer} from './utils/cell-renderer';
+import { substitutionsWidget } from './widgets/subst-table';
+import { getDistributionWidget } from './widgets/distribution';
 
 export class PeptidesModel {
   static _modelName = 'peptidesModel';
@@ -91,7 +93,16 @@ export class PeptidesModel {
     this.modifyOrCreateSplitCol();
     this.fireBitsetChanged();
     this.invalidateGrids();
-    grok.shell.o = this._dataFrame;
+    grok.shell.o = this.createAccordion().root;
+  }
+
+  createAccordion() {
+    const acc = ui.accordion('Selection info');
+    acc.addTitle(ui.h1('Selection info'));
+    acc.addPane('Substitutions', () => substitutionsWidget(this._dataFrame, this).root, true);
+    acc.addPane('Distribtution', () => getDistributionWidget(this._dataFrame).root, true);
+
+    return acc;
   }
 
   updateProperties(): void {
