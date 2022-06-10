@@ -147,14 +147,12 @@ export class PinnedColumn {
     if(dart.m_arRowHeaders === undefined)
       dart.m_arRowHeaders = [];
 
-    const colGrid0 = grid.columns.byIndex(0);
-    if(dart.m_arRowHeaders.length === 0 && colGrid.idx !== 0) {
+
+    if(dart.m_arRowHeaders.length === 0 && !GridUtils.isRowHeader(colGrid)) {
+      const colGrid0 = grid.columns.byIndex(0);
       if(colGrid0 !== null && colGrid0 !== undefined)
       new PinnedColumn(colGrid0);
     }
-
-
-
 
     dart.m_arRowHeaders.push(this);
 
@@ -172,11 +170,13 @@ export class PinnedColumn {
       console.error("ERROR: Couldn't hide column.");
     }
 
-    if(colGrid.settings === null || colGrid.settings === undefined)
-      colGrid.settings = {};
+    if(!GridUtils.isRowHeader(colGrid)) {
+      if (colGrid.settings === null || colGrid.settings === undefined)
+        colGrid.settings = {};
 
-    colGrid.settings.isPinned = true; //this will be saved with the layout
-    colGrid.settings.idxPinned = dart.m_arRowHeaders.length -1;
+      colGrid.settings.isPinned = true; //this will be saved with the layout
+      colGrid.settings.idxPinned = dart.m_arRowHeaders.length - 1;
+    }
 
     grid.canvas.style.left = (grid.canvas.offsetLeft + nW).toString() + "px";
     grid.overlay.style.left= (grid.overlay.offsetLeft + nW).toString() + "px";
@@ -633,8 +633,11 @@ export class PinnedColumn {
       colGridTmp.m_colGrid.settings.idxPinned = n;
     }
 
-    this.m_colGrid.settings.idxPinned = -1;
-    this.m_colGrid.settings.isPinned = false;
+    if(!GridUtils.isRowHeader(this.m_colGrid)) {
+      this.m_colGrid.settings.idxPinned = -1;
+      this.m_colGrid.settings.isPinned = false;
+    }
+
     try {
       this.m_colGrid.visible = true;
     }
@@ -664,7 +667,7 @@ export class PinnedColumn {
         try {
           dart.m_arRowHeaders[0].close();
         } catch (e) {
-          console.error("ERROR: Couldn't set visible property to true");
+          console.error("ERROR: Couldn't close pinned row header.");
         }
     }
     this.m_colGrid = null;
