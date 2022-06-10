@@ -80,7 +80,7 @@ function notifyAllPinnedColsRowsResized(colPinnedSource : PinnedColumn, nHRows :
     return;
   }
 
-  const grid = colGridSource.grid;
+  const grid = getGrid(colGridSource);
   const dart = DG.toDart(grid);
   if(dart.m_arRowHeaders === undefined) {
     throw new Error('Pinned Columns are not installed.');
@@ -98,7 +98,7 @@ function notifyAllPinnedColsRowsResized(colPinnedSource : PinnedColumn, nHRows :
     }
 
     renderer = GridUtils.getGridColumnRenderer(colGrid);
-    if (renderer instanceof GridCellRendererEx  && colPinned.m_root !== null) {
+    if (renderer instanceof GridCellRendererEx  && colPinned.m_root !== null && grid !== null) {
       renderer.onResizeHeight(colPinned, grid, nHRows, bAdjusting);
     }
   }
@@ -167,7 +167,7 @@ export class PinnedColumn {
     }
     catch(e) {
       //DG bug
-      console.error("ERROR: Couldn't hide column.");
+      console.error("ERROR: Couldn't hide column '" + colGrid.name + "' due to a DG bug.");
     }
 
     if(!GridUtils.isRowHeader(colGrid)) {
@@ -619,7 +619,11 @@ export class PinnedColumn {
     this.m_handlerMouseMove.unsubscribe();
     this.m_handlerMouseMove = null;
 
-    const grid = this.m_colGrid.grid;
+    const grid = getGrid(this.m_colGrid);
+    if(grid === null){
+      throw new Error("Column '" + this.m_colGrid.name + "' is disconnected from grid.");
+    }
+
     const dart = DG.toDart(grid);
     const ar = dart.m_arRowHeaders;
     const nIdx = ar.indexOf(this);
