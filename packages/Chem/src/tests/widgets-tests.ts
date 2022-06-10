@@ -19,8 +19,10 @@ category('Chem: Widgets', async () => {
   const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
 
   before(async () => {
-    chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
-    await chemCommonRdKit.initRdKitModuleLocal();
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
   });
 
   //TODO: Test mol2000, mol3000

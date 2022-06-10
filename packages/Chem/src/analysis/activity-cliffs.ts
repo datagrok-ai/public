@@ -2,11 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {chemSpace} from './chem-space';
-import * as chemSearches from '../chem-searches';
-import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {findMCS} from '../scripts-api';
 import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
-import { Matrix } from '@datagrok-libraries/utils/src/type-declarations';
+import { getSimilaritiesMarix, getSimilaritiesMarixFromDistances } from '../utils/similarity-utils';
 
 const options = {
   'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
@@ -309,25 +307,4 @@ function createLines(n1: number[], n2: number[], smiles: DG.Column, activities: 
   linesDf.col('1_smiles')!.semType = DG.SEMTYPE.MOLECULE;
   linesDf.col('2_smiles')!.semType = DG.SEMTYPE.MOLECULE;
   return {lines, linesDf};
-}
-
-async function getSimilaritiesMarix(dim: number, smiles: DG.Column, dfSmiles: DG.DataFrame, simArr: DG.Column[])
-  : Promise<DG.Column[]> {
-  for (let i = 0; i != dim - 1; ++i) {
-    const mol = smiles.get(i);
-    dfSmiles.rows.removeAt(0, 1, false);
-    simArr[i] = (await chemSearches.chemGetSimilarities(dfSmiles.col('smiles')!, mol))!;
-  }
-  return simArr;
-}
-
-function getSimilaritiesMarixFromDistances(dim: number, distances: Matrix, simArr: DG.Column[])
-  : DG.Column[] {
-  for (let i = 0; i < dim - 1; ++i) {
-    const similarityArr = [];
-    for (let j = i + 1; j < dim; ++j)
-      similarityArr.push(getSimilarityFromDistance(distances[i][j]));
-    simArr[i] = DG.Column.fromFloat32Array('similarity', Float32Array.from(similarityArr));
-  }
-  return simArr;
 }

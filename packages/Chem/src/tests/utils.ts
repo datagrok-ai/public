@@ -7,6 +7,20 @@ export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
 }
 
+export async function createTableView(tableName: string) {
+  const df = await readDataframe(tableName);
+  df.name = tableName.replace('.csv', '');
+  const view = grok.shell.addTableView(df);
+  return view;
+}
+
+export async function readDataframe(tableName: string) {
+  const file = await loadFileAsText(tableName);
+  const df = DG.DataFrame.fromCsv(file);
+  df.name = tableName.replace('.csv', '');
+  return df;
+}
+
 export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
   pattern: string, trueIndices: number[]) {
   const col = df.columns.byName(colName);
