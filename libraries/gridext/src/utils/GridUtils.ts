@@ -2,6 +2,10 @@ import * as DG from 'datagrok-api/dg';
 import {GridCellRendererEx} from "../renderer/GridCellRendererEx";
 
 
+export function isRowHeader(colGrid : DG.GridColumn) : boolean {
+  return colGrid.idx === 0;
+}
+
 export function getInstalledGridForColumn(colGrid : DG.GridColumn) : DG.Grid | null {
   const dart : any = DG.toDart(colGrid);
   if(!(dart.m_grid instanceof DG.Grid))
