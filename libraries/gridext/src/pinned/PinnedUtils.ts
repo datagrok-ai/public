@@ -16,6 +16,12 @@ export function findPinnedColumnByRoot(eCanvas : HTMLCanvasElement, grid : DG.Gr
   return null;
 }
 
+export function getPinnedColumnCount(grid : DG.Grid) : number {
+  const dart = DG.toDart(grid);
+  const nPinnedColCount =dart.m_arRowHeaders === undefined ? 0 : dart.m_arRowHeaders.length;
+  return nPinnedColCount;
+}
+
 export function addPinnedColumn(colGrid : DG.GridColumn) : PinnedColumn {
   const colPinned = new PinnedColumn(colGrid);
   return colPinned;
@@ -25,8 +31,8 @@ export function closeAllPinnedColumns(grid : DG.Grid) : void {
   const dart = DG.toDart(grid);
   let colPinned = null;
   const nPinnedColCount =dart.m_arRowHeaders === undefined ? 0 : dart.m_arRowHeaders.length;
-  for(let n=0; n<nPinnedColCount; ++n) {
-    colPinned = dart.m_arRowHeaders[0]; //0 is not a bug
+  for(let n=1; n<nPinnedColCount; ++n) {
+    colPinned = dart.m_arRowHeaders[1]; //0 is not a bug
     colPinned.close();
   }
 }
@@ -90,6 +96,7 @@ export function isPinnableColumn(colGrid : DG.GridColumn) : boolean {
     return false;
   }
 
+
   let grid : DG.Grid | null = colGrid.grid;
   if(!(grid instanceof DG.Grid)) {
     grid = GridUtils.getInstalledGridForColumn(colGrid);
@@ -132,6 +139,7 @@ export function handleContextMenu(args : any, fnMenuCallback : Function) : void 
       return;
     }
   }
+  //Regular Columns
   const cell = grid.hitTest(e.offsetX, e.offsetY);
   if (cell === undefined || cell === null || cell.cellType === null) //bug in DG , top left cell
     return;
@@ -141,7 +149,7 @@ export function handleContextMenu(args : any, fnMenuCallback : Function) : void 
     return;
   }
 
-  if ((cell.isTableCell || cell.isColHeader) && (elem === grid.canvas || elem === grid.overlay)) {
+  if ((cell.isTableCell || cell.isColHeader)  && (elem === grid.canvas || elem === grid.overlay)) {
     const menu = args.args.menu;
     fnMenuCallback(menu, colGrid, grid);
     e.preventDefault();

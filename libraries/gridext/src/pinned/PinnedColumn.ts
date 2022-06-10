@@ -147,6 +147,15 @@ export class PinnedColumn {
     if(dart.m_arRowHeaders === undefined)
       dart.m_arRowHeaders = [];
 
+    const colGrid0 = grid.columns.byIndex(0);
+    if(dart.m_arRowHeaders.length === 0 && colGrid.idx !== 0) {
+      if(colGrid0 !== null && colGrid0 !== undefined)
+      new PinnedColumn(colGrid0);
+    }
+
+
+
+
     dart.m_arRowHeaders.push(this);
 
     const viewTable = grid.view;
@@ -183,6 +192,7 @@ export class PinnedColumn {
     grid.canvas.parentNode.insertBefore(eCanvasThis, grid.canvas);
     this.m_root = eCanvasThis;
 
+    /* my chamges
     const colGrid0 = grid.columns.byIndex(0);
     if(colGrid0 !== null && colGrid0 !== undefined) {//DG Bug from reading layout
     try{
@@ -192,7 +202,7 @@ export class PinnedColumn {
         console.error("ERROR: Couldn't hide row header.");
       }
     }
-
+*/
 
 
     //OnResize Row header
@@ -225,7 +235,7 @@ export class PinnedColumn {
       //headerThis.m_root.height = grid.root.offsetHeight;
       const g = eCanvasThis.getContext('2d');
       for (let entry of entries) {
-        setTimeout(()=> {headerThis.paint(g, grid);}, 500);
+        setTimeout(()=> {headerThis.paint(g, grid);}, 200);
       }
     });
 
@@ -631,18 +641,10 @@ export class PinnedColumn {
     catch(e) {
       //DG bug
     }
-    this.m_colGrid = null;
 
 
-    if (dart.m_arRowHeaders.length === 0) {
-      const colGrid0 = grid.columns.byIndex(0);
-      if(colGrid0 !== null) {
-        try{colGrid0.visible = true;}
-        catch(e) {
-          console.error("ERROR: Couldn't set visible property to true");
-        }
-      }
-    }
+
+
     if(this.m_root === null)
       throw new Error('Root cannot be null');
 
@@ -655,6 +657,17 @@ export class PinnedColumn {
      this.m_root.parentNode.removeChild(this.m_root);
 
     this.m_root = null;
+
+    if (dart.m_arRowHeaders.length === 1 && dart.m_arRowHeaders[0].m_colGrid.idx === 0 && this.m_colGrid.idx !== 0) {
+
+        // try{colGrid0.visible = true;}
+        try {
+          dart.m_arRowHeaders[0].close();
+        } catch (e) {
+          console.error("ERROR: Couldn't set visible property to true");
+        }
+    }
+    this.m_colGrid = null;
   }
 
 
@@ -709,6 +722,16 @@ export class PinnedColumn {
     //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nHCH);
     g.fillText(str, nXX, nYY);
 
+    if(options.look.showRowGridlines) {
+      g.strokeStyle = "Gainsboro";
+      g.beginPath();
+      g.moveTo(0, nY);
+      g.lineTo(0, nY + nHCH-1);
+      g.stroke();
+    }
+
+
+
     //Regular cells
     const nRowCurrent =  dframe.currentRow.idx;
     const bitsetSel = dframe.selection;
@@ -717,7 +740,6 @@ export class PinnedColumn {
     GridUtils.fillVisibleViewportRows(arRowsMinMax, grid);
     const nRowMin = arRowsMinMax[0];
     const nRowMax = arRowsMinMax[1];
-
 
     //console.log(nRowMin + " " + nRowMax);
     const nHRow = GridUtils.getGridRowHeight(grid);
@@ -731,7 +753,7 @@ export class PinnedColumn {
     for(let nRG=nRowMin; nRG<=nRowMax; ++nRG)
     {
       try{cellRH = grid.cell(this.m_colGrid.name, nRG);}
-      catch(e)     //to address DG bug when everything is filtered
+      catch(e) //to address DG bug when everything is filtered
       {
         continue;
       }
@@ -746,7 +768,7 @@ export class PinnedColumn {
       if(renderer === null) {
         try{renderer = cellRH.renderer;}
         catch(e) {
-          console.error("Could obtain renderer for DG cell. DG bug " + this.m_colGrid.name + " row "  + nRG);
+          console.error("Could not obtain renderer for DG cell. DG bug " + this.m_colGrid.name + " row "  + nRG);
           continue;
         }
       }
@@ -772,6 +794,11 @@ export class PinnedColumn {
         g.beginPath();
         g.moveTo(0, nY + nHRowGrid);
         g.lineTo(nW - 1, nY + nHRowGrid);
+        g.stroke();
+
+        g.beginPath();
+        g.moveTo(0, nY);
+        g.lineTo(0, nY + nHRowGrid -1);
         g.stroke();
       }
 
