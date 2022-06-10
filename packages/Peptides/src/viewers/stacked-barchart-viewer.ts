@@ -327,7 +327,8 @@ export class StackedBarChart extends DG.JsViewer {
     let aar = barPart['aaName'];
     let position = barPart['colName'];
     if (event.type === 'click') {
-      event.altKey ? this.model.modifyCurrentSelection(aar, position) : this.model.initCurrentSelection(aar, position);
+      event.shiftKey ? this.model.modifyCurrentSelection(aar, position) :
+        this.model.initCurrentSelection(aar, position);
     } else {
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
         const currentAAR = this.dataFrame.get(position, i);

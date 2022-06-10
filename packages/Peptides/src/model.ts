@@ -656,8 +656,8 @@ export class PeptidesModel {
     const sarDf = this._sarGrid.dataFrame;
     const sarVDf = this._sarVGrid.dataFrame;
 
-    const chooseAction = (aar: string, position: string, isAltPressed: boolean) => {
-      isAltPressed ? this.modifyCurrentSelection(aar, position) : this.initCurrentSelection(aar, position);
+    const chooseAction = (aar: string, position: string, isShiftPressed: boolean) => {
+      isShiftPressed ? this.modifyCurrentSelection(aar, position) : this.initCurrentSelection(aar, position);
     };
 
     const gridCellValidation = (gc: DG.GridCell | null) => !gc || !gc.tableColumn || gc.tableRowIndex == null ||
@@ -669,7 +669,7 @@ export class PeptidesModel {
 
       const position = gridCell!.tableColumn!.name;
       const aar = sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, gridCell!.tableRowIndex!);
-      chooseAction(aar, position, ev.altKey);
+      chooseAction(aar, position, ev.shiftKey);
     });
 
     this._sarVGrid.root.addEventListener('click', (ev) => {
@@ -680,7 +680,7 @@ export class PeptidesModel {
       const tableRowIdx = gridCell!.tableRowIndex!;
       const position = sarVDf.get(C.COLUMNS_NAMES.POSITION, tableRowIdx);
       const aar = sarVDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIdx);
-      chooseAction(aar, position, ev.altKey);
+      chooseAction(aar, position, ev.shiftKey);
     });
 
     const cellChanged = (table: DG.DataFrame) => {
@@ -777,8 +777,14 @@ export class PeptidesModel {
       }
     }
 
-    sarGrid.props.allowEdit = false;
-    sarVGrid.props.allowEdit = false;
+    const setViewerGridProps = (grid: DG.Grid) => {
+      grid.props.allowEdit = false;
+      grid.props.allowRowSelection = false;
+      grid.props.allowBlockSelection = false;
+    };
+    
+    setViewerGridProps(sarGrid);
+    setViewerGridProps(sarVGrid);
   }
 
   getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
