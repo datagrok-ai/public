@@ -236,26 +236,6 @@ export async function runTestMSAEnoughMemory(_table: DG.DataFrame, col: DG.Colum
   return col;
 }
 
-//name: Substitution
-//tags: panel, widgets
-//input: dataframe table {semType: Substitution}
-//output: widget result
-export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widget> {
-  if (!table.temp[C.PEPTIDES_ANALYSIS])
-    return new DG.Widget(ui.divText('This widget is only applicable for peptides analysis'));
-  return substitutionsWidget(table);
-}
-
-//name: Distribution
-//tags: panel, widgets
-//input: dataframe table {semType: viewerTable}
-//output: widget result
-export function peptideDistribution(table: DG.DataFrame): DG.Widget {
-  if (!table.temp[C.PEPTIDES_ANALYSIS])
-    return new DG.Widget(ui.divText('This widget is only applicable for peptides analysis'));
-  return getDistributionWidget(table);
-}
-
 //name: Get Peptides Structure
 //tags: panel, widgets
 //input: column col {semType: alignedSequence}

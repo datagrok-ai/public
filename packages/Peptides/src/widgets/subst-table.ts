@@ -4,9 +4,7 @@ import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
 
-//TODO: get rid of await?
-export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widget> {
-  const model = await PeptidesModel.getInstance(table);
+export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   const substInfo = model.substitutionsInfo;
   const currentCell = model.currentSelection;
   const positions = Object.keys(currentCell);
