@@ -36,9 +36,11 @@ category('Core', () => {
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName, _package);
     expect(model instanceof PeptidesModel, true);
-    // model?.setSARGridCellAt('D', '11');
-    if (model != null)
+    
+    if (model != null) {
+      model.currentSelection = {'11': ['D']};
       grok.shell.closeTable(model._dataFrame);
+    }
   });
 
   test('Start analysis: сomplex', async () => {
@@ -56,8 +58,10 @@ category('Core', () => {
     model = await startAnalysis(
       complexActivityCol, complexAlignedSeqCol, complexTable, complexScaledDf, complexScaledColName, _package);
     expect(model instanceof PeptidesModel, true);
-    // model?.setSARGridCellAt('-', '13');
-    if (model != null)
+
+    if (model != null) {
+      model.currentSelection = {'13': ['-']};
       grok.shell.closeTable(model._dataFrame);
+    }
   });
 });
