@@ -24,9 +24,9 @@ category('WebLogo', () => {
 
 const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(
   `seq
-'ACGT'
-'CAGT'
-'TTCA'
+ACGTCT
+CAGTGT
+TTCAAC
 `);
 
 /** 2 - is an error monomer
@@ -35,17 +35,17 @@ const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(
  */
 const dfN1e: DG.DataFrame = DG.DataFrame.fromCsv(
   `seq
-ACGT
-CAGT
-TTC2
+ACGTAT
+CAGTTG
+TTCG2C
 `);
 
 /** Pure amino acids sequence */
 const dfAA1: DG.DataFrame = DG.DataFrame.fromCsv(
   `seq
-FWPHWYV
+FWPHEYV
 YNRQWYV
-MKPSWYV
+MKPSEYV
 `);
 
 /** A - alanine, G - glycine, T -= threonine, C - cysteine, W - tryptophan
@@ -53,9 +53,9 @@ MKPSWYV
  */
 const dfAA2: DG.DataFrame = DG.DataFrame.fromCsv(
   `seq
-AGTC
-AGTC
-AGTCW
+AGTCAT
+AGTCGC
+AGTCATW
 `);
 
 /** This sequence set should be recognized as unknown. */
@@ -72,10 +72,10 @@ export function _testGetAlphabetFreqs() {
   const mFreq = WebLogo.getAlphabetFreqs(seqCol);
 
   expectObject(mFreq, {
-    'A': 3,
-    'C': 3,
-    'G': 2,
-    'T': 4
+    'A': 4,
+    'C': 5,
+    'G': 3,
+    'T': 6
   });
 }
 
