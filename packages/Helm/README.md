@@ -1,3 +1,15 @@
-# Helm
+# HELM
 
-Helm is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
+Provides support for [HELM notation](https://pistoiaalliance.atlassian.net/wiki/spaces/HELM/overview) 
+(Hierarchical Editing Language for Macromolecules) -
+a single notation that can encode the structure of complex biomolecules including diverse polymers, non-natural monomers and complex attachment points
+
+Features
+* Automatic detection of HELM values in datasets
+* Rendering
+* Editing
+* Conversion to SMARTS and MOLBLOCK
+
+See also:
+* https://pistoiaalliance.atlassian.net/wiki/spaces/HELM/overview
+* https://github.com/PistoiaHELM/HELMWebEditor
