@@ -95,8 +95,8 @@ export async function startAnalysis(
     activityScaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
     newDf.columns.add(activityScaledCol);
     newDf.name = 'Peptides analysis';
-    newDf.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
-    newDf.tags[C.PEPTIDES_ANALYSIS] = 'true';
+    newDf.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
+    // newDf.tags[C.PEPTIDES_ANALYSIS] = 'true';
 
     model = await PeptidesModel.getInstance(newDf, dgPackage ?? _package);
   } else

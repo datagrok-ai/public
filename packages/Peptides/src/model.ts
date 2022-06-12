@@ -55,8 +55,6 @@ export class PeptidesModel {
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
-    this._dataFrame.temp[C.PEPTIDES_ANALYSIS] = true;
-
     this.updateProperties();
   }
 
@@ -89,11 +87,14 @@ export class PeptidesModel {
   set currentSelection(selection: type.SelectionObject) {
     this._currentSelection = selection;
     this._dataFrame.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
+    this.invalidateSelection();
+  }
 
+  invalidateSelection(): void {
     this.modifyOrCreateSplitCol();
     this.fireBitsetChanged();
-    this.invalidateGrids();
     grok.shell.o = this.createAccordion().root;
+    this.invalidateGrids();
   }
 
   createAccordion() {
@@ -167,7 +168,7 @@ export class PeptidesModel {
       }
     }
     await this.updateBarchart();
-    this.invalidateGrids();
+    this.invalidateSelection();
 
     this._isUpdating = false;
   }
@@ -251,8 +252,6 @@ export class PeptidesModel {
     this.setTooltips(renderColNames, statsDf, peptidesCount, sarGrid, sarVGrid, this._dataFrame);
 
     this.setInteractionCallback();
-
-    this.modifyOrCreateSplitCol();
 
     this.setBitsetCallback();
 
@@ -384,7 +383,7 @@ export class PeptidesModel {
     activityScaling: string, df: DG.DataFrame, sourceGrid: DG.Grid, splitSeqDf: DG.DataFrame,
   ): Promise<void> {
     const [scaledDf, newColName] = await PeptidesModel.scaleActivity(
-      activityScaling, df, df.temp[C.COLUMNS_NAMES.ACTIVITY]);
+      activityScaling, df, df.tags[C.COLUMNS_NAMES.ACTIVITY]);
     //TODO: make another func
     const scaledCol = scaledDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     scaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
@@ -394,7 +393,7 @@ export class PeptidesModel {
     const gridCol = sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     if (gridCol !== null) {
       gridCol.name = newColName;
-      df.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newColName;
+      df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newColName;
     }
 
     sourceGrid.columns.setOrder([newColName]);
@@ -919,8 +918,8 @@ export class PeptidesModel {
   }
 
   syncProperties(isSourceSAR = true): void {
-    const sarViewer = this._dataFrame.temp['sarViewer'];
-    const sarViewerVertical = this._dataFrame.temp['sarViewerVertical'];
+    const sarViewer: SARViewer = this._dataFrame.temp['sarViewer'];
+    const sarViewerVertical: SARViewerVertical = this._dataFrame.temp['sarViewerVertical'];
     const sourceViewer = isSourceSAR ? sarViewer : sarViewerVertical;
     const targetViewer = isSourceSAR ? sarViewerVertical : sarViewer;
     const properties = sourceViewer.props.getProperties();
@@ -940,10 +939,16 @@ export class PeptidesModel {
     stats.setMask(this._dataFrame.selection);
     this._dataFrame.temp[C.STATS] = stats;
 
-    this.currentView = grok.shell.addTableView(this._dataFrame);
+    this.currentView = this._dataFrame.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
+      grok.shell.addTableView(this._dataFrame);
     const sourceGrid = this.currentView.grid;
-    sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this._dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED];
-    sourceGrid.columns.setOrder([this._dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
+    if (this._dataFrame.tags[C.PEPTIDES_ANALYSIS] == 'true')
+      return;
+
+    this._dataFrame.tags[C.PEPTIDES_ANALYSIS] = 'true';
+    sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
+    sourceGrid.columns.setOrder([this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
+    
 
     this._dataFrame.temp[C.EMBEDDING_STATUS] = false;
     const adjustCellSize = (grid: DG.Grid): void => {
@@ -958,9 +963,8 @@ export class PeptidesModel {
     for (let i = 0; i < sourceGrid.columns.length; i++) {
       const aarCol = sourceGrid.columns.byIndex(i);
       if (aarCol && aarCol.name && aarCol.column?.semType !== C.SEM_TYPES.AMINO_ACIDS &&
-        aarCol.name !== this._dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED]
-      )
-        sourceGrid.columns.byIndex(i)!.visible = false;
+        aarCol.name !== this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED])
+        aarCol.visible = false;
     }
 
     const options = {scaling: this._dataFrame.tags['scaling']};
@@ -970,11 +974,9 @@ export class PeptidesModel {
 
     const sarViewer =
       await this._dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
-    this._dataFrame.temp['sarViewer'] = sarViewer;
 
     const sarViewerVertical =
       await this._dataFrame.plot.fromType('peptide-sar-viewer-vertical', options) as SARViewerVertical;
-    this._dataFrame.temp['sarViewerVertical'] = sarViewer;
 
     const sarViewersGroup: viewerTypes[] = [sarViewer, sarViewerVertical];
 
