@@ -39,42 +39,27 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.initRibbon();
     this.initMenu();
     this.currentCall = grok.functions.getCurrentCall();
-    this.initFavorites().then(r => {});
+    //this.initFavorites().then((_) => {});
   }
 
   currentCall: DG.FuncCall;
 
   async initFavorites() {
-    let parser = document.createElement('a');
-    parser.href = window.location.href;
-    let pathSegments = parser.pathname.split('/');
-
-    if (pathSegments.length > 3) {
-      let lst = await grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list();
-      if (lst.length == 1)
-        ModelHandler.openModel(lst[0]);
-    }
     let fav = await grok.dapi.functions.filter('starredBy = @current #model').list();
     for (let f of fav) {
       //console.log(f.name);
       let fc = f.prepare();
       fc.parentCall = this.currentCall;
       let v = DG.View.create();
+      v.name = f.name;
       v.parentView = this;
       v.parentCall = fc;
 
-      //grok.shell.addView(v);
+      grok.shell.addView(v);
       // @ts-ignore
       v.temp.model = f;
-      //ModelHandler.openModel(f, this.currentCall);
+      ModelHandler.openModel(f, this.currentCall);
     }
-
-    grok.events.onCurrentViewChanged.subscribe((v) => {
-      if (v.temp.model != null) {
-        ModelHandler.openModel(v.temp.model);
-        v.close();
-      }
-    })
   }
 
   initRibbon() {
