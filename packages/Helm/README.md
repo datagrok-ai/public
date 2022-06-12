@@ -12,9 +12,21 @@ non-natural monomers and complex attachment points.
 
 ### Features
 * Automatic detection of HELM values in datasets
-* Rendering
+* Rendering in the spreadsheet
 * Editing
 * Conversion to SMARTS and MOLBLOCK
+* Substructure search
+* Similarity search
+* Calculators (mol weight, mol formula, extinction coefficient, )
+* Data augmentation (show relevant information in the property panel)
+
+### Advanced features
+* Integration with the [HELM2WebService](https://github.com/PistoiaHELM/HELM2WebService) (calculations, images, etc)
+* Support for company-specific monomer libraries
+* Management tool for monomer libraries (integrated with the security and privileges)
+* Similarity and diversity analyses
+* HELM space (UMAP or t-SNE based on the distance)
+* Activity cliffs analysis (based on the HELM space)
 
 Kudos to Pistoia alliance for open-sourcing the [HELM Web Editor](https://github.com/PistoiaHELM/HELMWebEditor) 
 that is used in this integration. 
