@@ -1,6 +1,50 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-12 Dev build 1.3.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.3.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Packages manager WIP 
+* Packages manager WIP Some styling 
+* Closes #655: Grid: No auto new line when editing and '+' available 
+* Exclude broken integration tests 
+* Datagrok incapsulated grok connect 
+* Packages: context menu improvements (WIP)
+* #695: style paramter for range slider 
+* Packages: Package install fail timeout 
+* Packages: fixed exception on packages without repository 
+* PackagesClient.deletePublished 
+* Scripting: understand extra white spaces in the script header (WIP)
+* Packages: Ability to delete package (WIP)
+* SelectAll: only selecting rows, not columns 
+* Filters: fixed the indication of the active/inactive state 
+* Packages: Debug packages permissions fix (WIP)
+* #698: custom property panel 
+* Peptides: p-value column format fix 
+* Viewers: harmonizing properties \- WIP 
+* Peptides: accordion panels width fix 
+* Update icons. 
+* Helm: initial update (test files + detectors) 
+* Helm: updated README.md 
+* #700: Helm: implemented renderer, updated wiki 
+* Compute: UX harmonization #180 
+* Peptides: visual fixes 
+* #700: Helm: help update 
+* Peptides: analysis save-load fix 
+* Peptides: lint fix 
+* Compute: UX harmonization #180 URL fix 
+* Updated public index 
+
+
 # 2022-06-08 Dev build 1.2.1
 
 ## Latest Docker Images
