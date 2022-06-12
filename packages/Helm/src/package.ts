@@ -8,6 +8,7 @@ export const _package = new DG.Package();
 
 //tags: init
 export async function initChem(): Promise<void> {
+  // apparently HELMWebEditor requires dojo to be initialized first
   return new Promise((resolve, reject) => {
     // @ts-ignore
     dojo.ready(function () { resolve(null); });
@@ -23,6 +24,31 @@ export async function initChem(): Promise<void> {
 export function helmCellRenderer(): DG.GridCellRenderer {
   return new HelmCellRenderer();
 }
+
+//name: helmToSmiles
+//tags: converter
+//output: string smiles {semType: Molecule}
+export function helmToSmiles(helm: string): string {
+  //todo: call webservice
+  return 'foo';
+}
+
+//name: helmToFasta
+//tags: converter
+//output: string smiles {semType: fasta}
+export function helmToFasta(helm: string): string {
+  return 'foo';
+}
+
+
+//name: helmColumnToSmiles
+//input: column helmColumn {semType: HELM}
+export function helmColumnToSmiles(helmColumn: DG.Column) {
+  //todo: add column with smiles to col.dataFrame.
+}
+
+// todo: "Details" panel (see Toxicity)
+// smiles, mol weight, mol formula, extinction coefficient, "combined"
 
 
 class HelmCellRenderer extends DG.GridCellRenderer {
