@@ -599,11 +599,6 @@ export class PeptidesModel {
           }
 
           //TODO: frame based on currentSelection
-          // if (currentAAR == 'D' && currentPosition == '11') {
-          //   canvasContext.strokeStyle = '#000';
-          //   canvasContext.lineWidth = 1;
-          //   canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);
-          // }
           const aarSelection = this.currentSelection[currentPosition];
           if (aarSelection && aarSelection.includes(currentAAR)) {
             canvasContext.strokeStyle = '#000';
@@ -672,8 +667,8 @@ export class PeptidesModel {
       isShiftPressed ? this.modifyCurrentSelection(aar, position) : this.initCurrentSelection(aar, position);
     };
 
-    const gridCellValidation = (gc: DG.GridCell | null) => !gc || !gc.tableColumn || gc.tableRowIndex == null ||
-      gc.tableRowIndex == -1;
+    const gridCellValidation = (gc: DG.GridCell | null) => !gc || !gc.cell.value || !gc.tableColumn ||
+      gc.tableRowIndex == null || gc.tableRowIndex == -1;
     this._sarGrid.root.addEventListener('click', (ev) => {
       const gridCell = this._sarGrid.hitTest(ev.offsetX, ev.offsetY);
       if (gridCellValidation(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)
@@ -743,10 +738,6 @@ export class PeptidesModel {
 
     const changeBitset = (currentBitset: DG.BitSet, previousBitset: DG.BitSet): void => {
       previousBitset.setAll(!this._filterMode, false);
-      // currentBitset.init((i) => {
-      //   const currentCategory = this.splitCol.get(i);
-      //   return currentCategory !== C.CATEGORIES.OTHER && currentCategory !== C.CATEGORIES.ALL;
-      // }, false);
       currentBitset.init((i) => this.splitCol.get(i), false);
     };
 
@@ -778,14 +769,17 @@ export class PeptidesModel {
     mdCol.name = 'Diff';
 
     for (const grid of [sarGrid, sarVGrid]) {
-      grid.props.rowHeight = 20;
-      grid.columns.rowHeader!.width = 20;
-      for (let i = 0; i < grid.columns.length; ++i) {
-        const col = grid.columns.byIndex(i)!;
-        if (grid == sarVGrid && col.name !== 'Diff' && col.name !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)
-          col.width = 45;
+      const gridProps = grid.props;
+      gridProps.rowHeight = 20;
+      const girdCols = grid.columns;
+      const colNum = girdCols.length;
+      for (let i = 0; i < colNum; ++i) {
+        const col = girdCols.byIndex(i)!;
+        const colName = col.name;
+        if (grid == sarVGrid && colName !== 'Diff' && colName !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)
+          col.width = 50;
         else
-          col.width = grid.props.rowHeight;
+          col.width = gridProps.rowHeight + 10;
       }
     }
 
@@ -804,7 +798,6 @@ export class PeptidesModel {
     return currentAAR === aar ? aarLabel : C.CATEGORIES.OTHER;
   }
 
-  // modifyOrCreateSplitCol(aar: string, position: string): void {
   modifyOrCreateSplitCol(): void {
     const df = this._dataFrame;
     this.splitCol = df.col(C.COLUMNS_NAMES.SPLIT_COL) ?? df.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
@@ -839,7 +832,7 @@ export class PeptidesModel {
     const tempDf = df.clone(cloneBitset ? df.filter : null, [currentActivityColName]);
 
     let formula = '${' + currentActivityColName + '}';
-    let newColName = 'activity'; //originalActivityName ?? df.temp[C.COLUMNS_NAMES.ACTIVITY] ?? currentActivityColName;
+    let newColName = 'activity';
     switch (activityScaling) {
     case 'none':
       break;
