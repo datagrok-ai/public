@@ -52,8 +52,9 @@ export function functionParametersGrid(f: DG.Func): DG.View {
 }
 
 //name: hof
-//tags: sidebar
+//tags: model
 //description: some description
+//sidebar: @compute
 export function hof() {
   grok.shell.info('hof');
   let f: DG.Func = DG.Func.byName('Sin');
@@ -66,13 +67,16 @@ export function hof() {
 
 //name: hof2
 //description: some description 2 2 2
+//sidebar: @compute
+//meta.icon: package1.png
+//tags: model
 export function hof2() {
   grok.shell.info('hof2');
   let f: DG.Func = DG.Func.byName('Sin');
   let v: DG.View = functionParametersGrid(f);
-  v.parentCall = grok.functions.getCurrentCall().parentCall;
-  v.parentView = v.parentCall?.aux['view'];
-  v.path = 'hof';
+  v.parentCall = grok.functions.getCurrentCall();
+  v.parentView = v.parentCall?.parentCall?.aux['view'];
+  v.path = grok.functions.getCurrentCall().func.name;
   grok.shell.addView(v);
 }
 
@@ -174,9 +178,12 @@ export function init() {
 //name: Model Catalog
 //tags: app
  export function modelCatalog() {
-   let view = new ModelCatalogView();
-   view.name = 'Models';
-   grok.shell.addView(view);
+   let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
+   if (modelsView == null) {
+     let view = new ModelCatalogView();
+     view.name = 'Models';
+     grok.shell.addView(view);
+   } else grok.shell.v = modelsView;
  }
 
 
