@@ -5,6 +5,9 @@ Provides support for [HELM notation](https://pistoiaalliance.atlassian.net/wiki/
 a single notation that can encode the structure of complex biomolecules including diverse polymers, 
 non-natural monomers and complex attachment points.
 
+[Andrew Skalkin](https://github.com/skalkin) | 
+[issue tracker](https://github.com/datagrok-ai/public/issues/700) | beta
+
 ![](images/helm-rendering.png)
 
 ### Features
