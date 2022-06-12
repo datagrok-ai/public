@@ -22,10 +22,10 @@ const allLabel = 'All';
 
 export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   const splitCol = table.col(C.COLUMNS_NAMES.SPLIT_COL);
-  if (!splitCol)
+  const selectionObject: type.SelectionObject = JSON.parse(table.tags[C.TAGS.SELECTION]);
+  if (!splitCol || !selectionObject)
     return new DG.Widget(ui.divText('No distribution'));
 
-  const selectionObject: type.SelectionObject = JSON.parse(table.tags[C.TAGS.SELECTION]);
   const positions = Object.keys(selectionObject);
   let currentColor = DG.Color.toHtml(DG.Color.blue);
   const otherColor = DG.Color.toHtml(DG.Color.blue);

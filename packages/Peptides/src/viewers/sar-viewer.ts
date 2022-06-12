@@ -104,6 +104,7 @@ export class SARViewer extends SARViewerBase {
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
     this.viewerGrid = this.model._sarGrid;
+    this.dataFrame.temp['sarViewer'] = this;
 
     this.subs.push(this.model.onSARGridChanged.subscribe((data) => {
       this.viewerGrid = data;
@@ -143,6 +144,7 @@ export class SARViewerVertical extends SARViewerBase {
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
     this.viewerGrid = this.model._sarVGrid;
+    this.dataFrame.temp['sarViewerVertical'] = this;
 
     this.subs.push(this.model.onSARVGridChanged.subscribe((data) => {
       this.viewerGrid = data;
