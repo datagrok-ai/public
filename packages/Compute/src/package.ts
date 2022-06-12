@@ -67,13 +67,17 @@ export function hof() {
 //name: hof2
 //description: some description 2 2 2
 //sidebar: @compute
+//meta.icon: package1.png
 export function hof2() {
   grok.shell.info('hof2');
   let f: DG.Func = DG.Func.byName('Sin');
   let v: DG.View = functionParametersGrid(f);
+
   v.parentCall = grok.functions.getCurrentCall();
-  v.parentView = v.parentCall?.parentCall?.aux['view'];
-  v.path = grok.functions.getCurrentCall().func.name;
+  v.parentView = v.parentCall.parentCall?.aux['view'];
+  v.basePath = '/' + v.parentCall.func.name;
+  v.path = '/';
+
   grok.shell.addView(v);
 }
 
@@ -174,14 +178,24 @@ export function init() {
 
 //name: Model Catalog
 //tags: app
- export function modelCatalog() {
-   let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
-   if (modelsView == null) {
-     let view = new ModelCatalogView();
-     view.name = 'Models';
-     grok.shell.addView(view);
-   } else grok.shell.v = modelsView;
- }
+export function modelCatalog() {
+  let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
+  if (modelsView == null) {
+    let view = new ModelCatalogView();
+    view.name = 'Models';
+    let parser = document.createElement('a');
+    parser.href = window.location.href;
+    let pathSegments = parser.pathname.split('/');
+    grok.shell.addView(view);
+    if (pathSegments.length > 3) {
+      let c = grok.functions.getCurrentCall();
+      grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
+        if (lst.length == 1)
+          ModelHandler.openModel(lst[0], c);
+      });
+    }
+  } else grok.shell.v = modelsView;
+}
 
 
 //name: computationTest
