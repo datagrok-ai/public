@@ -3,42 +3,34 @@
 
 # Cheminformatics
 
-[Wikipedia](https://en.wikipedia.org/wiki/Cheminformatics): Cheminformatics is the use of computer and informational
-techniques applied to a range of problems in the field of chemistry. These *in silico* techniques are used, for example,
-in pharmaceutical companies and academic settings in the process of drug discovery. These methods can also be used in
-chemical and allied industries in various other forms.
+Cheminformatics (see also the [Wikipedia](https://en.wikipedia.org/wiki/Cheminformatics) article) is the application of computer and information science methods to a wide range of problems in chemistry. The associated _in silico_ techniques (see below) are used, for example, during the process of drug discovery in pharmaceutical companies and academic environments, and can be employed in chemical and allied industries.
 
-Counterposed to *in vitro* (undertaken in glass without cells) and *in vivo* (undertaken in cell cultures, or organisms)
-biochemical experiments *in silico* was defined to imply a biochemical experiment performed via computational
-approaches (as silicon is the main component of modern CPU). Cheminformatics is a complex in silico discipline serving
-to handle chemical entities for several different purposes:
+As contrasted to _in vitro_ biochemical experiments (conducted in labware without the living cells) and _in vivo_ ones (conducted in cell cultures or organisms), _in silico_ biochemical experiments are defined as the ones performed by means of computer simulations, because silicon is the main component of modern CPUs. Cheminformatics is a complex _in silico_ discipline, serving multiple purposes, such as:
 
-- developing methods for chemical data storage, and operating with it
-- determination of structure-property and structure-activity relationships via modeling
-- virtual screening to evaluate the most potent drug candidates.
-- generation of possible chemical structures
-- synthesis planning and synthetical routes prediction
-- facilitation of chemists' work via visualization and reaction prediction
-- molecular design, etc
+* development of methods for storage and operating chemical data 
+* determining the structure-property and structure-activity relations by means of simulation
+* virtual screening aimed at discovery of most potent drug candidates
+* generation of possible chemical structures
+* synthesis planning and prediction of synthetic routes
+* facilitation of a researcher's work by means of visualization and reaction prediction
+* molecular design
+* etc.
 
-Cheminformatics tends to consider a molecule structure as a sole chemical object that could be presented in plural data
-forms. More complex objects like mixtures, materials and reactions are also investigated but are related to molecular
-structures in each case. Datagrok provides first-class support for small molecules, as well as most popular building
-blocks for cheminformatics. It understands several popular notations for representing chemical (sub)structures, such as
-SMILES and SMARTS. Molecules can be rendered in either 2D or 3D with different visualization options. They can be
-sketched as well. Chemical properties, descriptors, and fingerprints can be extracted. Predictive models that accept
-molecules as an input can be easily trained, assessed, executed, deployed, reused by other scientists, and used in
-pipelines or in info panels. Several toxicity and drug-likeness prediction models are supported. Substructure and
-similarity search works out-of-the box for imported data and can be efficiently utilized for querying databases using
-Postgres chemical cartridge. To further explore collections of molecules, use advanced tools such as diversity search
-and similarity search. Though it might seem that cheminformatics covers all molecular needs, it has its limitations. The
-applicability of this field is limited to small molecules and some types of peptides. It shows real power when it is
-combined with other *in silico* approaches including but not limited to:
+Cheminformatics tends to consider _molecular structure_ as a principal chemical object, which can be considered in various data representations. More complex objects, such as mixtures, materials and reactions, can also be investigated in this setting, but have to be related to the associated molecular structures in each case.
 
-- docking and molecular dynamics
-- systems biology and pharmacology
-- bioinformatics
-- proteomics.
+<!--corr: now goes the description of Datagrok functionality -- is it apt here? The style requires refactoring, for it resembles a dull prayer --> 
+<!--corr: to improve style, one should mention that Datagrok is a powerful cheminformatics tool, which has the following instruments...--> 
+Datagrok supplies a researcher with a powerful cheminformatics arsenal, in particular:
+<!--corr: LINKS!!!--> 
+* The platform supports widely accepted _types of notation_ for representing chemical (sub)structures, such as SMILES and SMARTS. 
+* It provides first-class support for _small molecules_, as well as most popular building blocks for simulations.<!--corr: a good idea to mention those blocks-->  
+* Molecules can be sketched and rendered as 2D or 3D models_, equipped with auxiliary _visualization options_. 
+* _Chemical properties_, _descriptors_, and _fingerprints_ can be extracted on the fly. 
+* _Predictive models_, accepting molecular structures as their input, can be trained, assessed, executed, deployed, reused by other scientists, and incorporated in pipelines or info panels.<!--corr: what is info panel? a link/description needed --> Predictive models for _toxicity_ and _drug-likeness_ are also supported. 
+* _Substructure and similarity search_ works out-of-the box for the imported data and can efficiently be utilized for querying databases with the help of Postgres chemical cartridge. 
+* In order to further explore collections of molecules, one can use advanced tools like _diversity search_ and _similarity search_.
+
+Though it might seem that cheminformatics covers all the "molecular" needs <!--corr: a very vague formulation--> , it has its limitations. In particular, its applicability is limited to small molecules and some types of peptides. It shows real power when combined with other _in silico_ approaches, including but not limited to: docking and molecular dynamics, systems biology and pharmacology, bioinformatics, proteomics.<!--corr: This paragraph leaves the feeling of being unfinished-->  
 
 ## Representaion
 
