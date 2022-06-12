@@ -16,8 +16,8 @@ import {_package} from './package';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {setAARRenderer} from './utils/cell-renderer';
-import { substitutionsWidget } from './widgets/subst-table';
-import { getDistributionWidget } from './widgets/distribution';
+import {substitutionsWidget} from './widgets/subst-table';
+import {getDistributionWidget} from './widgets/distribution';
 
 export class PeptidesModel {
   static _modelName = 'peptidesModel';
@@ -787,7 +787,7 @@ export class PeptidesModel {
       grid.props.allowRowSelection = false;
       grid.props.allowBlockSelection = false;
     };
-    
+
     setViewerGridProps(sarGrid);
     setViewerGridProps(sarVGrid);
   }
@@ -948,7 +948,7 @@ export class PeptidesModel {
     this._dataFrame.tags[C.PEPTIDES_ANALYSIS] = 'true';
     sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
     sourceGrid.columns.setOrder([this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
-    
+
 
     this._dataFrame.temp[C.EMBEDDING_STATUS] = false;
     const adjustCellSize = (grid: DG.Grid): void => {

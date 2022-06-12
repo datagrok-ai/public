@@ -40,7 +40,7 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
 
       for (const aar of selectionObject[position])
         aarStr += `${aar}, `;
-  
+
       aarStr = aarStr.slice(0, aarStr.length - 2);
       aarStr += '}; ';
     }
