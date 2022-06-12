@@ -47,6 +47,9 @@ export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): 
     }
   }
 
+  if (!substitutionsArray.length)
+    return new DG.Widget(ui.label('No substitution table generated'));
+
   const substCol = DG.Column.fromStrings('Substiutions', substitutionsArray);
   substCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE_DIFFERENCE;
   const toColName = '~to';
