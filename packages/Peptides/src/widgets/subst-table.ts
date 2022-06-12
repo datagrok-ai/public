@@ -27,7 +27,7 @@ export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): 
 
       const posCol = table.getCol(pos);
       for (const [referenceIdx, indexArray] of substitutionsMap.entries()) {
-        const forbiddentIndexes = seenIndexes.has(referenceIdx) ? seenIndexes.get(referenceIdx)! : [];    
+        const forbiddentIndexes = seenIndexes.has(referenceIdx) ? seenIndexes.get(referenceIdx)! : [];
         const baseSequence = alignedSeqCol.get(referenceIdx);
         const baseActivity = activityScaledCol.get(referenceIdx);
 

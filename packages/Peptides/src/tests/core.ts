@@ -36,7 +36,7 @@ category('Core', () => {
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName, _package);
     expect(model instanceof PeptidesModel, true);
-    
+
     if (model != null) {
       model.currentSelection = {'11': ['D']};
       grok.shell.closeTable(model._dataFrame);

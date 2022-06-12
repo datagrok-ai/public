@@ -324,8 +324,8 @@ export class StackedBarChart extends DG.JsViewer {
   requestAction(event: MouseEvent, barPart: {colName: string, aaName: string} | null): void {
     if (!barPart)
       return;
-    let aar = barPart['aaName'];
-    let position = barPart['colName'];
+    const aar = barPart['aaName'];
+    const position = barPart['colName'];
     if (event.type === 'click') {
       event.shiftKey ? this.model.modifyCurrentSelection(aar, position) :
         this.model.initCurrentSelection(aar, position);
