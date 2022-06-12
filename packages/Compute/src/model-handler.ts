@@ -91,6 +91,7 @@ export class ModelHandler extends DG.ObjectHandler {
       parentCall.aux['view'] = modelsView;
       fc.parentCall = parentCall;
     }
+    fc.aux['showOnTaskBar'] = false;
     fc.edit();
   }
 

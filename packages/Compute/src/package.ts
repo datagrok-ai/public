@@ -52,7 +52,6 @@ export function functionParametersGrid(f: DG.Func): DG.View {
 }
 
 //name: hof
-//tags: model
 //description: some description
 //sidebar: @compute
 export function hof() {
@@ -68,8 +67,6 @@ export function hof() {
 //name: hof2
 //description: some description 2 2 2
 //sidebar: @compute
-//meta.icon: package1.png
-//tags: model
 export function hof2() {
   grok.shell.info('hof2');
   let f: DG.Func = DG.Func.byName('Sin');
