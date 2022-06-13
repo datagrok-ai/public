@@ -19,13 +19,15 @@ jobs:
         run: |
           name="$(jq .name package.json | sed 's/"//g')"
           current_version="$(jq .version package.json | sed 's/"//g')"
-            npm_response="$(curl --retry 3 "https://registry.npmjs.org/${name}/${current_version}")"
+            npm_response="$(curl -s --retry 3 "https://registry.npmjs.org/${name}/${current_version}")"
           if [[ $npm_response == "\"version not found: ${current_version}\"" ]] || [[ $npm_json == "\"Not Found\"" ]]; then
             changed_version='true'
           else
             changed_version='false'
           fi
+          echo '::echo::on'
           echo "::set-output name=changed_version::${changed_version}"
+          echo '::echo::off'
 
   build:
     name: Build and publish to npm
@@ -56,7 +58,7 @@ jobs:
         working-directory: ./js-api
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && needs.check.outputs.changed_version == 'true'
+        if: needs.check.outputs.changed_version == 'true'
       - name: Commit package-lock.json
         if: github.ref == 'refs/heads/master' && needs.check.outputs.changed_version == 'true'
         run: |
