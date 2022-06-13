@@ -610,7 +610,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/UsageAnalysis"
       },
-      "category": "Analyze"
+      "category": "Development"
     },
     "multiplot": {
       "dependencies": {
