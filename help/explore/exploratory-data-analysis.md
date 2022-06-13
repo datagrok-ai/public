@@ -13,7 +13,7 @@ assumptions required for model fitting and hypothesis testing, and handling miss
 variables as needed. EDA encompasses IDA.*
 
 From the ground up, Datagrok has been designed to enable interactive exploratory data analysis on big
-datasets. [Importing data](../access/importing-data.md) is seamless and fast. Multiple interactive tools exist for 
+datasets. [Importing data](../access/importing-data.md) is seamless and fast. Multiple interactive tools exist for
 [data cleanup and preparation](../transform/data-wrangling.md). A rich set
 of [high-performance](../develop/advanced/performance.md), interactive [viewers](../visualize/viewers.md)
 let you filter and visualize data in any possible way; some of them directly support EDA-related features such
