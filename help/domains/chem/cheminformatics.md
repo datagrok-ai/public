@@ -3,11 +3,17 @@
 
 # Cheminformatics
 
-Cheminformatics (see also the [Wikipedia](https://en.wikipedia.org/wiki/Cheminformatics) article) is the application of computer and information science methods to a wide range of problems in chemistry. The associated _in silico_ techniques (see below) are used, for example, during the process of drug discovery in pharmaceutical companies and academic environments, and can be employed in chemical and allied industries.
+Cheminformatics (see also the [Wikipedia](https://en.wikipedia.org/wiki/Cheminformatics) article) is the application of
+computer and information science methods to a wide range of problems in chemistry. The associated _in silico_
+techniques (see below) are used, for example, during the process of drug discovery in pharmaceutical companies and
+academic environments, and can be employed in chemical and allied industries.
 
-As contrasted to _in vitro_ biochemical experiments (conducted in labware without the living cells) and _in vivo_ ones (conducted in cell cultures or organisms), _in silico_ biochemical experiments are defined as the ones performed by means of computer simulations, because silicon is the main component of modern CPUs. Cheminformatics is a complex _in silico_ discipline, serving multiple purposes, such as:
+As contrasted to _in vitro_ biochemical experiments (conducted in labware without the living cells) and _in vivo_ ones (
+conducted in cell cultures or organisms), _in silico_ biochemical experiments are defined as the ones performed by means
+of computer simulations, because silicon is the main component of modern CPUs. Cheminformatics is a complex _in silico_
+discipline, serving multiple purposes, such as:
 
-* development of methods for storage and operating chemical data 
+* development of methods for storage and operating chemical data
 * determining the structure-property and structure-activity relations by means of simulation
 * virtual screening aimed at discovery of most potent drug candidates
 * generation of possible chemical structures
@@ -16,21 +22,35 @@ As contrasted to _in vitro_ biochemical experiments (conducted in labware withou
 * molecular design
 * etc.
 
-Cheminformatics tends to consider _molecular structure_ as a principal chemical object, which can be considered in various data representations. More complex objects, such as mixtures, materials and reactions, can also be investigated in this setting, but have to be related to the associated molecular structures in each case.
+Cheminformatics tends to consider _molecular structure_ as a principal chemical object, which can be considered in
+various data representations. More complex objects, such as mixtures, materials and reactions, can also be investigated
+in this setting, but have to be related to the associated molecular structures in each case.
 
 <!--corr: now goes the description of Datagrok functionality -- is it apt here? The style requires refactoring, for it resembles a dull prayer --> 
 <!--corr: to improve style, one should mention that Datagrok is a powerful cheminformatics tool, which has the following instruments...--> 
 Datagrok supplies a researcher with a powerful cheminformatics arsenal, in particular:
 <!--corr: LINKS!!!--> 
-* The platform supports widely accepted _types of notation_ for representing chemical (sub)structures, such as SMILES and SMARTS. 
-* It provides first-class support for _small molecules_, as well as most popular building blocks for simulations.<!--corr: a good idea to mention those blocks-->  
-* Molecules can be sketched and rendered as 2D or 3D models_, equipped with auxiliary _visualization options_. 
-* _Chemical properties_, _descriptors_, and _fingerprints_ can be extracted on the fly. 
-* _Predictive models_, accepting molecular structures as their input, can be trained, assessed, executed, deployed, reused by other scientists, and incorporated in pipelines or info panels.<!--corr: what is info panel? a link/description needed --> Predictive models for _toxicity_ and _drug-likeness_ are also supported. 
-* _Substructure and similarity search_ works out-of-the box for the imported data and can efficiently be utilized for querying databases with the help of Postgres chemical cartridge. 
-* In order to further explore collections of molecules, one can use advanced tools like _diversity search_ and _similarity search_.
 
-Though it might seem that cheminformatics covers all the "molecular" needs <!--corr: a very vague formulation--> , it has its limitations. In particular, its applicability is limited to small molecules and some types of peptides. It shows real power when combined with other _in silico_ approaches, including but not limited to: docking and molecular dynamics, systems biology and pharmacology, bioinformatics, proteomics.<!--corr: This paragraph leaves the feeling of being unfinished-->  
+* The platform supports widely accepted _types of notation_ for representing chemical (sub)structures, such as SMILES
+  and SMARTS.
+* It provides first-class support for _small molecules_, as well as most popular building blocks for
+  simulations.<!--corr: a good idea to mention those blocks-->
+* Molecules can be sketched and rendered as 2D or 3D models, equipped with auxiliary _visualization options_.
+* _Chemical properties_, _descriptors_, and _fingerprints_ can be extracted on the fly.
+* _Predictive models_, accepting molecular structures as their input, can be trained, assessed, executed, deployed,
+  reused by other scientists, and incorporated in pipelines or info
+  panels.<!--corr: what is info panel? a link/description needed --> Predictive models for _toxicity_ and _
+  drug-likeness_ are also supported.
+* _Substructure and similarity search_ works out-of-the box for the imported data and can efficiently be utilized for
+  querying databases with the help of Postgres chemical cartridge.
+* In order to further explore collections of molecules, one can use advanced tools like _diversity search_ and _
+  similarity search_.
+
+Though it might seem that cheminformatics covers all the "molecular" needs <!--corr: a very vague formulation--> , it
+has its limitations. In particular, its applicability is limited to small molecules and some types of peptides. It shows
+real power when combined with other _in silico_ approaches, including but not limited to: docking and molecular
+dynamics, systems biology and pharmacology, bioinformatics,
+proteomics.<!--corr: This paragraph leaves the feeling of being unfinished-->
 
 ## Representaion
 
@@ -104,9 +124,9 @@ the similarity of two molecules, and screening, a way of rapidly eliminating mol
 search, are both processes that use fingerprints. Descriptors and fingerprint feature in the following items:
 *A variety of different descriptors and fingerprints could be derived from a single molecular graph
 
-- They are invariant to numberings in a molecule
-- In most case they could be interpretated in terms of chemical or physical properties
-- Reactions, mixtures of compounds, nanoparticles could also be represented as descriptors
+* They are invariant to numberings in a molecule
+* In most case they could be interpretated in terms of chemical or physical properties
+* Reactions, mixtures of compounds, nanoparticles could also be represented as descriptors
 
 Descriptors and fingerprints are frequently used for proceeding similar chemical structures. These principles yield in
 similarity search and diversity search. In combination with clustering and self-organizing maps, methods such as
@@ -248,17 +268,17 @@ purposes and process the situations when equal chemical entities have different 
 with the representation of the molecule in descriptor space and may lead to inconsistent analysis results and non-robust
 models. Curation tools include, but are not limited to:
 
-- kekulization
-- normalization
-- neutralization
-- tautomerization
-- selection of the main component
+* kekulization
+* normalization
+* neutralization
+* tautomerization
+* selection of the main component
 
 See [Chemical dataset curation](chem-curate.md) for more details, and a demo with curation examples.
 
 References:
 
-- [Chemical structures curation in cheminformatics](https://pubs.acs.org/doi/10.1021/ci100176x)
+* [Chemical structures curation in cheminformatics](https://pubs.acs.org/doi/10.1021/ci100176x)
 
 ### Biological data driven filtering
 
@@ -306,7 +326,7 @@ applying a model.
 
 References:
 
-- [Machine learning in chemoinformatics and drug discovery](https://www.sciencedirect.com/science/article/pii/S1359644617304695)
+* [Machine learning in chemoinformatics and drug discovery](https://www.sciencedirect.com/science/article/pii/S1359644617304695)
 
 ### What chemical space to screen?
 
@@ -383,17 +403,17 @@ a current object, and its properties are shown in the [property panel](../../ove
 on a molecule to select it as a current object. This will bring up this molecule's properties to the property panel. The
 following panels are part of the 'chem' plugin:
 
-- Identifiers - all known identifiers for the specified structure (UniChem)
-- Molfile – get a specified molecule .mol file
-- Structure 2D – gets a planar molecular representation
-- Structure 3D – gets a 3 dimensional molecular representation
-- Gasteiger Partial Charges – use it to get a representation with partial charges highlight
-- Chem descriptors – get the specified descriptors for a structure
-- Properties – get a list of calculated or predicted physical and chemical properties
-- Toxicity – drug design related feature to predict the toxicity
-- Structural alerts – drug design related feature to highlight fragments in structures that might greatly increase the
+* Identifiers - all known identifiers for the specified structure (UniChem)
+* Molfile – get a specified molecule .mol file
+* Structure 2D – gets a planar molecular representation
+* Structure 3D – gets a 3 dimensional molecular representation
+* Gasteiger Partial Charges – use it to get a representation with partial charges highlight
+* Chem descriptors – get the specified descriptors for a structure
+* Properties – get a list of calculated or predicted physical and chemical properties
+* Toxicity – drug design related feature to predict the toxicity
+* Structural alerts – drug design related feature to highlight fragments in structures that might greatly increase the
   toxicity and other problematic structural features
-- Drug likeness – drug design related feature to get a score that shows how likely this molecule is to be a drug. The
+* Drug likeness – drug design related feature to get a score that shows how likely this molecule is to be a drug. The
   score comes with an interpretation of how different sub-structure fragments contribute to the score.
 
 ![Toxicity, Gasteiger Partial Charges, Solubility Prediction](../../uploads/gifs/chem-model-augment.gif "Toxicity, Gasteiger Partial Charges, Solubility Prediction")
@@ -408,11 +428,11 @@ To see chemically-related actions applicable for the specified column, right-cli
 under `Current column | Chem` and `Current column | Extract`. Alternatively, click on the column of interest, and expand
 the 'Actions' section in the property panel.
 
-- Descriptors – calculates specified descriptors for the whole dataset and adds them to the table
-- Fingerprints – calculates specified fingerprints for the whole dataset and adds them to the table
-- To InchI – extracts InchI identifiiers for the whole dataset and adds them to the table
-- To inchI Key – extracts InchI keys for the whole dataset and adds them to the table
-- Find MCS – adds the most common substructure to the dataset
+* Descriptors – calculates specified descriptors for the whole dataset and adds them to the table
+* Fingerprints – calculates specified fingerprints for the whole dataset and adds them to the table
+* To InchI – extracts InchI identifiiers for the whole dataset and adds them to the table
+* To inchI Key – extracts InchI keys for the whole dataset and adds them to the table
+* Find MCS – adds the most common substructure to the dataset
 
 As always, it is a good idea to search for functionality using the smart search (Alt+Q), or by opening the registry of
 available functions Help | Functions.
@@ -421,17 +441,17 @@ available functions Help | Functions.
 
 To see chemically-related actions applicable for the table that includes molecules right-click the top-menu button Chem.
 
-- Sketcher – calls a sketcher for the filtering purposes, double-right-click on the structure to call the sketcher for
+* Sketcher – calls a sketcher for the filtering purposes, double-right-click on the structure to call the sketcher for
   structure modification.
-- Chemical space – renders a planar map for dataset chemical space. Options are provided for fingerprints and metrics.
-- Similarity search – performs similarity search and adds a view with the most similar structures from the dataset with
+* Chemical space – renders a planar map for dataset chemical space. Options are provided for fingerprints and metrics.
+* Similarity search – performs similarity search and adds a view with the most similar structures from the dataset with
   similarity values. Options are provided for fingerprints and metrics.
-- Diversity search – performs diversity search and adds a view with 10 most unsimilar structures from the dataset.
+* Diversity search – performs diversity search and adds a view with 10 most unsimilar structures from the dataset.
   Options are provided for fingerprints and metrics.
-- R-groups analysis – performs R-group analysis, adds the found groups to the table and shows the Trellis plot.
-- Activity cliffs – performs the search of activity cliffs in the dataset versus data column with property or activity.
-- Curate – performs dataset curation chemical structures.
-- Mutate – performs structural generation.
+* R-groups analysis – performs R-group analysis, adds the found groups to the table and shows the Trellis plot.
+* Activity cliffs – performs the search of activity cliffs in the dataset versus data column with property or activity.
+* Curate – performs dataset curation chemical structures.
+* Mutate – performs structural generation.
 
 ### Cheminformatics engine
 
@@ -478,34 +498,34 @@ See [DB Substructure and similarity search](db-substructure-similarity-search.md
 
 #### Public datasets deployed on our servers
 
-- [ChEMBL](https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/) (Postgres)
-- [UniChem](https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/) (Postgres)
+* [ChEMBL](https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/) (Postgres)
+* [UniChem](https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/) (Postgres)
 
 ## Functions
 
 The following cheminformatics-related [functions](../../overview/functions/function.md) are exposed:
 
-- \#{x.ChemSubstructureSearch}
-- \#{x.ChemFindMCS}
-- \#{x.ChemDescriptors}
-- \#{x.ChemGetRGroups}
-- \#{x.ChemFingerprints}
-- \#{x.ChemSimilaritySPE}
-- \#{x.ChemSmilesToInchi}
-- \#{x.ChemSmilesToCanonical}
-- \#{x.ChemMapIdentifiers}
+* \#{x.ChemSubstructureSearch}
+* \#{x.ChemFindMCS}
+* \#{x.ChemDescriptors}
+* \#{x.ChemGetRGroups}
+* \#{x.ChemFingerprints}
+* \#{x.ChemSimilaritySPE}
+* \#{x.ChemSmilesToInchi}
+* \#{x.ChemSmilesToCanonical}
+* \#{x.ChemMapIdentifiers}
 
 Lot of chemical analysis is implemented using [scripting](../../compute/scripting.md) functionality:
 
-- \#{x.ChemScripts:ButinaMoleculesClustering}
-- \#{x.ChemScripts:FilterByCatalogs}
-- \#{x.ChemScripts:GasteigerPartialCharges}
-- \#{x.ChemScripts:MurckoScaffolds}
-- \#{x.ChemScripts:SimilarityMapsUsingFingerprints}
-- \#{x.ChemScripts:ChemicalSpaceUsingtSNE}
-- \#{x.ChemScripts:TwoComponentReaction}
-- \#{x.ChemScripts:ChemicalSpaceUsingUMAP}
-- \#{x.ChemScripts:USRCAT}
+* \#{x.ChemScripts:ButinaMoleculesClustering}
+* \#{x.ChemScripts:FilterByCatalogs}
+* \#{x.ChemScripts:GasteigerPartialCharges}
+* \#{x.ChemScripts:MurckoScaffolds}
+* \#{x.ChemScripts:SimilarityMapsUsingFingerprints}
+* \#{x.ChemScripts:ChemicalSpaceUsingtSNE}
+* \#{x.ChemScripts:TwoComponentReaction}
+* \#{x.ChemScripts:ChemicalSpaceUsingUMAP}
+* \#{x.ChemScripts:USRCAT}
 
 # Performance
 
@@ -531,10 +551,10 @@ Lot of chemical analysis is implemented using [scripting](../../compute/scriptin
 
 See also:
 
-- [Descriptors](descriptors.md)
-- [Diversity search](diversity-search.md)
-- [Similarity search](similarity-search.md)
-- [Fingerprints](fingerprints.md)
-- [Similarity SPE](similarity-spe.md)
-- [Info panels](../../discover/info-panels.md)
-- [GrokCompute](../../develop/admin/infrastructure.md#grok-compute)
+* [Descriptors](descriptors.md)
+* [Diversity search](diversity-search.md)
+* [Similarity search](similarity-search.md)
+* [Fingerprints](fingerprints.md)
+* [Similarity SPE](similarity-spe.md)
+* [Info panels](../../discover/info-panels.md)
+* [GrokCompute](../../develop/admin/infrastructure.md#grok-compute)
