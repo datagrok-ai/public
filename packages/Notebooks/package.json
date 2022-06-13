@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/notebooks",
   "fullName": "Notebooks",
-  "version": "0.3.2",
+  "version": "1.0.0",
   "description": "JupyterLab Notebooks integration package",
   "repository": {
     "type": "git",
@@ -54,7 +54,11 @@
     "upload-debug": "datagrok-upload http://localhost:8082 debug rebuild",
     "upload-deploy": "datagrok-upload http://localhost:8082 deploy rebuild"
   },
-  "canEdit": [ "Developers" ],
-  "canView": [ "All users" ],
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
   "category": "Development"
 }
