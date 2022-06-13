@@ -26,18 +26,27 @@ Cheminformatics tends to consider _molecular structure_ as a principal chemical 
 various data representations. More complex objects, such as mixtures, materials and reactions, can also be investigated
 in this setting, but have to be related to the associated molecular structures in each case.
 
-<!--corr: now goes the description of Datagrok functionality -- is it apt here? The style requires refactoring, for it resembles a dull prayer --> 
-<!--corr: to improve style, one should mention that Datagrok is a powerful cheminformatics tool, which has the following instruments...--> 
+<!--corr: now goes the description of Datagrok functionality -- is it apt here? -->
+<!--corr: The style requires refactoring, for it resembles a dull prayer -->
+<!--corr: to improve style, one should mention that Datagrok is a powerful cheminformatics tool,  -->
+<!--corr: which has the following instruments...-->
 Datagrok supplies a researcher with a powerful cheminformatics arsenal, in particular:
-<!--corr: LINKS!!!--> 
+<!--corr: LINKS!!!-->
 
-* The platform supports widely accepted _types of notation_ for representing chemical (sub)structures, such as SMILES and SMARTS. 
-* It provides first-class support for _small molecules_, as well as most popular building blocks for simulations.<!--corr: a good idea to mention those blocks-->  
-* Molecules can be sketched and rendered as 2D or 3D models, equipped with auxiliary _visualization options_. 
-* _Chemical properties_, _descriptors_, and _fingerprints_ can be extracted on the fly. 
-* _Predictive models_, accepting molecular structures as their input, can be trained, assessed, executed, deployed, reused by other scientists, and incorporated in pipelines or info panels.<!--corr: what is info panel? a link/description needed --> Predictive models for _toxicity_ and _drug-likeness_ are also supported. 
-* _Substructure and similarity search_ works out-of-the box for the imported data and can efficiently be utilized for querying databases with the help of Postgres chemical cartridge. 
-* In order to further explore collections of molecules, one can use advanced tools like _diversity search_ and _similarity search_.
+* The platform supports widely accepted _types of notation_ for representing chemical (sub)structures, such as SMILES
+  and SMARTS.
+* It provides first-class support for _small molecules_, as well as most popular building blocks for
+  simulations.<!--corr: a good idea to mention those blocks-->
+* Molecules can be sketched and rendered as 2D or 3D models, equipped with auxiliary _visualization options_.
+* _Chemical properties_, _descriptors_, and _fingerprints_ can be extracted on the fly.
+* _Predictive models_, accepting molecular structures as their input, can be trained, assessed, executed, deployed,
+  reused by other scientists, and incorporated in pipelines or info
+  panels.<!--corr: what is info panel? a link/description needed --> Predictive models for _toxicity_ and _
+  drug-likeness_ are also supported.
+* _Substructure and similarity search_ works out-of-the box for the imported data and can efficiently be utilized for
+  querying databases with the help of Postgres chemical cartridge.
+* In order to further explore collections of molecules, one can use advanced tools like _diversity search_ and _
+  similarity search_.
 
 Though it might seem that cheminformatics covers all the "molecular" needs <!--corr: a very vague formulation--> , it
 has its limitations. In particular, its applicability is limited to small molecules and some types of peptides. It shows
@@ -49,56 +58,106 @@ proteomics.<!--corr: This paragraph leaves the feeling of being unfinished-->
 
 ### Molecular graphs
 
-Each cheminformatic problem is usually associated with a specific structure set, and thus all structures should be represented in the forms convenient both for researchers and computations. In these two cases the structure is typically modelled as a graph, with atoms being its vertices and bonds, its edges. Usually, researchers tend to use the graphical representations, planar and 3D.
+Each cheminformatic problem is usually associated with a specific structure set, and thus all structures should be
+represented in the forms convenient both for researchers and computations. In these two cases the structure is typically
+modelled as a graph, with atoms being its vertices and bonds, its edges. Usually, researchers tend to use the graphical
+representations, planar and 3D.
 
 ### Importing molecular data
 
-[Import the dataset](../../access/importing-data.md), as you normally would, by opening a file, querying a database, connecting to a webservice, or by any other method. The platform is smart enough to automatically recognize chemical structures.  ![representations1](../../uploads/chem/representations1.png "graphs")
+[Import the dataset](../../access/importing-data.md), as you normally would, by opening a file, querying a database,
+connecting to a webservice, or by any other method. The platform is smart enough to automatically recognize chemical
+structures.  ![representations1](../../uploads/chem/representations1.png "graphs")
 
-One might expect planar representations to be the most convenient form for small molecules and use 3D representations only when conformational properties of molecules are of importance, are which is an everyday situation in such areas like molecular modelling. Macromolecular representations are also supposed to be 3D. 
+One might expect planar representations to be the most convenient form for small molecules and use 3D representations
+only when conformational properties of molecules are of importance, are which is an everyday situation in such areas
+like molecular modelling. Macromolecular representations are also supposed to be 3D.
 
-The generalizations of molecules with varied substitutes or chemical groups, also known as Markush structures, only describe a scaffold and can have any substitutes in R positions.  ![representations2](../../uploads/chem/representations2.png "graphs")
+The generalizations of molecules with varied substitutes or chemical groups, also known as Markush structures, only
+describe a scaffold and can have any substitutes in R
+positions.  ![representations2](../../uploads/chem/representations2.png "graphs")
 
-These representations can be of great importance for description of monomers of a decomposed macromolecule, or for description of chemical classes, which is widely used in high throughput screening or umbrella patents. The concept of _scaffold_ is widely applied in medicinal chemistry. Scaffolds are mostly used to represent core structures of bioactive compounds. Although the scaffold concept has its limitations and is often viewed differently from a chemical and computational perspective, it has provided a basis for systematic investigations of molecular cores and building blocks, going far beyond the consideration of individual compound series. (On scaffolds, also see [here](functions/murcko-scaffolds.md)).
+These representations can be of great importance for description of monomers of a decomposed macromolecule, or for
+description of chemical classes, which is widely used in high throughput screening or umbrella patents. The concept of _
+scaffold_ is widely applied in medicinal chemistry. Scaffolds are mostly used to represent core structures of bioactive
+compounds. Although the scaffold concept has its limitations and is often viewed differently from a chemical and
+computational perspective, it has provided a basis for systematic investigations of molecular cores and building blocks,
+going far beyond the consideration of individual compound series. (On scaffolds, also
+see [here](functions/murcko-scaffolds.md)).
 
-Datagrok is sharpened to process chemical structures. The platform is smart enough to automatically recognize them, so Datagrok provides these representations as soon as it detects any molecule-associated type in every entity whether it is a table, tooltip, any other element.  ![representations3](../../uploads/chem/representations3.png "graphs")
+Datagrok is sharpened to process chemical structures. The platform is smart enough to automatically recognize them, so
+Datagrok provides these representations as soon as it detects any molecule-associated type in every entity whether it is
+a table, tooltip, any other element.  ![representations3](../../uploads/chem/representations3.png "graphs")
 
 ### Formats for storage of structural data in cheminformatics
 
-The most vivid representation of molecular structure is _molecular graph_, and Datagrok provides to its users the set of tools for work with such graphs. <!--corr: Which ones? Examples, please-->  From the viewpoint of mathematics, graphs are sets of vertices and edges, and can be encoded in different formats.
+The most vivid representation of molecular structure is _molecular graph_, and Datagrok provides to its users the set of
+tools for work with such graphs. <!--corr: Which ones? Examples, please-->  From the viewpoint of mathematics, graphs
+are sets of vertices and edges, and can be encoded in different formats.
 
-In order to store comprehensive structural information about a molecule, the MOL file format is widely used (see [here](http://c4.cabrillo.edu/404/ctfile.pdf) and [here](https://en.wikipedia.org/wiki/Chemical_table_file#Molfile)). It encodes the information about atoms (vertices), bonds (edges), and the associated data, such as atom coordinates, charges, isotopes, etc. Multiple MOL files are stored as an SDF file (see [here](https://en.wikipedia.org/wiki/Chemical_table_file#SDF)), its feature is the ability to include any other additional information (e.g. experimental activity values). Being very convenient, MOL is widely used in the overwhelming majority of cheminformatics software. 
+In order to store comprehensive structural information about a molecule, the MOL file format is widely used (
+see [here](http://c4.cabrillo.edu/404/ctfile.pdf) and [here](https://en.wikipedia.org/wiki/Chemical_table_file#Molfile))
+. It encodes the information about atoms (vertices), bonds (edges), and the associated data, such as atom coordinates,
+charges, isotopes, etc. Multiple MOL files are stored as an SDF file (
+see [here](https://en.wikipedia.org/wiki/Chemical_table_file#SDF)), its feature is the ability to include any other
+additional information (e.g. experimental activity values). Being very convenient, MOL is widely used in the
+overwhelming majority of cheminformatics software.
 
-Very similar to MOL is [PDB notation](https://pdb101.rcsb.org/learn/guide-to-understanding-pdb-data/dealing-with-coordinates), utilized for macromolecules. The most compact popular format for encoding molecular data is [SMILES string](https://www.daylight.com/dayhtml/doc/theory/theory.smiles.html). Datagrok uses SMILES to restore MOL files for subsequent processing. For chemical reactions, the modified strings of [SMIRKS notation](https://www.daylight.com/dayhtml/doc/theory/theory.smirks.html) are employed. 
+Very similar to MOL
+is [PDB notation](https://pdb101.rcsb.org/learn/guide-to-understanding-pdb-data/dealing-with-coordinates), utilized for
+macromolecules. The most compact popular format for encoding molecular data
+is [SMILES string](https://www.daylight.com/dayhtml/doc/theory/theory.smiles.html). Datagrok uses SMILES to restore MOL
+files for subsequent processing. For chemical reactions, the modified strings
+of [SMIRKS notation](https://www.daylight.com/dayhtml/doc/theory/theory.smirks.html) are employed.
 
-MOL and SMILES are, perhaps, the best existing formats for storing the structural data for a single molecule. However, some applications rely upon the idea of _uncertain chemical structures_, like fragments that do not correspond to any specific molecule. For such purposes, logical expressions become essential, (e.g. _carbon or oxygen_ atom, _double or aromatic_ bond) and [SMARTS notation](https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) comes in handy with this option. One might say that SMARTS is the "regular expressions of cheminformatics", for this notation is used to define substructural _patterns_ in molecules. 
+MOL and SMILES are, perhaps, the best existing formats for storing the structural data for a single molecule. However,
+some applications rely upon the idea of _uncertain chemical structures_, like fragments that do not correspond to any
+specific molecule. For such purposes, logical expressions become essential, (e.g. _carbon or oxygen_ atom, _double or
+aromatic_ bond) and [SMARTS notation](https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) comes in handy
+with this option. One might say that SMARTS is the "regular expressions of cheminformatics", for this notation is used
+to define substructural _patterns_ in molecules.
 
-Datagrok makes use of SMARTS for search of structural alerts, substructure search and R-group analysis.  <!--corr: it is necessary to list here other exapmles of the aforementioned formats in use--> 
+Datagrok makes use of SMARTS for search of structural alerts, substructure search and R-group
+analysis.  <!--corr: it is necessary to list here other exapmles of the aforementioned formats in use-->
 
 ### Descriptors and fingerprints
 
-Although molecular graph is a useful representation for molecular structure, it is less appropriate for a range of cheminformatics applications, in particular, machine learning (ML) tasks. For such tasks, molecules can be represented as a set of _molecular descriptors_ or _molecular fingerprints_. The purpose of these representations is to meet the linear algebra requirements of the majority of ML methods, namely, provide a vector describing the molecule. 
+Although molecular graph is a useful representation for molecular structure, it is less appropriate for a range of
+cheminformatics applications, in particular, machine learning (ML) tasks. For such tasks, molecules can be represented
+as a set of _molecular descriptors_ or _molecular fingerprints_. The purpose of these representations is to meet the
+linear algebra requirements of the majority of ML methods, namely, provide a vector describing the molecule.
 
-Fingerprints are an abstract representation of molecular structure in the form of binary vectors. They are used in similarity measures (calculations that quantify the similarity of two molecules), and screening (a way of rapidly excluding molecules from the set of candidates in a substructure search). Descriptors and fingerprint have the following properties:
+Fingerprints are an abstract representation of molecular structure in the form of binary vectors. They are used in
+similarity measures (calculations that quantify the similarity of two molecules), and screening (a way of rapidly
+excluding molecules from the set of candidates in a substructure search). Descriptors and fingerprint have the following
+properties:
 
 * A variety of different descriptors and fingerprints could be derived from a single molecular graph.
 * They are invariant to numberings in a molecule.
 * In most cases, they can be interpretated in terms of chemical or physical properties.
 * Reactions, mixtures of compounds, nanoparticles could also be represented as descriptors.
 
-Descriptors and fingerprints are frequently used for processing similar chemical structures. These representations are helpful in similarity search and diversity search. In combination with clustering and self-organizing maps, the methods like stochastic proximity embedding allow one to reduce the dimensionality of the abstract vector representations, and to separate the most significant features of the molecule. It helps us to visualize the chemical space in 2D maps in the problems of molecular data mining, and compound activity prediction.
+Descriptors and fingerprints are frequently used for processing similar chemical structures. These representations are
+helpful in similarity search and diversity search. In combination with clustering and self-organizing maps, the methods
+like stochastic proximity embedding allow one to reduce the dimensionality of the abstract vector representations, and
+to separate the most significant features of the molecule. It helps us to visualize the chemical space in 2D maps in the
+problems of molecular data mining, and compound activity prediction.
 
-Datagrok supports generation of different sets of descriptors and fingerprints: 
+Datagrok supports generation of different sets of descriptors and fingerprints:
 
-* Lipinski, Crippen, EState, EState VSA, Fragments, Graph, MolSurf, QED. See [molecular descriptors](descriptors.md) for more details and a demo about descriptors.
+* Lipinski, Crippen, EState, EState VSA, Fragments, Graph, MolSurf, QED. See [molecular descriptors](descriptors.md) for
+  more details and a demo about descriptors.
 
 * RDKFingerprint, MACCSKeys, AtomPair, TopologicalTorsion, Morgan/Circular.
-See [molecular fingerprints](fingerprints.md) for more details and a demo about fingerprints.
+  See [molecular fingerprints](fingerprints.md) for more details and a demo about fingerprints.
 
 ## Descriptor-based tools
 
-Descriptor representation of molecular structure allows one to consider molecules as points in and abstract _chemical space_. This space is estimated to have more than 10<sup>60</sup> such points, corresponding to real or possible molecules (as estimated by Lipinski and Hopkins<!--corr: links?-->). Each molecular dataset defines a local chemical space which could be interpreted as a linear/vector space based on molecular descriptors. In these terms the structure could be compared as vectors. This leads to similarity estimation for each pair of molecules in a dataset.
-
+Descriptor representation of molecular structure allows one to consider molecules as points in and abstract _chemical
+space_. This space is estimated to have more than 10<sup>60</sup> such points, corresponding to real or possible
+molecules (as estimated by Lipinski and Hopkins<!--corr: links?-->). Each molecular dataset defines a local chemical
+space which could be interpreted as a linear/vector space based on molecular descriptors. In these terms the structure
+could be compared as vectors. This leads to similarity estimation for each pair of molecules in a dataset.
 
 ### Chemical space maps
 
