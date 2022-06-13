@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser",
   "fullName": "MolecularLiabilityBrowser",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
   "repository": {
     "type": "git",
@@ -52,5 +52,9 @@
     "build": "webpack",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix"
-  }
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "category": "Bioinformatics"
 }
