@@ -152,6 +152,28 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
   }
 }
 
+//name: checkSmilesValidity
+//input: list molStrings
+//input: double minPerc
+//output: bool res
+export async function checkSmilesValidity(molStrings: string[], minPerc: number): Promise<boolean> {
+  const len = molStrings.length;
+  if (len == 0)
+    return false;
+  const minValid = Math.ceil(len * minPerc);
+  let valid = 0;
+  for (let i = 0; i < molStrings.length; i++) {
+    try {
+      getRdKitModule().get_mol(molStrings[i]).delete();
+      valid += 1;
+    } finally {
+      if (valid >= minValid)
+        return true;
+    }
+  }
+  return false;
+}
+
 //name: getMorganFingerprint
 //input: string molString {semType: Molecule}
 //output: object fingerprintBitset [Fingerprints]
