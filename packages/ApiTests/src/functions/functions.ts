@@ -1,3 +1,4 @@
+import './date-functions';
 import './math-functions';
 import './text-functions';
 import './logical-functions';
