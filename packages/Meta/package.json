@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -997,6 +997,9 @@
         },
         "0.3.2": {
           "datagrok-api": "^0.94.10"
+        },
+        "1.0.0": {
+          "datagrok-api": "^1.0.0"
         }
       },
       "description": "JupyterLab Notebooks integration package",
