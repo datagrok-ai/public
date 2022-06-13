@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.32",
+  "version": "1.0.33",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -1397,6 +1397,9 @@
         },
         "0.0.10": {
           "datagrok-api": "^1.1.5"
+        },
+        "0.0.11": {
+          "datagrok-api": "^1.1.5"
         }
       },
       "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
@@ -1404,7 +1407,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/MolecularLiabilityBrowser"
-      }
+      },
+      "category": "Bioinformatics"
     },
     "molecular-liability-browser-data": {
       "dependencies": {
