@@ -1,6 +1,29 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-13 Dev build 1.3.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.3.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Formatting: add a missing format alias for floats 
+* Packages: change package card view for debug versions 
+* Compute: UX harmonization #180 URL fix 
+* Docs: Dev deployment 
+* Run Integration tests locally 
+* JS API Tests: Functions: tests for all built-in arithmetic/logical/date functions (WIP)
+* Packages: Debug packages permissions fix (WIP)
+* cheminformatics: refactored up to descriptor-based tools 
+* Packages: add categories 
+
+
 # 2022-06-12 Dev build 1.3.0
 
 ## Latest Docker Images
