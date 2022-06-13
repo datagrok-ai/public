@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/power-grid",
 	"friendlyName": "PowerGrid",
-	"version": "0.0.4",
+	"version": "1.0.0",
 	"description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
 	"repository": {
 		"type": "git",
