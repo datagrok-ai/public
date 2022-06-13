@@ -69,14 +69,14 @@ export class RdKitService {
     }, {molIdxToHash: [], hashToMolblock: {}}));
   }
 
-  async searchSubstructure(query: string, querySmarts: string, patternFgs?: Uint8Array[]): Promise<number[]> {
+  async searchSubstructure(query: string, querySmarts: string, bitset?: BitArray): Promise<number[]> {
     const t = this;
     return this._doParallel(
       (i: number, nWorkers: number) => {
-        return patternFgs ?
+        return bitset ?
           t.parallelWorkers[i].searchSubstructure(query, querySmarts, i < (nWorkers - 1) ?
-            patternFgs.slice(i * this.segmentLength, (i + 1) * this.segmentLength) :
-            patternFgs.slice(i * this.segmentLength, patternFgs.length)) :
+            bitset.getRangeAsList(i * this.segmentLength, (i + 1) * this.segmentLength) :
+            bitset.getRangeAsList(i * this.segmentLength, bitset.length)) :
           t.parallelWorkers[i].searchSubstructure(query, querySmarts);
       },
       (data: any) => {

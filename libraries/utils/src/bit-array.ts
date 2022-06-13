@@ -364,6 +364,24 @@ export default class BitArray {
     this.incrementVersion(notify);
   }
 
+  getRange(from: number, to: number): BitArray {
+    this.assureInRange(from, 0, this._length - 1, 'from');
+    this.assureInRange(to, 0, this._length, 'to');
+    const arr: Array<boolean> = [];
+    for (let i = from; i < to; ++i)
+      arr.push(this.getBit(i));
+    return BitArray.fromValues(arr);
+  }
+
+  getRangeAsList(from: number, to: number): boolean[] {
+    this.assureInRange(from, 0, this._length - 1, 'from');
+    this.assureInRange(to, 0, this._length, 'to');
+    const arr: boolean[] = [];
+    for (let i = from; i < to; ++i)
+      arr.push(this.getBit(i));
+    return arr;
+  }
+
   setRange(from: number, to: number, value: boolean, notify = true): BitArray {
     this.assureInRange(from, 0, this._length - 1, 'from');
     this.assureInRange(to, 0, this._length - 1, 'to');

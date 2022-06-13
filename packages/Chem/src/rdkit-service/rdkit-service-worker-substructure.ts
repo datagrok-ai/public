@@ -1,6 +1,7 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {isMolBlock} from '../utils/chem-utils';
 import {RDModule} from "../rdkit-api";
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 interface InitMoleculesStructuresResult {
   molIdxToHash: string[];
@@ -53,7 +54,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return {molIdxToHash, hashToMolblock};
   }
 
-  searchSubstructure(queryMolString: string, querySmarts: string, patternFps?: Uint8Array[]): string {
+  searchSubstructure(queryMolString: string, querySmarts: string, bitset?: boolean[]): string {
     const matches: number[] = [];
     if (this._rdKitMols) {
       try {
@@ -71,15 +72,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
               throw new Error('Chem | SMARTS not set');
           }
           if (queryMol && queryMol.is_valid()) {
-            if (patternFps) {
-              const fpRdKit = queryMol.get_pattern_fp_as_uint8array(this._patternFpLength);
-              checkEl:
-              for (let i = 0; i < patternFps.length; ++i) {
-                for (let j = 0; j < this._patternFpUint8Length; ++j)
-                  if ((patternFps[i][j] & fpRdKit[j]) != fpRdKit[j])
-                    continue checkEl;
-
-                if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
+            if (bitset) {
+              for (let i = 0; i < bitset.length; ++i) {
+                if (bitset[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
                   matches.push(i);
               }
             } else {

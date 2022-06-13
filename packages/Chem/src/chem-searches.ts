@@ -97,28 +97,23 @@ function checkForFingerprintsColumn(col: DG.Column, fingerprintsType: Fingerprin
 }
 
 function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[], fingerprintsType: Fingerprint): void {
+  if (!col.dataFrame)
+    throw new Error('Column has no parent dataframe');
+
   const colNameTag = '.' + fingerprintsType + '.Column';
   const colVerTag = '.' + fingerprintsType + '.Version';
-  if (col.dataFrame) {
-    const fingerprintColumnName = col.getTag(colNameTag) ??
-      '~' + col.name + fingerprintsType + 'Fingerprints';
-    const df = col.dataFrame;
-    const newCol: DG.Column<Uint8Array> = df.columns.names().includes(fingerprintColumnName) ?
-      df.columns.byName(fingerprintColumnName) :
-      DG.Column.fromType(DG.COLUMN_TYPE.BYTE_ARRAY, fingerprintColumnName, fgs.length);
 
-    for (let i = 0; i < fgs.length; ++i)
-      newCol.set(i, fgs[i]);
+  const fingerprintColumnName = col.getTag(colNameTag) ??
+    '~' + col.name + fingerprintsType + 'Fingerprints';
+  const df = col.dataFrame;
+  const newCol: DG.Column<Uint8Array> = df.columns.getOrCreate(
+    fingerprintColumnName, DG.COLUMN_TYPE.BYTE_ARRAY, fgs.length);
 
-    if (df.columns.names().includes(fingerprintColumnName))
-      df.columns.replace(fingerprintColumnName, newCol);
-    else
-      df.columns.add(newCol);
+  newCol.init((i) => fgs[i]);
 
-    col.setTag(colNameTag, fingerprintColumnName);
-    col.setTag(colVerTag, String(col.version + 2));
-    col.setTag(FING_COL_TAGS.invalidatedForVersion, String(col.version + 1));
-  }
+  col.setTag(colNameTag, fingerprintColumnName);
+  col.setTag(colVerTag, String(col.version + 2));
+  col.setTag(FING_COL_TAGS.invalidatedForVersion, String(col.version + 1));
 }
 
 async function getUint8ArrayFingerprints(
@@ -138,6 +133,31 @@ async function getUint8ArrayFingerprints(
     if (endSection)
       chemEndCriticalSection();
   }
+}
+
+function substructureSearchPatternsMatch(molString: string, querySmarts: string, fgs: Uint8Array[]): BitArray {
+  const patternFpUint8Length = 256;
+  const result = new BitArray(fgs.length, false);
+  let queryMol = null;
+  try {
+    queryMol = getRdKitModule().get_mol(molString, '{"mergeQueryHs":true}');
+  } catch (e2) {
+    queryMol?.delete();
+    queryMol = null;
+    if (querySmarts !== null && querySmarts !== '')
+      queryMol = getRdKitModule().get_qmol(querySmarts);
+    else
+      throw new Error('Chem | SMARTS not set');
+  }
+  const fpRdKit = queryMol.get_pattern_fp_as_uint8array();
+  checkEl:
+  for (let i = 0; i < fgs.length; ++i) {
+    for (let j = 0; j < patternFpUint8Length; ++j)
+      if ((fgs[i][j] & fpRdKit[j]) != fpRdKit[j])
+        continue checkEl;
+    result.setBit(i, true, false);
+  }
+  return result;
 }
 
 export async function chemGetFingerprints(...args: [DG.Column, Fingerprint?, boolean?]): Promise<BitArray[]> {
@@ -174,8 +194,9 @@ export async function chemSubstructureSearchLibrary(
     if (molString.length != 0) {
       let matches: number[];
       if (usePatternFingerprints) {
-        matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts,
-          await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern));
+        const fgs: Uint8Array[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern);
+        const bitset: BitArray = substructureSearchPatternsMatch(molString, molStringSmarts, fgs);
+        matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts, bitset);
       } else {
         await _invalidate(molStringsColumn);
         matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
