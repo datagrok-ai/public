@@ -35,6 +35,9 @@
     },
     {
       "pattern": "https://www.ebi.ac.uk"
+    },
+    {
+      "pattern": "https://cactus.nci.nih.gov"
     }
   ],
   "retryOn429": true
