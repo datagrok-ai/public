@@ -107,6 +107,7 @@ jobs:
         with:
           token: ${{ secrets.WRITE_TOKEN }}
       - name: Check package properties
+        id: check
         working-directory: packages/${{ matrix.package }}
         run: |
           if [ -z "$(jq '. | select( has("repository") == true ).repository' package.json)" ]; then
@@ -200,7 +201,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && always() && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped')
+        if: github.ref == 'refs/heads/master' && always() && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success'
       - name: Get package information
         id: info
         if: always() && steps.publish.outcome == 'success' && matrix.package != 'Meta'
