@@ -72,9 +72,11 @@ jobs:
             tar_add="grok_connect_${{ needs.build.outputs.version }}-$(echo ${platform_add#linux/})-${commit_sha}-${{ github.run_id }}-${{ github.run_attempt }}.tar"
             echo "::set-output name=tar_add::${tar_add}"
             echo "::set-output name=dest_add::type=docker,dest=/tmp/${tar_add}"
+            echo "::set-output name=tags::datagrok/grok_connect:${{ needs.build.outputs.version }}-${commit_sha}"
           else
             echo "::set-output name=cache_to::type=registry,ref=datagrok/grok_connect:cache,mode=max"
             echo "::set-output name=platform::linux/amd64,linux/arm64"
+            echo "::set-output name=tags::datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}"
           fi
 
       - uses: hadolint/hadolint-action@v2.0.0
@@ -88,7 +90,7 @@ jobs:
           context: ./connectors
           platforms: ${{ steps.param.outputs.platform }}
           push: ${{ github.ref == 'refs/heads/master' }}
-          tags: datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}
+          tags: ${{ steps.param.outputs.tags }}
           cache-from: type=registry,ref=datagrok/grok_connect:cache
           cache-to: ${{ steps.param.outputs.cache_to }}
           outputs: ${{ steps.param.outputs.dest }}
