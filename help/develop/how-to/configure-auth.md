@@ -47,8 +47,8 @@ Datagrok supports the OpenID protocol to allow users to be authenticated using O
    like `https://login.datagrok.ai/.well-known/openid-configuration`
 4) Set 'Open Id Client Id' and 'Open Id Secret' as in your OpenId provider
 5) Set the' Open Id Code Challenge method' if you enabled authorization code encryption. In most cases, it is `S256`
-6) Set 'Open Id Login Claim', 'Open Id Email Claim', 'Open Id First Name Claim', and 'Open Id Last Name Claim' to provide
-   optional claims for the application
+6) Set 'Open Id Login Claim', 'Open Id Email Claim', 'Open Id First Name Claim', and 'Open Id Last Name Claim' to
+   provide optional claims for the application
 7) OpenID auto-login can be enabled using the 'Open Id Auto Login' option
 
 ## LDAP authentication
@@ -58,8 +58,9 @@ services. You can also use Active Directory to authenticate by this method.
 
 1) Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
 2) Enable 'Domain authentication' to use the LDAP method
-3) Enable 'Domain signup' to enable all users present on a domain controller to authenticate in the Datagrok platform. If the
-   option is disabled, it is required to create the user in the Datagrok platform first to allow the user to log in to the platform
+3) Enable 'Domain signup' to enable all users present on a domain controller to authenticate in the Datagrok platform.
+   If the option is disabled, it is required to create the user in the Datagrok platform first to allow the user to log
+   in to the platform
 4) Configure LDAP server address/DNS name
 5) Set LDAP server port
 6) Enable LDAP SSL if you use LDAPS on your server
