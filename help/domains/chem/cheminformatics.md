@@ -21,7 +21,7 @@ complex _in silico_ discipline, serving multiple purposes, such as:
 * facilitation of a researcher's work by means of visualization and reaction prediction
 * molecular design
 * etc.
-  
+
 Cheminformatics tends to consider _molecular structure_ as a principal chemical object, which can be studied in various
 data representations. More complex objects, such as mixtures, materials and reactions, can also be investigated in this
 setting, but have to be related to the associated molecular structures in each case.
