@@ -16,9 +16,6 @@ class HelmPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectHelm(col) {
-    if (col.type !== DG.TYPE.STRING)
-      return null;
-
     if (DG.Detector.sampleCategories(col, (s) => HelmPackageDetectors.isHelm(s)))
       return 'HELM';
   }
