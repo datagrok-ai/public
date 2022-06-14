@@ -117,6 +117,7 @@ export class PinnedColumn {
 
   private m_colGrid : DG.GridColumn | null;
   private m_root : HTMLCanvasElement | null;
+  private m_nWidthBug : number;
   //private m_observerResize : ResizeObserver | null;
   private m_observerResizeGrid : ResizeObserver | null;
   private m_handlerVScroll : any;
@@ -130,6 +131,7 @@ export class PinnedColumn {
   private m_handlerMouseUp : any;
   private m_handlerMouseLeave : any;
   private m_handlerMouseMove : any;
+  private m_handlerMouseWheel : any;
 
   constructor(colGrid : DG.GridColumn) {
 
@@ -161,13 +163,20 @@ export class PinnedColumn {
 
     const nW = colGrid.width;
     this.m_colGrid = colGrid;
-
+    this.m_nWidthBug = -1;
     try {
       colGrid.visible = false;
     }
     catch(e) {
       //DG bug
-      console.error("ERROR: Couldn't hide column '" + colGrid.name + "' due to a DG bug.");
+      console.error("ERROR: Couldn't hide column '" + colGrid.name + "' due to a DG bug. Attempt to set the width to 0");
+      try {
+        this.m_nWidthBug = colGrid.width;
+        colGrid.width = 0;
+      } catch (e) {
+        //DG bug
+        console.error("ERROR: Couldn't set the width to 0 for column '" + colGrid.name + "' due to a DG bug. This could be ignored if the column visually looks ok.");
+      }
     }
 
     if(!GridUtils.isRowHeader(colGrid)) {
@@ -555,6 +564,45 @@ export class PinnedColumn {
         document.body.style.cursor = "auto";
       }
     });
+
+    let nCount = 0;
+    this.m_handlerMouseWheel = rxjs.fromEvent(this.m_root, 'wheel').subscribe((e) => {
+
+      if (DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
+        return;
+      }
+
+      const eWheel = e as WheelEvent;
+      if(eWheel.deltaX !== 0 || eWheel.deltaZ !== 0) {
+        return;
+      }
+
+      if(nCount === 1) {
+        //scroll +
+        const nRowCount = GridUtils.getGridVisibleRowCount(grid);
+        const scrollY = grid.vertScroll;
+        if(nRowCount -1 > scrollY.max) {
+          scrollY.setValues(scrollY.minRange, scrollY.maxRange, scrollY.min + 1, scrollY.max + 1);
+        }
+        nCount = 0;
+      }
+      else if(nCount === -1)
+      {
+        //scroll -
+        const scrollY = grid.vertScroll;
+        if(scrollY.min >=1) {
+          scrollY.setValues(scrollY.minRange, scrollY.maxRange, scrollY.min - 1, scrollY.max - 1);
+        }
+        nCount = 0;
+      }
+       else {
+        nCount = eWheel.deltaY > 0 ? 1 : -1;
+      }
+
+
+
+      //console.log(eWheel.deltaX + " " + eWheel.deltaY);
+    });
   }
 
   isPinned() : boolean {
@@ -619,6 +667,9 @@ export class PinnedColumn {
     this.m_handlerMouseMove.unsubscribe();
     this.m_handlerMouseMove = null;
 
+    this.m_handlerMouseWheel.unsubscribe();
+    this.m_handlerMouseWheel = null;
+
     const grid = getGrid(this.m_colGrid);
     if(grid === null){
       throw new Error("Column '" + this.m_colGrid.name + "' is disconnected from grid.");
@@ -642,11 +693,23 @@ export class PinnedColumn {
       this.m_colGrid.settings.isPinned = false;
     }
 
+
+    if(this.m_nWidthBug >= 0) {
+      try {
+        this.m_colGrid.width = this.m_nWidthBug;
+      }
+      catch(e) {
+        //DG bug
+        console.error("ERROR: Couldn't set the width to " + this.m_nWidthBug + " for column '" + this.m_colGrid.name + "' due to a DG bug. This could be ignored if the column visually looks ok.");
+      }
+    }
+
     try {
       this.m_colGrid.visible = true;
     }
     catch(e) {
       //DG bug
+      console.error("ERROR: Couldn't show column '" + this.m_colGrid.name + "' due to a DG bug. This could be ignored if the column visually looks ok.");
     }
 
 
@@ -671,7 +734,7 @@ export class PinnedColumn {
         try {
           dart.m_arRowHeaders[0].close();
         } catch (e) {
-          console.error("ERROR: Couldn't close pinned row header.");
+          console.error("ERROR: Couldn't close pinned column '" + dart.m_arRowHeaders[0].m_colGrid.name + "' ");
         }
     }
     this.m_colGrid = null;
@@ -708,7 +771,7 @@ export class PinnedColumn {
 
     //column Header
     const options : any = grid.getOptions(true);
-    g.font = options.colHeaderFont == null || options.colHeaderFont === undefined ? "bold 13px Roboto, Roboto Local" : options.colHeaderFont;
+    g.font = options.look.colHeaderFont == null || options.look.colHeaderFont === undefined ? "bold 14px Volta Text, Arial" : options.look.colHeaderFont;
     let str = TextUtils.trimText(this.m_colGrid.name, g, nW);
 
     const tm = g.measureText(str);
@@ -729,13 +792,13 @@ export class PinnedColumn {
     //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nHCH);
     g.fillText(str, nXX, nYY);
 
-    if(options.look.showRowGridlines) {
+    //if(options.look.showRowGridlines) {
       g.strokeStyle = "Gainsboro";
       g.beginPath();
       g.moveTo(0, nY);
       g.lineTo(0, nY + nHCH-1);
       g.stroke();
-    }
+    //}
 
 
 
@@ -796,7 +859,7 @@ export class PinnedColumn {
         }
       }
 
-      if(options.look.showRowGridlines) {
+      //if(options.look.showRowGridlines) {
         g.strokeStyle = "Gainsboro";
         g.beginPath();
         g.moveTo(0, nY + nHRowGrid);
@@ -807,7 +870,7 @@ export class PinnedColumn {
         g.moveTo(0, nY);
         g.lineTo(0, nY + nHRowGrid -1);
         g.stroke();
-      }
+      //}
 
       bSel = nRowTable < 0 ? false : bitsetSel.get(nRowTable);
       if(bSel)
