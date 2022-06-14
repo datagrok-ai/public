@@ -62,10 +62,10 @@ jobs:
           echo "::set-output name=branch::${branch}"
           if [[ ${{ github.ref }} != 'refs/heads/master' ]]; then
             platform='linux/amd64'
-            echo "::set-output name=platform::${platform]"
+            echo "::set-output name=platform::${platform}"
             tar="grok_connect_${{ needs.build.outputs.version }}-$(echo ${platform#linux/})-${commit_sha}-${{ github.run_id }}-${{ github.run_attempt }}.tar"
-            echo "::set-output name=tar::/tmp/${tar}"
-            echo "::set-output name=dest::type=docker,dest=${tar}"
+            echo "::set-output name=tar::${tar}"
+            echo "::set-output name=dest::type=docker,dest=/tmp/${tar}"
 
             platform_add='linux/arm64'
             echo "::set-output name=platform_add::${platform_add}"
