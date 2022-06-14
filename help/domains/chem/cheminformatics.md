@@ -23,7 +23,7 @@ CPUs. Cheminformatics is a complex _in silico_ discipline, serving multiple purp
 * etc.
 
 Cheminformatics tends to consider _molecular structure_ as a principal chemical object, which can be
-considered in various data representations. More complex objects, such as mixtures, materials and reactions,
+studied in various data representations. More complex objects, such as mixtures, materials and reactions,
 can also be investigated in this setting, but have to be related to the associated molecular structures
 in each case.
 
@@ -37,7 +37,7 @@ Datagrok supplies a researcher with a powerful cheminformatics arsenal, in parti
 * The platform supports widely accepted _types of notation_ for representing chemical (sub)structures,
 such as SMILES and SMARTS.
 * It provides first-class support for _small molecules_, as well as most popular building blocks for
-simulations.<!--corr: a good idea to mention those blocks--> 
+simulations.<!--corr: a good idea to mention those blocks-->
 * Molecules can be sketched and rendered as 2D or 3D models, equipped with auxiliary _visualization options_.
 
 * _Chemical properties_, _descriptors_, and _fingerprints_ can be extracted on the fly.
@@ -65,7 +65,7 @@ should be represented in the forms convenient both for researchers and computati
 the structure is typically modelled as a graph, with atoms being its vertices and bonds, its edges. Usually,
 researchers tend to use the graphical representations, planar and 3D.
 
-### Importing molecular data in Datagrok<!--corr: should it be here?--> 
+### Importing molecular data in Datagrok<!--corr: should it be here?-->
 
 [Import the dataset](../../access/importing-data.md), as you normally would, by opening a file, querying
 a database, connecting to a webservice, or by any other method. The platform is smart enough to automatically
@@ -78,7 +78,7 @@ situation in such areas like molecular modelling. Macromolecular representations
 be 3D.
 
 The generalizations of molecules with varied substitutes or chemical groups, also known as Markush structures,
-only describe a scaffold and can have any substitutes in R positions. 
+only describe a scaffold and can have any substitutes in R positions.
 ![representations2](../../uploads/chem/representations2.png
 "graphs")
 
@@ -92,7 +92,7 @@ of individual compound series. (On scaffolds, also see [here](functions/murcko-s
 
 Datagrok is sharpened to process chemical structures. The platform is smart enough to automatically recognize
 them, so Datagrok provides these representations as soon as it detects any molecule-associated type in
-every entity whether it is a table, tooltip, any other element. 
+every entity whether it is a table, tooltip, any other element.
 ![representations3](../../uploads/chem/representations3.png
 "graphs")
 
@@ -169,7 +169,7 @@ _chemical space_. This space is supposed to have more than 10<sup>60</sup> such 
 to actual or possible molecules, as estimated by Lipinski and Hopkins<!--corr: links?-->. Each molecular
 dataset defines a chemical space which could be interpreted as a linear/vector space based on molecular
 descriptors, which allows to implement the mechanisms of similarity estimation.<!--corr: revision of
-this phrase required--> 
+this phrase required-->
 
 ### Chemical space maps
 
@@ -261,7 +261,7 @@ See [R-group analysis](r-group-analysis.md) for more details and a demo.
 
 Combination of two subgraphs yields a new graph. Molecule-generating functions in Datagrok are capable
 of generating structures based on selected scaffold, thus enriching the chemical space being studied.<!--corr:
-examples--> 
+examples-->
 
 ### Virtual reactions
 
