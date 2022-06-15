@@ -113,28 +113,28 @@ export abstract class DataLoader {
   /**
    * Heavy chain calculated data
    */
-  abstract load_hChainDf(): Promise<DG.DataFrame>;
+  abstract loadHChainDf(): Promise<DG.DataFrame>;
 
   /**
    * Light chain calculated data
    */
-  abstract load_lChainDf(): Promise<DG.DataFrame>;
+  abstract loadLChainDf(): Promise<DG.DataFrame>;
 
   /**
    * TODO: Some description of data structure purpose
    */
-  abstract load_mlbDf(): Promise<DG.DataFrame>;
+  abstract loadMlbDf(): Promise<DG.DataFrame>;
 
-  abstract load_treeDf(): Promise<DG.DataFrame>;
+  abstract loadTreeDf(): Promise<DG.DataFrame>;
 
-  abstract load_example(vid: string): Promise<JsonType>;
+  abstract loadExample(vid: string): Promise<JsonType>;
 
   /**
    */
-  abstract load_pdb(vid: string): Promise<string>;
+  abstract loadPdb(vid: string): Promise<string>;
 
   /**
    * Get post observable translational modifications data for 'v_id'
    */
-  abstract load_obsPtm(vid: string): Promise<ObsPtmType>;
+  abstract loadObsPtm(vid: string): Promise<ObsPtmType>;
 }

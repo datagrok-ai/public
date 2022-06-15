@@ -416,13 +416,13 @@ export class MolecularLiabilityBrowser {
   async setViewTwinPViewer(): Promise<void> {
     const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
       await Promise.all([
-        this.dataLoader.load_example(this.vid),
-        this.dataLoader.load_pdb(this.vid),
+        this.dataLoader.loadExample(this.vid),
+        this.dataLoader.loadPdb(this.vid),
         this.dataLoader.realNums,
         ((): Promise<ObsPtmType> => {
           let res: Promise<ObsPtmType> = null;
           if (this.vidsObsPTMs.includes(this.vid))
-            res = this.dataLoader.load_obsPtm(this.vid);
+            res = this.dataLoader.loadObsPtm(this.vid);
           return res;
         })()
       ]));
@@ -601,13 +601,13 @@ export class MolecularLiabilityBrowser {
 
     const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
       await Promise.all([
-        this.dataLoader.load_example(this.vid),
-        this.dataLoader.load_pdb(this.vid),
+        this.dataLoader.loadExample(this.vid),
+        this.dataLoader.loadPdb(this.vid),
         this.dataLoader.realNums,
         ((): Promise<ObsPtmType> => {
           let res: Promise<ObsPtmType> = null;
           if (this.vidsObsPTMs.includes(this.vid))
-            res = this.dataLoader.load_obsPtm(this.vid);
+            res = this.dataLoader.loadObsPtm(this.vid);
           return res;
         })()
       ]));
