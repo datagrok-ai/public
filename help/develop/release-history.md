@@ -1,6 +1,22 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-15 Dev build 1.3.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.3.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Row number is not clickable after applying saved layout #679 
+* JS API: convert datetime to dayjs object in DG.toJs 
+
+
 # 2022-06-15 Dev build 1.3.3
 
 ## Latest Docker Images
