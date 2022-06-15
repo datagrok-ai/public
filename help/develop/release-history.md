@@ -1,6 +1,21 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-15 Dev build 1.3.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.3.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* MLB: Fix camelCase in DataLoader and setup.cmd 
+
+
 # 2022-06-15 Dev build 1.3.4
 
 ## Latest Docker Images
