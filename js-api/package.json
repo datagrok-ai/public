@@ -1,6 +1,6 @@
 {
   "name": "datagrok-api",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "",
   "dependencies": {
     "@types/react": "latest",
