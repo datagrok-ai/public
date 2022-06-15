@@ -118,15 +118,15 @@ export class DataLoaderFiles extends DataLoader {
     return Promise.resolve(res);
   }
 
-  async load_hChainDf(): Promise<DG.DataFrame> {
+  async loadHChainDf(): Promise<DG.DataFrame> {
     return DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.h_out));
   }
 
-  async load_lChainDf(): Promise<DG.DataFrame> {
+  async loadLChainDf(): Promise<DG.DataFrame> {
     return DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.l_out));
   }
 
-  async load_mlbDf(): Promise<DG.DataFrame> {
+  async loadMlbDf(): Promise<DG.DataFrame> {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.mlb));
 
     // 'ngl' column have been removed from query 2022-04
@@ -145,7 +145,7 @@ export class DataLoaderFiles extends DataLoader {
     return df;
   }
 
-  async load_treeDf(): Promise<DG.DataFrame> {
+  async loadTreeDf(): Promise<DG.DataFrame> {
     return DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.tree));
   }
 
@@ -154,7 +154,7 @@ export class DataLoaderFiles extends DataLoader {
       .then((data: string) => JSON.parse(data));
   }
 
-  async load_example(vid: string): Promise<JsonType> {
+  async loadExample(vid: string): Promise<JsonType> {
     return this.load_file_json(this._files.example)
       .then((o) => <JsonType>o);
   }
@@ -162,13 +162,13 @@ export class DataLoaderFiles extends DataLoader {
   /** Load PDB structure data
    * @param {string} vid Molecule id
    */
-  async load_pdb(vid: string): Promise<string> {
+  async loadPdb(vid: string): Promise<string> {
     // TODO: Check for only allowed vid of example
     return this.load_file_json(this._files.examplePDB)
       .then((o) => (o)['pdb']);
   }
 
-  async load_obsPtm(vid: string): Promise<ObsPtmType> {
+  async loadObsPtm(vid: string): Promise<ObsPtmType> {
     return this.load_file_json(this._files.exampleOptm)
       .then((o) => <ObsPtmType>o['ptm_observed']);
   }

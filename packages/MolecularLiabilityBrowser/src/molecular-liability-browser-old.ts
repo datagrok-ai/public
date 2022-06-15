@@ -78,15 +78,15 @@ export class MolecularLiabilityBrowserOld {
     const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
     ////////////////////////////////////////////////////
-    const jsonStr: JsonType = await this.dataLoader.load_example(this.vIdInput.value);
+    const jsonStr: JsonType = await this.dataLoader.loadExample(this.vIdInput.value);
 
-    const pdbStr: PdbType = (await this.dataLoader.load_pdb(this.vIdInput.value));
+    const pdbStr: PdbType = (await this.dataLoader.loadPdb(this.vIdInput.value));
 
     const jsonNums: NumsType = await this.dataLoader.realNums;
 
     let jsonStrObsPtm: ObsPtmType = null;
     if (this.vidsObsPTMs.includes(this.vIdInput.value))
-      jsonStrObsPtm = await this.dataLoader.load_obsPtm(this.vIdInput.value);
+      jsonStrObsPtm = await this.dataLoader.loadObsPtm(this.vIdInput.value);
     ////////////////////////////////////////////////////
     // #region
 
@@ -494,7 +494,7 @@ export class MolecularLiabilityBrowserOld {
     // #endregion
 
     ////////////////////////////////////////////////////
-    this.mlbTable = await this.dataLoader.load_mlbDf();
+    this.mlbTable = await this.dataLoader.loadMlbDf();
 
     for (const column of this.mlbTable.columns)
       column.name = column.name.replaceAll('_', ' ');
@@ -525,8 +525,8 @@ export class MolecularLiabilityBrowserOld {
        Secondly merge them to common positions sequence.
        Thirdly build sequences by common po
      */
-    const hChainDf = await this.dataLoader.load_hChainDf();
-    const lChainDf = await this.dataLoader.load_lChainDf();
+    const hChainDf = await this.dataLoader.loadHChainDf();
+    const lChainDf = await this.dataLoader.loadLChainDf();
     [{name: 'Heavy', df: hChainDf}, {name: 'Light', df: lChainDf}].forEach((chain) => {
       const seqCol = this.mergeSequenceColumns(chain.df, chain.name);
       grok.data.joinTables(
@@ -564,7 +564,7 @@ export class MolecularLiabilityBrowserOld {
       await this.regionsViewer.init();
     }
 
-    const dfTree: DG.DataFrame = await this.dataLoader.load_treeDf();
+    const dfTree: DG.DataFrame = await this.dataLoader.loadTreeDf();
     if (dfTree) {
       const treeBrowser = new TreeBrowserOld();
       await treeBrowser.init(dfTree, this.mlbView);

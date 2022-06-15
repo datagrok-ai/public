@@ -94,36 +94,36 @@ export class DataLoaderDb extends DataLoader {
       .then((df: DG.DataFrame) => df.columns[0].toList());
   }
 
-  async load_example(vid: string): Promise<JsonType> {
+  async loadExample(vid: string): Promise<JsonType> {
     return JSON.parse((await grok.functions.call(`${this._pName}:getJsonByVid`, {vid: vid})).columns[0].get(0));
   }
 
-  async load_pdb(vid: string): Promise<string> {
+  async loadPdb(vid: string): Promise<string> {
     return (await grok.functions.call(`${this._pName}:getPdbByVid`, {vid: vid})).columns[0].get(0);
   }
 
-  async load_hChainDf(): Promise<DG.DataFrame> {
+  async loadHChainDf(): Promise<DG.DataFrame> {
     // Could not find chains in old MLB
     return DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.h_out));
   }
 
-  async load_lChainDf(): Promise<DG.DataFrame> {
+  async loadLChainDf(): Promise<DG.DataFrame> {
     // Could not find chains in old MLB
     return DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.l_out));
   }
 
-  async load_mlbDf(): Promise<DG.DataFrame> {
+  async loadMlbDf(): Promise<DG.DataFrame> {
     const df = await grok.functions.call(`${this._pName}:GetMolecularLiabilityBrowser`);
     // 'ngl' column have been removed from query 2022-04
     df.columns.remove('ngl');
     return df;
   }
 
-  async load_obsPtm(vid: string): Promise<ObsPtmType> {
+  async loadObsPtm(vid: string): Promise<ObsPtmType> {
     return JSON.parse((await grok.functions.call(`${this._pName}:getJsonObsByVid`, {vid: vid})).columns[0].get(0));
   }
 
-  async load_treeDf(): Promise<DG.DataFrame> {
+  async loadTreeDf(): Promise<DG.DataFrame> {
     return DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.tree));
   }
 }
