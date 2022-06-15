@@ -1,6 +1,34 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-15 Dev build 1.3.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.3.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Packages: Debug packages permissions fix (WIP)
+* Closes #701: ositioning of Hamburger menus with inserted pinned columns 
+* Packages: update the details section 
+* fixes batch 
+* Docker Datagrok new image 
+* tab fix 
+* tab 
+* Packages: add url 
+* Row number is not clickable after applying saved layout #679 
+* Added the "showCharts" property that apparently was still used 
+* Closes #703: Dialog: onCancel does not get invoked if you close it by pressing ESC or by clicking on the 'x' icon 
+* improve enter behavior 
+* JS API: convert datetime to dayjs object in DG.toJs 
+* #700: Fixing bugs in opening the editor 
+
+
 # 2022-06-13 Dev build 1.3.1
 
 ## Latest Docker Images
