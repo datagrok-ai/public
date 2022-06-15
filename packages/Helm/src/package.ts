@@ -70,13 +70,16 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     }, 200);
     
     let view = ui.div();
+    let app: { canvas: { helm: { setSequence: (arg0: any, arg1: string) => void; }; }; };
+    setTimeout(function (){
+      //@ts-ignore
+      org.helm.webeditor.MolViewer.molscale = 0.8;
+      //@ts-ignore
+      app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
+    })
 
     host.addEventListener('click', function(){
       setTimeout(function() {
-        //@ts-ignore
-        org.helm.webeditor.MolViewer.molscale = 0.8;
-        //@ts-ignore
-        var app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
         //@ts-ignore
         app.canvas.helm.setSequence(host.getAttribute('data'), 'HELM');
       }, 200);
