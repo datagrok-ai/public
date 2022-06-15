@@ -62,8 +62,8 @@ export function toJs(dart: any, check: boolean = false): any {
 export function toDart(x: any): any {
   if (x === undefined || x === null)
     return x;
-  if (x instanceof dayjs.Dayjs)
-    return x.valueOf();
+  // if (x instanceof dayjs.Dayjs)
+  //   return x.valueOf();
   if (typeof x.toDart === 'function')
     return x.toDart();
   if (typeof x.dart !== 'undefined')
