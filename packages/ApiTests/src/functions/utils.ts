@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import dayjs from 'dayjs';
 import {expect, expectArray, expectFloat, expectObject} from '@datagrok-libraries/utils/src/test';
 
 
@@ -7,6 +8,8 @@ export async function check(cases: {[expression: string]: any}): Promise<void> {
     const result = await grok.functions.eval(expression);
     if (Array.isArray(expected))
       expectArray(result, expected);
+    else if (typeof expected === 'object' && expected instanceof dayjs)
+      expect((<dayjs.Dayjs>expected).isSame(result), true);
     else if (typeof expected === 'object' && expected !== null)
       expectObject(result, expected);
     else if (typeof expected === 'number' && Number.isFinite(expected) && !Number.isInteger(expected))

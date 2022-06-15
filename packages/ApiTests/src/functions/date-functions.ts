@@ -1,13 +1,38 @@
-import {category, test} from '@datagrok-libraries/utils/src/test';
+import * as grok from 'datagrok-api/grok';
+import dayjs from 'dayjs';
+import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {check} from './utils';
 
 
 category('Date functions', () => {
+  test('Date', () => check({
+    'Date(2020, 1, 1)': dayjs('2020-01-01'),
+    'Date(2000, 10, 1)': dayjs('2000-10-01'),
+    'Date(2040, 1, 30)': dayjs('2040-01-30'),
+  }));
+
+  test('DateAdd', () => check({
+    'DateAdd(Date(2020, 1, 1), 86400000)': dayjs('2020-01-01').add(1, 'd'),
+    'DateAdd(Date(2020, 1, 1), 10800000)': dayjs('2020-01-01').add(3, 'h'),
+    'DateAdd(Date(2020, 1, 1), 3605000)': dayjs('2020-01-01').add(1, 'h').add(5, 's'),
+  }));
+
   test('DateDiff', () => check({
     'DateDiff(Date(2020, 1, 2), Date(2020, 1, 1))': 86400000,
     'DateDiff(Date(2020, 1, 1), Date(2020, 1, 2))': -86400000,
     'DateDiff(Date(2020, 1, 1), Date(2020, 1, 1))': 0,
     'DateDiff(DateTime(2020, 1, 1, 0, 0, 0, 125), Date(2020, 1, 1))': 125,
+  }));
+
+  test('DateNow', async () => {
+    const now = await grok.functions.eval('DateNow()');
+    const tolerance = 1;
+    expect(Math.abs(dayjs().valueOf() - now.valueOf()) <= tolerance, true);
+  });
+
+  test('DateTime', () => check({
+    'DateTime(2020, 1, 1, 23, 59, 45, 999)': dayjs(new Date(2020, 0, 1, 23, 59, 45, 999)),
+    'DateTime(2050, 10, 10, 0, 15, 5, 0)': dayjs(new Date(2050, 9, 10, 0, 15, 5, 0)),
   }));
 
   test('DayOfMonth', () => check({
@@ -71,6 +96,18 @@ category('Date functions', () => {
     'Second(DateTime(2020, 1, 1, 23, 59, 59, 999))': 59,
     'Second(DateTime(2020, 1, 1, 23, 59, 45, 999))': 45,
     'Second(DateTime(2020, 1, 1, 23, 59, 0, 999))': 0,
+  }));
+
+  test('Time', () => check({
+    // 2-digit year is replaced in expected dates with 4-digit format to address offset inconsistency
+    'Time(23, 59, 45, 999)': dayjs(new Date(2001, 0, 1, 23, 59, 45, 999)),
+    'Time(10, 35, 15, 500)': dayjs(new Date(2001, 0, 1, 10, 35, 15, 500)),
+    // 'Time(5, 5, 5, 5)': dayjs(new Date(2001, 0, 1, 5, 5, 5, 5)),
+    // 'Time(0, 0, 0, 0)': dayjs(new Date(2001, 0, 1)),
+  }));
+
+  test('Today', () => check({
+    'Today()': dayjs().hour(0).minute(0).second(0).millisecond(0),
   }));
 
   test('Weeknum', () => check({
