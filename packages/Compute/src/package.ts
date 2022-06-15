@@ -70,11 +70,18 @@ export function hof() {
 //meta.icon: package1.png
 export function hof2() {
   grok.shell.info('hof2');
+
   let f: DG.Func = DG.Func.byName('Sin');
   let v: DG.View = functionParametersGrid(f);
 
-  v.parentCall = grok.functions.getCurrentCall();
-  v.parentView = v.parentCall.parentCall?.aux['view'];
+  v.parentCall = grok.functions.getCurrentCall(); // hof2 call itself
+  v.parentView = v.parentCall.parentCall?.aux['view']; // modelCatalog view
+  let path = v.parentCall.parentCall?.aux['url']; // uri if called from model catalog
+  grok.shell.info(path);
+
+  let path2 = v.parentCall?.aux['url']; // uri if called directly (if app)
+  grok.shell.info(path2);
+
   v.basePath = '/' + v.parentCall.func.name;
   v.path = '/';
 
@@ -187,6 +194,7 @@ export function modelCatalog() {
     parser.href = window.location.href;
     let pathSegments = parser.pathname.split('/');
     grok.shell.addView(view);
+    grok.shell.info(parser.href);
     if (pathSegments.length > 3) {
       let c = grok.functions.getCurrentCall();
       grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
