@@ -67,6 +67,12 @@ export function catchToLog<T>(prefix: string, func: () => T): T {
   }
 }
 
+export enum DataLoaderType {
+  Unknown = 'unknown',
+  Files = 'Files',
+  Database = 'Database',
+}
+
 export abstract class DataLoader {
   /** Properties for filters
    */

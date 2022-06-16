@@ -3,15 +3,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {PtmFilter} from './custom-filters';
-import {DataLoader} from './utils/data-loader';
+import {DataLoader, DataLoaderType} from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
+import {DataLoaderDb} from './utils/data-loader-db';
 import {VdRegion, VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {MolecularLiabilityBrowser} from './molecular-liability-browser';
 import {TreeBrowser} from './mlb-tree';
 
-// import {DataLoaderDb} from './utils/data-loader-db';
-
 export const _package = new DG.Package();
+const dataPackageName: string = 'MolecularLiabilityBrowserData';
 
 /** DataLoader instance
  */
@@ -28,12 +28,23 @@ let dl: DataLoader;
 // }
 
 //tags: init
-export async function init() {
+export async function initMlb() {
   const pi = DG.TaskBarProgressIndicator.create('Loading filters data...');
 
-  dl = new DataLoaderFiles();
-  // dl = new DataLoaderDb();
+  const dataSourceSettings: string = await grok.functions.call(`${dataPackageName}:getPackageProperty`,
+    {propertyName: 'DataSource'});
+  switch (dataSourceSettings) {
+  case DataLoaderType.Files:
+    dl = new DataLoaderFiles();
+    break;
+  case DataLoaderType.Database:
+    dl = new DataLoaderDb();
+    break;
+  default:
+    throw new Error(`Unexpected data package property 'DataSource' value '${dataSourceSettings}'.`);
+  }
   await dl.init();
+
   pi.close();
 }
 
