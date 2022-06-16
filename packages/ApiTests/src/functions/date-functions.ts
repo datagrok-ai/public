@@ -99,11 +99,12 @@ category('Date functions', () => {
   }));
 
   test('Time', () => check({
+    // The function returns a datetime with a special insignificant date `01-01-01`.
     // 2-digit year is replaced in expected dates with 4-digit format to address offset inconsistency
     'Time(23, 59, 45, 999)': dayjs(new Date(2001, 0, 1, 23, 59, 45, 999)),
     'Time(10, 35, 15, 500)': dayjs(new Date(2001, 0, 1, 10, 35, 15, 500)),
-    // 'Time(5, 5, 5, 5)': dayjs(new Date(2001, 0, 1, 5, 5, 5, 5)),
-    // 'Time(0, 0, 0, 0)': dayjs(new Date(2001, 0, 1)),
+    'Time(5, 5, 5, 5)': dayjs(new Date(2001, 0, 1, 5, 5, 5, 5)),
+    'Time(0, 0, 0, 0)': dayjs(new Date(2001, 0, 1)),
   }));
 
   test('Today', () => check({
