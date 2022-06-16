@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.40",
+  "version": "1.0.41",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -567,6 +567,9 @@
         },
         "0.0.4": {
           "datagrok-api": "^0.145.0"
+        },
+        "0.0.5": {
+          "datagrok-api": "^1.0.0"
         }
       },
       "description": "js-api-tests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
