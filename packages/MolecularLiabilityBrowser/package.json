@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser",
   "fullName": "MolecularLiabilityBrowser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
   "repository": {
     "type": "git",
@@ -17,8 +17,8 @@
     "css/vd-regions-viewer.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^2.0.1 <2.0.3",
-    "@datagrok/bio": "^1.0.3",
+    "@datagrok-libraries/bio": "^2.0.3",
+    "@datagrok/bio": "^1.0.6",
     "@datagrok/molecular-liability-browser-data": "^1.1.0",
     "@deck.gl/core": "^8.7.5",
     "@deck.gl/layers": "^8.7.5",
@@ -26,7 +26,7 @@
     "@luma.gl/core": "^8.5.10",
     "@phylocanvas/phylocanvas.gl": "^1.43.0",
     "cash-dom": "latest",
-    "datagrok-api": "^1.1.5",
+    "datagrok-api": "^1.3.5",
     "logojs-react": "^2.1.1",
     "rxjs": "^6.5.5",
     "ts-loader": "^9.2.5",
