@@ -2,7 +2,7 @@
   "name": "@datagrok/bio",
   "beta": false,
   "friendlyName": "Bio",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
   "repository": {
     "type": "git",
@@ -10,10 +10,10 @@
     "directory": "packages/Bio"
   },
   "dependencies": {
-    "@datagrok-libraries/bio": "^2.0.2",
+    "@datagrok-libraries/bio": "^2.0.3",
     "@datagrok-libraries/utils": "^0.4.2",
     "cash-dom": "latest",
-    "datagrok-api": "^1.1.5",
+    "datagrok-api": "^1.3.5",
     "dayjs": "latest",
     "ts-loader": "^9.2.5",
     "typescript": "^4.4.2"
