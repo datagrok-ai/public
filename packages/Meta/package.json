@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.42",
+  "version": "1.0.43",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -1429,6 +1429,9 @@
         },
         "1.0.0": {
           "datagrok-api": "^1.1.5"
+        },
+        "1.1.0": {
+          "datagrok-api": "^1.1.5"
         }
       },
       "description": "Data for MolecularLiabilityBrowser",
@@ -1436,7 +1439,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/MolecularLiabilityBrowserData"
-      }
+      },
+      "category": "Data Access"
     },
     "alation": {
       "dependencies": {
