@@ -64,10 +64,8 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     host.setAttribute('data', gridCell.cell.value);
 
     gridCell.element = host;
-    setTimeout(function() {
-      // @ts-ignore
-      new JSDraw(host, { width: w, height: h, skin: "w8", viewonly: true });
-    }, 200);
+    // @ts-ignore
+    new JSDraw2.Editor(host, { width: w, height: h, skin: "w8", viewonly: true });
     
     let view = ui.div();
     let app: { canvas: { helm: { setSequence: (arg0: any, arg1: string) => void; }; }; };
