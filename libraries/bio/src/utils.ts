@@ -11,7 +11,7 @@ export function getColumnSeparator(col: DG.Column<string>): string {
   const categories = col.categories;
   const catLen = categories.length;
   for (const potentialSeparator of defaultSeparators) {
-    if (categories.filter(sequence => sequence.includes(potentialSeparator) || sequence == '').length == catLen)
+    if (categories.every((sequence: string) => sequence.includes(potentialSeparator) || sequence == ''))
       return potentialSeparator;
   }
   return separator ?? '';
