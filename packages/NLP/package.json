@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/nlp",
 	"fullName": "NLP",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Natural Language Processing Package",
 	"repository": {
     "type": "git",

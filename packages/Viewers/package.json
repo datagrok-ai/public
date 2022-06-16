@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/viewers",
 	"fullName": "Viewers",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "Set of custom JavaScript viewers",
 	"repository": {
     "type": "git",
