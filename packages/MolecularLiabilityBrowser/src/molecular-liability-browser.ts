@@ -81,7 +81,6 @@ export class MolecularLiabilityBrowser {
       await this.setView();
       await this.setViewFilters();
       await this.setViewTwinPViewer();
-
     } finally {
       grok.events.onViewRemoved.subscribe((v) => {
         if (v.type === DG.VIEW_TYPE.TABLE_VIEW && (v as DG.TableView).dataFrame.id === this.mlbDf.id)
@@ -456,8 +455,8 @@ export class MolecularLiabilityBrowser {
       this.idMapping[this.allVids.get(i)] = this.allIds.get(i).replaceAll(' ', '').split(',');
 
     if (this.mlbView === null) {
-      this.mlbView = grok.shell.addTableView(this.mlbDf);
       // this.mlbView = grok.shell.addView();
+      this.mlbView = grok.shell.addTableView(this.mlbDf);
     } else {
       this.mlbView.dataFrame = this.mlbDf;
     }
