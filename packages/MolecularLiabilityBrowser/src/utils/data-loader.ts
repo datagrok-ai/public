@@ -74,6 +74,10 @@ export enum DataLoaderType {
 }
 
 export abstract class DataLoader {
+  abstract get vids(): string[];
+
+  abstract get vidsObsPtm(): string[];
+
   /** Properties for filters
    */
   abstract get filterProperties(): FilterPropertiesType;
@@ -104,8 +108,6 @@ export abstract class DataLoader {
       throw new Error(`Files errors:\n ${fileErrors.join('\n')}`);
   }
 
-  abstract getVids(): Promise<string[]>;
-
   abstract listAntigens(): Promise<DG.DataFrame>;
 
   abstract getMlbByAntigen(antigen: string): Promise<DG.DataFrame>;
@@ -113,8 +115,6 @@ export abstract class DataLoader {
   abstract getTreeByAntigen(antigen: string): Promise<DG.DataFrame>;
 
   abstract getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame>;
-
-  abstract getObservedPtmVids(): Promise<string[]>;
 
   /**
    * Heavy chain calculated data

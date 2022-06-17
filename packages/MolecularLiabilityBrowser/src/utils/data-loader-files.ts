@@ -32,12 +32,18 @@ export class DataLoaderFiles extends DataLoader {
     exampleOptm: 'exampleOptm.json',
     realNums: 'exampleNums.json',
   };
+  private _vids: string[];
+  private _vidsObsPtm: string[];
   private _filterProperties: FilterPropertiesType;
   private _mutcodes: MutcodesDataType;
   private _ptmMap: PtmMapType;
   private _cdrMap: CdrMapType;
   private _refDf: DG.DataFrame;
   private _realNums: any;
+
+  get vids(): string[] { return this._vids; }
+
+  get vidsObsPtm(): string[] { return this._vidsObsPtm; }
 
   get filterProperties(): FilterPropertiesType { return this._filterProperties; }
 
@@ -58,6 +64,12 @@ export class DataLoaderFiles extends DataLoader {
     const t2 = Date.now();
 
     await Promise.all([
+      () => {
+        this._vids = ['VR000000008', 'VR000000043', 'VR000000044'];
+      },
+      () => {
+        this._vidsObsPtm = ['VR000000044'];
+      },
       _package.files.readAsText(this._files.filterProps).then(
         (v) => this._filterProperties = JSON.parse(v)
       ),
@@ -79,12 +91,7 @@ export class DataLoaderFiles extends DataLoader {
     const t3 = Date.now();
 
     console.debug(`DataLoaderFiles check_files ${((t2 - t1) / 1000).toString()} s`);
-    console.debug(`DataLoaderFiles preload_files ${((t3 - t2) / 1000).toString()} s`);
-  }
-
-  async getVids(): Promise<string[]> {
-    const res: string[] = ['VR000000008', 'VR000000043', 'VR000000044'];
-    return Promise.resolve(res);
+    console.debug(`DataLoaderFiles preload_data ${((t3 - t2) / 1000).toString()} s`);
   }
 
   async listAntigens(): Promise<DG.DataFrame> {
@@ -111,11 +118,6 @@ export class DataLoaderFiles extends DataLoader {
     const df: DG.DataFrame = await grok.functions.call(
       `${this._pName}:getAnarci${scheme2}${chain2}`, {antigen: antigen});
     return df;
-  }
-
-  async getObservedPtmVids(): Promise<string[]> {
-    const res: string[] = ['VR000000044'];
-    return Promise.resolve(res);
   }
 
   async loadHChainDf(): Promise<DG.DataFrame> {
@@ -149,13 +151,16 @@ export class DataLoaderFiles extends DataLoader {
     return DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.tree));
   }
 
-  private async load_file_json(path: string): Promise<Object> {
+  private async loadFileJson(path: string): Promise<Object> {
     return _package.files.readAsText(path)
       .then((data: string) => JSON.parse(data));
   }
 
   async loadExample(vid: string): Promise<JsonType> {
-    return this.load_file_json(this._files.example)
+    if (!this.vids.includes(vid))
+      return null;
+
+    return this.loadFileJson(this._files.example)
       .then((o) => <JsonType>o);
   }
 
@@ -163,13 +168,19 @@ export class DataLoaderFiles extends DataLoader {
    * @param {string} vid Molecule id
    */
   async loadPdb(vid: string): Promise<string> {
+    if (!this.vids.includes(vid))
+      return null;
+
     // TODO: Check for only allowed vid of example
-    return this.load_file_json(this._files.examplePDB)
+    return this.loadFileJson(this._files.examplePDB)
       .then((o) => (o)['pdb']);
   }
 
   async loadObsPtm(vid: string): Promise<ObsPtmType> {
-    return this.load_file_json(this._files.exampleOptm)
+    if (!this.vidsObsPtm.includes(vid))
+      return null;
+
+    return this.loadFileJson(this._files.exampleOptm)
       .then((o) => <ObsPtmType>o['ptm_observed']);
   }
 }

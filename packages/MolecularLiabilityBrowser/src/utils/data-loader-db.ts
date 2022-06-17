@@ -26,12 +26,18 @@ export class DataLoaderDb extends DataLoader {
     tree: 'tree.csv',
     realNums: 'exampleNums.json',
   };
+  private _vids: string[];
+  private _vidsObsPtm: string[];
   private _filterProperties: FilterPropertiesType;
   private _mutcodes: MutcodesDataType;
   private _ptmMap: PtmMapType;
   private _cdrMap: CdrMapType;
   private _refDf: DG.DataFrame;
   private _realNums: any;
+
+  get vids(): string[] { return this._vids; }
+
+  get vidsObsPtm(): string[] { return this._vidsObsPtm; }
 
   get filterProperties(): FilterPropertiesType { return this._filterProperties; }
 
@@ -49,21 +55,53 @@ export class DataLoaderDb extends DataLoader {
     // Here we should load files from src/externalData
     // But if we will use require(), commit will fail
 
+    const t1 = Date.now();
     // Checking files is disabled because it takes too long
     // await this.check_files(this._files);
+    const t2 = Date.now();
 
-    this._filterProperties = JSON.parse(await _package.files.readAsText(this._files.filterProps));
-    this._mutcodes = JSON.parse(await _package.files.readAsText(this._files.mutcodes));
-    this._ptmMap = JSON.parse(await _package.files.readAsText(this._files.ptm_map));
-    this._cdrMap = JSON.parse(await _package.files.readAsText(this._files.cdr_map));
-    this._refDf = await _package.files.readBinaryDataFrames(this._files.ptm_in_cdr)
-      .then((dfList: DG.DataFrame[]) => dfList[0]);
-    this._realNums = JSON.parse(await _package.files.readAsText(this._files.realNums));
-  }
+    //this._filterProperties = JSON.parse(await _package.files.readAsText(this._files.filterProps));
+    //this._mutcodes = JSON.parse(await _package.files.readAsText(this._files.mutcodes));
+    //this._ptmMap = JSON.parse(await _package.files.readAsText(this._files.ptm_map));
+    //this._cdrMap = JSON.parse(await _package.files.readAsText(this._files.cdr_map));
+    //this._refDf = (await _package.files.readBinaryDataFrames(this._files.ptm_in_cdr))[0];
+    // this._realNums = JSON.parse(await _package.files.readAsText(this._files.realNums));
 
-  async getVids(): Promise<string[]> {
-    return await grok.functions.call(`${this._pName}:getVids`)
-      .then((df: DG.DataFrame) => df.columns[0].toList());
+    await Promise.all([
+      grok.functions.call(`${this._pName}:getVids`).then(
+        (df: DG.DataFrame) => {
+          this._vids = df.columns.byIndex(0).toList();
+        }),
+      grok.functions.call(`${this._pName}:getObservedPtmVids`).then(
+        (df: DG.DataFrame) => {
+          this._vidsObsPtm = df.columns.byIndex(0).toList();
+        }),
+      _package.files.readAsText(this._files.filterProps).then(
+        (v) => {
+          this._filterProperties = JSON.parse(v);
+        }),
+      _package.files.readAsText(this._files.mutcodes).then(
+        (v) => {
+          this._mutcodes = JSON.parse(v);
+        }),
+      _package.files.readAsText(this._files.ptm_map).then(
+        (v) => { this._ptmMap = JSON.parse(v); }),
+      _package.files.readAsText(this._files.cdr_map).then(
+        (v) => {
+          this._cdrMap = JSON.parse(v);
+        }),
+      _package.files.readBinaryDataFrames(this._files.ptm_in_cdr).then(
+        (dfList) => {
+          this._refDf = dfList[0];
+        }),
+      _package.files.readAsText(this._files.realNums).then(
+        (v) => {
+          this._realNums = JSON.parse(v);
+        }),
+    ]);
+    const t3 = Date.now();
+    console.debug(`DataLoaderDb check_files ${((t2 - t1) / 1000).toString()} s`);
+    console.debug(`DataLoaderDb preload_data ${((t3 - t2) / 1000).toString()} s`);
   }
 
   async listAntigens(): Promise<DG.DataFrame> {
@@ -84,22 +122,28 @@ export class DataLoaderDb extends DataLoader {
   }
 
   async getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame> {
+    // There is a problem with using underscore symbols in query names.
+    const scheme2: string = scheme.charAt(0).toUpperCase() + scheme.slice(1);
+    const chain2: string = chain.charAt(0).toUpperCase() + chain.slice(1);
     const df: DG.DataFrame = await grok.functions.call(
-      `${this._pName}:getAnarci_${scheme}_${chain}`, {antigen: antigen});
+      `${this._pName}:getAnarci${scheme2}${chain2}`, {antigen: antigen});
     return df;
   }
 
-  async getObservedPtmVids(): Promise<string[]> {
-    return await grok.functions.call(`${this._pName}:getObservedPtmVids`)
-      .then((df: DG.DataFrame) => df.columns[0].toList());
-  }
-
   async loadExample(vid: string): Promise<JsonType> {
-    return JSON.parse((await grok.functions.call(`${this._pName}:getJsonByVid`, {vid: vid})).columns[0].get(0));
+    if (!this.vids.includes(vid))
+      return null;
+
+    return JSON.parse((await grok.functions.call(`${this._pName}:getJsonByVid`, {vid: vid}))
+      .columns.byIndex(0).get(0));
   }
 
   async loadPdb(vid: string): Promise<string> {
-    return (await grok.functions.call(`${this._pName}:getPdbByVid`, {vid: vid})).columns[0].get(0);
+    if (!this.vids.includes(vid))
+      return null;
+
+    return (await grok.functions.call(`${this._pName}:getPdbByVid`, {vid: vid}))
+      .columns.byIndex(0).get(0);
   }
 
   async loadHChainDf(): Promise<DG.DataFrame> {
@@ -120,7 +164,11 @@ export class DataLoaderDb extends DataLoader {
   }
 
   async loadObsPtm(vid: string): Promise<ObsPtmType> {
-    return JSON.parse((await grok.functions.call(`${this._pName}:getJsonObsByVid`, {vid: vid})).columns[0].get(0));
+    if (!this.vidsObsPtm.includes(vid))
+      return null;
+
+    return JSON.parse((await grok.functions.call(`${this._pName}:getJsonObsByVid`, {vid: vid}))
+      .columns.byIndex(0).get(0));
   }
 
   async loadTreeDf(): Promise<DG.DataFrame> {
