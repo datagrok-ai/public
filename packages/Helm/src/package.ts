@@ -69,12 +69,12 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     
     let view = ui.div();
     let app: { canvas: { helm: { setSequence: (arg0: any, arg1: string) => void; }; }; };
-    setTimeout(function (){
+    setTimeout(function () {
       //@ts-ignore
       org.helm.webeditor.MolViewer.molscale = 0.8;
       //@ts-ignore
       app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
-    })
+    });
 
     host.addEventListener('dblclick', function(){
       setTimeout(function() {
