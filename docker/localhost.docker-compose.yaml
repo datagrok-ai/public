@@ -108,19 +108,19 @@ services:
     restart: unless-stopped
     profiles: [ "all", "datagrok" ]
 
-  grok_scaler:
-    image: datagrok/grok_scaler:latest
+  grok_spawner:
+    image: datagrok/grok_spawner:latest
     user: root
     environment:
-      API_SECRET: localhost-api-token
+      X_API_KEY: test-x-api-key
     networks:
       datagrok:
         aliases:
-          - grok_scaler
+          - grok_spawner
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
-    profiles: [ "all", "grok_scaler" ]
+    profiles: [ "all", "grok_spawner" ]
 
   grok_connect:
     image: datagrok/grok_connect:latest
