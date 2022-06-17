@@ -20,6 +20,7 @@ import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
+import {_rdKitModule} from './utils/chem-common-rdkit';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
 import {convertMoleculeImpl, isMolBlock, MolNotation, molToMolblock} from './utils/chem-utils';
@@ -33,9 +34,8 @@ import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
+import {RDMol} from './rdkit-api';
 import Sketcher = chem.Sketcher;
-import {RDMol} from "./rdkit-api";
-import {_rdKitModule} from "./utils/chem-common-rdkit";
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -206,8 +206,8 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: string molStringSmarts
 //output: column result
 export async function searchSubstructure(
-      molStringsColumn: DG.Column, molString: string,
-      substructLibrary: boolean, molStringSmarts: string) : Promise<DG.Column<any>> {
+  molStringsColumn: DG.Column, molString: string,
+  substructLibrary: boolean, molStringSmarts: string) : Promise<DG.Column<any>> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
   assure.notNull(substructLibrary, 'substructLibrary');
@@ -249,7 +249,7 @@ export function saveAsSdf(): void {
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
-      similarity: number, methodName: string) : Promise<void> {
+  similarity: number, methodName: string) : Promise<void> {
   await getActivityCliffs(df, smiles, activities, similarity, methodName);
 }
 
@@ -262,7 +262,7 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //input: bool plotEmbeddings = true
 //output: viewer result
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
-      similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
   return new Promise<void>(async (resolve, _) => {
     const chemSpaceRes = await chemSpace(smiles, methodName, similarityMetric, ['Embed_X', 'Embed_Y']);
     const embeddings = chemSpaceRes.coordinates;
@@ -476,8 +476,7 @@ export function diversitySearchTopMenu() {
 //meta.inputRegexp: (InChI\=.+)
 export async function inchiToSmiles(id: string) {
   const mol = getRdKitModule().get_mol(id);
-  const smiles = mol.get_smiles();
-  return smiles;
+  return mol.get_smiles();
 }
 
 //name: openChemLibSketch
@@ -513,7 +512,7 @@ export function importSdf(bytes: Uint8Array): DG.DataFrame[] {
 //input: string content
 //output: list tables
 export function importMol(content: string): DG.DataFrame[] {
-  let molCol = DG.Column.string('molecule', 1).init((_) => content);
+  const molCol = DG.Column.string('molecule', 1).init((_) => content);
   return [DG.DataFrame.fromColumns([molCol])];
 }
 
@@ -529,12 +528,14 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
 //meta.action: Use as filter
 //input: string mol { semType: Molecule }
 export function useAsSubstructureFilter(mol: string): void {
-  let tv = grok.shell.tv;
+  const tv = grok.shell.tv;
   if (tv == null)
+    // eslint-disable-next-line no-throw-literal
     throw 'Requires an open table view.';
 
-  let molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  const molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (molCol == null)
+    // eslint-disable-next-line no-throw-literal
     throw 'Molecule column not found.';
 
   tv.getFiltersGroup({createDefaultFilters: false}).add({
@@ -554,11 +555,9 @@ export function detectSmiles(col: DG.Column, min: number) {
     try {
       d = _rdKitModule.get_mol(s);
       return true;
-    }
-    catch {
+    } catch {
       return false;
-    }
-    finally {
+    } finally {
       d?.delete();
     }
   }
