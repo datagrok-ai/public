@@ -72,10 +72,11 @@ export class MolecularLiabilityBrowser {
       this.schemeName = this.schemeChoices.includes(this.urlParams.get('scheme')) ? this.urlParams.get('scheme') :
         this.schemeChoices[0];
 
-      [this.vids, this.vidsObsPTMs] = (await Promise.all([
-        this.dataLoader.getVids(),
-        this.dataLoader.getObservedPtmVids()
-      ]));
+      this.vids = this.dataLoader.vids;
+      this.vidsObsPTMs = this.dataLoader.vidsObsPtm;
+
+      if (!this.vid)
+        this.vid = this.vids[0];
 
       await this.loadData();
       await this.setView();

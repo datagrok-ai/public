@@ -506,8 +506,8 @@ export class MolecularLiabilityBrowserOld {
     }
 
     // let vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
-    this.vids = await this.dataLoader.getVids();
-    this.vidsObsPTMs = await this.dataLoader.getObservedPtmVids();
+    this.vids = this.dataLoader.vids;
+    this.vidsObsPTMs = this.dataLoader.vidsObsPtm;
     ////////////////////////////////////////////////////
 
     // #region Code from RepertoireBrowser till pi.close()
