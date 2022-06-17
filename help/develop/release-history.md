@@ -1,6 +1,31 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-17 Dev build 1.4.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* KeyPair::encryptString/decryptString methods fixed for UTF8 symbols 
+* Grid: add cell context action 
+* (Bug) Functions: invalid date format in `Time()`  in some acceptable cases 
+* Packages Manager (WIP)
+* Fixed test 
+* #700: Helm fixing trouble with rendering 
+* F2 no longer edits a cell as it is still used as a column editor hotkey 
+* (Bug) Data | Text: Semantic type is not detected after table loaded 
+* JS API: Exposed Column.Aggregate 
+* Closes #642: Autodetection of Structure columns imported from external files 
+* Opening editor on double click 
+
+
 # 2022-06-15 Dev build 1.3.5
 
 ## Latest Docker Images
