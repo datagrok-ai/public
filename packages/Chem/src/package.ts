@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import {chem} from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FILTER_TYPE} from 'datagrok-api/dg';
+import {FILTER_TYPE, SEMTYPE} from 'datagrok-api/dg';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import * as chemSearches from './chem-searches';
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
@@ -34,6 +34,8 @@ import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = chem.Sketcher;
+import {RDMol} from "./rdkit-api";
+import {_rdKitModule} from "./utils/chem-common-rdkit";
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -541,4 +543,28 @@ export function useAsSubstructureFilter(mol: string): void {
     columnName: molCol.name,
     molBlock: molToMolblock(mol, getRdKitModule())
   });
+}
+
+//name: detectSmiles
+//input: column col
+//input: int min
+export function detectSmiles(col: DG.Column, min: number) {
+  function isSmiles(s: string) {
+    let d: RDMol | null = null;
+    try {
+      d = _rdKitModule.get_mol(s);
+      return true;
+    }
+    catch {
+      return false;
+    }
+    finally {
+      d?.delete();
+    }
+  }
+
+  if (DG.Detector.sampleCategories(col, isSmiles, min, 10, 0.8)) {
+    col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
+    col.semType = SEMTYPE.MOLECULE;
+  }
 }

@@ -25,14 +25,12 @@
     "common/ngl_viewer/ngl.js"
   ],
   "dependencies": {
-    "datagrok-api": "^1.0.0",
-    "@datagrok-libraries/ml": "^2.0.1",
-    "@datagrok-libraries/utils": "^0.4.1",
     "@types/wu": "latest",
     "cash-dom": "latest",
     "css-loader": "latest",
     "dayjs": "latest",
     "file-loader": "latest",
+    "jstat": "^1.9.5",
     "offscreen-canvas": "latest",
     "openchemlib": "6.0.1",
     "path": "^0.12.7",
@@ -41,8 +39,7 @@
     "ts-loader": "latest",
     "typescript": "latest",
     "worker-loader": "latest",
-    "wu": "latest",
-    "jstat": "^1.9.5"
+    "wu": "latest"
   },
   "devDependencies": {
     "@types/offscreencanvas": "latest",
@@ -67,9 +64,9 @@
     "crypto": false
   },
   "scripts": {
-    "link-api": "npm install && npm link datagrok-api",
-    "link-utils": "npm install && npm link @datagrok-libraries/utils",
-    "link-ml": "npm install && npm link @datagrok-libraries/ml",
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-ml": "npm link @datagrok-libraries/ml",
     "link-all": "npm install && npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml",
     "build-chem-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build",
     "build": "webpack",
@@ -85,5 +82,5 @@
   "canView": [
     "All users"
   ],
-	"category": "Cheminformatics"
+  "category": "Cheminformatics"
 }
