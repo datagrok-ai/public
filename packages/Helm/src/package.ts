@@ -76,7 +76,7 @@ class HelmCellRenderer extends DG.GridCellRenderer {
       app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
     })
 
-    host.addEventListener('click', function(){
+    host.addEventListener('dblclick', function(){
       setTimeout(function() {
         //@ts-ignore
         app.canvas.helm.setSequence(host.getAttribute('data'), 'HELM');
