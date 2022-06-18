@@ -82,11 +82,14 @@ class HelmCellRenderer extends DG.GridCellRenderer {
         app.canvas.helm.setSequence(host.getAttribute('data'), 'HELM');
       }, 200);
 
-      ui.dialog()
+      let dlg = ui.dialog()
       .add(view)
       .onOK(() => {
         view;
-      }).show({ fullScreen: true, center: true });
+      }).show({ modal: true, fullScreen: true});
+      dlg.root.children[0].remove();
+      dlg.root.children[1].classList.remove('ui-panel'); 
+      dlg.root.children[1].classList.remove('ui-box');
     }, false);
   }
 }
