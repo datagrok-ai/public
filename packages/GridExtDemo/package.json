@@ -1,0 +1,33 @@
+{
+  "name": "@datagrok/gridextdemo",
+  "publishConfig": {
+    "access": "public"
+  },
+  "fullName": "Demos of Grid Extensions",
+  "version": "1.0.0",
+  "description": "Demos of Grid Extensions",
+  "dependencies": {
+    "@types/node": "^14.14.37",
+    "datagrok-api": ">=0.95.8",
+    "dts-bundle": "^0.7.3",
+    "js-yaml": "^4.1.0",
+    "node-fetch": "^2.6.0",
+    "rxjs": "^6.5.5"
+  },
+  "devDependencies": {
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.2.3",
+    "webpack-cli": "^4.9.2"
+  },
+  "scripts": {
+    "buildwp": "webpack",
+    "link": "npm link",
+    "link-api": "npm link datagrok-api",
+    "link-gridext": "npm link @datagrok-libraries/gridext",
+    "link-all": "npm link datagrok-api @datagrok-libraries/gridext",
+    "build": "tsc",
+    "debug-gridext-nibr": "webpack && grok publish nibr",
+    "release-gridext-nibr": "grok publish nibr --rebuild --release",
+    "debug-gridext-dg-dev": "webpack && grok publish dev"
+  }
+}
