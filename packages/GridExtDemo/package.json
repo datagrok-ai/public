@@ -1,11 +1,14 @@
 {
   "name": "@datagrok/gridextdemo",
-  "publishConfig": {
-    "access": "public"
-  },
+  "friendlyName": "GridExtDemo",
   "fullName": "Demos of Grid Extensions",
   "version": "1.0.0",
   "description": "Demos of Grid Extensions",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/gridextdemo"
+  },
   "dependencies": {
     "@types/node": "^14.14.37",
     "datagrok-api": ">=0.95.8",
@@ -29,5 +32,11 @@
     "debug-gridext-nibr": "webpack && grok publish nibr",
     "release-gridext-nibr": "grok publish nibr --rebuild --release",
     "debug-gridext-dg-dev": "webpack && grok publish dev"
-  }
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }
