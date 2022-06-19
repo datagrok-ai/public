@@ -41,6 +41,7 @@ class ChemPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectRDSmiles(col) {
+    console.log('detecting');
     let lowerCaseName = col.name.toLowerCase();
     let likelyMolName = ChemPackageDetectors.likelyNames.some((likelyName) => lowerCaseName.endsWith(likelyName));
     let minUnique = likelyMolName ? 1 : 3;
