@@ -1,3 +1,23 @@
+import {lcmsToGcrs} from './map';
+import * as DG from 'datagrok-api/dg';
+
+//name: gcrsToLcms
+//input: string nucleotides {semType: GCRS}
+//output: string result {semType: LCMS}
+export function gcrsToLcms(sequence: string): string {
+  const df = DG.DataFrame.fromCsv(lcmsToGcrs);
+  const arr1 = df.getCol('GCRS').toList();
+  const arr2 = df.getCol('LCMS').toList();
+  const obj: {[i: string]: string} = {};
+  arr1.forEach((element, index) => obj[element] = arr2[index]);
+  for (let i = 0; i < arr1.length; i++) {
+    arr1[i] = arr1[i].replace('(', '\\(');
+    arr1[i] = arr1[i].replace(')', '\\)');
+  }
+  const regExp = new RegExp('(' + arr1.join('|') + ')', 'g');
+  return sequence.replace(regExp, function(code) {return obj[code];});
+}
+
 //name: asoGapmersNucleotidesToBioSpring
 //input: string nucleotides {semType: DNA nucleotides}
 //output: string result {semType: BioSpring / Gapmers}

@@ -1,9 +1,13 @@
+import * as DG from 'datagrok-api/dg';
+import {getAllCodesOfSynthesizer} from './sequence-codes-tools';
+
 export const SYNTHESIZERS = {
   RAW_NUCLEOTIDES: 'Raw Nucleotides',
   BIOSPRING: 'BioSpring Codes',
   GCRS: 'Janssen GCRS Codes',
   AXOLABS: 'Axolabs Codes',
   MERMADE_12: 'Mermade 12',
+  LCMS: 'LCMS',
 };
 export const TECHNOLOGIES = {
   DNA: 'DNA',
@@ -52,7 +56,7 @@ export const MODIFICATIONS: {[index: string]: {molecularWeight: number, left: st
 export const stadardPhosphateLinkSmiles = 'OP(=O)(O)O';
 export const map: {[synthesizer: string]:
   {[technology: string]: {[code: string]:
-    {'name': string, 'weight': number, 'normalized': string, 'SMILES': string}}}} = {
+    {'name'?: string, 'weight'?: number, 'normalized'?: string, 'SMILES': string}}}} = {
       'Raw Nucleotides': {
         'DNA': {
           'A': {
@@ -458,6 +462,7 @@ export const map: {[synthesizer: string]:
             'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1O',
           },
         },
+        'Others': {},
       },
       'Mermade 12': {
         'For 2\'-OMe and 2\'-F modified siRNA': {
@@ -559,4 +564,164 @@ export const map: {[synthesizer: string]:
           },
         },
       },
+      // 'LCMS': {
+      //   'For 2\'-OMe and 2\'-F modified siRNA': {
     };
+
+export const lcmsToGcrs = `LCMS, GCRS
+A, A
+C, C
+/5mC/, (5m)C
+G, G
+T, T
+rA, rA
+rC, rC
+rG, rG
+rU, rU
+mA, mA
+mC, mC
+/5mmC/, (5m)mC
+mG, mG
+mU, mU
+fA, fA
+fC, fC
+/5mfC/, (5m)fC
+fG, fG
+fU, fU
+/afA/, afA
+/afC/, afC
+/afG/, afG
+/afU/, afU
++A, lna A
++C, lna C
++G, lna G
++T, lna T
+/moeA/, moeA
+/moeC/, moeC
+/5mmoeC/, (5m)moeC
+/moeG/, moeG
+/moeT/, moeT
+/moeU/, moeU
+/xA/, Anp
+/xC/, Cnp
+/x5mC/, (5m)Cnp
+/xG/, Gnp
+/xT/, Tnp
+/xrA/, rAnp
+/xrC/, rCnp
+/xrG/, rGnp
+/xrU/, rUnp
+/xmA/, mAnp
+/xmC/, mCnp
+/x5mmC/, (5m)mCnp
+/xmG/, mGnp
+/xmU/, mUnp
+/xfA/, fAnp
+/xfC/, fCnp
+/xfG/, fGnp
+/xfT/, fTnp
+/xfU/, fUnp
+/xafA/, afAnp
+/xafC/, afCnp
+/xafG/, afGnp
+/xafU/, afUnp
+/xeA/, eAnp
+/xeC/, eCnp
+/xeG/, eGnp
+/xeU/, eUnp
+/xmoeA/, moeAnp
+/xmoeC/, moeCnp
+/x5mmoeC/, (5m)moeCnp
+/xmoeG/, moeGnp
+/xmoeU/, moeUnp
+/UNA-A/, (UNA-A)
+/UNA-C/, (UNA-C)
+/UNA-G/, (UNA-G)
+/UNA-T/, (UNA-T)
+/UNA-U/, (UNA-U)
+/GNA-A/, (GNA-A)
+/GNA-C/, (GNA-C)
+/GNA-G/, (GNA-G)
+/GNA-T/, (GNA-T)
+/GNA-U/, (GNA-U)
+/5CholTEG/, (5-CholTEG)
+/3CholTEG/, (TEGChol-3)
+/Toco/, Toco
+/Palm/, Palm
+/GalNAc/, GalNAc
+/GalNAc2/, GalNAc2
+/GalNAc3/, GalNAc3
+/GalNAc6/, GalNAc6
+/GalNAc7/, GalNAc7
+/GalNAc9/, GalNAc9
+/GalNAc14/, GalNAc14
+/NAG37/, NAG37
+/HEG/, (HEG)
+/TEG/, (TEG)
+/AmmC6/, (NHC6)
+/AmmC7/, (NHC7)
+/AmmC12/, (NHC12)
+/invAb/, (invabasic)
+/invdT/, (invdT)
+/VPmU/, (vinu)
+*, ps
+/2-C16U/, 2-C16U 
+/2-C18w9U/, 2-C18w9U
+/JDi-Palm/, JDi-Palm
+/J2-CONC16U/, J2-CONC16U
+/J2-C3NC16U/, J2-C3NC16U
+/J-C15Ada/, J-C15Ada
+/J-2C15AdaU/, J-2C15AdaU
+/J-C16NC6/, J-C16NC6
+/R2-C6NH-U/, R2-C6NH-U
+/J-M1/, J-M1
+/J-B1/, J-B1
+/J-B2/, J-B2
+/J-M2/, J-M2
+/2-C16C/, 2-C16C
+/2-C16A/, 2-C16A
+/2-C16G/, 2-C16G
+/R2-C6NH-G/, R2-C6NH-G
+/R2-C6NH-C/, R2-C6NH-C
+/J2-CONC16A/, J2-CONC16A
+/J2-CONC16C/, J2-CONC16C
+/J2-CONC16G/, J2-CONC16G
+/J2-C15AdaC/, J2-C15AdaC
+/J2-M2U/, J2-M2U
+/J2-B2U/, J2-B2U
+/J2-C3NC16C/, J2-C3NC16C
+/J2-C3NC16G/, J2-C3NC16G
+/R2-C6NH-A/, R2-C6NH-A
+/J2-C15AdaA/, J2-C15AdaA
+/J2-C3NC16A/, J2-C3NC16A
+/J-C5-SER-1/, J-C5-SER-1
+/J-C16-SER-1/, J-C16-SER-1
+/J-A2/, J-A2
+/J-A1/, J-A1
+/J2-C15AdaG/, J2-C15AdaG
+/J-C16NAsp/, J-C16NAsp
+/J2-C16NC6U/, J2-C16NC6U
+/J-C5-REBO-1/, J-C5-REBO-1
+/J-C16-REBO-1/, J-C16-REBO-1
+/J-C16-IND-1/, J-C16-IND-1
+/J-C5-IND-1/, J-C5-IND-1
+/J-1C15Ada-2Man/, J-1C15Ada-2Man
+/JG-1C15Ada-23DiMan/, JG-1C15Ada-2,3DiMan
+/J-TriManPC/, J-TriManPC
+/J-triManPO/, J-triManPO
+/J-A4/, J-A4
+/J-Ara-1/, J-Ara-1
+/J-Ara-2/, J-Ara-2
+/J-AcCS/, J-AcCS
+/J-CbCS/, J-CbCS
+/J-MtCD/, J-MtCD`;
+
+function differenceOfTwoArrays(a: string[], b: string[]): string[] {
+  return a.filter((x) => !b.includes(x));
+}
+
+const codesWithSmiles = getAllCodesOfSynthesizer(SYNTHESIZERS.GCRS);
+const allGcrsCodes = DG.DataFrame.fromCsv(lcmsToGcrs).getCol('GCRS').toList();
+export const gcrsCodesWithoutSmiles = differenceOfTwoArrays(allGcrsCodes, codesWithSmiles);
+for (const e of gcrsCodesWithoutSmiles)
+  map[SYNTHESIZERS.GCRS]['Others'][e] = {'SMILES': ''};
