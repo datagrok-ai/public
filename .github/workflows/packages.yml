@@ -210,7 +210,7 @@ jobs:
           dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' package.json)"          
           deps=''
           if [[ "${{ matrix.install_jsapi }}" == "true" ]]; then
-            deps+="datagrok-api=$(jq '."datagrok-api"' <<<$dependencies | sed -E 's/(^"|"$)//g') "
+            deps+="datagrok-api:$(jq '."datagrok-api"' <<<$dependencies | sed -E 's/(^"|"$)//g') "
           fi
           mkdir gh-cache
           echo "$(jq .name package.json | sed -E -e 's/(^"|"$)//g' -e 's,@datagrok/,,g')" >> gh-cache/${{ matrix.package }}.name.txt
@@ -336,8 +336,8 @@ jobs:
                bin/grok-meta.js "${grok_args[@]}"
             else
               for d in ${dependencies}; do
-                dep=$(cut -d= -f1 <<<$d)
-                depver=$(cut -d= -f2 <<<$d)
+                dep=$(cut -d: -f1 <<<$d)
+                depver=$(cut -d: -f2 <<<$d)
                 dep_args=(--dep "$dep" --depver "$depver")
                 bin/grok-meta.js "${grok_args[@]}" "${dep_args[@]}"
               done
