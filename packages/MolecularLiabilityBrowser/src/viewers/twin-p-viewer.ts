@@ -34,15 +34,15 @@ export class TwinPviewer {
   // ptmMotifPredictions: string[];
   twinSelections = {'H': {}, 'L': {}};
   colorScheme = {
-    'colBackground': 'string',
+    'colBackground': 'white',
     'colHeavyChain': '#0069a7',
     'colLightChain': '#f1532b',
     'colCdr': '#45d145',
     'colPara': '#b0c4de',
     'colHighlight': '#45d145',
     'colHighlightCdr': '#FFFF00',
-    'colPartopes_low': '(176,196,222)', //col_para in rgb
-    'colPartopes_high': '(255, 0, 255)',
+    'colPartopes_low': 'rgb(176,196,222)', //col_para in rgb
+    'colPartopes_high': 'rgb(255, 0, 255)',
   };
 
   ngl: NglAspect;

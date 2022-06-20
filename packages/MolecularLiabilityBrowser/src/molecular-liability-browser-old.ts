@@ -78,11 +78,11 @@ export class MolecularLiabilityBrowserOld {
     const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
     ////////////////////////////////////////////////////
-    const jsonStr: JsonType = await this.dataLoader.loadExample(this.vIdInput.value);
+    const jsonStr: JsonType = await this.dataLoader.loadJson(this.vIdInput.value);
 
-    const pdbStr: PdbType = (await this.dataLoader.loadPdb(this.vIdInput.value));
+    const pdbStr: PdbType = await this.dataLoader.loadPdb(this.vIdInput.value);
 
-    const jsonNums: NumsType = await this.dataLoader.realNums;
+    const jsonNums: NumsType = await this.dataLoader.loadRealNums(this.vIdInput.value);
 
     let jsonStrObsPtm: ObsPtmType = null;
     if (this.vidsObsPTMs.includes(this.vIdInput.value))

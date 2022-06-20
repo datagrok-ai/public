@@ -64,12 +64,14 @@ export class DataLoaderFiles extends DataLoader {
     const t2 = Date.now();
 
     await Promise.all([
-      () => {
+      new Promise((resolve: (value: unknown) => void, reject: (reason?: unknown) => void) => {
         this._vids = ['VR000000008', 'VR000000043', 'VR000000044'];
-      },
-      () => {
+        resolve(true);
+      }),
+      new Promise((resolve: (value: unknown) => void, reject: (reason?: unknown) => void) => {
         this._vidsObsPtm = ['VR000000044'];
-      },
+        resolve(true);
+      }),
       _package.files.readAsText(this._files.filterProps).then(
         (v) => this._filterProperties = JSON.parse(v)
       ),
@@ -156,31 +158,34 @@ export class DataLoaderFiles extends DataLoader {
       .then((data: string) => JSON.parse(data));
   }
 
-  async loadExample(vid: string): Promise<JsonType> {
-    if (!this.vids.includes(vid))
-      return null;
+  async loadJson(vid: string): Promise<JsonType> {
+    // Always return example data due TwinPViewer inability to work with null data
+    // if (!this.vids.includes(vid))
+    //   return null;
 
-    return this.loadFileJson(this._files.example)
-      .then((o) => <JsonType>o);
+    return (await this.loadFileJson(this._files.example)) as JsonType;
   }
 
   /** Load PDB structure data
    * @param {string} vid Molecule id
    */
   async loadPdb(vid: string): Promise<string> {
-    if (!this.vids.includes(vid))
-      return null;
+    // Always return example data due TwinPViewer inability to work with null data
+    // if (!this.vids.includes(vid))
+    //   return null;
 
     // TODO: Check for only allowed vid of example
-    return this.loadFileJson(this._files.examplePDB)
-      .then((o) => (o)['pdb']);
+    return (await this.loadFileJson(this._files.examplePDB))['pdb'];
+  }
+
+  async loadRealNums(vid: string): Promise<NumsType> {
+    return (await this.loadFileJson(this._files.realNums)) as NumsType;
   }
 
   async loadObsPtm(vid: string): Promise<ObsPtmType> {
     if (!this.vidsObsPtm.includes(vid))
       return null;
 
-    return this.loadFileJson(this._files.exampleOptm)
-      .then((o) => <ObsPtmType>o['ptm_observed']);
+    return (await this.loadFileJson(this._files.exampleOptm))['ptm_observed'] as ObsPtmType;
   }
 }

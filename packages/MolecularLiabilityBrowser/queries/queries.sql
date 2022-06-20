@@ -27,6 +27,7 @@ where v_id = @vid
 
 --name: getJsonComplementByVid
 --connection: MolecularLiabilityBrowserData:MLB
+--description: PDB positions map to real position  &
 --input: string vid = "VR000030945"
 select json
 from public.jsons_new
@@ -41,6 +42,7 @@ from db_v2.gdb_id_mappings
 
 --name: getJsonByVid
 --connection: MolecularLiabilityBrowserData:MLB
+--description: Chains seq & PTM predictions & Paratop predictions & CDR ranges
 --input: string vid = "VR000030945"
 select encode(json_data, 'escape')
 from db_v2.json_files
