@@ -1,6 +1,4 @@
-// import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
-// import * as DG from 'datagrok-api/dg';
+
 import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS} from './map';
 import {asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, asoGapmersGcrsToNucleotides,
@@ -8,7 +6,7 @@ import {asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   siRnaNucleotideToAxolabsSenseStrand, siRnaNucleotidesToGcrs, siRnaBioSpringToNucleotides,
   siRnaBioSpringToAxolabs, siRnaBioSpringToGcrs, siRnaAxolabsToNucleotides,
   siRnaAxolabsToBioSpring, siRnaAxolabsToGcrs, siRnaGcrsToNucleotides,
-  siRnaGcrsToBioSpring, siRnaGcrsToAxolabs, gcrsToNucleotides} from './converters';
+  siRnaGcrsToBioSpring, siRnaGcrsToAxolabs, gcrsToNucleotides, gcrsToLcms} from './converters';
 
 const noTranslationTableAvailable = 'No translation table available';
 export const undefinedInputSequence = 'Type of input sequence is undefined';
@@ -206,11 +204,11 @@ export function isValidSequence(sequence: string, format: string | null): {
   };
 }
 
-function getAllCodesOfSynthesizer(synthesizer: string): string[] {
+export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
   let codes: string[] = [];
   for (const technology of Object.keys(map[synthesizer]))
     codes = codes.concat(Object.keys(map[synthesizer][technology]));
-  return codes.concat(Object.keys(MODIFICATIONS));
+  return codes.concat(Object.keys(MODIFICATIONS)).concat(',');
 }
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): string[] {
@@ -273,6 +271,7 @@ export function convertSequence(sequence: string, output: {
       BioSpring: asoGapmersGcrsToBioSpring(sequence),
       Mermade12: gcrsToMermade12(sequence),
       GCRS: sequence,
+      LCMS: gcrsToLcms(sequence),
     };
   }
   if (output.synthesizer!.includes(SYNTHESIZERS.RAW_NUCLEOTIDES) && output.technology!.includes(TECHNOLOGIES.RNA)) {
@@ -310,6 +309,7 @@ export function convertSequence(sequence: string, output: {
       Axolabs: siRnaGcrsToAxolabs(sequence),
       MM12: gcrsToMermade12(sequence),
       GCRS: sequence,
+      LCMS: gcrsToLcms(sequence),
     };
   }
   if (output.synthesizer!.includes(SYNTHESIZERS.GCRS)) {
@@ -318,6 +318,7 @@ export function convertSequence(sequence: string, output: {
       Nucleotides: gcrsToNucleotides(sequence),
       GCRS: sequence,
       Mermade12: gcrsToMermade12(sequence),
+      LCMS: gcrsToLcms(sequence),
     };
   }
   if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12)) {
