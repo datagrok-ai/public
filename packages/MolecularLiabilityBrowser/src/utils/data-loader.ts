@@ -90,8 +90,6 @@ export abstract class DataLoader {
 
   abstract get refDf(): DG.DataFrame;
 
-  abstract get realNums(): NumsType;
-
   abstract init();
 
   protected async check_files(files: { [name: string]: string }): Promise<void> {
@@ -133,11 +131,13 @@ export abstract class DataLoader {
 
   abstract loadTreeDf(): Promise<DG.DataFrame>;
 
-  abstract loadExample(vid: string): Promise<JsonType>;
+  abstract loadJson(vid: string): Promise<JsonType>;
 
   /**
    */
   abstract loadPdb(vid: string): Promise<string>;
+
+  abstract loadRealNums(vid: string): Promise<NumsType>;
 
   /**
    * Get post observable translational modifications data for 'v_id'

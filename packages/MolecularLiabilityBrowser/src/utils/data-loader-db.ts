@@ -24,7 +24,6 @@ export class DataLoaderDb extends DataLoader {
     h_out: 'h_out.csv',
     l_out: 'l_out.csv',
     tree: 'tree.csv',
-    realNums: 'exampleNums.json',
   };
   private _vids: string[];
   private _vidsObsPtm: string[];
@@ -33,7 +32,6 @@ export class DataLoaderDb extends DataLoader {
   private _ptmMap: PtmMapType;
   private _cdrMap: CdrMapType;
   private _refDf: DG.DataFrame;
-  private _realNums: any;
 
   get vids(): string[] { return this._vids; }
 
@@ -48,8 +46,6 @@ export class DataLoaderDb extends DataLoader {
   get cdrMap(): CdrMapType { return this._cdrMap; }
 
   get refDf(): DG.DataFrame { return this._refDf; }
-
-  get realNums(): NumsType { return this._realNums; }
 
   async init() {
     // Here we should load files from src/externalData
@@ -94,10 +90,6 @@ export class DataLoaderDb extends DataLoader {
         (dfList) => {
           this._refDf = dfList[0];
         }),
-      _package.files.readAsText(this._files.realNums).then(
-        (v) => {
-          this._realNums = JSON.parse(v);
-        }),
     ]);
     const t3 = Date.now();
     console.debug(`DataLoaderDb check_files ${((t2 - t1) / 1000).toString()} s`);
@@ -130,7 +122,7 @@ export class DataLoaderDb extends DataLoader {
     return df;
   }
 
-  async loadExample(vid: string): Promise<JsonType> {
+  async loadJson(vid: string): Promise<JsonType> {
     if (!this.vids.includes(vid))
       return null;
 
@@ -144,6 +136,14 @@ export class DataLoaderDb extends DataLoader {
 
     return (await grok.functions.call(`${this._pName}:getPdbByVid`, {vid: vid}))
       .columns.byIndex(0).get(0);
+  }
+
+  async loadRealNums(vid: string): Promise<NumsType> {
+    if (!this.vids.includes(vid))
+      return null;
+
+    return JSON.parse((await grok.functions.call(`${this._pName}:getJsonComplementByVid`, {vid: vid}))
+      .columns.byIndex(0).get(0));
   }
 
   async loadHChainDf(): Promise<DG.DataFrame> {
