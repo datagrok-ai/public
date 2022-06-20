@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.50",
+  "version": "1.0.51",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -282,6 +282,9 @@
           "datagrok-api": "^1.0.0"
         },
         "1.0.15": {
+          "datagrok-api": "^1.0.0"
+        },
+        "1.1.0": {
           "datagrok-api": "^1.0.0"
         }
       },
