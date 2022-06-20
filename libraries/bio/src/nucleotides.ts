@@ -23,7 +23,7 @@ export class NucleotidesPalettes extends SeqPaletteBase {
 }
 
 export class Nucleotides {
-  static readonly SemType: string = 'MultipleAlignment';
+  static readonly SemType: string = 'Nucleotides';
 
   static readonly SemTypeMultipleAlignment: string = 'NucleotidesMultipleAlignment';
 
