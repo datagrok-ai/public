@@ -4,7 +4,7 @@
   "friendlyName":"Northwind",
   "parameters": {
     "server":"",
-    "db":"/home/www/release/servergrok/data/demo/northwind/northwind.mdb",
+    "db":"/home/grok/datagrok/data/demo/northwind/northwind.mdb",
     "port": 5432
   },
   "credentials" : {
