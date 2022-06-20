@@ -30,18 +30,12 @@ class ChemPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
-  detectMolBlocks(col) {
-    if (DG.Detector.sampleCategories(col, (s) => s.includes('M  END'))) {
+  detectMolecules(col) {
+    if (DG.Detector.sampleCategories(col, (s) => s.includes('M  END'), 1)) {
       col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.MOLBLOCK;
       return DG.SEMTYPE.MOLECULE;
     }
-  }
 
-  //tags: semTypeDetector
-  //input: column col
-  //output: string semType
-  detectRDSmiles(col) {
-    console.log('detecting');
     let lowerCaseName = col.name.toLowerCase();
     let likelyMolName = ChemPackageDetectors.likelyNames.some((likelyName) => lowerCaseName.endsWith(likelyName));
     let minUnique = likelyMolName ? 1 : 3;

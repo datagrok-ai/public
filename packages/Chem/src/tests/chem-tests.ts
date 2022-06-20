@@ -21,8 +21,9 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5`;
 
 const testSubstructure = 'C1CC1';
 
-category('chem', () => {
-  test('testDetectorSmiles', async () => {
+
+category('detectors', () => {
+  test('detectSmiles', async () => {
     const df = DG.DataFrame.fromCsv(await loadFileAsText('sar-small.csv'));
     let col = df.columns.byName('smiles');
     await grok.data.detectSemanticTypes(df);
@@ -52,7 +53,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.SMILES);
   });
 
-  test('testDetectorShortSmiles', async () => {
+  test('detectShortSmiles', async () => {
     let df = await dfFromColWithOneCategory('result', 'NO', 10);
     let col = df.columns.byName('result');
     await grok.data.detectSemanticTypes(df);
@@ -70,7 +71,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     expect(col.semType, null);
   });
 
-  test('testDetectorMolblock', async () => {
+  test('detectMolblock', async () => {
     const df = DG.DataFrame.fromCsv(await loadFileAsText('molblocks.csv'));
     const col = df.columns.byName('scaffold');
     col.name = 'not familiar name';
@@ -79,20 +80,23 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.MOLBLOCK);
   });
 
-  test('testDetectorMolblockSDF', async () => {
+  test('detectMolblockSDF', async () => {
     const [df] = _importSdf(await loadFileAsBytes('mol1K.sdf'));
     await grok.data.detectSemanticTypes(df);
     const col = df.columns.byName('molecule');
     expect(col.semType, DG.SEMTYPE.MOLECULE);
     expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.MOLBLOCK);
   });
+});
 
+
+category('substructure search', () => {
   test('searchSubstructure.sar-small', async () => {
     await _testSearchSubstructureAllParameters(
       _testSearchSubstructureSARSmall);
   });
 
-  test('searchSustructureColWithoutDf', async () => {
+  test('searchSubstructureColWithoutDf', async () => {
     const col = DG.Column.fromStrings('smiles', [
       'CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1C4CC4',
       'Fc1cc2C(=O)C(=CN(C3CC3)c2cc1N4CCNCC4)c5oc(COc6ccccc6)nn5',
@@ -101,24 +105,24 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
   });
 
   //Number of molecules is smaller than a number of threads
-  test('searchSustructure.5_rows', async () => {
+  test('searchSubstructure.5_rows', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
   });
 
-  test('searchSustructureWithMalformedMolString', async () => {
+  test('searchSubstructureWithMalformedMolString', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     df.columns.byName('smiles').set(4, 'qq');
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
   });
 
-  test('searchSustructureWithNull', async () => {
+  test('searchSubstructureWithNull', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     df.columns.byName('smiles').set(4, null);
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
   });
 
-  test('searchSustructurePerformance', async () => {
+  test('searchSubstructurePerformance', async () => {
     const df = grok.data.demo.molecules(50000);
 
     const startTime = performance.now();
@@ -135,14 +139,14 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     console.log(`last Call to WithLibrary took ${endTime - midTime2} milliseconds`);
   });
 
-  test('searchSustructureAfterChanges', async () => {
+  test('searchSubstructureAfterChanges', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
     df.columns.byName('smiles').set(0, 'COc1ccc2cc(ccc2c1)C(C)C(=O)Oc3ccc(C)cc3OC');
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [2]);
   });
 
-  test('searchSustructureWith2Columns', async () => {
+  test('searchSubstructureWith2Columns', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     const col = DG.Column.fromStrings('smiles1', [
       'COc1ccc2cc(ccc2c1)C(C)C(=O)Oc3ccc(C)cc3OC',
@@ -155,6 +159,11 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     await _testSearchSubstructure(df, 'smiles', testSubstructure, [0, 2]);
     await _testSearchSubstructure(df, 'smiles1', testSubstructure, [1, 4]);
   });
+});
+
+
+category('chem', () => {
+
 
   test('findSimilar.sar-small', async () => {
     const dfInput = DG.DataFrame.fromCsv(await loadFileAsText('sar-small.csv'));

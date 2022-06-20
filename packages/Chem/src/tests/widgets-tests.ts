@@ -15,7 +15,7 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import { getDescriptorsSingle } from '../descriptors/descriptors-calculation';
 
 
-category('Chem: Widgets', async () => {
+category('widgets', async () => {
   const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
 
   before(async () => {
