@@ -1,12 +1,15 @@
 import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
 import {_testSearchSubstructure,
   _testSearchSubstructureAllParameters,
-  _testSearchSubstructureSARSmall, loadFileAsText} from './utils';
+  _testSearchSubstructureSARSmall,
+  loadFileAsText, loadFileAsBytes,
+  dfFromColWithOneCategory} from './utils';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {_testDiversitySearchViewerOpen, _testSimilaritySearchFunctionality,
   _testSimilaritySearchViewerOpen} from './similarity-diversity-utils';
+import {_importSdf} from '../open-chem/sdf-importer';
 
 //csv with C1CC1 as substructure in pos 0 and 2
 const testCsv = `smiles
@@ -19,6 +22,71 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5`;
 const testSubstructure = 'C1CC1';
 
 category('chem', () => {
+  test('testDetectorSmiles', async () => {
+    const df = DG.DataFrame.fromCsv(await loadFileAsText('sar-small.csv'));
+    let col = df.columns.byName('smiles');
+    await grok.data.detectSemanticTypes(df);
+    expect(col.semType, DG.SEMTYPE.MOLECULE);
+    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.SMILES);
+
+    const testSmiles2 = `smiles
+O=C1CN=C(c2ccccc2N1)C3CCCCC3
+CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+CC(C)CCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
+O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
+CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
+    const df2 = DG.DataFrame.fromCsv(testSmiles2);
+    col = df2.columns.byName('smiles');
+    await grok.data.detectSemanticTypes(df2);
+    expect(col.semType, DG.SEMTYPE.MOLECULE);
+    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.SMILES);
+
+    const df3 = DG.DataFrame.fromCsv(testSmiles2);
+    col = df3.columns.byName('smiles');
+    col.set(2, 'not a molstring');
+    col.set(4, 'not a molstring');
+    await grok.data.detectSemanticTypes(df3);
+    expect(col.semType, DG.SEMTYPE.MOLECULE);
+    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.SMILES);
+  });
+
+  test('testDetectorShortSmiles', async () => {
+    let df = await dfFromColWithOneCategory('result', 'NO', 10);
+    let col = df.columns.byName('result');
+    await grok.data.detectSemanticTypes(df);
+    expect(col.semType, null);
+
+    df = await dfFromColWithOneCategory('smiles', 'NO', 10);
+    col = df.columns.byName('smiles');
+    await grok.data.detectSemanticTypes(df);
+    expect(col.semType, DG.SEMTYPE.MOLECULE);
+    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.SMILES);
+
+    df = await dfFromColWithOneCategory('smiles', 'OK', 10);
+    col = df.columns.byName('smiles');
+    await grok.data.detectSemanticTypes(df);
+    expect(col.semType, null);
+  });
+
+  test('testDetectorMolblock', async () => {
+    const df = DG.DataFrame.fromCsv(await loadFileAsText('molblocks.csv'));
+    const col = df.columns.byName('scaffold');
+    col.name = 'not familiar name';
+    await grok.data.detectSemanticTypes(df);
+    expect(col.semType, DG.SEMTYPE.MOLECULE);
+    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.MOLBLOCK);
+  });
+
+  test('testDetectorMolblockSDF', async () => {
+    const [df] = _importSdf(await loadFileAsBytes('mol1K.sdf'));
+    await grok.data.detectSemanticTypes(df);
+    const col = df.columns.byName('molecule');
+    expect(col.semType, DG.SEMTYPE.MOLECULE);
+    expect(col.tags[DG.TAGS.UNITS], DG.UNITS.Molecule.MOLBLOCK);
+  });
+
   test('searchSubstructure.sar-small', async () => {
     await _testSearchSubstructureAllParameters(
       _testSearchSubstructureSARSmall);
