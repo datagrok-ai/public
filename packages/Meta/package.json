@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.48",
+  "version": "1.0.49",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -1502,7 +1502,7 @@
     "gridextdemo": {
       "dependencies": {
         "1.0.0": {
-          "datagrok-api": ">"
+          "datagrok-api": "^1.0.0"
         }
       },
       "description": "Demos of Grid Extensions",
