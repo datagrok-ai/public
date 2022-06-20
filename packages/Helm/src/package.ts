@@ -67,16 +67,15 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     // @ts-ignore
     new JSDraw2.Editor(host, { width: w, height: h, skin: "w8", viewonly: true });
     
-    let view = ui.div();
-    let app: { canvas: { helm: { setSequence: (arg0: any, arg1: string) => void; }; }; };
-    setTimeout(function () {
-      //@ts-ignore
-      org.helm.webeditor.MolViewer.molscale = 0.8;
-      //@ts-ignore
-      app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
-    });
-
-    host.addEventListener('dblclick', function(){
+    host.addEventListener('dblclick', function() {
+      let view = ui.div();
+      let app: { canvas: { helm: { setSequence: (arg0: any, arg1: string) => void; }; }; };
+      setTimeout(function () {
+        //@ts-ignore
+        org.helm.webeditor.MolViewer.molscale = 0.8;
+        //@ts-ignore
+        app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
+      });
       setTimeout(function() {
         //@ts-ignore
         app.canvas.helm.setSequence(host.getAttribute('data'), 'HELM');
