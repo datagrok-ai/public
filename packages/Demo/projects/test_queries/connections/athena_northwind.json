@@ -10,8 +10,8 @@
   },
   "credentials" : {
     "parameters" : {
-      "login": "AKIA3FCRUQ6CIZE355ND",
-      "password": "hZM5Zigmi3yd0KlLYX36V9pejD2vfqgOqes+fhz9"
+      "login": "",
+      "password": ""
     }
   },
   "dataSource":"Athena",
