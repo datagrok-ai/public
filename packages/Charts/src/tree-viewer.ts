@@ -3,41 +3,33 @@ import { EChartViewer, Utils } from './echart-viewer';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 export class TreeViewer extends EChartViewer {
-  layout: string;
-  orient: string;
+  layout: layoutType;
+  orient: orientation;
   expandAndCollapse: boolean;
-  edgeShape: string;
-  symbol: string;
+  edgeShape: edgeShape;
+  symbol: symbolType;
   symbolSize: number;
-  legendColors: string[];
-  newickCol: DG.Column | null = null;
+  hierarchyColumnNames: string[];
 
   constructor() {
     super();
 
     this.initCommonProperties();
-    this.layout = this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'] });
-    this.orient = this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'] });
+    this.layout = <layoutType>this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'] });
+    this.orient = <orientation>this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'] });
     this.expandAndCollapse = this.bool('expandAndCollapse', true);
     this.animationDuration = this.int('animationDuration', 750);
-    this.edgeShape = this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'] });
-    this.symbol = this.string('symbol', 'emptyCircle', { choices: [
+    this.edgeShape = <edgeShape>this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'] });
+    this.symbol = <symbolType>this.string('symbol', 'emptyCircle', { choices: [
       'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
     ] });
     this.symbolSize = this.int('symbolSize', 7);
-
-    this.legendColors = ['#beb0de', '#deb2b0', '#6495ed', '#b0c4de', '#ffc0cb'];
+    this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
 
     this.option = {
       tooltip: {
         trigger: 'item',
         triggerOn: 'mousemove',
-      },
-      legend: {
-        top: '2%',
-        left: '2%',
-        orient: 'vertical',
-        data: [],
       },
       series: [
         {
@@ -64,69 +56,40 @@ export class TreeViewer extends EChartViewer {
     this.onPropertyChanged(null);
   }
 
-  setForestOpts() {
-    const treeOptions = this.option.series[0];
-    this.option.series.length = 0;
-
-    for (const i of this.dataFrame.filter.getSelectedIndexes()) {
-      const tree = this.parseNwk(this.newickCol!.get(i));
-      const name = `tree-${i}`;
-      const color = this.legendColors[i % this.legendColors.length];
-
-      this.option.series.push({
-        ...treeOptions,
-        name: name,
-        data: [tree],
-
-        orient: ['LR', 'TB', 'RL', 'BT'][i % 4],
-        top: ['10%', '60%', '10%', '10%'][i % 4],
-        left: ['60%', '0%', '10%', '0%'][i % 4],
-        bottom: ['10%', '10%', '10%', '50%'][i % 4],
-        right: ['10%', '10%', '60%', '10%'][i % 4],
-
-        lineStyle: { color },
-        emphasis: { focus: 'descendant' },
-      });
-
-      this.option.legend.data.push({
-        name: name,
-        icon: 'roundRect',
-        itemStyle: { color },
-      });
-    }
-  }
-
-  parseNwk(s: string) {
-    return { name: 'A', children: [
-      { name: 'B', value: 123 }, { name: 'C', children: [{ name: 'D', value: 456 }, { name: 'E', value: 789 },
-      ] }] };
-  }
-
-  updateSeriesData() {
-    this.newickCol = this.dataFrame.columns.bySemType('newick');
-    if (this.newickCol)
-      this.setForestOpts();
-    else
-      this.option.series[0].data = [Utils.toTree(this.dataFrame, ['sex', 'race', 'dis_pop'], this.dataFrame.filter)];
-  }
-
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
-    const properties = p !== null ? [p] : this.props.getProperties();
-    const isForest = this.option.series.length > 1;
+    if (p?.name === 'hierarchyColumnNames')
+      this.render();
+    else
+      super.onPropertyChanged(p, render);
+  }
 
-    for (const p of properties) {
-      for (const chart of this.option.series) {
-        if (isForest && p.name === 'orient') continue;
-        chart[p.name] = p.get(this);
-      }
+  onTableAttached() {
+    const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
+      col1.categories.length - col2.categories.length);
+
+    if (categoricalColumns.length < 1) {
+      return;
     }
 
-    if (render)
-      this.chart.setOption(this.option);
+    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
+      this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
+
+    super.onTableAttached();
+  }
+
+  getSeriesData() {
+    return [Utils.toTree(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter)];
   }
 
   render() {
-    this.updateSeriesData();
-    this.chart.setOption(this.option);
+    if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
+      return;
+
+    super.render();
   }
 }
+
+type layoutType = 'orthogonal' | 'radial';
+type orientation = 'LR' | 'RL' | 'TB' | 'BT';
+type edgeShape = 'curve' | 'polyline';
+type symbolType = 'circle' | 'emptyCircle' | 'rect' | 'roundRect' | 'triangle' | 'diamond' | 'pin' | 'arrow' | 'none';
