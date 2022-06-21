@@ -759,12 +759,12 @@ export class Grid extends Viewer {
   }
 
   /** Column labels height */
-  get colHeadersHeight(): number {
+  get colHeaderHeight(): number {
     return toJs(api.grok_Grid_Get_ColHeaderHeight(this.dart));
   }
 
   /** Column labels box */
-  get colHeadersBox(): Rect {
+  get colHeaderBox(): Rect {
     return toJs(api.grok_Grid_Get_ColHeaderRect(this.dart));
   }
 
