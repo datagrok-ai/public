@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.52",
+  "version": "1.0.53",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -1078,6 +1078,9 @@
         },
         "0.0.31": {
           "datagrok-api": "^0.94.10"
+        },
+        "1.0.0": {
+          "datagrok-api": "^1.4.1"
         }
       },
       "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
