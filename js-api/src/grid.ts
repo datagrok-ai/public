@@ -758,6 +758,16 @@ export class Grid extends Viewer {
     return toJs(api.grok_Grid_Get_HorzScroll(this.dart));
   }
 
+  /** Column labels height */
+  get colHeaderHeight(): number {
+    return toJs(api.grok_Grid_Get_ColHeaderHeight(this.dart));
+  }
+
+  /** Column labels box */
+  get colHeaderBox(): Rect {
+    return toJs(api.grok_Grid_Get_ColHeaderRect(this.dart));
+  }
+
   /** Forces the grid to execute calculations that were postponed before the next rendering (such as recalculating layout).
    * Call it in case the client code changes column widths and needs to access the new recalculated layout. */
   runPostponedComputations(): void {
