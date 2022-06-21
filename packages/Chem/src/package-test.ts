@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/chem-tests';
+import './tests/detector-tests';
 import './tests/widgets-tests';
 import './tests/chem-space-tests';
 

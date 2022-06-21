@@ -2,8 +2,15 @@ class ChemPackageDetectors extends DG.Package {
 
   static likelyNames = [
     'structure', 'mol', 'molecule', 'smiles', 'rdkit',
-    'canonical_smiles', 'core', 'scaffold',
-    'r1', 'r2', 'r3', 'r4', 'r5'];
+    'canonical_smiles', 'core', 'scaffold'];
+
+  // typical r-group names, such as "R1" or "R100-family"
+  static likelyRegexps = [/[r|R][0-9]+(\W|$)/];
+
+  static likelyChemicalName(s) {
+    return ChemPackageDetectors.likelyNames.some((likelyName) => s.endsWith(likelyName)) ||
+      ChemPackageDetectors.likelyRegexps.some((regexp) => regexp.test(s));
+  }
 
   static validSmilesChars = new Uint32Array([0, 671083320, 1073741823, 134217726, 0, 0, 0, 0]);
   static validFirstSmilesChars = new Uint32Array([0, 256, 134857308, 573448, 0, 0, 0, 0]);
@@ -37,7 +44,7 @@ class ChemPackageDetectors extends DG.Package {
     }
 
     let lowerCaseName = col.name.toLowerCase();
-    let likelyMolName = ChemPackageDetectors.likelyNames.some((likelyName) => lowerCaseName.endsWith(likelyName));
+    let likelyMolName = ChemPackageDetectors.likelyChemicalName(lowerCaseName);
     let minUnique = likelyMolName ? 1 : 3;
     let longest = grok_Column_Aggregate(col.dart, 'longest');
     if (!likelyMolName && longest.length < 5)
