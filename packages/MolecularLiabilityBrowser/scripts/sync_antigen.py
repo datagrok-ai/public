@@ -147,9 +147,6 @@ class CdrLayoutBuilder:
             return tgt_pos_name
 
         def build_record(region: VdRegion):
-            # Get position name from self._cdr_df by position name specified in region object
-            pos_start = None
-
             pos_start = NumberingSchemeMapper.simplify_position_name(
                 self._scheme_mapper.map_first(scheme_name, region.chain[0]) if region.pos_start == 'start'
                 else get_position(region.pos_start, region.pos_start_shift))
