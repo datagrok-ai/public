@@ -19,6 +19,12 @@ declare let grok: any;
 const STORAGE_NAME = 'sketcher';
 const KEY = 'selected';
 const DEFAULT_SKETCHER = 'openChemLibSketcher';
+const WHITE_MOLBLOCK = `
+  Datagrok empty molecule
+
+0  0  0  0  0  0  0  0  0  0999 V2000
+M  END
+`;
 
 let extractors: Func[];  // id => molecule
 
@@ -262,7 +268,7 @@ export namespace chem {
         let savedMolFile = this.getMolFile();
         ui.dialog()
           .add(this.createInplaceModeSketcher())
-          .onCancel(() => this.setMolFile(savedMolFile))
+          .onCancel(() => this.setMolFile(WHITE_MOLBLOCK))
           .onOK(() => {
             this.updateExtSketcherContent(this.extSketcherDiv);
             Sketcher.addRecent(savedMolFile);
