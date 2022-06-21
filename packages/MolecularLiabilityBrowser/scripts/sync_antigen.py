@@ -1,22 +1,19 @@
 #!/usr/bin/env python
+
 import os.path
-import sys
 from types import SimpleNamespace
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import re
-import orjson as json
-
-import psycopg2 as pg
 
 import click
 from click_default_group import DefaultGroup
 
 import sqlalchemy as sa
+import sqlalchemy.dialects.postgresql as sapg
 import sqlalchemy.engine as sae
 import sqlalchemy.orm as sao
-import sqlalchemy.dialects.postgresql as sapg
 
 meta_public = sa.MetaData(schema='public')
 meta_v2 = sa.MetaData(schema='db_v2')
@@ -24,6 +21,157 @@ Base_v2 = sao.declarative_base(metadata=meta_v2)
 
 scheme_list = ['chothia', 'imgt', 'kabat']
 chain_list = ['heavy', 'light']
+
+
+class NumberingSchemeMapper:
+    def __init__(self, numbering_scheme_f):
+        # We have to replace column names, due to some confusion in the file headers
+        self._ns_df: pd.DataFrame = pd.read_csv(
+            numbering_scheme_f, sep='\t', skiprows=[0, 1, ], dtype=str,
+            names=['aho', 'chothia', 'chothia_enh', 'kabat', 'imgt'])
+
+    def map_position(self, src_scheme: str, src_pos_name: str, pos_shift: int, tgt_scheme: str):
+        src_pos_list: list[str] = self._ns_df.loc[:, src_scheme].to_list()
+        pos_idx = src_pos_list.index(src_pos_name)
+        # if pos_idx == -1:
+        #     raise ValueError(f"Position '{src_pos_name}' not found in numbering scheme definitions.")
+        tgt_scheme_col_idx = self._ns_df.columns.to_list().index(tgt_scheme)
+        # if tgt_scheme_col_idx == -1:
+        #     raise ValueError(f"Target scheme '{tgt_scheme}' not fount in numbering scheme definitions.")
+        return self._ns_df.iloc[pos_idx + pos_shift, tgt_scheme_col_idx]
+
+    def map_first(self, scheme_name: str, chain_sel: str):
+        pos_name_res: str = self._ns_df.loc[self._ns_df[scheme_name].str.startswith(chain_sel), scheme_name].iloc[0]
+        return pos_name_res
+
+    def map_last(self, scheme_name: str, chain_sel: str):
+        pos_name_res: str = self._ns_df.loc[self._ns_df[scheme_name].str.startswith(chain_sel), scheme_name].iloc[-1]
+        return pos_name_res
+
+    @classmethod
+    def simplify_position_name(cls, pos_name):
+        """
+        :param pos_name: position name from (.tsv) text files with
+                         numbering scheme definitions/mapping and cdr definitions
+        :return: simplified position name
+        """
+        pos_m: re.Match = re.search(r'[LH]:(\d+):([~A-Z])', pos_name)
+        pos_res: str = pos_m.group(1) if pos_m.group(2) == '~' \
+            else f'{pos_m.group(1)}{pos_m.group(2)}'
+        return pos_res
+
+
+class VdRegion:
+    def __init__(self, chain: str, type: str, name: str, order: int,
+                 pos_start: str, pos_start_shift: int, pos_end: str, pos_end_shift: int):
+        self.chain = chain
+        self.type = type
+        self.name = name
+        self.order = order
+        self.pos_start = pos_start
+        self.pos_start_shift = pos_start_shift
+        self.pos_end = pos_end
+        self.pos_end_shift = pos_end_shift
+
+    def __repr__(self):
+        return f"chain: '{self.chain}', type: '{self.type}', name: '{self.name}', order: {self.order}, " \
+               f"start: '{self.pos_start}' {self.pos_start_shift}, end: '{self.pos_end}' {self.pos_end_shift}"
+
+    def __str__(self):
+        return self.__repr__()
+
+
+class CdrLayoutBuilder:
+    """
+    Generalized description of the area of regions in terms
+    of positions names as defined in file cdr_definitions.tsv
+    """
+    cdr_region_list = [
+        VdRegion('Light', 'framework', 'FR1', 1, 'start', +1, 'L1 cdr_start', -1),
+        VdRegion('Heavy', 'framework', 'FR1', 1, 'start', +1, 'H1 cdr_start', -1),
+
+        VdRegion('Light', 'cdr', 'CDR1', 2, 'L1 cdr_start', 0, 'L1 cdr_end', 0),
+        VdRegion('Heavy', 'cdr', 'CDR1', 2, 'H1 cdr_start', 0, 'H1 cdr_end', 0),
+
+        VdRegion('Light', 'framework', 'FR2', 3, 'L1 cdr_end', +1, 'L2 cdr_start', -1),
+        VdRegion('Heavy', 'framework', 'FR2', 3, 'H1 cdr_end', +1, 'H2 cdr_start', -1),
+
+        VdRegion('Light', 'cdr', 'CDR2', 4, 'L2 cdr_start', 0, 'L2 cdr_end', 0),
+        VdRegion('Heavy', 'cdr', 'CDR2', 4, 'H2 cdr_start', 0, 'H2 cdr_end', 0),
+
+        VdRegion('Light', 'framework', 'FR3', 5, 'L2 cdr_end', +1, 'L3 cdr_start', -1),
+        VdRegion('Heavy', 'framework', 'FR3', 5, 'H2 cdr_end', +1, 'H3 cdr_start', -1),
+
+        VdRegion('Light', 'cdr', 'CDR3', 6, 'L3 cdr_start', 0, 'L3 cdr_end', 0),
+        VdRegion('Heavy', 'cdr', 'CDR3', 6, 'H3 cdr_start', 0, 'H3 cdr_end', 0),
+
+        VdRegion('Light', 'framework', 'FR4', 7, 'L3 cdr_end', +1, 'end', -1),
+        VdRegion('Heavy', 'framework', 'FR4', 7, 'H3 cdr_end', +1, 'end', -1),
+    ]
+
+    def __init__(self, cdr_f, numbering_scheme_f):
+        # We have to replace column names, due to some confusion in the file headers
+        self._cdr_df: pd.DataFrame = pd.read_csv(
+            cdr_f, sep='\t', skiprows=[0, 1, 2, ], dtype=str,
+            names=['chothia:chothia', 'aroop:chothia', 'north:aho', 'martin:aho', 'kabat:aho'])
+        self._scheme_mapper = NumberingSchemeMapper(numbering_scheme_f)
+
+    def get_cdr_region_list(self, scheme_name: str, cdr_name: str, scheme_layout_table: sa.Table):
+        """
+        List of regions for numbering scheme and cdr definition arguments.
+        :param scheme_name:
+        :param cdr_name:
+        :param scheme_layout_table: to generate Insert objects
+        :return: List of regions (preferable records of table 'scheme_layout')
+        """
+
+        def get_position(region_pos_name: str, region_pos_shift: int) -> str:
+            # search region_pos_name in self._cdr_df row names
+            cdr_row_idx = self._cdr_df.index.to_list().index(region_pos_name)
+            # if cdr_row_idx == -1:
+            #     raise ValueError(f"Region position name '{region_pos_name}' not found in cdr definitions.")
+
+            tgt_pos_name: str
+            if f'{cdr_name}:{scheme_name}' in self._cdr_df.columns:
+                tgt_pos_name = self._cdr_df.loc[region_pos_name, f'{cdr_name}:{scheme_name}']
+            else:
+                cdr_col_idx = [cdr_col_name.split(':')[0] for cdr_col_name in self._cdr_df.columns].index(cdr_name)
+                # if cdr_col_idx == -1:
+                #     raise ValueError(f"CDR '{cdr_name}' not found in cdr definitions.")
+
+                cdr_src_scheme = self._cdr_df.columns[cdr_col_idx].split(':')[1]
+                cdr_pos_name = self._cdr_df.iloc[cdr_row_idx, cdr_col_idx]
+                tgt_pos_name = self._scheme_mapper \
+                    .map_position(cdr_src_scheme, cdr_pos_name, region_pos_shift, scheme_name)
+
+            return tgt_pos_name
+
+        def build_record(region: VdRegion):
+            # Get position name from self._cdr_df by position name specified in region object
+            pos_start = None
+
+            pos_start = NumberingSchemeMapper.simplify_position_name(
+                self._scheme_mapper.map_first(scheme_name, region.chain[0]) if region.pos_start == 'start'
+                else get_position(region.pos_start, region.pos_start_shift))
+
+            pos_end = NumberingSchemeMapper.simplify_position_name(
+                self._scheme_mapper.map_last(scheme_name, region.chain[0]) if region.pos_end == 'end'
+                else get_position(region.pos_end, region.pos_end_shift))
+
+            rec_res = scheme_layout_table.insert().values(
+                scheme=scheme_name,
+                cdr=cdr_name,
+                type=region.type,
+                name=region.name,
+                chain=region.chain,
+                order=region.order,
+                position_start_name=pos_start,
+                position_end_name=pos_end
+            )
+            return rec_res
+
+        rec_list_res = [build_record(region) for region in CdrLayoutBuilder.cdr_region_list]
+        return rec_list_res
 
 
 def build_antibody_anarci_table(antibody: sa.Table, scheme: str, chain: str, anarci_path: str) -> sa.Table:
@@ -135,15 +283,40 @@ def build_schema(anarci_path: str):
         sa.Column('v_id', sa.String(), sa.ForeignKey(antibody.columns['v_id'])),
     )
 
-    # antibody_anarci_tables: dict[str, dict[str, any]] = \
-    #     dict([(
-    #         scheme,
-    #         dict([(
-    #             chain,
-    #             build_antibody_anarci_table(antibody, scheme, chain, anarci_path)
-    #         )  # ANARCI results file name
-    #             for chain in chain_list])
-    #     ) for scheme in scheme_list])
+    antibody_anarci_tables: dict[str, dict[str, any]] = \
+        dict([(
+            scheme,
+            dict([(
+                chain,
+                build_antibody_anarci_table(antibody, scheme, chain, anarci_path)
+            )  # ANARCI results file name
+                for chain in chain_list])
+        ) for scheme in scheme_list])
+
+    scheme = sa.Table(
+        'scheme', meta_v2,
+        sa.Column('scheme_id', sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column('scheme', sa.String(), nullable=False, unique=True)
+    )
+
+    cdr = sa.Table(
+        'cdr', meta_v2,
+        sa.Column('cdr_id', sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column('cdr', sa.String(), nullable=False, unique=True),
+    )
+
+    scheme_layout = sa.Table(
+        'scheme_layout', meta_v2,
+        sa.Column('region_id', sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column('scheme', sa.String, sa.ForeignKey(scheme.columns['scheme'])),
+        sa.Column('cdr', sa.String, sa.ForeignKey(cdr.columns['cdr'])),
+        sa.Column('type', sa.String(), nullable=False),
+        sa.Column('name', sa.String(), nullable=False),
+        sa.Column('chain', sa.String(), nullable=False),
+        sa.Column('order', sa.Integer, nullable=False),
+        sa.Column('position_start_name', sa.String(), nullable=True),
+        sa.Column('position_end_name', sa.String(), nullable=True),
+    )
 
     return SimpleNamespace(
         antigen=antigen,
@@ -151,7 +324,10 @@ def build_schema(anarci_path: str):
         antibody2antigen=antibody2antigen,
         tree=tree,
         antibody2tree=antibody2tree,
-        # antibody_anarci_tables=antibody_anarci_tables
+        antibody_anarci_tables=antibody_anarci_tables,
+        scheme=scheme,
+        cdr=cdr,
+        scheme_layout=scheme_layout,
     )
 
 
@@ -205,6 +381,58 @@ def load_data_ab2tr(conn: sae.Connection, antibody_df: pd.DataFrame, tree_df, ds
     k = 11
 
 
+def load_data_scheme(conn: sae.Connection, scheme: sa.Table):
+    ins_dict = {
+        'imgt': scheme.insert().values(scheme='imgt'),
+        'aho': scheme.insert().values(scheme='aho'),
+        'chothia': scheme.insert().values(scheme='chothia'),
+        'kabat': scheme.insert().values(scheme='kabat'),
+    }
+    for (scheme_name, scheme_ins) in ins_dict.items():
+        scheme_check_stmt = sa.select(scheme).filter_by(scheme=scheme_name)
+        scheme_check_res = conn.execute(scheme_check_stmt).one_or_none()
+        if not scheme_check_res:
+            conn.execute(scheme_ins)
+
+
+def load_data_cdr(conn: sae.Connection, cdr: sa.Table):
+    ins_dict = {
+        'chothia': cdr.insert().values(cdr='chothia'),
+        'aroop': cdr.insert().values(cdr='aroop'),
+        'north': cdr.insert().values(cdr='north'),
+        'martin': cdr.insert().values(cdr='martin'),
+        'kabat': cdr.insert().values(cdr='kabat'),
+    }
+    for (cdr_name, cdr_ins) in ins_dict.items():
+        cdr_check_stmt = sa.select(cdr).filter_by(cdr=cdr_name)
+        cdr_check_res = conn.execute(cdr_check_stmt).one_or_none()
+        if not cdr_check_res:
+            conn.execute(cdr_ins)
+
+
+def load_data_scheme_layout_for_scheme_cdr(
+        conn: sae.Connection, cdr_layout_builder: CdrLayoutBuilder,
+        scheme_layout_table: sa.Table, scheme_name: str, cdr_name: str) -> None:
+    rec_list = cdr_layout_builder.get_cdr_region_list(scheme_name, cdr_name, scheme_layout_table)
+    for rec in rec_list:
+        conn.execute(rec)
+
+
+def load_data_scheme_layout(conn: sae.Connection,
+                            scheme_table: sa.Table, cdr_table: sa.Table,
+                            cdr_layout_builder: CdrLayoutBuilder, scheme_layout_table: sa.Table):
+    for (scheme_id, scheme_name) in conn.execute(sa.select(scheme_table)).all():
+        for (crd_id, cdr_name) in conn.execute(sa.select(cdr_table)).all():
+            layout_check_res = conn.execute(
+                sa.select(scheme_layout_table).filter_by(scheme=scheme_name, cdr=cdr_name)).all()
+            if len(layout_check_res) == 0:
+                load_data_scheme_layout_for_scheme_cdr(
+                    conn, cdr_layout_builder, scheme_layout_table, scheme_name, cdr_name)
+            else:
+                print(f"There are already {len(layout_check_res)} layout records "
+                      f"for scheme '{scheme_name}' cdr '{cdr_name}'.")
+
+
 @click.group(cls=DefaultGroup, default='main')
 def cli():
     pass
@@ -238,15 +466,21 @@ def cli():
 @click.option('--anarci-path', 'anarci_path',
               help='Path to MA ANARCI .csv files',
               type=click.Path(exists=True))
+@click.option('--numbering-scheme', 'numbering_scheme_f',
+              help='Text (.tsv) file with mapping numbering schemes positions',
+              type=click.File('r'))
+@click.option('--cdr', 'cdr_f',
+              help='Text (.tsv) file with cdr regions definitions',
+              type=click.File('r'))
 @click.pass_context
-def main(ctx, conn_str, ag_f, ab_f, ab2ag_f, tree_f, anarci_path):
+def main(ctx, conn_str, ag_f, ab_f, ab2ag_f, tree_f, anarci_path, numbering_scheme_f, cdr_f):
     s = build_schema(anarci_path)
 
     engine = sa.create_engine(conn_str)
 
     meta_v2.create_all(bind=engine)
 
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         antigen_fdf: pd.DataFrame = pd.read_csv(ag_f, dtype=str)
         antigen_sdf: pd.DataFrame = pd.read_sql_table(table_name=s.antigen.name, schema=s.antigen.schema, con=conn)
 
@@ -290,11 +524,16 @@ def main(ctx, conn_str, ag_f, ab_f, ab2ag_f, tree_f, anarci_path):
             .to_sql(name=s.antibody2antigen.name, schema=s.antibody2antigen.schema, con=conn, index=False,
                     if_exists='append')
 
-        # load_data_antibody_anarci(conn, antibody_fdf, s.antibody_anarci_tables)
+        load_data_antibody_anarci(conn, antibody_fdf, s.antibody_anarci_tables)
 
         load_data_tree(conn, antibody_fdf, tree_f, s.tree)
         tree_sdf: pd.DataFrame = pd.read_sql_table(table_name=s.tree.name, schema=s.tree.schema, con=conn)
         load_data_ab2tr(conn, antibody_fdf, tree_sdf, s.antibody2tree)
+
+        load_data_scheme(conn, s.scheme)
+        load_data_cdr(conn, s.cdr)
+        cdr_layout_builder = CdrLayoutBuilder(cdr_f, numbering_scheme_f)
+        load_data_scheme_layout(conn, s.scheme, s.cdr, cdr_layout_builder, s.scheme_layout, )
 
         k = 11
 
