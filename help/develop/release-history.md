@@ -1,6 +1,39 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-21 Dev build 1.4.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Grok Spawner: create endpoint for docker build from Dockerfile 
+* Packages Manager (WIP)
+* Packages View: visual improvements 
+* Grid: html rendering: automatically annotating host div with semantic type (WIP)
+* Closes #699: Valid formula line on scatter plot is not shown if one of the scatter plot lines is invalid 
+* Work in progress. 
+* Merged in spodolskaya/testtrack (pull request #179) 
+* Changing the behavior of ESC button in the filter panel #644 
+* (Bug) Semantic type detection: column with manually assigned sem types are being auto-detected 
+* Closes #642: Autodetection of Structure columns imported from external files 
+* Package content validation: up-to-date bundle check 
+* Closes #719: Viewers: current object won't change after viewer properties are edited 
+* Chem: v1.0.2 
+* Chem: #697 Close preserves changes, x\- button recovers initial sketch 
+* Closes #718: Custom categorical columns sort order in not reflected on plots after page reload 
+* MLBData: set category to "Bioinformatics" 
+* Closes #605: [Filter Panel] Search doesn't work in the column list for adding column filter ("+" icon) 
+* MLB: Buildup regions layout for cdr definition/numbering scheme combinations 
+* MLB: Buildup regions layout for cdr definition/numbering scheme combinations fix 
+
+
 # 2022-06-17 Dev build 1.4.1
 
 ## Latest Docker Images
