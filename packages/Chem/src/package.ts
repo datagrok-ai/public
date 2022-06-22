@@ -208,7 +208,6 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 export async function searchSubstructure(
   molStringsColumn: DG.Column, molString: string,
   substructLibrary: boolean, molBlockFailover: string) : Promise<DG.Column<any>> {
-
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
   assure.notNull(substructLibrary, 'substructLibrary');
