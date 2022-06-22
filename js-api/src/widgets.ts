@@ -578,11 +578,11 @@ export class Dialog extends DartWidget {
   }
 
   /** Creates a new dialog with the specified options. */
-  static create(options?: { title?: string, helpUrl?: string } | string): Dialog {
+  static create(options?: { title?: string, helpUrl?: string, showHeader?: boolean, showFooter?: boolean } | string): Dialog {
     if (typeof options === 'string')
-      return new Dialog(api.grok_Dialog(options, null));
+      return Dialog.create({ title: options });
     else
-      return new Dialog(api.grok_Dialog(options?.title ?? '', options?.helpUrl));
+      return new Dialog(api.grok_Dialog(options?.title ?? '', options?.helpUrl, options?.showHeader ?? true, options?.showFooter ?? true));
   }
 
   /** When provided, adds a "?" icon to the dialog header on the right. */
