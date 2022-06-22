@@ -12,6 +12,7 @@
     "datagrok-api": "^1.0",
     "dts-bundle": "^0.7.3",
     "exceljs": "^4.3.0",
+    "html2canvas": "^1.4.1",
     "node-fetch": "^2.6.0",
     "rxjs": "^7.4.0",
     "wu": "latest"

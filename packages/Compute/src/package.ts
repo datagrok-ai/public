@@ -24,13 +24,12 @@ export function OutliersSelection() {
   return new OutliersSelectionViewer();
 }
 
-//name: ComputationViewTest
-//description: Creates an outliers selection viewer
+//name: ComputationView
 //tags: viewer
 //input: funccall call
 //output: view result
-export function ComputationViewTest(call: DG.FuncCall) {
- // return new ComputationView(call.func);
+export function ComputationViewEditor(call: DG.FuncCall) {
+  return new ComputationView(call);
 }
 
 
@@ -77,10 +76,10 @@ export function hof2() {
   v.parentCall = grok.functions.getCurrentCall(); // hof2 call itself
   v.parentView = v.parentCall.parentCall?.aux['view']; // modelCatalog view
   let path = v.parentCall.parentCall?.aux['url']; // uri if called from model catalog
-  grok.shell.info(path);
+  // grok.shell.info(path);
 
   let path2 = v.parentCall?.aux['url']; // uri if called directly (if app)
-  grok.shell.info(path2);
+  // grok.shell.info(path2);
 
   v.basePath = '/' + v.parentCall.func.name;
   v.path = '/';
@@ -194,7 +193,7 @@ export function modelCatalog() {
     parser.href = window.location.href;
     let pathSegments = parser.pathname.split('/');
     grok.shell.addView(view);
-    grok.shell.info(parser.href);
+    // grok.shell.info(parser.href);
     if (pathSegments.length > 3) {
       let c = grok.functions.getCurrentCall();
       grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
