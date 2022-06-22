@@ -130,13 +130,8 @@ export class SubstructureFilter extends DG.Filter {
     else {
       this.calculating = true;
       try {
-        const smarts = await this.sketcher.getSmarts();
-        if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
-          return;
-
-        this.bitset = await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts);
-        this.calculating = false;
-        this.dataFrame?.rows.requestFilter();
+        this.bitset = await chemSubstructureSearchLibrary(
+          this.column!, await this.sketcher.getSmarts(), this.sketcher.getMolFile());
       } finally {
         this.calculating = false;
       }

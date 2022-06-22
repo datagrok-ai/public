@@ -179,12 +179,12 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 }
 
 export async function chemSubstructureSearchLibrary(
-  molStringsColumn: DG.Column, molString: string, molStringSmarts: string): Promise<DG.BitSet> {
+  molStringsColumn: DG.Column, molString: string, molBlockFailover: string): Promise<DG.BitSet> {
   await _invalidate(molStringsColumn, molString, false, false);
   try {
     const result = DG.BitSet.create(molStringsColumn.length);
     if (molString.length != 0) {
-      const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
+      const matches = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover);
       for (const match of matches)
         result.set(match, true, false);
     }

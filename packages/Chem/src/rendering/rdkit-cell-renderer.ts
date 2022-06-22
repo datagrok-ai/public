@@ -70,20 +70,36 @@ M  END
   get defaultHeight() {return 100;}
 
   _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean): IMolInfo {
-    let mol: RDMol | null;
+    let mol: RDMol | null = null;
     let substruct = {};
     try {
       mol = this.rdKitModule.get_mol(molString);
-    } catch (e) {
+      if (!mol.is_valid()) {
+        mol.delete();
+        mol = null;
+      }
+    } catch (e) { }
+    if (!mol)
       try {
         mol = this.rdKitModule.get_mol(molString, '{"kekulize":false}');
-      } catch (e2) {
+        if (!mol.is_valid()) {
+          mol.delete();
+          mol = null;
+        }
+      } catch (e2) { }
+    if (!mol)
+      try {
+        mol = this.rdKitModule.get_qmol(molString);
+        if (!mol.is_valid()) {
+          mol.delete();
+          mol = null;
+        }
+      } catch (e3) {
         console.error(
           'Chem | In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `' + molString + '`');
         mol = null;
       }
-    }
-    if (mol) {
+    if (mol)
       try {
         if (mol.is_valid()) {
           const scaffoldIsMolBlock = isMolBlock(scaffoldMolString);
@@ -116,7 +132,6 @@ M  END
         console.error(
           'In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `' + molString + '`');
       }
-    }
 
     return {
       mol: mol,
