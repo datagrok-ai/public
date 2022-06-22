@@ -122,19 +122,23 @@ export class SubstructureFilter extends DG.Filter {
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
       this.bitset = null;
-      //this.dataFrame?.rows.requestFilter();
+      this.dataFrame?.rows.requestFilter();
     } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
       // some other filter is already filtering for the exact same thing
       return;
     } else {
       this.calculating = true;
       try {
-        this.bitset = await chemSubstructureSearchLibrary(
-          this.column!, await this.sketcher.getSmarts(), this.sketcher.getMolFile());
+        const smarts = await this.sketcher.getSmarts();
+        if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
+          return;
+
+        this.bitset = await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts);
+        this.calculating = false;
+        this.dataFrame?.rows.requestFilter();
       } finally {
         this.calculating = false;
       }
     }
-    this.dataFrame?.rows.requestFilter();
   }
 }
