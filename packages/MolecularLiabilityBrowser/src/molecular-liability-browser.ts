@@ -10,6 +10,7 @@ import {TreeBrowser} from './mlb-tree';
 import {TreeAnalyzer} from './utils/tree-stats';
 import {MiscMethods} from './viewers/misc';
 import {TwinPviewer} from './viewers/twin-p-viewer';
+import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 
 
 export class MolecularLiabilityBrowser {
@@ -22,8 +23,11 @@ export class MolecularLiabilityBrowser {
   antigenDf: DG.DataFrame = null;
   pf: FilterPropertiesType = null;
   antigenName: string = null;
-  schemeName: string = 'chothia';
-  schemeChoices: string[] = ['imgt', 'chothia', 'kabat'];
+  schemeName: string = null;
+  cdrName: string = null;
+
+  schemeChoices: string[] = null;
+  cdrChoices: string[] = null;
 
   /** Current antibody selected molecule */
   vid: string = null;
@@ -49,6 +53,7 @@ export class MolecularLiabilityBrowser {
   antigenInput: DG.InputBase = null;
   antigenPopup: HTMLElement = null;
   schemeInput: DG.InputBase = null;
+  cdrInput: DG.InputBase = null;
   hideShowIcon: HTMLElement = null;
 
   constructor(dataLoader: DataLoader) {
@@ -68,9 +73,27 @@ export class MolecularLiabilityBrowser {
         throw new Error(msg);
       }
 
-      this.antigenName = this.urlParams.get('antigen') || this.antigenDf.col('antigen').get(0);
-      this.schemeName = this.schemeChoices.includes(this.urlParams.get('scheme')) ? this.urlParams.get('scheme') :
-        this.schemeChoices[0];
+      console.debug(`MolecularLiabilityBrowser.init() schemeChoices = ${this.schemeChoices ? 'value' : 'null'}`);
+      this.schemeChoices = this.dataLoader.schemes;
+      console.debug(`MolecularLiabilityBrowser.init() cdrChoices = ${this.cdrChoices ? 'value' : 'null'}`);
+      this.cdrChoices = this.dataLoader.cdrs;
+
+      this.antigenName = ((): string => {
+        const antigenUrlParam = this.urlParams.get('antigen');
+        // By default, if antigen is not specified in the url
+        // we display the beautiful one 'IAPW8' (with a spreading tree)
+        return antigenUrlParam || 'IAPW8';
+      })();
+
+      this.urlParams.get('antigen') || this.antigenDf.col('antigen').get(0);
+      this.schemeName = ((): string => {
+        const schemeUrlParam = this.urlParams.get('scheme');
+        return this.schemeChoices.includes(schemeUrlParam) ? schemeUrlParam : this.schemeChoices[0];
+      })();
+      this.cdrName = ((): string => {
+        const cdrUrlParam = this.urlParams.get('cdr');
+        return this.cdrChoices.includes(cdrUrlParam) ? cdrUrlParam : this.cdrChoices[0];
+      })();
 
       this.vids = this.dataLoader.vids;
       this.vidsObsPTMs = this.dataLoader.vidsObsPtm;
@@ -157,6 +180,14 @@ export class MolecularLiabilityBrowser {
     return this.schemeInput;
   }
 
+  setCdrInput(): DG.InputBase {
+    this.cdrInput = ui.choiceInput('CDR', this.cdrName, this.cdrChoices, () => {
+      this.onCdrChanged(this.cdrInput.value);
+    });
+
+    return this.cdrInput;
+  }
+
   setHideShowIcon(): void {
     this.hideShowIcon = ui.tooltip.bind(ui.iconFA('eye', () => {
       if (this.hideShowIcon.classList.value.includes('fa-eye-slash'))
@@ -183,11 +214,13 @@ export class MolecularLiabilityBrowser {
 
     this.setAntigenInput(this.antigenDf);
     this.setSchemeInput();
+    this.setCdrInput();
     this.setHideShowIcon();
 
     this.mlbView.setRibbonPanels([
       [this.antigenInput.root],
       [this.schemeInput.root],
+      [this.cdrInput.root],
       [],
       [this.hideShowIcon],
     ]);
@@ -300,23 +333,27 @@ export class MolecularLiabilityBrowser {
   }
 
   private _mlbDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
+  private _regions: VdRegion[] = [];
   private _treeDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
 
   get mlbDf(): DG.DataFrame { return this._mlbDf; }
 
+  get regions(): VdRegion[] { return this._regions; }
+
   get treeDf(): DG.DataFrame { return this._treeDf; }
 
-  async setData(mlbDf: DG.DataFrame, treeDf: DG.DataFrame): Promise<void> {
+  async setData(mlbDf: DG.DataFrame, treeDf: DG.DataFrame, regions: VdRegion[]): Promise<void> {
     await this.destroyView();
     // .catch((ex) => {
     //   console.error(`MolecularLiabilityBrowser.setData() > destroyView() error:\n${ex.toString()}`);
     // });
     this._mlbDf = mlbDf;
     this._treeDf = treeDf;
-    await this.buildView()
-      .catch((ex) => {
-        console.error(`MolecularLiabilityBrowser.setData() > buildView() error:\n${ex ? ex.toString() : 'none'}`);
-      });
+    this._regions = regions;
+    await this.buildView();
+    // .catch((ex) => {
+    //   console.error(`MolecularLiabilityBrowser.setData() > buildView() error:\n${ex ? ex.toString() : 'none'}`);
+    // });
   }
 
   /** Sets controls' layout. Called once from init(). */
@@ -334,7 +371,6 @@ export class MolecularLiabilityBrowser {
 
     this.mlbView.grid.columns.byName('v id')!.width = 120;
     this.mlbView.grid.columns.byName('v id')!.cellType = 'html';
-
 
     //table visual polishing
     this.mlbView.grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => {
@@ -463,7 +499,8 @@ export class MolecularLiabilityBrowser {
     }
 
     if (this.treeBrowser === null) {
-      this.treeBrowser = (await this.treeDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
+      const tempDf = DG.DataFrame.fromCsv(['"v id"'].join(','));
+      this.treeBrowser = (await tempDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
       await this.treeBrowser.setData(this.treeDf, this.mlbDf);
       this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
     } else {
@@ -471,14 +508,16 @@ export class MolecularLiabilityBrowser {
     }
 
     if (this.regionsViewer === null) {
-      this.regionsViewer = (await this.mlbDf.plot.fromType('VdRegions', {
-        numberingScheme: this.schemeName,
-      })) as unknown as VdRegionsViewer;
+      const tempDf = DG.DataFrame.fromObjects([{}]);
+      this.regionsViewer = (await tempDf.plot.fromType('VdRegions')) as unknown as VdRegionsViewer;
+      await this.regionsViewer.setDf(this.mlbDf, this.regions);
       this.mlbView.dockManager.dock(this.regionsViewer, DG.DOCK_TYPE.DOWN, null, 'Regions', 0.3);
     } else {
-      this.regionsViewer.numberingScheme = this.schemeName;
+      // this.regionsViewer.numberingScheme = this.schemeName;
       // this.regionsViewer.setOptions({numberingScheme: this.schemeName});
-      await this.regionsViewer.setDf(this.mlbDf);
+
+      // TODO: Set all required props before setDf (or together with)
+      await this.regionsViewer.setDf(this.mlbDf, this.regions);
     }
 
     this.updateView();
@@ -520,7 +559,6 @@ export class MolecularLiabilityBrowser {
       this.antigenInput.value = this.antigenName;
 
     this.urlParams.set('antigen', this.antigenName);
-
     window.setTimeout(async () => { await this.loadData(); }, 10);
 
     // const treeDf: DG.DataFrame = await this.dataLoader.getTreeByAntigen(this.antigenName);
@@ -535,7 +573,15 @@ export class MolecularLiabilityBrowser {
       this.schemeInput.value = this.schemeName;
 
     this.urlParams.set('scheme', this.schemeName);
+    window.setTimeout(async () => { await this.loadData(); }, 10);
+  }
 
+  onCdrChanged(cdrName: string): void {
+    this.cdrName = cdrName;
+    if (this.cdrInput.value != this.cdrName)
+      this.cdrInput.value = this.cdrName;
+
+    this.urlParams.set('cdr', this.cdrName);
     window.setTimeout(async () => { await this.loadData(); }, 10);
   }
 
@@ -556,20 +602,23 @@ export class MolecularLiabilityBrowser {
       // let lChainDf: DG.DataFrame;
 
       const t1 = Date.now();
-      const [mlbDf, hChainDf, lChainDf, treeDf]: [DG.DataFrame, DG.DataFrame, DG.DataFrame, DG.DataFrame] =
-        (await Promise.all([
+      const [mlbDf, hChainDf, lChainDf, treeDf, regions]:
+        [DG.DataFrame, DG.DataFrame, DG.DataFrame, DG.DataFrame, VdRegion[]] =
+        await Promise.all([
           this.dataLoader.getMlbByAntigen(this.antigenName),
           this.dataLoader.getAnarci(this.schemeName, 'heavy', this.antigenName),
           this.dataLoader.getAnarci(this.schemeName, 'light', this.antigenName),
           this.dataLoader.getTreeByAntigen(this.antigenName),
-        ]));
+          this.dataLoader.getLayoutBySchemeCdr(this.schemeName, this.cdrName),
+        ]);
       const t2 = Date.now();
       console.debug(`MolecularLiabilityBrowser.loadMlbDf() load duration ${((t2 - t1) / 1000).toString()} s`);
 
-      this.setData(
+      await this.setData(
         MolecularLiabilityBrowser.prepareDataMlbDf(mlbDf, this.schemeName, hChainDf, lChainDf, this.pf),
-        MolecularLiabilityBrowser.prepareDataTreeDf(treeDf));
-      ;
+        MolecularLiabilityBrowser.prepareDataTreeDf(treeDf),
+        regions);
+
       const t3 = Date.now();
       console.debug(`MolecularLiabilityBrowser.loadMlbDf() prepare ${((t3 - t2) / 1000).toString()} s`);
     } finally {

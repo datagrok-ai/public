@@ -106,6 +106,41 @@ SELECT ag.id,
 FROM db_v2.antigen as ag
 --end
 
+--name: listSchemes
+--connection: MolecularLiabilityBrowserData:MLB
+SELECT
+    s."scheme_id",
+    s."scheme"
+FROM db_v2.scheme as s
+--end
+
+--name: listCdrs
+--connection: MolecularLiabilityBrowserData:MLB
+SELECT
+    cdr."cdr_id",
+    cdr."cdr"
+FROM db_v2.cdr as cdr
+--end
+
+--name: getLayoutBySchemeCdr
+--connection: MolecularLiabilityBrowserData:MLB
+--input: string scheme
+--input: string cdr
+SELECT
+    sl."region_id",
+    sl."scheme",
+    sl."cdr",
+    sl."type",
+    sl."name",
+    sl."chain",
+    sl."order",
+    sl."position_start_name",
+    sl."position_end_name"
+FROM db_v2.scheme_layout as sl
+WHERE sl."scheme" = @scheme and sl."cdr" = @cdr
+ORDER BY sl."order", sl."chain"
+--end
+
 --name: getMlbByAntigen
 --connection: MolecularLiabilityBrowserData:MLB
 --input: string antigen
@@ -184,6 +219,25 @@ WHERE ab2ag.antigen = @antigen;
 --input: string antigen
 SELECT ma.*
 FROM db_v2.antibody_anarci_kabat_light as ma
+         JOIN db_v2.antibody2antigen as ab2ag ON ab2ag."v_id" = ma."Id"
+WHERE ab2ag.antigen = @antigen;
+--end
+
+
+--name: getAnarciAhoHeavy
+--connection: MolecularLiabilityBrowserData:MLB
+--input: string antigen
+SELECT ma.*
+FROM db_v2.antibody_anarci_aho_heavy as ma
+         JOIN db_v2.antibody2antigen as ab2ag ON ab2ag."v_id" = ma."Id"
+WHERE ab2ag.antigen = @antigen;
+--end
+
+--name: getAnarciAhoLight
+--connection: MolecularLiabilityBrowserData:MLB
+--input: string antigen
+SELECT ma.*
+FROM db_v2.antibody_anarci_aho_light as ma
          JOIN db_v2.antibody2antigen as ab2ag ON ab2ag."v_id" = ma."Id"
 WHERE ab2ag.antigen = @antigen;
 --end

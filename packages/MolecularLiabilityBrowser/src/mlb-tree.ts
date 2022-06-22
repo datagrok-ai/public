@@ -29,11 +29,11 @@ export class TreeBrowser extends DG.JsViewer {
 
   treeAnalyser: TreeAnalyzer;
 
-  private _mlbDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
+  private _treeDf: DG.DataFrame = DG.DataFrame.fromCsv(['TREE', 'CLONE'].join(','));
 
-  get treeDf(): DG.DataFrame { return this.dataFrame; }
+  get treeDf(): DG.DataFrame { return this._treeDf; }
 
-  get mlbDf(): DG.DataFrame { return this._mlbDf; }
+  get mlbDf(): DG.DataFrame { return this.dataFrame; }
 
   private viewSubs: Subscription[] = [];
 
@@ -43,8 +43,8 @@ export class TreeBrowser extends DG.JsViewer {
     // .catch((ex) => {
     //   console.error(`TreeBrowser.setData() > destroyView() error:\n${ex.toString()}`);
     // });
-    this.dataFrame = treeDf;
-    this._mlbDf = mlbDf;
+    this.dataFrame = mlbDf;
+    this._treeDf = treeDf;
     await this.buildView()
       .catch((ex) => {
         console.error(`TreeBrowser.setData() > buildView() error:\n${ex.toString()}`);
@@ -122,10 +122,10 @@ export class TreeBrowser extends DG.JsViewer {
     this.subs.push(
       ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
 
-    await this.buildView()
-      .catch((ex) => {
-        console.error(`TreeBrowser.init() > buildView() error:\n${ex ? ex.toString() : 'none'}`);
-      });
+    await this.buildView();
+    // .catch((ex) => {
+    //   console.error(`TreeBrowser.init() > buildView() error:\n${ex ? ex.toString() : 'none'}`);
+    // });
   }
 
   /**
@@ -281,7 +281,6 @@ export class TreeBrowser extends DG.JsViewer {
     else
       this.treeGrid.dataFrame = this.treeDf;
 
-
     //const color: string = `#bbff${Math.ceil(128 + Math.random() * 127).toString(16)}`;
     this.treeDiv = ui.div([], {
       style: {
@@ -329,7 +328,7 @@ export class TreeBrowser extends DG.JsViewer {
   }
 
   public override async onTableAttached() {
-    console.debug(`TableBrowser.onTableAttached( dataFrame = ${!this.dataFrame ? 'null' : 'value'} )`);
+    console.debug(`TreeBrowser.onTableAttached( dataFrame = ${!this.dataFrame ? 'null' : 'value'} )`);
     await this.init();
   }
 

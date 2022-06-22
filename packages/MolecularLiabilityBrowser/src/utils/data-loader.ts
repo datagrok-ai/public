@@ -1,4 +1,8 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+
+import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
+
 import {_package} from '../package';
 
 export interface FilterPropertiesType {
@@ -74,6 +78,12 @@ export enum DataLoaderType {
 }
 
 export abstract class DataLoader {
+  protected _pName: string = 'MolecularLiabilityBrowser';
+
+  abstract get schemes(): string[];
+
+  abstract get cdrs(): string[];
+
   abstract get vids(): string[];
 
   abstract get vidsObsPtm(): string[];
@@ -108,11 +118,33 @@ export abstract class DataLoader {
 
   abstract listAntigens(): Promise<DG.DataFrame>;
 
+  async getLayoutBySchemeCdr(scheme: string, cdr: string): Promise<VdRegion[]> {
+    return catchToLog<Promise<VdRegion[]>>('MLB database access error: ', async () => {
+      const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getLayoutBySchemeCdr`,
+        {scheme: scheme, cdr: cdr});
+      const regionListRes: VdRegion[] = [];
+      for (const dfRow of df.rows) {
+        const region = new VdRegion(
+          dfRow.get('type'), dfRow.get('name'), dfRow.get('chain'), dfRow.get('order'),
+          dfRow.get('position_start_name'), dfRow.get('position_end_name'));
+        regionListRes.push(region);
+      }
+      return regionListRes;
+    });
+  }
+
   abstract getMlbByAntigen(antigen: string): Promise<DG.DataFrame>;
 
   abstract getTreeByAntigen(antigen: string): Promise<DG.DataFrame>;
 
-  abstract getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame>;
+  async getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame> {
+    // There is a problem with using underscore symbols in query names.
+    const scheme2: string = scheme.charAt(0).toUpperCase() + scheme.slice(1);
+    const chain2: string = chain.charAt(0).toUpperCase() + chain.slice(1);
+    const df: DG.DataFrame = await grok.functions.call(
+      `${this._pName}:getAnarci${scheme2}${chain2}`, {antigen: antigen});
+    return df;
+  }
 
   /**
    * Heavy chain calculated data

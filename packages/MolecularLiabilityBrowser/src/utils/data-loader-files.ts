@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import {_package} from '../package';
+
 import {
   CdrMapType,
   DataLoader,
@@ -13,10 +15,7 @@ import {
   catchToLog,
 } from './data-loader';
 
-
 export class DataLoaderFiles extends DataLoader {
-  private _pName: string = 'MolecularLiabilityBrowser';
-
   private _files = {
     filterProps: 'properties.json',
     mutcodes: 'mutcodes.json',
@@ -32,6 +31,9 @@ export class DataLoaderFiles extends DataLoader {
     exampleOptm: 'exampleOptm.json',
     realNums: 'exampleNums.json',
   };
+
+  private _schemes: string[];
+  private _cdrs: string[];
   private _vids: string[];
   private _vidsObsPtm: string[];
   private _filterProperties: FilterPropertiesType;
@@ -40,6 +42,10 @@ export class DataLoaderFiles extends DataLoader {
   private _cdrMap: CdrMapType;
   private _refDf: DG.DataFrame;
   private _realNums: any;
+
+  get schemes(): string[] { return this._schemes; }
+
+  get cdrs(): string[] { return this._cdrs; }
 
   get vids(): string[] { return this._vids; }
 
@@ -55,16 +61,21 @@ export class DataLoaderFiles extends DataLoader {
 
   get refDf(): DG.DataFrame { return this._refDf; }
 
-  get realNums(): NumsType { return this._realNums; }
-
-  async init() {
+  async init(): Promise<void> {
     const t1 = Date.now();
     // Check files disabled while too much time consuming
     // await this.check_files(this._files);
     const t2 = Date.now();
 
     await Promise.all([
+      catchToLog<Promise<DG.DataFrame>>('MLB database error \'listSchemes\': ',
+        () => grok.functions.call(`${this._pName}:listSchemes`))
+        .then((df: DG.DataFrame) => { this._schemes = df.columns.byName('scheme').toList(); }),
+      catchToLog<Promise<DG.DataFrame>>('MLB database error \'listCdrs\': ',
+        () => grok.functions.call(`${this._pName}:listCdrs`))
+        .then((df: DG.DataFrame) => { this._cdrs = df.columns.byName('cdr').toList(); }),
       new Promise((resolve: (value: unknown) => void, reject: (reason?: unknown) => void) => {
+        console.debug('DataLoaderFiles.init() set vids');
         this._vids = ['VR000000008', 'VR000000043', 'VR000000044'];
         resolve(true);
       }),
@@ -110,15 +121,6 @@ export class DataLoaderFiles extends DataLoader {
 
   async getTreeByAntigen(antigen: string): Promise<DG.DataFrame> {
     const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getTreeByAntigen`, {antigen: antigen});
-    return df;
-  }
-
-  async getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame> {
-    // There is a problem with using underscore symbols in query names.
-    const scheme2: string = scheme.charAt(0).toUpperCase() + scheme.slice(1);
-    const chain2: string = chain.charAt(0).toUpperCase() + chain.slice(1);
-    const df: DG.DataFrame = await grok.functions.call(
-      `${this._pName}:getAnarci${scheme2}${chain2}`, {antigen: antigen});
     return df;
   }
 
