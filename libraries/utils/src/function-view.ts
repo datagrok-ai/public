@@ -7,14 +7,18 @@ import * as rxjs from 'rxjs';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import ExcelJS from 'exceljs';
+import html2canvas from 'html2canvas';
 
 export class FunctionView extends DG.ViewBase {
-  constructor(funcCall: DG.FuncCall) {
+  constructor(funcCall: DG.FuncCall | null) {
     super();
     this.preparedCall = funcCall;
     this.context = DG.Context.cloneDefault();
     this.controlsRoot.style.maxWidth = '370px';
     this.box = true;
+
+    if (funcCall)
+      this.init(funcCall);
   }
 
   get func() {
@@ -34,26 +38,28 @@ export class FunctionView extends DG.ViewBase {
     return this._type;
   }
 
+  public get isInputPanelRequired() {
+    return this.func.inputs.some((p) => p.propertyType == DG.TYPE.DATA_FRAME && p.options['viewer'] != null);
+  }
+
+  public get tabsLabels() {
+    return Object.keys(this.paramToCategoryMap);
+  }
+
   readonly context: DG.Context;
   public preparedCall: DG.FuncCall | null;
-  public lastCall?: DG.FuncCall | null;
-  _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
+  public lastCall: DG.FuncCall | null = null;
+  protected outputCategories = [] as string[];
+  protected paramToCategoryMap = {} as Record<string, string[]>;
 
   async init(funcCall: DG.FuncCall) {
     this.preparedCall ??= funcCall;
-    /*
-      var meta = EntityMeta.forEntity(f);
-      func = await meta.refresh(f);
-    */
 
     this.preparedCall.aux['view'] = this;
     this.preparedCall.context = this.context;
 
     this.singleDfParam = wu(this.func.outputs).filter((p) => p.propertyType == DG.TYPE.DATA_FRAME)
       .toArray().length == 1;
-    //var fullRunSection = div();
-    //var fullDiv = div('ui-panel', [getFullSection(func, call, fullRunSection)]);
-    //htmlSetDisplay(fullDiv, false);
 
     for (const inParam of wu(this.preparedCall.inputParams.values() as DG.FuncCallParam[])
       .filter((p: DG.FuncCallParam) =>
@@ -66,40 +72,46 @@ export class FunctionView extends DG.ViewBase {
 
         self.appendResultDataFrame(param, {
           height: (self.singleDfParam && !grok.shell.windows.presentationMode) ? 600 : 400,
-          category: 'INPUT'
+          category: 'Input'
         });
       }));
     }
 
+    const outParamCategories = [
+      ...new Set(
+        this.func!.outputs
+          .map((p) => p.category) // get all output params' categories
+          .filter((category) => category !== 'Misc') // filter out the default ones
+      )]; // keep only unique of them
 
-    //this.controlsRoot.appendChild(fullDiv);
+    this.outputCategories = [
+      ...!outParamCategories.length ? ['Output'] : [], // if no categories are stated, the default category is added
+      ...outParamCategories,
+    ];
 
-    /*advancedModeSwitch.onChanged.listen((_) {
-      if (advancedModeSwitch.value)
-        fullRunSection.append(runSection);
-      else
-        funcDiv.append(runSection);
-      htmlSetDisplay(fullDiv, advancedModeSwitch.value);
-      htmlSetDisplay(funcDiv, !advancedModeSwitch.value);
-    });*/
-    //setRibbon();
+    if (this.isInputPanelRequired)
+      this.func.inputs.forEach((p) => this.paramToCategoryMap['Input'] ? this.paramToCategoryMap['Input'].push(p.name): this.paramToCategoryMap['Input'] = [p.name]);
+
+    this.func.outputs.forEach((p) => this.paramToCategoryMap[p.category === 'Misc' ? 'Output': p.category] ? this.paramToCategoryMap[p.category === 'Misc' ? 'Output': p.category].push(p.name) : this.paramToCategoryMap[p.category === 'Misc' ? 'Output': p.category] = [p.name]);
+
     this.root.appendChild(this.build());
-    /*
-    Routing.setPath(this.path, f.name, true);
-    */
+
+    this.buildRibbonPanels();
+    this.buildHistoryBlock();
+    this.buildRibbonMenu();
 
     this.name = this.func.friendlyName;
   }
 
+  /** Override to create a fully custom UI */
   build(): HTMLElement {
     const inputBlock = this.buildInputBlock();
     const outputBlock = this.buildOutputBlock();
-    const ribbonPanels = this.buildRibbonPanels();
-    const historyBlock = this.buildHistoryBlock();
 
     return ui.splitH([inputBlock, outputBlock]);
   }
 
+  /** Override to create a custom input block. */
   buildInputBlock(): HTMLElement {
     const funcDiv = ui.div([this.renderRunSection(this.preparedCall!)], 'ui-div');
     this.controlsRoot.innerHTML = '';
@@ -107,12 +119,14 @@ export class FunctionView extends DG.ViewBase {
     return this.controlsRoot;
   }
 
+  /** Override to create a custom output block. */
   buildOutputBlock(): HTMLElement {
     this.resultsRoot.innerHTML = '';
     this.resultsRoot.appendChild(this.resultsDiv);
     return this.resultsRoot;
   }
 
+  /** Override to create a custom historical runs control. */
   buildHistoryBlock(): HTMLElement {
     const newHistoryBlock = ui.iconFA('history', () => {
       this.pullRuns().then(async (historicalRuns) => {
@@ -143,6 +157,24 @@ export class FunctionView extends DG.ViewBase {
     return newRibbonPanels;
   }
 
+  /** Override to create a custom ribbon menu on the top. */
+  buildRibbonMenu() {
+    const ribbonMenu = this.ribbonMenu
+      .group('Model')
+      .group('Export')
+      .items(this.supportedExportFormats, async (format: string) => DG.Utils.download(this.exportFilename(format), await this.export(format)))
+      .endGroup();
+
+    if (this.reportBug)
+      ribbonMenu.item('Report a bug', () => this.reportBug!());
+
+    if (this.helpUrl)
+      ribbonMenu.item('Get help', () => window.open(this.helpUrl!));
+  }
+
+  /** Override to create bug reporting feature */
+  reportBug: (() => Promise<void>) | null = null;
+
   /** Filename for exported files. Override for custom names */
   exportFilename(format: string): string {
     return `${this.name} - ${new Date().toLocaleString()}.${this.supportedExportExtensions[format]}`;
@@ -164,7 +196,7 @@ export class FunctionView extends DG.ViewBase {
     };
   }
 
-  /** Override to provide custom export. */
+  /** Override to provide custom export. Obligatory to override if custom {@link build()} or {@link buildOutputBlock()} is overriden. */
   async export(format: string): Promise<Blob> {
     if (!this.func) throw new Error(`No function is associated with view`);
 
@@ -184,6 +216,9 @@ export class FunctionView extends DG.ViewBase {
     const scalarInputs = this.func.inputs.filter((input) => isScalarType(input.propertyType));
     const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
     const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
+
+    const inputParams = [...lastCall.inputParams.values()] as DG.FuncCallParam[];
+    const outputParams = [...lastCall.outputParams.values()] as DG.FuncCallParam[];
 
     dfInputs.forEach((dfInput) => {
       const visibleTitle = dfInput.options.caption || dfInput.name;
@@ -210,6 +245,7 @@ export class FunctionView extends DG.ViewBase {
       dfToSheet(currentDfSheet, currentDf);
     });
 
+
     if (scalarOutputs.length) {
       const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
       scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
@@ -218,6 +254,62 @@ export class FunctionView extends DG.ViewBase {
         units: scalarOutput.options['units'] || '',
       })));
     }
+
+    const tabControl = this.resultsTabControl;
+    if (tabControl) {
+      for (const tabLabel of this.tabsLabels) {
+        tabControl.currentPane = tabControl.getPane(tabLabel);
+        await new Promise((r) => setTimeout(r, 100));
+        if (tabLabel === 'Input') {
+          for (const inputParam of inputParams.filter((inputParam) => inputParam.property.propertyType === DG.TYPE.DATA_FRAME)) {
+            const nonGridViewers = (inputParam.aux['viewers'] as DG.Viewer[]).filter((viewer) => viewer.type !== DG.VIEWER.GRID);
+
+            const dfInput = dfInputs.find((input) => input.name === inputParam.name);
+            const visibleTitle = dfInput!.options.caption || inputParam.name;
+            const currentDf = (lastCall.inputs[dfInput!.name] as DG.DataFrame);
+
+            for (const [index, viewer] of nonGridViewers.entries()) {
+              if (viewer.root.parentElement?.style.display === 'none') {
+                this.paramGridSwitches.get(inputParam.name)?.click();
+                await new Promise((r) => setTimeout(r, 50));
+              }
+
+              await plotToSheet(
+                exportWorkbook,
+                exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT)),
+                viewer.root,
+                currentDf.columns.length + 2,
+                (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0
+              );
+            };
+          }
+        } else {
+          for (const outputParam of outputParams.filter((outputParam) => outputParam.property.propertyType === DG.TYPE.DATA_FRAME && outputParam.property.category === tabLabel)) {
+            const nonGridViewers = (outputParam.aux['viewers'] as DG.Viewer[]).filter((viewer) => viewer.type !== DG.VIEWER.GRID);
+
+            const dfOutput = dfOutputs.find((input) => input.name === outputParam.name);
+            const visibleTitle = dfOutput!.options.caption || outputParam.name;
+            const currentDf = (lastCall.outputs[dfOutput!.name] as DG.DataFrame);
+
+            for (const [index, viewer] of nonGridViewers.entries()) {
+              if (viewer.root.parentElement?.style.display === 'none') {
+                this.paramGridSwitches.get(outputParam.name)?.click();
+                await new Promise((r) => setTimeout(r, 50));
+              }
+
+              await plotToSheet(
+                exportWorkbook,
+                exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT)),
+                viewer.root,
+                currentDf.columns.length + 2,
+                (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0
+              );
+            }
+          };
+        }
+      };
+    }
+
 
     const buffer = await exportWorkbook.xlsx.writeBuffer();
 
@@ -245,10 +337,10 @@ export class FunctionView extends DG.ViewBase {
 
   clearResults(switchToOutput: boolean = true) {
     const categories: string[] = [];
-    //  resultTabs.clear();
+    // this.resultTabs.clear();
     if (this.showInputs) {
-      categories.push('INPUT');
-      this.resultTabs.set('INPUT', this.inputsDiv);
+      categories.push('Input');
+      this.resultTabs.set('Input', this.inputsDiv);
     }
     for (const p of this.func.outputs) {
       if (categories.includes(p.category))
@@ -259,7 +351,7 @@ export class FunctionView extends DG.ViewBase {
       this.resultsTabControl = DG.TabControl.create();
       for (const c of categories) {
         if (!this.resultTabs.has(c))
-          this.resultTabs.set(c, ui.div([], 'ui-panel, grok-func-results'));
+          this.resultTabs.set(c, ui.div([], 'ui-panel, grok-func-results, ui-box'));
         let name = c;
         if (this.showInputs && categories.length == 2 && c == 'Misc')
           name = 'OUTPUT';
@@ -269,18 +361,16 @@ export class FunctionView extends DG.ViewBase {
         this.resultsTabControl.currentPane = this.resultsTabControl.panes[1];
       this.resultsDiv = this.resultsTabControl.root;
     }
-    this.buildOutputBlock();
   }
 
   async run(): Promise<void> {
-    this.lastCall = this.preparedCall;
-
     try {
-      await this.compute(this.lastCall!);
+      await this.compute(this.preparedCall!);
     } catch (e) {
       // this.onComputationError.next(this.lastCall);
     }
     this.onComputationSucceeded.next(this.lastCall!);
+    this.lastCall = this.preparedCall;
 
     this.outputParametersToView(this.lastCall!);
   }
@@ -298,6 +388,7 @@ export class FunctionView extends DG.ViewBase {
       else
         this.appendResultScalar(p, {caption: p.property.name, category: p.property.category});
     }
+    this.buildOutputBlock();
   }
 
   renderRunSection(call: DG.FuncCall): HTMLElement {
@@ -315,125 +406,128 @@ export class FunctionView extends DG.ViewBase {
     });
   }
 
+  // flag to show or not the "Input" tab
   showInputs: boolean = false;
   singleDfParam: boolean = false;
+  // mappping of param to the switchces of their viewers/grids
+  paramGridSwitches: Map<string, HTMLElement> = new Map();
+  // mappping of param to their viewers
   paramViewers: Map<string, DG.Viewer[]> = new Map();
-  resultsTabControl: DG.TabControl | undefined;
+  // mappping of param to their html elements
+  paramSpans: Map<string, HTMLElement> = new Map();
+  // mappping of tab names to their content
   resultTabs: Map<String, HTMLElement> = new Map();
+  resultsTabControl: DG.TabControl | undefined;
   resultsDiv: HTMLElement = ui.panel([], 'grok-func-results');
   controlsRoot: HTMLDivElement = ui.box();
   resultsRoot: HTMLDivElement = ui.box();
   historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
-  inputsDiv: HTMLDivElement = ui.panel([], 'grok-func-results');
+  inputsDiv: HTMLDivElement = ui.panel([], 'grok-func-results, ui-box');
 
   appendResultDataFrame(param: DG.FuncCallParam, options?: { caption?: string, category?: string, height?: number }) {
-    const df = param.value;
+    const paramDf = param.value as DG.DataFrame;
     let caption = options?.caption;
-    let height = options?.height ?? 400;
-    const viewers: DG.Viewer[] = param.aux['viewers'] ?? [];
-    caption ??= param.aux['viewerTitle'] ??
+    const height = options?.height ?? 400;
+    const viewers: DG.Viewer[] = param.aux['viewers'] ?? []; // storing the viewers of Df
+    caption ??= param.aux['viewerTitle'] ?? // description of the viewer ?
       ((this.singleDfParam && viewers.length == 1) ? '' : param.property.caption) ?? '';
-    let existingViewers: DG.Viewer[] | undefined = this.paramViewers.get(param.name);
+    let existingViewers = this.paramViewers.get(param.name);
     if (existingViewers != null) {
       for (const v of existingViewers)
-        v.dataFrame = df;
-
+        v.dataFrame = paramDf;
       return;
     }
     existingViewers ??= [];
     this.paramViewers.set(param.name, existingViewers);
     if (viewers.length == 0)
-      viewers.push(df.plot.grid());
+      viewers.push(paramDf.plot.grid());
 
-    const hideList: HTMLElement[] = [];
+    const viewersToHide: HTMLElement[] = [];
     let blocks: number = 0;
-    let blockSize: number = 0;
-    const gridWrapper = ui.block([]);
+    let blockWidth: number = 0;
+    const gridWrapper = ui.box(null, {style: {height: '100%'}});
 
-    const gridSwitch = !wu(viewers).some((v: DG.Viewer) => v.type == 'Grid');
+    const isGridSwitchable = wu(viewers).every((v: DG.Viewer) => v.type !== 'Grid');
     $(gridWrapper).hide();
 
-    const getHeader = (sw: boolean) => {
-      const s = caption ?? df.name ?? '';
+    const getHeader = () => {
+      const headerLabel = caption ?? paramDf.name ?? '';
       const header = ui.div([], 'grok-func-results-header');
-      if (s != '') {
-        const h = ui.h1(s);
-        ui.Tooltip.bind(h, () => s);
+      if (headerLabel != '') {
+        const h = ui.h1(headerLabel);
+        ui.Tooltip.bind(h, () => headerLabel);
         header.appendChild(h);
       }
-      if (gridSwitch) {
+      if (isGridSwitchable) {
         const icon = ui.iconSvg('table', (e) => {
           e.stopPropagation();
-          ui.setDisplayAll(hideList, !sw);
-          ui.setDisplay(gridWrapper, sw);
-          gridWrapper.classList.add(`ui-block-${blockSize}`);
+          ui.setDisplayAll(viewersToHide, viewersToHide.some((viewer) => viewer.style.display === 'none'));
+          ui.setDisplay(gridWrapper, gridWrapper.style.display === 'none');
         }, 'Show grid');
-        if (!sw)
-          icon.classList.add('active');
         header.appendChild(icon);
+        this.paramGridSwitches.set(param.name, icon);
       }
-      if (!grok.shell.tables.includes(df)) {
-        header.appendChild(ui.icons.add((e: any) => {
-          e.stopPropagation();
-          const v = grok.shell.addTableView(df);
-          (async () => {
-            for (const viewer of viewers) {
-              if (viewer.type != 'Grid') {
-                const newViewer = await df.plot.fromType(viewer.type) as DG.Viewer;
-                newViewer.setOptions(viewer.getOptions());
-                v.addViewer(newViewer);
+      if (!grok.shell.tables.includes(paramDf)) {
+        header.appendChild(
+          ui.icons.add((e: any) => {
+            e.stopPropagation();
+            const v = grok.shell.addTableView(paramDf);
+            (async () => {
+              for (const viewer of viewers) {
+                if (viewer.type != 'Grid') {
+                  const newViewer = await paramDf.plot.fromType(viewer.type) as DG.Viewer;
+                  newViewer.setOptions(viewer.getOptions());
+                  v.addViewer(newViewer);
+                }
               }
-            }
-          })();
-        }, 'Add to workspace'));
+            })();
+          },
+          'Add to workspace'
+          ));
       }
       return header;
     };
 
-    if (gridSwitch) {
-      gridWrapper.appendChild(getHeader(false));
-      const grid = df.plot.grid();
-      grid.root.style.height = `${height}px`;
+    if (isGridSwitchable) {
+      const grid = paramDf.plot.grid();
       gridWrapper.appendChild(grid.root);
       existingViewers.push(grid);
     }
 
-    let header = getHeader(true);
-    this._appendResultElement(gridWrapper, options?.category);
-    for (const viewer of viewers) {
+    const header = getHeader();
+    const wrapper = ui.divH([], {style: {height: '100%'}});
+    viewers.forEach((viewer) => {
       if (viewer?.tags == null)
-        continue;
-      existingViewers.push(viewer);
-      const block = viewer.tags['.block-size'] ?? 100;
-      const wrapper = ui.block([], `ui-block-${block}`);
-      if (blocks + block <= 100) {
-        hideList.push(wrapper);
-        blockSize += block;
+        return;
+      existingViewers!.push(viewer);
+      const viewerSize = viewer.tags['.block-size'] ?? 100; // getting `(block: 25)` value; if not defined, it is 100
+
+      viewer.root.style.height = '100%';
+      viewer.root.classList.add(`ui-block-${viewerSize}`);
+      if (blocks + viewerSize <= 100) {
+        viewersToHide.push(wrapper);
+        blockWidth += viewerSize;
       }
-      blocks += block;
-      wrapper.appendChild(header);
-      header = ui.div([], 'grok-func-results-header');
+      blocks += viewerSize;
       wrapper.appendChild(viewer.root);
-      if (viewer.type == 'grid') {
-        // @ts-ignore
-        const totalHeight = viewer.getOptions()['rowHeight'] *
-          (viewer.dataFrame!.rowCount + 1);
-        if (totalHeight < height)
-          height = totalHeight;
-      }
-      viewer.root.style.height = `${height}px`;
-      this._appendResultElement(wrapper, options?.category);
-    }
+    });
+
+    const block = ui.divV([header, wrapper, gridWrapper], {style: {height: `${height}px`, width: `${blockWidth}%`}});
+    block.classList.add('ui-box');
+    this._appendResultElement(block, options?.category);
   }
 
   appendResultScalar(param: DG.FuncCallParam, options: { caption?: string, category: string, height?: number }) {
-    if (this.resultsTabControl) {
-      this.resultsTabControl.getPane(options.category).content.innerHTML = '';
-      this.resultsTabControl.getPane(options.category).content.append(ui.span([`${options.caption ?? param.name}: `, `${param.value}`]));
+    const span = ui.span([`${options.caption ?? param.name}: `, `${param.value}`]);
+    if (!this.paramSpans.get(param.name)) {
+      if (this.resultsTabControl)
+        this.resultTabs.get(options.category)!.appendChild(span);
+      else
+        this.resultsDiv.appendChild(span);
     } else {
-      this.resultsDiv.innerHTML = '';
-      this.resultsDiv.append(ui.span([`${options.caption ?? param.name}: `, `${param.value}`]));
+      this.paramSpans.get(param.name)?.replaceWith(span);
     }
+    this.paramSpans.set(param.name, span);
   }
 
   _appendResultElement(d: HTMLElement, category?: string) {
@@ -479,4 +573,18 @@ const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame) => {
         (df.columns as DG.ColumnList).byIndex(i).name.length
       ) * 1.2;
   }
+};
+
+const plotToSheet = async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement, columnForImage: number, rowForImage: number = 0) => {
+  const canvas = await html2canvas(plot as HTMLElement, {logging: false});
+  const dataUrl = canvas.toDataURL('image/png');
+
+  const imageId = exportWb.addImage({
+    base64: dataUrl,
+    extension: 'png',
+  });
+  sheet.addImage(imageId, {
+    tl: {col: columnForImage, row: rowForImage},
+    ext: {width: canvas.width, height: canvas.height},
+  });
 };
