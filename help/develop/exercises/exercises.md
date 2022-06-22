@@ -127,7 +127,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
    For best performance, don't iterate over all column values, instead
    iterate [on `column.categories`](https://datagrok.ai/help/develop/advanced/data-frame#work-with-categories)
-   . Full Datagrok Column type API could be found [here](https://datagrok.ai/help/develop/dataframe#dgcolumn).
+   . Full Datagrok Column type API could be found [here](https://datagrok.ai/js-api/classes/dg.Column).
 
 4. Upload your package to `dev.datagrok.ai` using `grok publish dev`
    command. When everything is done correctly, the `detectors.js` file will get loaded by the platform automatically,
