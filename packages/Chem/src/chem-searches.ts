@@ -13,8 +13,7 @@ import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metri
 import {assure} from '@datagrok-libraries/utils/src/test';
 
 function _chemFindSimilar(molStringsColumn: DG.Column,
-      queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
-
+  queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
   const len = molStringsColumn.length;
   const distances = _chemGetSimilarities(queryMolString);
   const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);

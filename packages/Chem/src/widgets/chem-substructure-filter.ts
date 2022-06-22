@@ -13,7 +13,7 @@ import {Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
 import Sketcher = chem.Sketcher;
 import wu from 'wu';
-import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
+import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 export class SubstructureFilter extends DG.Filter {
   sketcher: Sketcher = new Sketcher();
@@ -21,15 +21,16 @@ export class SubstructureFilter extends DG.Filter {
   loader: HTMLDivElement = ui.loader();
   onSketcherChangedSubs?: Subscription;
 
-  get calculating(): boolean { return this.loader.style.display == 'initial'; }
-  set calculating(value: boolean) { this.loader.style.display = value ? 'initial' : 'none'; }
+  get calculating(): boolean {return this.loader.style.display == 'initial';}
+  set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
 
   get filterSummary(): string {
     return this.sketcher.getSmiles();
   }
 
   get isFiltering(): boolean {
-    return super.isFiltering && (!!this.sketcher?.getMolFile() && !(this.sketcher?.getMolFile().split("\n")[3].trimStart()[0] === '0'));
+    return super.isFiltering &&
+    (!!this.sketcher?.getMolFile() && !(this.sketcher?.getMolFile().split('\n')[3].trimStart()[0] === '0'));
   }
 
   get isReadyToApplyFilter(): boolean {
@@ -106,9 +107,9 @@ export class SubstructureFilter extends DG.Filter {
     if (state.molBlock)
       this.sketcher.setMolFile(state.molBlock);
 
-    let that = this;
+    const that = this;
     if (state.molBlock)
-      setTimeout(function() { that._onSketchChanged(); }, 1000);
+      setTimeout(function() {that._onSketchChanged();}, 1000);
   }
 
   /**
@@ -121,13 +122,11 @@ export class SubstructureFilter extends DG.Filter {
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
       this.bitset = null;
-      this.dataFrame?.rows.requestFilter();
-    }
-    else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
+      //this.dataFrame?.rows.requestFilter();
+    } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
       // some other filter is already filtering for the exact same thing
       return;
-    }
-    else {
+    } else {
       this.calculating = true;
       try {
         this.bitset = await chemSubstructureSearchLibrary(
@@ -136,5 +135,6 @@ export class SubstructureFilter extends DG.Filter {
         this.calculating = false;
       }
     }
+    this.dataFrame?.rows.requestFilter();
   }
 }

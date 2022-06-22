@@ -2,13 +2,13 @@ import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {rdKitFingerprintToBitArray} from '../utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {isMolBlock} from '../utils/chem-utils';
-import {RDModule, RDMol} from "../rdkit-api";
+import {RDModule, RDMol} from '../rdkit-api';
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   _patternFps: BitArray[] | null = null;
-   readonly _patternFpLength = 2048;
+  readonly _patternFpLength = 2048;
 
-   constructor(module: RDModule, webRoot: string) {
+  constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
 
@@ -60,11 +60,11 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   }
 
   getMol(molString: string) {
-     return this._rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
+    return this._rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
   }
 
   getQMol(molString: string) {
-     return this._rdKitModule.get_qmol(molString);
+    return this._rdKitModule.get_qmol(molString);
   }
 
   searchSubstructure(queryMolString: string, queryMolBlockFailover: string): string {
@@ -72,9 +72,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (this._rdKitMols) {
       let queryMol: RDMol | null = null;
       try {
-        if (isMolBlock(queryMolString)) {
+        if (isMolBlock(queryMolString))
           queryMol = this.getMol(queryMolString);
-        } else {
+        else {
           let createdQMol = false;
           try {
             queryMol = this.getQMol(queryMolString);
@@ -93,7 +93,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
               mol?.delete();
             }
             if (createdMol) { // check the qmol is proper
-              let match = mol!.get_substruct_match(queryMol!);
+              const match = mol!.get_substruct_match(queryMol!);
               if (match === '{}') {
                 queryMol!.delete();
                 queryMol = mol;
@@ -109,14 +109,17 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             const queryMolFp = rdKitFingerprintToBitArray(fpRdKit);
             for (let i = 0; i < this._patternFps.length; ++i) {
               const crossedFp = BitArray.fromAnd(this._patternFps[i], queryMolFp);
-              if (crossedFp.equals(queryMolFp))
+              if (crossedFp.equals(queryMolFp)) {
                 if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
                   matches.push(i);
+              }
             }
-          } else
-            for (let i = 0; i < this._rdKitMols!.length; ++i)
+          } else {
+            for (let i = 0; i < this._rdKitMols!.length; ++i) {
               if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
                 matches.push(i);
+            }
+          }
         } else
           throw new Error('Chem | Search pattern cannot be set');
       } catch (e) {
@@ -129,10 +132,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     }
     return '[' + matches.join(', ') + ']';
   }
-  
+
   freeMoleculesStructures(): void {
     if (this._rdKitMols !== null) {
-      for (let mol of this._rdKitMols!)
+      for (const mol of this._rdKitMols!)
         mol.delete();
       this._rdKitMols = null;
     }
