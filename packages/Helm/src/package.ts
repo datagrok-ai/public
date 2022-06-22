@@ -25,6 +25,33 @@ export function helmCellRenderer(): DG.GridCellRenderer {
   return new HelmCellRenderer();
 }
 
+//tags: cellEditor
+//description: HELM
+//input: grid_cell cell
+export function editMoleculeCell(cell: DG.GridCell): void {
+  let view = ui.div();
+  let app: { canvas: { helm: { setSequence: (arg0: any, arg1: string) => void; }; }; };
+  setTimeout(function () {
+    //@ts-ignore
+    org.helm.webeditor.MolViewer.molscale = 0.8;
+    //@ts-ignore
+    app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
+  });
+  setTimeout(function() {
+    //@ts-ignore
+    app.canvas.helm.setSequence(cell.cell.value , 'HELM');
+  }, 200);
+
+  let dlg = ui.dialog()
+  .add(view)
+  .onOK(() => {
+    view;
+  }).show({ modal: true, fullScreen: true});
+  dlg.root.children[0].remove();
+  dlg.root.children[1].classList.remove('ui-panel'); 
+  dlg.root.children[1].classList.remove('ui-box');
+}
+
 //name: helmToSmiles
 //tags: converter
 //output: string smiles {semType: Molecule}
@@ -66,29 +93,5 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     gridCell.element = host;
     // @ts-ignore
     new JSDraw2.Editor(host, { width: w, height: h, skin: "w8", viewonly: true });
-    
-    host.addEventListener('dblclick', function() {
-      let view = ui.div();
-      let app: { canvas: { helm: { setSequence: (arg0: any, arg1: string) => void; }; }; };
-      setTimeout(function () {
-        //@ts-ignore
-        org.helm.webeditor.MolViewer.molscale = 0.8;
-        //@ts-ignore
-        app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
-      });
-      setTimeout(function() {
-        //@ts-ignore
-        app.canvas.helm.setSequence(host.getAttribute('data'), 'HELM');
-      }, 200);
-
-      let dlg = ui.dialog()
-      .add(view)
-      .onOK(() => {
-        view;
-      }).show({ modal: true, fullScreen: true});
-      dlg.root.children[0].remove();
-      dlg.root.children[1].classList.remove('ui-panel'); 
-      dlg.root.children[1].classList.remove('ui-box');
-    }, false);
   }
 }
