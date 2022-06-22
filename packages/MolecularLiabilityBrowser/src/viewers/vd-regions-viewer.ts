@@ -4,130 +4,88 @@ import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
 
+import {VdRegionType, VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
-
-export enum VdRegionType {
-  Unknown = 'unknown',
-  FR = 'framework',
-  CDR = 'cdr',
-}
-
 const vrt = VdRegionType;
-
-/** Describes V-DOMAIN (IG and TR) region (of multiple alignment)
- * https://www.imgt.org/IMGTScientificChart/Numbering/IMGTIGVLsuperfamily.html
- */
-export class VdRegion {
-  type: VdRegionType;
-  name: string;
-  chain: string;
-  order: number;
-  startPositionName: string;
-  endPositionName: string;
-
-  /**
-   * start and position are strings because they correspond position names as column names in ANARCI output
-   * @param {VdRegionType} type  Type of the region
-   * @param {string} name  Name of the region
-   * @param {string} chain
-   * @param {string} order
-   * @param {string} startPositionName  Region start position (inclusive)
-   * @param {string} endPositionName  Region end position (inclusive)
-   */
-  constructor(type: VdRegionType, name: string, chain: string, order: number,
-    startPositionName: string, endPositionName: string) {
-    this.type = type;
-    this.name = name;
-    this.chain = chain;
-    this.order = order;
-    this.startPositionName = startPositionName;
-    this.endPositionName = endPositionName;
-  }
-
-  // public toString(): string {
-  //   return `type: '${this.type}', name: '${this.name}', ` +
-  //     `start: '${this.startPositionName}', end: '${this.endPositionName}'`;
-  // }
-}
 
 // Positions of regions for numbering schemes
 // http://www.bioinf.org.uk/abs/info.html
 
-const imgtRegions: VdRegion[] = [
-  new VdRegion(vrt.FR, 'FR1', 'Light', 1, '1', '26'),
-  new VdRegion(vrt.FR, 'FR1', 'Heavy', 1, '1', '26'),
+// const imgtRegions: VdRegion[] = [
+//   new VdRegion(vrt.FR, 'FR1', 'Light', 1, '1', '26'),
+//   new VdRegion(vrt.FR, 'FR1', 'Heavy', 1, '1', '26'),
+//
+//   new VdRegion(vrt.CDR, 'CDR1', 'Light', 2, '27', '38'), // 27-32
+//   new VdRegion(vrt.CDR, 'CDR1', 'Heavy', 2, '27', '38'), // 27-32
+//
+//   new VdRegion(vrt.FR, 'FR2', 'Light', 3, '39', '55'),
+//   new VdRegion(vrt.FR, 'FR2', 'Heavy', 3, '39', '55'),
+//
+//   new VdRegion(vrt.CDR, 'CDR2', 'Light', 4, '56', '65'),
+//   new VdRegion(vrt.CDR, 'CDR2', 'Heavy', 4, '56', '65'),
+//
+//   new VdRegion(vrt.FR, 'FR3', 'Light', 5, '66', '104'),
+//   new VdRegion(vrt.FR, 'FR3', 'Heavy', 5, '66', '104'),
+//
+//   new VdRegion(vrt.CDR, 'CDR3', 'Light', 6, '105', '117'),
+//   new VdRegion(vrt.CDR, 'CDR3', 'Heavy', 6, '105', '117'),
+//
+//   new VdRegion(vrt.FR, 'FR4', 'Light', 7, '118', null/*127*/),
+//   new VdRegion(vrt.FR, 'FR4', 'Heavy', 7, '118', null/*128*/),
+// ];
+//
+// const chothiaRegions: VdRegion[] = [
+//   new VdRegion(vrt.FR, 'FR1', 'Light', 1, '1', '23'),
+//   new VdRegion(vrt.FR, 'FR1', 'Heavy', 1, '1', '25'),
+//
+//   new VdRegion(vrt.CDR, 'L1', 'Light', 2, '24', '34'),
+//   new VdRegion(vrt.CDR, 'H1', 'Heavy', 2, '26', '32'),
+//
+//   new VdRegion(vrt.FR, 'FR2', 'Light', 3, '35', '49'),
+//   new VdRegion(vrt.FR, 'FR2', 'Heavy', 3, '33', '51'),
+//
+//   new VdRegion(vrt.CDR, 'L2', 'Light', 4, '50', '56'),
+//   new VdRegion(vrt.CDR, 'H2', 'Heavy', 4, '52', '56'),
+//
+//   new VdRegion(vrt.FR, 'FR3', 'Light', 5, '57', '88'),
+//   new VdRegion(vrt.FR, 'FR3', 'Heavy', 5, '57', '94'),
+//
+//   new VdRegion(vrt.CDR, 'L3', 'Light', 6, '89', '97'),
+//   new VdRegion(vrt.CDR, 'H3', 'Heavy', 6, '95', '102'),
+//
+//   new VdRegion(vrt.FR, 'FR4', 'Light', 7, '98', null/*107*/),
+//   new VdRegion(vrt.FR, 'FR4', 'Heavy', 7, '103', null/*113*/),
+// ];
+//
+// const kabatRegions: VdRegion[] = [
+//   new VdRegion(vrt.FR, 'FR1', 'Light', 1, '1', '23'),
+//   new VdRegion(vrt.FR, 'FR1', 'Heavy', 1, '1', '37'),
+//
+//   new VdRegion(vrt.CDR, 'L1', 'Light', 2, '24', '42'),
+//   new VdRegion(vrt.CDR, 'H1', 'Heavy', 2, '38', '42'),
+//
+//   new VdRegion(vrt.FR, 'FR2', 'Light', 3, '43', '56'),
+//   new VdRegion(vrt.FR, 'FR2', 'Heavy', 3, '43', '55'),
+//
+//   new VdRegion(vrt.CDR, 'L2', 'Light', 4, '57', '72'),
+//   new VdRegion(vrt.CDR, 'H2', 'Heavy', 4, '56', '74'),
+//
+//   new VdRegion(vrt.FR, 'FR3', 'Light', 5, '73', '106'),
+//   new VdRegion(vrt.FR, 'FR3', 'Heavy', 5, '75', '106'/*??*/),
+//
+//   new VdRegion(vrt.CDR, 'L3', 'Light', 6, '107', '138'),
+//   new VdRegion(vrt.CDR, 'H3', 'Heavy', 6, '107' /*??*/, '138'),
+//
+//   new VdRegion(vrt.FR, 'FR4', 'Light', 7, '139', null /*107*/),
+//   new VdRegion(vrt.FR, 'FR4', 'Heavy', 7, '139', null /*113*/),
+// ];
 
-  new VdRegion(vrt.CDR, 'CDR1', 'Light', 2, '27', '38'), // 27-32
-  new VdRegion(vrt.CDR, 'CDR1', 'Heavy', 2, '27', '38'), // 27-32
-
-  new VdRegion(vrt.FR, 'FR2', 'Light', 3, '39', '55'),
-  new VdRegion(vrt.FR, 'FR2', 'Heavy', 3, '39', '55'),
-
-  new VdRegion(vrt.CDR, 'CDR2', 'Light', 4, '56', '65'),
-  new VdRegion(vrt.CDR, 'CDR2', 'Heavy', 4, '56', '65'),
-
-  new VdRegion(vrt.FR, 'FR3', 'Light', 5, '66', '104'),
-  new VdRegion(vrt.FR, 'FR3', 'Heavy', 5, '66', '104'),
-
-  new VdRegion(vrt.CDR, 'CDR3', 'Light', 6, '105', '117'),
-  new VdRegion(vrt.CDR, 'CDR3', 'Heavy', 6, '105', '117'),
-
-  new VdRegion(vrt.FR, 'FR4', 'Light', 7, '118', null/*127*/),
-  new VdRegion(vrt.FR, 'FR4', 'Heavy', 7, '118', null/*128*/),
-];
-
-const chothiaRegions: VdRegion[] = [
-  new VdRegion(vrt.FR, 'FR1', 'Light', 1, '1', '23'),
-  new VdRegion(vrt.FR, 'FR1', 'Heavy', 1, '1', '25'),
-
-  new VdRegion(vrt.CDR, 'L1', 'Light', 2, '24', '34'),
-  new VdRegion(vrt.CDR, 'H1', 'Heavy', 2, '26', '32'),
-
-  new VdRegion(vrt.FR, 'FR2', 'Light', 3, '35', '49'),
-  new VdRegion(vrt.FR, 'FR2', 'Heavy', 3, '33', '51'),
-
-  new VdRegion(vrt.CDR, 'L2', 'Light', 4, '50', '56'),
-  new VdRegion(vrt.CDR, 'H2', 'Heavy', 4, '52', '56'),
-
-  new VdRegion(vrt.FR, 'FR3', 'Light', 5, '57', '88'),
-  new VdRegion(vrt.FR, 'FR3', 'Heavy', 5, '57', '94'),
-
-  new VdRegion(vrt.CDR, 'L3', 'Light', 6, '89', '97'),
-  new VdRegion(vrt.CDR, 'H3', 'Heavy', 6, '95', '102'),
-
-  new VdRegion(vrt.FR, 'FR4', 'Light', 7, '98', null/*107*/),
-  new VdRegion(vrt.FR, 'FR4', 'Heavy', 7, '103', null/*113*/),
-];
-
-const kabatRegions: VdRegion[] = [
-  new VdRegion(vrt.FR, 'FR1', 'Light', 1, '1', '23'),
-  new VdRegion(vrt.FR, 'FR1', 'Heavy', 1, '1', '37'),
-
-  new VdRegion(vrt.CDR, 'L1', 'Light', 2, '24', '42'),
-  new VdRegion(vrt.CDR, 'H1', 'Heavy', 2, '38', '42'),
-
-  new VdRegion(vrt.FR, 'FR2', 'Light', 3, '43', '56'),
-  new VdRegion(vrt.FR, 'FR2', 'Heavy', 3, '43', '55'),
-
-  new VdRegion(vrt.CDR, 'L2', 'Light', 4, '57', '72'),
-  new VdRegion(vrt.CDR, 'H2', 'Heavy', 4, '56', '74'),
-
-  new VdRegion(vrt.FR, 'FR3', 'Light', 5, '73', '106'),
-  new VdRegion(vrt.FR, 'FR3', 'Heavy', 5, '75', '106'/*??*/),
-
-  new VdRegion(vrt.CDR, 'L3', 'Light', 6, '107', '138'),
-  new VdRegion(vrt.CDR, 'H3', 'Heavy', 6, '107' /*??*/, '138'),
-
-  new VdRegion(vrt.FR, 'FR4', 'Light', 7, '139', null /*107*/),
-  new VdRegion(vrt.FR, 'FR4', 'Heavy', 7, '139', null /*113*/),
-];
-
-const numberingSchemeRegions: { [name: string]: VdRegion[] } = {
-  'imgt': imgtRegions,
-  'chothia': chothiaRegions,
-  'kabat': kabatRegions,
-};
+// const numberingSchemeRegions: { [name: string]: VdRegion[] } = {
+//   'imgt': imgtRegions,
+//   'chothia': chothiaRegions,
+//   'kabat': kabatRegions,
+// };
 
 /** Viewer with tabs based on description of chain regions.
  *  Used to define regions of an immunoglobulin LC.
@@ -143,7 +101,8 @@ export class VdRegionsViewer extends DG.JsViewer {
   private isOpened: boolean;
   private panelNode: DG.DockNode;
 
-  public numberingScheme: string;
+  public regions: VdRegion[] = [];
+  // public numberingScheme: string;
   public regionTypes: string[];
   public chains: string[];
   public heavyChainSequenceColumnName: string;
@@ -154,9 +113,10 @@ export class VdRegionsViewer extends DG.JsViewer {
   }
 
   // TODO: .onTableAttached is not calling on dataFrame set, onPropertyChanged  also not calling
-  public async setDf(value: DG.DataFrame) {
+  public async setDf(value: DG.DataFrame, regions: VdRegion[]) {
     console.debug('VdRegionsViewer.setDf()');
     await this.destroyView();
+    this.regions = regions;
     this.dataFrame = value;
     await this.buildView();
   }
@@ -281,11 +241,12 @@ export class VdRegionsViewer extends DG.JsViewer {
     const colNames: { [chain: string]: string } = Object.assign({},
       ...['Heavy', 'Light'].map((chain) => ({[chain]: `${chain} chain sequence`})));
 
-    const scheme = this.numberingScheme ||
-      this.dataFrame.col(colNames['Heavy']).getTag('numberingScheme');
+    // const scheme = this.numberingScheme ||
+    //   this.dataFrame.col(colNames['Heavy']).getTag('numberingScheme');
 
-    const regionsFiltered: VdRegion[] = scheme in numberingSchemeRegions ?
-      numberingSchemeRegions[scheme].filter((r: VdRegion) => this.regionTypes.includes(r.type)) : [];
+    // const regionsFiltered: VdRegion[] = scheme in numberingSchemeRegions ?
+    //   numberingSchemeRegions[scheme].filter((r: VdRegion) => this.regionTypes.includes(r.type)) : [];
+    const regionsFiltered: VdRegion[] = this.regions.filter((r: VdRegion) => this.regionTypes.includes(r.type));
 
     const orderList: number[] = Array.from(new Set(regionsFiltered.map((r) => r.order))).sort();
 
@@ -298,8 +259,8 @@ export class VdRegionsViewer extends DG.JsViewer {
 
         regionChains[chain] = (await this.dataFrame.plot.fromType('WebLogo', {
           sequenceColumnName: colNames[chain],
-          startPositionName: region.startPositionName,
-          endPositionName: region.endPositionName,
+          startPositionName: region.positionStartName,
+          endPositionName: region.positionEndName,
           fixWidth: true,
         })) as unknown as WebLogo;
       }

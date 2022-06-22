@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import {_package} from '../package';
+
 import {
   catchToLog,
   CdrMapType,
@@ -13,8 +15,6 @@ import {
 } from './data-loader';
 
 export class DataLoaderDb extends DataLoader {
-  private _pName: string = 'MolecularLiabilityBrowser';
-
   private _files: { [name: string]: string } = {
     filterProps: 'properties.json',
     mutcodes: 'mutcodes.json',
@@ -25,6 +25,9 @@ export class DataLoaderDb extends DataLoader {
     l_out: 'l_out.csv',
     tree: 'tree.csv',
   };
+
+  private _schemes: string[];
+  private _cdrs: string[];
   private _vids: string[];
   private _vidsObsPtm: string[];
   private _filterProperties: FilterPropertiesType;
@@ -32,6 +35,10 @@ export class DataLoaderDb extends DataLoader {
   private _ptmMap: PtmMapType;
   private _cdrMap: CdrMapType;
   private _refDf: DG.DataFrame;
+
+  get schemes(): string[] { return this._schemes; }
+
+  get cdrs(): string[] { return this._cdrs; }
 
   get vids(): string[] { return this._vids; }
 
@@ -64,6 +71,12 @@ export class DataLoaderDb extends DataLoader {
     // this._realNums = JSON.parse(await _package.files.readAsText(this._files.realNums));
 
     await Promise.all([
+      catchToLog<Promise<DG.DataFrame>>('MLB database error \'listSchemes\': ',
+        () => grok.functions.call(`${this._pName}:listSchemes`))
+        .then((df: DG.DataFrame) => { this._schemes = df.columns.byName('scheme').toList(); }),
+      catchToLog<Promise<DG.DataFrame>>('MLB database error \'listCdrs\': ',
+        () => grok.functions.call(`${this._pName}:listCdrs`))
+        .then((df: DG.DataFrame) => { this._cdrs = df.columns.byName('cdr').toList(); }),
       grok.functions.call(`${this._pName}:getVids`).then(
         (df: DG.DataFrame) => {
           this._vids = df.columns.byIndex(0).toList();
@@ -110,15 +123,6 @@ export class DataLoaderDb extends DataLoader {
 
   async getTreeByAntigen(antigen: string): Promise<DG.DataFrame> {
     const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getTreeByAntigen`, {antigen: antigen});
-    return df;
-  }
-
-  async getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame> {
-    // There is a problem with using underscore symbols in query names.
-    const scheme2: string = scheme.charAt(0).toUpperCase() + scheme.slice(1);
-    const chain2: string = chain.charAt(0).toUpperCase() + chain.slice(1);
-    const df: DG.DataFrame = await grok.functions.call(
-      `${this._pName}:getAnarci${scheme2}${chain2}`, {antigen: antigen});
     return df;
   }
 

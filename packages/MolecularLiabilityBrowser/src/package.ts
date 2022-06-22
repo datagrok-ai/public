@@ -6,7 +6,7 @@ import {PtmFilter} from './custom-filters';
 import {DataLoader, DataLoaderType} from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
 import {DataLoaderDb} from './utils/data-loader-db';
-import {VdRegion, VdRegionsViewer} from './viewers/vd-regions-viewer';
+import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {MolecularLiabilityBrowser} from './molecular-liability-browser';
 import {TreeBrowser} from './mlb-tree';
 
@@ -41,9 +41,12 @@ export async function initMlb() {
     dl = new DataLoaderDb();
     break;
   default:
-    throw new Error(`Unexpected data package property 'DataSource' value '${dataSourceSettings}'.`);
+    throw new Error(`MLB: Unexpected data package property 'DataSource' value '${dataSourceSettings}'.`);
   }
+
+  console.debug('MLB.package.initMLB() before dl.init()');
   await dl.init();
+  console.debug('MLB.package.initMLB() after dl.init()');
 
   pi.close();
 }
@@ -54,7 +57,7 @@ export async function initMlb() {
 //output: filter result
 export function ptmFilter() {
   if (!(dl.ptmMap && dl.cdrMap && dl.refDf))
-    throw new Error(`Filter data is not initialized!`);
+    throw new Error(`MLB: Filter data is not initialized!`);
 
   return new PtmFilter(dl.ptmMap, dl.cdrMap, dl.refDf);
 }
@@ -62,11 +65,14 @@ export function ptmFilter() {
 //name: Molecular Liability Browser
 //tags: app
 export async function MolecularLiabilityBrowserApp() {
+  console.debug('MLB.package.MolecularLiabilityBrowserApp()');
   grok.shell.windows.showToolbox = false;
   const urlParams: URLSearchParams = new URLSearchParams(window.location.search);
 
   const app = new MolecularLiabilityBrowser(dl);
+  console.debug('MLB.package.MolecularLiabilityBrowserApp() before app.init()');
   await app.init(urlParams);
+  console.debug('MLB.package.MolecularLiabilityBrowserApp() after app.init()');
 }
 
 /* WebLogo viewer is registered in Bio package */
