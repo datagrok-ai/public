@@ -1,8 +1,8 @@
 {
 	"name": "helm",
-	"beta": true,
+	"beta": false,
 	"friendlyName": "Helm",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "latest",
