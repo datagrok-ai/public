@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/nlp",
 	"fullName": "NLP",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Natural Language Processing Package",
 	"repository": {
     "type": "git",
@@ -32,5 +32,6 @@
 		"release-nlp-localhost": "webpack && grok publish localhost --release"
 	},
 	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+	"canView": [ "All users" ],
+	"category": "Machine Learning"
 }

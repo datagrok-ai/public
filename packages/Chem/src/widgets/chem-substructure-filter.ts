@@ -13,36 +13,36 @@ import {Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
 import Sketcher = chem.Sketcher;
 import wu from 'wu';
+import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
 export class SubstructureFilter extends DG.Filter {
   sketcher: Sketcher = new Sketcher();
   bitset: DG.BitSet | null = null;
-  loader = ui.loader();
-  readonly WHITE_MOL = '\n  0  0  0  0  0  0  0  0  0  0999 V2000\nM  END\n';
+  loader: HTMLDivElement = ui.loader();
   onSketcherChangedSubs?: Subscription;
 
-  _indicateProgress(on = true) {
-    this.loader.style.display = on ? 'block' : 'none';
-  }
+  get calculating(): boolean { return this.loader.style.display == 'initial'; }
+  set calculating(value: boolean) { this.loader.style.display = value ? 'initial' : 'none'; }
 
   get filterSummary(): string {
     return this.sketcher.getSmiles();
   }
 
   get isFiltering(): boolean {
-    return super.isFiltering && !this.sketcher?.getMolFile()?.endsWith(this.WHITE_MOL);
+    return super.isFiltering && (!!this.sketcher?.getMolFile() && !(this.sketcher?.getMolFile().split("\n")[3].trimStart()[0] === '0'));
+  }
+
+  get isReadyToApplyFilter(): boolean {
+    return !this.calculating && this.bitset != null;
   }
 
   constructor() {
     super();
     initRdKitService(); // No await
     this.root = ui.divV([]);
-    this._indicateProgress(false);
-    this.loader.style.position = 'absolute';
-    this.loader.style.right = '60px';
-    this.loader.style.top = '4px';
+    this.calculating = false;
     this.root.appendChild(this.sketcher.root);
-    this.root.firstChild!.firstChild!.firstChild!.appendChild(this.loader);
+    this.root.appendChild(this.loader);
   }
 
   get _debounceTime(): number {
@@ -105,25 +105,36 @@ export class SubstructureFilter extends DG.Filter {
     super.applyState(state);
     if (state.molBlock)
       this.sketcher.setMolFile(state.molBlock);
+
+    let that = this;
+    if (state.molBlock)
+      setTimeout(function() { that._onSketchChanged(); }, 1000);
   }
 
+  /**
+   * Performs the actual filtering
+   * When the results are ready, triggers `rows.requestFilter`, which in turn triggers `applyFilter`
+   * that would simply apply the bitset synchronously.
+   */
   async _onSketchChanged(): Promise<void> {
     if (!this.isFiltering) {
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
       this.bitset = null;
-    } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
+      this.dataFrame?.rows.requestFilter();
+    }
+    else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
       // some other filter is already filtering for the exact same thing
       return;
-    } else {
-      this._indicateProgress();
+    }
+    else {
+      this.calculating = true;
       try {
         this.bitset = await chemSubstructureSearchLibrary(
           this.column!, await this.sketcher.getSmarts(), this.sketcher.getMolFile());
       } finally {
-        this._indicateProgress(false);
+        this.calculating = false;
       }
     }
-    this.dataFrame?.rows.requestFilter();
   }
 }

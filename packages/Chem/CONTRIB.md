@@ -28,6 +28,13 @@ https://github.com/datagrok-ai/public/blob/master/CONTRIB.md
 ### Preparing working environment
 
 Don't just do `npm install & webpack` at the start. This may fail, as explained below.
+This is how to build Chem locally, if that works for you skip this section:
+
+```
+packages/libraries-link-local.cmd
+chem/npm run link-all
+chem/npm run build-chem-local
+```
 
 The `Chem` library depends on common
 Datarok libraries located at `public/js-api`, `public/libraries/utils`, and `public/libraries/ml`.

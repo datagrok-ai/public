@@ -1,12 +1,11 @@
 import * as DG from 'datagrok-api/dg';
-
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 
+import './tests/core';
 import './tests/peptide-space-test';
-import './tests/peptides-tests';
 import './tests/msa-tests';
 
-export const _packageTest = new DG.Package();
+export const _package = new DG.Package();
 export {tests};
 
 //name: test

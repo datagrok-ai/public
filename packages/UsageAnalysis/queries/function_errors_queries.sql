@@ -11,7 +11,8 @@ and (u.login = any(@users) or @users = ARRAY['all'])
 and e.error_message is not null
 and et.source != 'error'
 and e.is_error = true
-group by e.event_time::date;
+group by e.event_time::date
+order by e.event_time::date;
 --end
 
 

@@ -93,6 +93,22 @@ function vectorSquare(v: Vector): Vector {
   return total;
 }
 
+export function vectorLength(v: Vector): number {
+  let sqrSum: number = 0;
+  for (let i: number = 0; i < v.length; i++)
+    sqrSum += v[i] * v[i];
+  return Math.sqrt(sqrSum);
+}
+
+export function vectorDotProduct(v1: Vector, v2: Vector): number {
+  if (v1.length != v2.length)
+    throw Error('The dimensionality of the vectors must match');
+  let prod: number = 0;
+  for (let i: number = 0; i < v1.length; i++)
+    prod += v1[i] * v2[i];
+  return prod;
+}
+
 /**
  * Creates a matrix filled with random floating point values.
  *
@@ -140,7 +156,7 @@ export function calcDistanceMatrix(data: Vectors, distance: DistanceMetric): Mat
   const matrix = initCoordinates(nItems, nItems, 0);
 
   for (let i = 0; i < nItems; ++i) {
-    for (let j = i+1; j < nItems; ++j) {
+    for (let j = i + 1; j < nItems; ++j) {
       const d: number = (data[i] == null) || (data[j] == null) ? 0 : distance(data[i], data[j]);
       matrix[i][j] = matrix[j][i] = d;
     }
@@ -148,7 +164,7 @@ export function calcDistanceMatrix(data: Vectors, distance: DistanceMetric): Mat
   return matrix;
 }
 
-/** Generates array from a range [begin; end] or [begin; end) if endExclusive. */
+/** Generates array from a range [begin; end] or [begin; end) if endExclusive. **/
 export function genRange(begin: number, end: number, endExclusive = false): Int32Array {
   const nItems = end - begin + (endExclusive ? 0 : 1);
   const series = new Int32Array(nItems);
@@ -159,7 +175,7 @@ export function genRange(begin: number, end: number, endExclusive = false): Int3
   return series;
 }
 
-/**
+ /**
  * Returns order of values as if they are sorted.
  *
  * @export
@@ -179,7 +195,8 @@ export function argSort(values: any[], reverse = false): number[] {
  * Returns the indexes of the most diverse objects according to the dist function
  * @param {number} length total number of objects
  * @param {number} n number of diverse elements to find
- * @param {(i1: number, i2: number) => number} dist a function which calculates distance between two objects using their indexes
+ * @param {(i1: number, i2: number) => number} dist a function which calculates distance between
+ *                                                  two objects using their indexes
  * @returns {number[]} The indexes of the most diverse objects
  */
 export function getDiverseSubset(length: number, n: number, dist: (i1: number, i2: number) => number): number[] {
@@ -208,7 +225,7 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
   while (subset.length < n) {
     const idx = maxBy(
       complement.values() as IterableIterator<number>,
-      (i) => Math.min.apply(Math, subset.map(function (val, index) {
+      (i) => Math.min.apply(Math, subset.map(function(val, index) {
         return dist(i, val);
       })));
     if (idx) {
@@ -221,7 +238,7 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
 
 /**
  * Returns normalized vector
- * @param data numerical array
+ * @param {Vector} data numerical array
  */
 export function normalize(data: Vector): Vector {
   let mean = 0;
@@ -247,6 +264,7 @@ export function normalize(data: Vector): Vector {
  * Finds set difference between two lists.
  * @param {any[]} a The first list.
  * @param {any[]} b The second list.
+ * @return {any[]}
  */
 export function setDifference(a: any[], b: any[]): any[] {
   const bSet = new Set(b);

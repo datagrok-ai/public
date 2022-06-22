@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "0.54.1",
+  "version": "1.0.2",
   "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis",
   "repository": {
     "type": "git",
@@ -25,14 +25,15 @@
     "common/ngl_viewer/ngl.js"
   ],
   "dependencies": {
-    "datagrok-api": "^1.0.0",
-    "@datagrok-libraries/ml": "^1.0.0",
-    "@datagrok-libraries/utils": "^0.3.9",
+    "datagrok-api": "^1.4.0",
+    "@datagrok-libraries/ml": "^2.0.1",
+    "@datagrok-libraries/utils": "^0.4.1",
     "@types/wu": "latest",
     "cash-dom": "latest",
     "css-loader": "latest",
     "dayjs": "latest",
     "file-loader": "latest",
+    "jstat": "^1.9.5",
     "offscreen-canvas": "latest",
     "openchemlib": "6.0.1",
     "path": "^0.12.7",
@@ -57,7 +58,7 @@
     "jest": "^27.0.0",
     "@types/jest": "^27.0.0",
     "ts-jest": "^27.0.0",
-    "puppeteer": "latest"
+    "puppeteer": "^13.7.0"
   },
   "browser": {
     "fs": false,
@@ -66,9 +67,9 @@
     "crypto": false
   },
   "scripts": {
-    "link-api": "npm install && npm link datagrok-api",
-    "link-utils": "npm install && npm link @datagrok-libraries/utils",
-    "link-ml": "npm install && npm link @datagrok-libraries/ml",
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-ml": "npm link @datagrok-libraries/ml",
     "link-all": "npm install && npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml",
     "build-chem-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build",
     "build": "webpack",
@@ -83,5 +84,6 @@
   ],
   "canView": [
     "All users"
-  ]
+  ],
+  "category": "Cheminformatics"
 }

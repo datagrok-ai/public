@@ -10,8 +10,8 @@
   },
   "credentials" : {
     "parameters" : {
-      "login": "northwind",
-      "password": "northwind"
+      "login": "",
+      "password": ""
     }
   },
   "dataSource":"Athena",

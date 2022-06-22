@@ -9,10 +9,11 @@ export async function callMVA(
   currentDf: DG.DataFrame,
   options: {[name: string]: string},
   sequencesCol: DG.Column,
-) {
+): Promise<void> {
   const activityCol = await _scaleColumn(currentDf.getCol(options['activityColumnName']), options['scaling']);
   const encDf = _encodeSequences(sequencesCol);
 
+  //TODO: is it correct? Is it needed?
   _insertColumns(
     currentDf,
     [DG.Column.fromList('double', C.COLUMNS_NAMES.ACTIVITY_SCALED, activityCol.toList())],

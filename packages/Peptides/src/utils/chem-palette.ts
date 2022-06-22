@@ -31,7 +31,7 @@ export class ChemPalette {
    * @param {number} y y coordinate of the mouse pointer.
    * @param {MonomerLibrary} monomerLib Monomer Library instance
    */
-  static showTooltip(cell: DG.GridCell, x: number, y: number, monomerLib: MonomerLibrary) {
+  static showTooltip(cell: DG.GridCell, x: number, y: number, monomerLib: MonomerLibrary): void {
     const s = cell.cell.value as string;
     let toDisplay = [ui.divText(s)];
     const [, aarOuter, aarInner] = ChemPalette.getColorAAPivot(s);

@@ -1,3 +1,12 @@
+export type MonomerEntry = {
+  mol: string,
+  type: string,
+  analogueCode: string,
+  linkages: { [link: string]: { atomNumber: number, type: string } }
+};
+export type MonomerEntries = {[name: string]: MonomerEntry};
+export type LinkData = { [link: string]: { atomNumber: number, type: string } };
+
 /** HELM associated sdf libraries with monomer processing*/
 export class MonomerLibrary {
   static libName = 'monomerLibrary';
@@ -6,14 +15,7 @@ export class MonomerLibrary {
     'molecule', 'MonomerType', 'MonomerNaturalAnalogCode', 'MonomerName', 'MonomerCode', 'MonomerCaps', 'BranchMonomer',
   ];
 
-  private library: {
-    [name: string]: {
-      mol: string,
-      type: string,
-      analogueCode: string,
-      linkages: { [link: string]: { atomNumber: number, type: string } }
-    }
-  } = {};
+  private library: MonomerEntries = {};
 
   private monomers: string[] = [];
 
@@ -45,16 +47,15 @@ export class MonomerLibrary {
   }
 
   /** getting full monomer information from monomer library*/
-  public getMonomerEntry(name: string) {
+  public getMonomerEntry(name: string): MonomerEntry {
     if (!this.monomers.includes(name))
       throw new Error(`Monomer library do not contain ${name} monomer`);
-
 
     return this.library[name];
   }
 
   /** getting mol as string for monomer*/
-  public getMonomerMol(name: string) {
+  public getMonomerMol(name: string): string {
     if (!this.monomers.includes(name))
       throw new Error(`Monomer library do not contain ${name} monomer`);
 
@@ -72,7 +73,7 @@ export class MonomerLibrary {
   }
 
   /** getting the list of the minomers available in library*/
-  get monomerNames() {
+  get monomerNames(): string[] {
     return this.monomers;
   }
 
@@ -80,11 +81,10 @@ export class MonomerLibrary {
     return MonomerLibrary.libName;
   }
 
-  private getLinkData(mol: string, caps: string, name: string) {
+  private getLinkData(mol: string, caps: string, name: string): LinkData {
     const rawData = mol.match(/M  RGP  .+/);
     if (rawData === null)
       throw new Error(`Monomer library was not compiled: ${name} entry has no RGP`);
-
 
     const types: { [code: string]: string } = {};
     caps.split('\n')?.forEach((e) => {
@@ -92,7 +92,7 @@ export class MonomerLibrary {
     });
 
     const data = rawData[0].replace('M  RGP  ', '').split(/\s+/);
-    const res: { [link: string]: { atomNumber: number, type: string } } = {};
+    const res: LinkData = {};
     for (let i = 0; i < parseInt(data[0]); i++) {
       const code = parseInt(data[2 * i + 2]);
       let type = '';
@@ -118,21 +118,21 @@ export class MonomerLibrary {
 
 //TODO: merge with Chem version
 class SDFReader {
-  dataColls: { [_: string]: any };
+  dataColls: { [_: string]: string [] };
 
   constructor() {
     this.dataColls = {'molecule': []};
   }
 
-  getColls(content: string) {
+  getColls(content: string): { [_: string]: string[] } {
     this.read(content);
     return this.dataColls;
   }
 
-  read(content: string) {
+  read(content: string): void {
     content = content.replaceAll('\r', ''); //equalize old and new sdf standards
     let startIndex = content.indexOf('$$$$', 0);
-    this.parse(content, 0, startIndex, (name: string, val: any) => { // TODO: type
+    this.parse(content, 0, startIndex, (name: string, val: string): void => { // TODO: type
       this.dataColls[name] = [];
       this.dataColls[name].push(val);
     });
@@ -141,13 +141,15 @@ class SDFReader {
       startIndex = this.readNext(content, startIndex);
   }
 
-  readNext(content: string, startIndex: number) {
+  readNext(content: string, startIndex: number): number {
     const nextStartIndex = content.indexOf('$$$$', startIndex);
     if (nextStartIndex === -1)
       return -1;
     else {
       this.parse(content, startIndex, nextStartIndex,
-        (name: string, val: number) => this.dataColls[name].push(val));
+        (name: string, val: string): void => {
+          this.dataColls[name].push(val);
+        });
     }
 
     if (nextStartIndex > -1)
@@ -157,7 +159,7 @@ class SDFReader {
     return nextStartIndex;
   }
 
-  parse(content: string, start: number, end: number, handler: any) {
+  parse(content: string, start: number, end: number, handler: (name: string, val: string) => void): void {
     const molEnd = +content.indexOf('M  END\n', start) + 7;
     let localEnd = start;
     this.dataColls['molecule'].push(content.substring(start, molEnd));

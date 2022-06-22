@@ -356,9 +356,14 @@ export class Rect {
   }
 
   fit(width: number, height: number): Rect {
-    return width / height > this.width / this.height 
-      ? this.fromCenterSize(this.midX, this.midY, this.width, height * (this.width / width)) 
-      : this.fromCenterSize(this.midX, this.midY, width * (this.height / height), this.height) 
+    return width / height > this.width / this.height
+      ? this.fromCenterSize(this.midX, this.midY, this.width, height * (this.width / width))
+      : this.fromCenterSize(this.midX, this.midY, width * (this.height / height), this.height)
+  }
+
+  /** Checks if this Rect contains the point (x; y) inside */
+  contains(x: number, y: number): boolean {
+    return this.left <= x && x <= this.right && this.top <= y && y <= this.bottom;
   }
 }
 
@@ -751,6 +756,16 @@ export class Grid extends Viewer {
   /** Horizontal scroll bar */
   get horzScroll(): RangeSlider {
     return toJs(api.grok_Grid_Get_HorzScroll(this.dart));
+  }
+
+  /** Column labels height */
+  get colHeaderHeight(): number {
+    return toJs(api.grok_Grid_Get_ColHeaderHeight(this.dart));
+  }
+
+  /** Column labels box */
+  get colHeaderBox(): Rect {
+    return toJs(api.grok_Grid_Get_ColHeaderRect(this.dart));
   }
 
   /** Forces the grid to execute calculations that were postponed before the next rendering (such as recalculating layout).

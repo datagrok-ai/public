@@ -21,13 +21,13 @@ export class FilteringStatistics {
    * Sets values to make statistical analysis.
    * @param {Float32Array} data Those values.
    */
-  setData(data: Float32Array) {this.data = data;}
+  setData(data: Float32Array): void {this.data = data;}
 
   /**
    * Sets bit mask to split population into two groups.
    * @param {DG.BitSet} mask The mask to perform splitting.
    */
-  setMask(mask: DG.BitSet) {
+  setMask(mask: DG.BitSet): void {
     if (!this.data)
       return;
     const selected = this.data.filter((_, i) => mask.get(i));

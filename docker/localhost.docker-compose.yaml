@@ -84,18 +84,18 @@ services:
   datagrok:
     image: datagrok/datagrok:latest
     environment:
-      GROK_PARAMETERS: "{
-        \"deployDemo\": false,
-        \"dbServer\": \"database\",
-        \"db\": \"datagrok\",
-        \"dbAdminLogin\": \"postgres\",
-        \"dbAdminPassword\": \"postgres\",
-        \"dbLogin\": \"dg\",
-        \"dbPassword\": \"dg\",
-        \"adminPassword\": \"admin\",
-        \"adminDevKey\": \"admin\"
-      }"
-#      GROK_COMPONENTS: "${COMPOSE_PROFILES:?err}"
+      GROK_PARAMETERS:  |
+        {
+          "deployDemo": false,
+          "dbServer": "database",
+          "db": "datagrok",
+          "dbAdminLogin": "postgres",
+          "dbAdminPassword": "postgres",
+          "dbLogin": "dg",
+          "dbPassword": "dg",
+          "adminPassword": "admin",
+          "adminDevKey": "admin"
+        }
     ports:
       - "8080:8080/tcp"
     networks:
@@ -108,19 +108,19 @@ services:
     restart: unless-stopped
     profiles: [ "all", "datagrok" ]
 
-  grok_scaler:
-    image: datagrok/grok_scaler:latest
+  grok_spawner:
+    image: datagrok/grok_spawner:latest
     user: root
     environment:
-      API_SECRET: localhost-api-token
+      X_API_KEY: test-x-api-key
     networks:
       datagrok:
         aliases:
-          - grok_scaler
+          - grok_spawner
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
-    profiles: [ "all", "grok_scaler" ]
+    profiles: [ "all", "grok_spawner" ]
 
   grok_connect:
     image: datagrok/grok_connect:latest

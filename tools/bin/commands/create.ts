@@ -72,7 +72,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
             '@types/jest': '^27.0.0'
           }, ts ? {
             'ts-jest': '^27.0.0',
-            'puppeteer': 'latest'
+            'puppeteer': '^13.7.0'
           } : {});
           Object.assign(_package.scripts, {
             'test': 'jest',
@@ -137,6 +137,8 @@ export function create(args: CreateArgs) {
 
   if (validName) {
     let packageDir = curDir;
+    let repositoryInfo: RepositoryInfo | null = null;
+
     if (curFolder !== name) {
       packageDir = path.join(packageDir, name);
       if (!fs.existsSync(packageDir)) {
@@ -148,6 +150,36 @@ export function create(args: CreateArgs) {
       console.log('The package directory should be empty');
       return false;
     }
+
+    exec('git rev-parse --is-inside-work-tree', { cwd: packageDir }, (err) => {
+      if (err) return;
+      const repository: RepositoryInfo = { type: 'git' };
+
+      exec('git config --get remote.origin.url', { cwd: packageDir }, (err, stdout) => {
+        if (err) return;
+        repository.url = stdout.trim();
+
+        exec('git rev-parse --show-prefix', { cwd: packageDir }, (err, stdout) => {
+          if (err) return;
+          const prefix = stdout.trim();
+          repository.directory = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
+
+          if (repository.type && repository.url && repository.directory)
+            repositoryInfo = repository;
+        });
+      });
+    });
+
+    process.on('beforeExit', () => {
+      if (repositoryInfo) {
+        const packagePath = path.join(packageDir, 'package.json');
+        const p = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
+        p.repository = repositoryInfo;
+        fs.writeFileSync(packagePath, JSON.stringify(p, null, '\t'), 'utf-8');
+      }
+      process.exit();
+    });
+
     createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts, args.eslint, args.jest);
     console.log(help.package(name, args.ts));
     console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
@@ -168,4 +200,10 @@ interface CreateArgs {
   ts?: boolean,
   eslint?: boolean,
   jest?: boolean
+}
+
+interface RepositoryInfo {
+  type?: string,
+  url?: string,
+  directory?: string,
 }

@@ -6,6 +6,10 @@ import {pubChemSearchWidget} from './widget';
 
 export const _package = new DG.Package();
 
+const pubChemBaseURL = 'https://pubchem.ncbi.nlm.nih.gov';
+const pubChemRest = `${pubChemBaseURL}/rest`;
+const pubChemPug = `${pubChemRest}/pug`;
+
 //name: PubChem
 //tags: panel, widgets
 //input: string molString {semType: Molecule}
@@ -37,4 +41,46 @@ export async function pubChemSimilaritySearchPanel(molString: string): Promise<D
 //output: widget result
 export async function pubChemIdentitySearch(molString: string): Promise<DG.Widget> {
   return await pubChemSearchWidget(molString, 'identity');
+}
+
+//name: pubChem
+//input: string id
+//output: string smiles {semType: Molecule}
+//meta.role: converter
+//meta.inputRegexp: ([0-9]+)
+//connection: PubChemApi
+export async function pubChem(id: string) {
+  const url = `${pubChemRest}/pug_view/data/compound/${id}/JSON`;
+  const response = await fetch(url);
+  const json = await response.json();
+  const recordJson = json['Record'];
+  var sections = recordJson['Section'];
+  var smiles;
+  for (var i = 0; i < sections.length; i++) {
+    if (sections[i]['TOCHeading'] === 'Names and Identifiers') 
+      for (var j = 0; j < recordJson['Section'][i]['Section'].length; j++){
+        sections = recordJson['Section'][i]['Section'];
+        if (sections[j]['TOCHeading'] === 'Computed Descriptors')
+          for (var k = 0; k < recordJson['Section'][i]['Section'][j]['Section'].length; k++){
+            sections = recordJson['Section'][i]['Section'][j]['Section'];
+            if (sections[k]['TOCHeading'] === 'Canonical SMILES')
+              smiles = sections[k]['Information'][0]['Value']['StringWithMarkup'][0].String;
+          }
+      }
+  }
+  return smiles; 
+}
+
+
+//name: inchiKeys
+//input: string id
+//output: string smiles {semType: Molecule}
+//meta.role: converter
+//meta.inputRegexp: ([A-Z]{14}-[A-Z]{10}-N)
+//connection: PubChemApi
+export async function inchiKeys(id: string) {
+  const s = await getBy('InChIKey', 'cids', id);
+  const cids = s['IdentifierList']['CID'][0];
+  var smiles = await pubChem(cids);
+  return smiles;
 }

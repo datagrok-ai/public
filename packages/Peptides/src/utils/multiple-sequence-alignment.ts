@@ -91,7 +91,7 @@ export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.
   return alignedCol;
 }
 
-export async function testMSAEnoughMemory(col: DG.Column) {
+export async function testMSAEnoughMemory(col: DG.Column): Promise<void> {
   const sequencesCount = col.length;
   const delta = sequencesCount/100;
 

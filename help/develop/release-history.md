@@ -1,6 +1,349 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-21 Dev build 1.4.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Grok Spawner: create endpoint for docker build from Dockerfile 
+* Packages Manager (WIP)
+* Packages View: visual improvements 
+* Grid: html rendering: automatically annotating host div with semantic type (WIP)
+* Closes #699: Valid formula line on scatter plot is not shown if one of the scatter plot lines is invalid 
+* Work in progress. 
+* Merged in spodolskaya/testtrack (pull request #179) 
+* Changing the behavior of ESC button in the filter panel #644 
+* (Bug) Semantic type detection: column with manually assigned sem types are being auto-detected 
+* Closes #642: Autodetection of Structure columns imported from external files 
+* Package content validation: up-to-date bundle check 
+* Closes #719: Viewers: current object won't change after viewer properties are edited 
+* Chem: v1.0.2 
+* Chem: #697 Close preserves changes, x\- button recovers initial sketch 
+* Closes #718: Custom categorical columns sort order in not reflected on plots after page reload 
+* MLBData: set category to "Bioinformatics" 
+* Closes #605: [Filter Panel] Search doesn't work in the column list for adding column filter ("+" icon) 
+* MLB: Buildup regions layout for cdr definition/numbering scheme combinations 
+* MLB: Buildup regions layout for cdr definition/numbering scheme combinations fix 
+
+
+# 2022-06-17 Dev build 1.4.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Packages Manager (WIP)
+
+
+# 2022-06-17 Dev build 1.4.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* KeyPair::encryptString/decryptString methods fixed for UTF8 symbols 
+* Grid: add cell context action 
+* (Bug) Functions: invalid date format in `Time()`  in some acceptable cases 
+* Packages Manager (WIP)
+* Fixed test 
+* #700: Helm fixing trouble with rendering 
+* F2 no longer edits a cell as it is still used as a column editor hotkey 
+* (Bug) Data | Text: Semantic type is not detected after table loaded 
+* JS API: Exposed Column.Aggregate 
+* Closes #642: Autodetection of Structure columns imported from external files 
+* Opening editor on double click 
+
+
+# 2022-06-15 Dev build 1.3.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.3.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* MLB: Fix camelCase in DataLoader and setup.cmd 
+
+
+# 2022-06-15 Dev build 1.3.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.3.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Row number is not clickable after applying saved layout #679 
+* JS API: convert datetime to dayjs object in DG.toJs 
+
+
+# 2022-06-15 Dev build 1.3.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.3.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Fixed missing taskbar 
+
+
+# 2022-06-15 Dev build 1.3.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.3.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Packages: Debug packages permissions fix (WIP)
+* Closes #701: ositioning of Hamburger menus with inserted pinned columns 
+* Packages: update the details section 
+* fixes batch 
+* Docker Datagrok new image 
+* tab fix 
+* tab 
+* Packages: add url 
+* Row number is not clickable after applying saved layout #679 
+* Added the "showCharts" property that apparently was still used 
+* Closes #703: Dialog: onCancel does not get invoked if you close it by pressing ESC or by clicking on the 'x' icon 
+* improve enter behavior 
+* JS API: convert datetime to dayjs object in DG.toJs 
+* #700: Fixing bugs in opening the editor 
+
+
+# 2022-06-13 Dev build 1.3.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.3.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Formatting: add a missing format alias for floats 
+* Packages: change package card view for debug versions 
+* Compute: UX harmonization #180 URL fix 
+* Docs: Dev deployment 
+* Run Integration tests locally 
+* JS API Tests: Functions: tests for all built-in arithmetic/logical/date functions (WIP)
+* Packages: Debug packages permissions fix (WIP)
+* cheminformatics: refactored up to descriptor-based tools 
+* Packages: add categories 
+
+
+# 2022-06-12 Dev build 1.3.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.3.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Packages manager WIP 
+* Packages manager WIP Some styling 
+* Closes #655: Grid: No auto new line when editing and '+' available 
+* Exclude broken integration tests 
+* Datagrok incapsulated grok connect 
+* Packages: context menu improvements (WIP)
+* #695: style paramter for range slider 
+* Packages: Package install fail timeout 
+* Packages: fixed exception on packages without repository 
+* PackagesClient.deletePublished 
+* Scripting: understand extra white spaces in the script header (WIP)
+* Packages: Ability to delete package (WIP)
+* SelectAll: only selecting rows, not columns 
+* Filters: fixed the indication of the active/inactive state 
+* Packages: Debug packages permissions fix (WIP)
+* #698: custom property panel 
+* Peptides: p-value column format fix 
+* Viewers: harmonizing properties \- WIP 
+* Peptides: accordion panels width fix 
+* Update icons. 
+* Helm: initial update (test files + detectors) 
+* Helm: updated README.md 
+* #700: Helm: implemented renderer, updated wiki 
+* Compute: UX harmonization #180 
+* Peptides: visual fixes 
+* #700: Helm: help update 
+* Peptides: analysis save-load fix 
+* Peptides: lint fix 
+* Compute: UX harmonization #180 URL fix 
+* Updated public index 
+
+
+# 2022-06-08 Dev build 1.2.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.2.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Dev: Beta users and test track (WIP)
+* SequenceTranslator: update JS API version 
+* Fixed Datlas tests 
+* Changes made to grid row header are not saved with layout #528 
+* Sidebar icons harmonization 
+* Error searching non-existent layout #670 
+* Closes #694: Selected/filtered rows: "Save as column" action 
+* New viewer icons 
+* Closes #678: Memory consumption is constantly increasing if a view with filters panel is duplicated 
+* Closes #87 Charts: migrate to TypeScript 
+
+
+# 2022-06-08 Dev build 1.2.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.2.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Closes #405: Switching table for a viewer: column selection dropdown/dialog in properties panel is not updated 
+* Row number is not clickable after applying saved layout #679 
+* Closes #687: Filters: ESC should toggle all filters on/off 
+* Closes #608: [Filer panel] Substructure search improvements 
+* Fix new datagrok image 
+* GtHub actions: Fix category for Mets 
+* Chem: fixed empty molecule check 
+* Make CloseAll aware of ignoreCloseAll 
+* Wiki: fix documentation using markdownlint 
+* JS-API: fixed check marks in sketcher menu 
+* #691: getColumnSeparator function intial 
+
+
+# 2022-06-07 Dev build 1.1.9
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.1.9`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chem: changed logic of empty molecule check 
+* OligoBatchCalculator: fix of not valid data in additional modifications table 
+* SequenceTranslator: fix of conversion 
+* SequenceTranslator: fix of sequenceToSmiles tests 
+
+
+# 2022-06-07 Dev build 1.1.8
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.1.8`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Removed debug printout. 
+* Closes #576: Changing the order of values of categorical columns is not reflected in the filter panel 
+* Remove COMPOSE_PROFILES 
+
+
+# 2022-06-06 Dev build 1.1.7
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.1.7`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Closes #654: Chem: ability to import mol files V3000 
+* Closes #640: How to switch Structure Search to categorical filter 
+* Code cleanup. 
+* Closes #637: [Filter Panel] \- the history of Structure Search fields 
+* #604: Chem: "Use as Substructure Filter" action for molecules \- WIP 
+* Ability to specify actions for semantic types as JS functions 
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules 
+* Dockerfile datagrok multiarch 
+* The modification of the formula is not propagated to other calculated columns #666 
+* Buildx Docker images 
+* Docker buildx multiplatform 
+* Heatmap: add max columns property instead of hardcoded value 
+* Fix buildx script 
+* Resolves #669 JS API: add View.temp object to store auxiliary information 
+* Docker Buildx disable cache 
+* Docker Buildx multiplatform: one platform at a time 
+* Docker datagrok new image 
+* Docker buildx scan images 
+* Docker buildx log the tar archive 
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- plenty of fixes and improvements 
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- progress indicator, better interactivity 
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- CSS improvements 
+* Docker Buildx cache push by flag 
+* JS API: grok.dapi.groups.getGroupsLookup 
+* Closes #681: Friendly names for columns 
+* Added a beta user 
+* Do not tag latest without push 
+* Datagrok elasticsearch configuration 
+* Fixing issues with drugNameMolecule function 
+* Issue #673: InChi-based sketcher structure query integration 
+* Chem: filtering using Ketcher sketcher 
+
+
 # 2022-05-27 Dev build 1.1.5
 
 ## Latest Docker Images

@@ -5,15 +5,15 @@ import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
 
 import Choices from "choices.js";
-import {InputBase} from "datagrok-api/dg";
+import {Group, InputBase} from "datagrok-api/dg";
 
 export class ChoiceInput {
   choices: Choices;
   field: InputBase;
 
-  static async construct (funcToGetList: Function) {
+  static async construct () {
    // @ts-ignore
-    let field = ui.choiceInput('Lookup field',[], await funcToGetList());
+    let field = ui.choiceInput('Groups',[], []);
 
     field.input.setAttribute('multiple', '');
     let choices = new Choices(field.input, {
@@ -24,6 +24,16 @@ export class ChoiceInput {
       searchChoices: true,
       itemSelectText: ''
     });
+
+    field.input.addEventListener('search', async (event) => {
+      // @ts-ignore
+      let newGroups: Group[] = await grok.dapi.groups.getGroupsLookup(choices.input.value);
+      choices.clearChoices();
+      choices.setChoices(() => newGroups.map((g: Group) => {
+        return {value: g.name, label: g.name};
+      }));
+    });
+
 
     return new ChoiceInput(choices, field);
   }

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "0.0.12",
+  "version": "1.0.1",
   "description": "SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform, used to translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
   "repository": {
     "type": "git",
@@ -11,9 +11,9 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^0.1.0",
     "@types/react": "latest",
-    "datagrok-api": "^1.0.0",
+    "datagrok-api": "^1.1.7",
     "datagrok-tools": "^4.1.2",
-    "npm": "^7.11.2",
+    "npm": "^8.11.0",
     "save-svg-as-png": "^1.4.17",
     "ts-loader": "latest",
     "typescript": "latest",
@@ -48,6 +48,7 @@
     "jest": "^27.0.0",
     "@types/jest": "^27.0.0",
     "ts-jest": "^27.0.0",
-    "puppeteer": "latest"
-  }
+    "puppeteer": "^13.7.0"
+  },
+  "category": "Bioinformatics"
 }

@@ -1,0 +1,48 @@
+{
+	"name": "helm",
+	"beta": true,
+	"friendlyName": "Helm",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest",
+		"@datagrok-libraries/utils": "latest"
+	},
+	"sources": [
+		"css/helm.css",
+		"https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js",
+		"helm/JSDraw/Scilligence.JSDraw2.Lite.js",
+		"helm/JSDraw/Scilligence.JSDraw2.Resources.js",
+		"helm/JSDraw/Pistoia.HELM-uncompressed.js"
+	],
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"scripts": {
+		"link-all": "",
+		"debug-helm": "webpack && grok publish ",
+		"release-helm": "webpack && grok publish --release",
+		"build-helm": "webpack",
+		"build": "webpack",
+		"debug-helm-dev": "grok publish dev --rebuild",
+		"release-helm-dev": "grok publish dev --rebuild --release",
+		"debug-helm-public": "grok publish public --rebuild",
+		"release-helm-public": "grok publish public --rebuild --release"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/Helm"
+	}
+}

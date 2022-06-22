@@ -93,6 +93,7 @@ export function _IconTool(): void {
 
 //name: testManager
 //top-menu: Tools | Dev | Test Manager
+//tags: app
 export async function testManager(): Promise<void> { await testManagerView(); }
 
 //tags: unitTest

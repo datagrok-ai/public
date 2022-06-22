@@ -7,6 +7,7 @@ import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encod
 import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {
   createDimensinalityReducingWorker,
+  IReduceDimensionalityResult,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
@@ -43,16 +44,17 @@ export async function createPeptideSimilaritySpaceViewer(
   const pi = DG.TaskBarProgressIndicator.create('Creating embedding...');
 
   const axesNames = ['~X', '~Y', '~MW'];
-  const columnData = (col ?? table.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE)).toList()
-    .map((v) => AlignedSequenceEncoder.clean(v));
+  col ??= table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
+  const columnData = col.toList().map((v) => AlignedSequenceEncoder.clean(v));
 
-  const embcols = await createDimensinalityReducingWorker(
+  const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(
     {data: columnData, metric: measure as StringMetrics}, method, {cycles: cyclesCount});
 
+  const embcols = reduceDimRes.embedding;
   const columns = Array.from(
     embcols as Coordinates, (v: Float32Array, k) => DG.Column.fromFloat32Array(axesNames[k], v));
 
-  function _getMW(sequences: string[]) {
+  function _getMW(sequences: string[]): Float32Array {
     const mw: Float32Array = new Float32Array(sequences.length);
 
     mw.map((_, index) => getSequenceMolecularWeight(sequences[index] ?? ''));
@@ -78,8 +80,9 @@ export async function createPeptideSimilaritySpaceViewer(
       table.columns.insert(newCol);
   }
 
+  const colorColName = table.columns.bySemType(C.SEM_TYPES.ACTIVITY)?.name ?? '~MW';
   const viewerOptions = {
-    x: '~X', y: '~Y', color: C.COLUMNS_NAMES.ACTIVITY ?? '~MW', size: '~MW', title: 'Peptide Space',
+    x: '~X', y: '~Y', color: colorColName, size: '~MW', title: 'Peptide Space',
     showYSelector: false, showXSelector: false, showColorSelector: false, showSizeSelector: false,
   };
   const viewer = table.plot.scatter(viewerOptions);
@@ -144,7 +147,7 @@ export class PeptideSimilaritySpaceWidget {
    * @protected
    * @memberof PeptideSimilaritySpaceWidget
    */
-  protected async updateViewer() {
+  protected async updateViewer(): Promise<void> {
     const viewer = await this.drawViewer();
     this.viewer.lastChild?.remove();
     this.viewer.appendChild(viewer.root);

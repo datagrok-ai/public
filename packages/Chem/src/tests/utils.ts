@@ -7,14 +7,33 @@ export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
 }
 
-export async function _testSearchSubstructure(csv: string,
-  pattern: string, trueIndices: number[], params: any | null = null) {
-  // await grok.functions.call('Chem:initChem');
-  const df = DG.DataFrame.fromCsv(csv);
-  const col = df.columns.byIndex(0);
-  const bitset: DG.BitSet = (params !== null) ?
-    (await grok.chem.searchSubstructure(col, pattern, params)) :
-    (await grok.chem.searchSubstructure(col, pattern));
+export async function loadFileAsBytes(name: string): Promise<Uint8Array> {
+  return await _package.files.readAsBytes(name);
+}
+
+export async function dfFromColWithOneCategory(colName: string, value: string, length: number): Promise<DG.DataFrame> {
+  const col = DG.Column.fromType(DG.COLUMN_TYPE.STRING, colName, length);
+  col.init((i) => value);
+  return DG.DataFrame.fromColumns([col]);
+}
+export async function createTableView(tableName: string): Promise<DG.TableView> {
+  const df = await readDataframe(tableName);
+  df.name = tableName.replace('.csv', '');
+  const view = grok.shell.addTableView(df);
+  return view;
+}
+
+export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
+  const file = await loadFileAsText(tableName);
+  const df = DG.DataFrame.fromCsv(file);
+  df.name = tableName.replace('.csv', '');
+  return df;
+}
+
+export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
+  pattern: string, trueIndices: number[]): Promise<void> {
+  const col = df.columns.byName(colName);
+  const bitset: DG.BitSet = await grok.chem.searchSubstructure(col, pattern);
   const bitsetString = bitset.toBinaryString();
   const bitsetArray = [...bitsetString];
   for (let k = 0; k < trueIndices.length; ++k) {
@@ -25,7 +44,7 @@ export async function _testSearchSubstructure(csv: string,
     expect(bitsetArray[i] === '0', true);
 }
 
-export async function _testSearchSubstructureSARSmall(params: any | null = null) {
+export async function _testSearchSubstructureSARSmall(params: any | null = null): Promise<void> {
   const file = await loadFileAsText('sar-small.csv');
 
   // await grok.functions.call('Chem:initChem');
@@ -40,7 +59,7 @@ export async function _testSearchSubstructureSARSmall(params: any | null = null)
   expect(countResult, 90);
 }
 
-export async function _testSearchSubstructureAllParameters(foo: any) {
+export async function _testSearchSubstructureAllParameters(foo: any): Promise<void> {
   await foo({substructLibrary: false});
   await foo({substructLibrary: true});
   await foo({});

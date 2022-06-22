@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {delay, expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {Fingerprint} from '../utils/chem-common';
+import { createTableView, readDataframe } from './utils';
 
 const testSimilarityResults = {
   'Tanimoto/Morgan': [
@@ -22,23 +23,6 @@ const testSimilarityResults = {
     {smiles: 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3', indexes: 30, score: 0.0714285746216774}],
 };
 
-export async function requireText(name: string): Promise<string> {
-  return await _package.files.readAsText(name);
-}
-
-async function createTableView(tableName: string) {
-  const df = await readDataframe(tableName);
-  df.name = tableName.replace('.csv', '');
-  const view = grok.shell.addTableView(df);
-  return view;
-}
-
-async function readDataframe(tableName: string) {
-  const file = await requireText(tableName);
-  const df = DG.DataFrame.fromCsv(file);
-  df.name = tableName.replace('.csv', '');
-  return df;
-}
 
 function getSearchViewer(viewer: DG.Viewer, name: string) {
   for (const v of viewer.view.viewers) {

@@ -32,8 +32,9 @@
 		"webpack-cli": "^3.3.12"
 	},
 	"canEdit": [
-		"Arcadia"
+		"Arcadia",
+		"Developers"
 	],
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+	"canView": [ "All users" ],
+  "category": "Visualizations"
 }

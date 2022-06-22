@@ -459,6 +459,10 @@ export class GroupsDataSource extends HttpDataSource<Group> {
     return api.grok_GroupsDataSource_Save(this.dart, e.dart);
   }
 
+  /** Looking for groups with similar name */
+  async getGroupsLookup(name: string): Promise<Group[]> {
+    return toJs(await api.grok_Dapi_Get_GroupsLookup(name));
+  }
 }
 
 

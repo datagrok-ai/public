@@ -97,6 +97,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           token: ${{ secrets.WRITE_TOKEN }}
+      - name: Check library properties
+        working-directory: libraries/${{ matrix.project }}
+        run: |
+          if [[ "$(jq '.name' package.json | sed -E 's/(^"|"$)//g')" != "@datagrok-libraries/"* ]]; then
+            echo "::error title=${{ matrix.project }}: failed properties check::Library should be in '@datagrok-libraries' scope. Change library name to '@datagrok-libraries/<name>' in ${{ matrix.project }}/package.json"
+            exit 1
+          fi
       - name: Setup Node
         uses: actions/setup-node@v2
         with:

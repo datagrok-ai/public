@@ -114,7 +114,7 @@ export function defineAxolabsPattern() {
     asPtoLinkages = asPtoLinkages.concat(Array(maximalAsLength - asBases.length).fill(fullyPto));
     asBases = asBases.concat(Array(maximalAsLength - asBases.length).fill(sequenceBase));
     let nucleotideCounter = 0;
-    for (let i = 0; i < asLength.value; i++) {
+    for (let i = 0; i < asLength.value!; i++) {
       asPtoLinkages[i] = ui.boolInput('', asPtoLinkages[i].value, () => {
         updateSvgScheme();
         updateOutputExamples();
@@ -157,7 +157,7 @@ export function defineAxolabsPattern() {
     ssPtoLinkages = ssPtoLinkages.concat(Array(maximalSsLength - ssBases.length).fill(fullyPto));
     ssBases = ssBases.concat(Array(maximalSsLength - ssBases.length).fill(sequenceBase));
     let nucleotideCounter = 0;
-    for (let i = 0; i < ssLength.value; i++) {
+    for (let i = 0; i < ssLength.value!; i++) {
       ssPtoLinkages[i] = ui.boolInput('', ssPtoLinkages[i].value, () => {
         updateSvgScheme();
         updateOutputExamples();
@@ -196,11 +196,11 @@ export function defineAxolabsPattern() {
   }
 
   function updateUiForNewSequenceLength() {
-    if (ssLength.value < maximalValidSequenceLength && asLength.value < maximalValidSequenceLength) {
-      if (ssLength.value > maximalSsLength)
-        maximalSsLength = ssLength.value;
-      if (asLength.value > maximalAsLength)
-        maximalAsLength = asLength.value;
+    if (ssLength.value! < maximalValidSequenceLength && asLength.value! < maximalValidSequenceLength) {
+      if (ssLength.value! > maximalSsLength)
+        maximalSsLength = ssLength.value!;
+      if (asLength.value! > maximalAsLength)
+        maximalAsLength = asLength.value!;
       updateSsModification();
       updateAsModification();
       updateSvgScheme();
@@ -236,17 +236,17 @@ export function defineAxolabsPattern() {
   }
 
   function updateInputExamples() {
-    ssInputExample.value = generateExample(ssLength.value, sequenceBase.value);
+    ssInputExample.value = generateExample(ssLength.value!, sequenceBase.value!);
     if (createAsStrand.value)
-      asInputExample.value = generateExample(asLength.value, sequenceBase.value);
+      asInputExample.value = generateExample(asLength.value!, sequenceBase.value!);
   }
 
   function updateOutputExamples() {
     ssOutputExample.value = translateSequence(
-      ssInputExample.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value);
+      ssInputExample.value, ssBases, ssPtoLinkages, ssFiveModification, ssThreeModification, firstSsPto.value!);
     if (createAsStrand.value) {
       asOutputExample.value = translateSequence(
-        asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstAsPto.value);
+        asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstAsPto.value!);
     }
   }
 
@@ -256,11 +256,11 @@ export function defineAxolabsPattern() {
       ui.span([
         drawAxolabsPattern(
           getShortName(saveAs.value),
-          createAsStrand.value,
-          ssBases.slice(0, ssLength.value).map((e) => e.value),
-          asBases.slice(0, asLength.value).map((e) => e.value),
-          [firstSsPto.value].concat(ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value)),
-          [firstAsPto.value].concat(asPtoLinkages.slice(0, asLength.value).map((e) => e.value)),
+          createAsStrand.value!,
+          ssBases.slice(0, ssLength.value!).map((e) => e.value),
+          asBases.slice(0, asLength.value!).map((e) => e.value),
+          [firstSsPto.value!].concat(ssPtoLinkages.slice(0, ssLength.value!).map((e) => e.value)),
+          [firstAsPto.value!].concat(asPtoLinkages.slice(0, asLength.value!).map((e) => e.value)),
           ssThreeModification.value,
           ssFiveModification.value,
           asThreeModification.value,
@@ -329,7 +329,7 @@ export function defineAxolabsPattern() {
   }
 
   function checkWhetherAllValuesInColumnHaveTheSameLength(colName: string): boolean {
-    const col = tables.value.columns.byName(colName);
+    const col = tables.value!.columns.byName(colName);
     let allLengthsAreTheSame = true;
     for (let i = 1; i < col.length; i++) {
       if (col.get(i - 1).length != col.get(i).length) {
@@ -344,10 +344,10 @@ export function defineAxolabsPattern() {
         .add(ui.divText('The sequence length should match the number of Raw sequences in the input file'))
         .add(ui.divText('\'ADD COLUMN\' to see sequences lengths'))
         .addButton('ADD COLUMN', () => {
-          tables.value.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
-          grok.shell.info('Column with lengths added to \'' + tables.value.name + '\'');
+          tables.value!.columns.addNewInt('Sequences lengths in ' + colName).init((j: number) => col.get(j).length);
+          grok.shell.info('Column with lengths added to \'' + tables.value!.name + '\'');
           dialog.close();
-          grok.shell.v = grok.shell.getTableView(tables.value.name);
+          grok.shell.v = grok.shell.getTableView(tables.value!.name);
         })
         .show();
     }
@@ -368,10 +368,10 @@ export function defineAxolabsPattern() {
       userStorageKey,
       saveAs.stringValue,
       JSON.stringify({
-        'ssBases': ssBases.slice(0, ssLength.value).map((e) => e.value),
-        'asBases': asBases.slice(0, asLength.value).map((e) => e.value),
-        'ssPtoLinkages': [firstSsPto.value].concat(ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value)),
-        'asPtoLinkages': [firstAsPto.value].concat(asPtoLinkages.slice(0, asLength.value).map((e) => e.value)),
+        'ssBases': ssBases.slice(0, ssLength.value!).map((e) => e.value),
+        'asBases': asBases.slice(0, asLength.value!).map((e) => e.value),
+        'ssPtoLinkages': [firstSsPto.value].concat(ssPtoLinkages.slice(0, ssLength.value!).map((e) => e.value)),
+        'asPtoLinkages': [firstAsPto.value].concat(asPtoLinkages.slice(0, asLength.value!).map((e) => e.value)),
         'ssThreeModification': ssThreeModification.value,
         'ssFiveModification': ssFiveModification.value,
         'asThreeModification': asThreeModification.value,
@@ -506,24 +506,24 @@ export function defineAxolabsPattern() {
 
   function validateSsColumn(colName: string) {
     const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
-    const firstSequence = tables.value.columns.byName(colName).get(0);
+    const firstSequence = tables.value!.columns.byName(colName).get(0);
     if (allLengthsAreTheSame && firstSequence.length != ssLength.value)
-      ssLength.value = tables.value.columns.byName(colName).get(0).length;
+      ssLength.value = tables.value!.columns.byName(colName).get(0).length;
     ssInputExample.value = firstSequence;
   }
 
   function validateAsColumn(colName: string) {
     const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
-    const firstSequence = tables.value.columns.byName(colName).get(0);
+    const firstSequence = tables.value!.columns.byName(colName).get(0);
     if (allLengthsAreTheSame && firstSequence.length != asLength.value)
-      asLength.value = tables.value.columns.byName(colName).get(0).length;
+      asLength.value = tables.value!.columns.byName(colName).get(0).length;
     asLengthDiv.innerHTML = '';
     asLengthDiv.append(asLength.root);
     asInputExample.value = firstSequence;
   }
 
   function validateIdsColumn(colName: string) {
-    const col = tables.value.columns.byName(colName);
+    const col = tables.value!.columns.byName(colName);
     if (col.type != DG.TYPE.INT)
       grok.shell.error('Column should contain integers only');
     else if (col.categories.length < col.length) {
@@ -531,32 +531,35 @@ export function defineAxolabsPattern() {
       ui.dialog('Non-unique IDs')
         .add(ui.divText('Press \'OK\' to select rows with non-unique values'))
         .onOK(() => {
-          const selection = tables.value.selection;
+          const selection = tables.value!.selection;
           selection.init((i: number) => duplicates.indexOf(col.get(i)) > -1);
-          grok.shell.v = grok.shell.getTableView(tables.value.name);
-          grok.shell.info('Rows are selected in table \'' + tables.value.name + '\'');
+          grok.shell.v = grok.shell.getTableView(tables.value!.name);
+          grok.shell.info('Rows are selected in table \'' + tables.value!.name + '\'');
         })
         .show();
     }
   }
 
   const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
-    inputSsColumn = ui.choiceInput('SS Column', '', t.columns.names(), (colName: string) => validateSsColumn(colName));
+    const inputSsColumn =
+      ui.choiceInput('SS Column', '', t.columns.names(), (colName: string) => validateSsColumn(colName));
     inputSsColumnDiv.innerHTML = '';
     inputSsColumnDiv.append(inputSsColumn.root);
-    inputAsColumn = ui.choiceInput('AS Column', '', t.columns.names(), (colName: string) => validateAsColumn(colName));
+    const inputAsColumn =
+      ui.choiceInput('AS Column', '', t.columns.names(), (colName: string) => validateAsColumn(colName));
     inputAsColumnDiv.innerHTML = '';
     inputAsColumnDiv.append(inputAsColumn.root);
-    inputIdColumn = ui.choiceInput('ID Column', '', t.columns.names(), (colName: string) => validateIdsColumn(colName));
+    const inputIdColumn =
+      ui.choiceInput('ID Column', '', t.columns.names(), (colName: string) => validateIdsColumn(colName));
     inputIdColumnDiv.innerHTML = '';
     inputIdColumnDiv.append(inputIdColumn.root);
   });
 
-  let inputSsColumn = ui.choiceInput('SS Column', '', []);
+  const inputSsColumn = ui.choiceInput('SS Column', '', []);
   inputSsColumnDiv.append(inputSsColumn.root);
-  let inputAsColumn = ui.choiceInput('AS Column', '', []);
+  const inputAsColumn = ui.choiceInput('AS Column', '', []);
   inputAsColumnDiv.append(inputAsColumn.root);
-  let inputIdColumn = ui.choiceInput('ID Column', '', []);
+  const inputIdColumn = ui.choiceInput('ID Column', '', []);
   inputIdColumnDiv.append(inputIdColumn.root);
 
   updatePatternsList();
@@ -573,8 +576,8 @@ export function defineAxolabsPattern() {
     updateOutputExamples();
   });
 
-  const firstSsPto = ui.boolInput('First SS PTO', fullyPto.value, () => updateSvgScheme());
-  const firstAsPto = ui.boolInput('First AS PTO', fullyPto.value, () => updateSvgScheme());
+  const firstSsPto = ui.boolInput('First SS PTO', fullyPto.value!, () => updateSvgScheme());
+  const firstAsPto = ui.boolInput('First AS PTO', fullyPto.value!, () => updateSvgScheme());
   firstAsPtoDiv.append(firstAsPto.root);
 
   const createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
@@ -643,34 +646,34 @@ export function defineAxolabsPattern() {
       dialog
         .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
         .addButton('YES', () => {
-          ssLength.value = tables.value.columns.byName(inputSsColumn.value).getString(0).length;
-          asLength.value = tables.value.columns.byName(inputAsColumn.value).getString(0).length;
+          ssLength.value = tables.value!.columns.byName(inputSsColumn.value!).getString(0).length;
+          asLength.value = tables.value!.columns.byName(inputAsColumn.value!).getString(0).length;
           dialog.close();
         })
         .show();
     } else {
       if (inputIdColumn.value != null)
-        addColumnWithIds(tables.value.name, inputIdColumn.value, getShortName(saveAs.value));
+        addColumnWithIds(tables.value!.name, inputIdColumn.value, getShortName(saveAs.value));
       addColumnWithTranslatedSequences(
-        tables.value.name, inputSsColumn.value, ssBases, ssPtoLinkages,
-        ssFiveModification, ssThreeModification, firstSsPto.value);
+        tables.value!.name, inputSsColumn.value, ssBases, ssPtoLinkages,
+        ssFiveModification, ssThreeModification, firstSsPto.value!);
       if (createAsStrand.value) {
         addColumnWithTranslatedSequences(
-          tables.value.name, inputAsColumn.value, asBases, asPtoLinkages,
-          asFiveModification, asThreeModification, firstAsPto.value);
+          tables.value!.name, inputAsColumn.value!, asBases, asPtoLinkages,
+          asFiveModification, asThreeModification, firstAsPto.value!);
       }
-      grok.shell.v = grok.shell.getTableView(tables.value.name);
+      grok.shell.v = grok.shell.getTableView(tables.value!.name);
       grok.shell.info(((createAsStrand.value) ? 'Columns were' : 'Column was') +
-      ' added to table \'' + tables.value.name + '\'');
+      ' added to table \'' + tables.value!.name + '\'');
     }
   });
 
-  const ssInputExample = ui.textInput('Sense Strand', generateExample(ssLength.value, sequenceBase.value), () => {
+  const ssInputExample = ui.textInput('Sense Strand', generateExample(ssLength.value!, sequenceBase.value!), () => {
     ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages,
-      ssFiveModification, ssThreeModification, firstSsPto.value);
+      ssFiveModification, ssThreeModification, firstSsPto.value!);
   });
   const ssOutputExample = ui.textInput(' ', translateSequence(
-    ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value));
+    ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value!));
   (ssInputExample.input as HTMLElement).style.resize = 'none';
   (ssInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
   (ssOutputExample.input as HTMLElement).style.resize = 'none';
@@ -686,12 +689,12 @@ export function defineAxolabsPattern() {
     ], 'ui-input-options'),
   );
 
-  const asInputExample = ui.textInput('Antisense Strand', generateExample(asLength.value, sequenceBase.value), () => {
+  const asInputExample = ui.textInput('Antisense Strand', generateExample(asLength.value!, sequenceBase.value!), () => {
     asOutputExample.value = translateSequence(
-      asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstSsPto.value);
+      asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstSsPto.value!);
   });
   const asOutputExample = ui.textInput(' ', translateSequence(
-    asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstSsPto.value));
+    asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstSsPto.value!));
   (asInputExample.input as HTMLElement).style.resize = 'none';
   (asInputExample.input as HTMLElement).style.minWidth = exampleMinWidth;
   (asOutputExample.input as HTMLElement).style.resize = 'none';

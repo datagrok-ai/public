@@ -31,5 +31,6 @@
 		"release-chemblapi-dev": "grok publish dev --rebuild --release",
 		"debug-chemblapi-local": "grok publish local --rebuild",
 		"release-chemblapi-local": "grok publish local --rebuild --release"
-	}
+	},
+	"category": "Cheminformatics"
 }

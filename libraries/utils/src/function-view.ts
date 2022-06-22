@@ -33,6 +33,7 @@ export class FunctionView extends DG.ViewBase {
   public get type(): string {
     return this._type;
   }
+
   readonly context: DG.Context;
   public preparedCall: DG.FuncCall | null;
   public lastCall?: DG.FuncCall | null;
@@ -63,9 +64,10 @@ export class FunctionView extends DG.ViewBase {
         self.clearResults(false);
         param.processOutput();
 
-        self.appendResultDataFrame(param,
-          {height: (self.singleDfParam && !grok.shell.windows.presentationMode) ? 600 : 400,
-            category: 'INPUT'});
+        self.appendResultDataFrame(param, {
+          height: (self.singleDfParam && !grok.shell.windows.presentationMode) ? 600 : 400,
+          category: 'INPUT'
+        });
       }));
     }
 
@@ -227,11 +229,13 @@ export class FunctionView extends DG.ViewBase {
     throw new Error('Method is not implemented');
     /* await grok.dapi.functions.calls.save(call);*/
   }
+
   /** Loads the specified historical results. See also {@link saveRun}. */
   async loadRun(runId: string): Promise<DG.FuncCall> {
     throw new Error('Method is not implemented');
     /* await grok.dapi.functions.calls.find(call.id);*/
   }
+
   /** Loads all the function call of this function. */
   async pullRuns(): Promise<DG.FuncCall[]> {
     throw new Error('Method is not implemented');
@@ -322,7 +326,7 @@ export class FunctionView extends DG.ViewBase {
   historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
   inputsDiv: HTMLDivElement = ui.panel([], 'grok-func-results');
 
-  appendResultDataFrame(param: DG.FuncCallParam, options?: { caption?: string, category?: string, height?: number}) {
+  appendResultDataFrame(param: DG.FuncCallParam, options?: { caption?: string, category?: string, height?: number }) {
     const df = param.value;
     let caption = options?.caption;
     let height = options?.height ?? 400;
@@ -363,8 +367,7 @@ export class FunctionView extends DG.ViewBase {
           ui.setDisplayAll(hideList, !sw);
           ui.setDisplay(gridWrapper, sw);
           gridWrapper.classList.add(`ui-block-${blockSize}`);
-        }
-        , 'Show grid');
+        }, 'Show grid');
         if (!sw)
           icon.classList.add('active');
         header.appendChild(icon);
@@ -382,9 +385,7 @@ export class FunctionView extends DG.ViewBase {
               }
             }
           })();
-        },
-        'Add to workspace',
-        ));
+        }, 'Add to workspace'));
       }
       return header;
     };
@@ -425,7 +426,7 @@ export class FunctionView extends DG.ViewBase {
     }
   }
 
-  appendResultScalar(param: DG.FuncCallParam, options: { caption?: string, category: string, height?: number}) {
+  appendResultScalar(param: DG.FuncCallParam, options: { caption?: string, category: string, height?: number }) {
     if (this.resultsTabControl) {
       this.resultsTabControl.getPane(options.category).content.innerHTML = '';
       this.resultsTabControl.getPane(options.category).content.append(ui.span([`${options.caption ?? param.name}: `, `${param.value}`]));
@@ -453,14 +454,14 @@ enum DIRECTION {
   OUTPUT = 'Output'
 }
 
-const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: {caption: string, value: string, units: string}[]) => {
+const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string }[]) => {
   sheet.addRow(['Parameter', 'Value', 'Units']).font = {bold: true};
   scalars.forEach((scalar) => {
     sheet.addRow([scalar.caption, scalar.value, scalar.units]);
   });
 
   sheet.getColumn(1).width = Math.max(
-    ...scalars.map((scalar) => scalar.caption.toString().length), 'Parameter'.length,
+    ...scalars.map((scalar) => scalar.caption.toString().length), 'Parameter'.length
   ) * 1.2;
   sheet.getColumn(2).width = Math.max(...scalars.map((scalar) => scalar.value.toString().length), 'Value'.length) * 1.2;
   sheet.getColumn(3).width = Math.max(...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
@@ -471,12 +472,11 @@ const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame) => {
   for (let i = 0; i < df.rowCount; i++)
     sheet.addRow([...df.row(i).cells].map((cell: DG.Cell) => cell.value));
 
-
   for (let i = 0; i < df.columns.length; i++) {
-    sheet.getColumn(i+1).width =
+    sheet.getColumn(i + 1).width =
       Math.max(
         ...(df.columns as DG.ColumnList).byIndex(i).categories.map((category) => category.toString().length),
-        (df.columns as DG.ColumnList).byIndex(i).name.length,
+        (df.columns as DG.ColumnList).byIndex(i).name.length
       ) * 1.2;
   }
 };

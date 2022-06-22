@@ -50,16 +50,20 @@ export abstract class UaViewer {
     let host = ui.block([]);
     if (this.setStyle)
       this.setStyle(host);
+
+    let nameDiv = ui.divH([]);
     if (this.showName)
-      host.appendChild(ui.h1(this.name));
+      nameDiv.append(ui.h1(this.name));
+    host.appendChild(nameDiv);
+
     let loader = ui.loader();
     host.appendChild(loader);
 
-    this.setViewer(loader, host);
+    this.setViewer(loader, host, nameDiv);
 
     this.root.append(host);
   }
 
-  setViewer(loader: any, host: HTMLDivElement): void {
+  setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement): void {
   }
 }

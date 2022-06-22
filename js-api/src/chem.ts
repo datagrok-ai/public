@@ -116,6 +116,7 @@ export namespace chem {
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
+    selectedSketcherName?: string = '';
 
     /** Whether the currently drawn molecule becomes the current object as you sketch it */
     syncCurrentObject: boolean = true;
@@ -145,6 +146,7 @@ export namespace chem {
 
     setSmiles(x: string) {
       this._smiles = x;
+      this._molFile = convert(x, 'smiles', 'mol');
       if (this.sketcher != null)
         this.sketcher!.smiles = x;
       this.updateExtSketcherContent(this.extSketcherDiv);
@@ -156,6 +158,7 @@ export namespace chem {
 
     setMolFile(x: string) {
       this._molFile = x;
+      this._smiles = convert(x, 'mol', 'smiles');
       if (this.sketcher != null)
         this.sketcher!.molFile = x;
       this.updateExtSketcherContent(this.extSketcherDiv);
@@ -163,7 +166,7 @@ export namespace chem {
 
     get isEmpty(): boolean {
       return (this.getSmiles() == null || this.getSmiles() == '') &&
-        (this.getMolFile() == null || this.getMolFile() == '');
+        (this.getMolFile() == null || this.getMolFile() == '' || this.getMolFile().split("\n")[3].trimStart()[0] === '0');
     }
 
     /** Sets the molecule, supports either SMILES or MOLBLOCK formats */
@@ -179,7 +182,7 @@ export namespace chem {
     }
 
     async getSmarts(): Promise<string> {
-      return this.sketcher!.getSmarts();
+      return this.sketcher ? await this.sketcher.getSmarts() : '';
     }
 
     setChangeListenerCallback(callback: () => void) {
@@ -234,16 +237,17 @@ export namespace chem {
       if (!this.isEmpty && extSketcherDiv.parentElement) {
         const width = extSketcherDiv.parentElement!.clientWidth;
         const height = width / 2;
-        let renderFunc = Func.find({ tags: [ 'molRenderer' ] });
-        if (renderFunc.length == 0) {
-          this._updateExtSketcherInnerHTML(svgMol(this.getMolFile(), width, height));
-        }
-        renderFunc![ 0 ]
-          .apply({ molStr: this.getMolFile(), width: width, height: height })
-          .then((molDiv) => {
-            this._updateExtSketcherInnerHTML(molDiv);
+        ui.empty(this.extSketcherDiv);
+        let canvas = ui.canvas(width, height);
+        canvas.style.height = '100%';
+        canvas.style.width = '100%';
+        canvasMol(0, 0, width, height, canvas, this.getMolFile())
+          .then((_) => {
+            ui.empty(this.extSketcherDiv);
+            this.extSketcherDiv.append(canvas);
           });
       }
+
       let sketchLink = ui.button('Sketch', () => this.updateExtSketcherContent(extSketcherDiv));
       sketchLink.style.paddingLeft = '0px';
       sketchLink.style.marginLeft = '0px';
@@ -256,14 +260,19 @@ export namespace chem {
 
       this.extSketcherDiv.addEventListener('mousedown', () => {
         let savedMolFile = this.getMolFile();
-        ui.dialog()
-          .add(this.createInplaceModeSketcher())
-          .onCancel(() => this.setMolFile(savedMolFile))
-          .onOK(() => {
+        let dlg = ui.dialog();
+        dlg.add(this.createInplaceModeSketcher())
+          .addButton("CLOSE", () => {
             this.updateExtSketcherContent(this.extSketcherDiv);
             Sketcher.addRecent(savedMolFile);
+            dlg.close();
+          })
+          .onCancel(() => {
+            this.setMolFile(savedMolFile);
           })
           .show();
+
+          $(dlg.getButton('CANCEL')).hide()
       });
 
       ui.onSizeChanged(this.extSketcherDiv).subscribe((_) => {
@@ -280,6 +289,7 @@ export namespace chem {
         let funcs = Func.find({ tags: [ 'moleculeSketcher' ] });
         let fr = funcs.find(e => e.friendlyName == sname || e.name == sname)
           ?? funcs.find(e => e.name == DEFAULT_SKETCHER);
+        this.selectedSketcherName = fr?.friendlyName;
 
         $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
@@ -339,7 +349,7 @@ export namespace chem {
           .endGroup()
           .separator()
           .items(funcs.map((f) => f.friendlyName), (name: string) => this.setSketcher(name),
-            { isChecked: (item) => item === sname, toString: item => item })
+            { isChecked: (item) => item === this.selectedSketcherName, toString: item => item })
           .show();
       });
       $(optionsIcon).addClass('d4-input-options');
@@ -389,6 +399,7 @@ export namespace chem {
 
       let funcs = Func.find({tags: ['moleculeSketcher']});
       let f = funcs.find(e => e.friendlyName == name || e.name == name);
+      this.selectedSketcherName = f?.friendlyName;
 
       grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, f!.friendlyName, true);
 

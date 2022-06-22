@@ -164,6 +164,7 @@ export const SEMTYPE = {
   LONGITUDE: 'Longitude',
   IP_ADDRESS: 'IP Address',
   MOLECULE: 'Molecule',
+  HELM: 'HELM',
   SUBSTRUCTURE: 'Substructure',
   MONEY: 'Money',
   IMAGE: 'Image',
@@ -239,6 +240,8 @@ export const TAGS = {
 
   CELL_RENDERER: 'cell.renderer',
   UNITS: 'units',  // see DG.UNITS
+
+  FRIENDLY_NAME: 'friendlyName',
 
   CHEM: {
     SCAFFOLD: 'chem-scaffold'

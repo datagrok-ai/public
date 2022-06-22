@@ -40,8 +40,11 @@ export function toJs(dart: any, check: boolean = false): any {
     return wrapper;
   } else if (type === TYPE.LIST) {
     return paramsToJs(dart);
-  } else if (type === 'DG.TypedEventArgs')
+  } else if (type === 'DG.TypedEventArgs') {
     return new TypedEventArgs(dart);
+  } else if (type === TYPE.DATE_TIME) {
+    return dayjs(dart);
+  }
 
   let wrapper = (<any>window).grok_GetWrapper(dart);
   if (wrapper != null)
@@ -59,6 +62,8 @@ export function toJs(dart: any, check: boolean = false): any {
 export function toDart(x: any): any {
   if (x === undefined || x === null)
     return x;
+  // if (x instanceof dayjs.Dayjs)
+  //   return x.valueOf();
   if (typeof x.toDart === 'function')
     return x.toDart();
   if (typeof x.dart !== 'undefined')

@@ -208,9 +208,11 @@ export class Detector {
    * @param {StringPredicate} check
    * @param {number} min - minimum number of categories. Returns false if less than that.
    * @param {number} max - number of checks to make
+   * @param {number} ratio - [0-1] range: minimum allowed number of the success/total checks.
+   * @param minStringLength - values shorter than that are not considered checks
    * @returns {boolean}
    * */
-  static sampleCategories(column: Column, check: StringPredicate, min: number = 5, max: number = 10): boolean {
+  static sampleCategories(column: Column, check: StringPredicate, min: number = 5, max: number = 10, ratio: number = 1, minStringLength: number = 1): boolean {
     if (column.type !== TYPE.STRING)
       return false;
 
@@ -218,15 +220,14 @@ export class Detector {
     if (categories.length < min)
       return false;
 
-    // check all of them if there are few
-    if (categories.length < max)
-      return categories.every((value) => value === '' || check(value));
+    let checksCount = Math.min(max, categories.length);
+    let maxFailed = checksCount * (1 - ratio);
+    let failed = 0;
 
-    // otherwise, sample randomly
-    for (let i = 0; i < Math.min(max, categories.length); i++) {
-      let categoryIndex = Math.floor(Math.random() * categories.length);
-      let value = categories[categoryIndex];
-      if (value !== '' && !check(value))
+    for (let i = 0; i < checksCount; i++) {
+      let categoryIndex = Math.floor(categories.length * i / checksCount);
+      let s = categories[categoryIndex];
+      if (s.length >= minStringLength && !check(s) && ++failed > maxFailed)
         return false;
     }
 

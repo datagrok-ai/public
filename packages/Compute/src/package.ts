@@ -52,8 +52,8 @@ export function functionParametersGrid(f: DG.Func): DG.View {
 }
 
 //name: hof
-//tags: sidebar
 //description: some description
+//sidebar: @compute
 export function hof() {
   grok.shell.info('hof');
   let f: DG.Func = DG.Func.byName('Sin');
@@ -66,13 +66,25 @@ export function hof() {
 
 //name: hof2
 //description: some description 2 2 2
+//sidebar: @compute
+//meta.icon: package1.png
 export function hof2() {
   grok.shell.info('hof2');
+
   let f: DG.Func = DG.Func.byName('Sin');
   let v: DG.View = functionParametersGrid(f);
-  v.parentCall = grok.functions.getCurrentCall().parentCall;
-  v.parentView = v.parentCall?.aux['view'];
-  v.path = 'hof';
+
+  v.parentCall = grok.functions.getCurrentCall(); // hof2 call itself
+  v.parentView = v.parentCall.parentCall?.aux['view']; // modelCatalog view
+  let path = v.parentCall.parentCall?.aux['url']; // uri if called from model catalog
+  grok.shell.info(path);
+
+  let path2 = v.parentCall?.aux['url']; // uri if called directly (if app)
+  grok.shell.info(path2);
+
+  v.basePath = '/' + v.parentCall.func.name;
+  v.path = '/';
+
   grok.shell.addView(v);
 }
 
@@ -173,11 +185,25 @@ export function init() {
 
 //name: Model Catalog
 //tags: app
- export function modelCatalog() {
-   let view = new ModelCatalogView();
-   view.name = 'Models';
-   grok.shell.addView(view);
- }
+export function modelCatalog() {
+  let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
+  if (modelsView == null) {
+    let view = new ModelCatalogView();
+    view.name = 'Models';
+    let parser = document.createElement('a');
+    parser.href = window.location.href;
+    let pathSegments = parser.pathname.split('/');
+    grok.shell.addView(view);
+    grok.shell.info(parser.href);
+    if (pathSegments.length > 3) {
+      let c = grok.functions.getCurrentCall();
+      grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
+        if (lst.length == 1)
+          ModelHandler.openModel(lst[0], c);
+      });
+    }
+  } else grok.shell.v = modelsView;
+}
 
 
 //name: computationTest

@@ -6,8 +6,7 @@ import $ from 'cash-dom';
 
 import {getSequenceMolecularWeight} from '../utils/molecular-measure';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-import {
-  createDimensinalityReducingWorker,
+import {createDimensinalityReducingWorker, IReduceDimensionalityResult,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
@@ -31,27 +30,28 @@ export class PeptideSpaceViewer extends DG.JsViewer {
     this.cyclesCount = this.addProperty('cyclesCount', DG.TYPE.INT, 100);
   }
 
-  async onFrameAttached(dataFrame: DG.DataFrame) {
+  async onFrameAttached(dataFrame: DG.DataFrame): Promise<void> {
     super.onFrameAttached(dataFrame);
     await this.render(this.dataFrame.temp[C.EMBEDDING_STATUS]);
   }
 
-  async onPropertyChanged(property: DG.Property | null) {
+  async onPropertyChanged(property: DG.Property | null): Promise<void> {
     super.onPropertyChanged(property);
 
 
     await this.render(this.customProperties.has(property?.name ?? '') || this.dataFrame.temp[C.EMBEDDING_STATUS]);
   }
 
-  async render(computeData=false) {
+  async render(computeData=false): Promise<void> {
     if (computeData && !this.isEmbeddingCreating) {
       this.isEmbeddingCreating = true;
       $(this.root).empty();
       const viewerHost = ui.waitBox(async () => {
         await computeWeights(this.dataFrame, this.method, this.measure, this.cyclesCount);
 
+        const colorColName = this.dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!.name;
         const viewerOptions = {
-          x: '~X', y: '~Y', color: C.COLUMNS_NAMES.ACTIVITY_SCALED ?? '~MW', size: '~MW', title: 'Peptide Space',
+          x: '~X', y: '~Y', color: colorColName ?? '~MW', size: '~MW', title: 'Peptide Space',
           showYSelector: false, showXSelector: false, showColorSelector: false, showSizeSelector: false,
           zoomAndFilter: 'no action', axesFollowFilter: false,
         };
@@ -73,16 +73,18 @@ export async function computeWeights(
   const pi = DG.TaskBarProgressIndicator.create('Creating embedding...');
   try {
     const axesNames = ['~X', '~Y', '~MW'];
-    const columnData = (col ?? table.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE)).toList()
+    col ??= table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
+    const columnData = col.toList()
       .map((v) => AlignedSequenceEncoder.clean(v));
 
-    const embcols = await createDimensinalityReducingWorker(
+    const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(
       {data: columnData, metric: measure as StringMetrics}, method, {cycles: cyclesCount});
+    const embcols = reduceDimRes.embedding;
 
     const columns = Array.from(
       embcols as Coordinates, (v: Float32Array, k) => DG.Column.fromFloat32Array(axesNames[k], v));
 
-    function _getMW(sequences: string[]) {
+    function _getMW(sequences: string[]): Float32Array {
       const mw: Float32Array = new Float32Array(sequences.length);
 
       mw.map((_, index) => getSequenceMolecularWeight(sequences[index] ?? ''));

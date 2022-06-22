@@ -1,13 +1,13 @@
 {
 	"name": "@datagrok/power-grid",
 	"friendlyName": "PowerGrid",
-	"version": "0.0.4",
+	"version": "1.0.0",
 	"description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
 	"repository": {
-    "type": "git",
-    "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/PowerGrid"
-  },
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/PowerGrid"
+	},
 	"dependencies": {
 		"cash-dom": "latest",
 		"dayjs": "latest"
@@ -38,5 +38,6 @@
 		"debug-powergrid-public": "grok publish public --rebuild",
 		"release-powergrid-public": "grok publish public --rebuild --release",
 		"debug-powergrid-local": "grok publish local --rebuild"
-	}
+	},
+  "category": "Development"
 }

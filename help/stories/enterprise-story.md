@@ -43,7 +43,7 @@ applications, and a lot more.
 
 ## Data retrieval and governance
 
-If your organization already has ten different databases, the last thing you want is another, all-encompassing database. 
+If your organization already has ten different databases, the last thing you want is another, all-encompassing database.
 Instead, Grok serves as an intelligence layer, and seamlessly and efficiently works with all the popular
 databases (30+ connectors). Connections and queries are centrally managed and are subject to our role-based privilege
 management system. Queries can be used as functions in scripts. All objects can be annotated with user-defined metadata.

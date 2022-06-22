@@ -50,7 +50,34 @@ export interface ObsPtmType {
   L: any;
 }
 
+export function catchToLog<T>(prefix: string, func: () => T): T {
+  try {
+    const res: T = func();
+    if (res instanceof Promise) {
+      return res.catch((ex) => {
+        console.error(prefix + ex.toString());
+        throw (ex);
+      }) as unknown as T;
+    } else {
+      return res;
+    }
+  } catch (ex: any) {
+    console.error(prefix + ex.toString());
+    throw (ex);
+  }
+}
+
+export enum DataLoaderType {
+  Unknown = 'unknown',
+  Files = 'Files',
+  Database = 'Database',
+}
+
 export abstract class DataLoader {
+  abstract get vids(): string[];
+
+  abstract get vidsObsPtm(): string[];
+
   /** Properties for filters
    */
   abstract get filterProperties(): FilterPropertiesType;
@@ -63,49 +90,57 @@ export abstract class DataLoader {
 
   abstract get refDf(): DG.DataFrame;
 
-  abstract get realNums(): NumsType;
-
   abstract init();
 
   protected async check_files(files: { [name: string]: string }): Promise<void> {
-    const errorsFiles: string[] = [];
-    for (const filePath of Object.values(files)) {
-      if (!(await _package.files.exists(filePath)))
-        errorsFiles.push(filePath);
-    }
-    if (errorsFiles.length > 0)
-      throw new Error(`Files errors:\n ${errorsFiles.join('\n')}`);
+    // for (const filePath of Object.values(files)) {
+    //   if (!(await _package.files.exists(filePath)))
+    //     fileErrors.push(filePath);
+    // }
+    const fileNames = Object.values(files);
+    const fileErrors: string[] = (await Promise.all(
+      fileNames.map((filePath) => { return _package.files.exists(filePath); })
+    ).then((exists) => fileNames.filter((v, i) => !exists[i])));
+
+    if (fileErrors.length > 0)
+      throw new Error(`Files errors:\n ${fileErrors.join('\n')}`);
   }
 
-  abstract getVids(): Promise<string[]>;
+  abstract listAntigens(): Promise<DG.DataFrame>;
 
-  abstract getObservedPtmVids(): Promise<string[]>;
+  abstract getMlbByAntigen(antigen: string): Promise<DG.DataFrame>;
+
+  abstract getTreeByAntigen(antigen: string): Promise<DG.DataFrame>;
+
+  abstract getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame>;
 
   /**
    * Heavy chain calculated data
    */
-  abstract load_hChainDf(): Promise<DG.DataFrame>;
+  abstract loadHChainDf(): Promise<DG.DataFrame>;
 
   /**
    * Light chain calculated data
    */
-  abstract load_lChainDf(): Promise<DG.DataFrame>;
+  abstract loadLChainDf(): Promise<DG.DataFrame>;
 
   /**
    * TODO: Some description of data structure purpose
    */
-  abstract load_mlbDf(): Promise<DG.DataFrame>;
+  abstract loadMlbDf(): Promise<DG.DataFrame>;
 
-  abstract load_treeDf(): Promise<DG.DataFrame>;
+  abstract loadTreeDf(): Promise<DG.DataFrame>;
 
-  abstract load_example(vid: string): Promise<JsonType>;
+  abstract loadJson(vid: string): Promise<JsonType>;
 
   /**
    */
-  abstract load_pdb(vid: string): Promise<string>;
+  abstract loadPdb(vid: string): Promise<string>;
+
+  abstract loadRealNums(vid: string): Promise<NumsType>;
 
   /**
    * Get post observable translational modifications data for 'v_id'
    */
-  abstract load_obsPtm(vid: string): Promise<ObsPtmType>;
+  abstract loadObsPtm(vid: string): Promise<ObsPtmType>;
 }

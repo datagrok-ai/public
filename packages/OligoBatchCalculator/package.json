@@ -27,7 +27,7 @@
     "jest": "^27.0.0",
     "@types/jest": "^27.0.0",
     "ts-jest": "^27.0.0",
-    "puppeteer": "latest"
+    "puppeteer": "^13.7.0"
   },
   "scripts": {
     "debug-oligobatchcalculator": "grok publish --rebuild",
@@ -47,5 +47,6 @@
   ],
   "canView": [
     "All users"
-  ]
+  ],
+  "category": "Bioinformatics"
 }

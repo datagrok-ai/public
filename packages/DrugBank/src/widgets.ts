@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {drugBankSimilaritySearch, drugBankSubstructureSearch} from './searches';
 
 import * as OCL from 'openchemlib/full';
-import {drugBankSearchTypes} from './utils';
+import {drugBankSearchTypes, getTooltip} from './utils';
 
 export async function drugBankSearchWidget(
   molString: string, searchType: drugBankSearchTypes, dbdf: DG.DataFrame): Promise<DG.Widget> {
@@ -30,27 +30,26 @@ export async function drugBankSearchWidget(
     compsHost.appendChild(ui.divText('No matches'));
     return new DG.Widget(panel);
   }
+  table.name = `DrugBank ${searchType === 'similarity' ? 'Similarity' : 'Substructure'} Search`;
 
   const bitsetIndexes = table.filter.getSelectedIndexes();
   const iterations = Math.min(bitsetIndexes.length, 20);
+  const smilesCol: DG.Column<string> = table.getCol('SMILES');
+  const idCol: DG.Column<string> = table.getCol('DRUGBANK_ID');
+  const linkCol: DG.Column<string> = table.getCol('link');
   for (let n = 0; n < iterations; n++) {
     const piv = bitsetIndexes[n];
     const molHost = ui.canvas();
-    const smiles = table.get('SMILES', piv);
+    const smiles = smilesCol.get(piv)!;
     const molecule = OCL.Molecule.fromSmiles(smiles);
     OCL.StructureView.drawMolecule(molHost, molecule, {'suppressChiralText': true});
 
-    //@ts-ignore: second argument expects string type, but works with callable too
-    ui.tooltip.bind(molHost, () => getTooltip(table.get('DRUGBANK_ID', piv)));
-    molHost.addEventListener('click', () => {
-      window.open(table!.get('link', piv), '_blank');
-    });
+    ui.tooltip.bind(molHost, () => getTooltip(idCol.get(piv)!));
+    molHost.addEventListener('click', () => window.open(linkCol.get(piv)!, '_blank'));
     compsHost.appendChild(molHost);
   }
-  headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
-    table!.name = 'DrugBank Similarity Search';
-    grok.shell.addTableView(table!);
-  }, 'Open compounds as table'));
+  headerHost.appendChild(
+    ui.iconFA('arrow-square-down', () => grok.shell.addTableView(table!), 'Open compounds as table'));
   compsHost.style.overflowY = 'auto';
 
   return new DG.Widget(panel);

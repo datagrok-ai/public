@@ -18,12 +18,15 @@ export enum TAGS {
   AAR = 'AAR',
   POSITION = 'Pos',
   SEPARATOR = 'monomer-separator',
+  SELECTION = 'selection',
 }
 
 export enum SEM_TYPES {
   AMINO_ACIDS = 'aminoAcids',
   ALIGNED_SEQUENCE = 'alignedSequence',
   ALIGNED_SEQUENCE_DIFFERENCE = 'alignedSequenceDifference',
+  ACTIVITY = 'activity',
+  ACTIVITY_SCALED = 'activityScaled',
 }
 
 export const STATS = 'stats';

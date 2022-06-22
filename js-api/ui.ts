@@ -6,7 +6,7 @@
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
 import {VirtualView} from './src/views/view';
-import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider} from './src/widgets';
+import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider, RangeSliderStyle} from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
@@ -530,8 +530,8 @@ export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: b
   return api.grok_UI_ShowPopup(element, anchor, vertical);
 }
 
-export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical: boolean = false): RangeSlider {
-  let rs = RangeSlider.create(vertical);
+export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical: boolean = false, style: RangeSliderStyle = 'barbell'): RangeSlider {
+  let rs = RangeSlider.create(vertical, style);
   rs.setValues(minRange, maxRange, min, max);
   return rs;
 }
@@ -649,7 +649,7 @@ export namespace input {
 }
 
 
-export function intInput(name: string, value: number, onValueChanged: Function | null = null): InputBase<number | null> {
+export function intInput(name: string, value: number | null, onValueChanged: Function | null = null): InputBase<number | null> {
   return new InputBase(api.grok_IntInput(name, value), onValueChanged);
 }
 
@@ -669,7 +669,7 @@ export function searchInput(name: string, value: string, onValueChanged: Functio
   return new InputBase(api.grok_SearchInput(name, value), onValueChanged);
 }
 
-export function floatInput(name: string, value: number, onValueChanged: Function | null = null): InputBase<number | null> {
+export function floatInput(name: string, value: number | null, onValueChanged: Function | null = null): InputBase<number | null> {
   return new InputBase(api.grok_FloatInput(name, value), onValueChanged);
 }
 
@@ -698,7 +698,7 @@ export function columnsInput(name: string, table: DataFrame, onValueChanged: (co
   return new InputBase(api.grok_ColumnsInput(name, table.dart, options?.available, options?.checked), onValueChanged);
 }
 
-export function tableInput(name: string, table: DataFrame, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase<DataFrame | null> {
+export function tableInput(name: string, table: DataFrame | null, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase<DataFrame | null> {
   return new InputBase(api.grok_TableInput(name, table, tables), onValueChanged);
 }
 

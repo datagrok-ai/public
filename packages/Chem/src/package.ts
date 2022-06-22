@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import {chem} from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FILTER_TYPE} from 'datagrok-api/dg';
+import {FILTER_TYPE, SEMTYPE} from 'datagrok-api/dg';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import * as chemSearches from './chem-searches';
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
@@ -20,6 +20,7 @@ import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
+import {_rdKitModule} from './utils/chem-common-rdkit';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
 import {convertMoleculeImpl, isMolBlock, MolNotation, molToMolblock} from './utils/chem-utils';
@@ -33,6 +34,7 @@ import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
+import {RDMol} from './rdkit-api';
 import Sketcher = chem.Sketcher;
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
@@ -158,7 +160,7 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
 export function getMorganFingerprint(molString: string): DG.BitSet {
   const bitArray = chemSearches.chemGetFingerprint(molString, Fingerprint.Morgan);
   //@ts-ignore
-  return DG.BitSet.fromBytes(bitArray.getRawData(), bitArray.length);
+  return DG.BitSet.fromBytes(bitArray.getRawData().buffer, bitArray.length);
 }
 
 //name: getSimilarities
@@ -204,8 +206,9 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: string molBlockFailover
 //output: column result
 export async function searchSubstructure(
-      molStringsColumn: DG.Column, molString: string,
-      substructLibrary: boolean, molBlockFailover: string) : Promise<DG.Column<any>> {
+  molStringsColumn: DG.Column, molString: string,
+  substructLibrary: boolean, molBlockFailover: string) : Promise<DG.Column<any>> {
+
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
   assure.notNull(substructLibrary, 'substructLibrary');
@@ -247,7 +250,7 @@ export function saveAsSdf(): void {
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
-      similarity: number, methodName: string) : Promise<void> {
+  similarity: number, methodName: string) : Promise<void> {
   await getActivityCliffs(df, smiles, activities, similarity, methodName);
 }
 
@@ -260,9 +263,10 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //input: bool plotEmbeddings = true
 //output: viewer result
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
-      similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
   return new Promise<void>(async (resolve, _) => {
-    const embeddings = await chemSpace(smiles, methodName, similarityMetric, ['Embed_X', 'Embed_Y']);
+    const chemSpaceRes = await chemSpace(smiles, methodName, similarityMetric, ['Embed_X', 'Embed_Y']);
+    const embeddings = chemSpaceRes.coordinates;
     const cols = table.columns as DG.ColumnList;
     for (const col of embeddings)
       cols.add(col);
@@ -466,15 +470,14 @@ export function diversitySearchTopMenu() {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
 
+//name: inchiToSmiles
 //input: string id
-//output: string smiles { semType: Molecule }
+//output: string smiles {semType: Molecule}
 //meta.role: converter
-//meta.inputRegexp: InChI\=.+
-export function inchiToSmiles(id: string): string {
-  const mol = chemCommonRdKit.getRdKitModule().get_mol(id);
-  const smiles = mol.get_smiles();
-  mol.delete();
-  return smiles;
+//meta.inputRegexp: (InChI\=.+)
+export async function inchiToSmiles(id: string) {
+  const mol = getRdKitModule().get_mol(id);
+  return mol.get_smiles();
 }
 
 //name: openChemLibSketch
@@ -510,7 +513,7 @@ export function importSdf(bytes: Uint8Array): DG.DataFrame[] {
 //input: string content
 //output: list tables
 export function importMol(content: string): DG.DataFrame[] {
-  let molCol = DG.Column.string('molecule', 1).init((_) => content);
+  const molCol = DG.Column.string('molecule', 1).init((_) => content);
   return [DG.DataFrame.fromColumns([molCol])];
 }
 
@@ -526,12 +529,14 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
 //meta.action: Use as filter
 //input: string mol { semType: Molecule }
 export function useAsSubstructureFilter(mol: string): void {
-  let tv = grok.shell.tv;
+  const tv = grok.shell.tv;
   if (tv == null)
+    // eslint-disable-next-line no-throw-literal
     throw 'Requires an open table view.';
 
-  let molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  const molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (molCol == null)
+    // eslint-disable-next-line no-throw-literal
     throw 'Molecule column not found.';
 
   /*
@@ -542,4 +547,26 @@ export function useAsSubstructureFilter(mol: string): void {
     molBlock: molToMolblock(mol, getRdKitModule())
   });
    */
+}
+
+//name: detectSmiles
+//input: column col
+//input: int min
+export function detectSmiles(col: DG.Column, min: number) {
+  function isSmiles(s: string) {
+    let d: RDMol | null = null;
+    try {
+      d = _rdKitModule.get_mol(s);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      d?.delete();
+    }
+  }
+
+  if (DG.Detector.sampleCategories(col, isSmiles, min, 10, 0.8)) {
+    col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
+    col.semType = SEMTYPE.MOLECULE;
+  }
 }

@@ -14,6 +14,11 @@ export function normalizeSequence(sequence: string, synthesizer: string | null, 
   for (let i = 0; i < additionalModsDf.rowCount; i++)
     normalizedObj[additionalCodesCol.getString(i)] = (baseModifsCol.get(i) != 'NO') ? baseModifsCol.get(i) : '';
 
+  for (let i = 0; i < codes.length; i++) {
+    codes[i] = codes[i].replace('(', '\\(');
+    codes[i] = codes[i].replace(')', '\\)');
+  }
+
   const sortedCodes = sortByStringLengthInDescOrder(codes);
   const regExp = new RegExp('(' + sortedCodes.join('|') + ')', 'g');
   return sequence.replace(regExp, function(code) {return normalizedObj[code];});

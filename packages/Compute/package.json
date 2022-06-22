@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
-	"version": "0.7.3",
+	"version": "0.8.3",
 	"description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)",
 	"repository": {
     "type": "git",
@@ -57,5 +57,6 @@
 	],
 	"canView": [
 		"All users"
-	]
+	],
+	"category": "Machine Learning"
 }

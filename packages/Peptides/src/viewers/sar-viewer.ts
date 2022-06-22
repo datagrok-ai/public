@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {PeptidesController} from '../peptides';
 import * as C from '../utils/constants';
+import {PeptidesModel} from '../model';
 
 let IS_PROPERTY_CHANGING = false;
 
@@ -12,7 +12,7 @@ export class SARViewerBase extends DG.JsViewer {
   tempName!: string;
   viewerGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
-  controller!: PeptidesController;
+  model!: PeptidesModel;
   scaling: string;
   bidirectionalAnalysis: boolean;
   showSubstitution: boolean;
@@ -32,18 +32,19 @@ export class SARViewerBase extends DG.JsViewer {
     this.activityLimit = this.float('activityLimit', 2);
   }
 
-  async onTableAttached() {
+  async onTableAttached(): Promise<void> {
     super.onTableAttached();
     this.dataFrame.temp[this.tempName] ??= this;
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
-    this.controller = await PeptidesController.getInstance(this.dataFrame);
-    this.controller.init(this.dataFrame);
+    this.model = await PeptidesModel.getInstance(this.dataFrame);
+    // this.model.init(this.dataFrame);
     await this.requestDataUpdate();
+    this.helpUrl = '/help/domains/bio/peptides.md';
   }
 
-  detach() {this.subs.forEach((sub) => sub.unsubscribe());}
+  detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
 
-  render(refreshOnly = false) {
+  render(refreshOnly = false): void {
     if (!this.initialized)
       return;
     if (!refreshOnly) {
@@ -55,12 +56,12 @@ export class SARViewerBase extends DG.JsViewer {
     this.viewerGrid?.invalidate();
   }
 
-  async requestDataUpdate() {
-    await this.controller.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis,
+  async requestDataUpdate(): Promise<void> {
+    await this.model.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis,
       this.activityLimit, this.maxSubstitutions, this.showSubstitution);
   }
 
-  async onPropertyChanged(property: DG.Property) {
+  async onPropertyChanged(property: DG.Property): Promise<void> {
     super.onPropertyChanged(property);
     this.dataFrame.tags[property.name] = `${property.get(this)}`;
     if (!this.initialized || IS_PROPERTY_CHANGING)
@@ -69,10 +70,12 @@ export class SARViewerBase extends DG.JsViewer {
     const propName = property.name;
 
     if (propName === 'scaling' && typeof this.dataFrame !== 'undefined') {
-      const minActivity = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY).stats.min;
+      const activityCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY)!;
+      // const minActivity = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY).stats.min;
+      const minActivity = activityCol.stats.min;
       if (minActivity && minActivity <= 0 && this.scaling !== 'none') {
         grok.shell.warning(`Could not apply ${this.scaling}: ` +
-          `activity column ${C.COLUMNS_NAMES.ACTIVITY} contains zero or negative values, falling back to 'none'.`);
+          `activity column ${activityCol.name} contains zero or negative values, falling back to 'none'.`);
         property.set(this, 'none');
         return;
       }
@@ -96,13 +99,14 @@ export class SARViewer extends SARViewerBase {
 
   constructor() {super();}
 
-  get name() {return this._name;}
+  get name(): string {return this._name;}
 
-  async onTableAttached() {
+  async onTableAttached(): Promise<void> {
     await super.onTableAttached();
-    this.viewerGrid = this.controller.sarGrid;
+    this.viewerGrid = this.model._sarGrid;
+    this.dataFrame.temp['sarViewer'] = this;
 
-    this.subs.push(this.controller.onSARGridChanged.subscribe((data) => {
+    this.subs.push(this.model.onSARGridChanged.subscribe((data) => {
       this.viewerGrid = data;
       this.render();
     }));
@@ -111,22 +115,21 @@ export class SARViewer extends SARViewerBase {
     this.render();
   }
 
-  isInitialized() {return this.controller?.sarGrid ?? false;}
+  isInitialized(): DG.Grid {return this.model?._sarGrid;}
 
+  //1. debouncing in rxjs; 2. flags?
   async onPropertyChanged(property: DG.Property): Promise<void> {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)
       return;
 
     await super.onPropertyChanged(property);
     IS_PROPERTY_CHANGING = true;
-    this.controller.syncProperties(true);
+    this.model.syncProperties(true);
     IS_PROPERTY_CHANGING = false;
   }
 }
 
-/**
- * Vertical structure activity relationship viewer.
- */
+/** Vertical structure activity relationship viewer. */
 export class SARViewerVertical extends SARViewerBase {
   _name = 'Sequence-Activity relationship';
   _titleHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
@@ -136,13 +139,14 @@ export class SARViewerVertical extends SARViewerBase {
     super();
   }
 
-  get name() {return this._name;}
+  get name(): string {return this._name;}
 
-  async onTableAttached() {
+  async onTableAttached(): Promise<void> {
     await super.onTableAttached();
-    this.viewerGrid = this.controller.sarVGrid;
+    this.viewerGrid = this.model._sarVGrid;
+    this.dataFrame.temp['sarViewerVertical'] = this;
 
-    this.subs.push(this.controller.onSARVGridChanged.subscribe((data) => {
+    this.subs.push(this.model.onSARVGridChanged.subscribe((data) => {
       this.viewerGrid = data;
       this.render();
     }));
@@ -151,7 +155,7 @@ export class SARViewerVertical extends SARViewerBase {
     this.render();
   }
 
-  isInitialized() {return this.controller?.sarVGrid ?? false;}
+  isInitialized(): DG.Grid {return this.model?._sarVGrid;}
 
   async onPropertyChanged(property: DG.Property): Promise<void> {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)
@@ -159,7 +163,7 @@ export class SARViewerVertical extends SARViewerBase {
 
     await super.onPropertyChanged(property);
     IS_PROPERTY_CHANGING = true;
-    this.controller.syncProperties(false);
+    this.model.syncProperties(false);
     IS_PROPERTY_CHANGING = false;
   }
 }

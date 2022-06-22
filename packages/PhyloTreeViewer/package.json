@@ -37,5 +37,6 @@
 	],
 	"devDependencies": {
 		"webpack-cli": "^4.9.2"
-	}
+	},
+  "category": "Visualizations"
 }

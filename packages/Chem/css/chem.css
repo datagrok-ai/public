@@ -69,3 +69,8 @@
   height: 50px;
   overflow: hidden;
 }
+
+.d4-filter-element .grok-loader {
+  position: absolute;
+  top: 10px;
+}

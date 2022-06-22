@@ -24,7 +24,7 @@ it('TEST', async () => {
   console.log(`Testing ${target_package} package`);
 
   //console.log(require('root-require')('package.json').version);
-  let r = await page.evaluate((target_package):Promise<object> => {
+  let r = await page.evaluate((target_package: Promise<object>) => {
     return new Promise<object>((resolve, reject) => {
       (<any>window).grok.functions.eval(target_package + ':test()').then((df: any) => {
         let cStatus = df.columns.byName('success');

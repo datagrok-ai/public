@@ -15,6 +15,8 @@ declare let DG: any;
 declare let ui: any;
 let api = <any>window;
 
+export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
+
 export class ObjectPropertyBag {
   source: any;
 
@@ -290,8 +292,12 @@ export abstract class Filter extends Widget {
    * This is used to minimize the number of unnecessary computations.
    * Make sure to call super.isFiltering to check whether the filter has been disabled by the user */
   get isFiltering(): boolean {
-    return !(this.root.parentElement?.classList?.contains('d4-filter-disabled') == true);
+    return !(this.root.parentElement?.classList?.contains('d4-filter-disabled') == true) &&
+      !(this.root.parentElement?.parentElement?.parentElement?.classList?.contains('d4-filters-disabled') == true);
   }
+
+  /** Whether a filter is ready to apply the filtering mask synchronously. */
+  get isReadyToApplyFilter(): boolean { return true; }
 
   /** Override to provide short filter summary that might be shown on viewers or in the property panel. */
   abstract get filterSummary(): string;
@@ -321,7 +327,7 @@ export abstract class Filter extends Widget {
   attach(dataFrame: DataFrame): void {
     this.dataFrame = dataFrame;
     this.subs.push(this.dataFrame.onRowsFiltering
-      .pipe(filter((_) => this.isFiltering))
+      .pipe(filter((_) => this.isFiltering && this.isReadyToApplyFilter))
       .subscribe((_) => {
         this.applyFilter();
         this.dataFrame!.rows.filters.push(`${this.columnName}: ${this.filterSummary}`);
@@ -1485,8 +1491,8 @@ export class TreeViewNode {
 /** A slider that lets user control both min and max values. */
 export class RangeSlider extends DartWidget {
 
-  static create(vertical: boolean = false): RangeSlider {
-    return toJs(api.grok_RangeSlider(vertical));
+  static create(vertical: boolean = false, style: RangeSliderStyle = 'barbell'): RangeSlider {
+    return toJs(api.grok_RangeSlider(style, vertical));
   }
 
   /** Minimum range value. */
@@ -1508,7 +1514,7 @@ export class RangeSlider extends DartWidget {
    * @param {number} max */
   setValues(minRange: number, maxRange: number, min: number, max: number): void {
     api.grok_RangeSlider_SetValues(this.dart, minRange, maxRange, min, max);
-  };
+  }
 
   /** @returns {Observable} */
   get onValuesChanged(): Observable<any> {
