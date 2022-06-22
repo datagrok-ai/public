@@ -315,7 +315,7 @@ AND t.chembl_id      = @target;
 
 --name: @pattern similarity search
 --connection: Chembl
---input: string pattern {semType: Substructure}
+--input: string pattern {semType: Molecule}
 --input: int maxRows = 1000
 select fps.molregno, cs.canonical_smiles as smiles
 from rdk.fps fps
