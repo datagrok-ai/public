@@ -147,23 +147,31 @@ export class FunctionView extends DG.ViewBase {
 
   /** Override to create a custom input control. */
   buildRibbonPanels(): HTMLElement[][] {
-    const newRibbonPanels = [...this.getRibbonPanels(), [ui.divH([
-      ui.comboPopup(
-        ui.iconFA('arrow-to-bottom'),
-        this.supportedExportFormats,
-        async (format: string) => DG.Utils.download(this.exportFilename(format), await this.export(format))),
-    ])]];
+    const newRibbonPanels = [
+      ...this.getRibbonPanels(),
+      [...(this.supportedExportFormats.length > 0) ? [ui.divH([
+        ui.comboPopup(
+          ui.iconFA('arrow-to-bottom'),
+          this.supportedExportFormats,
+          async (format: string) => DG.Utils.download(this.exportFilename(format), await this.export(format))),
+      ])]: []]
+    ];
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
   }
 
   /** Override to create a custom ribbon menu on the top. */
   buildRibbonMenu() {
-    const ribbonMenu = this.ribbonMenu
-      .group('Model')
-      .group('Export')
-      .items(this.supportedExportFormats, async (format: string) => DG.Utils.download(this.exportFilename(format), await this.export(format)))
-      .endGroup();
+    if (this.supportedExportFormats.length === 0 && !this.reportBug && !this.helpUrl) return;
+
+    const ribbonMenu = this.ribbonMenu.group('Model');
+
+    if (this.supportedExportFormats.length > 0) {
+      ribbonMenu
+        .group('Export')
+        .items(this.supportedExportFormats, async (format: string) => DG.Utils.download(this.exportFilename(format), await this.export(format)))
+        .endGroup();
+    }
 
     if (this.reportBug)
       ribbonMenu.item('Report a bug', () => this.reportBug!());
