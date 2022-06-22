@@ -203,20 +203,21 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: column molStringsColumn
 //input: string molString
 //input: bool substructLibrary
-//input: string molStringSmarts
+//input: string molBlockFailover
 //output: column result
 export async function searchSubstructure(
   molStringsColumn: DG.Column, molString: string,
-  substructLibrary: boolean, molStringSmarts: string) : Promise<DG.Column<any>> {
+  substructLibrary: boolean, molBlockFailover: string) : Promise<DG.Column<any>> {
+
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
   assure.notNull(substructLibrary, 'substructLibrary');
-  assure.notNull(molStringSmarts, 'molStringSmarts');
+  assure.notNull(molBlockFailover, 'molBlockFailover');
 
   try {
     const result =
       substructLibrary ?
-        await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts) :
+        await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molBlockFailover) :
         chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
     return DG.Column.fromList('object', 'bitset', [result]); // TODO: should return a bitset itself
   } catch (e: any) {
@@ -538,12 +539,14 @@ export function useAsSubstructureFilter(mol: string): void {
     // eslint-disable-next-line no-throw-literal
     throw 'Molecule column not found.';
 
+  /*
   tv.getFiltersGroup({createDefaultFilters: false}).add({
     type: FILTER_TYPE.SUBSTRUCTURE,
     column: molCol.name,
     columnName: molCol.name,
     molBlock: molToMolblock(mol, getRdKitModule())
   });
+   */
 }
 
 //name: detectSmiles

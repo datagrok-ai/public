@@ -2,7 +2,7 @@ import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {rdKitFingerprintToBitArray} from '../utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {isMolBlock} from '../utils/chem-utils';
-import {RDModule} from "../rdkit-api";
+import {RDModule, RDMol} from "../rdkit-api";
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   _patternFps: BitArray[] | null = null;
@@ -59,51 +59,77 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return {molIdxToHash, hashToMolblock};
   }
 
-  searchSubstructure(queryMolString: string, querySmarts: string): string {
+  getMol(molString: string) {
+     return this._rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
+  }
+
+  getQMol(molString: string) {
+     return this._rdKitModule.get_qmol(molString);
+  }
+
+  searchSubstructure(queryMolString: string, queryMolBlockFailover: string): string {
     const matches: number[] = [];
     if (this._rdKitMols) {
+      let queryMol: RDMol | null = null;
       try {
-        let queryMol = null;
-        try {
+        if (isMolBlock(queryMolString)) {
+          queryMol = this.getMol(queryMolString);
+        } else {
+          let createdQMol = false;
           try {
-            queryMol = this._rdKitModule.get_mol(queryMolString, '{"mergeQueryHs":true}');
-          } catch (e2) {
+            queryMol = this.getQMol(queryMolString);
+            createdQMol = queryMol.is_valid();
+          } catch (e) {
             queryMol?.delete();
             queryMol = null;
-            if (querySmarts !== null && querySmarts !== '') {
-              console.log('Chem | Cannot parse a MolBlock. Switching to SMARTS');
-              queryMol = this._rdKitModule.get_qmol(querySmarts);
-            } else
-              throw new Error('Chem | SMARTS not set');
           }
-          if (queryMol && queryMol.is_valid()) {
-            if (this._patternFps) {
-              const fpRdKit = queryMol.get_pattern_fp_as_uint8array(this._patternFpLength);
-              const queryMolFp = rdKitFingerprintToBitArray(fpRdKit);
-              for (let i = 0; i < this._patternFps.length; ++i) {
-                const crossedFp = BitArray.fromAnd(this._patternFps[i], queryMolFp);
-                if (crossedFp.equals(queryMolFp))
-                  if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
-                    matches.push(i);
+          if (createdQMol) {
+            let mol = null;
+            let createdMol = false;
+            try {
+              mol = this.getMol(queryMolString);
+              createdMol = mol.is_valid();
+            } catch (e) {
+              mol?.delete();
+            }
+            if (createdMol) { // check the qmol is proper
+              let match = mol!.get_substruct_match(queryMol!);
+              if (match === '{}') {
+                queryMol!.delete();
+                queryMol = mol;
               }
-            } else {
-              for (let i = 0; i < this._rdKitMols!.length; ++i)
-                if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
+            } // else, this looks to be a real SMARTS
+          } else { // failover to queryMolBlockFailover
+            queryMol = this.getMol(queryMolBlockFailover);
+          }
+        }
+        if (queryMol && queryMol.is_valid()) {
+          if (this._patternFps) {
+            const fpRdKit = queryMol.get_pattern_fp_as_uint8array(this._patternFpLength);
+            const queryMolFp = rdKitFingerprintToBitArray(fpRdKit);
+            for (let i = 0; i < this._patternFps.length; ++i) {
+              const crossedFp = BitArray.fromAnd(this._patternFps[i], queryMolFp);
+              if (crossedFp.equals(queryMolFp))
+                if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
                   matches.push(i);
             }
-          }
-        } finally {
-          queryMol?.delete();
-        }
+          } else
+            for (let i = 0; i < this._rdKitMols!.length; ++i)
+              if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
+                matches.push(i);
+        } else
+          throw new Error('Chem | Search pattern cannot be set');
       } catch (e) {
         console.error(
-          'Possibly a malformed query: `' + queryMolString + '`');
+          'Chem | Possibly a malformed query: `' + queryMolString + '`');
         // Won't rethrow
+      } finally {
+        queryMol?.delete();
       }
     }
     return '[' + matches.join(', ') + ']';
   }
-
+  
   freeMoleculesStructures(): void {
     if (this._rdKitMols !== null) {
       for (let mol of this._rdKitMols!)
