@@ -1,11 +1,12 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as echarts from 'echarts';
 
 
 export class Utils {
-  static toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[],
-    rowMask: DG.BitSet, visitNode: ((arg0: treeDataType) => void) | null = null): treeDataType {
+  static toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
+    visitNode: ((arg0: treeDataType) => void) | null = null, linkSelection: boolean = true): treeDataType {
     const data: treeDataType = {
       name: 'All',
       value: 0,
@@ -19,13 +20,40 @@ export class Utils {
       .whereRowMask(rowMask)
       .aggregate();
 
+    if (linkSelection)
+      grok.data.linkTables(dataFrame, aggregated, splitByColumnNames,
+        splitByColumnNames, [DG.SYNC_TYPE.SELECTION_TO_SELECTION]);
+
     const countCol = aggregated.columns.byName('count');
     const columns = aggregated.columns.byNames(splitByColumnNames);
     const parentNodes: (treeDataType | null)[] = columns.map((_) => null);
 
+    const selectedPaths: string[] = [];
+    const selectedNodeStyle = { color: DG.Color.toRgb(DG.Color.selectedRows) };
+
+    const markSelectedNodes = (node: treeDataType): boolean => {
+      if (selectedPaths.includes(node.path!)) {
+        node.itemStyle = selectedNodeStyle;
+        return true;
+      }
+      if (node.children && node.children.length > 0) {
+        let parentSelected = true;
+        for (const child of node.children) {
+          parentSelected = markSelectedNodes(child) && parentSelected;
+        }
+        if (parentSelected) {
+          node.itemStyle = selectedNodeStyle;
+          return true;
+        }
+      }
+      return false;
+    }
+
     for (let i = 0; i < aggregated.rowCount; i++) {
       const idx = i === 0 ? 0 : columns.findIndex((col) => col.get(i) !== col.get(i - 1));
       const value = countCol.get(i);
+      if (aggregated.selection.get(i))
+        selectedPaths.push(columns.map((col) => col.getString(i)).join(' | '));
 
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
@@ -50,6 +78,7 @@ export class Utils {
     }
 
     console.log(JSON.stringify(data));
+    markSelectedNodes(data);
 
     return data;
   }
@@ -88,7 +117,7 @@ export class Utils {
   }
 }
 
-type treeDataType = {name: string, value: number, path: null | string, children?: treeDataType[]};
+type treeDataType = {name: string, value: number, path: null | string, children?: treeDataType[], itemStyle?: { color?: string }};
 
 
 export class EChartViewer extends DG.JsViewer {
