@@ -841,6 +841,15 @@ export interface PropertyOptions {
   /** Custom editor (such as slider or text area) */
   editor?: string;
 
+  /** Corresponding category on the property panel */
+  category?: string;
+
+  /** Value format */
+  format?: string;
+
+  /** Whether the property should be editable via the UI */
+  userEditable?: boolean;
+
   /** List of validators. It can include [NAMED_VALIDATORS] as well as any pre-defined function names.
    * Signature: validator(x: DG.Type): string | null.
    * [null] indicates that the value is valid, [string] describes a validation error. */
@@ -854,6 +863,9 @@ export interface PropertyOptions {
 
   /** Field postfix shown in [PropertyGrid]. [units] take precedence over the [postfix] value. */
   postfix?: string;
+
+  /** Name of the corresponding JavaScript field. No need to specify it if it is the same as name. */
+  fieldName?: string;
 }
 
 

@@ -209,18 +209,21 @@ export class Widget {
    * @private
    */
   addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: any } & PropertyOptions | null = null): any {
+    const fieldName = options?.fieldName ?? propertyName;
+
     let obj = this;
     // @ts-ignore
-    let p = Property.create(propertyName, propertyType, (_) => obj[propertyName], null, defaultValue);
+    let p = Property.create(propertyName, propertyType, (_) => obj[fieldName], null, defaultValue);
     p.set = function (_: any, x: any) {
       // @ts-ignore
-      obj[propertyName] = x;
+      obj[fieldName] = x;
       obj.onPropertyChanged(p);
     };
 
     if (options !== null) {
       for (let key of Object.keys(options))
-        api.grok_PropMixin_SetPropertyValue(p.dart, key, options[key]);
+        if (key != 'fieldName')
+          api.grok_PropMixin_SetPropertyValue(p.dart, key, options[key]);
     }
 
     this._properties.push(p);
