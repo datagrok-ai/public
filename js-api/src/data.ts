@@ -143,10 +143,11 @@ export class Data {
   }
 
   /**
-   * Links tables by the specified key columns using the specified link types (such as "current row to filter").
+   * Links tables by the specified key columns using the specified link types (such as "current row to filter", see {@link DG.SYNC_TYPE}).
+   * Tables are synchronized on the first change, set the {@link initialSync} option to reflect the current table state according to the sync type.
    * */
-  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[]): void {
-    api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes);
+  linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[], initialSync: boolean = false): void {
+    api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes, initialSync);
   };
 
   /**
