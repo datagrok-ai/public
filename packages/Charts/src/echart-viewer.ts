@@ -130,9 +130,14 @@ export class EChartViewer extends DG.JsViewer {
   right?: string;
   animationDuration?: number;
   animationDurationUpdate?: number;
+  tableName?: string;
 
   constructor() {
     super();
+
+    //common properties
+    this.tableName = this.string('table', null, { fieldName: 'tableName', category: 'Data', editor: 'table' });
+
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.chart = echarts.init(chartDiv);
