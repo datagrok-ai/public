@@ -22,7 +22,7 @@ export class Utils {
 
     if (linkSelection)
       grok.data.linkTables(dataFrame, aggregated, splitByColumnNames,
-        splitByColumnNames, [DG.SYNC_TYPE.SELECTION_TO_SELECTION]);
+        splitByColumnNames, [DG.SYNC_TYPE.SELECTION_TO_SELECTION], true);
 
     const countCol = aggregated.columns.byName('count');
     const columns = aggregated.columns.byNames(splitByColumnNames);
