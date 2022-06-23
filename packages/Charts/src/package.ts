@@ -28,7 +28,6 @@ export function timelinesViewerDemo() {
 
 //name: RadarViewer
 //tags: viewer
-//meta.trellisable: true
 //output: viewer result
 export function _RadarViewer() {
   return new RadarViewer();
@@ -50,7 +49,6 @@ export function _TreeViewer() {
 
 //name: TreeMapViewer
 //tags: viewer
-//meta.trellisable: true
 //output: viewer result
 export function _TreeMapViewer() {
   return new TreeMapViewer();
@@ -72,7 +70,6 @@ export function _SankeyViewer() {
 
 //name: ChordViewer
 //tags: viewer
-//meta.trellisable: true
 //output: viewer result
 export function _ChordViewer() {
   return new ChordViewer();
@@ -80,7 +77,6 @@ export function _ChordViewer() {
 
 //name: WordCloudViewer
 //tags: viewer
-//meta.trellisable: true
 //output: viewer result
 export function _WordCloudViewer() {
   return new WordCloudViewer();
