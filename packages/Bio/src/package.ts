@@ -7,6 +7,7 @@ import {SequenceAlignment, Aligned} from './seq_align';
 export const _package = new DG.Package();
 
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -28,4 +29,12 @@ export function sequenceAlignment(alignType: string, alignTable: string, gap: nu
 //output: viewer result
 export function webLogoViewer() {
   return new WebLogo();
+}
+
+//name: VdRegions
+//description: V-Domain regions viewer
+//tags: viewer, panel
+//output: viewer result
+export function vdRegionViewer() {
+  return new VdRegionsViewer();
 }
