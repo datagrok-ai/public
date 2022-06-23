@@ -152,6 +152,7 @@ export namespace chem {
 
     setSmiles(x: string) {
       this._smiles = x;
+      this._smarts = x;
       this._molFile = convert(x, 'smiles', 'mol');
       if (this.sketcher != null)
         this.sketcher!.smiles = x;
@@ -423,7 +424,9 @@ export namespace chem {
           grok.shell.o = SemanticValue.fromValueType(this.sketcher!.molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
       });
 
-      if (!Utils.isEmpty(this._molFile))
+      if (!Utils.isEmpty(this._smarts))
+        this.sketcher!.setSmarts(this._smarts);
+      else if (!Utils.isEmpty(this._molFile))
         this.sketcher!.molFile = this._molFile;
       else if (!Utils.isEmpty(this._smiles))
         this.sketcher!.smiles = this._smiles;
