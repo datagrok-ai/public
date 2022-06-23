@@ -10,14 +10,16 @@ export class TreeViewer extends EChartViewer {
   symbol: symbolType;
   symbolSize: number;
   hierarchyColumnNames: string[];
+  animation: boolean;
 
   constructor() {
     super();
 
     this.initCommonProperties();
+    this.animation = this.bool('animation', false);
     this.layout = <layoutType>this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'] });
     this.orient = <orientation>this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'] });
-    this.expandAndCollapse = this.bool('expandAndCollapse', true);
+    this.expandAndCollapse = this.bool('expandAndCollapse', false);
     this.animationDuration = this.int('animationDuration', 750);
     this.edgeShape = <edgeShape>this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'] });
     this.symbol = <symbolType>this.string('symbol', 'emptyCircle', { choices: [
@@ -56,6 +58,24 @@ export class TreeViewer extends EChartViewer {
     this.onPropertyChanged(null);
   }
 
+  initChartEventListeners() {
+    this.chart.on('click', (params: {[key: string]: any}) => this.dataFrame.selection.handleClick((i) => {
+      if (params.componentType !== 'series')
+        return false;
+      if (params.data.path === null)
+        return true;
+      else {
+        const categories: string[] = params.data.path.split(' | ');
+        let isMatch = true;
+        categories.forEach((category, idx) => {
+          const col = this.dataFrame.col(this.hierarchyColumnNames[idx]);
+          isMatch = isMatch && category === (col!.type === DG.COLUMN_TYPE.BOOL ? col!.get(i).toString() : col!.get(i));
+        });
+        return isMatch;
+      }
+    }, params.event!.event));
+  }
+
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
     if (p?.name === 'hierarchyColumnNames')
       this.render();
@@ -75,6 +95,7 @@ export class TreeViewer extends EChartViewer {
       this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
 
     super.onTableAttached();
+    this.initChartEventListeners();
   }
 
   getSeriesData() {
