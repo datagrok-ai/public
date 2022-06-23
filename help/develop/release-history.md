@@ -1,6 +1,30 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-23 Dev build 1.4.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Simplified JsConvertible 
+* Closes #709: Filter panel is not synchronised across different views 
+* (Bug) Correlation plot: histogram cells are not shown 
+* (Bug) Correlation plot: in-cell scatter plots are empty 
+* Correlation Plot: cell format set to 0.00 
+* Package content validation: up-to-date bundle check 
+* Packages: notify of successful settings saving 
+* Dialog: showHeader and showFooter properties 
+* (Bug) Semantic type detection not performed in the file preview pane 
+* Bio pckg: Fix VdRegions viewer registering 
+
+
 # 2022-06-21 Dev build 1.4.2
 
 ## Latest Docker Images
