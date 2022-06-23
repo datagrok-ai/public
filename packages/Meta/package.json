@@ -513,6 +513,9 @@
         },
         "0.1.13": {
           "datagrok-api": "^1.3.0"
+        },
+        "1.0.0": {
+          "datagrok-api": "^1.3.0"
         }
       },
       "description": "marvin is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
