@@ -52,6 +52,22 @@ export function editMoleculeCell(cell: DG.GridCell): void {
   dlg.root.children[1].classList.remove('ui-box');
 }
 
+//name: Details
+//tags: panel, widgets
+//input: string helmString {semType: HELM}
+//output: widget result
+export function detailsPanel(helmString: string){
+  //return new DG.Widget(ui.divText(lru.get(helmString)));
+  var result = lru.get(helmString).split(',');
+  return new DG.Widget(
+    ui.tableFromMap({
+      'formula': result[0].replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
+      'molecular weight': result[1],
+      'extinction coefficient': result[2],
+    })
+  )
+}
+
 //name: helmToSmiles
 //tags: converter
 //output: string smiles {semType: Molecule}
@@ -92,6 +108,11 @@ class HelmCellRenderer extends DG.GridCellRenderer {
 
     gridCell.element = host;
     // @ts-ignore
-    new JSDraw2.Editor(host, { width: w, height: h, skin: "w8", viewonly: true });
+    var canvas = new JSDraw2.Editor(host, { width: w, height: h, skin: "w8", viewonly: true });
+    var formula = canvas.getFormula(true);
+    var molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
+    var coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
+    var result = formula + ', ' + molWeight + ', ' + coef;
+    lru.set(gridCell.cell.value, result);
   }
 }
