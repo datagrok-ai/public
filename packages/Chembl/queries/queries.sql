@@ -315,7 +315,7 @@ AND t.chembl_id      = @target;
 
 --name: @pattern similarity search
 --connection: Chembl
---input: string pattern {semType: Molecule}
+--input: string pattern {semType: Substructure}
 --input: int maxRows = 1000
 select fps.molregno, cs.canonical_smiles as smiles
 from rdk.fps fps
@@ -433,5 +433,6 @@ from
 --name: unichemUnitTestQuery
 --connection: Unichem
 --tags: unit-test
+--meta.testExpected: 1
 select count(from_id) from src10src11
 --end
