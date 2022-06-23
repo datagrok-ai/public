@@ -81,7 +81,7 @@ export function _WordCloudViewer() {
   return new WordCloudViewer();
 }
 
-//tags: autostart
+//tags: init
 export function init() {
   grok.shell.registerViewer('TimelinesViewer', 'Creates TimelinesViewer viewer', () => new TimelinesViewer());
   grok.events.onContextMenu.subscribe((args) => {
