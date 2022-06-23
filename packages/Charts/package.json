@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.0.0",
+    "datagrok-api": "^1.4.4",
     "echarts": "^5.0.0",
     "echarts-wordcloud": "^2.0.0",
     "wu": "latest"
