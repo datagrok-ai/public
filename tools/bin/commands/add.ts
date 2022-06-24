@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { help } from '../utils/ent-helpers';
 import * as utils from '../utils/utils';
+import * as color from '../utils/color-utils';
 
 
 export function add(args: { _: string[] }) {
@@ -23,11 +24,11 @@ export function add(args: { _: string[] }) {
   const packagePath = path.join(curDir, 'package.json');
 
   // Package directory check
-  if (!fs.existsSync(packagePath)) return console.log('`package.json` not found');
+  if (!fs.existsSync(packagePath)) return color.error('`package.json` not found');
   try {
     const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
   } catch (error) {
-    console.error(`Error while reading ${packagePath}:`)
+    color.error(`Error while reading ${packagePath}:`)
     console.error(error);
   }
 
@@ -38,7 +39,7 @@ export function add(args: { _: string[] }) {
 
   function validateName(name: string) {
     if (!/^([A-Za-z])+([A-Za-z\d])*$/.test(name)) {
-      return console.log('The name may only include letters and numbers. It cannot start with a digit');
+      return color.error('The name may only include letters and numbers. It cannot start with a digit');
     }
     return true;
   }
@@ -74,7 +75,7 @@ export function add(args: { _: string[] }) {
         name = args['_'][4];
       }
       if (!Object.keys(utils.scriptLangExtMap).includes(lang)) {
-        console.log('Unsupported language:', lang);
+        color.error(`Unsupported language: ${lang}`);
         console.log('You can add a script in one of the following languages:');
         console.log(Object.keys(utils.scriptLangExtMap).join(', '));
         return false;
@@ -83,14 +84,14 @@ export function add(args: { _: string[] }) {
       // Script name check
       if (!validateName(name)) return false;
 
-      if (tag && tag !== 'panel') return console.log('Currently, you can only add the `panel` tag');
+      if (tag && tag !== 'panel') return color.error('Currently, you can only add the `panel` tag');
 
       // Create the folder `scripts` if it doesn't exist yet
       if (!fs.existsSync(scriptsDir)) fs.mkdirSync(scriptsDir);
 
       let scriptPath = path.join(scriptsDir, name + '.' + utils.scriptLangExtMap[lang]);
       if (fs.existsSync(scriptPath)) {
-        return console.log(`The file with the script already exists: ${scriptPath}`);
+        return color.error(`The file with the script already exists: ${scriptPath}`);
       }
 
       // Copy the script template
@@ -136,7 +137,7 @@ export function add(args: { _: string[] }) {
       if (!validateName(name)) return false;
 
       if (tag && tag !== 'panel' && tag !== 'init') {
-        return console.log('Currently, you can only add the `panel` or `init` tag');
+        return color.error('Currently, you can only add the `panel` or `init` tag');
       }
 
       // Create src/package.js if it doesn't exist yet
@@ -163,7 +164,7 @@ export function add(args: { _: string[] }) {
 
       let connectPath = path.join(connectDir, `${name}.json`);
       if (fs.existsSync(connectPath)) {
-        return console.log(`The connection file already exists: ${connectPath}`);
+        return color.error(`The connection file already exists: ${connectPath}`);
       }
 
       const connectionTemplate = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
@@ -210,7 +211,7 @@ export function add(args: { _: string[] }) {
       name = args['_'][2];
       if (!validateName(name)) return false;
       if (!name.endsWith('View')) {
-        console.log("For consistency reasons, we recommend postfixing classes with 'View'");
+        color.warn("For consistency reasons, we recommend postfixing classes with 'View'");
       }
 
       // Create src/package.js if it doesn't exist yet
@@ -219,7 +220,7 @@ export function add(args: { _: string[] }) {
       // Add a new JS file with a view class
       let viewPath = path.join(srcDir, utils.camelCaseToKebab(name) + ext);
       if (fs.existsSync(viewPath)) {
-        return console.log(`The view file already exists: ${viewPath}`);
+        return color.error(`The view file already exists: ${viewPath}`);
       }
       let viewClass = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'view-class' + ext), 'utf8');
@@ -242,7 +243,7 @@ export function add(args: { _: string[] }) {
       name = args['_'][2];
       if (!validateName(name)) return false;
       if (!name.endsWith('Viewer')) {
-        console.log("For consistency reasons, we recommend postfixing classes with 'Viewer'");
+        color.warn("For consistency reasons, we recommend postfixing classes with 'Viewer'");
       }
 
       // Create src/package.js if it doesn't exist yet
@@ -251,7 +252,7 @@ export function add(args: { _: string[] }) {
       // Add a new JS file with a viewer class
       let viewerPath = path.join(srcDir, utils.camelCaseToKebab(name) + ext);
       if (fs.existsSync(viewerPath)) {
-        return console.log(`The viewer file already exists: ${viewerPath}`);
+        return color.error(`The viewer file already exists: ${viewerPath}`);
       }
       let viewerClass = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'viewer-class' + ext), 'utf8');
@@ -282,7 +283,7 @@ export function add(args: { _: string[] }) {
         'entity-template', 'sem-type-detector.js'), 'utf8');
       contents = fs.readFileSync(detectorsPath, 'utf8');
       let idx = contents.search(/(?<=PackageDetectors extends DG.Package\s*{\s*(\r\n|\r|\n)).*/);
-      if (idx === -1) return console.log('Detectors class not found'); 
+      if (idx === -1) return color.error('Detectors class not found'); 
       contents = contents.slice(0, idx) + detector + contents.slice(idx);
 
       for (let repl of ['NAME', 'NAME_PREFIX', 'PACKAGE_DETECTORS_NAME']) {

@@ -2,13 +2,15 @@ import fs from 'fs';
 import path from 'path';
 import walk from 'ignore-walk';
 import * as utils from '../utils/utils';
+import * as color from '../utils/color-utils';
 
 
 function generateQueryWrappers(): void {
   const curDir = process.cwd();
   const queriesDir = path.join(curDir, 'queries');
   if (!fs.existsSync(queriesDir)) {
-    console.log(`Directory ${queriesDir} not found\nSkipping API generation for queries...`);
+    color.warn(`Directory ${queriesDir} not found`);
+    console.log('Skipping API generation for queries...');
     return;
   }
 
@@ -50,19 +52,21 @@ function generateQueryWrappers(): void {
   const queryFileName = 'queries-api.ts';
   const queryFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, queryFileName);
   if (fs.existsSync(queryFilePath)) {
-    console.log(`The file ${queryFilePath} already exists\nRewriting its contents...`);
+    color.warn(`The file ${queryFilePath} already exists`);
+    console.log('Rewriting its contents...');
   }
 
   const sep = '\n';
   fs.writeFileSync(queryFilePath, utils.dgImports + sep + wrappers.join(sep.repeat(2)) + sep, 'utf8');
-  console.log(`Successfully generated file ${queryFileName}${sep}`);
+  color.success(`Successfully generated file ${queryFileName}${sep}`);
 }
 
 function generateScriptWrappers(): void {
   const curDir = process.cwd();
   const scriptsDir = path.join(curDir, 'scripts');
   if (!fs.existsSync(scriptsDir)) {
-    console.log(`Directory ${scriptsDir} not found\nSkipping API generation for scripts...`);
+    color.warn(`Directory ${scriptsDir} not found`);
+    console.log('Skipping API generation for scripts...');
     return;
   }
 
@@ -104,7 +108,8 @@ function generateScriptWrappers(): void {
   const funcFileName = 'scripts-api.ts';
   const funcFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, funcFileName);
   if (fs.existsSync(funcFilePath)) {
-    console.log(`The file ${funcFilePath} already exists\nRewriting its contents...`);
+    color.warn(`The file ${funcFilePath} already exists`);
+    console.log('Rewriting its contents...');
   }
 
   const sep = '\n';
@@ -112,14 +117,14 @@ function generateScriptWrappers(): void {
     .replace('PACKAGE_NAMESPACE', _package.name)
     .replace('NAME', wrappers.join(sep.repeat(2)));
   fs.writeFileSync(funcFilePath, utils.dgImports + sep + scriptApi.build() + sep, 'utf8');
-  console.log(`Successfully generated file ${funcFileName}${sep}`);
+  color.success(`Successfully generated file ${funcFileName}${sep}`);
 }
 
 export function api(args: { _: string[] }): boolean {
   const nOptions = Object.keys(args).length - 1;
   if (args['_'].length !== 1 || nOptions > 0) return false;
   if (!utils.isPackageDir(process.cwd())) {
-    console.log('File `package.json` not found. Run the command from the package directory');
+    color.error('File `package.json` not found. Run the command from the package directory');
     return false;
   }
   generateScriptWrappers();

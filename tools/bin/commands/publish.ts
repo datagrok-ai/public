@@ -9,6 +9,7 @@ import walk from 'ignore-walk';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import { Indexable } from '../utils/utils';
+import * as color from '../utils/color-utils';
 
 
 const grokDir = path.join(os.homedir(), '.grok');
@@ -26,7 +27,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     try {
       timestamps = await (await fetch(url + '/timestamps')).json();
       if (timestamps['#type'] === 'ApiError') {
-        console.log(timestamps.message);
+        color.error(timestamps.message);
         return 1;
       }
     } catch (error) {
@@ -59,9 +60,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         files.push(`dist/${df}`);
       })
     } else {
-      console.log("File 'dist/package.js' not found. Building the package on the server side...");
-      console.log("Next time, please build your package locally with Webpack beforehand");
-      console.log("or run `grok publish` with the `--rebuild` option");
+      color.warn('File `dist/package.js` not found. Building the package on the server side...\n' +
+        'Next time, please build your package locally with Webpack beforehand\n' +
+        'or run `grok publish` with the `--rebuild` option');
       rebuild = true;
     }
   }
@@ -116,7 +117,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         response = await body.text();
         return JSON.parse(response);
       } catch (error) {
-        console.log(response);
+        console.error(response);
       }
     }).then((j: {}) => resolve(j)).catch((err: Error) => {
       reject(err);
@@ -131,12 +132,12 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
 
     fs.unlinkSync('zip');
     if (log['#type'] === 'ApiError') {
-      console.log(log['message']);
-      console.log(log['innerMessage']);
+      color.error(log['message']);
+      console.error(log['innerMessage']);
       return 1;
     } else {
       console.log(log);
-      console.log(contentValidationLog);
+      color.warn(contentValidationLog);
     }
   } catch (error) {
     console.error(error);
@@ -152,8 +153,14 @@ export function publish(args: PublishArgs) {
   if (nArgs > 2 || nOptions > 5) return false;
   if (!Object.keys(args).slice(1).every(option => ['build', 'rebuild',
   'debug', 'release', 'k', 'key', 'suffix'].includes(option))) return false;
-  if ((args.build && args.rebuild) || (args.debug && args.release)) {
-    console.log('You have used incompatible options');
+
+  if (args.build && args.rebuild) {
+    color.error('Incompatible options: --build and --rebuild');
+    return false;
+  }
+
+  if (args.debug && args.release) {
+    color.error('Incompatible options: --debug and --release');
     return false;
   }
 
@@ -174,17 +181,17 @@ export function publish(args: PublishArgs) {
     if (url.endsWith('/')) url = url.slice(0, -1);
     if (url in urls) key = config['servers'][urls[url]]['key'];
   } catch (error) {
-    if (!(host in config.servers)) return console.log(`Unknown server alias. Please add it to ${confPath}`);
+    if (!(host in config.servers)) return color.error(`Unknown server alias. Please add it to ${confPath}`);
     url = config['servers'][host]['url'];
     key = config['servers'][host]['key'];
   }
 
   // Update the developer key
   if (args.key) key = args.key;
-  if (key === '') return console.log('Please provide the key with `--key` option or add it by running `grok config`');
+  if (key === '') return color.warn('Please provide the key with `--key` option or add it by running `grok config`');
 
   // Get the package name
-  if (!fs.existsSync(packDir)) return console.log('`package.json` doesn\'t exist');
+  if (!fs.existsSync(packDir)) return color.error('`package.json` doesn\'t exist');
   let _package = JSON.parse(fs.readFileSync(packDir, { encoding: 'utf-8' }));
   let packageName = _package.name;
 
