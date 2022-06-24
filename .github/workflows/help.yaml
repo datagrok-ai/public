@@ -12,19 +12,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Lint Code Base
-        uses: github/super-linter/slim@v4
+      - name: Lint Markdown
+        uses: docker://ghcr.io/igorshubovych/markdownlint-cli:latest
+        with:
+          args: --output help/lint-check-report.md --config .github/linters/.markdownlint.yaml "help/**/*.md"
+      - name: Check Markdown Lint report
+        id: check
+        run:
+          if [ -s help/lint-check-report.md ]; then
+            echo "::set-output name=report::true"
+          fi
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v2
+        if: steps.check.outputs.report == 'true'
+        with:
+          name: lint-check-report
+          path: help/lint-check-report.md
+          retention-days: 7
         env:
-          LOG_LEVEL: WARN
-          MARKDOWN_CONFIG_FILE: .markdownlint.yaml
-          VALIDATE_ALL_CODEBASE: true
-          VALIDATE_MARKDOWN: true
-          FILTER_REGEX_INCLUDE: /github/workspace/help/.*
-          USE_FIND_ALGORITHM: true
-          IGNORE_GITIGNORED_FILES: true
-          DEFAULT_BRANCH: master
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DISABLE_ERRORS: false
 
   anchor_check:
     name: Check anchors
@@ -32,17 +38,30 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
       - name: Setup Node
         uses: actions/setup-node@v2
-
       - name: Install remark
         run: |
           npm install -g remark-cli
           npm install remark-validate-links --save-dev
-
-      - name: Check Markdown acnchors
-        run: remark --use remark-validate-links --quiet --frail help
+      - name: Check Markdown anchors
+        run: |
+          remark --use remark-validate-links --report vfile-reporter-shiny --quiet --frail help/ > help/anchor-check-report.md
+      - name: Check Markdown anchors report
+        id: check
+        run:
+          if [ -s help/anchor-check-report.md ]; then
+          echo "::set-output name=report::true"
+          fi
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v2
+        if: steps.check.outputs.report == 'true'
+        with:
+          name: anchor-check-report
+          path: help/anchor-check-report.md
+          retention-days: 7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   link_check:
     name: Check links
@@ -58,8 +77,16 @@ jobs:
           jobSummary: true
           format: markdown
           output: help/link-check-report.md
+
+      - name: Check Markdown links report
+        id: check
+        run:
+          if [ -s help/link-check-report.md ]; then
+          echo "::set-output name=report::true"
+          fi
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v2
+        if: steps.check.outputs.report == 'true'
         with:
           name: link-check-report
           path: help/link-check-report.md
@@ -69,8 +96,8 @@ jobs:
 
   convert:
     name: Convert to HTML
-#    needs: [ lint, link_check ]
-#    if: github.ref == 'refs/heads/master'
+    needs: [ lint, link_check, anchor_check ]
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
