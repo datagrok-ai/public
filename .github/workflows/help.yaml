@@ -12,24 +12,37 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          # Full git history is needed to get a proper list of changed files within `super-linter`
-          fetch-depth: 0
       - name: Lint Code Base
         uses: github/super-linter/slim@v4
         env:
           LOG_LEVEL: WARN
           MARKDOWN_CONFIG_FILE: .markdownlint.yaml
-          JSCPD_CONFIG_FILE: .jscpd.json
           VALIDATE_ALL_CODEBASE: true
           VALIDATE_MARKDOWN: true
-          VALIDATE_HTML: true
           FILTER_REGEX_INCLUDE: /github/workspace/help/.*
           USE_FIND_ALGORITHM: true
           IGNORE_GITIGNORED_FILES: true
           DEFAULT_BRANCH: master
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DISABLE_ERRORS: false
+
+  anchor_check:
+    name: Check anchors
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+
+      - name: Install remark
+        run: |
+          npm install -g remark-cli
+          npm install remark-validate-links --save-dev
+
+      - name: Check Markdown acnchors
+        run: remark --use remark-validate-links --quiet --frail help
 
   link_check:
     name: Check links
@@ -103,7 +116,6 @@ jobs:
           for f in output/help/**/*.html; do
             sed -i -e '0,/<p>/s//<p class="d4-help-info">/' "$f";
           done;
-
       - name: Set up Dart SDK
         uses: dart-lang/setup-dart@v1
         with:
@@ -118,24 +130,6 @@ jobs:
       - name: Run Dart script to create menu
         run: dart generate_menu.dart -s ../output/help/ -d ../output/help/
         working-directory: ./help/_internal
-
-      - name: Check HTML links
-        uses: lycheeverse/lychee-action@76ab977fedbeaeb32029313724a2e56a8a393548
-        with:
-          args: "--exclude-all-private --include-verbatim --require-https --verbose --no-progress 'help/output/**/*.html'"
-          fail: true
-          jobSummary: true
-          format: markdown
-          output: help/link-check-report.md
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v2
-        with:
-          name: link-check-report
-          path: help/link-check-report.md
-          retention-days: 7
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v2
         with:
