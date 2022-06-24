@@ -12,25 +12,50 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Lint Markdown
+        id: check
+        uses: docker://ghcr.io/igorshubovych/markdownlint-cli:latest
         with:
-          # Full git history is needed to get a proper list of changed files within `super-linter`
-          fetch-depth: 0
-      - name: Lint Code Base
-        uses: github/super-linter/slim@v4
-        env:
-          LOG_LEVEL: WARN
-          MARKDOWN_CONFIG_FILE: .markdownlint.yaml
-          JSCPD_CONFIG_FILE: .jscpd.json
-          VALIDATE_ALL_CODEBASE: true
-          VALIDATE_MARKDOWN: true
-          VALIDATE_HTML: true
-          FILTER_REGEX_INCLUDE: /github/workspace/help/.*
-          USE_FIND_ALGORITHM: true
-          ERROR_ON_MISSING_EXEC_BIT: true
-          IGNORE_GITIGNORED_FILES: true
-          DEFAULT_BRANCH: master
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DISABLE_ERRORS: false
+          args: --output help/lint-check-report.md --config .github/linters/.markdownlint.yaml "help/**/*.md"
+      - name: Set summary
+        if: always()
+        run: |
+          echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
+          if [ -s help/lint-check-report.md ]; then
+            echo ":no_entry_sign: Some errors occured" >> "${GITHUB_STEP_SUMMARY}"
+            echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
+            cat help/lint-check-report.md >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+  anchor_check:
+    name: Check anchors
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+      - name: Install remark
+        run: |
+          npm install -g remark-cli
+          npm install remark-validate-links vfile-reporter-shiny --save-dev
+      - name: Check Markdown anchors
+        id: check
+        run: |
+          remark --use remark-validate-links --report vfile-reporter-shiny --quiet --frail help/ > help/anchor-check-report.md 2>&1
+      - name: Set summary
+        if: always()
+        run: |
+          echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
+          if [ -s help/anchor-check-report.md ]; then
+            echo ":no_entry_sign: Some errors occured" >> "${GITHUB_STEP_SUMMARY}"
+            echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
+            cat help/anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
+          fi
 
   link_check:
     name: Check links
@@ -39,16 +64,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Check Markdown links
-        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        uses: lycheeverse/lychee-action@76ab977fedbeaeb32029313724a2e56a8a393548
         with:
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'yes'
-          folder-path: 'help/'
-          config-file: '.github/linters/mlc_config.json'
+          args: "--exclude-all-private --include-verbatim --require-https --verbose --no-progress 'help/**/*.md'"
+          fail: true
+          jobSummary: true
+          format: markdown
+          output: help/link-check-report.md
 
   convert:
     name: Convert to HTML
-    needs: [ lint, link_check ]
+    needs: [ lint, link_check, anchor_check ]
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     steps:
@@ -95,7 +121,6 @@ jobs:
           for f in output/help/**/*.html; do
             sed -i -e '0,/<p>/s//<p class="d4-help-info">/' "$f";
           done;
-
       - name: Set up Dart SDK
         uses: dart-lang/setup-dart@v1
         with:
@@ -110,7 +135,6 @@ jobs:
       - name: Run Dart script to create menu
         run: dart generate_menu.dart -s ../output/help/ -d ../output/help/
         working-directory: ./help/_internal
-
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v2
         with:
