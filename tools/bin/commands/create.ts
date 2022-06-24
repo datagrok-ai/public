@@ -49,8 +49,8 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
         let _package = JSON.parse(contents);
         for (let server in config.servers) {
           if (server === config.default) continue;
-          _package['scripts'][`debug-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild`;
-          _package['scripts'][`release-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild --release`;
+          _package['scripts'][`debug-${name.toLowerCase()}-${server}`] = `webpack && grok publish ${server}`;
+          _package['scripts'][`release-${name.toLowerCase()}-${server}`] = `webpack && grok publish ${server} --release`;
         }
         if (ts) Object.assign(_package.devDependencies, { 'ts-loader': 'latest', 'typescript': 'latest' });
         if (eslint) {
