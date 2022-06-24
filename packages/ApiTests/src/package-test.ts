@@ -36,9 +36,24 @@ import './ui/accordion';
 import './ui/tab-control';
 import './ui/list';
 import './ui/image';
+import './gui/anonimize';
+import './gui/cluster';
 import './ui/viewers-adding';
 import './grid/grid';
+import './gui/random-data';
 import './gui/missing-values-imputation';
+import './connections/demo_queries';
+import './gui/aggregate-rows';
+import './gui/multivariate-analysis';
+import './gui/pca';
+import './gui/spe';
+import './gui/split-columns';
+import './gui/add-new-column';
+import './gui/data-search';
+import './gui/delete-rows-columns';
+import './gui/filters';
+import './gui/unpivot';
+
 
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
