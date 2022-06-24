@@ -8,7 +8,7 @@ import {AminoacidsPalettes} from '../aminoacids';
 import {SeqPaletteBase} from '../seq-palettes';
 import {NucleotidesPalettes} from '../nucleotides';
 
-export function _testPaletteN() {
+export async function _testPaletteN() {
   const cpChromatogram = NucleotidesPalettes.Chromatogram;
 
   // TODO: Check palettes implement SeqPalette interface
@@ -19,7 +19,7 @@ export function _testPaletteN() {
   expect(cpChromatogram instanceof NucleotidesPalettes, true);
 }
 
-export function _testPaletteAA() {
+export async function _testPaletteAA() {
   const cpLest = AminoacidsPalettes.Lesk;
   const cpRasMol = AminoacidsPalettes.RasMol;
   const cpGrokGroups = AminoacidsPalettes.GrokGroups;
