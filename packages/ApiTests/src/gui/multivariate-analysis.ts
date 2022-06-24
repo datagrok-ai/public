@@ -56,8 +56,8 @@ category('Dialog: Multivariate Analysis', () => {
         okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click(); await delay(1000);
   });
-  /* after(async () => {
+   after(async () => {
         v.close();
         grok.shell.closeAll();
-    }); */
+    }); 
 });
