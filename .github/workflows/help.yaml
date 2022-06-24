@@ -13,24 +13,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Lint Markdown
+        id: check
         uses: docker://ghcr.io/igorshubovych/markdownlint-cli:latest
         with:
           args: --output help/lint-check-report.md --config .github/linters/.markdownlint.yaml "help/**/*.md"
-      - name: Check Markdown Lint report
-        id: check
-        run:
+      - name: Set summary
+        if: always()
+        run: |
+          echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
           if [ -s help/lint-check-report.md ]; then
-            echo "::set-output name=report::true"
+            echo ":no_entry_sign: Some errors occured" >> "${GITHUB_STEP_SUMMARY}"
+            echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
+            cat help/lint-check-report.md >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
           fi
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v2
-        if: steps.check.outputs.report == 'true'
-        with:
-          name: lint-check-report
-          path: help/lint-check-report.md
-          retention-days: 7
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   anchor_check:
     name: Check anchors
@@ -43,25 +40,22 @@ jobs:
       - name: Install remark
         run: |
           npm install -g remark-cli
-          npm install remark-validate-links --save-dev
+          npm install remark-validate-links vfile-reporter-shiny --save-dev
       - name: Check Markdown anchors
-        run: |
-          remark --use remark-validate-links --report vfile-reporter-shiny --quiet --frail help/ > help/anchor-check-report.md
-      - name: Check Markdown anchors report
         id: check
-        run:
+        run: |
+          remark --use remark-validate-links --report vfile-reporter-shiny --quiet --frail help/ > help/anchor-check-report.md 2>&1
+      - name: Set summary
+        if: always()
+        run: |
+          echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
           if [ -s help/anchor-check-report.md ]; then
-          echo "::set-output name=report::true"
+            echo ":no_entry_sign: Some errors occured" >> "${GITHUB_STEP_SUMMARY}"
+            echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
+            cat help/anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
           fi
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v2
-        if: steps.check.outputs.report == 'true'
-        with:
-          name: anchor-check-report
-          path: help/anchor-check-report.md
-          retention-days: 7
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   link_check:
     name: Check links
@@ -77,22 +71,6 @@ jobs:
           jobSummary: true
           format: markdown
           output: help/link-check-report.md
-
-      - name: Check Markdown links report
-        id: check
-        run:
-          if [ -s help/link-check-report.md ]; then
-          echo "::set-output name=report::true"
-          fi
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v2
-        if: steps.check.outputs.report == 'true'
-        with:
-          name: link-check-report
-          path: help/link-check-report.md
-          retention-days: 7
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   convert:
     name: Convert to HTML
