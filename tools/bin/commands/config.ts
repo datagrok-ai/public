@@ -5,6 +5,7 @@ import path from 'path';
 import yaml from 'js-yaml';
 import { validateConf } from '../validators/config-validator';
 import { Config, Indexable } from '../utils/utils';
+import * as color from '../utils/color-utils';
 
 
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
@@ -83,11 +84,11 @@ export function config(args: ConfigArgs) {
     try {
       new URL(args.server!);
     } catch (error) {
-      console.error('URL parsing error. Please, provide a valid server URL.');
+      color.error('URL parsing error. Please, provide a valid server URL.');
       return false;
     }
     config.servers[args.alias!] = { url: args.server!, key: args.key! };
-    console.log('Successfully added the server.');
+    color.success('Successfully added the server.');
     console.log(`Use this command to deploy packages: grok publish ${args.alias!}`);
     if (args.default) {
       config.default = args.alias!;
@@ -98,10 +99,10 @@ export function config(args: ConfigArgs) {
   console.log(config);
   const valRes = validateConf(config);
   if (!config || !valRes.value) {
-    console.log(valRes.message);
+    color.error(valRes.message);
     return false;
   }
-  if (valRes.warnings!.length) console.log(valRes.warnings!.join('\n'));
+  if (valRes.warnings!.length) color.warn(valRes.warnings!.join('\n'));
   (async () => {
     try {
       const answers = await inquirer.prompt({
@@ -136,7 +137,7 @@ export function config(args: ConfigArgs) {
         // fs.writeFileSync(confPath, yaml.dump(config));
       }
     } catch (err) {
-      console.error('The file is corrupted. Please run `grok config --reset` to restore the default template');
+      color.error('The file is corrupted. Please run `grok config --reset` to restore the default template');
       console.error(err);
       return false;
     }

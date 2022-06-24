@@ -5,6 +5,7 @@ import yaml from 'js-yaml';
 import { exec } from 'child_process';
 import { help } from '../utils/ent-helpers';
 import * as utils from '../utils/utils';
+import * as color from '../utils/color-utils';
 import { validateConf } from '../validators/config-validator';
 
 
@@ -128,7 +129,7 @@ export function create(args: CreateArgs) {
   const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
   const confTest = validateConf(config);
   if (!confTest.value) {
-    console.log(confTest.message);
+    color.error(confTest.message);
     return false;
   }
 
@@ -147,7 +148,7 @@ export function create(args: CreateArgs) {
     }
     if (!utils.isEmpty(packageDir)) {
       console.log();
-      console.log('The package directory should be empty');
+      color.error('The package directory should be empty');
       return false;
     }
 
@@ -189,7 +190,7 @@ export function create(args: CreateArgs) {
       else console.log(stderr, stdout);
     });
   } else {
-    console.log('Package name may only include letters, numbers, underscores, or hyphens');
+    color.error('Package name may only include letters, numbers, underscores, or hyphens');
   }
   return true;
 }
