@@ -25,5 +25,6 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 --friendlyName: Products
 --connection: PostgreSQLNorthwind
 --tags: unit-test
+--meta.testExpected: 77
 select * from Products
 --end
