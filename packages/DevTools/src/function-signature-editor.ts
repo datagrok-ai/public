@@ -9,7 +9,7 @@ import 'codemirror/mode/octave/octave'
 import 'codemirror/mode/r/r'
 import 'codemirror/mode/julia/julia'
 
-export async function functionSignatureEditor(view: DG.View) {
+export function functionSignatureEditor(view: DG.View) {
     addFseRibbon(view);
 }
 
@@ -38,7 +38,7 @@ const enum FUNC_PROPS_FIELDS {
   SAMPLE = 'sample',
   ENVIRONMENT = 'environment',
   TAGS = 'tags'
-};
+}
 
 const obligatoryFuncProps = ['name', 'description', 'helpUrl', 'language'];
 
@@ -101,7 +101,7 @@ const enum FUNC_PARAM_FIELDS {
   DEFAULT_VALUE = 'defaultValue',
   DESCRIPTION = 'description',
   CATEGORY = 'category',
-};
+}
 
 const enum DIRECTION {
   INPUT= 'input',
@@ -224,8 +224,7 @@ async function openFse(v: DG.View, functionCode: string) {
         .map(({tag, val}) => `${tag}: ${val}`)
         .concat(...(param.category && param.category!== DEFAULT_CATEGORY)? [`category: ${param.category}`]:[])
         .join('; ');
-      const result =`${headerSign(inputScriptCopy.language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
-      return result;
+      return `${headerSign(inputScriptCopy.language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name ? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
     };
   
     const functionProps = {
@@ -291,10 +290,8 @@ async function openFse(v: DG.View, functionCode: string) {
     };
   
     let addButton = ui.div();
-    let propsForm = ui.div();
     let inputs: HTMLElement = ui.div();
-  
-  
+
     const functionPropsInput = (prop: DG.Property) => {
       switch (prop.name) {
       case FUNC_PROPS_FIELDS.LANGUAGE:
@@ -586,7 +583,7 @@ async function openFse(v: DG.View, functionCode: string) {
     previewTabs.style.width = '100%';
     previewTabs.style.flexGrow = '3';
   
-    propsForm = functionPropsForm();
+    let propsForm = functionPropsForm();
   
     const addParamBtn = () => ui.button(
       [

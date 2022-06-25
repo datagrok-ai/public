@@ -38,8 +38,10 @@ export function describeCurrentObj(): void {
     const ent = acc.context;
     if (ent == null) return; 
     let devPane = acc.getPane('Dev');
-    if (!devPane) devPane = acc.addPane('Dev', () => ui.wait(async () => (await renderDevPanel(ent)).root));
-    if (!acc.getPane('Test manager')) acc.addPane('Test manager', () => ui.wait(async () => (await renderTestManagerPanel(ent)).root));
+    if (!devPane)
+      acc.addPane('Dev', () => ui.wait(async () => (await renderDevPanel(ent)).root));
+    if (!acc.getPane('Test manager'))
+      acc.addPane('Test manager', () => ui.wait(async () => (await renderTestManagerPanel(ent)).root));
   });
 
   grok.events.onContextMenu.subscribe((args) => {
@@ -62,7 +64,7 @@ export function _scriptEditor(): void {
 export function _functionSignatureEditor(): void { 
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type == 'ScriptView')
-    functionSignatureEditor(view);
+      functionSignatureEditor(view);
   });
 }
 
