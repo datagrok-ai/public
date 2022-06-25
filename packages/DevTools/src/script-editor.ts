@@ -4,8 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { TagEditor } from 'datagrok-api/dg';
 
-export async function scriptEditor(view: DG.View) {
-
+export function scriptEditor(view: DG.View) {
   setTimeout(function () {
     // @ts-ignore
     let editor = view.root.lastChild.lastChild.CodeMirror;
