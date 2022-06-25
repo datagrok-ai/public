@@ -31,7 +31,7 @@ export class Entity {
   get id(): string { return api.grok_Entity_Get_Id(this.dart); }
   set id(x: string) { api.grok_Entity_Set_Id(this.dart, x); }
 
-  newId(): void { api.grok_Entity_New_Id(this.dart);}
+  newId(): void { api.grok_Entity_New_Id(this.dart); }
 
   /** Entity friendly name
    *  @type {string} */

@@ -37,7 +37,6 @@
     "openchemlib": "6.0.1",
     "path": "^0.12.7",
     "rxjs": "^6.5.5",
-    "ts-loader": "latest",
     "typescript": "latest",
     "worker-loader": "latest",
     "wu": "latest"
@@ -58,6 +57,7 @@
     "ts-jest": "^27.0.0",
     "style-loader": "latest",
     "css-loader": "latest",
+    "ts-loader": "latest",
     "puppeteer": "^13.7.0"
   },
   "browser": {
