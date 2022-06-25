@@ -23,7 +23,8 @@ module.exports = (env, options) => ({
     'rxjs': 'rxjs',
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
-    'dayjs': 'dayjs'
+    'dayjs': 'dayjs',
+    'wu': 'wu'
   },
   output: {
     filename: '[name].js',
