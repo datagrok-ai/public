@@ -1,10 +1,11 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {_rdKitModule, getRdKitModule} from '../utils/chem-common-rdkit';
-import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
+import {_rdKitModule} from '../utils/chem-common-rdkit';
 import {RDMol} from "../rdkit-api";
 
+/** Adds a derived column, given a source column `col` and extraction function `extract`.
+ * Handles progress indication, and molecule disposal. */
 function addDerived(col: DG.Column, description: string, extract: (mol: RDMol) => string): void {
   const pi = DG.TaskBarProgressIndicator.create(description);
   const result = new Array(col.length);

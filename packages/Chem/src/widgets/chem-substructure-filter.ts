@@ -6,17 +6,16 @@
 
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {chem} from 'datagrok-api/grok';
 import {chemSubstructureSearchLibrary} from '../chem-searches';
 import {initRdKitService} from '../utils/chem-common-rdkit';
 import {Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
-import Sketcher = chem.Sketcher;
 import wu from 'wu';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 export class SubstructureFilter extends DG.Filter {
-  sketcher: Sketcher = new Sketcher();
+  // @ts-ignore
+  sketcher: DG.chem.chem.Sketcher = new DG.chem.chem.Sketcher();
   bitset: DG.BitSet | null = null;
   loader: HTMLDivElement = ui.loader();
   onSketcherChangedSubs?: Subscription;

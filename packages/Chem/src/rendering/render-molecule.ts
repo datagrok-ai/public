@@ -4,9 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import {isMolBlock} from '../utils/chem-utils';
 import $ from 'cash-dom';
 import {_properties, renderer} from '../package';
-import {chem} from 'datagrok-api/grok';
-import Sketcher = chem.Sketcher;
-import {GridCell} from 'datagrok-api/dg';
 
 /** Renders the molecule and returns div with the canvas inside. */
 export function renderMolecule(
@@ -34,7 +31,7 @@ export function renderMolecule(
 
   // @ts-ignore
   renderer.render(moleculeHost.getContext('2d')!, 0, 0, options.width, options.height,
-    GridCell.fromValue(molStr));
+    DG.GridCell.fromValue(molStr));
 
   const moreBtn = ui.iconFA(
     'ellipsis-v',
@@ -49,7 +46,7 @@ export function renderMolecule(
         grok.shell.info('Molfile copied to clipboard');
       });
       menu.item('Sketch', () => {
-        const sketcher = new Sketcher();
+        const sketcher = new DG.chem.chem.Sketcher();
         isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
         ui.dialog()
           .add(sketcher)

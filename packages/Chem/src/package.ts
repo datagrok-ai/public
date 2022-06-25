@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import {chem} from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FILTER_TYPE, SEMTYPE} from 'datagrok-api/dg';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import * as chemSearches from './chem-searches';
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
@@ -70,6 +69,7 @@ export async function initChem(): Promise<void> {
 }
 
 //tags: autostart
+//meta.autostartDelayed: true
 export async function initChemAutostart(): Promise<void> { }
 
 //name: SubstructureFilter
@@ -566,6 +566,6 @@ export function detectSmiles(col: DG.Column, min: number) {
 
   if (DG.Detector.sampleCategories(col, isSmiles, min, 10, 0.8)) {
     col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
-    col.semType = SEMTYPE.MOLECULE;
+    col.semType = DG.SEMTYPE.MOLECULE;
   }
 }
