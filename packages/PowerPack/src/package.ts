@@ -43,6 +43,7 @@ export function _distributionProfiler(): DistributionProfilerViewer {
 
 //name: welcomeView
 //tags: autostart
+//meta.autostartImmediate: true
 export function _welcomeView(): void {
   if (_properties['showWelcomeView'])
     welcomeView();
