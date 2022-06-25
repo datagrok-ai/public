@@ -298,9 +298,6 @@ export const FUNC_TYPES = {
    *  Signature: dashboard(): DG.Widget */
   DASHBOARD: 'dashboard',
 
-  /** Package unit-test functions. This is used by the DevTools package. */
-  UNIT_TEST: 'unitTest',
-
   /**
    * Function analysis. Examples: sensitivity analysis, parameter editor
    * Func => View */

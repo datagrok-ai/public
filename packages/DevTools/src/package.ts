@@ -97,9 +97,3 @@ export function _IconTool(): void {
 //top-menu: Tools | Dev | Test Manager
 //tags: app
 export async function testManager(): Promise<void> { await testManagerView(); }
-
-//tags: unitTest
-export function _throwsException(): void { tests.throwsException(); }
-
-//tags: unitTest
-export function _returnsFine(): void { tests.returnsFine(); }
