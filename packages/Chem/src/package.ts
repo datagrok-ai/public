@@ -69,7 +69,6 @@ export async function initChem(): Promise<void> {
 }
 
 //tags: autostart
-//meta.autostartDelayed: true
 export async function initChemAutostart(): Promise<void> { }
 
 //name: SubstructureFilter

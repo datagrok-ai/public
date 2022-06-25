@@ -51,27 +51,51 @@ grok add script panel <language> <name>
 
 *Details:* [How to add an info panel](how-to/add-info-panel.md)
 
-## Pre-run functions
+## Package initialization 
 
-The purpose of pre-run functions is to prepare the main package code for execution. This includes fetching specific
-pieces of data, subscribing to global events, changing the user interface right after the platform starts, connecting to
-external services with refined configuration parameters, and so on.
-
-There are two types of functions serving this purpose: `init` and `autostart`. The function tagged with `init` gets
-invoked when the containing package is initialized. This typically happens the first time any of the functions in the
-package is called. It is guaranteed that this function gets invoked *once* before the execution of the rest of the code
-and will not be re-executed on subsequent calls. The `autostart` functions are similar to the first type, but differ
-from it in a few aspects. Firstly, these functions are called at the platform startup, not necessarily when some package
-function is invoked. Moreover, if you decide to call a regular function from your package, there is no guarantee that
-its code will wait until the `autostart` completes. Another caveat is that the whole package will get initialized along
-with `autostart`, so use this type of functions wisely. If possible, stick to the `init` tag while developing your
-programs.
+`init` function gets invoked before the first time any of the package functions is invoked. 
+This is a good place to initialize some common structures 
+(load WebAssembly, fetch files) that some of exposed functions use. It gets invoked at most once. 
 
 Use `datagrok-tools` to get a template:
 
 ```shell
 cd <package-name>
 grok add function init <packageName>Init
+```
+
+See also [autostart](#autostart).
+
+## Autostart
+
+`autostart` function get invoked at platform startup. It starts immediately if it is tagged 
+as `meta.autostartImmediate: true`, otherwise it starts three seconds later. 
+
+Use the `meta.autostartImmediate: true` mode is good to subscribe to global events, change
+some default settings, or change the UI right at the platform start. The default mode is good for
+preloading popular big packages (for instance, Chem package preloads to eliminate the delays 
+when a user opens a file with molecules). Keep in mind that some packages are big, and unless
+the `autostart` function resides in the `detectors.js` file, the whole content of the package gets loaded,
+so use this option wisely.
+
+The `autostart` function can reside in the `detectors.js` file, in which case full package content is not loaded.
+You might want to use it to quickly add some menu items or start listening to some events, and then you can load
+the full package only when a user launches that functionality.
+
+If the `autostart` function is defined in the package where the [`init`](#package-initialization)
+is also defined, the `init` function gets executed first. No one awaits on the `autostart` function.
+You might have zero, one, or more `autostart` functions in a package.
+
+Example from the [PowerPack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack)
+plugin that introduces a "Welcome" view at startup:
+```js
+//name: welcomeView
+//tags: autostart
+//meta.autostartImmediate: true
+export function _welcomeView(): void {
+  if (_properties['showWelcomeView'])
+    welcomeView();
+}
 ```
 
 ## Semantic type detectors
