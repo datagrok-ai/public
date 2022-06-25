@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {findMCS} from '../scripts-api';
-import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
 /**
  * Finds most common substructure in molecules column and adds to dataframe.

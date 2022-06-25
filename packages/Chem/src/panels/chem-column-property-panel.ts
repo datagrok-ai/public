@@ -1,7 +1,5 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {chem} from 'datagrok-api/src/chem';
-import Sketcher = chem.Sketcher;
 
 enum StructureFilterType {
   Sketch = 'Sketch',
@@ -78,7 +76,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   const panes = ui.accordion('chem-settings');
   panes.addPane('RDKit', () => rdKitPane);
   panes.addPane('Scaffold', () => {
-    const sketcher = new Sketcher();
+    const sketcher = new DG.chem.chem.Sketcher();
     sketcher.syncCurrentObject = false;
     sketcher.setMolFile(col.tags['chem-scaffold']);
     sketcher.onChanged.subscribe((_) => col.tags['chem-scaffold'] = sketcher.getMolFile());

@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {updateDivInnerHTML} from '../utils/ui-utils';
-import {Property} from 'datagrok-api/dg';
 
 export class ChemSearchBaseViewer extends DG.JsViewer {
   name: string = '';
@@ -57,7 +56,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     await this.render();
   }
 
-  onPropertyChanged(property: Property): void {
+  onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
     if (!this.initialized)
       return;
