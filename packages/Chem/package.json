@@ -30,7 +30,6 @@
     "@datagrok-libraries/utils": "^0.4.1",
     "@types/wu": "latest",
     "cash-dom": "latest",
-    "css-loader": "latest",
     "dayjs": "latest",
     "file-loader": "latest",
     "jstat": "^1.9.5",
@@ -38,7 +37,6 @@
     "openchemlib": "6.0.1",
     "path": "^0.12.7",
     "rxjs": "^6.5.5",
-    "style-loader": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
     "worker-loader": "latest",
@@ -58,6 +56,8 @@
     "jest": "^27.0.0",
     "@types/jest": "^27.0.0",
     "ts-jest": "^27.0.0",
+    "style-loader": "latest",
+    "css-loader": "latest",
     "puppeteer": "^13.7.0"
   },
   "browser": {
