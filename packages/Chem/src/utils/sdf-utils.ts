@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full.js';
+import * as OCL from 'openchemlib/full';
 
 export function _saveAsSdf(): void {
   //todo: load OpenChemLib (or use RDKit?)

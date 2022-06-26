@@ -4,7 +4,7 @@
 
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full.js';
+import * as OCL from 'openchemlib/full';
 
 function oclMol(mol: string): OCL.Molecule {
   return mol.includes('M  END') ? OCL.Molecule.fromMolfile(mol) : OCL.Molecule.fromSmiles(mol);

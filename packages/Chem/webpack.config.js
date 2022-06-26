@@ -1,17 +1,18 @@
 const path = require('path');
 const rdkitLibVersion = require('./src/rdkit_lib_version.js');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
+const mode = 'production';
 
 module.exports = (env, options) => ({
   stats: {
     children: true
   },
-  mode: 'development',
+  mode: mode,
   entry: {
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
     package: [`./src/${rdkitLibVersion}.wasm`, './src/package.ts'],
   },
-  devtool: options.mode !== 'production' ? 'inline-source-map' : 'source-map',
+  devtool: mode !== 'production' ? 'inline-source-map' : 'source-map',
   devServer: {
     contentBase: './dist'
   },
@@ -19,12 +20,12 @@ module.exports = (env, options) => ({
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
-    'openchemlib/full.js': 'OCL',
+    'openchemlib/full': 'OCL',
     'rxjs': 'rxjs',
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
-    'dayjs': 'dayjs',
-    'wu': 'wu'
+    'wu': 'wu',
+    'dayjs': 'dayjs'
   },
   output: {
     filename: '[name].js',
