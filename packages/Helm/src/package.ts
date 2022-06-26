@@ -68,18 +68,62 @@ export function detailsPanel(helmString: string){
   )
 }
 
+//name: helmToFasta
+//input: string helmString {semType: HELM}
+//output: string res
+export async function helmToFasta(helmString: string) {
+  const url = `http://localhost:8081/WebService/service/Fasta/Produce/${helmString}`
+  const params: RequestInit = {
+    method: 'GET', 
+    headers: {
+      'Accept': 'application/json',
+    }
+  };
+  const response = await fetch(url, params);
+  const json = await response.json();
+  return json['FastaFile'];
+}
+
+//name: helmToRNA
+//description: converts to rna analogue sequence
+//input: string helmString {semType: HELM}
+//output: string res
+export async function helmToRNA(helmString: string) {
+  const url = `http://localhost:8081/WebService/service/Fasta/Convert/RNA/${helmString}`
+  const params: RequestInit = {
+    method: 'GET', 
+    headers: {
+      'Accept': 'application/json',
+    }
+  };
+  const response = await fetch(url, params);
+  const json = await response.json();
+  return json['Sequence'];
+}
+
+
+//name: helmToPeptide
+//description: converts to peptide analogue sequence
+//input: string helmString {semType: HELM}
+//output: string res
+export async function helmToPeptide(helmString: string) {
+  const url = `http://localhost:8081/WebService/service/Fasta/Convert/PEPTIDE/${helmString}`
+  const params: RequestInit = {
+    method: 'GET', 
+    headers: {
+      'Accept': 'application/json',
+    }
+  };
+  const response = await fetch(url, params);
+  const json = await response.json();
+  return json['Sequence'];
+}
+
 //name: helmToSmiles
 //tags: converter
 //output: string smiles {semType: Molecule}
 export function helmToSmiles(helm: string): string {
   //todo: call webservice
-  return 'foo';
-}
-
-//name: helmToFasta
-//tags: converter
-//output: string smiles {semType: fasta}
-export function helmToFasta(helm: string): string {
   return 'foo';
 }
 
@@ -89,9 +133,6 @@ export function helmToFasta(helm: string): string {
 export function helmColumnToSmiles(helmColumn: DG.Column) {
   //todo: add column with smiles to col.dataFrame.
 }
-
-// todo: "Details" panel (see Toxicity)
-// smiles, mol weight, mol formula, extinction coefficient, "combined"
 
 
 class HelmCellRenderer extends DG.GridCellRenderer {
