@@ -2,7 +2,7 @@
 // Therefore, this cannot be currently used from WebWorkers
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import * as ui from 'datagrok-api/ui';
-import * as OCL from 'openchemlib/full.js';
+import * as OCL from 'openchemlib/full';
 import {isMolBlock} from './chem-utils';
 
 export function renderDescription(description: OCL.IParameterizedString[]): HTMLDivElement {

@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import * as OCL from 'openchemlib/full.js';
+import * as OCL from 'openchemlib/full';
 
 let sketcherId = 0;
 

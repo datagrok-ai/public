@@ -1,6 +1,6 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full.js';
+import * as OCL from 'openchemlib/full';
 
 export function _importSdf(bytes: Uint8Array): DG.DataFrame[] {
   const str = new TextDecoder().decode(bytes);
