@@ -53,6 +53,7 @@ import './gui/data-search';
 import './gui/delete-rows-columns';
 import './gui/filters';
 import './gui/unpivot';
+import './gui/scatter-plot'
 
 
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
