@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
+const lru = new DG.LruCache<any, any>(); 
 
 //tags: init
 export async function initChem(): Promise<void> {
