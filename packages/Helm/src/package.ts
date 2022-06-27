@@ -64,6 +64,9 @@ export function detailsPanel(helmString: string){
       'formula': result[0].replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
       'molecular weight': result[1],
       'extinction coefficient': result[2],
+      'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
+      'rna analogue sequence': ui.wait(async () => ui.divText(await helmToRNA(helmString))),
+      'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),
     })
   )
 }
