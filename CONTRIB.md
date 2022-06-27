@@ -58,7 +58,7 @@ should still set up `eslint`. It is straightforward:
 Make sure that your `.eslintrc.json` is actualized to using TypeScript (look
 for `"parser": "@typescript-eslint/parser"`). If that's not the case, populate your `.eslintrc.json`
 file with the settings
-[matching this file from `datagrok-tools`]().
+[matching this file from `datagrok-tools`](https://github.com/datagrok-ai/public/blob/master/tools/package-template/.eslintrc.json).
 
 ## Git
 
@@ -78,10 +78,10 @@ In this public repo, we follow some Git best practices:
 8. Do not create unnecessary merge loops. To pull changes after commit creation use `git pull --rebase`. Run the
    following commands to make the work easier with rebase.
 
-```shell
-git config --global pull.rebase true
-git config --global rebase.autoStash true
-```
+   ```shell
+   git config --global pull.rebase true
+   git config --global rebase.autoStash true
+   ```
 
 9. Push one commit at a time to avoid unexpected GitHub Actions behavior
 

@@ -51,7 +51,7 @@ predictive models, integration with the external utilities, data augmentation, a
 
 ## Setting up the environment
 
-Prerequisites: basic JavaScript knowledge.
+*Prerequisites:* basic TypeScript or JavaScript knowledge.
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
    [these instructions](../how-to/set-up-environment.md)
@@ -59,7 +59,7 @@ Prerequisites: basic JavaScript knowledge.
    running `grok config`. Open [https://dev.datagrok.ai/u](https://dev.datagrok.ai/u), click on `Developer key`,
    copy the `grok` command and execute it to add the key to your config
 3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions)
-   `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence`
+   `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence` (if you are new to TypeScript, you can specify the `--js` option)
 4. Upload it to the server: run `webpack` and `grok publish dev` (see other options [here](../develop.md#deployment-modes))
 5. Launch the platform and run the package's `info()` function using different methods:
 
@@ -75,7 +75,7 @@ As a result of the function execution you should see an info notification with u
 
 ## Semantic types
 
-Prerequisites: basic TypeScript or JavaScript knowledge.
+*Prerequisites:* basic TypeScript or JavaScript knowledge.
 
 Details: [How to define semantic type detectors](../how-to/define-semantic-type-detectors.md),
 [How to add an info panel](../how-to/add-info-panel.md).

@@ -64,7 +64,7 @@ Datagrok Tools also outputs the `config.yaml` file and the directory it's stored
   grok create <package-name>
   ```
 
-> **Note**: If you want to create a TypeScript package, pass the `--ts` option to the command.
+> **Note**: The package template uses TypeScript. If you want to create a simple JavaScript package, pass the `--js` option to the command.
 
 5. Cd into the package directory and install other dependencies:
 
