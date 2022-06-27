@@ -1,0 +1,2390 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "1.0",
+        "title": " "
+    },
+    "host": "www.ebi.ac.uk/ena/browser/api",
+    "basePath": "",
+    "schemes": [
+        "https"
+    ],
+    "tags": [{
+        "name": "ENA Browser Data API",
+        "description": "Content Controller"
+    }, {
+        "name": "status-controller",
+        "description": "Status Controller"
+    }],
+    "paths": {
+        "/changed_sets/{dataType}/{date}": {
+            "get": {
+                "tags": ["status-controller"],
+                "summary": "getChangedSets",
+                "operationId": "getChangedSetsUsingGET",
+                "produces": ["application/json"],
+                "parameters": [{
+                    "name": "dataType",
+                    "in": "path",
+                    "description": "dataType",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "notIndexed",
+                    "in": "query",
+                    "description": "Get only sets that have been indexed",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "date",
+                    "in": "path",
+                    "description": "date",
+                    "required": true,
+                    "type": "string",
+                    "format": "date-time"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/deleted/{dataType}/{date}": {
+            "get": {
+                "tags": ["status-controller"],
+                "summary": "getDeletedRecords",
+                "operationId": "getDeletedRecordsUsingGET",
+                "produces": ["application/json"],
+                "parameters": [{
+                    "name": "dataType",
+                    "in": "path",
+                    "description": "dataType",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "date",
+                    "in": "path",
+                    "description": "date",
+                    "required": true,
+                    "type": "string",
+                    "format": "date-time"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/doc": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Download the documentation as a PDF file.",
+                "operationId": "downloadDocUsingGET",
+                "produces": ["*/*"],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/embl": {
+            "post": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Obtain records in EMBL flatfile format with max limit of 10000 accessions per request",
+                "operationId": "getFlatFilePostUsingPOST",
+                "consumes": ["application/json"],
+                "produces": ["text/plain"],
+                "parameters": [{
+                    "name": "accessions",
+                    "in": "query",
+                    "required": false,
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "collectionFormat": "multi"
+                }, {
+                    "name": "expanded",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "annotationOnly",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "lineLimit",
+                    "in": "query",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "download",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "set",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "range",
+                    "in": "query",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "complement",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "201": {
+                        "description": "Created"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/embl/ebisearch": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a text search and download data in EMBL flat file format.",
+                "operationId": "downloadTextFromTextSearchUsingGET",
+                "produces": ["text/plain"],
+                "parameters": [{
+                    "name": "domain",
+                    "in": "query",
+                    "description": "The ENA data domain to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search keywords joined by logical operators (AND, OR, NOT). Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/embl/links/{linksResult}": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Get links (related ENA records) and download sequence data in EMBl flatfile format.",
+                "operationId": "downloadTextLinksUsingGET",
+                "produces": ["*/*", "text/plain"],
+                "parameters": [{
+                    "name": "linksResult",
+                    "in": "path",
+                    "description": "The result type of the record to get links for. Links can only be retrieved for 'study', 'sample' or 'taxon' result types. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type of the links to get. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "accession",
+                    "in": "query",
+                    "description": "The accession of the record to get links for. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "subtree",
+                    "in": "query",
+                    "description": "Whether to include links for taxon subtree as well.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/embl/search": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a warehouse search and download data in EMBl flatfile format.",
+                "operationId": "downloadTextUsingGET",
+                "produces": ["*/*", "text/plain"],
+                "parameters": [{
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search conditions joined by logical operators (AND, OR, NOT) and bound by double quotes.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "includeAccessions",
+                    "in": "query",
+                    "description": "A list of accessions that you would like to be included with the results of your query",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "includeAccessionType",
+                    "in": "query",
+                    "description": "The accession type to include accessions",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "excludeAccessions",
+                    "in": "query",
+                    "description": "A list of accessions that you would like to be excluded from the results of your query",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "excludeAccessionType",
+                    "in": "query",
+                    "description": "The accession type to exclude accessions",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "savedSearch",
+                    "in": "query",
+                    "description": "The id to download the results of a previously submitted search. If this parameter is set, all additional parameters are ignored.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "fields",
+                    "in": "query",
+                    "description": "A list of fields (comma separated) to be returned in the result. If none supplied, the accession and description/title of the main result object will be returned.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "sortFields",
+                    "in": "query",
+                    "description": "A list of fields (comma separated) in the order of which the results should be sorted.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "rule",
+                    "in": "query",
+                    "description": "Rule ID / Name",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "dataPortal",
+                    "in": "query",
+                    "description": "The data portal ID. Defaults to 'ena'.",
+                    "required": false,
+                    "type": "string",
+                    "enum": ["ena", "faang", "metagenome", "pathogen"]
+                }, {
+                    "name": "dccDataOnly",
+                    "in": "query",
+                    "description": "Whether to limit the search to only DCC records. By default, all public data is also included in the search.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "includeMetagenomes",
+                    "in": "query",
+                    "description": "Whether to include public metagenome data in the search. By default, these are not included. Note that any metagenome data associated with a DCC hub will always be included in a search against that DCC.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "format",
+                    "in": "query",
+                    "description": "What format the results should be returned as: TSV (Tab Separated Values) or JSON. By default, a TSV report is provided.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "download",
+                    "in": "query",
+                    "description": "Whether to download the result as a file, rather than read it from the stream. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "email",
+                    "in": "query",
+                    "description": "Submit search and be notified via email when search result is ready for downloading. Mandatory if fields=all is set.",
+                    "required": false,
+                    "type": "string"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/embl/textsearch": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a text search and download data in EMBL flat file format.",
+                "operationId": "downloadTextFromTextSearchUsingGET_1",
+                "produces": ["text/plain"],
+                "parameters": [{
+                    "name": "domain",
+                    "in": "query",
+                    "description": "The ENA data domain to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search keywords joined by logical operators (AND, OR, NOT). Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/embl/{accession}": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Obtain records in EMBL flatfile format",
+                "operationId": "getFlatFileUsingGET",
+                "produces": ["text/plain"],
+                "parameters": [{
+                    "name": "accession",
+                    "in": "path",
+                    "description": "single accession, range or comma separated list",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "download",
+                    "in": "query",
+                    "description": "Whether to download the result as a file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "lineLimit",
+                    "in": "query",
+                    "description": "Limit the number of text lines returned. Returns full text by default or if lineLimit=0.",
+                    "required": false,
+                    "type": "integer",
+                    "default": 0,
+                    "format": "int32"
+                }, {
+                    "name": "annotationOnly",
+                    "in": "query",
+                    "description": "Get annotation data only, without the sequence.",
+                    "required": false,
+                    "type": "boolean",
+                    "default": false
+                }, {
+                    "name": "expanded",
+                    "in": "query",
+                    "description": "Get expanded record for CON sequences.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "set",
+                    "in": "query",
+                    "description": "Only applicable for contigsets (WGS/TSA/TLS). Whether to download the  full set of sequences as opposed to the master record only. For FASTA format, set is returned by default for contigsets.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/fasta": {
+            "post": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Obtain records in FASTA file format with max limit of 10000 accessions per request",
+                "operationId": "getFastaPostUsingPOST",
+                "consumes": ["application/json"],
+                "produces": ["text/plain"],
+                "parameters": [{
+                    "name": "accessions",
+                    "in": "query",
+                    "required": false,
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "collectionFormat": "multi"
+                }, {
+                    "name": "expanded",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "annotationOnly",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "lineLimit",
+                    "in": "query",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "download",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "set",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "range",
+                    "in": "query",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "complement",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "201": {
+                        "description": "Created"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/fasta/ebisearch": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a text search and download data in FASTA format.",
+                "operationId": "downloadFastaFromTextSearchUsingGET",
+                "produces": ["text/plain"],
+                "parameters": [{
+                    "name": "domain",
+                    "in": "query",
+                    "description": "The ENA data domain to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search keywords joined by logical operators (AND, OR, NOT). Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "complement",
+                    "in": "query",
+                    "description": "Get the complement of the FASTA sequence.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/fasta/links/{linksResult}": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Get links (related ENA records) and download sequence data in FASTA format.",
+                "operationId": "downloadFastaLinksUsingGET",
+                "produces": ["*/*", "text/plain"],
+                "parameters": [{
+                    "name": "linksResult",
+                    "in": "path",
+                    "description": "The result type of the record to get links for. Links can only be retrieved for 'study', 'sample' or 'taxon' result types. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type of the links to get. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "accession",
+                    "in": "query",
+                    "description": "The accession of the record to get links for. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "subtree",
+                    "in": "query",
+                    "description": "Whether to include links for taxon subtree as well.",
+                    "required": true,
+                    "type": "boolean"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/fasta/search": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a warehouse search and download sequence data in FASTA format, ordered by accession Note: Only sequence_release and sequence_update result types are available currently.",
+                "operationId": "downloadFastaUsingGET",
+                "produces": ["*/*", "text/plain"],
+                "parameters": [{
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search conditions joined by logical operators (AND, OR, NOT) and bound by double quotes.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "includeAccessions",
+                    "in": "query",
+                    "description": "A list of accessions that you would like to be included with the results of your query",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "includeAccessionType",
+                    "in": "query",
+                    "description": "The accession type to include accessions",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "excludeAccessions",
+                    "in": "query",
+                    "description": "A list of accessions that you would like to be excluded from the results of your query",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "excludeAccessionType",
+                    "in": "query",
+                    "description": "The accession type to exclude accessions",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "savedSearch",
+                    "in": "query",
+                    "description": "The id to download the results of a previously submitted search. If this parameter is set, all additional parameters are ignored.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "fields",
+                    "in": "query",
+                    "description": "A list of fields (comma separated) to be returned in the result. If none supplied, the accession and description/title of the main result object will be returned.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "sortFields",
+                    "in": "query",
+                    "description": "A list of fields (comma separated) in the order of which the results should be sorted.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "rule",
+                    "in": "query",
+                    "description": "Rule ID / Name",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "dataPortal",
+                    "in": "query",
+                    "description": "The data portal ID. Defaults to 'ena'.",
+                    "required": false,
+                    "type": "string",
+                    "enum": ["ena", "faang", "metagenome", "pathogen"]
+                }, {
+                    "name": "dccDataOnly",
+                    "in": "query",
+                    "description": "Whether to limit the search to only DCC records. By default, all public data is also included in the search.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "includeMetagenomes",
+                    "in": "query",
+                    "description": "Whether to include public metagenome data in the search. By default, these are not included. Note that any metagenome data associated with a DCC hub will always be included in a search against that DCC.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "format",
+                    "in": "query",
+                    "description": "What format the results should be returned as: TSV (Tab Separated Values) or JSON. By default, a TSV report is provided.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "download",
+                    "in": "query",
+                    "description": "Whether to download the result as a file, rather than read it from the stream. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "email",
+                    "in": "query",
+                    "description": "Submit search and be notified via email when search result is ready for downloading. Mandatory if fields=all is set.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "complement",
+                    "in": "query",
+                    "description": "Get the complement of the FASTA sequence.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/fasta/textsearch": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a text search and download data in FASTA format.",
+                "operationId": "downloadFastaFromTextSearchUsingGET_1",
+                "produces": ["text/plain"],
+                "parameters": [{
+                    "name": "domain",
+                    "in": "query",
+                    "description": "The ENA data domain to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search keywords joined by logical operators (AND, OR, NOT). Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "complement",
+                    "in": "query",
+                    "description": "Get the complement of the FASTA sequence.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/fasta/{accession}": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "fasta",
+                "operationId": "getFastaUsingGET",
+                "produces": ["text/plain"],
+                "parameters": [{
+                    "name": "accession",
+                    "in": "path",
+                    "description": "single accession, range or comma separated list",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "download",
+                    "in": "query",
+                    "description": "Whether to download the result as a file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "lineLimit",
+                    "in": "query",
+                    "description": "Limit the number of text lines returned. Returns full text by default or if lineLimit=0.",
+                    "required": false,
+                    "type": "integer",
+                    "default": 0,
+                    "format": "int32"
+                }, {
+                    "name": "expanded",
+                    "in": "query",
+                    "description": "expanded",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "range",
+                    "in": "query",
+                    "description": "Get a limited segment of the FASTA sequence.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "complement",
+                    "in": "query",
+                    "description": "Get the complement of the FASTA sequence.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/text/ebisearch": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a text search and download data in EMBL flat file format.",
+                "operationId": "downloadTextFromTextSearchUsingGET_2",
+                "produces": ["text/plain"],
+                "parameters": [{
+                    "name": "domain",
+                    "in": "query",
+                    "description": "The ENA data domain to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search keywords joined by logical operators (AND, OR, NOT). Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/text/links/{linksResult}": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Get links (related ENA records) and download sequence data in EMBl flatfile format.",
+                "operationId": "downloadTextLinksUsingGET_1",
+                "produces": ["*/*", "text/plain"],
+                "parameters": [{
+                    "name": "linksResult",
+                    "in": "path",
+                    "description": "The result type of the record to get links for. Links can only be retrieved for 'study', 'sample' or 'taxon' result types. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type of the links to get. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "accession",
+                    "in": "query",
+                    "description": "The accession of the record to get links for. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "subtree",
+                    "in": "query",
+                    "description": "Whether to include links for taxon subtree as well.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/text/search": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a warehouse search and download data in EMBl flatfile format.",
+                "operationId": "downloadTextUsingGET_1",
+                "produces": ["*/*", "text/plain"],
+                "parameters": [{
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search conditions joined by logical operators (AND, OR, NOT) and bound by double quotes.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "includeAccessions",
+                    "in": "query",
+                    "description": "A list of accessions that you would like to be included with the results of your query",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "includeAccessionType",
+                    "in": "query",
+                    "description": "The accession type to include accessions",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "excludeAccessions",
+                    "in": "query",
+                    "description": "A list of accessions that you would like to be excluded from the results of your query",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "excludeAccessionType",
+                    "in": "query",
+                    "description": "The accession type to exclude accessions",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "savedSearch",
+                    "in": "query",
+                    "description": "The id to download the results of a previously submitted search. If this parameter is set, all additional parameters are ignored.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "fields",
+                    "in": "query",
+                    "description": "A list of fields (comma separated) to be returned in the result. If none supplied, the accession and description/title of the main result object will be returned.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "sortFields",
+                    "in": "query",
+                    "description": "A list of fields (comma separated) in the order of which the results should be sorted.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "rule",
+                    "in": "query",
+                    "description": "Rule ID / Name",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "dataPortal",
+                    "in": "query",
+                    "description": "The data portal ID. Defaults to 'ena'.",
+                    "required": false,
+                    "type": "string",
+                    "enum": ["ena", "faang", "metagenome", "pathogen"]
+                }, {
+                    "name": "dccDataOnly",
+                    "in": "query",
+                    "description": "Whether to limit the search to only DCC records. By default, all public data is also included in the search.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "includeMetagenomes",
+                    "in": "query",
+                    "description": "Whether to include public metagenome data in the search. By default, these are not included. Note that any metagenome data associated with a DCC hub will always be included in a search against that DCC.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "format",
+                    "in": "query",
+                    "description": "What format the results should be returned as: TSV (Tab Separated Values) or JSON. By default, a TSV report is provided.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "download",
+                    "in": "query",
+                    "description": "Whether to download the result as a file, rather than read it from the stream. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "email",
+                    "in": "query",
+                    "description": "Submit search and be notified via email when search result is ready for downloading. Mandatory if fields=all is set.",
+                    "required": false,
+                    "type": "string"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/text/textsearch": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a text search and download data in EMBL flat file format.",
+                "operationId": "downloadTextFromTextSearchUsingGET_3",
+                "produces": ["text/plain"],
+                "parameters": [{
+                    "name": "domain",
+                    "in": "query",
+                    "description": "The ENA data domain to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search keywords joined by logical operators (AND, OR, NOT). Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/text/{accession}": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Obtain records in EMBL flatfile format",
+                "operationId": "getFlatFileUsingGET_1",
+                "produces": ["text/plain"],
+                "parameters": [{
+                    "name": "accession",
+                    "in": "path",
+                    "description": "single accession, range or comma separated list",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "download",
+                    "in": "query",
+                    "description": "Whether to download the result as a file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "lineLimit",
+                    "in": "query",
+                    "description": "Limit the number of text lines returned. Returns full text by default or if lineLimit=0.",
+                    "required": false,
+                    "type": "integer",
+                    "default": 0,
+                    "format": "int32"
+                }, {
+                    "name": "annotationOnly",
+                    "in": "query",
+                    "description": "Get annotation data only, without the sequence.",
+                    "required": false,
+                    "type": "boolean",
+                    "default": false
+                }, {
+                    "name": "expanded",
+                    "in": "query",
+                    "description": "Get expanded record for CON sequences.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "set",
+                    "in": "query",
+                    "description": "Only applicable for contigsets (WGS/TSA/TLS). Whether to download the  full set of sequences as opposed to the master record only. For FASTA format, set is returned by default for contigsets.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/tsv/ebisearch": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a text search and download data as a tsv report.",
+                "operationId": "downloadTsvFromTextSearchUsingGET",
+                "produces": ["text/plain", "application/xml"],
+                "parameters": [{
+                    "name": "domain",
+                    "in": "query",
+                    "description": "The ENA data domain to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search keywords joined by logical operators (AND, OR, NOT). Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/tsv/textsearch": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a text search and download data as a tsv report.",
+                "operationId": "downloadTsvFromTextSearchUsingGET_1",
+                "produces": ["text/plain", "application/xml"],
+                "parameters": [{
+                    "name": "domain",
+                    "in": "query",
+                    "description": "The ENA data domain to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search keywords joined by logical operators (AND, OR, NOT). Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/versions/{accession}": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "versions",
+                "operationId": "getVersionsUsingGET",
+                "produces": ["application/json"],
+                "parameters": [{
+                    "name": "accession",
+                    "in": "path",
+                    "description": "unversioned accession",
+                    "required": true,
+                    "type": "string"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Versions"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/xml": {
+            "post": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Obtain records in XML format with max limit of 10000 accessions per request",
+                "operationId": "getXmlPostUsingPOST",
+                "consumes": ["application/json"],
+                "produces": ["application/xml"],
+                "parameters": [{
+                    "name": "accessions",
+                    "in": "query",
+                    "required": false,
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "collectionFormat": "multi"
+                }, {
+                    "name": "expanded",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "annotationOnly",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "lineLimit",
+                    "in": "query",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "download",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "set",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "range",
+                    "in": "query",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "complement",
+                    "in": "query",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "201": {
+                        "description": "Created"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/xml/ebisearch": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a text search and download data in XML format.",
+                "operationId": "downloadXmlFromTextSearchUsingGET",
+                "produces": ["application/xml"],
+                "parameters": [{
+                    "name": "domain",
+                    "in": "query",
+                    "description": "The ENA data domain to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search keywords joined by logical operators (AND, OR, NOT). Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/xml/links/{linksResult}": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Get links (related ENA records) and download data in XML format. Note: This endpoint does not produce up to date ENA data.",
+                "operationId": "downloadXmlLinksUsingGET",
+                "produces": ["*/*", "application/xml"],
+                "parameters": [{
+                    "name": "linksResult",
+                    "in": "path",
+                    "description": "The result type of the record to get links for. Links can only be retrieved for 'study', 'sample' or 'taxon' result types. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type of the links to get. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "accession",
+                    "in": "query",
+                    "description": "The accession of the record to get links for. Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "subtree",
+                    "in": "query",
+                    "description": "Whether to include links for taxon subtree as well.",
+                    "required": true,
+                    "type": "boolean"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/xml/search": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a warehouse search and download data in XML format.",
+                "operationId": "downloadXmlUsingGET",
+                "produces": ["*/*", "application/xml"],
+                "parameters": [{
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search conditions joined by logical operators (AND, OR, NOT) and bound by double quotes.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "includeAccessions",
+                    "in": "query",
+                    "description": "A list of accessions that you would like to be included with the results of your query",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "includeAccessionType",
+                    "in": "query",
+                    "description": "The accession type to include accessions",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "excludeAccessions",
+                    "in": "query",
+                    "description": "A list of accessions that you would like to be excluded from the results of your query",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "excludeAccessionType",
+                    "in": "query",
+                    "description": "The accession type to exclude accessions",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "savedSearch",
+                    "in": "query",
+                    "description": "The id to download the results of a previously submitted search. If this parameter is set, all additional parameters are ignored.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "fields",
+                    "in": "query",
+                    "description": "A list of fields (comma separated) to be returned in the result. If none supplied, the accession and description/title of the main result object will be returned.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "sortFields",
+                    "in": "query",
+                    "description": "A list of fields (comma separated) in the order of which the results should be sorted.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "rule",
+                    "in": "query",
+                    "description": "Rule ID / Name",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "dataPortal",
+                    "in": "query",
+                    "description": "The data portal ID. Defaults to 'ena'.",
+                    "required": false,
+                    "type": "string",
+                    "enum": ["ena", "faang", "metagenome", "pathogen"]
+                }, {
+                    "name": "dccDataOnly",
+                    "in": "query",
+                    "description": "Whether to limit the search to only DCC records. By default, all public data is also included in the search.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "includeMetagenomes",
+                    "in": "query",
+                    "description": "Whether to include public metagenome data in the search. By default, these are not included. Note that any metagenome data associated with a DCC hub will always be included in a search against that DCC.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "format",
+                    "in": "query",
+                    "description": "What format the results should be returned as: TSV (Tab Separated Values) or JSON. By default, a TSV report is provided.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "download",
+                    "in": "query",
+                    "description": "Whether to download the result as a file, rather than read it from the stream. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "email",
+                    "in": "query",
+                    "description": "Submit search and be notified via email when search result is ready for downloading. Mandatory if fields=all is set.",
+                    "required": false,
+                    "type": "string"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/xml/textsearch": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a text search and download data in XML format.",
+                "operationId": "downloadXmlFromTextSearchUsingGET_1",
+                "produces": ["application/xml"],
+                "parameters": [{
+                    "name": "domain",
+                    "in": "query",
+                    "description": "The ENA data domain to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search keywords joined by logical operators (AND, OR, NOT). Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "offset",
+                    "in": "query",
+                    "description": "How many records to skip from the beginning in the results. Default value is 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "limit",
+                    "in": "query",
+                    "description": "The maximum number of records to retrieve. Default value is 100,000. If the full result set is to be fetched, the limit should be set to 0.",
+                    "required": false,
+                    "type": "integer",
+                    "format": "int32"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/xml/{accession}": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "xml",
+                "operationId": "getXmlUsingGET",
+                "produces": ["application/xml"],
+                "parameters": [{
+                    "name": "accession",
+                    "in": "path",
+                    "description": "single accession, range or comma separated list",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "download",
+                    "in": "query",
+                    "description": "Whether to download the result as a file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }, {
+                    "name": "gzip",
+                    "in": "query",
+                    "description": "Whether to download the result as a gzip file. By default, this is false.",
+                    "required": false,
+                    "type": "boolean"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/StreamingResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/{recordFormat}/textsearch/count": {
+            "get": {
+                "tags": ["ENA Browser Data API"],
+                "summary": "Perform a count for the xml text search",
+                "operationId": "textSearchCountUsingGET",
+                "produces": ["application/json"],
+                "parameters": [{
+                    "name": "recordFormat",
+                    "in": "path",
+                    "description": "Perform a count for text search in the given format.",
+                    "required": true,
+                    "type": "string"
+                }, {
+                    "name": "domain",
+                    "in": "query",
+                    "description": "The ENA data domain to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "result",
+                    "in": "query",
+                    "description": "The result type (data set) to search against. Is mandatory.",
+                    "required": false,
+                    "type": "string"
+                }, {
+                    "name": "query",
+                    "in": "query",
+                    "description": "A set of search keywords joined by logical operators (AND, OR, NOT). Is mandatory.",
+                    "required": true,
+                    "type": "string"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "AnnotationResponse": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Attribute"
+                    }
+                },
+                "links": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CrossReference"
+                    }
+                },
+                "references": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Reference"
+                    }
+                }
+            },
+            "title": "AnnotationResponse"
+        },
+        "Attribute": {
+            "type": "object",
+            "properties": {
+                "tag": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            },
+            "title": "Attribute"
+        },
+        "CrossReference": {
+            "type": "object",
+            "properties": {
+                "pId": {
+                    "type": "string"
+                },
+                "sId": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                }
+            },
+            "title": "CrossReference"
+        },
+        "Reference": {
+            "type": "object",
+            "properties": {
+                "authors": {
+                    "type": "string"
+                },
+                "comment": {
+                    "type": "string"
+                },
+                "crossReferences": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CrossReference"
+                    }
+                },
+                "group": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "position": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            },
+            "title": "Reference"
+        },
+        "StreamingResponseBody": {
+            "type": "object",
+            "title": "StreamingResponseBody"
+        },
+        "Summary": {
+            "type": "object",
+            "properties": {
+                "accession": {
+                    "type": "string"
+                },
+                "contigs": {
+                    "type": "string"
+                },
+                "dataClass": {
+                    "type": "string"
+                },
+                "dataType": {
+                    "type": "string",
+                    "enum": ["ANALYSIS", "ASSEMBLY", "CHECKLIST", "CODING", "SAMPLE", "CONTIGSET", "EXPERIMENT", "NONCODING", "PROJECT", "RUN", "SEQUENCE", "SEQUENCE_EXPANDED", "STUDY", "SUBMISSION", "TAXON"]
+                },
+                "description": {
+                    "type": "string"
+                },
+                "firstPublic": {
+                    "type": "string"
+                },
+                "inserted": {
+                    "type": "string",
+                    "example": "yyyy-MM-dd hh:mm:ss"
+                },
+                "lastUpdated": {
+                    "type": "string"
+                },
+                "moleculeType": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "newAccession": {
+                    "type": "string"
+                },
+                "project": {
+                    "type": "string"
+                },
+                "publications": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CrossReference"
+                    }
+                },
+                "sample": {
+                    "type": "string"
+                },
+                "scaffolds": {
+                    "type": "string"
+                },
+                "searchFields": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "secondaryAccession": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sequenceLength": {
+                    "type": "integer",
+                    "format": "int64"
+                },
+                "status": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "statusDescription": {
+                    "type": "string"
+                },
+                "taxon": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated": {
+                    "type": "string",
+                    "example": "yyyy-MM-dd hh:mm:ss"
+                },
+                "version": {
+                    "type": "integer",
+                    "format": "int32"
+                }
+            },
+            "title": "Summary"
+        },
+        "SummaryResponse": {
+            "type": "object",
+            "properties": {
+                "summaries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Summary"
+                    }
+                },
+                "total": {
+                    "type": "string"
+                }
+            },
+            "title": "SummaryResponse"
+        },
+        "VersionRecord": {
+            "type": "object",
+            "properties": {
+                "accession": {
+                    "type": "string"
+                },
+                "fasta": {
+                    "type": "string"
+                },
+                "firstPublic": {
+                    "type": "string"
+                },
+                "lastUpdated": {
+                    "type": "string"
+                },
+                "secondaryAccession": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sequenceVersion": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "xml": {
+                    "type": "string"
+                }
+            },
+            "title": "VersionRecord"
+        },
+        "Versions": {
+            "type": "object",
+            "properties": {
+                "accession": {
+                    "type": "string"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/VersionRecord"
+                    }
+                }
+            },
+            "title": "Versions"
+        }
+    }
+}
