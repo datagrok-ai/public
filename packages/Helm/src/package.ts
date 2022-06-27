@@ -30,22 +30,18 @@ export function helmCellRenderer(): DG.GridCellRenderer {
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell): void {
   let view = ui.div();
-  let app: { canvas: { helm: { setSequence: (arg0: any, arg1: string) => void; }; }; };
-  setTimeout(function () {
-    //@ts-ignore
-    org.helm.webeditor.MolViewer.molscale = 0.8;
-    //@ts-ignore
-    app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
-  });
+  //@ts-ignore
+  org.helm.webeditor.MolViewer.molscale = 0.8;
+  //@ts-ignore
+  let app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
   setTimeout(function() {
     //@ts-ignore
     app.canvas.helm.setSequence(cell.cell.value , 'HELM');
   }, 200);
-
   let dlg = ui.dialog()
   .add(view)
   .onOK(() => {
-    view;
+    cell.cell.value = app.canvas.getHelm(true);
   }).show({ modal: true, fullScreen: true});
   dlg.root.children[0].remove();
   dlg.root.children[1].classList.remove('ui-panel'); 
