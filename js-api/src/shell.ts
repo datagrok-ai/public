@@ -302,119 +302,60 @@ export class Shell {
 }
 
 
-/** Controls tool windows */
+/** Controls tool windows visibility */
 export class Windows {
 
-  /** Controls the visibility of the sidebar.
-   * @type {boolean} */
-  get showSidebar(): boolean {
-    return api.grok_Windows_Get_ShowSidebar();
-  }
+  /** Controls the visibility of the sidebar. */
+  get showSidebar(): boolean { return api.grok_Windows_Get_ShowSidebar(); }
+  set showSidebar(x: boolean) { api.grok_Windows_Set_ShowSidebar(x); }
 
-  set showSidebar(x: boolean) {
-    api.grok_Windows_Set_ShowSidebar(x);
-  }
+  /** Controls the visibility of the toolbox. */
+  get showToolbox(): boolean { return api.grok_Windows_Get_ShowToolbox(); }
+  set showToolbox(x: boolean) { api.grok_Windows_Set_ShowToolbox(x); }
 
-  /** Controls the visibility of the toolbox.
-   * @type {boolean} */
-  get showToolbox(): boolean {
-    return api.grok_Windows_Get_ShowToolbox();
-  }
+  /** Controls the visibility of the status bar. */
+  get showStatusBar(): boolean { return api.grok_Windows_Get_ShowStatusBar(); }
+  set showStatusBar(x: boolean) { api.grok_Windows_Set_ShowStatusBar(x); }
 
-  set showToolbox(x: boolean) {
-    api.grok_Windows_Set_ShowToolbox(x);
-  }
+  /** Controls the visibility of the console. */
+  get showConsole(): boolean { return api.grok_Windows_Get_ShowConsole(); }
+  set showConsole(x: boolean) { api.grok_Windows_Set_ShowConsole(x); }
 
-  /** Controls the visibility of the console.
-   * @type {boolean} */
-  get showConsole(): boolean {
-    return api.grok_Windows_Get_ShowConsole();
-  }
+  /** Controls the visibility of the help window. */
+  get showHelp(): boolean { return api.grok_Windows_Get_ShowHelp();   }
+  set showHelp(x: boolean) { api.grok_Windows_Set_ShowHelp(x); }
 
-  set showConsole(x: boolean) {
-    api.grok_Windows_Set_ShowConsole(x);
-  }
+  /** Controls the visibility of the properties window. */
+  get showProperties(): boolean { return api.grok_Windows_Get_ShowProperties(); }
+  set showProperties(x: boolean) { api.grok_Windows_Set_ShowProperties(x); }
 
-  /** Controls the visibility of the help window.
-   * @type {boolean} */
-  get showHelp(): boolean {
-    return api.grok_Windows_Get_ShowHelp();
-  }
+  /** Controls the visibility of the variables window. */
+  get showVariables(): boolean { return api.grok_Windows_Get_ShowVariables(); }
+  set showVariables(x: boolean) { api.grok_Windows_Set_ShowVariables(x); }
 
-  set showHelp(x: boolean) {
-    api.grok_Windows_Set_ShowHelp(x);
-  }
+  /** Controls the visibility of the tables window. */
+  get showTables(): boolean { return api.grok_Windows_Get_ShowTables(); }
+  set showTables(x: boolean) { api.grok_Windows_Set_ShowTables(x); }
 
-  /** Controls the visibility of the properties window.
-   * @type {boolean} */
-  get showProperties(): boolean {
-    return api.grok_Windows_Get_ShowProperties();
-  }
-
-  set showProperties(x: boolean) {
-    api.grok_Windows_Set_ShowProperties(x);
-  }
-
-  /** Controls the visibility of the variables window.
-   * @type {boolean} */
-  get showVariables(): boolean {
-    return api.grok_Windows_Get_ShowVariables();
-  }
-
-  set showVariables(x: boolean) {
-    api.grok_Windows_Set_ShowVariables(x);
-  }
-
-  /** Controls the visibility of the tables window.
-   * @type {boolean} */
-  get showTables(): boolean {
-    return api.grok_Windows_Get_ShowTables();
-  }
-
-  set showTables(x: boolean) {
-    api.grok_Windows_Set_ShowTables(x);
-  }
-
-  /** Controls the visibility of the columns window.
-   * @type {boolean} */
-  get showColumns(): boolean {
-    return api.grok_Windows_Get_ShowColumns();
-  }
-
-  set showColumns(x: boolean) {
-    api.grok_Windows_Set_ShowColumns(x);
-  }
+  /** Controls the visibility of the columns window. */
+  get showColumns(): boolean { return api.grok_Windows_Get_ShowColumns(); }
+  set showColumns(x: boolean) { api.grok_Windows_Set_ShowColumns(x); }
 
   /** Controls the visibility of the top menu ribbon. */
   get showRibbon(): boolean { return api.grok_Windows_Get_ShowRibbon(); }
   set showRibbon(x: boolean) { api.grok_Windows_Set_ShowRibbon(x); }
 
   /** Hide dock tabs in presentation mode **/
-  get hideTabsInPresentationMode(): boolean {
-    return api.grok_Get_HideTabsInPresentationMode();
-  }
+  get hideTabsInPresentationMode(): boolean { return api.grok_Get_HideTabsInPresentationMode(); }
+  set hideTabsInPresentationMode(x: boolean) { api.grok_Set_HideTabsInPresentationMode(x); }
 
-  set hideTabsInPresentationMode(x: boolean) {
-    api.grok_Set_HideTabsInPresentationMode(x);
-  }
+  /** Presentation mode */
+  get presentationMode(): boolean { return api.grok_Get_PresentationMode(); }
+  set presentationMode(x: boolean) { api.grok_Set_PresentationMode(x); }
 
-  /** Presentation mode **/
-  get presentationMode(): boolean {
-    return api.grok_Get_PresentationMode();
-  }
-
-  set presentationMode(x: boolean) {
-    api.grok_Set_PresentationMode(x);
-  }
-
-  /** New menu style**/
-  get simpleMode(): boolean {
-    return api.grok_Get_SimpleMode();
-  }
-
-  set simpleMode(x: boolean) {
-    api.grok_Set_SimpleMode(x);
-  }
+  /** New menu style **/
+  get simpleMode(): boolean { return api.grok_Get_SimpleMode(); }
+  set simpleMode(x: boolean) { api.grok_Set_SimpleMode(x); }
 }
 
 
