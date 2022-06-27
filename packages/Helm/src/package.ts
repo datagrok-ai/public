@@ -73,7 +73,8 @@ export function detailsPanel(helmString: string){
 
 //name: accessServer
 //input: string url
-export async function accessServer(url: string) {
+//input: string key
+export async function accessServer(url: string, key: string) {
   const params: RequestInit = {
     method: 'GET', 
     headers: {
@@ -82,7 +83,7 @@ export async function accessServer(url: string) {
   };
   const response = await fetch(url, params);
   const json = await response.json();
-  return json;
+  return json[key];
 }
 
 
@@ -91,8 +92,7 @@ export async function accessServer(url: string) {
 //output: string res
 export async function helmToFasta(helmString: string) {
   const url = `http://localhost:8081/WebService/service/Fasta/Produce/${helmString}`
-  const json = await accessServer(url);
-  return json['FastaFile'];
+  return await accessServer(url, 'FastaFile');
 }
 
 //name: helmToRNA
@@ -101,8 +101,7 @@ export async function helmToFasta(helmString: string) {
 //output: string res
 export async function helmToRNA(helmString: string) {
   const url = `http://localhost:8081/WebService/service/Fasta/Convert/RNA/${helmString}`
-  const json = await accessServer(url);
-  return json['Sequence'];
+  return await accessServer(url, 'Sequence');
 }
 
 
@@ -112,8 +111,7 @@ export async function helmToRNA(helmString: string) {
 //output: string res
 export async function helmToPeptide(helmString: string) {
   const url = `http://localhost:8081/WebService/service/Fasta/Convert/PEPTIDE/${helmString}`
-  const json = await accessServer(url);
-  return json['Sequence'];
+  return await accessServer(url, 'Sequence');
 }
 
 //name: helmToSmiles
