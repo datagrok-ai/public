@@ -118,15 +118,14 @@ dependencies, and other data.
     "webpack-cli": "latest"
   },
   "scripts": {
-    "install-dependencies": "npm install",
-    "debug-my-grok-app": "grok publish --rebuild",
-    "release-my-grok-app": "grok publish --rebuild --release",
+    "debug-my-grok-app": "webpack && grok publish",
+    "release-my-grok-app": "webpack && grok publish --release",
     "build-my-grok-app": "webpack",
     "build": "webpack",
-    "debug-my-grok-app-dev": "grok publish dev --rebuild",
-    "release-my-grok-app-dev": "grok publish dev --rebuild --release",
-    "debug-my-grok-app-local": "grok publish local --rebuild",
-    "release-my-grok-app-local": "grok publish local --rebuild --release"
+    "debug-my-grok-app-dev": "webpack && grok publish dev",
+    "release-my-grok-app-dev": "webpack && grok publish dev --release",
+    "debug-my-grok-app-local": "webpack && grok publish local",
+    "release-my-grok-app-local": "webpack && grok publish local --release"
   }
 }
 ```
