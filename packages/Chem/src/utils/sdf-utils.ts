@@ -18,9 +18,9 @@ export function _saveAsSdf(): void {
   for (let i = 0; i < table.rowCount; i++) {
     try {
       const molecule: string = structureColumn.get(i);
-      const mol = molecule.includes('M  END') ? OCL.Molecule.fromMolfile(molecule) : OCL.Molecule.fromSmiles(molecule);
+      const mol = molecule.includes('M  END') ? molecule : OCL.Molecule.fromSmiles(molecule).toMolfile();
       result += i == 0 ? '' : '\n';
-      result += `${mol.toMolfile()}\n`;
+      result += `${mol}\n`;
 
       // properties
       for (const col of table.columns) {
