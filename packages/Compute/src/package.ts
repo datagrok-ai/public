@@ -184,6 +184,7 @@ export function init() {
 
 //name: Model Catalog
 //tags: app
+//sidebar: @compute
 export function modelCatalog() {
   let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
   if (modelsView == null) {
