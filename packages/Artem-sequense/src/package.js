@@ -23,10 +23,6 @@ export function complement(nucleotides) {
         ['C', 'G'],
         ['G', 'C'],
         ['T', 'A'],
-        ['a', 't'],
-        ['c', 'g'],
-        ['g', 'c'],
-        ['t', 'a']
     ]);
     let result = '';
     for (let i = 0; i < nucleotides.length; i++) {
@@ -98,45 +94,47 @@ function kmpMatching(str, word) {
 function matchAllSequnces(word, df) {
     let count = 0;
     let iteratorRow = 0;
-    let row = df.columns.bySemType('dna_nucleotide').get(iteratorRow);
+    let column = df.columns.bySemType('dna_nucleotide')
+    let row = column.get(iteratorRow);
     while ((row != null)) {
         // row to string
         count += kmpMatching(row, word);
         iteratorRow += 1;
-        row = df.columns.bySemType('dna_nucleotide').get(iteratorRow);
+        row = column.get(iteratorRow);
     }
     return count;
 }
 
-var PreCounted = {};
 
-function matchAllSequncesForSubstring(str, N, df) {
+function matchAllSequncesForSubstring(str, N, df, preCounted) {
     let countAll = 0;
     for (let i = 0; i + N < str.length; i++) {
         let word = str.substring(i, i + N);
-        if (PreCounted[word] == null) {
+        if (!preCounted[word]) {
             let count = matchAllSequnces(word, df);
-            PreCounted[word] = count;
+            preCounted[word] = count;
             countAll += count;
         } else {
-            countAll += PreCounted[word];
+            countAll += preCounted[word];
         }
     }
     return countAll;
 }
 
 function addCountToDataFrame(df1, df2, N) {
-    let iteratorRow = 0;
-    let row1 = df1.columns.bySemType('dna_nucleotide').get(iteratorRow);
+    let preCounted = {};
     let counts = df1.columns.byName('Count');
-    if (df1.columns.byName('Count') == null) {
+    if (counts == null) 
         counts = df1.columns.addNew('Count', 'int');
-    }
-    while ((row1 != null)) {
-        let count = matchAllSequncesForSubstring(row1, N, df2);
+    
+    let iteratorRow = 0;
+    let column = df1.columns.bySemType('dna_nucleotide')
+    let row1 = column.get(iteratorRow);
+    while (row1 != null) {
+        let count = matchAllSequncesForSubstring(row1, N, df2, preCounted);
         counts.set(iteratorRow, count);
         iteratorRow += 1;
-        row1 = df1.columns.bySemType('dna_nucleotide').get(iteratorRow);
+        row1 = column.get(iteratorRow);
     }
 }
 
@@ -162,9 +160,8 @@ class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
     render(g, x, y, w, h, gridCell, cellStyle) {
         let seq = gridCell.cell.value;
         const sl = new SmartLabel('id', true);
-        sl.setStyle({
-            'font-size': '11px'
-        });
+        console.log(ce)
+        sl.setStyle(cellStyle);
         let ctx = g.canvas.getContext("2d");
         ctx.font = '11px courier';
         ctx.fillStyle = "black";
@@ -201,11 +198,10 @@ export async function testENASwagger() {
 export async function enaSequence(cellText) {
     const url = `https://www.ebi.ac.uk/ena/browser/api/fasta/${cellText}`;
     const fasta = await (await grok.dapi.fetchProxy(url)).text();
-    let lines = fasta.split('\n').slice(1);
-    let sequence = '';
-    sequence = lines.reduce((acc, line) => acc + line, '');
-    let IdUi = ui.stringInput('ID: ', cellText);
-    let sequenceUi = ui.divText(sequence);
+    const lines = fasta.split('\n').slice(1);
+    const sequence = lines.reduce((acc, line) => acc + line, '');
+    const IdUi = ui.stringInput('ID: ', cellText);
+    const sequenceUi = ui.divText(sequence);
     return new DG.Widget(ui.box(ui.splitV([ui.div([IdUi]), sequenceUi])));
 }
 
@@ -243,7 +239,7 @@ async function _fetchENASequence(url) {
         }
     }
     // shrink ids if ids.length > sequences.length
-    if (ids.length > sequences.length) {
+    if (sequences.length < ids.length) {
         ids = ids.slice(0, sequences.length);
     }
     let df = DG.DataFrame.fromColumns([

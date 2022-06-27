@@ -63,22 +63,20 @@ def KMPSearch(pat, txt):
                 i += 1
     return count
 
-
 def count_subsequense_in_sequnse(sequencesColumn, subsequence):
     count = 0
     for i in range(len(sequencesColumn)):
        count += KMPSearch(subsequence, sequencesColumn[i])
     return count
-import numpy as np
-import matplotlib.pyplot as plt
 
 sequencesColumn = t[ColumnName].values
 counts = np.zeros(64)
 x = np.arange(64)
 numberSequence = 0
-for char1 in list(['g', 'a', 't', 'c']):
-    for char2 in list(['g', 'a', 't', 'c']):
-        for char3 in list(['g', 'a', 't', 'c']):
+variants = ['g', 'a', 't', 'c']
+for char1 in variants:
+    for char2 in variants:
+        for char3 in variants:
             # create string for char 1, char 2, char 3
             subsequence = char1 + char2 + char3
             # count number of subsequence in sequences
