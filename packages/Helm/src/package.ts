@@ -39,14 +39,12 @@ export function editMoleculeCell(cell: DG.GridCell): void {
     //@ts-ignore
     app.canvas.helm.setSequence(cell.cell.value , 'HELM');
   }, 200);
-  let dlg = ui.dialog()
+  //@ts-ignore
+  ui.dialog({ showHeader: false, showFooter: false })
   .add(view)
   .onOK(() => {
     cell.cell.value = app.canvas.getHelm(true);
   }).show({ modal: true, fullScreen: true});
-  dlg.root.children[0].remove();
-  dlg.root.children[1].classList.remove('ui-panel'); 
-  dlg.root.children[1].classList.remove('ui-box');
 }
 
 //name: Details
