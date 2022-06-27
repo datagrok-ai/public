@@ -58,9 +58,14 @@ export class CardView extends View {
   /** Text filter properties list */
   get filters(): { [property: string]: string } { return toJs(api.grok_CardView_Get_Filters(this.dart)); }
   set filters(ff: { [property: string]: string }) { api.grok_CardView_Set_Filters(this.dart, ff); }
+
   /** Grouping properties list */
   get hierarchy(): string[] { return toJs(api.grok_CardView_Get_Hierarchy(this.dart)); }
   set hierarchy(s: string[]) { api.grok_CardView_Set_Hierarchy(this.dart, s); }
+
+  /** All possible grouping properties list */
+  get hierarchyProperties(): { [property: string]: string } { return toJs(api.grok_CardView_Get_HierarchyPropertis(this.dart)); }
+  set hierarchyProperties(s: { [property: string]: string }) { api.grok_CardView_Set_HierarchyProperties(this.dart, s); }
 
   /** Grouping mode on */
   get showTree(): boolean { return api.grok_CardView_Get_ShowTree(this.dart); }
