@@ -16,7 +16,7 @@
   },
   "scripts": {
     "link-all": "",
-    "debug-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish ",
+    "debug-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish",
     "release-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish --release",
     "build-#{PACKAGE_NAME_LOWERCASE}": "webpack",
     "build": "webpack"
