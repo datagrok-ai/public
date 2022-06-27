@@ -86,13 +86,29 @@ export class ModelHandler extends DG.ObjectHandler {
 
   static openModel(x: DG.Func, parentCall?: DG.FuncCall) {
     let fc = x.prepare();
-    if (parentCall != null) {
-      let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
-      parentCall.aux['view'] = modelsView;
-      fc.parentCall = parentCall;
-    }
     fc.aux['showOnTaskBar'] = false;
-    fc.edit();
+
+    function findModelCatalogView() {
+      return wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
+    }
+
+    function startModel(modelsView: DG.View | undefined) {
+      if (parentCall != null) {
+        parentCall.aux['view'] = modelsView;
+        fc.parentCall = parentCall;
+      }
+      fc.edit();
+    }
+
+    let modelsView = findModelCatalogView();
+    if (modelsView == null) {
+      grok.functions.call('Compute:ModelCatalog').then((_) => {
+        modelsView = findModelCatalogView();
+        startModel(modelsView);
+      });
+    } else {
+      startModel(modelsView);
+    }
   }
 
   init() {
