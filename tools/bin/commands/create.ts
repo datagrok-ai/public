@@ -22,7 +22,7 @@ const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, { encoding: 'utf
 
 let dependencies: string[] = [];
 
-function createDirectoryContents(name: string, config: utils.Config, templateDir: string, packageDir: string, ide: string = '', ts: boolean = false, eslint: boolean = false, jest: boolean = false) {
+function createDirectoryContents(name: string, config: utils.Config, templateDir: string, packageDir: string, ide: string = '', ts: boolean = true, eslint: boolean = false, jest: boolean = false) {
 
   const filesToCreate = fs.readdirSync(templateDir);
 
@@ -117,10 +117,13 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
 }
 
 export function create(args: CreateArgs) {
+  const options = ['ide', 'js', 'ts', 'eslint', 'jest'];
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
-  if (nArgs > 2 || nOptions > 3) return false;
-  if (nOptions && !Object.keys(args).slice(1).every(op => ['ide', 'ts', 'eslint', 'jest'].includes(op))) return false;
+
+  if (nArgs > 2 || nOptions > 4) return false;
+  if (nOptions && !Object.keys(args).slice(1).every(op => options.includes(op))) return false;
+  if (args.js && args.ts) return color.error('Incompatible options: --js and --ts');
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
@@ -181,8 +184,9 @@ export function create(args: CreateArgs) {
       process.exit();
     });
 
-    createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts, args.eslint, args.jest);
-    console.log(help.package(name, args.ts));
+    createDirectoryContents(name, config, templateDir, packageDir, args.ide, !!args.ts, !!args.eslint, !!args.jest);
+    color.success('Successfully created package ' + name);
+    console.log(help.package(!!args.ts));
     console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
     console.log('Running `npm install` to get the required dependencies...\n');
     exec('npm install', { cwd: packageDir }, (err, stdout, stderr) => {
@@ -198,6 +202,7 @@ export function create(args: CreateArgs) {
 interface CreateArgs {
   _: string[],
   ide?: string,
+  js?: boolean,
   ts?: boolean,
   eslint?: boolean,
   jest?: boolean
