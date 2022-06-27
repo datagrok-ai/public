@@ -64,7 +64,7 @@ export class CardView extends View {
   set hierarchy(s: string[]) { api.grok_CardView_Set_Hierarchy(this.dart, s); }
 
   /** All possible grouping properties list */
-  get hierarchyProperties(): { [property: string]: string } { return toJs(api.grok_CardView_Get_HierarchyPropertis(this.dart)); }
+  get hierarchyProperties(): { [property: string]: string } { return toJs(api.grok_CardView_Get_HierarchyProperties(this.dart)); }
   set hierarchyProperties(s: { [property: string]: string }) { api.grok_CardView_Set_HierarchyProperties(this.dart, s); }
 
   /** Grouping mode on */
