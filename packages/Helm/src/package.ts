@@ -40,7 +40,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
     app.canvas.helm.setSequence(cell.cell.value , 'HELM');
   }, 200);
   //@ts-ignore
-  ui.dialog({ showHeader: false, showFooter: false })
+  ui.dialog({ showHeader: false, showFooter: true })
   .add(view)
   .onOK(() => {
     cell.cell.value = app.canvas.getHelm(true);
