@@ -168,7 +168,7 @@ export namespace chem {
       this._smiles = convert(x, 'mol', 'smiles');
 
       if (this.sketcher != null)
-        this.sketcher!.molFile = this._molFile;
+        this.sketcher!.molFile = x;
       this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
