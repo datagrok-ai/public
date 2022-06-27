@@ -13,7 +13,7 @@ import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
-import {chemSpace} from './analysis/chem-space';
+import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
 import {getActivityCliffs} from './analysis/activity-cliffs';
 import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
 import {addInchiKeys, addInchis} from './panels/inchi';
@@ -35,6 +35,7 @@ import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import {RDMol} from './rdkit-api';
 import Sketcher = chem.Sketcher;
+import { Viewer } from 'datagrok-api/dg';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -259,22 +260,21 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE", "pSPE", "OriginalSPE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
-//output: viewer result
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
-  return new Promise<void>(async (resolve, _) => {
-    const chemSpaceRes = await chemSpace(smiles, methodName, similarityMetric, ['Embed_X', 'Embed_Y']);
-    const embeddings = chemSpaceRes.coordinates;
-    const cols = table.columns as DG.ColumnList;
-    for (const col of embeddings)
-      cols.add(col);
 
-    const view = grok.shell.addTableView(table);
-    if (plotEmbeddings)
-      view.scatterPlot({x: 'Embed_X', y: 'Embed_Y'});
-    resolve();
-  });
-}
+    const embedColsNames = getEmbeddingColsNames(table);
+    const chemSpaceRes = await chemSpace(smiles, methodName, similarityMetric, embedColsNames);
+    const embeddings = chemSpaceRes.coordinates;
+    for (const col of embeddings)
+      table.columns.add(col);
+    if (plotEmbeddings) {
+      for (let v of grok.shell.views) {
+        if (v.name === table.name)
+          (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1]});
+      }
+    }
+  };
 
 //name: R-Groups Analysis
 //top-menu: Chem | R-Groups Analysis...
