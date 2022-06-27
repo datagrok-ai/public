@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {chemSpace} from './chem-space';
+import {chemSpace, getEmbeddingColsNames} from './chem-space';
 import {findMCS} from '../scripts-api';
 import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
 import { getSimilaritiesMarix, getSimilaritiesMarixFromDistances } from '../utils/similarity-utils';
@@ -33,11 +33,10 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
   const MIN_SIMILARITY = 80;
 
   const initialSimilarityLimit = automaticSimilarityLimit ? MIN_SIMILARITY : similarity / 100;
-  const axes = ['Embed_X', 'Embed_Y'];
-  const colNameInd = df.columns.names().filter((it) => it.includes(axes[0])).length + 1;
 
+  const embeddingColsNames = getEmbeddingColsNames(df);
   const {distance, coordinates} = await chemSpace(smiles, methodName, 'Tanimoto',
-    axes.map((it) => `${it}_${colNameInd}`), (options as any)[methodName]);
+  embeddingColsNames, (options as any)[methodName]);
 
   for (const col of coordinates)
     df.columns.add(col);
@@ -100,14 +99,14 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
     }
   }
 
-  const sali: DG.Column = DG.Column.fromList('double', `sali_${colNameInd}`, saliCount);
+  const sali: DG.Column = DG.Column.fromList('double', `sali_${embeddingColsNames[0].substring(embeddingColsNames[0].lastIndexOf('_'))}`, saliCount);
 
   df.columns.add(sali);
 
   const view = grok.shell.getTableView(df.name);
   const sp = view.addViewer(DG.Viewer.scatterPlot(df, {
-    xColumnName: `${axes[0]}_${colNameInd}`,
-    yColumnName: `${axes[1]}_${colNameInd}`,
+    xColumnName: embeddingColsNames[0],
+    yColumnName: embeddingColsNames[1],
     size: sali.name,
     color: activities.name,
     showXSelector: false,
@@ -229,14 +228,14 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
   sp.onEvent('d4-before-draw-scene')
     .subscribe((_) => {
       const lines = renderLines(sp,
-        `${axes[0]}_${colNameInd}`, `${axes[1]}_${colNameInd}`, linesRes, saliVals, saliOpacityCoef, saliMin);
+        embeddingColsNames[0], embeddingColsNames[1], linesRes, saliVals, saliOpacityCoef, saliMin);
       if (zoom) {
         const currentLine = lines[linesRes.linesDf.currentRowIdx];
         setTimeout(()=> {
-          const x1 = sp.dataFrame.get(`${axes[0]}_${colNameInd}`, currentLine.mols[0]);
-          const y1 = sp.dataFrame.get(`${axes[1]}_${colNameInd}`, currentLine.mols[0]);
-          const x2 = sp.dataFrame.get(`${axes[0]}_${colNameInd}`, currentLine.mols[1]);
-          const y2 = sp.dataFrame.get(`${axes[1]}_${colNameInd}`, currentLine.mols[1]);
+          const x1 = sp.dataFrame.get(embeddingColsNames[0], currentLine.mols[0]);
+          const y1 = sp.dataFrame.get(embeddingColsNames[1], currentLine.mols[0]);
+          const x2 = sp.dataFrame.get(embeddingColsNames[0], currentLine.mols[1]);
+          const y2 = sp.dataFrame.get(embeddingColsNames[1], currentLine.mols[1]);
           sp.zoom(x1 < x2 ? x1 : x2,
             y1 > y2 ? y1 : y2,
             x1 > x2 ? x1 : x2,

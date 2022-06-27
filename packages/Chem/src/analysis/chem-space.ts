@@ -37,3 +37,9 @@ export async function chemSpace(molColumn: DG.Column, methodName: string, simila
   }
   return {distance: dimensionalityReduceRes.distance, coordinates: new DG.ColumnList(cols)};
 }
+
+export function getEmbeddingColsNames(df: DG.DataFrame){
+  const axes = ['Embed_X', 'Embed_Y'];
+  const colNameInd = df.columns.names().filter((it) => it.includes(axes[0])).length + 1;
+  return axes.map((it) => `${it}_${colNameInd}`);
+}
