@@ -84,8 +84,8 @@ In addition to that, it might contain the following folders:
     "datagrok-api": "latest"
   },
   "scripts": {
-    "debug-sequence": "grok publish --rebuild",
-    "release-sequence": "grok publish --rebuild --release",
+    "debug-sequence": "webpack && grok publish",
+    "release-sequence": "webpack && grok publish --release",
     "build-sequence": "webpack",
     "build": "webpack"
   }
@@ -283,14 +283,14 @@ having the `debug` word in their name. For production, use the alternative scrip
 
 ```json
 "scripts": {
-"debug-sequence": "grok publish --rebuild",
-"release-sequence": "grok publish --rebuild --release",
+"debug-sequence": "webpack && grok publish",
+"release-sequence": "webpack && grok publish --release",
 "build-sequence": "webpack",
 "build": "webpack",
-"debug-sequence-dev": "grok publish dev --rebuild",
-"release-sequence-dev": "grok publish dev --rebuild --release",
-"debug-sequence-local": "grok publish local --rebuild",
-"release-sequence-local": "grok publish local --rebuild --release"
+"debug-sequence-dev": "webpack && grok publish dev",
+"release-sequence-dev": "webpack && grok publish dev --release",
+"debug-sequence-local": "webpack && grok publish local",
+"release-sequence-local": "webpack && grok publish local --release"
 }
 ```
 
@@ -327,12 +327,11 @@ If necessary, you can specify additional settings and then publish the package.
 
 ### Continuous integration
 
-`Webpack` is required for your package source code to work successfully in the browser. The Datagrok platform can build
-a package on the server side, in which case, you need to specify `--rebuild`
-option in scripts from `package.json`. The script `"build": "webpack"` is reserved for server build.
-
-Alternatively, it's possible to build your package on the client-side using `Webpack`. To do that, run the
-script `"build": "webpack"` before publishing.
+`Webpack` is required for your package source code to work successfully in the browser.
+You can build your package with `webpack` locally. To do that, run the script `"build": "webpack"`
+before publishing. For convenience, publication scripts in `package.json` combine these two steps:
+`webpack && grok publish`. The `build` script is reserved for server-side build, so don't change or remove it.
+The platform will build a package on the server side, if you call `grok publish` with the `--rebuild` option.
 
 Package publication is compatible with automation tools. You can pass your server URL and developer key explicitly
 without configuring:
