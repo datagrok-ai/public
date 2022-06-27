@@ -30,11 +30,18 @@ export class ModelCatalogView extends DG.CustomCardView {
       'Favorites': 'starredBy = @current',
       'Used by me': 'usedBy = @current'
     };
+
     this.hierarchy = [
       'options.department',
       'options.group',
       'options.process'
     ];
+
+    this.hierarchyProperties = {
+      'options.department': 'Department',
+      'options.group': 'Group',
+      'options.process': 'Process'
+    };
     this.showTree = true;
     this.initRibbon();
     this.initMenu();
