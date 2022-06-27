@@ -24,7 +24,7 @@
 		"typescript": "latest"
 	},
 	"scripts": {
-		"link-all": "",
+		"link-all": "npm link datagrok-api  @datagrok-libraries/utils",
 		"debug-helm": "webpack && grok publish ",
 		"release-helm": "webpack && grok publish --release",
 		"build-helm": "webpack",
