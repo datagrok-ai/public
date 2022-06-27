@@ -67,10 +67,7 @@ export function detailsPanel(helmString: string){
   )
 }
 
-//name: accessServer
-//input: string url
-//input: string key
-export async function accessServer(url: string, key: string) {
+async function accessServer(url: string, key: string) {
   const params: RequestInit = {
     method: 'GET', 
     headers: {
