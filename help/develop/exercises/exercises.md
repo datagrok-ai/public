@@ -17,9 +17,9 @@ predictive models, integration with the external utilities, data augmentation, a
 * [Setting up the environment](#setting-up-the-environment)
 * [Semantic-types](#exercise-1-semantic-types)
 * [Scripting and functions](#exercise-2-scripting-and-functions)
-    * [Scripting with server functions](#scripting-with-server-functions)
-    * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
-    * [Scripting with client functions](#scripting-with-client-functions)
+  * [Scripting with server functions](#scripting-with-server-functions)
+  * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
+  * [Scripting with client functions](#scripting-with-client-functions)
 
 <!---
 * [Composing functions](#composing-functions)
@@ -55,16 +55,17 @@ predictive models, integration with the external utilities, data augmentation, a
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
    [these instructions](../how-to/set-up-environment.md)
-2. Create a branch from master at [GitHub](https://github.com/datagrok-ai/public/branches) or using your IDE; Use your credentials as a name of the branch 
+2. Create a branch from master at [GitHub](https://github.com/datagrok-ai/public/branches) or using your IDE;
+Use your credentials as a name of the branch
 3. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by
    running `grok config`. Open [https://dev.datagrok.ai/u](https://dev.datagrok.ai/u), click on `Developer key`, copy
    the `grok` command and execute it to add the key to your config
 4. Create a default package in your branch [called](https://datagrok.ai/help/develop/develop#naming-conventions)
-   `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence` with specifying the `--ts` option to create a package with TypeScript configuration (if you are new to
-   TypeScript, you can specify the `--js` option); Note that detectors.js file is still using JavaScript
+   `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence` with specifying the `--ts` option to create a package with TypeScript configuration
+   (if you are new to TypeScript, you can specify the `--js` option); Note that detectors.js file is still using JavaScript
 5. Run `npm install` to link the dependencies mentioned in `package.json` file of your package
 6. Upload it to the server: run `webpack` and `grok publish dev` (see other
-   options [here](../develop.md#deployment-modes))
+options [here](../develop.md#deployment-modes))
 7. Launch the platform and run the package's `info()` function using different methods:
 
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
@@ -97,7 +98,8 @@ You will learn: how to write semantic type detectors, how to develop context-spe
     }
     ```
 
-   Note that comments on the top of the function declaration are crucial for runnig it on the platform. They determine the function name, the input and output types.
+   Note that comments on the top of the function declaration are crucial for runnig it on the platform.
+   They determine the function name, the input and output types.
    Essentially, change each character to the complementary one: `A <=> T`, `G <=> C`. Run it and check whether
    everything works fine.
 
@@ -144,7 +146,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 6. Test your implementation by opening the following CSV or TXT file (or go to `📁 (Data) | Text`
    and paste it there). Make sure you click on DONE (this will trigger semantic types detection):
 
-    ```
+   ```
    sequence, id
    GATTACA, 1997
    ATTCGGA, 1984
@@ -714,7 +716,7 @@ coronavirus.
   and `host`, in some Swaggers it isn't always the case.
 * Add the following function to `package.js`:
 
-   ```
+  ```
   //name: testENASwagger
   export async function testENASwagger() {
     let data = await grok.data.query('<yourFirstName>sequence:PerformATextSearchAndDownloadDataInXMLFormat',
