@@ -2,17 +2,20 @@ import * as DG from 'datagrok-api/dg';
 
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 
-import './tests/WebLogo.test';
+import './tests/WebLogo-test';
+import './tests/Palettes-test';
+import './tests/detectors-test';
 
 export const _packageTest = new DG.Package();
 export {tests};
 
+/** For the 'test' function argument names are fixed as 'category' and 'test' because of way it is called. */
 //name: test
 //input: string category {optional: true}
-//input: string t {optional: true}
+//input: string test {optional: true}
 //output: dataframe result
 //top-menu: Tools | Dev | JS API Tests
-export async function test(category: string, t: string): Promise<DG.DataFrame> {
-  const data = await runTests({category, test: t});
+export async function test(category: string, test: string): Promise<DG.DataFrame> {
+  const data = await runTests({category, test});
   return DG.DataFrame.fromObjects(data)!;
 }
