@@ -35,3 +35,5 @@ export type baseEntity = dataSource | schema | table;
 export type specialType = 'data-source' | 'schema' | 'table' | 'column';
 export type createApiTokenResponse = {api_access_token: string, user_id: number, created_at: string,
   token_expires_at: string, token_status: string};
+export type createRefreshTokenResponse = {refresh_token: string, user_id: number, created_at: string, name: string,
+  token_expires_at: string, token_status: string};

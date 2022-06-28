@@ -18,6 +18,8 @@ let isSettingDescription = false;
 export async function getBaseURL() {
   const properties = await _package.getProperties() as {[key: string]: any};
   baseUrl = properties['Base URL'] as string;
+  if (!baseUrl)
+    throw new Error('PackagePropertyError: Base URL is not set!');
   baseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   return baseUrl;
 }

@@ -23,6 +23,32 @@ export async function testToken(
   return response.json();
 }
 
+export async function createRefreshToken(
+  username: string, password: string, name: string): Promise<types.createRefreshTokenResponse> {
+  const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.create_refresh_token}/`;
+  const params = {
+    method: 'POST',
+    headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+    body: JSON.stringify({username: username, password: password, name: name}),
+  };
+
+  const response = await grok.dapi.fetchProxy(url, params);
+  return response.json();
+}
+
+export async function regenerateRefreshToken(
+  refreshToken: string, userId: number): Promise<types.createRefreshTokenResponse> {
+  const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.regenerate_refresh_token}/`;
+  const params = {
+    method: 'POST',
+    headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+    body: JSON.stringify({refresh_token: refreshToken, user_id: userId}),
+  };
+
+  const response = await grok.dapi.fetchProxy(url, params);
+  return response.json();
+}
+
 export async function createAPIAccessToken(
   refreshToken: string, userId: number): Promise<types.createApiTokenResponse> {
   const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.create_api_token}/`;
