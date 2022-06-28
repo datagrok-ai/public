@@ -28,8 +28,12 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderIcon(x: DG.Func, context: any = null): HTMLElement {
-    if (x instanceof DG.Script)
+    if (x.options['icon'] != null && (x.options['icon'].startsWith('http://') || x.options['icon'].startsWith('https://'))) {
+      return ui.iconImage('model-icon', x.options['icon']);
+    }
+    if (x instanceof DG.Script) {
       return this.getLanguageIcon(x.language);
+    }
     let iconUrl = x.package.getIconUrl();
     if (x.options['icon'] != null) {
       let packagePathSegments = iconUrl.split('/');
