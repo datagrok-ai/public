@@ -340,8 +340,8 @@ RandBetween(5, 7)    // Randomly returns 5 or 6
 
 ## <a name="rnd"></a>Rnd(`limit`)
 
-Returns a random integer number within the range from 0, inclusive, to `n`, exclusive.
-The absolute value is taken if the number is negative.
+Returns a random integer number within the range from 0, inclusive, to `n`, exclusive. The absolute value is taken if
+the number is negative.
 
 ```javascript
 Rnd(2)    // Randomly returns 0 or 1

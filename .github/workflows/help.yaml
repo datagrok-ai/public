@@ -65,8 +65,10 @@ jobs:
         uses: actions/checkout@v2
       - name: Check Markdown links
         uses: lycheeverse/lychee-action@76ab977fedbeaeb32029313724a2e56a8a393548
+        env:
+          GITHUB_TOKEN: ${{ secrets.WRITE_TOKEN }}
         with:
-          args: "--exclude-all-private --include-verbatim --require-https --verbose --no-progress 'help/**/*.md'"
+          args: "--exclude-all-private --require-https --cache -a 429 --verbose --no-progress 'help/**/*.md'"
           fail: true
           jobSummary: true
           format: markdown
@@ -75,7 +77,6 @@ jobs:
   convert:
     name: Convert to HTML
     needs: [ lint, link_check, anchor_check ]
-    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout

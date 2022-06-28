@@ -8,7 +8,7 @@ Typically, each function type has a special tag denoting what the function does,
 * `#app` for [applications](#applications)
 * `#dashboard` for [dashboards](#dashboards)
 * `#panel` for [info panels](#info-panels)
-* `#init` for [package initialization](#package-initialization) 
+* `#init` for [package initialization](#package-initialization)
 * `#autostart` for [automatic execution at platform startup](#autostart)
 * `#semTypeDetector` for [semantic types detectors](#semantic-type-detectors)
 * `#cellRenderer` for custom [cell renderers](#cell-renderers)
@@ -29,8 +29,8 @@ const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
 
 ## Applications
 
-Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag.
-Use `datagrok-tools` to get a template:
+Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag. Use `datagrok-tools` to get
+a template:
 
 ```shell
 cd <package-name>
@@ -52,11 +52,11 @@ grok add script panel <language> <name>
 
 *Details:* [How to add an info panel](how-to/add-info-panel.md)
 
-## Package initialization 
+## Package initialization
 
-`init` function gets invoked before the first time any of the package functions is invoked. 
-This is a good place to initialize some common structures 
-(load WebAssembly, fetch files) that some of exposed functions use. It gets invoked at most once. 
+`init` function gets invoked before the first time any of the package functions is invoked. This is a good place to
+initialize some common structures
+(load WebAssembly, fetch files) that some of exposed functions use. It gets invoked at most once.
 
 Use `datagrok-tools` to get a template:
 
@@ -69,26 +69,26 @@ See also [autostart](#autostart).
 
 ## Autostart
 
-`autostart` function get invoked at platform startup. It starts immediately if it is tagged 
-as `meta.autostartImmediate: true`, otherwise it starts three seconds later. 
+`autostart` function get invoked at platform startup. It starts immediately if it is tagged
+as `meta.autostartImmediate: true`, otherwise it starts three seconds later.
 
-Use the `meta.autostartImmediate: true` mode is good to subscribe to global events, change
-some default settings, or change the UI right at the platform start. The default mode is good for
-preloading popular big packages (for instance, Chem package preloads to eliminate the delays 
-when a user opens a file with molecules). Keep in mind that some packages are big, and unless
-the `autostart` function resides in the `detectors.js` file, the whole content of the package gets loaded,
-so use this option wisely.
+Use the `meta.autostartImmediate: true` mode is good to subscribe to global events, change some default settings, or
+change the UI right at the platform start. The default mode is good for preloading popular big packages (for instance,
+Chem package preloads to eliminate the delays when a user opens a file with molecules). Keep in mind that some packages
+are big, and unless the `autostart` function resides in the `detectors.js` file, the whole content of the package gets
+loaded, so use this option wisely.
 
-The `autostart` function can reside in the `detectors.js` file, in which case full package content is not loaded.
-You might want to use it to quickly add some menu items or start listening to some events, and then you can load
-the full package only when a user launches that functionality.
+The `autostart` function can reside in the `detectors.js` file, in which case full package content is not loaded. You
+might want to use it to quickly add some menu items or start listening to some events, and then you can load the full
+package only when a user launches that functionality.
 
 If the `autostart` function is defined in the package where the [`init`](#package-initialization)
-is also defined, the `init` function gets executed first. No one awaits on the `autostart` function.
-You might have zero, one, or more `autostart` functions in a package.
+is also defined, the `init` function gets executed first. No one awaits on the `autostart` function. You might have
+zero, one, or more `autostart` functions in a package.
 
 Example from the [PowerPack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack)
 plugin that introduces a "Welcome" view at startup:
+
 ```js
 //name: welcomeView
 //tags: autostart
@@ -101,8 +101,7 @@ export function _welcomeView(): void {
 
 ## Semantic type detectors
 
-Functions that define semantic types have the `#semTypeDetector` tag.
-Use `datagrok-tools` to get a template:
+Functions that define semantic types have the `#semTypeDetector` tag. Use `datagrok-tools` to get a template:
 
 ```shell
 cd <package-name>
@@ -113,8 +112,8 @@ grok add detector <semantic-type-name>
 
 ## Cell renderers
 
-Cell renderers allow customizing the appearance of cells in the [grid](../visualize/viewers/grid.md).
-These functions are annotated with two special tags: `cellRenderer` and `cellRenderer-<type>`.
+Cell renderers allow customizing the appearance of cells in the [grid](../visualize/viewers/grid.md). These functions
+are annotated with two special tags: `cellRenderer` and `cellRenderer-<type>`.
 
 ## File viewers
 

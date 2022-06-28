@@ -26,7 +26,7 @@ Result:
 | Mars-4  | Mars  | 4  |
 
 To learn more about regular expressions, please visit
-[http://www.regular-expressions.info](http://www.regular-expressions.info).
+[https://www.regular-expressions.info](https://www.regular-expressions.info).
 
 Click on the _keyboard_arrow_down_ icon in order to access the following commands:
 

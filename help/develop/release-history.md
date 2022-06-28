@@ -5,2159 +5,2110 @@
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.4.3`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.4.3`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Simplified JsConvertible 
-* Closes #709: Filter panel is not synchronised across different views 
-* (Bug) Correlation plot: histogram cells are not shown 
-* (Bug) Correlation plot: in-cell scatter plots are empty 
-* Correlation Plot: cell format set to 0.00 
-* Package content validation: up-to-date bundle check 
-* Packages: notify of successful settings saving 
-* Dialog: showHeader and showFooter properties 
-* (Bug) Semantic type detection not performed in the file preview pane 
-* Bio pckg: Fix VdRegions viewer registering 
-
+* Simplified JsConvertible
+* Closes #709: Filter panel is not synchronised across different views
+* (Bug) Correlation plot: histogram cells are not shown
+* (Bug) Correlation plot: in-cell scatter plots are empty
+* Correlation Plot: cell format set to 0.00
+* Package content validation: up-to-date bundle check
+* Packages: notify of successful settings saving
+* Dialog: showHeader and showFooter properties
+* (Bug) Semantic type detection not performed in the file preview pane
+* Bio pckg: Fix VdRegions viewer registering
 
 # 2022-06-21 Dev build 1.4.2
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.4.2`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.4.2`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Grok Spawner: create endpoint for docker build from Dockerfile 
+* Grok Spawner: create endpoint for docker build from Dockerfile
 * Packages Manager (WIP)
-* Packages View: visual improvements 
+* Packages View: visual improvements
 * Grid: html rendering: automatically annotating host div with semantic type (WIP)
-* Closes #699: Valid formula line on scatter plot is not shown if one of the scatter plot lines is invalid 
-* Work in progress. 
-* Merged in spodolskaya/testtrack (pull request #179) 
-* Changing the behavior of ESC button in the filter panel #644 
-* (Bug) Semantic type detection: column with manually assigned sem types are being auto-detected 
-* Closes #642: Autodetection of Structure columns imported from external files 
-* Package content validation: up-to-date bundle check 
-* Closes #719: Viewers: current object won't change after viewer properties are edited 
-* Chem: v1.0.2 
-* Chem: #697 Close preserves changes, x\- button recovers initial sketch 
-* Closes #718: Custom categorical columns sort order in not reflected on plots after page reload 
-* MLBData: set category to "Bioinformatics" 
-* Closes #605: [Filter Panel] Search doesn't work in the column list for adding column filter ("+" icon) 
-* MLB: Buildup regions layout for cdr definition/numbering scheme combinations 
-* MLB: Buildup regions layout for cdr definition/numbering scheme combinations fix 
-
+* Closes #699: Valid formula line on scatter plot is not shown if one of the scatter plot lines is invalid
+* Work in progress.
+* Merged in spodolskaya/testtrack (pull request #179)
+* Changing the behavior of ESC button in the filter panel #644
+* (Bug) Semantic type detection: column with manually assigned sem types are being auto-detected
+* Closes #642: Autodetection of Structure columns imported from external files
+* Package content validation: up-to-date bundle check
+* Closes #719: Viewers: current object won't change after viewer properties are edited
+* Chem: v1.0.2
+* Chem: #697 Close preserves changes, x\- button recovers initial sketch
+* Closes #718: Custom categorical columns sort order in not reflected on plots after page reload
+* MLBData: set category to "Bioinformatics"
+* Closes #605: [Filter Panel] Search doesn't work in the column list for adding column filter ("+" icon)
+* MLB: Buildup regions layout for cdr definition/numbering scheme combinations
+* MLB: Buildup regions layout for cdr definition/numbering scheme combinations fix
 
 # 2022-06-17 Dev build 1.4.1
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.4.1`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.4.1`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
 * Packages Manager (WIP)
-
 
 # 2022-06-17 Dev build 1.4.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.4.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.4.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* KeyPair::encryptString/decryptString methods fixed for UTF8 symbols 
-* Grid: add cell context action 
-* (Bug) Functions: invalid date format in `Time()`  in some acceptable cases 
+* KeyPair::encryptString/decryptString methods fixed for UTF8 symbols
+* Grid: add cell context action
+* (Bug) Functions: invalid date format in `Time()`  in some acceptable cases
 * Packages Manager (WIP)
-* Fixed test 
-* #700: Helm fixing trouble with rendering 
-* F2 no longer edits a cell as it is still used as a column editor hotkey 
-* (Bug) Data | Text: Semantic type is not detected after table loaded 
-* JS API: Exposed Column.Aggregate 
-* Closes #642: Autodetection of Structure columns imported from external files 
-* Opening editor on double click 
-
+* Fixed test
+* # 700: Helm fixing trouble with rendering
+* F2 no longer edits a cell as it is still used as a column editor hotkey
+* (Bug) Data | Text: Semantic type is not detected after table loaded
+* JS API: Exposed Column.Aggregate
+* Closes #642: Autodetection of Structure columns imported from external files
+* Opening editor on double click
 
 # 2022-06-15 Dev build 1.3.5
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.3.5`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.3.5`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* MLB: Fix camelCase in DataLoader and setup.cmd 
-
+* MLB: Fix camelCase in DataLoader and setup.cmd
 
 # 2022-06-15 Dev build 1.3.4
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.3.4`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.3.4`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Row number is not clickable after applying saved layout #679 
-* JS API: convert datetime to dayjs object in DG.toJs 
-
+* Row number is not clickable after applying saved layout #679
+* JS API: convert datetime to dayjs object in DG.toJs
 
 # 2022-06-15 Dev build 1.3.3
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.3.3`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.3.3`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Fixed missing taskbar 
-
+* Fixed missing taskbar
 
 # 2022-06-15 Dev build 1.3.2
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.3.2`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.3.2`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
 * Packages: Debug packages permissions fix (WIP)
-* Closes #701: ositioning of Hamburger menus with inserted pinned columns 
-* Packages: update the details section 
-* fixes batch 
-* Docker Datagrok new image 
-* tab fix 
-* tab 
-* Packages: add url 
-* Row number is not clickable after applying saved layout #679 
-* Added the "showCharts" property that apparently was still used 
-* Closes #703: Dialog: onCancel does not get invoked if you close it by pressing ESC or by clicking on the 'x' icon 
-* improve enter behavior 
-* JS API: convert datetime to dayjs object in DG.toJs 
-* #700: Fixing bugs in opening the editor 
-
+* Closes #701: ositioning of Hamburger menus with inserted pinned columns
+* Packages: update the details section
+* fixes batch
+* Docker Datagrok new image
+* tab fix
+* tab
+* Packages: add url
+* Row number is not clickable after applying saved layout #679
+* Added the "showCharts" property that apparently was still used
+* Closes #703: Dialog: onCancel does not get invoked if you close it by pressing ESC or by clicking on the 'x' icon
+* improve enter behavior
+* JS API: convert datetime to dayjs object in DG.toJs
+* # 700: Fixing bugs in opening the editor
 
 # 2022-06-13 Dev build 1.3.1
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.3.1`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.3.1`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Formatting: add a missing format alias for floats 
-* Packages: change package card view for debug versions 
-* Compute: UX harmonization #180 URL fix 
-* Docs: Dev deployment 
-* Run Integration tests locally 
+* Formatting: add a missing format alias for floats
+* Packages: change package card view for debug versions
+* Compute: UX harmonization #180 URL fix
+* Docs: Dev deployment
+* Run Integration tests locally
 * JS API Tests: Functions: tests for all built-in arithmetic/logical/date functions (WIP)
 * Packages: Debug packages permissions fix (WIP)
-* cheminformatics: refactored up to descriptor-based tools 
-* Packages: add categories 
-
+* cheminformatics: refactored up to descriptor-based tools
+* Packages: add categories
 
 # 2022-06-12 Dev build 1.3.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.3.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.3.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Packages manager WIP 
-* Packages manager WIP Some styling 
-* Closes #655: Grid: No auto new line when editing and '+' available 
-* Exclude broken integration tests 
-* Datagrok incapsulated grok connect 
+* Packages manager WIP
+* Packages manager WIP Some styling
+* Closes #655: Grid: No auto new line when editing and '+' available
+* Exclude broken integration tests
+* Datagrok incapsulated grok connect
 * Packages: context menu improvements (WIP)
-* #695: style paramter for range slider 
-* Packages: Package install fail timeout 
-* Packages: fixed exception on packages without repository 
-* PackagesClient.deletePublished 
+* # 695: style paramter for range slider
+* Packages: Package install fail timeout
+* Packages: fixed exception on packages without repository
+* PackagesClient.deletePublished
 * Scripting: understand extra white spaces in the script header (WIP)
 * Packages: Ability to delete package (WIP)
-* SelectAll: only selecting rows, not columns 
-* Filters: fixed the indication of the active/inactive state 
+* SelectAll: only selecting rows, not columns
+* Filters: fixed the indication of the active/inactive state
 * Packages: Debug packages permissions fix (WIP)
-* #698: custom property panel 
-* Peptides: p-value column format fix 
-* Viewers: harmonizing properties \- WIP 
-* Peptides: accordion panels width fix 
-* Update icons. 
-* Helm: initial update (test files + detectors) 
-* Helm: updated README.md 
-* #700: Helm: implemented renderer, updated wiki 
-* Compute: UX harmonization #180 
-* Peptides: visual fixes 
-* #700: Helm: help update 
-* Peptides: analysis save-load fix 
-* Peptides: lint fix 
-* Compute: UX harmonization #180 URL fix 
-* Updated public index 
-
+* # 698: custom property panel
+* Peptides: p-value column format fix
+* Viewers: harmonizing properties \- WIP
+* Peptides: accordion panels width fix
+* Update icons.
+* Helm: initial update (test files + detectors)
+* Helm: updated README.md
+* # 700: Helm: implemented renderer, updated wiki
+* Compute: UX harmonization #180
+* Peptides: visual fixes
+* # 700: Helm: help update
+* Peptides: analysis save-load fix
+* Peptides: lint fix
+* Compute: UX harmonization #180 URL fix
+* Updated public index
 
 # 2022-06-08 Dev build 1.2.1
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.2.1`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.2.1`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
 * (Bug) Dev: Beta users and test track (WIP)
-* SequenceTranslator: update JS API version 
-* Fixed Datlas tests 
-* Changes made to grid row header are not saved with layout #528 
-* Sidebar icons harmonization 
-* Error searching non-existent layout #670 
-* Closes #694: Selected/filtered rows: "Save as column" action 
-* New viewer icons 
-* Closes #678: Memory consumption is constantly increasing if a view with filters panel is duplicated 
-* Closes #87 Charts: migrate to TypeScript 
-
+* SequenceTranslator: update JS API version
+* Fixed Datlas tests
+* Changes made to grid row header are not saved with layout #528
+* Sidebar icons harmonization
+* Error searching non-existent layout #670
+* Closes #694: Selected/filtered rows: "Save as column" action
+* New viewer icons
+* Closes #678: Memory consumption is constantly increasing if a view with filters panel is duplicated
+* Closes #87 Charts: migrate to TypeScript
 
 # 2022-06-08 Dev build 1.2.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.2.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.2.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Closes #405: Switching table for a viewer: column selection dropdown/dialog in properties panel is not updated 
-* Row number is not clickable after applying saved layout #679 
-* Closes #687: Filters: ESC should toggle all filters on/off 
-* Closes #608: [Filer panel] Substructure search improvements 
-* Fix new datagrok image 
-* GtHub actions: Fix category for Mets 
-* Chem: fixed empty molecule check 
-* Make CloseAll aware of ignoreCloseAll 
-* Wiki: fix documentation using markdownlint 
-* JS-API: fixed check marks in sketcher menu 
-* #691: getColumnSeparator function intial 
-
+* Closes #405: Switching table for a viewer: column selection dropdown/dialog in properties panel is not updated
+* Row number is not clickable after applying saved layout #679
+* Closes #687: Filters: ESC should toggle all filters on/off
+* Closes #608: [Filer panel] Substructure search improvements
+* Fix new datagrok image
+* GtHub actions: Fix category for Mets
+* Chem: fixed empty molecule check
+* Make CloseAll aware of ignoreCloseAll
+* Wiki: fix documentation using markdownlint
+* JS-API: fixed check marks in sketcher menu
+* # 691: getColumnSeparator function intial
 
 # 2022-06-07 Dev build 1.1.9
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.1.9`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.1.9`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Chem: changed logic of empty molecule check 
-* OligoBatchCalculator: fix of not valid data in additional modifications table 
-* SequenceTranslator: fix of conversion 
-* SequenceTranslator: fix of sequenceToSmiles tests 
-
+* Chem: changed logic of empty molecule check
+* OligoBatchCalculator: fix of not valid data in additional modifications table
+* SequenceTranslator: fix of conversion
+* SequenceTranslator: fix of sequenceToSmiles tests
 
 # 2022-06-07 Dev build 1.1.8
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.1.8`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.1.8`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Removed debug printout. 
-* Closes #576: Changing the order of values of categorical columns is not reflected in the filter panel 
-* Remove COMPOSE_PROFILES 
-
+* Removed debug printout.
+* Closes #576: Changing the order of values of categorical columns is not reflected in the filter panel
+* Remove COMPOSE_PROFILES
 
 # 2022-06-06 Dev build 1.1.7
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.1.7`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.1.7`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Closes #654: Chem: ability to import mol files V3000 
-* Closes #640: How to switch Structure Search to categorical filter 
-* Code cleanup. 
-* Closes #637: [Filter Panel] \- the history of Structure Search fields 
-* #604: Chem: "Use as Substructure Filter" action for molecules \- WIP 
-* Ability to specify actions for semantic types as JS functions 
-* Closes #604: Chem: "Use as Substructure Filter" action for molecules 
-* Dockerfile datagrok multiarch 
-* The modification of the formula is not propagated to other calculated columns #666 
-* Buildx Docker images 
-* Docker buildx multiplatform 
-* Heatmap: add max columns property instead of hardcoded value 
-* Fix buildx script 
-* Resolves #669 JS API: add View.temp object to store auxiliary information 
-* Docker Buildx disable cache 
-* Docker Buildx multiplatform: one platform at a time 
-* Docker datagrok new image 
-* Docker buildx scan images 
-* Docker buildx log the tar archive 
-* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- plenty of fixes and improvements 
-* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- progress indicator, better interactivity 
-* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- CSS improvements 
-* Docker Buildx cache push by flag 
-* JS API: grok.dapi.groups.getGroupsLookup 
-* Closes #681: Friendly names for columns 
-* Added a beta user 
-* Do not tag latest without push 
-* Datagrok elasticsearch configuration 
-* Fixing issues with drugNameMolecule function 
-* Issue #673: InChi-based sketcher structure query integration 
-* Chem: filtering using Ketcher sketcher 
-
+* Closes #654: Chem: ability to import mol files V3000
+* Closes #640: How to switch Structure Search to categorical filter
+* Code cleanup.
+* Closes #637: [Filter Panel] \- the history of Structure Search fields
+* # 604: Chem: "Use as Substructure Filter" action for molecules \- WIP
+* Ability to specify actions for semantic types as JS functions
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules
+* Dockerfile datagrok multiarch
+* The modification of the formula is not propagated to other calculated columns #666
+* Buildx Docker images
+* Docker buildx multiplatform
+* Heatmap: add max columns property instead of hardcoded value
+* Fix buildx script
+* Resolves #669 JS API: add View.temp object to store auxiliary information
+* Docker Buildx disable cache
+* Docker Buildx multiplatform: one platform at a time
+* Docker datagrok new image
+* Docker buildx scan images
+* Docker buildx log the tar archive
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- plenty of fixes and improvements
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- progress indicator, better interactivity
+* Closes #604: Chem: "Use as Substructure Filter" action for molecules \- CSS improvements
+* Docker Buildx cache push by flag
+* JS API: grok.dapi.groups.getGroupsLookup
+* Closes #681: Friendly names for columns
+* Added a beta user
+* Do not tag latest without push
+* Datagrok elasticsearch configuration
+* Fixing issues with drugNameMolecule function
+* Issue #673: InChi-based sketcher structure query integration
+* Chem: filtering using Ketcher sketcher
 
 # 2022-05-27 Dev build 1.1.5
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.1.5`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.1.5`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* New Datagrok Image with caching layers 
-* Create release notes for every release 
-* Js-Api: fixed bug with function name in chem sketcher 
-* Js-Api: fixed bug with sketcher function 
-
+* New Datagrok Image with caching layers
+* Create release notes for every release
+* Js-Api: fixed bug with function name in chem sketcher
+* Js-Api: fixed bug with sketcher function
 
 # 2022-05-27 Dev build 1.1.4
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.1.4`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.1.4`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* JS API: add Property options 
-
+* JS API: add Property options
 
 # 2022-05-26 Dev build 1.1.3
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.1.3`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.1.3`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Closes #648: Viewers: Column selectors: Interactivity: previous column is not set back on mouse leave 
-* Closes #535: Chem: Structure filter (MarvinJS) cannot be removed from filter panel once added 
-* Charts: add webpack-cli to dev dependencies 
-* Simple mode: correct misspellings 
-* #618 Charts: Timelines: ability to define multiple "Events" columns (WIP) 
-* Test for dateTime pattern added 
-* JS API: JsViewer.columnList property 
-* Meta fix 
-* (Bug) Old version layout restoring hides row numbers column 
-* Extending UNDO mechanism (views closing, axes changes) #600 
-* Fix Meta package format 
-* Removed debug lines 
-* Added missing await 
+* Closes #648: Viewers: Column selectors: Interactivity: previous column is not set back on mouse leave
+* Closes #535: Chem: Structure filter (MarvinJS) cannot be removed from filter panel once added
+* Charts: add webpack-cli to dev dependencies
+* Simple mode: correct misspellings
+* # 618 Charts: Timelines: ability to define multiple "Events" columns (WIP)
+* Test for dateTime pattern added
+* JS API: JsViewer.columnList property
+* Meta fix
+* (Bug) Old version layout restoring hides row numbers column
+* Extending UNDO mechanism (views closing, axes changes) #600
+* Fix Meta package format
+* Removed debug lines
+* Added missing await
 * Meta-package in NPM (WIP)
-* Fixed S3 file read 
+* Fixed S3 file read
 * JS API Tests: Functions: tests for all built-in arithmetic/logical/date functions (WIP)
 * Oligo Batch Calculator: editing option on the base modification logic (WIP)
-* Add uploading ANARCI (aligned to numbering scheme) antibodies sequences (to filter for an antigen) within position names columns to separate tables containing scheme and chain within table name. 
-* JS-Api: implemented sketcher inplace/external modes 
-* Usage analysis: use groups instead of users in filters 
-* #646: replaced objects with Maps & storing indexes 
+* Add uploading ANARCI (aligned to numbering scheme) antibodies sequences (to filter for an antigen) within position
+  names columns to separate tables containing scheme and chain within table name.
+* JS-Api: implemented sketcher inplace/external modes
+* Usage analysis: use groups instead of users in filters
+* # 646: replaced objects with Maps & storing indexes
 * JS API Tests: Stats: test each exposed method and property (WIP)
-
 
 # 2022-05-24 Dev build 1.1.2
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.1.2`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.1.2`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Closes #641: Grid.autoSize(maxWidth, maxHeight) 
-* Grok Scaler 
+* Closes #641: Grid.autoSize(maxWidth, maxHeight)
+* Grok Scaler
 * Unable to set value to datetime column from JS (WIP)
-* Removed unused code 
-* Moved grok_api to separate library 
-* Grok Scaler documentation 
-* ApiTests: fix the build error 
-* ApiTests: add eslint plugin 
-* ApiTests: linting 
-
+* Removed unused code
+* Moved grok_api to separate library
+* Grok Scaler documentation
+* ApiTests: fix the build error
+* ApiTests: add eslint plugin
+* ApiTests: linting
 
 # 2022-05-23 Dev build 1.1.1
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.1.1`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.1.1`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Sidebar integration improvements 
-* PowerGrid: code cleanup, added a description to the "Global Scale", gave friendly names to renderers. 
-* Removed sparkline renderers from core 
-* Property description is rendered as markup. Code cleanup. 
-* (Bug) File Browser: "Bad state: no element" error when clicking on the empty folder in the tree 
-* Chem: Code cleanup 
-* Closes #630: Structure queries 
-* Closes #523: Sketcher: ability to paste molblock 
-* Better function signatures 
-* Complete CI Flow 
-* Moved CI Flow images to Help 
-* Ignore drawio backups 
-* New CI Flow Documentation 
-* Resolves  #617 Charts: Timelines: setting "Color by" to empty results in an exception 
-* CDM: sample project 
-* Datlas split to libraries (WIP) 
-
+* Sidebar integration improvements
+* PowerGrid: code cleanup, added a description to the "Global Scale", gave friendly names to renderers.
+* Removed sparkline renderers from core
+* Property description is rendered as markup. Code cleanup.
+* (Bug) File Browser: "Bad state: no element" error when clicking on the empty folder in the tree
+* Chem: Code cleanup
+* Closes #630: Structure queries
+* Closes #523: Sketcher: ability to paste molblock
+* Better function signatures
+* Complete CI Flow
+* Moved CI Flow images to Help
+* Ignore drawio backups
+* New CI Flow Documentation
+* Resolves #617 Charts: Timelines: setting "Color by" to empty results in an exception
+* CDM: sample project
+* Datlas split to libraries (WIP)
 
 # 2022-05-20 Stable version 1.0.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:1.0.0`
-  *  `docker pull datagrok/datagrok:stable`
-* CVM: 
-  *  `docker pull datagrok/cvm:1.0.0`
-  *  `docker pull datagrok/cvm:stable`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:1.0.0`
+    * `docker pull datagrok/datagrok:stable`
+* CVM:
+    * `docker pull datagrok/cvm:1.0.0`
+    * `docker pull datagrok/cvm:stable`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Packages: get compatible npm package versions 
-* (Bug) connection.close in JdbcDataProvider.execute didn't account for exceptions other than SQLException 
-* Additional tests for calculated columns 
-* Push version script: releases branch 
-* Scatter Plot: Scroll bars visibility 
-* Docker build script: releases branch 
-* Lines by equations: Ability to create dashed and dotted lines 
-* Lines by equations: Ability to remove lines from storage 
-* Datlas: keep trying to connect to Grok connect 
-* MultiView css fix 
-* Viewers: harmonize property names for shapes 
-* Filters: add wildcard support in search over categories 
-* Formula lines: Update help 
-* Work in progress 
-* Minor code cleanup 
-* (Bug) In-Vis Filter: Does not affect the regression line 
-* JS: MultiView: DockView support 
-* Close button on TabControl 
-* Convert FunctionView to DockView 
-* JS: MultiView: DockView support 
-* Peptides: code cleanup and minor improvements 
-* Model Catalog improvements 
-* (Bug) Filters: Uncheck/Check a field in the filter panel that does not update the record properly 
-* Viewers: In-vis filtering: Implement for Bar Chart 
-* JKG: lost RxODE 
-* Fixed analyzer warning 
-* iframe-embeddable views 
-* Compute: documentation \- WIP 
-* Added documentation on caching 
-* OnViewAdding event 
-* Compute: documentation 
-* NPM repositories: new package manager UI 
-* Scatter Plot: Hide property "formula-lines" from PP 
-* Remove a utility function 
-* Fixed css 
-* (Bug) Multiple FuncCall.onCancel subscriptions 
-* Additional debug lines 
-* (Bug) Socket fails if there is ID in DataFrame Param value instead of TableInfo 
-* Formula Lines: Hide '...' button from Filter field in PP 
-* Change routing for CVM components in AWS 
-* (Bug) Packages: dapi.packages.find ignores the include string 
-* (Bug) Packages: URL field is empty for packages deployed from npm repositories 
-* README 
-* Datlas: Add logging to ConnectorsPlugin 
-* Datals: add tryToReconnectToConnectorServer flag 
-* In-vis Filter: Implement for Line Chart 
-* Fix concurrent modification during iteration exception 
-* CSS Fix 
-* (Bug) Formula Lines: Lines are clipped on some data 
-* Packages: Add tests for versions 
-* JS API: Script.sample, Script.reference, Script.tags, Script.environment 
-* Chem: similarity analysis and SPE removal 
-* (Bug) Packages: Infinite detectors loop 
-* Docker versioning 
-* Chem: panels removal 
-* Commit version to the according branch 
-* Fix condition to create branches in public repository 
-* Git information inside docker containers 
-* (Bug) In-vis Filter: Take into account property ShowFilteredOutPoints 
-* Ability to show input parameters in Function View 
-* (Bug) MariaDB and MySQL databases throw an exception when trying to open a list of tables 
-* Separate source maps 
-* Scatter Plot: Make scrollbars like a histogram and place them on the axes 
-* More error handling for getNpmPackageVersions 
-* Check js-api build before docker image build 
-* Push version: get latest datagrok-api version from npm registry 
-* Packages: optimised search for compatible versions 
-* Fixed addNewColumn layout 
-* Unit tests: exclude and include components from command line 
-* (Bug) Grok connect: NPE after dev deploy  
-* Updated dev environment v2 for Linux users 
-* Packages: allow subfolders in the directories reserved for entities 
-* (Bug) Grok Connect: Athena: java.lang.NullPointerException at java.util.Hashtable.put(Hashtable.java:460) 
-* JS API: add Property options 
-* Datlas: remove timer for reconnecting to Grok connect 
-* Grok connect: improve SettingsManager for tests and GrokConnectShell 
-* (Bug) Formula Lines: Sometimes tooltips doesn't appear 
-* Wiki: Access \- WIP 
-* Package files caching 
-* Scatter Plot: Marker coding for Split-By-Marker 
-* JS API: Improved code style (marker coding, formula lines) 
-* (Bug) Scatter Plot: Y axis shows weird values 
-* Small help addition 
-* Scatter Plot: Get rid of code duplication (axes and grid lines) 
-* (Bug) Bar chart: When "Axis Type" = "logarithmic", numbers on the axis get merged 
-* (Bug) Grid: categorical color-coding cannot be switched on/off without opening 'Edit' menu in some cases 
-* Functions: help-url support for scripts in Function View 
-* Ability to disable events in InputBase 
-* (Bug) Calculated column with numeric type and empty formula leaves no formula tag 
-* Ability to show multiple viewers in Function View 
-* Function View: Show table inputs if there are viewers set 
-* small css adjustment 
-* Function View: Adjust table heights 
-* Grid: add changePropertyPanel property   
-* Fixed analyzer warnings 
-* Update public 
-* Scatter plot: regression line: improve precision for the regression coefficient  
-* Scatter plot: improve axis formatting (".00" postfixes are often unnecessary) 
-* Scatter Plot: Rename and move property for MinMax labels visibility 
-* (Bug) Trellis Plot: full screen mode for inner viewers doesn't work when trellis is zoomed 
-* Renamed .d to .dart to fix minified code 
-* CSS fix 
-* Grok Connect: maven cache in docker image 
-* Viewers: Unification of properties (alpha/opacity/opaque) 
-* (Bug) JS API: null reference in JsViewer.dataframe 
-* Scatter Plot: an option to follow global filter 
-* Added an SQLite demo file 
-* SQLite: improved documentation 
-* Bar chart: improve and refactor collaborative filtering  
-* Grok connect: NPE when settings in schemas, schema, and query_table_sql are null  
-* Formula lines: Fixed name conflict 
-* NPM repositories: add check for deprecated versions 
-* NPM repositories: improve package search for given scope 
-* Terraform configuration for CVM 
-* Function View: Viewer positioning tags 
-* Function View: Ability to show grid 
-* Release notes: ignore GitHub Actions commits 
-* Added isolatesCount to GROK_PARAMETERS 
-* Added pool settings to GROK_PARAMETERS 
-* (Bug) Grid: "Show row header" property does not have any effect 
-* Skip test: ddt.calculated_column.metadata presence after formula application 
-* (Bug) Tree Map: After selecting column for "Size" property, column selectors on the viewer are duplicated 
-* Chem: Support filters from packages 
-* Push version using the version in package.json file 
-* (Bug) Formula Lines: "=" in the column names breaks the formula lines 
-* NPM repositories: add registry property 
-* Actions panel function names fix 
-* Added build all batch script 
-* Fixed name conflict (opacity) 
-* (Bug) Formula Lines: Browser crashes om some analysis 
-* ElasticSearch log4j vulnerability CVE-2021-44228 
-* Push version: generate release notes for minor release 
-* (Bug) ListInput: caption is not shown 
-* Filters: ability to add multiple filters (for the specified selected package filter) for selected columns 
-* Filters: ability to remove all filters (via the popup menu) 
-* Scripting: in-place definition for environments 
-* (Bug) Viewer Filter: Scatter Plot doesn't refresh after Viewer filter changed 
-* H2O: log4j CVE-2021-44228 remediation 
-* Css fixes 
-* CSS Harmonization 
-* Changed default run section to condensed mode 
-* Formula Lines: Name harmonization \- core side (doesn't affect users) 
-* Formula Lines: Name harmonization \- js api side (affects users). Change property name: equation -> formula. Both options are valid, but equation is obsolete. 
-* (Bug) Filters: closing the viewer does not properly detach it (event subscriptions are leaking) 
-* (Bug) ColumnComboBox: allowDrop field is ignored 
-* (Bug) Widget.die() does not kill all descendants 
-* Filters: ability to drag-and-drop columns to the filter group 
-* (Bug) Formula Lines: No lines if plot was created from the script annotation (Pmax) 
-* Propertly detaching JS-based filters 
-* Minor fixes and improvements 
-* (Bug) Scatter Plot: Wrong scrollbar length when canvas resized 
+* Packages: get compatible npm package versions
+* (Bug) connection.close in JdbcDataProvider.execute didn't account for exceptions other than SQLException
+* Additional tests for calculated columns
+* Push version script: releases branch
+* Scatter Plot: Scroll bars visibility
+* Docker build script: releases branch
+* Lines by equations: Ability to create dashed and dotted lines
+* Lines by equations: Ability to remove lines from storage
+* Datlas: keep trying to connect to Grok connect
+* MultiView css fix
+* Viewers: harmonize property names for shapes
+* Filters: add wildcard support in search over categories
+* Formula lines: Update help
+* Work in progress
+* Minor code cleanup
+* (Bug) In-Vis Filter: Does not affect the regression line
+* JS: MultiView: DockView support
+* Close button on TabControl
+* Convert FunctionView to DockView
+* JS: MultiView: DockView support
+* Peptides: code cleanup and minor improvements
+* Model Catalog improvements
+* (Bug) Filters: Uncheck/Check a field in the filter panel that does not update the record properly
+* Viewers: In-vis filtering: Implement for Bar Chart
+* JKG: lost RxODE
+* Fixed analyzer warning
+* iframe-embeddable views
+* Compute: documentation \- WIP
+* Added documentation on caching
+* OnViewAdding event
+* Compute: documentation
+* NPM repositories: new package manager UI
+* Scatter Plot: Hide property "formula-lines" from PP
+* Remove a utility function
+* Fixed css
+* (Bug) Multiple FuncCall.onCancel subscriptions
+* Additional debug lines
+* (Bug) Socket fails if there is ID in DataFrame Param value instead of TableInfo
+* Formula Lines: Hide '...' button from Filter field in PP
+* Change routing for CVM components in AWS
+* (Bug) Packages: dapi.packages.find ignores the include string
+* (Bug) Packages: URL field is empty for packages deployed from npm repositories
+* README
+* Datlas: Add logging to ConnectorsPlugin
+* Datals: add tryToReconnectToConnectorServer flag
+* In-vis Filter: Implement for Line Chart
+* Fix concurrent modification during iteration exception
+* CSS Fix
+* (Bug) Formula Lines: Lines are clipped on some data
+* Packages: Add tests for versions
+* JS API: Script.sample, Script.reference, Script.tags, Script.environment
+* Chem: similarity analysis and SPE removal
+* (Bug) Packages: Infinite detectors loop
+* Docker versioning
+* Chem: panels removal
+* Commit version to the according branch
+* Fix condition to create branches in public repository
+* Git information inside docker containers
+* (Bug) In-vis Filter: Take into account property ShowFilteredOutPoints
+* Ability to show input parameters in Function View
+* (Bug) MariaDB and MySQL databases throw an exception when trying to open a list of tables
+* Separate source maps
+* Scatter Plot: Make scrollbars like a histogram and place them on the axes
+* More error handling for getNpmPackageVersions
+* Check js-api build before docker image build
+* Push version: get latest datagrok-api version from npm registry
+* Packages: optimised search for compatible versions
+* Fixed addNewColumn layout
+* Unit tests: exclude and include components from command line
+* (Bug) Grok connect: NPE after dev deploy
+* Updated dev environment v2 for Linux users
+* Packages: allow subfolders in the directories reserved for entities
+* (Bug) Grok Connect: Athena: java.lang.NullPointerException at java.util.Hashtable.put(Hashtable.java:460)
+* JS API: add Property options
+* Datlas: remove timer for reconnecting to Grok connect
+* Grok connect: improve SettingsManager for tests and GrokConnectShell
+* (Bug) Formula Lines: Sometimes tooltips doesn't appear
+* Wiki: Access \- WIP
+* Package files caching
+* Scatter Plot: Marker coding for Split-By-Marker
+* JS API: Improved code style (marker coding, formula lines)
+* (Bug) Scatter Plot: Y axis shows weird values
+* Small help addition
+* Scatter Plot: Get rid of code duplication (axes and grid lines)
+* (Bug) Bar chart: When "Axis Type" = "logarithmic", numbers on the axis get merged
+* (Bug) Grid: categorical color-coding cannot be switched on/off without opening 'Edit' menu in some cases
+* Functions: help-url support for scripts in Function View
+* Ability to disable events in InputBase
+* (Bug) Calculated column with numeric type and empty formula leaves no formula tag
+* Ability to show multiple viewers in Function View
+* Function View: Show table inputs if there are viewers set
+* small css adjustment
+* Function View: Adjust table heights
+* Grid: add changePropertyPanel property
+* Fixed analyzer warnings
+* Update public
+* Scatter plot: regression line: improve precision for the regression coefficient
+* Scatter plot: improve axis formatting (".00" postfixes are often unnecessary)
+* Scatter Plot: Rename and move property for MinMax labels visibility
+* (Bug) Trellis Plot: full screen mode for inner viewers doesn't work when trellis is zoomed
+* Renamed .d to .dart to fix minified code
+* CSS fix
+* Grok Connect: maven cache in docker image
+* Viewers: Unification of properties (alpha/opacity/opaque)
+* (Bug) JS API: null reference in JsViewer.dataframe
+* Scatter Plot: an option to follow global filter
+* Added an SQLite demo file
+* SQLite: improved documentation
+* Bar chart: improve and refactor collaborative filtering
+* Grok connect: NPE when settings in schemas, schema, and query_table_sql are null
+* Formula lines: Fixed name conflict
+* NPM repositories: add check for deprecated versions
+* NPM repositories: improve package search for given scope
+* Terraform configuration for CVM
+* Function View: Viewer positioning tags
+* Function View: Ability to show grid
+* Release notes: ignore GitHub Actions commits
+* Added isolatesCount to GROK_PARAMETERS
+* Added pool settings to GROK_PARAMETERS
+* (Bug) Grid: "Show row header" property does not have any effect
+* Skip test: ddt.calculated_column.metadata presence after formula application
+* (Bug) Tree Map: After selecting column for "Size" property, column selectors on the viewer are duplicated
+* Chem: Support filters from packages
+* Push version using the version in package.json file
+* (Bug) Formula Lines: "=" in the column names breaks the formula lines
+* NPM repositories: add registry property
+* Actions panel function names fix
+* Added build all batch script
+* Fixed name conflict (opacity)
+* (Bug) Formula Lines: Browser crashes om some analysis
+* ElasticSearch log4j vulnerability CVE-2021-44228
+* Push version: generate release notes for minor release
+* (Bug) ListInput: caption is not shown
+* Filters: ability to add multiple filters (for the specified selected package filter) for selected columns
+* Filters: ability to remove all filters (via the popup menu)
+* Scripting: in-place definition for environments
+* (Bug) Viewer Filter: Scatter Plot doesn't refresh after Viewer filter changed
+* H2O: log4j CVE-2021-44228 remediation
+* Css fixes
+* CSS Harmonization
+* Changed default run section to condensed mode
+* Formula Lines: Name harmonization \- core side (doesn't affect users)
+* Formula Lines: Name harmonization \- js api side (affects users). Change property name: equation -> formula. Both
+  options are valid, but equation is obsolete.
+* (Bug) Filters: closing the viewer does not properly detach it (event subscriptions are leaking)
+* (Bug) ColumnComboBox: allowDrop field is ignored
+* (Bug) Widget.die() does not kill all descendants
+* Filters: ability to drag-and-drop columns to the filter group
+* (Bug) Formula Lines: No lines if plot was created from the script annotation (Pmax)
+* Propertly detaching JS-based filters
+* Minor fixes and improvements
+* (Bug) Scatter Plot: Wrong scrollbar length when canvas resized
 * JS API: Filters (WIP)
-* Bar Chart: Wrong scrollbar length when canvas resized 
-* JS API: ability to interop with Dart lists (no deep copy) 
-* Harmonize interop 
-* Minor code cleanup. 
-* JS API: getRawData should return real buffers (currently creates a copy) 
-* (Bug) Bar Chart: Exception when filtered table rows = 0 
-* SketcherFilter: provided filterType (will be retired soon, anyway) 
-* Seamless data loading to Function View 
-* Function View improvements 
-* Markers: Fixed bug with last marker in List 
-* Markers: Add new marker for outliers 
-* Python base image: remove boost artifacts from image 
-* Package repositories: unique scope check 
-* Datagrok: disable update certificates by environment variable 
-* Function View: markup improvements 
-* Formula Lines: Property harmonization (opacity) 
-* JS API: Moved properties (column.colors => column.meta.colors, column.markers => column.meta.markers) 
-* Scripting: global named conda environments 
-* JS API: Users API 
-* Formula Lines: Endless lines 
-* Result Header CSS Fix 
-* Formula Lines: Minor changes 
-* Minor code cleanup, switched to the thin barbell look 
-* Fixed a silly division by zero error 
-* Fixed filtering and add minor fixes 
-* _JsBasedHandlers resulting tables names fix 
-* Bar Chart: Fixed "compact()" call on nullable "stackColAggr" 
-* Removed parentheses 
-* (Bug) Line Chart: Fixed bug with "Y Global Scale" 
-* (Bug) Core: Sensitivity analysis won't work 
-* Line Chart: Added global Y-axis 
-* Line Chart: Added title for global Y-axis 
-* Octave: vectorization 
-* (Bug) Line Chart: X-selector overlaps the chart when the x-axis is auto-hidden 
-* (Bug) Line Chart: No X-axis in Multi Axis mode (if there are many lines) 
-* Line Chart: Show chevrons only on mouse hover 
-* Line Chart: Ability to set selectors legend position 
+* Bar Chart: Wrong scrollbar length when canvas resized
+* JS API: ability to interop with Dart lists (no deep copy)
+* Harmonize interop
+* Minor code cleanup.
+* JS API: getRawData should return real buffers (currently creates a copy)
+* (Bug) Bar Chart: Exception when filtered table rows = 0
+* SketcherFilter: provided filterType (will be retired soon, anyway)
+* Seamless data loading to Function View
+* Function View improvements
+* Markers: Fixed bug with last marker in List
+* Markers: Add new marker for outliers
+* Python base image: remove boost artifacts from image
+* Package repositories: unique scope check
+* Datagrok: disable update certificates by environment variable
+* Function View: markup improvements
+* Formula Lines: Property harmonization (opacity)
+* JS API: Moved properties (column.colors => column.meta.colors, column.markers => column.meta.markers)
+* Scripting: global named conda environments
+* JS API: Users API
+* Formula Lines: Endless lines
+* Result Header CSS Fix
+* Formula Lines: Minor changes
+* Minor code cleanup, switched to the thin barbell look
+* Fixed a silly division by zero error
+* Fixed filtering and add minor fixes
+* _JsBasedHandlers resulting tables names fix
+* Bar Chart: Fixed "compact()" call on nullable "stackColAggr"
+* Removed parentheses
+* (Bug) Line Chart: Fixed bug with "Y Global Scale"
+* (Bug) Core: Sensitivity analysis won't work
+* Line Chart: Added global Y-axis
+* Line Chart: Added title for global Y-axis
+* Octave: vectorization
+* (Bug) Line Chart: X-selector overlaps the chart when the x-axis is auto-hidden
+* (Bug) Line Chart: No X-axis in Multi Axis mode (if there are many lines)
+* Line Chart: Show chevrons only on mouse hover
+* Line Chart: Ability to set selectors legend position
 * JS API: improve the registration of async functions (WIP)
-* (Bug) Grid: column popups: popup container left handing in the DOM tree after a popup is closed 
-* Filters API: passing the requester filter up the event chain 
-* (Bug) ui.wait() adds default 400x300 size to the container 
-* Filters in the column property panel 
+* (Bug) Grid: column popups: popup container left handing in the DOM tree after a popup is closed
+* Filters API: passing the requester filter up the event chain
+* (Bug) ui.wait() adds default 400x300 size to the container
+* Filters in the column property panel
 * Grid: column quick panel: ability to add as filter (WIP)
-* Bar chart: checkboxes "select" and "filter" in the context menu 
-* (Bug) Property panel: columns: clicking on the column does not change current object 
-* Added a comment on comments 
-* ClientPackageFunc: ability to run function synchronously once the package is loaded 
-* (Bug) Scatter Plot: programmatic zoom causes an error 
-* Untyped events since they clearly were not Stream<String> 
+* Bar chart: checkboxes "select" and "filter" in the context menu
+* (Bug) Property panel: columns: clicking on the column does not change current object
+* Added a comment on comments
+* ClientPackageFunc: ability to run function synchronously once the package is loaded
+* (Bug) Scatter Plot: programmatic zoom causes an error
+* Untyped events since they clearly were not `Stream<String>`
 * Bar chart: add categoryValueWidth property (WIP)
-* Chem: excludin duplicated features 
-* (Bug) Scatter Plot: onZoomed returns objects of different data types when the plot is zoomed manually and programmaticaly 
-* Provide Area \- interface for Rect, Polygon, etc. 
-* Line Chart: Auto margin for yAxisTitle (get rid of yGlobalMarginAxisLeft) 
-* (Bug) Line Chart: The top marker of each line is cut off 
-* Line Chart: Changed close-icon style of lines 
-* Line Chart: Place close buttons to the right of the y-selectors in MultiAxis mode 
-* Minor CSS improvements 
-* Wiki harmonization \- WIP 
-* Name harmonization: API Samples, API Tests 
-* Set some packages as beta. 
-* Packages: remove unneeded package detectors 
-* Dialog.create: made options really optionable :) 
-* Axes: Ability to display vertical axis on the right side of the chart 
-* Line Chart: 2 different y-axes when lines count = 2 
-* Documentation improvements 
-* Chem: move semantic type detectors to the Chem package 
-* (Bug) Chem: some panels (drug likeness, toxicity, etc) do not work with molblocks-encoded molecules 
-* Unit conversion \- WIP 
-* Chem: get rid of the Molecule-specific renderer tricks in the core 
-* Line Chart: Special y-selector visual mode for 1 and 2 lines 
-* Axes: Add more y-tickmarks (need for Line Chart) 
-* Reusing DruglikenessPredictor 
-* (Bug) Opening an SDF file results in writing a big binary array to Datagrok's console 
-* Made the accordion pane's left margin smaller 
-* (Bug) Info panel invocations end up cluttering Datagrok console 
-* Build fix 
-* JS API: Cell.value setter 
-* (Bug) Chem: double-clicking on a structure: move to the Chem package 
-* (Bug) Chem: double-clicking on a structure opens an empty sketcher 
-* (Bug) Chem: Molfile widget does not work with molblocks 
-* Implemented #243: Chem: sketcher: "Copy as SMILES" and "Copy as MOLBLOCK" context commands 
-* CSS fixes 
-* Code cleanup 
-* Chem: fixed two memory leaks (molecules not being disposed) 
-* Chem: SDF importer: fixed a bug with 100 first rows being ignored 
-* Chem: removed unnecessary imports 
-* JS API: Func.find: ability to search by metadata 
-* Dart Sketcher: fixed an issue with smiles = null 
-* Chem: refactoring cell rendering \- WIP 
-* Formula Lines: Editor 
-* grok.shell tests fix 
-* (Bug) Octave: graphics won't work 
-* DevOps documentation 
-* Modified field length 
-* Update the dialog design for developer keys 
-* Help failed tests troubleshooting 
-* (Bug) Bar chart: scroll the page when BC scrolls are invisible  
-* H2O: Grok Helper URL prefix 
-* (Bug) DataFrame.onCellValue event not fired when a value is deleted in a spreadsheet by pressing Del or Backspace 
-* Viewer in accordion has zero height 
-* Bar chart: pass information about is click was on the header  
-* Bar Chart: maxBarHeight property 
-* Bar Chart: verticalAlign property 
-* (Bug) Bar Chart: initial render cuts category names 
-* (Bug) JS API: Legend.create doesn't return an instance of DG.Legend class 
-* Add CodeMirror to sources 
-* Change release-history.md during release 
-* Updated beta_users.csv 
-* Bump elasticsearch from 6.4.2 to 7.16.2 Elasticsearch release to upgrade Apache Log4j2 
-* JS-API: Packages test framework 
-* Bar chart: add filtering by clicking a category label in the stacked BC  
-* Bar chart: fixed bar border line 
-* (Bug) JS API: "Legend.column =" causes an exception 
-* JKG: Allow gnuplot run on different platforms 
-* Fix docker build for datagrok 
-* (Bug) Grid: virtual column of type bool renders as text 
-* 9913 displaying scalar query outputparams 
-* 9913 space by arrow 
-* DataFrame: editable virtual columns 
-* JS-API: Exposed DataFrame.fromByteArray and FileSource.readAsDataFrame methods 
-* JS API: updated js-api-common files 
-* (Bug) Pivot table icon is missing 
-* JS API: readAsDataFrames renamed to readBinaryDataFrames 
-* Bar chart: click not on the bar to clear the filter 
-* PowerPack: added tests for widgets 
-* ApiTests: added a test for package files 
-* (Bug) Trellis Plot | Inner Viewer Settings throws an exception 
-* ParamCommand: default item comands ("open" for project, "details" for users, etc). Support for double-click 
-* Property panel: decreased the margin for nested accordions 
-* (Bug) Grid: renderer type is not automatically changed when it is set via column.tags['cell-renderer'] 
-* Resolves #266: Chem: molecule column property panel 
-* Dialogs: add missing wiki links 
-* JS API: add Viewer.helpUrl parameter 
-* Introduce Func.source constants 
-* (Bug) grok.dapi.files.delete(): NoSuchMethodError 
-* 9913 dataFame 
-* API: added getting and saving event types 
-* Updated demo/bio peptides data 
-* Added ability to set code in ScriptView constructor 
-* ViewFactories ScriptView construction enhancement 
-* Move all demo assets to packages 
-* (Bug)  JS-based file handlers are not invoked when you double-click on a file in file browser 
-* #277 Chem: Substructure filter: fixed collaborative filtering 
-* #277 Chem: Substructure filter: picking up current filter 
-* (Bug) DAPI: Filter returns incorrect query 
-* Fixed test 
-* (Bug) Grid: column tools: filter: add: there should be no other filters in the filter group 
-* Simplified the creation of the popup filter 
-* #277 Chem: Substructure filter: better integration for the filter group / popup filter / property panel filter 
-* Formula Lines: Fixed typo 
-* Update the beta users list 
-* Fix a css rule 
-* NPM repositories: package data caching 
-* Amazon S3 Adapter: Anonymous access 
-* Packages: Ability to store content in S3 
-* Code cleanup and harmonization 
-* Moved files to folders 
-* Removed default handlers for Function and Script 
-* JS API: GridCellRenderer: ability to render values (without GridCell / GridCellStyle) 
-* Chem: Similarity & Diversity: switched to the renderMolecule() method 
-* Add a grayed-out text color constant 
+* Chem: excludin duplicated features
+* (Bug) Scatter Plot: onZoomed returns objects of different data types when the plot is zoomed manually and
+  programmaticaly
+* Provide Area \- interface for Rect, Polygon, etc.
+* Line Chart: Auto margin for yAxisTitle (get rid of yGlobalMarginAxisLeft)
+* (Bug) Line Chart: The top marker of each line is cut off
+* Line Chart: Changed close-icon style of lines
+* Line Chart: Place close buttons to the right of the y-selectors in MultiAxis mode
+* Minor CSS improvements
+* Wiki harmonization \- WIP
+* Name harmonization: API Samples, API Tests
+* Set some packages as beta.
+* Packages: remove unneeded package detectors
+* Dialog.create: made options really optionable :)
+* Axes: Ability to display vertical axis on the right side of the chart
+* Line Chart: 2 different y-axes when lines count = 2
+* Documentation improvements
+* Chem: move semantic type detectors to the Chem package
+* (Bug) Chem: some panels (drug likeness, toxicity, etc) do not work with molblocks-encoded molecules
+* Unit conversion \- WIP
+* Chem: get rid of the Molecule-specific renderer tricks in the core
+* Line Chart: Special y-selector visual mode for 1 and 2 lines
+* Axes: Add more y-tickmarks (need for Line Chart)
+* Reusing DruglikenessPredictor
+* (Bug) Opening an SDF file results in writing a big binary array to Datagrok's console
+* Made the accordion pane's left margin smaller
+* (Bug) Info panel invocations end up cluttering Datagrok console
+* Build fix
+* JS API: Cell.value setter
+* (Bug) Chem: double-clicking on a structure: move to the Chem package
+* (Bug) Chem: double-clicking on a structure opens an empty sketcher
+* (Bug) Chem: Molfile widget does not work with molblocks
+* Implemented #243: Chem: sketcher: "Copy as SMILES" and "Copy as MOLBLOCK" context commands
+* CSS fixes
+* Code cleanup
+* Chem: fixed two memory leaks (molecules not being disposed)
+* Chem: SDF importer: fixed a bug with 100 first rows being ignored
+* Chem: removed unnecessary imports
+* JS API: Func.find: ability to search by metadata
+* Dart Sketcher: fixed an issue with smiles = null
+* Chem: refactoring cell rendering \- WIP
+* Formula Lines: Editor
+* grok.shell tests fix
+* (Bug) Octave: graphics won't work
+* DevOps documentation
+* Modified field length
+* Update the dialog design for developer keys
+* Help failed tests troubleshooting
+* (Bug) Bar chart: scroll the page when BC scrolls are invisible
+* H2O: Grok Helper URL prefix
+* (Bug) DataFrame.onCellValue event not fired when a value is deleted in a spreadsheet by pressing Del or Backspace
+* Viewer in accordion has zero height
+* Bar chart: pass information about is click was on the header
+* Bar Chart: maxBarHeight property
+* Bar Chart: verticalAlign property
+* (Bug) Bar Chart: initial render cuts category names
+* (Bug) JS API: Legend.create doesn't return an instance of DG.Legend class
+* Add CodeMirror to sources
+* Change release-history.md during release
+* Updated beta_users.csv
+* Bump elasticsearch from 6.4.2 to 7.16.2 Elasticsearch release to upgrade Apache Log4j2
+* JS-API: Packages test framework
+* Bar chart: add filtering by clicking a category label in the stacked BC
+* Bar chart: fixed bar border line
+* (Bug) JS API: "Legend.column =" causes an exception
+* JKG: Allow gnuplot run on different platforms
+* Fix docker build for datagrok
+* (Bug) Grid: virtual column of type bool renders as text
+* 9913 displaying scalar query outputparams
+* 9913 space by arrow
+* DataFrame: editable virtual columns
+* JS-API: Exposed DataFrame.fromByteArray and FileSource.readAsDataFrame methods
+* JS API: updated js-api-common files
+* (Bug) Pivot table icon is missing
+* JS API: readAsDataFrames renamed to readBinaryDataFrames
+* Bar chart: click not on the bar to clear the filter
+* PowerPack: added tests for widgets
+* ApiTests: added a test for package files
+* (Bug) Trellis Plot | Inner Viewer Settings throws an exception
+* ParamCommand: default item comands ("open" for project, "details" for users, etc). Support for double-click
+* Property panel: decreased the margin for nested accordions
+* (Bug) Grid: renderer type is not automatically changed when it is set via column.tags['cell-renderer']
+* Resolves #266: Chem: molecule column property panel
+* Dialogs: add missing wiki links
+* JS API: add Viewer.helpUrl parameter
+* Introduce Func.source constants
+* (Bug) grok.dapi.files.delete(): NoSuchMethodError
+* 9913 dataFame
+* API: added getting and saving event types
+* Updated demo/bio peptides data
+* Added ability to set code in ScriptView constructor
+* ViewFactories ScriptView construction enhancement
+* Move all demo assets to packages
+* (Bug)  JS-based file handlers are not invoked when you double-click on a file in file browser
+* # 277 Chem: Substructure filter: fixed collaborative filtering
+* # 277 Chem: Substructure filter: picking up current filter
+* (Bug) DAPI: Filter returns incorrect query
+* Fixed test
+* (Bug) Grid: column tools: filter: add: there should be no other filters in the filter group
+* Simplified the creation of the popup filter
+* # 277 Chem: Substructure filter: better integration for the filter group / popup filter / property panel filter
+* Formula Lines: Fixed typo
+* Update the beta users list
+* Fix a css rule
+* NPM repositories: package data caching
+* Amazon S3 Adapter: Anonymous access
+* Packages: Ability to store content in S3
+* Code cleanup and harmonization
+* Moved files to folders
+* Removed default handlers for Function and Script
+* JS API: GridCellRenderer: ability to render values (without GridCell / GridCellStyle)
+* Chem: Similarity & Diversity: switched to the renderMolecule() method
+* Add a grayed-out text color constant
 * DataQueries: Support scalar results in setResult method (WIP)
-* UI: Condensed form, units after labels 
-* added ScriptView.fromParams constructor 
-* Always create NPM repository 
-* JS API: Projects API 
-* Updated public token 
-* Remove redundant deployDataPath 
-* Enabled Chem | Descriptors 
-* Embedding viewer should embed Guest User session 
-* CI: Vulnerability scan 
-* (Bug) Filters: the panel is reset when it is closed and re-opened 
+* UI: Condensed form, units after labels
+* added ScriptView.fromParams constructor
+* Always create NPM repository
+* JS API: Projects API
+* Updated public token
+* Remove redundant deployDataPath
+* Enabled Chem | Descriptors
+* Embedding viewer should embed Guest User session
+* CI: Vulnerability scan
+* (Bug) Filters: the panel is reset when it is closed and re-opened
 * JS API: Get last error state (WIP)
-* (Bug) Histogram: Opacity for bands has no effect 
-* (Bug) Line Chart: Exception while activating multiAxis & overviewType at the same time 
-* (Bug) Line Chart: Previous renders of the chart are visible on the canvas 
-* (Bug) Line Chart: X axis overlays on lines when { overviewType: "Line Chart" } 
-* AppEvents.lastError: simplified the code and fixed a bug 
-* Updated package-locks. 
-* (Bug) Filters: show header property does not work 
+* (Bug) Histogram: Opacity for bands has no effect
+* (Bug) Line Chart: Exception while activating multiAxis & overviewType at the same time
+* (Bug) Line Chart: Previous renders of the chart are visible on the canvas
+* (Bug) Line Chart: X axis overlays on lines when { overviewType: "Line Chart" }
+* AppEvents.lastError: simplified the code and fixed a bug
+* Updated package-locks.
+* (Bug) Filters: show header property does not work
 * JS API: Filters: fine-grained API (WIP)
-* Filters: ability to specify filtering criteria during construction 
-* JS API: JS Filters: ability to provide custom caption 
-* JS API: Help & Example for ui.colorInput() 
-* (Bug) Line Chart: Selectors indents (when count = 2) 
-* (Bug) Scatter plot: Erroneous ticks when zooming out 
-* Fixed analyzer error 
-* JS API: Added additional useful FLines methods 
-* Usage analysis: add Function errors tab 
-* Chem: minor fixes 
-* Func.find: fixed a bug with metadata search 
-* Func.find: ability to search for the result type/semantic type 
-* Implemented #138: Chem: Text search for molecules in the sketcher 
-* Chem: refactoring 
-* JS API: Added ColumnList.getUnusedName() 
-* (Bug) FLines: Constant lines do not take min-max into account 
-* credential manager prototype 
-* 10269 secret manager prototype 
-* JnJ: monitoring resources: RAM, CPU, HDD 
-* Implemented #304: Chem: Sketcher: Add to favorites 
-* (Bug) Filters: free-text input: emptying the input box throws an error 
-* Tooltip: ability to show multiple tooltips at once 
-* Filters: Histograms: Tooltips while dragging 
-* Css style fix for the checkbox in filters 
-* JS API: add vertical RangeSlider 
-* (Bug) Accessing .type in onViewerAdded event breaks filter 
-* Canvas viewers: fixed fps calculation 
-* Scatter Plot: selected rows should be rendered on top 
+* Filters: ability to specify filtering criteria during construction
+* JS API: JS Filters: ability to provide custom caption
+* JS API: Help & Example for ui.colorInput()
+* (Bug) Line Chart: Selectors indents (when count = 2)
+* (Bug) Scatter plot: Erroneous ticks when zooming out
+* Fixed analyzer error
+* JS API: Added additional useful FLines methods
+* Usage analysis: add Function errors tab
+* Chem: minor fixes
+* Func.find: fixed a bug with metadata search
+* Func.find: ability to search for the result type/semantic type
+* Implemented #138: Chem: Text search for molecules in the sketcher
+* Chem: refactoring
+* JS API: Added ColumnList.getUnusedName()
+* (Bug) FLines: Constant lines do not take min-max into account
+* credential manager prototype
+* 10269 secret manager prototype
+* JnJ: monitoring resources: RAM, CPU, HDD
+* Implemented #304: Chem: Sketcher: Add to favorites
+* (Bug) Filters: free-text input: emptying the input box throws an error
+* Tooltip: ability to show multiple tooltips at once
+* Filters: Histograms: Tooltips while dragging
+* Css style fix for the checkbox in filters
+* JS API: add vertical RangeSlider
+* (Bug) Accessing .type in onViewerAdded event breaks filter
+* Canvas viewers: fixed fps calculation
+* Scatter Plot: selected rows should be rendered on top
 * Line Chart: logarithmic axes (WIP)
-* (Bug) Scatter Plot: area selector: null values are getting selected  
-* A quick way to move columns to the beginning/end of the spreadsheet 
-* Box Plot: support for log scale 
-* Chem: Filter won't appear 
-* Fixed analyzer warings 
-* Fixed wrong method 
-* (Bug) Demo files connection is missing 
-* Minor CSS fixes 
-* Fixed typo 
-* Upgrade H2O 
-* (Bug) Filters are not applied in some cases 
-* (Bug) Function View: Add to Workspace button won't work 
-* (Bug) Function View: Dataframes selection from a file is buggy 
-* (Bug) Function View: Dataframes selection from a file is buggy 
-* (Bug) Scatter Plot: column selectors should be enabled in the invalid state 
-* (Bug) Form: Structure in form viewer is not rendered after page reload 
-* (Bug) MoleculeInput: caption is not shown 
+* (Bug) Scatter Plot: area selector: null values are getting selected
+* A quick way to move columns to the beginning/end of the spreadsheet
+* Box Plot: support for log scale
+* Chem: Filter won't appear
+* Fixed analyzer warings
+* Fixed wrong method
+* (Bug) Demo files connection is missing
+* Minor CSS fixes
+* Fixed typo
+* Upgrade H2O
+* (Bug) Filters are not applied in some cases
+* (Bug) Function View: Add to Workspace button won't work
+* (Bug) Function View: Dataframes selection from a file is buggy
+* (Bug) Function View: Dataframes selection from a file is buggy
+* (Bug) Scatter Plot: column selectors should be enabled in the invalid state
+* (Bug) Form: Structure in form viewer is not rendered after page reload
+* (Bug) MoleculeInput: caption is not shown
 * JS API: Inputs: validation (WIP)
-* Public token 
-* Fixed grok_shared build 
-* (Bug) Filters: After reopening filters, all columns appear deactivated in the "Select columns" dialog 
-* (Bug) Filters: Filters for multi-value columns are not saved after reopening the Filters 
-* (Bug) Filters: ​double-click on checkbox: weird characters are visible 
-* (Bug) Scatter Plot: Custom linear coloring is not propagated 
-* NPM repositories: add an option to skip installation of deployed packages during repository publication 
-* Push version from package.json for master branch 
-* syft local image 
-* DockManager_Dock now attaches viewer to view 
-* Fixed #320: Filtering: 'Select columns' dialog for filter panel is showing currently selected columns incorrectly in some cases 
-* Fixed #319: Disabling/not disabling filtering behaviour on closing filter panel is inconsistent in some cases 
-* (Bug) JS API: incorrect constant in DG.DOCK_TYPE.TOP  
-* Fix datagro build 
-* Added Viewer_Remove_From_View function 
-* js-api-common update 
-* Scripting: Better handle missing output variables (R, Python) 
-* Package description: add markdown rendering  
-* JS API: Dialog.getOpenDialogs() 
-* JS API: Dialog.input(caption): InputBase 
-* JS API: Grid: ability to get cell back color 
-* (Bug) Color coding: the editing dialog shows the black color for categories which color is set via hex codes 
-* (Bug) Line Chart: rightmost line segment is not always drawn 
-* New demo dataset: dose-response 
-* New sample script: charts-in-cells 
-* GridColumnMeta 
-* (Bug) Chem: double-clicking on an empty structure does not open a sketcher 
-* (Bug) Grid: an exception when resizing the window 
-* Wiki: Doc on running Dart tests locally 
-* Test file fixed precision 
-* (Bug) Grid scrolls to first row after adding/deleting row 
-* Grid: ability to easily add rows to the end 
-* #323: MultiForm: WIP 
-* Fixed null exception 
-* (Bug) Parameter subquery is empty 
-* Harmonize viewer title 
+* Public token
+* Fixed grok_shared build
+* (Bug) Filters: After reopening filters, all columns appear deactivated in the "Select columns" dialog
+* (Bug) Filters: Filters for multi-value columns are not saved after reopening the Filters
+* (Bug) Filters: ​double-click on checkbox: weird characters are visible
+* (Bug) Scatter Plot: Custom linear coloring is not propagated
+* NPM repositories: add an option to skip installation of deployed packages during repository publication
+* Push version from package.json for master branch
+* syft local image
+* DockManager_Dock now attaches viewer to view
+* Fixed #320: Filtering: 'Select columns' dialog for filter panel is showing currently selected columns incorrectly in
+  some cases
+* Fixed #319: Disabling/not disabling filtering behaviour on closing filter panel is inconsistent in some cases
+* (Bug) JS API: incorrect constant in DG.DOCK_TYPE.TOP
+* Fix datagro build
+* Added Viewer_Remove_From_View function
+* js-api-common update
+* Scripting: Better handle missing output variables (R, Python)
+* Package description: add markdown rendering
+* JS API: Dialog.getOpenDialogs()
+* JS API: Dialog.input(caption): InputBase
+* JS API: Grid: ability to get cell back color
+* (Bug) Color coding: the editing dialog shows the black color for categories which color is set via hex codes
+* (Bug) Line Chart: rightmost line segment is not always drawn
+* New demo dataset: dose-response
+* New sample script: charts-in-cells
+* GridColumnMeta
+* (Bug) Chem: double-clicking on an empty structure does not open a sketcher
+* (Bug) Grid: an exception when resizing the window
+* Wiki: Doc on running Dart tests locally
+* Test file fixed precision
+* (Bug) Grid scrolls to first row after adding/deleting row
+* Grid: ability to easily add rows to the end
+* # 323: MultiForm: WIP
+* Fixed null exception
+* (Bug) Parameter subquery is empty
+* Harmonize viewer title
 * Property panel: "Distributions" pane (WIP)
-* Core: delete the service jobs before the repository deletion 
-* bug fixed fro smiles string in example 
-* Formula lines improvements 
-* Update repository jobs: change user permissions (WIP) 
-* Error status style update (WIP) 
-* (Bug) BoxPlot Y axis labels overlapping with axis column name 
+* Core: delete the service jobs before the repository deletion
+* bug fixed fro smiles string in example
+* Formula lines improvements
+* Update repository jobs: change user permissions (WIP)
+* Error status style update (WIP)
+* (Bug) BoxPlot Y axis labels overlapping with axis column name
 * Harmonize PackagesView (WIP)
-* Filters: header should stay on top when you scroll down 
-* (Bug) Input too large for RSA cipher exception during package deploy 
-* Avoid extra data copy 
-* update ref to head on public 
+* Filters: header should stay on top when you scroll down
+* (Bug) Input too large for RSA cipher exception during package deploy
+* Avoid extra data copy
+* update ref to head on public
 * Porting Ketcher reading molfile in React to package (WIP)
-* DB: migrate test and demo DB to docker 
-* VirtualItemView.refreshItem 
-* Docking Manager: improve auto-docking algorithm when the initial split is vertical 
-* Improved the description of the connection string in the "add connection" dialog. 
-* Security: WIP 
-* Docs: add local installation issue. 
-* (Bug) Color coding: missing values lose the reserved color when the rules for categorical color-coding are set 
-* Add details about this can be applied only for Debian-based systems. 
-* Added Neptune logo 
-* Docs: create documentation for CVM connection from Local Dart stand 
+* DB: migrate test and demo DB to docker
+* VirtualItemView.refreshItem
+* Docking Manager: improve auto-docking algorithm when the initial split is vertical
+* Improved the description of the connection string in the "add connection" dialog.
+* Security: WIP
+* Docs: add local installation issue.
+* (Bug) Color coding: missing values lose the reserved color when the rules for categorical color-coding are set
+* Add details about this can be applied only for Debian-based systems.
+* Added Neptune logo
+* Docs: create documentation for CVM connection from Local Dart stand
 * Strong mode static checking (WIP)
-* (Bug) Scripting: Reset variables before script run (Python, R) 
-* Fix analyser warnings 
-* (Bug) Renv creates environments directories with nested UUIDs 
-* (Bug) Several functions broken in calculated columns 
-* Checkbox styling improvement 
-* (Bug) Chem: moleculeInput won't set smiles 
-* Expose additional map data structure to save meta information along with project entity #331 
-* Add additional options to configure the view loading behaviour to project.open() method #332 
-* Viewers: ability to specify default axis type (linear / logarithmic) 
-* PC Plot: log scaling for Y axis 
-* Grid: spacebar to toggle row selection 
-* Made analysis options less strict. 
-* Scatter Plot: ability to invert axes 
-* Bar Chart: fixed an issue with the initial viewport position 
-* Expose id property for tableView entitity #328 
-* Core: update OpenChemLib 
-* (Bug) Exception on reading credentials for package 
-* Webstorm configs 
-* Ability to set Function as a default value 
-* WebStrom default configurations 
-* Viewers: legend: ability to reset"filter by category" 
-* (Bug) Newly created user failed to login 
-* Fixed #344: Miss configured in-visualisation filter kills the browser session 
-* Fixed the initial position of the filter 
-* Grid: Excel-style column resizing 
-* Grid: column rearrangement: fixed the "'offsetParent' was called on null" bug 
-* Grid: ability to reorder multiple columns at once 
-* Renamed images 
-* Implement '!=' and 'NOT IN' operators for matching rows 
-* Fixed #348: HTML cells \- selection & scrolling issues 
-* EacapeSequences: R 
-* Updated help 
-* Line Chart: "Invert X Axis" property 
-* Exposed grok.events.onResetFilterRequest 
-* Scatter Plot: highlight the category on axis on mouse-over 
+* (Bug) Scripting: Reset variables before script run (Python, R)
+* Fix analyser warnings
+* (Bug) Renv creates environments directories with nested UUIDs
+* (Bug) Several functions broken in calculated columns
+* Checkbox styling improvement
+* (Bug) Chem: moleculeInput won't set smiles
+* Expose additional map data structure to save meta information along with project entity #331
+* Add additional options to configure the view loading behaviour to project.open() method #332
+* Viewers: ability to specify default axis type (linear / logarithmic)
+* PC Plot: log scaling for Y axis
+* Grid: spacebar to toggle row selection
+* Made analysis options less strict.
+* Scatter Plot: ability to invert axes
+* Bar Chart: fixed an issue with the initial viewport position
+* Expose id property for tableView entitity #328
+* Core: update OpenChemLib
+* (Bug) Exception on reading credentials for package
+* Webstorm configs
+* Ability to set Function as a default value
+* WebStrom default configurations
+* Viewers: legend: ability to reset"filter by category"
+* (Bug) Newly created user failed to login
+* Fixed #344: Miss configured in-visualisation filter kills the browser session
+* Fixed the initial position of the filter
+* Grid: Excel-style column resizing
+* Grid: column rearrangement: fixed the "'offsetParent' was called on null" bug
+* Grid: ability to reorder multiple columns at once
+* Renamed images
+* Implement '!=' and 'NOT IN' operators for matching rows
+* Fixed #348: HTML cells \- selection & scrolling issues
+* EacapeSequences: R
+* Updated help
+* Line Chart: "Invert X Axis" property
+* Exposed grok.events.onResetFilterRequest
+* Scatter Plot: highlight the category on axis on mouse-over
 * Sharing file connection must share credentials (WIP)
-* Made debug configuration the default one 
-* Grid tooltip should be more discreet 
-* Add IN operator to AddNewColumn 
-* Box Plot: "inverse Y axis" property 
-* Ability to rename tab of docked viewer 
-* (Bug) applyLayout drops columns if table property set 
-* (Bug) Unable to switch scatterplot axis to logarithmic mode 
-* Chem: working with mol 
-* (Bug) AddNewColumn: Vectorization doesn't work 
-* Chem: hiding old realizations of similarity 
-* (Bug) Unable to delete project 
-* Grok Compute gunicorn workers 
-* PowerGrid: initial update 
-* Chem: hide fasr descriptors calculation 
-* Closes #372: JS API: expose CsvExportOptions 
-* Closes #350: Add option on toCsv() function to split QNum into two columns 
-* (Bug) Unable to call a function from AddNewColumn formula 
-* Missing table attribute in layout for "active table" #345 
-* DG.Utils.download(filename, content, contentType) 
-* Closes #369: Persisting tooltip form state 
-* Fixed #357: Free-text filter doesn't work for columns which names contain more than one word 
-* (Bug) Viewers: 'Edit Viewer Tooltip..." disregards the table a viewer is bound to 
-* Closes #374: Grid: rendering dataframe values as HTML # 
-* (Bug) toCsv() throws an exception 
-* User status interop 
-* (Bug) Filter indicator is hidden after restoring the layout 
-* Closes #340: Expose Grid renderers for DG native data types 
-* Closes #383: Items are unexpectedly filtered out after new rows were added 
-* (Bug) Query View: "Add results to workspace" button does not work 
-* Closes #385: Filters saved on older DG versions are not restored 
-* Fixed the type annotation 
-* Fixed the friendly name 
-* Closes #393: GridCellRenderer: ability to handle mouse input 
-* Closes #393: GridCellRenderer: ability to handle mouse input \- added onMouseLeave 
-* VPN access to dev resources 
-* Function View convert to TS WIP 
-* Closes #393: GridCellRenderer: ability to handle mouse input \- fixed onMouseLeave 
-* Closes #395: GridCellRenderer: ability to render HTML elements 
-* VPN with credentials 
-* Merged in kdoncov/grok_connect_vulnerability_fixes (pull request #163) 
-* Remove deploy folder 
-* Unable to set value to datetime column from JS 
-* #396: Chem: support SMARTS for db querying 
-* Elasticsearch config 
-* Chem: polishing 
-* Closes #401: Vertical Axis: incorrect label density for custom renderers (i.e., Molecules) 
-* Chem: bumped version up to 0.51 
-* LruCache<Key, Value>: added generic arguments and strongly-typed it 
-* Simplified code to avoid warnings 
-* Chem rendering: strongly-typed, simplified 
-* Chem: work in progress 
-* Fixed positions descriptions 
-* Elasticsearch commit 
-* Closes #423: Grid: JS-based sparklines 
-* Closes #422: PowerGrid: Sparklines: Sparklines 
-* Closes #435: ui.columnsInput: a way to specify a subset of columns to choose from 
-* Closes #436: Grid JS API: ability to add virtual column 
-* Added new functions: Utils.openFile and Utils.openFileBytes 
-* BinaryImageCellRenderer: work in progress 
-* Fixed #403: Scatter plot: wrong category name is shown on highlighting 
-* Fixed #404: Box plot: axis labels are not updated when axis is inverted or changed to log scale 
-* public 
-* Ability to get all packages tests 
-* Grid: better renderer isolation: an exception in the JS renderer should not affect the whole grid 
-* Logging: ability to report a given exception only once per session 
-* GridColumn: fixed serialization of JS-based settings 
-* Closes #442: PowerGrid: Sparklines: an option to normalize values 
-* Closes $443: PowerGrid: PercentCompleted cell renderer 
-* Allow minor builds in push_version script 
-* PGAdmin connect through SSH tunnel 
-* #424: Blocking option (graying it out) to switch to log scale for columns with negative values \- WIP 
-* Allow user to rename the viewers from the arranged tab #341 
-* ignore IDE files 
-* removed duplicate 
-* #424: Blocking option (graying it out) to switch to log scale for columns with negative values 
-* New method: ListUtils.move(list, from, to) 
-* Grid: manual row reordering 
-* Closes #455: Ability to define order of categories 
-* Grid: fixed an issue with the exception when row header is not visible 
-* Default value computing error handling 
-* Closes #464: ability to rearrange columns 
-* Closes #465: Column selectors: search field is invisible (above the screen) when the number of columns is big 
-* Grid: Order columns: ability to show/hide all selected columns at once 
-* Grid: Order or Hide: ability to reorder all selected columns at once 
-* #466: ComputationView \- work in progress 
-* Added banner 
-* (Bug) DataFrame: Column.init(...) does not increment dataframe version 
-* (Bug) Grid: html cells: rendered cells should be invalidated when table content changes 
-* #470: JS API: JS-based custom inputs \- work in progress 
-* Miss configured in-visualisation filter kills the browser session #344 
-* New VPN server 
-* Temporarily rolled back JsView.name-related changes 
-* Dataframe formula lines are not shown on scatter plot, if scatterplot's table was changed in properties panel #375 
-* (Bug) Saving Connection doesn't save credentials 
-* APP_DATA variable in package deploy 
-* (Bug) NPM repositories: package manager opens with an exception  
-* Add missing import statement 
-* Method to check current user permissions 
-* Fixed typing 
-* (Bug) Registry is undefined when a package repository update job is launched 
-* Added Alexander to the list of users. 
-* #480: Ordering categories: SMILES should be rendered as molecules 
-* JS-API: added notify parameter to BitSet.init 
-* Revert grok_server and connectors changes 
-* HttpDataSource -\- dapi.functions support 
-* Fixed wrong parameter name 
-* #466 Computation View \- Integration with FunctionView 
-* JS-API: exposed setBufferSilent method 
-* JS-API: setBuffer method 
-* Closes #488: Positioning of Grid cells in HTML rendering mode 
-* Menu capitalization fixes. 
-* Closes #489: Grid: "Current Column | Sort | Custom..." should open the "Order or Hide Columns" dialog 
-* bug: duplicated event firing 
-* Closes #490: Custom order of categories should be saved in the view layout 
-* Wrong data is shown in viewers using calculated column after calculated column's formula was updated #434 
-* bug: changing cell-double-click features 
-* (Bug) Wrong output of getCategoryIndex with caseSensitive = false 
-* Datlas: use reader/writer login in Datagrok system connection, if reader login isn't available 
-* (Bug) Previously deployed packages sometimes get deleted during repository publication 
-* Ability to use Func options for grouping  
-* JS: Ability to disable events in InputBase 
-* Exposed DG.Color.fromHtml method in JsApi 
-* JS-API: add a default parameter value for FileSource.list() 
-* (Bug) NPM repositories: missing proxy settings 
-* Closes #433: Data exported to csv is incorrect in 'sign' columns if there is more than one such column and there are some nulls 
-* Closes #526: [LineChart] \- axes do not scale to plotted points but to max values of plotted columns 
-* Closes #367: Persisting visualizations zoom when saving analysis \- proper handling of the "no action" zoom type 
-* Updated help links 
-* Closes #367: Persisting visualizations zoom when saving analysis 
-* Packages: skip the build step for packages that were published along with build outputs 
-* Fixed an issue with the barchart. 
-* Closes #530: Grid: do not include units in the column header 
-* Scatter Plot: Animated zoom to filter 
-* Ability to save new user without permissions 
-* Top Menu: change "mousedown" event to "click" for clicks on menu items 
-* (Bug) Package content validation: one-line functions get annotation warnings 
-* Closes #532: Show only filtered category items on legends 
-* #342: (Only) show filtered category items on scatterplot axes 
-* Caching Column.getUsedCategories for performance reasons 
-* JS: bySemTypeAll method 
+* Made debug configuration the default one
+* Grid tooltip should be more discreet
+* Add IN operator to AddNewColumn
+* Box Plot: "inverse Y axis" property
+* Ability to rename tab of docked viewer
+* (Bug) applyLayout drops columns if table property set
+* (Bug) Unable to switch scatterplot axis to logarithmic mode
+* Chem: working with mol
+* (Bug) AddNewColumn: Vectorization doesn't work
+* Chem: hiding old realizations of similarity
+* (Bug) Unable to delete project
+* Grok Compute gunicorn workers
+* PowerGrid: initial update
+* Chem: hide fasr descriptors calculation
+* Closes #372: JS API: expose CsvExportOptions
+* Closes #350: Add option on toCsv() function to split QNum into two columns
+* (Bug) Unable to call a function from AddNewColumn formula
+* Missing table attribute in layout for "active table" #345
+* DG.Utils.download(filename, content, contentType)
+* Closes #369: Persisting tooltip form state
+* Fixed #357: Free-text filter doesn't work for columns which names contain more than one word
+* (Bug) Viewers: 'Edit Viewer Tooltip..." disregards the table a viewer is bound to
+* Closes #374: Grid: rendering dataframe values as HTML #
+* (Bug) toCsv() throws an exception
+* User status interop
+* (Bug) Filter indicator is hidden after restoring the layout
+* Closes #340: Expose Grid renderers for DG native data types
+* Closes #383: Items are unexpectedly filtered out after new rows were added
+* (Bug) Query View: "Add results to workspace" button does not work
+* Closes #385: Filters saved on older DG versions are not restored
+* Fixed the type annotation
+* Fixed the friendly name
+* Closes #393: GridCellRenderer: ability to handle mouse input
+* Closes #393: GridCellRenderer: ability to handle mouse input \- added onMouseLeave
+* VPN access to dev resources
+* Function View convert to TS WIP
+* Closes #393: GridCellRenderer: ability to handle mouse input \- fixed onMouseLeave
+* Closes #395: GridCellRenderer: ability to render HTML elements
+* VPN with credentials
+* Merged in kdoncov/grok_connect_vulnerability_fixes (pull request #163)
+* Remove deploy folder
+* Unable to set value to datetime column from JS
+* # 396: Chem: support SMARTS for db querying
+* Elasticsearch config
+* Chem: polishing
+* Closes #401: Vertical Axis: incorrect label density for custom renderers (i.e., Molecules)
+* Chem: bumped version up to 0.51
+* `LruCache<Key, Value>`: added generic arguments and strongly-typed it
+* Simplified code to avoid warnings
+* Chem rendering: strongly-typed, simplified
+* Chem: work in progress
+* Fixed positions descriptions
+* Elasticsearch commit
+* Closes #423: Grid: JS-based sparklines
+* Closes #422: PowerGrid: Sparklines: Sparklines
+* Closes #435: ui.columnsInput: a way to specify a subset of columns to choose from
+* Closes #436: Grid JS API: ability to add virtual column
+* Added new functions: Utils.openFile and Utils.openFileBytes
+* BinaryImageCellRenderer: work in progress
+* Fixed #403: Scatter plot: wrong category name is shown on highlighting
+* Fixed #404: Box plot: axis labels are not updated when axis is inverted or changed to log scale
+* public
+* Ability to get all packages tests
+* Grid: better renderer isolation: an exception in the JS renderer should not affect the whole grid
+* Logging: ability to report a given exception only once per session
+* GridColumn: fixed serialization of JS-based settings
+* Closes #442: PowerGrid: Sparklines: an option to normalize values
+* Closes $443: PowerGrid: PercentCompleted cell renderer
+* Allow minor builds in push_version script
+* PGAdmin connect through SSH tunnel
+* # 424: Blocking option (graying it out) to switch to log scale for columns with negative values \- WIP
+* Allow user to rename the viewers from the arranged tab #341
+* ignore IDE files
+* removed duplicate
+* # 424: Blocking option (graying it out) to switch to log scale for columns with negative values
+* New method: ListUtils.move(list, from, to)
+* Grid: manual row reordering
+* Closes #455: Ability to define order of categories
+* Grid: fixed an issue with the exception when row header is not visible
+* Default value computing error handling
+* Closes #464: ability to rearrange columns
+* Closes #465: Column selectors: search field is invisible (above the screen) when the number of columns is big
+* Grid: Order columns: ability to show/hide all selected columns at once
+* Grid: Order or Hide: ability to reorder all selected columns at once
+* # 466: ComputationView \- work in progress
+* Added banner
+* (Bug) DataFrame: Column.init(...) does not increment dataframe version
+* (Bug) Grid: html cells: rendered cells should be invalidated when table content changes
+* # 470: JS API: JS-based custom inputs \- work in progress
+* Miss configured in-visualisation filter kills the browser session #344
+* New VPN server
+* Temporarily rolled back JsView.name-related changes
+* Dataframe formula lines are not shown on scatter plot, if scatterplot's table was changed in properties panel #375
+* (Bug) Saving Connection doesn't save credentials
+* APP_DATA variable in package deploy
+* (Bug) NPM repositories: package manager opens with an exception
+* Add missing import statement
+* Method to check current user permissions
+* Fixed typing
+* (Bug) Registry is undefined when a package repository update job is launched
+* Added Alexander to the list of users.
+* # 480: Ordering categories: SMILES should be rendered as molecules
+* JS-API: added notify parameter to BitSet.init
+* Revert grok_server and connectors changes
+* HttpDataSource -\- dapi.functions support
+* Fixed wrong parameter name
+* # 466 Computation View \- Integration with FunctionView
+* JS-API: exposed setBufferSilent method
+* JS-API: setBuffer method
+* Closes #488: Positioning of Grid cells in HTML rendering mode
+* Menu capitalization fixes.
+* Closes #489: Grid: "Current Column | Sort | Custom..." should open the "Order or Hide Columns" dialog
+* bug: duplicated event firing
+* Closes #490: Custom order of categories should be saved in the view layout
+* Wrong data is shown in viewers using calculated column after calculated column's formula was updated #434
+* bug: changing cell-double-click features
+* (Bug) Wrong output of getCategoryIndex with caseSensitive = false
+* Datlas: use reader/writer login in Datagrok system connection, if reader login isn't available
+* (Bug) Previously deployed packages sometimes get deleted during repository publication
+* Ability to use Func options for grouping
+* JS: Ability to disable events in InputBase
+* Exposed DG.Color.fromHtml method in JsApi
+* JS-API: add a default parameter value for FileSource.list()
+* (Bug) NPM repositories: missing proxy settings
+* Closes #433: Data exported to csv is incorrect in 'sign' columns if there is more than one such column and there are
+  some nulls
+* Closes #526: [LineChart] \- axes do not scale to plotted points but to max values of plotted columns
+* Closes #367: Persisting visualizations zoom when saving analysis \- proper handling of the "no action" zoom type
+* Updated help links
+* Closes #367: Persisting visualizations zoom when saving analysis
+* Packages: skip the build step for packages that were published along with build outputs
+* Fixed an issue with the barchart.
+* Closes #530: Grid: do not include units in the column header
+* Scatter Plot: Animated zoom to filter
+* Ability to save new user without permissions
+* Top Menu: change "mousedown" event to "click" for clicks on menu items
+* (Bug) Package content validation: one-line functions get annotation warnings
+* Closes #532: Show only filtered category items on legends
+* # 342: (Only) show filtered category items on scatterplot axes
+* Caching Column.getUsedCategories for performance reasons
+* JS: bySemTypeAll method
 * DataSourceCardView categories (WIP)
-* setup for connect refined 
-* Sketching: size up 
-* (Bug) Can't set and get ViewBase URL 
-* Chem: sketching issues with substructure search 
-* (Bug) Color coding: Selected palette in "Colors" panel differs from the actual colors 
-* (Bug) Modal window positioning bugs 
-* (Bug) Color Coding: Color does not change for boolean columns 
-* Closes #547: Chem: SubstructureFilter: substructure is not saved properly 
-* Update the linear color-coding section 
-* Add .item to grid context menu args 
-* Added Widget.isDetached property 
-* Closes #524: Filters: highlighting stays after you close the filter group 
-* Chem: substrucure search queries fixed 
-* Molecule input: code cleanup 
-* JS API: additional options for Menu.items 
-* Documentation \- WIP 
+* setup for connect refined
+* Sketching: size up
+* (Bug) Can't set and get ViewBase URL
+* Chem: sketching issues with substructure search
+* (Bug) Color coding: Selected palette in "Colors" panel differs from the actual colors
+* (Bug) Modal window positioning bugs
+* (Bug) Color Coding: Color does not change for boolean columns
+* Closes #547: Chem: SubstructureFilter: substructure is not saved properly
+* Update the linear color-coding section
+* Add .item to grid context menu args
+* Added Widget.isDetached property
+* Closes #524: Filters: highlighting stays after you close the filter group
+* Chem: substrucure search queries fixed
+* Molecule input: code cleanup
+* JS API: additional options for Menu.items
+* Documentation \- WIP
 * Zeno integration (WIP)
-* (Bug) Grid: ctrl+click no longer inverts selection 
-* (Bug) Error when closing a view 
-* ScatterPlot: made the "viewport" property hidden 
+* (Bug) Grid: ctrl+click no longer inverts selection
+* (Bug) Error when closing a view
+* ScatterPlot: made the "viewport" property hidden
 * Functions: dateTimeFromUnixTimestamp (WIP)
-* Closes #367: Persisting visualizations zoom when saving analysis Closes #552: Zoom Sliders get reset on the Scatter Plot (Zoom And Filter: no action, Axes Follow Filter: false) on opening the filter panel with some filtering applied 
-* Color-coding: add a check for the currently used color-coding type to the column context menu 
-* git-secret for credentials 
-* git-secret documentation 
-* git-secret 
-* (Bug) Fix Demo deploy 
-* GitHub #566: CsvImportOptions 
-* (Bug) Packages: missing version check during package upload 
-* (Bug) JS API: JS-based viewers that are instantiated directly are not linked to the Dart viewer 
-* Closes #545: Including columns headers when copying data from the table (ctrl + c / cmd +c ) 
-* ddt folder 
-* restore lines 
-* Closes #546: [ScatterPlot] \- the config panel is being closed when trying to change some values in dropdowns 
-* Closes #507: [Filter panel \- Structures] Turning on / off doesn't work for structure columns in the filter panel 
-* [Formula Lines] Columns with parentheses in its names used in Bands' formulas breaks Formula Lines rendering #542 
-* HierarchyView: minor UI improvements 
-* PowerGrid help \- WIP 
-* Datagrok build context 
-* (Bug) Color Coding: After enabling Conditional for numeric column, the colors are displayed as Linear 
-* Closes #588: DataFrame: strongly-typed columns #588 
-* Closes #589: Strongly-typed InputBase.value 
-* Share git secret to aparamonov 
-* #594: the 'Features' dialog in the predictive modeling view shows incorrect count of checked columns when opened for the second time 
-* TreeView harmonization 
-* (Bug) Connections deploy doesn't deploy connection credentials 
-* Folder content preview wiki: fixed the title 
-* FilterGroup.add: fixed the signature. 
-* Added shell.tv: TableView 
-* Grok connect: test numeric types 
-* Datlas split to libraries (WIP) 
-* Closes #527: Grid options don't return default values 
+* Closes #367: Persisting visualizations zoom when saving analysis Closes #552: Zoom Sliders get reset on the Scatter
+  Plot (Zoom And Filter: no action, Axes Follow Filter: false) on opening the filter panel with some filtering applied
+* Color-coding: add a check for the currently used color-coding type to the column context menu
+* git-secret for credentials
+* git-secret documentation
+* git-secret
+* (Bug) Fix Demo deploy
+* GitHub #566: CsvImportOptions
+* (Bug) Packages: missing version check during package upload
+* (Bug) JS API: JS-based viewers that are instantiated directly are not linked to the Dart viewer
+* Closes #545: Including columns headers when copying data from the table (ctrl + c / cmd +c )
+* ddt folder
+* restore lines
+* Closes #546: [ScatterPlot] \- the config panel is being closed when trying to change some values in dropdowns
+* Closes #507: [Filter panel \- Structures] Turning on / off doesn't work for structure columns in the filter panel
+* [Formula Lines] Columns with parentheses in its names used in Bands' formulas breaks Formula Lines rendering #542
+* HierarchyView: minor UI improvements
+* PowerGrid help \- WIP
+* Datagrok build context
+* (Bug) Color Coding: After enabling Conditional for numeric column, the colors are displayed as Linear
+* Closes #588: DataFrame: strongly-typed columns #588
+* Closes #589: Strongly-typed InputBase.value
+* Share git secret to aparamonov
+* # 594: the 'Features' dialog in the predictive modeling view shows incorrect count of checked columns when opened for the second time
+* TreeView harmonization
+* (Bug) Connections deploy doesn't deploy connection credentials
+* Folder content preview wiki: fixed the title
+* FilterGroup.add: fixed the signature.
+* Added shell.tv: TableView
+* Grok connect: test numeric types
+* Datlas split to libraries (WIP)
+* Closes #527: Grid options don't return default values
 * Viewers: Transformations (WIP)
-* JS API: fix type annotation for DataFrame.getSortedOrder 
+* JS API: fix type annotation for DataFrame.getSortedOrder
 * Meta-package in NPM (WIP)
-* JS API: better typing \- WIP 
-* Package guidelines (WIP) 
-* JS API: GridColumn.renderer 
-* Sparklines: renamed "Normalize" to "Global Scale" 
-* #612: Compute: Add "open" option for DataFrameInput 
-
+* JS API: better typing \- WIP
+* Package guidelines (WIP)
+* JS API: GridColumn.renderer
+* Sparklines: renamed "Normalize" to "Global Scale"
+* # 612: Compute: Add "open" option for DataFrameInput
 
 # 2022-05-18 Dev build 0.151.7
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.151.7`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.151.7`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* (Bug) Color Coding: After enabling Conditional for numeric column, the colors are displayed as Linear 
-* Share git secret to aparamonov 
-* #594: the 'Features' dialog in the predictive modeling view shows incorrect count of checked columns when opened for the second time 
-* TreeView harmonization 
-* (Bug) Connections deploy doesn't deploy connection credentials 
-* Folder content preview wiki: fixed the title 
-* FilterGroup.add: fixed the signature. 
-* Added shell.tv: TableView 
-* Grok connect: test numeric types 
-* Datlas split to libraries (WIP) 
-* Chem: fix the issue with duplicated function name 
-* Chem: sketcher bug fix 
+* (Bug) Color Coding: After enabling Conditional for numeric column, the colors are displayed as Linear
+* Share git secret to aparamonov
+* # 594: the 'Features' dialog in the predictive modeling view shows incorrect count of checked columns when opened for the second time
+* TreeView harmonization
+* (Bug) Connections deploy doesn't deploy connection credentials
+* Folder content preview wiki: fixed the title
+* FilterGroup.add: fixed the signature.
+* Added shell.tv: TableView
+* Grok connect: test numeric types
+* Datlas split to libraries (WIP)
+* Chem: fix the issue with duplicated function name
+* Chem: sketcher bug fix
 * JS API Tests: Functions: tests for all built-in arithmetic/logical/date functions (WIP)
 * JS API Tests: connections: create, edit, delete, share (WIP)
 * JBIO: Labels 'Heavy' and 'Light' on Logo rows (WIP)
-* Usage analysis: apps/UsageAnalysis/Data URL not working 
-* Usage analysis: can't reopen the app after closing all views 
-* #607: setting table name upon retrievial 
-* #607: top-menu and toolbox link to Alation app 
-* Alation ESLint fixes 
-* PowerGrid: improved help on embedded images 
-* Demo script: adding a specified filter to the already existing filter groupaa 
-
+* Usage analysis: apps/UsageAnalysis/Data URL not working
+* Usage analysis: can't reopen the app after closing all views
+* # 607: setting table name upon retrievial
+* # 607: top-menu and toolbox link to Alation app
+* Alation ESLint fixes
+* PowerGrid: improved help on embedded images
+* Demo script: adding a specified filter to the already existing filter groupaa
 
 # 2022-05-15 Dev build 0.151.6
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.151.6`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.151.6`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
 * Wiki: PowerGrid: Sparklines (WIP)
-* DevTools: added test manager to readme.md 
-* Chem: activity cliffs tooltip in progress 
-* Chem: selected sketcher check 
-* Peptides: barchart unselect fix 
-* Peptides #587: substitution table fix 
-* Fix doc: comments to Rect class methods 
-* Chem: tests.md update 
-* bio WebLogo startPosition endPosition attributes and positionNames column tag 
-* ST: notation modified 
-* Closes #588: DataFrame: strongly-typed columns #588 
-* Closes #589: Strongly-typed InputBase.value 
-* Fix bio WebLogo startPosition endPosition options and positionNames tag 
-* Fix bio WebLogo startPosition endPosition options and positionNames tag for JSViewer.dataFrame attribute type 
-* Model Catalog improvements 
-
+* DevTools: added test manager to readme.md
+* Chem: activity cliffs tooltip in progress
+* Chem: selected sketcher check
+* Peptides: barchart unselect fix
+* Peptides #587: substitution table fix
+* Fix doc: comments to Rect class methods
+* Chem: tests.md update
+* bio WebLogo startPosition endPosition attributes and positionNames column tag
+* ST: notation modified
+* Closes #588: DataFrame: strongly-typed columns #588
+* Closes #589: Strongly-typed InputBase.value
+* Fix bio WebLogo startPosition endPosition options and positionNames tag
+* Fix bio WebLogo startPosition endPosition options and positionNames tag for JSViewer.dataFrame attribute type
+* Model Catalog improvements
 
 # 2022-05-13 Dev build 0.151.5
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.151.5`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.151.5`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Closes #545: Including columns headers when copying data from the table (ctrl + c / cmd +c ) 
-* ddt folder 
-* restore lines 
-* Closes #546: [ScatterPlot] \- the config panel is being closed when trying to change some values in dropdowns 
-* Closes #465: Column selectors: search field is invisible (above the screen) when the number of columns is big 
-* Closes #507: [Filter panel \- Structures] Turning on / off doesn't work for structure columns in the filter panel 
-* [Formula Lines] Columns with parentheses in its names used in Bands' formulas breaks Formula Lines rendering #542 
+* Closes #545: Including columns headers when copying data from the table (ctrl + c / cmd +c )
+* ddt folder
+* restore lines
+* Closes #546: [ScatterPlot] \- the config panel is being closed when trying to change some values in dropdowns
+* Closes #465: Column selectors: search field is invisible (above the screen) when the number of columns is big
+* Closes #507: [Filter panel \- Structures] Turning on / off doesn't work for structure columns in the filter panel
+* [Formula Lines] Columns with parentheses in its names used in Bands' formulas breaks Formula Lines rendering #542
 * DataSourceCardView categories (WIP)
-* Bio: fix the build errors 
-* Multiplot: fix the build errors 
-* Model Catalog improvements 
-* #466 Computation View \- simple structure 
-* HierarchyView: minor UI improvements 
-* Fixes #550, #560, #536: various fixes and improvements 
-* Chem: sketcher selection 
-* column+snippet 
-* PowerGrid help \- WIP 
-* JS API: Document function roles 
+* Bio: fix the build errors
+* Multiplot: fix the build errors
+* Model Catalog improvements
+* # 466 Computation View \- simple structure
+* HierarchyView: minor UI improvements
+* Fixes #550, #560, #536: various fixes and improvements
+* Chem: sketcher selection
+* column+snippet
+* PowerGrid help \- WIP
+* JS API: Document function roles
 * Zeno integration (WIP)
-* Datagrok build context 
-* Grok Connect build image 
-
+* Datagrok build context
+* Grok Connect build image
 
 # 2022-05-10 Dev build 0.151.4
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.151.4`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.151.4`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* (Bug) Fix Demo deploy 
-* #566: CsvImportOptions extension and ColumnInfo type 
-* GitHub #566: CsvImportOptions 
-* (Bug) Oligo Batch Calculator: not valid sequences with additional modifications 
-* (Bug) Packages: missing version check during package upload 
-* Peptides: Get Peptides Structure panel 
-* Initial commit introducing Pinned Columns feature 
-* Add codeMirror to devTools 
-* (Bug) JS API: JS-based viewers that are instantiated directly are not linked to the Dart viewer 
-* Public token 
-
+* (Bug) Fix Demo deploy
+* # 566: CsvImportOptions extension and ColumnInfo type
+* GitHub #566: CsvImportOptions
+* (Bug) Oligo Batch Calculator: not valid sequences with additional modifications
+* (Bug) Packages: missing version check during package upload
+* Peptides: Get Peptides Structure panel
+* Initial commit introducing Pinned Columns feature
+* Add codeMirror to devTools
+* (Bug) JS API: JS-based viewers that are instantiated directly are not linked to the Dart viewer
+* Public token
 
 # 2022-05-09 Dev build 0.151.3
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.151.3`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.151.3`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
 * DataSourceCardView categories (WIP)
-* Update Chem package-lock.json [skip-ci] 
-* Peptides: bump vesion of libraries/ml 
-* Chem: passing parameters to SPE, bumb versions of Chem, libraries/ml 
-* libraries/ml: ability to pass parameters to dimensionality reducing algorithms, bump version 
-
+* Update Chem package-lock.json [skip-ci]
+* Peptides: bump vesion of libraries/ml
+* Chem: passing parameters to SPE, bumb versions of Chem, libraries/ml
+* libraries/ml: ability to pass parameters to dimensionality reducing algorithms, bump version
 
 # 2022-05-06 Dev build 0.151.2
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.151.2`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.151.2`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Color-coding: add a check for the currently used color-coding type to the column context menu 
-* git-secret for credentials 
-* git-secret documentation 
-* Fix links in Help documentation 
-* git-secret 
-* Connection queries for Demo package 
+* Color-coding: add a check for the currently used color-coding type to the column context menu
+* git-secret for credentials
+* git-secret documentation
+* Fix links in Help documentation
+* git-secret
+* Connection queries for Demo package
 * DataSourceCardView categories (WIP)
-
 
 # 2022-05-06 Dev build 0.151.1
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.151.1`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.151.1`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Update the linear color-coding section 
-* Add .item to grid context menu args 
-* Added Widget.isDetached property 
-* Closes #524: Filters: highlighting stays after you close the filter group 
-* Chem: substrucure search queries fixed 
-* Molecule input: code cleanup 
-* \- update DG to RDKit_minimal_2022.03_1 \- add support for chemical reaction drawing \- add support for additional FPs 
-* (Bug) Color Coding: Color does not change for boolean columns 
-* Closes #556: added expectObject and expectArray functions 
-* Single WebLogo class for multiple alignments and palettes to bio 
-* JS API: additional options for Menu.items 
-* Documentation \- WIP 
-* #558 Chem: Contributors guide 
-* #558 Chem: Contributors guide. wip 
+* Update the linear color-coding section
+* Add .item to grid context menu args
+* Added Widget.isDetached property
+* Closes #524: Filters: highlighting stays after you close the filter group
+* Chem: substrucure search queries fixed
+* Molecule input: code cleanup
+* \- update DG to RDKit_minimal_2022.03_1 \- add support for chemical reaction drawing \- add support for additional FPs
+* (Bug) Color Coding: Color does not change for boolean columns
+* Closes #556: added expectObject and expectArray functions
+* Single WebLogo class for multiple alignments and palettes to bio
+* JS API: additional options for Menu.items
+* Documentation \- WIP
+* # 558 Chem: Contributors guide
+* # 558 Chem: Contributors guide. wip
 * Zeno integration (WIP)
-* (Bug) Grid: ctrl+click no longer inverts selection 
+* (Bug) Grid: ctrl+click no longer inverts selection
 * DataSourceCardView categories (WIP)
-* (Bug) Error when closing a view 
-* make sure the molecule has coordinates before calling normalize_depiction() and straighten_depiction() 
-* ScatterPlot: made the "viewport" property hidden 
+* (Bug) Error when closing a view
+* make sure the molecule has coordinates before calling normalize_depiction() and straighten_depiction()
+* ScatterPlot: made the "viewport" property hidden
 * Functions: dateTimeFromUnixTimestamp (WIP)
-* Closes #367: Persisting visualizations zoom when saving analysis Closes #552: Zoom Sliders get reset on the Scatter Plot (Zoom And Filter: no action, Axes Follow Filter: false) on opening the filter panel with some filtering applied 
-
+* Closes #367: Persisting visualizations zoom when saving analysis Closes #552: Zoom Sliders get reset on the Scatter
+  Plot (Zoom And Filter: no action, Axes Follow Filter: false) on opening the filter panel with some filtering applied
 
 # 2022-05-03 Dev build 0.150.5
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.150.5`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.150.5`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Chem: sketching issues with substructure search 
+* Chem: sketching issues with substructure search
 * DataSourceCardView categories (WIP)
-* (Bug) Color coding: Selected palette in "Colors" panel differs from the actual colors 
-* (Bug) Modal window positioning bugs 
+* (Bug) Color coding: Selected palette in "Colors" panel differs from the actual colors
+* (Bug) Modal window positioning bugs
 * (Bug) Color Coding: Color does not change for boolean columns (WIP)
-* Chem: minor fixes 
-* Chem: converter smiles -> mol for marvin input 
-* Fixes #519: chem widgets test fix 
-* #524 Chem Filters: highlighting stays after you close the filter group. wip \* The re-opening of the filter gives some flicker \* Needs to manage the filter state idiomatically, not with chem-scaffold-filter-prev 
-* Closes #547: Chem: SubstructureFilter: substructure is not saved properly 
-
+* Chem: minor fixes
+* Chem: converter smiles -> mol for marvin input
+* Fixes #519: chem widgets test fix
+* # 524 Chem Filters: highlighting stays after you close the filter group. wip \* The re-opening of the filter gives some flicker \* Needs to manage the filter state idiomatically, not with chem-scaffold-filter-prev
+* Closes #547: Chem: SubstructureFilter: substructure is not saved properly
 
 # 2022-04-29 Dev build 0.150.4
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.150.4`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.150.4`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Top Menu: change "mousedown" event to "click" for clicks on menu items 
-* (Bug) Package content validation: one-line functions get annotation warnings 
-* Closes #532: Show only filtered category items on legends 
-* #342: (Only) show filtered category items on scatterplot axes 
-* Scatter Plot: Animated zoom to filter 
-* Caching Column.getUsedCategories for performance reasons 
-* JS: bySemTypeAll method 
+* Top Menu: change "mousedown" event to "click" for clicks on menu items
+* (Bug) Package content validation: one-line functions get annotation warnings
+* Closes #532: Show only filtered category items on legends
+* # 342: (Only) show filtered category items on scatterplot axes
+* Scatter Plot: Animated zoom to filter
+* Caching Column.getUsedCategories for performance reasons
+* JS: bySemTypeAll method
 * DataSourceCardView categories (WIP)
-* setup for connect refined 
-* Sketching: size up 
-* (Bug) Can't set and get ViewBase URL 
-* Packages build and test documentation 
-* Fixed analyzer warnings 
-
+* setup for connect refined
+* Sketching: size up
+* (Bug) Can't set and get ViewBase URL
+* Packages build and test documentation
+* Fixed analyzer warnings
 
 # 2022-04-29 Dev build 0.150.3
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.150.3`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.150.3`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Top Menu: change "mousedown" event to "click" for clicks on menu items 
-* (Bug) Package content validation: one-line functions get annotation warnings 
-* Closes #532: Show only filtered category items on legends 
-* #342: (Only) show filtered category items on scatterplot axes 
-* Scatter Plot: Animated zoom to filter 
-* Caching Column.getUsedCategories for performance reasons 
-* JS: bySemTypeAll method 
+* Top Menu: change "mousedown" event to "click" for clicks on menu items
+* (Bug) Package content validation: one-line functions get annotation warnings
+* Closes #532: Show only filtered category items on legends
+* # 342: (Only) show filtered category items on scatterplot axes
+* Scatter Plot: Animated zoom to filter
+* Caching Column.getUsedCategories for performance reasons
+* JS: bySemTypeAll method
 * DataSourceCardView categories (WIP)
-* setup for connect refined 
-* Sketching: size up 
-* Chem: saving recent molecules in sketcher 
-* JS API: saving recent molecules in sketcher 
-
+* setup for connect refined
+* Sketching: size up
+* Chem: saving recent molecules in sketcher
+* JS API: saving recent molecules in sketcher
 
 # 2022-04-27 Dev build 0.150.2
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.150.2`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.150.2`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Scatter Plot: Animated zoom to filter 
-* Ability to save new user without permissions 
-
+* Scatter Plot: Animated zoom to filter
+* Ability to save new user without permissions
 
 # 2022-04-26 Dev build 0.150.1
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.150.1`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.150.1`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Packages: skip the build step for packages that were published along with build outputs 
-* #501 Wiki: package files (AppData) 
-* Chem: added column picker to similarity search, refactoring 
-* Fixed an issue with the barchart. 
-* Closes #530: Grid: do not include units in the column header 
-
+* Packages: skip the build step for packages that were published along with build outputs
+* # 501 Wiki: package files (AppData)
+* Chem: added column picker to similarity search, refactoring
+* Fixed an issue with the barchart.
+* Closes #530: Grid: do not include units in the column header
 
 # 2022-04-26 Dev build 0.150.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.150.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.150.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
 * JS: Ability to disable events in InputBase (WIP)
-* Exposed DG.Color.fromHtml method in JsApi 
-* JS-API: add a default parameter value for FileSource.list() 
+* Exposed DG.Color.fromHtml method in JsApi
+* JS-API: add a default parameter value for FileSource.list()
 * (Bug) NPM repositories: missing proxy settings (WIP)
-* Closes #433: Data exported to csv is incorrect in 'sign' columns if there is more than one such column and there are some nulls 
-* DevTools: minor version bump 
-* Closes #526: [LineChart] \- axes do not scale to plotted points but to max values of plotted columns 
-* Closes #367: Persisting visualizations zoom when saving analysis \- proper handling of the "no action" zoom type 
-* Code cleanup 
+* Closes #433: Data exported to csv is incorrect in 'sign' columns if there is more than one such column and there are
+  some nulls
+* DevTools: minor version bump
+* Closes #526: [LineChart] \- axes do not scale to plotted points but to max values of plotted columns
+* Closes #367: Persisting visualizations zoom when saving analysis \- proper handling of the "no action" zoom type
+* Code cleanup
 * Wiki: an article about routing (WIP)
-* Updated help links 
-* Closes #367: Persisting visualizations zoom when saving analysis 
-* #466 Computation View \- splitting on components and services 
-* Peptides version bump 
-
+* Updated help links
+* Closes #367: Persisting visualizations zoom when saving analysis
+* # 466 Computation View \- splitting on components and services
+* Peptides version bump
 
 # 2022-04-21 Dev build 0.148.6
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.148.6`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.148.6`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* JS-API: setBuffer method 
-* Closes #488: Positioning of Grid cells in HTML rendering mode 
-* Menu capitalization fixes. 
-* Closes #489: Grid: "Current Column | Sort | Custom..." should open the "Order or Hide Columns" dialog 
-* bug: duplicated event firing 
-* Closes #490: Custom order of categories should be saved in the view layout 
-* Wrong data is shown in viewers using calculated column after calculated column's formula was updated #434 
-* Allow user to rename the viewers from the arranged tab #341 
-* bug: changing cell-double-click features 
-* (Bug) Wrong output of getCategoryIndex with caseSensitive = false 
-* Updated public token 
-* Datlas: use reader/writer login in Datagrok system connection, if reader login isn't available 
+* JS-API: setBuffer method
+* Closes #488: Positioning of Grid cells in HTML rendering mode
+* Menu capitalization fixes.
+* Closes #489: Grid: "Current Column | Sort | Custom..." should open the "Order or Hide Columns" dialog
+* bug: duplicated event firing
+* Closes #490: Custom order of categories should be saved in the view layout
+* Wrong data is shown in viewers using calculated column after calculated column's formula was updated #434
+* Allow user to rename the viewers from the arranged tab #341
+* bug: changing cell-double-click features
+* (Bug) Wrong output of getCategoryIndex with caseSensitive = false
+* Updated public token
+* Datlas: use reader/writer login in Datagrok system connection, if reader login isn't available
 * (Bug) Previously deployed packages sometimes get deleted during repository publication (WIP)
-* Ability to use Func options for grouping  
-
+* Ability to use Func options for grouping
 
 # 2022-04-18 Dev build 0.148.4
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.148.4`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.148.4`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* #466 Computation View \- Integration with FunctionView 
-* #466 Computation View \- Added super calls 
-* Oligo Batch Calculator: convert modifications from overhang to additional 
-* Clinical Case: global filters in progress 
-* Chem: similarity/diversity search tests 
-* API tests: moved test manager to DevTools 
-* JS-API: exposed setBufferSilent method 
-
+* # 466 Computation View \- Integration with FunctionView
+* # 466 Computation View \- Added super calls
+* Oligo Batch Calculator: convert modifications from overhang to additional
+* Clinical Case: global filters in progress
+* Chem: similarity/diversity search tests
+* API tests: moved test manager to DevTools
+* JS-API: exposed setBufferSilent method
 
 # 2022-04-18 Dev build 0.148.3
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.148.3`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.148.3`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Dialogs: add missing wiki links 
-* (Bug) Saving Connection doesn't save credentials 
-* APP_DATA variable in package deploy 
-* (Bug) NPM repositories: package manager opens with an exception  
-* Add missing import statement 
-* Method to check current user permissions 
-* Fixed typing 
+* Dialogs: add missing wiki links
+* (Bug) Saving Connection doesn't save credentials
+* APP_DATA variable in package deploy
+* (Bug) NPM repositories: package manager opens with an exception
+* Add missing import statement
+* Method to check current user permissions
+* Fixed typing
 * (Bug) Registry is undefined when a package repository update job is launched (WIP)
-* Added Alexander to the list of users. 
-* #480: Ordering categories: SMILES should be rendered as molecules 
-* JS-API: added notify parameter for BitSet.init 
-* JS-API: BitSet anyTrue & anyFalse methods fix 
-* JS-API: added notify parameter to BitSet.init 
-* Revert grok_server and connectors changes 
-* HttpDataSource -\- dapi.functions support 
-* Retired the obsolete SDTM package. All hail ClinicalCase! 
-* Fixed wrong parameter name 
-
+* Added Alexander to the list of users.
+* # 480: Ordering categories: SMILES should be rendered as molecules
+* JS-API: added notify parameter for BitSet.init
+* JS-API: BitSet anyTrue & anyFalse methods fix
+* JS-API: added notify parameter to BitSet.init
+* Revert grok_server and connectors changes
+* HttpDataSource -\- dapi.functions support
+* Retired the obsolete SDTM package. All hail ClinicalCase!
+* Fixed wrong parameter name
 
 # 2022-04-14 Dev build 0.148.2
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.148.2`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.148.2`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Dialogs: add missing wiki links 
+* Dialogs: add missing wiki links
 * Oligo Batch Calculator: convert modifications from overhang to additional (WIP)
-* Chem: high definition rendering 
-* (Bug) Saving Connection doesn't save credentials 
-* APP_DATA variable in package deploy 
-* Chem: small fixes 
-* Chem: widget test annotation 
+* Chem: high definition rendering
+* (Bug) Saving Connection doesn't save credentials
+* APP_DATA variable in package deploy
+* Chem: small fixes
+* Chem: widget test annotation
 * (Bug) NPM repositories: package manager opens with an exception  (WIP)
-* Add missing import statement 
-
+* Add missing import statement
 
 # 2022-04-13 Dev build 0.148.1
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.148.1`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.148.1`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Temporarily rolled back JsView.name-related changes 
-* Dataframe formula lines are not shown on scatter plot, if scatterplot's table was changed in properties panel #375 
-* MLB return connection to deploy 
-* Wiki: Fix misspellings 
-
+* Temporarily rolled back JsView.name-related changes
+* Dataframe formula lines are not shown on scatter plot, if scatterplot's table was changed in properties panel #375
+* MLB return connection to deploy
+* Wiki: Fix misspellings
 
 # 2022-04-12 Dev build 0.148.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.148.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.148.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Fixed analyzer warnings 
-
+* Fixed analyzer warnings
 
 # 2022-04-12 Dev build 0.147.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.147.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.147.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Allow minor builds in push_version script 
-* PGAdmin connect through SSH tunnel 
-* Function View convert to TS WIP 
-* #424: Blocking option (graying it out) to switch to log scale for columns with negative values \- WIP 
-* Closes $443: PowerGrid: PercentCompleted cell renderer 
-* Allow user to rename the viewers from the arranged tab #341 
-* ignore IDE files 
-* removed duplicate 
-* Updated public token 
-* #424: Blocking option (graying it out) to switch to log scale for columns with negative values 
-* New method: ListUtils.move(list, from, to) 
-* Grid: manual row reordering 
-* Closes #455: Ability to define order of categories 
-* Grid: fixed an issue with the exception when row header is not visible 
-* Default value computing error handling 
-* Closes #464: ability to rearrange columns 
-* Closes #465: Column selectors: search field is invisible (above the screen) when the number of columns is big 
-* Grid: Order columns: ability to show/hide all selected columns at once 
-* Grid: Order or Hide: ability to reorder all selected columns at once 
-* #466: ComputationView \- work in progress 
-* Added banner 
-* (Bug) DataFrame: Column.init(...) does not increment dataframe version 
-* (Bug) Grid: html cells: rendered cells should be invalidated when table content changes 
-* #470: JS API: JS-based custom inputs \- work in progress 
-* Peptides: initial state distribution widget fix 
-* API Tests: updated tests manager UI 
-* #439 WIP: fix sync function error 
-* API Tests: updated test manager 
-* Miss configured in-visualisation filter kills the browser session #344 
-* Chem: added euclidean and hamming similarity metrics, selected most commonly used similarity metrics for cheminformatics 
-* Closes #471: fixed widgets not handling exceptions 
-* New VPN server 
-* #448: Substitution and SAR viewers merge WIP 
-* Utils: update for Chem run 
-
+* Allow minor builds in push_version script
+* PGAdmin connect through SSH tunnel
+* Function View convert to TS WIP
+* # 424: Blocking option (graying it out) to switch to log scale for columns with negative values \- WIP
+* Closes $443: PowerGrid: PercentCompleted cell renderer
+* Allow user to rename the viewers from the arranged tab #341
+* ignore IDE files
+* removed duplicate
+* Updated public token
+* # 424: Blocking option (graying it out) to switch to log scale for columns with negative values
+* New method: ListUtils.move(list, from, to)
+* Grid: manual row reordering
+* Closes #455: Ability to define order of categories
+* Grid: fixed an issue with the exception when row header is not visible
+* Default value computing error handling
+* Closes #464: ability to rearrange columns
+* Closes #465: Column selectors: search field is invisible (above the screen) when the number of columns is big
+* Grid: Order columns: ability to show/hide all selected columns at once
+* Grid: Order or Hide: ability to reorder all selected columns at once
+* # 466: ComputationView \- work in progress
+* Added banner
+* (Bug) DataFrame: Column.init(...) does not increment dataframe version
+* (Bug) Grid: html cells: rendered cells should be invalidated when table content changes
+* # 470: JS API: JS-based custom inputs \- work in progress
+* Peptides: initial state distribution widget fix
+* API Tests: updated tests manager UI
+* # 439 WIP: fix sync function error
+* API Tests: updated test manager
+* Miss configured in-visualisation filter kills the browser session #344
+* Chem: added euclidean and hamming similarity metrics, selected most commonly used similarity metrics for
+  cheminformatics
+* Closes #471: fixed widgets not handling exceptions
+* New VPN server
+* # 448: Substitution and SAR viewers merge WIP
+* Utils: update for Chem run
 
 # 2022-03-30 Dev build 0.145.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.145.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.145.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Chem: polishing 
-* Closes #401: Vertical Axis: incorrect label density for custom renderers (i.e., Molecules) 
-* Chem: bumped version up to 0.51 
-* LruCache<Key, Value>: added generic arguments and strongly-typed it 
-* Simplified code to avoid warnings 
-* Chem rendering: strongly-typed, simplified 
-* Chem: work in progress 
-* Chem: new version, bug fixes, sdf saving 
-* SequenceTranslator: minor fixes 
-* Update models widget 
+* Chem: polishing
+* Closes #401: Vertical Axis: incorrect label density for custom renderers (i.e., Molecules)
+* Chem: bumped version up to 0.51
+* `LruCache<Key, Value>`: added generic arguments and strongly-typed it
+* Simplified code to avoid warnings
+* Chem rendering: strongly-typed, simplified
+* Chem: work in progress
+* Chem: new version, bug fixes, sdf saving
+* SequenceTranslator: minor fixes
+* Update models widget
 * JBIO: refine LOGO viewer (WIP)
-* Chem: UI improvements 
-
+* Chem: UI improvements
 
 # 2022-03-29 Dev build 0.143.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.143.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.143.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Unable to set value to datetime column from JS 
-* Added an example of turning the color-coding off 
-* #396: Chem: support SMARTS for db querying 
-* Elasticsearch config 
-
+* Unable to set value to datetime column from JS
+* Added an example of turning the color-coding off
+* # 396: Chem: support SMARTS for db querying
+* Elasticsearch config
 
 # 2022-03-28 Dev build 0.142.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.142.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.142.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Unable to set value to datetime column from JS 
-
+* Unable to set value to datetime column from JS
 
 # 2022-03-28 Dev build 0.141.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.141.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.141.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Merged in kdoncov/grok_connect_vulnerability_fixes (pull request #163) 
-* Remove deploy folder 
-
+* Merged in kdoncov/grok_connect_vulnerability_fixes (pull request #163)
+* Remove deploy folder
 
 # 2022-03-28 Dev build 0.140.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.140.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.140.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* (Bug) Viewers: 'Edit Viewer Tooltip..." disregards the table a viewer is bound to 
-* Closes #374: Grid: rendering dataframe values as HTML # 
-* Grok Connect vulnerability fixes (#294) 
-* (Bug) toCsv() throws an exception 
-* User status interop 
-* (Bug) Filter indicator is hidden after restoring the layout 
-* Adjusted documentation 
-* Closes #382: JS API: Grid: Expose grid-related events 
-* Closes #340: Expose Grid renderers for DG native data types 
-* Compute: added table updating on manual outliers selection 
-* Closes #383: Items are unexpectedly filtered out after new rows were added 
-* Removed unnecessary comments 
-* Fixed column name in a sample script 
-* (Bug) Query View: "Add results to workspace" button does not work 
-* Closes #385: Filters saved on older DG versions are not restored 
-* Fixed the type annotation 
-* Fixed the friendly name 
-* Closes #393: GridCellRenderer: ability to handle mouse input 
-* Closes #393: GridCellRenderer: ability to handle mouse input \- added onMouseLeave 
-* VPN access to dev resources 
-* Closes #393: GridCellRenderer: ability to handle mouse input \- fixed onMouseLeave 
-* Closes #395: GridCellRenderer: ability to render HTML elements 
-* VPN with credentials 
-* Clinical Case: questionnaires view in pogress 
-
+* (Bug) Viewers: 'Edit Viewer Tooltip..." disregards the table a viewer is bound to
+* Closes #374: Grid: rendering dataframe values as HTML #
+* Grok Connect vulnerability fixes (#294)
+* (Bug) toCsv() throws an exception
+* User status interop
+* (Bug) Filter indicator is hidden after restoring the layout
+* Adjusted documentation
+* Closes #382: JS API: Grid: Expose grid-related events
+* Closes #340: Expose Grid renderers for DG native data types
+* Compute: added table updating on manual outliers selection
+* Closes #383: Items are unexpectedly filtered out after new rows were added
+* Removed unnecessary comments
+* Fixed column name in a sample script
+* (Bug) Query View: "Add results to workspace" button does not work
+* Closes #385: Filters saved on older DG versions are not restored
+* Fixed the type annotation
+* Fixed the friendly name
+* Closes #393: GridCellRenderer: ability to handle mouse input
+* Closes #393: GridCellRenderer: ability to handle mouse input \- added onMouseLeave
+* VPN access to dev resources
+* Closes #393: GridCellRenderer: ability to handle mouse input \- fixed onMouseLeave
+* Closes #395: GridCellRenderer: ability to render HTML elements
+* VPN with credentials
+* Clinical Case: questionnaires view in pogress
 
 # 2022-03-22 Dev build 0.139.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.139.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.139.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Clinical Case: Questionnaires view in progress, added tTest instead of anova when comparing 2 groups in boxplots view 
-* Missing table attribute in layout for "active table" #345 
-* DG.Utils.download(filename, content, contentType) 
-* Closes #369: Persisting tooltip form state 
-* Fixed #357: Free-text filter doesn't work for columns which names contain more than one word 
-
+* Clinical Case: Questionnaires view in progress, added tTest instead of anova when comparing 2 groups in boxplots view
+* Missing table attribute in layout for "active table" #345
+* DG.Utils.download(filename, content, contentType)
+* Closes #369: Persisting tooltip form state
+* Fixed #357: Free-text filter doesn't work for columns which names contain more than one word
 
 # 2022-03-22 Dev build 0.138.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.138.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.138.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Chem: hide fasr descriptors calculation 
-* Closes #372: JS API: expose CsvExportOptions 
-* Closes #350: Add option on toCsv() function to split QNum into two columns 
-* (Bug) Unable to call a function from AddNewColumn formula 
-
+* Chem: hide fasr descriptors calculation
+* Closes #372: JS API: expose CsvExportOptions
+* Closes #350: Add option on toCsv() function to split QNum into two columns
+* (Bug) Unable to call a function from AddNewColumn formula
 
 # 2022-03-20 Dev build 0.136.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.136.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.136.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* (Bug) Grok connect: Neptune doesn't work with scalar values without column names 
-* Viewers: ability to specify default axis type (linear / logarithmic) 
-* Grok Compute gunicorn workers 
-* PowerGrid: initial update 
-
+* (Bug) Grok connect: Neptune doesn't work with scalar values without column names
+* Viewers: ability to specify default axis type (linear / logarithmic)
+* Grok Compute gunicorn workers
+* PowerGrid: initial update
 
 # 2022-03-18 Dev build 0.135.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.135.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.135.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Chem: working with mol 
-* (Bug) AddNewColumn: Vectorization doesn't work 
-* Chem: hiding old realizations of similarity 
+* Chem: working with mol
+* (Bug) AddNewColumn: Vectorization doesn't work
+* Chem: hiding old realizations of similarity
 * Ability to search JS-models in Model Catalog (WIP)
-* (Bug) Unable to delete project 
-
+* (Bug) Unable to delete project
 
 # 2022-03-18 Dev build 0.134.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.134.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.134.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Peptides: cell renderers fix 
-* SequenceTranslator: IDP column dropdown 
-* SequenceTranslator: fix for 3dx read 
-* Compute: OutliersSelectionViewer simplified 
-* Chem: working with mol 
-* (Bug) AddNewColumn: Vectorization doesn't work 
-
+* Peptides: cell renderers fix
+* SequenceTranslator: IDP column dropdown
+* SequenceTranslator: fix for 3dx read
+* Compute: OutliersSelectionViewer simplified
+* Chem: working with mol
+* (Bug) AddNewColumn: Vectorization doesn't work
 
 # 2022-03-16 Dev build 0.133.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.133.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.133.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Grok connect: test commit 
-* Typedoc revert to 0.21.x version 
-* Fixed js-api links 
-* Updated public token 
-* (Bug) Unable to switch scatterplot axis to logarithmic mode 
-
+* Grok connect: test commit
+* Typedoc revert to 0.21.x version
+* Fixed js-api links
+* Updated public token
+* (Bug) Unable to switch scatterplot axis to logarithmic mode
 
 # 2022-03-15 Dev build 0.132.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.132.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.132.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* add model-catalog widget 
-* Made debug configuration the default one 
-* Grid tooltip should be more discreet 
-* Add IN operator to AddNewColumn 
-* Box Plot: "inverse Y axis" property 
-* Fixed #348: HTML cells \- selection & scrolling issues 
-* RepertoireBrowser: Add tree grid filtering by the main tree. 
-* Ability to rename tab of docked viewer 
-* (Bug) applyLayout drops columns if table property set 
-* Sequence Translator: add dropdown list for salts, with corresponding molecular weights and charges 
-* Added Neptune 
-
+* add model-catalog widget
+* Made debug configuration the default one
+* Grid tooltip should be more discreet
+* Add IN operator to AddNewColumn
+* Box Plot: "inverse Y axis" property
+* Fixed #348: HTML cells \- selection & scrolling issues
+* RepertoireBrowser: Add tree grid filtering by the main tree.
+* Ability to rename tab of docked viewer
+* (Bug) applyLayout drops columns if table property set
+* Sequence Translator: add dropdown list for salts, with corresponding molecular weights and charges
+* Added Neptune
 
 # 2022-03-14 Dev build 0.131.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.131.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.131.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* SequenceTranslator: macromolecule rendering 
-* Oligo Batch Calculator: use abbreviation as unique keys in User Data Storage 
-* RepertoireBrowser: Refactoring. 
-* JnJ: monitoring resources: RAM, CPU, HDD 
-* update viewers-gallery 
-
+* SequenceTranslator: macromolecule rendering
+* Oligo Batch Calculator: use abbreviation as unique keys in User Data Storage
+* RepertoireBrowser: Refactoring.
+* JnJ: monitoring resources: RAM, CPU, HDD
+* update viewers-gallery
 
 # 2022-03-14 Dev build 0.130.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.130.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.130.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Clinical case: extracting VISITDY from tv domain, handling missing ~STDY columns in visits view 
-* RepertoireBrowser: Refactor tree statistics collection. 
-* RepertoireBrowser: Fix tree node label. 
+* Clinical case: extracting VISITDY from tv domain, handling missing ~STDY columns in visits view
+* RepertoireBrowser: Refactor tree statistics collection.
+* RepertoireBrowser: Fix tree node label.
 * Sharing file connection must share credentials (WIP)
-* update viewer gallery 
-* RepertoireBrowser: Fix tree node label highlight. 
-* RepertoireBrowser: Add improved tree node label colouring. 
-* RepertoireBrowser: Refactoring. 
-* JnJ: monitoring resources: RAM, CPU, HDD 
-
+* update viewer gallery
+* RepertoireBrowser: Fix tree node label highlight.
+* RepertoireBrowser: Add improved tree node label colouring.
+* RepertoireBrowser: Refactoring.
+* JnJ: monitoring resources: RAM, CPU, HDD
 
 # 2022-03-08 Dev build 0.129.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.129.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.129.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
 * WebStorm configs
-* Ability to set Function as a default value 
-* WebStrom default configurations 
-* Viewers: legend: ability to reset"filter by category" 
+* Ability to set Function as a default value
+* WebStrom default configurations
+* Viewers: legend: ability to reset"filter by category"
 * (Bug) Newly created user failed to login (WIP)
-* Fixed #344: Miss configured in-visualisation filter kills the browser session 
-* Fixed the initial position of the filter 
-* Grid: Excel-style column resizing 
-* Grid: column rearrangement: fixed the "'offsetParent' was called on null" bug 
-* Grid: ability to reorder multiple columns at once 
-* Renamed images 
-* JnJ: monitoring resources: RAM, CPU, HDD 
-* Implement '!=' and 'NOT IN' operators for matching rows 
-* Fixed #348: HTML cells \- selection & scrolling issues 
-* EacapeSequences: R 
-* Updated help 
-* Line Chart: "Invert X Axis" property 
-* Exposed grok.events.onResetFilterRequest 
-* Scatter Plot: highlight the category on axis on mouse-over 
-* SequenceTranslator: refactoring 
-
+* Fixed #344: Miss configured in-visualisation filter kills the browser session
+* Fixed the initial position of the filter
+* Grid: Excel-style column resizing
+* Grid: column rearrangement: fixed the "'offsetParent' was called on null" bug
+* Grid: ability to reorder multiple columns at once
+* Renamed images
+* JnJ: monitoring resources: RAM, CPU, HDD
+* Implement '!=' and 'NOT IN' operators for matching rows
+* Fixed #348: HTML cells \- selection & scrolling issues
+* EacapeSequences: R
+* Updated help
+* Line Chart: "Invert X Axis" property
+* Exposed grok.events.onResetFilterRequest
+* Scatter Plot: highlight the category on axis on mouse-over
+* SequenceTranslator: refactoring
 
 # 2022-02-24 Dev build 0.128.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.128.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.128.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
 * Strong mode static checking (WIP)
 
-
 # 2022-02-23 Dev build 0.127.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.127.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.127.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* syft local image 
-* DockManager_Dock now attaches viewer to view 
-* Fixed #320: Filtering: 'Select columns' dialog for filter panel is showing currently selected columns incorrectly in some cases 
-* Fixed #319: Disabling/not disabling filtering behaviour on closing filter panel is inconsistent in some cases 
-* (Bug) JS API: incorrect constant in DG.DOCK_TYPE.TOP  
-* Fix datagro build 
-* Functions: help-url support for scripts in Function View 
-* Added Viewer_Remove_From_View function 
-* (Bug) Function View: Dataframes selection from a file is buggy 
-* js-api-common update 
-* Scripting: Better handle missing output variables (R, Python) 
-* Package description: add Markdown rendering  
-* JS API: Dialog.getOpenDialogs() 
-* JS API: Dialog.input(caption): InputBase 
-* JS API: Grid: ability to get cell back color 
-* (Bug) Color coding: the editing dialog shows the black color for categories which color is set via hex codes 
-* (Bug) Line Chart: rightmost line segment is not always drawn 
-* New demo dataset: dose-response 
-* New sample script: charts-in-cells 
-* GridColumnMeta 
-* (Bug) Chem: double-clicking on an empty structure does not open a sketcher 
-* (Bug) Grid: an exception when resizing the window 
-* Wiki: Doc on running Dart tests locally 
-* Test file fixed precision 
-* (Bug) Grid scrolls to first row after adding/deleting row 
-* Grid: ability to easily add rows to the end 
-* #323: MultiForm: WIP 
-* JnJ: monitoring resources: RAM, CPU, HDD 
-* Fixed null exception 
-* (Bug) Parameter subquery is empty 
-* Harmonize viewer title 
-* NPM repositories: add an option to skip installation of deployed packages during repository publication 
+* syft local image
+* DockManager_Dock now attaches viewer to view
+* Fixed #320: Filtering: 'Select columns' dialog for filter panel is showing currently selected columns incorrectly in
+  some cases
+* Fixed #319: Disabling/not disabling filtering behaviour on closing filter panel is inconsistent in some cases
+* (Bug) JS API: incorrect constant in DG.DOCK_TYPE.TOP
+* Fix datagro build
+* Functions: help-url support for scripts in Function View
+* Added Viewer_Remove_From_View function
+* (Bug) Function View: Dataframes selection from a file is buggy
+* js-api-common update
+* Scripting: Better handle missing output variables (R, Python)
+* Package description: add Markdown rendering
+* JS API: Dialog.getOpenDialogs()
+* JS API: Dialog.input(caption): InputBase
+* JS API: Grid: ability to get cell back color
+* (Bug) Color coding: the editing dialog shows the black color for categories which color is set via hex codes
+* (Bug) Line Chart: rightmost line segment is not always drawn
+* New demo dataset: dose-response
+* New sample script: charts-in-cells
+* GridColumnMeta
+* (Bug) Chem: double-clicking on an empty structure does not open a sketcher
+* (Bug) Grid: an exception when resizing the window
+* Wiki: Doc on running Dart tests locally
+* Test file fixed precision
+* (Bug) Grid scrolls to first row after adding/deleting row
+* Grid: ability to easily add rows to the end
+* # 323: MultiForm: WIP
+* JnJ: monitoring resources: RAM, CPU, HDD
+* Fixed null exception
+* (Bug) Parameter subquery is empty
+* Harmonize viewer title
+* NPM repositories: add an option to skip installation of deployed packages during repository publication
 * Property panel: "Distributions" pane (WIP)
-* Fixed typo 
-* Core: delete the service jobs before the repository deletion 
-* bug fixed fro smiles string in example 
-* Formula lines improvements 
-* Update repository jobs: change user permissions (WIP) 
-* Error status style update (WIP) 
-* (Bug) BoxPlot Y axis labels overlapping with axis column name 
+* Fixed typo
+* Core: delete the service jobs before the repository deletion
+* bug fixed fro smiles string in example
+* Formula lines improvements
+* Update repository jobs: change user permissions (WIP)
+* Error status style update (WIP)
+* (Bug) BoxPlot Y axis labels overlapping with axis column name
 * Harmonize PackagesView (WIP)
-* Filters: header should stay on top when you scroll down 
-* NPM repositories: new package manager UI 
-* (Bug) Input too large for RSA cipher exception during package deploy 
-* Avoid extra data copy 
-* update ref to head on public 
+* Filters: header should stay on top when you scroll down
+* NPM repositories: new package manager UI
+* (Bug) Input too large for RSA cipher exception during package deploy
+* Avoid extra data copy
+* update ref to head on public
 * Porting Ketcher reading molfile in React to package (WIP)
-* DB: migrate test and demo DB to docker 
-* VirtualItemView.refreshItem 
-* Docking Manager: improve auto-docking algorithm when the initial split is vertical 
-* Improved the description of the connection string in the "add connection" dialog. 
-* Security: WIP 
-* (Bug) Color coding: missing values lose the reserved color when the rules for categorical color-coding are set 
-* Added Neptune logo 
-* Docs: create documentation for CVM connection from Local Dart stand 
-* Strong mode static checking 
-* (Bug) Scripting: Reset variables before script run (Python, R) 
-* Fix analyser warnings 
-* (Bug) Renv creates environments directories with nested UUIDs 
-* (Bug) Several functions broken in calculated columns 
-* Checkbox styling improvement 
-* (Bug) Chem: moleculeInput won't set smiles 
-* Expose additional map data structure to save meta information along with project entity #331 
-* Add additional options to configure the view loading behaviour to project.open() method #332 
-* Viewers: ability to specify default axis type (linear / logarithmic) 
-* PC Plot: log scaling for Y axis 
-* Grid: spacebar to toggle row selection 
-* Made analysis options less strict. 
-* Scatter Plot: ability to invert axes 
-* Bar Chart: fixed an issue with the initial viewport position 
-* Expose ID property for tableView entitity #328 
+* DB: migrate test and demo DB to docker
+* VirtualItemView.refreshItem
+* Docking Manager: improve auto-docking algorithm when the initial split is vertical
+* Improved the description of the connection string in the "add connection" dialog.
+* Security: WIP
+* (Bug) Color coding: missing values lose the reserved color when the rules for categorical color-coding are set
+* Added Neptune logo
+* Docs: create documentation for CVM connection from Local Dart stand
+* Strong mode static checking
+* (Bug) Scripting: Reset variables before script run (Python, R)
+* Fix analyser warnings
+* (Bug) Renv creates environments directories with nested UUIDs
+* (Bug) Several functions broken in calculated columns
+* Checkbox styling improvement
+* (Bug) Chem: moleculeInput won't set smiles
+* Expose additional map data structure to save meta information along with project entity #331
+* Add additional options to configure the view loading behaviour to project.open() method #332
+* Viewers: ability to specify default axis type (linear / logarithmic)
+* PC Plot: log scaling for Y axis
+* Grid: spacebar to toggle row selection
+* Made analysis options less strict.
+* Scatter Plot: ability to invert axes
+* Bar Chart: fixed an issue with the initial viewport position
+* Expose ID property for tableView entitity #328
 * Core: update OpenChemLib (WIP)
-* Peptides: barchart fix 
-* (Bug) Exception on reading credentials for package 
-
+* Peptides: barchart fix
+* (Bug) Exception on reading credentials for package
 
 # 2022-02-08 Dev build 0.122.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.122.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.122.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* (Bug) Filters: After reopening filters, all columns appear deactivated in the "Select columns" dialog 
-* (Bug) Filters: Filters for multi-value columns are not saved after reopening the Filters 
-* (Bug) Filters: double-click on checkbox: weird characters are visible 
-* (Bug) Scatter Plot: Custom linear coloring is not propagated 
-* Push version from package.json for master branch 
-* CloudFormation required parameters 
-* RepertoireBrowser: viewers dislocation 
-
+* (Bug) Filters: After reopening filters, all columns appear deactivated in the "Select columns" dialog
+* (Bug) Filters: Filters for multi-value columns are not saved after reopening the Filters
+* (Bug) Filters: double-click on checkbox: weird characters are visible
+* (Bug) Scatter Plot: Custom linear coloring is not propagated
+* Push version from package.json for master branch
+* CloudFormation required parameters
+* RepertoireBrowser: viewers dislocation
 
 # 2022-01-26 Dev build 0.119.0
 
@@ -2473,7 +2424,7 @@
 * Added a comment on comments
 * ClientPackageFunc: ability to run function synchronously once the package is loaded
 * (Bug) Scatter Plot: programmatic zoom causes an error
-* Untyped events since they clearly were not Stream<String>
+* Untyped events since they clearly were not `Stream<String>`
 * Bar chart: add categoryValueWidth property
 * Chem: excludin duplicated features
 * (Bug) Scatter Plot: onZoomed returns objects of different data types when the plot is zoomed manually and
@@ -6779,7 +6730,7 @@
 * Demo of structural curation added
 * Minor style improvements
 * Fixed paths to images
-* JS API: Func.appy(params): Promise<TResult>
+* JS API: Func.appy(params): `Promise<TResult>`
 * Widget-based Welcome page (WIP)
 * JS API: Func.find(package, name, tags, returnType)
 * Added documentation for FASTA reader
@@ -8295,7 +8246,7 @@
 * Minor style improvements
 * Fixed paths to images
 * JS API: Func.find(package, name, tags, returnType)
-* JS API: Func.appy(params): Promise<TResult>
+* JS API: Func.appy(params): `Promise<TResult>`
 * Widget-based Welcome page (WIP)
 * Added documentation for FASTA reader
 * Added tag for sequence field
@@ -10522,7 +10473,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * Unable to run R script from JS if there is DataFrame input parameter
 * API to push credentials to DataConnection or Package
 * Scripts to return list of Py installed packages
-* Box Plot: an exception when selecting the <empty> x category
+* Box Plot: an exception when selecting the `<empty>` x category
 * Excel import: treat "N/A" as missing values
 * Missing "..." after "Edit" in the context menu for packages and repositories
 * Harmonize JS-API ViewLayout class
@@ -11129,7 +11080,7 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
   refreshing
 * JS Examples view doesn't work
 * Unable to set global permissions
-* Postgres: List<String> parameters binding, uuid explicit conversion
+* Postgres: `List<String>` parameters binding, uuid explicit conversion
 * Chem | To InChi (To InChi Key): Dialog opens when called for column
 * Chem | Info Panels: Panel hiding does not work
 * Settings View
@@ -11231,7 +11182,7 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 * grok.query(query, params): make params optional
 * GrokConnect: Athena parametrized queries does not work
 * GrokConnect: Denodo integration
-* GrokConnect: MSSQL collision on usage @<> syntax with query parameters
+* GrokConnect: MSSQL collision on usage `@<>` syntax with query parameters
 * GrokConnect: MSSQL provider - "the value is not set for the parameter #2"
 * GrokConnect: Order schemas, tables and columns in tree
 * GrokConnect: Postgres SSL support

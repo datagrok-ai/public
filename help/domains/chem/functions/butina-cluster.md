@@ -17,5 +17,5 @@ See also:
 
 References:
 
-* [RDKit Cluster Butina Module](http://rdkit.org/docs/source/rdkit.ML.Cluster.Butina.html)
+* [RDKit Cluster Butina Module](https://rdkit.org/docs/source/rdkit.ML.Cluster.Butina.html)
 * [Butina JCICS 39 747-750 (1999)](http://www.l4patterns.com/uploads/dbclus-paper.pdf)

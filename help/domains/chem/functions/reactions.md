@@ -4,7 +4,7 @@
 # Reactions
 
 Enumeration of many molecules with template reaction and building blocks are useful for library generation. Reaction
-template is in [SMARTS](http://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) format. Reactants can be combined
+template is in [SMARTS](https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) format. Reactants can be combined
 from two sets, or sequentially depending from **matrixExpansion** flag.
 
 ![Reactions](../../../uploads/chem/reactions.png "Reactions")
@@ -16,4 +16,4 @@ See also:
 References:
 
 * [RDKit Chemical reaction handling](https://rdkit.org/docs/RDKit_Book.html#chemical-reaction-handling)
-* [SMARTS](http://www.daylight.com/dayhtml/doc/theory/theory.smarts.html)
+* [SMARTS](https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html)

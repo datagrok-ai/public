@@ -19,11 +19,11 @@ and more. Besides, scripting viewers must be part of a package in order to run t
 Table of contents
 
 * [JavaScript-Based Viewers](#javascript-based-viewers)
-  * [External Dependencies](#external-dependencies)
-  * [Properties](#properties)
-  * [Preparing Data](#preparing-data)
-  * [Rendering](#rendering)
-  * [Events](#events)
+    * [External Dependencies](#external-dependencies)
+    * [Properties](#properties)
+    * [Preparing Data](#preparing-data)
+    * [Rendering](#rendering)
+    * [Events](#events)
 * [Scripting Viewers](#scripting-viewers)
 * [Registering Viewers](#registering-viewers)
 * [Examples](#examples)
@@ -512,7 +512,7 @@ You can find more inspiring examples in our [public repository](https://github.c
 
 * JavaScript-based viewers:
     * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts): constructs graphs of various types
-      using the [Echarts](http://echarts.apache.org) framework
+      using the [Echarts](https://echarts.apache.org) framework
     * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet): integrates with
       the [Leaflet](https://leafletjs.com/) library to build interactive maps
     * [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst): uses the [D3](https://d3js.org/)

@@ -36,14 +36,14 @@ the [step-by-step guide](how-to/create-package.md) for creating your own package
 
 A simplest JavaScript package consists of the following files:
 
-| file                                    | description           |
-|-----------------------------------------|-----------------------|
-| [package.json](#package.json)           | metadata              |
-| [package.js](#package.js)               | entry point           |
-| [detectors.js](#detectors.js)           | detectors file        |
-| [webpack.config.js](#webpack.config.js) | webpack configuration |
-| README.md                               | package summary       |
-| package.PNG                             | package icon          |
+| file                                  | description           |
+|---------------------------------------|-----------------------|
+| [package.json](#packagejson)          | metadata              |
+| [package.js](#packagejs)              | entry point           |
+| [detectors.js](#detectorsjs)          | detectors file        |
+| [webpack.config.js](#webpackconfigjs) | webpack configuration |
+| README.md                             | package summary       |
+| package.PNG                           | package icon          |
 
 In addition to that, it might contain the following folders:
 
@@ -327,11 +327,11 @@ If necessary, you can specify additional settings and then publish the package.
 
 ### Continuous integration
 
-`Webpack` is required for your package source code to work successfully in the browser.
-You can build your package with `webpack` locally. To do that, run the script `"build": "webpack"`
+`Webpack` is required for your package source code to work successfully in the browser. You can build your package
+with `webpack` locally. To do that, run the script `"build": "webpack"`
 before publishing. For convenience, publication scripts in `package.json` combine these two steps:
-`webpack && grok publish`. The `build` script is reserved for server-side build, so don't change or remove it.
-The platform will build a package on the server side, if you call `grok publish` with the `--rebuild` option.
+`webpack && grok publish`. The `build` script is reserved for server-side build, so don't change or remove it. The
+platform will build a package on the server side, if you call `grok publish` with the `--rebuild` option.
 
 Package publication is compatible with automation tools. You can pass your server URL and developer key explicitly
 without configuring:
@@ -369,7 +369,7 @@ We recommend you the practices below with debugging your package code.
 
 ### One-click debugging with Visual Studio Code
 
-Use an `--ide=vscode` key of [grok tools](#Getting-Started) to set up a `.vscode` debugging integration with Datagrok.
+Use an `--ide=vscode` key of [grok tools](getting-started.md) to set up a `.vscode` debugging integration with Datagrok.
 
 This parameter coupled with `grok create` adds an additional `.vscode` folder with two files to your package folder.
 These files bring you development experience close to building native apps, where you modify the code, hit the "Run",
@@ -549,13 +549,13 @@ file:
 
 ```json
 "properties": [
-  {
-    "name": "Property name",
-    "propertyType": "string",             // `DG.TYPES_SCALAR` are supported
-    "choices": ["value #1", "value #2"],  // Optional field with values of the property type
-    "defaultValue": "value #2",           // Optional field with a default value (it should be in choices, if they are given)
-    "nullable": false                     // Optional field determining whether the property value can be null
-  }
+{
+"name": "Property name",
+"propertyType": "string", // `DG.TYPES_SCALAR` are supported
+"choices": ["value #1", "value #2"], // Optional field with values of the property type
+"defaultValue": "value #2", // Optional field with a default value (it should be in choices, if they are given)
+"nullable": false                     // Optional field determining whether the property value can be null
+}
 ]
 ```
 
@@ -571,7 +571,7 @@ special [editor function](function-roles.md#settings-editors).
 
 ## Documentation
 
-According to [this study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
+According to [this study](https://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
 , in terms of the strategies used for understanding API documentation, different developers fall into several groups:
 systematic, opportunistic and pragmatic. These findings are consistent with our experience. For Datagrok's
 documentation, we have established an approach that enables developers from either of the above-mentioned groups to be
@@ -598,6 +598,6 @@ See also:
 * [Grok API](js-api.md)
 * [Scripting](../compute/scripting.md)
 * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
-* [How Developers Use API Documentation: An Observation Study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
+* [How Developers Use API Documentation: An Observation Study](https://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
 
 [DemoScripts]: https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/
