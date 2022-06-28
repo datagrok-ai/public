@@ -7,6 +7,6 @@ import * as DG from 'datagrok-api/dg';
 import {_testPaletteN, _testPaletteAA} from '@datagrok-libraries/bio/src/tests/palettes.test';
 
 category('Palettes', () => {
-  test('testPaletteN', async () => { _testPaletteN(); });
-  test('testPaletteAA', async () => { _testPaletteAA(); });
+  test('testPaletteN', async () => { await _testPaletteN(); });
+  test('testPaletteAA', async () => { await _testPaletteAA(); });
 });
