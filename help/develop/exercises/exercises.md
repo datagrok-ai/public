@@ -15,8 +15,8 @@ predictive models, integration with the external utilities, data augmentation, a
 ## Table of contents
 
 * [Setting up the environment](#setting-up-the-environment)
-* [Semantic types](#semantic-types)
-* [Scripting and functions](#scripting-and-functions)
+* [Semantic-types](#exercise-1-semantic-types)
+* [Scripting and functions](#exercise-2-scripting-and-functions)
     * [Scripting with server functions](#scripting-with-server-functions)
     * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
     * [Scripting with client functions](#scripting-with-client-functions)
@@ -28,13 +28,13 @@ predictive models, integration with the external utilities, data augmentation, a
 * Composing functions in the package
 --->
 
-* [Querying databases](#querying-databases)
-* [Creating a scripting viewer](#creating-a-scripting-viewer)
-* [Transforming dataframes](#transforming-dataframes)
-* [Custom cell renderers with 3-rd party JS libraries](#custom-cell-renderers-with-3-rd-party-js-libraries)
-* [Accessing Web services with OpenAPI](#accessing-web-services-with-openapi)
-* [Creating an info panel with a REST web service](#creating-an-info-panel-with-a-rest-web-service)
-* [Enhancing Datagrok with dialog-based functions](#enhancing-datagrok-with-dialog-based-functions)
+* [Querying databases](#exercise-3-querying-databases)
+* [Creating a scripting viewer](#exercise-4-creating-a-scripting-viewer)
+* [Transforming dataframes](#exercise-5-transforming-dataframes)
+* [Custom cell renderers with 3-rd party JS libraries](#exercise-6-custom-cell-renderers-with-3-rd-party-js-libraries)
+* [Accessing Web services with OpenAPI](#exercise-7-accessing-web-services-with-openapi)
+* [Creating an info panel with a REST web service](#exercise-8-creating-an-info-panel-with-a-rest-web-service)
+* [Enhancing Datagrok with dialog-based functions](#exercise-9-enhancing-datagrok-with-dialog-based-functions)
 
 <!---
 * Creating an application
@@ -55,15 +55,17 @@ predictive models, integration with the external utilities, data augmentation, a
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
    [these instructions](../how-to/set-up-environment.md)
-2. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by
+2. Create a branch from master at [GitHub](https://github.com/datagrok-ai/public/branches) or using your IDE; Use your credentials as a name of the branch 
+3. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by
    running `grok config`. Open [https://dev.datagrok.ai/u](https://dev.datagrok.ai/u), click on `Developer key`, copy
    the `grok` command and execute it to add the key to your config
-3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions)
-   `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence` (if you are new to
-   TypeScript, you can specify the `--js` option)
-4. Upload it to the server: run `webpack` and `grok publish dev` (see other
+4. Create a default package in your branch [called](https://datagrok.ai/help/develop/develop#naming-conventions)
+   `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence` with specifying the `--ts` option to create a package with TypeScript configuration (if you are new to
+   TypeScript, you can specify the `--js` option); Note that detectors.js file is still using JavaScript
+5. Run `npm install` to link the dependencies mentioned in `package.json` file of your package
+6. Upload it to the server: run `webpack` and `grok publish dev` (see other
    options [here](../develop.md#deployment-modes))
-5. Launch the platform and run the package's `info()` function using different methods:
+7. Launch the platform and run the package's `info()` function using different methods:
 
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
 * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `info()`
@@ -75,7 +77,7 @@ predictive models, integration with the external utilities, data augmentation, a
 
 As a result of the function execution you should see an info notification with url of package's webRoot.
 
-## Semantic types
+## Exercise 1: Semantic types
 
 *Prerequisites:* basic TypeScript or JavaScript knowledge.
 
@@ -90,11 +92,12 @@ You will learn: how to write semantic type detectors, how to develop context-spe
     //name: complement
     //input: string nucleotides
     //output: string result
-    export function complement(nucleotides) {
+    export function complement(nucleotides): /*type*/ {
         // your code goes here
     }
     ```
 
+   Note that comments on the top of the function declaration are crucial for runnig it on the platform. They determine the function name, the input and output types.
    Essentially, change each character to the complementary one: `A <=> T`, `G <=> C`. Run it and check whether
    everything works fine.
 
@@ -160,7 +163,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    column, and find the `complement` property in the panel on the right as it is shown on screenshot:
    ![exercises-complement-data-panel](exercises-complement-data-panel.png)
 
-## Scripting and functions
+## Exercise 2: Scripting and functions
 
 ### Scripting with server functions
 
@@ -447,7 +450,7 @@ nested script.
 
 -->
 
-## Querying databases
+## Exercise 3: Querying databases
 
 *Prerequisites:* basic SQL knowledge
 
@@ -506,7 +509,7 @@ from our server.
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
     (see examples in the article [Parameterized Queries](../../access/parameterized-queries.md)).
 
-## Creating a scripting viewer
+## Exercise 4: Creating a scripting viewer
 
 *Prerequisites:* basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
@@ -564,7 +567,7 @@ First, let's explore how scripting viewer works.
     occurred within all of these sequences. As you may notice, `numpy` and `matplotlib` are already available for your
     Python scripting in Datagrok. Reuse them to finish this exercise.
 
-## Transforming dataframes
+## Exercise 5: Transforming dataframes
 
 *Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment),
 ["Semantic types"](#semantic-types).
@@ -613,7 +616,7 @@ First, let's explore how scripting viewer works.
 
 <!--- TODO: add linked dataframes demo here --->
 
-## Custom cell renderers with 3-rd party js libraries
+## Exercise 6: Custom cell renderers with 3-rd party js libraries
 
 *You will learn:* reuse 3-rd party JavaScript libraries in your Datagrok packages; render cells by semantic types.
 
@@ -680,7 +683,7 @@ First, let's explore how scripting viewer works.
 6. (*) Implement a colored nucleotide sequence box where backgrounds of `A`, `G`, `C`, `T` vary. Choose one of the
    popular coloring conventions, following [this link](https://www.biostars.org/p/171056/).
 
-## Accessing web services with OpenAPI
+## Exercise 7: Accessing web services with OpenAPI
 
 *Details:* [OpenAPI access](../../access/open-api.md)
 
@@ -729,7 +732,7 @@ coronavirus.
 We provide a handful of demo Swaggers, check their source JSON files [here][021] and see in action in Datagrok at
 the [`Web Services`](https://public.datagrok.ai/webservices) section of the Datagrok UI.
 
-## Creating an info panel with a REST web service
+## Exercise 8: Creating an info panel with a REST web service
 
 We will use the ENA REST API to output sequences and associated data in the info panel, based on the ENA sequence ID
 contained in a currently selected grid cell.
@@ -778,7 +781,7 @@ a [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) limitation of J
 the external domain from your web page, whereas CORS prevents you from querying anything outside a reach of your web
 page's domain. Thus Datagrok provides a proxy facility in the neat `fetchProxy` wrapper.
 
-## Enhancing Datagrok with dialog-based functions
+## Exercise 9: Enhancing Datagrok with dialog-based functions
 
 In the previous exercises we've learned how the Datagrok function inputs are offered in a dialog window automatically
 once you run the function. In this exercise we find how to expand these dialogs with the behaviour beyond simple
