@@ -74,8 +74,7 @@ jobs:
 
   convert:
     name: Convert to HTML
-    needs: [ lint, link_check, anchor_check ]
-    if: github.ref == 'refs/heads/master'
+#    needs: [ lint, link_check, anchor_check ]
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
