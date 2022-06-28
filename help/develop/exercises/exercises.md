@@ -17,9 +17,9 @@ predictive models, integration with the external utilities, data augmentation, a
 * [Setting up the environment](#setting-up-the-environment)
 * [Semantic types](#semantic-types)
 * [Scripting and functions](#scripting-and-functions)
-    * [Scripting with server functions](#scripting-with-server-functions)
-    * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
-    * [Scripting with client functions](#scripting-with-client-functions)
+   * [Scripting with server functions](#scripting-with-server-functions)
+   * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
+   * [Scripting with client functions](#scripting-with-client-functions)
 
 <!---
 * [Composing functions](#composing-functions)
@@ -56,11 +56,13 @@ predictive models, integration with the external utilities, data augmentation, a
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
    [these instructions](../how-to/set-up-environment.md)
 2. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by
-   running `grok config`. Open [https://dev.datagrok.ai/u](https://dev.datagrok.ai/u), click on `Developer key`,
-   copy the `grok` command and execute it to add the key to your config
+   running `grok config`. Open [https://dev.datagrok.ai/u](https://dev.datagrok.ai/u), click on `Developer key`, copy
+   the `grok` command and execute it to add the key to your config
 3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions)
-   `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence` (if you are new to TypeScript, you can specify the `--js` option)
-4. Upload it to the server: run `webpack` and `grok publish dev` (see other options [here](../develop.md#deployment-modes))
+   `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence` (if you are new to
+   TypeScript, you can specify the `--js` option)
+4. Upload it to the server: run `webpack` and `grok publish dev` (see other
+   options [here](../develop.md#deployment-modes))
 5. Launch the platform and run the package's `info()` function using different methods:
 
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
@@ -189,11 +191,11 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    (use any `#description` you like). Spaces are not allowed between '#' and attribute name:
 
     ```python
-    #name: CountSubsequencePython
-    #language: python
-    #input: string sequence
-    #input: string subsequence
-    #output: int count
+    # name: CountSubsequencePython
+    # language: python
+    # input: string sequence
+    # input: string subsequence
+    # output: int count
     ```
 
    In the body, implement a Python function counting all occurrences of a given `subsequence` in a `sequence`. Return
@@ -234,12 +236,12 @@ repeat what we've achieved in the last point of the previous exercise, now with 
    dataframe. To start with, the function's Datagrok signature should look as follows:
 
     ```python
-    #name: CountSubsequencePythonDataframe
-    #language: python
-    #input: dataframe sequences
-    #input: column columnName
-    #input: string subsequence = "acc"
-    #output: dataframe result {action:join(sequences)}
+    # name: CountSubsequencePythonDataframe
+    # language: python
+    # input: dataframe sequences
+    # input: column columnName
+    # input: string subsequence = "acc"
+    # output: dataframe result {action:join(sequences)}
     ```
 
    This function takes as an input a dataframe with a column containing nucleotide sequences, named as a value of
@@ -670,9 +672,9 @@ First, let's explore how scripting viewer works.
     }
     ```
 
-5. Deploy the package as usual with `grok publish dev`. In [Datagrok](https://public.datagrok.ai), navigate to
-   a file with nucleotide sequences from `"Demo files"`, such as `sars-cov-2.csv`. Verify you get the desired result, it
-   should look similar to this:
+5. Deploy the package as usual with `grok publish dev`. In [Datagrok](https://public.datagrok.ai), navigate to a file
+   with nucleotide sequences from `"Demo files"`, such as `sars-cov-2.csv`. Verify you get the desired result, it should
+   look similar to this:
    ![exercises-custom-cell-renderer](exercises-custom-cell-renderer.png)
    Change the "Sequence" column width and rows heights with a mouse to see how things adujst.
 6. (*) Implement a colored nucleotide sequence box where backgrounds of `A`, `G`, `C`, `T` vary. Choose one of the

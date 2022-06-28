@@ -19,11 +19,11 @@ and more. Besides, scripting viewers must be part of a package in order to run t
 Table of contents
 
 * [JavaScript-Based Viewers](#javascript-based-viewers)
-  * [External Dependencies](#external-dependencies)
-  * [Properties](#properties)
-  * [Preparing Data](#preparing-data)
-  * [Rendering](#rendering)
-  * [Events](#events)
+    * [External Dependencies](#external-dependencies)
+    * [Properties](#properties)
+    * [Preparing Data](#preparing-data)
+    * [Rendering](#rendering)
+    * [Events](#events)
 * [Scripting Viewers](#scripting-viewers)
 * [Registering Viewers](#registering-viewers)
 * [Examples](#examples)
