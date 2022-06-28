@@ -124,8 +124,8 @@ context menu, then go to the **Viewer** submenu and select **Embed**:
 
 ![Viewers Embedding](../uploads/viewers/embedding.png "Viewers Embedding")
 
-Now you can copy the generated iframe and use it in your site. The only thing you need to remember is that this
-feature works only for data uploaded as a project to the server.
+Now you can copy the generated iframe and use it in your site. The only thing you need to remember is that this feature
+works only for data uploaded as a project to the server.
 
 ## Interaction
 

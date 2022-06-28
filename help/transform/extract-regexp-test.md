@@ -9,7 +9,7 @@ columns.
 ## Testing scenarios
 
 1. Split the column using different regular expressions (
-   about [Regular expressions](http://www.regular-expressions.info))
+   about [Regular expressions](https://www.regular-expressions.info))
 
 * The result is shown in the dialog box "Results dialogs". After clicking the "OK" button new columns are created in the
   table
@@ -29,4 +29,4 @@ columns.
 See also:
 
 * [Split column by regular expression](extract-regexp.md)
-* [About regular expressions](http://www.regular-expressions.info)
+* [About regular expressions](https://www.regular-expressions.info)

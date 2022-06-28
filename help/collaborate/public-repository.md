@@ -26,8 +26,8 @@ very extensible, and almost anything could be implemented as a package:
 
 These open-source packages are free to use by anyone, although for the [public environment](https://public.datagrok.ai)
 there are some restrictions related to the server computational capacities. Organizations that deploy Datagrok
-[on their premises](../develop/admin/architecture.md#deployment) also can access public packages. In addition to that,
-enterprises typically establish their own private repositories that contain proprietary extensions.
+[on their premises](../develop/admin/deploy.md) also can access public packages. In addition to that, enterprises
+typically establish their own private repositories that contain proprietary extensions.
 
 For developers: check out [getting started](../develop/develop.md)
 and [contributor's guide](../../CONTRIB.md).

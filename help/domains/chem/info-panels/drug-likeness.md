@@ -2,7 +2,7 @@
 
 # Drug likeness
 
-From [openmolecules](http://www.openmolecules.org/properties/properties.html#druglikeness):
+From [openmolecules](https://www.openmolecules.org/properties/properties.html#druglikeness):
 _There are many approaches around that assess a compound's druglikeness partially based on topological descriptors,
 fingerprints of MDL struture keys or other properties as cLogP and molecular weights. Our approach is based on a list of
 about 5300 distinct substructure fragments with associated druglikeness scores. The druglikeness is calculated with the

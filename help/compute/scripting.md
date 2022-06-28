@@ -46,16 +46,15 @@ Functions. See [Grok Scripting](../overview/grok-script.md) for more details.
 
 ### Output values validation
 
-Datagrok functions return zero, one or more typed arguments. Any single run of the function shall
-always return as many output values as specified in the header, all having corresponding types. It
-is expected that the output values would be assigned throughout the script code, so that they are
-defined by the end of the script. If for some reason this doesn't happen, the two things will
-follow:
+Datagrok functions return zero, one or more typed arguments. Any single run of the function shall always return as many
+output values as specified in the header, all having corresponding types. It is expected that the output values would be
+assigned throughout the script code, so that they are defined by the end of the script. If for some reason this doesn't
+happen, the two things will follow:
 
 1. The unset output values would still be returned, but valued as `null`-s.
 
 2. A warning `Output value ${output.param.name} was not set` will be print to
-[Datagrok Console](../overview/navigation.md#console) (open it with `Ctrl-~`).
+   [Datagrok Console](../overview/navigation.md#console) (open it with `Ctrl-~`).
 
 In this script the value `c3` is missed to be set:
 
@@ -97,8 +96,8 @@ registered in the platform as a
 
 When a function is invoked with no explicitly specified parameters, a dialog is shown. The UI is automatically generated
 by creating editors for each parameter. Depending on the metadata associated with the parameters, the editor can be
-enriched by [validators](#validators), [choices](#choices), and [suggestions](#suggestions). Validators, choices, and
-suggestions are
+enriched by [validators](#parameter-validators), [choices](#parameter-choices),
+and [suggestions](#parameter-suggestions). Validators, choices, and suggestions are
 [functions](../overview/functions/function.md), that means they can be implemented in different ways (db query, script,
 etc), and reused.
 
@@ -171,8 +170,8 @@ In this case, the environment `Chemprop` should be specified in a file
 
 Datagrok identifies and resolves environments by their names. If an environment referred in a script wasn't previously
 used, it will first be created on the
-[Compute Virtual Machine](../develop/admin/infrastructure.md#compute-components). This may take up to several
-minutes. If it was used at least once, a previously created environment will be re-used with no delay to run the script.
+[Compute Virtual Machine](../develop/admin/infrastructure.md#compute-components). This may take up to several minutes.
+If it was used at least once, a previously created environment will be re-used with no delay to run the script.
 
 #### Specify environment in-place
 
@@ -193,10 +192,10 @@ dependencies:
 To use it in any script, specify it as follows:
 
 ```python
-#name: EnvTestInline
-#environment: channels: [conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
-#language: python
-#output: string result
+# name: EnvTestInline
+# environment: channels: [conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
+# language: python
+# output: string result
 
 import re, requests
 from glom import glom
@@ -207,11 +206,11 @@ result = glom(target, 'a.b.c')  # returns 'd'
 ```
 
 When the script runs first time, the environment will be created on
-the [Compute Virtual Machine](../develop/admin/infrastructure.md#compute-components), which may take some
-time, up to several minutes. However, on the second run and onwards this environment will simply be reused. If the
-environment string is changed in this script to some other environment which was previously created in same way even in
-some other script, this environment will also be picked up and reused. These environments are handeled by Datagrok using
-MD5 hashes of their body strings.
+the [Compute Virtual Machine](../develop/admin/infrastructure.md#compute-components), which may take some time, up to
+several minutes. However, on the second run and onwards this environment will simply be reused. If the environment
+string is changed in this script to some other environment which was previously created in same way even in some other
+script, this environment will also be picked up and reused. These environments are handeled by Datagrok using MD5 hashes
+of their body strings.
 
 #### Reference an environment from another package
 

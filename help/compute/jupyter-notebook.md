@@ -39,7 +39,7 @@ your data.
 Use simple function called "grok". Example:
 
 ```python
-    grok( < table >)
+    grok(< table >)
 ```
 
 where table in a Pandas dataframe.
@@ -66,5 +66,5 @@ To import a notebook, just drag-and-drop the corresponding `.ipynb` file to the 
 
 See also:
 
-* [http://jupyter.org](http://jupyter.org)
+* [https://jupyter.org](https://jupyter.org)
 * [A gallery of interesting Jupyter notebooks](https://github.com/jupyter/jupyter/wiki/A-gallery-of-interesting-Jupyter-Notebooks#statistics-machine-learning-and-data-science)

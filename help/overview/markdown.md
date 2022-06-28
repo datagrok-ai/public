@@ -3,7 +3,7 @@
 
 # Markdown
 
-[Markdown](http://daringfireball.net/projects/markdown) is a way to style text on the web. You control the display of
+[Markdown](https://daringfireball.net/projects/markdown) is a way to style text on the web. You control the display of
 the document; formatting words as bold or italic, adding images, and creating lists are just a few of the things we can
 do with Markdown. Mostly, Markdown is just regular text with a few non-alphabetic characters thrown in, like `#` or `*`.
 
@@ -51,8 +51,8 @@ Format: `![Alt Text](url)`
 
 ### Links
 
-http://github.com - automatic!
-[GitHub](http://github.com)
+https://github.com - automatic!
+[GitHub](https://github.com)
 
 ### Blockquotes
 
@@ -95,7 +95,7 @@ Here’s an example of Python code without syntax highlighting:
 
 ### Task lists
 
-* [x] @mentions, #refs, [links](links), **formatting**, and <del>tags</del> supported
+* [x] @mentions, #refs, [links](https://datagrok.ai/help/overview/markdown#task-lists), **formatting**, and <del>tags</del> supported
 * [x] list syntax required (any unordered or ordered list supported)
 * [x] this is a complete item
 * [ ] this is an incomplete item

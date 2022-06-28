@@ -25,6 +25,6 @@ See also:
 
 References:
 
-* [rdkit.Chem.Scaffolds.MurckoScaffold module](http://rdkit.org/docs/source/rdkit.Chem.Scaffolds.MurckoScaffold.html)
-* [Computational Exploration of Molecular Scaffolds in Medicinal Chemistry](http://europepmc.org/abstract/MED/26840095)
+* [rdkit.Chem.Scaffolds.MurckoScaffold module](https://rdkit.org/docs/source/rdkit.Chem.Scaffolds.MurckoScaffold.html)
+* [Computational Exploration of Molecular Scaffolds in Medicinal Chemistry](https://europepmc.org/abstract/MED/26840095)
 * [Comparative analyses of structural features and scaffold diversity for purchasable compound libraries](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5400773/)

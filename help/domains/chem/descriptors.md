@@ -294,4 +294,4 @@ Lipinski parameters for molecules
 See also:
 
 * [Molecular descriptor](https://en.wikipedia.org/wiki/Molecular_descriptor)
-* [RDKit](http://rdkit.org)
+* [RDKit](https://rdkit.org)

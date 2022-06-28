@@ -14,4 +14,4 @@ See also:
 References:
 
 * [RDKit Visualization of Descriptors](https://www.rdkit.org/docs/GettingStartedInPython.html#visualization-of-descriptors)
-* [Gasteiger-Marsili empirical atomic partial charges](http://www.codessa-pro.com/descriptors/electrostatic/gmc.htm)
+* [Gasteiger-Marsili empirical atomic partial charges](https://www.codessa-pro.com/descriptors/electrostatic/gmc.htm)

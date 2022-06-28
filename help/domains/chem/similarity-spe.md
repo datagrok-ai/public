@@ -36,5 +36,5 @@ See also:
 
 * [Chemical similarity](https://en.wikipedia.org/wiki/Chemical_similarity)
 * [Molecular fingerprints](fingerprints.md)
-* [Fingerprints - Screening and similarity](http://www.daylight.com/dayhtml/doc/theory/theory.finger.html)
+* [Fingerprints - Screening and similarity](https://www.daylight.com/dayhtml/doc/theory/theory.finger.html)
 * [Stochastic Proximity Embedding](https://pdfs.semanticscholar.org/aeb7/aa3b9655838e00de12e33e64f9f1b43bb922.pdf)

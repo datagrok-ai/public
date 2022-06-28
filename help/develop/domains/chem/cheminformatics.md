@@ -8,8 +8,8 @@ for developing cheminformatics solutions on top of it. Depending on your needs, 
 or come up with your own solution.
 
 * For **Typical tasks** such as calculating descriptors, substructure or similarity search, finding MCS or performing an
-  R-group analysis, consider using the [Datagrok JS API](#grok-js-api).
-* For **custom client-side computations**, consider using either [OpenChemLib.JS](#openchemlib.js),
+  R-group analysis, consider using the [Datagrok JS API](#datagrok-js-api).
+* For **custom client-side computations**, consider using either [OpenChemLib.JS](#openchemlibjs),
   or [RDKit built for WebAssembly](#rdkit-in-webassembly).
 * For **custom server-side computations**, a popular option is using
   [RDKit in Python](#rdkit-in-python). Python scripts can be seamlessly embedded into Datagrok
@@ -55,7 +55,7 @@ The `settings` object allows passing the following parameters:
   RDKit (`substructLibrary: false`
   , [code sample 1](https://public.datagrok.ai/js/samples/domains/chem/substructure-search-simple)
   , [code sample 2](https://public.datagrok.ai/js/samples/domains/chem/substructure-search-library))
-  , or a [`substructLibrary`](http://rdkit.blogspot.com/2018/02/introducing-substructlibrary.html)
+  , or a [`substructLibrary`](https://rdkit.blogspot.com/2018/02/introducing-substructlibrary.html)
   from RDKit (`substructLibrary: true`
   , [code sample](https://public.datagrok.ai/js/samples/domains/chem/substructure-search-library)). The default value
   is `true`.
@@ -199,7 +199,7 @@ in the public repository.
 ## Rdkit in WebAssembly
 
 Recently, Greg Landrum, the author of RDKit, has introduced
-[a way to compile its C++ code to WebAssembly](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html)
+[a way to compile its C++ code to WebAssembly](https://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html)
 , thus allowing to combine the performance and efficiency of the carefully crafted C++ codebase with the ability to run
 it in the browser. This approach fits perfectly with Datagrok's philosophy of performing as much computations on the
 client as possible, so naturally we've jumped on that opportunity!
