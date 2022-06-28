@@ -2,6 +2,8 @@ export const STORAGE_NAME = 'alation';
 export const REFRESH_TOKEN_KEY = 'refresh_token';
 export const API_TOKEN_KEY = 'api_access_token';
 export const USER_ID = 'user_id';
+export const SERVICE_USERNAME = 'service_username';
+export const SERVICE_PASSWORD = 'service_password';
 
 export const URI_MAP = {
   refresh_token: 'validateRefreshToken',
@@ -12,6 +14,8 @@ export const URI_MAP = {
   column: 'column',
   result: 'result',
   create_api_token: 'createAPIAccessToken',
+  create_refresh_token: 'createRefreshToken',
+  regenerate_refresh_token: 'regenRefreshToken',
   account_auth: 'account/auth',
 };
 
