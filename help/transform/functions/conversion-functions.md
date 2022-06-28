@@ -8,7 +8,7 @@
 - [Boolean](#booleanx)
 - [DateParse](#dateparses)
 - [TimeSpanParse](#timespanparses)
-- [ToString](#tostring)
+- [ToString](#tostringx)
 
 ## <a name="boolean"></a>Boolean(`x`)
 

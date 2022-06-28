@@ -8,12 +8,12 @@ created an automated flow to build, scan, test and publish our application. This
 code to be published.
 
 The generalized CI/CD scheme consists of 4 steps: analyze, build, test, publish. More information can be found below in
-specific topics: [public flow](#public-repositorycollaboratepublic-repositorymd-cicd-flow), [build flow](#build-release)
+specific topics: [public flow](#public-repository-cicd-flow), [build flow](#build-release)
 , [patch flow](#patch-release), [minor flow](#minor-release), [major flow](#major-release).
 
 ![General CI Flow](img/CI_Flow.png)
 
-## [Public repository](../collaborate/public-repository.md) CI/CD flow
+## Public repository CI/CD flow
 
 ![Public CI Flow](img/CI_public.jpg)
 

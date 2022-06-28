@@ -15,7 +15,7 @@ features), or indirectly to drive the choice of decision rules.
 Plugin uses following types of kernels:
 
 * [R Caret](https://topepo.github.io/caret/index.html)
-* [H2O](http://h2o.ai)
+* [H2O](https://h2o.ai)
 * [Chemprop](https://github.com/chemprop/chemprop)
 
 To select kernel open **Tools** | **Settings...** | **Servers**
@@ -135,7 +135,7 @@ See also:
 * [Predictive modeling](https://en.wikipedia.org/wiki/Predictive_modelling)
 * [Statistical classification](https://en.wikipedia.org/wiki/Statistical_classification)
 * [R Caret package](https://topepo.github.io/caret/index.html)
-* [H2O](http://h2o.ai/)
+* [H2O](https://h2o.ai/)
 * [Chemprop](https://github.com/chemprop/chemprop)
 * [Receiver operating characteristic (ROC)](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)
 * [Confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix)

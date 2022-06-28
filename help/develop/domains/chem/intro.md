@@ -99,7 +99,7 @@ of chemical data is usually integrated to analysis pipeline.
 
 There is a number of freely-available cheminformatics toolkits available for investigators and
 developers. [RDKit](https://www.rdkit.org/docs/GettingStartedInPython.html)
-, [CDK](https://cdk.github.io/), [Open Babel](http://openbabel.org/wiki/Main_Page) are among them. RDKit is widely used
+, [CDK](https://cdk.github.io/), [Open Babel](https://openbabel.org/wiki/Main_Page) are among them. RDKit is widely used
 at Datagrok in form of Python, C++ and JS code.
 
 To provide an opportunity of having up-to-date data for its users, Datagrok is connected

@@ -11,7 +11,7 @@ language, and use results in dashboards, data augmentation panels, or via the [J
 To create a new Neo4j connection, open the "Databases" pane (Open | Databases), right-click on Neo4j, and choose "Add
 connection...". Then, enter the connection details, click TEST to make sure you've entered everything correctly, and
 click SAVE. Note that by default, the connection will only be accessible to you, so you will have to share it in order
-for others to use it. Check out [creating a connection](../data-connection.md#creating-a-new-connection) for more
+for others to use it. Check out [creating a connection](../data-connection.md#creating-a-connection) for more
 details.
 
 Once a connection is created, it's time to create a query.

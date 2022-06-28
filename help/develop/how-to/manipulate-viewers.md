@@ -79,7 +79,7 @@ and the application of supplied values is not guaranteed in synchronous use).
 
 Examples:
 
-<ul style="column-count: 2;">
+<ul style={{"column-count":2,}}>
   <li>
     <a href="https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart" target="_blank">Bar Chart</a>
   </li>

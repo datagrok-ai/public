@@ -64,7 +64,7 @@ relevant part of the input gets sent to the server, where it gets processed, and
 Results of the computations reside on the server until either the client retrieves it, or an automatic cleanup happens.
 Neither inputs nor outputs can be accessed by functions executed by other users. Only administrators can access compute
 server, where the data is stored or processed. All traffic between client and server
-is [TLS-encrypted](https://www.websecurity.symantec.com/security-topics/what-is-ssl-tls-https).
+is [TLS-encrypted](https://en.wikipedia.org/wiki/Transport_Layer_Security).
 
 Most of the actions performed by users are logged for the usage analysis and [audit](../../govern/audit.md) purposes.
 For logging, only the metadata associated with the parameters (such as table and column names) will be additionally

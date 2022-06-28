@@ -20,7 +20,7 @@ eliminating molecules as candidates in a substructure search, are both processes
 
 See also:
 
-* [Fingerprints - Screening and similarity](http://www.daylight.com/dayhtml/doc/theory/theory.finger.html)
+* [Fingerprints - Screening and similarity](https://www.daylight.com/dayhtml/doc/theory/theory.finger.html)
 * [RDKFingerprint](https://www.rdkit.org/docs/GettingStartedInPython.html#fingerprinting-and-molecular-similarity)
 * [MACCSKeys](https://pdfs.semanticscholar.org/ad40/b25e38314f39a82f193dc4806e6a1c2c6b69.pdf)
 * [AtomPair](https://pubs.acs.org/doi/abs/10.1021/ci00046a002)

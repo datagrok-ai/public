@@ -5,10 +5,10 @@
 
 * [Architecture](architecture.md)
     * Data flows
-    * [Deployment](architecture.md#deployment)
+    * [Deployment](deploy.md)
 
 * Security
-    * [Security overview](#security)
+    * [Security overview](security.md)
     * [Authentication](../../govern/authentication.md)
       and [authorization](../../govern/authorization.md)
     * [Encryption at rest](#encryption-at-rest) and [encryption in transit](#encryption-in-transit)
@@ -17,7 +17,7 @@
     * [Logging and monitoring](#logging-and-monitoring) (using standard AWS tools)
     * [Backup and restore](#backup-and-restore)
     * [Disaster recovery (HA/DR)](#disaster-recovery)
-    * [Infrastructure as code](#infrastructure-as-code) (ability to deploy using standard DevOps tools)
+    * [Infrastructure as code](#infrastructure-as-a-code) (ability to deploy using standard DevOps tools)
 
 * Interoperability
     * Calling web services from client and server with proper auth and integrate that data with Datagrok API
