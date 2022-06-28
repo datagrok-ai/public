@@ -18,9 +18,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
-import {substitutionsWidget} from './widgets/subst-table';
 import {msaWidget} from './widgets/multiple-sequence-alignment';
-import {getDistributionWidget} from './widgets/distribution';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 
 export const _package = new DG.Package();

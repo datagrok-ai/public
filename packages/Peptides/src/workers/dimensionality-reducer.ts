@@ -11,12 +11,7 @@ import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
  * @return {any} Embedding (and distance matrix where applicable).
  */
 function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, options: any): any {
-  const reducer = new DimensionalityReducer(
-    columnData,
-    method,
-    measure,
-    options,
-  );
+  const reducer = new DimensionalityReducer(columnData, method, measure, options);
   return reducer.transform(true);
 }
 

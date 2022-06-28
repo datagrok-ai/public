@@ -9,14 +9,12 @@ import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encod
 import {createDimensinalityReducingWorker, IReduceDimensionalityResult,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
-import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 import * as C from '../utils/constants';
 
 export class PeptideSpaceViewer extends DG.JsViewer {
   method: string;
   measure: string;
   cyclesCount: number;
-  // controller: PeptidesController | null = null;
   customProperties = new Set(['method', 'measure', 'cyclesCount']);
   isEmbeddingCreating: boolean = false;
 
@@ -74,15 +72,13 @@ export async function computeWeights(
   try {
     const axesNames = ['~X', '~Y', '~MW'];
     col ??= table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
-    const columnData = col.toList()
-      .map((v) => AlignedSequenceEncoder.clean(v));
+    const columnData = col.toList().map((v) => AlignedSequenceEncoder.clean(v));
 
     const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(
       {data: columnData, metric: measure as StringMetrics}, method, {cycles: cyclesCount});
     const embcols = reduceDimRes.embedding;
 
-    const columns = Array.from(
-      embcols as Coordinates, (v: Float32Array, k) => DG.Column.fromFloat32Array(axesNames[k], v));
+    const columns = Array.from(embcols, (v: Float32Array, k) => DG.Column.fromFloat32Array(axesNames[k], v));
 
     function _getMW(sequences: string[]): Float32Array {
       const mw: Float32Array = new Float32Array(sequences.length);
