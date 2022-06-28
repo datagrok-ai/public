@@ -13,11 +13,11 @@ Here’s an overview of Markdown syntax that you can use.
 
 ### Headers
 
-# This is an <h1> tag
+# This is an `<h1>` tag
 
-## This is an <h2> tag
+## This is an `<h2>` tag
 
-###### This is an <h6> tag
+###### This is an `<h6>` tag
 
 ### Emphasis
 
@@ -95,7 +95,7 @@ Here’s an example of Python code without syntax highlighting:
 
 ### Task lists
 
-* [x] @mentions, #refs, [links](), **formatting**, and <del>tags</del> supported
+* [x] @mentions, #refs, [links](links), **formatting**, and <del>tags</del> supported
 * [x] list syntax required (any unordered or ordered list supported)
 * [x] this is a complete item
 * [ ] this is an incomplete item

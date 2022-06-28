@@ -127,7 +127,7 @@ comes in handy with this option. One might say that SMARTS is the "regular expre
 for this notation is used to define substructural _patterns_ in molecules.
 
 Datagrok makes use of SMARTS for search of structural alerts, substructure search and R-group analysis.
- <!--corr: it is necessary to list here other exapmles of the aforementioned formats in use-->
+<!--corr: it is necessary to list here other exapmles of the aforementioned formats in use-->
 
 ### Descriptors and fingerprints
 
