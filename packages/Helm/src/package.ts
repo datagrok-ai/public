@@ -59,8 +59,10 @@ export function detailsPanel(helmString: string){
       'formula': result[0].replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
       'molecular weight': result[1],
       'extinction coefficient': result[2],
+      'molfile': result[3],
       'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
       'rna analogue sequence': ui.wait(async () => ui.divText(await helmToRNA(helmString))),
+      'smiles': ui.wait(async () => ui.divText(await helmToSmiles(helmString))),
       'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),
     })
   )
@@ -107,11 +109,12 @@ export async function helmToPeptide(helmString: string) {
 }
 
 //name: helmToSmiles
-//tags: converter
+//description: converts to smiles
+//input: string helmString {semType: HELM}
 //output: string smiles {semType: Molecule}
-export function helmToSmiles(helm: string): string {
-  //todo: call webservice
-  return 'foo';
+export async function helmToSmiles(helmString: string) {
+  const url = `http://localhost:8081/WebService/service/SMILES/${helmString}`
+  return await accessServer(url, 'SMILES');
 }
 
 
@@ -140,7 +143,8 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     var formula = canvas.getFormula(true);
     var molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
     var coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
-    var result = formula + ', ' + molWeight + ', ' + coef;
+    var molfile = canvas.getMolfile();
+    var result = formula + ', ' + molWeight + ', ' + coef + ', ' + molfile;
     lru.set(gridCell.cell.value, result);
   }
 }
