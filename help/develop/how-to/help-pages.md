@@ -32,10 +32,14 @@ easily [create it on GitHub](https://docs.github.com/en/authentication/keeping-y
 .
 
 ```shell
+# Download dependencies
+docker pull ghcr.io/igorshubovych/markdownlint-cli:latest
+docker pull lycheeverse/lychee
+npm install -g remark-cli remark-validate-links
+
 # To check full documentation
 docker run -v "<absolut_path_to_public_repo>":/workdir --rm -i ghcr.io/igorshubovych/markdownlint-cli:latest --config .github/linters/.markdownlint.yaml help/**/*.md
 docker run --init -it -v "<absolut_path_to_public_repo>/help":/help -v "<absolut_path_to_public_repo>/.lycheeignore":/.lycheeignore  lycheeverse/lychee /help --github-token "<your_personal_github_token>" --exclude-all-private --require-https --cache -a 429
-npm install -g remark-cli remark-validate-links
 remark -u validate-links --frail "<absolut_path_to_public_repo>/help"
 
 # To check and fix full documentation using mardownlint
