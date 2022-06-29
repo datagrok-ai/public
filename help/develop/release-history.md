@@ -1,6 +1,22 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-29 Dev build 1.4.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* OligoBatchCalculator: fix of using new modification 
+* Compute: Model Catalog Groups editor #658 
+
+
 # 2022-06-29 Dev build 1.4.5
 
 ## Latest Docker Images
