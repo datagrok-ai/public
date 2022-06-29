@@ -1,6 +1,32 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-29 Dev build 1.4.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Test manager: ability to run tests using url (WIP)
+* Exercises: fixes 
+* (Bug) IgnoreCloseAll doesn't work 
+* Compute: Script icons support 
+* JS-API: package-test.js fails to load on autostart 
+* Compute: Model Catalog app to appear on the Left Panel #411 
+* Docs: Help documentation 
+* Docusaurus documentation 
+* (Bug) Parametrized DataQueries don't work (WIP)
+* Fixed typo 
+* Compute: Model Catalog Groups editor #658 
+* Fixed routes order 
+
+
 # 2022-06-28 Dev build 1.4.4
 
 ## Latest Docker Images
