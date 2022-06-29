@@ -17,9 +17,9 @@ predictive models, integration with the external utilities, data augmentation, a
 * [Setting up the environment](#setting-up-the-environment)
 * [Semantic-types](#exercise-1-semantic-types)
 * [Scripting and functions](#exercise-2-scripting-and-functions)
-  * [Scripting with server functions](#scripting-with-server-functions)
-  * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
-  * [Scripting with client functions](#scripting-with-client-functions)
+    * [Scripting with server functions](#scripting-with-server-functions)
+    * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
+    * [Scripting with client functions](#scripting-with-client-functions)
 
 <!---
 * [Composing functions](#composing-functions)
@@ -61,7 +61,8 @@ Use your credentials as a name of the branch
    running `grok config`. Open [https://dev.datagrok.ai/u](https://dev.datagrok.ai/u), click on `Developer key`, copy
    the `grok` command and execute it to add the key to your config
 4. Create a default package in your branch [called](https://datagrok.ai/help/develop/develop#naming-conventions)
-   `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence` with specifying the `--ts` option to create a package with TypeScript configuration
+   `<yourFirstName>-sequence` using datagrok-tools:
+   `grok create <yourFirstName>-sequence` with specifying the `--ts` option to create a package with TypeScript configuration
    (if you are new to TypeScript, you can specify the `--js` option); Note that detectors.js file is still using JavaScript
 5. Run `npm install` to link the dependencies mentioned in `package.json` file of your package
 6. Upload it to the server: run `webpack` and `grok publish dev` (see other
@@ -98,7 +99,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
     }
     ```
 
-   Note that comments on the top of the function declaration are crucial for runnig it on the platform.
+   Note that comments on the top of the function declaration are crucial for running it on the platform.
    They determine the function name, the input and output types.
    Essentially, change each character to the complementary one: `A <=> T`, `G <=> C`. Run it and check whether
    everything works fine.
@@ -422,7 +423,7 @@ fetches back the result to the browser.
    Grasp a number of techniques with Datagrok JS API:
    * creating a new column of a given type
    * iterating through a dataframe by a row index
-   * crearing a dataframe from an array of columns
+   * creating a dataframe from an array of columns
 
 10. In `CountSubsequenceTablePythonAugment`, replace `CountSubsequenceTablePython` to `CountSubsequenceTableJS`,
     rename itself to `CountSubsequenceTableJSAugment` and run it. Check that the exact same new column is produced
