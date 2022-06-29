@@ -28,7 +28,7 @@ let zoom = false;
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
 export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
-  activities: DG.Column, similarity: number, methodName: string) : Promise<void> {
+  activities: DG.Column, similarity: number, methodName: string) : Promise<DG.Viewer> {
   const automaticSimilarityLimit = false;
   const MIN_SIMILARITY = 80;
 
@@ -151,9 +151,10 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
   });
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
-    ui.dialog({title: 'Activity cliffs'})
+    const cliffsDialog = ui.dialog({title: 'Activity cliffs'})
       .add(linesDfGrid.root)
       .show();
+    cliffsDialog.root.id = 'cliffs_dialog';
   });
   listCliffsLink.style.position = 'absolute';
   listCliffsLink.style.top = '10px';
@@ -246,6 +247,7 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column,
     });
 
   sp.addProperty('similarityLimit', 'double', optSimilarityLimit);
+  return sp;
 }
 
 function checkCursorOnLine(event: any, canvas: any, lines: ILine[]): ILine | null {

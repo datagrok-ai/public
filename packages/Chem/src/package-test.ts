@@ -5,6 +5,7 @@ import './tests/chem-tests';
 import './tests/detector-tests';
 import './tests/widgets-tests';
 import './tests/chem-space-tests';
+import './tests/activity-cliffs-tests';
 
 export const _package = new DG.Package();
 export {tests};

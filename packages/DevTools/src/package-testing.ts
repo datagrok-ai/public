@@ -86,7 +86,7 @@ async function collectTests(testFromUrl: ITestFromUrl, packageName?: string): Pr
   const packagesTestsList: IPackageTests[] = [];
   for (let f of testFunctions) {
     await f.package.load({ file: f.options.file });
-    await delay(2000);
+   // await delay(2000);
     const allPackageTests = f.package.getModule(f.options.file).tests;
     let testsWithPackNameAndActFlag: { [cat: string]: ICategory } = {};
     if (allPackageTests) {
