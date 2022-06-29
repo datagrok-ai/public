@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-//allowRowSelection?
+
 import {Subject, Observable} from 'rxjs';
 import {addViewerToHeader, StackedBarChart} from './viewers/stacked-barchart-viewer';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
@@ -91,8 +91,8 @@ export class PeptidesModel {
   }
 
   invalidateSelection(): void {
-    this.modifyOrCreateSplitCol();
     this.fireBitsetChanged();
+    this.modifyOrCreateSplitCol();
     grok.shell.o = this.createAccordion().root;
     this.invalidateGrids();
   }
@@ -737,7 +737,25 @@ export class PeptidesModel {
 
     const changeBitset = (currentBitset: DG.BitSet, previousBitset: DG.BitSet): void => {
       previousBitset.setAll(!this._filterMode, false);
-      currentBitset.init((i) => this.splitCol.get(i), false);
+
+      const positionList = Object.keys(this.currentSelection);
+      if (positionList.length == 0) {
+        currentBitset.init(() => false);
+        return;
+      }
+
+      //TODO: move out
+      const getBitAt = (i: number) => {
+        for (const position of positionList) {
+          const positionCol: DG.Column<string> = this._dataFrame.getCol(position);
+          if (this._currentSelection[position].includes(positionCol.get(i)))
+            return true;
+        }
+        return false;
+      };
+      currentBitset.init((i) => getBitAt(i), false);
+
+      // currentBitset.init((i) => this.splitCol.get(i), false);
     };
 
     const recalculateStatistics =
@@ -754,7 +772,9 @@ export class PeptidesModel {
     this.isBitsetChangedInitialized = true;
   }
 
-  fireBitsetChanged(): void {(this._filterMode ? this._dataFrame.filter : this._dataFrame.selection).fireChanged();}
+  fireBitsetChanged(): void {this.getBiteset().fireChanged();}
+
+  getBiteset(): DG.BitSet { return this._filterMode ? this._dataFrame.filter : this._dataFrame.selection; }
 
   //TODO: move out
   postProcessGrids(sourceGrid: DG.Grid, invalidIndexes: number[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
@@ -798,26 +818,10 @@ export class PeptidesModel {
   }
 
   modifyOrCreateSplitCol(): void {
-    const df = this._dataFrame;
-    this.splitCol = df.col(C.COLUMNS_NAMES.SPLIT_COL) ?? df.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
-
-    const positionList = Object.keys(this.currentSelection);
-    if (positionList.length == 0) {
-      this.splitCol.init(() => false);
-      return;
-    }
-
-    //TODO: move out
-    const splitColInit = (i: number) => {
-      for (const position of positionList) {
-        const positionCol: DG.Column<string> = this._dataFrame.getCol(position);
-        if (this._currentSelection[position].includes(positionCol.get(i)))
-          return true;
-      }
-      return false;
-    };
-    this.splitCol.init((i) => splitColInit(i));
-
+    const bs = this.getBiteset();
+    this.splitCol = this._dataFrame.col(C.COLUMNS_NAMES.SPLIT_COL) ??
+      this._dataFrame.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
+    this.splitCol.init(i => bs.get(i));
     this.splitCol.compact();
   }
 
@@ -972,8 +976,7 @@ export class PeptidesModel {
 
     const dockManager = this.currentView.dockManager;
 
-    const sarViewer =
-      await this._dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
+    const sarViewer = await this._dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
 
     const sarViewerVertical =
       await this._dataFrame.plot.fromType('peptide-sar-viewer-vertical', options) as SARViewerVertical;
