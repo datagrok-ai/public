@@ -15,33 +15,58 @@ The exercises are based on your knowledge obtained in [exercies](./exercises.md)
 
 ## Exercise 1: Search for most common structures
 
-Statement of the problem.
-Write a function that reads a file containing SMILES, determines the associated maximal common substructure (MCS).
-It should also compute the mutual similarity scores for molecules and the MCS.
-Input data. Files > App Data > Chem > sars\_small.csv
-*Solution*, step-by-step.
+_You will learn:_ How to employ functions from external packages in your own package.
 
-1. Let's call our function findSimilarToMCS. This function takes a single input -- a dataframe df.
-For the sake of simplicity, we suppose that the column with SMILES is df.col('smiles').
-2. Employ the asynchronous function FindMCS from Chem package.
-Since we're calling a function from an external package, we should use grok.functions.call:
-const mcsValue = await grok.functions.call('Chem:FindMCS', {'smiles': 'smiles', 'df': dataframe, 'returnSmarts': false});
-3. Having obtained the string mcsValue, create a new column in df, whose cells are filled with this value:
-Create an Array of the apporpriate length, filled with mcsValue.
-Feed this array to the constructor DG.Column.fromList() to get the desired mcsCol object.
-Assign semantic type Molecule to the newly created column, with the help of col.semType(...).
-  Similarly, associate Molecule cell renderer with the help of col.setTag(...) method.
-4. To compute similarity scores, we can invoke the getSimilarities() function of Chem.
-It takes as its parameters the initial SMILES column and mcsValue. The function can be called as described in step 2.
-5. The output of step 4 is a new dataframe scoresDf, its 0-th column contains the scores values.
-This column, scoresCol, can be reached with by means of byIndex() method of scoresDf.columns object.
-6. Finally, insert mcsCol and scoresCol next to the position of the initial SMILES column.
+_Prerequisites:_ ["Cheminformatics"](#https://datagrok.ai/help/domains/chem/cheminformatics).
+
+_Statement of the problem_. Write a function that reads a file containing SMILES, determines the associated
+maximal common substructure (MCS), and computes the mutual similarity scores for molecules and the MCS.
+
+_Input data_. Files > App Data > Chem > sars\_small.csv
+
+**Solution**, step-by-step.
+
+1. Let's call our function `findSimilarToMCS`, we place its definition in `./src/package.ts` inside our
+package. This function takes a single input — a dataframe `df`. For the sake of simplicity, we suppose
+that the column with SMILES is `df.col('smiles')`:
+  ```typescript
+  //name: findSimilarToMCS
+  //input: dataframe df
+  export async function findSimilarToMCS(df: DG.DataFrame) : Promise<void> {
+    ... // your code goes here
+  }
+  ```
+
+2. Employ the asynchronous function `FindMCS` from `Chem` package. Since we're calling a function from
+an external package, we should use `grok.functions.call`:
+  ```typescript
+  const mcsValue = await grok.functions.call('Chem:FindMCS', {'smiles': 'smiles', 'df': dataframe, 'returnSmarts':
+  false});
+  ```
+
+3. Having obtained the string `mcsValue`, create a new column in `df`, whose cells are filled with this
+value:
+  * Create an `Array` of the apporpriate length, filled with `mcsValue`.
+  * Feed this array to the constructor `DG.Column.fromList()` to get the desired `mcsCol` object.
+  * Assign semantic type `Molecule` to the newly created column, with the help of `col.semType(...)`.
+Similarly, associate `Molecule` cell renderer with the help of `col.setTag(...)` method.
+
+4. To compute similarity scores, we can call the `getSimilarities()` function of `Chem` package, which
+takes as its parameters the initial SMILES column and `mcsValue`. The function can be invoked as described
+in step 2.
+
+5. The output of step 4 is a new dataframe `scoresDf`, its 0-th column contains the scores values. This
+column, `scoresCol`, can be reached with by means of `byIndex()` method of `scoresDf.columns` object.
+
+6. Finally, insert the columns `mcsCol` and `scoresCol` into the dataframe, next to the position of the
+initial SMILES column. `df.columns.insert()` method can help with this, if we cleverly specify the index/position
+at which the insertion should take place.
 
 ## Exercise 3: Train Model to Predict Activity
 
-*You will learn:* How to train a model inside a package and use it to predict the activity of molecules
+_You will learn:_ How to train a model inside a package and use it to predict the activity of molecules
 
-*Prerequisites:*  ["Molecular fingerprints"](#https://datagrok.ai/help/domains/chem/fingerprints),
+_Prerequisites:_  ["Molecular fingerprints"](#https://datagrok.ai/help/domains/chem/fingerprints),
 ["Cheminformatics"](#https://datagrok.ai/help/domains/chem/cheminformatics).
 
 1. Create a package with the name `<yourFirstName>-cheminformatics`
