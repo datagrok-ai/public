@@ -119,9 +119,9 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
 //tags: app
 export async function OligoBatchCalculatorApp(): Promise<void> {
   const additionalModsDf = await getAdditionalModifications();
-  const additionalCodes = additionalModsDf.col(COL_NAMES.ABBREVIATION)!.categories;
-  const additionalAbbreviations = additionalModsDf.col(COL_NAMES.ABBREVIATION)!.toList();
-  const additionalWeights = additionalModsDf.col(COL_NAMES.MOLECULAR_WEIGHT)!.toList();
+  let additionalCodes = additionalModsDf.getCol(COL_NAMES.ABBREVIATION).categories;
+  let additionalAbbreviations = additionalModsDf.getCol(COL_NAMES.ABBREVIATION).toList();
+  let additionalWeights = additionalModsDf.getCol(COL_NAMES.MOLECULAR_WEIGHT).toList();
   const extinctionCoefficients = additionalModsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.toList();
   const additionalWeightsObj: {[index: string]: number} = {};
   const extinctionCoeffsObj: {[index: string]: number} = {};
@@ -133,6 +133,18 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   const mainGrid = DG.Viewer.grid(DG.DataFrame.create(), {'showRowHeader': false});
 
   async function render(text: string): Promise<void> {
+    const additionalModsDf = await getAdditionalModifications();
+    additionalCodes = additionalModsDf.getCol(COL_NAMES.ABBREVIATION).categories;
+    additionalAbbreviations = additionalModsDf.getCol(COL_NAMES.ABBREVIATION).toList();
+    additionalWeights = additionalModsDf.getCol(COL_NAMES.MOLECULAR_WEIGHT).toList();
+    const newExtinctionCoefficients = additionalModsDf.getCol(COL_NAMES.EXTINCTION_COEFFICIENT).toList();
+    const additionalWeightsObj: {[index: string]: number} = {};
+    const extinctionCoeffsObj: {[index: string]: number} = {};
+    additionalAbbreviations.forEach((key, i) => additionalWeightsObj[key] = additionalWeights[i]);
+    additionalAbbreviations.forEach((key, i) => {
+      if (newExtinctionCoefficients[i] != 'Base')
+        extinctionCoeffsObj[key] = newExtinctionCoefficients[i] ?? 1;
+    });
     const sequences = text.split('\n')
       .map((s) => s.replace(/\s/g, ''))
       .filter((item) => item);
@@ -379,12 +391,12 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       STORAGE_NAME,
       additionalModsDf.col(COL_NAMES.ABBREVIATION)!.get(rowIndex),
       JSON.stringify({
-        longName: additionalModsDf.col(COL_NAMES.LONG_NAMES)!.get(rowIndex),
-        abbreviation: additionalModsDf.col(COL_NAMES.ABBREVIATION)!.get(rowIndex),
-        molecularWeight: additionalModsDf.col(COL_NAMES.MOLECULAR_WEIGHT)!.get(rowIndex),
-        extinctionCoefficient: additionalModsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.get(rowIndex),
-        baseModification: additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)!.get(rowIndex),
-        changeLogs: additionalModsDf.col('~' + COL_NAMES.CHANGE_LOGS)!.get(rowIndex),
+        longName: additionalModsDf.getCol(COL_NAMES.LONG_NAMES).get(rowIndex),
+        abbreviation: additionalModsDf.getCol(COL_NAMES.ABBREVIATION).get(rowIndex),
+        molecularWeight: additionalModsDf.getCol(COL_NAMES.MOLECULAR_WEIGHT).get(rowIndex),
+        extinctionCoefficient: additionalModsDf.getCol(COL_NAMES.EXTINCTION_COEFFICIENT).get(rowIndex),
+        baseModification: additionalModsDf.getCol(COL_NAMES.BASE_MODIFICATION).get(rowIndex),
+        changeLogs: additionalModsDf.getCol('~' + COL_NAMES.CHANGE_LOGS).get(rowIndex),
       }),
       CURRENT_USER,
     );
