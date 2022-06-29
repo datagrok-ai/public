@@ -980,10 +980,12 @@ export class PeptidesModel {
 
     const sarViewersGroup: viewerTypes[] = [sarViewer, sarViewerVertical];
 
-    const peptideSpaceViewerOptions = {method: 't-SNE', measure: 'Levenshtein', cyclesCount: 100};
-    const peptideSpaceViewer =
-      await this._dataFrame.plot.fromType('peptide-space-viewer', peptideSpaceViewerOptions) as PeptideSpaceViewer;
-    dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
+    if (this._dataFrame.rowCount <= 10000) {
+      const peptideSpaceViewerOptions = {method: 'SPE', measure: 'Levenshtein', cyclesCount: 100};
+      const peptideSpaceViewer =
+        await this._dataFrame.plot.fromType('peptide-space-viewer', peptideSpaceViewerOptions) as PeptideSpaceViewer;
+      dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
+    }
 
     dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
