@@ -35,6 +35,18 @@ export function editMoleculeCell(cell: DG.GridCell): void {
   org.helm.webeditor.MolViewer.molscale = 0.8;
   //@ts-ignore
   let app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
+  var sizes = app.calculateSizes();
+  app.canvas.resize(sizes.rightwidth, sizes.topheight - 210);
+  var s = { width: sizes.rightwidth + "px", height: sizes.bottomheight + "px" };
+  //@ts-ignore
+  scil.apply(app.sequence.style, s);
+  //@ts-ignore
+  scil.apply(app.notation.style, s);
+  s = { width: sizes.rightwidth + "px", height: (sizes.bottomheight + app.toolbarheight) + "px" };
+  //@ts-ignore
+  scil.apply(app.properties.parent.style, s);
+  app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
+  app.mex.resize(sizes.topheight - 80);
   setTimeout(function() {
     //@ts-ignore
     app.canvas.helm.setSequence(cell.cell.value , 'HELM');
