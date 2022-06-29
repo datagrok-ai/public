@@ -1,6 +1,26 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-29 Dev build 1.4.7
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.7`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* #741: Peptides Space fix 
+* Peptide space tests fix and performance benchmark 
+* Helm: Updating the sizes of the HelmWebEditor 
+* Chem: activity cliffs tests 
+* Compute: Model Catalog Groups editor #658 
+* Exercises: lint fixes 
+
+
 # 2022-06-29 Dev build 1.4.6
 
 ## Latest Docker Images
