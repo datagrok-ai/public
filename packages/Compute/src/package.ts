@@ -16,6 +16,9 @@ import './css/model-card.css';
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
 
+//@ts-ignore
+window.grok_Dapi_Function_Calls = window.grok_Dapi_Function_calls;
+
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
 //tags: viewer
