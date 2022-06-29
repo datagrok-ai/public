@@ -237,7 +237,15 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
 
   await render(defaultInput);
 
-  const title = ui.panel([ui.h2('Oligo Properties')], 'ui-panel ui-box');
+  const downloadIcon = ui.iconFA('download', () => saveAsCsv(mainGrid.dataFrame), 'Save as CSV');
+  $(downloadIcon).css('margin-left', '5px');
+
+  const title = ui.panel([
+    ui.divH([
+      ui.h2('Oligo Properties'),
+      downloadIcon,
+    ], {style: {'display': 'flex', 'align-items': 'center'}}),
+  ], 'ui-panel ui-box');
   title.style.maxHeight = '40px';
   $(title).children('h2').css('margin', '0px');
 
@@ -292,8 +300,17 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     }
   });
 
+  const addModificationIcon = ui.iconFA('plus', () => addModificationButton(additionalModsDf), 'Add new modidfication');
+  $(addModificationIcon).css('margin-left', '5px');
+  $(addModificationIcon).css('margin-top', '12px');
+
   const codesTablesDiv = ui.splitV([
-    ui.box(ui.h2('Additional modifications'), {style: {maxHeight: '40px'}}),
+    ui.box(
+      ui.divH([
+        ui.h2('Additional modifications'),
+        addModificationIcon,
+      ]), {style: {maxHeight: '40px'}},
+    ),
     additionaModifsGrid.root,
     ui.box(ui.h2('ASO Gapmers'), {style: {maxHeight: '40px'}}),
     asoGapmersGrid.root,
@@ -303,6 +320,10 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
 
   additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)!
     .setTag(DG.TAGS.CHOICES, '["NO", "rU", "rA", "rC", "rG", "dA", "dC", "dG", "dT"]');
+
+  const clearIcon = ui.iconFA('redo', () => inputSequences.value = '', 'Clear input field');
+  $(clearIcon).css('margin-left', '5px');
+  $(clearIcon).css('margin-top', '12px');
 
   const view = grok.shell.newView('Oligo Batch Calculator', [
     ui.splitH([
@@ -314,7 +335,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
               yieldAmount.root,
               units.root,
             ]),
-            ui.h2('Input Sequences'),
+            ui.divH([ui.h2('Input Sequences'), clearIcon]),
             ui.div([
               inputSequences.root,
             ], 'inputSequences'),
@@ -331,9 +352,6 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   view.box = true;
   view.path = '/apps/OligoBatchCalculator/';
   view.setRibbonPanels([[
-    ui.iconFA('redo', () => inputSequences.value = ''),
-    ui.iconFA('plus', () => addModificationButton(additionalModsDf)),
-    ui.iconFA('arrow-to-bottom', () => saveAsCsv(mainGrid.dataFrame!)),
     ui.switchInput('Codes', true, (v: boolean) => (v) ? $(codesTablesDiv).show() : $(codesTablesDiv).hide()).root,
   ]]);
 
