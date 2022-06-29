@@ -10,10 +10,10 @@ export {tests};
 
 //name: test
 //input: string category {optional: true}
-//input: string t {optional: true}
+//input: string test {optional: true}
 //output: dataframe result
 //top-menu: Tools | Dev | JS API Tests
-export async function test(category: string, t: string): Promise<DG.DataFrame> {
-  const data = await runTests({category, test: t});
+export async function test(category: string, test: string): Promise<DG.DataFrame> {
+  const data = await runTests({category, test: test});
   return DG.DataFrame.fromObjects(data)!;
 }
