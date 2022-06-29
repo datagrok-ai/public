@@ -98,10 +98,8 @@ export class ModelHandler extends DG.ObjectHandler {
       view.name = 'Models';
       view.parentCall = fc;
       grok.shell.addView(view);
-      console.log('call model catalog');
     }
     modelsView = this.findModelCatalogView();
-    console.log('model catalog '  + modelsView?.name);
     return modelsView as ModelCatalogView;
   }
 
@@ -118,10 +116,8 @@ export class ModelHandler extends DG.ObjectHandler {
     let modelsView = ModelHandler.getModelCatalogView();
     fc.aux['showOnTaskBar'] = false;
     if (modelsView != null) {
-      console.log('onBefore1');
       let parentCall = modelsView.parentCall;
       if (parentCall != null) {
-        console.log('onBefore2');
         parentCall.aux['view'] = modelsView;
         fc.parentCall = parentCall;
       }
