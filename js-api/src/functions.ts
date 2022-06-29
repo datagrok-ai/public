@@ -204,7 +204,7 @@ export class Context {
 /** Represents a function call
  * {@link https://datagrok.ai/help/overview/functions/function-call*}
  * */
-export class FuncCall {
+export class FuncCall extends Entity {
   public readonly dart: any;
   public inputs: any;
   public outputs: any;
@@ -214,7 +214,7 @@ export class FuncCall {
   public outputParams: any;
 
   constructor(dart: any) {
-    this.dart = dart;
+    super(dart);
     this.inputs = new FuncCallParamMapProxy(this.dart, true);
     this.outputs = new FuncCallParamMapProxy(this.dart, false);
     this.inputParams = new MapProxy(api.grok_FuncCall_Get_Params(this.dart, true));
@@ -255,6 +255,11 @@ export class FuncCall {
   /** Executes the function call */
   call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
     return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
+  }
+
+  /** Executes the function call synchronously*/
+  callSync(options?: {processed?: boolean, report?: boolean}):FuncCall {
+     return api.grok_FuncCall_Call_Sync(this.dart, options?.processed, options?.report);
   }
 
   /** Shows the corresponding dialog (or view). */

@@ -131,6 +131,7 @@ function getCookie(name: string): string | undefined{
 }
 
 //tags: init, autostart
+//meta.autostartImmediate: true
 export function init() {
   if (initCompleted)
     return;
@@ -146,7 +147,7 @@ export function init() {
     if (!restPane)
       acc.addPane('REST', () => ui.wait(async () => (await renderRestPanel(ent)).root));
   });
-
+/*
   let modelsList = ui.waitBox(async () => {
     let models = await grok.dapi.scripts
       .filter('#model')
@@ -169,17 +170,6 @@ export function init() {
       'LIST': list,
       'TREE': tree
     }).root;
-  });
-
-/*  grok.events.onViewAdding.subscribe((v: DG.ViewBase) => {
-    if (v instanceof ComputationView && (v as ComputationView).func?.hasTag("model")) {
-      let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
-      if (modelsView != undefined) {
-        v.parentCall = modelsView!.parentCall;
-        v.parentView = modelsView!;
-        v.toolbox = modelsList;
-      }
-    }
   });*/
 
   initCompleted = true;
@@ -189,7 +179,7 @@ export function init() {
 //tags: app
 //sidebar: @compute
 export function modelCatalog() {
-  let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
+  let modelsView = ModelHandler.findModelCatalogView();
   if (modelsView == null) {
     let view = new ModelCatalogView();
     view.name = 'Models';
@@ -197,7 +187,7 @@ export function modelCatalog() {
     parser.href = window.location.href;
     let pathSegments = parser.pathname.split('/');
     grok.shell.addView(view);
-    // grok.shell.info(parser.href);
+    // console.log(parser.href);
     if (pathSegments.length > 3) {
       let c = grok.functions.getCurrentCall();
       grok.dapi.functions.filter(`shortName = "${pathSegments[3]}" and #model`).list().then((lst) => {
