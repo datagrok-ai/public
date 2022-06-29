@@ -1,4 +1,4 @@
-<!-- TITLE: &#8204;Exercises -->
+<!-- TITLE: Cheminformatics -->
 <!-- SUBTITLE: -->
 
 # Cheminformatics
