@@ -117,6 +117,21 @@ export async function helmToSmiles(helmString: string) {
   return await accessServer(url, 'SMILES');
 }
 
+//name: Monomer Manager
+//input: column helmColumn {semType: HELM}
+export function monomerManager(helmColumn: DG.Column) {
+  let manager = ui.div();
+  //@ts-ignore
+  org.helm.webeditor.Adapter.init();
+  //@ts-ignore
+  new scil.helm.MonomerLibApp(manager);
+  //@ts-ignore
+  ui.dialog({showHeader: false, showFooter: true})
+  .add(manager)
+  .onOK(() => {
+    manager;
+  }).show({ modal: true, fullScreen: true});
+}
 
 //name: helmColumnToSmiles
 //input: column helmColumn {semType: HELM}
