@@ -9,7 +9,7 @@ including [data manipulation](js-api.md#data-manipulation), adding [views](js-ap
 or [viewers](how-to/manipulate-viewers.md),
 [developing custom viewers](how-to/develop-custom-viewer.md),
 [registering functions](js-api.md#registering-functions), training and
-applying [predictive models](../learn/predictive-modeling.md), and even [building custom apps](#applications).
+applying [predictive models](../learn/predictive-modeling.md), and even [building custom apps](../develop/how-to/build-an-app.md).
 
 There are two options to run custom JavaScript code. For ad-hoc [scripts](../compute/scripting.md), use the built-in
 JavaScript editor (`Functions | Scripts | New JavaScript Script`). For reusable functions, viewers, and applications,
@@ -24,7 +24,7 @@ A package is a versionable unit of content distribution within Datagrok. Essenti
 package might contain different things:
 
 * JavaScript [functions](../overview/functions/function.md), [viewers](../visualize/viewers.md)
-  , [widgets](../visualize/widgets.md), [applications](#applications)
+  , [widgets](../visualize/widgets.md), [applications](../develop/how-to/build-an-app.md)
 * [Scripts](../compute/scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
 * [Queries](../access/data-query.md) and [connections](../access/data-connection.md)
 * [Tables](../access/connectors/files.md#supported-tabular-formats), files, and other objects

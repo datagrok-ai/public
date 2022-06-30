@@ -17,9 +17,9 @@ predictive models, integration with the external utilities, data augmentation, a
 * [Setting up the environment](#setting-up-the-environment)
 * [Semantic types](#semantic-types)
 * [Scripting and functions](#scripting-and-functions)
-    * [Scripting with server functions](#scripting-with-server-functions)
-    * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
-    * [Scripting with client functions](#scripting-with-client-functions)
+  * [Scripting with server functions](#scripting-with-server-functions)
+  * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
+  * [Scripting with client functions](#scripting-with-client-functions)
 
 <!---
 * [Composing functions](#composing-functions)

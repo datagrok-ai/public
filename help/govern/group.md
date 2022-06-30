@@ -46,7 +46,7 @@ group, which called by the name of the user, so it can be added to any other sec
 
 A [user group](group.md) might have a number of rules associated with it. A rule applies to all members of the group and
 grants a privilege to a list of [entities](../overview/objects.md) of the specified type that pass a
-[specified filter](#defining-entities-for-a-rule.md). You can think of a group with defined privileges as a 'role'.
+[specified filter](#defining-entities-for-a-rule). You can think of a group with defined privileges as a 'role'.
 
 ## Defining entities for a rule
 
