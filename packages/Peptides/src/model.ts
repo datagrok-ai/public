@@ -46,12 +46,15 @@ export class PeptidesModel {
   _dataFrame: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
   stackedBarchart!: StackedBarChart;
+  edf: DG.DataFrame | null = null;
 
   substitutionsInfo: type.SubstitutionsInfo = new Map();
   isInitialized: boolean = false;
   currentView!: DG.TableView;
 
   _currentSelection!: type.SelectionObject;
+  isPeptideSpaceChangingBitset: boolean = false;
+  isChangingEdfBitset: boolean = false;
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
@@ -738,6 +741,15 @@ export class PeptidesModel {
     const changeBitset = (currentBitset: DG.BitSet, previousBitset: DG.BitSet): void => {
       previousBitset.setAll(!this._filterMode, false);
 
+      const edfSelection = this.edf?.selection;
+      if (this.isPeptideSpaceChangingBitset) {
+        if (edfSelection == null)
+          return;
+
+        currentBitset.init(i => edfSelection.get(i) ?? false, false);
+        return;
+      }
+
       const positionList = Object.keys(this.currentSelection);
       if (positionList.length == 0) {
         currentBitset.init(() => false, false);
@@ -755,6 +767,9 @@ export class PeptidesModel {
       };
       currentBitset.init((i) => getBitAt(i), false);
 
+      this.isChangingEdfBitset = true;
+      edfSelection?.copyFrom(currentBitset);
+      this.isChangingEdfBitset = false;
       // currentBitset.init((i) => this.splitCol.get(i), false);
     };
 
@@ -772,7 +787,11 @@ export class PeptidesModel {
     this.isBitsetChangedInitialized = true;
   }
 
-  fireBitsetChanged(): void {this.getBiteset().fireChanged();}
+  fireBitsetChanged(isPeptideSpaceSource: boolean = false): void {
+    this.isPeptideSpaceChangingBitset = isPeptideSpaceSource;
+    this.getBiteset().fireChanged();
+    this.isPeptideSpaceChangingBitset = false;
+  }
 
   getBiteset(): DG.BitSet { return this._filterMode ? this._dataFrame.filter : this._dataFrame.selection; }
 
