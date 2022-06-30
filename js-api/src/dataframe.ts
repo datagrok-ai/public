@@ -1103,6 +1103,12 @@ export class ColumnList {
     return column;
   }
 
+  getOrCreate(name: string, type: ColumnType, length: number): Column {
+    return this.contains(name) ?
+    this.byName(name) :
+    this.add(DG.Column.fromType(type, name, length));
+  }
+
   /** Inserts a column, and optionally notifies the parent dataframe.
    * @param {Column} column
    * @param {boolean} notify - whether DataFrame's `changed` event should be fired

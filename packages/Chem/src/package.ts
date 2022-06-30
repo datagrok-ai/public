@@ -214,10 +214,7 @@ export async function searchSubstructure(
   assure.notNull(molBlockFailover, 'molBlockFailover');
 
   try {
-    const result =
-      substructLibrary ?
-        await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molBlockFailover) :
-        chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
+    const result = await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molBlockFailover);
     return DG.Column.fromList('object', 'bitset', [result]); // TODO: should return a bitset itself
   } catch (e: any) {
     console.error('Chem | In substructureSearch: ' + e.toString());
