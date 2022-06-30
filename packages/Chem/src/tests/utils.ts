@@ -60,8 +60,6 @@ export async function _testSearchSubstructureSARSmall(params: any | null = null)
 }
 
 export async function _testSearchSubstructureAllParameters(foo: any): Promise<void> {
-  await foo({substructLibrary: false});
-  await foo({substructLibrary: true});
   await foo({});
   await foo();
 }
