@@ -1,7 +1,6 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {isMolBlock} from '../utils/chem-utils';
-import {RDModule} from "../rdkit-api";
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {RDModule, RDMol} from '../rdkit-api';
 
 interface InitMoleculesStructuresResult {
   molIdxToHash: string[];
@@ -54,24 +53,51 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return {molIdxToHash, hashToMolblock};
   }
 
-  searchSubstructure(queryMolString: string, querySmarts: string, bitset?: boolean[]): string {
+  getMol(molString: string) {
+    return this._rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
+  }
+
+  getQMol(molString: string) {
+    return this._rdKitModule.get_qmol(molString);
+  }
+
+  searchSubstructure(queryMolString: string, queryMolBlockFailover: string, bitset?: boolean[]): string {
     const matches: number[] = [];
     if (this._rdKitMols) {
+      let queryMol: RDMol | null = null;
       try {
-        let queryMol = null;
-        try {
+        if (isMolBlock(queryMolString))
+          queryMol = this.getMol(queryMolString);
+        else {
+          let createdQMol = false;
           try {
-            queryMol = this._rdKitModule.get_mol(queryMolString, '{"mergeQueryHs":true}');
-          } catch (e2) {
+            queryMol = this.getQMol(queryMolString);
+            createdQMol = queryMol.is_valid();
+          } catch (e) {
             queryMol?.delete();
             queryMol = null;
-            if (querySmarts !== null && querySmarts !== '') {
-              console.log('Chem | Cannot parse a MolBlock. Switching to SMARTS');
-              queryMol = this._rdKitModule.get_qmol(querySmarts);
-            } else
-              throw new Error('Chem | SMARTS not set');
           }
-          if (queryMol && queryMol.is_valid()) {
+          if (createdQMol) {
+            let mol = null;
+            let createdMol = false;
+            try {
+              mol = this.getMol(queryMolString);
+              createdMol = mol.is_valid();
+            } catch (e) {
+              mol?.delete();
+            }
+            if (createdMol) { // check the qmol is proper
+              const match = mol!.get_substruct_match(queryMol!);
+              if (match === '{}') {
+                queryMol!.delete();
+                queryMol = mol;
+              }
+            } // else, this looks to be a real SMARTS
+          } else { // failover to queryMolBlockFailover
+            queryMol = this.getMol(queryMolBlockFailover);
+          }
+        }
+        if (queryMol && queryMol.is_valid()) {
             if (bitset) {
               for (let i = 0; i < bitset.length; ++i) {
                 if (bitset[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
@@ -82,14 +108,14 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
                 if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
                   matches.push(i);
             }
-          }
-        } finally {
-          queryMol?.delete();
-        }
+          } else
+          throw new Error('Chem | Search pattern cannot be set');
       } catch (e) {
         console.error(
-          e, 'Possibly a malformed query: `' + queryMolString + '`');
+          'Chem | Possibly a malformed query: `' + queryMolString + '`');
         // Won't rethrow
+      } finally {
+        queryMol?.delete();
       }
     }
     return '[' + matches.join(', ') + ']';

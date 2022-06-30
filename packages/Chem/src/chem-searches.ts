@@ -199,7 +199,7 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 }
 
 export async function chemSubstructureSearchLibrary(
-  molStringsColumn: DG.Column, molString: string, molStringSmarts: string, usePatternFingerprints = false)
+  molStringsColumn: DG.Column, molString: string, molBlockFailover: string, usePatternFingerprints = false)
   : Promise<DG.BitSet> {
   await chemBeginCriticalSection();
   try {
@@ -208,11 +208,11 @@ export async function chemSubstructureSearchLibrary(
       let matches: number[];
       if (usePatternFingerprints) {
         const fgs: Uint8Array[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false);
-        const bitset: BitArray = substructureSearchPatternsMatch(molString, molStringSmarts, fgs);
-        matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts, bitset);
+        const bitset: BitArray = substructureSearchPatternsMatch(molString, molBlockFailover, fgs);
+        matches = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover, bitset);
       } else {
         await _invalidate(molStringsColumn);
-        matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
+        matches = await (await getRdKitService()).searchSubstructure(molString, molBlockFailover);
       }
       for (const match of matches)
         result.set(match, true, false);
