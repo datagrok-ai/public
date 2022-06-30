@@ -195,7 +195,7 @@ export class Data {
     return new Promise((resolve, reject) => api.grok_CallQuery(queryName, queryParameters, adHoc, pollingInterval, (c: any) => resolve(new FuncCall(c)), (e: any) => reject(e)));
   }
 
-  detectSemanticTypes(t: any): Promise<void> {
+  detectSemanticTypes(t: DataFrame): Promise<void> {
     return new Promise((resolve, reject) => api.grok_DetectSemanticTypes(t.dart, (_: any) => resolve(), (e: any) => reject(e)));
   }
 }
