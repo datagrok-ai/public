@@ -1,0 +1,34 @@
+# Documentation
+
+We organized this documentation by topic. Each topic provides a comprehensive overview of the underlying subject matter. You may navigate the tree to learn about the topics and sections that interest you.
+
+**Topics:**
+
+* [Industries and verticals](link): Solutions for industries and verticals; use cases
+* [Platform](link): “what’s under the hood” and other technical information
+* [Access](/access/): data access
+* [Transform](/transform/): Manipulating data
+* [Visualize and explore](link): Exploratory data analysis
+* [Compute](/compute/): Developing, publishing, and using scientific applications
+* [Machine learning](link): Predictive modeling and statistical hypothesis testing
+* [Discover](/discover/): Data augmentation and knowledge dissemination
+* [Deploy and integrate](link): Deploying and integrating Datagrok
+* [Manage and govern](link): Managing users, data, and workflows; data governance
+* [Develop](/develop/): Developers’ documentation
+* [Collaborate](/collaborate/): How to contribute and become part of the Datagrok community
+
+If you are starting with Datagrok, we recommend looking at our [tutorials](link)<!--todo create a Resources section and link to Tutorials page?-->. You can also explore key feature areas using demo projects. To access demo projects, [launch Datagrok](https://datagrok.ai/) and locate available demo projects on your _Home_ tab. Also, check out [Resources](link)<!--todo create a Resources section?--> for YouTube videos, exercises, and other learning material.
+
+Domain-specific documentation:
+
+* [Cheminformatics](/domains/chem)
+* [Bioinformatics](/domains/bio)
+* [NLP](/domains/nlp/)
+
+Packages:
+
+* [Placeholder]
+
+We incorporated using many fantastic open-source projects into our platform. To see the list, visit [Acknowledgements](/acknowledgements.md).
+
+Lastly, [let us know](docs@datagrok.ai)<!--todo create a gmail alias--> if you have any suggestions or feedback!
