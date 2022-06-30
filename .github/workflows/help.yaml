@@ -76,7 +76,8 @@ jobs:
 
   convert:
     name: Convert to HTML
-    needs: [ lint, link_check, anchor_check ]
+#    needs: [ lint, link_check, anchor_check ]
+    needs: [ lint ]
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout

@@ -108,11 +108,14 @@ export class UsageWidget extends DG.Widget {
     eventsChart.appendChild(getNewEvents('30'));
     errorsChart.appendChild(getNewErrors('30'));
 
+    let uaAppLink = ui.link('Open Usage Analysis', {});
+    uaAppLink.onclick = () => grok.functions.call("UsageAnalysis:usageAnalysisApp");
+
     this.root.appendChild(ui.splitV([
       ui.box(
         ui.divH([
           period.root,
-          ui.link('Open Usage Analysis',()=>{grok.functions.call("UsageAnalysis:usageAnalysisApp")},'Open Usage Analysis application')        
+          uaAppLink
         ], {style:{justifyContent:'space-between', alignItems:'center', margin:'0 12px'}})
       , {style:{maxHeight:'40px', marginBottom:'12px'}}),
       users,

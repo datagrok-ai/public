@@ -4,8 +4,8 @@ import {COL_NAMES} from './additional-modifications';
 
 export function normalizeSequence(sequence: string, synthesizer: string | null, technology: string | null,
   additionalModsDf: DG.DataFrame): string {
-  const additionalCodesCol = additionalModsDf.col(COL_NAMES.ABBREVIATION)!;
-  const baseModifsCol = additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)!;
+  const additionalCodesCol = additionalModsDf.getCol(COL_NAMES.ABBREVIATION);
+  const baseModifsCol = additionalModsDf.getCol(COL_NAMES.BASE_MODIFICATION);
 
   const codes = (technology == null) ?
     getAllCodesOfSynthesizer(synthesizer!).concat(additionalCodesCol.toList()) :

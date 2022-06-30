@@ -102,7 +102,7 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
 
   setTimeout(function () {
     let codeMirror = CodeMirror.fromTextArea(editor.input as HTMLTextAreaElement, {
-      readOnly: true,
+      readOnly: false,
       lineNumbers:false,
       showCursorWhenSelecting: false,
       lineWrapping: true,

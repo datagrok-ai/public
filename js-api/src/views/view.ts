@@ -7,7 +7,7 @@ import {Grid} from '../grid';
 import {Menu, TabControl, ToolboxPage} from '../widgets';
 import {Entity, Func, Property, Script} from '../entities';
 import {toDart, toJs} from '../wrappers';
-import {_options, _toIterable} from '../utils';
+import {_options, _toIterable, MapProxy} from '../utils';
 import {StreamSubscription} from '../events';
 import $ from "cash-dom";
 import {Subscription} from "rxjs";
@@ -216,10 +216,14 @@ export class ViewBase {
  */
 export class View extends ViewBase {
 
+  /** Contains auxiliary information */
+  public temp: any;
+
   /** @constructs View */
   constructor(dart: any) {
     super(null, '', false);
     this.dart = dart;
+    this.temp = new MapProxy(api.grok_Widget_Get_Temp(this.dart));
   }
 
   static fromDart(dart: any): View | TableView {
@@ -306,10 +310,7 @@ export class View extends ViewBase {
     api.grok_View_Set_HelpUrl(this.dart, url);
   }
 
-  /** Contains auxiliary information */
-  get temp(): object { return api.grok_View_Get_Temp(this.dart); }
-
-  /** 
+  /**
    * Loads previously saved view layout. Only applicable to certain views, such as {@link TableView}.
    *  See also {@link saveLayout}
    *  @param {ViewLayout} layout */

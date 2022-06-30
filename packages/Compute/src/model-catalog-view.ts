@@ -42,6 +42,7 @@ export class ModelCatalogView extends DG.CustomCardView {
       'options.group': 'Group',
       'options.process': 'Process'
     };
+
     this.showTree = true;
     this.initRibbon();
     this.initMenu();

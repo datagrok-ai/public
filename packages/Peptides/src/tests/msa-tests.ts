@@ -12,16 +12,16 @@ export const _package = new DG.Package();
 
 let table: DG.DataFrame;
 
-category('peptides', async () => {
+category('MSA', async () => {
   //table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
   table = DG.DataFrame.fromCsv(aligned1);
   const alignedSequencesColumn = table.getCol('AlignedSequence');
 
-  test('MSA.test_table.is_not_empty', async () => {
+  test('test_table.is_not_empty', async () => {
     _testTableIsNotEmpty(table);
   });
 
-  test('MSA.is_correct', async () => {
+  test('is_correct', async () => {
     _testMSAIsCorrect(alignedSequencesColumn);
   });
 });

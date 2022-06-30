@@ -1,6 +1,116 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-06-29 Dev build 1.4.7
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.7`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* #741: Peptides Space fix 
+* Peptide space tests fix and performance benchmark 
+* Helm: Updating the sizes of the HelmWebEditor 
+* Chem: activity cliffs tests 
+* Compute: Model Catalog Groups editor #658 
+* Exercises: lint fixes 
+
+
+# 2022-06-29 Dev build 1.4.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* OligoBatchCalculator: fix of using new modification 
+* Compute: Model Catalog Groups editor #658 
+
+
+# 2022-06-29 Dev build 1.4.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Test manager: ability to run tests using url (WIP)
+* Exercises: fixes 
+* (Bug) IgnoreCloseAll doesn't work 
+* Compute: Script icons support 
+* JS-API: package-test.js fails to load on autostart 
+* Compute: Model Catalog app to appear on the Left Panel #411 
+* Docs: Help documentation 
+* Docusaurus documentation 
+* (Bug) Parametrized DataQueries don't work (WIP)
+* Fixed typo 
+* Compute: Model Catalog Groups editor #658 
+* Fixed routes order 
+
+
+# 2022-06-28 Dev build 1.4.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* [Calculated columns] \- Min() and Max() are not compatible with date and datetime columns #689 
+* JS API: add initial sync option to grok.data.linkTables 
+* JS API: Property: expose category, format, nullable, editable properties 
+* Viewers: ability to use JS-based viewers in Trellis (WIP)
+* Fixed packages view css 
+* PackagesView: Fixed categories refresh 
+* closes #639 Scaling Structures on the ScatterPlot 
+* trellis plot with one cat 
+* Added more beta users 
+* Grid: updated some properties 
+* Work in progress 
+* Properties: "depends on" property (WIP)
+* Retired the obsolete `unitTest` tag 
+* Chem: optimization of dependencies \- WIP 
+* Chem: optimization of dependencies \- got rid of the built-in js-api 
+* Chem: removing obsolete stuff from the core 
+* D4: rebuilt auto-generated files 
+* Chem: moved openchemlib-full.js under /common for Chem to load it via "sources" 
+* Delayed execution for autostart functions by default (+ meta.autostartImmediate) 
+* Optimized favorites requests 
+* Package Manager -\- audit fix 
+* Disable package functions logging 
+* Optimized DataSources list load 
+* Package Manager: fixed the styles 
+* Packages: context menu improvements (WIP)
+* Core: Apps won't start from Favourites #632 
+* Css fixes 
+* Promote MenuItem to JS 
+* Compute: fix model URL #574 
+* Compute: Model Catalog Groups editor #658 
+* Compute: Model Catalog app to appear on the Left Panel #411 
+* Closes #733: Grid: allow to resize column header by dragging the border between the header and the first row 
+* CI: Fix links checker 
+* HELM: issue #700 Smiles + Molifle representation 
+
+
 # 2022-06-23 Dev build 1.4.3
 
 ## Latest Docker Images

@@ -14,6 +14,8 @@ import { addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel } from 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
 
+export let c: DG.FuncCall;
+
 //name: renderDevPanel
 //tags: dev-tools
 //input: object ent
@@ -93,7 +95,10 @@ export function _IconTool(): void {
 }
 
 
-//name: testManager
+//name: TestManager
 //top-menu: Tools | Dev | Test Manager
 //tags: app
-export async function testManager(): Promise<void> { await testManagerView(); }
+export async function testManager(): Promise<void> {
+  c = grok.functions.getCurrentCall(); 
+  await testManagerView(); 
+}

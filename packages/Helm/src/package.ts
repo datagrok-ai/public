@@ -35,6 +35,18 @@ export function editMoleculeCell(cell: DG.GridCell): void {
   org.helm.webeditor.MolViewer.molscale = 0.8;
   //@ts-ignore
   let app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
+  var sizes = app.calculateSizes();
+  app.canvas.resize(sizes.rightwidth, sizes.topheight - 210);
+  var s = { width: sizes.rightwidth + "px", height: sizes.bottomheight + "px" };
+  //@ts-ignore
+  scil.apply(app.sequence.style, s);
+  //@ts-ignore
+  scil.apply(app.notation.style, s);
+  s = { width: sizes.rightwidth + "px", height: (sizes.bottomheight + app.toolbarheight) + "px" };
+  //@ts-ignore
+  scil.apply(app.properties.parent.style, s);
+  app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
+  app.mex.resize(sizes.topheight - 80);
   setTimeout(function() {
     //@ts-ignore
     app.canvas.helm.setSequence(cell.cell.value , 'HELM');
@@ -59,8 +71,10 @@ export function detailsPanel(helmString: string){
       'formula': result[0].replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
       'molecular weight': result[1],
       'extinction coefficient': result[2],
+      'molfile': result[3],
       'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
       'rna analogue sequence': ui.wait(async () => ui.divText(await helmToRNA(helmString))),
+      'smiles': ui.wait(async () => ui.divText(await helmToSmiles(helmString))),
       'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),
     })
   )
@@ -107,13 +121,29 @@ export async function helmToPeptide(helmString: string) {
 }
 
 //name: helmToSmiles
-//tags: converter
+//description: converts to smiles
+//input: string helmString {semType: HELM}
 //output: string smiles {semType: Molecule}
-export function helmToSmiles(helm: string): string {
-  //todo: call webservice
-  return 'foo';
+export async function helmToSmiles(helmString: string) {
+  const url = `http://localhost:8081/WebService/service/SMILES/${helmString}`
+  return await accessServer(url, 'SMILES');
 }
 
+//name: Monomer Manager
+//input: column helmColumn {semType: HELM}
+export function monomerManager(helmColumn: DG.Column) {
+  let manager = ui.div();
+  //@ts-ignore
+  org.helm.webeditor.Adapter.init();
+  //@ts-ignore
+  new scil.helm.MonomerLibApp(manager);
+  //@ts-ignore
+  ui.dialog({showHeader: false, showFooter: true})
+  .add(manager)
+  .onOK(() => {
+    manager;
+  }).show({ modal: true, fullScreen: true});
+}
 
 //name: helmColumnToSmiles
 //input: column helmColumn {semType: HELM}
@@ -140,7 +170,8 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     var formula = canvas.getFormula(true);
     var molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
     var coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
-    var result = formula + ', ' + molWeight + ', ' + coef;
+    var molfile = canvas.getMolfile();
+    var result = formula + ', ' + molWeight + ', ' + coef + ', ' + molfile;
     lru.set(gridCell.cell.value, result);
   }
 }

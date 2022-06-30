@@ -9,6 +9,7 @@ import { filter } from 'rxjs/operators';
 import {Rect} from "./grid";
 import $ from "cash-dom";
 import {Viewer} from "./viewer";
+import {MapProxy} from "./utils";
 
 declare let grok: any;
 declare let DG: any;
@@ -114,6 +115,9 @@ export class ObjectPropertyBag {
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget {
 
+  /** Contains auxiliary information */
+  public temp: any;
+
   /** Constructor function. No parameters, returns [Widget]. */
   factory: Func | null = null;
 
@@ -140,6 +144,8 @@ export class Widget {
     this.subs = [];
 
     this.getProperties = this.getProperties.bind(this);
+
+    this.temp = {};
   }
 
   toDart() {
@@ -186,9 +192,6 @@ export class Widget {
    * @type {HTMLElement} */
   get root(): HTMLElement { return this._root; }
   set root(r: HTMLElement) { this._root = r; }
-
-  /** For auxiliary information */
-  get temp(): any { return api.grok_Widget_Get_Temp(this.dart); }
 
   /** Gets called when a widget is detached and will no longer be used. Typically used for unsubscribing from events.
    * Be sure to call super.detach() if this method is overridden.  */
@@ -350,6 +353,7 @@ export class DartWidget extends Widget {
   constructor(dart: any) {
     super(api.grok_Widget_Get_Root(dart));
     this.dart = dart;
+    this.temp = new MapProxy(api.grok_Widget_Get_Temp(this.dart));
   }
 
   get root(): HTMLElement {

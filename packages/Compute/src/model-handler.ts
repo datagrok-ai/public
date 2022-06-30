@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import wu from "wu";
+import {ModelCatalogView} from "./model-catalog-view";
 
 export class ModelHandler extends DG.ObjectHandler {
   get type() {
@@ -28,8 +29,12 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderIcon(x: DG.Func, context: any = null): HTMLElement {
-    if (x instanceof DG.Script)
+    if (x.options['icon'] != null && (x.options['icon'].startsWith('http://') || x.options['icon'].startsWith('https://'))) {
+      return ui.iconImage('model-icon', x.options['icon']);
+    }
+    if (x instanceof DG.Script) {
       return this.getLanguageIcon(x.language);
+    }
     let iconUrl = x.package.getIconUrl();
     if (x.options['icon'] != null) {
       let packagePathSegments = iconUrl.split('/');
@@ -84,33 +89,49 @@ export class ModelHandler extends DG.ObjectHandler {
     return card;
   }
 
+  static getModelCatalogView(): ModelCatalogView {
+    let modelsView = this.findModelCatalogView();
+    if (modelsView == null) {
+      let mc: DG.Func = DG.Func.find({package:'Compute', name: 'ModelCatalog'})[0];
+      let fc = mc.prepare();
+      let view = new ModelCatalogView();
+      view.name = 'Models';
+      view.parentCall = fc;
+      grok.shell.addView(view);
+    }
+    modelsView = this.findModelCatalogView();
+    return modelsView as ModelCatalogView;
+  }
+
+  static findModelCatalogView(): ModelCatalogView | undefined {
+    return wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog') as ModelCatalogView;
+  }
+
   static openModel(x: DG.Func, parentCall?: DG.FuncCall) {
     let fc = x.prepare();
+    fc.edit();
+  }
+
+  static bindModel(fc: DG.FuncCall) {
+    let modelsView = ModelHandler.getModelCatalogView();
     fc.aux['showOnTaskBar'] = false;
-
-    function findModelCatalogView() {
-      return wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
-    }
-
-    function startModel(modelsView: DG.View | undefined, parentCall: DG.FuncCall | undefined) {
+    if (modelsView != null) {
+      let parentCall = modelsView.parentCall;
       if (parentCall != null) {
         parentCall.aux['view'] = modelsView;
         fc.parentCall = parentCall;
       }
-      fc.edit();
-    }
-
-    let modelsView = findModelCatalogView();
-    if (modelsView == null) {
-      grok.functions.call('Compute:ModelCatalog').then((_) => {
-        modelsView = findModelCatalogView();
-        startModel(modelsView, modelsView?.parentCall);
-      });
-    } else {
-      startModel(modelsView, parentCall);
     }
   }
 
   init() {
+    console.log('init handler');
+    setTimeout(() => {
+      grok.functions.onBeforeRunAction.subscribe((fc) => {
+        if (fc.func.hasTag('model')) {
+          ModelHandler.bindModel(fc);
+        }
+      });
+    });
   }
 }

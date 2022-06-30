@@ -25,15 +25,8 @@ export function _testTableIsNotEmpty(table: DG.DataFrame): void {
  * @param {DG.TableView} view Demo view.
  */
 export async function _testViewerIsDrawing(table: DG.DataFrame, view: DG.TableView): Promise<void> {
-  let noException = true;
-
-  try {
-    const widget = new PeptideSimilaritySpaceWidget(table.getCol('AlignedSequence'), view);
-    await widget.draw();
-  } catch (error) {
-    noException = false;
-  }
-  expect(noException, true);
+  const widget = new PeptideSimilaritySpaceWidget(table.getCol('AlignedSequence'), view);
+  await widget.draw();
 }
 
 /**
@@ -45,18 +38,12 @@ export async function _testViewerIsDrawing(table: DG.DataFrame, view: DG.TableVi
  */
 export async function _testDimensionalityReducer(
   columnData: Array<string>, method: StringMetrics, measure: string): Promise<void> {
-  let noException = true;
   const cyclesCount = 100;
   let embcols;
 
-  try {
-    const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(
-      {data: columnData, metric: measure as StringMetrics}, method, {cycles: cyclesCount});
-    embcols = reduceDimRes.embedding;
-  } catch (error) {
-    noException = false;
-  }
-  expect(noException, true);
+  const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(
+    {data: columnData, metric: measure as StringMetrics}, method, {cycles: cyclesCount});
+  embcols = reduceDimRes.embedding;
 
   const [X, Y] = embcols as Array<Float32Array>;
 
@@ -76,39 +63,20 @@ export async function _testDimensionalityReducer(
  * @param {(DG.TableView | null)} view Viewer to show graphics on.
  * @param {(string | null)} [activityColumnName] Name of column with activity.
  */
-export async function _testPeptideSimilaritySpaceViewer(
-  table: DG.DataFrame,
-  alignedSequencesColumn: DG.Column,
-  method: string,
-  measure: string,
-  cyclesCount: number,
-): Promise<void> {
-  let noException = true;
+export async function _testPeptideSimilaritySpaceViewer(table: DG.DataFrame, alignedSequencesColumn: DG.Column,
+  method: string, measure: string, cyclesCount: number): Promise<void> {
   let viewer;
   let df: DG.DataFrame;
 
-  try {
-    viewer = await createPeptideSimilaritySpaceViewer(
-      table, method, measure, cyclesCount, undefined, alignedSequencesColumn);
-    df = viewer.dataFrame!;
-  } catch (error) {
-    noException = false;
-  }
+  viewer = await createPeptideSimilaritySpaceViewer(
+    table, method, measure, cyclesCount, undefined, alignedSequencesColumn);
+  df = viewer.dataFrame;
 
-  expect(noException, true);
+  const axesNames = ['~X', '~Y', '~MW'];
+  const axes = axesNames.map((v) => df.getCol(v).getRawData() as Float32Array);
 
-  noException = true;
-
-  try {
-    const axesNames = ['~X', '~Y', '~MW'];
-    const axes = axesNames.map((v) => df?.getCol(v).getRawData() as Float32Array);
-
-    for (const ax of axes)
-      expect(ax.every((v) => v !== null && v !== NaN), true);
-  } catch (error) {
-    noException = false;
-  }
-  expect(noException, true);
+  for (const ax of axes)
+    expect(ax.every((v) => v !== null && v !== NaN), true);
 }
 
 /**
@@ -121,4 +89,3 @@ export async function _testMSAIsCorrect(col: DG.Column): Promise<void> {
   const msaCol = await runKalign(col, true);
   expect(msaCol.toList().every((v, i) => v == col.get(i)), true);
 }
-
