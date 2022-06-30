@@ -16,6 +16,8 @@ const enum FING_COL_TAGS{
   invalidatedForVersion = '.invalideted.for.version',
 }
 
+let LastColumnInvalidated: string = '';
+
 function _chemFindSimilar(molStringsColumn: DG.Column, fingerprints: BitArray[],
   queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
   const len = molStringsColumn.length;
@@ -57,8 +59,13 @@ function _chemGetSimilarities(queryMolString: string, fingerprints: BitArray[]):
   return distances;
 }
 
+function colInvalidated(col: DG.Column): Boolean {
+  return (LastColumnInvalidated == col.name &&
+    col.getTag(FING_COL_TAGS.invalidatedForVersion) == String(col.version));
+}
+
 async function _invalidate(molCol: DG.Column) {
-  if (!(molCol.getTag(FING_COL_TAGS.invalidatedForVersion) == String(molCol.version))) {
+  if (!colInvalidated(molCol)) {
     const {molIdxToHash, hashToMolblock} =
         await (await getRdKitService()).initMoleculesStructures(molCol.toList(), false, false);
     let i = 0;
@@ -78,6 +85,7 @@ async function _invalidate(molCol: DG.Column) {
         molCol.compact();
       }
     }
+    LastColumnInvalidated = molCol.name;
     molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
   }
 }
@@ -117,20 +125,24 @@ function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[], fingerprintsTy
 }
 
 async function getUint8ArrayFingerprints(
-  molCol: DG.Column, fingerprintsType: Fingerprint = Fingerprint.Morgan, endSection = true): Promise<Uint8Array[]> {
-  await chemBeginCriticalSection();
+  molCol: DG.Column, fingerprintsType: Fingerprint = Fingerprint.Morgan, useSection = true): Promise<Uint8Array[]> {
+  let sectionStarted = false;
   try {
     const fgsCheck = checkForFingerprintsColumn(molCol, fingerprintsType);
     if (fgsCheck)
       return fgsCheck;
     else {
+      if (useSection)
+        await chemBeginCriticalSection();
+      sectionStarted = true;
       await _invalidate(molCol);
       const fingerprints = await (await getRdKitService()).getFingerprints(fingerprintsType);
       saveFingerprintsToCol(molCol, fingerprints, fingerprintsType);
+      chemEndCriticalSection();
       return fingerprints;
     }
   } finally {
-    if (endSection)
+    if (useSection && sectionStarted)
       chemEndCriticalSection();
   }
 }
@@ -189,12 +201,13 @@ export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolStrin
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molStringSmarts: string, usePatternFingerprints = false)
   : Promise<DG.BitSet> {
+  await chemBeginCriticalSection();
   try {
     const result = DG.BitSet.create(molStringsColumn.length);
     if (molString.length != 0) {
       let matches: number[];
       if (usePatternFingerprints) {
-        const fgs: Uint8Array[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern);
+        const fgs: Uint8Array[] = await getUint8ArrayFingerprints(molStringsColumn, Fingerprint.Pattern, false);
         const bitset: BitArray = substructureSearchPatternsMatch(molString, molStringSmarts, fgs);
         matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts, bitset);
       } else {
