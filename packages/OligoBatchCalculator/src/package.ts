@@ -49,9 +49,9 @@ export async function nMole(sequence: string, amount: number, outputUnits: strin
 //output: double molecularMass
 export async function molecularMass(sequence: string, amount: number, outputUnits: string): Promise<number> {
   const additionalModificationsDf = await getAdditionalModifications();
-  const additionalAbbreviations = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.toList();
-  const extinctionCoefficients = additionalModificationsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.toList();
-  const additionalWeights = additionalModificationsDf.col(COL_NAMES.MOLECULAR_WEIGHT)!.toList();
+  const additionalAbbreviations = additionalModificationsDf.getCol(COL_NAMES.ABBREVIATION).toList();
+  const extinctionCoefficients = additionalModificationsDf.getCol(COL_NAMES.EXTINCTION_COEFFICIENT).toList();
+  const additionalWeights = additionalModificationsDf.getCol(COL_NAMES.MOLECULAR_WEIGHT).toList();
   const extinctionCoefficientsObj: {[index: string]: number} = {};
   const additionalWeightsObj: {[index: string]: number} = {};
   additionalAbbreviations.forEach((key, i) => additionalWeightsObj[key] = additionalWeights[i]);
@@ -122,7 +122,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   let additionalCodes = additionalModsDf.getCol(COL_NAMES.ABBREVIATION).categories;
   let additionalAbbreviations = additionalModsDf.getCol(COL_NAMES.ABBREVIATION).toList();
   let additionalWeights = additionalModsDf.getCol(COL_NAMES.MOLECULAR_WEIGHT).toList();
-  const extinctionCoefficients = additionalModsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.toList();
+  const extinctionCoefficients = additionalModsDf.getCol(COL_NAMES.EXTINCTION_COEFFICIENT).toList();
   const additionalWeightsObj: {[index: string]: number} = {};
   const extinctionCoeffsObj: {[index: string]: number} = {};
   additionalAbbreviations.forEach((key, i) => additionalWeightsObj[key] = additionalWeights[i]);
@@ -251,34 +251,34 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
 
   const asoGapmersGrid = DG.Viewer.grid(
     DG.DataFrame.fromObjects([
-      {'Name': '2\'MOE-5Me-rU', 'BioSpring': '5', 'Janssen GCRS': 'moeT', 'Weight': 378.27},
-      {'Name': '2\'MOE-rA', 'BioSpring': '6', 'Janssen GCRS': 'moeA', 'Weight': 387.29},
-      {'Name': '2\'MOE-5Me-rC', 'BioSpring': '7', 'Janssen GCRS': 'moe5mC', 'Weight': 377.29},
-      {'Name': '2\'MOE-rG', 'BioSpring': '8', 'Janssen GCRS': 'moeG', 'Weight': 403.28},
-      {'Name': '5-Methyl-dC', 'BioSpring': '9', 'Janssen GCRS': '5mC', 'Weight': 303.21},
-      {'Name': 'ps linkage', 'BioSpring': '*', 'Janssen GCRS': 'ps', 'Weight': 16.07},
-      {'Name': 'dA', 'BioSpring': 'A', 'Janssen GCRS': 'A, dA', 'Weight': 313.21},
-      {'Name': 'dC', 'BioSpring': 'C', 'Janssen GCRS': 'C, dC', 'Weight': 289.18},
-      {'Name': 'dG', 'BioSpring': 'G', 'Janssen GCRS': 'G, dG', 'Weight': 329.21},
-      {'Name': 'dT', 'BioSpring': 'T', 'Janssen GCRS': 'T, dT', 'Weight': 304.2},
-      {'Name': 'rA', 'BioSpring': '', 'Janssen GCRS': 'rA', 'Weight': 329.21},
-      {'Name': 'rC', 'BioSpring': '', 'Janssen GCRS': 'rC', 'Weight': 305.18},
-      {'Name': 'rG', 'BioSpring': '', 'Janssen GCRS': 'rG', 'Weight': 345.21},
-      {'Name': 'rU', 'BioSpring': '', 'Janssen GCRS': 'rU', 'Weight': 306.17},
+      {'Name': '2\'MOE-5Me-rU', 'Code': 'moeT', 'Weight': 378.27},
+      {'Name': '2\'MOE-rA', 'Code': 'moeA', 'Weight': 387.29},
+      {'Name': '2\'MOE-5Me-rC', 'Code': 'moe5mC', 'Weight': 377.29},
+      {'Name': '2\'MOE-rG', 'Code': 'moeG', 'Weight': 403.28},
+      {'Name': '5-Methyl-dC', 'Code': '5mC', 'Weight': 303.21},
+      {'Name': 'ps linkage', 'Code': 'ps', 'Weight': 16.07},
+      {'Name': 'dA', 'Code': 'A, dA', 'Weight': 313.21},
+      {'Name': 'dC', 'Code': 'C, dC', 'Weight': 289.18},
+      {'Name': 'dG', 'Code': 'G, dG', 'Weight': 329.21},
+      {'Name': 'dT', 'Code': 'T, dT', 'Weight': 304.2},
+      {'Name': 'rA', 'Code': 'rA', 'Weight': 329.21},
+      {'Name': 'rC', 'Code': 'rC', 'Weight': 305.18},
+      {'Name': 'rG', 'Code': 'rG', 'Weight': 345.21},
+      {'Name': 'rU', 'Code': 'rU', 'Weight': 306.17},
     ])!, {showRowHeader: false, showCellTooltip: false},
   );
 
   const omeAndFluoroGrid = DG.Viewer.grid(
     DG.DataFrame.fromObjects([
-      {'Name': '2\'-fluoro-U', 'BioSpring': '1', 'Axolabs': 'Uf', 'Janssen GCRS': 'fU', 'Weight': 308.16},
-      {'Name': '2\'-fluoro-A', 'BioSpring': '2', 'Axolabs': 'Af', 'Janssen GCRS': 'fA', 'Weight': 331.2},
-      {'Name': '2\'-fluoro-C', 'BioSpring': '3', 'Axolabs': 'Cf', 'Janssen GCRS': 'fC', 'Weight': 307.18},
-      {'Name': '2\'-fluoro-G', 'BioSpring': '4', 'Axolabs': 'Gf', 'Janssen GCRS': 'fG', 'Weight': 347.19},
-      {'Name': '2\'OMe-rU', 'BioSpring': '5', 'Axolabs': 'u', 'Janssen GCRS': 'mU', 'Weight': 320.2},
-      {'Name': '2\'OMe-rA', 'BioSpring': '6', 'Axolabs': 'a', 'Janssen GCRS': 'mA', 'Weight': 343.24},
-      {'Name': '2\'OMe-rC', 'BioSpring': '7', 'Axolabs': 'c', 'Janssen GCRS': 'mC', 'Weight': 319.21},
-      {'Name': '2\'OMe-rG', 'BioSpring': '8', 'Axolabs': 'g', 'Janssen GCRS': 'mG', 'Weight': 359.24},
-      {'Name': 'ps linkage', 'BioSpring': '*', 'Axolabs': 's', 'Janssen GCRS': 'ps', 'Weight': 16.07},
+      {'Name': '2\'-fluoro-U', 'Code': 'fU', 'Weight': 308.16},
+      {'Name': '2\'-fluoro-A', 'Code': 'fA', 'Weight': 331.2},
+      {'Name': '2\'-fluoro-C', 'Code': 'fC', 'Weight': 307.18},
+      {'Name': '2\'-fluoro-G', 'Code': 'fG', 'Weight': 347.19},
+      {'Name': '2\'OMe-rU', 'Code': 'mU', 'Weight': 320.2},
+      {'Name': '2\'OMe-rA', 'Code': 'mA', 'Weight': 343.24},
+      {'Name': '2\'OMe-rC', 'Code': 'mC', 'Weight': 319.21},
+      {'Name': '2\'OMe-rG', 'Code': 'mG', 'Weight': 359.24},
+      {'Name': 'ps linkage', 'Code': 'ps', 'Weight': 16.07},
     ])!, {showRowHeader: false, showCellTooltip: false},
   );
 
@@ -291,10 +291,10 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
 
   // Hide 'CHANGE_LOGS' column, display its content in tooltip
   additionaModifsGrid.columns.setVisible(additionalModsDf.columns.names().slice(0, -1));
-  additionalModsDf.col(COL_NAMES.CHANGE_LOGS)!.name = '~' + COL_NAMES.CHANGE_LOGS;
+  additionalModsDf.getCol(COL_NAMES.CHANGE_LOGS).name = '~' + COL_NAMES.CHANGE_LOGS;
   additionaModifsGrid.onCellTooltip(function(cell, x, y) {
     if (cell.isTableCell) {
-      const v = additionalModsDf.col('~' + COL_NAMES.CHANGE_LOGS)!.get(cell.gridRow).split('; ').slice(0, -1);
+      const v = additionalModsDf.getCol('~' + COL_NAMES.CHANGE_LOGS).get(cell.gridRow).split('; ').slice(0, -1);
       ui.tooltip.show(ui.divText(v), x, y);
       return true;
     }
@@ -318,7 +318,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     omeAndFluoroGrid.root,
   ], {style: {maxWidth: '600px'}});
 
-  additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)!
+  additionalModsDf.getCol(COL_NAMES.BASE_MODIFICATION)
     .setTag(DG.TAGS.CHOICES, '["NO", "rU", "rA", "rC", "rG", "dA", "dC", "dG", "dT"]');
 
   const clearIcon = ui.iconFA('redo', () => inputSequences.value = '', 'Clear input field');
@@ -407,7 +407,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
 
     await grok.dapi.userDataStorage.postValue(
       STORAGE_NAME,
-      additionalModsDf.col(COL_NAMES.ABBREVIATION)!.get(rowIndex),
+      additionalModsDf.getCol(COL_NAMES.ABBREVIATION).get(rowIndex),
       JSON.stringify({
         longName: additionalModsDf.getCol(COL_NAMES.LONG_NAMES).get(rowIndex),
         abbreviation: additionalModsDf.getCol(COL_NAMES.ABBREVIATION).get(rowIndex),
