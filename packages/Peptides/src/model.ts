@@ -740,7 +740,7 @@ export class PeptidesModel {
 
       const positionList = Object.keys(this.currentSelection);
       if (positionList.length == 0) {
-        currentBitset.init(() => false);
+        currentBitset.init(() => false, false);
         return;
       }
 
