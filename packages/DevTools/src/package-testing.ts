@@ -34,6 +34,9 @@ interface ITestFromUrl {
   testName: string
 }
 
+let packagesTests: IPackageTests[];
+let testsResultsDf: DG.DataFrame;
+
 
 export function addView(view: DG.ViewBase): DG.ViewBase {
   view.box = true;
@@ -44,13 +47,14 @@ export function addView(view: DG.ViewBase): DG.ViewBase {
 }
 
 export async function testManagerView(): Promise<void> {
+  await delay(2000);
   let pathSegments = window.location.pathname.split('/');
   pathSegments = pathSegments.map(it => it ? it.toLowerCase() : undefined);
-  const packagesTestsList = await collectTests({
+  packagesTests = await collectTests({
     packName: pathSegments[4], 
     catName: pathSegments[5], 
     testName: pathSegments[6]});
-  const testUIElements: ITestManagerUI = createTestManagerUI(packagesTestsList, true);
+  const testUIElements: ITestManagerUI = createTestManagerUI(true);
   let v = DG.View.create();
   v.name = 'Test Manager'
   addView(v);
@@ -59,7 +63,7 @@ export async function testManagerView(): Promise<void> {
     [ [ testUIElements.runButton ] ],
   );
   v.append(testUIElements.testsTree.root);
-  testUIElements.runButton.click();  
+  runActiveTests(testUIElements.testsTree);  
 }
 
 
@@ -69,7 +73,7 @@ export async function _renderTestManagerPanel(ent: EntityType): Promise<DG.Widge
   }
   if (ent.constructor.name === 'Package' || ent instanceof eval(`DG.Package`)) {
     const packagesTestsList = await collectTests(undefined, ent.name);
-    const testUIElements: ITestManagerUI = createTestManagerUI(packagesTestsList);
+    const testUIElements: ITestManagerUI = createTestManagerUI();
     const panelDiv = ui.divV([
       testUIElements.runButton,
       testUIElements.testsTree
@@ -85,8 +89,9 @@ async function collectTests(testFromUrl: ITestFromUrl, packageName?: string): Pr
   if (packageName) testFunctions = testFunctions.filter((f: DG.Func) => f.package.name === packageName);
   const packagesTestsList: IPackageTests[] = [];
   for (let f of testFunctions) {
+    await delay(2000);
     await f.package.load({ file: f.options.file });
-   // await delay(2000);
+    //await delay(2000);
     const allPackageTests = f.package.getModule(f.options.file).tests;
     let testsWithPackNameAndActFlag: { [cat: string]: ICategory } = {};
     if (allPackageTests) {
@@ -118,9 +123,7 @@ async function collectTests(testFromUrl: ITestFromUrl, packageName?: string): Pr
 }
 
 
-function createTestManagerUI(packagesTests: IPackageTests[], labelClick?: boolean): ITestManagerUI {
-
-  let testsResultsDf: DG.DataFrame;
+function createTestManagerUI(labelClick?: boolean): ITestManagerUI {
 
   let addCheckboxAndLabelClickListener = (item: DG.TreeViewNode, checked: boolean, isGroup: boolean, onChangeFunction: () => void, onItemClickFunction: () => void) => {
     item.enableCheckBox(checked);
@@ -130,70 +133,6 @@ function createTestManagerUI(packagesTests: IPackageTests[], labelClick?: boolea
       label.addEventListener('click', onItemClickFunction);
     }
   };
-
-  let collectActiveTests = () => {
-    let activeTests: IPackageTest[] = [];
-    packagesTests.forEach(pack => {
-      Object.keys(pack.categories).forEach(cat => {
-        activeTests = activeTests.concat(pack.categories[ cat ].tests.filter(t => t.active));
-      });
-    });
-    return activeTests;
-  }
-
-  let addPackageAndTimeInfo = (df: DG.DataFrame, start: number, pack: string) => {
-    df.columns.addNewInt('time, ms').init(() => Date.now() - start);
-    df.columns.addNewString('package').init(() => pack);
-  }
-
-  let runAllTests = async (activeTests: IPackageTest[]) => {
-    let completedTestsCount = 0;
-    activeTests.forEach(t => {
-      const start = Date.now();
-      grok.functions.call(
-        `${t.packageName}:test`, {
-        "category": t.test.category,
-        "test": t.test.name
-      }).then((res) => {
-        completedTestsCount +=1;
-        if (!testsResultsDf) {
-          testsResultsDf = res;
-          addPackageAndTimeInfo(testsResultsDf, start, t.packageName);
-        } else {
-          addPackageAndTimeInfo(res, start, t.packageName);
-          removeTestRow(t.packageName, t.test.category, t.test.name);
-          testsResultsDf = testsResultsDf.append(res);
-        }
-        updateTestResultsIcon(tree, t.packageName, t.test.category, t.test.name, res.get('success', 0));
-        if(completedTestsCount === activeTests.length) {
-        //  grok.shell.closeAll();
-        }
-      })
-    })
-  };
-
-  let removeTestRow = (pack: string, cat: string, test: string) => {
-    for (let i = 0; i < testsResultsDf.rowCount; i++) {
-      if (testsResultsDf.get('package', i) === pack && testsResultsDf.get('category', i) === cat && testsResultsDf.get('name', i) === test) {
-        testsResultsDf.rows.removeAt(i);
-        return;
-      }
-    }
-  }
-
-  let updateTestResultsIcon = (tree: DG.TreeViewNode, pack: string, cat: string, name: string, success?: boolean) => {
-    const items = tree.items;
-    const item = items.filter(it => it.root.id === `${pack}|${cat}|${name}`)[ 0 ];
-    success === undefined ? item.root.children[ 1 ].children[ 0 ].children[ 0 ].innerHTML = '' : updateIcon(success, item.root.children[ 1 ].children[ 0 ].children[ 0 ]);
-  }
-
-  let updateIcon = (passed: boolean, iconDiv: Element) => {
-    const icon = passed ? ui.iconFA('check') : ui.iconFA('ban');
-    icon.style.fontWeight = 'bold';
-    icon.style.paddingRight = '5px';
-    icon.style.color = passed ? 'lightgreen' : 'red';
-    iconDiv.append(icon);
-  }
 
   let getTestsInfoAcc = (condition: string) => {
     let acc = ui.accordion();
@@ -270,12 +209,83 @@ function createTestManagerUI(packagesTests: IPackageTests[], labelClick?: boolea
   });
 
   const runTestsButton = ui.bigButton('Run', async () => {
-    let actTests = collectActiveTests();
-    actTests.forEach(t => updateTestResultsIcon(tree, t.packageName, t.test.category, t.test.name));
-    if (actTests.length) {
-      runAllTests(actTests);
-    }
+    runActiveTests(tree);
   });
 
   return { runButton: runTestsButton, testsTree: tree };
 }
+
+function runActiveTests(tree: DG.TreeViewNode) {
+  let actTests = collectActiveTests();
+  actTests.forEach(t => updateTestResultsIcon(tree, t.packageName, t.test.category, t.test.name));
+  if (actTests.length) {
+    runAllTests(actTests, tree);
+  }
+}
+
+function collectActiveTests () {
+  let activeTests: IPackageTest[] = [];
+  packagesTests.forEach(pack => {
+    Object.keys(pack.categories).forEach(cat => {
+      activeTests = activeTests.concat(pack.categories[ cat ].tests.filter(t => t.active));
+    });
+  });
+  return activeTests;
+}
+
+function updateTestResultsIcon (tree: DG.TreeViewNode, pack: string, cat: string, name: string, success?: boolean) {
+  const items = tree.items;
+  const item = items.filter(it => it.root.id === `${pack}|${cat}|${name}`)[ 0 ];
+  success === undefined ? item.root.children[ 1 ].children[ 0 ].children[ 0 ].innerHTML = '' : updateIcon(success, item.root.children[ 1 ].children[ 0 ].children[ 0 ]);
+}
+
+function updateIcon (passed: boolean, iconDiv: Element) {
+  const icon = passed ? ui.iconFA('check') : ui.iconFA('ban');
+  icon.style.fontWeight = 'bold';
+  icon.style.paddingRight = '5px';
+  icon.style.color = passed ? 'lightgreen' : 'red';
+  iconDiv.append(icon);
+}
+
+async function runAllTests (activeTests: IPackageTest[], tree: DG.TreeViewNode) {
+  let completedTestsCount = 0;
+  activeTests.forEach(t => {
+    const start = Date.now();
+    grok.functions.call(
+      `${t.packageName}:test`, {
+      "category": t.test.category,
+      "test": t.test.name
+    }).then((res) => {
+      completedTestsCount +=1;
+      if (!testsResultsDf) {
+        testsResultsDf = res;
+        addPackageAndTimeInfo(testsResultsDf, start, t.packageName);
+      } else {
+        addPackageAndTimeInfo(res, start, t.packageName);
+        removeTestRow(t.packageName, t.test.category, t.test.name);
+        testsResultsDf = testsResultsDf.append(res);
+      }
+      updateTestResultsIcon(tree, t.packageName, t.test.category, t.test.name, res.get('success', 0));
+      if(completedTestsCount === activeTests.length) {
+      //  grok.shell.closeAll();
+      }
+    })
+  })
+};
+
+function addPackageAndTimeInfo (df: DG.DataFrame, start: number, pack: string) {
+  df.columns.addNewInt('time, ms').init(() => Date.now() - start);
+  df.columns.addNewString('package').init(() => pack);
+}
+
+function removeTestRow (pack: string, cat: string, test: string) {
+  for (let i = 0; i < testsResultsDf.rowCount; i++) {
+    if (testsResultsDf.get('package', i) === pack && testsResultsDf.get('category', i) === cat && testsResultsDf.get('name', i) === test) {
+      testsResultsDf.rows.removeAt(i);
+      return;
+    }
+  }
+}
+
+
+
