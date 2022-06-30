@@ -29,6 +29,7 @@ _Input data_. Files > App Data > Chem > sars\_small.csv
 1. Let's call our function `findSimilarToMCS`, we place its definition in `./src/package.ts` inside our
 package. This function takes a single input — a dataframe `df`. For the sake of simplicity, we suppose
 that the column with SMILES is `df.col('smiles')`:
+
   ```typescript
   //name: findSimilarToMCS
   //input: dataframe df
@@ -39,6 +40,7 @@ that the column with SMILES is `df.col('smiles')`:
 
 2. Employ the asynchronous function `FindMCS` from `Chem` package. Since we're calling a function from
 an external package, we should use `grok.functions.call`:
+
   ```typescript
   const mcsValue = await grok.functions.call('Chem:FindMCS', {'smiles': 'smiles', 'df': dataframe, 'returnSmarts':
   false});
@@ -46,10 +48,13 @@ an external package, we should use `grok.functions.call`:
 
 3. Having obtained the string `mcsValue`, create a new column in `df`, whose cells are filled with this
 value:
-  * Create an `Array` of the apporpriate length, filled with `mcsValue`.
-  * Feed this array to the constructor `DG.Column.fromList()` to get the desired `mcsCol` object.
-  * Assign semantic type `Molecule` to the newly created column, with the help of `col.semType(...)`.
-Similarly, associate `Molecule` cell renderer with the help of `col.setTag(...)` method.
+
+    * Create an `Array` of the apporpriate length, filled with `mcsValue`.
+
+    * Feed this array to the constructor `DG.Column.fromList()` to get the desired `mcsCol` object.
+
+    * Assign semantic type `Molecule` to the newly created column, with the help of `col.semType(...)`.
+    Similarly, associate `Molecule` cell renderer with the help of `col.setTag(...)` method.
 
 4. To compute similarity scores, we can call the `getSimilarities()` function of `Chem` package, which
 takes as its parameters the initial SMILES column and `mcsValue`. The function can be invoked as described
