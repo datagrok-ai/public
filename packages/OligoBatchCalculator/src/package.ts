@@ -96,7 +96,7 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
   let modificationsSum = 0;
   if (extCoefsObj != null) {
     for (const modif of Object.keys(extCoefsObj)) {//@ts-ignore
-      if (extCoefsObj[modif] != 'Base') {//@ts-ignore
+      if (extCoefsObj[modif] != 'Base' && extCoefsObj[modif] != undefined) {//@ts-ignore
         modificationsSum += (sequence.match(new RegExp(modif, 'g')) || []).length * parseFloat(extCoefsObj[modif]);
         ns = deleteWord(ns, modif);
       }
@@ -128,7 +128,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   additionalAbbreviations.forEach((key, i) => additionalWeightsObj[key] = additionalWeights[i]);
   additionalAbbreviations.forEach((key, i) => {
     if (extinctionCoefficients[i] != 'Base')
-      extinctionCoeffsObj[key] = (extinctionCoefficients[i] == null) ? 1 : extinctionCoefficients[i];
+      extinctionCoeffsObj[key] = extinctionCoefficients[i] ?? 1;
   });
   const mainGrid = DG.Viewer.grid(DG.DataFrame.create(), {'showRowHeader': false});
 
