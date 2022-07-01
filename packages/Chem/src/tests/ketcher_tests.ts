@@ -2,6 +2,7 @@ import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src
 import {Func} from "datagrok-api/src/entities";
 import * as grok from 'datagrok-api/grok';
 const exampleSmiles = 'CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3';
+const convertedSmarts = '[#6]-[#6](-[#6](=O)-[#8]-[#6]-[#6]-[#6]-c1cccnc1)-c1cccc(c1)-[#6](=O)-c1ccccc1';
 
 category('sketcher testing', () => {
     test('smiles-to-mol', async () => {
@@ -39,7 +40,7 @@ category('sketcher testing', () => {
             const startMol = grok.chem.convert(smilesString, 'smiles', 'mol');
             sketcher.mol = startMol;
             const resultSmarts = await sketcher.getSmarts();
-            expect(resultSmarts != null, true);
+            expect(resultSmarts, convertedSmarts);
         }
     });
     test('smiles-to-smarts', async () => {
@@ -50,7 +51,7 @@ category('sketcher testing', () => {
             const sketcher = await f!.apply();
             sketcher.smiles = smilesString;
             const resultSmarts = await sketcher.getSmarts();
-            expect(resultSmarts != null, true);
+            expect(resultSmarts, convertedSmarts);
         }
 
     });
