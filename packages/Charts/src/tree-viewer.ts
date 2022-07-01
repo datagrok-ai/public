@@ -16,10 +16,10 @@ export class TreeViewer extends EChartViewer {
     super();
 
     this.initCommonProperties();
-    this.animation = this.bool('animation', false);
+    this.animation = this.bool('animation', true);
     this.layout = <layoutType>this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'] });
     this.orient = <orientation>this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'] });
-    this.expandAndCollapse = this.bool('expandAndCollapse', false);
+    this.expandAndCollapse = this.bool('expandAndCollapse', true);
     this.animationDuration = this.int('animationDuration', 750);
     this.edgeShape = <edgeShape>this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'] });
     this.symbol = <symbolType>this.string('symbol', 'emptyCircle', { choices: [
@@ -73,7 +73,7 @@ export class TreeViewer extends EChartViewer {
         });
         return isMatch;
       }
-    }, params.event!.event));
+    }, params.event!.event, true));
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
