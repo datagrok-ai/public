@@ -160,6 +160,7 @@ export class WordCloudViewer extends DG.JsViewer {
       .on('mousedown', (d: echarts.SeriesOption) => {
         table.selection.handleClick((i) => {
           return d.name === strColumn.get(i);
+        //@ts-ignore
         }, d);
       });
   }
