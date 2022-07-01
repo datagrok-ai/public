@@ -84,6 +84,8 @@ export abstract class DataLoader {
 
   abstract get cdrs(): string[];
 
+  abstract get antigens(): DG.DataFrame;
+
   abstract get vids(): string[];
 
   abstract get vidsObsPtm(): string[];
@@ -115,8 +117,6 @@ export abstract class DataLoader {
     if (fileErrors.length > 0)
       throw new Error(`Files errors:\n ${fileErrors.join('\n')}`);
   }
-
-  abstract listAntigens(): Promise<DG.DataFrame>;
 
   async getLayoutBySchemeCdr(scheme: string, cdr: string): Promise<VdRegion[]> {
     return catchToLog<Promise<VdRegion[]>>('MLB database access error: ', async () => {

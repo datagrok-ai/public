@@ -30,15 +30,16 @@ export class TreeBrowser extends DG.JsViewer {
   treeAnalyser: TreeAnalyzer;
 
   private _treeDf: DG.DataFrame = DG.DataFrame.fromCsv(['TREE', 'CLONE'].join(','));
+  private _mlbDf: DG.DataFrame = null;
 
   get treeDf(): DG.DataFrame { return this._treeDf; }
 
-  get mlbDf(): DG.DataFrame { return this.dataFrame; }
+  get mlbDf(): DG.DataFrame { return this._mlbDf; }
 
   private viewSubs: Subscription[] = [];
 
   public async setData(treeDf: DG.DataFrame, mlbDf: DG.DataFrame): Promise<void> {
-    console.debug('TreeBrowser.setData()');
+    console.debug('MLB: TreeBrowser.setData()');
     await this.destroyView();
     // .catch((ex) => {
     //   console.error(`TreeBrowser.setData() > destroyView() error:\n${ex.toString()}`);
@@ -243,13 +244,15 @@ export class TreeBrowser extends DG.JsViewer {
   }
 
   private rootOnSizeChanged(args: any): void {
-    console.debug('TreeBrowser.rootOnSizeChanged()');
+    console.debug('MLB: TreeBrowser.rootOnSizeChanged()');
     this.calcSize();
   }
 
   calcSize(): void {
     // this.treeDiv.innerText = `${this.root.clientWidth} x ${this.root.clientHeight}`;
-    console.debug(`TreeBrowser.calcSize( ${this.root.clientWidth.toString()} x ${this.root.clientHeight.toString()} )`);
+    const cw: number = this.root.clientWidth;
+    const ch: number = this.root.clientHeight;
+    console.debug(`MLB: TreeBrowser.calcSize( ${cw.toString()} x ${ch.toString()} )`);
 
     const width = this.root.clientWidth;
     const height = this.root.clientHeight;
@@ -328,7 +331,7 @@ export class TreeBrowser extends DG.JsViewer {
   }
 
   public override async onTableAttached() {
-    console.debug(`TreeBrowser.onTableAttached( dataFrame = ${!this.dataFrame ? 'null' : 'value'} )`);
+    console.debug(`MLB: TreeBrowser.onTableAttached( dataFrame = ${!this.dataFrame ? 'null' : 'value'} )`);
     await this.init();
   }
 

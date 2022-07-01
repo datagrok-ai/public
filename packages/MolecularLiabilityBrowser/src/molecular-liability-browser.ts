@@ -5,12 +5,13 @@ import * as DG from 'datagrok-api/dg';
 import {DataLoader, FilterPropertiesType, JsonType, NumsType, ObsPtmType, PdbType} from './utils/data-loader';
 import {Subscription} from 'rxjs';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
-import {VdRegionsViewer} from './viewers/vd-regions-viewer';
+import {VdRegionsViewer} from '@datagrok/bio/src/viewers/vd-regions-viewer';
 import {TreeBrowser} from './mlb-tree';
 import {TreeAnalyzer} from './utils/tree-stats';
 import {MiscMethods} from './viewers/misc';
 import {TwinPviewer} from './viewers/twin-p-viewer';
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
+import {_startInit} from './package';
 
 
 export class MolecularLiabilityBrowser {
@@ -25,6 +26,7 @@ export class MolecularLiabilityBrowser {
   antigenName: string = null;
   schemeName: string = null;
   cdrName: string = null;
+  treeName: string = null;
 
   schemeChoices: string[] = null;
   cdrChoices: string[] = null;
@@ -46,14 +48,21 @@ export class MolecularLiabilityBrowser {
   subs: Subscription[] = [];
 
   mlbView: DG.TableView = null;
+  mlbGrid: DG.Grid = null;
+  filterView: DG.FilterGroup = null;
+  filterViewDn: DG.DockNode = null;
   regionsViewer: VdRegionsViewer = null;
   treeBrowser: TreeBrowser = null;
   twinPviewer: TwinPviewer;
 
+  reloadIcon: HTMLElement = null;
   antigenInput: DG.InputBase = null;
   antigenPopup: HTMLElement = null;
   schemeInput: DG.InputBase = null;
   cdrInput: DG.InputBase = null;
+  treeInput: DG.InputBase = null;
+  treePopup: HTMLElement = null;
+  treeGrid: DG.Grid = null;
   hideShowIcon: HTMLElement = null;
 
   constructor(dataLoader: DataLoader) {
@@ -66,16 +75,14 @@ export class MolecularLiabilityBrowser {
 
       this.pf = this.dataLoader.filterProperties;
 
-      this.antigenDf = await this.dataLoader.listAntigens();
+      this.antigenDf = this.dataLoader.antigens;
       if (!this.antigenDf) {
         const msg: string = `Get antigen list failed.`;
         grok.shell.error(msg);
         throw new Error(msg);
       }
 
-      console.debug(`MolecularLiabilityBrowser.init() schemeChoices = ${this.schemeChoices ? 'value' : 'null'}`);
       this.schemeChoices = this.dataLoader.schemes;
-      console.debug(`MolecularLiabilityBrowser.init() cdrChoices = ${this.cdrChoices ? 'value' : 'null'}`);
       this.cdrChoices = this.dataLoader.cdrs;
 
       this.antigenName = ((): string => {
@@ -85,7 +92,6 @@ export class MolecularLiabilityBrowser {
         return antigenUrlParam || 'IAPW8';
       })();
 
-      this.urlParams.get('antigen') || this.antigenDf.col('antigen').get(0);
       this.schemeName = ((): string => {
         const schemeUrlParam = this.urlParams.get('scheme');
         return this.schemeChoices.includes(schemeUrlParam) ? schemeUrlParam : this.schemeChoices[0];
@@ -113,8 +119,17 @@ export class MolecularLiabilityBrowser {
     }
   }
 
+  setReloadInput(): HTMLElement {
+    this.reloadIcon = ui.tooltip.bind(ui.iconFA('reload', () => {
+      window.setTimeout(async () => { await this.loadData(); }, 10);
+    }), 'Reload');
+    this.reloadIcon.classList.value = 'grok-icon reload';
+
+    return this.reloadIcon;
+  }
+
   setAntigenInput(agDf: DG.DataFrame): DG.InputBase {
-    this.antigenInput = ui.stringInput('AG', this.antigenName, null, {tabindex: '1'} as unknown);
+    this.antigenInput = ui.stringInput('AG', this.antigenName);
 
     const agCol: DG.Column = agDf.col('antigen');
     const gsCol: DG.Column = agDf.col('antigen_gene_symbol');
@@ -138,7 +153,7 @@ export class MolecularLiabilityBrowser {
     idGCol.visible = false;
     ncbiGCol.visible = false;
     agDfGrid.root.style.setProperty('width', '220px');
-    this.antigenPopup = ui.div([agDfGrid.root], {tabindex: '2'} as unknown);
+    this.antigenPopup = ui.div([agDfGrid.root]);
 
     agDf.onCurrentRowChanged.subscribe(() => {
       this.antigenPopup.hidden = true;
@@ -188,6 +203,21 @@ export class MolecularLiabilityBrowser {
     return this.cdrInput;
   }
 
+  setTreeInput(): DG.InputBase {
+    this.treeInput = ui.stringInput('Tree', this.treeName, null, {});
+
+    const tempDf = DG.DataFrame.fromCsv('');
+
+    this.treePopup = ui.div([this.treeGrid.root]);
+
+    this.treeInput.root.addEventListener('mousedown', (event: MouseEvent) => {
+      this.treePopup.hidden = false;
+      ui.showPopup(this.treePopup, this.treeInput.root);
+    });
+
+    return this.treeInput;
+  }
+
   setHideShowIcon(): void {
     this.hideShowIcon = ui.tooltip.bind(ui.iconFA('eye', () => {
       if (this.hideShowIcon.classList.value.includes('fa-eye-slash'))
@@ -197,37 +227,47 @@ export class MolecularLiabilityBrowser {
     }), 'show structure');
     this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
 
-    grok.events.onCustomEvent('closeAllDock').subscribe((v) => {
-      this.twinPviewer.close(this.mlbView);
+    grok.events.onCustomEvent('closeAllDock').subscribe(async () => {
+      await this.twinPviewer.close(this.mlbView);
       this.hideShowIcon.classList.value = 'grok-icon fal fa-eye-slash';
     });
 
-    grok.events.onCustomEvent('showAllDock').subscribe((v) => {
-      this.twinPviewer.open(this.mlbView);
+    grok.events.onCustomEvent('showAllDock').subscribe(async (v) => {
+      await this.twinPviewer.open(this.mlbView);
       this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
     });
   }
 
-
   setRibbonPanels(): void {
     this.mlbView.ribbonMenu.clear();
 
+    this.setReloadInput();
     this.setAntigenInput(this.antigenDf);
     this.setSchemeInput();
     this.setCdrInput();
+    this.setTreeInput();
     this.setHideShowIcon();
 
     this.mlbView.setRibbonPanels([
+      [this.reloadIcon],
+      [],
       [this.antigenInput.root],
       [this.schemeInput.root],
       [this.cdrInput.root],
+      [],
+      [this.treeInput.root],
       [],
       [this.hideShowIcon],
     ]);
   }
 
-  static prepareDataMlbDf(df: DG.DataFrame, numberingScheme: string,
-    hChainDf: DG.DataFrame, lChainDf: DG.DataFrame, pf: FilterPropertiesType): DG.DataFrame {
+  static prepareDataMlbDf(
+    df: DG.DataFrame, hChainDf: DG.DataFrame, lChainDf: DG.DataFrame,
+    antigen: string, numberingScheme: string, pf: FilterPropertiesType
+  ): DG.DataFrame {
+    console.debug('MLB: MolecularLiabilityBrowser.prepareDataMlbDf() start, ' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
+
     for (const column of df.columns)
       column.name = column.name.replaceAll('_', ' ');
 
@@ -239,7 +279,7 @@ export class MolecularLiabilityBrowser {
     }
 
     // TODO: Load chains sequences
-    console.debug(`hChainDf: ${hChainDf.rowCount} rows, lChainDf: ${lChainDf.rowCount} rows`);
+    console.debug(`MLB: hChainDf: ${hChainDf.rowCount} rows, lChainDf: ${lChainDf.rowCount} rows`);
     [{name: 'Heavy', df: hChainDf}, {name: 'Light', df: lChainDf}].forEach((chain) => {
       const seqCol = this.mergeSequenceColumns(chain.df, chain.name);
       grok.data.joinTables(
@@ -285,6 +325,9 @@ export class MolecularLiabilityBrowser {
         }
       ]));
     }
+
+    console.debug('MLB: MolecularLiabilityBrowser.prepareDataMlbDf() end, ' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
 
     return df;
   }
@@ -335,6 +378,7 @@ export class MolecularLiabilityBrowser {
   private _mlbDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
   private _regions: VdRegion[] = [];
   private _treeDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
+  private viewSubs: Subscription[] = [];
 
   get mlbDf(): DG.DataFrame { return this._mlbDf; }
 
@@ -343,22 +387,20 @@ export class MolecularLiabilityBrowser {
   get treeDf(): DG.DataFrame { return this._treeDf; }
 
   async setData(mlbDf: DG.DataFrame, treeDf: DG.DataFrame, regions: VdRegion[]): Promise<void> {
+    console.debug(`MLB: MolecularLiabilityBrowser.setData() start, ${((Date.now() - _startInit) / 1000).toString()} s`);
     await this.destroyView();
-    // .catch((ex) => {
-    //   console.error(`MolecularLiabilityBrowser.setData() > destroyView() error:\n${ex.toString()}`);
-    // });
     this._mlbDf = mlbDf;
     this._treeDf = treeDf;
     this._regions = regions;
     await this.buildView();
-    // .catch((ex) => {
-    //   console.error(`MolecularLiabilityBrowser.setData() > buildView() error:\n${ex ? ex.toString() : 'none'}`);
-    // });
+
+    console.debug(`MLB: MolecularLiabilityBrowser.setData() end, ${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
   /** Sets controls' layout. Called once from init(). */
   async setView(): Promise<void> {
-    console.debug('MolecularLiabilityBrowser.setView()');
+    console.debug(`MLB: MolecularLiabilityBrowser.setView() start ${((Date.now() - _startInit) / 1000).toString()} s`);
+
     grok.shell.windows.showProperties = false;
     grok.shell.windows.showHelp = false;
     this.setRibbonPanels();
@@ -373,18 +415,19 @@ export class MolecularLiabilityBrowser {
     this.mlbView.grid.columns.byName('v id')!.cellType = 'html';
 
     //table visual polishing
-    this.mlbView.grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => {
-      if (args.cell.isColHeader) {
-        if (args.cell.gridColumn.visible) {
-          const textSize = args.g.measureText(args.cell.gridColumn.name);
-          args.g.fillText(args.cell.gridColumn.name, args.bounds.x +
-            (args.bounds.width - textSize.width) / 2, args.bounds.y +
-            (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
-          args.g.fillStyle = '#4b4b4a';
+    this.subs.push(
+      this.mlbView.grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => {
+        if (args.cell.isColHeader) {
+          if (args.cell.gridColumn.visible) {
+            const textSize = args.g.measureText(args.cell.gridColumn.name);
+            args.g.fillText(args.cell.gridColumn.name, args.bounds.x +
+              (args.bounds.width - textSize.width) / 2, args.bounds.y +
+              (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
+            args.g.fillStyle = '#4b4b4a';
+          }
+          args.preventDefault(); // this is required to prevent drawing headers of hidden columns
         }
-        args.preventDefault(); // this is required to prevent drawing headers of hidden columns
-      }
-    });
+      }));
 
     this.mlbView.grid.onCellPrepare((gc) => {
       if (gc.isTableCell && gc.gridColumn.name === 'v id') {
@@ -401,9 +444,14 @@ export class MolecularLiabilityBrowser {
         }
       }
     });
+
+    console.debug(`MLB: MolecularLiabilityBrowser.setView() end ${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
   setViewFilters(): void {
+    console.debug(`MLB: MolecularLiabilityBrowser.setViewFilters() start, ` +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
+
     const filterList: { type: string, column?: string, label?: string }[] = [];
 
     for (const pfName of this.pf.names) {
@@ -411,10 +459,10 @@ export class MolecularLiabilityBrowser {
       this.mlbView.grid.col(pfName).width = 150;
       filterList.push({type: 'histogram', column: pfName});
     }
-    filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter'});
+    //filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter'});
 
-    const filterView = this.mlbView.filters({filters: filterList});
-    this.mlbView.dockManager.dock(filterView, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.25);
+    this.filterView = this.mlbView.filters({filters: filterList}) as DG.FilterGroup;
+    this.filterViewDn = this.mlbView.dockManager.dock(this.filterView, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.25);
 
     grok.events.onTooltipShown.subscribe((args) => {
       if (args.args.context instanceof DG.Column) {
@@ -447,6 +495,9 @@ export class MolecularLiabilityBrowser {
         }
       }
     });
+
+    console.debug(`MLB: MolecularLiabilityBrowser.setViewFilters() end, ` +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
   async setViewTwinPViewer(): Promise<void> {
@@ -471,18 +522,28 @@ export class MolecularLiabilityBrowser {
   }
 
   async destroyView(): Promise<void> {
-    console.debug('MolecularLiabilityBrowser.destroyView()');
+    console.debug('MLB: MolecularLiabilityBrowser.destroyView() start, ' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
     // DG.TableView.dataFrame cannot be null
     // if (this.mlbView !== null)
     //    this.mlbView.dataFrame = null;
 
+    // this.mlbView.dockManager.rootNode.removeChild(this.filterViewDn);
+
+    this.viewSubs.forEach((sub) => sub.unsubscribe());
+    this.viewSubs = [];
+
     this.idMapping = {};
     this.allIds = null;
     this.allVids = null;
+
+    console.debug('MLB: MolecularLiabilityBrowser.destroyView() end, ' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
   async buildView(): Promise<void> {
-    console.debug('MolecularLiabilityBrowser.buildView()');
+    console.debug('MLB: MolecularLiabilityBrowser.buildView() start, ' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
 
     this.allVids = this.mlbDf.col('v id')!;
     this.allIds = this.mlbDf.col('gdb id mappings');
@@ -493,9 +554,13 @@ export class MolecularLiabilityBrowser {
 
     if (this.mlbView === null) {
       // this.mlbView = grok.shell.addView();
+      this.mlbDf.name = 'Molecular Liability Browser'; // crutch for window/tab name support
       this.mlbView = grok.shell.addTableView(this.mlbDf);
+      this.mlbGrid = this.mlbView.grid;
     } else {
-      this.mlbView.dataFrame = this.mlbDf;
+      // this.mlbView.dataFrame = this.mlbDf;
+      this.mlbGrid.dataFrame = this.mlbDf;
+      const k = 11;
     }
 
     if (this.treeBrowser === null) {
@@ -505,6 +570,26 @@ export class MolecularLiabilityBrowser {
       this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
     } else {
       await this.treeBrowser.setData(this.treeDf, this.mlbDf);
+    }
+
+    this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(() => {
+      this.treePopup.hidden = true;
+
+      const k = 11;
+    }));
+
+    if (this.treeGrid === null) {
+      this.treeGrid = this.treeDf.plot.grid({
+        allowEdit: false,
+        allowRowSelection: false,
+        allowRowResizing: false,
+        allowRowReordering: false,
+        allowColReordering: false,
+        allowBlockSelection: false,
+        showRowHeader: false,
+      });
+    } else {
+      this.treeGrid.dataFrame = this.treeDf;
     }
 
     if (this.regionsViewer === null) {
@@ -522,12 +607,16 @@ export class MolecularLiabilityBrowser {
 
     this.updateView();
 
-    this.mlbDf.onCurrentRowChanged.subscribe(this.onMLBGridCurrentRowChanged.bind(this));
+    this.viewSubs.push(this.mlbDf.onCurrentRowChanged.subscribe(this.onMLBGridCurrentRowChanged.bind(this)));
+
+    console.debug('MLB: MolecularLiabilityBrowser.buildView() end, ' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
   /** Restores column hiding, sets view path after dataFrame replacement. */
   updateView() {
-    console.debug('MolecularLiabilityBrowser.updateView()');
+    console.debug('MLB: MolecularLiabilityBrowser.updateView() start,' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
     const urlParamsTxt = Array.from(this.urlParams.entries())
       .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
 
@@ -544,6 +633,9 @@ export class MolecularLiabilityBrowser {
       if (gridColumn.column !== null && mlbColumnsToHide.includes(gridColumn.column.name))
         gridColumn.visible = false;
     }
+
+    console.debug('MLB: MolecularLiabilityBrowser.updateView() end,' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
   onMLBGridCurrentRowChanged(args: any) {
@@ -593,14 +685,10 @@ export class MolecularLiabilityBrowser {
     window.setTimeout(async () => { await this.changeVid(); }, 10);
   }
 
-  /** Loads MLB data and sets prepared DataFrame */
+  /** Loads MLB data and sets prepared DataFrame. Calls setData() -> destroyView(), buildView(). */
   async loadData(): Promise<void> {
     const pi = DG.TaskBarProgressIndicator.create('Loading data...');
     try {
-      // let mlbDf: DG.DataFrame;
-      // let hChainDf: DG.DataFrame;
-      // let lChainDf: DG.DataFrame;
-
       const t1 = Date.now();
       const [mlbDf, hChainDf, lChainDf, treeDf, regions]:
         [DG.DataFrame, DG.DataFrame, DG.DataFrame, DG.DataFrame, VdRegion[]] =
@@ -612,15 +700,16 @@ export class MolecularLiabilityBrowser {
           this.dataLoader.getLayoutBySchemeCdr(this.schemeName, this.cdrName),
         ]);
       const t2 = Date.now();
-      console.debug(`MolecularLiabilityBrowser.loadMlbDf() load duration ${((t2 - t1) / 1000).toString()} s`);
+      console.debug(`MLB: MolecularLiabilityBrowser.loadData() load duration, ${((t2 - t1) / 1000).toString()} s`);
 
       await this.setData(
-        MolecularLiabilityBrowser.prepareDataMlbDf(mlbDf, this.schemeName, hChainDf, lChainDf, this.pf),
+        MolecularLiabilityBrowser.prepareDataMlbDf(mlbDf, hChainDf, lChainDf,
+          this.antigenName, this.schemeName, this.pf),
         MolecularLiabilityBrowser.prepareDataTreeDf(treeDf),
         regions);
 
       const t3 = Date.now();
-      console.debug(`MolecularLiabilityBrowser.loadMlbDf() prepare ${((t3 - t2) / 1000).toString()} s`);
+      console.debug(`MLB: MolecularLiabilityBrowser.loadData() prepare duration, ${((t3 - t2) / 1000).toString()} s`);
     } finally {
       pi.close();
     }
@@ -682,4 +771,8 @@ export class MolecularLiabilityBrowser {
 
     pi.close();
   };
+
+  async changeTree() {
+    const k = 11;
+  }
 }
