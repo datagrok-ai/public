@@ -1,6 +1,23 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-07-01 Dev build 1.4.10
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.10`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS UI Test: Pie Chart 
+* Better units CSS 
+* fix $ sign 
+
+
 # 2022-07-01 Dev build 1.4.9
 
 ## Latest Docker Images
