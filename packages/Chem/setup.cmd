@@ -1,6 +1,3 @@
-call npm unlink datagrok-api
-call npm unlink @datagrok-libraries/utils
-call npm unlink @datagrok-libraries/ml
 cd ../../js-api
 call npm install
 call npm link
