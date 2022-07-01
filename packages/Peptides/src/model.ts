@@ -744,7 +744,7 @@ export class PeptidesModel {
         if (edfSelection == null)
           return;
 
-        currentBitset.init(i => edfSelection.get(i) ?? false, false);
+        currentBitset.init((i) => edfSelection.get(i) ?? false, false);
         return;
       }
 
@@ -797,7 +797,7 @@ export class PeptidesModel {
     grok.shell.o = this.createAccordion().root;
   }
 
-  getBiteset(): DG.BitSet { return this._filterMode ? this._dataFrame.filter : this._dataFrame.selection; }
+  getBiteset(): DG.BitSet {return this._filterMode ? this._dataFrame.filter : this._dataFrame.selection;}
 
   //TODO: move out
   postProcessGrids(sourceGrid: DG.Grid, invalidIndexes: number[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
@@ -844,7 +844,7 @@ export class PeptidesModel {
     const bs = this.getBiteset();
     this.splitCol = this._dataFrame.col(C.COLUMNS_NAMES.SPLIT_COL) ??
       this._dataFrame.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
-    this.splitCol.init(i => bs.get(i));
+    this.splitCol.init((i) => bs.get(i));
     this.splitCol.compact();
   }
 
