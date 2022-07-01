@@ -14,7 +14,7 @@ import {
 } from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
-import {VdRegionsViewer} from './viewers/vd-regions-viewer';
+import {VdRegionsViewer} from '@datagrok/bio/src/viewers/vd-regions-viewer';
 
 // import {WebLogo} from '@datagrok-libraries/bio';
 
@@ -510,15 +510,15 @@ export class MolecularLiabilityBrowserOld {
     this.vidsObsPTMs = this.dataLoader.vidsObsPtm;
     ////////////////////////////////////////////////////
 
-    // #region Code from RepertoireBrowser till pi.close()
-    const referenceDf = await this.dataLoader.refDf;
-
-    const tempDf = referenceDf.clone(null, ['v_id']);
-    (tempDf.columns as DG.ColumnList).addNewInt('index').init((i) => i);
-    const indexes = (this.mlbTable.clone(null, ['v id'])
-      .join(tempDf, ['v id'], ['v_id'], [], ['index'], 'left', false)
-      .getCol('index').getRawData() as Int32Array);
-    // #endregion
+    // // #region Code from RepertoireBrowser till pi.close()
+    // const referenceDf = this.dataLoader.refDf;
+    //
+    // const tempDf = referenceDf.clone(null, ['v_id']);
+    // (tempDf.columns as DG.ColumnList).addNewInt('index').init((i) => i);
+    // const indexes = (this.mlbTable.clone(null, ['v id'])
+    //   .join(tempDf, ['v id'], ['v_id'], [], ['index'], 'left', false)
+    //   .getCol('index').getRawData() as Int32Array);
+    // // #endregion
 
     //#region -- Build columns with multiple alignments --
     /* Firstly get positions list for every chain.

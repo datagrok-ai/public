@@ -6,10 +6,10 @@ import {PtmFilter} from './custom-filters';
 import {DataLoader, DataLoaderType} from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
 import {DataLoaderDb} from './utils/data-loader-db';
-import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {MolecularLiabilityBrowser} from './molecular-liability-browser';
 import {TreeBrowser} from './mlb-tree';
 
+export let _startInit: number;
 export const _package = new DG.Package();
 const dataPackageName: string = 'MolecularLiabilityBrowserData';
 
@@ -29,7 +29,8 @@ let dl: DataLoader;
 
 //tags: init
 export async function initMlb() {
-  const pi = DG.TaskBarProgressIndicator.create('Loading filters data...');
+  _startInit = Date.now();
+  const pi = DG.TaskBarProgressIndicator.create('MLB: initMlb() Loading filters data...');
 
   const dataSourceSettings: string = await grok.functions.call(`${dataPackageName}:getPackageProperty`,
     {propertyName: 'DataSource'});
@@ -43,10 +44,10 @@ export async function initMlb() {
   default:
     throw new Error(`MLB: Unexpected data package property 'DataSource' value '${dataSourceSettings}'.`);
   }
+  console.debug(`MLB: initMLB() data loaded before init ${((Date.now() - _startInit) / 1000).toString()} s`);
 
-  console.debug('MLB.package.initMLB() before dl.init()');
   await dl.init();
-  console.debug('MLB.package.initMLB() after dl.init()');
+  console.debug(`MLB: initMLB() after init ${((Date.now() - _startInit) / 1000).toString()} s`);
 
   pi.close();
 }
@@ -59,7 +60,8 @@ export function ptmFilter() {
   if (!(dl.ptmMap && dl.cdrMap && dl.refDf))
     throw new Error(`MLB: Filter data is not initialized!`);
 
-  return new PtmFilter(dl.ptmMap, dl.cdrMap, dl.refDf);
+  const flt: PtmFilter = new PtmFilter(dl.ptmMap, dl.cdrMap, dl.refDf);
+  return flt;
 }
 
 //name: Molecular Liability Browser
@@ -70,20 +72,16 @@ export async function MolecularLiabilityBrowserApp() {
   const urlParams: URLSearchParams = new URLSearchParams(window.location.search);
 
   const app = new MolecularLiabilityBrowser(dl);
-  console.debug('MLB.package.MolecularLiabilityBrowserApp() before app.init()');
+  console.debug(`MLB.package.MolecularLiabilityBrowserApp() before ` +
+    `app init ${((Date.now() - _startInit) / 1000).toString()} s`);
   await app.init(urlParams);
-  console.debug('MLB.package.MolecularLiabilityBrowserApp() after app.init()');
+  console.debug(`MLB.package.MolecularLiabilityBrowserApp() after ` +
+    `app.init ${((Date.now() - _startInit) / 1000).toString()} s`);
 }
 
 /* WebLogo viewer is registered in Bio package */
 
-//name: VdRegions
-//description: V-Domain regions viewer
-//tags: viewer, panel
-//output: viewer result
-export function vdRegionViewer() {
-  return new VdRegionsViewer();
-}
+/* VdRegions viewer is registered in Bio package */
 
 //name: MlbTree
 //description: Molecular Liability Browser clone tree viewer

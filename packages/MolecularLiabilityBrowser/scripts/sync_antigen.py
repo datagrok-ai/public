@@ -357,7 +357,7 @@ vr_re = re.compile(r'VR\d+')
 
 
 def get_v_id_list(tree_txt) -> list[str]:
-    ids = vr_re.findall(tree_txt)
+    ids = set(vr_re.findall(tree_txt))
     return ids
 
 
@@ -446,6 +446,7 @@ def cli():
 
 
 @cli.command()
+@click.pass_context
 @click.option('--conn-str', 'conn_str',
               help="Database connection string .",
               type=str)
@@ -469,7 +470,6 @@ def cli():
 @click.option('--cdr', 'cdr_f',
               help='Text (.tsv) file with cdr regions definitions',
               type=click.File('r'))
-@click.pass_context
 def main(ctx, conn_str, ag_f, ab_f, ab2ag_f, tree_f, anarci_path, numbering_scheme_f, cdr_f):
     s = build_schema(anarci_path)
 

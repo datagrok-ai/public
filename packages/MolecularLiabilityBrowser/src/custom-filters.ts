@@ -3,6 +3,8 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
+import {_startInit} from './package';
+
 type ChainTypeType = 'L' | 'H';
 
 /**
@@ -67,6 +69,7 @@ export class PtmFilter extends DG.Filter {
   }
 
   attach(dataFrame: DG.DataFrame) {
+    console.debug(`MLB: PtmFilter.attach() start, ${((Date.now() - _startInit) / 1000).toString()}`);
     super.attach(dataFrame);
 
     const tempDf = this.referenceDf.clone(null, ['v_id']);
@@ -75,6 +78,7 @@ export class PtmFilter extends DG.Filter {
       .getCol('index').getRawData() as Int32Array);
 
     this.render();
+    console.debug(`MLB: PtmFilter.attach() end, ${((Date.now() - _startInit) / 1000).toString()}`);
   }
 
   applyState(state: string) {
@@ -84,10 +88,12 @@ export class PtmFilter extends DG.Filter {
 
   detach() {
     super.detach();
-    console.log('MLB filter detached');
+    console.log('MLB: PtmFilter.detach() filter detached');
   }
 
   applyFilter() {
+    console.debug(`MLB: PtmFilter.applyFilter() start, ${((Date.now() - _startInit) / 1000).toString()}`);
+
     const getStateFor = (index: number) => {
       for (const chosenPTM of this.ptmInputValue) {
         const binStr = this.referenceDf.get(this.ptmMap[`${this.chainType} ${chosenPTM}`], this.indexes[index]);
@@ -115,9 +121,12 @@ export class PtmFilter extends DG.Filter {
       filter.set(i, filter.get(i) && getStateFor(i), false);
 
     filter.fireChanged();
+    console.debug(`MLB: PtmFilter.applyFilter() end, ${((Date.now() - _startInit) / 1000).toString()}`);
   }
 
   render() {
+    console.debug(`MLB: PtmFilter.render() start, ${((Date.now() - _startInit) / 1000).toString()}`);
+
     $(this.root).empty();
 
     const chainTypeInput = ui.choiceInput('Chain type', 'L', ['L', 'H'], () => {
@@ -150,7 +159,7 @@ export class PtmFilter extends DG.Filter {
     const probabilityHeader = ui.divText(this.getProbabilityText());
     probabilityHeader.style.marginTop = '5px';
     probabilityHeader.style.marginBottom = '5px';
-    const probabilityInput = ui.rangeSlider(0, 1, this.cMin, this.cMax);
+    const probabilityInput = ui.rangeSlider(0, 1, this.cMin, this.cMax, false, 'thin_barbell');
 
     const rsMin = ui.inlineText(['0']);
     rsMin.style.marginRight = '5px';
@@ -169,6 +178,8 @@ export class PtmFilter extends DG.Filter {
 
     this.root = ui.divV([chainTypeInput.root, cdrInput.root, ptmInputLabel, ptmInput.root, probabilityHost]);
     this.root.style.margin = '10px';
+
+    console.debug(`MLB: PtmFilter.render() end, ${((Date.now() - _startInit) / 1000).toString()}`);
   }
 
   private getProbabilityText(): string {
