@@ -25,7 +25,6 @@ category('Viewers: Bar Chart', () => {
     if (document.getElementsByClassName('property-grid-base property-grid-disable-selection').length == 0)
         throw 'Properties table does not open'
 
-
     let hamburgerBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0].getElementsByClassName('grok-icon grok-font-icon-menu')[0] as HTMLElement;
     hamburgerBtn.click(); await delay(1000);
 
@@ -102,24 +101,25 @@ category('Viewers: Bar Chart', () => {
     }
 
     if (!barChart!.props.relativeValues)
-        throw 'relativeValues property has not been deserialize' 
+        throw 'relativeValues property has not been deserialized' 
     if (barChart!.props.onClick != 'Filter')
-        throw 'onClick property has not been deserialize'
+        throw 'onClick property has not been deserialized'
     if (barChart!.props.barBorderLineMouseOverWidth != 10)
-        throw 'barBorderLineMouseOverWidth property has not been deserialize'
+        throw 'barBorderLineMouseOverWidth property has not been deserialized'
     if (barChart!.props.barSortOrder != 'desc')
-        throw 'barSortOrder property (default) has not been deserialize'
+        throw 'barSortOrder property (default) has not been deserialized'
     if (barChart!.props.barSortType != 'by value')
-        throw 'barSortType property (default) has not been deserialize'
+        throw 'barSortType property (default) has not been deserialized'
     if (barChart!.props.splitColumnName != 'race')
-        throw 'Split column has not been deserialize' 
+        throw 'Split column has not been deserialized' 
     if (barChart!.props.valueColumnName != 'height')
-        throw 'Value column has not been deserialize'
+        throw 'Value column has not been deserialized'
     if (barChart!.props.valueAggrType != 'max')
-        throw 'Aggregation has not been deserialize' 
+        throw 'Aggregation has not been deserialized' 
   }); 
   after(async () => {
     v.close();
     grok.shell.closeAll();
+    await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Bar Chart').first())
   }); 
 });

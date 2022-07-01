@@ -25,7 +25,6 @@ category('Viewers: Scatter Plot', () => {
     if (document.getElementsByClassName('property-grid-base property-grid-disable-selection').length == 0)
         throw 'Properties table does not open'
 
-
     let hamburgerBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0].getElementsByClassName('grok-icon grok-font-icon-menu')[0] as HTMLElement;
     hamburgerBtn.click(); await delay(1000);
     /* finish when it becomes clear with menu events
@@ -131,5 +130,6 @@ category('Viewers: Scatter Plot', () => {
   after(async () => {
     v.close();
     grok.shell.closeAll();
+    await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Scatter plot').first())
   }); 
 });
