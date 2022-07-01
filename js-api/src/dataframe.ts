@@ -1655,8 +1655,8 @@ export class BitSet {
     return api.grok_Object_ToString(this.dart);
   }
 
-  handleClick(rowIndexPredicate: IndexPredicate, mouseEvent: any) {
-    api.grok_Utils_SelectRowsWhere(this.dart, rowIndexPredicate, mouseEvent.ctrlKey, mouseEvent.shiftKey, mouseEvent.metaKey);
+  handleClick(rowIndexPredicate: IndexPredicate, mouseEvent: MouseEvent, modifiedSelectOnly: boolean = false) {
+    api.grok_Utils_SelectRowsWhere(this.dart, rowIndexPredicate, mouseEvent.ctrlKey, mouseEvent.shiftKey, mouseEvent.metaKey, modifiedSelectOnly);
   }
 }
 
