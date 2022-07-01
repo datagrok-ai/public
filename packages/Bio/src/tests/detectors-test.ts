@@ -5,6 +5,24 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 category('detectors', () => {
+  //   const csvDf1: string = `col1
+  // 1
+  // 2
+  // 3`;
+  //
+  //   const csvDf2: string = `col1
+  // 4
+  // 5
+  // 6
+  // 7`;
+  //
+  //   const csvDf3: string = `col1
+  // 8
+  // 9
+  // 10
+  // 11
+  // 12`;
+
   const csvDfN1: string = `seq
 ACGTC
 CAGTGT
@@ -60,6 +78,10 @@ YNR-WYV-KHP
 MWRSWY-CKHP
 `;
 
+  // test('testDetectors1', async () => { await _testDetectors(csvDf1); });
+  // test('testDetectors2', async () => { await _testDetectors(csvDf2); });
+  // test('testDetectors3', async () => { await _testDetectors(csvDf3); });
+
   test('testDetectorsN1', async () => { await _testDetectorsN1(csvDfN1); });
   test('testDetectorsAA1', async () => { await _testDetectorsAA1(csvDfAA1); });
   test('testDetectorsMsaN1', async () => { await _testDetectorsMsaN1(csvDfMsaN1); });
@@ -70,6 +92,15 @@ MWRSWY-CKHP
 
   test('testDetectorsSepMsaN1', async () => { await _testDetectorsSepMsaN1(csvDfSepMsaN1); });
 });
+
+// export async function _testDetectors(csvDf: string) {
+//   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf);
+//   await grok.data.detectSemanticTypes(df);
+//
+//   const col1: DG.Column = df.col('col1')!;
+//   expect(col1.semType, null);
+//   expect(col1.getTag(DG.TAGS.UNITS), null);
+// }
 
 export async function _testDetectorsN1(csvDfN1: string) {
   const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
