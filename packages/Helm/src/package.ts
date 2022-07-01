@@ -31,9 +31,7 @@ export function helmCellRenderer(): DG.GridCellRenderer {
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell): void {
   let view = ui.div();
-  //@ts-ignore
   org.helm.webeditor.MolViewer.molscale = 0.8;
-  //@ts-ignore
   let app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
   var sizes = app.calculateSizes();
   app.canvas.resize(sizes.rightwidth, sizes.topheight - 210);
@@ -48,7 +46,6 @@ export function editMoleculeCell(cell: DG.GridCell): void {
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
   setTimeout(function() {
-    //@ts-ignore
     app.canvas.helm.setSequence(cell.cell.value , 'HELM');
   }, 200);
   //@ts-ignore
@@ -133,9 +130,7 @@ export async function helmToSmiles(helmString: string) {
 //input: column helmColumn {semType: HELM}
 export function monomerManager(helmColumn: DG.Column) {
   let manager = ui.div();
-  //@ts-ignore
   org.helm.webeditor.Adapter.init();
-  //@ts-ignore
   new scil.helm.MonomerLibApp(manager);
   //@ts-ignore
   ui.dialog({showHeader: false, showFooter: true})
@@ -165,7 +160,6 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     host.setAttribute('data', gridCell.cell.value);
 
     gridCell.element = host;
-    // @ts-ignore
     var canvas = new JSDraw2.Editor(host, { width: w, height: h, skin: "w8", viewonly: true });
     var formula = canvas.getFormula(true);
     var molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
