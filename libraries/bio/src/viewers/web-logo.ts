@@ -11,6 +11,7 @@ import {Aminoacids, AminoacidsPalettes} from '../aminoacids';
 import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
 import {UnknownSeqPalette, UnknownSeqPalettes} from '../unknown';
 import {SeqPalette} from '../seq-palettes';
+import {Subscription} from 'rxjs';
 
 declare module 'datagrok-api/src/grid' {
   interface Rect {
@@ -65,10 +66,11 @@ export class PositionInfo {
   }
 }
 
-
 export class WebLogo extends DG.JsViewer {
   public static residuesSet = 'nucleotides';
+  private static viewerCount: number = -1;
 
+  private viewerId: number = -1;
   private initialized: boolean = false;
 
   // private readonly colorScheme: ColorScheme = ColorSchemes[NucleotidesWebLogo.residuesSet];
@@ -115,8 +117,13 @@ export class WebLogo extends DG.JsViewer {
     return this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
   }
 
+  private viewSubs: Subscription[] = [];
+
   constructor() {
     super();
+
+    this.viewerId = WebLogo.viewerCount;
+    WebLogo.viewerCount += 1;
 
     this.textBaseline = 'top';
 
@@ -179,11 +186,11 @@ export class WebLogo extends DG.JsViewer {
       return [jPos, monomer, position.freq[monomer]];
     };
 
-    this.canvas.onmouseover = (e: MouseEvent) => {
 
-    };
+    // this.subs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'mouseover').subscribe((e: MouseEvent) => {
+    // }));
 
-    this.subs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'mousemove').subscribe((e: MouseEvent) => {
+    this.viewSubs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'mousemove').subscribe((e: MouseEvent) => {
       if (!this.canvas)
         return;
 
@@ -201,7 +208,7 @@ export class WebLogo extends DG.JsViewer {
       }
     }));
 
-    this.subs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'mousedown').subscribe((e: MouseEvent) => {
+    this.viewSubs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'mousedown').subscribe((e: MouseEvent) => {
       if (!this.canvas || e.button != 0)
         return;
 
@@ -218,7 +225,7 @@ export class WebLogo extends DG.JsViewer {
       }
     }));
 
-    this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
+    this.viewSubs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
 
     this.root.append(this.host);
     // this.root.appendChild(this.slider.root);
@@ -332,7 +339,10 @@ export class WebLogo extends DG.JsViewer {
   }
 
   public override async onTableAttached() {
-    // console.debug(`WebLogo.onTableAttached( dataFrame = ${this.dataFrame ? 'data' : 'null'} )`);
+    const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
+    console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
+    super.onTableAttached();
+
     this.updateSeqCol();
 
     if (this.dataFrame !== void 0) {
@@ -344,6 +354,22 @@ export class WebLogo extends DG.JsViewer {
     }
 
     await this.init();
+    console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached() end`);
+  }
+
+  public override async detach() {
+    const dataFrameTxt = `${this.dataFrame ? 'data' : 'null'}`;
+    console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
+    super.detach();
+
+    this.viewSubs.forEach((sub) => sub.unsubscribe());
+    this.host!.remove();
+    this.canvas = undefined;
+    this.msgHost = undefined;
+    this.host = undefined;
+
+    this.initialized = false;
+    console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached() end`);
   }
 
   protected _nullSequence(fillerResidue = 'X'): string {
@@ -402,7 +428,7 @@ export class WebLogo extends DG.JsViewer {
     //#endregion
 
     const maxHeight = this.canvas.height - this.axisHeight;
-    // console.debug(`WebLogo._calculate() maxHeight=${maxHeight}.`);
+    // console.debug(`WebLogo<${this.viewerId}>._calculate() maxHeight=${maxHeight}.`);
 
     //#region Calculate screen
     for (let jPos = 0; jPos < this.Length; jPos++) {
