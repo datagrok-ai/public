@@ -10,7 +10,7 @@ import {createDimensinalityReducingWorker, IReduceDimensionalityResult,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import * as C from '../utils/constants';
-import { PeptidesModel } from '../model';
+import {PeptidesModel} from '../model';
 
 export class PeptideSpaceViewer extends DG.JsViewer {
   method: string;
@@ -52,7 +52,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
 
     if (this.model)
       await this.render(this.customProperties.has(property?.name ?? '') || !this.dataFrame.temp[C.EMBEDDING_STATUS]);
-    
+
     this.updatePrevProperties();
   }
 
@@ -67,7 +67,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
 
         if (edf === null)
           return ui.label('Could not compute embeddings');
-        
+
         const edfSelection = edf.selection;
         edfSelection.copyFrom(this.model.getBiteset());
         edfSelection.onChanged.subscribe(() => {

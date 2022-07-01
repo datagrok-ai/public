@@ -20,7 +20,7 @@ let view: DG.TableView;
 
 category('Peptide space', async () => {
   table = DG.DataFrame.fromCsv(aligned1);
-  
+
   test('test_table.is_not_empty', async () => {
     _testTableIsNotEmpty(table);
   });
@@ -31,7 +31,7 @@ category('Peptide space', async () => {
   });
 
   const alignedSequencesColumn = table.getCol('AlignedSequence');
-  
+
   test('test_deminsionality_reducer', async () => {
     const columnData = cleanAlignedSequencesColumn(alignedSequencesColumn);
     for (const method of DimensionalityReducer.availableMethods) {
@@ -41,7 +41,7 @@ category('Peptide space', async () => {
         });
       }
     }
-  })
+  });
 
   test('test_peptide_similarity_space_viewer', async () => {
     for (const method of DimensionalityReducer.availableMethods) {
