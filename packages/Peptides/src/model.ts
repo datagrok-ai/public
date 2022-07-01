@@ -1007,7 +1007,7 @@ export class PeptidesModel {
     const sarViewersGroup: viewerTypes[] = [sarViewer, sarViewerVertical];
 
     if (this._dataFrame.rowCount <= 10000) {
-      const peptideSpaceViewerOptions = {method: 'SPE', measure: 'Levenshtein', cyclesCount: 100};
+      const peptideSpaceViewerOptions = {method: 'UMAP', measure: 'Levenshtein', cyclesCount: 100};
       const peptideSpaceViewer =
         await this._dataFrame.plot.fromType('peptide-space-viewer', peptideSpaceViewerOptions) as PeptideSpaceViewer;
       dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
