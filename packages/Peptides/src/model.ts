@@ -95,8 +95,6 @@ export class PeptidesModel {
 
   invalidateSelection(): void {
     this.fireBitsetChanged();
-    this.modifyOrCreateSplitCol();
-    grok.shell.o = this.createAccordion().root;
     this.invalidateGrids();
   }
 
@@ -750,9 +748,16 @@ export class PeptidesModel {
         return;
       }
 
+      const updateEdfSelection = () => {
+        this.isChangingEdfBitset = true;
+        edfSelection?.copyFrom(currentBitset);
+        this.isChangingEdfBitset = false;
+      };
+
       const positionList = Object.keys(this.currentSelection);
       if (positionList.length == 0) {
         currentBitset.init(() => false, false);
+        updateEdfSelection();
         return;
       }
 
@@ -765,12 +770,9 @@ export class PeptidesModel {
         }
         return false;
       };
-      currentBitset.init((i) => getBitAt(i), false);
+      currentBitset.init(getBitAt, false);
 
-      this.isChangingEdfBitset = true;
-      edfSelection?.copyFrom(currentBitset);
-      this.isChangingEdfBitset = false;
-      // currentBitset.init((i) => this.splitCol.get(i), false);
+      updateEdfSelection();
     };
 
     const recalculateStatistics =
@@ -791,6 +793,8 @@ export class PeptidesModel {
     this.isPeptideSpaceChangingBitset = isPeptideSpaceSource;
     this.getBiteset().fireChanged();
     this.isPeptideSpaceChangingBitset = false;
+    this.modifyOrCreateSplitCol();
+    grok.shell.o = this.createAccordion().root;
   }
 
   getBiteset(): DG.BitSet { return this._filterMode ? this._dataFrame.filter : this._dataFrame.selection; }
