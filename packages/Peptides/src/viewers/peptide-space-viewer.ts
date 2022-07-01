@@ -19,6 +19,8 @@ export class PeptideSpaceViewer extends DG.JsViewer {
   customProperties = new Set(['method', 'measure', 'cyclesCount']);
   isEmbeddingCreating: boolean = false;
   model!: PeptidesModel;
+  //FIXME: even if the property stays the same, for some reason it's still triggering prop change
+  prevProps!: {'method': string, 'measure': string, 'cyclesCount': number};
 
   constructor() {
     super();
@@ -28,12 +30,12 @@ export class PeptideSpaceViewer extends DG.JsViewer {
     const measureChoices = ['Levenshtein', 'Jaro-Winkler'];
     this.measure = this.addProperty('measure', DG.TYPE.STRING, 'Levenshtein', {choices: measureChoices});
     this.cyclesCount = this.addProperty('cyclesCount', DG.TYPE.INT, 100);
+    this.updatePrevProperties();
   }
 
-  // async onFrameAttached(dataFrame: DG.DataFrame): Promise<void> {
-  //   super.onFrameAttached(dataFrame);
-  //   await this.render(this.dataFrame.temp[C.EMBEDDING_STATUS]);
-  // }
+  updatePrevProperties(): void {
+    this.prevProps = {'method': this.method, 'measure': this.measure, 'cyclesCount': this.cyclesCount};
+  }
 
   async onTableAttached(): Promise<void> {
     super.onTableAttached();
@@ -45,9 +47,13 @@ export class PeptideSpaceViewer extends DG.JsViewer {
 
   async onPropertyChanged(property: DG.Property | null): Promise<void> {
     super.onPropertyChanged(property);
+    if (this.prevProps[property?.name as 'method' | 'measure' | 'cyclesCount' ?? ''] == property?.get(this))
+      return;
 
     if (this.model)
       await this.render(this.customProperties.has(property?.name ?? '') || !this.dataFrame.temp[C.EMBEDDING_STATUS]);
+    
+    this.updatePrevProperties();
   }
 
   async render(computeData=false): Promise<void> {
