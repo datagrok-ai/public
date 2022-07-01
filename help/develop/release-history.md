@@ -1,6 +1,34 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-07-01 Dev build 1.4.8
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.8`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Properties: an option to reorder rows in column grid for multi-column property editor 
+* Document viewer properties (WIP)
+* Fixed exception on AccordionPane.toJs() 
+* Compute: Model Catalog app to appear on the Left Panel #411 
+* property generator reads comments from files 
+* optimize iteration throulines in same files 
+* open file from other package 
+* Fixed parameter type in detectSemanticTypes 
+* Func subtype fixed 
+* Wiki: fixed broken links 
+* Wiki: moved dashboards.md 
+* Add smiles-to-mol scketcher tests 
+* Added other conversion tests except molV3 
+* Added value for converted smarts to ketcher_tests 
+
+
 # 2022-06-29 Dev build 1.4.7
 
 ## Latest Docker Images
