@@ -7,7 +7,7 @@ Data is one of the most critical elements in today's world. How fast you can con
 
 ## Why Datagrok?
 
-An end-to-end solution. An intuitive UI makes it simple for non-technical users to perform all data-related tasks from the main screen: [access](#access), [transform](#transform), [visualize and explore](#visualize-and-explore), [model and test hypotheses](#machine-learning), [compute](#compute), [discover](#discover), and [share](#share) anything with anyone.
+One platform. An intuitive UI makes it simple for non-technical users to perform all data-related tasks from the main screen: [access](#access), [transform](#transform), [visualize and explore](#visualize-and-explore), [model and test hypotheses](#machine-learning), [compute](#compute), [discover](#discover), and [share](#share) anything with anyone.
 
 Superior web-based performance and scalability. Thanks to our [proprietary in-memory database](develop/advanced/performance.md##in-memory-database), you can interactively explore data sets with _tens of millions of rows_ in the browser. The platform can scale up a billion rows and a million columns and is limited only by the amount of physical memory available on the client computer.
 
