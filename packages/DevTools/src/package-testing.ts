@@ -36,7 +36,7 @@ interface ITestFromUrl {
 
 let packagesTests: IPackageTests[];
 let testsResultsDf: DG.DataFrame;
-
+let testPath = '';
 
 export function addView(view: DG.ViewBase): DG.ViewBase {
   view.box = true;
@@ -47,15 +47,14 @@ export function addView(view: DG.ViewBase): DG.ViewBase {
 }
 
 export async function testManagerView(): Promise<void> {
-  await delay(2000);
   let pathSegments = window.location.pathname.split('/');
   pathSegments = pathSegments.map(it => it ? it.toLowerCase() : undefined);
   packagesTests = await collectTests({
     packName: pathSegments[4], 
     catName: pathSegments[5], 
     testName: pathSegments[6]});
-  const testUIElements: ITestManagerUI = createTestManagerUI(true);
   let v = DG.View.create();
+  const testUIElements: ITestManagerUI = createTestManagerUI(true, v);
   v.name = 'Test Manager'
   addView(v);
   v.temp['ignoreCloseAll'] = true;
@@ -63,7 +62,7 @@ export async function testManagerView(): Promise<void> {
     [ [ testUIElements.runButton ] ],
   );
   v.append(testUIElements.testsTree.root);
-  runActiveTests(testUIElements.testsTree);  
+  runActiveTests(testUIElements.testsTree, v);  
 }
 
 
@@ -72,7 +71,7 @@ export async function _renderTestManagerPanel(ent: EntityType): Promise<DG.Widge
     return DG.Widget.fromRoot(ui.divText('Entity does not exist.', { style: { color: 'var(--failure)' } }));
   }
   if (ent.constructor.name === 'Package' || ent instanceof eval(`DG.Package`)) {
-    const packagesTestsList = await collectTests(undefined, ent.name);
+    packagesTests = await collectTests(undefined, ent.name);
     const testUIElements: ITestManagerUI = createTestManagerUI();
     const panelDiv = ui.divV([
       testUIElements.runButton,
@@ -89,9 +88,8 @@ async function collectTests(testFromUrl: ITestFromUrl, packageName?: string): Pr
   if (packageName) testFunctions = testFunctions.filter((f: DG.Func) => f.package.name === packageName);
   const packagesTestsList: IPackageTests[] = [];
   for (let f of testFunctions) {
-    await delay(2000);
+    await delay(4000); // will be removed with new version of js-api
     await f.package.load({ file: f.options.file });
-    //await delay(2000);
     const allPackageTests = f.package.getModule(f.options.file).tests;
     let testsWithPackNameAndActFlag: { [cat: string]: ICategory } = {};
     if (allPackageTests) {
@@ -123,7 +121,7 @@ async function collectTests(testFromUrl: ITestFromUrl, packageName?: string): Pr
 }
 
 
-function createTestManagerUI(labelClick?: boolean): ITestManagerUI {
+function createTestManagerUI(labelClick?: boolean, view?: DG.View): ITestManagerUI {
 
   let addCheckboxAndLabelClickListener = (item: DG.TreeViewNode, checked: boolean, isGroup: boolean, onChangeFunction: () => void, onItemClickFunction: () => void) => {
     item.enableCheckBox(checked);
@@ -209,17 +207,17 @@ function createTestManagerUI(labelClick?: boolean): ITestManagerUI {
   });
 
   const runTestsButton = ui.bigButton('Run', async () => {
-    runActiveTests(tree);
+    runActiveTests(tree, view);
   });
 
   return { runButton: runTestsButton, testsTree: tree };
 }
 
-function runActiveTests(tree: DG.TreeViewNode) {
+function runActiveTests(tree: DG.TreeViewNode, view?: DG.View) {
   let actTests = collectActiveTests();
   actTests.forEach(t => updateTestResultsIcon(tree, t.packageName, t.test.category, t.test.name));
   if (actTests.length) {
-    runAllTests(actTests, tree);
+    runAllTests(actTests, tree, view);
   }
 }
 
@@ -227,9 +225,25 @@ function collectActiveTests () {
   let activeTests: IPackageTest[] = [];
   packagesTests.forEach(pack => {
     Object.keys(pack.categories).forEach(cat => {
+      const active = pack.categories[ cat ].tests.filter(t => t.active);
+      if (active.length > 0){
+
+      }
       activeTests = activeTests.concat(pack.categories[ cat ].tests.filter(t => t.active));
     });
   });
+  const actPacks = [...new Set(activeTests.map(it => it.packageName))];
+  testPath = '';
+  if(actPacks.length === 1) {
+    testPath += `/${actPacks[0]}`;
+    const actCats = [...new Set(activeTests.map(it => it.test.category))];
+    if (actCats.length === 1) {
+      testPath += `/${actCats[0]}`;
+      if (activeTests.length === 1) {
+        testPath += `/${activeTests[0].test.name}`;
+      }
+    }
+  }
   return activeTests;
 }
 
@@ -247,8 +261,9 @@ function updateIcon (passed: boolean, iconDiv: Element) {
   iconDiv.append(icon);
 }
 
-async function runAllTests (activeTests: IPackageTest[], tree: DG.TreeViewNode) {
+async function runAllTests (activeTests: IPackageTest[], tree: DG.TreeViewNode, view?: DG.View) {
   let completedTestsCount = 0;
+  if (view) view.path = '/' + view.name.replace(' ', '') + testPath.replace(/ /g, '');
   activeTests.forEach(t => {
     const start = Date.now();
     grok.functions.call(
