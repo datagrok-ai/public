@@ -125,10 +125,9 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   init() {
-    console.log('init handler');
-    setTimeout(() => {
+     setTimeout(() => {
       grok.functions.onBeforeRunAction.subscribe((fc) => {
-        if (fc.func.hasTag('model')) {
+        if (fc.func.hasTag('model') || fc.func.hasTag('model-editor')) {
           ModelHandler.bindModel(fc);
         }
       });
