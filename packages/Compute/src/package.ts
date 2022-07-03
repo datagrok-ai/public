@@ -16,9 +16,6 @@ import './css/model-card.css';
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
 
-//@ts-ignore
-window.grok_Dapi_Function_Calls = window.grok_Dapi_Function_calls;
-
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
 //tags: viewer
@@ -28,11 +25,16 @@ export function OutliersSelection() {
 }
 
 //name: ComputationView
-//tags: viewer
+//tags: model-editor, editor
 //input: funccall call
 //output: view result
 export function ComputationViewEditor(call: DG.FuncCall) {
-  return new ComputationView(call);
+  let v = new ComputationView(call);
+  v.parentCall = call;
+  v.name = call.func.friendlyName;
+  v.parentView = grok.functions.getCurrentCall().parentCall.aux['view']; // modelCatalog view
+  //todo: parse url, set parameters to call
+  return v;
 }
 
 
@@ -50,14 +52,13 @@ export function modelsWidget(): DG.Widget {
 //output: view result
 export function functionParametersGrid(f: DG.Func): DG.View {
   return _functionParametersGrid(f);
-  document.getElementById('root')?.appendChild(ui.h1('Hello World'));
 }
 
 //name: hof
 //description: some description
 //sidebar: @compute
 export function hof() {
-  grok.shell.info('hof');
+  console.log('hof');
   let f: DG.Func = DG.Func.byName('Sin');
   let v: DG.View = functionParametersGrid(f);
   v.parentCall = grok.functions.getCurrentCall();
@@ -67,19 +68,27 @@ export function hof() {
 
 
 //name: hof2
+//tags: model
 //description: some description 2 2 2
 //sidebar: @compute
 //meta.icon: package1.png
 export function hof2() {
-  grok.shell.info('hof2');
+  console.log('hof2');
 
   let f: DG.Func = DG.Func.byName('Sin');
   let v: DG.View = functionParametersGrid(f);
 
+  v.root.appendChild(ui.narrowForm([
+    ui.switchInput('test', true),
+    ui.boolInput('test', true)]));
+  v.root.appendChild(ui.form([
+    ui.switchInput('test', true),
+    ui.boolInput('test', true)]));
   v.parentCall = grok.functions.getCurrentCall(); // hof2 call itself
   v.parentView = v.parentCall.parentCall?.aux['view']; // modelCatalog view
   let path = v.parentCall.parentCall?.aux['url']; // uri if called from model catalog
   // grok.shell.info(path);
+
 
   let path2 = v.parentCall?.aux['url']; // uri if called directly (if app)
   // grok.shell.info(path2);
@@ -130,8 +139,14 @@ function getCookie(name: string): string | undefined{
   return matches ? decodeURIComponent(matches[1]) : undefined;
 }
 
-//tags: init, autostart
+
+//tags: autostart
 //meta.autostartImmediate: true
+export function autostart() {
+
+}
+
+//tags: init
 export function init() {
   if (initCompleted)
     return;
