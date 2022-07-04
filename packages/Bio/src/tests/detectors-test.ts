@@ -4,24 +4,32 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {mmSemType} from '../const';
+
 category('detectors', () => {
-  //   const csvDf1: string = `col1
-  // 1
-  // 2
-  // 3`;
-  //
-  //   const csvDf2: string = `col1
-  // 4
-  // 5
-  // 6
-  // 7`;
-  //
-  //   const csvDf3: string = `col1
-  // 8
-  // 9
-  // 10
-  // 11
-  // 12`;
+  const csvDf1: string = `col1
+1
+2
+3`;
+
+  const csvDf2: string = `col1
+4
+5
+6
+7`;
+
+  const csvDf3: string = `col1
+8
+9
+10
+11
+12`;
+
+  const csvDfSmiles: string = `col1
+CCCCN1C(=O)CN=C(c2cc(F)ccc12)C3CCCCC3
+C1CCCCC1
+CCCCCC
+`;
 
   const csvDfN1: string = `seq
 ACGTC
@@ -78,36 +86,38 @@ YNR-WYV-KHP
 MWRSWY-CKHP
 `;
 
-  // test('testDetectors1', async () => { await _testDetectors(csvDf1); });
-  // test('testDetectors2', async () => { await _testDetectors(csvDf2); });
-  // test('testDetectors3', async () => { await _testDetectors(csvDf3); });
+  test('testDetectorsNegative1', async () => { await _testDetectorsNegative(csvDf1); });
+  test('testDetectorsNegative2', async () => { await _testDetectorsNegative(csvDf2); });
+  test('testDetectorsNegative3', async () => { await _testDetectorsNegative(csvDf3); });
+  test('testDetectorsNegativeSmiles', async () => { await _testDetectorsNegative(csvDfSmiles); });
 
   test('testDetectorsN1', async () => { await _testDetectorsN1(csvDfN1); });
   test('testDetectorsAA1', async () => { await _testDetectorsAA1(csvDfAA1); });
   test('testDetectorsMsaN1', async () => { await _testDetectorsMsaN1(csvDfMsaN1); });
   test('testDetectorsMsaAA1', async () => { await _testDetectorsMsaAA1(csvDfMsaAA1); });
 
-  test('testDetectorsSepUn1', async () => { await _testDetectorsSepUn1(csvDfSepUn1); });
-  test('testDetectorsSepUn2', async () => { await _testDetectorsSepUn2(csvDfSepUn2); });
+  test('testDetectorsSepNt', async () => { await _testDetectorsSepNt(csvDfSepNt, '*'); });
+  test('testDetectorsSepPt', async () => { await _testDetectorsSepPt(csvDfSepPt, '-'); });
+  test('testDetectorsSepUn1', async () => { await _testDetectorsSepUn(csvDfSepUn1, '-'); });
+  test('testDetectorsSepUn2', async () => { await _testDetectorsSepUn(csvDfSepUn2, '/'); });
 
   test('testDetectorsSepMsaN1', async () => { await _testDetectorsSepMsaN1(csvDfSepMsaN1); });
 });
 
-// export async function _testDetectors(csvDf: string) {
-//   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf);
-//   await grok.data.detectSemanticTypes(df);
-//
-//   const col1: DG.Column = df.col('col1')!;
-//   expect(col1.semType, null);
-//   expect(col1.getTag(DG.TAGS.UNITS), null);
-// }
+export async function _testDetectorsNegative(csvDf: string) {
+  const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf);
+  await grok.data.detectSemanticTypes(df);
+
+  const col1: DG.Column = df.col('col1')!;
+  expect(col1.semType == mmSemType, false);
+}
 
 export async function _testDetectorsN1(csvDfN1: string) {
   const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
   await grok.data.detectSemanticTypes(dfN1);
 
   const col: DG.Column = dfN1.col('seq')!;
-  expect(col.semType, 'MACROMOLECULE');
+  expect(col.semType, mmSemType);
   expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ:NT');
 }
 
@@ -116,7 +126,7 @@ export async function _testDetectorsAA1(csvDfAA1: string) {
   await grok.data.detectSemanticTypes(dfAA1);
 
   const col: DG.Column = dfAA1.col('seq')!;
-  expect(col.semType, 'MACROMOLECULE');
+  expect(col.semType, mmSemType);
   expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ:PT');
 }
 
@@ -125,7 +135,7 @@ export async function _testDetectorsMsaN1(csvDfMsaN1: string) {
   await grok.data.detectSemanticTypes(dfMsaN1);
 
   const col: DG.Column = dfMsaN1.col('seq')!;
-  expect(col.semType, 'MACROMOLECULE');
+  expect(col.semType, mmSemType);
   expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ.MSA:NT');
 }
 
@@ -134,33 +144,46 @@ export async function _testDetectorsMsaAA1(csvDfMsaAA1: string) {
   await grok.data.detectSemanticTypes(dfMsaAA1);
 
   const col: DG.Column = dfMsaAA1.col('seq')!;
-  expect(col.semType, 'MACROMOLECULE');
+  expect(col.semType, mmSemType);
   expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ.MSA:PT');
 }
 
-export async function _testDetectorsSepUn1(csvDfSepUn1: string) {
-  const dfSepUn1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfSepUn1);
-  await grok.data.detectSemanticTypes(dfSepUn1);
+export async function _testDetectorsSepNt(csv: string, separator: string) {
+  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+  await grok.data.detectSemanticTypes(df);
 
-  const col: DG.Column = dfSepUn1.col('seq')!;
-  expect(col.semType, 'MACROMOLECULE');
-  expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ:UN');
+  const col: DG.Column = df.col('seq')!;
+  expect(col.semType, mmSemType);
+  expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ:NT');
+  expect(col.getTag('separator'), separator);
 }
 
-export async function _testDetectorsSepUn2(csvDfSepUn2: string) {
-  const dfSepUn2: DG.DataFrame = DG.DataFrame.fromCsv(csvDfSepUn2);
-  await grok.data.detectSemanticTypes(dfSepUn2);
+export async function _testDetectorsSepPt(csv: string, separator: string) {
+  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+  await grok.data.detectSemanticTypes(df);
 
-  const col: DG.Column = dfSepUn2.col('seq')!;
-  expect(col.semType, 'MACROMOLECULE');
-  expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ:UN');
+  const col: DG.Column = df.col('seq')!;
+  expect(col.semType, mmSemType);
+  expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ:PT');
+  expect(col.getTag('separator'), separator);
 }
+
+export async function _testDetectorsSepUn(csv: string, separator: string) {
+  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+  await grok.data.detectSemanticTypes(df);
+
+  const col: DG.Column = df.col('seq')!;
+  expect(col.semType, mmSemType);
+  expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ:UN');
+  expect(col.getTag('separator'), separator);
+}
+
 
 export async function _testDetectorsSepMsaN1(csvDfSepMsaN1: string) {
   const dfSepMsaN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfSepMsaN1);
   await grok.data.detectSemanticTypes(dfSepMsaN1);
 
   const col: DG.Column = dfSepMsaN1.col('seq')!;
-  expect(col.semType, 'MACROMOLECULE');
+  expect(col.semType, mmSemType);
   expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ.MSA:NT');
 }

@@ -50,7 +50,7 @@ export function vdRegionViewer() {
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string) : Promise<void> {
+  similarity: number, methodName: string): Promise<void> {
 }
 
 //top-menu: Bio | Sequence Space...
@@ -61,9 +61,8 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean): Promise<void> {
 };
-
 
 //top-menu: Bio | MSA...
 //name: MSA
@@ -100,7 +99,7 @@ export async function compositionAnalysis(): Promise<void> {
 //meta.ext: fasta, fna, ffn, faa, frn, fa
 //input: string content
 //output: list tables
-export function importFasta(content : string) : DG.DataFrame [] {
+export function importFasta(content: string): DG.DataFrame [] {
   const regex = /^>(.*)$/gm;
   let match;
   const descriptions = [];
