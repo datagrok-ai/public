@@ -1,6 +1,32 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-07-04 Dev build 1.4.11
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.11`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Document viewer properties (WIP)
+* string fields 
+* JS API: support a selection mode via modifier keys only in Bitset.handleClick  
+* property grid null dependencies 
+* Compute: Model Catalog app to appear on the Left Panel #411 
+* JWT test 
+* RSA KeyPair: Sign and verify methods 
+* Implement JWT tokens (WIP)
+* Bio: top menu added 
+* fix semtype 
+* Fixed #745: Compute: several custom viewers are in conflict 
+* Fixed analyzer warning 
+
+
 # 2022-07-01 Dev build 1.4.10
 
 ## Latest Docker Images
