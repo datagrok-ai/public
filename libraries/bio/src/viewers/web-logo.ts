@@ -25,7 +25,9 @@ declare global {
   }
 }
 
-type MonomerFreqs = { [m: string]: number };
+export type MonomerFreqs = { [m: string]: number };
+export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }
+export type SplitterFunc = (seq: string) => string[];
 
 HTMLCanvasElement.prototype.getCursorPosition = function(event: MouseEvent): DG.Point {
   const rect = this.getBoundingClientRect();
@@ -200,7 +202,7 @@ export class WebLogo extends DG.JsViewer {
       if (this.dataFrame && this.seqCol && monomer) {
         ui.tooltip.showRowGroup(this.dataFrame, (iRow) => {
           const seq = this.seqCol!.get(iRow);
-          const seqM = seq ? WebLogo.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
+          const seqM = seq ? WebLogo.splitterAsFasta(seq)[this.startPosition + jPos] : null;
           return seqM === monomer && this.dataFrame.filter.get(iRow);
         }, args.x + 16, args.y + 16);
       } else {
@@ -219,7 +221,7 @@ export class WebLogo extends DG.JsViewer {
       if (this.dataFrame && this.seqCol && monomer) {
         this.dataFrame.selection.init((iRow) => {
           const seq = this.seqCol!.get(iRow);
-          const seqM = seq ? WebLogo.splitSeqToMonomers(seq)[this.startPosition + jPos] : null;
+          const seqM = seq ? WebLogo.splitterAsFasta(seq)[this.startPosition + jPos] : null;
           return seqM === monomer && this.dataFrame.filter.get(iRow);
         });
       }
@@ -276,7 +278,7 @@ export class WebLogo extends DG.JsViewer {
       categories = this.seqCol.categories;
     }
     const maxLength = categories.length > 0 ? Math.max(...categories.map(
-      (s) => s !== null ? WebLogo.splitSeqToMonomers(s).length : 0)) : 0;
+      (s) => s !== null ? WebLogo.splitterAsFasta(s).length : 0)) : 0;
 
     // Get position names from data column tag 'positionNames'
     const positionNamesTxt = this.seqCol.getTag('positionNames');
@@ -407,7 +409,7 @@ export class WebLogo extends DG.JsViewer {
         ++this.rowsNull;
       }
 
-      const seqM: string[] = WebLogo.splitSeqToMonomers(s);
+      const seqM: string[] = WebLogo.splitterAsFasta(s);
       for (let jPos = 0; jPos < this.Length; jPos++) {
         const pmInfo = this.positions[jPos].freq;
         const m: string = seqM[this.startPosition + jPos] || '-';
@@ -625,54 +627,52 @@ export class WebLogo extends DG.JsViewer {
       res = NucleotidesPalettes.Chromatogram;
       break;
     }
-    const alphabetFreqs: MonomerFreqs = WebLogo.getAlphabetFreqs(seqCol, minLength);
+    const stats: SeqColStats = WebLogo.getStats(seqCol, minLength, WebLogo.splitterAsFasta);
 
     const alphabetCandidates: [Set<string>, SeqPalette][] = [
       [new Set(Object.keys(Nucleotides.Names)), NucleotidesPalettes.Chromatogram],
       [new Set(Object.keys(Aminoacids.Names)), AminoacidsPalettes.GrokGroups],
     ];
     // Calculate likelihoods for alphabet_candidates
-    const alphabetCandidatesSim: number[] = alphabetCandidates.map(
-      (c) => WebLogo.getAlphabetSimilarity(alphabetFreqs, c[0]));
+    const alphabetCandidatesSim: number[] = alphabetCandidates
+      .map((c) => WebLogo.getAlphabetSimilarity(stats.freq, c[0]));
     const maxCos = Math.max(...alphabetCandidatesSim);
     if (maxCos > 0.65)
       res = alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][1];
     else
       res = UnknownSeqPalettes.Color;
 
-    // if (res === null) {
-    //   // The alphabet of nucleotides is a smaller set, so we check it first.
-    //   const alphabet = {...Nucleotides.Names, ...{'-': 'gap'}};
-    //   res = DG.Detector.sampleCategories(seqCol, (seq) => {
-    //     return !seq || (seq.length > minLength && this.splitSeqToMonomers(seq).every((n) => n in alphabet));
-    //   }, 1) ? NucleotidesPalettes.Chromatogram : null;
-    // }
-    // if (res === null) {
-    //   // And then check for amino acid's alphabet.
-    //   const alphabet = {...Aminoacids.Names, ...{'-': 'gap'}};
-    //   res = DG.Detector.sampleCategories(seqCol, (seq) => {
-    //     return !seq || (seq.length > minLength && this.splitSeqToMonomers(seq).every((n) => n in alphabet));
-    //   }, 1) ? AminoacidsPalettes.GrokGroups : null;
-    // }
-    // if (res === null) {
-    //   res = UnknownSeqPalettes.Color;
-    // }
     return res;
   }
 
-  public static getAlphabetFreqs(seqCol: DG.Column, minLength: number = 0): MonomerFreqs {
-    const res: MonomerFreqs = {};
+  /** Stats of sequences with specified splitter func, returns { freq, sameLength }.
+   * @param {DG.Column} seqCol
+   * @param {number} minLength
+   * @param {SplitterFunc} splitter
+   * @return { SeqColStats }, sameLength: boolean } stats of column sequences
+   */
+  static getStats(seqCol: DG.Column, minLength: number, splitter: SplitterFunc): SeqColStats {
+    const freq: { [m: string]: number } = {};
+    let sameLength = true;
+    let firstLength = null;
+
     for (const seq of seqCol.categories) {
-      const mSeq: string[] = WebLogo.splitSeqToMonomers(seq);
+      const mSeq = splitter(seq);
+
+      if (firstLength == null)
+        firstLength = mSeq.length;
+      else if (mSeq.length !== firstLength)
+        sameLength = false;
+
       if (mSeq.length > minLength) {
         for (const m of mSeq) {
-          if (!(m in res))
-            res[m] = 0;
-          res[m] += 1;
+          if (!(m in freq))
+            freq[m] = 0;
+          freq[m] += 1;
         }
       }
     }
-    return res;
+    return {freq: freq, sameLength: sameLength};
   }
 
   public static getAlphabetSimilarity(freq: MonomerFreqs, alphabet: Set<string>, gapSymbol: string = '-'): number {
@@ -711,13 +711,16 @@ export class WebLogo extends DG.JsViewer {
     return res;
   }
 
-  private static splitRe = /\[(\w+)\]|(\w)|(-)/g;
+  private static monomerRe = /\[(\w+)\]|(\w)|(-)/g;
 
-  public static splitSeqToMonomers(seq: string): string[] {
-    // TODO: Use sequence separator
-    const res: string[] = wu(seq.toString().matchAll(WebLogo.splitRe)).map((ma) => {
+  /** Split sequence for single character monomers, square brackets multichar monomer names or gap symbol.
+   * @param {any} seq object with sequence
+   * @return {string[]} array of monomers
+   */
+  public static splitterAsFasta(seq: any): string[] {
+    const res: string[] = wu<RegExpMatchArray>(seq.toString().matchAll(WebLogo.monomerRe)).map((ma: RegExpMatchArray) => {
       let mRes: string;
-      const m = ma[0];
+      const m: string = ma[0];
       if (m.length > 1) {
         if (m in WebLogo.aaSynonyms) {
           mRes = WebLogo.aaSynonyms[m];
