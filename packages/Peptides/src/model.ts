@@ -567,7 +567,7 @@ export class PeptidesModel {
     renderColNames: string[], statsDf: DG.DataFrame, peptidesCount: number, sarGrid: DG.Grid, sarVGrid: DG.Grid,
     sourceDf: DG.DataFrame,
   ): void {
-    const onCellTooltipAction = async (cell: DG.GridCell, x: number, y: number): Promise<boolean> => {
+    const onCellTooltipAction = (cell: DG.GridCell, x: number, y: number): boolean => {
       if (
         !cell.isRowHeader && !cell.isColHeader && cell.tableColumn !== null && cell.cell.value !== null &&
           cell.tableRowIndex !== null && renderColNames.indexOf(cell.tableColumn.name) !== -1) {
@@ -596,7 +596,7 @@ export class PeptidesModel {
 
         ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
       }
-      if (!cell.isColHeader && cell.tableColumn?.name == C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
+      if (!cell.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.AMINO_ACIDS) {
         const monomerLib = sourceDf.temp[MonomerLibrary.id];
         ChemPalette.showTooltip(cell, x, y, monomerLib);
       }

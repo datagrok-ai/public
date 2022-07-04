@@ -316,7 +316,7 @@ export class StackedBarChart extends DG.JsViewer {
   }
 
   unhighlight(): void {
-    ui.tooltip.hide();
+    // ui.tooltip.hide();
     this.computeData();
   }
 
