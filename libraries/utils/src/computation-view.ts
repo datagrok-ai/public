@@ -32,9 +32,9 @@ export class ComputationView extends FunctionView {
   reportBug: (() => Promise<void>) | null = null;
 
   /**
-   * Looks for {@link reportBug} and {@link getHelp} members and creates model menus
+   * Looks for {@link reportBug}, {@link getHelp} and {@link exportConfig} members and creates model menus
    * @stability Stable
- */
+  */
   override buildRibbonMenu() {
     super.buildRibbonMenu();
 

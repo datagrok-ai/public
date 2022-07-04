@@ -70,6 +70,9 @@ export class FunctionView extends DG.ViewBase {
     return this._type;
   }
 
+  /** Export options. Could be overriden partially, using default implementation of each option.
+    * @stability Stable
+  */
   exportConfig: {
     /** Override to provide custom export logic.
       * Default implementation {@link defaultExport} heavily relies on the default implementation of {@link buildIO}.
@@ -220,7 +223,7 @@ export class FunctionView extends DG.ViewBase {
   }
 
   /**
-   * Looks for {@link supportedExportFormats} members and creates model menus
+   * Looks for {@link supportedExportFormats} members and creates ribbon panel
    * @returns The HTMLElements of ribbonPanels
    * @stability Stable
  */
