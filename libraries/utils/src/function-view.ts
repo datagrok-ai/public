@@ -19,6 +19,9 @@ export class FunctionView extends DG.ViewBase {
     this.box = true;
     this.context = DG.Context.cloneDefault();
 
+    this.parentCall = grok.functions.getCurrentCall();
+    this.parentView = grok.functions.getCurrentCall().parentCall.aux['view'];
+
     if (!funcCall) return;
 
     this.linkFunccall(funcCall);
