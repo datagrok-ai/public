@@ -8,6 +8,8 @@ import * as rxjs from 'rxjs';
 import { GridCellRendererEx} from "../renderer/GridCellRendererEx";
 import * as PinnedUtils from "./PinnedUtils";
 //import {TableView} from "datagrok-api/dg";
+
+
 /*
 const hSubscriber  = grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewLayout) => {
   const view : DG.TableView = layout.view as TableView;
@@ -851,7 +853,16 @@ export class PinnedColumn {
 
       if(nW > 0 && nHRowGrid > 0) { //to address a bug caused either DG or client app
         try {
-         renderer.render(g, 0, nY, nW, nHRowGrid, cellRH, cellRH.style);
+          let nYY = nY;
+          let nWW = nW;
+          let nHH = nHRowGrid;
+          if(renderer.name === 'Molecule' && window.devicePixelRatio > 1.0) {
+            nYY /= window.devicePixelRatio;
+            nWW /= window.devicePixelRatio;
+            nHH /= window.devicePixelRatio;
+          }
+
+         renderer.render(g, 0, nYY, nWW, nHH, cellRH, cellRH.style);
         } catch(e) {
           console.error("Could not paint cell for pinned column " + this.m_colGrid.name + " row "  + nRG);
           continue;
