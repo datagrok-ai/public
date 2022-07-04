@@ -22,18 +22,18 @@ We are utilizing "PepSea" tool for analyzing peptide and nucleotide sequences co
 
 Datagrok supports ingesting data in multiple file formats (such as fasta or csv) and multiple notations for natural and modified molecules, aligned and non-aligned forms, nucleotide and amino acid sequences. We support all widely used notation systems for molecular representations, and process them in a unified way. The sequences are automatically detected and classified, while preserving their initial notation. HELM perfectly fits the requirements for this kind of unification. If a dataframe contains any sequence data, it will be recognized and annotated appropriately. 
 
-![](../../uploads/macromolecules/macromolecules-3.png " ")
+![HELM for description](../../uploads/macromolecules/macromolecules-3.png " ")
 
 Automatic conversion to HELM from other notations will occur as necessary. The user can get a HELM plot for each sequence, with all the monomers included in a graph, even if the original notation was not HELM.
 Datagrok HELM package already allows to ingest, auto-detect, visualize, and edit HELM. Future plans: support monomer libraries in the enterprise context (privileges, sharing).
 
-![](../../uploads/macromolecules/macromolecules-4.png " ")
+![HELM for description](../../uploads/macromolecules/macromolecules-4.png " ")
 
 ### Visualizing Assay Data and Dose-Response Curves
 
 The built-in spreadsheet is designed for interactive analysis of vast amounts of scientific data. The system could be extended with plugins that provide support for cheminformatics/bioinformatics, or for custom cell renderers for molecules, sequences, or dose-response curves.
 
-![](../../uploads/macromolecules/macromolecules-5.png " ")
+![Visualizing Assay Data and Dose-Response Curves](../../uploads/macromolecules/macromolecules-5.png " ")
 
 ### Visualize Sequence Alignments
 
@@ -43,7 +43,7 @@ The composition barchart is interactive, the corresponding rows could be selecte
 
 For identifiers that do not fit in a cell, an ellipsis is shown.
 
-![](../../uploads/macromolecules/macromolecules-6.png " ")
+![Visualize Sequence Alignments](../../uploads/macromolecules/macromolecules-6.png " ")
 
 ### Atomic-Level Structures from Sequences
 
@@ -57,11 +57,11 @@ We can reproduce this approach for any given case of HELM notation in order to g
 
 Since atomic-level structure is available for each monomer and macromolecule, all the cheminformatics features of Datagrok can be used. Namely: similarity search, substructure filtering, structure curation for structural data, activity cliffs analysis for pairs of structures and SAR data. 
 
-![](../../uploads/macromolecules/macromolecules-8.png " ")
+![Polymer structures and SAR data](../../uploads/macromolecules/macromolecules-8.png " ")
 
 For analyzing polymer structures at the monomer level, Datagrok provides a set of tools and approaches (such as WebLogo plots, interactive sequence-aware spreadsheet, etc), as well as applications that are built for specific modality, such as [Peptides](peptides.md). 
 
-![](../../uploads/macromolecules/macromolecules-9.png " ")
+![Polymer structures and SAR data](../../uploads/macromolecules/macromolecules-9.png " ")
 
 ### Sequence Analysis and Analytics
 
