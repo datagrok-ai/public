@@ -75,32 +75,6 @@ class SequencePackage extends DG.Package {
   webLogoViewer() {
     return new WebLogoViewer();
   }
-/*
-  //input: string content
-  //output: list tables
-  //tags:
-  // file-handler
-  //meta.ext:
-  // fasta
-  fastaFileHandler(content) {
-    let regex = /^>(.*)$/gm;
-    let match;
-    let descriptions = [];
-    let sequences = [];
-    let index = 0;
-    while (match = regex.exec(content)) {
-      descriptions.push(content.substring(match.index + 1, regex.lastIndex));
-      if (index !== 0)
-        sequences.push(content.substring(index, regex.lastIndex));
-      index = regex.lastIndex + 1;
-    }
-    sequences.push(content.substring(index));
-    return [DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('description', descriptions),
-      DG.Column.fromStrings('sequence', sequences)
-    ])];
-  }
-*/
 
   // TODO: condition detector to be connected with the file-handler (currently impossible)
   //
