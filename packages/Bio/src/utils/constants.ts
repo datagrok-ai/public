@@ -27,6 +27,7 @@ export enum SEM_TYPES {
   ALIGNED_SEQUENCE_DIFFERENCE = 'alignedSequenceDifference',
   ACTIVITY = 'activity',
   ACTIVITY_SCALED = 'activityScaled',
+  Macro_Molecule = 'Macromolecule',
 }
 
 export const STATS = 'stats';

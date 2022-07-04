@@ -5,6 +5,7 @@ import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 import './tests/WebLogo-test';
 import './tests/Palettes-test';
 import './tests/detectors-test';
+import './tests/msa-tests';
 
 export const _packageTest = new DG.Package();
 export {tests};
