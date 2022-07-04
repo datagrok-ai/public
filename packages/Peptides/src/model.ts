@@ -15,7 +15,7 @@ import {getSeparator, getTypedArrayConstructor, stringToBool} from './utils/misc
 import {_package} from './package';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
-import {setAARRenderer} from './utils/cell-renderer';
+import {renderSARCell, setAARRenderer} from './utils/cell-renderer';
 import {substitutionsWidget} from './widgets/subst-table';
 import {getDistributionWidget} from './widgets/distribution';
 
@@ -527,84 +527,32 @@ export class PeptidesModel {
     const cellRendererAction = (args: DG.GridCellRenderArgs): void => {
       const canvasContext = args.g;
       const bound = args.bounds;
-      const cell = args.cell;
-      const tableColName = cell.tableColumn?.name;
-      const tableRowIndex = cell.tableRowIndex!;
-      const cellValue = cell.cell.value;
-      const midX = bound.x + bound.width / 2;
-      const midY = bound.y + bound.height / 2;
-
+      
       canvasContext.save();
       canvasContext.beginPath();
       canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
       canvasContext.clip();
 
+      // Hide row column
+      const cell = args.cell;
       if (cell.isRowHeader && cell.gridColumn.visible) {
         cell.gridColumn.visible = false;
         args.preventDefault();
         return;
       }
 
+      const tableColName = cell.tableColumn?.name;
+      const tableRowIndex = cell.tableRowIndex!;
       if (cell.isTableCell && tableColName && tableRowIndex !== null && renderColNames.indexOf(tableColName) !== -1) {
-        const gridTable = cell.grid.table;
-        const currentPosition: string = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ?
-          tableColName : gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
-        const currentAAR: string = gridTable.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
+        const cellValue: number | null = cell.cell.value;
+        if (cellValue && cellValue !== DG.INT_NULL && cellValue !== DG.FLOAT_NULL) {
+          const gridTable = cell.grid.table;
+          const currentPosition: string = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ?
+            tableColName : gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
+          const currentAAR: string = gridTable.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
 
-        const queryAAR = `${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ${currentAAR}`;
-        if (cellValue) {
-          const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
-          const pVal: number = statsDf
-            .groupBy([C.COLUMNS_NAMES.P_VALUE])
-            .where(query)
-            .aggregate()
-            .get(C.COLUMNS_NAMES.P_VALUE, 0);
-
-          let coef: string;
-          const variant = cellValue < 0;
-          if (pVal < 0.01)
-            coef = variant && twoColorMode ? '#FF7900' : '#299617';
-          else if (pVal < 0.05)
-            coef = variant && twoColorMode ? '#FFA500' : '#32CD32';
-          else if (pVal < 0.1)
-            coef = variant && twoColorMode ? '#FBCEB1' : '#98FF98';
-          else
-            coef = DG.Color.toHtml(DG.Color.lightLightGray);
-
-
-          const chooseMin = (): number => twoColorMode ? 0 : mdCol.min;
-          const chooseMax = (): number => twoColorMode ? Math.max(Math.abs(mdCol.min), mdCol.max) : mdCol.max;
-          const chooseCurrent = (): any => twoColorMode ? Math.abs(cellValue) : cellValue;
-
-          const rCoef = (chooseCurrent() - chooseMin()) / (chooseMax() - chooseMin());
-
-          const maxRadius = 0.9 * (bound.width > bound.height ? bound.height : bound.width) / 2;
-          const radius = Math.floor(maxRadius * rCoef);
-
-          canvasContext.beginPath();
-          canvasContext.fillStyle = coef;
-          canvasContext.arc(midX, midY, radius < 3 ? 3 : radius, 0, Math.PI * 2, true);
-          canvasContext.closePath();
-
-          canvasContext.fill();
-          if (isSubstitutionOn) {
-            canvasContext.textBaseline = 'middle';
-            canvasContext.textAlign = 'center';
-            canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(coef)));
-            canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
-            let substValue = 0;
-            this.substitutionsInfo.get(currentAAR)?.get(currentPosition)?.forEach((idxs) => substValue += idxs.length);
-            if (substValue && substValue != 0)
-              canvasContext.fillText(substValue.toString(), midX, midY);
-          }
-
-          //TODO: frame based on currentSelection
-          const aarSelection = this.currentSelection[currentPosition];
-          if (aarSelection && aarSelection.includes(currentAAR)) {
-            canvasContext.strokeStyle = '#000';
-            canvasContext.lineWidth = 1;
-            canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);
-          }
+          renderSARCell(canvasContext, currentAAR, currentPosition, statsDf, twoColorMode, mdCol, bound, cellValue,
+            this.currentSelection, isSubstitutionOn ? this.substitutionsInfo : null);
         }
         args.preventDefault();
       }

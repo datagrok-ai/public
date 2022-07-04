@@ -2,6 +2,7 @@ import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
+import * as types from './types';
 import {getSeparator} from './misc';
 
 /**
@@ -324,5 +325,65 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
       updatedX += 4;
     });
     g.restore();
+  }
+}
+
+export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAAR: string, currentPosition: string,
+  statsDf: DG.DataFrame, twoColorMode: boolean, mdCol: DG.Column<number>, bound: DG.Rect, cellValue: number,
+  currentSelection: types.SelectionObject, substitutionsInfo: types.SubstitutionsInfo | null): void {
+  const queryAAR = `${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ${currentAAR}`;
+  const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
+  const pVal: number = statsDf
+    .groupBy([C.COLUMNS_NAMES.P_VALUE])
+    .where(query)
+    .aggregate()
+    .get(C.COLUMNS_NAMES.P_VALUE, 0);
+
+  let coef: string;
+  const variant = cellValue < 0;
+  if (pVal < 0.01)
+    coef = variant && twoColorMode ? '#FF7900' : '#299617';
+  else if (pVal < 0.05)
+    coef = variant && twoColorMode ? '#FFA500' : '#32CD32';
+  else if (pVal < 0.1)
+    coef = variant && twoColorMode ? '#FBCEB1' : '#98FF98';
+  else
+    coef = DG.Color.toHtml(DG.Color.lightLightGray);
+
+
+  const chooseMin = (): number => twoColorMode ? 0 : mdCol.min;
+  const chooseMax = (): number => twoColorMode ? Math.max(Math.abs(mdCol.min), mdCol.max) : mdCol.max;
+  const chooseCurrent = (): any => twoColorMode ? Math.abs(cellValue) : cellValue;
+
+  const rCoef = (chooseCurrent() - chooseMin()) / (chooseMax() - chooseMin());
+
+  const maxRadius = 0.9 * (bound.width > bound.height ? bound.height : bound.width) / 2;
+  const radius = Math.floor(maxRadius * rCoef);
+
+  const midX = bound.x + bound.width / 2;
+  const midY = bound.y + bound.height / 2;
+  canvasContext.beginPath();
+  canvasContext.fillStyle = coef;
+  canvasContext.arc(midX, midY, radius < 3 ? 3 : radius, 0, Math.PI * 2, true);
+  canvasContext.closePath();
+
+  canvasContext.fill();
+  if (substitutionsInfo) {
+    canvasContext.textBaseline = 'middle';
+    canvasContext.textAlign = 'center';
+    canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(coef)));
+    canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+    let substValue = 0;
+    substitutionsInfo.get(currentAAR)?.get(currentPosition)?.forEach((idxs) => substValue += idxs.length);
+    if (substValue && substValue != 0)
+      canvasContext.fillText(substValue.toString(), midX, midY);
+  }
+
+  //TODO: frame based on currentSelection
+  const aarSelection = currentSelection[currentPosition];
+  if (aarSelection && aarSelection.includes(currentAAR)) {
+    canvasContext.strokeStyle = '#000';
+    canvasContext.lineWidth = 1;
+    canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);
   }
 }
