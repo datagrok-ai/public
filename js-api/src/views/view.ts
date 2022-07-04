@@ -118,6 +118,12 @@ export class ViewBase {
   get entity(): object | null { return null; }
   set entity(e: object | null) { }
 
+  /**
+   *  View type URI. Note that {@link path} is specific to the instance of the view.
+   *  @type {string} */
+  get basePath(): string { return api.grok_View_Get_BasePath(this.dart); }
+  set basePath(s: string) { api.grok_View_Set_BasePath(this.dart, s); }
+
   /** View toolbox.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/toolbox} */
   get toolbox(): HTMLElement { return api.grok_View_Get_Toolbox(this.dart); }
@@ -280,17 +286,6 @@ export class View extends ViewBase {
 
   get id(): string {
     return api.grok_View_Get_Id(this.dart);
-  }
-
-  /**
-   *  View type URI. Note that {@link path} is specific to the instance of the view.
-   *  @type {string} */
-  get basePath(): string {
-    return api.grok_View_Get_BasePath(this.dart);
-  }
-
-  set basePath(s: string) {
-    api.grok_View_Set_BasePath(this.dart, s);
   }
 
   get description(): string {
