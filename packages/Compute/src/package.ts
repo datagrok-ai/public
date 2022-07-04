@@ -8,9 +8,9 @@ import {ModelCatalogView} from './model-catalog-view';
 import wu from 'wu';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 //import {ModelsWidget} from './models-widget'
-import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
 import {delay} from "@datagrok-libraries/utils/src/test";
 import {ComputationView} from "@datagrok-libraries/utils/src/computation-view";
+import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
 import './css/model-card.css';
 
 let initCompleted: boolean = false;
@@ -35,6 +35,14 @@ export function ComputationViewEditor(call: DG.FuncCall) {
   v.parentView = grok.functions.getCurrentCall().parentCall.aux['view']; // modelCatalog view
   //todo: parse url, set parameters to call
   return v;
+}
+
+//name: FunctionView
+//tags: viewer
+//input: funccall call
+//output: view result
+export function FunctionViewEditor(call: DG.FuncCall) {
+  return new FunctionView(call);
 }
 
 

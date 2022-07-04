@@ -1,12 +1,19 @@
 /* eslint-disable valid-jsdoc */
 /* eslint-disable max-len */
-import wu from 'wu';
-import $ from 'cash-dom';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import ExcelJS from 'exceljs';
+import html2canvas from 'html2canvas';
+import wu from 'wu';
+import $ from 'cash-dom';
 
 export class FunctionView extends DG.ViewBase {
+  protected readonly context: DG.Context;
+  protected _funcCall?: DG.FuncCall;
+  protected _lastCall?: DG.FuncCall;
+  protected _type: string = 'function';
+
   constructor(funcCall?: DG.FuncCall) {
     super();
     this.box = true;
@@ -17,64 +24,101 @@ export class FunctionView extends DG.ViewBase {
     this.linkFunccall(funcCall);
     this.init();
     this.build();
+    this.name = funcCall.func.friendlyName;
   }
 
-  get func() {
-    return this.funcCall?.func;
-  }
-
-  private _type: string = 'function';
-  public get type(): string {
-    return this._type;
-  }
-
-  public get isInputPanelRequired() {
-    return this.func?.inputs.some((p) => p.propertyType == DG.TYPE.DATA_FRAME && p.options['viewer'] != null) || false;
-  }
-
-  public get outParamCategories() {
-    return [
-      ...new Set(this.func!.outputs.map((p) => p.category)) // get all output params' categories
-    ]; // keep only unique of them
-  }
-
-  public get outputTabsLabels() {
-    return [
-      ...this.outParamCategories,
-      ...this.outParamCategories.find((val) => val === 'Misc') ? ['Output'] : [], // if no categories are stated, the default category is added
-    ];
-  }
-
-  public get tabsLabels() {
-    return Object.keys(this.paramToCategoryMap);
-  }
-
-  public get paramToCategoryMap() {
-    const map = {} as Record<string, string[]>;
-    if (this.isInputPanelRequired)
-      this.func!.inputs.forEach((p) => map['Input'] ? map['Input'].push(p.name): map['Input'] = [p.name]);
-
-    this.func!.outputs.forEach((p) => map[p.category === 'Misc' ? 'Output': p.category] ? map[p.category === 'Misc' ? 'Output': p.category].push(p.name) : map[p.category === 'Misc' ? 'Output': p.category] = [p.name]);
-
-    return map;
-  }
-
-  readonly context: DG.Context;
-  protected _funcCall?: DG.FuncCall;
-  protected lastCall?: DG.FuncCall;
-
-  /** Link FuncCall to the view */
-  public linkFunccall(funcCall: DG.FuncCall) {
-    this._funcCall = funcCall;
-  }
-
-  /** Get copy of FuncCall of the view */
+  /**
+   * Get current function call of the view
+   * @returns The actual funccall associated with the view
+   * @stability Stable
+ */
   public get funcCall(): DG.FuncCall | undefined {
     return this._funcCall;
   }
 
-  /** Init custom logic */
-  init() {
+  /**
+   * Get Func of the view
+   * @returns The actual func associated with the view
+   * @stability Stable
+ */
+  get func() {
+    return this.funcCall?.func;
+  }
+
+  /**
+   * Get data of last call of associated function
+   * @returns The actual func associated with the view
+   * @stability Stable
+ */
+  get lastCall() {
+    return this._lastCall;
+  }
+
+  /**
+   * Set data of last call of associated function
+   * @stability Stable
+ */
+  set lastCall(lastCall: DG.FuncCall | undefined) {
+    this._lastCall = lastCall;
+  }
+
+  /**
+   * View type
+   * @stability Stable
+ */
+  public get type(): string {
+    return this._type;
+  }
+
+  exportConfig: {
+    /** Override to provide custom export logic.
+      * Default implementation {@link defaultExport} heavily relies on the default implementation of {@link buildIO}.
+      * @returns Blob with data to be exported into the file.
+      * @stability Stable
+    */
+    export: ((format: string) => Promise<Blob>);
+
+
+    /** Filename for exported files. Override for custom filenames.
+      * Default implementation is {@link defaultExportFilename}
+      * @param format Format name to be exported
+      * @returns The actual filename to be used for the generated file.
+      * @stability Stable
+    */
+    filename: ((format: string) => string);
+
+    /** Override to provide custom list of supported export formats.
+     * Default implementation is {@link defaultSupportedExportFormats}
+     * These formats are available under the "Export" popup on the ribbon panel.
+     * @returns The array of formats available for the export.
+     * @stability Stable
+    */
+    supportedFormats: string[];
+
+    /** Override to provide custom file extensions for exported formats.
+       * Default implementation is {@link defaultSupportedExportExtensions}
+       * These extensions are used in filenames {@link exportFilename}.
+       * @returns The mapping between supported export formats and their extensions.
+       * @stability Stable
+     */
+    supportedExtensions: Record<string, string>;
+  } | null = null;
+
+  /**
+   * Link FuncCall to the view
+   * @param funcCall The actual funccall to be associated with the view
+   * @stability Stable
+ */
+  public linkFunccall(funcCall: DG.FuncCall) {
+    this._funcCall = funcCall;
+  }
+
+  /**
+   * Method for custom logic that could not be placed in the constructor.
+   * Any async methods and most of the logic should be placed here.
+   * @stability Stable
+ */
+  public async init() {
     if (this.funcCall && this.func) {
       this.funcCall.aux['view'] = this;
       this.funcCall.context = this.context;
@@ -95,8 +139,11 @@ export class FunctionView extends DG.ViewBase {
     }
   }
 
-  /** Override to create a fully custom UI */
-  build(): void {
+  /**
+   * Override to create a fully custom UI including ribbon menus and panels
+   * @stability Stable
+ */
+  public build(): void {
     this.root.appendChild(this.buildIO());
 
     this.buildRibbonPanels();
@@ -104,16 +151,32 @@ export class FunctionView extends DG.ViewBase {
     this.buildRibbonMenu();
   }
 
-  /** Override to create a custom input-output block */
-  buildIO(): HTMLElement {
+  /**
+   * Override to create a custom input-output block
+   * @returns The HTMLElement with whole UI excluding ribbon menus and panels
+   * @stability Stable
+ */
+  public buildIO(): HTMLElement {
+    this.exportConfig = {
+      supportedExtensions: this.defaultSupportedExportExtensions(),
+      supportedFormats: this.defaultSupportedExportFormats(),
+      export: this.defaultExport,
+      filename: this.defaultExportFilename,
+    };
+
     const inputBlock = this.buildInputBlock();
     const outputBlock = this.buildOutputBlock();
 
     return ui.splitH([inputBlock, outputBlock]);
   }
 
-  /** Override to create a custom input block. */
-  buildInputBlock(): HTMLElement {
+
+  /**
+   * Override to create a custom input block
+   * @returns The HTMLElement with input block UI on the left side by default
+   * @stability Stable
+ */
+  public buildInputBlock(): HTMLElement {
     if (!this.funcCall) return this.controlsRoot;
 
     const funcDiv = ui.div([this.renderRunSection(this.funcCall)], 'ui-div');
@@ -122,15 +185,23 @@ export class FunctionView extends DG.ViewBase {
     return this.controlsRoot;
   }
 
-  /** Override to create a custom output block. */
-  buildOutputBlock(): HTMLElement {
+  /**
+   * Override to create a custom output block.
+   * @returns The HTMLElement with input block UI on the left side by default
+   * @stability Stable
+ */
+  public buildOutputBlock(): HTMLElement {
     this.resultsRoot.innerHTML = '';
     this.resultsRoot.appendChild(this.resultsDiv);
     return this.resultsRoot;
   }
 
-  /** Override to create a custom historical runs control. */
-  buildHistoryBlock(): HTMLElement {
+  /**
+   * Override to create a custom historical runs control.
+   * @returns The HTMLElement with history block UI
+   * @stability Experimental
+ */
+  public buildHistoryBlock(): HTMLElement {
     const newHistoryBlock = ui.iconFA('history', () => {
       this.pullRuns().then(async (historicalRuns) => {
         const menu = DG.Menu.popup();
@@ -148,34 +219,253 @@ export class FunctionView extends DG.ViewBase {
     return newHistoryBlock;
   }
 
-  /** Override to create a custom input control. */
+  /**
+   * Looks for {@link supportedExportFormats} members and creates model menus
+   * @returns The HTMLElements of ribbonPanels
+   * @stability Stable
+ */
   buildRibbonPanels(): HTMLElement[][] {
-    return this.getRibbonPanels();
+    const newRibbonPanels = [
+      ...this.getRibbonPanels(),
+      [...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [ui.divH([
+        ui.comboPopup(
+          ui.iconFA('arrow-to-bottom'),
+          this.exportConfig.supportedFormats,
+          async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format))),
+      ])]: []]
+    ];
+    this.setRibbonPanels(newRibbonPanels);
+    return newRibbonPanels;
   }
 
-  /** Override to create a custom ribbon menu on the top. */
-  buildRibbonMenu() {
+  /**
+   * Override to create a custom ribbon menu on the top.
+   * @stability Stable
+ */
+  public buildRibbonMenu() {
 
   }
 
-  /** Saves the computation results to the historical results, returns its id. See also {@link loadRun}. */
-  async saveRun(): Promise<DG.FuncCall> {
+  /**
+   * Saves the computation results to the historical results, returns its id. See also {@link loadRun}.
+   * @stability Experimental
+ */
+  public async saveRun(): Promise<DG.FuncCall> {
     //@ts-ignore
-    return await grok.dapi.functions.calls.save(this.funcCall!);
+    return await grok.dapi.functions.calls.save(this.lastCall!);
   }
 
-  /** Loads the specified historical results. See also {@link saveRun}. */
-  async loadRun(funcCallId: string): Promise<DG.FuncCall> {
+  /**
+   * Loads the specified historical run. See also {@link saveRun}.
+   * @stability Experimental
+ */
+  public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     return await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
   }
 
-  /** Loads all the function call of this function. */
-  /** ACHTUNG: FuncCall inputs/outputs are not included */
-  async pullRuns(): Promise<DG.FuncCall[]> {
-    return await grok.dapi.functions.calls.filter(`func.id="${this.func?.id}"`).list();
+  /**
+   * Loads all the function call of this function.
+   * Designed to pull hstorical runs in fast manner and the call {@link loadRun} with specified run ID.
+   * WARNING: FuncCall inputs/outputs are not included
+   * @stability Experimental
+ */
+  public async pullRuns(): Promise<DG.FuncCall[]> {
+    const list = grok.dapi.functions.calls.filter(`func.id="${this.func?.id}"`).list();
+    return list;
   }
 
-  clearResults(switchToOutput: boolean = true) {
+  public async run(): Promise<void> {
+    if (!this.funcCall) throw new Error('The correspoding function is not specified');
+
+    try {
+      this.lastCall = await this.funcCall.call(true, undefined, {processed: true});
+    } catch (e) {
+
+    }
+
+    this.outputParametersToView(this.lastCall!);
+  }
+
+  protected defaultExportFilename = (format: string) => {
+    return `${this.name} - ${new Date().toLocaleString()}.${this.exportConfig!.supportedExtensions[format]}`;
+  };
+
+  protected defaultSupportedExportExtensions = () => {
+    return {
+      'Excel': 'xlsx'
+    };
+  };
+
+  protected defaultSupportedExportFormats = () => {
+    return ['Excel'];
+  };
+
+  protected defaultExport = async (format: string) => {
+    const lastCall = this.lastCall;
+    if (!lastCall) throw new Error(`Function was not called`);
+
+    if (!this.exportConfig!.supportedFormats.includes(format)) throw new Error(`Format "${format}" is not supported.`);
+
+    if (!this.func) throw new Error('The correspoding function is not specified');
+
+    const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+    const exportWorkbook = new ExcelJS.Workbook();
+
+    const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
+
+    const isDataFrame = (type: DG.TYPE) => (type === DG.TYPE.DATA_FRAME);
+
+    const dfInputs = this.func.inputs.filter((input) => isDataFrame(input.propertyType));
+    const scalarInputs = this.func.inputs.filter((input) => isScalarType(input.propertyType));
+    const dfOutputs = this.func.outputs.filter((output) => isDataFrame(output.propertyType));
+    const scalarOutputs = this.func.outputs.filter((output) => isScalarType(output.propertyType));
+
+    const inputParams = [...lastCall.inputParams.values()] as DG.FuncCallParam[];
+    const outputParams = [...lastCall.outputParams.values()] as DG.FuncCallParam[];
+
+    dfInputs.forEach((dfInput) => {
+      const visibleTitle = dfInput.options.caption || dfInput.name;
+      const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT));
+
+      const currentDf = (lastCall.inputs[dfInput.name] as DG.DataFrame);
+      dfToSheet(currentDfSheet, currentDf);
+    });
+
+    if (scalarInputs.length) {
+      const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
+      scalarsToSheet(inputScalarsSheet, scalarInputs.map((scalarInput) => ({
+        caption: scalarInput.options['caption'] || scalarInput.name,
+        value: lastCall.inputs[scalarInput.name],
+        units: scalarInput.options['units'] || '',
+      })));
+    }
+
+    dfOutputs.forEach((dfOutput) => {
+      const visibleTitle = dfOutput.options.caption || dfOutput.name;
+      const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
+
+      const currentDf = (lastCall.outputs[dfOutput.name] as DG.DataFrame);
+      dfToSheet(currentDfSheet, currentDf);
+    });
+
+
+    if (scalarOutputs.length) {
+      const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
+      scalarsToSheet(outputScalarsSheet, scalarOutputs.map((scalarOutput) => ({
+        caption: scalarOutput.options['caption'] || scalarOutput.name,
+        value: lastCall.outputs[scalarOutput.name],
+        units: scalarOutput.options['units'] || '',
+      })));
+    }
+
+    const tabControl = this.resultsTabControl;
+    if (tabControl) {
+      for (const tabLabel of this.tabsLabels) {
+        tabControl.currentPane = tabControl.getPane(tabLabel);
+        await new Promise((r) => setTimeout(r, 100));
+        if (tabLabel === 'Input') {
+          for (const inputParam of inputParams.filter((inputParam) => inputParam.property.propertyType === DG.TYPE.DATA_FRAME)) {
+            const nonGridViewers = (inputParam.aux['viewers'] as DG.Viewer[]).filter((viewer) => viewer.type !== DG.VIEWER.GRID);
+
+            const dfInput = dfInputs.find((input) => input.name === inputParam.name);
+            const visibleTitle = dfInput!.options.caption || inputParam.name;
+            const currentDf = (lastCall.inputs[dfInput!.name] as DG.DataFrame);
+
+            for (const [index, viewer] of nonGridViewers.entries()) {
+              if (viewer.root.parentElement?.style.display === 'none') {
+                this.paramGridSwitches.get(inputParam.name)?.click();
+                await new Promise((r) => setTimeout(r, 50));
+              }
+
+              await plotToSheet(
+                exportWorkbook,
+                exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT)),
+                viewer.root,
+                currentDf.columns.length + 2,
+                (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0
+              );
+            };
+          }
+        } else {
+          for (const outputParam of outputParams.filter((outputParam) => outputParam.property.propertyType === DG.TYPE.DATA_FRAME && outputParam.property.category === tabLabel)) {
+            const nonGridViewers = (outputParam.aux['viewers'] as DG.Viewer[]).filter((viewer) => viewer.type !== DG.VIEWER.GRID);
+
+            const dfOutput = dfOutputs.find((input) => input.name === outputParam.name);
+            const visibleTitle = dfOutput!.options.caption || outputParam.name;
+            const currentDf = (lastCall.outputs[dfOutput!.name] as DG.DataFrame);
+
+            for (const [index, viewer] of nonGridViewers.entries()) {
+              if (viewer.root.parentElement?.style.display === 'none') {
+                this.paramGridSwitches.get(outputParam.name)?.click();
+                await new Promise((r) => setTimeout(r, 50));
+              }
+
+              await plotToSheet(
+                exportWorkbook,
+                exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT)),
+                viewer.root,
+                currentDf.columns.length + 2,
+                (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0
+              );
+            }
+          };
+        }
+      };
+    }
+    const buffer = await exportWorkbook.xlsx.writeBuffer();
+
+    return new Blob([buffer], {type: BLOB_TYPE});
+  };
+
+  protected get isInputPanelRequired() {
+    return this.func?.inputs.some((p) => p.propertyType == DG.TYPE.DATA_FRAME && p.options['viewer'] != null) || false;
+  }
+
+  protected get outParamCategories() {
+    return [
+      ...new Set(this.func!.outputs.map((p) => p.category)) // get all output params' categories
+    ]; // keep only unique of them
+  }
+
+  protected get outputTabsLabels() {
+    return [
+      ...this.outParamCategories,
+      ...this.outParamCategories.find((val) => val === 'Misc') ? ['Output'] : [], // if no categories are stated, the default category is added
+    ];
+  }
+
+  protected get tabsLabels() {
+    return Object.keys(this.paramToCategoryMap);
+  }
+
+  protected get paramToCategoryMap() {
+    const map = {} as Record<string, string[]>;
+    if (this.isInputPanelRequired)
+      this.func!.inputs.forEach((p) => map['Input'] ? map['Input'].push(p.name): map['Input'] = [p.name]);
+
+    this.func!.outputs.forEach((p) => map[p.category === 'Misc' ? 'Output': p.category] ? map[p.category === 'Misc' ? 'Output': p.category].push(p.name) : map[p.category === 'Misc' ? 'Output': p.category] = [p.name]);
+
+    return map;
+  }
+
+
+  protected renderRunSection(call: DG.FuncCall): HTMLElement {
+    return ui.wait(async () => {
+      const runButton = ui.bigButton('Run', async () => {
+        call.aux['view'] = this.dart;
+        await this.run();
+        // this.saveRun();
+      });
+      const editor = ui.div();
+      const inputs: DG.InputBase[] = await call.buildEditor(editor, {condensed: true});
+      editor.classList.add('ui-form');
+      const buttons = ui.divH([this.historyRoot, runButton], {style: {'justify-content': 'space-between'}});
+      editor.appendChild(buttons);
+      return editor;
+    });
+  }
+
+  private clearResults(switchToOutput: boolean = true) {
     const categories = this.tabsLabels;
 
     if ((categories.length > 1 || (categories.length == 1 && categories[0] != 'Misc'))) {
@@ -194,66 +484,34 @@ export class FunctionView extends DG.ViewBase {
     }
   }
 
-  async run(): Promise<void> {
-    if (!this.funcCall) throw new Error('The correspoding function is not specified');
-
-    try {
-      await this.compute(this.funcCall);
-    } catch (e) {
-
-    }
-    this.lastCall = this.funcCall;
-
-    this.outputParametersToView(this.lastCall!);
-  }
-
-  async compute(call: DG.FuncCall): Promise<void> {
-    await call.call(true, undefined, {processed: true});
-  }
-
-  outputParametersToView(call: DG.FuncCall): void {
+  private outputParametersToView(call: DG.FuncCall): void {
     this.clearResults(true);
     for (const p of call.outputParams.values() as DG.FuncCallParam[]) {
       p.processOutput();
       if (p.property.propertyType == DG.TYPE.DATA_FRAME && p.value != null)
         this.appendOutputDf(p, {caption: p.property.name, category: p.property.category});
-      else
-        this.appendResultScalar(p, {caption: p.property.name, category: p.property.category});
+      else this.appendResultScalar(p, {caption: p.property.name, category: p.property.category});
     }
     this.buildOutputBlock();
   }
 
-  renderRunSection(call: DG.FuncCall): HTMLElement {
-    return ui.wait(async () => {
-      const runButton = ui.bigButton('Run', async () => {
-        call.aux['view'] = this.dart;
-        await this.run();
-      });
-      const editor = ui.div();
-      const inputs: DG.InputBase[] = await call.buildEditor(editor, {condensed: true});
-      editor.classList.add('ui-form');
-      const buttons = ui.divH([this.historyRoot, runButton], {style: {'justify-content': 'space-between'}});
-      editor.appendChild(buttons);
-      return editor;
-    });
-  }
-
   // mappping of param to the switchces of their viewers/grids
-  paramGridSwitches: Map<string, HTMLElement> = new Map();
+  protected paramGridSwitches: Map<string, HTMLElement> = new Map();
   // mappping of param to their viewers placed on DOM
-  existingParamViewers: Map<string, DG.Viewer[]> = new Map();
+  protected existingParamViewers: Map<string, DG.Viewer[]> = new Map();
   // mappping of param to their html elements
-  paramSpans: Map<string, HTMLElement> = new Map();
+  protected paramSpans: Map<string, HTMLElement> = new Map();
   // mappping of tab names to their content
-  resultTabs: Map<String, HTMLElement> = new Map();
-  resultsTabControl: DG.TabControl | undefined;
-  resultsDiv: HTMLElement = ui.panel([], 'grok-func-results');
-  controlsRoot: HTMLDivElement = ui.box(null, {style: {maxWidth: '370px'}});
-  resultsRoot: HTMLDivElement = ui.box();
-  historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
-  inputsRoot: HTMLDivElement = ui.panel([], 'grok-func-results, ui-box');
+  protected resultTabs: Map<String, HTMLElement> = new Map();
+  protected resultsTabControl: DG.TabControl | undefined;
+  protected resultsDiv: HTMLElement = ui.panel([], 'grok-func-results');
 
-  appendOutputDf(param: DG.FuncCallParam, options?: { caption?: string, category?: string, height?: number }) {
+  protected controlsRoot: HTMLDivElement = ui.box(null, {style: {maxWidth: '370px'}});
+  protected resultsRoot: HTMLDivElement = ui.box();
+  protected historyRoot: HTMLDivElement = ui.divV([], {style: {'justify-content': 'center'}});
+  protected inputsRoot: HTMLDivElement = ui.panel([], 'grok-func-results, ui-box');
+
+  private appendOutputDf(param: DG.FuncCallParam, options?: { caption?: string, category?: string, height?: number }) {
     const paramDf = param.value as DG.DataFrame;
     const height = options?.height ?? 400;
     const paramViewers: DG.Viewer[] = param.aux['viewers'] ?? []; // storing the viewers of Df
@@ -262,6 +520,7 @@ export class FunctionView extends DG.ViewBase {
     if (existingViewers != null) {
       for (const v of existingViewers)
         v.dataFrame = paramDf;
+
       return;
     }
     existingViewers ??= [];
@@ -341,10 +600,10 @@ export class FunctionView extends DG.ViewBase {
 
     const block = ui.divV([header, wrapper, gridWrapper], {style: {height: `${height}px`, width: `${blockWidth}%`}});
     block.classList.add('ui-box');
-    this._appendResultElement(block, options?.category);
+    this.appendResultElement(block, options?.category);
   }
 
-  appendResultScalar(param: DG.FuncCallParam, options: { caption?: string, category: string, height?: number }) {
+  private appendResultScalar(param: DG.FuncCallParam, options: { caption?: string, category: string, height?: number }) {
     const span = ui.span([`${options.caption ?? param.name}: `, `${param.value}`]);
     if (!this.paramSpans.get(param.name)) {
       if (this.resultsTabControl)
@@ -357,10 +616,62 @@ export class FunctionView extends DG.ViewBase {
     this.paramSpans.set(param.name, span);
   }
 
-  _appendResultElement(d: HTMLElement, category?: string) {
+  private appendResultElement(d: HTMLElement, category?: string) {
     if (category != null && this.resultsTabControl != undefined && this.resultTabs.get(category) != null)
       this.resultTabs.get(category)!.appendChild(d);
     else
       this.resultsDiv.appendChild(d);
   }
 }
+
+const getSheetName = (name: string, direction: DIRECTION) => {
+  const idealName = `${direction} - ${name}`;
+  return (idealName.length > 31) ? name.substring(0, 32) : idealName;
+};
+
+enum DIRECTION {
+  INPUT = 'Input',
+  OUTPUT = 'Output'
+}
+
+const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, value: string, units: string }[]) => {
+  sheet.addRow(['Parameter', 'Value', 'Units']).font = {bold: true};
+  scalars.forEach((scalar) => {
+    sheet.addRow([scalar.caption, scalar.value, scalar.units]);
+  });
+
+  sheet.getColumn(1).width = Math.max(
+    ...scalars.map((scalar) => scalar.caption.toString().length), 'Parameter'.length
+  ) * 1.2;
+  sheet.getColumn(2).width = Math.max(...scalars.map((scalar) => scalar.value.toString().length), 'Value'.length) * 1.2;
+  sheet.getColumn(3).width = Math.max(...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
+};
+
+const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame) => {
+  console.log(df);
+  sheet.addRow(df.columns.names()).font = {bold: true};
+  for (let i = 0; i < df.rowCount; i++)
+    sheet.addRow([...df.row(i).cells].map((cell: DG.Cell) => cell.value));
+
+  for (let i = 0; i < df.columns.length; i++) {
+    sheet.getColumn(i + 1).width =
+      Math.max(
+        ...df.columns.byIndex(i).categories.map((category) => category.toString().length),
+        df.columns.byIndex(i).name.length
+      ) * 1.2;
+  }
+};
+
+const plotToSheet = async (exportWb: ExcelJS.Workbook, sheet: ExcelJS.Worksheet, plot: HTMLElement, columnForImage: number, rowForImage: number = 0) => {
+  const canvas = await html2canvas(plot as HTMLElement, {logging: false});
+  const dataUrl = canvas.toDataURL('image/png');
+
+  const imageId = exportWb.addImage({
+    base64: dataUrl,
+    extension: 'png',
+  });
+  sheet.addImage(imageId, {
+    tl: {col: columnForImage, row: rowForImage},
+    ext: {width: canvas.width, height: canvas.height},
+  });
+};

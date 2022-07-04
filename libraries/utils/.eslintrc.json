@@ -53,7 +53,6 @@
       }
     ],
     "guard-for-in": "off",
-    "prefer-spread": "warn",
-    "valid-jsdoc": "warn"
+    "prefer-spread": "warn"
   }
 }
