@@ -9,7 +9,7 @@ export const _package = new DG.Package();
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
-import { TableView } from 'datagrok-api/dg';
+import {TableView} from 'datagrok-api/dg';
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -64,6 +64,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, m
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
 };
 
+
 //top-menu: Bio | MSA...
 //name: MSA
 //input: dataframe table
@@ -77,20 +78,43 @@ export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.
 //top-menu: Bio | Composition Analysis
 //output: viewer result
 export async function compositionAnalysis(): Promise<void> {
-  const col = grok.shell.t.columns.bySemType("Macromolecule");//DG.SEMTYPE.MACROMOLECULE);
+  const col = grok.shell.t.columns.bySemType('Macromolecule');//DG.SEMTYPE.MACROMOLECULE);
   if (col === null) {
     grok.shell.error('Current table does not contain sequences');
     return;
   }
 
-  const wl = await col.dataFrame.plot.fromType("WebLogo", {});
+  const wl = await col.dataFrame.plot.fromType('WebLogo', {});
 
-  for (let v of grok.shell.views) {
-    if (v instanceof TableView && (v as  DG.TableView).dataFrame.name === col.dataFrame.name){
-      (v as DG.TableView).dockManager.dock(wl.root, "down");
+  for (const v of grok.shell.views) {
+    if (v instanceof TableView && (v as DG.TableView).dataFrame.name === col.dataFrame.name) {
+      (v as DG.TableView).dockManager.dock(wl.root, 'down');
       break;
     }
   }
+}
 
-
+//name: importFasta
+//description: Opens FASTA file
+//tags: file-handler
+//meta.ext: fasta, fna, ffn, faa, frn, fa
+//input: string content
+//output: list tables
+export function importFasta(content : string) : DG.DataFrame [] {
+  const regex = /^>(.*)$/gm;
+  let match;
+  const descriptions = [];
+  const sequences = [];
+  let index = 0;
+  while (match = regex.exec(content)) {
+    descriptions.push(content.substring(match.index + 1, regex.lastIndex));
+    if (index !== 0)
+      sequences.push(content.substring(index, regex.lastIndex));
+    index = regex.lastIndex + 1;
+  }
+  sequences.push(content.substring(index));
+  return [DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('description', descriptions),
+    DG.Column.fromStrings('sequence', sequences)
+  ])];
 }
