@@ -101,10 +101,10 @@ export async function compositionAnalysis(): Promise<void> {
 //output: list tables
 export function importFasta(content: string): DG.DataFrame [] {
   const regex = /^>(.*)$/gm;
-  let match;
   const descriptions = [];
   const sequences = [];
   let index = 0;
+  let match;
   while (match = regex.exec(content)) {
     descriptions.push(content.substring(match.index + 1, regex.lastIndex));
     if (index !== 0)
@@ -112,8 +112,11 @@ export function importFasta(content: string): DG.DataFrame [] {
     index = regex.lastIndex + 1;
   }
   sequences.push(content.substring(index));
+  const descriptionsCol = DG.Column.fromStrings('description', descriptions);
+  const sequenceCol = DG.Column.fromStrings('sequence', sequences);
+  sequenceCol.semType = 'Macromolecule';
   return [DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('description', descriptions),
-    DG.Column.fromStrings('sequence', sequences)
+    descriptionsCol,
+    sequenceCol,
   ])];
 }
