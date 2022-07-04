@@ -31,9 +31,13 @@ export type table = {base_table_key: null | string, description: string, ds_id: 
   sql: null | string, table_comment: null | string, table_type: string, title: string, url: string};
 // type baseEntity = {id: number, title: string, description: string};
 export type column = {name: string};
-export type baseEntity = dataSource | schema | table;
-export type specialType = 'data-source' | 'schema' | 'table' | 'column';
+export type baseEntity = dataSource | schema | table | query;
+export type specialType = 'data-source' | 'schema' | 'table' | 'query';
 export type createApiTokenResponse = {api_access_token: string, user_id: number, created_at: string,
   token_expires_at: string, token_status: string};
 export type createRefreshTokenResponse = {refresh_token: string, user_id: number, created_at: string, name: string,
   token_expires_at: string, token_status: string};
+export type query = {datasource_id: number, autosave_content: null | boolean, content: string, saved: boolean,
+  published: boolean, url: string, id: number, title: string, description: string,
+  datasource: {id: number, title: string, uri: string, url: string}, ts_last_saved: null | string,
+  has_unsaved_changes: null | boolean, catalog_url: string, compose_url: string, schedules: any[]};

@@ -17,6 +17,7 @@ export const URI_MAP = {
   create_refresh_token: 'createRefreshToken',
   regenerate_refresh_token: 'regenRefreshToken',
   account_auth: 'account/auth',
+  query: 'query'
 };
 
 export const DATASOURCE_URI_MAP = {

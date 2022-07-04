@@ -59,8 +59,30 @@ function createTree(
   objects: types.baseEntity[], objectType: types.specialType, treeRootNode?: DG.TreeViewNode): DG.TreeViewNode {
   objects = utils.filterDuplicates(objects);
   treeRootNode ??= ui.tree();
-  const iconClass = objectType === 'data-source' ? 'svg-data-connection' : 'svg-database-tables';
+  const iconClass = objectType === 'data-source' ? 'svg-data-connection' : 
+    objectType == 'query' ? 'svg-data-query' : 'svg-database-tables';
   const iconElement = `<i class="grok-icon svg-icon ${iconClass}"></i>`;
+
+  if (objectType == 'query') {
+    (objects as types.query[]).forEach((queryObject) => {
+      const name = queryObject.title.trim() || `Unnamed query id ${queryObject.id}`;
+      const item = treeRootNode!.item(name, queryObject);
+      $(item.root).children().first().before(iconElement);
+
+      item.root.addEventListener('mousedown', async (ev) => {
+        if (ev.button != 0 || isSettingDescription)
+          return;
+        isSettingDescription = true;
+        const description = queryObject.description
+          .replaceAll('src="/', `src="${await getBaseURL()}`)
+          .replaceAll('href="/', `href="${await getBaseURL()}`);
+        $('.alation-description').empty().html(description);
+        isSettingDescription = false;
+      });
+    });
+
+    return treeRootNode;
+  }
 
   if (objectType === 'table') {
     (objects as types.table[]).forEach((tableObject) => {
@@ -113,12 +135,37 @@ function createTree(
     });
   });
 
+  if (objectType == 'schema') {
+    const queryGroup = treeRootNode.group('Queries', null, false);
+    const currentId = (objects[0] as types.schema).ds_id;
+
+    isFirstTimeMap[objectType] ??= {};
+    isFirstTimeMap[objectType][`query ${currentId}`] = true;
+
+    $(queryGroup.root).children().first().children().first().after(`<i class="grok-icon svg-icon svg-data-query"></i>`);
+
+    queryGroup.root.addEventListener('mousedown', async (ev) => {
+      if (ev.button != 0 || isSettingDescription)
+        return;
+      isSettingDescription = true;
+      const pi = DG.TaskBarProgressIndicator.create('Loading child entities...');
+
+      if (isFirstTimeMap[objectType][`query ${currentId}`]) {
+        isFirstTimeMap[objectType][`query ${currentId}`] = false;
+        await getChildren('query', currentId, queryGroup);
+      }
+      pi.close();
+      isSettingDescription = false;
+    });
+  }
+
   return treeRootNode;
 }
 
 const isFirstTimeMap: {[key: string]: {[key: string]: boolean}} = {};
 
-async function getChildren(objectType: types.specialType, currentId: number, group: DG.TreeViewNode) {
+async function getChildren(
+  objectType: types.specialType, currentId: number, group: DG.TreeViewNode): Promise<DG.TreeViewNode> {
   let dataList: types.baseEntity[];
   let nextObjectType: types.specialType;
   switch (objectType) {
@@ -130,14 +177,14 @@ async function getChildren(objectType: types.specialType, currentId: number, gro
     dataList = await alationApi.getTables(currentId);
     nextObjectType = 'table';
     break;
-    // case 'table':
-    //   dataList = await alationApi.getColumns(currentId);
-    //   nextObjectType = 'column';
-    //   break;
+    case 'query':
+      dataList = await alationApi.getQueries(currentId);
+      nextObjectType = objectType;
+      break;
   default:
     throw new Error(`Unknown datasource type '${objectType}'`);
   }
-  createTree(dataList, nextObjectType, group);
+  return createTree(dataList, nextObjectType, group);
 }
 
 export async function connectToDb(tableObject: types.table, name: string): Promise<void> {

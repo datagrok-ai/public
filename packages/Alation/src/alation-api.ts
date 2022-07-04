@@ -67,7 +67,6 @@ export async function getDataSources(): Promise<types.dataSource[]> {
   return getResponseFor(url) as Promise<types.dataSource[]>;
 }
 
-
 export async function getSchemas(dataSourceId: number): Promise<types.schema[]> {
   const url = `${await getBaseURL()}integration/v2/${constants.URI_MAP.schema}/?ds_id=${dataSourceId}&limit=100&skip=0`;
   return getResponseFor(url) as Promise<types.schema[]>;
@@ -108,6 +107,22 @@ async function getResponseFor(
 
   const response = await grok.dapi.fetchProxy(url, params);
   return returnJson ? response.json() : response.text();
+}
+
+export async function getQueries(
+  dataSourceId: number, saved: boolean = true, published: boolean = true): Promise<types.query[]> {
+  const url_params = `datasource_id=${dataSourceId}&saved=${saved}&published=${published}`;
+  const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.query}/?${url_params}`;
+  const params = {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'TOKEN': await utils.getApiToken(),
+    },
+  };
+  
+  const response = await grok.dapi.fetchProxy(url, params);
+  return response.json();
 }
 
 export async function testQuery(execResultId: number): Promise<string> {
