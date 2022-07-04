@@ -38,7 +38,7 @@ function _castAligned(seq: string): string {
   for (const char of seq)
     delimited += char == '-' ? char : `-${char}`;
 
-  return `NH2${delimited}-COOH`;
+  return delimited;
 }
 
 /**
