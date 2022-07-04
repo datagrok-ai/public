@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {mmSemType} from '../const';
+import {importFasta} from '../package';
 
 category('detectors', () => {
   const csvDf1: string = `col1
@@ -102,6 +103,9 @@ MWRSWY-CKHP
   test('testDetectorsSepUn2', async () => { await _testDetectorsSepUn(csvDfSepUn2, '/'); });
 
   test('testDetectorsSepMsaN1', async () => { await _testDetectorsSepMsaN1(csvDfSepMsaN1); });
+
+  test('testDetectorsSamplesFastaCsvPt', async () => { await _testDetectorsSamplesFastaCsvPt(); });
+  test('testDetectorsSamplesFastaFastaPt', async () => { await _testDetectorsSamplesFastaFastaPt(); });
 });
 
 export async function _testDetectorsNegative(csvDf: string) {
@@ -178,7 +182,6 @@ export async function _testDetectorsSepUn(csv: string, separator: string) {
   expect(col.getTag('separator'), separator);
 }
 
-
 export async function _testDetectorsSepMsaN1(csvDfSepMsaN1: string) {
   const dfSepMsaN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfSepMsaN1);
   await grok.data.detectSemanticTypes(dfSepMsaN1);
@@ -186,4 +189,25 @@ export async function _testDetectorsSepMsaN1(csvDfSepMsaN1: string) {
   const col: DG.Column = dfSepMsaN1.col('seq')!;
   expect(col.semType, mmSemType);
   expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ.MSA:NT');
+}
+
+export async function _testDetectorsSamplesFastaCsvPt() {
+  const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA.csv');
+  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+  await grok.data.detectSemanticTypes(df);
+
+  const col: DG.Column = df.col('sequence')!;
+  expect(col.semType, mmSemType);
+  expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ:PT');
+  expect(col.getTag('separator'), null);
+}
+
+export async function _testDetectorsSamplesFastaFastaPt() {
+  const fasta: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA.fasta');
+  const df: DG.DataFrame = importFasta(fasta)[0];
+
+  const col: DG.Column = df.col('sequence')!;
+  expect(col.semType, mmSemType);
+  expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ:PT');
+  expect(col.getTag('separator'), null);
 }

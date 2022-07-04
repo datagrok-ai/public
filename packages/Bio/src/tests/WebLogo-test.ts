@@ -52,6 +52,7 @@ XZJ{}2
 `;
 
   // anonymous functions specified in test() registering must return Promise<any>
+  test('testGetStats', async () => { await _testGetStats(csvDfN1); });
   test('testGetAlphabetSimilarity', async () => { await _testGetAlphabetSimilarity(); });
 
   test('testPickupPaletteN1', async () => { await _testPickupPaletteN1(csvDfN1); });
@@ -61,16 +62,18 @@ XZJ{}2
 });
 
 
-export async function _testGetAlphabetFreqs(dfN1: DG.DataFrame) {
+export async function _testGetStats(csvDfN1: string) {
+  const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
   const seqCol: DG.Column = dfN1.col('seq')!;
-  const mFreq = WebLogo.getAlphabetFreqs(seqCol);
+  const stats = WebLogo.getStats(seqCol, 5, WebLogo.splitterAsFasta);
 
-  expectObject(mFreq, {
+  expectObject(stats.freq, {
     'A': 4,
     'C': 5,
     'G': 3,
     'T': 6
   });
+  expect(stats.sameLength, true);
 }
 
 export async function _testGetAlphabetSimilarity() {
