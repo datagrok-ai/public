@@ -11,7 +11,7 @@
 
 class BioPackageDetectors extends DG.Package {
 
-  static semType = 'Macromolecule';
+  static mmSemType = 'Macromolecule';
 
   static Units = {
     FastaSeqPt: 'fasta:SEQ:PT', FastaSeqNt: 'fasta:SEQ:NT', FastaMsaPt: 'fasta:MSA:PT', FastaMsaNt: 'fasta:MSA:NT',
@@ -40,25 +40,31 @@ class BioPackageDetectors extends DG.Package {
     // TODO: Lazy calculations could be helpful for performance and convenient for expressing classification logic.
     const statsAsChars = BioPackageDetectors.getStats(col, 5, BioPackageDetectors.splitterAsChars);
     if (statsAsChars.sameLength) {
-      const alphabet = BioPackageDetectors.detectAlphabet(statsAsChars.freq, alphabetCandidates, '-');
-      const units = `fasta:SEQ.MSA:${alphabet}`;
-      col.setTag(DG.TAGS.UNITS, units);
-      return BioPackageDetectors.semType;
+      if (Object.keys(statsAsChars.freq).length > 0) { // require non empty alphabet
+        const alphabet = BioPackageDetectors.detectAlphabet(statsAsChars.freq, alphabetCandidates, '-');
+        const units = `fasta:SEQ.MSA:${alphabet}`;
+        col.setTag(DG.TAGS.UNITS, units);
+        return BioPackageDetectors.mmSemType;
+      }
     } else {
-      const sep = BioPackageDetectors.detectSeparator(statsAsChars.freq);
-      const gapSymbol = sep ? '' : '-';
-      const splitter = sep ? BioPackageDetectors.getSplitterWithSeparator(sep) : BioPackageDetectors.splitterAsFasta;
+      const separator = BioPackageDetectors.detectSeparator(statsAsChars.freq);
+      const gapSymbol = separator ? '' : '-';
+      const splitter = separator ? BioPackageDetectors.getSplitterWithSeparator(separator) : BioPackageDetectors.splitterAsFasta;
       const stats = BioPackageDetectors.getStats(col, 5, splitter);
 
-      const format = sep ? 'separator' : 'fasta';
+      const format = separator ? 'separator' : 'fasta';
       const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
 
       // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
       const alphabet = BioPackageDetectors.detectAlphabet(stats.freq, alphabetCandidates, gapSymbol);
 
-      const units = `${format}:${seqType}:${alphabet}`;
-      col.setTag(DG.TAGS.UNITS, units);
-      return BioPackageDetectors.semType;
+      const allowed = BioPackageDetectors.checkAllowedWoSeparator(stats.freq);
+      if (separator || allowed) {
+        const units = `${format}:${seqType}:${alphabet}`;
+        col.setTag(DG.TAGS.UNITS, units);
+        if (separator) col.setTag('separator', separator);
+        return BioPackageDetectors.mmSemType;
+      }
     }
   }
 
@@ -73,14 +79,28 @@ class BioPackageDetectors extends DG.Package {
 
     // !!! But there is a caveat because exceptionally frequent char can be a gap symbol in MSA.
     // !!! What is the difference between the gap symbol and separator symbol in stats terms?
+    const cleanFreq = {...freq}; // copy
+    // const noSeparatorRe = /[a-z\d]+$/i;
+    const noSeparatorRe = /[HBCNOFPSKVYI]/i; // Mendeleev's periodic table single char elements
+    for (const m of Object.keys(freq)) {
+      if (m.match(noSeparatorRe)) {
+        delete cleanFreq[m];
+      }
+    }
+    const maxFreq = Math.max(...Object.values(cleanFreq));
 
-    const maxFreq = Math.max(...Object.values(freq));
     const sep = Object.entries(freq).find((kv) => kv[1] == maxFreq)[0];
     const sepFreq = freq[sep];
     const otherSumFreq = Object.entries(freq).filter((kv) => kv[0] !== sep)
       .map((kv) => kv[1]).reduce((pSum, a) => pSum + a, 0);
     const freqThreshold = 3.5 * (1 / Object.keys(freq).length);
     return sepFreq / otherSumFreq > freqThreshold ? sep : null;
+  }
+
+  /** Without separator monomers as special symbols or digits are not allowed */
+  static checkAllowedWoSeparator(freq) {
+    const forbiddenRe = /[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/i;
+    return Object.keys(freq).every((m) => !forbiddenRe.test(m));
   }
 
   /** Stats of sequences with specified splitter func, returns { freq, sameLength } */
