@@ -38,7 +38,7 @@ export function ComputationViewEditor(call: DG.FuncCall) {
 }
 
 //name: FunctionView
-//tags: viewer
+//tags: model-editor, editor
 //input: funccall call
 //output: view result
 export function FunctionViewEditor(call: DG.FuncCall) {
