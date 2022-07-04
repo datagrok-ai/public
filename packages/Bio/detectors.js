@@ -11,7 +11,7 @@
 
 class BioPackageDetectors extends DG.Package {
 
-  static semType = 'MACROMOLECULE';
+  static semType = 'MacroMolecule';
 
   static Units = {
     FastaSeqPt: 'fasta:SEQ:PT', FastaSeqNt: 'fasta:SEQ:NT', FastaMsaPt: 'fasta:MSA:PT', FastaMsaNt: 'fasta:MSA:NT',

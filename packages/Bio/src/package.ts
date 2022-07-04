@@ -38,3 +38,26 @@ export function webLogoViewer() {
 export function vdRegionViewer() {
   return new VdRegionsViewer();
 }
+
+//top-menu: Bio | Activity Cliffs...
+//name: Activity Cliffs
+//description: detect activity cliffs
+//input: dataframe df [Input data table]
+//input: column smiles {type:categorical; semType: MacroMolecule}
+//input: column activities
+//input: double similarity = 80 [Similarity cutoff]
+//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
+export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
+  similarity: number, methodName: string) : Promise<void> {
+}
+
+//top-menu: Bio | Sequence Space...
+//name: Sequence Space
+//input: dataframe table
+//input: column smiles { semType: MacroMolecule }
+//input: string methodName { choices:["UMAP", "t-SNE", "SPE", "pSPE", "OriginalSPE"] }
+//input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
+//input: bool plotEmbeddings = true
+export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
+};
