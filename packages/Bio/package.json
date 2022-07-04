@@ -10,6 +10,7 @@
     "directory": "packages/Bio"
   },
   "dependencies": {
+    "@biowasm/aioli": ">=2.4.0",
     "@datagrok-libraries/bio": "^2.1.4",
     "@datagrok-libraries/utils": "^0.4.2",
     "cash-dom": "latest",

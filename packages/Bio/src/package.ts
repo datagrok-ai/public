@@ -8,6 +8,7 @@ export const _package = new DG.Package();
 
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
+import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -61,3 +62,12 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
 };
+
+//top-menu: Bio | MSA...
+//name: MSA
+//input: dataframe table
+//input: column sequence { semType: MacroMolecule }
+export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<void> {
+  const msaCol = await runKalign(col, false);
+  table.columns.add(msaCol);
+}
