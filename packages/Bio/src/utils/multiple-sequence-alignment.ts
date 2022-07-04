@@ -86,8 +86,9 @@ export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.
   console.warn(output);
 
   const aligned = _fastaToStrings(buf).slice(0, sequences.length);
-  const alignedCol = DG.Column.fromStrings(`(${col.name})msa`, _stringsToAligned(aligned));
-  alignedCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE;
+  const alignedCol = DG.Column.fromStrings(`msa(${col.name})`, _stringsToAligned(aligned));
+  alignedCol.setTag(DG.TAGS.UNITS, ''); 
+  alignedCol.semType = C.SEM_TYPES.Macro_Molecule;
   return alignedCol;
 }
 
