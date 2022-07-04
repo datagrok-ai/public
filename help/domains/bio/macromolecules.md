@@ -2,11 +2,11 @@
 
 # Datagrok for Macromolecules
 
-***Datagrok, the Swiss Army knife for data gets a new blade for macromolecules.***
+## Datagrok, the Swiss Army knife for data gets a new blade for macromolecules
 
 Datagrok is a platform of choice for analyzing assay data in a few big pharma companies and in several smaller biotech companies. Datagrok natively supports cheminformatics and bioinformatics, with an extensive toolset supporting SAR analisys for small molecules and antibodies.
 
-With Datagrok for Macromolecules, we are expanding our capabilities to **polymer design** and **sequence-activity relationship** analysis. Our molecular toolkit used across our applications allows to work efficiently with macromolecules both on the macro (sequence) level and going all the way down to atoms if necessary. 
+With Datagrok for Macromolecules, we are expanding our capabilities to **polymer design** and **sequence-activity relationship** analysis. Our molecular toolkit used across our applications allows to work efficiently with macromolecules both on the macro (sequence) level and going all the way down to atoms if necessary.
 
 ### Align peptide and nucleotide sequences containing non-natural amino acids or modified nucleotides
 
@@ -20,7 +20,7 @@ We are utilizing "PepSea" tool for analyzing peptide and nucleotide sequences co
 
 ### Utilizing HELM for description, management and visualization of biopolymers, including those with non-natural amino acids or modified nucleotides
 
-Datagrok supports ingesting data in multiple file formats (such as fasta or csv) and multiple notations for natural and modified molecules, aligned and non-aligned forms, nucleotide and amino acid sequences. We support all widely used notation systems for molecular representations, and process them in a unified way. The sequences are automatically detected and classified, while preserving their initial notation. HELM perfectly fits the requirements for this kind of unification. If a dataframe contains any sequence data, it will be recognized and annotated appropriately. 
+Datagrok supports ingesting data in multiple file formats (such as fasta or csv) and multiple notations for natural and modified molecules, aligned and non-aligned forms, nucleotide and amino acid sequences. We support all widely used notation systems for molecular representations, and process them in a unified way. The sequences are automatically detected and classified, while preserving their initial notation. HELM perfectly fits the requirements for this kind of unification. If a dataframe contains any sequence data, it will be recognized and annotated appropriately.
 
 ![HELM for description](../../uploads/macromolecules/macromolecules-3.png " ")
 
@@ -47,7 +47,7 @@ For identifiers that do not fit in a cell, an ellipsis is shown.
 
 ### Atomic-Level Structures from Sequences
 
-We have developed an algorithm to generate the atomic structure of the sequences based on a specific monomer library or from natural monomers. Datagrok has two options of reproducing the structure. First, is a direct generation from HELM notation using HelmWebEditor functionality. In this case an unordered graph representation will be returned. Second, for linear sequences, the linear form (see the illustration below) of molecules is reproduced. This is useful for better visual inspection of sequence and duplex comparison. 
+We have developed an algorithm to generate the atomic structure of the sequences based on a specific monomer library or from natural monomers. Datagrok has two options of reproducing the structure. First, is a direct generation from HELM notation using HelmWebEditor functionality. In this case an unordered graph representation will be returned. Second, for linear sequences, the linear form (see the illustration below) of molecules is reproduced. This is useful for better visual inspection of sequence and duplex comparison.
 
 We can reproduce this approach for any given case of HELM notation in order to get a visually appropriate form of monomers in cycles etc. Structure at atomic level could be saved in available notations – smiles, mol V2000, mol V3000.
 
@@ -55,11 +55,11 @@ We can reproduce this approach for any given case of HELM notation in order to g
 
 ### Displaying and analyzing polymer structures and SAR data at the monomer and atomic level
 
-Since atomic-level structure is available for each monomer and macromolecule, all the cheminformatics features of Datagrok can be used. Namely: similarity search, substructure filtering, structure curation for structural data, activity cliffs analysis for pairs of structures and SAR data. 
+Since atomic-level structure is available for each monomer and macromolecule, all the cheminformatics features of Datagrok can be used. Namely: similarity search, substructure filtering, structure curation for structural data, activity cliffs analysis for pairs of structures and SAR data.
 
 ![Polymer structures and SAR data](../../uploads/macromolecules/macromolecules-8.png " ")
 
-For analyzing polymer structures at the monomer level, Datagrok provides a set of tools and approaches (such as WebLogo plots, interactive sequence-aware spreadsheet, etc), as well as applications that are built for specific modality, such as [Peptides](peptides.md). 
+For analyzing polymer structures at the monomer level, Datagrok provides a set of tools and approaches (such as WebLogo plots, interactive sequence-aware spreadsheet, etc), as well as applications that are built for specific modality, such as [Peptides](peptides.md).
 
 ![Polymer structures and SAR data](../../uploads/macromolecules/macromolecules-9.png " ")
 
@@ -80,10 +80,10 @@ Out of the box, Datagrok provides a comprehensive [machine learning toolkit](../
 One of such tools is the ["Peptides"](https://www.youtube.com/watch?v=HNSMSf2ZYsI&ab_channel=Datagrok) plugin. When a user opens a dataset with sequences that resemble peptides, the platform recognizes it, renders the sequences in a specific way in the spreadsheet, and suggests to launch an analysis of the dataset. Upon launching, the UI switches to a fit-for purpose peptide analysis mode for efficient exploration of the peptide space, allowing the following:
 
 - Interactively filter the dataset based on the monomer, position, or any other attribute
-- Analyze differences in activity distribution for groups of peptides, including the calculation of statistical significance on-the-fly 
+- Analyze differences in activity distribution for groups of peptides, including the calculation of statistical significance on-the-fly
 - Analyze the peptide space (UMAP based on distance, color-coded by activity)
 - Automatically identify most potent monomer/positions
- 
+
 We are developing tools that account for the steric and surface features of macromolecules, calculations to support the knowledge on their properties, homology, toxicity.
 
 ![Peptides plugin](../../uploads/macromolecules/macromolecules-12.png "Peptides plugin")
@@ -93,7 +93,6 @@ See [Peptides plugin](https://public.datagrok.ai/apps/Peptides) in action
 ### Integrate Predictive Models
 
 In addition to the [built-in predictive modeling capabilities](../../learn/predictive-modeling.md) (including cheminformatics-specific ones, such as chemprop), it is easy to connect to external predictive models that are deployed as web services. Two big pharmaceutical companies have already done that.
-
 
 The integration could be done in a several ways:
 Automatic ingestion of the [OpenAPI/Swagger](../../access/open-api.md) service definition
