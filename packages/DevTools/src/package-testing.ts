@@ -84,7 +84,7 @@ export async function _renderTestManagerPanel(ent: EntityType): Promise<DG.Widge
 
 
 async function collectTests(testFromUrl: ITestFromUrl, packageName?: string): Promise<IPackageTests[]>  {
-  let testFunctions = DG.Func.find({ name: 'Test' });
+  let testFunctions = DG.Func.find({ name: 'Test' , meta: {file: 'package-test.js'}});
   if (packageName) testFunctions = testFunctions.filter((f: DG.Func) => f.package.name === packageName);
   const packagesTestsList: IPackageTests[] = [];
   for (let f of testFunctions) {
