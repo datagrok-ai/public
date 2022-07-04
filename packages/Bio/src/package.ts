@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {SequenceAlignment, Aligned} from './seq_align';
 
 export const _package = new DG.Package();
@@ -10,6 +11,9 @@ import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
 import {TableView} from 'datagrok-api/dg';
+import {mmSemType} from './const';
+import {Nucleotides} from '@datagrok-libraries/bio/src/nucleotides';
+import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -114,7 +118,21 @@ export function importFasta(content: string): DG.DataFrame [] {
   sequences.push(content.substring(index));
   const descriptionsCol = DG.Column.fromStrings('description', descriptions);
   const sequenceCol = DG.Column.fromStrings('sequence', sequences);
-  sequenceCol.semType = 'Macromolecule';
+
+  const stats: { freq: { [m: string]: number }, sameLength: boolean } = WebLogo.getStats(sequenceCol, 5, WebLogo.splitterAsFasta);
+  const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
+  const alphabetCandidates: [string, Set<string>][] = [
+    ['NT', new Set(Object.keys(Nucleotides.Names)),],
+    ['PT', new Set(Object.keys(Aminoacids.Names)),],
+  ];
+  // Calculate likelihoods for alphabet_candidates
+  const alphabetCandidatesSim: number[] = alphabetCandidates.map(
+    (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));
+  const maxCos = Math.max(...alphabetCandidatesSim);
+  const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
+  sequenceCol.semType = mmSemType;
+  sequenceCol.setTag(DG.TAGS.UNITS, `fasta:${seqType}:${alphabet}`);
+
   return [DG.DataFrame.fromColumns([
     descriptionsCol,
     sequenceCol,

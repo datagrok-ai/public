@@ -50,7 +50,9 @@ class BioPackageDetectors extends DG.Package {
       const separator = BioPackageDetectors.detectSeparator(statsAsChars.freq);
       const gapSymbol = separator ? '' : '-';
       const splitter = separator ? BioPackageDetectors.getSplitterWithSeparator(separator) : BioPackageDetectors.splitterAsFasta;
+
       const stats = BioPackageDetectors.getStats(col, 5, splitter);
+      if (Object.keys(stats.freq).length === 0) return null;
 
       const format = separator ? 'separator' : 'fasta';
       const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
@@ -58,8 +60,8 @@ class BioPackageDetectors extends DG.Package {
       // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
       const alphabet = BioPackageDetectors.detectAlphabet(stats.freq, alphabetCandidates, gapSymbol);
 
-      const allowed = BioPackageDetectors.checkAllowedWoSeparator(stats.freq);
-      if (separator || allowed) {
+      const forbidden = BioPackageDetectors.checkForbiddenWoSeparator(stats.freq);
+      if (separator || !forbidden) {
         const units = `${format}:${seqType}:${alphabet}`;
         col.setTag(DG.TAGS.UNITS, units);
         if (separator) col.setTag('separator', separator);
@@ -79,17 +81,18 @@ class BioPackageDetectors extends DG.Package {
 
     // !!! But there is a caveat because exceptionally frequent char can be a gap symbol in MSA.
     // !!! What is the difference between the gap symbol and separator symbol in stats terms?
-    const cleanFreq = {...freq}; // copy
     // const noSeparatorRe = /[a-z\d]+$/i;
     const noSeparatorRe = /[HBCNOFPSKVYI]/i; // Mendeleev's periodic table single char elements
-    for (const m of Object.keys(freq)) {
-      if (m.match(noSeparatorRe)) {
-        delete cleanFreq[m];
-      }
-    }
+    const cleanFreq = Object.assign({}, ...Object.entries(freq)
+      .filter(([m, f]) => !noSeparatorRe.test(m) &&
+        !BioPackageDetectors.AminoacidsFastaAlphabet.has(m) &&
+        !BioPackageDetectors.NucleotidesFastaAlphabet.has(m))
+      .map(([m, f]) => ({[m]: f})));
+    if (Object.keys(cleanFreq).length == 0) return null;
+
     const maxFreq = Math.max(...Object.values(cleanFreq));
 
-    const sep = Object.entries(freq).find((kv) => kv[1] == maxFreq)[0];
+    const sep = Object.entries(freq).find(([k, v]) => v === maxFreq)[0];
     const sepFreq = freq[sep];
     const otherSumFreq = Object.entries(freq).filter((kv) => kv[0] !== sep)
       .map((kv) => kv[1]).reduce((pSum, a) => pSum + a, 0);
@@ -97,10 +100,10 @@ class BioPackageDetectors extends DG.Package {
     return sepFreq / otherSumFreq > freqThreshold ? sep : null;
   }
 
-  /** Without separator monomers as special symbols or digits are not allowed */
-  static checkAllowedWoSeparator(freq) {
+  /** Without a separator, special symbols or digits are not allowed as monomers. */
+  static checkForbiddenWoSeparator(freq) {
     const forbiddenRe = /[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/i;
-    return Object.keys(freq).every((m) => !forbiddenRe.test(m));
+    return Object.keys(freq).filter((m) => forbiddenRe.test(m)).length > 0;
   }
 
   /** Stats of sequences with specified splitter func, returns { freq, sameLength } */
