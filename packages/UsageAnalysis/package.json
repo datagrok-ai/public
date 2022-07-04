@@ -10,7 +10,7 @@
     "directory": "packages/UsageAnalysis"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "0.1.0 <0.5.0",
+    "@datagrok-libraries/utils": "0.1.0 <0.5.0 <0.7.1",
     "acorn": "^8.5.0",
     "cash-dom": "^8.1.0",
     "css-loader": "^6.4.0",
