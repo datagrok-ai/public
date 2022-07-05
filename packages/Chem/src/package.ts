@@ -257,7 +257,7 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //name: Chem Space
 //input: dataframe table
 //input: column smiles { semType: Molecule }
-//input: string methodName { choices:["UMAP", "t-SNE", "SPE", "pSPE", "OriginalSPE"] }
+//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
@@ -433,7 +433,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
     .add(sketcher)
     .onOK(() => {
       cell.cell.value = unit == 'molblock' ? sketcher.getMolFile() : sketcher.getSmiles();
-      Sketcher.addRecent(sketcher.getSmiles());
+      Sketcher.addRecent(sketcher.getMolFile());
     })
     .show();
 }
