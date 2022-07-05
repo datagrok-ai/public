@@ -93,6 +93,16 @@ export async function compositionAnalysis(): Promise<void> {
   }
 }
 
+// helper function for importFasta
+function parseMacromolecule(
+  fileContent: string,
+  startOfSequence: number,
+  endOfSequence: number
+): string {
+  const seq = fileContent.slice(startOfSequence, endOfSequence);
+  const seqArray = seq.split(/\s/);
+  return seqArray.join('');
+}
 
 //name: importFasta
 //description: Opens FASTA file
@@ -100,28 +110,25 @@ export async function compositionAnalysis(): Promise<void> {
 //meta.ext: fasta, fna, ffn, faa, frn, fa
 //input: string content
 //output: list tables
-export function importFasta(content: string): DG.DataFrame [] {
-  const regex = /^>(.*)$/gm;
-  const descriptions = [];
-  const sequences = [];
+export function importFasta(fileContent: string): DG.DataFrame [] {
+  const regex = /^>(.*)$/gm; // match the line starting with >
+  const descriptionsArray = [];
+  const sequencesArray: string[] = [];
   let startOfSequence = 0;
   let match; // match.index is the beginning of the matched line
-  while (match = regex.exec(content)) {
-    const description = content.substring(match.index + 1, regex.lastIndex);
-    descriptions.push(description);
-    if (startOfSequence !== 0) {
-      const seq = content.substring(startOfSequence, match.index);
-      const seqArray = seq.split(/\s/);
-      sequences.push(seqArray.join(''));
-    }
+  while (match = regex.exec(fileContent)) {
+    const description = fileContent.substring(match.index + 1, regex.lastIndex);
+    descriptionsArray.push(description);
+    if (startOfSequence !== 0)
+      sequencesArray.push(parseMacromolecule(fileContent, startOfSequence, match.index));
     startOfSequence = regex.lastIndex + 1;
   }
-  sequences.push(content.substring(startOfSequence));
-  const descriptionsCol = DG.Column.fromStrings('description', descriptions);
-  const sequenceCol = DG.Column.fromStrings('sequence', sequences);
+  sequencesArray.push(parseMacromolecule(fileContent, startOfSequence, -1));
+  const descriptionsArrayCol = DG.Column.fromStrings('description', descriptionsArray);
+  const sequenceCol = DG.Column.fromStrings('sequence', sequencesArray);
   sequenceCol.semType = 'Macromolecule';
   return [DG.DataFrame.fromColumns([
-    descriptionsCol,
+    descriptionsArrayCol,
     sequenceCol,
   ])];
 }
