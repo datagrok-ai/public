@@ -861,7 +861,7 @@
           "id": "0459faff-d046-422d-a5c6-5aa1915c13ee",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -1158,7 +1158,7 @@
           "id": "ceb6adc8-2a9d-46a1-8fe4-3a4b7be93d63",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -2309,7 +2309,7 @@
           "id": "0506caf0-cd30-4b42-b0ee-19b25d5eeafe",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -2606,7 +2606,7 @@
           "id": "3e54c317-a18d-478e-bc3c-d6f22a38e071",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -3762,7 +3762,7 @@
           "id": "c197d466-daa7-45f7-adc2-f1d840f21008",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -4101,7 +4101,7 @@
           "id": "f482a47e-4b34-478b-b6a4-ecd16e75d901",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -5248,7 +5248,7 @@
           "id": "5e840e41-fe60-4f17-8d56-3d50b7dbbced",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -5562,7 +5562,7 @@
           "id": "49268d4a-f540-4df3-b7b1-0cc2b0762dbc",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -6738,7 +6738,7 @@
           "id": "210ee4a4-e99d-4da6-b392-2c1d246a24cd",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -7055,7 +7055,7 @@
           "id": "7c29ad64-ed46-4370-868b-3e827830165e",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -8157,7 +8157,7 @@
           "id": "3b140584-08c6-4a4b-a500-10def94a980c",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -8450,7 +8450,7 @@
           "id": "17ff2597-0482-4e1c-bc8d-69c3aca30b73",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -9651,7 +9651,7 @@
           "id": "c62b2079-f646-40ce-b11b-7a7c44ead92e",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -9973,7 +9973,7 @@
           "id": "fcf07404-d425-44b0-aae0-0c1216668b49",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -11087,7 +11087,7 @@
           "id": "eabc4c44-917d-4172-ab6f-66515ba25526",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -11376,7 +11376,7 @@
           "id": "1d8cdf34-9541-43e8-af14-855c8631cb27",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -14790,7 +14790,7 @@
           "id": "f39b4199-1a1b-4d87-9381-9bf0727fee18",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -16193,7 +16193,7 @@
           "id": "c6e3ec89-7ad2-4a9f-94e1-479eb0bd3066",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -19615,7 +19615,7 @@
           "id": "1a7f6c32-b338-4240-9bd5-25b0a1184542",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -21018,7 +21018,7 @@
           "id": "30a53783-fb06-4f0d-97b1-69d4fa0c2e3b",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -24440,7 +24440,7 @@
           "id": "c6d448d9-5641-4190-865c-98201770281d",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -25843,7 +25843,7 @@
           "id": "70a519cc-6054-4144-82b1-a36f3407aa8c",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -29265,7 +29265,7 @@
           "id": "295f97f5-cdde-4704-b625-b6f5f837023d",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -30668,7 +30668,7 @@
           "id": "52a99c02-c2f5-4819-9ba4-d05ac9ce29b0",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -34090,7 +34090,7 @@
           "id": "28b62120-70f5-47de-9a8e-1a48ab98d235",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -35493,7 +35493,7 @@
           "id": "da6dcfc5-6482-4824-a00d-3a923db1d56b",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -38915,7 +38915,7 @@
           "id": "751149d4-ad3e-4e6c-8cd7-325aec50d6e7",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
@@ -40318,7 +40318,7 @@
           "id": "98e0c0af-ea5d-4571-82e2-eec7c2862511",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
