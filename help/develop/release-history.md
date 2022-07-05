@@ -1,6 +1,31 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-07-05 Dev build 1.4.12
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.12`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Document viewer properties (WIP)
+* Status Bar 
+* Popup: ability to show context menu next to the element 
+* Fix link to dart for Windows 
+* #735 and #736 property panel search improvments, expand all button 
+* #758 [Tooltip] \- using the option to sketch form for the tooltip completely breaks its responsiveness for further modifications (WIP) 
+* Ability to set layout on third-party system exported data 
+* Implement JWT tokens (WIP)
+* closes #732 tooltip for large text in small cells 
+* Properties: "depends on" property 
+* CSS fix 
+
+
 # 2022-07-04 Dev build 1.4.11
 
 ## Latest Docker Images
