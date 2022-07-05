@@ -2,9 +2,10 @@
 	"name": "@datagrok/power-pack",
 	"friendlyName": "PowerPack",
 	"sources": [
-		"css/power-pack.css"
+		"css/power-pack.css",
+		"css/viewers-gallery.css"
 	],
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "",
 	"repository": {
 		"type": "git",

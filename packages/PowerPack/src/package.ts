@@ -16,10 +16,11 @@ import { AboutWidget } from "./widgets/about-widget";
 import { functionSearch, pdbSearch, pubChemSearch, scriptsSearch, usersSearch, wikiSearch } from './search/entity-search';
 import { KpiWidget } from "./widgets/kpi-widget";
 import { HtmlWidget } from "./widgets/html-widget";
-import {PowerPackSettingsEditor} from "./settings-editor";
+import { PowerPackSettingsEditor } from "./settings-editor";
+import { viewersGallery } from "./viewers-gallery";
 
 export let _package = new DG.Package();
-export let _properties: {[propertyName: string]: any};
+export let _properties: { [propertyName: string]: any };
 
 //name: compareColumns
 //top-menu: Data | Compare Columns...
@@ -166,4 +167,23 @@ grok.events.onContextMenu.subscribe((args) => {
 //tags: init
 export async function powerPackInit() {
   _properties = await _package.getProperties();
+}
+
+//description: ViewerGallery
+//tags: autostart
+export function _viewerGallery(): void {
+  //grok.shell.topMenu.find('Add').separator().item('Add viewer...', ()=>viewersGallery())
+  grok.events.onViewAdded.subscribe((view) => {
+    if (view.type == 'TableView') {
+      let panel = view.getRibbonPanels();
+      panel[0][1].remove();
+
+      let icon = ui.iconFA('', () => { viewersGallery() }, 'Add viewer');
+      icon.className = 'grok-icon svg-icon svg-add-viewer';
+
+      let btn = ui.div([icon]);
+      btn.className = 'd4-ribbon-item';
+      panel[0][0].after(btn)
+    }
+  });
 }
