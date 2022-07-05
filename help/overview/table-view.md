@@ -22,7 +22,7 @@ viewers:
 
 ## Layout
 
-Contains gallery of published [projects](project.md).
+Contains gallery of saved [layouts](../visualize/view-layout.md).
 
 ## Videos
 
