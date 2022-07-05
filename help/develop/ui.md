@@ -40,30 +40,30 @@ Figma Datagrok UIKit available on [Figma Community](https://www.figma.com/@datag
 * [Table View](#table-view)
 * [Simple View](#simple-view)
 * [Viewers](#viewers)
-    * [Bar Chart](#bar-chart)
-    * [Box Plot](#box-plot)
-    * [Calendar](#calendar)
-    * [Correlation Plot](#correlation-plot)
-    * [Density Plot](#density-plot)
-    * [Filters](#filters)
-    * [Form](#form)
-    * [Globe](#globe)
-    * [Google Map Viewer](#google-map-viewer)
-    * [Grid](#grid)
-    * [Heat Map](#heat-map)
-    * [Histogram](#histogram)
-    * [Line Chart](#line-chart)
-    * [Markup Viewer](#markup-viewer)
-    * [Matrix Plot](#matrix-plot)
-    * [Network Diagram](#network-diagram)
-    * [Parallel Coordinates Plot](#parallel-coordinates-plot)
-    * [Scatter Plot 3D](#scatter-plot-3d)
-    * [Scatter Plot](#scatter-plot)
-    * [Shape Map](#shape-map)
-    * [Statistics](#statistics)
-    * [Tile Viewer](#tile-viewer)
-    * [Tree Map](#tree-map)
-    * [Word Cloud](#word-cloud)
+  * [Bar Chart](#bar-chart)
+  * [Box Plot](#box-plot)
+  * [Calendar](#calendar)
+  * [Correlation Plot](#correlation-plot)
+  * [Density Plot](#density-plot)
+  * [Filters](#filters)
+  * [Form](#form)
+  * [Globe](#globe)
+  * [Google Map Viewer](#google-map-viewer)
+  * [Grid](#grid)
+  * [Heat Map](#heat-map)
+  * [Histogram](#histogram)
+  * [Line Chart](#line-chart)
+  * [Markup Viewer](#markup-viewer)
+  * [Matrix Plot](#matrix-plot)
+  * [Network Diagram](#network-diagram)
+  * [Parallel Coordinates Plot](#parallel-coordinates-plot)
+  * [Scatter Plot 3D](#scatter-plot-3d)
+  * [Scatter Plot](#scatter-plot)
+  * [Shape Map](#shape-map)
+  * [Statistics](#statistics)
+  * [Tile Viewer](#tile-viewer)
+  * [Tree Map](#tree-map)
+  * [Word Cloud](#word-cloud)
 * [Ribbon](#ribbon)
 * [Toolbox](#toolbox)
 
@@ -73,9 +73,9 @@ Figma Datagrok UIKit available on [Figma Community](https://www.figma.com/@datag
 <summary>Dialogs</summary>
 
 * [Dialogs](#dialogs)
-    * [Standard Dialog](#standard-dialog)
-    * [Modal Dialog](#modal-dialog)
-    * [Fullscreen Modal Dialog](#fullscreen-modal-dialog)
+  * [Standard Dialog](#standard-dialog)
+  * [Modal Dialog](#modal-dialog)
+  * [Fullscreen Modal Dialog](#fullscreen-modal-dialog)
 
 </details>
 
@@ -84,24 +84,24 @@ Figma Datagrok UIKit available on [Figma Community](https://www.figma.com/@datag
 
 * [Colors](#colors)
 * [Typography](#typography)
-    * [Headers](#headers)
-    * [Paragraphs](#paragraphs)
-    * [Spans](#spans)
-    * [Label](#label)
-    * [Link](#link)
-    * [Inline text](#inline-text)
-    * [Text blocks](#text-blocks)
+  * [Headers](#headers)
+  * [Paragraphs](#paragraphs)
+  * [Spans](#spans)
+  * [Label](#label)
+  * [Link](#link)
+  * [Inline text](#inline-text)
+  * [Text blocks](#text-blocks)
 * [Tables](#tables)
 * [Lists](#lists)
 * [Buttons](#buttons)
 * [Forms](#forms)
-    * [Inputs](#inputs)
-    * [Text area](#text-area)
-    * [Dropdown selection](#dropdown-selection)
-    * [Selection](#selection)
-    * [Group selection](#group-selection)
-    * [Switch](#group-selection)
-    * [Range slider](#range-slider)
+  * [Inputs](#inputs)
+  * [Text area](#text-area)
+  * [Dropdown selection](#dropdown-selection)
+  * [Selection](#selection)
+  * [Group selection](#group-selection)
+  * [Switch](#group-selection)
+  * [Range slider](#range-slider)
 * [Icons](#icons)
 * [Image](#image)
 
@@ -192,12 +192,12 @@ height is determined by their inner content. The width of sections can also be s
 
 * 1 block: 100%
 * 2 blocks:
-    * 50% and 50%
-    * 75% and 25%
-    * 25% and 75%
+  * 50% and 50%
+  * 75% and 25%
+  * 25% and 75%
 * 3 blocks:
-    * 2 x 25% and 50%
-    * 50% and 2 x 25%
+  * 2 x 25% and 50%
+  * 50% and 2 x 25%
 * 4 blocks: 4 x 25%
 
 Use the block layout if you want to display section-based content by placing elements next to each other.

@@ -483,8 +483,8 @@ for (const row of df.rows) {
 To add, remove or replace columns in a dataframe:
 
 * for an existing instance `column` of `Column`:
-    * `.add(column)` adds it as a last column of the dataframe
-    * `.insert(column, index)` adds it _before_ the column position which is currently at position `index`, starting
+  * `.add(column)` adds it as a last column of the dataframe
+  * `.insert(column, index)` adds it _before_ the column position which is currently at position `index`, starting
       count from `0`. The default value of `index` is `null`, which corresponds to adding the column at the end of the
       columns list
 * `.addNew` adds a new empty column at the end of the column list

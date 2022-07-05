@@ -35,9 +35,9 @@ A query is a [function](../../overview/functions/function.md), and therefore cou
 different contexts. Here are some of them:
 
 * Executed manually
-    * From the [query editor](../data-query-view.md)
-    * From the "Functions" pane
-    * As part of expression for [calculated columns](../../transform/add-new-column.md)
+  * From the [query editor](../data-query-view.md)
+  * From the "Functions" pane
+  * As part of expression for [calculated columns](../../transform/add-new-column.md)
 * As an [info panel](../../discover/info-panels.md)
 * From [JS API](../../develop/js-api.md)
 

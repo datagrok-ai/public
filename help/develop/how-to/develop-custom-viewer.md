@@ -19,11 +19,11 @@ and more. Besides, scripting viewers must be part of a package in order to run t
 Table of contents
 
 * [JavaScript-Based Viewers](#javascript-based-viewers)
-    * [External Dependencies](#external-dependencies)
-    * [Properties](#properties)
-    * [Preparing Data](#preparing-data)
-    * [Rendering](#rendering)
-    * [Events](#events)
+  * [External Dependencies](#external-dependencies)
+  * [Properties](#properties)
+  * [Preparing Data](#preparing-data)
+  * [Rendering](#rendering)
+  * [Events](#events)
 * [Scripting Viewers](#scripting-viewers)
 * [Registering Viewers](#registering-viewers)
 * [Examples](#examples)
@@ -511,18 +511,18 @@ viewer can be obtained synchronously.
 You can find more inspiring examples in our [public repository](https://github.com/datagrok-ai/public):
 
 * JavaScript-based viewers:
-    * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts): constructs graphs of various types
+  * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts): constructs graphs of various types
       using the [Echarts](https://echarts.apache.org) framework
-    * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet): integrates with
+  * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet): integrates with
       the [Leaflet](https://leafletjs.com/) library to build interactive maps
-    * [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst): uses the [D3](https://d3js.org/)
+  * [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst): uses the [D3](https://d3js.org/)
       library for a sunburst chart
-    * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers): showcases creating JavaScript
+  * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers): showcases creating JavaScript
       viewers using various visualization libraries
 * Scripting viewers (R, Python, Julia):
-    * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to
+  * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to
       Python and R code using scripting viewers for the respective programming languages
-    * [DemoScripts]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
+  * [DemoScripts]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
 
   Most of these scripts are also available by the `viewers` tag in the script
   browser: [https://public.datagrok.ai/scripts?q=%23viewers](https://public.datagrok.ai/scripts?q=%23viewers)

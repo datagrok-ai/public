@@ -214,8 +214,8 @@ A short action list for accessing a database from your application:
 * Prepare database [queries](access-data.md#queries) in one or several files in package's `queries`
   folder, for each query referring to the corresponding database
 * Consider caching the database query results:
-    * `"cache results": true` in connection's JSON `""parameters"` section
-    * `--meta.cache: true` to the preamble of each query you want to be cached
+  * `"cache results": true` in connection's JSON `""parameters"` section
+  * `--meta.cache: true` to the preamble of each query you want to be cached
 * After the package is deployed, verify you've delivered database [credentials](access-data.md#managing-credentials)
 * [Invoke](access-data.md#executing-queries) the query in JavaScript code
   by `await grok.data.query("<PACKAGE_NAME>:<QUERY_NAME>", { ... })` with a dictionary of query arguments as the second

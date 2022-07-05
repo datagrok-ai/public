@@ -52,9 +52,9 @@ OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to
 Grok's [functions](../overview/functions/function.md). This has many benefits:
 
 * Ability to easily call that web method from:
-    * [Console](../overview/navigation.md#console)
-    * Event handler
-    * [Info panel](../discover/info-panels.md)
+  * [Console](../overview/navigation.md#console)
+  * Event handler
+  * [Info panel](../discover/info-panels.md)
 * Audit
 * Data lineage
 

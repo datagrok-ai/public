@@ -87,18 +87,18 @@ coefficients.
 Train models, apply them, compare performance characteristics, deploy, share. Currently, there two ways to train models:
 
 * Using build-in plugin for modelling based on R Caret via OpenCPU. It allows to train models:
-    * SVM (linear or radial)
-    * Random Forests
-    * GBM
+  * SVM (linear or radial)
+  * Random Forests
+  * GBM
 * Using [H2O](https://h2o.ai). A model can be built using H2O UI and than exported into the platform in POJO format and
   used from the "Model browser". Supports the following models:
-    * Deep Learning (Neural Networks)
-    * Distributed Random Forest (DRF)
-    * Generalized Linear Model (GLM)
-    * Gradient Boosting Machine (GBM)
-    * Naïve Bayes Classifier
-    * K-Means Clustering
-    * Principal Component Analysis (PCA)
+  * Deep Learning (Neural Networks)
+  * Distributed Random Forest (DRF)
+  * Generalized Linear Model (GLM)
+  * Gradient Boosting Machine (GBM)
+  * Naïve Bayes Classifier
+  * K-Means Clustering
+  * Principal Component Analysis (PCA)
 
 Trained models can be shared with other users. In addition to making them discoverable and reusable, the platform might
 also [suggest applying models to the datasets](self-learning-platform.md) (

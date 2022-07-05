@@ -331,7 +331,7 @@ and biological processes. Instead, they rely on techniques like random forest or
 biological and physical properties of novel compounds on the basis of empirical observations of small molecules.
 
 Datagrok supports machine learning [predictive models](../../learn/data-science.md#predictive-modeling), which take chemical
-[properties, descriptors, and fingerprints](#descriptors-and-fingerprints) 
+[properties, descriptors, and fingerprints](#descriptors-and-fingerprints)
 as features, and the observable properties as the predicted outcomes. It lets researchers build models that can be
 trained, assessed, executed, reused by other scientists, and included in pipelines.
 

@@ -13,9 +13,9 @@ that involves presenting additional augmented data without the explicit request.
 going an extra mile, and delivering these simple insights:
 
 * Showing quick data summary in the column tooltip
-    * Histogram
-    * Basic statistics
-    * Highlighting missing value
+  * Histogram
+  * Basic statistics
+  * Highlighting missing value
 
 ## Suggesting applicable view and viewer layouts
 
