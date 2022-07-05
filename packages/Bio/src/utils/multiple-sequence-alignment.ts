@@ -27,37 +27,6 @@ function _fastaToStrings(fasta: string): string[] {
 }
 
 /**
- * Converts aligned sequence to semantic type format.
- *
- * @param {string} seq Source sequence.
- * @return {string} Formatted sequence.
- */
-function _castAligned(seq: string): string {
-  let delimited = '';
-
-  for (const char of seq)
-    delimited += char == '-' ? char : `-${char}`;
-
-  return delimited;
-}
-
-/**
- * Formats a batch of sequences to correspond the semantic type.
- *
- * @param {string[]} alignment List of aligned sequences.
- * @return {string[]} Formatted sequences.
- */
-function _stringsToAligned(alignment: string[]): string[] {
-  const nItems = alignment.length;
-  const aligned = new Array<string>(nItems);
-
-  for (let i = 0; i < nItems; ++i)
-    aligned[i] = _castAligned(alignment[i]);
-
-  return aligned;
-}
-
-/**
  * Runs Aioli environment with kalign tool.
  *
  * @param {DG.Column} col Column with sequences.
@@ -86,7 +55,7 @@ export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.
   console.warn(output);
 
   const aligned = _fastaToStrings(buf).slice(0, sequences.length);
-  const alignedCol = DG.Column.fromStrings(`msa(${col.name})`, _stringsToAligned(aligned));
+  const alignedCol = DG.Column.fromStrings(`msa(${col.name})`, aligned);
   alignedCol.setTag(DG.TAGS.UNITS, ''); 
   alignedCol.semType = C.SEM_TYPES.Macro_Molecule;
   return alignedCol;
