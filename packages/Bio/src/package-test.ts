@@ -6,8 +6,9 @@ import './tests/WebLogo-test';
 import './tests/Palettes-test';
 import './tests/detectors-test';
 import './tests/msa-tests';
+import './tests/sequence-space-test';
 
-export const _packageTest = new DG.Package();
+export const _package = new DG.Package();
 export {tests};
 
 /** For the 'test' function argument names are fixed as 'category' and 'test' because of way it is called. */
