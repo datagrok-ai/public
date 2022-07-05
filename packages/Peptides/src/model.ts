@@ -524,10 +524,10 @@ export class PeptidesModel {
   ): void {
     const mdCol = statsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     //decompose into two different renering funcs
-    const cellRendererAction = (args: DG.GridCellRenderArgs): void => {
+    const renderCell = (args: DG.GridCellRenderArgs): void => {
       const canvasContext = args.g;
       const bound = args.bounds;
-      
+
       canvasContext.save();
       canvasContext.beginPath();
       canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
@@ -545,6 +545,7 @@ export class PeptidesModel {
       const tableRowIndex = cell.tableRowIndex!;
       if (cell.isTableCell && tableColName && tableRowIndex !== null && renderColNames.indexOf(tableColName) !== -1) {
         const cellValue: number | null = cell.cell.value;
+
         if (cellValue && cellValue !== DG.INT_NULL && cellValue !== DG.FLOAT_NULL) {
           const gridTable = cell.grid.table;
           const currentPosition: string = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ?
@@ -558,8 +559,8 @@ export class PeptidesModel {
       }
       canvasContext.restore();
     };
-    sarGrid.onCellRender.subscribe(cellRendererAction);
-    sarVGrid.onCellRender.subscribe(cellRendererAction);
+    sarGrid.onCellRender.subscribe(renderCell);
+    sarVGrid.onCellRender.subscribe(renderCell);
   }
 
   //FIXME: doesn't work at all
@@ -567,43 +568,47 @@ export class PeptidesModel {
     renderColNames: string[], statsDf: DG.DataFrame, peptidesCount: number, sarGrid: DG.Grid, sarVGrid: DG.Grid,
     sourceDf: DG.DataFrame,
   ): void {
-    const onCellTooltipAction = (cell: DG.GridCell, x: number, y: number): boolean => {
-      if (
-        !cell.isRowHeader && !cell.isColHeader && cell.tableColumn !== null && cell.cell.value !== null &&
-          cell.tableRowIndex !== null && renderColNames.indexOf(cell.tableColumn.name) !== -1) {
-        const tooltipMap: { [index: string]: string } = {};
+    const showTooltip = (cell: DG.GridCell, x: number, y: number): boolean => {
+      const tableCol = cell.tableColumn;
+      const tableColName = tableCol?.name;
 
-        for (const col of statsDf.columns.names()) {
-          if (col !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE && col !== C.COLUMNS_NAMES.POSITION) {
-            const currentPosition = cell.tableColumn.name !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ?
-              cell.tableColumn.name : cell.grid.table.get(C.COLUMNS_NAMES.POSITION, cell.tableRowIndex);
-            const query =
-              `${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ` +
-              `${cell.grid.table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, cell.tableRowIndex)} ` +
-              `and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
-            const textNum = statsDf.groupBy([col]).where(query).aggregate().get(col, 0);
-            let text = `${col === 'Count' ? textNum : textNum.toFixed(5)}`;
+      if (!cell.isRowHeader && !cell.isColHeader && tableCol !== null) {
+        const tableRowIndex = cell.tableRowIndex;
 
-            if (col === 'Count')
-              text += ` / ${peptidesCount}`;
-            else if (col === C.COLUMNS_NAMES.P_VALUE)
-              text = parseFloat(text) !== 0 ? text : '<0.01';
+        if (tableCol.semType == C.SEM_TYPES.AMINO_ACIDS) {
+          const monomerLib = sourceDf.temp[MonomerLibrary.id];
+          ChemPalette.showTooltip(cell, x, y, monomerLib);
+        } else if (cell.cell.value !== null && tableRowIndex !== null && renderColNames.includes(tableColName!)) {
+          const table = cell.grid.table;
+          const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
+            table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
+          const query = `${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ` +
+            `${table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex)} ` +
+            `and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
 
+          const tooltipMap: { [index: string]: string } = {};
+          for (const col of statsDf.columns.names()) {
+            if (col !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE && col !== C.COLUMNS_NAMES.POSITION) {
+              const textNum = statsDf.groupBy([col]).where(query).aggregate().get(col, 0);
+              let text = `${col === 'Count' ? textNum : textNum.toFixed(5)}`;
 
-            tooltipMap[col === C.COLUMNS_NAMES.P_VALUE ? 'p-value' : col] = text;
+              if (col === 'Count')
+                text += ` / ${peptidesCount}`;
+              else if (col === C.COLUMNS_NAMES.P_VALUE)
+                text = parseFloat(text) !== 0 ? text : '<0.01';
+
+              tooltipMap[col === C.COLUMNS_NAMES.P_VALUE ? 'p-value' : col] = text;
+            }
           }
-        }
 
-        ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
-      }
-      if (!cell.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.AMINO_ACIDS) {
-        const monomerLib = sourceDf.temp[MonomerLibrary.id];
-        ChemPalette.showTooltip(cell, x, y, monomerLib);
+          ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
+        }
       }
       return true;
     };
-    sarGrid.onCellTooltip(onCellTooltipAction);
-    sarVGrid.onCellTooltip(onCellTooltipAction);
+
+    sarGrid.onCellTooltip(showTooltip);
+    sarVGrid.onCellTooltip(showTooltip);
   }
 
   //TODO: think about it, move out?
