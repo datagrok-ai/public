@@ -4,7 +4,7 @@
 # Dashboard
 
 Use dashboard to visually present data in a pre-specified way. In contrast to
-[table views](table-view.md) that excel at
+[table views](../overview/table-view.md) that excel at
 [exploratory data analysis](../explore/exploratory-data-analysis.md),
 [data wrangling](../transform/data-wrangling.md) and other table-specific tasks, dashboards trade the ability to quickly
 interrogate data in unpredicted ways for delivering the visuals exactly as designed. In particular, here are some
