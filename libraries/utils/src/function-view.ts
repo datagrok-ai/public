@@ -502,15 +502,15 @@ export class FunctionView extends DG.ViewBase {
   }
 
   // mappping of param to the switchces of their viewers/grids
-  protected paramGridSwitches: Map<string, HTMLElement> = new Map();
+  private paramGridSwitches: Map<string, HTMLElement> = new Map();
   // mappping of param to their viewers placed on DOM
-  protected existingParamViewers: Map<string, DG.Viewer[]> = new Map();
+  private existingParamViewers: Map<string, DG.Viewer[]> = new Map();
   // mappping of param to their html elements
-  protected paramSpans: Map<string, HTMLElement> = new Map();
+  private paramSpans: Map<string, HTMLElement> = new Map();
   // mappping of tab names to their content
-  protected resultTabs: Map<String, HTMLElement> = new Map();
-  protected resultsTabControl: DG.TabControl | undefined;
-  protected resultsDiv: HTMLElement = ui.panel([], 'grok-func-results');
+  private resultTabs: Map<String, HTMLElement> = new Map();
+  private resultsTabControl: DG.TabControl | undefined;
+  private resultsDiv: HTMLElement = ui.panel([], 'grok-func-results');
 
   protected controlsRoot: HTMLDivElement = ui.box(null, {style: {maxWidth: '370px'}});
   protected resultsRoot: HTMLDivElement = ui.box();
