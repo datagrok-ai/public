@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/charts",
   "fullName": "Charts",
-  "version": "0.1.3",
+  "version": "1.0.0",
   "description": "Charts package provides visualizations built using\nthe [ECharts](https://echarts.apache.org/en/index.html) library.",
   "repository": {
     "type": "git",
