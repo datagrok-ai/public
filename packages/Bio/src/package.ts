@@ -9,6 +9,7 @@ export const _package = new DG.Package();
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
+import {convert} from './utils/convert';
 import {TableView} from 'datagrok-api/dg';
 
 //name: sequenceAlignment
@@ -131,4 +132,12 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
     descriptionsArrayCol,
     sequenceCol,
   ])];
+}
+
+//name: Bio | Convert
+//friendly-name: Bio | Convert
+//tags: panel, bio
+//input: column col {semType: Macromolecule}
+export function convertPanel(col: DG.Column): void {
+  convert(col);
 }
