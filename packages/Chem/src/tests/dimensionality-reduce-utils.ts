@@ -5,6 +5,13 @@ import { chemSpace } from '../analysis/chem-space';
 import { getSimilaritiesMarix, getSimilaritiesMarixFromDistances } from '../utils/similarity-utils';
 var { jStat } = require('jstat')
 
+
+export async function _testChemSpaceReturnsResult(col: DG.Column, algorithm: string) {
+  const {distance, coordinates} = await chemSpace(col, algorithm, 'Tanimoto', ['Embed_X', 'Embed_Y']);
+  expect(distance != undefined, true);
+  expect(coordinates != undefined, true);
+}
+
 export async function _testDimensionalityReducer(col: DG.Column, algorithm: string) {
     const {distance, coordinates} = await chemSpace(col, algorithm, 'Tanimoto', ['Embed_X', 'Embed_Y']);
 
