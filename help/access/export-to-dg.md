@@ -25,3 +25,12 @@ If you want to apply a layout automatically:
 - Go to Manage - Layouts, find your saved layout. Navigate to Property Panel, hit `Links...`
 - In the new window, grab ID or Grok name of the layout. If layout name is too generic - just rename it and try again
 - Pass ID or Name as `?layout` parameter to the request.
+
+# Example
+
+```curl
+curl --location --request POST 'http://localhost:8080/api/files/alex.aprm/uploads/from_excel/test.csv?layout=alexaprm.superlayout' \
+--header 'Content-Type: text/csv' \
+--data-raw 'a,b
+1,2'
+```
