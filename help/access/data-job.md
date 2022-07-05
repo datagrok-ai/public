@@ -8,18 +8,18 @@ Data job defines all actions that are needed to produce a dashboard.
 Each data job consists of the following parts that are executed to produce a dataset:
 
 * Data queries (each with the corresponding connection)
-    * Cross-database querying
+  * Cross-database querying
 * Transformations applied to the data
-    * Standard, can be defined via UI (such as "Remove rows where $AGE is null")
-    * Out-of-the box domain-specific analyses
-        * Statistical process control
-        * Credit card transactions: fraud detection
-        * NLP: Sentiment analysis
-        * DSP: Spectral analysis
-        * ... and hundreds of other algorithms
-    * Dart scripts
-    * R / Python / Julia scripts
-    * External programs
+  * Standard, can be defined via UI (such as "Remove rows where $AGE is null")
+  * Out-of-the box domain-specific analyses
+    * Statistical process control
+    * Credit card transactions: fraud detection
+    * NLP: Sentiment analysis
+    * DSP: Spectral analysis
+    * ... and hundreds of other algorithms
+  * Dart scripts
+  * R / Python / Julia scripts
+  * External programs
 * Visual layouts applied to the tables
 * Definition of the summary page
 

@@ -10,9 +10,9 @@ Here are some of commonly used drag-and drop operations:
 
 * [Variables view](navigation.md#variables)
 * Columns
-    * Rearrange grid column order (drag by the grid column header)
-    * Drag into [Add New Column](../transform/add-new-column.md) dialog
-    * Drag into [Add New Column](../transform/add-new-column.md) dialog
+  * Rearrange grid column order (drag by the grid column header)
+  * Drag into [Add New Column](../transform/add-new-column.md) dialog
+  * Drag into [Add New Column](../transform/add-new-column.md) dialog
 
 ## Drag-and-dropping columns
 

@@ -179,15 +179,15 @@ More information about Datagrok design and components:
 9. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
 
 * Scripting:
-    * CVM Url: `http://<CVM_DNS>`
-    * CVM URL Client: `http://<CVM_DNS>`
-    * H2o Url: `http://<CVM_DNS>:54321`
-    * API Url: `http://<DATAGROK_DNS>/api`
-    * Cvm Split: `true`
+  * CVM Url: `http://<CVM_DNS>`
+  * CVM URL Client: `http://<CVM_DNS>`
+  * H2o Url: `http://<CVM_DNS>:54321`
+  * API Url: `http://<DATAGROK_DNS>/api`
+  * Cvm Split: `true`
 * Dev:
-    * CVM Url: `http://<CVM_DNS>`
-    * Cvm Split: `true`
-    * API Url: `http://<DATAGROK_DNS>/api`
+  * CVM Url: `http://<CVM_DNS>`
+  * Cvm Split: `true`
+  * API Url: `http://<DATAGROK_DNS>/api`
 
 ## Additional information
 

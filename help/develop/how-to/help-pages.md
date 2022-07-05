@@ -15,7 +15,7 @@ help directory will trigger help pages GitHub Actions workflow.
   linter
 * If the checks are finished successfully, GitHub will convert the markdown files to HTML
   using [pandoc](https://pandoc.org/) and deploy them to the server.
-    * The 'Deploy to server' step contains detailed information about changes that are made on the server.
+  * The 'Deploy to server' step contains detailed information about changes that are made on the server.
 * The result HTML help pages are also available as GitHub Actions artifact: `help_html_pages`
 
 If any error occurs during lint checks, the deployment to the server will be canceled.

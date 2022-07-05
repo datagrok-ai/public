@@ -15,16 +15,16 @@ It's always possible to edit the markup directly, but we have made it even easie
 quick links to add the following:
 
 * Common
-    * **Clear** - clears the markup
-    * **Summarize** - adds a quick summary for the current project
-    * **View links** - adds links to all views currently opened
+  * **Clear** - clears the markup
+  * **Summarize** - adds a quick summary for the current project
+  * **View links** - adds links to all views currently opened
 * Viewers
-    * Add viewers for the specified table
+  * Add viewers for the specified table
 * Statistics
-    * Add statistics for the specified table
+  * Add statistics for the specified table
 * Table
-    * **Table link** - adds a table link
-    * **Summarize** - adds table summary with columns in rows, and column tags as columns
+  * **Table link** - adds a table link
+  * **Summarize** - adds table summary with columns in rows, and column tags as columns
 * Column
 
 * Add project-related content from the left pane

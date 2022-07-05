@@ -8,21 +8,21 @@ data analytics to using custom applications on top of the platform. In this envi
 how exactly the platform is being used. Here are some of the reasons for doing so:
 
 * UX improvements
-    * Remove unused menu items, etc
+  * Remove unused menu items, etc
 * Understanding your users better
-    * Cluster usage by usage patterns
-    * Correlate usage patterns with the organizational groups
+  * Cluster usage by usage patterns
+  * Correlate usage patterns with the organizational groups
 * Data history tracking
-    * Track origin of datasets
-    * See history of modifications
-    * See all actions performed with an object (Activity tab)
+  * Track origin of datasets
+  * See history of modifications
+  * See all actions performed with an object (Activity tab)
 * Performance analysis
-    * See how long each operation takes
+  * See how long each operation takes
 * Function usage analysis
-    * Analyze function usage as a table of users, timestamps, inputs and outputs
+  * Analyze function usage as a table of users, timestamps, inputs and outputs
 * Error tracking
-    * See all errors across the platform
-    * See which actions are causing the errors
+  * See all errors across the platform
+  * See which actions are causing the errors
 
 Logs are stored in a [Postgres database](../develop/admin/architecture.md#data-engine) in a form that allows for easy
 analysis of event parameters (See the following tables: `events`, `event_types`,

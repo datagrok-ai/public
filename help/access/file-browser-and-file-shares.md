@@ -8,9 +8,9 @@
 * [Security](#security)
 * [Indexing](#indexing)
 * [Adding a file share](#adding-a-file-share)
-    * [File share options](#file-share-options)
+  * [File share options](#file-share-options)
 * [Sharing a file](#sharing-a-file)
-    * [Sharing a file as table (dataframe)](#sharing-a-file-as-a-table-dataframe)
+  * [Sharing a file as table (dataframe)](#sharing-a-file-as-a-table-dataframe)
 
 ## Overview
 

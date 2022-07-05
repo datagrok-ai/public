@@ -105,6 +105,6 @@ More information about Datagrok design and components:
 2. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
 
 * Scripting:
-    * CVM URL Client: `https://<CVM_DNS>`
+  * CVM URL Client: `https://<CVM_DNS>`
 * Dev:
-    * CVM Url: `https://<CVM_DNS>`
+  * CVM Url: `https://<CVM_DNS>`
