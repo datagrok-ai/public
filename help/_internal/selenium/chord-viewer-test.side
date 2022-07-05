@@ -462,7 +462,7 @@
           "id": "666d45c6-af03-4b75-af82-2b7e0dc5881a",
           "comment": "",
           "command": "executeScript",
-          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
+          "target": "element = document.querySelector(\"#rootDiv > div.layout-workarea-wrapper > div.d4-tab-header-stripe.vertical\"); event = new MouseEvent(\"contextmenu\", { bubbles: true, cancelable: false, view: window, button: 2, buttons: 0, clientX: element.getBoundingClientRect().x+1, clientY: element.getBoundingClientRect().y+1}); element.dispatchEvent(event);",
           "targets": [],
           "value": ""
         },
