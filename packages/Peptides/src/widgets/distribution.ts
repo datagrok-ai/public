@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from '../utils/constants';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {FilteringStatistics} from '../utils/filtering-statistics';
+import {Stats} from '../utils/filtering-statistics';
 import * as type from '../utils/types';
 
 export function getDistributionPlot(df: DG.DataFrame, valueCol: string, splitCol: string): DG.Viewer {
@@ -58,7 +58,7 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
     const hist = getDistributionPlot(table, valueColName, C.COLUMNS_NAMES.SPLIT_COL).root;
     hist.style.width = 'auto';
     elements.push(hist);
-    const stats = (table.temp[C.STATS] as FilteringStatistics).result;
+    const stats = table.temp[C.STATS] as Stats;
 
     if (stats && aarStr != allLabel) {
       const tableMap: StringDictionary = {
