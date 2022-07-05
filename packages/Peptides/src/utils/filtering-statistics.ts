@@ -6,9 +6,10 @@ export type Stats = {
   count: number,
   pValue: number,
   meanDifference: number,
+  ratio: number,
 };
 
-export function getStats(data: Float32Array, mask: DG.BitSet): Stats {
+export function getStats(data: Float32Array | number[], mask: DG.BitSet): Stats {
   const selected = new Float32Array(mask.trueCount);
   const rest = new Float32Array(mask.falseCount);
   let selectedIndex = 0;
@@ -21,5 +22,6 @@ export function getStats(data: Float32Array, mask: DG.BitSet): Stats {
     count: selected.length,
     pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'],
     meanDifference: currentMeanDiff,
+    ratio: selected.length / data.length,
   };
 }

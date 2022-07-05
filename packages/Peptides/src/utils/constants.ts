@@ -7,6 +7,8 @@ export enum COLUMNS_NAMES {
   POSITION = 'Pos',
   P_VALUE = 'pValue',
   MEAN_DIFFERENCE = 'Mean difference',
+  COUNT = 'Count',
+  RATIO = 'Ratio',
 }
 
 export enum CATEGORIES {
