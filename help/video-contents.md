@@ -233,7 +233,7 @@ Full video: [link](https://youtu.be/2xuxJjpjXi4)
 
 [JavaScript API]: https://www.youtube.com/watch?v=p7_qOU_IzLM&t=3568s
 
-[Development Environment]: https://www.youtube.com/watch?v=p7_qOU_IzM&t=4146s
+<!--[Development Environment]: https://www.youtube.com/watch?v=p7_qOU_IzM&t=4146s-->
 
 [JS API Overview]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=536s
 
@@ -371,7 +371,7 @@ Full video: [link](https://youtu.be/2xuxJjpjXi4)
 
 [Shape Map]: https://www.youtube.com/watch?v=7MBXWzdC0-I&t=3650s
 
-[Jupiter Notebooks Support]: https://www.youtube.com/watch?v=7MBXWdC0-I&t=3880s
+<!--[Jupiter Notebooks Support]: https://www.youtube.com/watch?v=7MBXWdC0-I&t=3880s-->
 
 [JS API for predictive modelling]: https://www.youtube.com/watch?v=JaJgxtHAb98&t=202s
 
