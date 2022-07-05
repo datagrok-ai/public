@@ -28,7 +28,7 @@ objects _entities_. Here they are:
 The following operations can be applied to any entity:
 
 * Getting its URL
-* Referencing it in a [chat](../collaborate/chat.md), in [markup](markup.md), or in a [dashboard](dashboard.md)
+* Referencing it in a [chat](../collaborate/chat.md), in [markup](markup.md), or in a [dashboard](../visualize/dashboard.md)
 * Assigning [privileges](../govern/authorization.md), such as rights to view, edit, or share, to a particular instance
 * Using it as a parameter in the [audit](../govern/audit.md) record
 * Deleting it

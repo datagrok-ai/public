@@ -35,4 +35,4 @@ clicks on that button.
 
 See also:
 
-* [Table view](table-view.md)
+* [Table view](../overview/table-view.md)

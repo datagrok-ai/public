@@ -73,7 +73,7 @@ were previously impossible to spot, resulting in the acceleration of data-driven
 * Built-in viewers: [regression lines](visualize/viewers/scatter-plot.md), confidence intervals,
   correlations, [statistical tests](learn/data-science.md)
 * Automatic detection of outliers, [missing values](transform/missing-values-imputation.md), wrong data types
-* Publish [dashboards](overview/dashboard.md)
+* Publish [dashboards](./visualize/dashboard.md)
 
 ## Machine learning
 
