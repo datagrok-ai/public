@@ -2,7 +2,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
 import {SequenceAlignment, Aligned} from './seq_align';
 
 export const _package = new DG.Package();
@@ -11,9 +10,6 @@ import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
 import {TableView} from 'datagrok-api/dg';
-import {mmSemType} from './const';
-import {Nucleotides} from '@datagrok-libraries/bio/src/nucleotides';
-import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -97,6 +93,7 @@ export async function compositionAnalysis(): Promise<void> {
   }
 }
 
+
 //name: importFasta
 //description: Opens FASTA file
 //tags: file-handler
@@ -107,32 +104,22 @@ export function importFasta(content: string): DG.DataFrame [] {
   const regex = /^>(.*)$/gm;
   const descriptions = [];
   const sequences = [];
-  let index = 0;
-  let match;
+  let startOfSequence = 0;
+  let match; // match.index is the beginning of the matched line
   while (match = regex.exec(content)) {
-    descriptions.push(content.substring(match.index + 1, regex.lastIndex));
-    if (index !== 0)
-      sequences.push(content.substring(index, regex.lastIndex));
-    index = regex.lastIndex + 1;
+    const description = content.substring(match.index + 1, regex.lastIndex);
+    descriptions.push(description);
+    if (startOfSequence !== 0) {
+      const seq = content.substring(startOfSequence, match.index);
+      const seqArray = seq.split(/\s/);
+      sequences.push(seqArray.join(''));
+    }
+    startOfSequence = regex.lastIndex + 1;
   }
-  sequences.push(content.substring(index));
+  sequences.push(content.substring(startOfSequence));
   const descriptionsCol = DG.Column.fromStrings('description', descriptions);
   const sequenceCol = DG.Column.fromStrings('sequence', sequences);
-
-  const stats: { freq: { [m: string]: number }, sameLength: boolean } = WebLogo.getStats(sequenceCol, 5, WebLogo.splitterAsFasta);
-  const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
-  const alphabetCandidates: [string, Set<string>][] = [
-    ['NT', new Set(Object.keys(Nucleotides.Names)),],
-    ['PT', new Set(Object.keys(Aminoacids.Names)),],
-  ];
-  // Calculate likelihoods for alphabet_candidates
-  const alphabetCandidatesSim: number[] = alphabetCandidates.map(
-    (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));
-  const maxCos = Math.max(...alphabetCandidatesSim);
-  const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
-  sequenceCol.semType = mmSemType;
-  sequenceCol.setTag(DG.TAGS.UNITS, `fasta:${seqType}:${alphabet}`);
-
+  sequenceCol.semType = 'Macromolecule';
   return [DG.DataFrame.fromColumns([
     descriptionsCol,
     sequenceCol,
