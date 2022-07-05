@@ -21,6 +21,32 @@ import {FunctionView} from './function-view';
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
 export class ComputationView extends FunctionView {
+  /** Find the function by fully specified name, link it to the view and constructs the view.
+    * If function name is not specified, calls {@link init} and {@link build} without FuncCall linkage.
+    * @stability Stable
+  */
+  constructor(funcName?: string) {
+    super();
+
+    ui.setUpdateIndicator(this.root, true);
+    if (funcName) {
+      grok.functions.eval(funcName).then(async (func: DG.Func) => {
+        const funccall = func.prepare({});
+        this.linkFunccall(funccall);
+        await this.init();
+        this.build();
+      }).finally(() => {
+        ui.setUpdateIndicator(this.root, false);
+      });
+    } else {
+      setTimeout(async () => {
+        await this.init();
+        this.build();
+        ui.setUpdateIndicator(this.root, false);
+      }, 0);
+    }
+  }
+
   /** Override to customize getting help feature
     * @stability Stable
   */
