@@ -11,6 +11,8 @@ import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
 import {convert} from './utils/convert';
 import {TableView} from 'datagrok-api/dg';
+import { getEmbeddingColsNames, sequenceSpace } from './utils/sequence-space';
+import { AvailableMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -57,12 +59,23 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //top-menu: Bio | Sequence Space...
 //name: Sequence Space
 //input: dataframe table
-//input: column smiles { semType: Macromolecule }
-//input: string methodName { choices:["UMAP", "t-SNE", "SPE", "pSPE", "OriginalSPE"] }
-//input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
+//input: column macroMolecule { semType: Macromolecule }
+//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
+//input: string similarityMetric { choices:["Levenshtein", "Tanimoto"] }
 //input: bool plotEmbeddings = true
-export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean): Promise<void> {
+export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
+  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean) : Promise<void> {
+    const embedColsNames = getEmbeddingColsNames(table);
+    const sequenceSpaceRes = await sequenceSpace(macroMolecule, methodName, similarityMetric, embedColsNames);
+    const embeddings = sequenceSpaceRes.coordinates;
+    for (const col of embeddings)
+      table.columns.add(col);
+    if (plotEmbeddings) {
+      for (let v of grok.shell.views) {
+        if (v.name === table.name)
+          (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1]});
+      }
+    } 
 };
 
 //top-menu: Bio | MSA...
