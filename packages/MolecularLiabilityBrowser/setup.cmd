@@ -1,7 +1,6 @@
 set package_dir=%cd%
 
-call unlink.cmd
-pause
+call setup-unlink-clean.cmd
 
 cd %package_dir%/../../js-api
 call npm install
@@ -31,28 +30,27 @@ cd %package_dir%
 call npm install
 call npm run link-all
 
-pause
 
-echo js-api ...
+echo Build js-api ...
 cd %package_dir%/../../js-api
 call npm run build
 
-echo Utils ...
+echo Build  utils ...
 cd %package_dir%/../../libraries/utils
 call npm run build
 
-echo bio ...
+echo Build bio ...
 cd %package_dir%/../../libraries/bio
 call npm run build
 
-echo Bio ...
+echo Build Bio ...
 cd %package_dir%/../../packages/Bio
 call npm run build
 
-echo MLB-Data ...
+echo Build MLB-Data ...
 cd %package_dir%/../../packages/MolecularLiabilityBrowserData
 call npm run build
 
-echo MLB ...
+echo Build MLB ...
 cd %package_dir%
 call npm run build
