@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis",
   "repository": {
     "type": "git",
@@ -27,7 +27,7 @@
   ],
   "dependencies": {
     "datagrok-api": "^1.4.0",
-    "@datagrok-libraries/ml": "^2.0.1",
+    "@datagrok-libraries/ml": "^2.0.2",
     "@datagrok-libraries/utils": "^0.4.1",
     "cash-dom": "latest",
     "dayjs": "latest",
