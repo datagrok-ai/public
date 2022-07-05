@@ -112,9 +112,9 @@ Turn your data into actionable insights by using state-of-the art machine learni
 * Create [pipelines](transform/job-editor.md), schedule [jobs](access/data-job.md), and set up alerts
 * [Customizable by IT](develop/admin/it-customizations.md)
 * Easy to learn the platform with
-    * [Interactive help](overview/navigation.md#help),
-    * [Community forum](https://community.datagrok.ai/),
-    * Tutorials (go to [Datagrok Public](https://public.datagrok.ai/), find "Help" section and select "Tutorials")
-    * [Video lessons](video-lessons.md) and platform overviews (full [list of topics](video-contents.md), including
+  * [Interactive help](overview/navigation.md#help),
+  * [Community forum](https://community.datagrok.ai/),
+  * Tutorials (go to [Datagrok Public](https://public.datagrok.ai/), find "Help" section and select "Tutorials")
+  * [Video lessons](video-lessons.md) and platform overviews (full [list of topics](video-contents.md), including
       selection [for developers](develop/getting-started.md#6-videos)
-    * [Exercises for developers](develop/exercises/exercises.md)
+  * [Exercises for developers](develop/exercises/exercises.md)
