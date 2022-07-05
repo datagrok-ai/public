@@ -7,7 +7,6 @@ import { EntityType } from './constants';
 import './styles.css';
 import * as tests from "./tests/test-examples";
 import {testManagerView, _renderTestManagerPanel} from "./package-testing";
-import {viewersGallery} from "./viewers-gallery";
 import { functionSignatureEditor } from './function-signature-editor';
 import { addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel } from './dev-panel';
 
@@ -67,25 +66,6 @@ export function _functionSignatureEditor(): void {
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type == 'ScriptView')
       functionSignatureEditor(view);
-  });
-}
-
-//description: ViewerGallery
-//tags: autostart
-export function _viewerGallery(): void { 
-  //grok.shell.topMenu.find('Add').separator().item('Add viewer...', ()=>viewersGallery())
-  grok.events.onViewAdded.subscribe((view) => {
-    if (view.type == 'TableView'){
-      let panel = view.getRibbonPanels();
-      panel[0][1].remove();
-      
-      let icon = ui.iconFA('', ()=>{viewersGallery()}, 'Add viewer');
-      icon.className = 'grok-icon svg-icon svg-add-viewer';
-
-      let btn = ui.div([icon]);
-      btn.className = 'd4-ribbon-item';
-      panel[0][0].after(btn)
-    }
   });
 }
 

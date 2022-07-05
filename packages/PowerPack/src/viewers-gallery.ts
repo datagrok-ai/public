@@ -2,8 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import '../css/viewers-gallery.css';
-import { filter } from 'rxjs';
 import { DataFrame, InputBase, TableView, View } from 'datagrok-api/dg';
 const cat_comparisons = [
     'Bar chart',
@@ -86,13 +84,12 @@ filterBox.classList.add('vg-root-filters');
 
 filterBox.style.maxWidth = '230px';
 
-let dlgTitle;
-let dlgFooter;
-let dlg;
+let dlgTitle: any;
+let dlgFooter: any;
+let dlg: any;
 let view: DG.TableView;
 
-let okBtn;
-//let okBtn = ui.bigButton('ADD',()=>{});
+let okBtn: any;
 
 let backBtn = ui.iconFA('arrow-left', () => {
     dlgFooter.hide();
@@ -111,7 +108,7 @@ backBtn.classList.add('far');
 
 export async function viewersGallery() {
 
-    let viewers = {};
+    let viewers: any = {};
     const table = grok.shell.t;
     view = grok.shell.tableView(table.name);
     let root = ui.box();
@@ -150,7 +147,7 @@ export async function viewersGallery() {
     showMore.className = 'ui-link vg-link vg-link-expand';
     $(showMore).attr('data-content', '\f078');
 
-    let search = ui.searchInput('', '', (value) => {
+    let search = ui.searchInput('', '', (value: String) => {
         clearRoot([recommend]);
         clearRoot([cards]);
         $(okBtn).hide();
@@ -344,7 +341,7 @@ export async function viewersGallery() {
 }
 
 function getFilter(inputs: InputBase[], viewers: any) {
-    let arr = [];
+    let arr: any[] = [];
     let values = [];
     for (let i in inputs) {
         arr = arr.concat(inputs[i].value);
