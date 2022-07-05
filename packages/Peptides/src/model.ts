@@ -10,7 +10,7 @@ import {ChemPalette} from './utils/chem-palette';
 import {MonomerLibrary} from './monomer-library';
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {FilteringStatistics} from './utils/filtering-statistics';
+import {getStats, Stats} from './utils/filtering-statistics';
 import {getSeparator, getTypedArrayConstructor, stringToBool} from './utils/misc';
 import {_package} from './package';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
@@ -527,7 +527,7 @@ export class PeptidesModel {
     const renderCell = (args: DG.GridCellRenderArgs): void => {
       const canvasContext = args.g;
       const bound = args.bounds;
-
+      
       canvasContext.save();
       canvasContext.beginPath();
       canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
@@ -728,16 +728,16 @@ export class PeptidesModel {
       updateEdfSelection();
     };
 
-    const recalculateStatistics =
-      (bitset: DG.BitSet): void => (this._dataFrame.temp[C.STATS] as FilteringStatistics).setMask(bitset);
-
+    const activityScaledCol = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
     filter.onChanged.subscribe(() => {
       changeBitset(filter, selection);
-      recalculateStatistics(filter);
+      const stats = getStats(activityScaledCol.getRawData() as Float32Array, filter);
+      this._dataFrame.temp[C.STATS] = stats;
     });
     selection.onChanged.subscribe(() => {
       changeBitset(selection, filter);
-      recalculateStatistics(selection);
+      const stats = getStats(activityScaledCol.getRawData() as Float32Array, selection);
+      this._dataFrame.temp[C.STATS] = stats;
     });
     this.isBitsetChangedInitialized = true;
   }
@@ -913,10 +913,8 @@ export class PeptidesModel {
       return;
     this.isInitialized = true;
     //calculate initial stats
-    const stats = new FilteringStatistics();
     const activityScaledCol = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
-    stats.setData(activityScaledCol.getRawData() as Float32Array);
-    stats.setMask(this._dataFrame.selection);
+    const stats = getStats(activityScaledCol.getRawData() as Float32Array, this._dataFrame.selection);
     this._dataFrame.temp[C.STATS] = stats;
 
     this.currentView = this._dataFrame.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
@@ -928,7 +926,6 @@ export class PeptidesModel {
     this._dataFrame.tags[C.PEPTIDES_ANALYSIS] = 'true';
     sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
     sourceGrid.columns.setOrder([this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
-
 
     this._dataFrame.temp[C.EMBEDDING_STATUS] = false;
     const adjustCellSize = (grid: DG.Grid): void => {
