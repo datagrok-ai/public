@@ -126,18 +126,48 @@ export async function helmToSmiles(helmString: string) {
   return await accessServer(url, 'SMILES');
 }
 
+function getRS(smiles: string) {
+  var new_s = smiles.match(/(?<=\[)[^\][]*(?=])/gm);
+  var res = {};
+  var el = '';
+  var digit;
+  for (var i = 0; i < new_s.length; i++) {
+    if (new_s[i] != null){
+      if (/\d/.test(new_s[i])) {
+        digit = new_s[i][new_s[i].length - 1];
+        new_s[i] = new_s[i].replace(/[0-9]/g, '');
+        for (var j = 0; j < new_s[i].length; j++) {
+            if (new_s[i][j] != ':'){
+                el += new_s[i][j];
+            }
+        }
+        res['R' + digit] = el;
+        el = '';
+      }
+    }
+  }
+  return res;
+}
+
 //name: Monomer Manager
 //input: column helmColumn {semType: Macromolecule}
 export function monomerManager(helmColumn: DG.Column) {
-  let manager = ui.div();
-  org.helm.webeditor.Adapter.init();
-  new scil.helm.MonomerLibApp(manager);
-  //@ts-ignore
-  ui.dialog({showHeader: false, showFooter: true})
-  .add(manager)
-  .onOK(() => {
-    manager;
-  }).show({ modal: true, fullScreen: true});
+  const file = await _package.files.readAsText('HELMCoreLibrary.json');
+  const df = DG.DataFrame.fromJson(file);
+  var m;
+  for (var i = 0; i < df.rowCount; i++){
+    m = {
+      'id': df.get('symbol', i).toString(), 
+      'n': df.get('name', i).toString(),
+      'na': df.get('naturalAnalog', i).toString(),
+      'type': df.get('polymerType', i).toString(),
+      'mt': df.get('monomerType', i).toString(), 
+      'm': df.get('molfile', i).toString(), 
+      rs: Object.keys(getRS(df.get('smiles', i).toString())).length,
+      at: getRS(df.get('smiles', i).toString()),
+    }
+    org.helm.webeditor.Monomers.addOneMonomer(m);
+  }
 }
 
 //name: helmColumnToSmiles
