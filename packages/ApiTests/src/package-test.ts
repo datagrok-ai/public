@@ -55,6 +55,9 @@ import './gui/filters';
 import './gui/unpivot';
 import './gui/scatter-plot'
 import './gui/bar-chart'
+import './gui/pie-chart'
+import './gui/histogram'
+import './gui/matrix-plot'
 
 
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
