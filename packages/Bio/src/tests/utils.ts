@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
-import * as grok from "datagrok-api/grok";
+import * as grok from 'datagrok-api/grok';
 import {expect} from '@datagrok-libraries/utils/src/test';
 import {runKalign} from '../utils/multiple-sequence-alignment';
-import { _package} from '../package-test';
+import {_package} from '../package-test';
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -42,5 +42,4 @@ export function _testTableIsNotEmpty(table: DG.DataFrame): void {
 export async function _testMSAIsCorrect(col: DG.Column): Promise<void> {
   const msaCol = await runKalign(col, true);
   expect(msaCol.toList().every((v, i) => (v == col.get(i) || v == null)), true);
-
 }
