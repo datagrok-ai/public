@@ -5,13 +5,13 @@
   },
   "beta": true,
   "friendlyName": "Datagrok bio library",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/utils": "^0.4.2",
+    "@datagrok-libraries/utils": "^1.0.0",
     "@types/wu": "latest",
     "cash-dom": "latest",
-    "datagrok-api": "^1.4.11",
+    "datagrok-api": "^1.4.12",
     "dayjs": "latest",
     "rxjs": "^6.5.5",
     "wu": "latest"
