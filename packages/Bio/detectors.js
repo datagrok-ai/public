@@ -42,6 +42,8 @@ class BioPackageDetectors extends DG.Package {
     if (statsAsChars.sameLength) {
       if (Object.keys(statsAsChars.freq).length > 0) { // require non empty alphabet
         const alphabet = BioPackageDetectors.detectAlphabet(statsAsChars.freq, alphabetCandidates, '-');
+        if (alphabet === 'UN') return null;
+
         const units = `fasta:SEQ.MSA:${alphabet}`;
         col.setTag(DG.TAGS.UNITS, units);
         return BioPackageDetectors.mmSemType;
@@ -52,7 +54,10 @@ class BioPackageDetectors extends DG.Package {
       const splitter = separator ? BioPackageDetectors.getSplitterWithSeparator(separator) : BioPackageDetectors.splitterAsFasta;
 
       const stats = BioPackageDetectors.getStats(col, 5, splitter);
+      // Empty monomer alphabet is not allowed
       if (Object.keys(stats.freq).length === 0) return null;
+      // Long monomer names for sequences with separators have constraints
+      if (separator && BioPackageDetectors.checkForbiddenWithSeparators(stats.freq)) return null;
 
       const format = separator ? 'separator' : 'fasta';
       const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
@@ -82,9 +87,11 @@ class BioPackageDetectors extends DG.Package {
     // !!! But there is a caveat because exceptionally frequent char can be a gap symbol in MSA.
     // !!! What is the difference between the gap symbol and separator symbol in stats terms?
     // const noSeparatorRe = /[a-z\d]+$/i;
-    const noSeparatorRe = /[HBCNOFPSKVYI]/i; // Mendeleev's periodic table single char elements
+    const noSeparatorChemRe = /[HBCNOFPSKVYI]/i; // Mendeleev's periodic table single char elements
+    const noSeparatorAlphaDigitRe = /[\dA-Z]/i;
     const cleanFreq = Object.assign({}, ...Object.entries(freq)
-      .filter(([m, f]) => !noSeparatorRe.test(m) &&
+      .filter(([m, f]) => m != ' ' &&
+        !noSeparatorChemRe.test(m) && !noSeparatorAlphaDigitRe.test(m) &&
         !BioPackageDetectors.AminoacidsFastaAlphabet.has(m) &&
         !BioPackageDetectors.NucleotidesFastaAlphabet.has(m))
       .map(([m, f]) => ({[m]: f})));
@@ -98,6 +105,12 @@ class BioPackageDetectors extends DG.Package {
       .map((kv) => kv[1]).reduce((pSum, a) => pSum + a, 0);
     const freqThreshold = 3.5 * (1 / Object.keys(freq).length);
     return sepFreq / otherSumFreq > freqThreshold ? sep : null;
+  }
+
+  /** With a separator, spaces are nor allowed in monomer names. */
+  static checkForbiddenWithSeparators(freq) {
+    const forbiddenRe = /[ ]/i;
+    return Object.keys(freq).filter((m) => forbiddenRe.test(m)).length > 0;
   }
 
   /** Without a separator, special symbols or digits are not allowed as monomers. */
@@ -193,9 +206,9 @@ class BioPackageDetectors extends DG.Package {
     return seq.split('');
   }
 
-  static getSplitterWithSeparator(sep) {
+  static getSplitterWithSeparator(separator) {
     return function(seq) {
-      return seq.split(sep);
+      return seq.split(separator);
     };
   }
 

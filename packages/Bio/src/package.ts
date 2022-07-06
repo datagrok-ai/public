@@ -2,19 +2,21 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {SequenceAlignment, Aligned} from './seq_align';
 
 export const _package = new DG.Package();
 
-import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {mmSemType} from './const';
+import {WebLogo, SeqColStats} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
+import {SequenceAlignment, Aligned} from './seq_align';
+import {Nucleotides} from '@datagrok-libraries/bio/src/nucleotides';
+import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 import {convert} from './utils/convert';
-import {TableView} from 'datagrok-api/dg';
-import { getEmbeddingColsNames, sequenceSpace } from './utils/sequence-space';
-import { AvailableMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
-import { getActivityCliffs } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import { sequenceGetSimilarities, drawTooltip } from './utils/sequence-activity-cliffs';
+import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
+import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cliffs';
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -58,7 +60,7 @@ export async function activityCliffs(df: DG.DataFrame, sequence: DG.Column, acti
   similarity: number, methodName: string): Promise<void> {
   const axesNames = getEmbeddingColsNames(df);
   const options = {
-    'SPE': { cycles: 2000, lambda: 1.0, dlambda: 0.0005 },
+    'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
   };
   const units = sequence!.tags[DG.TAGS.UNITS];
   await getActivityCliffs(
@@ -85,24 +87,24 @@ export async function activityCliffs(df: DG.DataFrame, sequence: DG.Column, acti
 //input: string similarityMetric { choices:["Levenshtein", "Tanimoto"] }
 //input: bool plotEmbeddings = true
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean) : Promise<void> {
-    const embedColsNames = getEmbeddingColsNames(table);
-    const chemSpaceParams = {
-      seqCol: macroMolecule,
-      methodName: methodName,
-      similarityMetric: similarityMetric,
-      embedAxesNames: embedColsNames
+  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<void> {
+  const embedColsNames = getEmbeddingColsNames(table);
+  const chemSpaceParams = {
+    seqCol: macroMolecule,
+    methodName: methodName,
+    similarityMetric: similarityMetric,
+    embedAxesNames: embedColsNames
+  };
+  const sequenceSpaceRes = await sequenceSpace(chemSpaceParams);
+  const embeddings = sequenceSpaceRes.coordinates;
+  for (const col of embeddings)
+    table.columns.add(col);
+  if (plotEmbeddings) {
+    for (const v of grok.shell.views) {
+      if (v.name === table.name)
+        (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1]});
     }
-    const sequenceSpaceRes = await sequenceSpace(chemSpaceParams);
-    const embeddings = sequenceSpaceRes.coordinates;
-    for (const col of embeddings)
-      table.columns.add(col);
-    if (plotEmbeddings) {
-      for (let v of grok.shell.views) {
-        if (v.name === table.name)
-          (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1]});
-      }
-    } 
+  }
 };
 
 //top-menu: Bio | MSA...
@@ -127,7 +129,7 @@ export async function compositionAnalysis(): Promise<void> {
   const wl = await col.dataFrame.plot.fromType('WebLogo', {});
 
   for (const v of grok.shell.views) {
-    if (v instanceof TableView && (v as DG.TableView).dataFrame.name === col.dataFrame.name) {
+    if (v instanceof DG.TableView && (v as DG.TableView).dataFrame.name === col.dataFrame.name) {
       (v as DG.TableView).dockManager.dock(wl.root, 'down');
       break;
     }
@@ -168,6 +170,22 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
   const descriptionsArrayCol = DG.Column.fromStrings('description', descriptionsArray);
   const sequenceCol = DG.Column.fromStrings('sequence', sequencesArray);
   sequenceCol.semType = 'Macromolecule';
+
+  const stats: SeqColStats = WebLogo.getStats(sequenceCol, 5, WebLogo.splitterAsFasta);
+  const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
+  const alphabetCandidates: [string, Set<string>][] = [
+    ['NT', new Set(Object.keys(Nucleotides.Names))],
+    ['PT', new Set(Object.keys(Aminoacids.Names))],
+  ];
+  // Calculate likelihoods for alphabet_candidates
+  const alphabetCandidatesSim: number[] = alphabetCandidates.map(
+    (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));
+  const maxCos = Math.max(...alphabetCandidatesSim);
+  const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
+  sequenceCol.semType = mmSemType;
+  const units: string = `fasta:${seqType}:${alphabet}`;
+  sequenceCol.setTag(DG.TAGS.UNITS, units);
+
   return [DG.DataFrame.fromColumns([
     descriptionsArrayCol,
     sequenceCol,
