@@ -13,14 +13,11 @@ category('activityCliffs', async () => {
     let actCliffsDf: DG.DataFrame;
 
     before(async () => {
-        //@ts-ignore
         actCliffsTableView = await createTableView('sample_MSA.csv');
-        //@ts-ignore
         actCliffsDf = await readDataframe('sample_MSA.csv');
     });
 
     test('activityCliffsOpen', async () => {
-        //@ts-ignore
         const axesNames = getEmbeddingColsNames(actCliffsDf);
         const units = actCliffsDf.col('MSA')!.tags[DG.TAGS.UNITS];
         const options = {

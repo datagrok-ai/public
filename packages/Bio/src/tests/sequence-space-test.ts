@@ -9,14 +9,18 @@ category('sequenceSpace', async () => {
     let testFastaDf: DG.DataFrame;
   
     before(async () => {
-        //@ts-ignore
         testFastaDf = await readDataframe('sample_FASTA.csv');
     });
   
   
     test('sequenceSpaceOpens', async () => {
-         //@ts-ignore
-        const res = await sequenceSpace(testFastaDf.col('Sequence')!, 't-SNE', 'Levenshtein', ['Embed_X', 'Embed_Y']);
+        const sequenceSpaceParams = {
+            seqCol: testFastaDf.col('Sequence')!,
+            methodName: 't-SNE',
+            similarityMetric: 'Levenshtein',
+            embedAxesNames: ['Embed_X', 'Embed_Y']
+          }
+        const res = await sequenceSpace(sequenceSpaceParams);
         expect(res.coordinates != undefined, true); 
         expect(res.distance != undefined, true); 
     });
