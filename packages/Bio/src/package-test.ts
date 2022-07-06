@@ -7,6 +7,7 @@ import './tests/Palettes-test';
 import './tests/detectors-test';
 import './tests/msa-tests';
 import './tests/sequence-space-test';
+import './tests/activity-cliffs-tests';
 
 export const _package = new DG.Package();
 export {tests};
