@@ -27,7 +27,7 @@
   ],
   "dependencies": {
     "datagrok-api": "^1.4.0",
-    "@datagrok-libraries/ml": "^2.0.5 <2.0.6 <2.0.7",
+    "@datagrok-libraries/ml": "^2.0.5 <2.0.6 <2.0.7 <2.0.8",
     "@datagrok-libraries/utils": "^0.4.1",
     "cash-dom": "latest",
     "dayjs": "latest",
