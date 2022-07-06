@@ -18,16 +18,16 @@ export async function initChem(): Promise<void> {
 
 
 //name: helmCellRenderer
-//tags: cellRenderer,cellRenderer-HELM
-//meta.cellType: HELM
-//meta-cell-renderer-sem-type: HELM
+//tags: cellRenderer,cellRenderer-Macromolecule
+//meta.cellType: Macromolecule
+//meta-cell-renderer-sem-type: Macromolecule
 //output: grid_cell_renderer result
 export function helmCellRenderer(): DG.GridCellRenderer {
   return new HelmCellRenderer();
 }
 
 //tags: cellEditor
-//description: HELM
+//description: Macromolecule
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell): void {
   let view = ui.div();
@@ -58,7 +58,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 
 //name: Details
 //tags: panel, widgets
-//input: string helmString {semType: HELM}
+//input: string helmString {semType: Macromolecule}
 //output: widget result
 export function detailsPanel(helmString: string){
   //return new DG.Widget(ui.divText(lru.get(helmString)));
@@ -91,7 +91,7 @@ async function accessServer(url: string, key: string) {
 
 
 //name: helmToFasta
-//input: string helmString {semType: HELM}
+//input: string helmString {semType: Macromolecule}
 //output: string res
 export async function helmToFasta(helmString: string) {
   const url = `http://localhost:8081/WebService/service/Fasta/Produce/${helmString}`
@@ -100,7 +100,7 @@ export async function helmToFasta(helmString: string) {
 
 //name: helmToRNA
 //description: converts to rna analogue sequence
-//input: string helmString {semType: HELM}
+//input: string helmString {semType: Macromolecule}
 //output: string res
 export async function helmToRNA(helmString: string) {
   const url = `http://localhost:8081/WebService/service/Fasta/Convert/RNA/${helmString}`
@@ -110,7 +110,7 @@ export async function helmToRNA(helmString: string) {
 
 //name: helmToPeptide
 //description: converts to peptide analogue sequence
-//input: string helmString {semType: HELM}
+//input: string helmString {semType: Macromolecule}
 //output: string res
 export async function helmToPeptide(helmString: string) {
   const url = `http://localhost:8081/WebService/service/Fasta/Convert/PEPTIDE/${helmString}`
@@ -119,7 +119,7 @@ export async function helmToPeptide(helmString: string) {
 
 //name: helmToSmiles
 //description: converts to smiles
-//input: string helmString {semType: HELM}
+//input: string helmString {semType: Macromolecule}
 //output: string smiles {semType: Molecule}
 export async function helmToSmiles(helmString: string) {
   const url = `http://localhost:8081/WebService/service/SMILES/${helmString}`
@@ -127,7 +127,7 @@ export async function helmToSmiles(helmString: string) {
 }
 
 //name: Monomer Manager
-//input: column helmColumn {semType: HELM}
+//input: column helmColumn {semType: Macromolecule}
 export function monomerManager(helmColumn: DG.Column) {
   let manager = ui.div();
   org.helm.webeditor.Adapter.init();
@@ -149,8 +149,8 @@ export function helmColumnToSmiles(helmColumn: DG.Column) {
 
 class HelmCellRenderer extends DG.GridCellRenderer {
 
-  get name() { return 'helm'; }
-  get cellType() { return 'helm'; }
+  get name() { return 'macromolecule'; }
+  get cellType() { return 'macromolecule'; }
   get defaultWidth(): number | null { return 400; }
   get defaultHeight(): number | null { return 100; }
 
