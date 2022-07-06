@@ -92,7 +92,7 @@ export class Viewer extends Widget {
 
   /**
    * Gets the serialized viewer options. [includeDefaults] flag specifies whether the
-   * properties with the defaults values should be returned. Not including default
+   * properties with the defauЫlts values should be returned. Not including default
    * properties makes it more clean and efficient for serialization purposes.
    *
    * See also {@link setOptions}
