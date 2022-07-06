@@ -49,7 +49,7 @@ export function vdRegionViewer() {
 }
 
 //top-menu: Bio | Sequence Activity Cliffs...
-//name: Sequence Activity Cliffs Test
+//name: Sequence Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe df [Input data table]
 //input: column sequence {semType: Macromolecule}
