@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os.path
+from datetime import datetime
 from types import SimpleNamespace
 
 import numpy as np
@@ -208,12 +209,21 @@ def build_antibody_anarci_table(antibody: sa.Table, scheme: str, chain: str, ana
 
 
 def build_schema(anarci_path: str):
+    list_version = sa.Table(
+        'list_version', meta_v2,
+        sa.Column('list_id', sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column('name', sa.String(), nullable=False, unique=True),
+        sa.Column('version', sa.String(), nullable=False),
+        # TODO: Use timestamp column and update it with triggers on list's tables
+    )
+
     antigen = sa.Table(
         'antigen', meta_v2,
         sa.Column('antigen_id', sa.Integer, primary_key=True, autoincrement=True),
         sa.Column('antigen', sa.String(), nullable=False, unique=True),
         sa.Column('antigen_ncbi_id', sa.String(), nullable=True),
-        sa.Column('antigen_gene_symbol', sa.String(), nullable=True))
+        sa.Column('antigen_gene_symbol', sa.String(), nullable=True)
+    )
 
     antibody = sa.Table(  # MLB
         'mlb_main', meta_public,
@@ -316,6 +326,7 @@ def build_schema(anarci_path: str):
     )
 
     return SimpleNamespace(
+        list_version=list_version,
         antigen=antigen,
         antibody=antibody,
         antibody2antigen=antibody2antigen,

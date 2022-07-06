@@ -27,10 +27,13 @@
     "@phylocanvas/phylocanvas.gl": "^1.43.0",
     "cash-dom": "latest",
     "datagrok-api": "^1.4.10",
+    "dexie": "^3.2.2",
     "logojs-react": "^2.1.1",
     "rxjs": "^6.5.5",
     "ts-loader": "^9.2.5",
+    "ts-transformer-keys": "^0.4.3",
     "typescript": "^4.5.4",
+    "uint8-to-base64": "^0.2.0",
     "weighted": "^1.0.0"
   },
   "devDependencies": {
@@ -48,8 +51,8 @@
     "link-bio": "npm link @datagrok-libraries/bio",
     "link-data": "npm link @datagrok/molecular-liability-browser-data",
     "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio @datagrok/bio @datagrok/molecular-liability-browser-data",
-    "debug-mlb": "grok publish local --rebuild",
-    "local-mlb": "grok publish local",
+    "debug-local": "grok publish local",
+    "release-local": "grok publish local --release",
     "build": "webpack",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix"

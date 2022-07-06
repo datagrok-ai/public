@@ -37,19 +37,18 @@ export class MiscMethods {
     for (let i = 0; i < steps; i++)
       interpolatedColorArray.push(interpolateColor(colors1, colors2, stepFactor * i));
 
-
     return interpolatedColorArray;
   }
 
   // ---- Resizing ----
   static setDockSize(view: DG.TableView, node: DG.DockNode, nodeContent: HTMLElement | DG.Viewer): DG.DockNode {
-    const rootNodeHeight = view.dockManager.rootNode.container.containerElement.clientHeight;
-    let newHeight = 0;
-    //@ts-ignore
-    newHeight = $('#feature-viewer').outerHeight(true) + 55;
-    newHeight = rootNodeHeight != 0 ? 1 / (rootNodeHeight / newHeight) : 0.5;
+    const rootNodeHeight: number = view.dockManager.rootNode.container.containerElement.clientHeight;
 
     //@ts-ignore
-    return view.dockManager.dock(nodeContent, 'down', node, 'Sequence', newHeight.toFixed(2));
+    const newHeight = $('#feature-viewer').outerHeight(true) + 57;
+    const ratioHeight: number = rootNodeHeight != 0 ? 1 / (rootNodeHeight / newHeight) : 0.5;
+
+    //@ts-ignore
+    return view.dockManager.dock(nodeContent, 'down', node, 'Sequence', ratioHeight);
   }
 }
