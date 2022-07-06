@@ -4,12 +4,12 @@
     "access": "public"
   },
   "fullName": "Utils",
-  "version": "0.7.2",
+  "version": "1.0.0",
   "description": "Common utilities",
   "dependencies": {
     "@types/node": "^14.14.37",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.0",
+    "datagrok-api": "^1.4.12",
     "dts-bundle": "^0.7.3",
     "exceljs": "^4.3.0",
     "html2canvas": "^1.4.1",
