@@ -151,7 +151,7 @@ function getRS(smiles: string) {
 
 //name: Monomer Manager
 //input: column helmColumn {semType: Macromolecule}
-export function monomerManager(helmColumn: DG.Column) {
+export async function monomerManager(helmColumn: DG.Column) {
   const file = await _package.files.readAsText('HELMCoreLibrary.json');
   const df = DG.DataFrame.fromJson(file);
   var m;
