@@ -3,8 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model-handler';
 import {onboardModel} from './onboard-model';
+import {Subscription} from "rxjs";
 
 /* eslint-disable */
+
+let propsSub: Subscription;
 
 export class ModelCatalogView extends DG.CustomCardView {
 
@@ -47,28 +50,18 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.initRibbon();
     this.initMenu();
     this.currentCall = grok.functions.getCurrentCall();
-    //this.initFavorites().then((_) => {});
+    if (propsSub == null && window.localStorage.getItem('ModelCatalogShowProperties') == null) { // @ts-ignore
+        propsSub = grok.events.onCurrentObjectChanged.subscribe((o) => {
+                if (new ModelHandler().isApplicable(o.sender)) {
+                  grok.shell.windows.showProperties = true;
+                  window.localStorage.setItem('ModelCatalogShowProperties', 'false');
+                  propsSub.unsubscribe();
+                }
+              })
+      }
   }
 
   currentCall: DG.FuncCall;
-
-  async initFavorites() {
-    let fav = await grok.dapi.functions.filter('starredBy = @current #model').list();
-    for (let f of fav) {
-      //console.log(f.name);
-      let fc = f.prepare();
-      fc.parentCall = this.currentCall;
-      let v = DG.View.create();
-      v.name = f.name;
-      v.parentView = this;
-      v.parentCall = fc;
-
-      grok.shell.addView(v);
-      // @ts-ignore
-      v.temp.model = f;
-      ModelHandler.openModel(f, this.currentCall);
-    }
-  }
 
   initRibbon() {
     this.setRibbonPanels([[ui.icons.sync(() => this.refresh())]]);

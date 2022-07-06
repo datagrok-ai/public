@@ -65,7 +65,19 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderDetails(x: DG.Func) {
-    return ui.divV([ui.markdown(x.description), ui.span([ui.render(x.author), ' created ', ui.render(x.createdOn)])], {style: {lineHeight: '150%'}});
+    let educationLink = ui.link('Education materials', x.options['education']);
+    ui.setDisplay(educationLink, x.options['education'] != null);
+    let video = ui.link('Video', x.options['video']);
+    ui.setDisplay(video, x.options['video'] != null);
+    let status = ui.markdown(`Status: ${x.options['dev.status']}`);
+    ui.setDisplay(status, x.options['dev.status'] != null);
+    return ui.divV([
+      status,
+      ui.markdown(x.description),
+      ui.tags(x),
+      educationLink,
+      video
+    ], {style: {lineHeight: '150%'}});
   }
 
   renderTooltip(x: DG.Func) {
@@ -125,7 +137,7 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   init() {
-     setTimeout(() => {
+    setTimeout(() => {
       grok.functions.onBeforeRunAction.subscribe((fc) => {
         if (fc.func.hasTag('model') || fc.func.hasTag('model-editor')) {
           ModelHandler.bindModel(fc);
