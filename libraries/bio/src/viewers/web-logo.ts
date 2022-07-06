@@ -718,23 +718,34 @@ export class WebLogo extends DG.JsViewer {
    * @return {string[]} array of monomers
    */
   public static splitterAsFasta(seq: any): string[] {
-    const res: string[] = wu<RegExpMatchArray>(seq.toString().matchAll(WebLogo.monomerRe)).map((ma: RegExpMatchArray) => {
-      let mRes: string;
-      const m: string = ma[0];
-      if (m.length > 1) {
-        if (m in WebLogo.aaSynonyms) {
-          mRes = WebLogo.aaSynonyms[m];
+    const res: string[] = wu<RegExpMatchArray>(seq.toString().matchAll(WebLogo.monomerRe))
+      .map((ma: RegExpMatchArray) => {
+        let mRes: string;
+        const m: string = ma[0];
+        if (m.length > 1) {
+          if (m in WebLogo.aaSynonyms) {
+            mRes = WebLogo.aaSynonyms[m];
+          } else {
+            mRes = '';
+            console.debug(`Long monomer '${m}' has not a short synonym.`);
+          }
         } else {
-          mRes = '';
-          console.debug(`Long monomer '${m}' has not a short synonym.`);
+          mRes = m;
         }
-      } else {
-        mRes = m;
-      }
-      return mRes;
-    }).toArray();
+        return mRes;
+      }).toArray();
 
     return res;
+  }
+
+  /** Gets method to split sequence by separator
+   * @param {string} separator
+   * @return {SplitterFunc}
+   */
+  public static getSplitterWithSeparator(separator: string): SplitterFunc {
+    return (seq: string) => {
+      return seq.split(separator);
+    };
   }
 
   /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
