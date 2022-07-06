@@ -16,8 +16,8 @@ import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {renderSARCell, setAARRenderer} from './utils/cell-renderer';
 import {substitutionsWidget} from './widgets/subst-table';
-import {getDistributionWidget} from './widgets/distribution';
-import {getStats} from './utils/filtering-statistics';
+import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
+import {getStats, Stats} from './utils/filtering-statistics';
 
 export class PeptidesModel {
   static _modelName = 'peptidesModel';
@@ -552,26 +552,26 @@ export class PeptidesModel {
           const table = cell.grid.table;
           const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
             table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
-          const query = `${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ` +
-            `${table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex)} ` +
-            `and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
+          const currentAAR = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
+          const currentStatsDf = this.statsDf.rows.match({Pos: currentPosition, AAR: currentAAR}).toDataFrame();
 
-          const tooltipMap: { [index: string]: string } = {};
-          for (const col of this.statsDf.columns.names()) {
-            if (col !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE && col !== C.COLUMNS_NAMES.POSITION) {
-              const textNum = this.statsDf.groupBy([col]).where(query).aggregate().get(col, 0);
-              let text = `${col === 'Count' ? textNum : textNum.toFixed(3)}`;
+          if (currentStatsDf.rowCount != 0) {
+            const activityCol = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+            const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
+            const currentPosCol = this._dataFrame.getCol(currentPosition);
+            splitCol.init((i) => currentPosCol.get(i) == currentAAR);
+            const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
+            const stats: Stats = {
+              count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
+              ratio: currentStatsDf.get(C.COLUMNS_NAMES.RATIO, 0),
+              pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
+              meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
+            };
+            const tooltip = getDistributionAndStats(
+              distributionTable, stats, `${currentPosition} : ${currentAAR}`, 'Other', true);
 
-              if (col === 'Count')
-                text += ` / ${this._dataFrame.rowCount}`;
-              else if (col === C.COLUMNS_NAMES.P_VALUE)
-                text = parseFloat(text) !== 0 ? text : '<0.01';
-
-              tooltipMap[col === C.COLUMNS_NAMES.P_VALUE ? 'p-value' : col] = text;
-            }
+            ui.tooltip.show(tooltip, x, y);
           }
-
-          ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
         }
       }
       return true;
