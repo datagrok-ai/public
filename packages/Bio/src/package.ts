@@ -13,6 +13,8 @@ import {convert} from './utils/convert';
 import {TableView} from 'datagrok-api/dg';
 import { getEmbeddingColsNames, sequenceSpace } from './utils/sequence-space';
 import { AvailableMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
+import { getActivityCliffs } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import { sequenceGetSimilarities, drawTooltip } from './utils/sequence-activity-cliffs';
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -48,12 +50,31 @@ export function vdRegionViewer() {
 //name: Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe df [Input data table]
-//input: column smiles {type:categorical; semType: Macromolecule}
+//input: column sequence {semType: Macromolecule}
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
-export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
+export async function activityCliffs(df: DG.DataFrame, sequence: DG.Column, activities: DG.Column,
   similarity: number, methodName: string): Promise<void> {
+  const axesNames = getEmbeddingColsNames(df);
+  const options = {
+    'SPE': { cycles: 2000, lambda: 1.0, dlambda: 0.0005 },
+  };
+  const units = sequence!.tags[DG.TAGS.UNITS];
+  await getActivityCliffs(
+    df,
+    sequence,
+    axesNames,
+    activities,
+    similarity,
+    'Levenshtein',
+    methodName,
+    DG.SEMTYPE.MACROMOLECULE,
+    units,
+    sequenceSpace,
+    sequenceGetSimilarities,
+    drawTooltip,
+    (options as any)[methodName]);
 }
 
 //top-menu: Bio | Sequence Space...
@@ -66,7 +87,14 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
   similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean) : Promise<void> {
     const embedColsNames = getEmbeddingColsNames(table);
-    const sequenceSpaceRes = await sequenceSpace(macroMolecule, methodName, similarityMetric, embedColsNames);
+    const chemSpaceParams = {
+      seqCol: macroMolecule,
+      methodName: methodName,
+      similarityMetric: similarityMetric,
+      embedAxesNames: embedColsNames
+    }
+    //@ts-ignore
+    const sequenceSpaceRes = await sequenceSpace(chemSpaceParams);
     const embeddings = sequenceSpaceRes.coordinates;
     for (const col of embeddings)
       table.columns.add(col);

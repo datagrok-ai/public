@@ -4,34 +4,34 @@ import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/s
 import {BitArrayMetrics, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import { Matrix } from '@datagrok-libraries/utils/src/type-declarations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import { ISequenceSpaceParams } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
 export interface ISequenceSpaceResult {
   distance: Matrix;
   coordinates: DG.ColumnList;
 }
 
-export async function sequenceSpace(molColumn: DG.Column, methodName: string, similarityMetric: string,
-    axes: string[], options?: any): Promise<ISequenceSpaceResult> {
+export async function sequenceSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
     let preparedData: any;
-    if (!(molColumn!.tags[DG.TAGS.UNITS] === 'HELM')) {
-      const sep = molColumn.getTag('separator');
+    if (!(spaceParams.seqCol!.tags[DG.TAGS.UNITS] === 'HELM')) {
+      const sep = spaceParams.seqCol.getTag('separator');
       const sepFinal = sep ? sep === '.' ? '\\\.' : sep: '-';  
       var regex = new RegExp(sepFinal, "g");
-      if (Object.keys(AvailableMetrics['String']).includes(similarityMetric)) {
-          preparedData = molColumn.toList().map((v) => v.replace(regex, '')) as string[];
+      if (Object.keys(AvailableMetrics['String']).includes(spaceParams.similarityMetric)) {
+          preparedData = spaceParams.seqCol.toList().map((v) => v.replace(regex, '')) as string[];
       } else {
-          preparedData = molColumn.toList().map((v) => v.replace(regex, '')) as string[];
+          preparedData = spaceParams.seqCol.toList().map((v) => v.replace(regex, '')) as string[];
       }
     } else {
-      preparedData = molColumn.toList();
+      preparedData = spaceParams.seqCol.toList();
     }
     
     const sequenceSpaceResult = await reduceDimensinalityWithNormalization(
       preparedData,
-      methodName,
-      similarityMetric as StringMetrics|BitArrayMetrics,
-      options);
-    const cols: DG.Column[] = axes.map((name, index) => DG.Column.fromFloat32Array(name, sequenceSpaceResult.embedding[index]))
+      spaceParams.methodName,
+      spaceParams.similarityMetric as StringMetrics|BitArrayMetrics,
+      spaceParams.options);
+    const cols: DG.Column[] = spaceParams.embedAxesNames.map((name, index) => DG.Column.fromFloat32Array(name, sequenceSpaceResult.embedding[index]))
     return {distance: sequenceSpaceResult.distance, coordinates: new DG.ColumnList(cols)};
   }
 

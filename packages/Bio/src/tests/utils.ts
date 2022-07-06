@@ -15,6 +15,15 @@ export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
   return df;
 }
 
+export async function createTableView(tableName: string): Promise<DG.TableView> {
+  const df = await readDataframe(tableName);
+  df.name = tableName.replace('.csv', '');
+  //@ts-ignore
+  const view = grok.shell.addTableView(df);
+  //@ts-ignore
+  return view;
+}
+
 
 /**
  * Tests if a table has non zero rows and columns.
