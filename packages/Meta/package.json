@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.75",
+  "version": "1.0.76",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -1170,6 +1170,9 @@
         },
         "1.4.2": {
           "datagrok-api": "^1.4.11"
+        },
+        "1.5.1": {
+          "datagrok-api": "^1.4.12"
         }
       },
       "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
