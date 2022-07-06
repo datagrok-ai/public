@@ -149,10 +149,10 @@ function parseMacromolecule(
 //description: Opens FASTA file
 //tags: file-handler
 //meta.ext: fasta, fna, ffn, faa, frn, fa
-//input: string content
+//input: string fileContent
 //output: list tables
 export function importFasta(fileContent: string): DG.DataFrame [] {
-  const regex = /^>(.*)$/gm; // match the line starting with >
+  const regex = /^>(.*)$/gm; // match lines starting with >
   const descriptionsArray = [];
   const sequencesArray: string[] = [];
   let startOfSequence = 0;
