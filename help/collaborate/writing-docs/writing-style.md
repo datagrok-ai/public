@@ -1,4 +1,12 @@
-# Basics of technical writing
+# Writing style
+
+Use fewer words, better. Don't overwhelm users with information. [Use concise and clear
+language](##language-and-grammar) and follow the guidelines for [content
+types](/collaborate/writing-docs/content-types.md). Rather than repeating information from another topic, link to it
+instead.
+
+For topics not covered in this guide, see [Google Developer Documentation Style
+Guide](https://developers.google.com/style).
 
 ## Language and grammar
 
@@ -14,11 +22,12 @@ Datagrok documentation should be clear and easy to understand:
 * [Write compound words and words with prefixes without hyphens or spaces](###Compound-words-and-words-with-prefixes).
 * [Contractions](###contractions) are OK because we write in an informal tone.
 * [Spell out: acronyms on first use and numbers from zero to nine](###acronyms-and-numbers).
-* For usage and spelling of specific words, see the [Word list](../contribute%20to%20docs/word-list.md).
+* For usage and spelling of specific words, see the [Word list](./word-list.md).
 
 ### Conciseness
 
-Conciseness is about using the fewest words while retaining completeness in meaning. You can achieve conciseness in several ways:
+Conciseness is about using the fewest words while retaining completeness in meaning. You can achieve conciseness in
+several ways:
 
 * Shorten words and phrases.
 
@@ -59,7 +68,8 @@ Conciseness is about using the fewest words while retaining completeness in mean
   |the reason why    | why                   |
   |past experience   | experience            |
 
-* Avoid sentences starting with _there is_, _here is_, _it is_, and similar (that is, sentences with no true subjects). Use this tips:
+* Avoid sentences starting with _there is_, _here is_, _it is_, and similar (that is, sentences with no true subjects).
+  Use this tips:
 
     1. First, identify an actor.
     1. Then, find the key action and make it a verb.
@@ -77,7 +87,8 @@ Conciseness is about using the fewest words while retaining completeness in mean
   | It is necessary for you to do A. | You must do A.          |
   | Follow all of the steps below.   | Follow the steps below. |
 
-  _Tip:_ If a step is optional, start with the word _optional_ followed by a period. For example: _Step 3._ Optional. Change the size by dragging the bottom right corner.
+  _Tip:_ If a step is optional, start with the word _optional_ followed by a period. For example: _Step 3._ Optional.
+  Change the size by dragging the bottom right corner.
 
 * Simplify long, complicated sentences.
 
@@ -96,7 +107,10 @@ Conciseness is about using the fewest words while retaining completeness in mean
 
 ### Active voice
 
-Avoid using passive voice. When you use passive voice, you imply that the doer of the action is unknown, unimportant, or cannot be named for any reason. Because technical writing is action-oriented, the use of active voice is preferred. Never end a sentence with a passive word. Place the subject and verd close to each other and put them at the front of a sentence.
+Avoid using passive voice. When you use passive voice, you imply that the doer of the action is unknown, unimportant, or
+cannot be named for any reason. Because technical writing is action-oriented, the use of active voice is preferred.
+Never end a sentence with a passive word. Place the subject and verd close to each other and put them at the front of a
+sentence.
 
 | Instead of                                |Use                        |
 |:------------------------------------------|:--------------------------|
@@ -106,22 +120,28 @@ Avoid using passive voice. When you use passive voice, you imply that the doer o
 
 ### Pronouns
 
-Use the second person point of view (you) instead of a third person point of view (he/she). If you must use the third person, use plural pronouns (they, their) instead of single pronouns (he/she, his/her).
+Use the second person point of view (you) instead of a third person point of view (he/she). If you must use the third
+person, use plural pronouns (they, their) instead of single pronouns (he/she, his/her).
 
 _Note_: Avoid using words that explicitly favor one gender, such as _guys_ or _businessman/businesswoman_.
 
 ### Words that minimize the difficulty
 
-Avoid using words that minimize the difficulty involved in a task or operation, such as _just_ or _simply_. People may become frustrated when they do not find a step as straightforward or simple as it is implied to be.
+Avoid using words that minimize the difficulty involved in a task or operation, such as _just_ or _simply_. People may
+become frustrated when they do not find a step as straightforward or simple as it is implied to be.
 
 ### Capitalization
 
-Use sentence case. Sentence case refers to a capitalization style in which only the first word and proper nouns or acronyms are uppercased:
+Use sentence case. Sentence case refers to a capitalization style in which only the first word and proper nouns or
+acronyms are uppercased:
 
-* Capitalize names of third party organizations and products (such as _Slack_), methods, or methodologies (such as _Agile_).
+* Capitalize names of third party organizations and products (such as _Slack_), methods, or methodologies (such as
+  _Agile_).
 * For headings, capitalize the first word only.
-* When referring to specific user interface text, like a menu item, use the same capitalization that the user interface shows.
-* For bulleted lists, always capitalize the first word, including the text that completes an explanatory or introductory text (ending with a colon). For example:
+* When referring to specific user interface text, like a menu item, use the same capitalization that the user interface
+  shows.
+* For bulleted lists, always capitalize the first word, including the text that completes an explanatory or introductory
+  text (ending with a colon). For example:
 
   You have several options:
   * First option
@@ -129,11 +149,14 @@ Use sentence case. Sentence case refers to a capitalization style in which only 
 
 ### Compound words and words with prefixes
 
-We tend to use the closed form of compound words and words with prefixes; that is, write these words without a space or a hyphen (for example, a _dataset_ or an _open source_ plugin). For the list of commonly used terms, see [Word list](../contribute%20to%20docs/word-list.md).
+We tend to use the closed form of compound words and words with prefixes; that is, write these words without a space or
+a hyphen (for example, a _dataset_ or an _open source_ plugin). For the list of commonly used terms, see [Word
+list](./word-list.md).
 
 ### Contractions
 
-You can use most types of contractions. Negation contractions (such as _isn't_ or _don't_) are even helpful because it's harder to misread _don't_ compared to _do not_. However, avoid contractions formed from nouns and verbs:
+You can use most types of contractions. Negation contractions (such as _isn't_ or _don't_) are even helpful because it's
+harder to misread _don't_ compared to _do not_. However, avoid contractions formed from nouns and verbs:
 
 |Instead of                           |Use                             |
 |:------------------------------------|:-------------------------------|
@@ -141,9 +164,11 @@ You can use most types of contractions. Negation contractions (such as _isn't_ o
 
 ### Acronyms and numbers
 
-If you use an acronym, spell it out on the first use on a page. You don't need to spell it out more than once on a page. If you can, avoid using acronyms in headings.
+If you use an acronym, spell it out on the first use on a page. You don't need to spell it out more than once on a page.
+If you can, avoid using acronyms in headings.
 
-When using numbers in the text, spell out zero through nine, and use numbers for 10 and greater. For more guidance, see [Google Developer Documentation Style Guide](https://developers.google.com/style/numbers?hl=en).
+When using numbers in the text, spell out zero through nine, and use numbers for 10 and greater. For more guidance, see
+[Google Developer Documentation Style Guide](https://developers.google.com/style/numbers?hl=en).
 
 ### Clause order
 
@@ -161,11 +186,15 @@ Mentioning the goal or circumstance first lets the user skip the instruction if 
 
 ### Paragraphs
 
-The first sentence of a paragraph is a topic sentence describing that paragraph's central idea. State that idea upfront, then build on it. When reading technical documentation, users often look for a specific piece of information. When they know the topic, users can skip the paragraph if that paragraph's information is irrelevant to their needs.
+The first sentence of a paragraph is a topic sentence describing that paragraph's central idea. State that idea upfront,
+then build on it. When reading technical documentation, users often look for a specific piece of information. When they
+know the topic, users can skip the paragraph if that paragraph's information is irrelevant to their needs.
 
-Never assume users have read every word in the preceding paragraph. Don't start a paragraph with a pronoun or words like _but_ or _however_. Every paragraph should encapsulate an idea that can stand on its own.
+Never assume users have read every word in the preceding paragraph. Don't start a paragraph with a pronoun or words like
+_but_ or _however_. Every paragraph should encapsulate an idea that can stand on its own.
 
-Follow the 1:1 rule: one paragraph, one idea. Remove any sentences that neither clarify the idea in that paragraph, nor logically connect this paragraph and the next.
+Follow the 1:1 rule: one paragraph, one idea. Remove any sentences that neither clarify the idea in that paragraph, nor
+logically connect this paragraph and the next.
 
 End the paragraph with a sentence that summarizes the topic sentence.
 
@@ -181,7 +210,8 @@ Follow these guidelines for punctuation:
   * If a list item is a complete sentence (with a subject and a verb), add a period in the end.
   * Use no punctuation after bullets that are not complete sentences.
   * Be consistent. Don't mix sentences and individual items in a list.
-  * Separate list items from introductory or explanatory text with a colon. Also, for numbered lists, italicize the numbered list items to make them visually stand out.
+  * Separate list items from introductory or explanatory text with a colon. Also, for numbered lists, italicize the
+    numbered list items to make them visually stand out.
 
     For example:
 
@@ -191,7 +221,8 @@ Follow these guidelines for punctuation:
 
 ### Commas and appositives
 
-An appositive is a noun or a phrase placed next to another noun or a phrase to modify it. Appositives can be restrictive and nonrestrictive. The following table summarises the use of commas with appositives:
+An appositive is a noun or a phrase placed next to another noun or a phrase to modify it. Appositives can be restrictive
+and nonrestrictive. The following table summarises the use of commas with appositives:
 
 |                |Restrictive             |Nonrestrictive                |
 |:---------------|:-----------------------|:-----------------------------|
