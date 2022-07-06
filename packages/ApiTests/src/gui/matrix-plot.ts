@@ -32,7 +32,7 @@ category('Viewers: Matrix Plot', () => {
     closeBtn.click(); await delay(1000);
 
     for (let i:number = 0; i < Array.from(v.viewers).length; i++) {
-        if (Array.from(v.viewers)[i].type == 'Histogram') {
+        if (Array.from(v.viewers)[i].type == 'Matrix Plot') {
             throw 'Matrix Plot viewer was not closed'
         }
     }
