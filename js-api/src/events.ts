@@ -97,6 +97,8 @@ export class Events {
 
   get onCurrentViewChanged(): rxjs.Observable<any> { return __obs('d4-current-view-changed'); }
 
+  get onCurrentObjectChanged(): rxjs.Observable<any> { return __obs('d4-current-object-changed'); }
+
   get onCurrentCellChanged(): rxjs.Observable<any> { return __obs('d4-current-cell-changed'); }
 
   get onDialogShown(): rxjs.Observable<Dialog> { return __obs('d4-dialog-showed'); }
@@ -216,6 +218,10 @@ export class EventData<TArgs = any> {
   /** @type {UIEvent} */
   get causedBy(): UIEvent {
     return api.grok_EventData_Get_CausedBy(this.dart);
+  }
+
+  get sender(): any {
+    return toJs(api.grok_EventData_Get_Sender(this.dart));
   }
 
   /** Whether the default event handling is prevented. See also {@link preventDefault}
