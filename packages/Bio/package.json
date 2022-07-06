@@ -13,7 +13,7 @@
     "@biowasm/aioli": ">=2.4.0",
     "@datagrok-libraries/bio": "^2.2.0",
     "@datagrok-libraries/utils": "^0.4.2",
-    "@datagrok-libraries/ml": "^2.0.5",
+    "@datagrok-libraries/ml": "^2.0.5 <2.0.6",
     "cash-dom": "latest",
     "datagrok-api": "^1.4.11",
     "dayjs": "latest",
