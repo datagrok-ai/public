@@ -93,12 +93,14 @@ MWRSWY-CKHP
     peptidesComplex = 'PeptidesComplex',
     fastaCsv = 'FastaCsv',
     msaComplex = 'MsaComplex',
+    idCsv = 'IdCsv',
   }
 
   const samples: { [key: string]: string } = {
-    'PeptidesComplex': 'System:AppData/Bio/samples/peptides_complex_aligned.csv',
+    'PeptidesComplex': 'System:AppData/Bio/samples/peptides_complex_msa.csv',
     'FastaCsv': 'System:AppData/Bio/samples/sample_FASTA.csv',
     'MsaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
+    'IdCsv': 'System:AppData/Bio/samples/id.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -182,6 +184,10 @@ MWRSWY-CKHP
   });
   test('samplesMsaComplexNegativeActivity', async () => {
     await _testNeg(readSamplesCsv(Samples.msaComplex), 'Activity');
+  });
+
+  test('samplesIdCsvNegativeID', async () => {
+    await _testNeg(readSamplesCsv(Samples.idCsv), 'ID');
   });
 });
 
