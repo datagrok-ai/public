@@ -11,6 +11,8 @@ export class TreeViewer extends EChartViewer {
   symbolSize: number;
   hierarchyColumnNames: string[];
   animation: boolean;
+  sizeColumnName: string;
+  sizeAggrType: string;
 
   constructor() {
     super();
@@ -26,6 +28,8 @@ export class TreeViewer extends EChartViewer {
       'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
     ] });
     this.symbolSize = this.int('symbolSize', 7);
+    this.sizeColumnName = this.string('sizeColumnName');
+    this.sizeAggrType = this.string('sizeAggrType', DG.AGG.AVG, { choices: Object.values(DG.AGG) });
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
 
     this.option = {
@@ -77,7 +81,7 @@ export class TreeViewer extends EChartViewer {
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
-    if (p?.name === 'hierarchyColumnNames')
+    if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName')
       this.render();
     else
       super.onPropertyChanged(p, render);
@@ -99,13 +103,20 @@ export class TreeViewer extends EChartViewer {
   }
 
   getSeriesData() {
-    return [Utils.toTree(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter)];
+    const aggregations = [];
+    if (this.sizeColumnName)
+      aggregations.push({ type: <DG.AggregationType>this.sizeAggrType, columnName: this.sizeColumnName, propertyName: 'size' });
+
+    return [Utils.toTree(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter, null, aggregations)];
   }
 
   render() {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
 
+    this.option.series[0]['symbolSize'] = this.sizeColumnName ?
+      (value: number, params: {[key: string]: any}) => params.data.size : this.symbolSize;
+    // TODO: map a number from range (?, ?) to (2, 20)
     super.render();
   }
 }

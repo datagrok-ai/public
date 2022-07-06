@@ -6,7 +6,8 @@ import * as echarts from 'echarts';
 
 export class Utils {
   static toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
-    visitNode: ((arg0: treeDataType) => void) | null = null, linkSelection: boolean = true): treeDataType {
+    visitNode: ((arg0: treeDataType) => void) | null = null, aggregations:
+      aggregationInfo[] = [], linkSelection: boolean = true): treeDataType {
     const data: treeDataType = {
       name: 'All',
       value: 0,
@@ -14,18 +15,27 @@ export class Utils {
       children: [],
     };
 
-    const aggregated = dataFrame
+    const builder = dataFrame
       .groupBy(splitByColumnNames)
       .count()
-      .whereRowMask(rowMask)
-      .aggregate();
+      .whereRowMask(rowMask);
 
-    if (linkSelection)
+    for (const aggregation of aggregations) {
+      data[aggregation.propertyName] = 0; //TODO: accept custom initial values
+      builder.add(aggregation.type, aggregation.columnName, aggregation.propertyName);
+    }
+
+    const aggregated = builder.aggregate();
+
+    if (linkSelection) {
       grok.data.linkTables(dataFrame, aggregated, splitByColumnNames,
         splitByColumnNames, [DG.SYNC_TYPE.SELECTION_TO_SELECTION], true);
+    }
 
     const countCol = aggregated.columns.byName('count');
     const columns = aggregated.columns.byNames(splitByColumnNames);
+    const propNames = aggregations.map((a) => a.propertyName);
+    const aggrColumns = aggregated.columns.byNames(propNames);
     const parentNodes: (treeDataType | null)[] = columns.map((_) => null);
 
     const selectedPaths: string[] = [];
@@ -38,20 +48,30 @@ export class Utils {
       }
       if (node.children && node.children.length > 0) {
         let parentSelected = true;
-        for (const child of node.children) {
+        for (const child of node.children)
           parentSelected = markSelectedNodes(child) && parentSelected;
-        }
+
         if (parentSelected) {
           node.itemStyle = selectedNodeStyle;
           return true;
         }
       }
       return false;
-    }
+    };
+
+    function aggregateParentNodes(node: treeDataType): void {
+      // grok.functions.call(`${DG.AGG}(node.children.map((child) => child[prop]))`)
+      if (!node.children)
+        return;
+      node.children.forEach(aggregateParentNodes);
+      for (const prop of propNames)
+        node[prop] = node.children.reduce((sum, child) => sum += child[prop], 0) / node.children.length;
+    };
 
     for (let i = 0; i < aggregated.rowCount; i++) {
       const idx = i === 0 ? 0 : columns.findIndex((col) => col.get(i) !== col.get(i - 1));
       const value = countCol.get(i);
+      const aggrValues = aggrColumns.reduce((obj, col) => (obj[col.name] = col.get(i), obj), <{ [key: string]: number }>{});
       if (aggregated.selection.get(i))
         selectedPaths.push(columns.map((col) => col.getString(i)).join(' | '));
 
@@ -63,6 +83,9 @@ export class Utils {
           path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
           value: 0,
         };
+        if (colIdx === columns.length - 1)
+          propNames.forEach((prop) => node[prop] = aggrValues[prop]);
+
         parentNodes[colIdx] = node;
 
         if (!parentNode!.children)
@@ -77,6 +100,7 @@ export class Utils {
       data.value += value;
     }
 
+    aggregateParentNodes(data);
     console.log(JSON.stringify(data));
     markSelectedNodes(data);
 
@@ -117,7 +141,8 @@ export class Utils {
   }
 }
 
-type treeDataType = {name: string, value: number, path: null | string, children?: treeDataType[], itemStyle?: { color?: string }};
+type treeDataType = { name: string, value: number, path: null | string, children?: treeDataType[], itemStyle?: { color?: string }, [prop: string]: any };
+type aggregationInfo = { type: DG.AggregationType, columnName: string, propertyName: string };
 
 
 export class EChartViewer extends DG.JsViewer {
