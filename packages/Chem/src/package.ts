@@ -14,7 +14,7 @@ import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
-import {getActivityCliffs} from './analysis/activity-cliffs';
+import {drawTooltip} from './analysis/activity-cliffs';
 import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
@@ -36,6 +36,7 @@ import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import {RDMol} from './rdkit-api';
 import Sketcher = chem.Sketcher;
 import { Viewer } from 'datagrok-api/dg';
+import { getActivityCliffs } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -250,7 +251,25 @@ export function saveAsSdf(): void {
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
   similarity: number, methodName: string) : Promise<void> {
-  await getActivityCliffs(df, smiles, activities, similarity, methodName);
+ // await getActivityCliffs(df, smiles, activities, similarity, methodName);
+ const axesNames = getEmbeddingColsNames(df);
+ const options = {
+  'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
+};
+ await getActivityCliffs(
+  df, 
+  smiles, 
+  axesNames, 
+  activities, 
+  similarity, 
+  'Tanimoto',
+  methodName,
+  DG.SEMTYPE.MOLECULE,
+  'smiles',
+  chemSpace,
+  chemSearches.chemGetSimilarities,
+  drawTooltip,
+  (options as any)[methodName]);
 }
 
 //top-menu: Chem | Chemical Space...
@@ -264,7 +283,13 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, m
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
 
     const embedColsNames = getEmbeddingColsNames(table);
-    const chemSpaceRes = await chemSpace(smiles, methodName, similarityMetric, embedColsNames);
+    const chemSpaceParams = {
+      seqCol: smiles,
+      methodName: methodName,
+      similarityMetric: similarityMetric,
+      embedAxesNames: embedColsNames
+    }
+    const chemSpaceRes = await chemSpace(chemSpaceParams);
     const embeddings = chemSpaceRes.coordinates;
     for (const col of embeddings)
       table.columns.add(col);

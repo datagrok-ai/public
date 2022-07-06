@@ -6,22 +6,18 @@ import {reduceDimensinalityWithNormalization} from '@datagrok-libraries/ml/src/s
 import {Fingerprint} from '../utils/chem-common';
 import { Matrix } from '@datagrok-libraries/utils/src/type-declarations';
 import { IReduceDimensionalityResult } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
+import {ISequenceSpaceParams, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
-export interface IChemSpaceResult {
-  distance: Matrix;
-  coordinates: DG.ColumnList;
-}
 
-export async function chemSpace(molColumn: DG.Column, methodName: string, similarityMetric: string,
-  axes: string[], options?: any): Promise<IChemSpaceResult> {
+export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
 
-  const fpColumn = await chemGetFingerprints(molColumn, Fingerprint.Morgan);
+  const fpColumn = await chemGetFingerprints(spaceParams.seqCol, Fingerprint.Morgan);
   const chemSpaceResult: IReduceDimensionalityResult= await reduceDimensinalityWithNormalization(
     fpColumn,
-    methodName,
-    similarityMetric as BitArrayMetrics,
-    options);
-  const cols: DG.Column[] = axes.map((name, index) => DG.Column.fromFloat32Array(name, chemSpaceResult.embedding[index]))
+    spaceParams.methodName,
+    spaceParams.similarityMetric as BitArrayMetrics,
+    spaceParams.options);
+  const cols: DG.Column[] = spaceParams.embedAxesNames.map((name, index) => DG.Column.fromFloat32Array(name, chemSpaceResult.embedding[index]));
   return {distance: chemSpaceResult.distance, coordinates: new DG.ColumnList(cols)};
 }
 
