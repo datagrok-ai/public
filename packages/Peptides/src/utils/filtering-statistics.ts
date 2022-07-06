@@ -18,10 +18,11 @@ export function getStats(data: Float32Array | number[], mask: DG.BitSet): Stats 
 
   const testResult = tTest(selected, rest);
   const currentMeanDiff = testResult['Mean difference']!;
+  const realCount = selected.length || data.length;
   return {
-    count: selected.length,
+    count: realCount,
     pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'],
     meanDifference: currentMeanDiff,
-    ratio: selected.length / data.length,
+    ratio: realCount / data.length,
   };
 }

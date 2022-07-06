@@ -3,32 +3,19 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from '../utils/constants';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {getStats} from '../utils/filtering-statistics';
+import {getStats, Stats} from '../utils/filtering-statistics';
 import * as type from '../utils/types';
-
-export function getDistributionPlot(df: DG.DataFrame, valueCol: string, splitCol: string): DG.Viewer {
-  return df.plot.histogram({
-    filteringEnabled: false,
-    valueColumnName: valueCol,
-    splitColumnName: splitCol,
-    legendVisibility: 'Never',
-    showXAxis: true,
-    showColumnSelector: false,
-    showRangeSlider: false,
-  });
-}
 
 const allLabel = 'All';
 
 export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   const splitCol = table.col(C.COLUMNS_NAMES.SPLIT_COL);
+  const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
   const selectionObject: type.SelectionObject = JSON.parse(table.tags[C.TAGS.SELECTION]);
   if (!splitCol || !selectionObject)
     return new DG.Widget(ui.divText('No distribution'));
 
   const positions = Object.keys(selectionObject);
-  let currentColor = DG.Color.toHtml(DG.Color.blue);
-  const otherColor = DG.Color.toHtml(DG.Color.blue);
   let aarStr = allLabel;
   let otherStr = '';
 
@@ -46,33 +33,44 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
     }
     aarStr = aarStr.slice(0, aarStr.length - 2);
     otherStr = 'Other';
-    currentColor = DG.Color.toHtml(DG.Color.orange);
   }
 
-  const currentLabel = ui.label(aarStr, {style: {color: currentColor}});
-  const otherLabel = ui.label(otherStr, {style: {color: otherColor}});
-  const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
+  const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
+  const stats = getStats(activityScaledCol.toList(), table.selection);
+  return new DG.Widget(getDistributionAndStats(distributionTable, stats, aarStr, otherStr));
+}
 
-  const getContent = (): HTMLDivElement => {
-    const valueColName = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!.name;
-    const hist = getDistributionPlot(table, valueColName, C.COLUMNS_NAMES.SPLIT_COL).root;
-    hist.style.width = 'auto';
-    elements.push(hist);
+export function getDistributionAndStats(
+    table: DG.DataFrame, stats: Stats, thisLabel: string, otherLabel: string = '', isTooltip: boolean = false,
+  ): HTMLDivElement {
+  const labels = ui.divV([
+    ui.label(thisLabel, {style: {color: DG.Color.toHtml(otherLabel == '' ? DG.Color.blue : DG.Color.orange)}}),
+    ui.label(otherLabel, {style: {color: DG.Color.toHtml(DG.Color.blue)}})]);
 
-    //TODO: use model to get stats
-    if (aarStr != allLabel) {
-      const stats = getStats(table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).toList(), table.selection);
-      const tableMap: StringDictionary = {
-        'Statistics:': '',
-        'Count': stats.count.toString(),
-        'p-value': stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(2),
-        'Mean difference': stats.meanDifference.toFixed(2),
-      };
+  const histRoot = table.plot.histogram({
+    filteringEnabled: false,
+    valueColumnName: table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)?.name,
+    splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
+    legendVisibility: 'Never',
+    showXAxis: true,
+    showColumnSelector: false,
+    showRangeSlider: false,
+    showBinSelector: !isTooltip,
+    backColor: isTooltip ? '#fdffe5' : '#fffff',
+  }).root;
+  histRoot.style.width = 'auto';
 
-      elements.push(ui.tableFromMap(tableMap));
-    }
-    return ui.divV(elements);
+  const tableMap: StringDictionary = {
+    'Statistics:': '',
+    'Count': stats.count.toString(),
+    'Ratio': stats.ratio.toFixed(2),
+    'p-value': stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(2),
+    'Mean difference': stats.meanDifference.toFixed(2),
   };
 
-  return new DG.Widget(getContent());
+  const result = ui.divV([labels, histRoot, ui.tableFromMap(tableMap)]);
+  result.style.minWidth = '200px';
+  if (isTooltip)
+    histRoot.style.maxHeight = '150px';
+  return result;
 }
