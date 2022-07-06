@@ -280,7 +280,7 @@ function checkCursorOnLine(event: any, canvas: any, lines: ILine[]): ILine | nul
 function renderLines(sp: DG.ScatterPlotViewer,
   xAxis: string, yAxis: string, linesRes: IRenderedLines, saliVals: number[], saliOpacityCoef: number, saliMin: number): ILine [] {
   const lines = linesRes.lines;
-  const canvas = sp.getInfo()['canvas'];
+  const canvas = (sp.getInfo() as {[index: string] : any})['canvas'];
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
   const x = sp.dataFrame!.columns.byName(xAxis);
   const y = sp.dataFrame!.columns.byName(yAxis);
@@ -301,7 +301,6 @@ function renderLines(sp: DG.ScatterPlotViewer,
   return lines;
 }
 
-
 function createLines(
   n1: number[], 
   n2: number[], 
@@ -317,12 +316,12 @@ function createLines(
     lines.push({id: i, mols: [num1, num2], selected: false, a: [], b: []});
   }
   const linesDf = DG.DataFrame.create(lines.length);
-  linesDf.columns.addNewString('1_seq').init((i) => seq.get(lines[i].mols[0]));
-  linesDf.columns.addNewString('2_seq').init((i) => seq.get(lines[i].mols[1]));
+  linesDf.columns.addNewString('1_seq').init((i: number) => seq.get(lines[i].mols[0]));
+  linesDf.columns.addNewString('2_seq').init((i: number) => seq.get(lines[i].mols[1]));
   linesDf.columns.addNewFloat('act_diff')
-    .init((i) => Math.abs(activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1])));
-  linesDf.columns.addNewInt('line_index').init((i) => i);
-  linesDf.columns.addNewFloat('sali').init((i) => saliVals[i]);
+    .init((i: number) => Math.abs(activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1])));
+  linesDf.columns.addNewInt('line_index').init((i: number) => i);
+  linesDf.columns.addNewFloat('sali').init((i: number) => saliVals[i]);
   linesDf.col('1_seq')!.tags[DG.TAGS.UNITS] = units;
   linesDf.col('2_seq')!.tags[DG.TAGS.UNITS] = units;
   linesDf.col('1_seq')!.semType = semType;
