@@ -48,8 +48,8 @@ export function vdRegionViewer() {
   return new VdRegionsViewer();
 }
 
-//top-menu: Bio | Activity Cliffs...
-//name: Activity Cliffs
+//top-menu: Bio | Sequence Activity Cliffs...
+//name: Sequence Activity Cliffs Test
 //description: detect activity cliffs
 //input: dataframe df [Input data table]
 //input: column sequence {semType: Macromolecule}
