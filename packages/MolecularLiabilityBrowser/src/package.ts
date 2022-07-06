@@ -27,13 +27,26 @@ let dl: DataLoader;
 //     return null;
 // }
 
+function fromStartInit(): string {
+  return ((Date.now() - _startInit) / 1000).toString();
+}
+
 //tags: init
 export async function initMlb() {
   _startInit = Date.now();
   const pi = DG.TaskBarProgressIndicator.create('MLB: initMlb() Loading filters data...');
 
-  const dataSourceSettings: string = await grok.functions.call(`${dataPackageName}:getPackageProperty`,
-    {propertyName: 'DataSource'});
+  // const dataSourceSettings: string = await grok.functions.call(`${dataPackageName}:getPackageProperty`,
+  //   {propertyName: 'DataSource'});
+
+  console.debug('MLB: initMlb() start, ' + `${fromStartInit()} s`);
+  // Package property is a long call as well as getting serverVersionDf from database
+  const [dataSourceSettings, serverListVersionDf]: [string, DG.DataFrame] = await Promise.all([
+    grok.functions.call(`${dataPackageName}:getPackageProperty`, {propertyName: 'DataSource'}),
+    grok.functions.call(`${_package.name}:getListVersion`)
+  ]);
+  console.debug('MLB: initMlb() MLB-Data property + serverListVersion, ' + `${fromStartInit()}`);
+
   switch (dataSourceSettings) {
   case DataLoaderType.Files:
     dl = new DataLoaderFiles();
@@ -46,7 +59,7 @@ export async function initMlb() {
   }
   console.debug(`MLB: initMLB() data loaded before init ${((Date.now() - _startInit) / 1000).toString()} s`);
 
-  await dl.init();
+  await dl.init(_startInit, serverListVersionDf);
   console.debug(`MLB: initMLB() after init ${((Date.now() - _startInit) / 1000).toString()} s`);
 
   pi.close();

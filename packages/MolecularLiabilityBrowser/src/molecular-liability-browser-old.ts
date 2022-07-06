@@ -525,19 +525,22 @@ export class MolecularLiabilityBrowserOld {
        Secondly merge them to common positions sequence.
        Thirdly build sequences by common po
      */
-    const hChainDf = await this.dataLoader.loadHChainDf();
-    const lChainDf = await this.dataLoader.loadLChainDf();
-    [{name: 'Heavy', df: hChainDf}, {name: 'Light', df: lChainDf}].forEach((chain) => {
-      const seqCol = this.mergeSequenceColumns(chain.df, chain.name);
-      grok.data.joinTables(
-        this.mlbTable, chain.df,
-        ['v id'], ['Id'],
-        (this.mlbTable.columns as DG.ColumnList).names(), [seqCol.name],
-        DG.JOIN_TYPE.LEFT, true);
 
-      // crutch, because grok.data.joinTables() loses right table columns tags
-      this.mlbTable.col(seqCol.name).setTag('positionNames', chain.df.col(seqCol.name).getTag('positionNames'));
-    });
+    // commented out to remove old methods from DataLoader
+    // const hChainDf = await this.dataLoader.loadHChainDf();
+    // const lChainDf = await this.dataLoader.loadLChainDf();
+    // [{name: 'Heavy', df: hChainDf}, {name: 'Light', df: lChainDf}].forEach((chain) => {
+    //   const seqCol = this.mergeSequenceColumns(chain.df, chain.name);
+    //   grok.data.joinTables(
+    //     this.mlbTable, chain.df,
+    //     ['v id'], ['Id'],
+    //     (this.mlbTable.columns as DG.ColumnList).names(), [seqCol.name],
+    //     DG.JOIN_TYPE.LEFT, true);
+    //
+    //   // crutch, because grok.data.joinTables() loses right table columns tags
+    //   this.mlbTable.col(seqCol.name).setTag('positionNames', chain.df.col(seqCol.name).getTag('positionNames'));
+    // });
+
     //#endregion -- Build columns with multiple alignments --
 
     pi.close();

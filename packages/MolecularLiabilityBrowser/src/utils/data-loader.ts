@@ -3,8 +3,6 @@ import * as grok from 'datagrok-api/grok';
 
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 
-import {_package} from '../package';
-
 export interface FilterPropertiesType {
   source: string;
   names: string[];
@@ -102,7 +100,7 @@ export abstract class DataLoader {
 
   abstract get refDf(): DG.DataFrame;
 
-  abstract init();
+  abstract init(startInit: number, serverListVersionDf: DG.DataFrame);
 
   protected async check_files(files: { [name: string]: string }): Promise<void> {
     // for (const filePath of Object.values(files)) {
@@ -111,7 +109,7 @@ export abstract class DataLoader {
     // }
     const fileNames = Object.values(files);
     const fileErrors: string[] = (await Promise.all(
-      fileNames.map((filePath) => { return _package.files.exists(filePath); })
+      fileNames.map((filePath) => { return grok.dapi.files.exists(`System:AppData/${this._pName}/${filePath}`); })
     ).then((exists) => fileNames.filter((v, i) => !exists[i])));
 
     if (fileErrors.length > 0)
@@ -146,15 +144,16 @@ export abstract class DataLoader {
     return df;
   }
 
-  /**
-   * Heavy chain calculated data
-   */
-  abstract loadHChainDf(): Promise<DG.DataFrame>;
-
-  /**
-   * Light chain calculated data
-   */
-  abstract loadLChainDf(): Promise<DG.DataFrame>;
+  // deprecated to load all data at once
+  // /**
+  //  * Heavy chain calculated data
+  //  */
+  // abstract loadHChainDf(): Promise<DG.DataFrame>;
+  //
+  // /**
+  //  * Light chain calculated data
+  //  */
+  // abstract loadLChainDf(): Promise<DG.DataFrame>;
 
   /**
    * TODO: Some description of data structure purpose

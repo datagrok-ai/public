@@ -567,7 +567,8 @@ export class MolecularLiabilityBrowser {
       const tempDf = DG.DataFrame.fromCsv(['"v id"'].join(','));
       this.treeBrowser = (await tempDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
       await this.treeBrowser.setData(this.treeDf, this.mlbDf);
-      this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
+      //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
+      this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.FILL, null, 'Clone');
     } else {
       await this.treeBrowser.setData(this.treeDf, this.mlbDf);
     }
@@ -700,7 +701,7 @@ export class MolecularLiabilityBrowser {
           this.dataLoader.getLayoutBySchemeCdr(this.schemeName, this.cdrName),
         ]);
       const t2 = Date.now();
-      console.debug(`MLB: MolecularLiabilityBrowser.loadData() load duration, ${((t2 - t1) / 1000).toString()} s`);
+      console.debug(`MLB: MolecularLiabilityBrowser.loadData() load ET, ${((t2 - t1) / 1000).toString()} s`);
 
       await this.setData(
         MolecularLiabilityBrowser.prepareDataMlbDf(mlbDf, hChainDf, lChainDf,
@@ -709,7 +710,7 @@ export class MolecularLiabilityBrowser {
         regions);
 
       const t3 = Date.now();
-      console.debug(`MLB: MolecularLiabilityBrowser.loadData() prepare duration, ${((t3 - t2) / 1000).toString()} s`);
+      console.debug(`MLB: MolecularLiabilityBrowser.loadData() prepare ET, ${((t3 - t2) / 1000).toString()} s`);
     } finally {
       pi.close();
     }

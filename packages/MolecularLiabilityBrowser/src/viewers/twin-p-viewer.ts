@@ -16,13 +16,13 @@ export class TwinPviewer {
   pVizHostH: HTMLElement;
 
   //representations: string[];
-  repChoice: DG.InputBase;
-  cdrScheme: DG.InputBase;
-  ptmChoices: DG.InputBase;
-  ptmMotifChoices: DG.InputBase;
-  ptmObsChoices: DG.InputBase;
-  ptmProb: DG.InputBase;
-  paratopes: DG.InputBase;
+  repChoiceInput: DG.InputBase;
+  cdrSchemeInput: DG.InputBase;
+  ptmChoicesInput: DG.InputBase;
+  ptmMotifChoicesInput: DG.InputBase;
+  ptmObsChoicesInput: DG.InputBase;
+  ptmProbInput: DG.InputBase;
+  paratopesInput: DG.InputBase;
   sequenceTabs: DG.TabControl;
 
   accOptions: DG.Accordion;
@@ -53,6 +53,10 @@ export class TwinPviewer {
   pdbStr: PdbType;
   jsonObsPtm: ObsPtmType;
 
+  public get cdrScheme() { return this.cdrSchemeInput.value;}
+
+  public set cdrScheme(value: string) { this.cdrSchemeInput.value = value; }
+
   constructor(dataLoader: DataLoader) {
     this.dataLoader = dataLoader;
   }
@@ -70,16 +74,16 @@ export class TwinPviewer {
 
     // ---- INPUTS ----
     const representations = ['cartoon', 'backbone', 'ball+stick', 'licorice', 'hyperball', 'surface'];
-    this.repChoice = ui.choiceInput('Representation', 'cartoon', representations);
+    this.repChoiceInput = ui.choiceInput('Representation', 'cartoon', representations);
 
     const schemesLst = MiscMethods.extractSchemes(json);
-    this.cdrScheme = ui.choiceInput('CDR3 Scheme', 'default', schemesLst);
+    this.cdrSchemeInput = ui.choiceInput('CDR3 Scheme', 'default', schemesLst);
 
     this.root = ui.div();
     this.changeChoices();
 
-    this.ptmProb = ui.floatInput('PTM probability', 0.2);
-    this.paratopes = ui.boolInput('Paratopes', false);
+    this.ptmProbInput = ui.floatInput('PTM probability', 0.2);
+    this.paratopesInput = ui.boolInput('Paratopes', false);
 
     // ---- VIEWER CONTAINERS ----
     this.nglHost = ui.div([], 'd4-ngl-viewer');
@@ -153,13 +157,13 @@ export class TwinPviewer {
     };
 
     await this.ngl.init(mlbView, this.pdbStr, this.jsonStr, this.colorScheme, this.nglHost,
-      this.repChoice, this.cdrScheme, this.paratopes, this.twinSelections);
+      this.repChoiceInput, this.cdrSchemeInput, this.paratopesInput, this.twinSelections);
 
-    const obsChoice = this.ptmObsChoices !== undefined ? this.ptmObsChoices.value : null;
+    const obsChoice = this.ptmObsChoicesInput !== undefined ? this.ptmObsChoicesInput.value : null;
 
     await this.pViz.init(this.jsonStr, this.jsonObsPtm, this.colorScheme, this.pVizHostH, this.pVizHostL,
-      this.ptmChoices.value, this.ptmMotifChoices.value, obsChoice, this.cdrScheme,
-      this.paratopes, this.ptmProb.value, this.twinSelections);
+      this.ptmChoicesInput.value, this.ptmMotifChoicesInput.value, obsChoice, this.cdrSchemeInput,
+      this.paratopesInput, this.ptmProbInput.value, this.twinSelections);
 
     MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs.root);
 
@@ -167,41 +171,41 @@ export class TwinPviewer {
       this.ngl.render(false);
     });
 
-    this.repChoice.onChanged(async () => {
-      this.ngl.repChoice = this.repChoice;
+    this.repChoiceInput.onChanged(async () => {
+      this.ngl.repChoice = this.repChoiceInput;
       reload(true);
     });
 
-    this.cdrScheme.onChanged(async () => {
-      this.ngl.cdrScheme = this.cdrScheme;
-      this.pViz.cdrMapping(this.cdrScheme);
+    this.cdrSchemeInput.onChanged(async () => {
+      this.ngl.cdrScheme = this.cdrSchemeInput;
+      this.pViz.cdrMapping(this.cdrSchemeInput);
       reload(false);
     });
 
-    this.paratopes.onChanged(async () => {
-      this.ngl.paratopes = this.paratopes;
-      this.pViz.parMapping(this.paratopes);
+    this.paratopesInput.onChanged(async () => {
+      this.ngl.paratopes = this.paratopesInput;
+      this.pViz.parMapping(this.paratopesInput);
       reload(false);
     });
 
-    this.ptmChoices.onChanged(async () => {
-      this.pViz.ptmMapping(this.ptmChoices.value, this.ptmProb.value);
+    this.ptmChoicesInput.onChanged(async () => {
+      this.pViz.ptmMapping(this.ptmChoicesInput.value, this.ptmProbInput.value);
       reload(false);
     });
 
-    this.ptmProb.onChanged(async () => {
-      this.pViz.ptmMapping(this.ptmChoices.value, this.ptmProb.value);
+    this.ptmProbInput.onChanged(async () => {
+      this.pViz.ptmMapping(this.ptmChoicesInput.value, this.ptmProbInput.value);
       reload(false);
     });
 
-    this.ptmMotifChoices.onChanged(async () => {
-      this.pViz.motMapping(this.ptmMotifChoices.value, this.ptmProb.value);
+    this.ptmMotifChoicesInput.onChanged(async () => {
+      this.pViz.motMapping(this.ptmMotifChoicesInput.value, this.ptmProbInput.value);
       reload(false);
     });
 
-    if (this.ptmObsChoices !== undefined) {
-      this.ptmObsChoices.onChanged(async () => {
-        this.pViz.obsMapping(this.ptmObsChoices.value);
+    if (this.ptmObsChoicesInput !== undefined) {
+      this.ptmObsChoicesInput.onChanged(async () => {
+        this.pViz.obsMapping(this.ptmObsChoicesInput.value);
         reload(false);
       });
     }
@@ -224,9 +228,9 @@ export class TwinPviewer {
     }
 
     //@ts-ignore
-    this.ptmChoices = ui.multiChoiceInput('', [], ptmPredictions);
+    this.ptmChoicesInput = ui.multiChoiceInput('', [], ptmPredictions);
     //@ts-ignore
-    this.ptmMotifChoices = ui.multiChoiceInput('', [], ptmMotifPredictions);
+    this.ptmMotifChoicesInput = ui.multiChoiceInput('', [], ptmMotifPredictions);
 
     // ---- INPUTS PANEL ----
     if (!this.accOptions) {
@@ -241,10 +245,10 @@ export class TwinPviewer {
         this.accOptions.removePane(this.accOptions.getPane('Observed PTMs'));
     }
 
-    this.accOptions.addPane('3D model', () => ui.inputs([this.repChoice, this.cdrScheme]));
-    this.accOptions.addPane('Sequence', () => ui.inputs([this.paratopes, this.ptmProb]));
-    this.accOptions.addPane('Predicted PTMs', () => ui.div([this.ptmChoices]));
-    this.accOptions.addPane('Motif PTMs', () => ui.div([this.ptmMotifChoices]));
+    this.accOptions.addPane('3D model', () => ui.inputs([this.repChoiceInput, this.cdrSchemeInput]));
+    this.accOptions.addPane('Sequence', () => ui.inputs([this.paratopesInput, this.ptmProbInput]));
+    this.accOptions.addPane('Predicted PTMs', () => ui.div([this.ptmChoicesInput]));
+    this.accOptions.addPane('Motif PTMs', () => ui.div([this.ptmMotifChoicesInput]));
 
     if (this.jsonObsPtm !== null) {
       const obsPtmKeys =
@@ -255,8 +259,8 @@ export class TwinPviewer {
         obsPtmPredictions.push(obsPtmKeys[i].replaceAll('_', ' '));
 
       //@ts-ignore
-      this.ptmObsChoices = ui.multiChoiceInput('', [], obsPtmPredictions);
-      this.accOptions.addPane('Observed PTMs', () => ui.div([this.ptmObsChoices]));
+      this.ptmObsChoicesInput = ui.multiChoiceInput('', [], obsPtmPredictions);
+      this.accOptions.addPane('Observed PTMs', () => ui.div([this.ptmObsChoicesInput]));
     }
 
     this.root.append(this.accOptions.root);

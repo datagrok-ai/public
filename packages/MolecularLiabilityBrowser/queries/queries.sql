@@ -90,6 +90,12 @@ FROM
     ON t1.v_id=t2.NGL) t4
 --end
 
+--name: getListVersion
+--connection: MolecularLiabilityBrowserData:MLB
+SELECT lv.list_id, lv.name, lv.version
+FROM db_v2.list_version as lv;
+--end
+
 --name: getVids
 --connection: MolecularLiabilityBrowserData:MLB
 SELECT jf.v_id

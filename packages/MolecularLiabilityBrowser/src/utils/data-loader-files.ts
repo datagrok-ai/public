@@ -1,9 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {_package, _startInit} from '../package';
+import {encode as encode_to_base64, decode as decode_from_base64} from 'uint8-to-base64';
 
 import {
+  catchToLog,
   CdrMapType,
   DataLoader,
   FilterPropertiesType,
@@ -12,18 +13,19 @@ import {
   NumsType,
   ObsPtmType,
   PtmMapType,
-  catchToLog,
 } from './data-loader';
+import {IAntigen, ICdr, IScheme, IVid, IVidObsPtm, MlbDatabase} from './mlb-database';
 
 export class DataLoaderFiles extends DataLoader {
+  private _startInit: number;
+  private _serverListVersionDf: DG.DataFrame;
+
   private _files: { [name: string]: string } = {
     filterProps: 'properties.json',
     mutcodes: 'mutcodes.json',
     ptmMap: 'ptm_map.json',
     cdrMap: 'cdr_map.json',
     ptmInCdr: 'ptm_in_cdr.d42',
-    hOut: 'h_out.csv',
-    lOut: 'l_out.csv',
     mlb: 'mlb.csv',
     tree: 'tree.csv',
     example: 'example.json',
@@ -32,7 +34,7 @@ export class DataLoaderFiles extends DataLoader {
     realNums: 'exampleNums.json',
   };
 
-  // private _localStorageKeys: { [name: string]: string } = Object.assign({}, DataLoaderFiles._files.);
+  private cache!: MlbDatabase;
 
   private _schemes: string[];
   private _cdrs: string[];
@@ -66,86 +68,216 @@ export class DataLoaderFiles extends DataLoader {
 
   get refDf(): DG.DataFrame { return this._refDf; }
 
-  async init(): Promise<void> {
-    Object.entries(this._files).map(([key, value]: [string, string]) => ({[key]: `MLB:{$value}`}));
+  private fromStartInit(): string {
+    return ((Date.now() - this._startInit) / 1000).toString();
+  }
 
-    console.debug(`MLB: DataLoaderFiles.init(), ${((Date.now() - _startInit) / 1000).toString()} s`);
+  async init(startInit: number, serverListVersionDf: DG.DataFrame): Promise<void> {
+    this._startInit = startInit;
+    this._serverListVersionDf = serverListVersionDf;
+
+    console.debug(`MLB: DataLoaderFiles.init(), ${this.fromStartInit()} s`);
     // Check files disabled while too much time consuming
     // await this.check_files(this._files);
-    console.debug(`MLB: DataLoaderFiles.init() check_files, ${((Date.now() - _startInit) / 1000).toString()} s`);
+    console.debug('MLB: DataLoaderFiles.init() check_files, ' +
+      `${this.fromStartInit()} s`);
+
+    await this.init2();
 
     await Promise.all([
-      catchToLog<Promise<DG.DataFrame>>('MLB database error \'listSchemes\': ',
-        () => grok.functions.call(`${this._pName}:listSchemes`))
-        .then((df: DG.DataFrame) => {
-          console.debug(`MLB: DataLoaderFiles.init() set schemes, ${((Date.now() - _startInit) / 1000).toString()} s`);
-          this._schemes = df.columns.byName('scheme').toList();
-        }),
-      catchToLog<Promise<DG.DataFrame>>('MLB database error \'listCdrs\': ',
-        () => grok.functions.call(`${this._pName}:listCdrs`))
-        .then((df: DG.DataFrame) => {
-          console.debug(`MLB: DataLoaderFiles.init() set cdrs, ${((Date.now() - _startInit) / 1000).toString()} s`);
-          this._cdrs = df.columns.byName('cdr').toList();
-        }),
-      catchToLog<Promise<DG.DataFrame>>('MLB database error \'listAntigens\': ',
-        () => grok.functions.call(`${this._pName}:listAntigens`))
-        .then((df: DG.DataFrame) => {
-          console.debug(`MLB: DataLoaderFiles.init() set antigens, ${((Date.now() - _startInit) / 1000).toString()} s`);
-          this._antigens = df;
-        }),
-      new Promise((resolve: (value: unknown) => void, reject: (reason?: unknown) => void) => {
-        console.debug(`MLB: DataLoaderFiles.init() set vids, ${((Date.now() - _startInit) / 1000).toString()} s`);
-        this._vids = ['VR000000008', 'VR000000043', 'VR000000044'];
-        resolve(true);
-      }),
-      new Promise((resolve: (value: unknown) => void, reject: (reason?: unknown) => void) => {
-        this._vidsObsPtm = ['VR000000044'];
-        resolve(true);
-      }),
-      _package.files.readAsText(this._files.filterProps).then(
-        (v) => {
-          console.debug(`MLB: DataLoaderFiles.init() set filterProperties, ` +
-            `${((Date.now() - _startInit) / 1000).toString()} s`);
-          this._filterProperties = JSON.parse(v);
-        }
-      ),
-      _package.files.readAsText(this._files.mutcodes).then(
-        (v) => {
-          console.debug(`MLB: DataLoaderFiles.init() set mutcodes, ${((Date.now() - _startInit) / 1000).toString()} s`);
-          this._mutcodes = JSON.parse(v);
-        }
-      ),
-      _package.files.readAsText(this._files.ptmMap).then(
-        (v) => {
-          console.debug(`MLB: DataLoaderFiles.init() set ptmMap, ${((Date.now() - _startInit) / 1000).toString()} s`);
-          this._ptmMap = JSON.parse(v);
-        }
-      ),
-      _package.files.readAsText(this._files.cdrMap).then(
-        (v) => {
-          console.debug(`MLB: DataLoaderFiles.init() set cdrMap, ${((Date.now() - _startInit) / 1000).toString()} s`);
-          this._cdrMap = JSON.parse(v);
-        }
-      ),
+      // catchToLog<Promise<DG.DataFrame>>('MLB database error \'listSchemes\': ',
+      //   () => grok.functions.call(`${this._pName}:listSchemes`))
+      //   .then((df: DG.DataFrame) => {
+      //     console.debug('MLB: DataLoaderFiles.init() set schemes, ' +
+      //       `${this.fromStartInit()} s`);
+      //     this._schemes = df.columns.byName('scheme').toList();
+      //   }),
+      // catchToLog<Promise<DG.DataFrame>>('MLB database error \'listCdrs\': ',
+      //   () => grok.functions.call(`${this._pName}:listCdrs`))
+      //   .then((df: DG.DataFrame) => {
+      //     console.debug('MLB: DataLoaderFiles.init() set cdrs, ' +
+      //       `${this.fromStartInit()} s`);
+      //     this._cdrs = df.columns.byName('cdr').toList();
+      //   }),
+      // catchToLog<Promise<DG.DataFrame>>('MLB database error \'listAntigens\': ',
+      //   () => grok.functions.call(`${this._pName}:listAntigens`))
+      //   .then((df: DG.DataFrame) => {
+      //     console.debug('MLB: DataLoaderFiles.init() set antigens, ' +
+      //       `${this.fromStartInit()} s`);
+      //     this._antigens = df;
+      //   }),
       // new Promise((resolve: (value: unknown) => void, reject: (reason?: unknown) => void) => {
-      //   const dbr: IDBOpenDBRequest = indexedDB.open('MLB: ptm_in_cdr', 1);
-      //
-      //   dbr.
-      // })
-      _package.files.readBinaryDataFrames(this._files.ptmInCdr).then(
-        (dfList) => {
-          console.debug(`MLB: DataLoaderFiles.init() set refDf, ${((Date.now() - _startInit) / 1000).toString()} s`);
-          this._refDf = dfList[0];
-        }
-      ),
-      _package.files.readAsText(this._files.realNums).then(
-        (v) => {
-          console.debug(`MLB: DataLoaderFiles.init() set realNums, ${((Date.now() - _startInit) / 1000).toString()} s`);
-          this._realNums = JSON.parse(v);
-        }
-      )]);
+      //   console.debug(`MLB: DataLoaderFiles.init() set vids, ${this.fromStartInit()} s`);
+      //   this._vids = ['VR000000008', 'VR000000043', 'VR000000044'];
+      //   resolve(true);
+      // }),
+      // new Promise((resolve: (value: unknown) => void, reject: (reason?: unknown) => void) => {
+      //   this._vidsObsPtm = ['VR000000044'];
+      //   resolve(true);
+      // }),
+      // grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.filterProps}`)
+      //   .then((v) => {
+      //     console.debug(`MLB: DataLoaderFiles.init() set filterProperties, ` +
+      //       `${this.fromStartInit()} s`);
+      //     this._filterProperties = JSON.parse(v);
+      //   }),
+      // grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.mutcodes}`)
+      //   .then((v) => {
+      //     console.debug('MLB: DataLoaderFiles.init() set mutcodes, ' +
+      //       `${this.fromStartInit()} s`);
+      //     this._mutcodes = JSON.parse(v);
+      //   }),
+      // grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.ptmMap}`)
+      //   .then((v) => {
+      //       console.debug('MLB: DataLoaderFiles.init() set ptmMap, ' +
+      //         `${this.fromStartInit()} s`);
+      //       this._ptmMap = JSON.parse(v);
+      //     }
+      //   ),
+      // grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.cdrMap}`)
+      //   .then((v) => {
+      //     console.debug('MLB: DataLoaderFiles.init() set cdrMap, ' +
+      //       `${this.fromStartInit()} s`);
+      //     this._cdrMap = JSON.parse(v);
+      //   }),
+      // grok.dapi.files.readAsBytes(`System:AppData/${this._pName}/${this._files.ptmInCdr}`)
+      //   .then((data) => {
+      //     const dfList = DG.DataFrame.fromByteArray(data);
+      //     console.debug('MLB: DataLoaderFiles.init() set refDf, ' +
+      //       `${this.fromStartInit()} s`);
+      //     this._refDf = dfList[0];
+      //   }),
+    ]);
 
-    console.debug(`MLB: DataLoaderFiles.init() preload_data, ${((Date.now() - _startInit) / 1000).toString()} s`);
+    console.debug('MLB: DataLoaderFiles.init() preload_data, ' +
+      `${this.fromStartInit()} s`);
+  }
+
+  async init2(): Promise<void> {
+    console.debug('MLB: DataLoaderFiles.init2() start, ' + `${this.fromStartInit()} s`);
+
+    this.cache = new MlbDatabase();
+    this.cache.init(this._serverListVersionDf);
+
+    await Promise.all([
+      this.cache.getData<IScheme, string[]>('scheme',
+        () => catchToLog<Promise<DG.DataFrame>>(
+          'MLB database error \'listSchemes\': ',
+          () => grok.functions.call(`${this._pName}:listSchemes`)),
+        (dbRow: DG.Row) => ({scheme_id: dbRow.get('scheme_id'), scheme: dbRow.get('scheme')}),
+        (objList: IScheme[]) => objList.map((obj: IScheme) => obj.scheme)
+      ).then((value: string[]) => {
+        console.debug('MLB: DataLoaderFiles.init2() set schemes, ' + `${this.fromStartInit()} s`);
+        this._schemes = value;
+      }),
+      this.cache.getData<ICdr, string[]>('cdr',
+        () => catchToLog<Promise<DG.DataFrame>>(
+          'MLB database error \'listCdrs\': ',
+          () => grok.functions.call(`${this._pName}:listCdrs`)),
+        (dbRow: DG.Row) => ({cdr_id: dbRow.get('cdr_id'), cdr: dbRow.get('cdr')}),
+        (objList: ICdr[]) => objList.map((obj: ICdr) => obj.cdr)
+      ).then((value: string[]) => {
+        console.debug('MLB: DataLoaderFiles.init2() set cdrs, ' + `${this.fromStartInit()} s`);
+        this._cdrs = value;
+      }),
+      this.cache.getData<IAntigen, DG.DataFrame>('antigen',
+        () => catchToLog<Promise<DG.DataFrame>>(
+          'MLB database error \'listAntigens\': ',
+          () => grok.functions.call(`${this._pName}:listAntigens`)),
+        (dbRow: DG.Row) => Object.assign({},
+          ...(['id', 'antigen', 'antigen_ncbi_id', 'antigen_gene_symbol'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
+        (objList: IAntigen[]) => DG.DataFrame.fromObjects(objList)
+      ).then((value: DG.DataFrame) => {
+        console.debug('MLB: DataLoaderFiles.init2() set antigens, ' + `${this.fromStartInit()} s`);
+        this._antigens = value;
+      }),
+      this.cache.getData<IVid, string[]>('vid',
+        () => new Promise((resolve, reject) => {
+          const df: DG.DataFrame = DG.DataFrame.fromObjects([{v_id: 'VR000000008'}, {v_id: 'VR000000043'}, {v_id: 'VR000000044'}]);
+          resolve(df);
+        }),
+        (dbRow: DG.Row) => Object.assign({},
+          ...(['v_id',].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
+        (objList: IVid[]) => objList.map((obj) => obj.v_id)
+      ).then((value: string[]) => {
+        console.debug(`MLB: DataLoaderFiles.init() set vids, ${this.fromStartInit()} s`);
+        this._vids = value;
+      }),
+      this.cache.getData<IVidObsPtm, string[]>('vidObsPtm',
+        () => new Promise((resolve, reject) => {
+          const df: DG.DataFrame = DG.DataFrame.fromObjects([{v_id: 'VR000000044'}]);
+          resolve(df);
+        }),
+        (dbRow: DG.Row) => Object.assign({},
+          ...(['v_id',].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
+        (objList: IVidObsPtm[]) => objList.map((obj: IVidObsPtm) => obj.v_id)
+      ).then((value: string[]) => {
+        console.debug(`MLB: DataLoaderFiles.init2() set obsPtmVids, ${this.fromStartInit()} s`);
+        this._vidsObsPtm = value;
+      }),
+      this.cache.getObject<FilterPropertiesType>(this._files.filterProps,
+        async () => {
+          const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.filterProps}`);
+          return JSON.parse(txt);
+        })
+        .then((value: FilterPropertiesType) => {
+          console.debug(`MLB: DataLoaderFiles.init2() set filterProperties, ${this.fromStartInit()} s`);
+          this._filterProperties = value;
+        }),
+      this.cache.getObject<MutcodesDataType>(this._files.mutcodes,
+        async () => {
+          const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.mutcodes}`);
+          return JSON.parse(txt);
+        })
+        .then((value: MutcodesDataType) => {
+          console.debug(`MLB: DataLoaderFiles.init2() set mutcodes, ${this.fromStartInit()} s`);
+          this._mutcodes = value;
+        }),
+      this.cache.getObject<PtmMapType>(this._files.ptmMap,
+        async () => {
+          const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.ptmMap}`);
+          return JSON.parse(txt);
+        })
+        .then((value: PtmMapType) => {
+          console.debug(`MLB: DataLoaderFiles.init2() set ptmMap, ${this.fromStartInit()} s`);
+          this._ptmMap = value;
+        }),
+      this.cache.getObject<CdrMapType>(this._files.cdrMap,
+        async () => {
+          const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.cdrMap}`);
+          return JSON.parse(txt);
+        })
+        .then((value: CdrMapType) => {
+          console.debug(`MLB: DataLoaderFiles.init2() set cdrMap, ${this.fromStartInit()} s`);
+          this._cdrMap = value;
+        }),
+      this.cache.getObject<string>(this._files.ptmInCdr,
+        async () => {
+          const t1: number = Date.now();
+          const data: Uint8Array = await grok.dapi.files.readAsBytes(`System:AppData/${this._pName}/${this._files.ptmInCdr}`);
+          const t2: number = Date.now();
+          const txt_base64: string = encode_to_base64(data);
+          const t3: number = Date.now();
+          console.debug('MLB: DataLoaderFiles.init2() refDf ' +
+            `loading bytes ET ${((t2 - t1) / 1000).toString()} s, ` +
+            `encode base64 ET ${((t3 - t2) / 1000).toString()} s`);
+          return txt_base64;
+        })
+        .then((txt_base64: string) => {
+          const t1: number = Date.now();
+          const data: Uint8Array = decode_from_base64(txt_base64);
+          const t2: number = Date.now();
+          const df: DG.DataFrame = DG.DataFrame.fromByteArray(data);
+          const t3: number = Date.now();
+          console.debug('MLB: DataLoaderFiles.init2() refDf ' +
+            `decode base64 ET ${((t2 - t1) / 1000).toString()} s, ` +
+            `fromByteArray ET ${((t3 - t2) / 1000).toString()} s`);
+          console.debug(`MLB: DataLoaderFiles.init2() set refDf, ${this.fromStartInit()} s`);
+          this._refDf = df;
+        }),
+    ]);
+
+    console.debug('MLB: DataLoaderFiles.init2() end, ' + `${this.fromStartInit()} s`);
   }
 
   async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {
@@ -158,16 +290,9 @@ export class DataLoaderFiles extends DataLoader {
     return df;
   }
 
-  async loadHChainDf(): Promise<DG.DataFrame> {
-    return DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.hOut));
-  }
-
-  async loadLChainDf(): Promise<DG.DataFrame> {
-    return DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.lOut));
-  }
-
   async loadMlbDf(): Promise<DG.DataFrame> {
-    const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.mlb));
+    const df_txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.mlb}`);
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(df_txt);
 
     // 'ngl' column have been removed from query 2022-04
     df.columns.remove('ngl');
@@ -186,12 +311,13 @@ export class DataLoaderFiles extends DataLoader {
   }
 
   async loadTreeDf(): Promise<DG.DataFrame> {
-    return DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.tree));
+    const df_txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.tree}`);
+    return DG.DataFrame.fromCsv(df_txt);
   }
 
   private async loadFileJson(path: string): Promise<Object> {
-    return _package.files.readAsText(path)
-      .then((data: string) => JSON.parse(data));
+    const json_txt = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${path}`);
+    return JSON.parse(json_txt);
   }
 
   async loadJson(vid: string): Promise<JsonType> {
