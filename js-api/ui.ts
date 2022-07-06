@@ -14,7 +14,7 @@ import {__obs} from './src/events';
 import {_isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
-import {DateTime, Property} from './src/entities';
+import {DateTime, Entity, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 
 
@@ -169,6 +169,10 @@ export function divText(text: string, options: string | ElementOptions | any | n
   e.innerText = text;
   _options(e, options);
   return e as HTMLDivElement;
+}
+
+export function tags(entity: Entity): HTMLElement {
+  return api.grok_UI_Tags(entity.dart);
 }
 
 export function markdown(text: string): HTMLElement {
