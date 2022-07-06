@@ -43,7 +43,7 @@ export interface IDrawTooltipParams {
 let zoom = false;
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
-export async function getActivityCliffsTest(
+export async function getActivityCliffs(
     df: DG.DataFrame, 
     seqCol: DG.Column, 
     axesNames: string[],
