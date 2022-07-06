@@ -93,7 +93,6 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
       similarityMetric: similarityMetric,
       embedAxesNames: embedColsNames
     }
-    //@ts-ignore
     const sequenceSpaceRes = await sequenceSpace(chemSpaceParams);
     const embeddings = sequenceSpaceRes.coordinates;
     for (const col of embeddings)
