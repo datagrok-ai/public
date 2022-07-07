@@ -104,13 +104,13 @@ export class MlbDatabase extends Dexie {
     return cacheObj.value;
   }
 
-  /** Get object from cache if exists with appropriate version.
-   * @param {string} listName
-   * @param {() => Promise<DG.DataFrame>} loadDf
-   * @param {(db_row: DG.Row) => TCached} rowToCache
-   * @param {obj: TCached[]) => TData} fromCache
-   * @return {Promise<TData>}
-   * */
+  // /** Get object from cache if exists with appropriate version.
+  //  * @param {string} listName
+  //  * @param {() => Promise<DG.DataFrame>} loadDf
+  //  * @param {(db_row: DG.Row) => TCached} rowToCache
+  //  * @param {obj: TCached[]) => TData} fromCache
+  //  * @return {Promise<TData>}
+  //  * */
   async getData<TCached extends ICached, TData>(
     listName: string,
     loadDf: () => Promise<DG.DataFrame>,
