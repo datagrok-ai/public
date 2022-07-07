@@ -59,3 +59,36 @@
     padding: 4px 0;
     color: var(--grey-6);
 }
+
+.model-catalog-video {
+    width: 80%;
+    height: 0;
+    padding-bottom: 50%;
+    margin: 10px 10px 0 0;
+    border: 1px solid var(--grey-2);
+    position: relative;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.model-catalog-video i {
+    position: absolute;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: var(--grey-2);
+    font-size: 42px;
+}
+
+.model-catalog-video i:hover {
+    color: var(--grey-1);
+}
+
+.model-catalog-description {
+    padding: 10px 0 0 0;
+}

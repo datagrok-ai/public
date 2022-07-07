@@ -28,6 +28,19 @@ export class ModelHandler extends DG.ObjectHandler {
     return x instanceof DG.Func && x.hasTag('model');
   }
 
+  getVideoBackgroundUrl(x: DG.Func): string {
+    let url = x.options['video-preview'];
+    if (url == null)
+      return '';
+    if (url.startsWith('http://') || url.startsWith('https://'))
+      return url;
+   if (x.options['icon'] != null) {
+     let iconPath = x.options['icon'].substring(0, x.options['icon'].lastIndexOf('/'));
+     return `${iconPath}/${url}`;
+   }
+    return url;
+  }
+
   renderIcon(x: DG.Func, context: any = null): HTMLElement {
     if (x.options['icon'] != null && (x.options['icon'].startsWith('http://') || x.options['icon'].startsWith('https://'))) {
       return ui.iconImage('model-icon', x.options['icon']);
@@ -56,27 +69,42 @@ export class ModelHandler extends DG.ObjectHandler {
   renderProperties(x: DG.Func) {
     const a = ui.accordion('ComputeModel');
     a.context = x;
-    a.addTitle(ui.span([this.renderIcon(x), ui.label(x.friendlyName), ui.contextActions(x), ui.star(x.id)]));
-    a.addPane('Details', () => {
-      return this.renderDetails(x);
-    }, true);
+    let titleDiv = ui.div([
+      ui.span([this.renderIcon(x), ui.label(x.friendlyName), ui.contextActions(x), ui.star(x.id)])]);
+    a.addTitle(titleDiv);
+
+    if (x.description != null)
+      titleDiv.appendChild(ui.div([ui.markdown(x.description)], 'model-catalog-description'));
+    titleDiv.appendChild(ui.tags(x));
+    if ( x.options['dev.status'] != null)
+      titleDiv.appendChild(ui.tableFromMap({Status: x.options['dev.status']}));
+
+    if (x.options['video'] != null || x.options['education'] != null) {
+      let educationLink = ui.link('Education materials', x.options['education']);
+      ui.setDisplay(educationLink, x.options['education'] != null);
+      let video = ui.div(ui.icons.play(() => {window.open(x.options['video'], '_blank')}), 'model-catalog-video');
+      ui.setDisplay(video, x.options['video'] != null);
+      video.style.backgroundImage = `url('${this.getVideoBackgroundUrl(x)}')`;
+
+      a.addPane('Documentation', () => {
+        return ui.divV([
+          educationLink,
+          video], {style: {lineHeight: '150%'}});
+      }, true);
+    }
     a.end();
     return a.root;
   }
 
   renderDetails(x: DG.Func) {
-    let educationLink = ui.link('Education materials', x.options['education']);
-    ui.setDisplay(educationLink, x.options['education'] != null);
-    let video = ui.link('Video', x.options['video']);
-    ui.setDisplay(video, x.options['video'] != null);
-    let status = ui.markdown(`Status: ${x.options['dev.status']}`);
+    let status = ui.markdown(`**Status:** ${x.options['dev.status']}`);
     ui.setDisplay(status, x.options['dev.status'] != null);
     return ui.divV([
+      ui.markdown(`**Description: ** ${x.description}`),
       status,
-      ui.markdown(x.description),
+      ui.markdown('**Tags:**'),
       ui.tags(x),
-      educationLink,
-      video
+      ui.markdown('**Documentation:**'),
     ], {style: {lineHeight: '150%'}});
   }
 
