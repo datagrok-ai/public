@@ -34,11 +34,16 @@ export class ModelHandler extends DG.ObjectHandler {
       return '';
     if (url.startsWith('http://') || url.startsWith('https://'))
       return url;
-   if (x.options['icon'] != null) {
-     let iconPath = x.options['icon'].substring(0, x.options['icon'].lastIndexOf('/'));
-     return `${iconPath}/${url}`;
-   }
-    return url;
+    if (x instanceof DG.Script) {
+      if (x.options['icon'] != null) {
+        let iconPath = x.options['icon'].substring(0, x.options['icon'].lastIndexOf('/'));
+        return `${iconPath}/${url}`;
+      }
+      return '';
+    }
+    let iconPath = x.package.getIconUrl();
+    iconPath = iconPath.substring(0, iconPath.lastIndexOf('/'));
+    return `${iconPath}/${url}`;
   }
 
   renderIcon(x: DG.Func, context: any = null): HTMLElement {
