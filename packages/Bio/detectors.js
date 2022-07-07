@@ -24,12 +24,23 @@ class BioPackageDetectors extends DG.Package {
 
   static NucleotidesFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
 
+
+  /** @param s {String} - string to check
+   * @returns {boolean} */
+  static isHelm(s) {
+    return s.startsWith('PEPTIDE1{') || s.startsWith('RNA1{') || s.startsWith('CHEM1{') || s.startsWith('BLOB1{');
+  }
+
   //tags: semTypeDetector
   //input: column col
   //output: string semType
   detectMacromolecule(col) {
     // To collect alphabet freq three strategies can be used:
     // as chars, as fasta (single or within square brackets), as with the separator.
+    if (DG.Detector.sampleCategories(col, (s) => BioPackageDetectors.isHelm(s), 1)) {
+      col.setTag(DG.TAGS.UNITS, 'HELM');
+      return BioPackageDetectors.mmSemType;
+    }
 
     const alphabetCandidates = [
       ['NT', BioPackageDetectors.NucleotidesFastaAlphabet],
