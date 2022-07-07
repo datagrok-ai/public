@@ -11,14 +11,8 @@ export function convert(col: DG.Column): void {
   const current = col.tags[DG.TAGS.UNITS];
   //TODO: read all notations
   const units = [
-    'fasta:SEQ:NT',
-    'fasta:SEQ:PT',
-    'fasta:SEQ.MSA:NT',
-    'fasta:SEQ.MSA:PT',
-    'separator:SEQ:NT',
-    'separator:SEQ:PT',
-    'separator:SEQ.MSA:NT',
-    'separator:SEQ.MSA:PT',
+    'fasta',
+    'separator',
     'HELM'
   ];
   const choices = ui.choiceInput('convert to', '', units.filter((e) => e !== current));
@@ -33,7 +27,9 @@ export function convert(col: DG.Column): void {
     )
     .onOK(() => {
       //TODO: create new converted column
-      //col.dataFrame.columns.add();
+      const converter = new NotationConverter(col, choices.value!);
+      const newColumn = converter.convert();
+      col.dataFrame.columns.add(newColumn);
     })
     .show();
 }
