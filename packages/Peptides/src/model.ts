@@ -47,15 +47,16 @@ export class PeptidesModel {
   splitCol!: DG.Column<boolean>;
   stackedBarchart!: StackedBarChart;
   edf: DG.DataFrame | null = null;
-
+  statsDf!: DG.DataFrame;
+  _currentSelection!: type.SelectionObject;
   substitutionsInfo: type.SubstitutionsInfo = new Map();
-  isInitialized: boolean = false;
+  isInitialized = false;
   currentView!: DG.TableView;
 
-  _currentSelection!: type.SelectionObject;
-  isPeptideSpaceChangingBitset: boolean = false;
-  isChangingEdfBitset: boolean = false;
-  statsDf!: DG.DataFrame;
+  isPeptideSpaceChangingBitset = false;
+  isChangingEdfBitset = false;
+  splitByPos = false;
+  splitByAAR = false;
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
@@ -104,7 +105,7 @@ export class PeptidesModel {
     acc.root.style.width = '100%';
     acc.addTitle(ui.h1('Selection info'));
     acc.addPane('Substitutions', () => substitutionsWidget(this._dataFrame, this).root, true);
-    acc.addPane('Distribtution', () => getDistributionWidget(this._dataFrame).root, true);
+    acc.addPane('Distribtution', () => getDistributionWidget(this._dataFrame, this).root, true);
 
     return acc;
   }
@@ -555,23 +556,21 @@ export class PeptidesModel {
           const currentAAR = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
           const currentStatsDf = this.statsDf.rows.match({Pos: currentPosition, AAR: currentAAR}).toDataFrame();
 
-          if (currentStatsDf.rowCount != 0) {
-            const activityCol = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
-            const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
-            const currentPosCol = this._dataFrame.getCol(currentPosition);
-            splitCol.init((i) => currentPosCol.get(i) == currentAAR);
-            const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-            const stats: Stats = {
-              count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
-              ratio: currentStatsDf.get(C.COLUMNS_NAMES.RATIO, 0),
-              pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
-              meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
-            };
-            const tooltip = getDistributionAndStats(
-              distributionTable, stats, `${currentPosition} : ${currentAAR}`, 'Other', true);
+          const activityCol = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+          const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
+          const currentPosCol = this._dataFrame.getCol(currentPosition);
+          splitCol.init((i) => currentPosCol.get(i) == currentAAR);
+          const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
+          const stats: Stats = {
+            count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
+            ratio: currentStatsDf.get(C.COLUMNS_NAMES.RATIO, 0),
+            pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
+            meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
+          };
+          const tooltip = getDistributionAndStats(
+            distributionTable, stats, `${currentPosition} : ${currentAAR}`, 'Other', true);
 
-            ui.tooltip.show(tooltip, x, y);
-          }
+          ui.tooltip.show(tooltip, x, y);
         }
       }
       return true;

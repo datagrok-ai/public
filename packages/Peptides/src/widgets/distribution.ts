@@ -1,48 +1,159 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as C from '../utils/constants';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import $ from 'cash-dom';
+
+import * as C from '../utils/constants';
 import {getStats, Stats} from '../utils/filtering-statistics';
-import * as type from '../utils/types';
+import {PeptidesModel} from '../model';
 
-const allLabel = 'All';
+const allConst = 'All';
+const otherConst = 'Other';
 
-export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
-  const splitCol = table.col(C.COLUMNS_NAMES.SPLIT_COL);
+export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
-  const selectionObject: type.SelectionObject = JSON.parse(table.tags[C.TAGS.SELECTION]);
-  if (!splitCol || !selectionObject)
-    return new DG.Widget(ui.divText('No distribution'));
-
+  const rowCount = activityScaledCol.length;
+  const selectionObject = model.currentSelection;
   const positions = Object.keys(selectionObject);
-  let aarStr = allLabel;
+  const positionsLen = positions.length;
+  let aarStr = allConst;
   let otherStr = '';
 
-  if (positions.length) {
-    aarStr = '';
+  const updateDistributionHost = () => {
+    model.splitByPos = splitByPosition.value!;
+    model.splitByAAR = splitByAAR.value!;
+    const res: HTMLDivElement[] = [];
+    if (splitByPosition.value && splitByAAR.value) {
+      otherStr = otherConst;
+      for (const position of positions) {
+        const posCol = table.getCol(position);
+        for (const aar of selectionObject[position]) {
+          aarStr = `${position} : ${aar}`;
+          const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, rowCount).init((i) => posCol.get(i) == aar);
 
-    for (const position of positions) {
-      aarStr += `${position}: {`;
+          const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
+          const currentStatsDf = model.statsDf.rows.match({Pos: position, AAR: aar}).toDataFrame();
+          const stats: Stats = {
+            count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
+            ratio: currentStatsDf.get(C.COLUMNS_NAMES.RATIO, 0),
+            pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
+            meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
+          };
+          const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+          $(distributionRoot).addClass('d4-flex-col');
 
-      for (const aar of selectionObject[position])
-        aarStr += `${aar}, `;
+          res.push(distributionRoot);
+        }
+      }
+    } else if (splitByPosition.value) {
+      otherStr = otherConst;
+      const activityScaledData = activityScaledCol.getRawData();
+      for (const position of positions) {
+        const posCol = table.getCol(position);
+        const aarList = selectionObject[position];
+        aarStr = `${position}: {${aarList.join(', ')}}`;
 
-      aarStr = aarStr.slice(0, aarStr.length - 2);
-      aarStr += '}; ';
+        const mask = DG.BitSet.create(rowCount, (i) => aarList.includes(posCol.get(i)));
+        const stats = getStats(activityScaledData, mask);
+        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
+        const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
+        const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+        $(distributionRoot).addClass('d4-flex-col');
+
+        res.push(distributionRoot);
+      }
+    } else if (splitByAAR.value) {
+      const reversedSelectionObject: {[aar: string]: string[]} = {};
+      const aars = [];
+      for (const position of positions) {
+        for (const aar of selectionObject[position]) {
+          if (!reversedSelectionObject.hasOwnProperty(aar)) {
+            reversedSelectionObject[aar] = [position];
+            aars.push(aar);
+            continue;
+          }
+          if (!reversedSelectionObject[aar].includes(position))
+            reversedSelectionObject[aar].push(position);
+        }
+      }
+
+      otherStr = otherConst;
+      const activityScaledData = activityScaledCol.getRawData();
+      for (const aar of aars) {
+        const posList = reversedSelectionObject[aar];
+        aarStr = `${aar}: {${posList.join(', ')}}`;
+
+        const mask = DG.BitSet.create(rowCount, (i) => {
+          const currentRow = table.row(i);
+          for (const position of posList) {
+            if (currentRow.get(position) == aar)
+              return true;
+          }
+          return false;
+        });
+        const stats = getStats(activityScaledData, mask);
+        const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
+        const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
+        const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
+        $(distributionRoot).addClass('d4-flex-col');
+
+        res.push(distributionRoot);
+      }
+    } else {
+      const splitCol = table.col(C.COLUMNS_NAMES.SPLIT_COL);
+      if (!splitCol)
+        return new DG.Widget(ui.divText('No distribution'));
+
+      otherStr = '';
+      if (positionsLen) {
+        aarStr = '';
+        for (const position of positions) {
+          aarStr += `${position}: {`;
+          for (const aar of selectionObject[position])
+            aarStr += `${aar}, `;
+          aarStr = aarStr.slice(0, aarStr.length - 2);
+          aarStr += '}; ';
+        }
+        aarStr = aarStr.slice(0, aarStr.length - 2);
+        otherStr = otherConst;
+      }
+
+      const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
+      const stats = getStats(activityScaledCol.getRawData(), table.selection);
+      const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr);
+      $(distributionRoot).addClass('d4-flex-col');
+
+      res.push(distributionRoot);
     }
-    aarStr = aarStr.slice(0, aarStr.length - 2);
-    otherStr = 'Other';
-  }
+    $(distributionHost).empty().append(res);
+  };
 
-  const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-  const stats = getStats(activityScaledCol.toList(), table.selection);
-  return new DG.Widget(getDistributionAndStats(distributionTable, stats, aarStr, otherStr));
+  const setDefaultProperties = (input: DG.InputBase) => {
+    input.enabled = positionsLen != 0;
+    $(input.root).find('.ui-input-editor').css('margin', '0px');
+    $(input.root).find('.ui-input-bool-deco').css('left', '-35px').css('margin-right', '-35px');
+    $(input.root).find('.ui-input-description').css('padding', '0px');
+  };
+
+  const splitByPosition = ui.boolInput('', model.splitByPos, updateDistributionHost);
+  splitByPosition.addPostfix('Split by position');
+  setDefaultProperties(splitByPosition);
+  $(splitByPosition.root).css('margin-right', '10px');
+  const splitByAAR = ui.boolInput('', model.splitByAAR, updateDistributionHost);
+  splitByAAR.addPostfix('Split by monomer');
+  setDefaultProperties(splitByAAR);
+
+  const controlsHost = ui.divH([splitByPosition.root, splitByAAR.root]);
+  const distributionHost = ui.div([], 'd4-flex-wrap');
+  splitByAAR.fireChanged();
+
+  return new DG.Widget(ui.divV([controlsHost, distributionHost]));
 }
 
 export function getDistributionAndStats(
-    table: DG.DataFrame, stats: Stats, thisLabel: string, otherLabel: string = '', isTooltip: boolean = false,
-  ): HTMLDivElement {
+  table: DG.DataFrame, stats: Stats, thisLabel: string, otherLabel: string = '', isTooltip: boolean = false,
+): HTMLDivElement {
   const labels = ui.divV([
     ui.label(thisLabel, {style: {color: DG.Color.toHtml(otherLabel == '' ? DG.Color.blue : DG.Color.orange)}}),
     ui.label(otherLabel, {style: {color: DG.Color.toHtml(DG.Color.blue)}})]);
