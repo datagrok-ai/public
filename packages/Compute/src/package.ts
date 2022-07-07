@@ -28,14 +28,14 @@ export function OutliersSelection() {
 //tags: model-editor, editor
 //input: funccall call
 //output: view result
-export function ComputationViewEditor(call: DG.FuncCall) {
-  let v = new ComputationView(call);
-  v.parentCall = call;
-  v.name = call.func.friendlyName;
-  v.parentView = grok.functions.getCurrentCall().parentCall.aux['view']; // modelCatalog view
-  //todo: parse url, set parameters to call
-  return v;
-}
+// export function ComputationViewEditor(call: DG.FuncCall) {
+//   let v = new ComputationView(call);
+//   v.parentCall = call;
+//   v.name = call.func.friendlyName;
+//   v.parentView = grok.functions.getCurrentCall().parentCall.aux['view']; // modelCatalog view
+//   //todo: parse url, set parameters to call
+//   return v;
+// }
 
 //name: FunctionView
 //tags: model-editor, editor
@@ -76,7 +76,7 @@ export function hof() {
 
 
 //name: hof2
-//tags: model
+//tags: 
 //description: some description 2 2 2
 //sidebar: @compute
 //meta.icon: package1.png
