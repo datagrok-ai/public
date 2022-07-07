@@ -13,15 +13,15 @@ Guide](https://developers.google.com/style).
 Datagrok documentation should be clear and easy to understand:
 
 * Write in US English with US grammar.
-* [Be clear and concise](###Conciseness).
-* [Use active voice](###active-voice): make it clear who's performing the action.
-* [Put conditional clauses before instructions, not after](###clause-order).
-* [Use the second person point of view](###pronouns).
-* [Don't use words that minimize the difficulty of a task](###Words-that-minimize-difficulty).
-* [Use sentence case for headers and bulleted lists](###capitalization).
-* [Write compound words and words with prefixes without hyphens or spaces](###Compound-words-and-words-with-prefixes).
-* [Contractions](###contractions) are OK because we write in an informal tone.
-* [Spell out: acronyms on first use and numbers from zero to nine](###acronyms-and-numbers).
+* [Be clear and concise](#Conciseness).
+* [Use active voice](#active-voice): make it clear who's performing the action.
+* [Put conditional clauses before instructions, not after](#clause-order).
+* [Use the second person point of view](#pronouns).
+* [Don't use words that minimize the difficulty of a task](#words-that-minimize-difficulty).
+* [Use sentence case for headers and bulleted lists](#capitalization).
+* [Write compound words and words with prefixes without hyphens or spaces](#compound-words-and-words-with-prefixes).
+* [Contractions](#contractions) are OK because we write in an informal tone.
+* [Spell out: acronyms on first use and numbers from zero to nine](#acronyms-and-numbers).
 * For usage and spelling of specific words, see the [Word list](./word-list.md).
 
 ### Conciseness
