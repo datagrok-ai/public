@@ -61,7 +61,8 @@ export class PeptideSpaceViewer extends DG.JsViewer {
       this.isEmbeddingCreating = true;
       $(this.root).empty();
       const viewerHost = ui.waitBox(async () => {
-        const edf = await computeWeights(this.dataFrame, this.method, this.measure, this.cyclesCount);
+        const aligendSeqCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
+        const edf = await computeWeights(this.dataFrame, this.method, this.measure, this.cyclesCount, aligendSeqCol);
         this.dataFrame.temp[C.EMBEDDING_STATUS] = true;
         this.model.edf = edf;
 
@@ -83,7 +84,20 @@ export class PeptideSpaceViewer extends DG.JsViewer {
           showYSelector: false, showXSelector: false, showColorSelector: false, showSizeSelector: false,
           zoomAndFilter: 'no action', axesFollowFilter: false,
         };
-        const viewerRoot = edf.plot.scatter(viewerOptions).root;
+        const scatterPlot = edf.plot.scatter(viewerOptions);
+        const viewerRoot = scatterPlot.root;
+
+        viewerRoot.addEventListener('mousemove', (ev) => {
+          const idx = scatterPlot.hitTest(ev.offsetX, ev.offsetY);
+          if (idx != -1) {
+            const table = ui.tableFromMap({
+              'Activity': colorCol.get(idx),
+              'Sequence': aligendSeqCol.get(idx),
+              'Row ID': idx,
+            });
+            ui.tooltip.show(table, ev.clientX, ev.clientY);
+          }
+        });
         viewerRoot.style.width = 'auto';
         this.isEmbeddingCreating = false;
         viewerHost.style.paddingLeft = 'unset';
@@ -123,22 +137,6 @@ export async function computeWeights(
     columns.push(DG.Column.fromFloat32Array('~MW', _getMW(columnData)));
 
     edf = DG.DataFrame.fromColumns(columns);
-
-    // Add new axes.
-    // for (const axis of axesNames) {
-    //   const col = table.col(axis);
-    //   const newCol = edf.getCol(axis);
-
-    //   // if (col != null) {
-    //   //   for (let i = 0; i < newCol.length; ++i) {
-    //   //     const v = newCol.get(i);
-    //   //     table.set(axis, i, v);
-    //   //   }
-    //   // } else
-    //   //   table.columns.insert(newCol);
-    //   const columnList = table.columns;
-    //   col !== null ? columnList.replace(col, newCol) : columnList.insert(newCol);
-    // }
   } catch (error) {
     grok.shell.error('Could not compute embeddings. See console for details.');
     console.error(error);
