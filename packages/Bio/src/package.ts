@@ -16,6 +16,7 @@ import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
 import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cliffs';
+import { getMolfilesFromSeq, HELM_CORE_LIB_FILENAME } from './utils/utils';
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -105,6 +106,19 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
     }
   }
 };
+
+//top-menu: Bio | Molfiles From HELM...
+//name: Molfiles From HELM
+//description: returns molfiles for each monomer from HELM library
+//input: dataframe df [Input data table]
+//input: column sequence {semType: Macromolecule}
+export async function molfilesFromHELM(df: DG.DataFrame, sequence: DG.Column): Promise<string[][] | null> {
+  const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
+  const monomersLibDf = DG.DataFrame.fromJson(monomersLibFile);
+  const result = getMolfilesFromSeq(sequence, monomersLibDf);
+  return result;
+}
+
 
 //top-menu: Bio | MSA...
 //name: MSA
