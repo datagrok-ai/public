@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {NotationConverter} from './notation-converter';
+import {NotationConverter, NOTATION} from './notation-converter';
 
 /**
  * Converts notations of a Macromolecule column
@@ -8,14 +8,16 @@ import {NotationConverter} from './notation-converter';
  * @param {DG.column} col Column with 'Macromolecule' semantic type
  */
 export function convert(col: DG.Column): void {
-  const current = col.tags[DG.TAGS.UNITS];
+  const converter = new NotationConverter(col);
+  const current: NOTATION = converter.sourceNotation;
   //TODO: read all notations
-  const units = [
-    'fasta',
-    'separator',
-    'HELM'
+  const notations = [
+    NOTATION.FASTA,
+    NOTATION.SEPARATOR,
+    NOTATION.HELM
   ];
-  const choices = ui.choiceInput('convert to', '', units.filter((e) => e !== current));
+  const filtered = notations.filter((e) => e !== current);
+  const choices = ui.choiceInput('Convert to', filtered[0], filtered);
 
   ui.dialog('Convert sequence')
     .add(
@@ -27,7 +29,7 @@ export function convert(col: DG.Column): void {
     )
     .onOK(() => {
       //TODO: create new converted column
-      const converter = new NotationConverter(col, choices.value!);
+      converter.targetNotation = choices.value!;
       const newColumn = converter.convert();
       col.dataFrame.columns.add(newColumn);
     })
