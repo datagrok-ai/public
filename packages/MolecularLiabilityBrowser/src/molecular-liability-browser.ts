@@ -517,8 +517,8 @@ export class MolecularLiabilityBrowser {
     this.twinPviewer = new TwinPviewer(this.dataLoader);
     this.twinPviewer.init(jsonStr, pdbStr, jsonStrObsPtm);
 
-    await this.twinPviewer.show(this.mlbView);
     await this.twinPviewer.open(this.mlbView);
+    await this.twinPviewer.show(this.mlbView);
   }
 
   async destroyView(): Promise<void> {
