@@ -1,22 +1,40 @@
 import * as OCL from 'openchemlib/full.js';
+import * as grok from 'datagrok-api/grok';
 
-export function getMacroMol(molBlocks: string[]): string {
-  for (let i = 0; i < molBlocks.length; i++)
-    molBlocks[i] = rotateBackboneV3000(molBlocks[i]);
+export async function getMacroMol(monomers: any[][]): Promise<string[]> {
+  let result: string[] = [];
+  const moduleRdkit = await grok.functions.call('Chem:getRdKitModule');
+  for(let i = 0; i < monomers.length; i++) {
+    for (let j = 0; j < monomers[i].length; j++){
+      const mol = moduleRdkit.get_mol(monomers[i][j]['molfile']);
+      const indices = getIndices(monomers[i][j]);
+      monomers[i][j]['first'] = indices['first'];
+      monomers[i][j]['last'] = indices['last'];
+      monomers[i][j]['molfile'] = await rotateBackboneV3000(mol.get_v3Kmolblock(), indices['first'], indices['last']);
+      mol?.delete();
+    }
+    result.push(linkV3000(monomers[i]));
+  }
 
-  return linkV3000(molBlocks);
+  return result;
 }
 
-function rotateBackboneV3000(molecule: string): string {
-  let molBlock = OCL.Molecule.fromMolfile(molecule).toMolfileV3();
+function getIndices(monomer: any): {first: number, last: number} {
+  let indexStart = (monomer["molfile"] as string).indexOf('M  RGP', 0) + 8;
+  let indexEnd = (monomer["molfile"] as string).indexOf('\n', indexStart);
+  const indicesData = (monomer["molfile"] as string).substring(indexStart, indexEnd).replaceAll('  ', ' ').replaceAll('  ', ' ');
+  let parsedData = indicesData.split(' ')
+  const first = parsedData[2] == '1' ? parseInt(parsedData[1]) : parseInt(parsedData[3]);
+  const last = parsedData[2] == '2' ? parseInt(parsedData[1]) : parseInt(parsedData[3]);
+  return {first, last};
+}
+
+async function rotateBackboneV3000(molBlock: string, first: number, last: number): Promise<string> {
   const coordinates = extractAtomDataV3000(molBlock);
   const natom = coordinates.atomIndex.length;
 
-  const indexFivePrime = coordinates.atomIndex.indexOf(1);
-  const indexThreePrime = coordinates.atomIndex.indexOf(natom);
-
-  const xCenter = (coordinates.x[indexThreePrime] + coordinates.x[indexFivePrime])/2;
-  const yCenter = (coordinates.y[indexThreePrime] + coordinates.y[indexFivePrime])/2;
+  const xCenter = (coordinates.x[last] + coordinates.x[first])/2;
+  const yCenter = (coordinates.y[last] + coordinates.y[first])/2;
 
   //place to center
   for (let i = 0; i < natom; i++) {
@@ -25,12 +43,12 @@ function rotateBackboneV3000(molecule: string): string {
   }
 
   let angle = 0;
-  if (coordinates.x[indexFivePrime] == 0)
-    angle = coordinates.y[indexFivePrime] > coordinates.y[indexThreePrime] ? Math.PI/2 : 3*Math.PI/2;
-  else if (coordinates.y[indexFivePrime] == 0)
-    angle = coordinates.x[indexFivePrime] > coordinates.x[indexThreePrime] ? Math.PI : 0;
+  if (coordinates.x[first] == 0)
+    angle = coordinates.y[first] > coordinates.y[last] ? Math.PI/2 : 3*Math.PI/2;
+  else if (coordinates.y[first] == 0)
+    angle = coordinates.x[first] > coordinates.x[last] ? Math.PI : 0;
   else {
-    const derivative = coordinates.y[indexFivePrime]/coordinates.x[indexFivePrime];
+    const derivative = coordinates.y[first]/coordinates.x[first];
     angle = derivative > 0 ? Math.PI - Math.atan(derivative) : Math.atan(derivative);
   }
 
@@ -44,7 +62,7 @@ function rotateBackboneV3000(molecule: string): string {
   }
 
   //place to right
-  const xShift = coordinates.x[indexFivePrime];
+  const xShift = coordinates.x[first];
   for (let i = 0; i < natom; i++)
     coordinates.x[i] -= xShift;
 
@@ -103,7 +121,7 @@ function extractAtomDataV3000(molBlock: string) {
   return {atomIndex: indexes, atomType: types, x: x, y: y};
 }
 
-function linkV3000(molBlocks: string[]): string {
+function linkV3000(monomers: any[]): string {
   let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
   macroMolBlock += '  0  0  0  0  0  0            999 V3000\n';
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
@@ -115,90 +133,91 @@ function linkV3000(molBlocks: string[]): string {
   let nbond = 0;
   let xShift = 0;
 
-  for (let i = 0; i < molBlocks.length; i++) {
-    molBlocks[i] = molBlocks[i].replaceAll('(-\nM  V30 ', '(')
+  for (let i = 0; i < monomers.length; i++) {
+    let molfile = monomers[i]['molfile'];
+    molfile = molfile.replaceAll('(-\nM  V30 ', '(')
       .replaceAll('-\nM  V30 ', '').replaceAll(' )', ')');
-    const numbers = extractAtomsBondsNumbersV3000(molBlocks[i]);
-    const coordinates = extractAtomDataV3000(molBlocks[i]);
+    const numbers = extractAtomsBondsNumbersV3000(molfile);
+    const coordinates = extractAtomDataV3000(molfile);
 
-    let indexAtoms = molBlocks[i].indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms coordinates
-    indexAtoms = molBlocks[i].indexOf('\n', indexAtoms);
+    let indexAtoms = molfile.indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms coordinates
+    indexAtoms = molfile.indexOf('\n', indexAtoms);
     let index = indexAtoms;
     let indexEnd = indexAtoms;
 
     for (let j = 0; j < numbers.natom; j++) {
-      if (coordinates.atomIndex[j] != 1 || i == 0) {
+      if (coordinates.atomIndex[j] != monomers[i]['first'] || i == 0) {
         //rewrite atom number
-        index = molBlocks[i].indexOf('V30', index) + 4;
-        indexEnd = molBlocks[i].indexOf(' ', index);
-        const atomNumber = parseInt(molBlocks[i].substring(index, indexEnd)) + natom;
-        molBlocks[i] = molBlocks[i].slice(0, index) + atomNumber + molBlocks[i].slice(indexEnd);
+        index = molfile.indexOf('V30', index) + 4;
+        indexEnd = molfile.indexOf(' ', index);
+        const atomNumber = parseInt(molfile.substring(index, indexEnd)) + natom;
+        molfile = molfile.slice(0, index) + atomNumber + molfile.slice(indexEnd);
 
         //rewrite coordinates
-        index = molBlocks[i].indexOf(' ', index) + 1;
-        index = molBlocks[i].indexOf(' ', index) + 1;
-        indexEnd = molBlocks[i].indexOf(' ', index);
+        index = molfile.indexOf(' ', index) + 1;
+        index = molfile.indexOf(' ', index) + 1;
+        indexEnd = molfile.indexOf(' ', index);
 
         const totalShift = xShift - coordinates.x[0];
-        let coordinate = Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd)) + totalShift))/10000;
-        molBlocks[i] = molBlocks[i].slice(0, index) + coordinate + molBlocks[i].slice(indexEnd);
+        let coordinate = Math.round(10000*(parseFloat(molfile.substring(index, indexEnd)) + totalShift))/10000;
+        molfile = molfile.slice(0, index) + coordinate + molfile.slice(indexEnd);
 
-        index = molBlocks[i].indexOf(' ', index) + 1;
-        indexEnd = molBlocks[i].indexOf(' ', index);
-        coordinate = Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd))))/10000;
-        molBlocks[i] = molBlocks[i].slice(0, index) + coordinate + molBlocks[i].slice(indexEnd);
+        index = molfile.indexOf(' ', index) + 1;
+        indexEnd = molfile.indexOf(' ', index);
+        coordinate = Math.round(10000*(parseFloat(molfile.substring(index, indexEnd))))/10000;
+        molfile = molfile.slice(0, index) + coordinate + molfile.slice(indexEnd);
 
-        index = molBlocks[i].indexOf('\n', index) + 1;
+        index = molfile.indexOf('\n', index) + 1;
       } else {
-        index = molBlocks[i].indexOf('M  V30', index) - 1;
-        indexEnd = molBlocks[i].indexOf('\n', index + 1);
-        molBlocks[i] = molBlocks[i].slice(0, index) + molBlocks[i].slice(indexEnd);
+        index = molfile.indexOf('M  V30', index) - 1;
+        indexEnd = molfile.indexOf('\n', index + 1);
+        molfile = molfile.slice(0, index) + molfile.slice(indexEnd);
       }
     }
 
-    const indexAtomsEnd = molBlocks[i].indexOf('M  V30 END ATOM');
-    atomBlock += molBlocks[i].substring(indexAtoms + 1, indexAtomsEnd);
+    const indexAtomsEnd = molfile.indexOf('M  V30 END ATOM');
+    atomBlock += molfile.substring(indexAtoms + 1, indexAtomsEnd);
 
-    let indexBonds = molBlocks[i].indexOf('M  V30 BEGIN BOND'); // V3000 index for bonds
-    indexBonds = molBlocks[i].indexOf('\n', indexBonds);
+    let indexBonds = molfile.indexOf('M  V30 BEGIN BOND'); // V3000 index for bonds
+    indexBonds = molfile.indexOf('\n', indexBonds);
     index = indexBonds;
     indexEnd = indexBonds;
 
     for (let j = 0; j < numbers.nbond; j++) {
       //rewrite bond number
-      index = molBlocks[i].indexOf('V30', index) + 4;
-      indexEnd = molBlocks[i].indexOf(' ', index);
-      const bondNumber = parseInt(molBlocks[i].substring(index, indexEnd)) + nbond;
-      molBlocks[i] = molBlocks[i].slice(0, index) + bondNumber + molBlocks[i].slice(indexEnd);
+      index = molfile.indexOf('V30', index) + 4;
+      indexEnd = molfile.indexOf(' ', index);
+      const bondNumber = parseInt(molfile.substring(index, indexEnd)) + nbond;
+      molfile = molfile.slice(0, index) + bondNumber + molfile.slice(indexEnd);
 
       //rewrite atom pair in bond
-      index = molBlocks[i].indexOf(' ', index) + 1;
-      index = molBlocks[i].indexOf(' ', index) + 1;
-      indexEnd = molBlocks[i].indexOf(' ', index);
-      let atomNumber = parseInt(molBlocks[i].substring(index, indexEnd)) + natom;
-      molBlocks[i] = molBlocks[i].slice(0, index) + atomNumber + molBlocks[i].slice(indexEnd);
-      index = molBlocks[i].indexOf(' ', index) + 1;
-      indexEnd = Math.min(molBlocks[i].indexOf('\n', index), molBlocks[i].indexOf(' ', index));
-      atomNumber = parseInt(molBlocks[i].substring(index, indexEnd)) + natom;
-      molBlocks[i] = molBlocks[i].slice(0, index) + atomNumber + molBlocks[i].slice(indexEnd);
+      index = molfile.indexOf(' ', index) + 1;
+      index = molfile.indexOf(' ', index) + 1;
+      indexEnd = molfile.indexOf(' ', index);
+      let atomNumber = parseInt(molfile.substring(index, indexEnd)) + natom;
+      molfile = molfile.slice(0, index) + atomNumber + molfile.slice(indexEnd);
+      index = molfile.indexOf(' ', index) + 1;
+      indexEnd = Math.min(molfile.indexOf('\n', index), molfile.indexOf(' ', index));
+      atomNumber = parseInt(molfile.substring(index, indexEnd)) + natom;
+      molfile = molfile.slice(0, index) + atomNumber + molfile.slice(indexEnd);
 
-      index = molBlocks[i].indexOf('\n', index) + 1;
+      index = molfile.indexOf('\n', index) + 1;
     }
 
-    const indexBondEnd = molBlocks[i].indexOf('M  V30 END BOND');
-    bondBlock += molBlocks[i].substring(indexBonds + 1, indexBondEnd);
+    const indexBondEnd = molfile.indexOf('M  V30 END BOND');
+    bondBlock += molfile.substring(indexBonds + 1, indexBondEnd);
 
-    let indexCollection = molBlocks[i].indexOf('M  V30 MDLV30/STEABS ATOMS=('); // V3000 index for collections
+    let indexCollection = molfile.indexOf('M  V30 MDLV30/STEABS ATOMS=('); // V3000 index for collections
 
     while (indexCollection != -1) {
       indexCollection += 28;
-      const collectionEnd = molBlocks[i].indexOf(')', indexCollection);
-      const collectionEntries = molBlocks[i].substring(indexCollection, collectionEnd).split(' ').slice(1);
-      collectionEntries.forEach((e) => {
+      const collectionEnd = molfile.indexOf(')', indexCollection);
+      const collectionEntries = molfile.substring(indexCollection, collectionEnd).split(' ').slice(1);
+      collectionEntries.forEach((e: string) => {
         collection.push(parseInt(e) + natom);
       });
       indexCollection = collectionEnd;
-      indexCollection = molBlocks[i].indexOf('M  V30 MDLV30/STEABS ATOMS=(', indexCollection);
+      indexCollection = molfile.indexOf('M  V30 MDLV30/STEABS ATOMS=(', indexCollection);
     }
 
     natom += numbers.natom - 1;
