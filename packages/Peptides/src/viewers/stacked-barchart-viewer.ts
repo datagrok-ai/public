@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import * as ui from 'datagrok-api/ui';
 import {MonomerLibrary} from '../monomer-library';
 
 import * as C from '../utils/constants';
@@ -15,7 +14,7 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): voi
     const cell = grid.hitTest(ev.offsetX, ev.offsetY);
     if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.AMINO_ACIDS) {
       const newBarPart = barchart.findAARandPosition(cell, ev);
-      barchart._currentBarPart = newBarPart;
+      // barchart._currentBarPart = newBarPart;
       barchart.requestAction(ev, newBarPart);
       barchart.computeData();
     }
@@ -24,7 +23,7 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): voi
   // The following events makes the barchart interactive
   rxjs.fromEvent<MouseEvent>(grid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
   rxjs.fromEvent<MouseEvent>(grid.overlay, 'click').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
-  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mouseout').subscribe(() => barchart.unhighlight());
+  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mouseout').subscribe(() => barchart.computeData());
 
   barchart.tableCanvas = grid.canvas;
 
@@ -32,17 +31,11 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): voi
   grid.setOptions({'colHeaderHeight': 130});
 
   grid.onCellTooltip((cell, x, y) => {
-    if (
-      cell.tableColumn &&
-      [C.SEM_TYPES.AMINO_ACIDS, C.SEM_TYPES.ALIGNED_SEQUENCE].includes(cell.tableColumn.semType as C.SEM_TYPES)
-    ) {
+    const colSemType = cell.tableColumn?.semType as C.SEM_TYPES;
+    if (colSemType == C.SEM_TYPES.ALIGNED_SEQUENCE || colSemType == C.SEM_TYPES.AMINO_ACIDS) {
       if (!cell.isColHeader) {
         const monomerLib = cell.cell.dataFrame.temp[MonomerLibrary.id];
         PeptidesModel.chemPalette.showTooltip(cell, x, y, monomerLib);
-      } else if (barchart._currentBarPart) {
-        let elements: HTMLElement[] = [];
-        elements = elements.concat([ui.divText(barchart._currentBarPart.aaName)]);
-        ui.tooltip.show(ui.divV(elements), x, y);
       }
     }
     return true;
@@ -68,14 +61,10 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): voi
   });
 
   grid.temp['containsBarchart'] = true;
-  //FIXME: for some reason barchat didn't show when running analysis. This fixes it, but it's bad. Find a way to fix
-  // the problem
-  barchart.unhighlight();
 }
 
 export class StackedBarChart extends DG.JsViewer {
   dataEmptyAA: string;
-  _currentBarPart: type.BarChart.BarPart | null = null;
   tableCanvas: HTMLCanvasElement | undefined;
   aminoColumnNames: string[] = [];
   ord: { [Key: string]: number; } = {};
@@ -121,6 +110,7 @@ export class StackedBarChart extends DG.JsViewer {
       this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.computeData()));
       this.subs.push(DG.debounce(this.dataFrame.onValuesChanged, 50).subscribe(() => this.computeData()));
     }
+    this.computeData();
   }
 
   // Cancel subscriptions when the viewer is detached
@@ -272,6 +262,7 @@ export class StackedBarChart extends DG.JsViewer {
     });
   }
 
+  //TODO: refactor and simplify it
   findAARandPosition(cell: DG.GridCell, mouseEvent: MouseEvent): {colName: string, aaName: string} | null {
     if (!cell.tableColumn?.name || !this.aminoColumnNames.includes(cell.tableColumn.name))
       return null;
@@ -315,11 +306,6 @@ export class StackedBarChart extends DG.JsViewer {
     return null;
   }
 
-  unhighlight(): void {
-    // ui.tooltip.hide();
-    this.computeData();
-  }
-
   /** Requests highlight/select/filter action based on currentBarPart */
   requestAction(event: MouseEvent, barPart: {colName: string, aaName: string} | null): void {
     if (!barPart)
@@ -329,11 +315,7 @@ export class StackedBarChart extends DG.JsViewer {
     if (event.type === 'click') {
       event.shiftKey ? this.model.modifyCurrentSelection(aar, position) :
         this.model.initCurrentSelection(aar, position);
-    } else {
-      ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-        const currentAAR = this.dataFrame.get(position, i);
-        return currentAAR === aar;
-      }, event.offsetX, event.offsetY);
-    }
+    } else
+      this.model.showTooltip(aar, position, event.clientX, event.clientY);
   }
 }

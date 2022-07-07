@@ -554,23 +554,8 @@ export class PeptidesModel {
           const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
             table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
           const currentAAR = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
-          const currentStatsDf = this.statsDf.rows.match({Pos: currentPosition, AAR: currentAAR}).toDataFrame();
 
-          const activityCol = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
-          const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
-          const currentPosCol = this._dataFrame.getCol(currentPosition);
-          splitCol.init((i) => currentPosCol.get(i) == currentAAR);
-          const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-          const stats: Stats = {
-            count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
-            ratio: currentStatsDf.get(C.COLUMNS_NAMES.RATIO, 0),
-            pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
-            meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
-          };
-          const tooltip = getDistributionAndStats(
-            distributionTable, stats, `${currentPosition} : ${currentAAR}`, 'Other', true);
-
-          ui.tooltip.show(tooltip, x, y);
+          this.showTooltip(currentAAR, currentPosition, x, y);
         }
       }
       return true;
@@ -578,6 +563,25 @@ export class PeptidesModel {
 
     sarGrid.onCellTooltip(showTooltip);
     sarVGrid.onCellTooltip(showTooltip);
+  }
+
+  showTooltip(aar: string, position: string, x: number, y: number): void {
+    const currentStatsDf = this.statsDf.rows.match({Pos: position, AAR: aar}).toDataFrame();
+    const activityCol = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+    const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
+    const currentPosCol = this._dataFrame.getCol(position);
+    splitCol.init((i) => currentPosCol.get(i) == aar);
+    const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
+    const stats: Stats = {
+      count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
+      ratio: currentStatsDf.get(C.COLUMNS_NAMES.RATIO, 0),
+      pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
+      meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
+    };
+    const tooltip = getDistributionAndStats(
+      distributionTable, stats, `${position} : ${aar}`, 'Other', true);
+
+    ui.tooltip.show(tooltip, x, y);
   }
 
   //TODO: think about it, move out?
