@@ -33,11 +33,13 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
 export function createMomomersMolDict(lib: any[]): {[key: string]: string | any} {
     const dict: {[key: string]: string | any} = {};
     lib.forEach(it => {
-        const monomerObject: {[key: string]: any} = {};
-        HELM_CORE_FIELDS.forEach(field => {
-            monomerObject[field] = it[field];
-        })
-        dict[it[HELM_CORE_LIB_MONOMER_SYMBOL]] = monomerObject;
+        if (it['polymerType'] === 'PEPTIDE') {
+            const monomerObject: {[key: string]: any} = {};
+            HELM_CORE_FIELDS.forEach(field => {
+                monomerObject[field] = it[field];
+            })
+            dict[it[HELM_CORE_LIB_MONOMER_SYMBOL]] = monomerObject;
+        }
     })
     return dict;
 }
