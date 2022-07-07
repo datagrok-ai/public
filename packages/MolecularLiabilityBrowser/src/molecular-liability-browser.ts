@@ -566,9 +566,9 @@ export class MolecularLiabilityBrowser {
     if (this.treeBrowser === null) {
       const tempDf = DG.DataFrame.fromCsv(['"v id"'].join(','));
       this.treeBrowser = (await tempDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
+      this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.FILL, null, 'Clone');
       await this.treeBrowser.setData(this.treeDf, this.mlbDf);
       //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
-      this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.FILL, null, 'Clone');
     } else {
       await this.treeBrowser.setData(this.treeDf, this.mlbDf);
     }
