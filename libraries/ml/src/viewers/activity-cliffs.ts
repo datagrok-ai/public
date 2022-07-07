@@ -47,6 +47,7 @@ export async function getActivityCliffs(
     df: DG.DataFrame, 
     seqCol: DG.Column, 
     axesNames: string[],
+    scatterTitle: string,
     activities: DG.Column, 
     similarity: number,
     similarityMetric: string, 
@@ -145,6 +146,7 @@ export async function getActivityCliffs(
     showColorSelector: false,
     markerMinSize: 5,
     markerMaxSize: 25,
+    title: scatterTitle
   })) as DG.ScatterPlotViewer;
 
   const canvas = (sp.getInfo() as any)['canvas'];
@@ -250,10 +252,12 @@ export async function getActivityCliffs(
           const y1 = sp.dataFrame.get(axesNames[1], currentLine.mols[0]);
           const x2 = sp.dataFrame.get(axesNames[0], currentLine.mols[1]);
           const y2 = sp.dataFrame.get(axesNames[1], currentLine.mols[1]);
-          sp.zoom(x1 < x2 ? x1 : x2,
-            y1 > y2 ? y1 : y2,
-            x1 > x2 ? x1 : x2,
-            y1 < y2 ? y1 : y2);
+          const xDiff = Math.abs(x1 - x2)*5;
+          const yDiff = Math.abs(y1 - y2)*5;
+          sp.zoom(x1 < x2 ? x1 - xDiff : x2 - xDiff,
+            y1 > y2 ? y1 + yDiff : y2  + yDiff,
+            x1 > x2 ? x1 + xDiff : x2 + xDiff,
+            y1 < y2 ? y1 - yDiff : y2 - yDiff);
         }, 300);
         zoom = false;
       }
