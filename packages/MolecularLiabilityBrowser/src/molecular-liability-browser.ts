@@ -459,7 +459,7 @@ export class MolecularLiabilityBrowser {
       this.mlbView.grid.col(pfName).width = 150;
       filterList.push({type: 'histogram', column: pfName});
     }
-    //filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter'});
+    filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter'});
 
     this.filterView = this.mlbView.filters({filters: filterList}) as DG.FilterGroup;
     this.filterViewDn = this.mlbView.dockManager.dock(this.filterView, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.25);
