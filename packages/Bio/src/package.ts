@@ -52,7 +52,7 @@ export function vdRegionViewer() {
 //top-menu: Bio | Sequence Activity Cliffs...
 //name: Sequence Activity Cliffs
 //description: detect activity cliffs
-//input: dataframe df [Input data table]
+//input: dataframe table [Input data table]
 //input: column sequence {semType: Macromolecule}
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
@@ -68,6 +68,7 @@ export async function activityCliffs(df: DG.DataFrame, sequence: DG.Column, acti
     df,
     sequence,
     axesNames,
+    'Activity cliffs',
     activities,
     similarity,
     'Levenshtein',
@@ -103,7 +104,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   if (plotEmbeddings) {
     for (const v of grok.shell.views) {
       if (v.name === table.name)
-        (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1]});
+        (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
     }
   }
 };
