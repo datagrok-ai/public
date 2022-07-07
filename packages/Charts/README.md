@@ -81,14 +81,14 @@ categories.
 ## Radar
 
 Radar charts are used on multivariate data to plot groups of values over several common variables.
-Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/beer.csv
+Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/beer.csv>
 
 ![](./img/radar.gif)
 
 ## Chord
 
 Status: `experimental`
-Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/energy_uk.csv
+Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/energy_uk.csv>
 
 ![](./img/chord.gif)
 
@@ -97,28 +97,44 @@ See also the `Chord` viewer in the [Viewers](https://github.com/datagrok-ai/publ
 ## Sankey
 
 Status: `experimental`
-Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/energy_uk.csv
+Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/energy_uk.csv>
 
 ![](./img/sankey.gif)
 
 ## Sunburst
 
 Status: `experimental`
-Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv
+Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv>
 
 ![](./img/sunburst.gif)
 
 ## TreeMap
 
 Status: `experimental`
-Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv
+Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv>
 
 ![](./img/tree-map.gif)
 
 ## TreeViewer
 
-Status: `experimental`
-Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv
+`TreeViewer` is used to visualize hierarchical data. The chart builds a tree
+structure with up to three levels for a given dataset. The columns are selected
+based on a number of categories in them. To change the order of columns, add new
+levels to the initial hierarchy or remove the existing ones, edit the
+`hierarchy` property.
+
+The chart responds to data filters and rows selection. The only difference with
+the native viewers behavior is that the selection of rows in `TreeViewer` has
+limited interaction. The selection works on clicks with applied modifier keys
+(`Shift` adds to selection, `Ctrl` toggles the selected state, see more in the
+[wiki](https://datagrok.ai/help/visualize/viewers#selection)); while a regular
+click on a node is reserved for expanding or collapsing branches of the tree.
+
+In the viewer properties, you can adjust marker settings, change a tree layout,
+or toggle certain behaviors, such as animation, expanding or collapsing nodes,
+etc.
+
+Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv>
 
 ![](./img/tree-viewer.gif)
 
@@ -126,8 +142,9 @@ Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv
 
 ```js
 {
+  hierarchyColumnNames: ["level_1_column", "level_2_column"], // Ordered list of tree levels
   edgeShape: "curve",       // 'curve' | 'polyline'
-  expandAndCollapse: true,  //
+  expandAndCollapse: true,  // Enable branch expansion/collapse
   layout: "orthogonal",     // 'orthogonal' | 'radial'
   orient: "LR",             // 'LR' | 'RL' | 'TB' | 'BT'
   symbol: "emptyCircle",    // Tree node symbol shape
@@ -153,6 +170,7 @@ Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv
 ```
 
 See also:
-  - [ECharts](https://echarts.apache.org/en/index.html)
-  - [Viewers](https://datagrok.ai/help/visualize/viewers)
-  - [How to Develop Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer)
+
+- [ECharts](https://echarts.apache.org/en/index.html)
+- [Viewers](https://datagrok.ai/help/visualize/viewers)
+- [How to Develop Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer)
