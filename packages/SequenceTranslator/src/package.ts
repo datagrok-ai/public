@@ -10,6 +10,7 @@ import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-mono
 import {convertSequence, undefinedInputSequence, isValidSequence, getFormat} from
   './structures-works/sequence-codes-tools';
 import {map, COL_NAMES, MODIFICATIONS} from './structures-works/map';
+import {siRnaAxolabsToGcrs} from './structures-works/converters';
 import {SALTS_CSV} from './salts';
 import {USERS_CSV} from './users';
 import {ICDS} from './ICDs';
@@ -216,10 +217,12 @@ export function sequenceTranslator(): void {
     'SDF': saveSenseAntiSense(),
   });
 
+  $(codesTablesDiv).hide();
+
   const v = grok.shell.newView('Sequence Translator', [tabControl]);
   v.box = true;
 
-  const switchInput = ui.switchInput('Codes', true, (v: boolean) => (v) ?
+  const switchInput = ui.switchInput('Codes', false, (v: boolean) => (v) ?
     $(codesTablesDiv).show() :
     $(codesTablesDiv).hide(),
   );
@@ -306,9 +309,26 @@ function molecularWeight(sequence: string, weightsObj: {[index: string]: number}
 
 //tags: autostart
 export function autostartOligoSdFileSubscription() {
+  let alreadyAdded = false;
   grok.events.onViewAdded.subscribe((v: any) => {
-    if (v.type == 'TableView' && v.dataFrame.columns.contains(COL_NAMES.TYPE))
-      oligoSdFile(v.dataFrame);
+    if (v.type == 'TableView') {
+      if (v.dataFrame.columns.contains(COL_NAMES.TYPE))
+        oligoSdFile(v.dataFrame);
+      grok.events.onContextMenu.subscribe((args) => {
+        for (const col of v.dataFrame.columns) {
+          if (!alreadyAdded && DG.Detector.sampleCategories(col, (s) => /^[fsACGUacgu]{6,}$/.test(s))) {
+            alreadyAdded = true;
+            args.args.menu.item('Convert to GCRS', () => {
+              const seqCol = args.args.context.table.currentCol;
+              args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+                return siRnaAxolabsToGcrs(seqCol.get(i));
+              });
+            });
+            break;
+          };
+        }
+      });
+    }
   });
 }
 
@@ -366,7 +386,7 @@ export function oligoSdFile(table: DG.DataFrame) {
         ui.button('Save SD file', () => saveTableAsSdFile(addColumnsPressed ? newDf : table)),
       );
 
-      const view = grok.shell.getTableView(table.name)!;
+      const view = grok.shell.getTableView(table.name);
 
       view.table!.col(COL_NAMES.TYPE)!.setTag(DG.TAGS.CHOICES, '["AS", "SS", "Duplex"]');
       view.table!.col(COL_NAMES.OWNER)!.setTag(DG.TAGS.CHOICES, stringifyItems(usersDf.columns.byIndex(0).toList()));
