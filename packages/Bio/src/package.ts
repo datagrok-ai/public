@@ -18,7 +18,15 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cliffs';
 import { getMolfilesFromSeq, HELM_CORE_LIB_FILENAME } from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
+import {MacromoleculeSequenceCellRenderer} from "./utils/cell-renderer";
 
+//name: macromoleculeSequenceCellRenderer2
+//tags: cellRenderer
+//meta.cellType: Macromolecule
+//output: grid_cell_renderer result
+export function macromoleculeSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+  return new MacromoleculeSequenceCellRenderer();
+}
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
 // eslint-disable-next-line max-len
