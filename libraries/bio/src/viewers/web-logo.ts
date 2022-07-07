@@ -748,6 +748,18 @@ export class WebLogo extends DG.JsViewer {
     };
   }
 
+  /** Get splitter method to split sequences to monomers */
+  public static getSplitter(units: string, separator: string): SplitterFunc {
+    if (units.toLowerCase().startsWith('fasta')) {
+      return WebLogo.splitterAsFasta;
+    } else if (units.toLowerCase().startsWith('separator')) {
+      return WebLogo.getSplitterWithSeparator(separator);
+    } else
+      throw new Error(`Unexpected units ${units} .`);
+
+    // TODO: Splitter for HELM
+  }
+
   /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
   private static aaSynonyms: { [name: string]: string } = {
     '[MeNle]': 'L', // Nle - norleucine
