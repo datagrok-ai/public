@@ -107,6 +107,7 @@ export class WebLogo extends DG.JsViewer {
   public horizontalAlignment: string | null;
   public fitArea: boolean;
   public shrinkEmptyTail: boolean;
+  public skipEmptyPositions: boolean;
 
   private positionNames: string[] = [];
 
@@ -150,6 +151,7 @@ export class WebLogo extends DG.JsViewer {
       {choices: ['left', 'center', 'right']});
     this.fitArea = this.bool('fitArea', true);
     this.shrinkEmptyTail = this.bool('shrinkEmptyTail', true);
+    this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
   }
 
   private async init(): Promise<void> {
@@ -429,7 +431,8 @@ export class WebLogo extends DG.JsViewer {
     }
     //#endregion
 
-    const maxHeight = this.canvas.height - this.axisHeight;
+    const r = window.devicePixelRatio;
+    const maxHeight = this.canvas.height - this.axisHeight * r;
     // console.debug(`WebLogo<${this.viewerId}>._calculate() maxHeight=${maxHeight}.`);
 
     //#region Calculate screen
@@ -556,20 +559,21 @@ export class WebLogo extends DG.JsViewer {
       this._positionWidth = this.positionWidth * scale;
     }
 
-    this.canvas.width = width;
+    const r = window.devicePixelRatio;
+    this.canvas.width = width * r;
     this.canvas.style.width = `${width}px`;
 
     // const canvasHeight: number = width > this.root.clientWidth ? height - 8 : height;
     this.host.style.setProperty('height', `${height}px`);
     const canvasHeight: number = this.host.clientHeight;
-    this.canvas.height = canvasHeight;
+    this.canvas.height = canvasHeight * r;
     this.canvas.style.setProperty('height', `${canvasHeight}px`);
 
     // Adjust host and root width
     if (this.fixWidth) {
       // full width for canvas host and root
       this.root.style.width = this.host.style.width = `${width}px`;
-      this.root.style.height /*= this.host.style.height*/ = `${height}px`;
+      this.root.style.height = `${height}px`;
       this.host.style.setProperty('overflow', 'hidden', 'important');
     } else {
       // allow scroll canvas in root
@@ -750,11 +754,11 @@ export class WebLogo extends DG.JsViewer {
 
   /** Get splitter method to split sequences to monomers */
   public static getSplitter(units: string, separator: string): SplitterFunc {
-    if (units.toLowerCase().startsWith('fasta')) {
+    if (units.toLowerCase().startsWith('fasta'))
       return WebLogo.splitterAsFasta;
-    } else if (units.toLowerCase().startsWith('separator')) {
+    else if (units.toLowerCase().startsWith('separator'))
       return WebLogo.getSplitterWithSeparator(separator);
-    } else
+    else
       throw new Error(`Unexpected units ${units} .`);
 
     // TODO: Splitter for HELM
