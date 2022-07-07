@@ -1,6 +1,28 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-07-07 Dev build 1.4.14
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.14`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Ability to save favorites for groups 
+* Packages: improve package sources check 
+* JS UI Test: Density Plot 
+* Bio: modified getMolfilesFromSeq function 
+* CSS adjustments 
+* #740: barchart tooltips 
+* Model Property Panel layout 
+* #740: Peptide Space tooltip 
+
+
 # 2022-07-07 Dev build 1.4.13
 
 ## Latest Docker Images
