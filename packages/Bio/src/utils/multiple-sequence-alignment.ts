@@ -29,12 +29,12 @@ function _fastaToStrings(fasta: string): string[] {
 /**
  * Runs Aioli environment with kalign tool.
  *
- * @param {DG.Column} col Column with sequences.
+ * @param {DG.Column} srcCol Column with sequences.
  * @param {boolean} isAligned Whether the column is aligned.
  * @return {Promise<DG.Column>} Aligned sequences.
  */
-export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.Column> {
-  let sequences = col.toList();
+export async function runKalign(srcCol: DG.Column, isAligned = false): Promise<DG.Column> {
+  let sequences = srcCol.toList();
 
   if (isAligned)
     sequences = sequences.map((v: string, _) => AlignedSequenceEncoder.clean(v).replace(/\-/g, ''));
@@ -55,15 +55,20 @@ export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.
   console.warn(output);
 
   const aligned = _fastaToStrings(buf).slice(0, sequences.length);
-  const alignedCol = DG.Column.fromStrings(`msa(${col.name})`, aligned);
-  alignedCol.setTag(DG.TAGS.UNITS, '');
-  alignedCol.semType = C.SEM_TYPES.Macro_Molecule;
-  return alignedCol;
+  const tgtCol = DG.Column.fromStrings(`msa(${srcCol.name})`, aligned);
+
+  // units
+  const srcUnits = srcCol.getTag(DG.TAGS.UNITS);
+  const tgtUnits = srcUnits.split(':').map((p, i) => i == 1 ? p + '.MSA' : p).join(':');
+
+  tgtCol.setTag(DG.TAGS.UNITS, tgtUnits);
+  tgtCol.semType = C.SEM_TYPES.Macro_Molecule;
+  return tgtCol;
 }
 
 export async function testMSAEnoughMemory(col: DG.Column): Promise<void> {
   const sequencesCount = col.length;
-  const delta = sequencesCount/100;
+  const delta = sequencesCount / 100;
 
   for (let i = delta; i < sequencesCount; i += delta) {
     try {

@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
-import {mmSemType} from './const';
 import {WebLogo, SeqColStats} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
@@ -120,20 +119,23 @@ export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.
 //top-menu: Bio | Composition Analysis
 //output: viewer result
 export async function compositionAnalysis(): Promise<void> {
-  const col = grok.shell.t.columns.bySemType('Macromolecule');//DG.SEMTYPE.MACROMOLECULE);
-  if (col === null) {
+  // Higher priority for columns with MSA data to show with WebLogo.
+  const tv = grok.shell.tv;
+  const df = tv.dataFrame;
+  const semTypeColList = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
+  let col: DG.Column | undefined = semTypeColList.find((col) => {
+    const units = col.getTag(DG.TAGS.UNITS);
+    return units ? units.indexOf('MSA') !== -1 : false;
+  });
+  if (!col)
+    col = semTypeColList[0];
+
+  if (!col) {
     grok.shell.error('Current table does not contain sequences');
     return;
   }
 
-  const wl = await col.dataFrame.plot.fromType('WebLogo', {});
-
-  for (const v of grok.shell.views) {
-    if (v instanceof DG.TableView && (v as DG.TableView).dataFrame.name === col.dataFrame.name) {
-      (v as DG.TableView).dockManager.dock(wl.root, 'down');
-      break;
-    }
-  }
+  tv.addViewer('WebLogo', {sequenceColumnName: col.name});
 }
 
 // helper function for importFasta
@@ -182,7 +184,7 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
     (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));
   const maxCos = Math.max(...alphabetCandidatesSim);
   const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
-  sequenceCol.semType = mmSemType;
+  sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
   const units: string = `fasta:${seqType}:${alphabet}`;
   sequenceCol.setTag(DG.TAGS.UNITS, units);
 
