@@ -1,6 +1,39 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-07-07 Dev build 1.4.13
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.4.13`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Integration tests: ChemMapIdentifiers test fails 
+* CardView: Ribbon shortcuts (WIP)
+* Document viewer properties (WIP)
+* Fixed warnings 
+* Public token 
+* Macromolecules page 
+* Ability to save favorites for groups 
+* Fixed NPE 
+* OnCurrentObjectChangedEvent 
+* Updated public token 
+* CSS improvements 
+* Wiki: Upload data: improvements 
+* (Bug) Find and replace: an exception when replacing values 
+* Fixed NPE on admin login 
+* Added initial permissions for Admin user 
+* Fix docker datagrok image 
+* Added missing migration 
+* #763: distribution panel label fix 
+* Bio: getting monomer objects from HELM lib 
+
+
 # 2022-07-05 Dev build 1.4.12
 
 ## Latest Docker Images
