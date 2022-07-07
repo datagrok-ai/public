@@ -1,131 +1,124 @@
 import * as DG from 'datagrok-api/dg';
 
-// export const enum NOTATION {
-//   // these values can be changed to "user-friendly" ones later on
-//   FASTA = 'fasta',
-//   SEPARATOR = 'separator',
-//   HELM = 'helm'
-// }
+export const enum NOTATION {
+  // these values can be changed to "user-friendly" ones later on
+  FASTA = 'fasta',
+  SEPARATOR = 'separator',
+  HELM = 'helm'
+}
 
 export class NotationConverter {
   private _sourceColumn: DG.Column; // the column to be converted
   private _currentUnits: string; // units of the form fasta:SEQ:NT, etc.
-  private _sourceNotation: string; // current notation (without :SEQ:NT, etc.)
-  private _targetNotation: string;
+  private _sourceNotation: NOTATION; // current notation (without :SEQ:NT, etc.)
+  private _targetNotation: NOTATION;
 
-  private get sourceColumn(): DG.Column { return this._sourceColumn; }
   private get currentUnits(): string { return this._currentUnits; }
-  private get sourceNotation(): string { return this._sourceNotation; }
-  private get targetNotation(): string { return this._targetNotation; }
+  private get sourceColumn(): DG.Column { return this._sourceColumn; }
+  public get targetNotation(): NOTATION { return this._targetNotation; }
 
-  // these values can be changed to "user-friendly" ones later on
-  private _fasta = 'fasta';
-  private _separator = 'separator';
-  private _helm = 'helm';
+  public set targetNotation(target: NOTATION) {
+    this._targetNotation = target;
+  }
+  public get sourceNotation(): NOTATION { return this._sourceNotation; }
 
-  public isFasta(): boolean { return this.sourceNotation == this._fasta; }
-  public isSeparator(): boolean { return this.sourceNotation == this._separator; }
-  public isHelm(): boolean { return this.sourceNotation == this._helm; }
+  //   // these values can be changed to "user-friendly" ones later on
+  //   private _fasta = 'fasta';
+  //   private _separator = 'separator';
+  //   private _helm = 'helm';
 
-  private determineSourceNotation() : string {
+  public isFasta(): boolean { return this.sourceNotation === NOTATION.FASTA; }
+  public isSeparator(): boolean { return this.sourceNotation === NOTATION.SEPARATOR; }
+  public isHelm(): boolean { return this.sourceNotation === NOTATION.HELM; }
+
+  private determineSourceNotation() : NOTATION {
     if (this.currentUnits.toLowerCase().startsWith('fasta'))
-      return 'fasta';
+      return NOTATION.FASTA;
     else if (this.currentUnits.toLowerCase().startsWith('separator'))
-      return 'separator';
+      return NOTATION.SEPARATOR;
     else
       // TODO: handle possible exceptions
-      return 'HELM';
+      return NOTATION.HELM;
+  }
+
+  private getNewColumn(): DG.Column {
+    const col = this.sourceColumn;
+    const len = col.length;
+    const name = this.sourceNotation + '2' + this.targetNotation;
+    const newColName = col.dataFrame.columns.getUnusedName(name);
+    // dummy code
+    const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(name));
+    newColumn.semType = 'Macromolecule';
+    return newColumn;
   }
 
   private convertFastaToSeparator(): DG.Column {
     // TODO: implementation
-    const len = this.sourceColumn.length;
-    const newColName = 'converted';
-    const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill('fasta2sep'));
-    newColumn.semType = 'Macromolecule';
-    return newColumn;
+    return this.getNewColumn();
   }
 
   private convertFastaToHelm(): DG.Column {
     // TODO: implementation
-    const len = this.sourceColumn.length;
-    const newColName = 'converted';
-    const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill('fasta2helm'));
-    newColumn.semType = 'Macromolecule';
-    return newColumn;
+    return this.getNewColumn();
   }
 
   private convertSeparatorToFasta(): DG.Column {
     // TODO: implementation
-    const len = this.sourceColumn.length;
-    const newColName = 'converted';
-    const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill('sep2fasta'));
-    newColumn.semType = 'Macromolecule';
-    return newColumn;
+    return this.getNewColumn();
   }
 
   private convertSeparatorToHelm(): DG.Column {
     // TODO: implementation
-    const len = this.sourceColumn.length;
-    const newColName = 'converted';
-    const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill('sep2helm'));
-    newColumn.semType = 'Macromolecule';
-    return newColumn;
+    return this.getNewColumn();
   }
 
   private convertHelmToFasta(): DG.Column {
     // TODO: implementation
-    const len = this.sourceColumn.length;
-    const newColName = 'converted';
-    const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill('helm2fasta'));
-    newColumn.semType = 'Macromolecule';
-    return newColumn;
+    return this.getNewColumn();
   }
 
   private convertHelmToSeparator(): DG.Column {
-    // TODO: implementation
-    const len = this.sourceColumn.length;
-    const newColName = 'converted';
-    const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill('helm2sep'));
-    newColumn.semType = 'Macromolecule';
-    return newColumn;
+    // TODO: implementatioreturn this.getNewColumn();
+    return this.getNewColumn();
   }
 
   // TODO: write the bodies of converter methods
   public convert() : DG.Column {
+    if (this.sourceNotation === this.targetNotation)
+      throw new Error('Target notation is not specified');
     if (
-      this.sourceNotation == this._fasta &&
-      this.targetNotation == this._separator
+      this.sourceNotation === NOTATION.FASTA &&
+      this.targetNotation === NOTATION.SEPARATOR
     )
       return this.convertFastaToSeparator();
     else if (
-      this.sourceNotation == this._fasta &&
-      this.targetNotation == this._helm
+      this.sourceNotation === NOTATION.FASTA &&
+      this.targetNotation === NOTATION.HELM
     )
       return this.convertFastaToHelm();
     else if (
-      this.sourceNotation == this._separator &&
-      this.targetNotation == this._fasta
+      this.sourceNotation === NOTATION.SEPARATOR &&
+      this.targetNotation === NOTATION.FASTA
     )
       return this.convertSeparatorToFasta();
     else if (
-      this.sourceNotation == this._separator &&
-      this.targetNotation == this._helm
+      this.sourceNotation === NOTATION.SEPARATOR &&
+      this.targetNotation === NOTATION.HELM
     )
       return this.convertSeparatorToHelm();
     else if (
-      this.sourceNotation == this._helm &&
-      this.targetNotation == this._fasta
+      this.sourceNotation === NOTATION.HELM &&
+      this.targetNotation === NOTATION.FASTA
     )
       return this.convertHelmToFasta();
     else
       return this.convertHelmToSeparator();
   }
 
-  public constructor(col: DG.Column, target: string) {
+  public constructor(col: DG.Column) {
     this._sourceColumn = col;
     this._currentUnits = this._sourceColumn.tags[DG.TAGS.UNITS];
     this._sourceNotation = this.determineSourceNotation();
-    this._targetNotation = target;
+    this._targetNotation = this.sourceNotation;
   }
 }
