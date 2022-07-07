@@ -109,8 +109,8 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   }
 };
 
-//top-menu: Bio | Molfiles From HELM...
-//name: Molfiles From HELM
+//top-menu: Bio | To Atomic Level...
+//name: To Atomic Level
 //description: returns molfiles for each monomer from HELM library
 //input: dataframe df [Input data table]
 //input: column sequence {semType: Macromolecule}
@@ -118,12 +118,12 @@ export async function molfilesFromHELM(df: DG.DataFrame, sequence: DG.Column): P
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
   const atomicCodes = getMolfilesFromSeq(sequence, monomersLibObject);
+  const result = await getMacroMol(atomicCodes!);
 
-  let result: string[] = [];
-  for(let i = 0; i < atomicCodes!.length; i++)
-    result.push(getMacroMol(atomicCodes![i]));
-  
-  df.columns.add(DG.Column.fromStrings('regenerated', result));
+  const col = DG.Column.fromStrings('regenerated', result);
+  col.semType = DG.SEMTYPE.MOLECULE;
+  col.tags[DG.TAGS.UNITS] = 'molblock';
+  df.columns.add(col);
 }
 
 
