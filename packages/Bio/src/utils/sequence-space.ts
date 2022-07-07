@@ -31,7 +31,7 @@ export async function sequenceSpace(spaceParams: ISequenceSpaceParams): Promise<
     spaceParams.similarityMetric as StringMetrics | BitArrayMetrics,
     spaceParams.options);
   const cols: DG.Column[] = spaceParams.embedAxesNames.map(
-    (name: string, index: string) => DG.Column.fromFloat32Array(name, sequenceSpaceResult.embedding[index]));
+    (name: string, index: number) => DG.Column.fromFloat32Array(name, sequenceSpaceResult.embedding[index]));
   return {distance: sequenceSpaceResult.distance, coordinates: new DG.ColumnList(cols)};
 }
 
