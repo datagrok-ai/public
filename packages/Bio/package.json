@@ -18,7 +18,8 @@
     "datagrok-api": "^1.4.12",
     "dayjs": "latest",
     "ts-loader": "^9.2.5",
-    "typescript": "^4.4.2"
+    "typescript": "^4.4.2",
+    "openchemlib": "6.0.1"
   },
   "devDependencies": {
     "@types/jest": "^27.0.0",
