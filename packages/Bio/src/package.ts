@@ -116,8 +116,8 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
 //input: column sequence {semType: Macromolecule}
 export async function molfilesFromHELM(df: DG.DataFrame, sequence: DG.Column): Promise<void> {
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
-  const monomersLibDf = DG.DataFrame.fromJson(monomersLibFile);
-  const atomicCodes = getMolfilesFromSeq(sequence, monomersLibDf);
+  const monomersLibObject: any[] = JSON.parse(monomersLibFile);
+  const atomicCodes = getMolfilesFromSeq(sequence, monomersLibObject);
 
   let result: string[] = [];
   for(let i = 0; i < atomicCodes!.length; i++)

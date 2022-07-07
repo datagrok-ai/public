@@ -2,15 +2,16 @@ import * as DG from 'datagrok-api/dg';
 import { WebLogo, SplitterFunc } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import * as grok from 'datagrok-api/grok';
 
-export const HELM_CORE_LIB_MONOMER_COL = 'symbol';
-export const HELM_CORE_LIB_MOLFILE_COL = 'molfile';
 export const HELM_CORE_LIB_FILENAME = '/samples/HELMCoreLibrary.json';
+export const HELM_CORE_LIB_MONOMER_SYMBOL = 'symbol';
+export const HELM_CORE_LIB_MOLFILE = 'molfile';
+export const HELM_CORE_FIELDS = ['symbol', 'molfile', 'rgroups', 'name'];
 
-export function getMolfilesFromSeq(col: DG.Column, monomersLib: DG.DataFrame): string[][] | null {
+export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): any[][] | null {
     const units = col.tags[DG.TAGS.UNITS];
     const sep = col.getTag('separator');
     const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, sep);
-    const monomersDict = createMomomersMolDict(monomersLib);
+    const monomersDict = createMomomersMolDict(monomersLibObject);
     const molFiles = [];
     for (let i = 0; i < col.length; ++i) {
         const monomers = splitterFunc(col.get(i));
@@ -29,12 +30,14 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLib: DG.DataFrame): s
     return molFiles;
   }
 
-export function createMomomersMolDict(lib: DG.DataFrame): {[key: string]: string} {
-    const dict: {[key: string]: string} = {};
-    const monmersCol = lib.col(HELM_CORE_LIB_MONOMER_COL);
-    const molCol = lib.col(HELM_CORE_LIB_MOLFILE_COL);
-    for (let i = 0; i < lib.rowCount; ++i) {
-        dict[monmersCol!.get(i)] = molCol!.get(i);
-    }
+export function createMomomersMolDict(lib: any[]): {[key: string]: string | any} {
+    const dict: {[key: string]: string | any} = {};
+    lib.forEach(it => {
+        const monomerObject: {[key: string]: any} = {};
+        HELM_CORE_FIELDS.forEach(field => {
+            monomerObject[field] = it[field];
+        })
+        dict[it[HELM_CORE_LIB_MONOMER_SYMBOL]] = monomerObject;
+    })
     return dict;
 }
