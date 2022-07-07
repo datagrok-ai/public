@@ -17,6 +17,7 @@ import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cliffs';
 import { getMolfilesFromSeq, HELM_CORE_LIB_FILENAME } from './utils/utils';
+import {getMacroMol} from './utils/atomic-works';
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -112,11 +113,16 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
 //description: returns molfiles for each monomer from HELM library
 //input: dataframe df [Input data table]
 //input: column sequence {semType: Macromolecule}
-export async function molfilesFromHELM(df: DG.DataFrame, sequence: DG.Column): Promise<string[][] | null> {
+export async function molfilesFromHELM(df: DG.DataFrame, sequence: DG.Column): Promise<void> {
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibDf = DG.DataFrame.fromJson(monomersLibFile);
-  const result = getMolfilesFromSeq(sequence, monomersLibDf);
-  return result;
+  const atomicCodes = getMolfilesFromSeq(sequence, monomersLibDf);
+
+  let result: string[] = [];
+  for(let i = 0; i < atomicCodes!.length; i++)
+    result.push(getMacroMol(atomicCodes![i]));
+  
+  df.columns.add(DG.Column.fromStrings('regenerated', result));
 }
 
 
