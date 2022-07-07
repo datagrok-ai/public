@@ -9,7 +9,9 @@ export type Stats = {
   ratio: number,
 };
 
-export function getStats(data: Float32Array | number[], mask: DG.BitSet): Stats {
+type StatsData = Float32Array | Float64Array | Int32Array | Uint32Array | number[];
+
+export function getStats(data: StatsData, mask: DG.BitSet): Stats {
   const selected = new Float32Array(mask.trueCount);
   const rest = new Float32Array(mask.falseCount);
   let selectedIndex = 0;
