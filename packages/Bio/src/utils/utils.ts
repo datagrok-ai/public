@@ -22,7 +22,7 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
                     grok.shell.warning(`Monomer ${monomers[j]} is missing in HELM library. Structure cannot be created`);
                     return null;
                 }
-                molFilesForSeq.push(monomersDict[monomers[j]])
+                molFilesForSeq.push(JSON.parse(JSON.stringify(monomersDict[monomers[j]])))
             }
         }
         molFiles.push(molFilesForSeq);
