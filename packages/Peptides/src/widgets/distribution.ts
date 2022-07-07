@@ -19,6 +19,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const positionsLen = positions.length;
   let aarStr = allConst;
   let otherStr = '';
+  const useSelectedStr = model.isPeptideSpaceChangingBitset;
 
   const updateDistributionHost = () => {
     model.splitByPos = splitByPosition.value!;
@@ -106,15 +107,13 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         return new DG.Widget(ui.divText('No distribution'));
 
       otherStr = '';
-      if (positionsLen) {
+      if (useSelectedStr) {
+        aarStr = 'Selected';
+        otherStr = otherConst;
+      } else if (positionsLen) {
         aarStr = '';
-        for (const position of positions) {
-          aarStr += `${position}: {`;
-          for (const aar of selectionObject[position])
-            aarStr += `${aar}, `;
-          aarStr = aarStr.slice(0, aarStr.length - 2);
-          aarStr += '}; ';
-        }
+        for (const position of positions)
+          aarStr += `${position}: {${selectionObject[position].join(', ')}}; `;
         aarStr = aarStr.slice(0, aarStr.length - 2);
         otherStr = otherConst;
       }

@@ -705,9 +705,9 @@ export class PeptidesModel {
   fireBitsetChanged(isPeptideSpaceSource: boolean = false): void {
     this.isPeptideSpaceChangingBitset = isPeptideSpaceSource;
     this.getBiteset().fireChanged();
-    this.isPeptideSpaceChangingBitset = false;
     this.modifyOrCreateSplitCol();
     grok.shell.o = this.createAccordion().root;
+    this.isPeptideSpaceChangingBitset = false;
   }
 
   getBiteset(): DG.BitSet {return this._filterMode ? this._dataFrame.filter : this._dataFrame.selection;}
