@@ -6,6 +6,8 @@ import {NglAspect} from './ngl-aspect';
 import {PvizAspect} from './pviz-aspect';
 import {MiscMethods} from './misc';
 import {DataLoader, JsonType, ObsPtmType, PdbType} from '../utils/data-loader';
+import {MlbEvents} from '../const';
+import {Subscription} from 'rxjs';
 
 export class TwinPviewer {
   dataLoader: DataLoader;
@@ -24,6 +26,8 @@ export class TwinPviewer {
   ptmProbInput: DG.InputBase;
   paratopesInput: DG.InputBase;
   sequenceTabs: DG.TabControl;
+
+  schemesList: string[];
 
   accOptions: DG.Accordion;
   panelNode: DG.DockNode;
@@ -53,9 +57,7 @@ export class TwinPviewer {
   pdbStr: PdbType;
   jsonObsPtm: ObsPtmType;
 
-  public get cdrScheme() { return this.cdrSchemeInput.value; }
-
-  public set cdrScheme(value: string) { this.cdrSchemeInput.value = value; }
+  subs: Subscription[];
 
   constructor(dataLoader: DataLoader) {
     this.dataLoader = dataLoader;
@@ -76,8 +78,8 @@ export class TwinPviewer {
     const representations = ['cartoon', 'backbone', 'ball+stick', 'licorice', 'hyperball', 'surface'];
     this.repChoiceInput = ui.choiceInput('Representation', 'cartoon', representations);
 
-    const schemesLst = MiscMethods.extractSchemes(json);
-    this.cdrSchemeInput = ui.choiceInput('CDR3 Scheme', 'default', schemesLst);
+    this.schemesList = MiscMethods.extractSchemes(json);
+    this.cdrSchemeInput = ui.choiceInput('CDR3 Scheme', 'default', this.schemesList);
 
     this.root = ui.div();
     this.changeChoices();
@@ -129,6 +131,13 @@ export class TwinPviewer {
       this.sequenceNode =
         mlbView.dockManager.dock(this.sequenceTabs.root, DG.DOCK_TYPE.DOWN, this.nglNode, 'Sequence', 0.225);
       MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs.root);
+
+      this.subs.push(grok.events.onCustomEvent(MlbEvents.CdrChanged).subscribe((value: string) => {
+        const key = this.schemesList.find((v) => v.toUpperCase() == value.toUpperCase());
+        console.debug(`MLB: CompositionPviewer.onCustomEvent(${MlbEvents.CdrChanged}) ` +
+          `value="${value}" -> key="${key}".`);
+        this.cdrSchemeInput.value = key ? key : 'default';
+      }));
     }
   }
 
@@ -144,6 +153,8 @@ export class TwinPviewer {
 
     if (!!this.sequenceNode)
       mlbView.dockManager.close(this.sequenceNode);
+
+    this.subs.forEach((sub) => sub.unsubscribe());
 
     this.isOpened = false;
   }

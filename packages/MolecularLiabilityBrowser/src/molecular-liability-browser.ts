@@ -12,6 +12,7 @@ import {MiscMethods} from './viewers/misc';
 import {TwinPviewer} from './viewers/twin-p-viewer';
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {_startInit} from './package';
+import {MlbEvents} from './const';
 
 
 export class MolecularLiabilityBrowser {
@@ -597,7 +598,7 @@ export class MolecularLiabilityBrowser {
       const tempDf = DG.DataFrame.fromObjects([{}]);
       this.regionsViewer = (await tempDf.plot.fromType('VdRegions')) as unknown as VdRegionsViewer;
       await this.regionsViewer.setDf(this.mlbDf, this.regions);
-      this.mlbView.dockManager.dock(this.regionsViewer, DG.DOCK_TYPE.DOWN, null, 'Regions', 0.3);
+      this.mlbView.dockManager.dock(this.regionsViewer.root, DG.DOCK_TYPE.DOWN, null, 'Regions', 0.3);
     } else {
       // this.regionsViewer.numberingScheme = this.schemeName;
       // this.regionsViewer.setOptions({numberingScheme: this.schemeName});
@@ -675,7 +676,15 @@ export class MolecularLiabilityBrowser {
       this.cdrInput.value = this.cdrName;
 
     this.urlParams.set('cdr', this.cdrName);
-    window.setTimeout(async () => { await this.loadData(); }, 10);
+    window.setTimeout(async () => {
+      await this.loadData()
+        .then(() => {
+          grok.events.fireCustomEvent(MlbEvents.CdrChanged, this.cdrName);
+        })
+        .catch((e) => {
+          console.error(e);
+        });
+    }, 10);
   }
 
   onVidChanged(vid: string): void {

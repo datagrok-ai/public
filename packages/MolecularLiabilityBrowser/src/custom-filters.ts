@@ -1,9 +1,11 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
 import {_startInit} from './package';
+import {MlbEvents} from './const';
 
 type ChainTypeType = 'L' | 'H';
 
@@ -13,6 +15,8 @@ type ChainTypeType = 'L' | 'H';
  * 2. Call dataFrame.rows.requestFilter when filtering criteria changes.
  * */
 export class PtmFilter extends DG.Filter {
+  cdrInput: DG.InputBase;
+
   chainType: ChainTypeType;
   ptmMap: { [key: string]: string; };
   cdrMap: { [key: string]: string; };
@@ -27,7 +31,8 @@ export class PtmFilter extends DG.Filter {
   currentCdr: string;
 
   constructor(
-    ptmMap: { [key: string]: string }, cdrMap: { [key: string]: string }, referenceDf: DG.DataFrame) {
+    ptmMap: { [key: string]: string }, cdrMap: { [key: string]: string }, referenceDf: DG.DataFrame
+  ) {
     super();
     this.root = ui.divV(null, 'd4-mlb-filter');
     this.subs = [];
@@ -76,6 +81,12 @@ export class PtmFilter extends DG.Filter {
     tempDf.columns.addNewInt('index').init((i) => i);
     this.indexes = (dataFrame.clone(null, ['v id']).join(tempDf, ['v id'], ['v_id'], [], ['index'], 'left', false)
       .getCol('index').getRawData() as Int32Array);
+
+    this.subs.push(grok.events.onCustomEvent(MlbEvents.CdrChanged).subscribe((value: string) => {
+      const key: string = this.cdrKeys.find((v) => v.toUpperCase() == value.toUpperCase());
+      console.debug(`MLB: PtmFilter.onCustomEvent(${MlbEvents.CdrChanged}) value ="${value}" -> key="${key}".`);
+      this.cdrInput.value = key ? key : 'None';
+    }));
 
     this.render();
     console.debug(`MLB: PtmFilter.attach() end, ${((Date.now() - _startInit) / 1000).toString()}`);
@@ -150,9 +161,9 @@ export class PtmFilter extends DG.Filter {
       ui.tooltip.bind(element, `${element.lastChild.textContent}`);
     });
     ptmInputCash.children().first().remove();
-    const cdrInput = ui.choiceInput('CDR', this.currentCdr, this.cdrKeys, () => {
-      this.currentCdr = cdrInput.stringValue === 'None' ?
-        'max' : this.cdrMap[this.normalizedCDRMap[`${this.chainType} ${cdrInput.stringValue}`]];
+    this.cdrInput = ui.choiceInput('CDR', this.currentCdr, this.cdrKeys, () => {
+      this.currentCdr = this.cdrInput.stringValue === 'None' ?
+        'max' : this.cdrMap[this.normalizedCDRMap[`${this.chainType} ${this.cdrInput.stringValue}`]];
       this.dataFrame.rows.requestFilter();
     });
 
@@ -176,7 +187,7 @@ export class PtmFilter extends DG.Filter {
     });
     $(probabilityInput.root).children('*').height('17px').css('max-width', '265px');
 
-    this.root = ui.divV([chainTypeInput.root, cdrInput.root, ptmInputLabel, ptmInput.root, probabilityHost]);
+    this.root = ui.divV([chainTypeInput.root, this.cdrInput.root, ptmInputLabel, ptmInput.root, probabilityHost]);
     this.root.style.margin = '10px';
 
     console.debug(`MLB: PtmFilter.render() end, ${((Date.now() - _startInit) / 1000).toString()}`);
