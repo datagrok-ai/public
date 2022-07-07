@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Logo} from './ca-viewer-logo';
+import {MlbEvents} from '../const';
+import {Subscription} from 'rxjs';
 
 
 export class CompostionPviewer {
@@ -24,6 +26,8 @@ export class CompostionPviewer {
   aligned: DG.DataFrame;
 
   isOpen: boolean;
+
+  subs: Subscription[];
 
   #splitAlignedPeptides(peptideColumn: DG.Column) {
     let splitPeptidesArray: string[][] = [];
@@ -101,6 +105,13 @@ export class CompostionPviewer {
 
     this.openPanels = [this.panelNode, this.logoNode];
 
+    this.subs.push(grok.events.onCustomEvent(MlbEvents.CdrChanged).subscribe((value: string) => {
+      const key = cdrOptions.find((v) => v.toUpperCase() == value.toUpperCase());
+      console.debug(`MLB: CompositionPviewer.onCustomEvent(${MlbEvents.CdrChanged}) ` +
+        `value ="${value}" -> key="${key}".`);
+      this.cdrChoice.value = key ? key : 'default';
+    }));
+
     this.isOpen = true;
   }
 
@@ -108,6 +119,8 @@ export class CompostionPviewer {
     if (!!this.openPanels)
       this.openPanels.forEach((p) => mlbView.dockManager.close(p));
     this.isOpen = false;
+
+    this.subs.forEach((sub) => sub.unsubscribe());
   }
 
   do(view: DG.TableView) {

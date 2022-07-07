@@ -44,7 +44,7 @@ export class TreeBrowser extends DG.JsViewer {
     // .catch((ex) => {
     //   console.error(`TreeBrowser.setData() > destroyView() error:\n${ex.toString()}`);
     // });
-    this.dataFrame = mlbDf;
+    this._mlbDf = mlbDf;
     this._treeDf = treeDf;
     await this.buildView()
       .catch((ex) => {
