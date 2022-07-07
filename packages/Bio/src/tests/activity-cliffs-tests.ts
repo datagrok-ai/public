@@ -26,6 +26,7 @@ category('activityCliffs', async () => {
       actCliffsDf,
       actCliffsDf.col('MSA')!,
       axesNames,
+      'Activity cliffs',
       actCliffsDf.col('Activity')!,
       50,
       'Levenshtein',
