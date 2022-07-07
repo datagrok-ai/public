@@ -171,11 +171,26 @@ export async function monomerManager(helmColumn: DG.Column) {
 }
 
 //name: helmColumnToSmiles
-//input: column helmColumn {semType: HELM}
+//input: column helmColumn {semType: Macromolecule}
 export function helmColumnToSmiles(helmColumn: DG.Column) {
   //todo: add column with smiles to col.dataFrame.
 }
 
+//name: findMonomers
+//input: string helmString { semType: Macromolecule }
+export async function findMonomers(helmString: string) {
+  const types = Object.keys(org.helm.webeditor.monomerTypeList());
+  const monomers = [];
+  const monomer_names = [];
+  for (var i = 0; i < types.length; i++) {
+    monomers.push(new scil.helm.Monomers.getMonomerSet(types[i]));
+    Object.keys(monomers[i]).forEach(k => {
+      monomer_names.push(monomers[i][k].id);
+    });
+  }
+  const split_string = helmString.match(/[^\s.,\/\\(){}$]+/gim);
+  return new Set(split_string.filter(val => !monomer_names.includes(val)));
+}
 
 class HelmCellRenderer extends DG.GridCellRenderer {
 
