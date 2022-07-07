@@ -53,7 +53,7 @@ export class TwinPviewer {
   pdbStr: PdbType;
   jsonObsPtm: ObsPtmType;
 
-  public get cdrScheme() { return this.cdrSchemeInput.value;}
+  public get cdrScheme() { return this.cdrSchemeInput.value; }
 
   public set cdrScheme(value: string) { this.cdrSchemeInput.value = value; }
 
