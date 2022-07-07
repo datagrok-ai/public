@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.81",
+  "version": "1.0.82",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -1185,6 +1185,9 @@
         },
         "1.5.4": {
           "datagrok-api": "^1.4.12"
+        },
+        "1.5.5": {
+          "datagrok-api": "^1.4.12"
         }
       },
       "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
@@ -1595,6 +1598,9 @@
       "dependencies": {
         "0.0.4": {
           "datagrok-api": "latest"
+        },
+        "0.0.5": {
+          "datagrok-api": "latest"
         }
       },
       "description": "",
@@ -1602,7 +1608,8 @@
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Helm"
-      }
+      },
+      "category": "Bioinformatics"
     }
   }
 }
