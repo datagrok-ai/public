@@ -6,18 +6,4 @@
  */
 class HelmPackageDetectors extends DG.Package {
 
-  /** @param s {String} - string to check
-   * @returns {boolean} */
-  static isHelm(s) {
-    return s.startsWith('PEPTIDE1{') || s.startsWith('RNA1{') || s.startsWith('CHEM1{') || s.startsWith('BLOB1{');
-  }
-
-  //tags: semTypeDetector
-  //input: column col
-  //output: string semType
-  detectHelm(col) {
-    if (DG.Detector.sampleCategories(col, (s) => HelmPackageDetectors.isHelm(s), 1))
-      col.setTag(DG.TAGS.UNITS, 'HELM');
-      return 'Macromolecule';
-  }
 }

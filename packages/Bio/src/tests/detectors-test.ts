@@ -94,6 +94,7 @@ MWRSWY-CKHP
     msaComplex = 'MsaComplex',
     idCsv = 'IdCsv',
     sarSmallCsv = 'SarSmallCsv',
+    HelmCsv = 'HelmCsv',
   }
 
   const samples: { [key: string]: string } = {
@@ -102,6 +103,7 @@ MWRSWY-CKHP
     'MsaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
     'IdCsv': 'System:AppData/Bio/samples/id.csv',
     'SarSmallCsv': 'System:AppData/Bio/samples/sar-small.csv',
+    'HelmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -194,6 +196,14 @@ MWRSWY-CKHP
   test('samplesSarSmallCsvNegativeSmiles', async () => {
     await _testNeg(readSamplesCsv(Samples.sarSmallCsv), 'smiles');
   });
+
+  test('samplesHelmCsvHELM', async () => {
+    await _testPos(readSamplesCsv(Samples.HelmCsv), 'HELM', 'HELM', null);
+  });
+
+  test('samplesHelmCsvNegativeActivity', async () => {
+    await _testNeg(readSamplesCsv(Samples.HelmCsv), 'Activity');
+  });
 });
 
 export async function _testNeg(readDf: DfReaderFunc, colName: string) {
@@ -203,7 +213,7 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
   expect(col.semType === DG.SEMTYPE.MACROMOLECULE, false);
 }
 
-export async function _testPos(readDf: DfReaderFunc, colName: string, units: string, separator: string) {
+export async function _testPos(readDf: DfReaderFunc, colName: string, units: string, separator: string | null = null) {
   const df: DG.DataFrame = await readDf();
 
   const col: DG.Column = df.col(colName)!;
