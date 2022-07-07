@@ -101,9 +101,9 @@ export class PeptidesModel {
   }
 
   createAccordion() {
-    const acc = ui.accordion('Selection info');
+    const acc = ui.accordion();
     acc.root.style.width = '100%';
-    acc.addTitle(ui.h1('Selection info'));
+    acc.addTitle(ui.h1(`${this.getBiteset().trueCount} selected rows`));
     acc.addPane('Substitutions', () => substitutionsWidget(this._dataFrame, this).root, true);
     acc.addPane('Distribtution', () => getDistributionWidget(this._dataFrame, this).root, true);
 
