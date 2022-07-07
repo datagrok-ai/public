@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {encode as encode_to_base64, decode as decode_from_base64} from 'uint8-to-base64';
+import {encode as encodeToBase64, decode as decodeFromBase64} from 'uint8-to-base64';
 
 import {
   catchToLog,
@@ -23,12 +23,9 @@ export class DataLoaderDb extends DataLoader {
   private _files: { [name: string]: string } = {
     filterProps: 'properties.json',
     mutcodes: 'mutcodes.json',
-    ptm_map: 'ptm_map.json',
-    cdr_map: 'cdr_map.json',
-    ptm_in_cdr: 'ptm_in_cdr.d42',
-    h_out: 'h_out.csv',
-    l_out: 'l_out.csv',
-    tree: 'tree.csv',
+    ptmMap: 'ptm_map.json',
+    cdrMap: 'cdr_map.json',
+    ptmInCdr: 'ptm_in_cdr.d42'
   };
 
   private cache!: MlbDatabase;
@@ -154,9 +151,6 @@ export class DataLoaderDb extends DataLoader {
   async init2(): Promise<void> {
     console.debug('MLB: DataLoaderDb.init2() start, ' + `${this.fromStartInit()} s`);
 
-    const serverListVersionDf: DG.DataFrame = await grok.functions.call(`${this._pName}:getListVersion`);
-    console.debug('MLB: DataLoaderDb.init2() serverListVersionDf, ' + `${this.fromStartInit()} s`);
-
     this.cache = new MlbDatabase();
     this.cache.init(this._serverListVersionDf);
 
@@ -186,7 +180,8 @@ export class DataLoaderDb extends DataLoader {
           'MLB database error \'listAntigens\': ',
           () => grok.functions.call(`${this._pName}:listAntigens`)),
         (dbRow: DG.Row) => Object.assign({},
-          ...(['id', 'antigen', 'antigen_ncbi_id', 'antigen_gene_symbol'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
+          ...(['id', 'antigen', 'antigen_ncbi_id', 'antigen_gene_symbol']
+            .map((fn: string) => ({[fn]: dbRow.get(fn)})))),
         (objList: IAntigen[]) => DG.DataFrame.fromObjects(objList)
       ).then((value: DG.DataFrame) => {
         console.debug('MLB: DataLoaderDb.init2() set antigens, ' + `${this.fromStartInit()} s`);
@@ -197,18 +192,18 @@ export class DataLoaderDb extends DataLoader {
           'MLB database error \'getVids\': ',
           () => grok.functions.call(`${this._pName}:getVids`)),
         (dbRow: DG.Row) => Object.assign({},
-          ...(['v_id',].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
+          ...(['v_id'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
         (objList: IVid[]) => objList.map((obj: IVid) => obj.v_id)
       ).then((value: string[]) => {
         console.debug(`MLB: DataLoaderDb.init2() set vids, ${this.fromStartInit()} s`);
         this._vids = value;
       }),
-      this.cache.getData<IVidObsPtm, string[]>('vid',
+      this.cache.getData<IVidObsPtm, string[]>('vidObsPtm',
         () => catchToLog<Promise<DG.DataFrame>>(
           'MLB database error \'getObservedPtmVids\': ',
           () => grok.functions.call(`${this._pName}:getObservedPtmVids`)),
         (dbRow: DG.Row) => Object.assign({},
-          ...(['v_id',].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
+          ...(['v_id'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
         (objList: IVidObsPtm[]) => objList.map((obj: IVidObsPtm) => obj.v_id)
       ).then((value: string[]) => {
         console.debug(`MLB: DataLoaderDb.init2() set obsPtmVids, ${this.fromStartInit()} s`);
@@ -216,7 +211,8 @@ export class DataLoaderDb extends DataLoader {
       }),
       this.cache.getObject<FilterPropertiesType>(this._files.filterProps,
         async () => {
-          const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.filterProps}`);
+          const txt: string = await grok.dapi.files
+            .readAsText(`System:AppData/${this._pName}/${this._files.filterProps}`);
           return JSON.parse(txt);
         })
         .then((value: FilterPropertiesType) => {
@@ -234,8 +230,9 @@ export class DataLoaderDb extends DataLoader {
         }),
       this.cache.getObject<PtmMapType>(this._files.ptmMap,
         async () => {
-          const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.ptmMap}`);
-          return JSON.parse(txt);
+          const jsonTxt: string = await grok.dapi.files
+            .readAsText(`System:AppData/${this._pName}/${this._files.ptmMap}`);
+          return JSON.parse(jsonTxt);
         })
         .then((value: PtmMapType) => {
           console.debug(`MLB: DataLoaderDb.init2() set ptmMap, ${this.fromStartInit()} s`);
@@ -243,8 +240,9 @@ export class DataLoaderDb extends DataLoader {
         }),
       this.cache.getObject<CdrMapType>(this._files.cdrMap,
         async () => {
-          const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.cdrMap}`);
-          return JSON.parse(txt);
+          const jsonTxt: string = await grok.dapi.files
+            .readAsText(`System:AppData/${this._pName}/${this._files.cdrMap}`);
+          return JSON.parse(jsonTxt);
         })
         .then((value: CdrMapType) => {
           console.debug(`MLB: DataLoaderDb.init2() set cdrMap, ${this.fromStartInit()} s`);
@@ -253,18 +251,19 @@ export class DataLoaderDb extends DataLoader {
       this.cache.getObject<string>(this._files.ptmInCdr,
         async () => {
           const t1: number = Date.now();
-          const data: Uint8Array = await grok.dapi.files.readAsBytes(`System:AppData/${this._pName}/${this._files.ptmInCdr}`);
+          const data: Uint8Array = await grok.dapi.files
+            .readAsBytes(`System:AppData/${this._pName}/${this._files.ptmInCdr}`);
           const t2: number = Date.now();
-          const txt_base64: string = encode_to_base64(data);
+          const txtBase64: string = encodeToBase64(data);
           const t3: number = Date.now();
           console.debug('MLB: DataLoaderDb.init2() refDf ' +
             `loading bytes ET ${((t2 - t1) / 1000).toString()} s, ` +
             `encode base64 ET ${((t3 - t2) / 1000).toString()} s`);
-          return txt_base64;
+          return txtBase64;
         })
-        .then((txt_base64: string) => {
+        .then((txtBase64: string) => {
           const t1: number = Date.now();
-          const data: Uint8Array = decode_from_base64(txt_base64);
+          const data: Uint8Array = decodeFromBase64(txtBase64);
           const t2: number = Date.now();
           const df: DG.DataFrame = DG.DataFrame.fromByteArray(data);
           const t3: number = Date.now();
@@ -293,8 +292,9 @@ export class DataLoaderDb extends DataLoader {
     if (!this.vids.includes(vid))
       return null;
 
-    return JSON.parse((await grok.functions.call(`${this._pName}:getJsonByVid`, {vid: vid}))
-      .columns.byIndex(0).get(0));
+    const df = await grok.functions.call(`${this._pName}:getJsonByVid`, {vid: vid});
+    const jsonTxt = df.columns.byIndex(0).get(0);
+    return jsonTxt ? JSON.parse(jsonTxt) : null;
   }
 
   async loadPdb(vid: string): Promise<string> {
@@ -309,8 +309,9 @@ export class DataLoaderDb extends DataLoader {
     if (!this.vids.includes(vid))
       return null;
 
-    return JSON.parse((await grok.functions.call(`${this._pName}:getJsonComplementByVid`, {vid: vid}))
-      .columns.byIndex(0).get(0));
+    const jsonTxt = (await grok.functions.call(`${this._pName}:getJsonComplementByVid`, {vid: vid}))
+      .columns.byIndex(0).get(0);
+    return jsonTxt ? JSON.parse(jsonTxt) : null;
   }
 
   async loadMlbDf(): Promise<DG.DataFrame> {
@@ -324,12 +325,13 @@ export class DataLoaderDb extends DataLoader {
     if (!this.vidsObsPtm.includes(vid))
       return null;
 
-    return JSON.parse((await grok.functions.call(`${this._pName}:getJsonObsByVid`, {vid: vid}))
-      .columns.byIndex(0).get(0));
+    const df = await grok.functions.call(`${this._pName}:getJsonObsByVid`, {vid: vid});
+    const jsonTxt = df.columns.byIndex(0).get(0);
+    return JSON.parse(jsonTxt);
   }
 
   async loadTreeDf(): Promise<DG.DataFrame> {
-    const df_txt: string = await grok.dapi.files.readAsText(`System:Data/${this._pName}/${this._files.tree}`);
-    return DG.DataFrame.fromCsv(df_txt);
+    const dfTxt: string = await grok.dapi.files.readAsText(`System:Data/${this._pName}/${this._files.tree}`);
+    return DG.DataFrame.fromCsv(dfTxt);
   }
 }

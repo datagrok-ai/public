@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {encode as encode_to_base64, decode as decode_from_base64} from 'uint8-to-base64';
+import {encode as encodeToBase64, decode as decodeFromBase64} from 'uint8-to-base64';
 
 import {
   catchToLog,
@@ -185,7 +185,8 @@ export class DataLoaderFiles extends DataLoader {
           'MLB database error \'listAntigens\': ',
           () => grok.functions.call(`${this._pName}:listAntigens`)),
         (dbRow: DG.Row) => Object.assign({},
-          ...(['id', 'antigen', 'antigen_ncbi_id', 'antigen_gene_symbol'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
+          ...(['id', 'antigen', 'antigen_ncbi_id', 'antigen_gene_symbol']
+            .map((fn: string) => ({[fn]: dbRow.get(fn)})))),
         (objList: IAntigen[]) => DG.DataFrame.fromObjects(objList)
       ).then((value: DG.DataFrame) => {
         console.debug('MLB: DataLoaderFiles.init2() set antigens, ' + `${this.fromStartInit()} s`);
@@ -193,11 +194,12 @@ export class DataLoaderFiles extends DataLoader {
       }),
       this.cache.getData<IVid, string[]>('vid',
         () => new Promise((resolve, reject) => {
-          const df: DG.DataFrame = DG.DataFrame.fromObjects([{v_id: 'VR000000008'}, {v_id: 'VR000000043'}, {v_id: 'VR000000044'}]);
+          const df: DG.DataFrame = DG.DataFrame.fromObjects(
+            [{v_id: 'VR000000008'}, {v_id: 'VR000000043'}, {v_id: 'VR000000044'}]);
           resolve(df);
         }),
         (dbRow: DG.Row) => Object.assign({},
-          ...(['v_id',].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
+          ...(['v_id'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
         (objList: IVid[]) => objList.map((obj) => obj.v_id)
       ).then((value: string[]) => {
         console.debug(`MLB: DataLoaderFiles.init() set vids, ${this.fromStartInit()} s`);
@@ -209,7 +211,7 @@ export class DataLoaderFiles extends DataLoader {
           resolve(df);
         }),
         (dbRow: DG.Row) => Object.assign({},
-          ...(['v_id',].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
+          ...(['v_id'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
         (objList: IVidObsPtm[]) => objList.map((obj: IVidObsPtm) => obj.v_id)
       ).then((value: string[]) => {
         console.debug(`MLB: DataLoaderFiles.init2() set obsPtmVids, ${this.fromStartInit()} s`);
@@ -217,7 +219,8 @@ export class DataLoaderFiles extends DataLoader {
       }),
       this.cache.getObject<FilterPropertiesType>(this._files.filterProps,
         async () => {
-          const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.filterProps}`);
+          const txt: string = await grok.dapi.files
+            .readAsText(`System:AppData/${this._pName}/${this._files.filterProps}`);
           return JSON.parse(txt);
         })
         .then((value: FilterPropertiesType) => {
@@ -254,18 +257,19 @@ export class DataLoaderFiles extends DataLoader {
       this.cache.getObject<string>(this._files.ptmInCdr,
         async () => {
           const t1: number = Date.now();
-          const data: Uint8Array = await grok.dapi.files.readAsBytes(`System:AppData/${this._pName}/${this._files.ptmInCdr}`);
+          const data: Uint8Array = await grok.dapi.files
+            .readAsBytes(`System:AppData/${this._pName}/${this._files.ptmInCdr}`);
           const t2: number = Date.now();
-          const txt_base64: string = encode_to_base64(data);
+          const txtBase64: string = encodeToBase64(data);
           const t3: number = Date.now();
           console.debug('MLB: DataLoaderFiles.init2() refDf ' +
             `loading bytes ET ${((t2 - t1) / 1000).toString()} s, ` +
             `encode base64 ET ${((t3 - t2) / 1000).toString()} s`);
-          return txt_base64;
+          return txtBase64;
         })
-        .then((txt_base64: string) => {
+        .then((txtBase64: string) => {
           const t1: number = Date.now();
-          const data: Uint8Array = decode_from_base64(txt_base64);
+          const data: Uint8Array = decodeFromBase64(txtBase64);
           const t2: number = Date.now();
           const df: DG.DataFrame = DG.DataFrame.fromByteArray(data);
           const t3: number = Date.now();
@@ -291,8 +295,8 @@ export class DataLoaderFiles extends DataLoader {
   }
 
   async loadMlbDf(): Promise<DG.DataFrame> {
-    const df_txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.mlb}`);
-    const df: DG.DataFrame = DG.DataFrame.fromCsv(df_txt);
+    const dfTxt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.mlb}`);
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(dfTxt);
 
     // 'ngl' column have been removed from query 2022-04
     df.columns.remove('ngl');
@@ -311,13 +315,13 @@ export class DataLoaderFiles extends DataLoader {
   }
 
   async loadTreeDf(): Promise<DG.DataFrame> {
-    const df_txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.tree}`);
-    return DG.DataFrame.fromCsv(df_txt);
+    const dfTxt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.tree}`);
+    return DG.DataFrame.fromCsv(dfTxt);
   }
 
   private async loadFileJson(path: string): Promise<Object> {
-    const json_txt = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${path}`);
-    return JSON.parse(json_txt);
+    const jsonTxt = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${path}`);
+    return JSON.parse(jsonTxt);
   }
 
   async loadJson(vid: string): Promise<JsonType> {

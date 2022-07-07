@@ -84,7 +84,7 @@ export class MlbDatabase extends Dexie {
 
   async getObject<Type>(
     key: string,
-    getServerObject: () => Promise<Type>,
+    getServerObject: () => Promise<Type>
   ): Promise<Type> {
     const dbVersion: IDbVersion = this.getServerVersion(key);
 
@@ -105,7 +105,11 @@ export class MlbDatabase extends Dexie {
   }
 
   /** Get object from cache if exists with appropriate version.
-   * @param loadDf
+   * @param {string} listName
+   * @param {() => Promise<DG.DataFrame>} loadDf
+   * @param {(db_row: DG.Row) => TCached} rowToCache
+   * @param {obj: TCached[]) => TData} fromCache
+   * @return {Promise<TData>}
    * */
   async getData<TCached extends ICached, TData>(
     listName: string,
