@@ -16,7 +16,7 @@ class HelmPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectHelm(col) {
-    if (DG.Detector.sampleCategories(col, (s) => HelmPackageDetectors.isHelm(s)))
+    if (DG.Detector.sampleCategories(col, (s) => HelmPackageDetectors.isHelm(s), 1))
       col.setTag(DG.TAGS.UNITS, 'HELM');
       return 'Macromolecule';
   }
