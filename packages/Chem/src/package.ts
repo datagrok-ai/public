@@ -257,11 +257,12 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
   'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
 };
  await getActivityCliffs(
-  df, 
-  smiles, 
-  axesNames, 
-  activities, 
-  similarity, 
+  df,
+  smiles,
+  axesNames,
+     'test',
+  activities,
+  similarity,
   'Tanimoto',
   methodName,
   DG.SEMTYPE.MOLECULE,
