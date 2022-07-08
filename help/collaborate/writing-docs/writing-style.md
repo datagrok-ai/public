@@ -1,12 +1,11 @@
 # Writing style
 
-Use fewer words, better. Don't overwhelm users with information. [Use concise and clear
-language](#language-and-grammar) and follow the guidelines for [content
-types](content-types.md). Rather than repeating information from another topic, link to it
-instead.
+Use fewer words, better. Don't overwhelm users with information. [Use concise and clear language](#language-and-grammar)
+and follow the guidelines for [content types](content-types.md). Rather than repeating information from another topic,
+link to it instead.
 
-For topics not covered in this guide, see [Google Developer Documentation Style
-Guide](https://developers.google.com/style).
+For topics not covered in this guide,
+see [Google Developer Documentation Style Guide](https://developers.google.com/style).
 
 ## Language and grammar
 
@@ -31,20 +30,20 @@ several ways:
 
 * Shorten words and phrases.
 
-  | Wordy                    |Short         |
-  |:-------------------------|:--------------|
-  | presently                |now            |
-  | provide an opportunity   |allow/permit   |
-  | with regard to           |about          |
+  | Wordy                  | Short        |
+  |:-----------------------|:-------------|
+  | presently              | now          |
+  | provide an opportunity | allow/permit |
+  | with regard to         | about        |
 
 * Substitute large and complex words with short, simple words.
-  
+
   | Complex           | Simple        |
   |:------------------|:--------------|
   | commence          | begin/start   |
   | demonstrate       | show          |
   | employ / utilize  | use           |
-  
+
 * Avoid the words ending in _-sion_ or _-tion_ (nominalizations). Replace them with active words.
 
   | Nominalization          | Active word       |
@@ -62,28 +61,28 @@ several ways:
 
 * Avoid word redundancies.
 
-  |Instead of        |Use                    |
+  | Instead of       | Use                   |
   |:-----------------|:----------------------|
-  |like for example  | like _or_ for example |
-  |the reason why    | why                   |
-  |past experience   | experience            |
+  | like for example | like _or_ for example |
+  | the reason why   | why                   |
+  | past experience  | experience            |
 
 * Avoid sentences starting with _there is_, _here is_, _it is_, and similar (that is, sentences with no true subjects).
   Use this tips:
 
-    1. First, identify an actor.
-    1. Then, find the key action and make it a verb.
-    1. Lastly, make the actor the subject of this verb.
+  1. First, identify an actor.
+  1. Then, find the key action and make it a verb.
+  1. Lastly, make the actor the subject of this verb.
 
-  | Instead of                              |Use                     |
-  |:----------------------------------------|:-----------------------|
-  | There are many features in the platform. |The platform has many features. |
-  | There are multiple options.              |You have several options.|
+  | Instead of                               | Use                             |
+  |:-----------------------------------------|:--------------------------------|
+  | There are many features in the platform. | The platform has many features. |
+  | There are multiple options.              | You have several options.       |
 
 * Drop unnecessary words; use shorter alternatives if available.
 
-  | Instead of                      |Use                     |
-  |:--------------------------------|:-----------------------|
+  | Instead of                       | Use                     |
+  |:---------------------------------|:------------------------|
   | It is necessary for you to do A. | You must do A.          |
   | Follow all of the steps below.   | Follow the steps below. |
 
@@ -94,16 +93,16 @@ several ways:
 
   * Look for and remove an introductory phrase that doesn't add value.
 
-    |Instead of| Use|
-    |:---|:---|
-    | As discussed previously, you can embed a viewer as an iframe. | You can embed a viewer as an iframe.|
-    | It is important to note that this feature is in beta. | Important: This feature is in beta.|
+  | Instead of                                                    | Use                                  |
+  |:--------------------------------------------------------------|:-------------------------------------|
+  | As discussed previously, you can embed a viewer as an iframe. | You can embed a viewer as an iframe. |
+  | It is important to note that this feature is in beta.         | Important: This feature is in beta.  |
 
   * If a sentence contains multiple prepositions, rewrite the sentence to remove as many prepositions as you can.
 
-    |Instead of| Use|
-    |:---|:---|
-    |These representations can be _of_ great importance _for_ the description _of_ monomers _of_ a decomposed macromolecule. | These representations are essential to describing monomers of a decomposed macromolecule.|
+  | Instead of                                                                                                              | Use                                                                                       |
+  |:------------------------------------------------------------------------------------------------------------------------|:------------------------------------------------------------------------------------------|
+  | These representations can be _of_ great importance _for_ the description _of_ monomers _of_ a decomposed macromolecule. | These representations are essential to describing monomers of a decomposed macromolecule. |
 
 ### Active voice
 
@@ -112,11 +111,11 @@ cannot be named for any reason. Because technical writing is action-oriented, th
 Never end a sentence with a passive word. Place the subject and verd close to each other and put them at the front of a
 sentence.
 
-| Instead of                                |Use                        |
-|:------------------------------------------|:--------------------------|
-|In this article, challenges in interactive data exploration are discussed. | This article addresses challenges in interactive data exploration.|  
-|A dialog is displayed on clicking the icon. | When you click the icon, a dialog opens.|
-| Viewers can be customized.                 | You can customize viewers. |
+| Instead of                                                                 | Use                                                                |
+|:---------------------------------------------------------------------------|:-------------------------------------------------------------------|
+| In this article, challenges in interactive data exploration are discussed. | This article addresses challenges in interactive data exploration. |  
+| A dialog is displayed on clicking the icon.                                | When you click the icon, a dialog opens.                           |
+| Viewers can be customized.                                                 | You can customize viewers.                                         |
 
 ### Pronouns
 
@@ -150,17 +149,17 @@ acronyms are uppercased:
 ### Compound words and words with prefixes
 
 We tend to use the closed form of compound words and words with prefixes; that is, write these words without a space or
-a hyphen (for example, a _dataset_ or an _open source_ plugin). For the list of commonly used terms, see [Word
-list](word-list.md).
+a hyphen (for example, a _dataset_ or an _open source_ plugin). For the list of commonly used terms,
+see [Word list](word-list.md).
 
 ### Contractions
 
 You can use most types of contractions. Negation contractions (such as _isn't_ or _don't_) are even helpful because it's
 harder to misread _don't_ compared to _do not_. However, avoid contractions formed from nouns and verbs:
 
-|Instead of                           |Use                             |
-|:------------------------------------|:-------------------------------|
-|The platform's fast and easy to use.  |The platform is fast and easy to use.          |
+| Instead of                           | Use                                   |
+|:-------------------------------------|:--------------------------------------|
+| The platform's fast and easy to use. | The platform is fast and easy to use. |
 
 ### Acronyms and numbers
 
@@ -180,9 +179,9 @@ When giving instructions, follow this clause order:
 
 Mentioning the goal or circumstance first lets the user skip the instruction if it doesn't apply.
 
-|Instead of                                                  |Use       |
-|:-----------------------------------------------------------|:---------|
-| Click **Remove** on the **Sidebar** to delete the document. | To delete the document, on the **Sidebar**, click **Remove**.|
+| Instead of                                                  | Use                                                           |
+|:------------------------------------------------------------|:--------------------------------------------------------------|
+| Click **Remove** on the **Sidebar** to delete the document. | To delete the document, on the **Sidebar**, click **Remove**. |
 
 ### Paragraphs
 
@@ -224,9 +223,9 @@ Follow these guidelines for punctuation:
 An appositive is a noun or a phrase placed next to another noun or a phrase to modify it. Appositives can be restrictive
 and nonrestrictive. The following table summarises the use of commas with appositives:
 
-|                |Restrictive             |Nonrestrictive                |
-|:---------------|:-----------------------|:-----------------------------|
-|Purpose         |Narrow down the meaning |Provide additional information|
-|When removed    | Meaning changes        | Meaning doesn't change       |
-|Comma usage     | Don't wrap in commas   | Wrap in commas               |
-|Example         | Only users _who have preinstalled the package_ can access this feature.    | Data augmentation, _one of the platform capabilities_, is used to push insights to the users.|
+|              | Restrictive                                                             | Nonrestrictive                                                                               |
+|:-------------|:------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------|
+| Purpose      | Narrow down the meaning                                                 | Provide additional information                                                               |
+| When removed | Meaning changes                                                         | Meaning doesn't change                                                                       |
+| Comma usage  | Don't wrap in commas                                                    | Wrap in commas                                                                               |
+| Example      | Only users _who have preinstalled the package_ can access this feature. | Data augmentation, _oneof the platform capabilities_, is used to push insights to the users. |
