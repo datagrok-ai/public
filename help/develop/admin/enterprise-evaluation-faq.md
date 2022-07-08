@@ -10,7 +10,7 @@
 * Security
   * [Security overview](security.md)
   * [Authentication](../../govern/authentication.md)
-      and [authorization](../../govern/authorization.md)
+    and [authorization](../../govern/authorization.md)
   * [Encryption at rest](#encryption-at-rest) and [encryption in transit](#encryption-in-transit)
 
 * Enterprise Readiness
@@ -49,8 +49,8 @@
   * [Ability to build custom application including data entry, workflow, data model, state management, persistence, etc](https://github.com/datagrok-ai/public/tree/master/packages)
 
 * Frontend
-  * Capacity of holding data in client with differently sized data sets related to project scenarios, sizes detailed
-      in data sources section below
+  * Capacity of holding data in client with differently sized data sets related to project scenarios, sizes detailed in
+    data sources section below
     * High-throughput screening
     * Virtual screening (minimal requirement)
     * Large-chemical spaces
@@ -68,7 +68,7 @@
     * Different input methods (2D drawing etc.)
     * API calls
   * Ability to plugin non-native Datagrok pieces (e.g. react containers) and interact with Datagrok frontend (eg react
-      containers)
+    containers)
   * Scalability of frontend scripting functionality
 
 ## Encryption at rest
@@ -110,5 +110,7 @@ Docker-compose manifest is used to describe and deploy Datagrok applications.
 
 Also, there are multiple advanced options to deploy application:
 
-* [CloudFormation template](deploy/cloudformation/cloudformation.json) to deploy to AWS ECS
-* [Terraform scripts](deploy/terraform.tf) to deploy to AWS ECS
+* [CloudFormation template](https://github.com/datagrok-ai/public/tree/master/develop/admin/deploy/cloudformation/cloudformation.json)
+  to deploy to AWS ECS
+* [Terraform scripts](https://github.com/datagrok-ai/public/tree/master/develop/admin/deploy/terraform.tf) to deploy to
+  AWS ECS
