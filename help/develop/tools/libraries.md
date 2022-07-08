@@ -37,7 +37,7 @@ _Links:_
 ## TypeScript
 
 As we recommend [TypeScript](https://www.typescriptlang.org/) as a language for package development, there's an option
-to [create a package](../develop.md#getting-started)
+to [create a package](../getting-started.md)
 with a `--ts` flag. Among other things, it adds two new dependencies: `typescript` (provides the language support)
 and `ts-loader` (a file loader for `webpack`). Likely, these are not the only libraries you will use when writing in
 TypeScript. For example, if one of the libraries you want to work with has not been typed yet, check out the

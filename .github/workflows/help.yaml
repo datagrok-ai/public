@@ -138,6 +138,7 @@ jobs:
         run: dart generate_menu.dart -s ../output/help/ -d ../output/help/
         working-directory: ./help/_internal
       - name: Move output HTML files
+        id: move
         run: mv help/output/ output/
       - name: Install anchor-check
         run: npm install -g @untitaker/hyperlink
@@ -149,7 +150,7 @@ jobs:
         if: always() && (steps.anchors.outcome == 'failure' || steps.anchors.outcome == 'success')
         run: |
           echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
-          if [ -s help/anchor-check-report.md ]; then
+          if [[ "${{ steps.anchors.outcome }}" == "failure" ]]; then
             echo ":no_entry_sign: Some errors occured" >> "${GITHUB_STEP_SUMMARY}"
             cat help/anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
             sed -i '/Found some broken links, reading source files/a ## Errors per input' ${GITHUB_STEP_SUMMARY}
@@ -163,6 +164,7 @@ jobs:
           fi
 
       - name: 'Upload Artifact'
+        if: always() && steps.move.outcome == 'success'
         uses: actions/upload-artifact@v2
         with:
           name: help_html_pages

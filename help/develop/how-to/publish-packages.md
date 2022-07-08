@@ -21,7 +21,7 @@ the [repository master branch](../../collaborate/public-repository.md). Then Git
     2) Then, execute unit tests for the package before publishing.
     3) After successful build and test, the package is pushed to [NPM registry](https://www.npmjs.com/)
 7) Check that the GitHub Actions workflow finished successfully
-   [GitHub Action publish status](github-actions-publish-status.png)
+   ![GitHub Action publish status](github-actions-publish-status.png)
 8) Now, you can install a new package version to the Datagrok platform using the package manager
 
 ### Trigger GitHub Actions manually

@@ -12,7 +12,7 @@ see [Google Developer Documentation Style Guide](https://developers.google.com/s
 Datagrok documentation should be clear and easy to understand:
 
 * Write in US English with US grammar.
-* [Be clear and concise](#Conciseness).
+* [Be clear and concise](#conciseness).
 * [Use active voice](#active-voice): make it clear who's performing the action.
 * [Put conditional clauses before instructions, not after](#clause-order).
 * [Use the second person point of view](#pronouns).
