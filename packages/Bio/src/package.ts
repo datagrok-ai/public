@@ -20,7 +20,7 @@ import { getMolfilesFromSeq, HELM_CORE_LIB_FILENAME } from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from "./utils/cell-renderer";
 
-//name: macromoleculeSequenceCellRenderer2
+//name: macromoleculeSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: Macromolecule
 //output: grid_cell_renderer result
