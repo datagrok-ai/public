@@ -171,4 +171,4 @@ Datagrok allows to visualize multidimensional sequence space using dimensionalit
 
 You can open tool from a top menu by selecting Bio -> Sequence space.
 
-![Sequence space](../../uploads/macromolecules/sequence-space.gif)
+![Sequence space](../../uploads/macromolecules/sequence_space.gif)
