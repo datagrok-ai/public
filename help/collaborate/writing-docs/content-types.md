@@ -10,17 +10,17 @@ We follow four different content types:
 These content types represent different documentation functions and require a distinct writing mode. Users need all four
 kinds of documentation at different times, in different circumstances.
 
-|           | Tutorials | How-To guides  | Technical reference | Topics     |
-|:----------|:----------|:---------------|:--------------------|:-----------|
-|Purpose    |Learn      | Achieve a goal | Get information     | Understand |
-|Goal       |Allow users to get started|Solve a specific problem| Describe technical aspects of how things work and how to use them | Describe key concepts and topics at a fairly high level and provide useful background information and explanation|
-|Form | A walk-through | A series of steps | Dry description | Explanation|
+|         | Tutorials                  | How-To guides            | Technical reference                                               | Topics                                                                                                            |
+|:--------|:---------------------------|:-------------------------|:------------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------|
+| Purpose | Learn                      | Achieve a goal           | Get information                                                   | Understand                                                                                                        |
+| Goal    | Allow users to get started | Solve a specific problem | Describe technical aspects of how things work and how to use them | Describe key concepts and topics at a fairly high level and provide useful background information and explanation |
+| Form    | A walk-through             | A series of steps        | Dry description                                                   | Explanation                                                                                                       |
 
 Some of the Datagrok documentation content doesn't classify as one of the four primary content types:
 
 * _Release notes_
 * _FAQs_ are there to answer questions that go beyond the scope of tutorials and How-To guides.
-* _Internals_ is where you find information about how to contribute  code, report bugs, request features, or write
+* _Internals_ is where you find information about how to contribute code, report bugs, request features, or write
   documentation.
 
 ## Tutorials
@@ -36,39 +36,42 @@ In general, tutorials are most useful when users are just getting started. For e
 * Tutorials about a Datagrok feature, capability, or package (such as _Cheiminformatics tutorial_ or _Exploratory data
   analysis tutorial_).
 
-Try to limit tutorials to 10 steps or 30 minutes in length. More than that may indicate you're trying to describe a use case that
-is too complex for beginners or combining too many actions in one tutorial. The more complex and time-consuming a
-tutorial is, the less likely the user will finish it.
+Try to limit tutorials to 10 steps or 30 minutes in length. More than that may indicate you're trying to describe a use
+case that is too complex for beginners or combining too many actions in one tutorial. The more complex and
+time-consuming a tutorial is, the less likely the user will finish it.
 
 Tutorials should be in this format:
 
 1. Start by telling the user what the tutorial does, the estimated completion time, and the expected _outcome_:
 
-   * _By the end of this tutorial, you will be able to_ followed by a phrase that starts with a verb and clearly describes the outcome of what the user will accomplish.
-   * _Estimated completion time: 30 minutes._
+  * _By the end of this tutorial, you will be able to_ followed by a phrase that starts with a verb and clearly
+    describes the outcome of what the user will accomplish.
+  * _Estimated completion time: 30 minutes._
 1. Provide prerequisites:
-    * _Before you begin, make sure you meet these prerequisites:_
-      * _A conceptual understanding about x._
-      * _Access to the y application._
+  * _Before you begin, make sure you meet these prerequisites:_
+    * _A conceptual understanding about x._
+    * _Access to the y application._
 1. List everything the user will do.
-1. Next, tell users how to complete each task. Group related tasks into sections. Set clear expectations for each step or task.
+1. Next, tell users how to complete each task. Group related tasks into sections. Set clear expectations for each step
+   or task.
 
    Use this template:
 
-   * _Step 1._ Write the command here. Start with the verb.
-   * Add explanatory text, if needed.
-   * Add code samples or visuals that help complete this step.
-   * Describe the result.
+  * _Step 1._ Write the command here. Start with the verb.
+  * Add explanatory text, if needed.
+  * Add code samples or visuals that help complete this step.
+  * Describe the result.
 
    Use this language:
 
-     * _First, do x. Now, do y. Now that you have done y, do z._
-     * _You must always do x before you do y because…_ followed by minimal explanation of actions in the most basic language possible. Link out to more detailed explanation.
-     * _The output looks like this…_
-     * _Notice that…/remember that…_
+  * _First, do x. Now, do y. Now that you have done y, do z._
+  * _You must always do x before you do y because…_ followed by minimal explanation of actions in the most basic
+    language possible. Link out to more detailed explanation.
+  * _The output looks like this…_
+  * _Notice that…/remember that…_
 
 1. Lastly, reiterate the outcome the users will have achieved upon completion of this tutorial:
-   * _You have [built, created, established, etc.]... that ..._
+  * _You have [built, created, established, etc.]... that ..._
 
 ## How-To guides
 
@@ -79,7 +82,8 @@ A How-To guide is like a recipe. Users don't need to know _all_ the ways in whic
 need to know one optimal solution. Similarly, when users are focused on the current task, they don't want to be
 distracted by the technical aspects of how things work, descriptions of concepts, or the basics of working with UI.
 
-Avoid linking to concepts in the middle of a How-To. Every time a user clicks a link, a new tab opens. Clicking more links opens more tabs and adds more distraction and can be overwhelming.
+Avoid linking to concepts in the middle of a How-To. Every time a user clicks a link, a new tab opens. Clicking more
+links opens more tabs and adds more distraction and can be overwhelming.
 
 A How-To guide should be in this format:
 
