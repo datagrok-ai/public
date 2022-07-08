@@ -140,7 +140,7 @@ jobs:
       - name: Move output HTML files
         run: mv help/output/ output/
       - name: Check anchor
-        uses: untitaker/hyperlink@0.1.23
+        uses: untitaker/hyperlink@0.1.22
         with:
           args: --check-anchors output/ --sources help/
       - name: 'Upload Artifact'
