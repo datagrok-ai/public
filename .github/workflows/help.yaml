@@ -29,34 +29,6 @@ jobs:
             echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
           fi
 
-  anchor_check:
-    name: Check anchors
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup Node
-        uses: actions/setup-node@v2
-      - name: Install remark
-        run: |
-          npm install -g remark-cli
-          npm install remark-validate-links vfile-reporter-shiny --save-dev
-      - name: Check Markdown anchors
-        id: check
-        run: |
-          remark --use remark-validate-links --report vfile-reporter-shiny --quiet --frail help/ > help/anchor-check-report.md 2>&1
-      - name: Set summary
-        if: always()
-        run: |
-          echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
-          if [ -s help/anchor-check-report.md ]; then
-            echo ":no_entry_sign: Some errors occured" >> "${GITHUB_STEP_SUMMARY}"
-            echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
-            cat help/anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
-          else
-            echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
-          fi
-
   link_check:
     name: Check links
     runs-on: ubuntu-20.04
