@@ -77,7 +77,7 @@ jobs:
   convert:
     name: Convert to HTML
 #    needs: [ lint, link_check, anchor_check ]
-    needs: [ lint ]
+    needs: [ lint, link_check ]
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -137,11 +137,17 @@ jobs:
       - name: Run Dart script to create menu
         run: dart generate_menu.dart -s ../output/help/ -d ../output/help/
         working-directory: ./help/_internal
+      - name: Move output HTML files
+        run: mv help/output/ output/
+      - name: Check anchor
+        uses: untitaker/hyperlink@0.1.23
+        with:
+          args: --check-anchors output/ --sources help/
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v2
         with:
           name: help_html_pages
-          path: help/output
+          path: output
           retention-days: 7
 
   deploy:
