@@ -21,7 +21,8 @@ export class Utils {
       .whereRowMask(rowMask);
 
     for (const aggregation of aggregations) {
-      data[aggregation.propertyName] = 0; //TODO: accept custom initial values
+      data[aggregation.propertyName] = 0;
+      data[`${aggregation.propertyName}-meta`] = {};
       builder.add(aggregation.type, aggregation.columnName, aggregation.propertyName);
     }
 
@@ -59,13 +60,43 @@ export class Utils {
       return false;
     };
 
-    function aggregateParentNodes(node: treeDataType): void {
-      // grok.functions.call(`${DG.AGG}(node.children.map((child) => child[prop]))`)
-      if (!node.children)
-        return;
-      node.children.forEach(aggregateParentNodes);
-      for (const prop of propNames)
-        node[prop] = node.children.reduce((sum, child) => sum += child[prop], 0) / node.children.length;
+    function aggregateParentNodes(): void {
+      const paths: {[key: string]: {[key: string]: number}} = {};
+      for (let i = 1; i < columns.length; i++) {
+        const builder = dataFrame
+          .groupBy(splitByColumnNames.slice(0, -i))
+          .whereRowMask(rowMask);
+        for (const aggregation of aggregations)
+          builder.add(aggregation.type, aggregation.columnName, aggregation.propertyName);
+        const df = builder.aggregate();
+        const rowCount = df.rowCount;
+        for (let i = 0; i < rowCount; i++) {
+          let path = '';
+          const props: {[key: string]: number} = {};
+          for (let column of df.columns) {
+            if (propNames.includes(column.name))
+              props[column.name] = column.get(i);
+            else
+              path = (path ? path + ' | ' : '') + column.getString(i);
+          }
+          paths[path] = props;
+        }
+      }
+      function updateParentNodes(node: treeDataType) {
+        for (const prop of propNames) {
+          if (!node.path) {
+            data[`${prop}-meta`] = { min: Infinity, max: -Infinity };
+            continue;
+          }
+          node[prop] = node[prop] ?? paths[node.path][prop];
+          if (!data[`${prop}-meta`])
+            continue;
+          data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, node[prop]);
+          data[`${prop}-meta`].max = Math.max(data[`${prop}-meta`].max, node[prop]);
+        }
+        node.children?.forEach(updateParentNodes);
+      }
+      updateParentNodes(data);
     };
 
     for (let i = 0; i < aggregated.rowCount; i++) {
@@ -100,7 +131,9 @@ export class Utils {
       data.value += value;
     }
 
-    aggregateParentNodes(data);
+    if (aggregations.length > 0)
+      aggregateParentNodes();
+
     console.log(JSON.stringify(data));
     markSelectedNodes(data);
 
