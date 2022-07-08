@@ -6,6 +6,7 @@ import * as C from '../utils/constants';
 import {getSeparator} from '../utils/misc';
 import {PeptidesModel} from '../model';
 import {_package} from '../package';
+import $ from 'cash-dom';
 
 /** Peptide analysis widget.
  *
@@ -63,12 +64,21 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
   });
   startBtn.style.alignSelf = 'center';
 
-  const viewer = await currentDf.plot.fromType('WebLogo');
-  viewer.root.style.setProperty('height', '130px');
+  const bioList = (await grok.dapi.packages.list({filter: 'name = "Bio"'})).filter(p => p.name == 'Bio');
+  const logoHost = ui.div('Install Bio package to see WebLogo');
+  if (bioList.length > 0) {
+    const viewer = await currentDf.plot.fromType('WebLogo');
+    viewer.root.style.setProperty('height', '130px');
+    $(logoHost).empty().append(viewer.root);
+  } else {
+    logoHost.style.color = DG.Color.toHtml(DG.Color.red);
+    logoHost.style.alignSelf = 'center';
+    logoHost.style.margin = '10px';
+  }
 
   return new DG.Widget(
     ui.divV([
-      viewer.root,
+      logoHost,
       ui.splitH([
         ui.splitV([ui.inputs(inputsList), startBtn]),
         histogramHost,
