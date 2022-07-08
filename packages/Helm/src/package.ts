@@ -69,12 +69,36 @@ export function detailsPanel(helmString: string){
       'molecular weight': result[1],
       'extinction coefficient': result[2],
       'molfile': result[3],
-      'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
+      /*'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
       'rna analogue sequence': ui.wait(async () => ui.divText(await helmToRNA(helmString))),
       'smiles': ui.wait(async () => ui.divText(await helmToSmiles(helmString))),
-      'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),
+      'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),*/
     })
   )
+}
+
+
+async function loadDialog () {
+  //@ts-ignore
+  let res = await grok.dapi.files.list('System:AppData/Helm', false, '');
+  //@ts-ignore
+  res = res.map((e) => e.path);
+  //@ts-ignore
+  let FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
+  ui.dialog('Load library from file')
+  .add(FilesList)
+  .onOK(() => monomerManager(FilesList.value)).show();
+};
+
+//name: Library
+//tags: panel, widgets
+//input: string helmString {semType: Macromolecule}
+//output: widget result
+export function libraryPanel(helmString: string) {
+  //@ts-ignore
+  let loadButton = ui.button('Load Library');
+  loadButton.addEventListener('click', loadDialog);
+  return new DG.Widget(ui.divH([loadButton]));
 }
 
 async function accessServer(url: string, key: string) {
