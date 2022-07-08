@@ -55,11 +55,12 @@ export class NotationConverter {
   private getNewColumn(targetNotation: NOTATION): DG.Column {
     const col = this.sourceColumn;
     const len = col.length;
-    const name = this.sourceNotation + '2' + targetNotation;
+    const name = targetNotation + '(' + col.name + ')';
     const newColName = col.dataFrame.columns.getUnusedName(name);
     // dummy code
     const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(''));
     newColumn.semType = 'Macromolecule';
+    newColumn.setTag (DG.TAGS.UNITS, this.sourceUnits.replace(this.sourceNotation.toString(), targetNotation.toString()));
     // TODO: determine all the qualifiers (units, ...), perhaps, using detectors
     return newColumn;
   }
