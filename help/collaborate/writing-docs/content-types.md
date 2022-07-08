@@ -43,35 +43,34 @@ time-consuming a tutorial is, the less likely the user will finish it.
 Tutorials should be in this format:
 
 1. Start by telling the user what the tutorial does, the estimated completion time, and the expected _outcome_:
-
-  * _By the end of this tutorial, you will be able to_ followed by a phrase that starts with a verb and clearly
-    describes the outcome of what the user will accomplish.
-  * _Estimated completion time: 30 minutes._
-1. Provide prerequisites:
-  * _Before you begin, make sure you meet these prerequisites:_
+    * _By the end of this tutorial, you will be able to_ followed by a phrase that starts with a verb and clearly
+     describes the outcome of what the user will accomplish.
+    * _Estimated completion time: 30 minutes._
+2. Provide prerequisites:
+    * _Before you begin, make sure you meet these prerequisites:_
     * _A conceptual understanding about x._
     * _Access to the y application._
-1. List everything the user will do.
-1. Next, tell users how to complete each task. Group related tasks into sections. Set clear expectations for each step
+3. List everything the user will do.
+4. Next, tell users how to complete each task. Group related tasks into sections. Set clear expectations for each step
    or task.
 
    Use this template:
 
-  * _Step 1._ Write the command here. Start with the verb.
-  * Add explanatory text, if needed.
-  * Add code samples or visuals that help complete this step.
-  * Describe the result.
+    * _Step 1._ Write the command here. Start with the verb.
+    * Add explanatory text, if needed.
+    * Add code samples or visuals that help complete this step.
+    * Describe the result.
 
    Use this language:
 
-  * _First, do x. Now, do y. Now that you have done y, do z._
-  * _You must always do x before you do y because…_ followed by minimal explanation of actions in the most basic
-    language possible. Link out to more detailed explanation.
-  * _The output looks like this…_
-  * _Notice that…/remember that…_
+    * _First, do x. Now, do y. Now that you have done y, do z._
+    * _You must always do x before you do y because…_ followed by minimal explanation of actions in the most basic
+      language possible. Link out to more detailed explanation.
+    * _The output looks like this…_
+    * _Notice that…/remember that…_
 
-1. Lastly, reiterate the outcome the users will have achieved upon completion of this tutorial:
-  * _You have [built, created, established, etc.]... that ..._
+5. Lastly, reiterate the outcome the users will have achieved upon completion of this tutorial:
+    * _You have [built, created, established, etc.]... that ..._
 
 ## How-To guides
 
