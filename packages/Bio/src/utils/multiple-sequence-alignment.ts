@@ -62,7 +62,7 @@ export async function runKalign(srcCol: DG.Column, isAligned = false): Promise<D
   const tgtUnits = srcUnits.split(':').map((p, i) => i == 1 ? p + '.MSA' : p).join(':');
 
   tgtCol.setTag(DG.TAGS.UNITS, tgtUnits);
-  tgtCol.semType = C.SEM_TYPES.Macro_Molecule;
+  tgtCol.semType = DG.SEMTYPE.MACROMOLECULE;
   return tgtCol;
 }
 
