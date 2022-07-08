@@ -48,7 +48,6 @@ jobs:
 
   convert:
     name: Convert to HTML
-#    needs: [ lint, link_check, anchor_check ]
     needs: [ lint, link_check ]
     runs-on: ubuntu-20.04
     steps:
