@@ -20,6 +20,7 @@ import { getMolfilesFromSeq, HELM_CORE_LIB_FILENAME } from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from "./utils/cell-renderer";
 
+/*
 //name: macromoleculeSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: Macromolecule
@@ -27,6 +28,8 @@ import {MacromoleculeSequenceCellRenderer} from "./utils/cell-renderer";
 export function macromoleculeSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
 }
+*/
+
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
 // eslint-disable-next-line max-len
