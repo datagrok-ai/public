@@ -22,7 +22,7 @@ Datagrok documentation should be clear and easy to understand:
 * [Write compound words and words with prefixes without hyphens or spaces](#compound-words-and-words-with-prefixes).
 * [Contractions](#contractions) are OK because we write in an informal tone.
 * [Spell out: acronyms on first use and numbers from zero to nine](#acronyms-and-numbers).
-* For usage and spelling of specific words, see the [Word list](./word-list.md).
+* For usage and spelling of specific words, see the [Word list](word-list.md).
 
 ### Conciseness
 
@@ -151,7 +151,7 @@ acronyms are uppercased:
 
 We tend to use the closed form of compound words and words with prefixes; that is, write these words without a space or
 a hyphen (for example, a _dataset_ or an _open source_ plugin). For the list of commonly used terms, see [Word
-list](./word-list.md).
+list](word-list.md).
 
 ### Contractions
 

@@ -2,10 +2,10 @@
 
 We follow four different content types:
 
-* [Tutorials](##tutorials)
-* [How-To guides](##How-to-guides)
-* [Technical reference material](##reference-material)
-* [Topics](##topics)
+* [Tutorials](#tutorials)
+* [How-To guides](#How-to-guides)
+* [Technical reference material](#reference-material)
+* [Topics](#topics)
 
 These content types represent different documentation functions and require a distinct writing mode. Users need all four
 kinds of documentation at different times, in different circumstances.
@@ -36,13 +36,39 @@ In general, tutorials are most useful when users are just getting started. For e
 * Tutorials about a Datagrok feature, capability, or package (such as _Cheiminformatics tutorial_ or _Exploratory data
   analysis tutorial_).
 
+Try to limit tutorials to 10 steps or 30 minutes in length. More than that may indicate you're trying to describe a use case that
+is too complex for beginners or combining too many actions in one tutorial. The more complex and time-consuming a
+tutorial is, the less likely the user will finish it.
+
 Tutorials should be in this format:
 
-1. Start by telling the user what the tutorial does, the estimated completion time, and the expected outcome.
-1. Provide prerequisites.
+1. Start by telling the user what the tutorial does, the estimated completion time, and the expected _outcome_:
+
+   * _By the end of this tutorial, you will be able to_ followed by a phrase that starts with a verb and clearly describes the outcome of what the user will accomplish.
+   * _Estimated completion time: 30 minutes._
+1. Provide prerequisites:
+    * _Before you begin, make sure you meet these prerequisites:_
+      * _A conceptual understanding about x._
+      * _Access to the y application._
 1. List everything the user will do.
-1. Next, tell users how to complete each task. Group related tasks into sections.
-1. Lastly, reiterate the outcome the users will have achieved upon completion of this tutorial.  
+1. Next, tell users how to complete each task. Group related tasks into sections. Set clear expectations for each step or task.
+
+   Use this template:
+
+   * _Step 1._ Write the command here. Start with the verb.
+   * Add explanatory text, if needed.
+   * Add code samples or visuals that help complete this step.
+   * Describe the result.
+
+   Use this language:
+
+     * _First, do x. Now, do y. Now that you have done y, do z._
+     * _You must always do x before you do y because…_ followed by minimal explanation of actions in the most basic language possible. Link out to more detailed explanation.
+     * _The output looks like this…_
+     * _Notice that…/remember that…_
+
+1. Lastly, reiterate the outcome the users will have achieved upon completion of this tutorial:
+   * _You have [built, created, established, etc.]... that ..._
 
 ## How-To guides
 
@@ -52,6 +78,8 @@ to help users achieve their task in the shortest time and with the best results.
 A How-To guide is like a recipe. Users don't need to know _all_ the ways in which they can complete a task. They only
 need to know one optimal solution. Similarly, when users are focused on the current task, they don't want to be
 distracted by the technical aspects of how things work, descriptions of concepts, or the basics of working with UI.
+
+Avoid linking to concepts in the middle of a How-To. Every time a user clicks a link, a new tab opens. Clicking more links opens more tabs and adds more distraction and can be overwhelming.
 
 A How-To guide should be in this format:
 
@@ -97,6 +125,12 @@ Reference material is the place to describe "what's under the hood" and provide 
 users already understand the basic concepts involved but need to know technical details.
 
 Unlike topics, reference material may instruct users how to do something. However, stay tightly focused on the subject
-and avoid general explanations. Link to a topic that explains the concept instead. Use tables and lists where relevant.
+and avoid general explanations. Link to a topic that explains the concept instead. Use dry, simple language:
+
+* State the facts: _X is an example of y. W needs to be activated using z._
+* List commands, options, features, etc.: _Your options are: a,b,c, and d._
+* Use warning and provide limitations: _You must have privileges to access a. Never d. Don't use b unless c._
+
+Use tables and lists where relevant.
 
 Like with topics, reference material headings are usually nouns.
