@@ -164,3 +164,11 @@ sequences, or dose-response curves.
 
 See the [joint Datagrok/Novartis demo](https://vimeo.com/548606688/f2dd6e5c0a) for more details and a real-world use
 case (the second part describes Novartis’ system built on top of Datagrok).
+
+### Sequence space
+
+Datagrok allows to visualize multidimensional sequence space using dimensionality reduction approah. There are several dimensionality reduction algorithms available such as widely spread UMAP or t-SNE. Algorithms reduce the dimentionality of initial vector space and draw points/projections closer to each other if they correspond to similar structures, and farther otherwise, so that the distance between two points on a projection is determined by the similarity of molecules. The tool for analyzing molecules collections is called 'Sequence space' and exists in Bio package.
+
+You can open tool from a top menu by selecting Bio -> Sequence space.
+
+![Sequence space](../../uploads/macromolecules/sequence-space.gif)
