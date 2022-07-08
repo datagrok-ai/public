@@ -43,7 +43,7 @@ Automatic conversion to HELM from other notations will occur as necessary. The u
 sequence, with all the monomers included in a graph, even if the original notation was not HELM. Datagrok HELM package
 already allows to ingest, auto-detect, visualize, and edit HELM. 
 
-![Editing Helm](../../uploads/macromolecules/HelmWebEditor.gif "Editing Helm")
+![Editing Helm](../../uploads/macromolecules/HelmEditor.gif "Editing Helm")
 
 Support monomer libraries in the enterprise context (privileges, sharing).
 
