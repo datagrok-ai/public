@@ -1,0 +1,3 @@
+.d4-g-cell[semType="Macromolecule"] * {
+    pointer-events: none !important;
+}

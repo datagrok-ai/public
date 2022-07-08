@@ -20,15 +20,24 @@ import { getMolfilesFromSeq, HELM_CORE_LIB_FILENAME } from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from "./utils/cell-renderer";
 
-/*
+//tags: init
+export async function initBio(): Promise<void> {
+  // apparently HELMWebEditor requires dojo to be initialized first
+  return new Promise((resolve, reject) => {
+    // @ts-ignore
+    dojo.ready(function () { resolve(null); });
+  });
+}
+
+
 //name: macromoleculeSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: Macromolecule
 //output: grid_cell_renderer result
 export function macromoleculeSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
-}
-*/
+} 
+
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}

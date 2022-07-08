@@ -7,6 +7,9 @@ import {NucleotidesPalettes} from "@datagrok-libraries/bio/src/nucleotides";
 import {UnknownSeqPalettes} from "@datagrok-libraries/bio/src/unknown";
 import {SplitterFunc, WebLogo} from "@datagrok-libraries/bio/src/viewers/web-logo";
 import {SeqPalette} from "@datagrok-libraries/bio/src/seq-palettes";
+import * as ui from 'datagrok-api/ui';
+
+const lru = new DG.LruCache<any, any>(); 
 
 function getPalleteByType(paletteType: string): SeqPalette  {
   switch (paletteType) {
@@ -152,6 +155,60 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
       cellStyle: DG.GridCellStyle,
   ): void {
-    renderSequense(g, x, y, w, h, gridCell, cellStyle);
+    const grid = gridCell.grid;
+    const cell = gridCell.cell;
+    const tag = gridCell.cell.column.getTag(DG.TAGS.UNITS);
+    if (tag === 'HELM') {
+      let host = ui.div([], { style: { width: `${w}px`, height: `${h}px`}});
+      host.setAttribute('dataformat', 'helm');
+      host.setAttribute('data', gridCell.cell.value);
+      gridCell.element = host;
+      //@ts-ignore
+      var canvas = new JSDraw2.Editor(host, { width: w, height: h, skin: "w8", viewonly: true });
+      var formula = canvas.getFormula(true);
+      if (!formula) {
+        g.fillStyle = 'red';
+        g.fillText(gridCell.cell.value, x, y);
+      } else {
+        var molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
+        var coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
+        var molfile = canvas.getMolfile();
+        var result = formula + ', ' + molWeight + ', ' + coef + ', ' + molfile;
+        lru.set(gridCell.cell.value, result);
+      }
+    } else {
+      const [type, subtype, paletteType] =  gridCell.cell.column.getTag(DG.TAGS.UNITS).split(":");
+      w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+      g.save();
+      g.beginPath();
+      g.rect(x, y, w, h);
+      g.clip();
+      g.font = '12px monospace';
+      g.textBaseline = 'top';
+      const s: string = cell.value ?? '';
+  
+      //TODO: can this be replaced/merged with splitSequence?
+      const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
+  
+      const palette = getPalleteByType(paletteType);
+  
+      const separator = gridCell.cell.column.getTag('separator') ?? '';
+      const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator') );// splitter,
+  
+      const subParts:string[] =  splitterFunc(cell.value);
+      console.log(subParts);
+  
+      const textSize = g.measureText(subParts.join(''));
+      let x1 = Math.max(x, x + (w - textSize.width) / 2);
+  
+      subParts.forEach((amino, index) => {
+        let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
+        color = palette.get(amino);
+        g.fillStyle = ChemPalette.undefinedColor;
+        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, pivot, true, false, 1.0, separator);
+      });
+  
+      g.restore();
+    }
   }
 }
