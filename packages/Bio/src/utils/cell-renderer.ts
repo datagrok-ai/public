@@ -84,14 +84,53 @@ function printLeftOrCentered(
     return x + dx + colorTextSize.width;
   }
 }
+function renderSequense(
+      g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
+      cellStyle: DG.GridCellStyle,
+): void {
+    const grid = gridCell.grid;
+    const cell = gridCell.cell;
+    const [type, subtype, paletteType] =  gridCell.cell.column.getTag(DG.TAGS.UNITS).split(":");
+    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+    g.save();
+    g.beginPath();
+    g.rect(x, y, w, h);
+    g.clip();
+    g.font = '12px monospace';
+    g.textBaseline = 'top';
+    const s: string = cell.value ?? '';
+
+  //TODO: can this be replaced/merged with splitSequence?
+  const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
+
+  const palette = getPalleteByType(paletteType);
+
+  const separator = gridCell.cell.column.getTag('separator') ?? '';
+  const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator') );// splitter,
+
+  const subParts:string[] =  splitterFunc(cell.value);
+
+  const textSize = g.measureText(subParts.join(''));
+  let x1 = Math.max(x, x + (w - textSize.width) / 2);
+
+  subParts.forEach((amino, index) => {
+    let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
+    color = palette.get(amino);
+    g.fillStyle = ChemPalette.undefinedColor;
+    x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, pivot, true, false, 1.0, separator);
+  });
+
+  g.restore();
+}
+
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   constructor() {
     super();
   }
 
-  get name(): string {return 'alignedSequenceCR';}
+  get name(): string {return 'macromoleculeSequence';}
 
-  get cellType(): string {return C.SEM_TYPES.ALIGNED_SEQUENCE;}
+  get cellType(): string {return C.SEM_TYPES.Macro_Molecule;}
 
   get defaultHeight(): number {return 30;}
 
@@ -113,39 +152,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
       cellStyle: DG.GridCellStyle,
   ): void {
-    const grid = gridCell.grid;
-    const cell = gridCell.cell;
-    const [type, subtype, paletteType] =  gridCell.cell.column.getTag(DG.TAGS.UNITS).split(":");
-    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-    g.save();
-    g.beginPath();
-    g.rect(x, y, w, h);
-    g.clip();
-    g.font = '12px monospace';
-    g.textBaseline = 'top';
-    const s: string = cell.value ?? '';
-
-    //TODO: can this be replaced/merged with splitSequence?
-    const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
-
-    const palette = getPalleteByType(paletteType);
-
-    const separator = gridCell.cell.column.getTag('separator') ?? '';
-    const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator') );// splitter,
-
-    const subParts:string[] =  splitterFunc(cell.value);
-    console.log(subParts);
-
-    const textSize = g.measureText(subParts.join(''));
-    let x1 = Math.max(x, x + (w - textSize.width) / 2);
-
-    subParts.forEach((amino, index) => {
-      let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
-      color = palette.get(amino);
-      g.fillStyle = ChemPalette.undefinedColor;
-      x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, pivot, true, false, 1.0, separator);
-    });
-
-    g.restore();
+    renderSequense(g, x, y, w, h, gridCell, cellStyle);
   }
 }
