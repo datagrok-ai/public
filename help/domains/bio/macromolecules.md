@@ -41,10 +41,13 @@ unification. If a dataframe contains any sequence data, it will be recognized an
 
 Automatic conversion to HELM from other notations will occur as necessary. The user can get a HELM plot for each
 sequence, with all the monomers included in a graph, even if the original notation was not HELM. Datagrok HELM package
-already allows to ingest, auto-detect, visualize, and edit HELM. Future plans: support monomer libraries in the
-enterprise context (privileges, sharing).
+already allows to ingest, auto-detect, visualize, and edit HELM. 
 
-![HELM for description](../../uploads/macromolecules/macromolecules-4.png "HELM for description")
+![Editing Helm](../../uploads/macromolecules/HelmWebEditor.gif "Editing Helm")
+
+Support monomer libraries in the enterprise context (privileges, sharing).
+
+![Monomer Library](../../uploads/macromolecules/MonomerLibrary.gif "Monomer Library")
 
 ### Visualizing Assay Data and Dose-Response Curves
 
