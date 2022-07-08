@@ -15,20 +15,11 @@ predictive models, integration with the external utilities, data augmentation, a
 ## Table of contents
 
 * [Setting up the environment](#setting-up-the-environment)
-<<<<<<< HEAD
 * [Semantic-types](#exercise-1-semantic-types)
 * [Scripting and functions](#exercise-2-scripting-and-functions)
   * [Scripting with server functions](#scripting-with-server-functions)
   * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
   * [Scripting with client functions](#scripting-with-client-functions)
-=======
-* [Semantic types](#semantic-types)
-* [Scripting and functions](#scripting-and-functions)
-  * [Scripting with server functions](#scripting-with-server-functions)
-  * [Modifying dataframes with scripts](#modifying-dataframes-with-scripts)
-  * [Scripting with client functions](#scripting-with-client-functions)
-
->>>>>>> fbc001fb5 (Wiki: fixed broken links)
 
 <!---
 * [Composing functions](#composing-functions)
@@ -64,18 +55,20 @@ predictive models, integration with the external utilities, data augmentation, a
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
    [these instructions](../how-to/set-up-environment.md)
-2. Create a branch from master at [GitHub](https://github.com/datagrok-ai/public/branches) or using your IDE;
-Use your credentials as a name of the branch
+2. Create a branch from master at [GitHub](https://github.com/datagrok-ai/public/branches) or using your IDE; Use your
+   credentials as a name of the branch
 3. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by
    running `grok config`. Open [https://dev.datagrok.ai/u](https://dev.datagrok.ai/u), click on `Developer key`, copy
    the `grok` command and execute it to add the key to your config
 4. Create a default package in your branch [called](https://datagrok.ai/help/develop/develop#naming-conventions)
    `<yourFirstName>-sequence` using datagrok-tools:
-   `grok create <yourFirstName>-sequence` with specifying the `--ts` option to create a package with TypeScript configuration
-   (if you are new to TypeScript, you can specify the `--js` option); Note that detectors.js file is still using JavaScript
+   `grok create <yourFirstName>-sequence` with specifying the `--ts` option to create a package with TypeScript
+   configuration
+   (if you are new to TypeScript, you can specify the `--js` option); Note that detectors.js file is still using
+   JavaScript
 5. Run `npm install` to link the dependencies mentioned in `package.json` file of your package
 6. Upload it to the server: run `webpack` and `grok publish dev` (see other
-options [here](../develop.md#deployment-modes))
+   options [here](../develop.md#deployment-modes))
 7. Launch the platform and run the package's `info()` function using different methods:
 
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
@@ -108,10 +101,9 @@ You will learn: how to write semantic type detectors, how to develop context-spe
     }
     ```
 
-   Note that comments on the top of the function declaration are crucial for running it on the platform.
-   They determine the function name, the input and output types.
-   Essentially, change each character to the complementary one: `A <=> T`, `G <=> C`. Run it and check whether
-   everything works fine.
+   Note that comments on the top of the function declaration are crucial for running it on the platform. They determine
+   the function name, the input and output types. Essentially, change each character to the complementary one: `A <=> T`
+   , `G <=> C`. Run it and check whether everything works fine.
 
 2. Now, let's specify that this function is meant to accept not any string, but nucleotides only, and to return a
    nucleotide string as well. In order to do that, let's annotate both input and output parameters with
@@ -289,12 +281,12 @@ repeat what we've achieved in the last point of the previous exercise, now with 
    the `join` instruction, `result` will be  *appended* to the existing input dataframe `sequences`. As this is
    performed purely on the client, we save the bandwidth without needing to return a copy of a dataframe which we
    already passed to the server.
+
     * Use Pandas dataframes as `pd` to access the input dataframe and create an output dataframe
     * You don't need to import `pandas`, Datagrok does this automatically: to each Python script it adds a preamble with
       most popular imports (`os`, `io`, `json`, `pandas as pd`, `requests`
       , `datetime`, `timedelta`)
-    * Note that the column `columnName` is just a string with a column name passed to a script, not an actual column
-      content
+    * Note that the column `columnName` is just a string with a column name passed to a script, not an actual column content
 
 3. Run the function with a "Play" button on top of the function window. The dialog will prompt you to select a
    dataframe. Navigate to a "Data" view (first button on the left sidebar) and open a file with nucleotide sequences
@@ -377,7 +369,7 @@ fetches back the result to the browser.
 5. Run the script and check the new column appears in the grid.
 
 6. Add `CountSubsequenceTablePythonAugment` and `CountSubsequenceTablePython` as part of the package
-   `<yourFirstName>-sequence` prepared in ["Semantic types"](#semantic-types) exercise. Deploy the package,
+   `<yourFirstName>-sequence` prepared in ["Semantic types"](#exercise-1-semantic-types) exercise. Deploy the package,
    reload Datagrok and run `CountSubsequenceTablePythonAugment` from the package.
 
 7. Notice that we don't need the entire input dataframe to run the script, just one column. Optimize the 2 scripts
@@ -430,16 +422,16 @@ fetches back the result to the browser.
     outputDf = DG.DataFrame.fromColumns([newCol]);
     ```
    Grasp a number of techniques with Datagrok JS API:
-   * creating a new column of a given type
-   * iterating through a dataframe by a row index
-   * creating a dataframe from an array of columns
+     * creating a new column of a given type
+     * iterating through a dataframe by a row index
+     * creating a dataframe from an array of columns
 
 10. In `CountSubsequenceTablePythonAugment`, replace `CountSubsequenceTablePython` to `CountSubsequenceTableJS`,
     rename itself to `CountSubsequenceTableJSAugment` and run it. Check that the exact same new column is produced
     as it was for a Python version.
 
 11. Add `CountSubsequenceTableJS` and `CountSubsequenceTableJSAugment` as part of the
-    package `<yourFirstName>-sequence` prepared in ["Semantic types"](#semantic-types) exercise.
+    package `<yourFirstName>-sequence` prepared in ["Semantic types"](#exercise-1-semantic-types) exercise.
     Deploy the package, reload Datagrok and run `CountSubsequenceTableJSAugment` from the package.
 
 12. In contrast to `CountSubsequenceTablePythonAugment` running in the browser and `CountSubsequenceTablePython`
@@ -496,12 +488,13 @@ from our server.
    icon in the left bottom corner of the dialog window.
 7. Rename this query from your name to `ordersByCountry`, and save it.
 8. Try different ways to execute it:
+
     * Right-click on `Data | Databases | PostgreSQL | northwind | ordersByCountry`, select `Run` from the context menu,
       enter the country name, and run it
-    * Click on `Data | Databases | PostgreSQL | northwind | ordersByCountry`, expand the `Run` pane on the right, enter
-      the country name and run it
-    * Open console by pressing `~` key, see the results of the previous invocations. Copy-paste the corresponding
-      command and run it from the console.
+    * Click on `Data | Databases | PostgreSQL | northwind | ordersByCountry`, expand the `Run` pane on the right, enter the
+      country name and run it
+    * Open console by pressing `~` key, see the results of the previous invocations. Copy-paste the corresponding command
+      and run it from the console.
 
 9. Now, let's add this query to our package. Create a connection by running `grok add connection <yourFirstName>`, then,
    as instructed [here](../how-to/access-data.md#creating-queries), create the '.sql' file under the `queries`
@@ -582,13 +575,13 @@ First, let's explore how scripting viewer works.
 ## Exercise 5: Transforming dataframes
 
 *Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment),
-["Semantic types"](#semantic-types).
+["Semantic types"](#exercise-1-semantic-types).
 
 *You will learn:* how to join and union dataframes using the knowledge of semantic types, and display the result.
 
 1. Make sure the [prerequisites](#setting-up-the-environment) are prepared on your machine, including the package
    called `<yourFirstName>-sequence` Assure the package carries a relevant semantic type detector from the
-   exercise ["Semantic Types"](#semantic-types).
+   exercise ["Semantic Types"](#exercise-1-semantic-types).
 2. Add a function to the package as follows:
 
    ```javascript
@@ -600,20 +593,20 @@ First, let's explore how scripting viewer works.
    ```
 
 3. Implement a `fuzzyJoin` function which takes two dataframes `df1` and `df2`, and does the following:
+
     * takes a first column in `df1` which has a semantic type of `dna_nucleotide`, let's say it is `col1`
     * takes a first column in `df2` which has a semantic type of `dna_nucleotide`, let's say it is `col2`
     * creates a dataframe `df` out of `df1` and `df2` in the following way:
-        * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved — this is a UNION
-          operation for dataframes, as in SQL; use the
-          dataframe's [`.append`](https://public.datagrok.ai/js/samples/data-frame/append) method
-        * a new column `Counts` appears in `df`, which contains:
-            * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of
-              length `N`in *all* the sequences of `col2`
-            * symmetrically, same for each row from `df2` — consider this as a fuzzy, programmatic JOIN of the two
-              dataframes;
-              use[`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
-              , [`col.set(i, value)`](https://public.datagrok.ai/js/samples/data-frame/advanced/data-frames-in-columns)
-              on a newly created column
+      * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved — this is a UNION operation
+        for dataframes, as in SQL; use the dataframe's [`.append`](https://public.datagrok.ai/js/samples/data-frame/append)
+        method
+      * a new column `Counts` appears in `df`, which contains:
+        * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of length `N`
+          in *all* the sequences of `col2`
+        * symmetrically, same for each row from `df2` — consider this as a fuzzy, programmatic JOIN of the two dataframes;
+          use[`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
+          , [`col.set(i, value)`](https://public.datagrok.ai/js/samples/data-frame/advanced/data-frames-in-columns)
+          on a newly created column
     * displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)
 
 4. Deploy the package with `webpack` and `grok publish dev`. Unlike with the first exercise, where the package was built
@@ -633,7 +626,7 @@ First, let's explore how scripting viewer works.
 *You will learn:* reuse 3-rd party JavaScript libraries in your Datagrok packages; render cells by semantic types.
 
 *Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment),
-["Semantic types"](#semantic-types).
+["Semantic types"](#exercise-1-semantic-types).
 
 1. Navigate into the folder with your `<yourFirstName>-sequence` package created in
    ["Setting up the environment"](#setting-up-the-environment).
@@ -647,33 +640,33 @@ First, let's explore how scripting viewer works.
    The `--save` key updates `package.json` to add this library to your package dependencies.
 3. Add a class to `src/package.js` for the new cell renderer:
 
-    * use `fusioncharts-smartlabel` to break the original sequence in the current cell into lines which fit into a
-      cell's canvas rectangle; learn [here][017] how to do it, consider `SmartLabel.textToLines(...).lines`
+    * use `fusioncharts-smartlabel` to break the original sequence in the current cell into lines which fit into a cell's
+      canvas rectangle; learn [here][017] how to do it, consider `SmartLabel.textToLines(...).lines`
       as a target array of lines to render
     * Datagrok [grid](../../visualize/viewers/grid.md) is rendered through an
       [HTML5 Canvas](https://en.wikipedia.org/wiki/Canvas_element). The grid's canvas is `g.canvas`. Iterate through the
-      resulting lines and bring them to a `g.canvas` in the `render` method with `g.canvas.getContext("2d").fillText`;
-      learn more about HTML Canvas if it's new for you
+      resulting lines and bring them to a `g.canvas` in the `render` method with `g.canvas.getContext("2d").fillText`; learn
+      more about HTML Canvas if it's new for you
     * Hint: pay attention to managing `line-height` both at computing the box and rendering text lines
 
-      ```javascript
-      class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
-        get name() { return 'Nucleotide cell renderer'; }
-        get cellType() { return 'dna_nucleotide'; }
-        render(g, x, y, w, h, gridCell, cellStyle) {
-          let seq = gridCell.cell.value;
-          const sl = new SmartLabel('id', true);
-          sl.setStyle({/* ... */});
-          // ...
-          let ctx = g.canvas.getContext("2d");
-          ctx.font = '11px courier';
-          // ...
-          const lines = labelObj.lines;
-          for (let i = 0; i < lines.length; i++)
-            ctx.fillText(/* ... */);
-        }
+    ```javascript
+    class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
+      get name() { return 'Nucleotide cell renderer'; }
+      get cellType() { return 'dna_nucleotide'; }
+      render(g, x, y, w, h, gridCell, cellStyle) {
+        let seq = gridCell.cell.value;
+        const sl = new SmartLabel('id', true);
+        sl.setStyle({/* ... */});
+        // ...
+        let ctx = g.canvas.getContext("2d");
+        ctx.font = '11px courier';
+        // ...
+        const lines = labelObj.lines;
+        for (let i = 0; i < lines.length; i++)
+          ctx.fillText(/* ... */);
       }
-      ```
+    }
+    ```
 
 4. Add the below to `src/package.js` to make the new cell renderer part of the package:
 
@@ -722,24 +715,24 @@ coronavirus.
 6. Close the table, locate the saved query in the list and run it.
 7. Bring the connection to the package:
 
-* Put the Swagger file in a `swaggers` folder of the package. Make sure the swagger contains the correct `basePath`
-  and `host`, in some Swaggers it isn't always the case.
-* Add the following function to `package.js`:
+    * Put the Swagger file in a `swaggers` folder of the package. Make sure the swagger contains the correct `basePath`
+      and `host`, in some Swaggers it isn't always the case.
+    * Add the following function to `package.js`:
 
-  ```
-  //name: testENASwagger
-  export async function testENASwagger() {
-    let data = await grok.data.query('<yourFirstName>sequence:PerformATextSearchAndDownloadDataInXMLFormat',
-      {'query': 'coronavirus', 'result': 'assembly'});
-    grok.shell.addTableView(data);
-  }
-  ```
+    ```
+    //name: testENASwagger
+    export async function testENASwagger() {
+      let data = await grok.data.query('<yourFirstName>sequence:PerformATextSearchAndDownloadDataInXMLFormat',
+        {'query': 'coronavirus', 'result': 'assembly'});
+      grok.shell.addTableView(data);
+    }
+    ```
 
-* Note how the Swagger's query name translates into a package query name.
-* You can obtain this query name with the Datagrok UI. Click on the query of interest,
-  `"Perform a text search and download data in XML format"` in our case, and find a `Links...`
-  section. Click it and copy a function's name from the URI.
-* Deploy the package and make sure `testENASwagger` function works in Datagrok.
+    * Note how the Swagger's query name translates into a package query name.
+    * You can obtain this query name with the Datagrok UI. Click on the query of interest,
+      `"Perform a text search and download data in XML format"` in our case, and find a `Links...`
+      section. Click it and copy a function's name from the URI.
+    * Deploy the package and make sure `testENASwagger` function works in Datagrok.
 
 We provide a handful of demo Swaggers, check their source JSON files [here][021] and see in action in Datagrok at
 the [`Web Services`](https://public.datagrok.ai/webservices) section of the Datagrok UI.
@@ -751,7 +744,8 @@ contained in a currently selected grid cell.
 
 1. Searching through [the ENA archive](https://www.ebi.ac.uk/ena/browser/text-search?query=coronavirus), you may notice
    the sequences' IDs have a format of `[A-Z]{2}[0-9]{6}` (two capital letters + six digits). Go to
-   the [detectors file](#semantic-types) of your package and add a detector which recognizes a string of this form:
+   the [detectors file](#exercise-1-semantic-types) of your package and add a detector which recognizes a string of this
+   form:
 
    ```javascript
    //input: string str
@@ -824,14 +818,14 @@ be `coronavirus`, `influenza` etc.
 2. Make a function `formENADataTable` which constructs a dialog giving the user a two-step process for constructing a
    dataframe with ENA sequence data in it.
 
-    * First, the user can type in the query (`coronavirus` is the default setting) and see the first 10 results in the
-      grid right in this window after clicking the "Search" button. Consider this as a preview before the actual
-      dataframe is produced.
+    * First, the user can type in the query (`coronavirus` is the default setting) and see the first 10 results in the grid
+      right in this window after clicking the "Search" button. Consider this as a preview before the actual dataframe is
+      produced.
     * Second, when the user is happy with what's in the preview, he/she proceeds to the "Ok" button to get the actual
-      dataframe with the ENA data on the screen in the Datagrok's grid view. This table shall consist of the number of
-      rows the user chooses (`100` set as a default).
+      dataframe with the ENA data on the screen in the Datagrok's grid view. This table shall consist of the number of rows
+      the user chooses (`100` set as a default).
 
-   Here is the code scaffold for the `formENADataTable` function:
+    Here is the code scaffold for the `formENADataTable` function:
 
     ```javascript
     let grid = DG.Viewer.grid(df);
@@ -855,12 +849,12 @@ be `coronavirus`, `influenza` etc.
       .show();
     ```
 
-   Re-use twice the `_fetchENASequence` function you've prepared previously.
+    Re-use twice the `_fetchENASequence` function you've prepared previously.
 
 3. In this first version we fetched `60` characters for a sequence. Add a new text field called `Sequece length`
    to let the user specify this trim length, set it `60` as a default.
 
-4. Make your function set a proper [semantic type](#semantic-types) for the `Sequence` column.
+4. Make your function set a proper [semantic type](#exercise-1-semantic-types) for the `Sequence` column.
 
 5. (*) You may notice the sequences you get in this order are not too different. Add more diversity to these tables. For
    example, you can use the `offset` parameter of the `GET` query.
@@ -894,8 +888,8 @@ A simple keyword search in the ENA database (with navigation)
 
 [019]: https://www.ebi.ac.uk/ena/browser/api "Swagger API Tester"
 
-[020]: ../../access/open-api.md#Troubleshooting "OpenAPI connections troubleshooting"
+[020]: ../../access/open-api.md#troubleshooting "OpenAPI connections troubleshooting"
 
 [021]: https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers "Datagrok Swaggers samples"
 
-[022]: #creating-an-info-panel-with-a-rest-web-service "Creating an info panel with a REST web service"
+[022]: #exercise-8-creating-an-info-panel-with-a-rest-web-service "Creating an info panel with a REST web service"

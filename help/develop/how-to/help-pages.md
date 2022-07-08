@@ -31,28 +31,40 @@ If you do not have one yet, you can
 easily [create it on GitHub](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 .
 
-```shell
-# Download dependencies
-docker pull ghcr.io/igorshubovych/markdownlint-cli:latest
-docker pull lycheeverse/lychee
-npm install -g remark-cli remark-validate-links
+1. Markdown lint
 
-# To check full documentation
-docker run -v "<absolut_path_to_public_repo>":/workdir --rm -i ghcr.io/igorshubovych/markdownlint-cli:latest --config .github/linters/.markdownlint.yaml help/**/*.md
-docker run --init -it -v "<absolut_path_to_public_repo>/help":/help -v "<absolut_path_to_public_repo>/.lycheeignore":/.lycheeignore  lycheeverse/lychee /help --github-token "<your_personal_github_token>" --exclude-all-private --require-https --cache -a 429
-remark -u validate-links --frail "<absolut_path_to_public_repo>/help"
+    ```shell
+    # Download dependencies
+    docker pull pandoc/core:latest
+    npm install -g @untitaker/hyperlink
 
-# To check and fix full documentation using mardownlint
-docker run -v "<absolut_path_to_public_repo>":/workdir --rm -i ghcr.io/igorshubovych/markdownlint-cli:latest --fix --config .github/linters/.markdownlint.yaml help/**/*.md
+    # To run lint check
+    docker pull ghcr.io/igorshubovych/markdownlint-cli:latest
+    docker run -v "<absolut_path_to_public_repo>":/workdir --rm -i ghcr.io/igorshubovych/markdownlint-cli:latest --config .github/linters/.markdownlint.yaml help/**/*.md
+    docker run -v "<absolut_path_to_public_repo>":/workdir --rm -i ghcr.io/igorshubovych/markdownlint-cli:latest --fix --config .github/linters/.markdownlint.yaml help/**/*.md
+    docker run -v "<absolut_path_to_help_file>":"<absolut_path_to_help_file>" -v "<absolut_path_to_public_repo>/.github/linters/.markdownlint.yaml":/workdir/.markdownlint.yaml  ghcr.io/igorshubovych/markdownlint-cli:latest --config .markdownlint.yaml "<absolut_path_to_help_file>"
+    docker run -v "<absolut_path_to_help_file>":"<absolut_path_to_help_file>" -v "<absolut_path_to_public_repo>/.github/linters/.markdownlint.yaml":/workdir/.markdownlint.yaml  ghcr.io/igorshubovych/markdownlint-cli:latest --fix --config .markdownlint.yaml "<absolut_path_to_help_file>"
 
-# To check the exact file
-docker run -v "<absolut_path_to_help_file>":"<absolut_path_to_help_file>" -v "<absolut_path_to_public_repo>/.github/linters/.markdownlint.yaml":/workdir/.markdownlint.yaml  ghcr.io/igorshubovych/markdownlint-cli:latest --config .markdownlint.yaml "<absolut_path_to_help_file>"
-docker run --init -it -v "<absolut_path_to_help_file>":"<absolut_path_to_help_file>" -v $(pwd)/.lycheeignore:/.lycheeignore  lycheeverse/lychee "<absolut_file_path>" --github-token "<your_personal_github_token>" --exclude-all-private --require-https --cache -a 429
-remark -u validate-links --frail "<absolut_path_to_help_file>"
+    # To run external links checker
+    docker pull lycheeverse/lychee
+    docker run --init -it -v "<absolut_path_to_public_repo>/help":/help -v "<absolut_path_to_public_repo>/.lycheeignore":/.lycheeignore  lycheeverse/lychee /help --github-token "<your_personal_github_token>" --exclude-all-private --require-https --cache -a 429
+    docker run --init -it -v "<absolut_path_to_help_file>":"<absolut_path_to_help_file>" -v $(pwd)/.lycheeignore:/.lycheeignore  lycheeverse/lychee "<absolut_file_path>" --github-token "<your_personal_github_token>" --exclude-all-private --require-https --cache -a 429
+    ```
 
-# To check and fix the exact file using mardownlint
-docker run -v "<absolut_path_to_help_file>":"<absolut_path_to_help_file>" -v "<absolut_path_to_public_repo>/.github/linters/.markdownlint.yaml":/workdir/.markdownlint.yaml  ghcr.io/igorshubovych/markdownlint-cli:latest --fix --config .markdownlint.yaml "<absolut_path_to_help_file>"
-```
+2. External links check
+
+    ```shell
+    # To run external links checker
+    docker pull lycheeverse/lychee
+    docker run --init -it -v "<absolut_path_to_public_repo>/help":/help -v "<absolut_path_to_public_repo>/.lycheeignore":/.lycheeignore  lycheeverse/lychee /help --github-token "<your_personal_github_token>" --exclude-all-private --require-https --cache -a 429
+    docker run --init -it -v "<absolut_path_to_help_file>":"<absolut_path_to_help_file>" -v $(pwd)/.lycheeignore:/.lycheeignore  lycheeverse/lychee "<absolut_file_path>" --github-token "<your_personal_github_token>" --exclude-all-private --require-https --cache -a 429
+    ```
+
+3. Internal links and anchors check.
+
+   Internal links and anchors are checked after the help package convert to HTML. To test it locally wou should convert
+   markdown to HTML using [pandoc](https://pandoc.org/) and then check all links
+   using [hyperlink](https://github.com/untitaker/hyperlink).
 
 ## Trigger GitHub Actions manually
 

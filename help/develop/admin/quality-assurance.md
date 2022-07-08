@@ -66,7 +66,7 @@ Results of the integration tests are kept in the [test tracking system](#test-tr
 
 A separate suite of tests is devoted for the [JS API](../js-api.md). These tests are executed automatically on a server
 using a headless browser mode. The test suite is written in TypeScript, and is a regular Datagrok package. It is
-open-sourced and located [here](../../../packages/ApiTests)
+open-sourced and located [here](https://github.com/datagrok-ai/public/tree/master/packages/ApiTests)
 ; additions are welcome. Results are reported to the
 [test tracking system](#test-tracking-system)
 

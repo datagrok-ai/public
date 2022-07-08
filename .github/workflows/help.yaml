@@ -29,34 +29,6 @@ jobs:
             echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
           fi
 
-  anchor_check:
-    name: Check anchors
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup Node
-        uses: actions/setup-node@v2
-      - name: Install remark
-        run: |
-          npm install -g remark-cli
-          npm install remark-validate-links vfile-reporter-shiny --save-dev
-      - name: Check Markdown anchors
-        id: check
-        run: |
-          remark --use remark-validate-links --report vfile-reporter-shiny --quiet --frail help/ > help/anchor-check-report.md 2>&1
-      - name: Set summary
-        if: always()
-        run: |
-          echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
-          if [ -s help/anchor-check-report.md ]; then
-            echo ":no_entry_sign: Some errors occured" >> "${GITHUB_STEP_SUMMARY}"
-            echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
-            cat help/anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
-          else
-            echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
-          fi
-
   link_check:
     name: Check links
     runs-on: ubuntu-20.04
@@ -76,8 +48,7 @@ jobs:
 
   convert:
     name: Convert to HTML
-#    needs: [ lint, link_check, anchor_check ]
-    needs: [ lint ]
+    needs: [ lint, link_check ]
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -137,11 +108,38 @@ jobs:
       - name: Run Dart script to create menu
         run: dart generate_menu.dart -s ../output/help/ -d ../output/help/
         working-directory: ./help/_internal
+      - name: Move output HTML files
+        id: move
+        run: mv help/output/ output/
+      - name: Install anchor-check
+        run: npm install -g @untitaker/hyperlink
+      - name: Check anchors
+        id: anchors
+        run: |
+          hyperlink --check-anchors output/ --sources help/ >  help/anchor-check-report.md 2>&1
+      - name: Set summary
+        if: always() && (steps.anchors.outcome == 'failure' || steps.anchors.outcome == 'success')
+        run: |
+          echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
+          if [[ "${{ steps.anchors.outcome }}" == "failure" ]]; then
+            echo ":no_entry_sign: Some errors occured" >> "${GITHUB_STEP_SUMMARY}"
+            cat help/anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
+            sed -i '/Found some broken links, reading source files/a ## Errors per input' ${GITHUB_STEP_SUMMARY}
+            sed -i -r 's,^(help/.*\.md)$,### \1,g' ${GITHUB_STEP_SUMMARY}
+            sed -i 's,error:,**Error:**,g' ${GITHUB_STEP_SUMMARY}
+            sed -i -r 's,(at line [0-9]+),**\1**,g' ${GITHUB_STEP_SUMMARY}
+            sed -i -r 's,^(output/help.*\.html)$,### \1,g' ${GITHUB_STEP_SUMMARY}
+            sed -i -r '/^Found [0-9]+ bad links/i ## Errors summary' ${GITHUB_STEP_SUMMARY}
+          else
+            echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
       - name: 'Upload Artifact'
+        if: always() && steps.move.outcome == 'success'
         uses: actions/upload-artifact@v2
         with:
           name: help_html_pages
-          path: help/output
+          path: output
           retention-days: 7
 
   deploy:

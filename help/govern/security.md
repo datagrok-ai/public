@@ -35,7 +35,7 @@ group are inherited by all members of the group. [Groups can be nested](./group.
 membership is forbidden.
 
 ![Role-based model](../uploads/security/role-based-model.png "Role-based model")
-[Role-based model.drawio](../uploads/security/role-based-model.drawio)
+[Role-based model.drawio](https://github.com/datagrok-ai/public/tree/master/help/uploads/security/role-based-model.drawio)
 
 ## Credentials
 
@@ -54,7 +54,7 @@ client-side.
 Encrypted credentials are stored in the special [storage](#credentials-storage).
 
 ![Entities diagram](../uploads/security/credentials-entities-diagram.png "Entities diagram")
-[Entities diagram.drawio](../uploads/security/credentials-entities-diagram.drawio)
+[Entities diagram.drawio](https://github.com/datagrok-ai/public/tree/master/help/uploads/security/credentials-entities-diagram.drawio)
 
 ### Credentials storage
 
@@ -67,7 +67,7 @@ should be set up to take advantage of it.
 
 ![Credentials retrieving process diagram](../uploads/security/credentials-fetch-diagram.png
 "Credentials retrieving process diagram")
-*Credentials retrieving process diagram* ([drawio](../uploads/security/credentials-fetch-diagram.drawio))
+*Credentials retrieving process diagram* ([drawio](https://github.com/datagrok-ai/public/tree/master/help/uploads/security/credentials-fetch-diagram.drawio))
 
 Working with credentials storage,
 sample: [open at public repository](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/package-credentials.js)

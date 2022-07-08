@@ -112,7 +112,7 @@ Figma Datagrok UIKit available on [Figma Community](https://www.figma.com/@datag
 
 * [Accordions](#accordions)
 * [Await (Loading Indicator)](#await-loading-indicator)
-* [Drag and drop](#Drag-and-drop)
+* [Drag and drop](#drag-and-drop)
 * [Cards](#cards)
 * [Combo Popup](#combo-popup)
 * [Markdown](#markdown)
@@ -126,7 +126,7 @@ Figma Datagrok UIKit available on [Figma Community](https://www.figma.com/@datag
 * [Tree View](#tree-view)
 * [Iframe](#iframe)
 * [Info Bars](#info-bars)
-* [Update indicator](#Update-indicator)
+* [Update indicator](#update-indicator)
 
 </details>
 
@@ -176,7 +176,7 @@ ui.div([ui.h1('Header'), box])
 
 ## Panels
 
-The panel is a simple container similar to the [Containers](#Containers). It has full available wide and its height
+The panel is a simple container similar to the [Containers](#containers). It has full available wide and its height
 depends on its children. Also, panels have 10px paddings for all sides.
 
 ![Panel preview](img/panel.png)

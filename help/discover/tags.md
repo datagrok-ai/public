@@ -129,12 +129,12 @@ Indicates number of milliseconds spent for detecting column's semantic type. Thi
 ## .choices
 
 JSON-encoded list of strings used by the grid cell editor to populate a combo box. See
-also [auto-choices](#.auto-choices). Applicable to string columns.
+also [auto-choices](#auto-choices). Applicable to string columns.
 
 ## .auto-choices
 
 When set to 'true', switches the cell editor to a combo box that only allows to choose values from a list of already
-existing values in the column. See also [choices](#.choices). Applicable for string columns.
+existing values in the column. See also [choices](#choices). Applicable for string columns.
 
 ## Cell-renderer
 

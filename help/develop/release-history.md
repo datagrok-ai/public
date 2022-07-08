@@ -9713,7 +9713,7 @@ also [new viewers](https://community.datagrok.ai/t/visualization-related-updates
 , [several bar chart](https://community.datagrok.ai/t/bar-chart-color-by-category/516) [features](https://community.datagrok.ai/t/visualization-related-updates/521/10)
 , [color coding features](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional), and a few dozen
 of [JS API](https://datagrok.ai/help/govern/audit#javascript-api) [enhancements](https://community.datagrok.ai/t/javascript-api-updates/526/8)
-and [bugfixes](#bug-fixes).
+and [bugfixes](#bugfixes).
 
 ## Highlights
 
