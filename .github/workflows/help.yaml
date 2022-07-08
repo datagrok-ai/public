@@ -151,22 +151,16 @@ jobs:
           echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
           if [ -s help/anchor-check-report.md ]; then
             echo ":no_entry_sign: Some errors occured" >> "${GITHUB_STEP_SUMMARY}"
-            echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
             cat help/anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
+            sed -i '/Found some broken links, reading source files/a ## Errors per input' ${GITHUB_STEP_SUMMARY}
+            sed -i -r 's,^(help/.*\.md)$,### \1,g' ${GITHUB_STEP_SUMMARY}
+            sed -i 's,error:,**Error:**,g' ${GITHUB_STEP_SUMMARY}
+            sed -i -r 's,(at line [0-9]+),**\1**,g' ${GITHUB_STEP_SUMMARY}
+            sed -i -r 's,^(output/help.*\.html)$,### \1,g' ${GITHUB_STEP_SUMMARY}
+            sed -i -r '/^Found [0-9]+ bad links/i ## Errors summary' ${GITHUB_STEP_SUMMARY}
           else
             echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
           fi
-      - name: Check Markdown links
-        if: always()
-        uses: lycheeverse/lychee-action@76ab977fedbeaeb32029313724a2e56a8a393548
-        env:
-          GITHUB_TOKEN: ${{ secrets.WRITE_TOKEN }}
-        with:
-          args: "--offline --glob-ignore-case --verbose --no-progress --base output 'output/**/*.htm*'"
-          fail: true
-          jobSummary: true
-          format: markdown
-          output: help/anchor-check-report.md
 
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v2
