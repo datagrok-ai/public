@@ -154,6 +154,9 @@ export async function toAtomicLevel(df: DG.DataFrame, sequence: DG.Column): Prom
 export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<void> {
   const msaCol = await runKalign(col, false);
   table.columns.add(msaCol);
+
+  const tv: DG.TableView = grok.shell.tv;
+  tv.grid.invalidate();
 }
 
 //name: Composition Analysis
