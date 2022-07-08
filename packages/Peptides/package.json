@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/peptides",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Provides advanced tools for analyzing collections of peptides.",
   "repository": {
     "type": "git",
