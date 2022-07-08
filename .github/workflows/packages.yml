@@ -139,6 +139,7 @@ jobs:
       - name: npm version
         run: npm version
       - run: npm install
+        id: install
         working-directory: packages/${{ matrix.package }}
       - name: js-api dependencies
         run: npm install
@@ -201,7 +202,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && always() && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success'
+        if: github.ref == 'refs/heads/master' && always() && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success'
       - name: Get package information
         id: info
         if: always() && steps.publish.outcome == 'success' && matrix.package != 'Meta'
