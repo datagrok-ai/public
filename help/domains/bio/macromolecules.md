@@ -121,6 +121,33 @@ with Levenstein distance. The plot is interactive and allows subsetting.
 
 ![Peptide space](../../uploads/macromolecules/macromolecules-11.png "Peptide space")
 
+#### Sequence space
+
+Datagrok allows to visualize multidimensional sequence space using dimensionality reduction approach. There are several dimensionality reduction algorithms available such as widely spread UMAP or t-SNE. Algorithms reduce the dimensionality of initial vector space and draw points/projections closer to each other if they correspond to similar structures, and farther otherwise, so that the distance between two points on a projection is determined by the similarity of molecules. The tool for analyzing molecules collections is called 'Sequence space' and exists in Bio package.
+
+You can open the tool from a top menu by selecting Bio -> Sequence space.
+
+![Sequence space](../../uploads/macromolecules/sequence_space.gif)
+
+#### Sequence activity cliffs
+Activity cliffs is a tool which not only visualizes multidimensional sequence space in 2-dimensional scatter plot but also shows links between molecules which are similar in structure but differs in activity.
+You can open the tool from a top menu by selecting Bio -> Sequence Activity Cliffs. Similarity cutoff and similarity metric are configurable.
+As in Sequence space you can select from different dimensionality reduction algorithms.
+
+![Running activity cliffs](../../uploads/macromolecules/activity_cliffs_open.gif)
+
+After scatter plot is generated in the right top corner of it you will see a link with number of activity cliffs identified. By clicking on this link you will open a dialog with the table of corresponding cliffs. You can easily zoom in to cliff of interest and analyze it on a scatter plot. By hovering over a line a tooltip will appear with a pair of selected structures with activities.
+
+![Cliffs table](../../uploads/macromolecules/cliffs_table_open.gif)
+
+The line can also be selected with Ctrl click. Corresponding row will be marked as selected in cliffs table. And it works both ways. By selecting a row in table with Ctrl key the corresponding line will be selected on the scatter plot.
+
+![Cliffs selection](../../uploads/macromolecules/cliffs_selection.gif)
+
+Point color corresponds to activity, point size and line opacity correspond to SALI parameter (similarity/activity difference relation).
+
+![Properties](../../uploads/macromolecules/activity_cliffs_size_opacity.PNG)
+
 ### Enabling quantitative sequence-based activity relationship functionality to enable design and optimization of polymer modalities
 
 Out of the box, Datagrok provides a comprehensive [machine learning toolkit](../../learn/data-science.md) for
@@ -177,33 +204,6 @@ sequences, or dose-response curves.
 
 See the [joint Datagrok/Novartis demo](https://vimeo.com/548606688/f2dd6e5c0a) for more details and a real-world use
 case (the second part describes Novartis’ system built on top of Datagrok).
-
-### Sequence space
-
-Datagrok allows to visualize multidimensional sequence space using dimensionality reduction approach. There are several dimensionality reduction algorithms available such as widely spread UMAP or t-SNE. Algorithms reduce the dimensionality of initial vector space and draw points/projections closer to each other if they correspond to similar structures, and farther otherwise, so that the distance between two points on a projection is determined by the similarity of molecules. The tool for analyzing molecules collections is called 'Sequence space' and exists in Bio package.
-
-You can open the tool from a top menu by selecting Bio -> Sequence space.
-
-![Sequence space](../../uploads/macromolecules/sequence_space.gif)
-
-### Sequence activity cliffs
-Activity cliffs is a tool which not only visualizes multidimensional sequence space in 2-dimensional scatter plot but also shows links between molecules which are similar in structure but differs in activity.
-You can open the tool from a top menu by selecting Bio -> Sequence Activity Cliffs. Similarity cutoff and similarity metric are configurable.
-As in Sequence space you can select from different dimensionality reduction algorithms.
-
-![Running activity cliffs](../../uploads/macromolecules/activity_cliffs_open.gif)
-
-After scatter plot is generated in the right top corner of it you will see a link with number of activity cliffs identified. By clicking on this link you will open a dialog with the table of corresponding cliffs. You can easily zoom in to cliff of interest and analyze it on a scatter plot. By hovering over a line a tooltip will appear with a pair of selected structures with activities.
-
-![Cliffs table](../../uploads/macromolecules/cliffs_table_open.gif)
-
-The line can also be selected with Ctrl click. Corresponding row will be marked as selected in cliffs table. And it works both ways. By selecting a row in table with Ctrl key the corresponding line will be selected on the scatter plot.
-
-![Cliffs selection](../../uploads/macromolecules/cliffs_selection.gif)
-
-Point color corresponds to activity, point size and line opacity correspond to SALI parameter (similarity/activity difference relation).
-
-![Properties](../../uploads/macromolecules/activity_cliffs_size_opacity.PNG)
 
 ### Convert sequence notation
 
