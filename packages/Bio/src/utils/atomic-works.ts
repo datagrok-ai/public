@@ -93,7 +93,10 @@ async function rotateBackboneV3000(molBlock: string, indices:any): Promise<strin
     angle = coordinates.x[first] > coordinates.x[last] ? Math.PI : 0;
   else {
     const derivative = coordinates.y[first]/coordinates.x[first];
-    angle = derivative > 0 ? Math.PI - Math.atan(derivative) : Math.atan(derivative);
+    if(coordinates.x[first] < coordinates.x[last])
+      angle = derivative > 0 ? Math.PI - Math.atan(derivative) : Math.atan(derivative);
+    else
+      angle = derivative > 0 ? Math.atan(derivative) : Math.PI - Math.atan(derivative);
   }
 
   const cos = Math.cos(angle);
@@ -294,17 +297,18 @@ function linkV3000(monomers: any[]): string {
 
     natom += numbers.natom - 2;
     nbond += numbers.nbond - 2;
-    xShift += coordinates.x[numbers.natom - 1] - coordinates.x[0];
+    xShift += coordinates.x[last] - coordinates.x[first] + 1;
 
     if(i == monomers.length -1){
       natom++;
-      atomBlock += 'M  V30 ' + natom + ' O 10 0 0.000000 0\n';
+      const shift = xShift + 0.2;
+      atomBlock += 'M  V30 ' + natom + ' O ' + shift + ' 0 0.000000 0\n';
     }
     nbond++;
     if(i == monomers.length -1){
-      const rightTerminal = (last > remFirst && last > remLast) ? last + natom - (numbers.natom - 2) - 2:
-                            (last > remFirst || last > remLast) ? last + natom - (numbers.natom - 2) - 1 : 
-                            last + natom - (numbers.natom - 2);
+      const rightTerminal = (last > remFirst && last > remLast) ? last + natom - (numbers.natom - 2) - 3:
+                            (last > remFirst || last > remLast) ? last + natom - (numbers.natom - 2) - 2 : 
+                            last + natom - (numbers.natom - 2) - 1;
       bondBlock += 'M  V30 ' + nbond + ' 1 ' + rightTerminal + ' ' + natom + '\n';
     } else{
       const rightTerminal = (last > remFirst && last > remLast) ? last + natom - (numbers.natom - 2) - 2:
