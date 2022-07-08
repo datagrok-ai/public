@@ -139,10 +139,23 @@ jobs:
         working-directory: ./help/_internal
       - name: Move output HTML files
         run: mv help/output/ output/
-      - name: Check anchor
-        uses: untitaker/hyperlink@0.1.22
-        with:
-          args: --check-anchors output/ --sources help/
+      - name: Install anchor-check
+        run: npm install -g @untitaker/hyperlink
+      - name: Check anchors
+        id: anchors
+        run: |
+          hyperlink --check-anchors output/ --sources help/ >  help/anchor-check-report.md 2>&1
+      - name: Set summary
+        if: always() && (steps.anchors.outcome == 'failure' || steps.anchors.outcome == 'success')
+        run: |
+          echo "## Summary" >  "${GITHUB_STEP_SUMMARY}"
+          if [ -s help/anchor-check-report.md ]; then
+            echo ":no_entry_sign: Some errors occured" >> "${GITHUB_STEP_SUMMARY}"
+            echo "## Errors per input" >> "${GITHUB_STEP_SUMMARY}"
+            cat help/anchor-check-report.md >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo ":white_check_mark: Successful" >> "${GITHUB_STEP_SUMMARY}"
+          fi
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v2
         with:
