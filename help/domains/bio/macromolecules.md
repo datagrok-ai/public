@@ -84,8 +84,6 @@ monomers in cycles etc. Structure at atomic level could be saved in available no
 You can easily run this feature for any sequence data using Bio package.
 ![Restoring structure atomic level](../../uploads/macromolecules/restoreStructures.gif)
 
-
-
 ### Displaying and analyzing polymer structures and SAR data at the monomer and atomic level
 
 Since atomic-level structure is available for each monomer and macromolecule, all the cheminformatics features of
@@ -172,7 +170,11 @@ case (the second part describes Novartis’ system built on top of Datagrok).
 
 ### Sequence space
 
-Datagrok allows to visualize multidimensional sequence space using dimensionality reduction approah. There are several dimensionality reduction algorithms available such as widely spread UMAP or t-SNE. Algorithms reduce the dimentionality of initial vector space and draw points/projections closer to each other if they correspond to similar structures, and farther otherwise, so that the distance between two points on a projection is determined by the similarity of molecules. The tool for analyzing molecules collections is called 'Sequence space' and exists in Bio package.
+Datagrok allows to visualize multidimensional sequence space using dimensionality reduction approah. There are several
+dimensionality reduction algorithms available such as widely spread UMAP or t-SNE. Algorithms reduce the dimentionality
+of initial vector space and draw points/projections closer to each other if they correspond to similar structures, and
+farther otherwise, so that the distance between two points on a projection is determined by the similarity of molecules.
+The tool for analyzing molecules collections is called 'Sequence space' and exists in Bio package.
 
 You can open tool from a top menu by selecting Bio -> Sequence space.
 
