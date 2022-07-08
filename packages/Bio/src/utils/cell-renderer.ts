@@ -57,10 +57,11 @@ function printLeftOrCentered(
     x: number, y: number, w: number, h: number,
     g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
     pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
-): number {
+    separator: string = ''): number {
   g.textAlign = 'start';
   let colorPart = s.substring(0);
-  const textSize = g.measureText(colorPart);
+  let grayPart = separator;
+  const textSize = g.measureText(colorPart + grayPart);
   const indent = 5;
 
   const colorTextSize = g.measureText(colorPart);
@@ -70,12 +71,14 @@ function printLeftOrCentered(
     g.fillStyle = color;
     g.globalAlpha = transparencyRate;
     g.fillText(colorPart, x + dx1, y + dy);
+    g.fillStyle = '#808080';
+    g.fillText(grayPart, x + dx2, y + dy);
   }
 
 
   if (left || textSize.width > w) {
     draw(indent, indent + colorTextSize.width);
-    return x + colorTextSize.width;
+    return x + colorTextSize.width + g.measureText(grayPart).width;
   } else {
     const dx = (w - textSize.width) / 2;
     draw(dx, dx + colorTextSize.width);
@@ -128,6 +131,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     const palette = getPalleteByType(paletteType);
 
+    const separator = gridCell.cell.column.getTag('separator') ?? '';
     const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator') );// splitter,
 
     const subParts:string[] =  splitterFunc(cell.value);
@@ -140,7 +144,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
       color = palette.get(amino);
       g.fillStyle = ChemPalette.undefinedColor;
-      x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, pivot, true);
+      x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, pivot, true, false, 1.0, separator);
     });
 
     g.restore();
