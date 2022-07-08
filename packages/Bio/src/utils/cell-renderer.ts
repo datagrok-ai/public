@@ -7,7 +7,6 @@ import {NucleotidesPalettes} from "@datagrok-libraries/bio/src/nucleotides";
 import {UnknownSeqPalettes} from "@datagrok-libraries/bio/src/unknown";
 import {SplitterFunc, WebLogo} from "@datagrok-libraries/bio/src/viewers/web-logo";
 import {SeqPalette} from "@datagrok-libraries/bio/src/seq-palettes";
-import {HelmSequenceCellRenderer} from "../../../Helm/src/cell-renderer";
 
 function getPalleteByType(paletteType: string): SeqPalette  {
   switch (paletteType) {
