@@ -13,6 +13,7 @@ export class TreeViewer extends EChartViewer {
   animation: boolean;
   sizeColumnName: string;
   sizeAggrType: string;
+  aggregations: string[] = Object.values(DG.AGG).filter((f) => f !== DG.AGG.KEY && f !== DG.AGG.PIVOT);
 
   constructor() {
     super();
@@ -29,7 +30,7 @@ export class TreeViewer extends EChartViewer {
     ] });
     this.symbolSize = this.int('symbolSize', 7);
     this.sizeColumnName = this.string('sizeColumnName');
-    this.sizeAggrType = this.string('sizeAggrType', DG.AGG.AVG, { choices: Object.values(DG.AGG) });
+    this.sizeAggrType = this.string('sizeAggrType', DG.AGG.AVG, { choices: this.aggregations });
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
 
     this.option = {
@@ -81,7 +82,8 @@ export class TreeViewer extends EChartViewer {
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true) {
-    if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName')
+    if (p?.name === 'hierarchyColumnNames' || p?.name === 'sizeColumnName' ||
+        p?.name === 'sizeAggrType')
       this.render();
     else
       super.onPropertyChanged(p, render);
@@ -102,6 +104,12 @@ export class TreeViewer extends EChartViewer {
     this.initChartEventListeners();
   }
 
+  _mapToRange(x: number, min1: number, max1: number, min2: number, max2: number) {
+    const range1 = max1 - min1;
+    const range2 = max2 - min2;
+    return (((x - min1) * range2) / range1) + min2;
+  }
+
   getSeriesData() {
     const aggregations = [];
     if (this.sizeColumnName)
@@ -114,10 +122,14 @@ export class TreeViewer extends EChartViewer {
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       return;
 
+    this.option.series[0].data = this.getSeriesData();
+
     this.option.series[0]['symbolSize'] = this.sizeColumnName ?
-      (value: number, params: {[key: string]: any}) => params.data.size : this.symbolSize;
-    // TODO: map a number from range (?, ?) to (2, 20)
-    super.render();
+      (value: number, params: {[key: string]: any}) => params.data.path ? this._mapToRange(
+      params.data.size, this.option.series[0].data[0]['size-meta']['min'],
+      this.option.series[0].data[0]['size-meta']['max'], 5, 20) : this.symbolSize : this.symbolSize;
+
+    this.chart.setOption(this.option);
   }
 }
 
