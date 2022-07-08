@@ -7,21 +7,24 @@ This is a public repository for the API, tools, and [packages](https://datagrok.
 available for [Datagrok™](https://datagrok.ai), a next-generation web-based data analytics platform. The platform is
 very extensible, and almost anything could be implemented as a package:
 
-* Support for scientific domains, such as [cheminformatics](../../packages/Chem/README.md)
-* Applications, such as [Clinical Case](../../packages/ClinicalCase/README.md)
-  or [Peptides](../../packages/Peptides/README.md)
+* Support for scientific domains, such
+  as [cheminformatics](https://github.com/datagrok-ai/public/tree/master/packages/Chem/README.md)
+* Applications, such
+  as [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase/README.md)
+  or [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides/README.md)
 * Connectors to [OpenAPI web services](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
-* Visualizations, such as [Leaflet](../../packages/Leaflet/README.md)
+* Visualizations, such as [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet/README.md)
 * Importing and previewing files, such as
-  [SQLite](../../packages/SQLite),
-  [PDF](../../packages/PdfViewer/README.md), or
-  [CIF](../../packages/NglViewer/README.md)
+  [SQLite](https://github.com/datagrok-ai/public/tree/master/packages/SQLite),
+  [PDF](https://github.com/datagrok-ai/public/tree/master/packages/PdfViewer/README.md), or
+  [CIF](https://github.com/datagrok-ai/public/tree/master/packages/NglViewer/README.md)
 * Scientific methods implemented in R, Python, or Julia
-* File metadata extractors, such as [Tika](../../packages/Tika/README.md)
+* File metadata extractors, such as [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika/README.md)
 * Custom predictive models that work with the built-in [predictive modeling](../learn/predictive-modeling.md)
-  , such as [TensorFlow.js](../../packages/TensorFlow.js/README.md)
-* Platform enhancements, such as [PowerPack](../../packages/PowerPack/README.md)
-  or [UsageAnalysis](../../packages/UsageAnalysis)
+  , such as [TensorFlow.js](https://github.com/datagrok-ai/public/tree/master/packages/TensorFlow.js/README.md)
+* Platform enhancements, such
+  as [PowerPack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack/README.md)
+  or [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 * ... and other types of extensions documented [here](../develop/extending-and-customizing.md).
 
 These open-source packages are free to use by anyone, although for the [public environment](https://public.datagrok.ai)
@@ -30,7 +33,7 @@ there are some restrictions related to the server computational capacities. Orga
 typically establish their own private repositories that contain proprietary extensions.
 
 For developers: check out [getting started](../develop/develop.md)
-and [contributor's guide](../../CONTRIB.md).
+and [contributor's guide](https://github.com/datagrok-ai/public/tree/master/CONTRIB.md).
 
 # Academia
 
@@ -51,5 +54,5 @@ For academic collaborations, please email `info@datagrok.ai`.
 # See also
 
 * [Datagrok home](https://datagrok.ai/)
-* [JavaScript development](https://datagrok.ai/help/develop/develop)
+* [JavaScript development](../develop/develop.md)
 * [Community forum](https://community.datagrok.ai/)

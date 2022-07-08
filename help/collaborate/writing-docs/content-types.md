@@ -3,7 +3,7 @@
 We follow four different content types:
 
 * [Tutorials](#tutorials)
-* [How-To guides](#How-to-guides)
+* [How-To guides](#how-to-guides)
 * [Technical reference material](#reference-material)
 * [Topics](#topics)
 
