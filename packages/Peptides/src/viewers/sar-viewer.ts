@@ -25,7 +25,7 @@ export class SARViewerBase extends DG.JsViewer {
   constructor() {
     super();
 
-    this.scaling = this.string('scaling', 'none', {choices: ['none', 'lg', '-lg']});
+    this.scaling = this.string('scaling', '-lg', {choices: ['none', 'lg', '-lg']});
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
     this.showSubstitution = this.bool('showSubstitution', true);
     this.maxSubstitutions = this.int('maxSubstitutions', 1);

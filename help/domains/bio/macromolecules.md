@@ -41,10 +41,13 @@ unification. If a dataframe contains any sequence data, it will be recognized an
 
 Automatic conversion to HELM from other notations will occur as necessary. The user can get a HELM plot for each
 sequence, with all the monomers included in a graph, even if the original notation was not HELM. Datagrok HELM package
-already allows to ingest, auto-detect, visualize, and edit HELM. Future plans: support monomer libraries in the
-enterprise context (privileges, sharing).
+already allows to ingest, auto-detect, visualize, and edit HELM. 
 
-![HELM for description](../../uploads/macromolecules/macromolecules-4.png "HELM for description")
+![Editing Helm](../../uploads/macromolecules/HelmEditor.gif "Editing Helm")
+
+Support monomer libraries in the enterprise context (privileges, sharing).
+
+![Monomer Library](../../uploads/macromolecules/MonomerLibrary.gif "Monomer Library")
 
 ### Visualizing Assay Data and Dose-Response Curves
 
@@ -97,6 +100,13 @@ plots, interactive sequence-aware spreadsheet, etc), as well as applications tha
 as [Peptides](peptides.md).
 
 ![Polymer structures and SAR data](../../uploads/macromolecules/macromolecules-9.png "Polymer structures and SAR data")
+
+### Multiple Sequence Alignment Analysis
+
+Sequences of a particular column can be analyzed with MSA algorithm (kalign tool). Aligned sequences can be
+inspected for base composition at the position of MSA result.
+
+![MSA and base composition analysis](../../uploads/macromolecules/macromolecules-msa-and-composition-analysis-800.gif)
 
 ### Sequence Analysis and Analytics
 
@@ -170,12 +180,39 @@ case (the second part describes Novartis’ system built on top of Datagrok).
 
 ### Sequence space
 
-Datagrok allows to visualize multidimensional sequence space using dimensionality reduction approah. There are several
-dimensionality reduction algorithms available such as widely spread UMAP or t-SNE. Algorithms reduce the dimentionality
+Datagrok allows to visualize multidimensional sequence space using dimensionality reduction approach. There are several
+dimensionality reduction algorithms available such as widely spread UMAP or t-SNE. Algorithms reduce the dimensionality
 of initial vector space and draw points/projections closer to each other if they correspond to similar structures, and
 farther otherwise, so that the distance between two points on a projection is determined by the similarity of molecules.
 The tool for analyzing molecules collections is called 'Sequence space' and exists in Bio package.
 
-You can open tool from a top menu by selecting Bio -> Sequence space.
+You can open the tool from a top menu by selecting Bio -> Sequence space.
 
 ![Sequence space](../../uploads/macromolecules/sequence_space.gif)
+
+### Sequence activity cliffs
+Activity cliffs is a tool which not only visualizes multidimensional sequence space in 2-dimensional scatter plot but also shows links between molecules which are similar in structure but differs in activity.
+You can open the tool from a top menu by selecting Bio -> Sequence Activity Cliffs. Similarity cutoff and similarity metric are configurable.
+As in Sequence space you can select from different dimensionality reduction algorithms.
+
+![Running activity cliffs](../../uploads/macromolecules/activity_cliffs_open.gif)
+
+After scatter plot is generated in the right top corner of it you will see a link with number of activity cliffs identified. By clicking on this link you will open a dialog with the table of corresponding cliffs. You can easily zoom in to cliff of interest and analyze it on a scatter plot. By hovering over a line a tooltip will appear with a pair of selected structures with activities.
+
+![Cliffs table](../../uploads/macromolecules/cliffs_table_open.gif)
+
+The line can also be selected with Ctrl click. Corresponding row will be marked as selected in cliffs table. And it works both ways. By selecting a row in table with Ctrl key the corresponding line will be selected on the scatter plot.
+
+![Cliffs selection](../../uploads/macromolecules/cliffs_selection.gif)
+
+Point color corresponds to activity, point size and line opacity correspond to SALI parameter (similarity/activity difference relation).
+
+![Properties](../../uploads/macromolecules/activity_cliffs_size_opacity.PNG)
+
+### Convert sequence notation
+
+There are many formats used to store biological sequences such as traditional FASTA (one symbol per monomer) or
+for more complex / modified monomers separators are used. Another approach is to write long monomer name to FASTA
+with square brackets. So Datagrok offers the converter.
+
+![Notation converter](../../uploads/macromolecules/macromolecules-notation-converter-800.gif)
