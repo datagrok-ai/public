@@ -162,14 +162,14 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       let host = ui.div([], { style: { width: `${w}px`, height: `${h}px`}});
       host.setAttribute('dataformat', 'helm');
       host.setAttribute('data', gridCell.cell.value);
-      gridCell.element = host;
+      
       //@ts-ignore
       var canvas = new JSDraw2.Editor(host, { width: w, height: h, skin: "w8", viewonly: true });
       var formula = canvas.getFormula(true);
       if (!formula) {
-        g.fillStyle = 'red';
-        g.fillText(gridCell.cell.value, x, y);
+        gridCell.element = ui.divText(gridCell.cell.value, {style: {color: 'red'}});
       } else {
+        gridCell.element = host;
         var molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
         var coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
         var molfile = canvas.getMolfile();
