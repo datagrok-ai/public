@@ -58,30 +58,8 @@ function printLeftOrCentered(
     pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
 ): number {
   g.textAlign = 'start';
-  let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
-  if (colorPart.length == 1)
-    colorPart = colorPart.toUpperCase();
-
-  if (colorPart.length >= 3) {
-    if (colorPart.substring(0, 3) in ChemPalette.AAFullNames)
-      colorPart = ChemPalette.AAFullNames[s.substring(0, 3)] + colorPart.substring(3);
-    else if (colorPart.substring(1, 4) in ChemPalette.AAFullNames)
-      colorPart = colorPart[0] + ChemPalette.AAFullNames[s.substring(1, 4)] + colorPart.substring(4);
-  }
-  let grayPart = pivot == -1 ? '' : s.substring(pivot);
-  if (hideMod) {
-    let end = colorPart.lastIndexOf(')');
-    let beg = colorPart.indexOf('(');
-    if (beg > -1 && end > -1 && end - beg > 2)
-      colorPart = colorPart.substring(0, beg) + '(+)' + colorPart.substring(end + 1);
-
-
-    end = grayPart.lastIndexOf(')');
-    beg = grayPart.indexOf('(');
-    if (beg > -1 && end > -1 && end - beg > 2)
-      grayPart = grayPart.substring(0, beg) + '(+)' + grayPart.substring(end + 1);
-  }
-  const textSize = g.measureText(colorPart + grayPart);
+  let colorPart = s.substring(0);
+  const textSize = g.measureText(colorPart);
   const indent = 5;
 
   const colorTextSize = g.measureText(colorPart);
@@ -91,14 +69,12 @@ function printLeftOrCentered(
     g.fillStyle = color;
     g.globalAlpha = transparencyRate;
     g.fillText(colorPart, x + dx1, y + dy);
-    g.fillStyle = ChemPalette.undefinedColor;
-    g.fillText(grayPart, x + dx2, y + dy);
   }
 
 
   if (left || textSize.width > w) {
     draw(indent, indent + colorTextSize.width);
-    return x + colorTextSize.width + g.measureText(grayPart).width;
+    return x + colorTextSize.width;
   } else {
     const dx = (w - textSize.width) / 2;
     draw(dx, dx + colorTextSize.width);
@@ -152,25 +128,19 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     const palette = getPalleteByType(paletteType);
 
-    const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, ''); // splitter,
+    const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator') );// splitter,
 
     const subParts:string[] =  splitterFunc(cell.value);
+    console.log(subParts);
 
-    const [text, simplified] = processSequence(subParts);
-
-    const textSize = g.measureText(text.join(''));
+    const textSize = g.measureText(subParts.join(''));
     let x1 = Math.max(x, x + (w - textSize.width) / 2);
 
     subParts.forEach((amino, index) => {
-
       let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
-      color = palette.get(outerAmino);
+      color = palette.get(amino);
       g.fillStyle = ChemPalette.undefinedColor;
-      if (index + 1 < subParts.length) {
-        const gap = simplified ? '' : ' ';
-        outerAmino += `${outerAmino ? '' : '-'}${gap}`;
-      }
-      x1 = printLeftOrCentered(x1, y, w, h, g, outerAmino, color, pivot, true);
+      x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, pivot, true);
     });
 
     g.restore();
