@@ -892,4 +892,4 @@ A simple keyword search in the ENA database (with navigation)
 
 [021]: https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers "Datagrok Swaggers samples"
 
-[022]: #creating-an-info-panel-with-a-rest-web-service "Creating an info panel with a REST web service"
+[022]: #exercise-8-creating-an-info-panel-with-a-rest-web-service "Creating an info panel with a REST web service"
