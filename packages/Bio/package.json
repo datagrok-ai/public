@@ -58,5 +58,12 @@
   "canEdit": [
     "Developers"
   ],
+  "sources": [
+		"css/helm.css",
+		"https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js",
+		"helm/JSDraw/Scilligence.JSDraw2.Lite.js",
+		"helm/JSDraw/Scilligence.JSDraw2.Resources.js",
+		"helm/JSDraw/Pistoia.HELM-uncompressed.js"
+	],
   "category": "Bioinformatics"
 }
