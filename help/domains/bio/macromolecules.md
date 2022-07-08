@@ -84,8 +84,6 @@ monomers in cycles etc. Structure at atomic level could be saved in available no
 You can easily run this feature for any sequence data using Bio package.
 ![Restoring structure atomic level](../../uploads/macromolecules/restoreStructures.gif)
 
-
-
 ### Displaying and analyzing polymer structures and SAR data at the monomer and atomic level
 
 Since atomic-level structure is available for each monomer and macromolecule, all the cheminformatics features of
@@ -99,6 +97,13 @@ plots, interactive sequence-aware spreadsheet, etc), as well as applications tha
 as [Peptides](peptides.md).
 
 ![Polymer structures and SAR data](../../uploads/macromolecules/macromolecules-9.png "Polymer structures and SAR data")
+
+### Multiple Sequence Alignment Analysis
+
+Sequences of a particular column can be analyzed with MSA algorithm (kalign tool). Aligned sequences can be
+inspected for base composition at the position of MSA result.
+
+![MSA and base composition analysis](../../uploads/macromolecules/macromolecules-msa-and-composition-analysis-800.gif)
 
 ### Sequence Analysis and Analytics
 
@@ -172,8 +177,20 @@ case (the second part describes Novartis’ system built on top of Datagrok).
 
 ### Sequence space
 
-Datagrok allows to visualize multidimensional sequence space using dimensionality reduction approah. There are several dimensionality reduction algorithms available such as widely spread UMAP or t-SNE. Algorithms reduce the dimentionality of initial vector space and draw points/projections closer to each other if they correspond to similar structures, and farther otherwise, so that the distance between two points on a projection is determined by the similarity of molecules. The tool for analyzing molecules collections is called 'Sequence space' and exists in Bio package.
+Datagrok allows to visualize multidimensional sequence space using dimensionality reduction approah. There are several
+dimensionality reduction algorithms available such as widely spread UMAP or t-SNE. Algorithms reduce the dimentionality
+of initial vector space and draw points/projections closer to each other if they correspond to similar structures, and
+farther otherwise, so that the distance between two points on a projection is determined by the similarity of molecules.
+The tool for analyzing molecules collections is called 'Sequence space' and exists in Bio package.
 
 You can open tool from a top menu by selecting Bio -> Sequence space.
 
 ![Sequence space](../../uploads/macromolecules/sequence_space.gif)
+
+### Convert sequence notation
+
+There are many formats used to store biological sequences such as traditional FASTA (one symbol per monomer) or
+for more complex / modified monomers separators are used. Another approach is to write long monomer name to FASTA
+with square brackets. So Datagrok offers the converter.
+
+![Notation converter](../../uploads/macromolecules/macromolecules-notation-converter-800.gif)
