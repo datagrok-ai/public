@@ -81,14 +81,14 @@ categories.
 ## Radar
 
 Radar charts are used on multivariate data to plot groups of values over several common variables.
-Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/beer.csv>
+Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/beer.csv>
 
 ![](./img/radar.gif)
 
 ## Chord
 
 Status: `experimental`
-Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/energy_uk.csv>
+Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/energy_uk.csv>
 
 ![](./img/chord.gif)
 
@@ -97,21 +97,21 @@ See also the `Chord` viewer in the [Viewers](https://github.com/datagrok-ai/publ
 ## Sankey
 
 Status: `experimental`
-Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/energy_uk.csv>
+Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/energy_uk.csv>
 
 ![](./img/sankey.gif)
 
 ## Sunburst
 
 Status: `experimental`
-Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv>
+Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
 ![](./img/sunburst.gif)
 
 ## TreeMap
 
 Status: `experimental`
-Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv>
+Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
 ![](./img/tree-map.gif)
 
@@ -134,7 +134,7 @@ In the viewer properties, you can adjust marker settings, change a tree layout,
 or toggle certain behaviors, such as animation, expanding or collapsing nodes,
 etc.
 
-Demo dataset: <https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv>
+Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 
 ![](./img/tree-viewer.gif)
 
