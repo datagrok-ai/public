@@ -113,7 +113,7 @@ sentence.
 
 | Instead of                                                                 | Use                                                                |
 |:---------------------------------------------------------------------------|:-------------------------------------------------------------------|
-| In this article, challenges in interactive data exploration are discussed. | This article addresses challenges in interactive data exploration. |  
+| In this article, challenges in interactive data exploration are discussed. | This article addresses challenges in interactive data exploration. |
 | A dialog is displayed on clicking the icon.                                | When you click the icon, a dialog opens.                           |
 | Viewers can be customized.                                                 | You can customize viewers.                                         |
 
