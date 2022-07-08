@@ -81,6 +81,11 @@ monomers in cycles etc. Structure at atomic level could be saved in available no
 
 ![Datagrok-generated atom structure for the ATGCATGC sequence](../../uploads/macromolecules/macromolecules-7.png "Datagrok-generated atom structure for the ATGCATGC sequence")
 
+You can easily run this feature for any sequence data using Bio package.
+![Restoring structure atomic level](../../uploads/macromolecules/restoreStructures.gif)
+
+
+
 ### Displaying and analyzing polymer structures and SAR data at the monomer and atomic level
 
 Since atomic-level structure is available for each monomer and macromolecule, all the cheminformatics features of
