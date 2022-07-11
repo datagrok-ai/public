@@ -111,8 +111,8 @@ async function getResponseFor(
 
 export async function getQueries(
   dataSourceId: number, saved: boolean = true, published: boolean = true): Promise<types.query[]> {
-  const url_params = `datasource_id=${dataSourceId}&saved=${saved}&published=${published}`;
-  const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.query}/?${url_params}`;
+  const urlParams = `datasource_id=${dataSourceId}&saved=${saved}&published=${published}`;
+  const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.query}/?${urlParams}`;
   const params = {
     method: 'GET',
     headers: {
@@ -120,7 +120,7 @@ export async function getQueries(
       'TOKEN': await utils.getApiToken(),
     },
   };
-  
+
   const response = await grok.dapi.fetchProxy(url, params);
   return response.json();
 }
