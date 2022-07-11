@@ -29,7 +29,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
 
   constructor() {
     super('similarity');
-    this.cutoff = this.float('cutoff', 0.01);
+    this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.hotSearch = this.bool('hotSearch', true);
     this.sketchButton = ui.button('Sketch', () => {
       const sketcher = new grok.chem.Sketcher();
