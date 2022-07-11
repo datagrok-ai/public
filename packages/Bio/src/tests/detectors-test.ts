@@ -33,23 +33,35 @@ C1CCCCC1
 CCCCCC
 `;
 
-  const csvDfN1: string = `seq
+  const csvDfDna1: string = `seq
 ACGTC
 CAGTGT
 TTCAAC
 `;
 
+  const csvDfRna1: string = `seq
+ACGUC
+CAGUGU
+UUCAAC
+`;
+
   /** Pure amino acids sequence */
-  const csvDfAA1: string = `seq
+  const csvDfPt1: string = `seq
 FWPHEY
 YNRQWYV
 MKPSEYV
 `;
 
-  const csvDfSepNt: string = `seq
+  const csvDfSepDna: string = `seq
 A*C*G*T*C
 C*A*G*T*G*T
 T*T*C*A*A*C
+`;
+
+  const csvDfSepRna: string = `seq
+A*C*G*U*C
+C*A*G*U*G*U
+U*U*C*A*A*C
 `;
 
   const csvDfSepPt: string = `seq
@@ -70,49 +82,51 @@ rut12/her2/rty/wert//abc/abc1/dfgg
 rut12/rty/her2/abc/cfr3//wert/rut12
 `;
 
-  const csvDfSepMsaN1: string = `seq
+  const csvDfSepMsaDna1: string = `seq
 A-C--G-T--C-T
 C-A-C--T--G-T
 A-C-C-G-T-A-C-T
 `;
 
-  const csvDfMsaN1: string = `seq
+  const csvDfMsaDna1: string = `seq
 AC-GT-CT
 CAC-T-GT
 ACCGTACT
 `;
 
-  const csvDfMsaAA1: string = `seq
+  const csvDfMsaPt1: string = `seq
 FWR-WYV-KHP
 YNR-WYV-KHP
 MWRSWY-CKHP
 `;
 
   const enum Samples {
-    peptidesComplex = 'PeptidesComplex',
-    fastaCsv = 'FastaCsv',
-    msaComplex = 'MsaComplex',
-    idCsv = 'IdCsv',
-    sarSmallCsv = 'SarSmallCsv',
-    HelmCsv = 'HelmCsv',
+    peptidesComplex = 'peptidesComplex',
+    fastaCsv = 'fastaCsv',
+    fastaFasta = 'fastaFasta',
+    msaComplex = 'msaComplex',
+    idCsv = 'idCsv',
+    sarSmallCsv = 'sarSmallCsv',
+    helmCsv = 'helmCsv',
   }
 
   const samples: { [key: string]: string } = {
-    'PeptidesComplex': 'System:AppData/Bio/samples/peptides_complex_msa.csv',
-    'FastaCsv': 'System:AppData/Bio/samples/sample_FASTA.csv',
-    'MsaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
-    'IdCsv': 'System:AppData/Bio/samples/id.csv',
-    'SarSmallCsv': 'System:AppData/Bio/samples/sar-small.csv',
-    'HelmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
+    'peptidesComplex': 'System:AppData/Bio/samples/peptides_complex_msa.csv',
+    'fastaCsv': 'System:AppData/Bio/samples/sample_FASTA.csv',
+    'fastaFasta': 'System:AppData/Bio/samples/sample_FASTA.fasta',
+    'msaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
+    'idCsv': 'System:AppData/Bio/samples/id.csv',
+    'sarSmallCsv': 'System:AppData/Bio/samples/sar-small.csv',
+    'helmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
-  const readSamplesCsv: (key: string) => DfReaderFunc = (key: string) => {
+
+  function readSamples(key: string, readFile: (file: string) => Promise<DG.DataFrame> = readFileCsv): DfReaderFunc {
     return async () => {
       if (!(key in _samplesDfs)) {
         _samplesDfs[key] = (async (): Promise<DG.DataFrame> => {
-          const csv: string = await grok.dapi.files.readAsText(samples[key]);
-          const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+          const df: DG.DataFrame = await readFile(samples[key]);
           await grok.data.detectSemanticTypes(df);
           return df;
         })();
@@ -120,6 +134,18 @@ MWRSWY-CKHP
       return _samplesDfs[key];
     };
   };
+
+  async function readFileCsv(file: string): Promise<DG.DataFrame> {
+    const csv: string = await grok.dapi.files.readAsText(file);
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+    return df;
+  }
+
+  async function readFileFasta(file: string): Promise<DG.DataFrame> {
+    const txt: string = await grok.dapi.files.readAsText(file);
+    const df: DG.DataFrame = importFasta(txt)[0];
+    return df;
+  }
 
   const _csvDfs: { [key: string]: Promise<DG.DataFrame> } = {};
   const readCsv: (key: string, csv: string) => DfReaderFunc = (key: string, csv: string) => {
@@ -140,69 +166,91 @@ MWRSWY-CKHP
   test('Negative3', async () => { await _testNeg(readCsv('csvDf3', csvDf3), 'col1'); });
   test('NegativeSmiles', async () => { await _testNeg(readCsv('csvDfSmiles', csvDfSmiles), 'col1'); });
 
-  test('N1', async () => { await _testN1(csvDfN1); });
-  test('AA1', async () => { await _testAA1(csvDfAA1); });
-  test('MsaN1', async () => { await _testMsaN1(csvDfMsaN1); });
-  test('MsaAA1', async () => { await _testMsaAA1(csvDfMsaAA1); });
+  test('Dna1', async () => {
+    await _testPos(readCsv('csvDfDna1', csvDfDna1), 'seq', 'fasta:SEQ:DNA');
+  });
+  test('Rna1', async () => {
+    await _testPos(readCsv('csvDfRna1', csvDfRna1), 'seq', 'fasta:SEQ:RNA');
+  });
+  test('AA1', async () => {
+    await _testPos(readCsv('csvDfPt1', csvDfPt1), 'seq', 'fasta:SEQ:PT');
+  });
+  test('MsaDna1', async () => {
+    await _testPos(readCsv('csvDfMsaDna1', csvDfMsaDna1), 'seq', 'fasta:SEQ.MSA:DNA');
+  });
 
-  test('SepNt', async () => { await _testSepNt(csvDfSepNt, '*'); });
-  test('SepPt', async () => { await _testSepPt(csvDfSepPt, '-'); });
-  test('SepUn1', async () => { await _testSepUn(csvDfSepUn1, '-'); });
-  test('SepUn2', async () => { await _testSepUn(csvDfSepUn2, '/'); });
+  test('MsaAA1', async () => {
+    await _testPos(readCsv('csvDfMsaPt1', csvDfMsaPt1), 'seq', 'fasta:SEQ.MSA:PT');
+  });
 
-  test('SepMsaN1', async () => { await _testSepMsaN1(csvDfSepMsaN1); });
+  test('SepDna', async () => {
+    await _testPos(readCsv('csvDfSepDna', csvDfSepDna), 'seq', 'separator:SEQ:DNA', '*');
+  });
+  test('SepRna', async () => {
+    await _testPos(readCsv('csvDfSepRna', csvDfSepRna), 'seq', 'separator:SEQ:RNA', '*');
+  });
+  test('SepPt', async () => {
+    await _testPos(readCsv('csvDfSepPt', csvDfSepPt), 'seq', 'separator:SEQ:PT', '-');
+  });
+  test('SepUn1', async () => {
+    await _testPos(readCsv('csvDfSepUn1', csvDfSepUn1), 'seq', 'separator:SEQ:UN', '-');
+  });
+  test('SepUn2', async () => {
+    await _testPos(readCsv('csvDfSepUn2', csvDfSepUn2), 'seq', 'separator:SEQ:UN', '/');
+  });
+
+  test('SepMsaN1', async () => {
+    await _testPos(readCsv('csvDfSepMsaDna1', csvDfSepMsaDna1), 'seq', 'separator:SEQ.MSA:DNA', '-');
+  });
 
   test('SamplesFastaCsvPt', async () => {
-    await _testSamplesFastaCsvPt();
+    await _testPos(readSamples(Samples.fastaCsv), 'sequence', 'fasta:SEQ:PT');
   });
   test('SamplesFastaCsvNegativeEntry', async () => {
-    await _testNeg(readSamplesCsv(Samples.fastaCsv), 'Entry');
+    await _testNeg(readSamples(Samples.fastaCsv), 'Entry');
   });
   test('SamplesFastaCsvNegativeLength', async () => {
-    await _testNeg(readSamplesCsv(Samples.fastaCsv), 'Length');
+    await _testNeg(readSamples(Samples.fastaCsv), 'Length');
   });
   test('SamplesFastaCsvNegativeUniProtKB', async () => {
-    await _testNeg(readSamplesCsv(Samples.fastaCsv), 'UniProtKB');
+    await _testNeg(readSamples(Samples.fastaCsv), 'UniProtKB');
   });
 
-  test('SamplesFastaFastaPt', async () => { await _testSamplesFastaFastaPt(); });
-
-  // System:AppData/Bio/samples/peptides_complex_align.csv contains monomers with spaces
-  // test('SamplesPeptidesComplexUn', async () => {
-  //   await _testSamplesPeptidesComplexUn();
-  // });
+  test('SamplesFastaFastaPt', async () => {
+    await _testPos(readSamples(Samples.fastaFasta, readFileFasta), 'sequence', 'fasta:SEQ:PT');
+  });
 
   test('samplesPeptidesComplexNegativeID', async () => {
-    await _testNeg(readSamplesCsv(Samples.peptidesComplex), 'ID');
+    await _testNeg(readSamples(Samples.peptidesComplex), 'ID');
   });
   test('SamplesPeptidesComplexNegativeMeasured', async () => {
-    await _testNeg(readSamplesCsv(Samples.peptidesComplex), 'Measured');
+    await _testNeg(readSamples(Samples.peptidesComplex), 'Measured');
   });
   test('SamplesPeptidesComplexNegativeValue', async () => {
-    await _testNeg(readSamplesCsv(Samples.peptidesComplex), 'Value');
+    await _testNeg(readSamples(Samples.peptidesComplex), 'Value');
   });
 
   test('samplesMsaComplexUn', async () => {
-    await _testPos(readSamplesCsv(Samples.msaComplex), 'MSA', 'separator:SEQ.MSA:UN', '/');
+    await _testPos(readSamples(Samples.msaComplex), 'MSA', 'separator:SEQ.MSA:UN', '/');
   });
   test('samplesMsaComplexNegativeActivity', async () => {
-    await _testNeg(readSamplesCsv(Samples.msaComplex), 'Activity');
+    await _testNeg(readSamples(Samples.msaComplex), 'Activity');
   });
 
   test('samplesIdCsvNegativeID', async () => {
-    await _testNeg(readSamplesCsv(Samples.idCsv), 'ID');
+    await _testNeg(readSamples(Samples.idCsv), 'ID');
   });
 
   test('samplesSarSmallCsvNegativeSmiles', async () => {
-    await _testNeg(readSamplesCsv(Samples.sarSmallCsv), 'smiles');
+    await _testNeg(readSamples(Samples.sarSmallCsv), 'smiles');
   });
 
   test('samplesHelmCsvHELM', async () => {
-    await _testPos(readSamplesCsv(Samples.HelmCsv), 'HELM', 'HELM', null);
+    await _testPos(readSamples(Samples.helmCsv), 'HELM', 'HELM', null);
   });
 
   test('samplesHelmCsvNegativeActivity', async () => {
-    await _testNeg(readSamplesCsv(Samples.HelmCsv), 'Activity');
+    await _testNeg(readSamples(Samples.helmCsv), 'Activity');
   });
 });
 
@@ -221,112 +269,5 @@ export async function _testPos(readDf: DfReaderFunc, colName: string, units: str
   expect(col.getTag(DG.TAGS.UNITS), units);
   if (separator)
     expect(col.getTag('separator'), separator);
-}
-
-export async function _testN1(csvDfN1: string) {
-  const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
-  await grok.data.detectSemanticTypes(dfN1);
-
-  const col: DG.Column = dfN1.col('seq')!;
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ:NT');
-}
-
-export async function _testAA1(csvDfAA1: string) {
-  const dfAA1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfAA1);
-  await grok.data.detectSemanticTypes(dfAA1);
-
-  const col: DG.Column = dfAA1.col('seq')!;
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ:PT');
-}
-
-export async function _testMsaN1(csvDfMsaN1: string) {
-  const dfMsaN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfMsaN1);
-  await grok.data.detectSemanticTypes(dfMsaN1);
-
-  const col: DG.Column = dfMsaN1.col('seq')!;
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ.MSA:NT');
-}
-
-export async function _testMsaAA1(csvDfMsaAA1: string) {
-  const dfMsaAA1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfMsaAA1);
-  await grok.data.detectSemanticTypes(dfMsaAA1);
-
-  const col: DG.Column = dfMsaAA1.col('seq')!;
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ.MSA:PT');
-}
-
-export async function _testSepNt(csv: string, separator: string) {
-  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
-  await grok.data.detectSemanticTypes(df);
-
-  const col: DG.Column = df.col('seq')!;
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ:NT');
-  expect(col.getTag('separator'), separator);
-}
-
-export async function _testSepPt(csv: string, separator: string) {
-  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
-  await grok.data.detectSemanticTypes(df);
-
-  const col: DG.Column = df.col('seq')!;
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ:PT');
-  expect(col.getTag('separator'), separator);
-}
-
-export async function _testSepUn(csv: string, separator: string) {
-  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
-  await grok.data.detectSemanticTypes(df);
-
-  const col: DG.Column = df.col('seq')!;
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ:UN');
-  expect(col.getTag('separator'), separator);
-}
-
-export async function _testSepMsaN1(csvDfSepMsaN1: string) {
-  const dfSepMsaN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfSepMsaN1);
-  await grok.data.detectSemanticTypes(dfSepMsaN1);
-
-  const col: DG.Column = dfSepMsaN1.col('seq')!;
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ.MSA:NT');
-}
-
-export async function _testSamplesFastaCsvPt() {
-  const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA.csv');
-  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
-  await grok.data.detectSemanticTypes(df);
-
-  const col: DG.Column = df.col('sequence')!;
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ:PT');
-  expect(col.getTag('separator'), null);
-}
-
-export async function _testSamplesFastaFastaPt() {
-  const fasta: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA.fasta');
-  const df: DG.DataFrame = importFasta(fasta)[0];
-
-  const col: DG.Column = df.col('sequence')!;
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), 'fasta:SEQ:PT');
-  expect(col.getTag('separator'), null);
-}
-
-export async function _testSamplesPeptidesComplexUn() {
-  const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/peptides_complex_aligned.csv');
-  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
-  await grok.data.detectSemanticTypes(df);
-
-  const col: DG.Column = df.col('AlignedSequence')!;
-  expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  expect(col.getTag(DG.TAGS.UNITS), 'separator:SEQ.MSA:UN');
-  expect(col.getTag('separator'), '-');
 }
 

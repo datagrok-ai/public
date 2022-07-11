@@ -4,7 +4,7 @@ export type MonomerEntry = {
   analogueCode: string,
   linkages: { [link: string]: { atomNumber: number, type: string } }
 };
-export type MonomerEntries = {[name: string]: MonomerEntry};
+export type MonomerEntries = { [name: string]: MonomerEntry };
 export type LinkData = { [link: string]: { atomNumber: number, type: string } };
 
 /** HELM associated sdf libraries with monomer processing*/
@@ -46,7 +46,10 @@ export class MonomerLibrary {
     }
   }
 
-  /** getting full monomer information from monomer library*/
+  /** getting full monomer information from monomer library
+   * @param {string} name
+   * @return {MonomerEntry}
+   */
   public getMonomerEntry(name: string): MonomerEntry {
     if (!this.monomers.includes(name))
       throw new Error(`Monomer library do not contain ${name} monomer`);
@@ -54,7 +57,10 @@ export class MonomerLibrary {
     return this.library[name];
   }
 
-  /** getting mol as string for monomer*/
+  /** getting mol as string for monomer
+   * @param {string} name
+   * @return {string}
+   */
   public getMonomerMol(name: string): string {
     if (!this.monomers.includes(name))
       throw new Error(`Monomer library do not contain ${name} monomer`);
@@ -143,9 +149,9 @@ class SDFReader {
 
   readNext(content: string, startIndex: number): number {
     const nextStartIndex = content.indexOf('$$$$', startIndex);
-    if (nextStartIndex === -1)
+    if (nextStartIndex === -1) {
       return -1;
-    else {
+    } else {
       this.parse(content, startIndex, nextStartIndex,
         (name: string, val: string): void => {
           this.dataColls[name].push(val);

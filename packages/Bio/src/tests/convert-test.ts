@@ -1,31 +1,152 @@
-import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {ConverterFunc, DfReaderFunc} from './types';
+import {NOTATION, NotationConverter} from '../utils/notation-converter';
 
 // import {mmSemType} from '../const';
 // import {importFasta} from '../package';
 
 category('converters', () => {
-//   test('a', async () => {await _a();});
-//   test('b', async () => {await _b();});
-  test('testFastaToSeparator', async () => { await _testFastaToSeparator(); });
-  test('testSeparatorToFasta', async () => { await _testSeparatorToFasta(); });
+  enum Samples {
+    fastaPt = 'fastaPt',
+    separatorPt = 'separatorPt',
+    helmPt = 'helmPt',
+
+    fastaDna = 'fastaDna',
+    separatorDna = 'separatorDna',
+    helmDna = 'helmDna',
+
+    fastaRna = 'fastaRna',
+    separatorRna = 'separatorRna',
+    helmRna = 'helmRna',
+  }
+
+  const _csvTxts: { [key: string]: string } = {
+    fastaPt: `seq
+FWPHEY
+YNRQWYV
+MKPSEYV
+`,
+    separatorPt: `seq
+F-W-P-H-E-Y
+Y-N-R-Q-W-Y-V
+M-K-P-S-E-Y-V
+`,
+    helmPt: `seq
+PEPTIDE1{F.W.P.H.E.Y}$$$
+PEPTIDE1{Y.N.R.Q.W.Y.V}$$$
+PEPTIDE1{M.K.P.S.E.Y.V}$$$
+`,
+    fastaDna: `seq
+ACGTC
+CAGTGT
+TTCAAC
+    `,
+    separatorDna: `seq
+A/C/G/T/C
+C/A/G/T/G/T
+T/T/C/A/A/C
+`,
+    helmDna: `seq
+DNA1{D(A)P.D(C)P.D(G)P.D(T)P.D(C)P}$$$
+DNA1{D(C)P.D(A)P.D(G)P.D(T)P.D(G)P.D(T)P}$$$
+DNA1{D(T)P.D(T)P.D(C)P.D(A)P.D(A)P.D(C)P}$$$
+`,
+    fastaRna: `seq
+ACGUC
+CAGUGU
+UUCAAC
+    `,
+    separatorRna: `seq
+A*C*G*U*C
+C*A*G*U*G*U
+U*U*C*A*A*C
+`,
+    helmRna: `seq
+RNA1{R(A)P.R(C)P.R(G)P.R(U)P.R(C)P}$$$
+RNA1{R(C)P.R(A)P.R(G)P.R(U)P.R(G)P.R(U)P}$$$
+RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$
+`,
+  };
+
+  const _csvDfs: { [key: string]: Promise<DG.DataFrame> } = {};
+
+  /** Also detects semantic types
+   * @param {string} key
+   * @return {Promise<DG.DataFrame>}
+   */
+  function readCsv(key: string): Promise<DG.DataFrame> {
+    if (!(key in _csvDfs)) {
+      _csvDfs[key] = (async (): Promise<DG.DataFrame> => {
+        const csv: string = _csvTxts[key];
+        const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+        await grok.data.detectSemanticTypes(df);
+        return df;
+      })();
+    }
+    return _csvDfs[key];
+  };
+
+  function converter(tgtNotation: NOTATION, separator: string | null = null): ConverterFunc {
+    return function(srcCol: DG.Column): DG.Column {
+      const converter = new NotationConverter(srcCol);
+      const resCol = converter.convert(NOTATION.SEPARATOR, separator);
+      return resCol;
+    };
+  };
+
+  async function _testConvert(srcKey: string, converter: ConverterFunc, tgtKey: string) {
+    const srcDf: DG.DataFrame = await readCsv(srcKey);
+    const srcCol: DG.Column = srcDf.col('seq')!;
+
+    const resCol: DG.Column = converter(srcCol);
+
+    const tgtDf: DG.DataFrame = await readCsv(tgtKey);
+    const tgtCol: DG.Column = tgtDf.col('seq')!;
+
+    expectArray(resCol.toList(), tgtCol.toList());
+  }
+
+  test('testFastaPtToSeparator', async () => {
+    await _testConvert(Samples.fastaPt, converter(NOTATION.SEPARATOR, '-'), Samples.separatorPt);
+  });
+  test('testFastaDnaToSeparator', async () => {
+    await _testConvert(Samples.fastaDna, converter(NOTATION.SEPARATOR, '/'), Samples.separatorDna);
+  });
+  test('testFastaRnaToSeparator', async () => {
+    await _testConvert(Samples.fastaRna, converter(NOTATION.SEPARATOR, '*'), Samples.separatorRna);
+  });
+
+  test('testFastaPtToHelm', async () => {
+    await _testConvert(Samples.fastaPt, converter(NOTATION.HELM), Samples.helmPt);
+  });
+  test('testFastaDnaToHelm', async () => {
+    await _testConvert(Samples.fastaDna, converter(NOTATION.HELM), Samples.helmDna);
+  });
+  test('testFastaRnaToHelm', async () => {
+    await _testConvert(Samples.fastaDna, converter(NOTATION.HELM), Samples.helmRna);
+  });
+
+  test('testSeparatorPtToFasta', async () => {
+    await _testConvert(Samples.separatorPt, converter(NOTATION.FASTA), Samples.fastaPt);
+  });
+  test('testSeparatorDnaToFasta', async () => {
+    await _testConvert(Samples.separatorDna, converter(NOTATION.FASTA), Samples.fastaDna);
+  });
+  test('testSeparatorDnaToFasta', async () => {
+    await _testConvert(Samples.separatorRna, converter(NOTATION.FASTA), Samples.fastaRna);
+  });
+
+  test('testSeparatorPtToHelm', async () => {
+    await _testConvert(Samples.separatorRna, converter(NOTATION.HELM), Samples.helmPt);
+  });
+  test('testSeparatorDnaToHelm', async () => {
+    await _testConvert(Samples.separatorRna, converter(NOTATION.HELM), Samples.helmDna);
+  });
+  test('testSeparatorRnaToHelm', async () => {
+    await _testConvert(Samples.separatorRna, converter(NOTATION.HELM), Samples.helmRna);
+  });
 });
-
-// export async function _a() {
-//   expect(1, 1);
-// }
-// 
-// export async function _b() {
-//   expect(1, 2);
-// }
-
-export async function _testFastaToSeparator() {
-  expect(1, 1);
-}
-
-export async function _testSeparatorToFasta() {
-  expect(1, 2);
-}
