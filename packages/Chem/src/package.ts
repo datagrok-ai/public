@@ -260,7 +260,6 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
   df,
   smiles,
   axesNames,
-     'test',
   activities,
   similarity,
   'Tanimoto',
