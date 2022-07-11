@@ -6,7 +6,7 @@
 A package can contain various functions, and each function is annotated with a tag that defines what this function does:
 
 * `#app` for [applications](#applications)
-* `#dashboard` for [dashboards](#dashboards)
+* `#dashboard` for [dashboards](../../visualize/dashboard.md)
 * `#panel` for [info panels](#info-panels)
 * `#init` and `#autostart` for [pre-run functions](#pre-run-functions)
 * `#semTypeDetector` for [semantic types detectors](#semantic-type-detectors)
