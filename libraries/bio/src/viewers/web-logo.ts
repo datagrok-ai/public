@@ -87,6 +87,7 @@ export class WebLogo extends DG.JsViewer {
   private axisHeight: number = 12;
 
   private seqCol: DG.Column<string> | null = null;
+  private splitter: SplitterFunc | null = null;
   // private maxLength: number = 100;
   private positions: PositionInfo[] = [];
 
@@ -201,10 +202,10 @@ export class WebLogo extends DG.JsViewer {
       const args = e as MouseEvent;
       const [jPos, monomer] = getMonomer(this.canvas.getCursorPosition(args));
 
-      if (this.dataFrame && this.seqCol && monomer) {
+      if (this.dataFrame && this.seqCol && this.splitter && monomer) {
         ui.tooltip.showRowGroup(this.dataFrame, (iRow) => {
           const seq = this.seqCol!.get(iRow);
-          const seqM = seq ? WebLogo.splitterAsFasta(seq)[this.startPosition + jPos] : null;
+          const seqM = seq ? this.splitter!(seq)[this.startPosition + jPos] : null;
           return seqM === monomer && this.dataFrame.filter.get(iRow);
         }, args.x + 16, args.y + 16);
       } else {
@@ -220,10 +221,10 @@ export class WebLogo extends DG.JsViewer {
       const [jPos, monomer] = getMonomer(this.canvas.getCursorPosition(args));
 
       // prevents deselect all rows if we miss monomer bounds
-      if (this.dataFrame && this.seqCol && monomer) {
+      if (this.dataFrame && this.seqCol && this.splitter && monomer) {
         this.dataFrame.selection.init((iRow) => {
           const seq = this.seqCol!.get(iRow);
-          const seqM = seq ? WebLogo.splitterAsFasta(seq)[this.startPosition + jPos] : null;
+          const seqM = seq ? this.splitter!(seq)[this.startPosition + jPos] : null;
           return seqM === monomer && this.dataFrame.filter.get(iRow);
         });
       }
@@ -251,13 +252,18 @@ export class WebLogo extends DG.JsViewer {
     if (this.dataFrame) {
       this.seqCol = this.sequenceColumnName ? this.dataFrame.col(this.sequenceColumnName) : null;
       if (this.seqCol == null) {
-        this.seqCol = this.pickUpSeqCol(this.dataFrame);
+        this.seqCol = WebLogo.pickUpSeqCol2(this.dataFrame);
         this.sequenceColumnName = this.seqCol ? this.seqCol.name : null;
       }
       if (this.seqCol) {
+        const units: string = this.seqCol!.getTag(DG.TAGS.UNITS);
+        const separator: string = this.seqCol!.getTag('separator');
+        this.splitter = WebLogo.getSplitter(units, separator);
+
         this.updatePositions();
         this.cp = WebLogo.pickUpPalette(this.seqCol);
       } else {
+        this.splitter = null;
         this.positionNames = [];
         this.startPosition = -1;
         this.endPosition = -1;
@@ -280,7 +286,7 @@ export class WebLogo extends DG.JsViewer {
       categories = this.seqCol.categories;
     }
     const maxLength = categories.length > 0 ? Math.max(...categories.map(
-      (s) => s !== null ? WebLogo.splitterAsFasta(s).length : 0)) : 0;
+      (s) => s !== null ? this.splitter!(s).length : 0)) : 0;
 
     // Get position names from data column tag 'positionNames'
     const positionNamesTxt = this.seqCol.getTag('positionNames');
@@ -411,7 +417,7 @@ export class WebLogo extends DG.JsViewer {
         ++this.rowsNull;
       }
 
-      const seqM: string[] = WebLogo.splitterAsFasta(s);
+      const seqM: string[] = this.splitter!(s);
       for (let jPos = 0; jPos < this.Length; jPos++) {
         const pmInfo = this.positions[jPos].freq;
         const m: string = seqM[this.startPosition + jPos] || '-';
@@ -696,23 +702,34 @@ export class WebLogo extends DG.JsViewer {
     return cos;
   }
 
-  /** First try to find column with semType 'alignedSequence'.
-   * Next look for column with data alphabet corresponding to any of the known palettes.
-   * @param {DG.DataFrame} dataFrame
-   * @return {DG.Column} The column we were looking for or null
-   */
-  private pickUpSeqCol(dataFrame: DG.DataFrame): DG.Column | null {
-    let res: DG.Column | null = dataFrame.columns.bySemType('alignedSequence');
-    if (res == null) {
-      for (const col of dataFrame.columns) {
-        const cp = WebLogo.pickUpPalette(col as DG.Column, 5);
-        if (cp !== null && !(cp instanceof UnknownSeqPalette)) {
-          res = col;
-          break;
-        }
-      }
-    }
-    return res;
+  // /** First try to find column with semType 'alignedSequence'.
+  //  * Next look for column with data alphabet corresponding to any of the known palettes.
+  //  * @param {DG.DataFrame} dataFrame
+  //  * @return {DG.Column} The column we were looking for or null
+  //  */
+  // private pickUpSeqCol(dataFrame: DG.DataFrame): DG.Column | null {
+  //   let res: DG.Column | null = dataFrame.columns.bySemType('alignedSequence');
+  //   if (res == null) {
+  //     for (const col of dataFrame.columns) {
+  //       const cp = WebLogo.pickUpPalette(col as DG.Column, 5);
+  //       if (cp !== null && !(cp instanceof UnknownSeqPalette)) {
+  //         res = col;
+  //         break;
+  //       }
+  //     }
+  //   }
+  //   return res;
+  // }
+
+  public static pickUpSeqCol2(df: DG.DataFrame): DG.Column | null {
+    const semTypeColList = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
+    let resCol: DG.Column | null = semTypeColList.find((col) => {
+      const units = col.getTag(DG.TAGS.UNITS);
+      return units ? units.indexOf('MSA') !== -1 : false;
+    }) ?? null;
+    if (!resCol && semTypeColList.length > 0)
+      resCol = semTypeColList[0];
+    return resCol;
   }
 
   private static monomerRe = /\[(\w+)\]|(\w)|(-)/g;
@@ -752,12 +769,20 @@ export class WebLogo extends DG.JsViewer {
     };
   }
 
-  /** Get splitter method to split sequences to monomers */
+  /** Get splitter method to split sequences to monomers
+   * @param {string} units
+   * @param {string} separator
+   * @return {SplitterFunc}
+   */
   public static getSplitter(units: string, separator: string): SplitterFunc {
     if (units.toLowerCase().startsWith('fasta'))
       return WebLogo.splitterAsFasta;
     else if (units.toLowerCase().startsWith('separator'))
       return WebLogo.getSplitterWithSeparator(separator);
+    /*
+    else if (units.toLowerCase().startsWith('helm'))
+      return WebLogo.splitterAsHelm;
+    /**/
     else
       throw new Error(`Unexpected units ${units} .`);
 
