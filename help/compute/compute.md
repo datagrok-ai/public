@@ -372,7 +372,7 @@ Perhaps the most commonly used data structure in computing is [DataFrame](../dev
 either input or output dataframe, click on the `+` ("Add to workspace")
 icon. This will open the dataframe in the [exploratory data analysis](../explore/exploratory-data-analysis.md)
 mode, allowing to [visualize](../visualize/viewers.md) the data,
-[transform](../transform/)
+[transform](../transform/query-transformations.md)
 or perform more in-depth exploration, such as multivariate analysis.
 
 In the picture below, we are exploring the result of the model execution. While the default output is visualized via the

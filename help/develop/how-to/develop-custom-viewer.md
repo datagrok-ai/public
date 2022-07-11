@@ -503,7 +503,7 @@ export function initFunctionPackage() {
 }
 ```
 
-The [`autostart`](../function-roles.md#pre-run-functions) function prompts the package to initialize, which is why a
+The [`autostart`](../function-roles.md#autostart) function prompts the package to initialize, which is why a
 viewer can be obtained synchronously.
 
 ## Examples

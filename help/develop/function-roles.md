@@ -6,7 +6,7 @@ A package can contain a variety of functions, so it will be appropriate to give 
 Typically, each function type has a special tag denoting what the function does, for example:
 
 * `#app` for [applications](#applications)
-* `#dashboard` for [dashboards](#dashboards)
+* `#dashboard` for [dashboards](../visualize/dashboard.md)
 * `#panel` for [info panels](#info-panels)
 * `#init` for [package initialization](#package-initialization)
 * `#autostart` for [automatic execution at platform startup](#autostart)
@@ -132,7 +132,7 @@ Exporters reside in the platform's top menu "export" section.
 
 ## Settings editors
 
-Settings editors work with [package properties](#package-settings) and define how they will be displayed in
+Settings editors work with [package properties](develop.md#package-settings) and define how they will be displayed in
 the `Settings` pane of the property panel. An editor function should return a widget (`DG.Widget`) and be tagged as
 `#packageSettingsEditor`.
 

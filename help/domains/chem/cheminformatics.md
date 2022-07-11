@@ -41,8 +41,7 @@ Datagrok supplies a researcher with a powerful cheminformatics arsenal, in parti
 
 * _Chemical properties_, _descriptors_, and _fingerprints_ can be extracted on the fly.
 * _Predictive models_, accepting molecular structures as their input, can be trained, assessed, executed, deployed,
-  reused by other scientists, and incorporated in pipelines or info panels.<!--corr: what is
-info panel? a link/description needed --> Predictive models for _toxicity_ and _drug-likeness_ are also supported.
+  reused by other scientists, and incorporated in pipelines or [info panels](../../discover/info-panels.md). Predictive models for _toxicity_ and _drug-likeness_ are also supported.
 * _Substructure and similarity search_ works out-of-the box for the imported data and can efficiently be utilized for
   querying databases with the help of Postgres chemical cartridge.
 * In order to further explore collections of molecules, one can use advanced tools like _diversity search_
@@ -571,5 +570,4 @@ See also:
 * [Similarity search](similarity-search.md)
 * [Fingerprints](fingerprints.md)
 * [Similarity SPE](similarity-spe.md)
-* [Info panels](../../discover/info-panels.md)
 * [GrokCompute](../../develop/admin/infrastructure.md#grok-compute)

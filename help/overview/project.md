@@ -20,7 +20,7 @@ inside.
 
 ### Dynamic data
 
-Whenever a table is created by executing a [function](../overview/functions)
+Whenever a table is created by executing a [function](../overview/functions/function.md)
 (such as a [database query](../access/data-query.md)), this information gets stored with the table as a "generation
 script". This serves multiple purposes:
 

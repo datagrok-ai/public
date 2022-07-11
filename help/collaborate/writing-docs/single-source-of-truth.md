@@ -15,6 +15,5 @@ add this information to the documentation first and then share the link to commu
 information we add, the more we help others accomplish tasks faster and better and solve problems.
 
 We encourage anyone to share their knowledge through a wiki article, a post on
-a [community forum](https://community.datagrok.ai/), or a YouTube video. This section
-on [writing docs](../writing-docs/)
-explains how to do it in the most user-friendly and least error-prone way.
+a [community forum](https://community.datagrok.ai/), or a YouTube video. This section on writing docs explains how to do
+it in the most user-friendly and least error-prone way.
