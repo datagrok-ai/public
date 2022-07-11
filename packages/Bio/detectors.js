@@ -13,16 +13,14 @@ class BioPackageDetectors extends DG.Package {
 
   static mmSemType = 'Macromolecule';
 
-  static Units = {
-    FastaSeqPt: 'fasta:SEQ:PT', FastaSeqNt: 'fasta:SEQ:NT', FastaMsaPt: 'fasta:MSA:PT', FastaMsaNt: 'fasta:MSA:NT',
-  };
-
-  static AminoacidsFastaAlphabet = new Set([
+  static PeptideFastaAlphabet = new Set([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
     'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
   ]);
 
-  static NucleotidesFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
+  static DnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
+
+  static RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
 
 
   /** @param s {String} - string to check
@@ -43,8 +41,9 @@ class BioPackageDetectors extends DG.Package {
     }
 
     const alphabetCandidates = [
-      ['NT', BioPackageDetectors.NucleotidesFastaAlphabet],
-      ['PT', BioPackageDetectors.AminoacidsFastaAlphabet],
+      ['PT', BioPackageDetectors.PeptideFastaAlphabet],
+      ['DNA', BioPackageDetectors.DnaFastaAlphabet],
+      ['RNA', BioPackageDetectors.RnaFastaAlphabet],
     ];
 
     // TODO: Detect HELM sequence
@@ -103,8 +102,8 @@ class BioPackageDetectors extends DG.Package {
     const cleanFreq = Object.assign({}, ...Object.entries(freq)
       .filter(([m, f]) => m != ' ' &&
         !noSeparatorChemRe.test(m) && !noSeparatorAlphaDigitRe.test(m) &&
-        !BioPackageDetectors.AminoacidsFastaAlphabet.has(m) &&
-        !BioPackageDetectors.NucleotidesFastaAlphabet.has(m))
+        !BioPackageDetectors.PeptideFastaAlphabet.has(m) &&
+        !BioPackageDetectors.DnaFastaAlphabet.has(m))
       .map(([m, f]) => ({[m]: f})));
     if (Object.keys(cleanFreq).length == 0) return null;
 

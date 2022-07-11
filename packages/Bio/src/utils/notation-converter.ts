@@ -60,7 +60,8 @@ export class NotationConverter {
     // dummy code
     const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(''));
     newColumn.semType = 'Macromolecule';
-    newColumn.setTag (DG.TAGS.UNITS, this.sourceUnits.replace(this.sourceNotation.toString(), targetNotation.toString()));
+    const newUnits = this.sourceUnits.replace(this.sourceNotation.toString(), targetNotation.toString());
+    newColumn.setTag(DG.TAGS.UNITS, newUnits);
     // TODO: determine all the qualifiers (units, ...), perhaps, using detectors
     return newColumn;
   }
@@ -141,11 +142,11 @@ export class NotationConverter {
 
   /** Dispatcher method for notation conversion */
   // TODO: write the bodies of converter methods
-  public convert(targetNotation: NOTATION, separator: string): DG.Column {
+  public convert(targetNotation: NOTATION, separator: string | null): DG.Column {
     if (this.sourceNotation === targetNotation)
       throw new Error('Target notation is not specified');
     if (this.isFasta() && this.toSeparator(targetNotation))
-      return this.convertFastaToSeparator(separator);
+      return this.convertFastaToSeparator(separator!); // there is the only place where a separator is needed
     else if (this.isFasta() && this.toHelm(targetNotation))
       return this.convertFastaToHelm();
     else if (this.isSeparator() && this.toFasta(targetNotation))

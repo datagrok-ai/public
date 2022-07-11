@@ -9,6 +9,7 @@ import './tests/msa-tests';
 import './tests/sequence-space-test';
 import './tests/activity-cliffs-tests';
 import './tests/splitter-test';
+import './tests/renderer-test';
 
 export const _package = new DG.Package();
 export {tests};

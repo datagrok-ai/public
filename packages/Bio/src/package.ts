@@ -16,16 +16,16 @@ import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
 import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cliffs';
-import { getMolfilesFromSeq, HELM_CORE_LIB_FILENAME } from './utils/utils';
+import {getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
-import {MacromoleculeSequenceCellRenderer} from "./utils/cell-renderer";
+import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 
 //tags: init
 export async function initBio(): Promise<void> {
   // apparently HELMWebEditor requires dojo to be initialized first
   return new Promise((resolve, reject) => {
     // @ts-ignore
-    dojo.ready(function () { resolve(null); });
+    dojo.ready(function() { resolve(null); });
   });
 }
 
@@ -36,7 +36,7 @@ export async function initBio(): Promise<void> {
 //output: grid_cell_renderer result
 export function macromoleculeSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
-} 
+}
 
 
 //name: sequenceAlignment
@@ -151,12 +151,17 @@ export async function toAtomicLevel(df: DG.DataFrame, sequence: DG.Column): Prom
 //name: MSA
 //input: dataframe table
 //input: column sequence { semType: Macromolecule }
-export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<void> {
+//output: column result
+export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<DG.Column> {
   const msaCol = await runKalign(col, false);
   table.columns.add(msaCol);
 
-  const tv: DG.TableView = grok.shell.tv;
-  tv.grid.invalidate();
+  // This call is required to enable cell renderer activation
+  await grok.data.detectSemanticTypes(table);
+
+  // const tv: DG.TableView = grok.shell.tv;
+  // tv.grid.invalidate();
+  return msaCol;
 }
 
 //name: Composition Analysis

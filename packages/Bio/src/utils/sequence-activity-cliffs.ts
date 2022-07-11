@@ -2,9 +2,9 @@ import {IDrawTooltipParams} from '@datagrok-libraries/ml/src/viewers/activity-cl
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarity-metrics';
-import { AvailableMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
+import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
-export async function sequenceGetSimilarities(col: DG.Column, seq: string): Promise<DG.Column | null>{ 
+export async function sequenceGetSimilarities(col: DG.Column, seq: string): Promise<DG.Column | null> {
   const stringArray = col.toList();
   const distances = new Array(stringArray.length).fill(0.0);
   for (let i = 0; i < stringArray.length; ++i)
