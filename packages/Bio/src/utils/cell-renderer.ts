@@ -9,7 +9,7 @@ import {SplitterFunc, WebLogo} from "@datagrok-libraries/bio/src/viewers/web-log
 import {SeqPalette} from "@datagrok-libraries/bio/src/seq-palettes";
 import * as ui from 'datagrok-api/ui';
 
-const lru = new DG.LruCache<any, any>(); 
+const lru = new DG.LruCache<any, any>();
 
 function getPalleteByType(paletteType: string): SeqPalette  {
   switch (paletteType) {
@@ -127,9 +127,6 @@ function renderSequense(
 }
 
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
-  constructor() {
-    super();
-  }
 
   get name(): string {return 'macromoleculeSequence';}
 
@@ -162,7 +159,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       let host = ui.div([], { style: { width: `${w}px`, height: `${h}px`}});
       host.setAttribute('dataformat', 'helm');
       host.setAttribute('data', gridCell.cell.value);
-      
+      gridCell.element = host;
       //@ts-ignore
       var canvas = new JSDraw2.Editor(host, { width: w, height: h, skin: "w8", viewonly: true });
       var formula = canvas.getFormula(true);
@@ -186,28 +183,28 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       g.font = '12px monospace';
       g.textBaseline = 'top';
       const s: string = cell.value ?? '';
-  
+
       //TODO: can this be replaced/merged with splitSequence?
       const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
-  
+
       const palette = getPalleteByType(paletteType);
-  
+
       const separator = gridCell.cell.column.getTag('separator') ?? '';
       const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator') );// splitter,
-  
+
       const subParts:string[] =  splitterFunc(cell.value);
       console.log(subParts);
-  
+
       const textSize = g.measureText(subParts.join(''));
       let x1 = Math.max(x, x + (w - textSize.width) / 2);
-  
+
       subParts.forEach((amino, index) => {
         let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
         color = palette.get(amino);
         g.fillStyle = ChemPalette.undefinedColor;
         x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, pivot, true, false, 1.0, separator);
       });
-  
+
       g.restore();
     }
   }
