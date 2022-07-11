@@ -145,6 +145,7 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
   hierarchyColumnNames: ["level_1_column", "level_2_column"], // Ordered list of tree levels
   edgeShape: "curve",       // 'curve' | 'polyline'
   expandAndCollapse: true,  // Enable branch expansion/collapse
+  initialTreeDepth: 2,      // The initial depth of the tree (level 0 is the root node, etc., -1 expands all nodes)
   layout: "orthogonal",     // 'orthogonal' | 'radial'
   orient: "LR",             // 'LR' | 'RL' | 'TB' | 'BT'
   symbol: "emptyCircle",    // Tree node symbol shape

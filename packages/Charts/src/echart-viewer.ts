@@ -82,7 +82,8 @@ export class Utils {
           paths[path] = props;
         }
       }
-      function updateParentNodes(node: treeDataType) {
+
+      function updatePropMeta(node: treeDataType) {
         for (const prop of propNames) {
           if (!node.path) {
             data[`${prop}-meta`] = { min: Infinity, max: -Infinity };
@@ -94,9 +95,10 @@ export class Utils {
           data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, node[prop]);
           data[`${prop}-meta`].max = Math.max(data[`${prop}-meta`].max, node[prop]);
         }
-        node.children?.forEach(updateParentNodes);
+        node.children?.forEach(updatePropMeta);
       }
-      updateParentNodes(data);
+
+      updatePropMeta(data);
     };
 
     for (let i = 0; i < aggregated.rowCount; i++) {
