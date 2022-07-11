@@ -108,6 +108,7 @@ MWRSWY-CKHP
     idCsv = 'idCsv',
     sarSmallCsv = 'sarSmallCsv',
     helmCsv = 'helmCsv',
+    testHelmCsv = 'testHelmCsv',
   }
 
   const samples: { [key: string]: string } = {
@@ -118,6 +119,7 @@ MWRSWY-CKHP
     'idCsv': 'System:AppData/Bio/samples/id.csv',
     'sarSmallCsv': 'System:AppData/Bio/samples/sar-small.csv',
     'helmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
+    'testHelmCsv': 'System:AppData/Bio/samples/sample_testHelm.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -251,6 +253,30 @@ MWRSWY-CKHP
 
   test('samplesHelmCsvNegativeActivity', async () => {
     await _testNeg(readSamples(Samples.helmCsv), 'Activity');
+  });
+
+  // sample_testHelm.csb
+  // columns: ID,Test type,HELM string,Valid?,Mol Weight,Mol Formula,SMILES
+  test('samplesTestHelmNegativeID', async () => {
+    await _testNeg(readSamples(Samples.testHelmCsv), 'ID');
+  });
+  test('samplesTestHelmNegativeTestType', async () => {
+    await _testNeg(readSamples(Samples.testHelmCsv), 'Test type');
+  });
+  test('samplesTestHelmPositiveHelmString', async () => {
+    await _testPos(readSamples(Samples.testHelmCsv), 'HELM string', 'HELM');
+  });
+  test('samplesTestHelmNegativeValid', async () => {
+    await _testNeg(readSamples(Samples.testHelmCsv), 'Valid?');
+  });
+  test('samplesTestHelmNegativeMolWeight', async () => {
+    await _testNeg(readSamples(Samples.testHelmCsv), 'Mol Weight');
+  });
+  test('samplesTestHelmNegativeMolFormula', async () => {
+    await _testNeg(readSamples(Samples.testHelmCsv), 'Mol Formula');
+  });
+  test('samplesTestHelmNegativeSmiles', async () => {
+    await _testNeg(readSamples(Samples.testHelmCsv), 'Smiles');
   });
 });
 

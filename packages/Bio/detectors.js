@@ -75,8 +75,8 @@ class BioPackageDetectors extends DG.Package {
       // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
       const alphabet = BioPackageDetectors.detectAlphabet(stats.freq, alphabetCandidates, gapSymbol);
 
-      const forbidden = BioPackageDetectors.checkForbiddenWoSeparator(stats.freq);
-      if (separator || !forbidden) {
+      // const forbidden = BioPackageDetectors.checkForbiddenWoSeparator(stats.freq);
+      if (separator || alphabet != 'UN') {
         const units = `${format}:${seqType}:${alphabet}`;
         col.setTag(DG.TAGS.UNITS, units);
         if (separator) col.setTag('separator', separator);
@@ -123,11 +123,11 @@ class BioPackageDetectors extends DG.Package {
     return Object.keys(freq).filter((m) => forbiddenRe.test(m)).length > 0;
   }
 
-  /** Without a separator, special symbols or digits are not allowed as monomers. */
-  static checkForbiddenWoSeparator(freq) {
-    const forbiddenRe = /[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/i;
-    return Object.keys(freq).filter((m) => forbiddenRe.test(m)).length > 0;
-  }
+  // /** Without a separator, special symbols or digits are not allowed as monomers. */
+  // static checkForbiddenWoSeparator(freq) {
+  //   const forbiddenRe = /[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/i;
+  //   return Object.keys(freq).filter((m) => forbiddenRe.test(m)).length > 0;
+  // }
 
   /** Stats of sequences with specified splitter func, returns { freq, sameLength } */
   static getStats(seqCol, minLength, splitter) {
