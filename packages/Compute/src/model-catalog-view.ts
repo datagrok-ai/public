@@ -23,7 +23,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.objectType = 'Func';
     this.categoryFilters = {
       'options.department': 'Department',
-      'options.group': 'Group',
+      'options.HL_process': 'HL_process',
       'options.process': 'Process',
       'tag': 'Tags'
     };
@@ -36,13 +36,13 @@ export class ModelCatalogView extends DG.CustomCardView {
 
     this.hierarchy = [
       'options.department',
-      'options.group',
+      'options.HL_process',
       'options.process'
     ];
 
     this.hierarchyProperties = {
       'options.department': 'Department',
-      'options.group': 'Group',
+      'options.HL_process': 'HL_process',
       'options.process': 'Process'
     };
 
