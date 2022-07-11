@@ -16,16 +16,6 @@ export async function initChem(): Promise<void> {
   });
 }
 
-
-//name: helmCellRenderer
-//tags: cellRenderer,cellRenderer-Macromolecule
-//meta.cellType: Macromolecule
-//meta-cell-renderer-sem-type: Macromolecule
-//output: grid_cell_renderer result
-export function helmCellRenderer(): DG.GridCellRenderer {
-  return new HelmCellRenderer();
-}
-
 //tags: cellEditor
 //description: Macromolecule
 //input: grid_cell cell
