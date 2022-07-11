@@ -22,6 +22,10 @@ class BioPackageDetectors extends DG.Package {
 
   static RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
 
+  static SmilesRawAlphabet = new Set([
+    'O', 'C', 'c', 'N', 'S', 'F', '(', ')',
+    '1', '2', '3', '4', '5', '6', '7',
+    '+', '-', '@', '[', ']', '/', '\\', '#', '=']);
 
   /** @param s {String} - string to check
    * @returns {boolean} */
@@ -40,7 +44,11 @@ class BioPackageDetectors extends DG.Package {
       return BioPackageDetectors.mmSemType;
     }
 
-    const alphabetCandidates = [
+    const decoyAlphabets = [
+      ['SMILES', BioPackageDetectors.SmilesRawAlphabet],
+    ];
+
+    const candidateAlphabets = [
       ['PT', BioPackageDetectors.PeptideFastaAlphabet],
       ['DNA', BioPackageDetectors.DnaFastaAlphabet],
       ['RNA', BioPackageDetectors.RnaFastaAlphabet],
@@ -49,9 +57,13 @@ class BioPackageDetectors extends DG.Package {
     // TODO: Detect HELM sequence
     // TODO: Lazy calculations could be helpful for performance and convenient for expressing classification logic.
     const statsAsChars = BioPackageDetectors.getStats(col, 5, BioPackageDetectors.splitterAsChars);
+
+    const decoy = BioPackageDetectors.detectAlphabet(statsAsChars.freq, decoyAlphabets, null, 0.5);
+    if (decoy != 'UN') return null;
+
     if (statsAsChars.sameLength) {
       if (Object.keys(statsAsChars.freq).length > 0) { // require non empty alphabet
-        const alphabet = BioPackageDetectors.detectAlphabet(statsAsChars.freq, alphabetCandidates, '-');
+        const alphabet = BioPackageDetectors.detectAlphabet(statsAsChars.freq, candidateAlphabets, '-');
         if (alphabet === 'UN') return null;
 
         const units = `fasta:SEQ.MSA:${alphabet}`;
@@ -73,7 +85,7 @@ class BioPackageDetectors extends DG.Package {
       const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
 
       // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
-      const alphabet = BioPackageDetectors.detectAlphabet(stats.freq, alphabetCandidates, gapSymbol);
+      const alphabet = BioPackageDetectors.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol);
 
       // const forbidden = BioPackageDetectors.checkForbiddenWoSeparator(stats.freq);
       if (separator || alphabet != 'UN') {
@@ -160,7 +172,7 @@ class BioPackageDetectors extends DG.Package {
    * @param freq       frequencies of monomers in sequence set
    * @param candidates  an array of pairs [name, monomer set]
    * */
-  static detectAlphabet(freq, candidates, gapSymbol) {
+  static detectAlphabet(freq, candidates, gapSymbol, cut = 0.65) {
     const candidatesSims = candidates.map((c) => {
       const sim = BioPackageDetectors.getAlphabetSimilarity(freq, c[1], gapSymbol);
       return [c[0], c[1], freq, sim];
@@ -168,7 +180,7 @@ class BioPackageDetectors extends DG.Package {
 
     let alphabetName;
     const maxSim = Math.max(...candidatesSims.map((cs) => cs[3]));
-    if (maxSim > 0.65) {
+    if (maxSim > cut) {
       const sim = candidatesSims.find((cs) => cs[3] == maxSim);
       alphabetName = sim[0];
     } else {

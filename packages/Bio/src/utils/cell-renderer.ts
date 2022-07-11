@@ -193,7 +193,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator') );// splitter,
 
       const subParts:string[] =  splitterFunc(cell.value);
-      console.log(subParts);
+      // console.log(subParts);
 
       const textSize = g.measureText(subParts.join(''));
       let x1 = Math.max(x, x + (w - textSize.width) / 2);

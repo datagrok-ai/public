@@ -106,10 +106,11 @@ MWRSWY-CKHP
     fastaFasta = 'fastaFasta',
     msaComplex = 'msaComplex',
     helmCsv = 'helmCsv',
+    testDemogCsv = 'testDemogCsv',
+    testHelmCsv = 'testHelmCsv',
     testIdCsv = 'testIdCsv',
     testSmilesCsv = 'testSmilesCsv',
-    testHelmCsv = 'testHelmCsv',
-    testDemogCsv = 'testDemogCsv',
+    testSmiles2Csv = 'testSmiles2Csv',
   }
 
   const samples: { [key: string]: string } = {
@@ -119,9 +120,10 @@ MWRSWY-CKHP
     'msaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
     'helmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
     'testDemogCsv': 'System:AppData/Bio/samples/testDemog.csv',
-    'testIdCsv': 'System:AppData/Bio/samples/id.csv',
     'testHelmCsv': 'System:AppData/Bio/samples/testHelm.csv',
+    'testIdCsv': 'System:AppData/Bio/samples/id.csv',
     'testSmilesCsv': 'System:AppData/Bio/samples/testSmiles.csv',
+    'testSmiles2Csv': 'System:AppData/Bio/samples/testSmiles2.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -287,6 +289,10 @@ MWRSWY-CKHP
 
     for (const col of df.columns.toList())
       await _testNeg(dfFunc, col.name);
+  });
+
+  test('samplesTestSmiles2NegativeSmiles', async () => {
+    await _testNeg(readSamples(Samples.testSmiles2Csv), 'SMILES');
   });
 });
 
