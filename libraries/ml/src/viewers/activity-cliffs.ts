@@ -248,16 +248,18 @@ export async function getActivityCliffs(
       if (zoom) {
         const currentLine = lines[linesRes.linesDf.currentRowIdx];
         setTimeout(()=> {
-          const x1 = sp.dataFrame.get(axesNames[0], currentLine.mols[0]);
-          const y1 = sp.dataFrame.get(axesNames[1], currentLine.mols[0]);
-          const x2 = sp.dataFrame.get(axesNames[0], currentLine.mols[1]);
-          const y2 = sp.dataFrame.get(axesNames[1], currentLine.mols[1]);
-          const xDiff = Math.abs(x1 - x2)*5;
-          const yDiff = Math.abs(y1 - y2)*5;
-          sp.zoom(x1 < x2 ? x1 - xDiff : x2 - xDiff,
-            y1 > y2 ? y1 + yDiff : y2  + yDiff,
-            x1 > x2 ? x1 + xDiff : x2 + xDiff,
-            y1 < y2 ? y1 - yDiff : y2 - yDiff);
+          const {zoomLeft, zoomRight, zoomTop, zoomBottom} = getZoomCoordinates(
+            sp.viewport.width,
+            sp.viewport.height,
+            sp.dataFrame.get(axesNames[0], currentLine.mols[0]),
+            sp.dataFrame.get(axesNames[1], currentLine.mols[0]),
+            sp.dataFrame.get(axesNames[0], currentLine.mols[1]),
+            sp.dataFrame.get(axesNames[1], currentLine.mols[1])
+          )        
+          sp.zoom(zoomLeft,
+            zoomTop,
+            zoomRight,
+            zoomBottom);
         }, 300);
         zoom = false;
       }
@@ -265,6 +267,23 @@ export async function getActivityCliffs(
 
   sp.addProperty('similarityLimit', 'double', optSimilarityLimit);
   return sp;
+}
+
+function getZoomCoordinates(W0: number, H0: number, x1: number, y1: number, x2: number, y2: number) {
+  const W1 = Math.abs(x1 - x2);
+  const H1 = Math.abs(y1 - y2);
+  const scaleW = W0 / W1;
+  const scaleH = H0 / H1;
+  const scale = Math.min(scaleW, scaleH);
+  const W2 = (W0 / scale) * 5;
+  const H2 = (H0 / scale) * 5;
+  const left = x1 < x2 ? x1 : x2;
+  const top = y1 > y2 ? y1 : y2;
+  const zoomLeft = (left + W1 / 2) - W2 / 2;
+  const zoomRight = zoomLeft + W2;
+  const zoomTop = (top - H1 / 2) + H2 / 2;
+  const zoomBottom = zoomTop - H2;
+  return {zoomLeft: zoomLeft, zoomRight: zoomRight, zoomTop: zoomTop, zoomBottom: zoomBottom};
 }
 
 function checkCursorOnLine(event: any, canvas: any, lines: ILine[]): ILine | null {
