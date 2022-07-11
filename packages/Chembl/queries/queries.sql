@@ -308,14 +308,14 @@ AND t.chembl_id      = @target;
 --connection: Chembl
 --input: string pattern {semType: Substructure}
 --input: int maxRows = 1000
- select molregno,m as smiles from rdk.mols where m@>@pattern
+ select molregno,m as smiles from rdk.mols where m@>@pattern::qmol
  limit @maxRows
 --end
 
 
 --name: @pattern similarity search
 --connection: Chembl
---input: string pattern {semType: Substructure}
+--input: string pattern
 --input: int maxRows = 1000
 select fps.molregno, cs.canonical_smiles as smiles
 from rdk.fps fps
