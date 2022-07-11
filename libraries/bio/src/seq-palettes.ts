@@ -16,8 +16,9 @@ export interface SeqPalette {
 }
 
 export class SeqPaletteBase implements SeqPalette {
-  /** Palette with shades of primary colors
-   */
+  public static undefinedColor = 'rgb(100,100,100)';
+
+  /** Palette with shades of primary colors */
   public static colourPalette: { [key: string]: string[] } = {
     'orange': ['rgb(255,187,120)', 'rgb(245,167,100)', 'rgb(235,137,70)', 'rgb(205, 111, 71)'],
     'all_green': ['rgb(44,160,44)', 'rgb(74,160,74)', 'rgb(23,103,57)', 'rgb(30,110,96)', 'rgb(60,131,95)',
@@ -55,7 +56,7 @@ export class SeqPaletteBase implements SeqPalette {
     return new PaletteType(palette);
   }
 
-  private _palette: { [m: string]: string };
+  private readonly _palette: { [m: string]: string };
 
   constructor(palette: { [m: string]: string }) {
     this._palette = palette;
