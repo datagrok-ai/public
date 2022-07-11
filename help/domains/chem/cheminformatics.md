@@ -41,7 +41,8 @@ Datagrok supplies a researcher with a powerful cheminformatics arsenal, in parti
 
 * _Chemical properties_, _descriptors_, and _fingerprints_ can be extracted on the fly.
 * _Predictive models_, accepting molecular structures as their input, can be trained, assessed, executed, deployed,
-  reused by other scientists, and incorporated in pipelines or [info panels](../../discover/info-panels.md). Predictive models for _toxicity_ and _drug-likeness_ are also supported.
+  reused by other scientists, and incorporated in pipelines or [info panels](../../discover/info-panels.md). Predictive
+  models for _toxicity_ and _drug-likeness_ are also supported.
 * _Substructure and similarity search_ works out-of-the box for the imported data and can efficiently be utilized for
   querying databases with the help of Postgres chemical cartridge.
 * In order to further explore collections of molecules, one can use advanced tools like _diversity search_
@@ -329,7 +330,8 @@ to physical predictive models, machine learning predictive models do not have an
 and biological processes. Instead, they rely on techniques like random forest or deep learning to predict chemical,
 biological and physical properties of novel compounds on the basis of empirical observations of small molecules.
 
-Datagrok supports machine learning [predictive models](../../learn/data-science.md#predictive-modeling), which take chemical
+Datagrok supports machine learning [predictive models](../../learn/data-science.md#predictive-modeling), which take
+chemical
 [properties, descriptors, and fingerprints](#descriptors-and-fingerprints)
 as features, and the observable properties as the predicted outcomes. It lets researchers build models that can be
 trained, assessed, executed, reused by other scientists, and included in pipelines.
