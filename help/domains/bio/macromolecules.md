@@ -191,11 +191,11 @@ user opens a dataset with sequences that resemble peptides, the platform recogni
 specific way in the spreadsheet, and suggests launching an analysis of the dataset. Upon launching, the UI switches to a
 fit-for purpose peptide analysis mode for efficient exploration of the peptide space, allowing the following:
 
-- Interactively filter the dataset based on the monomer, position, or any other attribute
-- Analyze differences in activity distribution for groups of peptides
-- On-the-fly calculation of statistical significance of differences of value distributions between groups
-- Analyze the peptide space (UMAP based on distance, color-coded by activity)
-- Automatically identify most potent monomer/positions
+* Interactively filter the dataset based on the monomer, position, or any other attribute
+* Analyze differences in activity distribution for groups of peptides
+* On-the-fly calculation of statistical significance of differences of value distributions between groups
+* Analyze the peptide space (UMAP based on distance, color-coded by activity)
+* Automatically identify most potent monomer/positions
 
 We are developing tools that account for the steric and surface features of macromolecules, calculations to support the
 knowledge on their properties, homology, toxicity.
