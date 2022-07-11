@@ -135,6 +135,11 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
 //input: dataframe df [Input data table]
 //input: column sequence {semType: Macromolecule}
 export async function toAtomicLevel(df: DG.DataFrame, sequence: DG.Column): Promise<void> {
+  if (DG.Func.find({package: 'Chem', name: 'getRdKitModule'})) {
+    grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
+    return;
+  }
+
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
   const atomicCodes = getMolfilesFromSeq(sequence, monomersLibObject);
@@ -152,7 +157,23 @@ export async function toAtomicLevel(df: DG.DataFrame, sequence: DG.Column): Prom
 //input: dataframe table
 //input: column sequence { semType: Macromolecule }
 //output: column result
-export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<DG.Column> {
+export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<DG.Column | null> {
+  if (col.semType != DG.SEMTYPE.MACROMOLECULE) {
+    grok.shell.warning(`MSA analysis is allowed for semantic type "${DG.SEMTYPE.MACROMOLECULE}" data only.`);
+    return null;
+  }
+  const units: string = col.getTag(DG.TAGS.UNITS);
+  const allowedAlphabets = ['DNA', 'RNA', 'PT'];
+  const allowedNotations = ['fasta'];
+  if (!allowedAlphabets.some((a) => units.toUpperCase().endsWith(a.toUpperCase())) ||
+    !allowedNotations.some((n) => units.toUpperCase().startsWith(n.toUpperCase()))) {
+    grok.shell.warning('MSA analysis is allowed for ' +
+      `notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} ` +
+      'and ' +
+      `alphabet${allowedAlphabets.length > 1 ? 's' : ''} ${allowedAlphabets.map((a) => `"${a}"`).join(', ')}.`);
+    return null;
+  }
+
   const msaCol = await runKalign(col, false);
   table.columns.add(msaCol);
 
@@ -171,16 +192,18 @@ export async function compositionAnalysis(): Promise<void> {
   // Higher priority for columns with MSA data to show with WebLogo.
   const tv = grok.shell.tv;
   const df = tv.dataFrame;
-  const semTypeColList = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
-  let col: DG.Column | undefined = semTypeColList.find((col) => {
-    const units = col.getTag(DG.TAGS.UNITS);
-    return units ? units.indexOf('MSA') !== -1 : false;
-  });
-  if (!col)
-    col = semTypeColList[0];
 
+  const col: DG.Column | null = WebLogo.pickUpSeqCol2(df);
   if (!col) {
     grok.shell.error('Current table does not contain sequences');
+    return;
+  }
+
+  const allowedNotations: string[] = ['fasta', 'separator'];
+  const units = col.getTag(DG.TAGS.UNITS);
+  if (!allowedNotations.some((n) => units.toUpperCase().startsWith(n.toUpperCase()))) {
+    grok.shell.warning('Composition analysis is allowed for ' +
+      `notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')}.`);
     return;
   }
 

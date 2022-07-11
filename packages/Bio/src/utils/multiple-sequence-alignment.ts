@@ -50,9 +50,11 @@ export async function runKalign(srcCol: DG.Column, isAligned = false): Promise<D
 
   await CLI.fs.writeFile('input.fa', fasta);
   const output = await CLI.exec('kalign input.fa -f fasta -o result.fasta');
-  const buf = await CLI.cat('result.fasta');
-
   console.warn(output);
+
+  const buf = await CLI.cat('result.fasta');
+  if (!buf)
+    throw new Error(`kalign output no result`);
 
   const aligned = _fastaToStrings(buf).slice(0, sequences.length);
   const tgtCol = DG.Column.fromStrings(`msa(${srcCol.name})`, aligned);
