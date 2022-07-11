@@ -224,7 +224,7 @@ function parseMacromolecule(
 //name: importFasta
 //description: Opens FASTA file
 //tags: file-handler
-//meta.ext: fasta, fna, ffn, faa, frn, fa
+//meta.ext: fasta, fna, ffn, faa, frn, fa, fst
 //input: string fileContent
 //output: list tables
 export function importFasta(fileContent: string): DG.DataFrame [] {
