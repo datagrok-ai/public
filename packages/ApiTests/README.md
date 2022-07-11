@@ -11,7 +11,7 @@ To add tests for Datagrok's JS API:
   import { category, expect, test } from '@datagrok-libraries/utils/src/test';
   ```
 4. Write some tests
-5. Import your test files in `src/package.ts`
+5. Import your test files in `src/package-test.ts`
 6. Publish the package
 7. Open Datagrok and start the console (`~` or `Windows | Console`)
 8. Launch tests for a category via `ApiTests:test(category="category-name")`, e.g., `ApiTests:test(category="Layouts")`, or a specific test via `ApiTests:test(category="category-name", test="test-name")`, e.g., `ApiTests:test(category="Layouts", test="ViewLayout.toJson()")`, and wait for the results
