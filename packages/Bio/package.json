@@ -2,7 +2,7 @@
   "name": "@datagrok/bio",
   "beta": false,
   "friendlyName": "Bio",
-  "version": "1.5.8",
+  "version": "1.5.9",
   "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
   "repository": {
     "type": "git",

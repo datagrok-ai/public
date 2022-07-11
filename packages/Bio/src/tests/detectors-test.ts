@@ -105,10 +105,11 @@ MWRSWY-CKHP
     fastaCsv = 'fastaCsv',
     fastaFasta = 'fastaFasta',
     msaComplex = 'msaComplex',
-    idCsv = 'idCsv',
-    sarSmallCsv = 'sarSmallCsv',
     helmCsv = 'helmCsv',
+    testIdCsv = 'testIdCsv',
+    testSmilesCsv = 'testSmilesCsv',
     testHelmCsv = 'testHelmCsv',
+    testDemogCsv = 'testDemogCsv',
   }
 
   const samples: { [key: string]: string } = {
@@ -116,10 +117,11 @@ MWRSWY-CKHP
     'fastaCsv': 'System:AppData/Bio/samples/sample_FASTA.csv',
     'fastaFasta': 'System:AppData/Bio/samples/sample_FASTA.fasta',
     'msaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
-    'idCsv': 'System:AppData/Bio/samples/id.csv',
-    'sarSmallCsv': 'System:AppData/Bio/samples/sar-small.csv',
     'helmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
-    'testHelmCsv': 'System:AppData/Bio/samples/sample_testHelm.csv',
+    'testDemogCsv': 'System:AppData/Bio/samples/testDemog.csv',
+    'testIdCsv': 'System:AppData/Bio/samples/id.csv',
+    'testHelmCsv': 'System:AppData/Bio/samples/testHelm.csv',
+    'testSmilesCsv': 'System:AppData/Bio/samples/testSmiles.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -240,11 +242,11 @@ MWRSWY-CKHP
   });
 
   test('samplesIdCsvNegativeID', async () => {
-    await _testNeg(readSamples(Samples.idCsv), 'ID');
+    await _testNeg(readSamples(Samples.testIdCsv), 'ID');
   });
 
   test('samplesSarSmallCsvNegativeSmiles', async () => {
-    await _testNeg(readSamples(Samples.sarSmallCsv), 'smiles');
+    await _testNeg(readSamples(Samples.testSmilesCsv), 'smiles');
   });
 
   test('samplesHelmCsvHELM', async () => {
@@ -277,6 +279,14 @@ MWRSWY-CKHP
   });
   test('samplesTestHelmNegativeSmiles', async () => {
     await _testNeg(readSamples(Samples.testHelmCsv), 'Smiles');
+  });
+
+  test('samplesTestDemogNegativeAll', async () => {
+    const dfFunc: DfReaderFunc = readSamples(Samples.testDemogCsv);
+    const df: DG.DataFrame = await dfFunc();
+
+    for (const col of df.columns.toList())
+      await _testNeg(dfFunc, col.name);
   });
 });
 
