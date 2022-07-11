@@ -17,22 +17,21 @@ macromolecules both on the macro (sequence) level and going all the way down to 
 Datagrok provides well-known algorithms for pairwise alignment as part of the Bio package: Smith-Waterman and
 Needleman-Wunsch. For multiple-sequence alignment, Datagrok uses the “kalign” that relies on Wu-Manber string-matching
 algorithm. It is an open-source tool under GNU GPL, so it can be modified to work with custom substitution matrices for
-sequences of the custom alphabet. For maximum performance and scalability, these algorithms can run 
-either in user’s browser, or server-side.
+sequences of the custom alphabet. For maximum performance and scalability, these algorithms can run either in user’s
+browser, or server-side.
 
 #### Multiple Sequence Alignment
 
 We are planning to utilize "PepSea" tool for analyzing peptide and nucleotide sequences containing non-natural amino
-acids or
-modified nucleotides. It allows for alignment of multiple peptide sequences in HELM notation, with lengths up to 256
-non-natural amino acids. "PepSea" uses a substitution matrix calculated with Rapid Overlay of Chemical Structures
+acids or modified nucleotides. It allows for alignment of multiple peptide sequences in HELM notation, with lengths up
+to 256 non-natural amino acids. "PepSea" uses a substitution matrix calculated with Rapid Overlay of Chemical Structures
 Similarities Across ChEMBL 28 HELM Monomers (779). PepSea can be used as an in-house web service.
 
 ![Interactive alignment right in the spreadsheet with immediate feedback](../../uploads/macromolecules/macromolecules-2.png "Interactive alignment right in the spreadsheet with immediate feedback")
 
-Now MSA analysis is implemented using the `kalign` tool, which is ideally suited for sequences containing only
-natural monomers. Sequences of a particular column can be analyzed using MSA algorithm available at the top menu.
-Aligned sequences can be inspected for base composition at the position of MSA result.
+Now MSA analysis is implemented using the `kalign` tool, which is ideally suited for sequences containing only natural
+monomers. Sequences of a particular column can be analyzed using MSA algorithm available at the top menu. Aligned
+sequences can be inspected for base composition at the position of MSA result.
 
 ![MSA and base composition analysis](../../uploads/macromolecules/macromolecules-msa-and-composition-analysis-800.gif "MSA analysis")
 
@@ -52,37 +51,37 @@ For identifiers that do not fit in a cell, an ellipsis is shown.
 ![Visualize Sequence Alignments](../../uploads/macromolecules/macromolecules-6.png "Visualize Sequence Alignments")
 
 Sequence alignment visualization allows for manually modifying the alignment in the case when automatic alignment result
-is not satisfactory. The composition analysis plot changes interactively, providing a quick indication of how
-good the alignment is.
+is not satisfactory. The composition analysis plot changes interactively, providing a quick indication of how good the
+alignment is.
 
 ![Manual alignment by editing sequence in free text](../../uploads/macromolecules/macromolecules-1.gif "Manual alignment by editing sequence in free text")
 
 ### Utilizing HELM for description, management and visualization of biopolymers, including those with non-natural amino acids or modified nucleotides
 
-Datagrok can ingest data in multiple file formats (such as fasta or csv) and multiple notations for natural and
-modified molecules, aligned and non-aligned forms, nucleotide and amino acid sequences. We support all widely used
-notation systems for molecular representations, and process them in a unified way. The sequences are automatically
-detected and classified, while preserving their initial notation. There are many notations used to store biological
-sequences, such as traditional FASTA (one symbol per monomer) or more complex notations with separators.
-are used. Another approach is to write long monomer name to FASTA with square brackets. Datagrok allows you to
-convert sequences between different notations as well.
+Datagrok can ingest data in multiple file formats (such as fasta or csv) and multiple notations for natural and modified
+molecules, aligned and non-aligned forms, nucleotide and amino acid sequences. We support all widely used notation
+systems for molecular representations, and process them in a unified way. The sequences are automatically detected and
+classified, while preserving their initial notation. There are many notations used to store biological sequences, such
+as traditional FASTA (one symbol per monomer) or more complex notations with separators. are used. Another approach is
+to write long monomer name to FASTA with square brackets. Datagrok allows you to convert sequences between different
+notations as well.
 
 ![Notation converter](../../uploads/macromolecules/macromolecules-notation-converter-800.gif "Notation converter")
 
-HELM perfectly fits the requirements for this kind of unification. If a dataframe contains any sequence data,
-it will be recognized and annotated appropriately.
+HELM perfectly fits the requirements for this kind of unification. If a dataframe contains any sequence data, it will be
+recognized and annotated appropriately.
 
 ![HELM for description](../../uploads/macromolecules/macromolecules-3.png "HELM for description")
 
-Automatic conversion to HELM from other notations occurs when needed. You can get a HELM plot for each
-sequence, with all the monomers included in a graph, even if the original notation was not HELM. Datagrok HELM package
-lets you ingest, auto-detect, visualize, and edit HELM.
+Automatic conversion to HELM from other notations occurs when needed. You can get a HELM plot for each sequence, with
+all the monomers included in a graph, even if the original notation was not HELM. Datagrok HELM package lets you ingest,
+auto-detect, visualize, and edit HELM.
 
 ![Editing Helm](../../uploads/macromolecules/HelmEditor.gif "Editing Helm")
 
-In addition to the HELM core monomer library included with the package, Datagrok supports
-custom monomer libraries. If necessary, it could be combined with privileges (might be important in the 
-enterprise context), letting you specify which groups of people have access to which libraries.
+In addition to the HELM core monomer library included with the package, Datagrok supports custom monomer libraries. If
+necessary, it could be combined with privileges (might be important in the enterprise context), letting you specify
+which groups of people have access to which libraries.
 
 The system could be integrated with a custom monomer library service if needed.
 
@@ -100,12 +99,13 @@ molecules, sequences, or dose-response curves.
 
 We have developed an algorithm to generate the atomic structure of the sequences based on a specific monomer library or
 from natural monomers. Datagrok has two options of reproducing the structure:
-1. Direct generation from HELM using HelmWebEditor, resulting in the unordered molecule graph. 
-2. For linear sequences, the linear form (see the illustration below) of molecules is reproduced. This is useful for better
-visual inspection of sequence and duplex comparison.
 
-This approach could be used for any given case of HELM notation in order to get a visually appropriate form of
-monomers in cycles etc. Structure at atomic level could be saved in available notations.
+1. Direct generation from HELM using HelmWebEditor, resulting in the unordered molecule graph.
+2. For linear sequences, the linear form (see the illustration below) of molecules is reproduced. This is useful for
+   better visual inspection of sequence and duplex comparison.
+
+This approach could be used for any given case of HELM notation in order to get a visually appropriate form of monomers
+in cycles etc. Structure at atomic level could be saved in available notations.
 
 ![Datagrok-generated atom structure for the ATGCATGC sequence](../../uploads/macromolecules/macromolecules-7.png "Datagrok-generated atom structure for the ATGCATGC sequence")
 
@@ -145,8 +145,8 @@ Datagrok reflects all user actions as filtering and selection.
 #### Sequence space
 
 Datagrok allows visualizing multidimensional sequence space using a dimensionality reduction approach. Several
-distance-based dimensionality reduction algorithms are available, such as UMAP or t-SNE. The sequences are projected
-to 2D space closer if they correspond to similar structures, and farther otherwise. The tool for analyzing molecule
+distance-based dimensionality reduction algorithms are available, such as UMAP or t-SNE. The sequences are projected to
+2D space closer if they correspond to similar structures, and farther otherwise. The tool for analyzing molecule
 collections is called 'Sequence space' and exists in the Bio package.
 
 To launch the analysis from the top menu, select *Bio | Sequence space*.
@@ -155,18 +155,17 @@ To launch the analysis from the top menu, select *Bio | Sequence space*.
 
 #### Sequence activity cliffs
 
-Activity cliffs tool finds pairs of sequences where small changes in the sequence yield significant changes in activity or any
-other numerical property. open the tool from a top menu by selecting .
-Similarity cutoff and similarity metric are configurable. As in *Sequence space*, you can select from different
-dimensionality reduction algorithms.
+Activity cliffs tool finds pairs of sequences where small changes in the sequence yield significant changes in activity
+or any other numerical property. open the tool from a top menu by selecting . Similarity cutoff and similarity metric
+are configurable. As in *Sequence space*, you can select from different dimensionality reduction algorithms.
 
-To launch the analysis from the top menu, select *Bio | Sequence Activity Cliffs*. 
+To launch the analysis from the top menu, select *Bio | Sequence Activity Cliffs*.
 
 ![Running activity cliffs](../../uploads/macromolecules/activity_cliffs_open.gif)
 
-After scatter plot is generated, a link with the number of the identified activity cliffs appears in the top right 
-corner. Click on this link to open a dialog with the list of cliffs. Then, click on a particular pair to zoom
-in to it on a scatter plot. Hover a line to see the details on the corresponding sequences and activities.
+After scatter plot is generated, a link with the number of the identified activity cliffs appears in the top right
+corner. Click on this link to open a dialog with the list of cliffs. Then, click on a particular pair to zoom in to it
+on a scatter plot. Hover a line to see the details on the corresponding sequences and activities.
 
 ![Cliffs table](../../uploads/macromolecules/cliffs_table_open.gif)
 
@@ -212,14 +211,16 @@ cheminformatics-specific ones, such as chemprop), it is easy to connect to exter
 as web services. Two big pharmaceutical companies have already done that.
 
 The integration could be done in a several ways:
+
 * Automatic ingestion of the [OpenAPI/Swagger](../../access/open-api.md) service definition
 * Developing a wrapper [function](../../compute/compute.md) in JavaScript, Python, R, or Matlab
 
 Once a model is converted to a Datagrok function, there are multiple ways to expose it to users:
+
 * Develop a Datagrok application that would orchestrate everything (such as the “sketch-to-predict” interactive app)
 * Leverage Datagrok’s [data augmentation](../../discover/data-augmentation.md). For instance, in this case, a user will
-see the predictions when he clicks on a cell containing the macromolecule (similarly to
-how [predictions and information panels for small molecules](../../discover/data-augmentation.md#info-panels)
+  see the predictions when he clicks on a cell containing the macromolecule (similarly to
+  how [predictions and information panels for small molecules](../../discover/data-augmentation.md#info-panels)
 
 See also: [Scientific computing in Datagrok](https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md)
 
