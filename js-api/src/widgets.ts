@@ -1036,8 +1036,8 @@ export class InputBase<T = any> {
   }
 
   /** Sets the tooltip */
-  setTooltip(msg: string): void {
-    api.grok_InputBase_SetTooltip(this.dart, msg);
+  setTooltip(msg: string, tooltipCheck: (() => boolean) | null = null): void {
+    api.grok_InputBase_SetTooltip(this.dart, msg, tooltipCheck);
   };
 }
 
