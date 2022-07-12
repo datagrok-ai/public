@@ -58,10 +58,13 @@ function printLeftOrCentered(
     x: number, y: number, w: number, h: number,
     g: CanvasRenderingContext2D, s: string, color = undefinedColor,
     pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
-    separator: string = ''): number {
+    separator: string = '', last:boolean = false): number {
   g.textAlign = 'start';
   let colorPart = s.substring(0);
   let grayPart = separator;
+  if (last) {
+    grayPart = '';
+  }
   const textSize = g.measureText(colorPart + grayPart);
   const indent = 5;
 
@@ -162,7 +165,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       subParts.forEach((amino, index) => {
         color = palette.get(amino);
         g.fillStyle = undefinedColor;
-        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, false, 1.0, separator);
+        let last = false;
+        if (index === subParts.length - 1) {
+          last = true;
+        }
+        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, false, 1.0, separator, last);
       });
 
       g.restore();
