@@ -21,6 +21,8 @@ import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {Column} from 'datagrok-api/dg';
 import {SEM_TYPES} from './utils/constants';
+import { delay } from '@datagrok-libraries/utils/src/test';
+import { TableView } from 'datagrok-api/dg';
 
 //tags: init
 export async function initBio(): Promise<void> {
@@ -173,6 +175,21 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   if (!checkInputColumn(macroMolecule, 'To Atomic Level'))
     return;
 
+  let currentView: TableView;
+  for (let view of grok.shell.tableViews) {
+    if (df.name === view.name) {
+      currentView = view;
+    }
+  }
+  const file = await _package.files.readAsText('samples/sar-small.csv');
+  const df2 = DG.DataFrame.fromCsv(file);
+  const v = grok.shell.addTableView(df2);
+  setTimeout(()=> {
+    grok.shell.closeTable(df2);
+    v.close();
+    grok.shell.v = currentView;
+  }, 100);
+  
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
   const atomicCodes = getMolfilesFromSeq(macroMolecule, monomersLibObject);
@@ -181,7 +198,8 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   const col = DG.Column.fromStrings('regenerated', result);
   col.semType = DG.SEMTYPE.MOLECULE;
   col.tags[DG.TAGS.UNITS] = 'molblock';
-  df.columns.add(col);
+  df.columns.add(col, true);
+
 }
 
 
