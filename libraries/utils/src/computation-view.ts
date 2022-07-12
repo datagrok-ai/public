@@ -47,6 +47,11 @@ export class ComputationView extends FunctionView {
     }
   }
 
+  /** Override to customize getting mocks
+    * @stability Experimental
+  */
+  getMocks: ({mockName: string, action: () => Promise<void>}[]) | null = null;
+
   /** Override to customize getting help feature
     * @stability Stable
   */
@@ -64,9 +69,20 @@ export class ComputationView extends FunctionView {
   override buildRibbonMenu() {
     super.buildRibbonMenu();
 
-    if (!this.exportConfig && !this.reportBug && !this.getHelp) return;
+    if (!this.exportConfig && !this.reportBug && !this.getHelp && !this.getMocks) return;
 
     const ribbonMenu = this.ribbonMenu.group('Model');
+
+    if (this.getMocks && this.getMocks.length > 0) {
+      const dataGroup = ribbonMenu
+        .group('Input data mocks');
+
+      this.getMocks.forEach((val) => {
+        dataGroup.item(val.mockName, val.action);
+      });
+
+      ribbonMenu.endGroup();
+    }
 
     if (this.exportConfig && this.exportConfig.supportedFormats.length > 0) {
       ribbonMenu
