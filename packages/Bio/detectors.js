@@ -172,7 +172,7 @@ class BioPackageDetectors extends DG.Package {
    * @param freq       frequencies of monomers in sequence set
    * @param candidates  an array of pairs [name, monomer set]
    * */
-  static detectAlphabet(freq, candidates, gapSymbol, cut = 0.65) {
+  static detectAlphabet(freq, candidates, gapSymbol, cut = 0.55) {
     const candidatesSims = candidates.map((c) => {
       const sim = BioPackageDetectors.getAlphabetSimilarity(freq, c[1], gapSymbol);
       return [c[0], c[1], freq, sim];

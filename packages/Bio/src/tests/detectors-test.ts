@@ -104,6 +104,7 @@ MWRSWY-CKHP
     peptidesComplex = 'peptidesComplex',
     fastaCsv = 'fastaCsv',
     fastaFasta = 'fastaFasta',
+    fastaPtCsv = 'fastaPtCsv',
     msaComplex = 'msaComplex',
     helmCsv = 'helmCsv',
     testDemogCsv = 'testDemogCsv',
@@ -117,6 +118,7 @@ MWRSWY-CKHP
     'peptidesComplex': 'System:AppData/Bio/samples/peptides_complex_msa.csv',
     'fastaCsv': 'System:AppData/Bio/samples/sample_FASTA.csv',
     'fastaFasta': 'System:AppData/Bio/samples/sample_FASTA.fasta',
+    'fastaPtCsv': 'System:AppData/Bio/samples/sample_FASTA_PT.csv',
     'msaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
     'helmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
     'testDemogCsv': 'System:AppData/Bio/samples/testDemog.csv',
@@ -293,6 +295,10 @@ MWRSWY-CKHP
 
   test('samplesTestSmiles2NegativeSmiles', async () => {
     await _testNeg(readSamples(Samples.testSmiles2Csv), 'SMILES');
+  });
+
+  test('samplesFastaPtPosSequence', async () => {
+    await (_testPos(readSamples(Samples.fastaPtCsv), 'sequence', 'fasta:SEQ:PT'));
   });
 });
 
