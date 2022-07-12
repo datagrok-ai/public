@@ -1,32 +1,36 @@
-import * as C from "./constants";
+import * as C from './constants';
 import * as DG from 'datagrok-api/dg';
-import {AminoacidsPalettes} from "@datagrok-libraries/bio/src/aminoacids";
-import {NucleotidesPalettes} from "@datagrok-libraries/bio/src/nucleotides";
-import {UnknownSeqPalettes} from "@datagrok-libraries/bio/src/unknown";
-import {SplitterFunc, WebLogo} from "@datagrok-libraries/bio/src/viewers/web-logo";
-import {SeqPalette} from "@datagrok-libraries/bio/src/seq-palettes";
+import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
+import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
+import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
+import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as ui from 'datagrok-api/ui';
 
 const lru = new DG.LruCache<any, any>();
-const undefinedColor =  'rgb(100,100,100)';
+const undefinedColor = 'rgb(100,100,100)';
 
-function getPalleteByType(paletteType: string): SeqPalette  {
+function getPalleteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
-    case 'PT':
-      return  AminoacidsPalettes.GrokGroups;
-    case 'NT':
-      return  NucleotidesPalettes.Chromatogram
-      // other
-    default:
-      return UnknownSeqPalettes.Color;
+  case 'PT':
+    return AminoacidsPalettes.GrokGroups;
+  case 'NT':
+    return NucleotidesPalettes.Chromatogram;
+  case 'DNA':
+    return NucleotidesPalettes.Chromatogram;
+  case 'RNA':
+    return NucleotidesPalettes.Chromatogram;
+    // other
+  default:
+    return UnknownSeqPalettes.Color;
   }
 }
 
 export function processSequence(subParts: string[]): [string[], boolean] {
   const simplified = !subParts.some((amino, index) =>
-      amino.length > 1 &&
-      index != 0 &&
-      index != subParts.length - 1);
+    amino.length > 1 &&
+    index != 0 &&
+    index != subParts.length - 1);
 
   const text: string[] = [];
   const gap = simplified ? '' : ' ';
@@ -38,6 +42,7 @@ export function processSequence(subParts: string[]): [string[], boolean] {
   });
   return [text, simplified];
 }
+
 /**
  * A function that prints a string aligned to left or centered.
  *
@@ -55,10 +60,10 @@ export function processSequence(subParts: string[]): [string[], boolean] {
  * @return {number} x coordinate to start printing at.
  */
 function printLeftOrCentered(
-    x: number, y: number, w: number, h: number,
-    g: CanvasRenderingContext2D, s: string, color = undefinedColor,
-    pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
-    separator: string = '', last:boolean = false): number {
+  x: number, y: number, w: number, h: number,
+  g: CanvasRenderingContext2D, s: string, color = undefinedColor,
+  pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
+  separator: string = '', last: boolean = false): number {
   g.textAlign = 'start';
   let colorPart = s.substring(0);
   let grayPart = separator;
@@ -113,19 +118,19 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
    * @memberof AlignedSequenceCellRenderer
    */
   render(
-      g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-      cellStyle: DG.GridCellStyle,
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
+    cellStyle: DG.GridCellStyle,
   ): void {
     const grid = gridCell.grid;
     const cell = gridCell.cell;
     const tag = gridCell.cell.column.getTag(DG.TAGS.UNITS);
     if (tag === 'HELM') {
-      let host = ui.div([], { style: { width: `${w}px`, height: `${h}px`}});
+      let host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
       host.setAttribute('dataformat', 'helm');
       host.setAttribute('data', gridCell.cell.value);
       gridCell.element = host;
       //@ts-ignore
-      var canvas = new JSDraw2.Editor(host, { width: w, height: h, skin: "w8", viewonly: true });
+      var canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
       var formula = canvas.getFormula(true);
       if (!formula) {
         gridCell.element = ui.divText(gridCell.cell.value, {style: {color: 'red'}});
@@ -138,7 +143,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         lru.set(gridCell.cell.value, result);
       }
     } else {
-      const [type, subtype, paletteType] =  gridCell.cell.column.getTag(DG.TAGS.UNITS).split(":");
+      const [type, subtype, paletteType] = gridCell.cell.column.getTag(DG.TAGS.UNITS).split(':');
       w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
       g.save();
       g.beginPath();
@@ -154,9 +159,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const palette = getPalleteByType(paletteType);
 
       const separator = gridCell.cell.column.getTag('separator') ?? '';
-      const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator') );// splitter,
+      const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator'));// splitter,
 
-      const subParts:string[] =  splitterFunc(cell.value);
+      const subParts: string[] = splitterFunc(cell.value);
       // console.log(subParts);
 
       const textSize = g.measureText(subParts.join(''));
