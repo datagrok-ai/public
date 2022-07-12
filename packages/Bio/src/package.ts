@@ -19,6 +19,8 @@ import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cl
 import {getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
+import { Column } from 'datagrok-api/dg';
+import { SEM_TYPES } from './utils/constants';
 
 //tags: init
 export async function initBio(): Promise<void> {
@@ -38,6 +40,28 @@ export function macromoleculeSequenceCellRenderer(): MacromoleculeSequenceCellRe
   return new MacromoleculeSequenceCellRenderer();
 }
 
+function checkInputColumn(col: DG.Column, name: string, 
+                          allowedNotations: string[] = [], allowedAlphabets: string[] = []): boolean {
+  const units: string = col.getTag(DG.TAGS.UNITS);
+  if(col.semType !== DG.SEMTYPE.MACROMOLECULE) {
+    grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
+    return false;
+  } else if ((allowedAlphabets.length > 0 && 
+              !allowedAlphabets.some((a) => units.toUpperCase().endsWith(a.toUpperCase()))) ||
+             (allowedNotations.length > 0 && 
+              !allowedNotations.some((n) => units.toUpperCase().startsWith(n.toUpperCase())))) {
+    
+    const notationAdd = allowedNotations.length == 0 ? 'any notation' : 
+    (`notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} `);
+    const alphabetAdd = allowedNotations.length == 0 ? 'any alphabet' : 
+    (`alphabet${allowedAlphabets.length > 1 ? 's' : ''} ${allowedAlphabets.map((a) => `"${a}"`).join(', ')}.`);
+    
+    grok.shell.warning(name + ' analysis is allowed for Macromolecules with ' + notationAdd + ' and ' + alphabetAdd);
+    return false;
+  }
+
+  return true;
+}
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -73,20 +97,24 @@ export function vdRegionViewer() {
 //name: Sequence Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
-//input: column sequence {semType: Macromolecule}
+//input: column macroMolecule {semType: Macromolecule}
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
-export async function activityCliffs(df: DG.DataFrame, sequence: DG.Column, activities: DG.Column,
+export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
   similarity: number, methodName: string): Promise<void> {
+
+  if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
+    return;
+
   const axesNames = getEmbeddingColsNames(df);
   const options = {
     'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
   };
-  const units = sequence!.tags[DG.TAGS.UNITS];
+  const units = macroMolecule!.tags[DG.TAGS.UNITS];
   await getActivityCliffs(
     df,
-    sequence,
+    macroMolecule,
     axesNames,
     'Activity cliffs',
     activities,
@@ -110,6 +138,9 @@ export async function activityCliffs(df: DG.DataFrame, sequence: DG.Column, acti
 //input: bool plotEmbeddings = true
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
   similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<void> {
+  if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
+    return;
+  
   const embedColsNames = getEmbeddingColsNames(table);
   const chemSpaceParams = {
     seqCol: macroMolecule,
@@ -133,16 +164,18 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
 //name: To Atomic Level
 //description: returns molfiles for each monomer from HELM library
 //input: dataframe df [Input data table]
-//input: column sequence {semType: Macromolecule}
-export async function toAtomicLevel(df: DG.DataFrame, sequence: DG.Column): Promise<void> {
+//input: column macroMolecule {semType: Macromolecule}
+export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
   if (DG.Func.find({package: 'Chem', name: 'getRdKitModule'}).length === 0) {
     grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
     return;
   }
+  if (!checkInputColumn(macroMolecule, 'To Atomic Level'))
+    return;
 
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-  const atomicCodes = getMolfilesFromSeq(sequence, monomersLibObject);
+  const atomicCodes = getMolfilesFromSeq(macroMolecule, monomersLibObject);
   const result = await getMacroMol(atomicCodes!);
 
   const col = DG.Column.fromStrings('regenerated', result);
@@ -158,21 +191,8 @@ export async function toAtomicLevel(df: DG.DataFrame, sequence: DG.Column): Prom
 //input: column sequence { semType: Macromolecule }
 //output: column result
 export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<DG.Column | null> {
-  if (col.semType != DG.SEMTYPE.MACROMOLECULE) {
-    grok.shell.warning(`MSA analysis is allowed for semantic type "${DG.SEMTYPE.MACROMOLECULE}" data only.`);
+  if (!checkInputColumn(col, 'MSA', ['fasta'], ['DNA', 'RNA', 'PT']))
     return null;
-  }
-  const units: string = col.getTag(DG.TAGS.UNITS);
-  const allowedAlphabets = ['DNA', 'RNA', 'PT'];
-  const allowedNotations = ['fasta'];
-  if (!allowedAlphabets.some((a) => units.toUpperCase().endsWith(a.toUpperCase())) ||
-    !allowedNotations.some((n) => units.toUpperCase().startsWith(n.toUpperCase()))) {
-    grok.shell.warning('MSA analysis is allowed for ' +
-      `notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} ` +
-      'and ' +
-      `alphabet${allowedAlphabets.length > 1 ? 's' : ''} ${allowedAlphabets.map((a) => `"${a}"`).join(', ')}.`);
-    return null;
-  }
 
   const msaCol = await runKalign(col, false);
   table.columns.add(msaCol);
@@ -198,6 +218,9 @@ export async function compositionAnalysis(): Promise<void> {
     grok.shell.error('Current table does not contain sequences');
     return;
   }
+
+  if (!checkInputColumn(col, 'Composition'))
+    return;
 
   const allowedNotations: string[] = ['fasta', 'separator'];
   const units = col.getTag(DG.TAGS.UNITS);
