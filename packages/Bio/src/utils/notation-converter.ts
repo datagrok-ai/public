@@ -52,7 +52,11 @@ export class NotationConverter {
       return NOTATION.HELM;
   }
 
-  // TODO: docstring
+  /**
+   * Determine the separator used in SEPARATOR column
+   *
+   * @return {string} The detected separator
+   */
   private determineSeparator(): string {
   //   TODO: figure out how to determine the separator efficiently
     const col = this.sourceColumn;
@@ -94,13 +98,13 @@ export class NotationConverter {
     if (this.toFasta(targetNotation)) {
       newColumn.setTag(
         DG.TAGS.CELL_RENDERER,
-        this.sourceColumn.tags[DG.TAGS.CELL_RENDERER]);
+        'Macromolecule');
     }
     return newColumn;
   }
 
   /**
-   * Method for conversion from FASTA to SEPARATOR
+   * Convert a Macromolecule column from FASTA to SEPARATOR notation
    *
    * @param {string} separator  A specific separator to be used
    * @param {string} gapSymbol  Gap symbol in FASTA, '-' by default
@@ -124,25 +128,32 @@ export class NotationConverter {
     return newColumn;
   }
 
-  // TODO: doc
+  /**
+   * Convert a Macromolecule column from FASTA to HELM
+   *
+   * @param {string} fastaGapSymbol   Optional fasta gap symbol
+   * @param {string} helmGapSymbol    Optional helm gap symbol
+   * @return {DG.Column}              A new column in HELM notation
+   */
   private convertFastaToHelm(
     fastaGapSymbol: string = '-',
     helmGapSymbol: string = '*'
   ): DG.Column {
     // a function splitting FASTA sequence into an array of monomers
     const splitterAsFasta = WebLogo.splitterAsFasta;
+
     const prefix = (this.isDna()) ? 'DNA1{' :
       (this.isRna()) ? 'RNA1{' :
         (this.isPeptide()) ? 'PEPTIDE1{' :
-          'Unknown'; // this case should be handled as exception
+          'Unknown'; // this case should be handled as exceptional
 
     if (prefix === 'Unknown')
       throw new Error('Neither peptide, nor nucleotide');
 
     const postfix = '}$$$';
-    const wrapperLeft = (this.isDna()) ? 'D(' :
+    const leftWrapper = (this.isDna()) ? 'D(' :
       (this.isRna()) ? 'R(' : ''; // no wrapper for peptides
-    const wrapperRight = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides
+    const rightWrapper = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides
 
     const newColumn = this.getNewColumn(NOTATION.HELM);
     // assign the values to the empty column
@@ -157,7 +168,7 @@ export class NotationConverter {
           helmArray.push(helmGapSymbol);
         } else {
           const dot = firstIteration ? '' : '.';
-          const item = [dot, wrapperLeft, fastaMonomersArray[i], wrapperRight];
+          const item = [dot, leftWrapper, fastaMonomersArray[i], rightWrapper];
           helmArray.push(item.join(''));
         }
         firstIteration = false;
@@ -213,11 +224,18 @@ export class NotationConverter {
       const separatorItemsArray = splitterAsSeparator(separatorPolymer);
       const fastaMonomersArray : string[] = [];
       for (let i = 0; i < separatorItemsArray.length; i++) {
-        this.handleSeparatorItemForFasta(
-          i, separatorItemsArray, separator!, gapSymbol, fastaMonomersArray
-        );
+        const item = separatorItemsArray[i];
+        if (item.length === 0) {
+          fastaMonomersArray.push(gapSymbol);
+        } else if (item.length > 1) {
+          // the case of a multi-character monomer
+          const monomer = '[' + item + ']';
+          fastaMonomersArray.push(monomer);
+        } else {
+          fastaMonomersArray.push(item);
+        }
       }
-      return separatorItemsArray.join('');
+      return fastaMonomersArray.join('');
     });
     return newColumn;
   }
@@ -237,8 +255,12 @@ export class NotationConverter {
     return this.getNewColumn(NOTATION.SEPARATOR);
   }
 
-  /** Dispatcher method for notation conversion */
-  // TODO: write the bodies of converter methods
+  /** Dispatcher method for notation conversion
+   *
+   * @param {NOTATION} targetNotation   Notation we want to convert to
+   * @param {string | null} separator   Possible separator
+   * @return {DG.Column}                Converted column
+   */
   public convert(targetNotation: NOTATION, separator: string | null = null): DG.Column {
     // possible exceptions
     if (this.sourceNotation === targetNotation)
@@ -247,10 +269,7 @@ export class NotationConverter {
       separator === null)
       throw new Error('Separator is not specified');
 
-    if (
-      this.isFasta() &&
-      this.toSeparator(targetNotation) &&
-      separator !== null)
+    if (this.isFasta() && this.toSeparator(targetNotation) && separator !== null)
       return this.convertFastaToSeparator(separator);
     else if (this.isFasta() && this.toHelm(targetNotation))
       return this.convertFastaToHelm();
