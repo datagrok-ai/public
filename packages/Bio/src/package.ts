@@ -19,8 +19,8 @@ import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cl
 import {getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
-import { Column } from 'datagrok-api/dg';
-import { SEM_TYPES } from './utils/constants';
+import {Column} from 'datagrok-api/dg';
+import {SEM_TYPES} from './utils/constants';
 
 //tags: init
 export async function initBio(): Promise<void> {
@@ -40,22 +40,23 @@ export function macromoleculeSequenceCellRenderer(): MacromoleculeSequenceCellRe
   return new MacromoleculeSequenceCellRenderer();
 }
 
-function checkInputColumn(col: DG.Column, name: string, 
-                          allowedNotations: string[] = [], allowedAlphabets: string[] = []): boolean {
+function checkInputColumn(col: DG.Column, name: string,
+  allowedNotations: string[] = [], allowedAlphabets: string[] = []): boolean {
   const units: string = col.getTag(DG.TAGS.UNITS);
-  if(col.semType !== DG.SEMTYPE.MACROMOLECULE) {
+  if (col.semType !== DG.SEMTYPE.MACROMOLECULE) {
     grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
     return false;
-  } else if ((allowedAlphabets.length > 0 && 
-              !allowedAlphabets.some((a) => units.toUpperCase().endsWith(a.toUpperCase()))) ||
-             (allowedNotations.length > 0 && 
-              !allowedNotations.some((n) => units.toUpperCase().startsWith(n.toUpperCase())))) {
-    
-    const notationAdd = allowedNotations.length == 0 ? 'any notation' : 
-    (`notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} `);
-    const alphabetAdd = allowedNotations.length == 0 ? 'any alphabet' : 
-    (`alphabet${allowedAlphabets.length > 1 ? 's' : ''} ${allowedAlphabets.map((a) => `"${a}"`).join(', ')}.`);
-    
+  } else if (
+    (allowedAlphabets.length > 0 &&
+      !allowedAlphabets.some((a) => units.toUpperCase().endsWith(a.toUpperCase()))) ||
+    (allowedNotations.length > 0 &&
+      !allowedNotations.some((n) => units.toUpperCase().startsWith(n.toUpperCase())))
+  ) {
+    const notationAdd = allowedNotations.length == 0 ? 'any notation' :
+      (`notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} `);
+    const alphabetAdd = allowedNotations.length == 0 ? 'any alphabet' :
+      (`alphabet${allowedAlphabets.length > 1 ? 's' : ''} ${allowedAlphabets.map((a) => `"${a}"`).join(', ')}.`);
+
     grok.shell.warning(name + ' analysis is allowed for Macromolecules with ' + notationAdd + ' and ' + alphabetAdd);
     return false;
   }
@@ -103,7 +104,6 @@ export function vdRegionViewer() {
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
   similarity: number, methodName: string): Promise<void> {
-
   if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
     return;
 
@@ -140,7 +140,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<void> {
   if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
     return;
-  
+
   const embedColsNames = getEmbeddingColsNames(table);
   const chemSpaceParams = {
     seqCol: macroMolecule,

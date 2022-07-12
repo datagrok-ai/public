@@ -44,7 +44,7 @@ PEPTIDE1{M.K.P.S.E.Y.V}$$$
 ACGTC
 CAGTGT
 TTCAAC
-    `,
+`,
     separatorDna: `seq
 A/C/G/T/C
 C/A/G/T/G/T
@@ -59,7 +59,7 @@ DNA1{D(T)P.D(T)P.D(C)P.D(A)P.D(A)P.D(C)P}$$$
 ACGUC
 CAGUGU
 UUCAAC
-    `,
+`,
     separatorRna: `seq
 A*C*G*U*C
 C*A*G*U*G*U
@@ -90,10 +90,10 @@ RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$
     return _csvDfs[key];
   };
 
-  function converter(tgtNotation: NOTATION, separator: string | null = null): ConverterFunc {
+  function converter(tgtNotation: NOTATION, tgtSeparator: string | null = null): ConverterFunc {
     return function(srcCol: DG.Column): DG.Column {
       const converter = new NotationConverter(srcCol);
-      const resCol = converter.convert(NOTATION.SEPARATOR, separator);
+      const resCol = converter.convert(tgtNotation, tgtSeparator);
       return resCol;
     };
   };
@@ -127,7 +127,7 @@ RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$
     await _testConvert(Samples.fastaDna, converter(NOTATION.HELM), Samples.helmDna);
   });
   test('testFastaRnaToHelm', async () => {
-    await _testConvert(Samples.fastaDna, converter(NOTATION.HELM), Samples.helmRna);
+    await _testConvert(Samples.fastaRna, converter(NOTATION.HELM), Samples.helmRna);
   });
 
   test('testSeparatorPtToFasta', async () => {
@@ -136,15 +136,15 @@ RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$
   test('testSeparatorDnaToFasta', async () => {
     await _testConvert(Samples.separatorDna, converter(NOTATION.FASTA), Samples.fastaDna);
   });
-  test('testSeparatorDnaToFasta', async () => {
+  test('testSeparatorRnaToFasta', async () => {
     await _testConvert(Samples.separatorRna, converter(NOTATION.FASTA), Samples.fastaRna);
   });
 
   test('testSeparatorPtToHelm', async () => {
-    await _testConvert(Samples.separatorRna, converter(NOTATION.HELM), Samples.helmPt);
+    await _testConvert(Samples.separatorPt, converter(NOTATION.HELM), Samples.helmPt);
   });
   test('testSeparatorDnaToHelm', async () => {
-    await _testConvert(Samples.separatorRna, converter(NOTATION.HELM), Samples.helmDna);
+    await _testConvert(Samples.separatorDna, converter(NOTATION.HELM), Samples.helmDna);
   });
   test('testSeparatorRnaToHelm', async () => {
     await _testConvert(Samples.separatorRna, converter(NOTATION.HELM), Samples.helmRna);

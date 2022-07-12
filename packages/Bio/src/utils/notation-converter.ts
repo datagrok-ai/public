@@ -58,7 +58,7 @@ export class NotationConverter {
    * @return {string} The detected separator
    */
   private determineSeparator(): string {
-  //   TODO: figure out how to determine the separator efficiently
+    //   TODO: figure out how to determine the separator efficiently
     const col = this.sourceColumn;
     let i = 0;
     const re = /[^a-z]/;
@@ -210,19 +210,20 @@ export class NotationConverter {
     // conversion
     // * consider automatic determining the separator
 
-    if (separator === null)
-      separator = this.determineSeparator();
+    // if (separator === null)
+    //   separator = this.determineSeparator();
 
     // a function splitting FASTA sequence into an array of monomers
-    const splitterAsSeparator = WebLogo.getSplitterWithSeparator(separator);
+    //const splitterAsSeparator = WebLogo.getSplitterWithSeparator(separator);
+    const splitter = WebLogo.getSplitterForColumn(this._sourceColumn);
 
     const newColumn = this.getNewColumn(NOTATION.FASTA);
     // assign the values to the empty column
     newColumn.init((idx: number) => {
       const separatorPolymer = this.sourceColumn.get(idx);
       // items can be monomers or separators
-      const separatorItemsArray = splitterAsSeparator(separatorPolymer);
-      const fastaMonomersArray : string[] = [];
+      const separatorItemsArray = splitter(separatorPolymer);
+      const fastaMonomersArray: string[] = [];
       for (let i = 0; i < separatorItemsArray.length; i++) {
         const item = separatorItemsArray[i];
         if (item.length === 0) {
@@ -240,9 +241,45 @@ export class NotationConverter {
     return newColumn;
   }
 
-  private convertSeparatorToHelm(): DG.Column {
-    // TODO: implementation
-    return this.getNewColumn(NOTATION.HELM);
+  private convertSeparatorToHelm(fastaGapSymbol: string = '-', helmGapSymbol: string = '*'): DG.Column {
+    // a function splitting FASTA sequence into an array of monomers
+    const splitter = WebLogo.getSplitterForColumn(this._sourceColumn);
+
+    const prefix = (this.isDna()) ? 'DNA1{' :
+      (this.isRna()) ? 'RNA1{' :
+        (this.isPeptide()) ? 'PEPTIDE1{' :
+          'Unknown'; // this case should be handled as exceptional
+
+    if (prefix === 'Unknown')
+      throw new Error('Neither peptide, nor nucleotide');
+
+    const postfix = '}$$$';
+    const leftWrapper = (this.isDna()) ? 'D(' :
+      (this.isRna()) ? 'R(' : ''; // no wrapper for peptides
+    const rightWrapper = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides
+
+    const newColumn = this.getNewColumn(NOTATION.HELM);
+    // assign the values to the empty column
+    newColumn.init((idx: number) => {
+      const fastaPolymer = this.sourceColumn.get(idx);
+      const fastaMonomersArray = splitter(fastaPolymer);
+      const helmArray = [prefix];
+      let firstIteration = true;
+      for (let i = 0; i < fastaMonomersArray.length; i++) {
+        if (fastaMonomersArray[i] === fastaGapSymbol) {
+          // TODO: verify the correctness of gap symbols handling
+          helmArray.push(helmGapSymbol);
+        } else {
+          const dot = firstIteration ? '' : '.';
+          const item = [dot, leftWrapper, fastaMonomersArray[i], rightWrapper];
+          helmArray.push(item.join(''));
+        }
+        firstIteration = false;
+      }
+      helmArray.push(postfix);
+      return helmArray.join('');
+    });
+    return newColumn;
   }
 
   private convertHelmToFasta(): DG.Column {
@@ -258,23 +295,22 @@ export class NotationConverter {
   /** Dispatcher method for notation conversion
    *
    * @param {NOTATION} targetNotation   Notation we want to convert to
-   * @param {string | null} separator   Possible separator
+   * @param {string | null} tgtSeparator   Possible separator
    * @return {DG.Column}                Converted column
    */
-  public convert(targetNotation: NOTATION, separator: string | null = null): DG.Column {
+  public convert(targetNotation: NOTATION, tgtSeparator: string | null = null): DG.Column {
     // possible exceptions
     if (this.sourceNotation === targetNotation)
       throw new Error('Target notation is invalid');
-    if ((this.isSeparator() || this.toSeparator(targetNotation)) &&
-      separator === null)
-      throw new Error('Separator is not specified');
+    if (this.toSeparator(targetNotation) && tgtSeparator === null)
+      throw new Error('Target separator is not specified');
 
-    if (this.isFasta() && this.toSeparator(targetNotation) && separator !== null)
-      return this.convertFastaToSeparator(separator);
+    if (this.isFasta() && this.toSeparator(targetNotation) && tgtSeparator !== null)
+      return this.convertFastaToSeparator(tgtSeparator);
     else if (this.isFasta() && this.toHelm(targetNotation))
       return this.convertFastaToHelm();
     else if (this.isSeparator() && this.toFasta(targetNotation))
-      return this.convertSeparatorToFasta(separator!);
+      return this.convertSeparatorToFasta(tgtSeparator!);
     else if (this.isSeparator() && this.toHelm(targetNotation))
       return this.convertSeparatorToHelm();
     else if (this.isHelm() && this.toFasta(targetNotation))
