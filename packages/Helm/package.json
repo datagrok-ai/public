@@ -8,7 +8,7 @@
 		"datagrok-api": "latest",
 		"cash-dom": "latest",
 		"dayjs": "latest",
-		"@datagrok-libraries/utils": "latest"
+		"@datagrok-libraries/utils": "latest <1.2.0"
 	},
 	"sources": [
 		"css/helm.css",
