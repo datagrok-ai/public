@@ -135,7 +135,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
 //input: dataframe df [Input data table]
 //input: column sequence {semType: Macromolecule}
 export async function toAtomicLevel(df: DG.DataFrame, sequence: DG.Column): Promise<void> {
-  if (DG.Func.find({package: 'Chem', name: 'getRdKitModule'})) {
+  if (DG.Func.find({package: 'Chem', name: 'getRdKitModule'}).length === 0) {
     grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
     return;
   }
