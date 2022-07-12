@@ -52,6 +52,11 @@ export class ComputationView extends FunctionView {
   */
   getMocks: ({mockName: string, action: () => Promise<void>}[]) | null = null;
 
+  /** Override to customize getting templates
+    * @stability Experimental
+  */
+  getTemplates: ({name: string, action: () => Promise<void>}[]) | null = null;
+
   /** Override to customize getting help feature
     * @stability Stable
   */
@@ -82,6 +87,18 @@ export class ComputationView extends FunctionView {
       });
 
       ribbonMenu.endGroup();
+    }
+
+    if (this.getTemplates && this.getTemplates.length > 0) {
+      if (this.getTemplates.length === 1) {
+        ribbonMenu.item('Input data template', this.getTemplates[0].action);
+      } else {
+        const dataGroup = ribbonMenu.group('Input data templates');
+        this.getTemplates.forEach((val) => {
+          dataGroup.item(val.name, val.action);
+        });
+        ribbonMenu.endGroup();
+      }
     }
 
     if (this.exportConfig && this.exportConfig.supportedFormats.length > 0) {
