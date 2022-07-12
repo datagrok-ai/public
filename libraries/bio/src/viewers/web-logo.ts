@@ -647,7 +647,7 @@ export class WebLogo extends DG.JsViewer {
     const alphabetCandidatesSim: number[] = alphabetCandidates
       .map((c) => WebLogo.getAlphabetSimilarity(stats.freq, c[0]));
     const maxCos = Math.max(...alphabetCandidatesSim);
-    if (maxCos > 0.65)
+    if (maxCos > 0.55)
       res = alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][1];
     else
       res = UnknownSeqPalettes.Color;
@@ -759,6 +759,16 @@ export class WebLogo extends DG.JsViewer {
     return res;
   }
 
+  private static helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
+
+  public static splitterAsHelm(seq: any) {
+    const ea: RegExpExecArray | null = WebLogo.helmRe.exec(seq.toString());
+    const inSeq: string | null = ea ? ea[2] : null;
+
+    const res: string[] = inSeq ? inSeq.split('.') : [];
+    return res;
+  }
+
   /** Gets method to split sequence by separator
    * @param {string} separator
    * @return {SplitterFunc}
@@ -779,10 +789,8 @@ export class WebLogo extends DG.JsViewer {
       return WebLogo.splitterAsFasta;
     else if (units.toLowerCase().startsWith('separator'))
       return WebLogo.getSplitterWithSeparator(separator);
-    /*
     else if (units.toLowerCase().startsWith('helm'))
       return WebLogo.splitterAsHelm;
-    /**/
     else
       throw new Error(`Unexpected units ${units} .`);
 
