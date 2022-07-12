@@ -22,6 +22,10 @@ category('converters', () => {
     fastaRna = 'fastaRna',
     separatorRna = 'separatorRna',
     helmRna = 'helmRna',
+
+    fastaGaps = 'fastaGaps',
+    separatorGaps = 'separatorGaps',
+    helmGaps = 'helmGaps'
   }
 
   const _csvTxts: { [key: string]: string } = {
@@ -70,6 +74,24 @@ RNA1{R(A)P.R(C)P.R(G)P.R(U)P.R(C)P}$$$
 RNA1{R(C)P.R(A)P.R(G)P.R(U)P.R(G)P.R(U)P}$$$
 RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$
 `,
+
+    fastaGaps: `seq
+FW-PH-EY
+-YNRQWYV-
+MKP---SEYV
+`,
+
+    separatorGaps: `seq
+F/W//P/H//E/Y
+//Y/N/R/Q/W/Y/V//
+M/K/P////S/E/Y/V
+`,
+
+    helmGaps: `seq
+PEPTIDE1{F.W.*.P.H.*.E.Y}$$$
+PEPTIDE1{*.Y.N.R.Q.W.Y.V.*}$$$
+PEPTIDE1{M.K.P.*.*.*.S.E.Y.V}$$$
+`,
   };
 
   const _csvDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -110,6 +132,7 @@ RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$
     expectArray(resCol.toList(), tgtCol.toList());
   }
 
+  // FASTA tests
   test('testFastaPtToSeparator', async () => {
     await _testConvert(Samples.fastaPt, converter(NOTATION.SEPARATOR, '-'), Samples.separatorPt);
   });
@@ -130,6 +153,15 @@ RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$
     await _testConvert(Samples.fastaRna, converter(NOTATION.HELM), Samples.helmRna);
   });
 
+  test('testFastaGapsToSeparator', async () => {
+    await _testConvert(Samples.fastaGaps, converter(NOTATION.SEPARATOR, '/'), Samples.separatorGaps);
+  });
+  test('testFastaGapsToHelm', async () => {
+    await _testConvert(Samples.fastaGaps, converter(NOTATION.SEPARATOR), Samples.helmGaps);
+  });
+
+
+  // SEPARATOR tests
   test('testSeparatorPtToFasta', async () => {
     await _testConvert(Samples.separatorPt, converter(NOTATION.FASTA), Samples.fastaPt);
   });
@@ -149,4 +181,13 @@ RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$
   test('testSeparatorRnaToHelm', async () => {
     await _testConvert(Samples.separatorRna, converter(NOTATION.HELM), Samples.helmRna);
   });
+  test('testSeparatorGapsToFasta', async () => {
+    await _testConvert(Samples.separatorGaps, converter(NOTATION.FASTA), Samples.fastaGaps);
+  });
+  test('testSeparatorGapsToHelm', async () => {
+    await _testConvert(Samples.separatorGaps, converter(NOTATION.HELM), Samples.helmGaps);
+  });
+
+
+  // HELM tests: TODO
 });
