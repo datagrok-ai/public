@@ -244,13 +244,34 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
   const descriptionsArrayCol = DG.Column.fromStrings('description', descriptionsArray);
   const sequenceCol = DG.Column.fromStrings('sequence', sequencesArray);
   sequenceCol.semType = 'Macromolecule';
-
   const stats: SeqColStats = WebLogo.getStats(sequenceCol, 5, WebLogo.splitterAsFasta);
   const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
+
+  const PeptideFastaAlphabet = new Set([
+    'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
+    'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
+  ]);
+
+  const DnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
+
+  const RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
+
+  //const SmilesRawAlphabet = new Set([
+  //  'O', 'C', 'c', 'N', 'S', 'F', '(', ')',
+  //  '1', '2', '3', '4', '5', '6', '7',
+  //  '+', '-', '@', '[', ']', '/', '\\', '#', '=']);
+
   const alphabetCandidates: [string, Set<string>][] = [
-    ['NT', new Set(Object.keys(Nucleotides.Names))],
-    ['PT', new Set(Object.keys(Aminoacids.Names))],
+    ['PT', PeptideFastaAlphabet],
+    ['DNA', DnaFastaAlphabet],
+    ['RNA', RnaFastaAlphabet],
   ];
+
+  //const alphabetCandidates: [string, Set<string>][] = [
+  //  ['NT', new Set(Object.keys(Nucleotides.Names))],
+  //  ['PT', new Set(Object.keys(Aminoacids.Names))],
+  //];
+
   // Calculate likelihoods for alphabet_candidates
   const alphabetCandidatesSim: number[] = alphabetCandidates.map(
     (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));

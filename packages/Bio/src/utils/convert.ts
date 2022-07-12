@@ -16,26 +16,22 @@ export function convert(col: DG.Column): void {
     NOTATION.SEPARATOR,
     NOTATION.HELM
   ];
-  const filtered = notations.filter((e) => e !== current);
-  const targetNotationInput = ui.choiceInput('Convert to', filtered[0], filtered);
+  const separatorArray = ['-', '.', '/'];
+  const filteredNotations = notations.filter((e) => e !== current);
+  const targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations);
 
-  const separatorInput = ui.choiceInput('separator', '-', ['-', '.', '/']);
+  const separatorInput = ui.choiceInput('Choose separator', separatorArray[0], separatorArray);
 
-  ui.dialog('Convert sequence')
+  ui.dialog('Convert sequence notation')
     .add(ui.div([
-      ui.h1('current notation'),
-      ui.div(current),
-      targetNotationInput.root
-    ]))
-    .add(ui.div([
-      ui.h1('Separator'),
-      separatorInput,
-
+      ui.h1('Current notation: ' + current),
+      targetNotationInput.root,
+      // TODO: conditional separator input
+      separatorInput.root
     ]))
     .onOK(() => {
       //TODO: create new converted column
-      //const targetNotation: NOTATION = strToEnum<NOTATION>(NOTATION, targetNotationInput.value)!;
-      const targetNotation: NOTATION = targetNotationInput.value as NOTATION;
+      const targetNotation = targetNotationInput.value as NOTATION;
       const separator = separatorInput.value!;
       const newColumn = converter.convert(targetNotation, separator);
       col.dataFrame.columns.add(newColumn);
