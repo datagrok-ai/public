@@ -1,6 +1,4 @@
 import * as C from "./constants";
-import {getSeparator} from "./misc";
-import {ChemPalette} from "./chem-palette";
 import * as DG from 'datagrok-api/dg';
 import {AminoacidsPalettes} from "@datagrok-libraries/bio/src/aminoacids";
 import {NucleotidesPalettes} from "@datagrok-libraries/bio/src/nucleotides";
@@ -10,6 +8,7 @@ import {SeqPalette} from "@datagrok-libraries/bio/src/seq-palettes";
 import * as ui from 'datagrok-api/ui';
 
 const lru = new DG.LruCache<any, any>();
+const undefinedColor =  'rgb(100,100,100)';
 
 function getPalleteByType(paletteType: string): SeqPalette  {
   switch (paletteType) {
@@ -48,7 +47,7 @@ export function processSequence(subParts: string[]): [string[], boolean] {
  * @param {number} h Height.
  * @param {CanvasRenderingContext2D} g Canvas rendering context.
  * @param {string} s String to print.
- * @param {string} [color=ChemPalette.undefinedColor] String color.
+ * @param {string} [color=undefinedColor] String color.
  * @param {number} [pivot=0] Pirvot.
  * @param {boolean} [left=false] Is left aligned.
  * @param {boolean} [hideMod=false] Hide amino acid redidue modifications.
@@ -57,7 +56,7 @@ export function processSequence(subParts: string[]): [string[], boolean] {
  */
 function printLeftOrCentered(
     x: number, y: number, w: number, h: number,
-    g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
+    g: CanvasRenderingContext2D, s: string, color = undefinedColor,
     pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
     separator: string = ''): number {
   g.textAlign = 'start';
@@ -86,44 +85,6 @@ function printLeftOrCentered(
     draw(dx, dx + colorTextSize.width);
     return x + dx + colorTextSize.width;
   }
-}
-function renderSequense(
-      g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-      cellStyle: DG.GridCellStyle,
-): void {
-    const grid = gridCell.grid;
-    const cell = gridCell.cell;
-    const [type, subtype, paletteType] =  gridCell.cell.column.getTag(DG.TAGS.UNITS).split(":");
-    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-    g.save();
-    g.beginPath();
-    g.rect(x, y, w, h);
-    g.clip();
-    g.font = '12px monospace';
-    g.textBaseline = 'top';
-    const s: string = cell.value ?? '';
-
-  //TODO: can this be replaced/merged with splitSequence?
-  const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
-
-  const palette = getPalleteByType(paletteType);
-
-  const separator = gridCell.cell.column.getTag('separator') ?? '';
-  const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator') );// splitter,
-
-  const subParts:string[] =  splitterFunc(cell.value);
-
-  const textSize = g.measureText(subParts.join(''));
-  let x1 = Math.max(x, x + (w - textSize.width) / 2);
-
-  subParts.forEach((amino, index) => {
-    let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
-    color = palette.get(amino);
-    g.fillStyle = ChemPalette.undefinedColor;
-    x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, pivot, true, false, 1.0, separator);
-  });
-
-  g.restore();
 }
 
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
@@ -196,13 +157,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       // console.log(subParts);
 
       const textSize = g.measureText(subParts.join(''));
-      let x1 = Math.max(x, x + (w - textSize.width) / 2);
-
+      let x1 = x;
+      let color = undefinedColor;
       subParts.forEach((amino, index) => {
-        let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
         color = palette.get(amino);
-        g.fillStyle = ChemPalette.undefinedColor;
-        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, pivot, true, false, 1.0, separator);
+        g.fillStyle = undefinedColor;
+        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, false, 1.0, separator);
       });
 
       g.restore();
