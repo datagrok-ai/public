@@ -789,6 +789,15 @@ export class WebLogo extends DG.JsViewer {
     // TODO: Splitter for HELM
   }
 
+  public static getSplitterForColumn(col: DG.Column): SplitterFunc {
+    if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
+      throw new Error(`Get splitter for semType "${DG.SEMTYPE.MACROMOLECULE}" only.`);
+
+    const units = col.getTag(DG.TAGS.UNITS);
+    const separator = col.getTag('separator');
+    return WebLogo.getSplitter(units, separator);
+  }
+
   /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
   private static aaSynonyms: { [name: string]: string } = {
     '[MeNle]': 'L', // Nle - norleucine
