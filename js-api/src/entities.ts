@@ -333,6 +333,10 @@ export class DataQuery extends Func {
   /** Query text */
   get query(): string { return api.grok_Query_Query(this.dart); }
   set query(q: string) { api.grok_Query_Set_Query(this.dart, q); }
+
+  /** Executes query
+   * @returns {Promise<DataFrame>} */
+  async executeTable(): Promise<DataFrame> { return toJs(await api.grok_Query_ExecuteTable(this.dart)); }
 }
 
 /** Represents a table query
@@ -357,10 +361,6 @@ export class TableQuery extends DataQuery {
    * @type {string[]} */
   get fields(): string[] { return api.grok_TableQuery_GetFields(this.dart); }
   set fields(fields: string[]) { api.grok_TableQuery_SetFields(this.dart, fields); }
-
-  /** Executes query
-   * @returns {Promise<DataFrame>} */
-   async executeTable(): Promise<DataFrame> { return toJs(await api.grok_TableQuery_ExecuteTable(this.dart)); }
 }
 
 /** Represents a data job
@@ -390,7 +390,7 @@ export class DataConnection extends Entity {
   /** Tests the connection, returns "ok" on success or an error message on error
    * @returns {Promise<string>}*/
   test(): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_DataConnection_test(this.dart, (s: any) => resolve(toJs(s)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataConnection_Test(this.dart, (s: any) => resolve(toJs(s)), (e: any) => reject(e)));
   }
 
   /** Creates a database connection
