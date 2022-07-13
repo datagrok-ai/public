@@ -82,7 +82,9 @@ function addColumnWithIds(tableName: string, columnName: string, patternName: st
   if (columns.contains(nameOfNewColumn))
     columns.remove(nameOfNewColumn);
   const columnWithIds = columns.byName(columnName);
-  return columns.addNewString(nameOfNewColumn).init((i: number) => columnWithIds.get(i) + '_' + patternName);
+  return columns.addNewString(nameOfNewColumn).init((i: number) => {
+    return (columnWithIds.getString(i) == '') ? '' : columnWithIds.get(i) + '_' + patternName;
+  });
 }
 
 function addColumnWithTranslatedSequences(
@@ -99,8 +101,9 @@ function addColumnWithTranslatedSequences(
     columns.remove(nameOfNewColumn);
   const columnWithInputSequences = columns.byName(columnName);
   return columns.addNewString(nameOfNewColumn).init((i: number) => {
-    return translateSequence(columnWithInputSequences.getString(i),
-      bases, ptoLinkages, startModification, endModification, firstPtoExist);
+    return columnWithInputSequences.getString(i) == '' ?
+    '' :
+    translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, startModification, endModification, firstPtoExist);
   });
 }
 
