@@ -2,10 +2,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+//import {lru} from '../../Bio/src/utils/cell-renderer';
+import {NotationConverter, NOTATION} from '@datagrok-libraries/bio/src/utils/notation-converter';
+//import {ConverterFunc, DfReaderFunc} from '../../Bio/src/tests/types';
 
 export const _package = new DG.Package();
 
 const lru = new DG.LruCache<any, any>(); 
+
+
 
 //tags: init
 export async function initChem(): Promise<void> {
@@ -15,6 +20,23 @@ export async function initChem(): Promise<void> {
     dojo.ready(function () { resolve(null); });
   });
 }
+
+const fastaPt = `seq
+FWPHEY
+YNRQWYV
+MKPSEYV
+`;
+
+//name: getCol
+export async function getCol() {
+  const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(fastaPt);
+  await grok.data.detectSemanticTypes(srcDf);
+  const srcCol: DG.Column = srcDf.col('seq');
+  const converter = new NotationConverter(srcCol);
+  const resCol = converter.convert(NOTATION.HELM);
+  return resCol;
+};
+
 
 //tags: cellEditor
 //description: Macromolecule
@@ -59,10 +81,10 @@ export function detailsPanel(helmString: string){
       'molecular weight': result[1],
       'extinction coefficient': result[2],
       'molfile': result[3],
-      /*'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
+      'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
       'rna analogue sequence': ui.wait(async () => ui.divText(await helmToRNA(helmString))),
       'smiles': ui.wait(async () => ui.divText(await helmToSmiles(helmString))),
-      'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),*/
+      //'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),
     })
   )
 }

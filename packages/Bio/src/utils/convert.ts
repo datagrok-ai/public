@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {NotationConverter, NOTATION} from './notation-converter';
+import {NotationConverter, NOTATION} from '@datagrok-libraries/bio/src/utils/notation-converter';
 
 /**
  * Converts notations of a Macromolecule column
