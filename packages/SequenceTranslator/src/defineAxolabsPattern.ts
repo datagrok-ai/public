@@ -387,11 +387,12 @@ export function defineAxolabsPattern() {
       const lstMy: string[] = [];
       const lstOthers: string[] = [];
 
+      // TODO: display short name, but use long for querying userdataStorage
       for (const ent of Object.keys(entities)) {
         if (await isCurrentUserCreatedThisPattern(ent))
           lstOthers.push(ent);
         else
-          lstMy.push(getShortName(ent));
+          lstMy.push(ent);//getShortName(ent));
       }
 
       let loadPattern = ui.choiceInput('Load Pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
