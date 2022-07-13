@@ -237,6 +237,7 @@ jobs:
           retention-days: 1
       - name: Commit package-lock.json
         id: git
+        continue-on-error: true
         if: always() && steps.publish.outcome == 'success'
         run: |
           git config --global user.name 'GitHub Actions'
