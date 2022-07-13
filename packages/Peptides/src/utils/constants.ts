@@ -19,7 +19,7 @@ export enum CATEGORIES {
 export enum TAGS {
   AAR = 'AAR',
   POSITION = 'Pos',
-  SEPARATOR = 'monomer-separator',
+  SEPARATOR = 'separator',
   SELECTION = 'selection',
 }
 

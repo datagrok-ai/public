@@ -1,9 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+
 import '../styles.css';
 import * as C from '../utils/constants';
-import {getSeparator} from '../utils/misc';
 import {PeptidesModel} from '../model';
 import {_package} from '../package';
 import $ from 'cash-dom';
@@ -14,11 +16,12 @@ import $ from 'cash-dom';
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
 export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Column): Promise<DG.Widget> {
+  const funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
+  if (funcs.length == 0)
+    return new DG.Widget(ui.label('Bio package is missing or out of date. Please install the latest version.'));
   let tempCol = null;
   let scaledDf: DG.DataFrame;
   let newScaledColName: string;
-  const separator = getSeparator(col);
-  col.tags[C.TAGS.SEPARATOR] ??= separator;
 
   for (const column of currentDf.columns.numerical)
     tempCol = column.type === DG.TYPE.FLOAT ? column : null;
@@ -64,17 +67,10 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
   });
   startBtn.style.alignSelf = 'center';
 
-  const bioList = (await grok.dapi.packages.list({filter: 'name = "Bio"'})).filter(p => p.name == 'Bio');
-  const logoHost = ui.div('Install Bio package to see WebLogo');
-  if (bioList.length > 0) {
-    const viewer = await currentDf.plot.fromType('WebLogo');
-    viewer.root.style.setProperty('height', '130px');
-    $(logoHost).empty().append(viewer.root);
-  } else {
-    logoHost.style.color = DG.Color.toHtml(DG.Color.red);
-    logoHost.style.alignSelf = 'center';
-    logoHost.style.margin = '10px';
-  }
+  const viewer = await currentDf.plot.fromType('WebLogo') as WebLogo;
+  viewer.root.style.setProperty('height', '130px');
+  const logoHost = ui.div();
+  $(logoHost).empty().append(viewer.root);
 
   return new DG.Widget(
     ui.divV([

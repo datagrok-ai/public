@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
 import * as types from './types';
-import {getSeparator} from './misc';
 
 /**
  * A function to expand column size based on its contents.
@@ -236,7 +235,7 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
 
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
-    const separator = getSeparator(gridCell.tableColumn!);
+    const separator = gridCell.tableColumn!.tags[C.TAGS.SEPARATOR];
     const subParts1 = s1.split(separator);
     const subParts2 = s2.split(separator);
     const [text] = processSequence(subParts1);
