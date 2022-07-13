@@ -520,6 +520,7 @@ export class WebLogo extends DG.JsViewer {
     for (let jPos = 0; jPos < this.Length; jPos++) {
       for (const [monomer, pmInfo] of Object.entries(this.positions[jPos].freq)) {
         if (monomer !== '-') {
+          const monomerTxt = WebLogo.monomerToText(monomer);
           const b = pmInfo.bounds;
 
           const fontStyle = '16px Roboto, Roboto Local, sans-serif';
@@ -535,7 +536,7 @@ export class WebLogo extends DG.JsViewer {
           g.textAlign = 'left';
           g.font = fontStyle;
           //g.fillRect(b.left, b.top, b.width, b.height);
-          const mTm: TextMetrics = g.measureText(monomer);
+          const mTm: TextMetrics = g.measureText(monomerTxt);
 
           // if (mM.actualBoundingBoxAscent != 0)
           //   console.debug(`m: ${m}, mM.actualBoundingBoxAscent: ${mM.actualBoundingBoxAscent}`);
@@ -543,7 +544,7 @@ export class WebLogo extends DG.JsViewer {
           g.setTransform(
             b.width / mTm.width, 0, 0, b.height / uppercaseLetterHeight,
             b.left, b.top);
-          g.fillText(monomer, 0, -uppercaseLetterAscent);
+          g.fillText(monomerTxt, 0, -uppercaseLetterAscent);
         }
       }
     }
@@ -813,4 +814,29 @@ export class WebLogo extends DG.JsViewer {
     '[MeG]': 'G',
     '[MeF]': 'F',
   };
+
+  private static longMonomerPartRe = /(\w+)/g;
+
+  /* Shortens monomer representation text for monomers with long names.
+  **/
+  public static monomerToText(src: any): string {
+    const srcTxt: string = src.toString();
+    if (srcTxt.length <= 5) {
+      return srcTxt;
+    } else {
+      const parts: string[] = wu<RegExpMatchArray>(src.toString().matchAll(WebLogo.longMonomerPartRe))
+        .map((ma: RegExpMatchArray) => {
+          const mRes: string = ma[0];
+          return mRes;
+        }).toArray();
+
+      if (parts.length == 0) {
+        return ' ';
+      } else {
+        const part0: string = parts[0];
+        const resTxt: string = part0.length < 6 ? `${part0}…` : `${part0.substring(0, 5)}…`;
+        return resTxt;
+      }
+    }
+  }
 }
