@@ -94,7 +94,8 @@ services:
           "dbLogin": "dg",
           "dbPassword": "dg",
           "adminPassword": "admin",
-          "adminDevKey": "admin"
+          "adminDevKey": "admin",
+          "isolatesCount": 2
         }
     ports:
       - "8080:8080/tcp"
