@@ -115,17 +115,17 @@ MWRSWY-CKHP
   }
 
   const samples: { [key: string]: string } = {
-    'peptidesComplex': 'System:AppData/Bio/samples/peptides_complex_msa.csv',
+    'peptidesComplex': 'System:AppData/Bio/tests/peptides_complex_msa.csv',
     'fastaCsv': 'System:AppData/Bio/samples/sample_FASTA.csv',
     'fastaFasta': 'System:AppData/Bio/samples/sample_FASTA.fasta',
     'fastaPtCsv': 'System:AppData/Bio/samples/sample_FASTA_PT.csv',
     'msaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
     'helmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
-    'testDemogCsv': 'System:AppData/Bio/samples/testDemog.csv',
-    'testHelmCsv': 'System:AppData/Bio/samples/testHelm.csv',
-    'testIdCsv': 'System:AppData/Bio/samples/id.csv',
-    'testSmilesCsv': 'System:AppData/Bio/samples/testSmiles.csv',
-    'testSmiles2Csv': 'System:AppData/Bio/samples/testSmiles2.csv',
+    'testDemogCsv': 'System:AppData/Bio/tests/testDemog.csv',
+    'testHelmCsv': 'System:AppData/Bio/tests/testHelm.csv',
+    'testIdCsv': 'System:AppData/Bio/tests/id.csv',
+    'testSmilesCsv': 'System:AppData/Bio/tests/testSmiles.csv',
+    'testSmiles2Csv': 'System:AppData/Bio/tests/testSmiles2.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};

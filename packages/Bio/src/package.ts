@@ -181,7 +181,7 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
       currentView = view;
     }
   }
-  const file = await _package.files.readAsText('samples/sar-small.csv');
+  const file = await _package.files.readAsText('tests/sar-small.csv');
   const df2 = DG.DataFrame.fromCsv(file);
   const v = grok.shell.addTableView(df2);
   setTimeout(()=> {
