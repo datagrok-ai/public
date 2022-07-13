@@ -29,7 +29,7 @@ category('Core', () => {
     simpleTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned.csv'));
     simpleActivityCol = simpleTable.getCol(simpleActivityColName);
     simpleAlignedSeqCol = simpleTable.getCol(alignedSeuqnceCol);
-    simpleAlignedSeqCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE;
+    simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
     [simpleScaledDf, simpleScaledColName] =
       await PeptidesModel.scaleActivity('-lg', simpleTable, simpleActivityColName, true);
 
@@ -51,7 +51,7 @@ category('Core', () => {
     complexTable.filter.init((idx) => measuredCol.get(idx) == measureCategory);
     complexActivityCol = complexTable.getCol(complexActivityColName);
     complexAlignedSeqCol = complexTable.getCol(alignedSeuqnceCol);
-    complexAlignedSeqCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE;
+    complexAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
     [complexScaledDf, complexScaledColName] =
       await PeptidesModel.scaleActivity('-lg', complexTable, complexActivityColName, true);
 

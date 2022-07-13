@@ -61,7 +61,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
       this.isEmbeddingCreating = true;
       $(this.root).empty();
       const viewerHost = ui.waitBox(async () => {
-        const aligendSeqCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
+        const aligendSeqCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
         const edf = await computeWeights(this.dataFrame, this.method, this.measure, this.cyclesCount, aligendSeqCol);
         this.dataFrame.temp[C.EMBEDDING_STATUS] = true;
         this.model.edf = edf;
@@ -117,7 +117,7 @@ export async function computeWeights(
   let edf: DG.DataFrame | null = null;
   try {
     const axesNames = ['~X', '~Y', '~MW'];
-    col ??= table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
+    col ??= table.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
     const columnData = col.toList().map((v) => AlignedSequenceEncoder.clean(v));
 
     const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(

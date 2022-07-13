@@ -189,7 +189,7 @@ export class PeptidesModel {
     //Split the aligned sequence into separate AARs
     let splitSeqDf: DG.DataFrame | undefined;
     let invalidIndexes: number[];
-    const col: DG.Column = this._dataFrame.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
+    const col: DG.Column = this._dataFrame.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
     [splitSeqDf, invalidIndexes] = PeptidesModel.splitAlignedPeptides(col);
 
     const positionColumns = splitSeqDf.columns.names();
