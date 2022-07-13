@@ -16,6 +16,7 @@ export async function _testActivityCliffsOpen(df: DG.DataFrame) {
      df, 
      df.col('smiles')!, 
      axesNames, 
+     'Activity cliffs',
      df.col('Activity')!, 
      80, 
      'Tanimoto',

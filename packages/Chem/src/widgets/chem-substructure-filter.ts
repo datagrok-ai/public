@@ -67,7 +67,7 @@ export class SubstructureFilter extends DG.Filter {
     // hide the scaffold when user deactivates the filter
     this.subs.push(this.dataFrame!.onRowsFiltering
       .pipe(filter((_) => this.column != null && !this.isFiltering))
-      .subscribe((_) => delete this.column!.temp['chem-scaffold-filter']));
+      .subscribe((_: any) => delete this.column!.temp['chem-scaffold-filter']));
 
     chemSubstructureSearchLibrary(this.column!, '', '')
       .then((_) => {}); // Nothing, just a warmup
