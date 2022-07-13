@@ -332,7 +332,7 @@ export function defineAxolabsPattern() {
     const col = tables.value!.columns.byName(colName);
     let allLengthsAreTheSame = true;
     for (let i = 1; i < col.length; i++) {
-      if (col.get(i - 1).length != col.get(i).length) {
+      if (col.get(i - 1).length != col.get(i).length && col.get(i).length != 0) {
         allLengthsAreTheSame = false;
         break;
       }
@@ -361,12 +361,13 @@ export function defineAxolabsPattern() {
   }
 
   async function postPatternToUserStorage() {
-    const author = await getCurrentUserName();
-    if (!saveAs.stringValue.includes('(created by '))
-      saveAs.value = saveAs.stringValue + author;
+    const currUserName = await getCurrentUserName();
+    saveAs.value = (saveAs.stringValue.includes('(created by ')) ?
+      getShortName(saveAs.value) + currUserName :
+      saveAs.stringValue + currUserName;
     return grok.dapi.userDataStorage.postValue(
       userStorageKey,
-      saveAs.stringValue,
+      saveAs.value,
       JSON.stringify({
         'ssBases': ssBases.slice(0, ssLength.value!).map((e) => e.value),
         'asBases': asBases.slice(0, asLength.value!).map((e) => e.value),
@@ -527,7 +528,7 @@ export function defineAxolabsPattern() {
     const col = tables.value!.columns.byName(colName);
     if (col.type != DG.TYPE.INT)
       grok.shell.error('Column should contain integers only');
-    else if (col.categories.length < col.length) {
+    else if (col.categories.filter((e) => e != '').length < col.toList().filter((e) => e != '').length) {
       const duplicates = findDuplicates(col.getRawData());
       ui.dialog('Non-unique IDs')
         .add(ui.divText('Press \'OK\' to select rows with non-unique values'))
@@ -542,25 +543,43 @@ export function defineAxolabsPattern() {
   }
 
   const tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
-    const inputSsColumn =
-      ui.choiceInput('SS Column', '', t.columns.names(), (colName: string) => validateSsColumn(colName));
+    const inputSsColumn = ui.choiceInput('SS Column', '', t.columns.names(), (colName: string) => {
+      validateSsColumn(colName);
+      ssVar = colName;
+    });
     inputSsColumnDiv.innerHTML = '';
     inputSsColumnDiv.append(inputSsColumn.root);
-    const inputAsColumn =
-      ui.choiceInput('AS Column', '', t.columns.names(), (colName: string) => validateAsColumn(colName));
+    const inputAsColumn = ui.choiceInput('AS Column', '', t.columns.names(), (colName: string) => {
+      validateAsColumn(colName);
+      asVar = colName;
+    });
     inputAsColumnDiv.innerHTML = '';
     inputAsColumnDiv.append(inputAsColumn.root);
-    const inputIdColumn =
-      ui.choiceInput('ID Column', '', t.columns.names(), (colName: string) => validateIdsColumn(colName));
+    const inputIdColumn = ui.choiceInput('ID Column', '', t.columns.names(), (colName: string) => {
+      validateIdsColumn(colName);
+      idVar = colName;
+    });
     inputIdColumnDiv.innerHTML = '';
     inputIdColumnDiv.append(inputIdColumn.root);
   });
 
-  const inputSsColumn = ui.choiceInput('SS Column', '', []);
+  let ssVar = '';
+  const inputSsColumn = ui.choiceInput('SS Column', '', [], (colName: string) => {
+    validateSsColumn(colName);
+    ssVar = colName;
+  });
   inputSsColumnDiv.append(inputSsColumn.root);
-  const inputAsColumn = ui.choiceInput('AS Column', '', []);
+  let asVar = '';
+  const inputAsColumn = ui.choiceInput('AS Column', '', [], (colName: string) => {
+    validateAsColumn(colName);
+    asVar = colName;
+  });
   inputAsColumnDiv.append(inputAsColumn.root);
-  const inputIdColumn = ui.choiceInput('ID Column', '', []);
+  let idVar = '';
+  const inputIdColumn = ui.choiceInput('ID Column', '', [], (colName: string) => {
+    validateIdsColumn(colName);
+    idVar = colName;
+  });
   inputIdColumnDiv.append(inputIdColumn.root);
 
   updatePatternsList();
@@ -639,7 +658,7 @@ export function defineAxolabsPattern() {
   });
 
   const convertSequenceButton = ui.button('Convert Sequences', () => {
-    if (inputSsColumn.value == null || (createAsStrand.value && inputAsColumn.value == null))
+    if (ssVar == '' || (createAsStrand.value && asVar == ''))
       grok.shell.info('Please select table and columns on which to apply pattern');
     else if (ssLength.value != ssInputExample.value.length || asLength.value != asInputExample.value.length) {
       const dialog = ui.dialog('Length Mismatch');
@@ -653,14 +672,14 @@ export function defineAxolabsPattern() {
         })
         .show();
     } else {
-      if (inputIdColumn.value != null)
-        addColumnWithIds(tables.value!.name, inputIdColumn.value, getShortName(saveAs.value));
+      if (idVar != '')
+        addColumnWithIds(tables.value!.name, idVar, getShortName(saveAs.value));
       addColumnWithTranslatedSequences(
-        tables.value!.name, inputSsColumn.value, ssBases, ssPtoLinkages,
+        tables.value!.name, ssVar, ssBases, ssPtoLinkages,
         ssFiveModification, ssThreeModification, firstSsPto.value!);
       if (createAsStrand.value) {
         addColumnWithTranslatedSequences(
-          tables.value!.name, inputAsColumn.value!, asBases, asPtoLinkages,
+          tables.value!.name, asVar, asBases, asPtoLinkages,
           asFiveModification, asThreeModification, firstAsPto.value!);
       }
       grok.shell.v = grok.shell.getTableView(tables.value!.name);
