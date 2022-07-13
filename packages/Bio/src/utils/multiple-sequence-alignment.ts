@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import Aioli from '@biowasm/aioli';
 
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-import * as C from './constants';
 
 /**
  * Converts array of sequences into simple fasta string.
