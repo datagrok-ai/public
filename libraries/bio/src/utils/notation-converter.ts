@@ -15,9 +15,9 @@ export class NotationConverter {
   private _sourceNotation: NOTATION; // current notation (without :SEQ:NT, etc.)
   private _defaultGapSymbol: string;
   private _defaultGapSymbolsDict = {
-    helm: '*',
-    separator: '',
-    fasta: '-',
+    HELM: '*',
+    SEPARATOR: '',
+    FASTA: '-',
   };
 
   private get sourceUnits(): string { return this._sourceUnits; }
@@ -79,7 +79,7 @@ export class NotationConverter {
   private getNewColumn(targetNotation: NOTATION): DG.Column {
     const col = this.sourceColumn;
     const len = col.length;
-    const name = targetNotation + '(' + col.name + ')';
+    const name = targetNotation.toLowerCase() + '(' + col.name + ')';
     const newColName = col.dataFrame.columns.getUnusedName(name);
     // dummy code
     const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(''));
@@ -95,7 +95,6 @@ export class NotationConverter {
     if (this.toFasta(targetNotation)) {
       newColumn.setTag(
         DG.TAGS.CELL_RENDERER,
-        // TODO: replace by the enumeration value
         'Macromolecule');
     }
     return newColumn;
@@ -105,24 +104,28 @@ export class NotationConverter {
    * Convert a Macromolecule column from FASTA to SEPARATOR notation
    *
    * @param {string} separator  A specific separator to be used
-   * @param {string} gapSymbol  Gap symbol in FASTA, '-' by default
+   * @param {string} fastaGapSymbol  Gap symbol in FASTA, '-' by default
    * @return {DG.Column}        A new column in SEPARATOR notation
    */
-  private convertFastaToSeparator(separator: string, gapSymbol: string = '-'): DG.Column {
-    // a function splitting FASTA sequence into an array of monomers:
-    const splitterAsFasta = WebLogo.splitterAsFasta;
+  private convertFastaToSeparator(separator: string, fastaGapSymbol: string | null = null): DG.Column {
+    if (fastaGapSymbol === null)
+      fastaGapSymbol = this.defaultGapSymbol;
+    // A function splitting a sequence into an array of monomers according to
+    // its notation
+    const splitter = WebLogo.getSplitterForColumn(this.sourceColumn);
 
     const newColumn = this.getNewColumn(NOTATION.SEPARATOR);
     // assign the values to the newly created empty column
     newColumn.init((idx: number) => {
       const fastaPolymer = this.sourceColumn.get(idx);
-      const fastaMonomersArray = splitterAsFasta(fastaPolymer);
+      const fastaMonomersArray = splitter(fastaPolymer);
       for (let i = 0; i < fastaMonomersArray.length; i++) {
-        if (fastaMonomersArray[i] === gapSymbol)
-          fastaMonomersArray[i] = '';
+        if (fastaMonomersArray[i] === fastaGapSymbol)
+          fastaMonomersArray[i] = this._defaultGapSymbolsDict.SEPARATOR;
       }
       return fastaMonomersArray.join(separator);
     });
+    newColumn.setTag('separator', separator);
     return newColumn;
   }
 
@@ -157,7 +160,7 @@ export class NotationConverter {
         const dot = firstIteration ? '' : '.';
         let token = sourceMonomersArray[i];
         if (token === sourceGapSymbol)
-          token = this._defaultGapSymbolsDict.helm;
+          token = this._defaultGapSymbolsDict.HELM;
         const item = [dot, leftWrapper, token, rightWrapper];
         helmArray.push(item.join(''));
         firstIteration = false;
@@ -168,29 +171,7 @@ export class NotationConverter {
     return newColumn;
   }
 
-  private handleSeparatorItemForFasta(
-    idx: number,
-    separatorItemsArray: string[],
-    separator: string,
-    gapSymbol: string,
-    fastaMonomersArray: string[]
-  ): void {
-    const item = separatorItemsArray[idx];
-    if (item.length > 1) {
-      // the case of a multi-character monomer
-      const monomer = '[' + item + ']';
-      fastaMonomersArray.push(monomer);
-    }
-    if (item === separator) {
-      if (idx !== 0 && separatorItemsArray[idx - 1] === separator)
-        fastaMonomersArray.push(gapSymbol);
-    }
-  }
-
-  private convertSeparatorToFasta(
-    separator: string | null = null,
-    gapSymbol: string = '-'
-  ): DG.Column {
+  private convertSeparatorToFasta(fastaGapSymbol: string | null = null): DG.Column {
     // TODO: implementation
     // * similarly to fasta2separator, divide string into monomers
     // * adjacent separators is a gap (symbol to be specified)
@@ -199,11 +180,11 @@ export class NotationConverter {
     // conversion
     // * consider automatic determining the separator
 
-    if (separator === null)
-      separator = this.separator;
+    if (fastaGapSymbol === null)
+      fastaGapSymbol = this._defaultGapSymbolsDict.FASTA;
 
-    // a function splitting FASTA sequence into an array of monomers
-    //const splitterAsSeparator = WebLogo.getSplitterWithSeparator(separator);
+    // A function splitting a sequence into an array of monomers according to
+    // its notation
     const splitter = WebLogo.getSplitterForColumn(this.sourceColumn);
 
     const newColumn = this.getNewColumn(NOTATION.FASTA);
@@ -216,7 +197,7 @@ export class NotationConverter {
       for (let i = 0; i < separatorItemsArray.length; i++) {
         const item = separatorItemsArray[i];
         if (item.length === 0) {
-          fastaMonomersArray.push(gapSymbol);
+          fastaMonomersArray.push(fastaGapSymbol!);
         } else if (item.length > 1) {
           // the case of a multi-character monomer
           const monomer = '[' + item + ']';
@@ -258,7 +239,7 @@ export class NotationConverter {
     else if ((this.isFasta() || this.isSeparator()) && this.toHelm(targetNotation))
       return this.convertToHelm();
     else if (this.isSeparator() && this.toFasta(targetNotation))
-      return this.convertSeparatorToFasta(tgtSeparator!);
+      return this.convertSeparatorToFasta();
     else if (this.isHelm() && this.toFasta(targetNotation))
       return this.convertHelmToFasta();
     else
@@ -273,8 +254,8 @@ export class NotationConverter {
     else
       throw new Error('Units are not specified in column');
     this._sourceNotation = this.getSourceNotation();
-    this._defaultGapSymbol = (this.isFasta()) ? this._defaultGapSymbolsDict.fasta :
-      (this.isHelm()) ? this._defaultGapSymbolsDict.helm :
-        this._defaultGapSymbolsDict.separator;
+    this._defaultGapSymbol = (this.isFasta()) ? this._defaultGapSymbolsDict.FASTA :
+      (this.isHelm()) ? this._defaultGapSymbolsDict.HELM :
+        this._defaultGapSymbolsDict.SEPARATOR;
   }
 }
