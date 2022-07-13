@@ -168,13 +168,12 @@ export class ViewBase {
   /** 
    * View URI, relative to the platform root. See also {@link basePath}
    * @type {string} */
-  get path(): string | null {
-    return this._path;
+  get path(): string {
+    return api.grok_View_Get_Path(this.dart);
   }
 
-  set path(s: string | null) {
-    this._path = s;
-    api.grok_View_URL_changed(this.dart);
+  set path(s: string) {
+    api.grok_View_Set_Path(this.dart, s);
   }
 
   /** Handles URL path.
@@ -274,14 +273,6 @@ export class View extends ViewBase {
 
   get type(): string {
     return api.grok_View_Get_Type(this.dart);
-  }
-
-  get path(): string {
-    return api.grok_View_Get_Path(this.dart);
-  }
-
-  set path(s: string) {
-    api.grok_View_Set_Path(this.dart, s);
   }
 
   get id(): string {
