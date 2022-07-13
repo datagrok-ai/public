@@ -61,6 +61,24 @@ XZJ{}2
   test('testPickupPaletteX', async () => { await _testPickupPaletteX(csvDfX); });
 });
 
+category('WebLogo.monomerToText', () => {
+  test('longMonomerSingle', async () => {
+    await expect(WebLogo.monomerToText('S'), 'S');
+  });
+  test('longMonomerShort', async () => {
+    await expect(WebLogo.monomerToText('Short'), 'Short');
+  });
+  test('longMonomerLong56', async () => {
+    await expect(WebLogo.monomerToText('Long56'), 'Long5…');
+  });
+  test('longMonomerComplexFirstPartShort', async () => {
+    await expect(WebLogo.monomerToText('Long-long'), 'Long…');
+  });
+  test('longMonomerComplexFirstPartLong56', async () => {
+    await expect(WebLogo.monomerToText('Long56-long'), 'Long5…');
+  });
+});
+
 
 export async function _testGetStats(csvDfN1: string) {
   const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);

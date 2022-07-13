@@ -102,6 +102,7 @@ MWRSWY-CKHP
 
   const enum Samples {
     peptidesComplex = 'peptidesComplex',
+    peptidesSimple = 'peptidesSimple',
     fastaCsv = 'fastaCsv',
     fastaFasta = 'fastaFasta',
     fastaPtCsv = 'fastaPtCsv',
@@ -115,15 +116,16 @@ MWRSWY-CKHP
   }
 
   const samples: { [key: string]: string } = {
-    'peptidesComplex': 'System:AppData/Bio/tests/peptides_complex_msa.csv',
     'fastaCsv': 'System:AppData/Bio/samples/sample_FASTA.csv',
     'fastaFasta': 'System:AppData/Bio/samples/sample_FASTA.fasta',
     'fastaPtCsv': 'System:AppData/Bio/samples/sample_FASTA_PT.csv',
     'msaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
     'helmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
+    'peptidesComplex': 'System:AppData/Bio/tests/peptides_complex_msa.csv',
+    'peptidesSimple': 'System:AppData/Bio/tests/peptides_simple_msa.csv',
     'testDemogCsv': 'System:AppData/Bio/tests/testDemog.csv',
     'testHelmCsv': 'System:AppData/Bio/tests/testHelm.csv',
-    'testIdCsv': 'System:AppData/Bio/tests/id.csv',
+    'testIdCsv': 'System:AppData/Bio/tests/testId.csv',
     'testSmilesCsv': 'System:AppData/Bio/tests/testSmiles.csv',
     'testSmiles2Csv': 'System:AppData/Bio/tests/testSmiles2.csv',
   };
@@ -228,6 +230,10 @@ MWRSWY-CKHP
     await _testPos(readSamples(Samples.fastaFasta, readFileFasta), 'sequence', 'fasta:SEQ:PT');
   });
 
+  // peptidesComplex contains monomers with spaces in AlignedSequence columns, which are forbidden
+  // test('samplesPeptidesComplexPositiveAlignedSequence', async () => {
+  //   await _testPos(readSamples(Samples.peptidesComplex), 'AlignedSequence', 'separator:SEQ:UN', '-');
+  // });
   test('samplesPeptidesComplexNegativeID', async () => {
     await _testNeg(readSamples(Samples.peptidesComplex), 'ID');
   });
