@@ -118,7 +118,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle
   ): void {
-    const grid = gridCell.grid;
+    const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
     const cell = gridCell.cell;
     const tag = gridCell.cell.column.getTag(DG.TAGS.UNITS);
     if (tag === 'HELM') {
