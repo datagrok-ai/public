@@ -5,11 +5,7 @@
   },
   "beta": true,
   "friendlyName": "Datagrok bio library",
-<<<<<<< Updated upstream
-  "version": "2.6.0",
-=======
   "version": "2.7.0",
->>>>>>> Stashed changes
   "description": "",
   "dependencies": {
     "@datagrok-libraries/utils": "^1.0.0",
