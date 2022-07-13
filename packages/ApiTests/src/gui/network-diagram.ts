@@ -57,7 +57,6 @@ category('Viewers: Network Diagram', () => {
     networkDiagram.setOptions({
         title: 'Test Network Diagram',
         node1Shape: 'box',
-        edgeWidth: 50,
         suspendSimulation: true 
     }); await delay(500);
 
@@ -65,8 +64,6 @@ category('Viewers: Network Diagram', () => {
         throw 'Title property has not been set to box' 
     if (networkDiagram.props.node1Shape != 'box')
         throw 'node1Shape property has not been set to box' 
-    if (networkDiagram.props.edgeWidth != 50)
-        throw 'edgeWidth property has not been set to 30'
     if (!networkDiagram.props.suspendSimulation)
         throw 'suspendSimulation property has not been set to TRUE'
   });  
@@ -106,8 +103,6 @@ category('Viewers: Network Diagram', () => {
         throw 'edgeWidth prooerty has not been deserialized'   
     if (networkDiagram!.props.node1Shape != 'box')
         throw 'node1Shape property has not been deserialized' 
-    if (networkDiagram!.props.edgeWidth != 50)
-        throw 'edgeWidth property has not been deserialized'
     if (!networkDiagram!.props.suspendSimulation)
         throw 'suspendSimulation property has not been deserialized'
     if (networkDiagram!.props.title != 'Test Network Diagram')
@@ -116,6 +111,6 @@ category('Viewers: Network Diagram', () => {
   after(async () => {
     v.close();
     grok.shell.closeAll();
-    //await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Network Diagram').first())
+    await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Network Diagram').first())
   }); 
 });
