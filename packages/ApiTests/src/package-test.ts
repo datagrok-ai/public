@@ -58,7 +58,11 @@ import './gui/bar-chart'
 import './gui/pie-chart'
 import './gui/histogram'
 import './gui/matrix-plot'
-
+import './gui/pc-plot'
+import './gui/density-plot'
+import './gui/scatter-plot-3d.ts'
+import './gui/word-cloud'
+import './gui/network-diagram'
 
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
