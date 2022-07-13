@@ -51,7 +51,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
       cell.cell.value = app.canvas.getHelm(true);
     }).show({ modal: true, fullScreen: true});
   }
-  else {
+  else if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === "fasta:SEQ:PT") {
     const converter = new NotationConverter(cell.gridColumn.column);
     const resStr = converter.convertFastaStringToHelm(null, null, cell.cell.value);
     setTimeout(function() {
