@@ -4,13 +4,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {Subject, Observable} from 'rxjs';
 import {addViewerToHeader, StackedBarChart} from './viewers/stacked-barchart-viewer';
-import {tTest} from '@datagrok-libraries/statistics/src/tests';
-import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests';
 import {ChemPalette} from './utils/chem-palette';
 import {MonomerLibrary} from './monomer-library';
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {getSeparator, getTypedArrayConstructor, stringToBool} from './utils/misc';
+import {getTypedArrayConstructor, stringToBool} from './utils/misc';
 import {_package} from './package';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
@@ -269,8 +267,8 @@ export class PeptidesModel {
     for (let seq1Idx = 0; seq1Idx < nRows - 1; seq1Idx++) {
       for (let seq2Idx = seq1Idx + 1; seq2Idx < nRows; seq2Idx++) {
         let substCounter = 0;
-        const activityValSeq1 = activityValues.get(seq1Idx);
-        const activityValSeq2 = activityValues.get(seq2Idx);
+        const activityValSeq1 = activityValues.get(seq1Idx)!;
+        const activityValSeq2 = activityValues.get(seq2Idx)!;
         const delta = activityValSeq1 - activityValSeq2;
         if (Math.abs(delta) < this._activityLimit)
           continue;
@@ -279,8 +277,8 @@ export class PeptidesModel {
         const tempData: {pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number}[] =
           [];
         for (const currentPosCol of columnList) {
-          const seq1monomer = currentPosCol.get(seq1Idx);
-          const seq2monomer = currentPosCol.get(seq2Idx);
+          const seq1monomer = currentPosCol.get(seq1Idx)!;
+          const seq2monomer = currentPosCol.get(seq2Idx)!;
           if (seq1monomer == seq2monomer)
             continue;
 
@@ -691,7 +689,7 @@ export class PeptidesModel {
       const getBitAt = (i: number) => {
         for (const position of positionList) {
           const positionCol: DG.Column<string> = this._dataFrame.getCol(position);
-          if (this._currentSelection[position].includes(positionCol.get(i)))
+          if (this._currentSelection[position].includes(positionCol.get(i)!))
             return true;
         }
         return false;
@@ -798,7 +796,7 @@ export class PeptidesModel {
   }
 
   static splitAlignedPeptides(peptideColumn: DG.Column<string>, filter: boolean = true): [DG.DataFrame, number[]] {
-    const separator = peptideColumn.tags[C.TAGS.SEPARATOR] ?? getSeparator(peptideColumn);
+    const separator = peptideColumn.tags[C.TAGS.SEPARATOR];
     const splitPeptidesArray: string[][] = [];
     let currentSplitPeptide: string[];
     let modeMonomerCount = 0;
@@ -808,7 +806,7 @@ export class PeptidesModel {
     // splitting data
     const monomerLengths: {[index: string]: number} = {};
     for (let i = 0; i < colLength; i++) {
-      currentSplitPeptide = peptideColumn.get(i).split(separator).map((value: string) => value ? value : '-');
+      currentSplitPeptide = peptideColumn.get(i)!.split(separator).map((value: string) => value ? value : '-');
       splitPeptidesArray.push(currentSplitPeptide);
       currentLength = currentSplitPeptide.length;
       monomerLengths[currentLength + ''] =

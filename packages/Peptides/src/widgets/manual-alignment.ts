@@ -12,7 +12,7 @@ import {PeptidesModel} from '../model';
  * @param {DG.DataFrame} currentDf Working table
  * @return {DG.Widget} Widget for manual sequence alignment */
 export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, currentDf: DG.DataFrame): DG.Widget {
-  const sequenceInput = ui.textInput('', alignedSequenceCol.get(currentDf.currentRowIdx));
+  const sequenceInput = ui.textInput('', alignedSequenceCol.get(currentDf.currentRowIdx)!);
   $(sequenceInput.root).addClass('pep-textinput');
 
   const applyChangesBtn = ui.button('Apply', async () => {
@@ -36,7 +36,7 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, cur
 
   const resetBtn = ui.button(
     ui.iconFA('redo'),
-    () => sequenceInput.value = alignedSequenceCol.get(currentDf.currentRowIdx),
+    () => sequenceInput.value = alignedSequenceCol.get(currentDf.currentRowIdx)!,
     'Reset',
   );
   $(resetBtn).addClass('pep-snippet-editor-icon pep-reset-icon');
