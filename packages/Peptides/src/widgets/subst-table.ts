@@ -15,7 +15,7 @@ export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): 
   const substitutionsArray: string[] = [];
   const deltaArray: number[] = [];
   const substitutedToArray: string[] = [];
-  const alignedSeqCol = table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
+  const alignedSeqCol = table.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
   const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
   const seenIndexes = new Map<number, number[]>();
 

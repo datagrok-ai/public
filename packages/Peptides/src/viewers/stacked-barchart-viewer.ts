@@ -32,7 +32,7 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): voi
 
   grid.onCellTooltip((cell, x, y) => {
     const colSemType = cell.tableColumn?.semType as C.SEM_TYPES;
-    if (colSemType == C.SEM_TYPES.ALIGNED_SEQUENCE || colSemType == C.SEM_TYPES.AMINO_ACIDS) {
+    if (colSemType == C.SEM_TYPES.MACROMOLECULE || colSemType == C.SEM_TYPES.AMINO_ACIDS) {
       if (!cell.isColHeader) {
         const monomerLib = cell.cell.dataFrame.temp[MonomerLibrary.id];
         PeptidesModel.chemPalette.showTooltip(cell, x, y, monomerLib);

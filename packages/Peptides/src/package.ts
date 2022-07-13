@@ -5,11 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './utils/constants';
 
-import {
-  AlignedSequenceCellRenderer,
-  AlignedSequenceDifferenceCellRenderer,
-  AminoAcidsCellRenderer,
-} from './utils/cell-renderer';
+import {AlignedSequenceDifferenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
 import {StackedBarChart} from './viewers/stacked-barchart-viewer';
 
 import {analyzePeptidesWidget} from './widgets/analyze-peptides';
@@ -81,7 +77,7 @@ export async function Peptides(): Promise<void> {
 
 //name: Peptides
 //tags: panel, widgets
-//input: column col {semType: alignedSequence}
+//input: column col {semType: Macromolecule}
 //output: widget result
 export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
   if (!(col.temp['isAnalysisApplicable'] ?? true))
@@ -127,7 +123,7 @@ export async function stackedBarchartWidget(col: DG.Column): Promise<DG.Widget> 
 
 //name: Peptide Molecule
 //tags: panel, widgets
-//input: string peptide {semType: alignedSequence}
+//input: string peptide {semType: Macromolecule}
 //output: widget result
 export async function peptideMolecule(peptide: string): Promise<DG.Widget> {
   [currentTable, alignedSequenceColumn] = getOrDefine();
@@ -151,14 +147,6 @@ export function stackedBarChart(): DG.JsViewer {
   return new StackedBarChart();
 }
 
-//name: alignedSequenceCellRenderer
-//tags: cellRenderer
-//meta.cellType: alignedSequence
-//output: grid_cell_renderer result
-export function alignedSequenceCellRenderer(): AlignedSequenceCellRenderer {
-  return new AlignedSequenceCellRenderer();
-}
-
 //name: aminoAcidsCellRenderer
 //tags: cellRenderer
 //meta.cellType: aminoAcids
@@ -179,7 +167,7 @@ export function manualAlignment(_monomer: string): DG.Widget {
 
 //name: Peptide Space
 //tags: panel, widgets
-//input: column col {semType: alignedSequence}
+//input: column col {semType: Macromolecule}
 //output: widget result
 export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   [currentTable, alignedSequenceColumn] = getOrDefine(col.dataFrame, col);
@@ -189,7 +177,7 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 
 //name: Molfile
 //tags: panel, widgets
-//input: string peptide { semType: alignedSequence }
+//input: string peptide {semType: Macromolecule}
 //output: widget result
 export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
   [currentTable, alignedSequenceColumn] = getOrDefine();
@@ -199,7 +187,7 @@ export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
 
 //name: Molfile
 //tags: panel, widgets
-//input: string _aar { semType: aminoAcids }
+//input: string _aar {semType: aminoAcids}
 //output: widget result
 export async function peptideMolfile2(_aar: string): Promise<DG.Widget> {
   [currentTable, alignedSequenceColumn] = getOrDefine();
@@ -209,7 +197,7 @@ export async function peptideMolfile2(_aar: string): Promise<DG.Widget> {
 
 //name: Multiple sequence alignment
 //tags: panel
-//input: column col {semType: alignedSequence}
+//input: column col {semType: Macromolecule}
 //output: dataframe result
 export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.DataFrame> {
   return msaWidget(col);
@@ -236,7 +224,7 @@ export async function runTestMSAEnoughMemory(_table: DG.DataFrame, col: DG.Colum
 
 //name: Get Peptides Structure
 //tags: panel, widgets
-//input: column col {semType: alignedSequence}
+//input: column col {semType: Macromolecule}
 //output: widget result
 export function getPeptidesStructure(col: DG.Column): DG.Widget {
   const getButtonTooltip = 'Retrieves peptides structure from customer database by special id column';
@@ -266,7 +254,7 @@ export function alignedSequenceDifferenceCellRenderer(): AlignedSequenceDifferen
 
 function getOrDefine(dataframe?: DG.DataFrame, column?: DG.Column | null): [DG.DataFrame, DG.Column] {
   dataframe ??= grok.shell.t;
-  column ??= dataframe.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
+  column ??= dataframe.columns.bySemType(C.SEM_TYPES.MACROMOLECULE);
   if (column === null)
     throw new Error('Table does not contain aligned sequence columns');
 

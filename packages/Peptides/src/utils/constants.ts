@@ -25,7 +25,7 @@ export enum TAGS {
 
 export enum SEM_TYPES {
   AMINO_ACIDS = 'aminoAcids',
-  ALIGNED_SEQUENCE = 'alignedSequence',
+  MACROMOLECULE = 'Macromolecule',
   ALIGNED_SEQUENCE_DIFFERENCE = 'alignedSequenceDifference',
   ACTIVITY = 'activity',
   ACTIVITY_SCALED = 'activityScaled',

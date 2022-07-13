@@ -181,62 +181,6 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
   }
 }
 
-export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
-  get name(): string {return 'alignedSequenceCR';}
-
-  get cellType(): string {return C.SEM_TYPES.ALIGNED_SEQUENCE;}
-
-  get defaultHeight(): number {return 30;}
-
-  get defaultWidth(): number {return 230;}
-
-  /**
-   * Cell renderer function.
-   *
-   * @param {CanvasRenderingContext2D} g Canvas rendering context.
-   * @param {number} x x coordinate on the canvas.
-   * @param {number} y y coordinate on the canvas.
-   * @param {number} w width of the cell.
-   * @param {number} h height of the cell.
-   * @param {DG.GridCell} gridCell Grid cell.
-   * @param {DG.GridCellStyle} cellStyle Cell style.
-   * @memberof AlignedSequenceCellRenderer
-   */
-  render(
-    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle,
-  ): void {
-    const grid = gridCell.grid;
-    const cell = gridCell.cell;
-    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-    g.save();
-    g.beginPath();
-    g.rect(x, y, w, h);
-    g.clip();
-    g.font = '12px monospace';
-    g.textBaseline = 'top';
-    const s: string = cell.value ?? '';
-
-    //TODO: can this be replaced/merged with splitSequence?
-    const subParts = s.split(getSeparator(cell.column));
-    const [text, simplified] = processSequence(subParts);
-    const textSize = g.measureText(text.join(''));
-    let x1 = Math.max(x, x + (w - textSize.width) / 2);
-
-    subParts.forEach((amino, index) => {
-      let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
-      g.fillStyle = ChemPalette.undefinedColor;
-      if (index + 1 < subParts.length) {
-        const gap = simplified ? '' : ' ';
-        outerAmino += `${outerAmino ? '' : '-'}${gap}`;
-      }
-      x1 = printLeftOrCentered(x1, y, w, h, g, outerAmino, color, pivot, true);
-    });
-
-    g.restore();
-  }
-}
-
 export function processSequence(subParts: string[]): [string[], boolean] {
   const simplified = !subParts.some((amino, index) =>
     amino.length > 1 &&

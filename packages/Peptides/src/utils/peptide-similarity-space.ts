@@ -44,7 +44,7 @@ export async function createPeptideSimilaritySpaceViewer(
   const pi = DG.TaskBarProgressIndicator.create('Creating embedding...');
 
   const axesNames = ['~X', '~Y', '~MW'];
-  col ??= table.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
+  col ??= table.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
   const columnData = col.toList().map((v) => AlignedSequenceEncoder.clean(v));
 
   const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(
