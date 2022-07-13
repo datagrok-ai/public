@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {WebLogo} from '../viewers/web-logo';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 export const enum NOTATION {

@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {ConverterFunc, DfReaderFunc} from './types';
-import {NOTATION, NotationConverter} from '../utils/notation-converter';
+import {NOTATION, NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 
 // import {mmSemType} from '../const';
 // import {importFasta} from '../package';
