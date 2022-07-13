@@ -17,7 +17,7 @@ export class SARViewerBase extends DG.JsViewer {
   bidirectionalAnalysis: boolean;
   showSubstitution: boolean;
   maxSubstitutions: number;
-  activityLimit: number;
+  minActivityDelta: number;
   _titleHost = ui.divText('SAR Viewer', {id: 'pep-viewer-title'});
   initialized = false;
   isPropertyChanging: boolean = false;
@@ -25,21 +25,20 @@ export class SARViewerBase extends DG.JsViewer {
   constructor() {
     super();
 
-    this.scaling = this.string('scaling', '-lg', {choices: ['none', 'lg', '-lg']});
+    this.scaling = this.string('scaling', 'none', {choices: ['none', 'lg', '-lg']});
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
     this.showSubstitution = this.bool('showSubstitution', true);
-    this.maxSubstitutions = this.int('maxSubstitutions', 1);
-    this.activityLimit = this.float('activityLimit', 2);
+    this.maxSubstitutions = this.int('maxSubstitutions', 2);
+    this.minActivityDelta = this.float('minActivityDelta', 1);
   }
 
   async onTableAttached(): Promise<void> {
     super.onTableAttached();
-    this.dataFrame.temp[this.tempName] ??= this;
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
     this.model = await PeptidesModel.getInstance(this.dataFrame);
     // this.model.init(this.dataFrame);
-    await this.requestDataUpdate();
     this.helpUrl = '/help/domains/bio/peptides.md';
+    // await this.requestDataUpdate();
   }
 
   detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
@@ -58,7 +57,7 @@ export class SARViewerBase extends DG.JsViewer {
 
   async requestDataUpdate(): Promise<void> {
     await this.model.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis,
-      this.activityLimit, this.maxSubstitutions, this.showSubstitution);
+      this.minActivityDelta, this.maxSubstitutions, this.showSubstitution);
   }
 
   async onPropertyChanged(property: DG.Property): Promise<void> {
@@ -95,7 +94,6 @@ export class SARViewerBase extends DG.JsViewer {
 export class SARViewer extends SARViewerBase {
   _titleHost = ui.divText('Monomer-Positions', {id: 'pep-viewer-title'});
   _name = 'Structure-Activity Relationship';
-  tempName = 'sarViewer';
 
   constructor() {super();}
 
@@ -104,7 +102,8 @@ export class SARViewer extends SARViewerBase {
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
     this.viewerGrid = this.model._sarGrid;
-    this.dataFrame.temp['sarViewer'] = this;
+    this.model.sarViewer = this;
+    // this.dataFrame.temp['sarViewer'] = this;
 
     this.subs.push(this.model.onSARGridChanged.subscribe((data) => {
       this.viewerGrid = data;
@@ -133,7 +132,6 @@ export class SARViewer extends SARViewerBase {
 export class SARViewerVertical extends SARViewerBase {
   _name = 'Sequence-Activity relationship';
   _titleHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
-  tempName = 'sarViewerVertical';
 
   constructor() {
     super();
@@ -144,7 +142,7 @@ export class SARViewerVertical extends SARViewerBase {
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
     this.viewerGrid = this.model._sarVGrid;
-    this.dataFrame.temp['sarViewerVertical'] = this;
+    this.model.sarViewerVertical = this;
 
     this.subs.push(this.model.onSARVGridChanged.subscribe((data) => {
       this.viewerGrid = data;

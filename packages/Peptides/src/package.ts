@@ -80,9 +80,6 @@ export async function Peptides(): Promise<void> {
 //input: column col {semType: Macromolecule}
 //output: widget result
 export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
-  if (!(col.temp['isAnalysisApplicable'] ?? true))
-    return new DG.Widget(ui.divText('Analysis is not applicable'));
-
   [currentTable, alignedSequenceColumn] = getOrDefine(col.dataFrame, col);
   return analyzePeptidesWidget(currentTable, alignedSequenceColumn);
 }

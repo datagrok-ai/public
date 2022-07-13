@@ -55,6 +55,8 @@ export class PeptidesModel {
   isChangingEdfBitset = false;
   splitByPos = false;
   splitByAAR = false;
+  sarViewer!: SARViewer;
+  sarViewerVertical!: SARViewerVertical;
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
@@ -860,10 +862,8 @@ export class PeptidesModel {
   }
 
   syncProperties(isSourceSAR = true): void {
-    const sarViewer: SARViewer = this._dataFrame.temp['sarViewer'];
-    const sarViewerVertical: SARViewerVertical = this._dataFrame.temp['sarViewerVertical'];
-    const sourceViewer = isSourceSAR ? sarViewer : sarViewerVertical;
-    const targetViewer = isSourceSAR ? sarViewerVertical : sarViewer;
+    const [sourceViewer, targetViewer] = isSourceSAR ? [this.sarViewer, this.sarViewerVertical] :
+      [this.sarViewerVertical, this.sarViewer];
     const properties = sourceViewer.props.getProperties();
     for (const property of properties)
       targetViewer.props.set(property.name, property.get(sourceViewer));
