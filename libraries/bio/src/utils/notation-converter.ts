@@ -53,6 +53,44 @@ export class NotationConverter {
   public isDna(): boolean { return this.sourceUnits.toLowerCase().endsWith('dna'); }
 
   public isPeptide(): boolean { return this.sourceUnits.toLowerCase().endsWith('pt'); }
+  
+  public convertFastaStringToHelm(
+    fastaGapSymbol: string = '-',
+    helmGapSymbol: string = '*',
+    str: string
+  ): string {
+    // a function splitting FASTA sequence into an array of monomers
+    const splitterAsFasta = WebLogo.splitterAsFasta;
+
+    const prefix = (this.isDna()) ? 'DNA1{' :
+      (this.isRna()) ? 'RNA1{' :
+        (this.isPeptide()) ? 'PEPTIDE1{' :
+          'Unknown'; // this case should be handled as exceptional
+
+    if (prefix === 'Unknown')
+      throw new Error('Neither peptide, nor nucleotide');
+
+    const postfix = '}$$$';
+    const leftWrapper = (this.isDna()) ? 'D(' :
+      (this.isRna()) ? 'R(' : ''; // no wrapper for peptides
+    const rightWrapper = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides
+
+    const fastaMonomersArray = splitterAsFasta(str);
+    const helmArray = [prefix];
+    let firstIteration = true;
+    for (let i = 0; i < fastaMonomersArray.length; i++) {
+      if (fastaMonomersArray[i] === fastaGapSymbol) {
+        helmArray.push(helmGapSymbol);
+      } else {
+        const dot = firstIteration ? '' : '.';
+        const item = [dot, leftWrapper, fastaMonomersArray[i], rightWrapper];
+        helmArray.push(item.join(''));
+      }
+      firstIteration = false;
+    }
+    helmArray.push(postfix);
+    return helmArray.join('');
+  }
 
   /** Associate notation types with the corresponding units */
   /**
