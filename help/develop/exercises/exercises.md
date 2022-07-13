@@ -52,6 +52,9 @@ predictive models, integration with the external utilities, data augmentation, a
 ## Setting up the environment
 
 *Prerequisites:* basic TypeScript or JavaScript knowledge.
+*Useful links:*
+- [Datagrok tools](https://www.npmjs.com/package/datagrok-tools)
+- [Naming conventions](https://datagrok.ai/help/develop/develop#naming-conventions)
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
    [these instructions](../how-to/set-up-environment.md)
@@ -64,8 +67,8 @@ predictive models, integration with the external utilities, data augmentation, a
    `<yourFirstName>-sequence` using datagrok-tools:
    `grok create <yourFirstName>-sequence` with specifying the `--ts` option to create a package with TypeScript
    configuration
-   (if you are new to TypeScript, you can specify the `--js` option); Note that detectors.js file is still using
-   JavaScript
+   (if you are new to TypeScript, you can specify the `--js` option); Note that detectors.js file should be in 
+   JavaScript anyway
 5. Run `npm install` to link the dependencies mentioned in `package.json` file of your package
 6. Upload it to the server: run `webpack` and `grok publish dev` (see other
    options [here](../develop.md#deployment-modes))
