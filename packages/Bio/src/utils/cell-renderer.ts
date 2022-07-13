@@ -55,17 +55,18 @@ export function processSequence(subParts: string[]): [string[], boolean] {
  * @param {string} [color=undefinedColor] String color.
  * @param {number} [pivot=0] Pirvot.
  * @param {boolean} [left=false] Is left aligned.
- * @param {boolean} [hideMod=false] Hide amino acid redidue modifications.
  * @param {number} [transparencyRate=0.0] Transparency rate where 1.0 is fully transparent
+ * @param {string} [separator=''] Is separator for sequence.
+ * @param {boolean} [last=false] Is checker if element last or not.
  * @return {number} x coordinate to start printing at.
  */
 function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = undefinedColor,
-  pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
+  pivot: number = 0, left = false, transparencyRate: number = 1.0,
   separator: string = '', last: boolean = false): number {
   g.textAlign = 'start';
-  let colorPart = s.substring(0);
+  const colorPart = s.substring(0);
   let grayPart = separator;
   if (last) {
     grayPart = '';
@@ -96,14 +97,10 @@ function printLeftOrCentered(
 }
 
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
-
-  get name(): string {return 'macromoleculeSequence';}
-
-  get cellType(): string {return C.SEM_TYPES.Macro_Molecule;}
-
-  get defaultHeight(): number {return 30;}
-
-  get defaultWidth(): number {return 230;}
+  get name(): string { return 'macromoleculeSequence'; }
+  get cellType(): string { return C.SEM_TYPES.Macro_Molecule; }
+  get defaultHeight(): number { return 30; }
+  get defaultWidth(): number { return 230; }
 
   /**
    * Cell renderer function.
@@ -119,27 +116,27 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
    */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle,
+    cellStyle: DG.GridCellStyle
   ): void {
     const grid = gridCell.grid;
     const cell = gridCell.cell;
     const tag = gridCell.cell.column.getTag(DG.TAGS.UNITS);
     if (tag === 'HELM') {
-      let host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
+      const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
       host.setAttribute('dataformat', 'helm');
       host.setAttribute('data', gridCell.cell.value);
       gridCell.element = host;
       //@ts-ignore
-      var canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
-      var formula = canvas.getFormula(true);
+      const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
+      const formula = canvas.getFormula(true);
       if (!formula) {
         gridCell.element = ui.divText(gridCell.cell.value, {style: {color: 'red'}});
       } else {
         gridCell.element = host;
-        var molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
-        var coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
-        var molfile = canvas.getMolfile();
-        var result = formula + ', ' + molWeight + ', ' + coef + ', ' + molfile;
+        const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
+        const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
+        const molfile = canvas.getMolfile();
+        const result = formula + ', ' + molWeight + ', ' + coef + ', ' + molfile;
         lru.set(gridCell.cell.value, result);
       }
     } else {
@@ -159,12 +156,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const palette = getPalleteByType(paletteType);
 
       const separator = gridCell.cell.column.getTag('separator') ?? '';
-      const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator'));// splitter,
+      const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator'));
 
       const subParts: string[] = splitterFunc(cell.value);
       // console.log(subParts);
-
-      const textSize = g.measureText(subParts.join(''));
       let x1 = x;
       let color = undefinedColor;
       subParts.forEach((amino, index) => {
@@ -174,7 +169,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         if (index === subParts.length - 1) {
           last = true;
         }
-        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, false, 1.0, separator, last);
+        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0,  separator, last);
       });
 
       g.restore();
