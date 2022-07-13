@@ -8,7 +8,7 @@ import './tests/detectors-test';
 import './tests/msa-tests';
 import './tests/sequence-space-test';
 import './tests/activity-cliffs-tests';
-import './tests/splitter-test';
+import './tests/splitters-test';
 import './tests/renderer-test';
 import './tests/convert-test';
 

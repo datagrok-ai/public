@@ -11,7 +11,6 @@ import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignmen
 import {SequenceAlignment, Aligned} from './seq_align';
 import {Nucleotides} from '@datagrok-libraries/bio/src/nucleotides';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
-import {convert} from './utils/convert';
 import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
 import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
@@ -19,10 +18,8 @@ import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cl
 import {getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
-import {Column} from 'datagrok-api/dg';
-import {SEM_TYPES} from './utils/constants';
-import { delay } from '@datagrok-libraries/utils/src/test';
-import { TableView } from 'datagrok-api/dg';
+import {delay} from '@datagrok-libraries/utils/src/test';
+import {convert} from './utils/convert';
 
 //tags: init
 export async function initBio(): Promise<void> {
@@ -175,21 +172,22 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   if (!checkInputColumn(macroMolecule, 'To Atomic Level'))
     return;
 
-  let currentView: TableView;
-  for (let view of grok.shell.tableViews) {
-    if (df.name === view.name) {
+  let currentView: DG.TableView;
+  for (const view of grok.shell.tableViews) {
+    if (df.name === view.name)
       currentView = view;
-    }
   }
-  const file = await _package.files.readAsText('tests/sar-small.csv');
-  const df2 = DG.DataFrame.fromCsv(file);
-  const v = grok.shell.addTableView(df2);
-  setTimeout(()=> {
+
+  // Some hack to activate Chem Molecule rendering
+  const file2 = await _package.files.readAsText('tests/sar-small.csv');
+  const df2 = DG.DataFrame.fromCsv(file2);
+  const v2 = grok.shell.addTableView(df2);
+  setTimeout(() => {
     grok.shell.closeTable(df2);
-    v.close();
+    v2.close();
     grok.shell.v = currentView;
   }, 100);
-  
+
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
   const atomicCodes = getMolfilesFromSeq(macroMolecule, monomersLibObject);
@@ -199,7 +197,6 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   col.semType = DG.SEMTYPE.MOLECULE;
   col.tags[DG.TAGS.UNITS] = 'molblock';
   df.columns.add(col, true);
-
 }
 
 

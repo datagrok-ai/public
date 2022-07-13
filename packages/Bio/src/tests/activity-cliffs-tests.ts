@@ -1,7 +1,9 @@
 import {after, before, category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
+
 import * as DG from 'datagrok-api/dg';
-import {createTableView, readDataframe} from './utils';
-import {_package} from '../package-test';
+import * as grok from 'datagrok-api/grok';
+
+import {readDataframe} from './utils';
 import {getEmbeddingColsNames, sequenceSpace} from '../utils/sequence-space';
 import {drawTooltip, sequenceGetSimilarities} from '../utils/sequence-activity-cliffs';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
@@ -12,8 +14,15 @@ category('activityCliffs', async () => {
   let actCliffsDf: DG.DataFrame;
 
   before(async () => {
-    actCliffsTableView = await createTableView('sample_MSA.csv');
-    actCliffsDf = await readDataframe('sample_MSA.csv');
+    actCliffsDf = await readDataframe('samples/sample_MSA.csv');
+    actCliffsTableView = grok.shell.addTableView(actCliffsDf);
+
+    actCliffsDf = actCliffsTableView.dataFrame;
+  });
+
+  after(async () => {
+    grok.shell.closeTable(actCliffsDf);
+    actCliffsTableView.close();
   });
 
   test('activityCliffsOpen', async () => {
@@ -41,10 +50,6 @@ category('activityCliffs', async () => {
 
     const cliffsLink = (Array.from(scatterPlot.root.children) as Element[])
       .filter((it) => it.className === 'ui-btn ui-btn-ok');
-    expect((cliffsLink[0] as HTMLElement).innerText, '101 cliffs');
-  });
-
-  after(async () => {
-    actCliffsTableView.close();
+    expect((cliffsLink[0] as HTMLElement).innerText, '105 cliffs');
   });
 });

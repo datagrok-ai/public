@@ -111,9 +111,10 @@ class BioPackageDetectors extends DG.Package {
     // const noSeparatorRe = /[a-z\d]+$/i;
     const noSeparatorChemRe = /[HBCNOFPSKVYI]/i; // Mendeleev's periodic table single char elements
     const noSeparatorAlphaDigitRe = /[\dA-Z]/i;
+    const noSeparatorBracketsRe = /[\[\]()<>{}]/i;
     const cleanFreq = Object.assign({}, ...Object.entries(freq)
       .filter(([m, f]) => m != ' ' &&
-        !noSeparatorChemRe.test(m) && !noSeparatorAlphaDigitRe.test(m) &&
+        !noSeparatorChemRe.test(m) && !noSeparatorAlphaDigitRe.test(m) && !noSeparatorBracketsRe.test(m) &&
         !BioPackageDetectors.PeptideFastaAlphabet.has(m) &&
         !BioPackageDetectors.DnaFastaAlphabet.has(m))
       .map(([m, f]) => ({[m]: f})));

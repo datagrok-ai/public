@@ -7,12 +7,15 @@ import {importFasta, multipleSequenceAlignmentAny} from '../package';
 
 category('renderers', () => {
   let tvList: DG.TableView[];
+  let dfList: DG.DataFrame[];
 
   before(async () => {
     tvList = [];
+    dfList = [];
   });
 
   after(async () => {
+    dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
     tvList.forEach((tv: DG.TableView) => tv.close());
   });
 
@@ -23,6 +26,7 @@ category('renderers', () => {
   async function _testAfterMsa() {
     const fastaTxt: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA.fasta');
     const df: DG.DataFrame = importFasta(fastaTxt)[0];
+    // await grok.data.detectSemanticTypes(df);
 
     const srcSeqCol: DG.Column | null = df.col('sequence');
     expect(srcSeqCol !== null, true);
@@ -31,14 +35,15 @@ category('renderers', () => {
     const tv: DG.TableView = grok.shell.addTableView(df);
     console.log('Bio: tests/renderers/afterMsa, table view');
 
-    await grok.data.detectSemanticTypes(df);
+    // await grok.data.detectSemanticTypes(df);
     console.log('Bio: tests/renderers/afterMsa, detectSemanticTypes');
 
-    console.log('Bio: tests/renderers/afterMsa, src before test semType' +
+    console.log('Bio: tests/renderers/afterMsa, src before test ' +
       `semType="${srcSeqCol!.semType}", units="${srcSeqCol!.getTag(DG.TAGS.UNITS)}", ` +
       `cell.renderer="${srcSeqCol!.getTag('cell.renderer')}"`);
     expect(srcSeqCol!.semType, DG.SEMTYPE.MACROMOLECULE);
     expect(srcSeqCol!.getTag(DG.TAGS.UNITS), 'fasta:SEQ:PT');
+    // TODO: Find the way to check renderer for columns
     expect(srcSeqCol!.getTag('cell.renderer'), 'Macromolecule');
     console.log('Bio: tests/renderers/afterMsa, src semType tested');
 
@@ -53,6 +58,7 @@ category('renderers', () => {
     expect(msaSeqCol!.getTag('cell.renderer'), 'Macromolecule');
     console.log('Bio: tests/renderers/afterMsa, msa semType tested');
 
+    dfList.push(df);
     tvList.push(tv);
   }
 });

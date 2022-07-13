@@ -68,9 +68,9 @@ function printLeftOrCentered(
   g.textAlign = 'start';
   const colorPart = s.substring(0);
   let grayPart = separator;
-  if (last) {
+  if (last)
     grayPart = '';
-  }
+
   const textSize = g.measureText(colorPart + grayPart);
   const indent = 5;
 
@@ -98,8 +98,11 @@ function printLeftOrCentered(
 
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   get name(): string { return 'macromoleculeSequence'; }
+
   get cellType(): string { return C.SEM_TYPES.Macro_Molecule; }
+
   get defaultHeight(): number { return 30; }
+
   get defaultWidth(): number { return 230; }
 
   /**
@@ -166,10 +169,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         color = palette.get(amino);
         g.fillStyle = undefinedColor;
         let last = false;
-        if (index === subParts.length - 1) {
+        if (index === subParts.length - 1)
           last = true;
-        }
-        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0,  separator, last);
+
+        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last);
       });
 
       g.restore();
