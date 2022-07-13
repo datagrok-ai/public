@@ -21,23 +21,6 @@ export async function initChem(): Promise<void> {
   });
 }
 
-const fastaPt = `seq
-FWPHEY
-YNRQWYV
-MKPSEYV
-`;
-
-//name: getCol
-export async function getCol() {
-  const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(fastaPt);
-  await grok.data.detectSemanticTypes(srcDf);
-  const srcCol: DG.Column = srcDf.col('seq');
-  const converter = new NotationConverter(srcCol);
-  const resCol = converter.convert(NOTATION.HELM);
-  return resCol;
-};
-
-
 //tags: cellEditor
 //description: Macromolecule
 //input: grid_cell cell
@@ -57,15 +40,30 @@ export function editMoleculeCell(cell: DG.GridCell): void {
   scil.apply(app.properties.parent.style, s);
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
-  setTimeout(function() {
-    app.canvas.helm.setSequence(cell.cell.value , 'HELM');
-  }, 200);
-  //@ts-ignore
-  ui.dialog({ showHeader: false, showFooter: true })
-  .add(view)
-  .onOK(() => {
-    cell.cell.value = app.canvas.getHelm(true);
-  }).show({ modal: true, fullScreen: true});
+  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === "HELM"){
+    setTimeout(function() {
+      app.canvas.helm.setSequence(cell.cell.value , 'HELM');
+    }, 200);
+    //@ts-ignore
+    ui.dialog({ showHeader: false, showFooter: true })
+    .add(view)
+    .onOK(() => {
+      cell.cell.value = app.canvas.getHelm(true);
+    }).show({ modal: true, fullScreen: true});
+  }
+  else {
+    const converter = new NotationConverter(cell.gridColumn.column);
+    const resStr = converter.convertFastaStringToHelm(null, null, cell.cell.value);
+    setTimeout(function() {
+      app.canvas.helm.setSequence(resStr , 'HELM');
+    }, 200);
+    //@ts-ignore
+    ui.dialog({ showHeader: false, showFooter: true })
+    .add(view)
+    .onOK(() => {
+      cell.cell.value;
+    }).show({ modal: true, fullScreen: true});
+  }
 }
 
 //name: Details
