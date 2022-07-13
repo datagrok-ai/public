@@ -17,12 +17,12 @@ export async function chemSpace(spaceParams: ISequenceSpaceParams): Promise<ISeq
     spaceParams.methodName,
     spaceParams.similarityMetric as BitArrayMetrics,
     spaceParams.options);
-  const cols: DG.Column[] = spaceParams.embedAxesNames.map((name, index) => DG.Column.fromFloat32Array(name, chemSpaceResult.embedding[index]));
+  const cols: DG.Column[] = spaceParams.embedAxesNames.map((name: string, index: number) => DG.Column.fromFloat32Array(name, chemSpaceResult.embedding[index]));
   return {distance: chemSpaceResult.distance, coordinates: new DG.ColumnList(cols)};
 }
 
 export function getEmbeddingColsNames(df: DG.DataFrame){
   const axes = ['Embed_X', 'Embed_Y'];
-  const colNameInd = df.columns.names().filter((it) => it.includes(axes[0])).length + 1;
+  const colNameInd = df.columns.names().filter((it: string) => it.includes(axes[0])).length + 1;
   return axes.map((it) => `${it}_${colNameInd}`);
 }

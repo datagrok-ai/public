@@ -29,7 +29,6 @@ import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {_saveAsSdf} from './utils/sdf-utils';
 import {Fingerprint} from './utils/chem-common';
 import {assure} from '@datagrok-libraries/utils/src/test';
-
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
@@ -115,7 +114,7 @@ export async function rdKitCellRenderer(): Promise<RDKitCellRenderer> {
 }
 
 //name: chemCellRenderer
-//tags: cellRenderer,cellRenderer-Molecule
+//tags: cellRenderer, cellRenderer-Molecule
 //meta.cellType: Molecule
 //meta-cell-renderer-sem-type: Molecule
 //output: grid_cell_renderer result
@@ -244,24 +243,24 @@ export function saveAsSdf(): void {
 //top-menu: Chem | Activity Cliffs...
 //name: Activity Cliffs
 //description: detect activity cliffs
-//input: dataframe df [Input data table]
+//input: dataframe table [Input data table]
 //input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
   similarity: number, methodName: string) : Promise<void> {
- // await getActivityCliffs(df, smiles, activities, similarity, methodName);
  const axesNames = getEmbeddingColsNames(df);
  const options = {
   'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
 };
  await getActivityCliffs(
-  df,
-  smiles,
+  df, 
+  smiles, 
   axesNames,
-  activities,
-  similarity,
+  'Activity cliffs',
+  activities, 
+  similarity, 
   'Tanimoto',
   methodName,
   DG.SEMTYPE.MOLECULE,
@@ -296,7 +295,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, m
     if (plotEmbeddings) {
       for (let v of grok.shell.views) {
         if (v.name === table.name)
-          (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1]});
+          (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
       }
     }
   };
