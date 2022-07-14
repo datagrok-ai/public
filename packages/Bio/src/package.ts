@@ -15,10 +15,9 @@ import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
 import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cliffs';
-import {getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
+import {createJsonMonomerLibFromSdf, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
-import {delay} from '@datagrok-libraries/utils/src/test';
 import {convert} from './utils/convert';
 
 //tags: init
@@ -246,6 +245,13 @@ export async function compositionAnalysis(): Promise<void> {
   }
 
   tv.addViewer('WebLogo', {sequenceColumnName: col.name});
+}
+
+//top-menu: Bio | Sdf to Json lib...
+//name: sdfToJsonLib
+//input: dataframe table
+export async function sdfToJsonLib(table: DG.DataFrame) {
+  const jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);   
 }
 
 // helper function for importFasta
