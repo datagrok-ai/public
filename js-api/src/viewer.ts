@@ -11,6 +11,7 @@ import {Subscription} from "rxjs";
 import {map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper} from "./helpers";
+import { IScatterPlotLookSettings } from "./interfaces/d4";
 import dayjs from "dayjs";
 
 declare let DG: any;
@@ -48,8 +49,7 @@ export class TypedEventArgs<TData> {
      color: 'race',
    });
  **/
-export class Viewer extends Widget {
-  props: ObjectPropertyBag & any | undefined;
+export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   public tags: any;
   private _meta: ViewerMetaHelper | undefined;
@@ -65,6 +65,7 @@ export class Viewer extends Widget {
 
     if (dart != null) {
       /** @member {ObjectPropertyBag} */
+      // @ts-ignore
       this.props = new ObjectPropertyBag(this, api.grok_Viewer_Get_Look(this.dart));
       this.tags = new MapProxy(api.grok_Viewer_Get_Tags(this.dart), 'tags', 'string');
     }
@@ -87,6 +88,7 @@ export class Viewer extends Widget {
    *  Sets viewer options. See also {@link getOptions}
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot}
    *  @param {object} map */
+  // add tsettings
   setOptions(map: { type?: ViewerType, [key: string]: any }): void {
     api.grok_Viewer_Options(this.dart, JSON.stringify(map));
   }
@@ -351,7 +353,7 @@ export class FilterGroup extends Viewer {
 
 
 /** 2D scatter plot */
-export class ScatterPlotViewer extends Viewer {
+export class ScatterPlotViewer extends Viewer<IScatterPlotLookSettings> {
   constructor(dart: any) {
     super(dart);
   }
