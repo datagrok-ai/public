@@ -70,7 +70,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
           return ui.label('Could not compute embeddings');
 
         const edfSelection = edf.selection;
-        edfSelection.copyFrom(this.model.getBiteset());
+        edfSelection.copyFrom(this.dataFrame.selection);
         edfSelection.onChanged.subscribe(() => {
           if (!this.model.isChangingEdfBitset)
             this.model.fireBitsetChanged(true);

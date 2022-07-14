@@ -1,9 +1,12 @@
-import * as DG from 'datagrok-api/dg';
-
-import * as C from './constants';
-
 export function stringToBool(str: string): boolean {
-  return str === 'true' ? true : false;
+  switch (str) {
+    case 'true':
+      return true;
+    case 'false':
+      return false;
+    default:
+      throw new Error(`StrToBoolError: cannot convert string '${str}' to boolean`);
+  }
 }
 
 export function getTypedArrayConstructor(
