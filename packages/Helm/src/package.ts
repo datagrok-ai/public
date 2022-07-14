@@ -9,8 +9,7 @@ import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 export const _package = new DG.Package();
 
-const lru = new DG.LruCache<any, any>(); 
-
+const lru = new DG.LruCache<any, any>();
 
 
 //tags: init
@@ -18,7 +17,7 @@ export async function initChem(): Promise<void> {
   // apparently HELMWebEditor requires dojo to be initialized first
   return new Promise((resolve, reject) => {
     // @ts-ignore
-    dojo.ready(function () { resolve(null); });
+    dojo.ready(function() { resolve(null); });
   });
 }
 
@@ -26,54 +25,57 @@ export async function initChem(): Promise<void> {
 //description: Macromolecule
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell): void {
-  let view = ui.div();
+  const view = ui.div();
   org.helm.webeditor.MolViewer.molscale = 0.8;
-  let app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
-  var sizes = app.calculateSizes();
+  const app = new scil.helm.App(view, {
+    showabout: false,
+    mexfontsize: '90%',
+    mexrnapinontab: true,
+    topmargin: 20,
+    mexmonomerstab: true,
+    sequenceviewonly: false,
+    mexfavoritefirst: true,
+    mexfilter: true
+  });
+  const sizes = app.calculateSizes();
   app.canvas.resize(sizes.rightwidth, sizes.topheight - 210);
-  var s = { width: sizes.rightwidth + "px", height: sizes.bottomheight + "px" };
+  let s = {width: sizes.rightwidth + 'px', height: sizes.bottomheight + 'px'};
   //@ts-ignore
   scil.apply(app.sequence.style, s);
   //@ts-ignore
   scil.apply(app.notation.style, s);
-  s = { width: sizes.rightwidth + "px", height: (sizes.bottomheight + app.toolbarheight) + "px" };
+  s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + app.toolbarheight) + 'px'};
   //@ts-ignore
   scil.apply(app.properties.parent.style, s);
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
-  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === "HELM"){
-    setTimeout(function() {
-      app.canvas.helm.setSequence(cell.cell.value , 'HELM');
-    }, 200);
-    //@ts-ignore
-    ui.dialog({ showHeader: false, showFooter: true })
-    .add(view)
-    .onOK(() => {
-      cell.cell.value = app.canvas.getHelm(true);
-    }).show({ modal: true, fullScreen: true});
+
+  let dialogValue: string;
+  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'HELM') {
+    dialogValue = cell.cell.value;
+  } else {
+    const converter: NotationConverter = new NotationConverter(cell.cell.column);
+    dialogValue = converter.convertStringToHelm(cell.cell.value);
   }
-  else if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === "fasta:SEQ:PT") {
-    const converter = new NotationConverter(cell.gridColumn.column);
-    const resStr = converter.convertFastaStringToHelm(null, null, cell.cell.value);
-    setTimeout(function() {
-      app.canvas.helm.setSequence(resStr , 'HELM');
-    }, 200);
-    //@ts-ignore
-    ui.dialog({ showHeader: false, showFooter: true })
+
+  setTimeout(function() {
+    app.canvas.helm.setSequence(dialogValue, 'HELM');
+  }, 200);
+  //@ts-ignore
+  ui.dialog({showHeader: false, showFooter: true})
     .add(view)
     .onOK(() => {
       cell.cell.value;
-    }).show({ modal: true, fullScreen: true});
-  }
+    }).show({modal: true, fullScreen: true});
 }
 
 //name: Details
 //tags: panel, widgets
 //input: string helmString {semType: Macromolecule}
 //output: widget result
-export function detailsPanel(helmString: string){
+export function detailsPanel(helmString: string) {
   //return new DG.Widget(ui.divText(lru.get(helmString)));
-  var result = lru.get(helmString).split(',');
+  const result = lru.get(helmString).split(',');
   return new DG.Widget(
     ui.tableFromMap({
       'formula': result[0].replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
@@ -85,24 +87,24 @@ export function detailsPanel(helmString: string){
       'smiles': ui.wait(async () => ui.divText(await helmToSmiles(helmString))),
       //'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),
     })
-  )
+  );
 }
 
 
-async function loadDialog () {
+async function loadDialog() {
   //@ts-ignore
   let res = await grok.dapi.files.list('System:AppData/Helm', false, '');
   //@ts-ignore
   res = res.map((e) => e.path);
   //@ts-ignore
-  let FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
-  let grid = grok.shell.tv.grid;
+  const FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
+  const grid = grok.shell.tv.grid;
   ui.dialog('Load library from file')
-  .add(FilesList)
-  .onOK(async () => {
-    await monomerManager(FilesList.value);
-    grid.invalidate()
-  }).show();
+    .add(FilesList)
+    .onOK(async () => {
+      await monomerManager(FilesList.value);
+      grid.invalidate();
+    }).show();
 };
 
 //name: Library
@@ -111,14 +113,14 @@ async function loadDialog () {
 //output: widget result
 export function libraryPanel(helmString: string) {
   //@ts-ignore
-  let loadButton = ui.button('Load Library');
+  const loadButton = ui.button('Load Library');
   loadButton.addEventListener('click', loadDialog);
   return new DG.Widget(ui.divH([loadButton]));
 }
 
 async function accessServer(url: string, key: string) {
   const params: RequestInit = {
-    method: 'GET', 
+    method: 'GET',
     headers: {
       'Accept': 'application/json',
     }
@@ -133,7 +135,7 @@ async function accessServer(url: string, key: string) {
 //input: string helmString {semType: Macromolecule}
 //output: string res
 export async function helmToFasta(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/Fasta/Produce/${helmString}`
+  const url = `http://localhost:8081/WebService/service/Fasta/Produce/${helmString}`;
   return await accessServer(url, 'FastaFile');
 }
 
@@ -142,7 +144,7 @@ export async function helmToFasta(helmString: string) {
 //input: string helmString {semType: Macromolecule}
 //output: string res
 export async function helmToRNA(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/Fasta/Convert/RNA/${helmString}`
+  const url = `http://localhost:8081/WebService/service/Fasta/Convert/RNA/${helmString}`;
   return await accessServer(url, 'Sequence');
 }
 
@@ -152,7 +154,7 @@ export async function helmToRNA(helmString: string) {
 //input: string helmString {semType: Macromolecule}
 //output: string res
 export async function helmToPeptide(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/Fasta/Convert/PEPTIDE/${helmString}`
+  const url = `http://localhost:8081/WebService/service/Fasta/Convert/PEPTIDE/${helmString}`;
   return await accessServer(url, 'Sequence');
 }
 
@@ -161,24 +163,23 @@ export async function helmToPeptide(helmString: string) {
 //input: string helmString {semType: Macromolecule}
 //output: string smiles {semType: Molecule}
 export async function helmToSmiles(helmString: string) {
-  const url = `http://localhost:8081/WebService/service/SMILES/${helmString}`
+  const url = `http://localhost:8081/WebService/service/SMILES/${helmString}`;
   return await accessServer(url, 'SMILES');
 }
 
 function getRS(smiles: string) {
-  var new_s = smiles.match(/(?<=\[)[^\][]*(?=])/gm);
-  var res = {};
-  var el = '';
-  var digit;
-  for (var i = 0; i < new_s.length; i++) {
-    if (new_s[i] != null){
-      if (/\d/.test(new_s[i])) {
-        digit = new_s[i][new_s[i].length - 1];
-        new_s[i] = new_s[i].replace(/[0-9]/g, '');
-        for (var j = 0; j < new_s[i].length; j++) {
-            if (new_s[i][j] != ':'){
-                el += new_s[i][j];
-            }
+  const newS = smiles.match(/(?<=\[)[^\][]*(?=])/gm);
+  const res = {};
+  let el = '';
+  let digit;
+  for (let i = 0; i < newS.length; i++) {
+    if (newS[i] != null) {
+      if (/\d/.test(newS[i])) {
+        digit = newS[i][newS[i].length - 1];
+        newS[i] = newS[i].replace(/[0-9]/g, '');
+        for (let j = 0; j < newS[i].length; j++) {
+          if (newS[i][j] != ':')
+            el += newS[i][j];
         }
         res['R' + digit] = el;
         el = '';
@@ -191,18 +192,18 @@ function getRS(smiles: string) {
 async function monomerManager(value: string) {
   const file = await _package.files.readAsText(value.split('/')[1]);
   const df = DG.DataFrame.fromJson(file);
-  var m;
-  for (var i = 0; i < df.rowCount; i++){
+  let m;
+  for (let i = 0; i < df.rowCount; i++) {
     m = {
-      'id': df.get('symbol', i).toString(), 
+      'id': df.get('symbol', i).toString(),
       'n': df.get('name', i).toString(),
       'na': df.get('naturalAnalog', i).toString(),
       'type': df.get('polymerType', i).toString(),
-      'mt': df.get('monomerType', i).toString(), 
-      'm': df.get('molfile', i).toString(), 
-      rs: Object.keys(getRS(df.get('smiles', i).toString())).length,
-      at: getRS(df.get('smiles', i).toString()),
-    }
+      'mt': df.get('monomerType', i).toString(),
+      'm': df.get('molfile', i).toString(),
+      'rs': Object.keys(getRS(df.get('smiles', i).toString())).length,
+      'at': getRS(df.get('smiles', i).toString()),
+    };
     org.helm.webeditor.Monomers.addOneMonomer(m);
   }
 }
@@ -213,41 +214,48 @@ export function helmColumnToSmiles(helmColumn: DG.Column) {
   //todo: add column with smiles to col.dataFrame.
 }
 
+// Synonym to overcome eslint error
+const GetMonomerSet = scil.helm.Monomers.getMonomerSet;
+
 //name: findMonomers
 //input: string helmString { semType: Macromolecule }
 export async function findMonomers(helmString: string) {
   const types = Object.keys(org.helm.webeditor.monomerTypeList());
   const monomers = [];
-  const monomer_names = [];
-  for (var i = 0; i < types.length; i++) {
-    monomers.push(new scil.helm.Monomers.getMonomerSet(types[i]));
-    Object.keys(monomers[i]).forEach(k => {
-      monomer_names.push(monomers[i][k].id);
+  const monomerNames = [];
+  for (let i = 0; i < types.length; i++) {
+    monomers.push(new GetMonomerSet(types[i]));
+    Object.keys(monomers[i]).forEach((k) => {
+      monomerNames.push(monomers[i][k].id);
     });
   }
-  const split_string = WebLogo.splitterAsHelm(helmString);
-  return new Set(split_string.filter(val => !monomer_names.includes(val)));
+  const splitString = WebLogo.splitterAsHelm(helmString);
+  return new Set(splitString.filter((val) => !monomerNames.includes(val)));
 }
 
 class HelmCellRenderer extends DG.GridCellRenderer {
-
   get name() { return 'macromolecule'; }
+
   get cellType() { return 'macromolecule'; }
+
   get defaultWidth(): number | null { return 400; }
+
   get defaultHeight(): number | null { return 100; }
 
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
-    let host = ui.div([], { style: { width: `${w}px`, height: `${h}px`}});
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
+  ) {
+    const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
     host.setAttribute('dataformat', 'helm');
     host.setAttribute('data', gridCell.cell.value);
 
     gridCell.element = host;
-    var canvas = new JSDraw2.Editor(host, { width: w, height: h, skin: "w8", viewonly: true });
-    var formula = canvas.getFormula(true);
-    var molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
-    var coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
-    var molfile = canvas.getMolfile();
-    var result = formula + ', ' + molWeight + ', ' + coef + ', ' + molfile;
+    const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
+    const formula = canvas.getFormula(true);
+    const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
+    const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
+    const molfile = canvas.getMolfile();
+    const result = formula + ', ' + molWeight + ', ' + coef + ', ' + molfile;
     lru.set(gridCell.cell.value, result);
   }
 }
