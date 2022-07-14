@@ -163,7 +163,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    ![exercises-semantic-tooltip](exercises-semantic-tooltip.png)
    Alternatively, you can find this information if you click on the column and expand the 'Details' pane in the property
    panel on the right.
-7. Now transform the previously created `complement` function into an [info panel](../how-to/add-info-panel.md):
+7. Now let’s put the result of the previously created `complement` function into an [info panel](../how-to/add-info-panel.md):
    tag it with `panel` and `widgets` tags and change the output type to `widget` (see an example [here][014]). This will
    instruct the platform to use the `complement` function for providing additional information for string values of
    the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell in the `sequence`
