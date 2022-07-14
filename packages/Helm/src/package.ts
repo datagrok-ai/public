@@ -5,6 +5,8 @@ import * as DG from 'datagrok-api/dg';
 //import {lru} from '../../Bio/src/utils/cell-renderer';
 import {NotationConverter, NOTATION} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import { createJsonMonomerLibFromSdf } from './utils';
+import { MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES } from './constants';
 //import {ConverterFunc, DfReaderFunc} from '../../Bio/src/tests/types';
 
 export const _package = new DG.Package();
@@ -190,22 +192,35 @@ function getRS(smiles: string) {
 }
 
 async function monomerManager(value: string) {
-  const file = await _package.files.readAsText(value.split('/')[1]);
-  const df = DG.DataFrame.fromJson(file);
-  let m;
-  for (let i = 0; i < df.rowCount; i++) {
-    m = {
-      'id': df.get('symbol', i).toString(),
-      'n': df.get('name', i).toString(),
-      'na': df.get('naturalAnalog', i).toString(),
-      'type': df.get('polymerType', i).toString(),
-      'mt': df.get('monomerType', i).toString(),
-      'm': df.get('molfile', i).toString(),
-      'rs': Object.keys(getRS(df.get('smiles', i).toString())).length,
-      'at': getRS(df.get('smiles', i).toString()),
-    };
-    org.helm.webeditor.Monomers.addOneMonomer(m);
+  let df: any[];
+  if(value.endsWith('.sdf')) {
+    const file = await _package.files.readAsBytes(value.split('/')[1]);
+    const dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
+    df = createJsonMonomerLibFromSdf(dfSdf[0]);
+
+  } else {
+    const file = await _package.files.readAsText(value.split('/')[1]);
+    df = JSON.parse(file);
   }
+  
+  df.forEach(monomer => {
+    const m = {};
+    Object.keys(MONOMER_MANAGER_MAP).forEach(field => {
+      m[field] = monomer[MONOMER_MANAGER_MAP[field]] ?? '';
+    });
+    if (monomer[RGROUPS]) {
+      m['rs'] = monomer[RGROUPS].length;
+      const at = {};
+      monomer[RGROUPS].forEach(it => {
+        at[it[RGROUP_LABEL]] = it[RGROUP_CAP_GROUP_NAME];
+      });
+      m['at'] = at;
+    } else {
+      m['rs'] = Object.keys(getRS(df[SMILES].toString())).length;
+      m['at'] = getRS(df[SMILES].toString());
+    }
+    org.helm.webeditor.Monomers.addOneMonomer(m);
+  })
 }
 
 //name: helmColumnToSmiles
