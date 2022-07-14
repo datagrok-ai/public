@@ -10,7 +10,7 @@ import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-mono
 import {convertSequence, undefinedInputSequence, isValidSequence, getFormat} from
   './structures-works/sequence-codes-tools';
 import {map, COL_NAMES, MODIFICATIONS} from './structures-works/map';
-import {siRnaAxolabsToGcrs} from './structures-works/converters';
+import {siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs} from './structures-works/converters';
 import {SALTS_CSV} from './salts';
 import {USERS_CSV} from './users';
 import {ICDS} from './ICDs';
@@ -309,23 +309,37 @@ function molecularWeight(sequence: string, weightsObj: {[index: string]: number}
 
 //tags: autostart
 export function autostartOligoSdFileSubscription() {
-  let alreadyAdded = false;
   grok.events.onViewAdded.subscribe((v: any) => {
     if (v.type == 'TableView') {
       if (v.dataFrame.columns.contains(COL_NAMES.TYPE))
         oligoSdFile(v.dataFrame);
       grok.events.onContextMenu.subscribe((args) => {
-        for (const col of v.dataFrame.columns) {
-          if (!alreadyAdded && DG.Detector.sampleCategories(col, (s) => /^[fsACGUacgu]{6,}$/.test(s))) {
-            alreadyAdded = true;
-            args.args.menu.item('Convert to GCRS', () => {
-              const seqCol = args.args.context.table.currentCol;
-              args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
-                return siRnaAxolabsToGcrs(seqCol.get(i));
-              });
+        const seqCol = args.args.context.table.currentCol;
+        if (DG.Detector.sampleCategories(seqCol, (s) => /^[fsACGUacgu]{6,}$/.test(s))) {
+          args.args.menu.item('Convert Axolabs to GCRS', () => {
+            args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+              return siRnaAxolabsToGcrs(seqCol.get(i));
             });
-            break;
-          };
+          });
+        } else if (DG.Detector.sampleCategories(seqCol, (s) => /^[fmpsACGU]{6,}$/.test(s))) {
+          args.args.menu.item('Convert GCRS to raw', () => {
+            args.args.context.table.columns.addNewString(seqCol.name + ' to raw').init((i: number) => {
+              return gcrsToNucleotides(seqCol.get(i));
+            });
+          });
+        } else if (DG.Detector.sampleCategories(seqCol, (s) => /^[*56789ATGC]{6,}$/.test(s))) {
+          args.args.menu.item('Convert Biospring to GCRS', () => {
+            const seqCol = args.args.context.table.currentCol;
+            args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+              return asoGapmersBioSpringToGcrs(seqCol.get(i));
+            });
+          });
+        } else if (DG.Detector.sampleCategories(seqCol, (s) => /^[*1-8]{6,}$/.test(s))) {
+          args.args.menu.item('Convert Biospring to GCRS', () => {
+            args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+              return siRnaAxolabsToGcrs(seqCol.get(i));
+            });
+          });
         }
       });
     }
