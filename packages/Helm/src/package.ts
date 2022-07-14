@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 //import {lru} from '../../Bio/src/utils/cell-renderer';
 import {NotationConverter, NOTATION} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 //import {ConverterFunc, DfReaderFunc} from '../../Bio/src/tests/types';
 
 export const _package = new DG.Package();
@@ -224,7 +225,7 @@ export async function findMonomers(helmString: string) {
       monomer_names.push(monomers[i][k].id);
     });
   }
-  const split_string = helmString.match(/[^\s.,\/\\(){}$]+/gim);
+  const split_string = WebLogo.splitterAsHelm(helmString);
   return new Set(split_string.filter(val => !monomer_names.includes(val)));
 }
 
