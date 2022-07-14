@@ -22,9 +22,8 @@ export class NotationConverter {
 
   private _splitter: SplitterFunc | null = null;
   protected get splitter(): SplitterFunc {
-    if (this._splitter === null) {
+    if (this._splitter === null)
       this._splitter = WebLogo.getSplitterForColumn(this._sourceColumn);
-    }
     return this._splitter;
   };
 
@@ -62,31 +61,6 @@ export class NotationConverter {
   public isDna(): boolean { return this.sourceUnits.toLowerCase().endsWith('dna'); }
 
   public isPeptide(): boolean { return this.sourceUnits.toLowerCase().endsWith('pt'); }
-
-  public convertStringToHelm(src: string, fastaGapSymbol: string = '-', helmGapSymbol: string = '*') {
-    const prefix = (this.isDna()) ? 'DNA1{' :
-      (this.isRna()) ? 'RNA1{' :
-        (this.isPeptide()) ? 'PEPTIDE1{' :
-          'Unknown'; // this case should be handled as exceptional
-
-    if (prefix === 'Unknown')
-      throw new Error('Neither peptide, nor nucleotide');
-
-    const postfix = '}$$$';
-    const leftWrapper = (this.isDna()) ? 'D(' :
-      (this.isRna()) ? 'R(' : ''; // no wrapper for peptides
-    const rightWrapper = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides
-
-    const monomerArray = this.splitter(src);
-    const monomerHelmArray: string[] = monomerArray.map((mm: string) => {
-      if (mm === fastaGapSymbol) {
-        return helmGapSymbol;
-      } else {
-        return `${leftWrapper}${mm}${rightWrapper}`;
-      }
-    });
-    return `${prefix}${monomerHelmArray.join('.')}${postfix}`;
-  }
 
   /** Associate notation types with the corresponding units */
   /**
@@ -144,15 +118,12 @@ export class NotationConverter {
   private convertFastaToSeparator(separator: string, fastaGapSymbol: string | null = null): DG.Column {
     if (fastaGapSymbol === null)
       fastaGapSymbol = this.defaultGapSymbol;
-    // A function splitting a sequence into an array of monomers according to
-    // its notation
-    const splitter = WebLogo.getSplitterForColumn(this.sourceColumn);
 
     const newColumn = this.getNewColumn(NOTATION.SEPARATOR);
     // assign the values to the newly created empty column
     newColumn.init((idx: number) => {
       const fastaPolymer = this.sourceColumn.get(idx);
-      const fastaMonomersArray = splitter(fastaPolymer);
+      const fastaMonomersArray = this.splitter(fastaPolymer);
       for (let i = 0; i < fastaMonomersArray.length; i++) {
         if (fastaMonomersArray[i] === fastaGapSymbol)
           fastaMonomersArray[i] = this._defaultGapSymbolsDict.SEPARATOR;
@@ -163,13 +134,13 @@ export class NotationConverter {
     return newColumn;
   }
 
-  private convertToHelm(sourceGapSymbol: string | null = null) {
-    if (sourceGapSymbol === null)
-      sourceGapSymbol = this.defaultGapSymbol;
-    // A function splitting a sequence into an array of monomers according to
-    // its notation
-    const splitter = WebLogo.getSplitterForColumn(this.sourceColumn);
-
+  /**
+   * Get the wrapper strings for HELM, depending on the type of the
+   * macromolecule (peptide, DNA, RNA)
+   *
+   * @return {string[]} Array of wrappers
+   */
+  private getHelmWrappers(): string[] {
     const prefix = (this.isDna()) ? 'DNA1{' :
       (this.isRna()) ? 'RNA1{' :
         (this.isPeptide()) ? 'PEPTIDE1{' :
@@ -182,25 +153,63 @@ export class NotationConverter {
     const leftWrapper = (this.isDna()) ? 'D(' :
       (this.isRna()) ? 'R(' : ''; // no wrapper for peptides
     const rightWrapper = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides
+    return [prefix, leftWrapper, rightWrapper, postfix];
+  }
+
+  // A helper function for converting strings to HELM
+  private convertToHelmHelper(
+    sourcePolymer: string,
+    sourceGapSymbol: string,
+    prefix: string,
+    leftWrapper: string,
+    rightWrapper: string,
+    postfix: string
+  ): string {
+    const monomerArray = this.splitter(sourcePolymer);
+    const monomerHelmArray: string[] = monomerArray.map((mm: string) => {
+      if (mm === sourceGapSymbol)
+        return this._defaultGapSymbolsDict.HELM;
+      else
+        return `${leftWrapper}${mm}${rightWrapper}`;
+    });
+    return `${prefix}${monomerHelmArray.join('.')}${postfix}`;
+  }
+
+  /**
+   * Convert a string with SEPARATOR/FASTA notation to HELM
+   *
+   * @param {string} sourcePolymer  A string to be converted
+   * @param {string | null} sourceGapSymbol  An optional gap symbol, set to
+   * default values ('-' for FASTA and '' for SEPARATOR) unless specified
+   * @return {string}  The target HELM string
+   */
+  public convertStringToHelm(
+    sourcePolymer: string,
+    sourceGapSymbol: string | null = null
+  ) : string {
+    if (sourceGapSymbol === null)
+      sourceGapSymbol = this.defaultGapSymbol;
+    const [prefix, leftWrapper, rightWrapper, postfix] = this.getHelmWrappers();
+    return this.convertToHelmHelper(sourcePolymer, sourceGapSymbol, prefix, leftWrapper, rightWrapper, postfix);
+  }
+
+  /**
+   * Convert a column to HELM
+   *
+   * @param {string | null} sourceGapSymbol
+   * @return {DG.Column}
+   */
+  private convertToHelm(sourceGapSymbol: string | null = null): DG.Column {
+    if (sourceGapSymbol === null)
+      sourceGapSymbol = this.defaultGapSymbol;
+
+    const [prefix, leftWrapper, rightWrapper, postfix] = this.getHelmWrappers();
 
     const newColumn = this.getNewColumn(NOTATION.HELM);
     // assign the values to the empty column
     newColumn.init((idx: number) => {
       const sourcePolymer = this.sourceColumn.get(idx);
-      const sourceMonomersArray = splitter(sourcePolymer);
-      const helmArray = [prefix];
-      let firstIteration = true;
-      for (let i = 0; i < sourceMonomersArray.length; i++) {
-        const dot = firstIteration ? '' : '.';
-        let token = sourceMonomersArray[i];
-        if (token === sourceGapSymbol)
-          token = this._defaultGapSymbolsDict.HELM;
-        const item = [dot, leftWrapper, token, rightWrapper];
-        helmArray.push(item.join(''));
-        firstIteration = false;
-      }
-      helmArray.push(postfix);
-      return helmArray.join('');
+      return this.convertToHelmHelper(sourcePolymer, sourceGapSymbol!, prefix, leftWrapper, rightWrapper, postfix);
     });
     return newColumn;
   }

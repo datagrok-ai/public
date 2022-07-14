@@ -83,7 +83,7 @@ MKP---SEYV
 
     separatorGaps: `seq
 F/W//P/H//E/Y
-//Y/N/R/Q/W/Y/V//
+/Y/N/R/Q/W/Y/V/
 M/K/P////S/E/Y/V
 `,
 
