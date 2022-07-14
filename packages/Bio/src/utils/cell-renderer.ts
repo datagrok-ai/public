@@ -9,6 +9,7 @@ import * as ui from 'datagrok-api/ui';
 
 const lru = new DG.LruCache<any, any>();
 const undefinedColor = 'rgb(100,100,100)';
+const grayColor = '#808080'
 
 function getPalleteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
@@ -81,7 +82,7 @@ function printLeftOrCentered(
     g.fillStyle = color;
     g.globalAlpha = transparencyRate;
     g.fillText(colorPart, x + dx1, y + dy);
-    g.fillStyle = '#808080';
+    g.fillStyle = grayColor;
     g.fillText(grayPart, x + dx2, y + dy);
   }
 
@@ -94,6 +95,22 @@ function printLeftOrCentered(
     draw(dx, dx + colorTextSize.width);
     return x + dx + colorTextSize.width;
   }
+}
+
+function findMonomers(helmString: string) {
+  //@ts-ignore
+  const types = Object.keys(org.helm.webeditor.monomerTypeList());
+  const monomers: any = [];
+  const monomer_names: any = [];
+  for (var i = 0; i < types.length; i++) {
+    //@ts-ignore
+    monomers.push(new scil.helm.Monomers.getMonomerSet(types[i]));
+    Object.keys(monomers[i]).forEach(k => {
+      monomer_names.push(monomers[i][k].id);
+    });
+  }
+  const split_string = WebLogo.splitterAsHelm(helmString);
+  return new Set(split_string.filter(val => !monomer_names.includes(val)));
 }
 
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
@@ -125,22 +142,47 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const cell = gridCell.cell;
     const tag = gridCell.cell.column.getTag(DG.TAGS.UNITS);
     if (tag === 'HELM') {
-      const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
-      host.setAttribute('dataformat', 'helm');
-      host.setAttribute('data', gridCell.cell.value);
-      gridCell.element = host;
-      //@ts-ignore
-      const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
-      const formula = canvas.getFormula(true);
-      if (!formula) {
-        gridCell.element = ui.divText(gridCell.cell.value, {style: {color: 'red'}});
-      } else {
+      console.log(findMonomers(cell.value));
+      const monomers = findMonomers(cell.value);
+      if (monomers.size == 0) {
+        const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
+        host.setAttribute('dataformat', 'helm');
+        host.setAttribute('data', gridCell.cell.value);
         gridCell.element = host;
-        const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
-        const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
-        const molfile = canvas.getMolfile();
-        const result = formula + ', ' + molWeight + ', ' + coef + ', ' + molfile;
-        lru.set(gridCell.cell.value, result);
+        //@ts-ignore
+        const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
+        const formula = canvas.getFormula(true);
+        if (!formula) {
+          gridCell.element = ui.divText(gridCell.cell.value, {style: {color: 'red'}});
+        }
+        return;
+      }
+      if (monomers.size > 0) {
+        w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+        g.save();
+        g.beginPath();
+        g.rect(x, y, w, h);
+        g.clip();
+        g.font = '12px monospace';
+        g.textBaseline = 'top';
+        let x1 = x;
+        const s: string = cell.value ?? '';
+        let subParts: string[] = WebLogo.splitterAsHelm(s);
+        let color = undefinedColor;
+        subParts.forEach((amino, index) => {
+          if (monomers.has(amino)) {
+            color = 'red';
+          } else {
+            color = grayColor;
+          }
+          g.fillStyle = undefinedColor;
+          let last = false;
+          if (index === subParts.length - 1)
+            last = true;
+          x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, '/', last);
+        });
+        g.restore();
+        return;
       }
     } else {
       const [type, subtype, paletteType] = gridCell.cell.column.getTag(DG.TAGS.UNITS).split(':');
@@ -176,6 +218,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       });
 
       g.restore();
+      return;
+
     }
   }
 }
