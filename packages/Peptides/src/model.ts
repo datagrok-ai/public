@@ -10,7 +10,7 @@ import * as C from './utils/constants';
 import * as type from './utils/types';
 import {getTypedArrayConstructor, stringToBool} from './utils/misc';
 import {_package} from './package';
-import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
+import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {renderSARCell, setAARRenderer} from './utils/cell-renderer';
 import {substitutionsWidget} from './widgets/subst-table';
@@ -31,12 +31,12 @@ export class PeptidesModel {
   isCellChanging = false;
 
   //viewer properties
-  _filterMode!: boolean;
-  _twoColorMode!: boolean;
-  _activityScaling!: string;
-  _isSubstitutionOn!: boolean;
-  _activityLimit!: number;
-  _maxSubstitutions!: number;
+  // _filterMode!: boolean;
+  // _twoColorMode!: boolean;
+  // _activityScaling!: string;
+  // _isSubstitutionOn!: boolean;
+  // _activityLimit!: number;
+  // _maxSubstitutions!: number;
 
   _sarGrid!: DG.Grid;
   _sarVGrid!: DG.Grid;
@@ -58,9 +58,11 @@ export class PeptidesModel {
   sarViewer!: SARViewer;
   sarViewerVertical!: SARViewerVertical;
 
+  usedProperties: {[propName: string]: string | number | boolean} = {};
+
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
-    this.updateProperties();
+    // this.updateProperties();
   }
 
   static async getInstance(dataFrame: DG.DataFrame, dgPackage?: DG.Package): Promise<PeptidesModel> {
@@ -103,77 +105,101 @@ export class PeptidesModel {
   createAccordion() {
     const acc = ui.accordion();
     acc.root.style.width = '100%';
-    acc.addTitle(ui.h1(`${this.getBiteset().trueCount} selected rows`));
+    acc.addTitle(ui.h1(`${this._dataFrame.selection.trueCount} selected rows`));
     acc.addPane('Substitutions', () => substitutionsWidget(this._dataFrame, this).root, true);
     acc.addPane('Distribtution', () => getDistributionWidget(this._dataFrame, this).root, true);
 
     return acc;
   }
 
-  updateProperties(): void {
-    this._activityScaling = this._dataFrame.tags['scaling'];
-    this._filterMode = stringToBool(this._dataFrame.tags['filterMode']);
-    this._twoColorMode = stringToBool(this._dataFrame.tags['bidirectionalAnalysis']);
-    this._isSubstitutionOn = stringToBool(this._dataFrame.tags['showSubstitution']);
-    this._maxSubstitutions = parseInt(this._dataFrame.tags['maxSubstitutions']);
-    this._activityLimit = parseFloat(this._dataFrame.tags['activityLimit']);
+  // updateProperties(): void {
+  //   this._activityScaling = this._dataFrame.tags['scaling'];
+  //   this._filterMode = stringToBool(this._dataFrame.tags['filterMode']);
+  //   this._twoColorMode = stringToBool(this._dataFrame.tags['bidirectionalAnalysis']);
+  //   this._isSubstitutionOn = stringToBool(this._dataFrame.tags['showSubstitution']);
+  //   this._maxSubstitutions = parseInt(this._dataFrame.tags['maxSubstitutions']);
+  //   this._activityLimit = parseFloat(this._dataFrame.tags['activityLimit']);
+  // }
+
+  // setProperties(
+  //   activityScaling: string, filterMode: boolean, twoColorMode: boolean, isSubstitutionOn: boolean,
+  //   maxSubstitutions: number, activityLimit: number, forceUpdate = false,
+  // ): void {
+  //   const chooseAction =
+  //     (value: string, defaultValue: string | boolean | number): string | boolean | number =>
+  //       forceUpdate ? value : defaultValue ?? value;
+  //   this._dataFrame.tags['scaling'] = chooseAction(`${activityScaling}`, this._dataFrame.tags['scaling']);
+  //   this._dataFrame.tags['filterMode'] = chooseAction(`${filterMode}`, this._dataFrame.tags['filterMode']);
+  //   this._dataFrame.tags['bidirectionalAnalysis'] =
+  //     chooseAction(`${twoColorMode}`, this._dataFrame.tags['bidirectionalAnalysis']);
+  //   this._dataFrame.tags['showSubstitution'] =
+  //     chooseAction(`${isSubstitutionOn}`, this._dataFrame.tags['showSubstitution']);
+  //   this._dataFrame.tags['maxSubstitutions'] =
+  //     chooseAction(`${maxSubstitutions}`, this._dataFrame.tags['maxSubstitutions']);
+  //   this._dataFrame.tags['activityLimit'] = chooseAction(`${activityLimit}`, this._dataFrame.tags['activityLimit']);
+
+  //   this.updateProperties();
+  // }
+
+  // async updateData(
+  //   activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, activityLimit?: number,
+  //   maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
+  // ): Promise<void> {
+  //   //FIXME: threre are too many assignments, some are duplicating
+  //   this._activityScaling = activityScaling ?? this._activityScaling;
+  //   this._sourceGrid = sourceGrid ?? this._sourceGrid;
+  //   this._twoColorMode = twoColorMode ?? this._twoColorMode;
+  //   this._activityLimit = activityLimit ?? this._activityLimit;
+  //   this._maxSubstitutions = maxSubstitutions ?? this._maxSubstitutions;
+  //   this._isSubstitutionOn = isSubstitutionOn ?? this._isSubstitutionOn;
+  //   this._filterMode = filterMode ?? this._filterMode;
+  //   this.setProperties(this._activityScaling, this._filterMode, this._twoColorMode, this._isSubstitutionOn,
+  //     this._maxSubstitutions, this._activityLimit, true);
+
+  //   await this.updateDefault();
+  // }
+
+  getViewer(): SARViewerBase {
+    const viewer = this.sarViewer ?? this.sarViewerVertical;
+    if (!viewer)
+      throw new Error('ViewerError: none of the SAR viewers is initialized');
+    return viewer;
   }
 
-  setProperties(
-    activityScaling: string, filterMode: boolean, twoColorMode: boolean, isSubstitutionOn: boolean,
-    maxSubstitutions: number, activityLimit: number, forceUpdate = false,
-  ): void {
-    const chooseAction =
-      (value: string, defaultValue: string | boolean | number): string | boolean | number =>
-        forceUpdate ? value : defaultValue ?? value;
-    this._dataFrame.tags['scaling'] = chooseAction(`${activityScaling}`, this._dataFrame.tags['scaling']);
-    this._dataFrame.tags['filterMode'] = chooseAction(`${filterMode}`, this._dataFrame.tags['filterMode']);
-    this._dataFrame.tags['bidirectionalAnalysis'] =
-      chooseAction(`${twoColorMode}`, this._dataFrame.tags['bidirectionalAnalysis']);
-    this._dataFrame.tags['showSubstitution'] =
-      chooseAction(`${isSubstitutionOn}`, this._dataFrame.tags['showSubstitution']);
-    this._dataFrame.tags['maxSubstitutions'] =
-      chooseAction(`${maxSubstitutions}`, this._dataFrame.tags['maxSubstitutions']);
-    this._dataFrame.tags['activityLimit'] = chooseAction(`${activityLimit}`, this._dataFrame.tags['activityLimit']);
-
-    this.updateProperties();
+  isPropertyChanged(): boolean {
+    const viewer = this.getViewer();
+    const viewerProps = viewer.props.getProperties();
+    let result = false;
+    for (const property of viewerProps) {
+      const propName = property.name;
+      const propVal = property.get(viewer);
+      if (this.usedProperties[propName] != propVal) {
+        this.usedProperties[propName] = propVal;
+        result = true;
+      }
+    }
+    return result;
   }
 
-  async updateData(
-    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, activityLimit?: number,
-    maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
-  ): Promise<void> {
-    //FIXME: threre are too many assignments, some are duplicating
-    this._activityScaling = activityScaling ?? this._activityScaling;
-    this._sourceGrid = sourceGrid ?? this._sourceGrid;
-    this._twoColorMode = twoColorMode ?? this._twoColorMode;
-    this._activityLimit = activityLimit ?? this._activityLimit;
-    this._maxSubstitutions = maxSubstitutions ?? this._maxSubstitutions;
-    this._isSubstitutionOn = isSubstitutionOn ?? this._isSubstitutionOn;
-    this._filterMode = filterMode ?? this._filterMode;
-    this.setProperties(this._activityScaling, this._filterMode, this._twoColorMode, this._isSubstitutionOn,
-      this._maxSubstitutions, this._activityLimit, true);
-
-    await this.updateDefault();
-  }
-
-  async updateDefault(): Promise<void> {
-    if (this._activityScaling && this._sourceGrid && this._twoColorMode !== null && !this._isUpdating) {
+  async updateDefault(forceUpdate: boolean = false): Promise<void> {
+    const viewer = this.getViewer();
+    // if (this._activityScaling && this._sourceGrid && this._twoColorMode !== null && !this._isUpdating) {
+    if (this._sourceGrid && !this._isUpdating && (this.isPropertyChanged() || forceUpdate)) {
       this._isUpdating = true;
       const [viewerGrid, viewerVGrid, statsDf] = await this.initializeViewersComponents();
       //FIXME: modify during the initializeViewersComponents stages
       this._statsDataFrameSubject.next(statsDf);
       this._sarGridSubject.next(viewerGrid);
       this._sarVGridSubject.next(viewerVGrid);
-      if (this._isSubstitutionOn) {
+      if (viewer.showSubstitution) {
         this._substitutionTableSubject.next(this.substitutionsInfo);
         this._isSubstInitialized = true;
       }
-    }
-    await this.updateBarchart();
-    this.invalidateSelection();
+      await this.updateBarchart();
+      this.invalidateSelection();
 
-    this._isUpdating = false;
+      this._isUpdating = false;
+    }
   }
 
   async updateBarchart(): Promise<void> {
@@ -207,7 +233,9 @@ export class PeptidesModel {
 
     this.sortSourceGrid(this._sourceGrid);
 
-    await this.createScaledCol(this._activityScaling, this._dataFrame, this._sourceGrid, splitSeqDf);
+    const viewer = this.getViewer();
+
+    await this.createScaledCol(viewer.scaling, this._dataFrame, this._sourceGrid, splitSeqDf);
 
     //unpivot a table and handle duplicates
     let matrixDf = splitSeqDf.groupBy(positionColumns).aggregate();
@@ -232,7 +260,7 @@ export class PeptidesModel {
     const sequenceDf = this.createVerticalTable();
     renderColNames.push(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
 
-    if (this._isSubstitutionOn || !this._isSubstInitialized)
+    if (viewer.showSubstitution || !this._isSubstInitialized)
       this.calcSubstitutions();
 
     //TODO: move everything below out to controller
@@ -264,6 +292,7 @@ export class PeptidesModel {
     if (nCols == 0)
       throw new Error(`Couldn't find any column of semType '${C.SEM_TYPES.AMINO_ACIDS}'`);
 
+    const viewer = this.getViewer();
     this.substitutionsInfo = new Map();
     const nRows = this._dataFrame.rowCount;
     for (let seq1Idx = 0; seq1Idx < nRows - 1; seq1Idx++) {
@@ -272,7 +301,7 @@ export class PeptidesModel {
         const activityValSeq1 = activityValues.get(seq1Idx)!;
         const activityValSeq2 = activityValues.get(seq2Idx)!;
         const delta = activityValSeq1 - activityValSeq2;
-        if (Math.abs(delta) < this._activityLimit)
+        if (Math.abs(delta) < viewer.minActivityDelta)
           continue;
 
         let substCounterFlag = false;
@@ -285,7 +314,7 @@ export class PeptidesModel {
             continue;
 
           substCounter++;
-          substCounterFlag = substCounter > this._maxSubstitutions;
+          substCounterFlag = substCounter > viewer.maxSubstitutions;
           if (substCounterFlag)
             break;
 
@@ -431,9 +460,11 @@ export class PeptidesModel {
 
   async setCategoryOrder(matrixDf: DG.DataFrame): Promise<void> {
     const absMD = 'Absolute Mean difference';
-    const sortArgument = this._twoColorMode ? absMD : C.COLUMNS_NAMES.MEAN_DIFFERENCE;
-    if (this._twoColorMode)
+    let sortArgument: string = C.COLUMNS_NAMES.MEAN_DIFFERENCE;
+    if (this.getViewer().bidirectionalAnalysis) {
+      sortArgument = absMD;
       await this.statsDf.columns.addNewCalculated(absMD, 'Abs(${Mean difference})');
+    }
 
     const aarWeightsDf = this.statsDf.groupBy([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]).sum(sortArgument, 'weight')
       .aggregate();
@@ -464,7 +495,7 @@ export class PeptidesModel {
     const rowCount = sequenceDf.rowCount;
     for (const pos of posColCategories) {
       tempStats = DG.Stats.fromColumn(mdCol, DG.BitSet.create(rowCount, (i) => posCol.get(i) === pos));
-      maxAtPos[pos] = this._twoColorMode ?
+      maxAtPos[pos] = this.getViewer().bidirectionalAnalysis ?
         (tempStats.max > Math.abs(tempStats.min) ? tempStats.max : tempStats.min) :
         tempStats.max;
     }
@@ -527,8 +558,9 @@ export class PeptidesModel {
             tableColName : gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
           const currentAAR: string = gridTable.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
 
-          renderSARCell(canvasContext, currentAAR, currentPosition, this.statsDf, this._twoColorMode, mdCol, bound,
-            cellValue, this.currentSelection, this._isSubstitutionOn ? this.substitutionsInfo : null);
+          const viewer = this.getViewer();
+          renderSARCell(canvasContext, currentAAR, currentPosition, this.statsDf, viewer.bidirectionalAnalysis, mdCol,
+            bound, cellValue, this.currentSelection, viewer.showSubstitution ? this.substitutionsInfo : null);
         }
         args.preventDefault();
       }
@@ -659,11 +691,11 @@ export class PeptidesModel {
   setBitsetCallback(): void {
     if (this.isBitsetChangedInitialized)
       return;
-    const filter = this._dataFrame.filter;
+    // const filter = this._dataFrame.filter;
     const selection = this._dataFrame.selection;
 
-    const changeBitset = (currentBitset: DG.BitSet, previousBitset: DG.BitSet): void => {
-      previousBitset.setAll(!this._filterMode, false);
+    const changeBitset = (currentBitset: DG.BitSet): void => {
+      // previousBitset.setAll(!this._filterMode, false);
 
       const edfSelection = this.edf?.selection;
       if (this.isPeptideSpaceChangingBitset) {
@@ -701,20 +733,20 @@ export class PeptidesModel {
       updateEdfSelection();
     };
 
-    filter.onChanged.subscribe(() => changeBitset(filter, selection));
-    selection.onChanged.subscribe(() => changeBitset(selection, filter));
+    // filter.onChanged.subscribe(() => changeBitset(filter, selection));
+    selection.onChanged.subscribe(() => changeBitset(selection));
     this.isBitsetChangedInitialized = true;
   }
 
   fireBitsetChanged(isPeptideSpaceSource: boolean = false): void {
     this.isPeptideSpaceChangingBitset = isPeptideSpaceSource;
-    this.getBiteset().fireChanged();
+    this._dataFrame.selection.fireChanged();
     this.modifyOrCreateSplitCol();
     grok.shell.o = this.createAccordion().root;
     this.isPeptideSpaceChangingBitset = false;
   }
 
-  getBiteset(): DG.BitSet {return this._filterMode ? this._dataFrame.filter : this._dataFrame.selection;}
+  // getBiteset(): DG.BitSet {return this._filterMode ? this._dataFrame.filter : this._dataFrame.selection;}
 
   //TODO: move out
   postProcessGrids(sourceGrid: DG.Grid, invalidIndexes: number[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
@@ -758,9 +790,11 @@ export class PeptidesModel {
   }
 
   modifyOrCreateSplitCol(): void {
-    const bs = this.getBiteset();
+    // const bs = this.getBiteset();
+    const bs = this._dataFrame.selection;
     this.splitCol = this._dataFrame.col(C.COLUMNS_NAMES.SPLIT_COL) ??
       this._dataFrame.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
+    // this.splitCol.setRawData(bs.getBuffer());
     this.splitCol.init((i) => bs.get(i));
     this.splitCol.compact();
   }
@@ -862,11 +896,14 @@ export class PeptidesModel {
   }
 
   syncProperties(isSourceSAR = true): void {
-    const [sourceViewer, targetViewer] = isSourceSAR ? [this.sarViewer, this.sarViewerVertical] :
-      [this.sarViewerVertical, this.sarViewer];
-    const properties = sourceViewer.props.getProperties();
-    for (const property of properties)
-      targetViewer.props.set(property.name, property.get(sourceViewer));
+    if (this.sarViewer && this.sarViewerVertical) {
+      const [sourceViewer, targetViewer] = isSourceSAR ? [this.sarViewer, this.sarViewerVertical] :
+        [this.sarViewerVertical, this.sarViewer];
+      const properties = sourceViewer.props.getProperties();
+      for (const property of properties)
+        targetViewer.props.set(property.name, property.get(sourceViewer));
+    } else
+      console.warn('Warning: could not sync viewer properties, one of the viewers is not initialized');
   }
 
   /** Class initializer */
@@ -877,13 +914,13 @@ export class PeptidesModel {
 
     this.currentView = this._dataFrame.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
       grok.shell.addTableView(this._dataFrame);
-    const sourceGrid = this.currentView.grid;
+    this._sourceGrid = this.currentView.grid;
     if (this._dataFrame.tags[C.PEPTIDES_ANALYSIS] == 'true')
       return;
 
     this._dataFrame.tags[C.PEPTIDES_ANALYSIS] = 'true';
-    sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
-    sourceGrid.columns.setOrder([this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
+    this._sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
+    this._sourceGrid.columns.setOrder([this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
 
     this._dataFrame.temp[C.EMBEDDING_STATUS] = false;
     const adjustCellSize = (grid: DG.Grid): void => {
@@ -895,24 +932,23 @@ export class PeptidesModel {
       grid.props.rowHeight = 20;
     };
 
-    for (let i = 0; i < sourceGrid.columns.length; i++) {
-      const aarCol = sourceGrid.columns.byIndex(i);
+    for (let i = 0; i < this._sourceGrid.columns.length; i++) {
+      const aarCol = this._sourceGrid.columns.byIndex(i);
       if (aarCol && aarCol.name && aarCol.column?.semType !== C.SEM_TYPES.AMINO_ACIDS &&
         aarCol.name !== this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED])
         aarCol.visible = false;
     }
 
     const options = {scaling: this._dataFrame.tags['scaling']};
-    await this.updateData(this._dataFrame.tags['scaling'], sourceGrid, false, 1, 2, false, false);
 
     const dockManager = this.currentView.dockManager;
 
-    const sarViewer = await this._dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
+    this.sarViewer = await this._dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
 
-    const sarViewerVertical =
+    this.sarViewerVertical =
       await this._dataFrame.plot.fromType('peptide-sar-viewer-vertical', options) as SARViewerVertical;
 
-    const sarViewersGroup: viewerTypes[] = [sarViewer, sarViewerVertical];
+    const sarViewersGroup: viewerTypes[] = [this.sarViewer, this.sarViewerVertical];
 
     if (this._dataFrame.rowCount <= 10000) {
       const peptideSpaceViewerOptions = {method: 'UMAP', measure: 'Levenshtein', cyclesCount: 100};
@@ -921,10 +957,13 @@ export class PeptidesModel {
       dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
     }
 
+    // await this.updateData(this._dataFrame.tags['scaling'], sourceGrid, false, 1, 2, true, false);
+    await this.updateDefault();
+
     dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
-    sourceGrid.props.allowEdit = false;
-    adjustCellSize(sourceGrid);
+    this._sourceGrid.props.allowEdit = false;
+    adjustCellSize(this._sourceGrid);
 
     this.invalidateGrids();
   }

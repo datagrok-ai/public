@@ -55,10 +55,10 @@ export class SARViewerBase extends DG.JsViewer {
     this.viewerGrid?.invalidate();
   }
 
-  async requestDataUpdate(): Promise<void> {
-    await this.model.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis,
-      this.minActivityDelta, this.maxSubstitutions, this.showSubstitution);
-  }
+  // async requestDataUpdate(): Promise<void> {
+  //   await this.model.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis,
+  //     this.minActivityDelta, this.maxSubstitutions, this.showSubstitution);
+  // }
 
   async onPropertyChanged(property: DG.Property): Promise<void> {
     super.onPropertyChanged(property);
@@ -70,7 +70,6 @@ export class SARViewerBase extends DG.JsViewer {
 
     if (propName === 'scaling' && typeof this.dataFrame !== 'undefined') {
       const activityCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY)!;
-      // const minActivity = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY).stats.min;
       const minActivity = activityCol.stats.min;
       if (minActivity && minActivity <= 0 && this.scaling !== 'none') {
         grok.shell.warning(`Could not apply ${this.scaling}: ` +
@@ -83,7 +82,8 @@ export class SARViewerBase extends DG.JsViewer {
     if (!this.showSubstitution && ['maxSubstitutions', 'activityLimit'].includes(propName))
       return;
 
-    await this.requestDataUpdate();
+    // await this.requestDataUpdate();
+    this.model.updateDefault();
     this.render(true);
   }
 }
@@ -101,8 +101,8 @@ export class SARViewer extends SARViewerBase {
 
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
-    this.viewerGrid = this.model._sarGrid;
-    this.model.sarViewer = this;
+    this.model.sarViewer ??= this;
+    // this.viewerGrid = this.model._sarGrid;
     // this.dataFrame.temp['sarViewer'] = this;
 
     this.subs.push(this.model.onSARGridChanged.subscribe((data) => {
@@ -110,8 +110,9 @@ export class SARViewer extends SARViewerBase {
       this.render();
     }));
 
+    await this.model.updateDefault();
     this.initialized = true;
-    this.render();
+    // this.render();
   }
 
   isInitialized(): DG.Grid {return this.model?._sarGrid;}
@@ -141,16 +142,18 @@ export class SARViewerVertical extends SARViewerBase {
 
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
-    this.viewerGrid = this.model._sarVGrid;
-    this.model.sarViewerVertical = this;
+    // this.viewerGrid = this.model._sarVGrid;
+    this.model.sarViewerVertical ??= this;
 
     this.subs.push(this.model.onSARVGridChanged.subscribe((data) => {
       this.viewerGrid = data;
       this.render();
     }));
+    
+    await this.model.updateDefault();
 
     this.initialized = true;
-    this.render();
+    // this.render();
   }
 
   isInitialized(): DG.Grid {return this.model?._sarVGrid;}
