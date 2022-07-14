@@ -53,7 +53,7 @@ export class NotationConverter {
   public isDna(): boolean { return this.sourceUnits.toLowerCase().endsWith('dna'); }
 
   public isPeptide(): boolean { return this.sourceUnits.toLowerCase().endsWith('pt'); }
-  
+
   public convertFastaStringToHelm(
     fastaGapSymbol: string = '-',
     helmGapSymbol: string = '*',
