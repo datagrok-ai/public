@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {WebLogo} from '../viewers/web-logo';
+import {SplitterFunc, WebLogo} from '../viewers/web-logo';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 export const enum NOTATION {
@@ -10,7 +10,7 @@ export const enum NOTATION {
 
 /** Class for handling conversion of notation systems in Macromolecule columns */
 export class NotationConverter {
-  private _sourceColumn: DG.Column; // the column to be converted
+  private readonly _sourceColumn: DG.Column; // the column to be converted
   private _sourceUnits: string; // units, of the form fasta:SEQ:NT, etc.
   private _sourceNotation: NOTATION; // current notation (without :SEQ:NT, etc.)
   private _defaultGapSymbol: string;
@@ -19,6 +19,15 @@ export class NotationConverter {
     SEPARATOR: '',
     FASTA: '-',
   };
+
+  private _splitter: SplitterFunc | null = null;
+  protected get splitter(): SplitterFunc {
+    if (this._splitter === null) {
+      this._splitter = WebLogo.getSplitterForColumn(this._sourceColumn);
+    }
+    return this._splitter;
+  };
+
 
   private get sourceUnits(): string { return this._sourceUnits; }
 
@@ -54,14 +63,7 @@ export class NotationConverter {
 
   public isPeptide(): boolean { return this.sourceUnits.toLowerCase().endsWith('pt'); }
 
-  public convertFastaStringToHelm(
-    fastaGapSymbol: string = '-',
-    helmGapSymbol: string = '*',
-    str: string
-  ): string {
-    // a function splitting FASTA sequence into an array of monomers
-    const splitterAsFasta = WebLogo.splitterAsFasta;
-
+  public convertStringToHelm(src: string, fastaGapSymbol: string = '-', helmGapSymbol: string = '*') {
     const prefix = (this.isDna()) ? 'DNA1{' :
       (this.isRna()) ? 'RNA1{' :
         (this.isPeptide()) ? 'PEPTIDE1{' :
@@ -75,21 +77,15 @@ export class NotationConverter {
       (this.isRna()) ? 'R(' : ''; // no wrapper for peptides
     const rightWrapper = (this.isDna() || this.isRna()) ? ')P' : ''; // no wrapper for peptides
 
-    const fastaMonomersArray = splitterAsFasta(str);
-    const helmArray = [prefix];
-    let firstIteration = true;
-    for (let i = 0; i < fastaMonomersArray.length; i++) {
-      if (fastaMonomersArray[i] === fastaGapSymbol) {
-        helmArray.push(helmGapSymbol);
+    const monomerArray = this.splitter(src);
+    const monomerHelmArray: string[] = monomerArray.map((mm: string) => {
+      if (mm === fastaGapSymbol) {
+        return helmGapSymbol;
       } else {
-        const dot = firstIteration ? '' : '.';
-        const item = [dot, leftWrapper, fastaMonomersArray[i], rightWrapper];
-        helmArray.push(item.join(''));
+        return `${leftWrapper}${mm}${rightWrapper}`;
       }
-      firstIteration = false;
-    }
-    helmArray.push(postfix);
-    return helmArray.join('');
+    });
+    return `${prefix}${monomerHelmArray.join('.')}${postfix}`;
   }
 
   /** Associate notation types with the corresponding units */
