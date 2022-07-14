@@ -95,9 +95,13 @@ async function loadDialog () {
   res = res.map((e) => e.path);
   //@ts-ignore
   let FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
+  let grid = grok.shell.tv.grid;
   ui.dialog('Load library from file')
   .add(FilesList)
-  .onOK(() => monomerManager(FilesList.value)).show();
+  .onOK(async () => {
+    await monomerManager(FilesList.value);
+    grid.invalidate()
+  }).show();
 };
 
 //name: Library
