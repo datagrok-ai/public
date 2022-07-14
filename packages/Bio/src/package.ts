@@ -244,7 +244,8 @@ export async function compositionAnalysis(): Promise<void> {
     return;
   }
 
-  tv.addViewer('WebLogo', {sequenceColumnName: col.name});
+  const wlViewer = tv.addViewer('WebLogo', {sequenceColumnName: col.name});
+  grok.shell.tv.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.25);
 }
 
 //top-menu: Bio | Sdf to Json lib...
@@ -331,7 +332,7 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
   ])];
 }
 
-//name: Bio | Convert
+//name: Bio | Convert ...
 //friendly-name: Bio | Convert
 //tags: panel, bio
 //input: column col {semType: Macromolecule}
