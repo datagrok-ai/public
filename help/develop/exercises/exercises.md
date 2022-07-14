@@ -164,10 +164,18 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    Alternatively, you can find this information if you click on the column and expand the 'Details' pane in the property
    panel on the right.
 7. Now let’s put the result of the previously created `complement` function into an [info panel](../how-to/add-info-panel.md):
-   tag it with `panel` and `widgets` tags and change the output type to `widget` (see an example [here][014]). This will
-   instruct the platform to use the `complement` function for providing additional information for string values of
+   Create function `complementWidget` and add special comments block to allow Datagrok system recognise it and upload properly (see an example [here][014]).
+   ```javascript
+    //name: complementWidget
+    //tags: panel, widgets
+    //input: string nucleotides {semType: dna_nucleotide}
+    //output: widget result
+    //condition: true
+   ```
+   The `panel` and `widgets` tags and output type `widget` allows Datagrok to determine how the result of `complementWidget` function will appear in the system. Listed above block of comments will
+   instruct the platform to use the `complementWidget` function for providing additional information for string values of
    the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell in the `sequence`
-   column, and find the `complement` property in the panel on the right as it is shown on screenshot:
+   column, and find the `complementWidget` property in the panel on the right as it is shown on screenshot:
    ![exercises-complement-data-panel](exercises-complement-data-panel.png)
 
 ## Exercise 2: Scripting and functions
