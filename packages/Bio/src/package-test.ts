@@ -9,7 +9,7 @@ import './tests/msa-tests';
 import './tests/sequence-space-test';
 import './tests/activity-cliffs-tests';
 import './tests/splitters-test';
-import './tests/renderer-test';
+import './tests/renderers-test';
 import './tests/convert-test';
 
 export const _package = new DG.Package();
