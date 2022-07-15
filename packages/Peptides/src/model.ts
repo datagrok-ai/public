@@ -181,12 +181,12 @@ export class PeptidesModel {
     return result;
   }
 
-  async updateDefault(forceUpdate: boolean = false): Promise<void> {
+  updateDefault(forceUpdate: boolean = false): void {
     const viewer = this.getViewer();
     // if (this._activityScaling && this._sourceGrid && this._twoColorMode !== null && !this._isUpdating) {
     if (this._sourceGrid && !this._isUpdating && (this.isPropertyChanged() || forceUpdate)) {
       this._isUpdating = true;
-      const [viewerGrid, viewerVGrid, statsDf] = await this.initializeViewersComponents();
+      const [viewerGrid, viewerVGrid, statsDf] = this.initializeViewersComponents();
       //FIXME: modify during the initializeViewersComponents stages
       this._statsDataFrameSubject.next(statsDf);
       this._sarGridSubject.next(viewerGrid);
@@ -195,20 +195,21 @@ export class PeptidesModel {
         this._substitutionTableSubject.next(this.substitutionsInfo);
         this._isSubstInitialized = true;
       }
-      await this.updateBarchart();
+      // this.updateBarchart();
       this.invalidateSelection();
 
       this._isUpdating = false;
     }
   }
 
+  //TODO: make sync
   async updateBarchart(): Promise<void> {
     this.stackedBarchart ??= await this._dataFrame?.plot.fromType('StackedBarChartAA') as StackedBarChart;
     if (this.stackedBarchart && this._sourceGrid)
       addViewerToHeader(this._sourceGrid, this.stackedBarchart);
   }
 
-  async initializeViewersComponents(): Promise<[DG.Grid, DG.Grid, DG.DataFrame]> {
+  initializeViewersComponents(): [DG.Grid, DG.Grid, DG.DataFrame] {
     if (this._sourceGrid === null)
       throw new Error(`Source grid is not initialized`);
 
@@ -235,7 +236,7 @@ export class PeptidesModel {
 
     const viewer = this.getViewer();
 
-    await this.createScaledCol(viewer.scaling, this._dataFrame, this._sourceGrid, splitSeqDf);
+    this.createScaledCol(viewer.scaling, this._dataFrame, this._sourceGrid, splitSeqDf);
 
     //unpivot a table and handle duplicates
     let matrixDf = splitSeqDf.groupBy(positionColumns).aggregate();
@@ -254,7 +255,7 @@ export class PeptidesModel {
     matrixDf.name = 'SAR';
 
     // Setting category order
-    await this.setCategoryOrder(matrixDf);
+    this.setCategoryOrder(matrixDf);
 
     // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
     const sequenceDf = this.createVerticalTable();
@@ -402,11 +403,11 @@ export class PeptidesModel {
     }
   }
 
-  //TODO: move out, merge with controller's scaleActivity
-  async createScaledCol(
+  //TODO: make sync
+  createScaledCol(
     activityScaling: string, df: DG.DataFrame, sourceGrid: DG.Grid, splitSeqDf: DG.DataFrame,
-  ): Promise<void> {
-    const [scaledDf, newColName] = await PeptidesModel.scaleActivity(
+  ): void {
+    const [scaledDf, newColName] = PeptidesModel.scaleActivity(
       activityScaling, df, df.tags[C.COLUMNS_NAMES.ACTIVITY]);
     //TODO: make another func
     const scaledCol = scaledDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
@@ -458,12 +459,15 @@ export class PeptidesModel {
     return matrixDf as DG.DataFrame;
   }
 
-  async setCategoryOrder(matrixDf: DG.DataFrame): Promise<void> {
-    const absMD = 'Absolute Mean difference';
+  //TODO: make sync
+  setCategoryOrder(matrixDf: DG.DataFrame): void {
     let sortArgument: string = C.COLUMNS_NAMES.MEAN_DIFFERENCE;
     if (this.getViewer().bidirectionalAnalysis) {
-      sortArgument = absMD;
-      await this.statsDf.columns.addNewCalculated(absMD, 'Abs(${Mean difference})');
+      const mdCol = this.statsDf.getCol(sortArgument);
+      sortArgument = 'Absolute Mean difference';
+      // await this.statsDf.columns.addNewCalculated(absMD, 'Abs(${Mean difference})');
+      const absMDCol = this.statsDf.columns.addNewFloat(sortArgument);
+      absMDCol.init(i => Math.abs(mdCol.get(i)));
     }
 
     const aarWeightsDf = this.statsDf.groupBy([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]).sum(sortArgument, 'weight')
@@ -681,7 +685,7 @@ export class PeptidesModel {
   }
 
   invalidateGrids(): void {
-    this.stackedBarchart?.computeData();
+    // this.stackedBarchart?.computeData();
     this._sarGrid.invalidate();
     this._sarVGrid.invalidate();
     this._sourceGrid?.invalidate();
@@ -799,33 +803,40 @@ export class PeptidesModel {
     this.splitCol.compact();
   }
 
-  static async scaleActivity(
+  //TODO: make sync
+  static scaleActivity(
     activityScaling: string, df: DG.DataFrame, originalActivityName?: string, cloneBitset = false,
-  ): Promise<[DG.DataFrame, string]> {
+  ): [DG.DataFrame, string] {
     let currentActivityColName = originalActivityName ?? C.COLUMNS_NAMES.ACTIVITY;
     const flag = df.columns.names().includes(currentActivityColName) &&
       currentActivityColName === originalActivityName;
     currentActivityColName = flag ? currentActivityColName : C.COLUMNS_NAMES.ACTIVITY;
     const tempDf = df.clone(cloneBitset ? df.filter : null, [currentActivityColName]);
 
-    let formula = '${' + currentActivityColName + '}';
+    // let formula = '${' + currentActivityColName + '}';
+    let formula = (v: number) => v;
     let newColName = 'activity';
     switch (activityScaling) {
     case 'none':
       break;
     case 'lg':
-      formula = `Log10(${formula})`;
+      // formula = `Log10(${formula})`;
+      formula = (v: number) => Math.log10(v);
       newColName = `Log10(${newColName})`;
       break;
     case '-lg':
-      formula = `-1*Log10(${formula})`;
+      // formula = `-1*Log10(${formula})`;
+      formula = (v: number) => -Math.log10(v);
       newColName = `-Log10(${newColName})`;
       break;
     default:
       throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
     }
 
-    await tempDf.columns.addNewCalculated(C.COLUMNS_NAMES.ACTIVITY_SCALED, formula);
+    // await tempDf.columns.addNewCalculated(C.COLUMNS_NAMES.ACTIVITY_SCALED, formula);
+    const asCol = tempDf.columns.addNewFloat(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const activityCol = df.getCol(currentActivityColName);
+    asCol.init(i => formula(activityCol.get(i)));
     df.tags['scaling'] = activityScaling;
 
     return [tempDf, newColName];
@@ -958,7 +969,8 @@ export class PeptidesModel {
     }
 
     // await this.updateData(this._dataFrame.tags['scaling'], sourceGrid, false, 1, 2, true, false);
-    await this.updateDefault();
+    this.updateDefault();
+    await this.updateBarchart();
 
     dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
