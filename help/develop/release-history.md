@@ -1,6 +1,49 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-07-15 Dev build 1.5.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.5.0`
+* [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
+
+## Addressed Issues
+
+* resizing on right side 
+* Fixed admin session 
+* Ability to save favorites for groups 
+* Grok connect: stress test 
+* Wiki: macromolecules: harmonization & cleanup 
+* #10933legends almost work in any position 
+* #10933 resdrawing legend while dragging 
+* closes #10933 delete comments and redraw list on setData 
+* vertical legend maxheight 
+* generate comments for ts interfaces 
+* JS API: add optional tooltip check to InputBase.setTooltip 
+* (Bug) Packages: settings editor doesn't update package properties 
+*  #718 Custom categorical columns sort order in not reflected on plots after page reload 
+* GitHub #777: exposed DataConnection query method 
+* closes #10938 Make modals resizable 
+* StatusBar improvements 
+* (Bug) JS: ViewBase.basePath doesn't work 
+* xamgle.lock 
+* closes #10935 FlexboxLayout should not add extra divs 
+* recloses #756 bar chart zoom slider visibility 
+* Grok Spawner port 
+* CI: Fix all integration tests for any environment 
+* #424 fixed x axis log availability 
+* #756 dont show slider asap viewer created 
+* Deploy docker images 
+* Cleanup in beta users 
+* Documentation 
+* Public token 
+* Docker buildx release condition 
+* Docker Datagrok: Set Grok Connect directory 
+* debug 
+
+
 # 2022-07-07 Dev build 1.4.14
 
 ## Latest Docker Images
