@@ -18,12 +18,12 @@ const LIB_PATH = 'libraries/';
 
 
 //tags: init
-export async function initChem(): Promise<void> {
-  // apparently HELMWebEditor requires dojo to be initialized first
-  return new Promise((resolve, reject) => {
-    // @ts-ignore
-    dojo.ready(function() { resolve(null); });
-  });
+export async function initHelm(): Promise<void> {
+  let grid = grok.shell.tv.grid;
+  for (let j = 0; j <= i; j++) {
+    await monomerManager(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, j.toString(), true));
+  }
+  grid.invalidate();
 }
 
 //tags: cellEditor
