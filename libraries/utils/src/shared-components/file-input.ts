@@ -25,7 +25,7 @@ export class FileInput {
     this.draw();
 
     if (onValueChanged)
-      this.uploadedFile$.subscribe(() => this.onValueChanged);
+      this.uploadedFile$.subscribe((newValue) => onValueChanged(newValue));
   }
 
   private draw() {
