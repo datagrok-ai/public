@@ -20,7 +20,14 @@
   },
   "devDependencies": {
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "@types/jest": "^27.0.0",
+    "jest": "^27.0.0",
+    "jest-html-reporter": "^3.5.0",
+    "puppeteer": "^13.7.0",
+    "ts-jest": "^27.0.0",
+    "@types/js-yaml": "^4.0.5",
+    "@types/node-fetch": "^2.6.1"
   },
   "browser": {
     "fs": false,

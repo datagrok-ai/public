@@ -23,11 +23,13 @@
     "webpack-cli": "^4.9.1",
     "eslint": "^7.32.0",
     "eslint-config-google": "^0.14.0",
-    "jest-html-reporter": "^3.5.0",
-    "jest": "^27.0.0",
     "@types/jest": "^27.0.0",
+    "jest": "^27.0.0",
+    "jest-html-reporter": "^3.5.0",
+    "puppeteer": "^13.7.0",
     "ts-jest": "^27.0.0",
-    "puppeteer": "^13.7.0"
+    "@types/js-yaml": "^4.0.5",
+    "@types/node-fetch": "^2.6.1"
   },
   "scripts": {
     "debug-oligobatchcalculator": "grok publish --rebuild",
@@ -37,7 +39,10 @@
     "debug-oligobatchcalculator-public": "grok publish public --rebuild",
     "release-oligobatchcalculator-public": "grok publish public --rebuild --release",
     "debug-oligobatchcalculator-local": "grok publish local --rebuild",
-    "release-oligobatchcalculator-local": "grok publish local --rebuild --release"
+    "release-oligobatchcalculator-local": "grok publish local --rebuild --release",
+    "test": "set HOST=dev && jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
   },
   "sources": [
     "css/style.css"

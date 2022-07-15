@@ -1,13 +1,12 @@
-import * as path from 'path';
-import * as os from 'os';
-import * as fs from 'fs';
-// @ts-ignore
+import * as path from "path";
+import * as os from "os";
+import * as fs from "fs";
 import * as yaml from 'js-yaml';
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 export async function getToken(url: string, key: string) {
-  const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
-  const json = await response.json();
+  let response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+  let json = await response.json() as Record<string, any>;
   if (json.isSuccess == true)
     return json.token;
   else
@@ -15,8 +14,8 @@ export async function getToken(url: string, key: string) {
 }
 
 export async function getWebUrl(url: string, token: string) {
-  const response = await fetch(`${url}/admin/plugins/admin/settings`, {headers: {Authorization: token}});
-  const json = await response.json();
+  let response = await fetch(`${url}/admin/plugins/admin/settings`, {headers: {Authorization: token}});
+  let json = await response.json() as Record<string, any>;
   return json.settings.webRoot;
 }
 
@@ -24,18 +23,18 @@ const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 
 function mapURL(conf: Config): Indexable {
-  const urls: Indexable = {};
-  for (const server in conf.servers)
+  let urls: Indexable = {};
+  for (let server in conf.servers) {
     urls[conf['servers'][server]['url']] = conf['servers'][server];
-
+  }
   return urls;
 }
 
 export function getDevKey(hostKey: string): {url: string, key: string} {
-  const config = yaml.load(fs.readFileSync(confPath, 'utf8')) as any;
+  let config = yaml.load(fs.readFileSync(confPath, 'utf8')) as any;
   let host = hostKey == '' ? config.default : hostKey;
   host = host.trim();
-  const urls = mapURL(config);
+  let urls = mapURL(config);
   let key = '';
   let url = '';
   try {
@@ -53,20 +52,20 @@ export function getDevKey(hostKey: string): {url: string, key: string} {
 
 export async function getBrowserPage(puppeteer: any): Promise<{browser: any, page: any}> {
   let url:string = process.env.HOST ?? '';
-  const cfg = getDevKey(url);
+  let cfg = getDevKey(url);
   url = cfg.url;
 
-  const key = cfg.key;
-  const token = await getToken(url, key);
+  let key = cfg.key;
+  let token = await getToken(url, key);
   url = await getWebUrl(url, token);
   console.log(`Using web root: ${url}`);
 
-  const browser = await puppeteer.launch({
+  let browser = await puppeteer.launch({
     args: ['--disable-dev-shm-usage', '--disable-features=site-per-process'],
     ignoreHTTPSErrors: true,
   });
 
-  const page = await browser.newPage();
+  let page = await browser.newPage();
   await page.goto(`${url}/oauth/`);
   await page.setCookie({name: 'auth', value: token});
   await page.evaluate((token: any) => {
@@ -75,7 +74,7 @@ export async function getBrowserPage(puppeteer: any): Promise<{browser: any, pag
   await page.goto(url);
   try {
     await page.waitForSelector('.grok-preloader');
-    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 1000000});
+    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 100000});
   } catch (error) {
     throw error;
   }

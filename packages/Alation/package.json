@@ -26,7 +26,14 @@
 		"eslint": "latest",
 		"eslint-config-google": "latest",
 		"@typescript-eslint/eslint-plugin": "latest",
-		"@typescript-eslint/parser": "latest"
+		"@typescript-eslint/parser": "latest",
+		"@types/jest": "^27.0.0",
+		"jest": "^27.0.0",
+		"jest-html-reporter": "^3.5.0",
+		"puppeteer": "^13.7.0",
+		"ts-jest": "^27.0.0",
+		"@types/js-yaml": "^4.0.5",
+		"@types/node-fetch": "^2.6.1"
 	},
 	"scripts": {
 		"link-all": "",
@@ -37,7 +44,10 @@
 		"debug-alation-eval": "grok publish eval --rebuild",
 		"release-alation-eval": "grok publish eval --rebuild --release",
 		"lint": "eslint src --ext .ts",
-		"lint-fix": "eslint src --ext .ts --fix"
+		"lint-fix": "eslint src --ext .ts --fix",
+		"test": "set HOST=dev && jest",
+		"test-dev": "set HOST=dev && jest",
+		"test-local": "set HOST=localhost && jest"
 	},
 	"canEdit": [
 		"Developers"
