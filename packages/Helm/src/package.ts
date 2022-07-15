@@ -208,13 +208,14 @@ function getRS(smiles: string) {
 
 async function monomerManager(value: string) {
   let df: any[];
+  const libName = value.substring(value.lastIndexOf("/") + 1);
   if(value.endsWith('.sdf')) {
-    const file = await _package.files.readAsBytes(`${LIB_PATH}${value.split('/')[2]}`);
+    const file = await _package.files.readAsBytes(`${LIB_PATH}${libName}`);
     const dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
     df = createJsonMonomerLibFromSdf(dfSdf[0]);
 
   } else {
-    const file = await _package.files.readAsText(`${LIB_PATH}${value.split('/')[2]}`);
+    const file = await _package.files.readAsText(`${LIB_PATH}${libName}`);
     df = JSON.parse(file);
   }
   
