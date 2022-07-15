@@ -220,7 +220,10 @@ export class Detector {
     let categories = column.categories;
     if (categories.length < min)
       return false;
-
+    
+    if (!categories.some(cat => cat.length >= minStringLength)) 
+      return false;
+      
     let checksCount = Math.min(max, categories.length);
     let maxFailed = checksCount * (1 - ratio);
     let failed = 0;
