@@ -12,6 +12,8 @@ import { MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMIL
 export const _package = new DG.Package();
 
 const lru = new DG.LruCache<any, any>();
+const STORAGE_NAME = 'Libraries';
+let i = 0;
 
 
 //tags: init
@@ -93,31 +95,45 @@ export function detailsPanel(helmString: string) {
 }
 
 
-async function loadDialog() {
+async function loadDialog () {
   //@ts-ignore
-  let res = await grok.dapi.files.list('System:AppData/Helm', false, '');
+  let res = await grok.dapi.files.list('System:AppData/Helm/libraries', false, '');
   //@ts-ignore
   res = res.map((e) => e.path);
   //@ts-ignore
-  const FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
-  const grid = grok.shell.tv.grid;
+  let FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
+  let grid = grok.shell.tv.grid;
   ui.dialog('Load library from file')
-    .add(FilesList)
-    .onOK(async () => {
-      await monomerManager(FilesList.value);
-      grid.invalidate();
-    }).show();
+  .add(FilesList)
+  .onOK(async () => {
+    await monomerManager(FilesList.value);
+    grok.dapi.userDataStorage.postValue(STORAGE_NAME, i.toString(), FilesList.value, true);
+    i += 1;
+    grid.invalidate()
+  }).show();
 };
 
-//name: Library
+//name: Manage Libraries
 //tags: panel, widgets
-//input: string helmString {semType: Macromolecule}
+//input: column helmColumn {semType: Macromolecule}
 //output: widget result
-export function libraryPanel(helmString: string) {
+export async function libraryPanel(helmColumn: DG.Column) {
   //@ts-ignore
-  const loadButton = ui.button('Load Library');
+  let loadButton = ui.button('Load Library');
   loadButton.addEventListener('click', loadDialog);
-  return new DG.Widget(ui.divH([loadButton]));
+  let list = (await grok.dapi.files.list('System:AppData/Helm/libraries', false, '')).toString().split(',');
+  let usedLibraries = [];
+  for (let j = 0; j <= i; j++) {
+    usedLibraries.push(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, j.toString(), true));
+  }
+  let unusedLibraries = list.filter(x => !usedLibraries.includes(x));
+  return new DG.Widget(
+    ui.tableFromMap({
+      'Uploaded libraries': ui.divText(usedLibraries.toString()),
+      'Not used libraries': ui.divText(unusedLibraries.toString()),
+      'Upload new library': ui.divH([loadButton]),
+    })
+  );
 }
 
 async function accessServer(url: string, key: string) {
