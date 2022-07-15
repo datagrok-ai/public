@@ -209,7 +209,7 @@ PEPTIDE1{M.K.P.*.*.*.S.E.Y.V}$$$
     await _testConvert(Samples.helmDna, converter(NOTATION.SEPARATOR), Samples.separatorDna);
   });
   test('HelmRnaToSeparator', async () => {
-    await _testConvert(Samples.helmRna, converter(NOTATION.SEPARATOR), Samples.separatorRna);
+    await _testConvert(Samples.helmRna, converter(NOTATION.SEPARATOR, '*'), Samples.separatorRna);
   });
   test('HelmPtToSeparator', async () => {
     await _testConvert(Samples.helmPt, converter(NOTATION.SEPARATOR, '-'), Samples.separatorPt);
