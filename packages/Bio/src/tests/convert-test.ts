@@ -133,6 +133,7 @@ PEPTIDE1{M.K.P.*.*.*.S.E.Y.V}$$$
   }
 
   // FASTA tests
+  // fasta -> separator
   test('testFastaPtToSeparator', async () => {
     await _testConvert(Samples.fastaPt, converter(NOTATION.SEPARATOR, '-'), Samples.separatorPt);
   });
@@ -142,7 +143,11 @@ PEPTIDE1{M.K.P.*.*.*.S.E.Y.V}$$$
   test('testFastaRnaToSeparator', async () => {
     await _testConvert(Samples.fastaRna, converter(NOTATION.SEPARATOR, '*'), Samples.separatorRna);
   });
+  test('testFastaGapsToSeparator', async () => {
+    await _testConvert(Samples.fastaGaps, converter(NOTATION.SEPARATOR, '/'), Samples.separatorGaps);
+  });
 
+  // fasta -> helm
   test('testFastaPtToHelm', async () => {
     await _testConvert(Samples.fastaPt, converter(NOTATION.HELM), Samples.helmPt);
   });
@@ -152,16 +157,13 @@ PEPTIDE1{M.K.P.*.*.*.S.E.Y.V}$$$
   test('testFastaRnaToHelm', async () => {
     await _testConvert(Samples.fastaRna, converter(NOTATION.HELM), Samples.helmRna);
   });
-
-  test('testFastaGapsToSeparator', async () => {
-    await _testConvert(Samples.fastaGaps, converter(NOTATION.SEPARATOR, '/'), Samples.separatorGaps);
-  });
   test('testFastaGapsToHelm', async () => {
-    await _testConvert(Samples.fastaGaps, converter(NOTATION.SEPARATOR), Samples.helmGaps);
+    await _testConvert(Samples.fastaGaps, converter(NOTATION.HELM), Samples.helmGaps);
   });
 
 
   // SEPARATOR tests
+  // separator -> fasta
   test('testSeparatorPtToFasta', async () => {
     await _testConvert(Samples.separatorPt, converter(NOTATION.FASTA), Samples.fastaPt);
   });
@@ -171,7 +173,11 @@ PEPTIDE1{M.K.P.*.*.*.S.E.Y.V}$$$
   test('testSeparatorRnaToFasta', async () => {
     await _testConvert(Samples.separatorRna, converter(NOTATION.FASTA), Samples.fastaRna);
   });
+  test('testSeparatorGapsToFasta', async () => {
+    await _testConvert(Samples.separatorGaps, converter(NOTATION.FASTA), Samples.fastaGaps);
+  });
 
+  // separator -> helm
   test('testSeparatorPtToHelm', async () => {
     await _testConvert(Samples.separatorPt, converter(NOTATION.HELM), Samples.helmPt);
   });
@@ -181,13 +187,31 @@ PEPTIDE1{M.K.P.*.*.*.S.E.Y.V}$$$
   test('testSeparatorRnaToHelm', async () => {
     await _testConvert(Samples.separatorRna, converter(NOTATION.HELM), Samples.helmRna);
   });
-  test('testSeparatorGapsToFasta', async () => {
-    await _testConvert(Samples.separatorGaps, converter(NOTATION.FASTA), Samples.fastaGaps);
-  });
   test('testSeparatorGapsToHelm', async () => {
     await _testConvert(Samples.separatorGaps, converter(NOTATION.HELM), Samples.helmGaps);
   });
 
 
-  // HELM tests: TODO
+  // HELM tests
+  // helm -> fasta
+  test('HelmDnaToFasta', async () => {
+    await _testConvert(Samples.helmDna, converter(NOTATION.FASTA), Samples.fastaDna);
+  });
+  test('HelmRnaToFasta', async () => {
+    await _testConvert(Samples.helmRna, converter(NOTATION.FASTA), Samples.fastaRna);
+  });
+  test('HelmPtToFasta', async () => {
+    await _testConvert(Samples.helmPt, converter(NOTATION.FASTA), Samples.fastaPt);
+  });
+
+  // helm -> separator
+  test('HelmDnaToSeparator', async () => {
+    await _testConvert(Samples.helmDna, converter(NOTATION.SEPARATOR), Samples.separatorDna);
+  });
+  test('HelmRnaToSeparator', async () => {
+    await _testConvert(Samples.helmRna, converter(NOTATION.SEPARATOR), Samples.separatorRna);
+  });
+  test('HelmPtToSeparator', async () => {
+    await _testConvert(Samples.helmPt, converter(NOTATION.SEPARATOR, '-'), Samples.separatorPt);
+  });
 });

@@ -214,28 +214,22 @@ export class NotationConverter {
     return newColumn;
   }
 
+  /**
+   * Convert SEPARATOR column to FASTA notation
+   *
+   * @param {string | null} fastaGapSymbol Optional gap symbol for FASTA
+   * @return {DG.Column}  Converted column
+   */
   private convertSeparatorToFasta(fastaGapSymbol: string | null = null): DG.Column {
-    // TODO: implementation
-    // * similarly to fasta2separator, divide string into monomers
-    // * adjacent separators is a gap (symbol to be specified)
-    // * the monomers MUST be single-character onles, otherwise forbid
-    // * NO, they can be multi-characters
-    // conversion
-    // * consider automatic determining the separator
-
     if (fastaGapSymbol === null)
       fastaGapSymbol = this._defaultGapSymbolsDict.FASTA;
-
-    // A function splitting a sequence into an array of monomers according to
-    // its notation
-    const splitter = WebLogo.getSplitterForColumn(this.sourceColumn);
 
     const newColumn = this.getNewColumn(NOTATION.FASTA);
     // assign the values to the empty column
     newColumn.init((idx: number) => {
       const separatorPolymer = this.sourceColumn.get(idx);
       // items can be monomers or separators
-      const separatorItemsArray = splitter(separatorPolymer);
+      const separatorItemsArray = this.splitter(separatorPolymer);
       const fastaMonomersArray: string[] = [];
       for (let i = 0; i < separatorItemsArray.length; i++) {
         const item = separatorItemsArray[i];
@@ -254,9 +248,51 @@ export class NotationConverter {
     return newColumn;
   }
 
-  private convertHelmToFasta(): DG.Column {
-    // TODO: implementation
-    return this.getNewColumn(NOTATION.FASTA);
+  /**
+   *  Convert HELM column to FASTA/SEPARATOR
+   *
+   * @param {string} tgtNotation    Target notation: FASTA or SEPARATOR
+   * @param {string} tgtSeparator   Optional target separator (for HELM ->
+   * @param {string | null} tgtGapSymbol   Optional target gap symbol
+   * SEPARATOR)
+   * @return {DG.Column} Converted column
+   */
+  private convertHelm(
+    tgtNotation: string,
+    tgtSeparator: string = '',
+    tgtGapSymbol: string | null = null
+  ): DG.Column {
+    if (tgtGapSymbol === null) {
+      tgtGapSymbol = (this.toFasta(tgtNotation as NOTATION)) ?
+        this._defaultGapSymbolsDict.FASTA :
+        this._defaultGapSymbolsDict.SEPARATOR;
+    }
+
+    if (this.toSeparator(tgtNotation as NOTATION) && tgtSeparator === '')
+      tgtSeparator = this.separator;
+
+    const newColumn = this.getNewColumn(tgtNotation as NOTATION);
+    // assign the values to the empty column
+    newColumn.init((idx: number) => {
+      const helmPolymer = this.sourceColumn.get(idx);
+      // items can be monomers or helms
+      const helmItemsArray = this.splitter(helmPolymer);
+      const tgtMonomersArray: string[] = [];
+      for (let i = 0; i < helmItemsArray.length; i++) {
+        const item = helmItemsArray[i];
+        if (item === this._defaultGapSymbolsDict.HELM) {
+          tgtMonomersArray.push(tgtGapSymbol!);
+        } else if (this.toFasta(tgtNotation as NOTATION) && item.length > 1) {
+          // the case of a multi-character monomer converted to FASTA
+          const monomer = '[' + item + ']';
+          tgtMonomersArray.push(monomer);
+        } else {
+          tgtMonomersArray.push(item);
+        }
+      }
+      return tgtMonomersArray.join(tgtSeparator);
+    });
+    return newColumn;
   }
 
   private convertHelmToSeparator(): DG.Column {
@@ -270,23 +306,23 @@ export class NotationConverter {
    * @param {string | null} tgtSeparator   Possible separator
    * @return {DG.Column}                Converted column
    */
-  public convert(targetNotation: NOTATION, tgtSeparator: string | null = null): DG.Column {
+  public convert(tgtNotation: NOTATION, tgtSeparator: string | null = null): DG.Column {
     // possible exceptions
-    if (this.sourceNotation === targetNotation)
-      throw new Error('Target notation is invalid');
-    if (this.toSeparator(targetNotation) && tgtSeparator === null)
-      throw new Error('Target separator is not specified');
+    if (this.sourceNotation === tgtNotation)
+      throw new Error('tgt notation is invalid');
+    if (this.toSeparator(tgtNotation) && tgtSeparator === null)
+      throw new Error('tgt separator is not specified');
 
-    if (this.isFasta() && this.toSeparator(targetNotation) && tgtSeparator !== null)
+    if (this.isFasta() && this.toSeparator(tgtNotation) && tgtSeparator !== null)
       return this.convertFastaToSeparator(tgtSeparator);
-    else if ((this.isFasta() || this.isSeparator()) && this.toHelm(targetNotation))
+    else if ((this.isFasta() || this.isSeparator()) && this.toHelm(tgtNotation))
       return this.convertToHelm();
-    else if (this.isSeparator() && this.toFasta(targetNotation))
+    else if (this.isSeparator() && this.toFasta(tgtNotation))
       return this.convertSeparatorToFasta();
-    else if (this.isHelm() && this.toFasta(targetNotation))
-      return this.convertHelmToFasta();
-    else
-      return this.convertHelmToSeparator();
+    else if (this.isHelm() && this.toFasta(tgtNotation)) // the case of HELM
+      return this.convertHelm(tgtNotation);
+    else // this.isHelm() && this.toSeparator(tgtNotation)
+      return this.convertHelm(tgtNotation, tgtSeparator!);
   }
 
   public constructor(col: DG.Column) {
