@@ -26,7 +26,6 @@ module.exports = {
     [
       "./node_modules/jest-html-reporter",
       {
-        "includeConsoleLog": true,
         "includeFailureMsg": true
       }
     ]

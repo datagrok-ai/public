@@ -10,41 +10,59 @@ let browser: puppeteer.Browser;
 let page: puppeteer.Page;
 
 beforeAll(async () => {
-  const out = await utils.getBrowserPage(puppeteer);
+  let out = await utils.getBrowserPage(puppeteer);
   browser = out.browser;
   page = out.page;
 }, P_START_TIMEOUT);
 
 afterAll(async () => {
-  await browser.close();
+  await browser?.close();
+});
+
+expect.extend({
+  checkOutput(received, expected, context) {
+    if (received === expected) {
+      return {
+        message: () => context,
+        pass: true
+      };
+    } else {
+      return {
+        message: () => context,
+        pass: false
+      };
+    }
+  }
 });
 
 it('TEST', async () => {
   const target_package:string = process.env.TARGET_PACKAGE ?? 'ApiTests';
   console.log(`Testing ${target_package} package`);
 
-  //console.log(require('root-require')('package.json').version);
-  const r = await page.evaluate((target_package):Promise<object> => {
+  let r = await page.evaluate((target_package):Promise<object> => {
     return new Promise<object>((resolve, reject) => {
       (<any>window).grok.functions.eval(target_package + ':test()').then((df: any) => {
-        const cStatus = df.columns.byName('success');
-        const cMessage = df.columns.byName('result');
-        const cCat = df.columns.byName('category');
-        const cName = df.columns.byName('name');
+        let cStatus = df.columns.byName('success');
+        let cMessage = df.columns.byName('result');
+        let cCat = df.columns.byName('category');
+        let cName = df.columns.byName('name');
         let failed = false;
-        let report = '';
+        let passReport = '';
+        let failReport = '';
         for (let i = 0; i < df.rowCount; i++) {
-          if (!cStatus.get(i)) {
-            report += `${cCat.get(i)}.${cName.get(i)}: ${cMessage.get(i)}\n`;
+          if (cStatus.get(i)) {
+            passReport += `Test result : ${target_package}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+          } else {
             failed = true;
+            failReport += `Test result : ${target_package}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           }
         }
-        resolve({report, failed});
+        resolve({failReport, passReport, failed});
       }).catch((e: any) => reject(e));
     });
   }, target_package);
   // @ts-ignore
-  console.log(r.report);
+  console.log(r.passReport);
   // @ts-ignore
-  expect(r.failed).toBe(false);
+  expect(r.failed).checkOutput(false, r.failReport);
 }, 100000);

@@ -36,7 +36,7 @@ expect.extend({
 });
 
 it('TEST', async () => {
-  const target_package:string = process.env.TARGET_PACKAGE ?? 'UsageAnalysis';
+  const target_package:string = process.env.TARGET_PACKAGE ?? 'Helm';
   console.log(`Testing ${target_package} package`);
 
   let r = await page.evaluate((target_package):Promise<object> => {
