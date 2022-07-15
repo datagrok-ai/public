@@ -32,7 +32,7 @@ function _fastaToStrings(fasta: string): string[] {
  * @param {boolean} isAligned Whether the column is aligned.
  * @return {Promise<DG.Column>} Aligned sequences.
  */
-export async function runKalign(srcCol: DG.Column, isAligned = false): Promise<DG.Column> {
+export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName:string = ''): Promise<DG.Column> {
   let sequences = srcCol.toList();
 
   if (isAligned)
@@ -56,7 +56,7 @@ export async function runKalign(srcCol: DG.Column, isAligned = false): Promise<D
     throw new Error(`kalign output no result`);
 
   const aligned = _fastaToStrings(buf).slice(0, sequences.length);
-  const tgtCol = DG.Column.fromStrings(`msa(${srcCol.name})`, aligned);
+  const tgtCol = DG.Column.fromStrings(unUsedName, aligned);
 
   // units
   const srcUnits = srcCol.getTag(DG.TAGS.UNITS);

@@ -208,7 +208,8 @@ export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.
   if (!checkInputColumn(col, 'MSA', ['fasta'], ['DNA', 'RNA', 'PT']))
     return null;
 
-  const msaCol = await runKalign(col, false);
+  const unUsedName = table.columns.getUnusedName(`msa(${col.name})`);
+  const msaCol = await runKalign(col, false, unUsedName);
   table.columns.add(msaCol);
 
   // This call is required to enable cell renderer activation
