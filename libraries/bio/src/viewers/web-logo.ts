@@ -762,14 +762,26 @@ export class WebLogo extends DG.JsViewer {
 
   private static helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
   private static helmWrappersRe = /(R\(|D\(|\)P)/g;
+  private static helmPp1Re = /\[([^\[\]]+)]/g;
 
   public static splitterAsHelm(seq: any) {
     WebLogo.helmRe.lastIndex = 0;
     const ea: RegExpExecArray | null = WebLogo.helmRe.exec(seq.toString());
     const inSeq: string | null = ea ? ea[2].replace(WebLogo.helmWrappersRe, '') : null;
 
-    const res: string[] = inSeq ? inSeq.split('.') : [];
-    return res;
+    const mmPostProcess = (mm: string): string => {
+      WebLogo.helmPp1Re.lastIndex = 0;
+      const pp1M = WebLogo.helmPp1Re.exec(mm);
+      if (pp1M && pp1M.length >= 2) {
+        return pp1M[1];
+      } else {
+        return mm;
+      }
+    };
+
+    const mmList: string[] = inSeq ? inSeq.split('.') : [];
+    const mmListRes: string[] = mmList.map(mmPostProcess);
+    return mmListRes;
   }
 
   /** Gets method to split sequence by separator
