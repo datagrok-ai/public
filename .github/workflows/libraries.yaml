@@ -165,34 +165,8 @@ jobs:
             webpack || failed=true
             if [[ $failed == "true" ]]; then
               old_version=$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies) | ."@datagrok-libraries/${{ matrix.project }}"' package.json | sed 's/"//g')
-              sed -i "s,\"@datagrok-libraries/${{ matrix.project }}\": \"$old_version\",\"@datagrok-libraries/${{ matrix.project }}\": \"$old_version <${{ matrix.version }}\",g" "package.json"
               echo "::warning title=$package library ${{ matrix.project }}::Changed rule for ${{ matrix.project }} in $package: $old_version --> $(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies) | ."@datagrok-libraries/${{ matrix.project }}"' "package.json" | sed 's/"//g')"
               echo "::set-output name=changes::yes"
             fi
             cd $crnt
           done
-      - name: Commit packages package.json
-        if: ${{ steps.test-packages.outputs.changes == 'yes' }}
-        run: |
-          if [ -n "$(git status -s packages/*/package.json)" ]; then
-            git config --global user.name 'GitHub Actions'
-            git config --global user.email 'github_actions@datagrok.ai'
-            git pull
-            git add packages/*/package.json
-            git commit -m "GitHub Actions: Update library ${{ matrix.project }} dependency rule for packages [skip ci]"
-            count=0
-            retries=10
-            until git push; do
-              exit=$?
-              wait=$((2 ** count))
-              count=$((count + 1))
-              if [ $count -lt "$retries" ]; then
-                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
-                sleep $wait
-                git pull --rebase
-              else
-                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
-                exit $exit
-              fi
-            done
-          fi
