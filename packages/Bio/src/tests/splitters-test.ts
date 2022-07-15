@@ -21,10 +21,17 @@ category('splitters', () => {
       ['meI', 'hHis', 'Aca', 'N', 'T', 'dK', 'Thr_PO3H2', 'Aca',
         'D-Tyr_Et', 'D-Dap', 'dV', 'E', 'N', 'pnG', 'Phe_4Me']
     ],
+    // HELM editor dialog returns HELM string with multichar monomer names in square brackets
+    helm3: [
+      'PEPTIDE1{[meI].[hHis].[Aca].N.T.[dK].[Thr_PO3H2].[Aca].[D-Tyr_Et].[D-Dap].[dV].E.N.[pnG].[Phe_4Me]}$$$',
+      ['meI', 'hHis', 'Aca', 'N', 'T', 'dK', 'Thr_PO3H2', 'Aca',
+        'D-Tyr_Et', 'D-Dap', 'dV', 'E', 'N', 'pnG', 'Phe_4Me']
+    ],
   };
 
   test('helm1', async () => { await _testHelmSplitter(data.helm1[0], data.helm1[1]); });
   test('helm2', async () => { await _testHelmSplitter(data.helm2[0], data.helm2[1]); });
+  test('helm3-multichar', async () => { await _testHelmSplitter(data.helm3[0], data.helm3[1]); });
 });
 
 export async function _testHelmSplitter(src: string, tgt: string[]) {
