@@ -60,7 +60,7 @@ export class SARViewerBase extends DG.JsViewer {
   //     this.minActivityDelta, this.maxSubstitutions, this.showSubstitution);
   // }
 
-  async onPropertyChanged(property: DG.Property): Promise<void> {
+  onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
     this.dataFrame.tags[property.name] = `${property.get(this)}`;
     if (!this.initialized || IS_PROPERTY_CHANGING)
@@ -102,7 +102,6 @@ export class SARViewer extends SARViewerBase {
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
     this.model.sarViewer ??= this;
-    // this.viewerGrid = this.model._sarGrid;
     // this.dataFrame.temp['sarViewer'] = this;
 
     this.subs.push(this.model.onSARGridChanged.subscribe((data) => {
@@ -110,19 +109,20 @@ export class SARViewer extends SARViewerBase {
       this.render();
     }));
 
-    await this.model.updateDefault();
+    this.model.updateDefault();
+    this.viewerGrid = this.model._sarGrid;
     this.initialized = true;
-    // this.render();
+    this.render();
   }
 
   isInitialized(): DG.Grid {return this.model?._sarGrid;}
 
   //1. debouncing in rxjs; 2. flags?
-  async onPropertyChanged(property: DG.Property): Promise<void> {
+  onPropertyChanged(property: DG.Property): void {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)
       return;
 
-    await super.onPropertyChanged(property);
+    super.onPropertyChanged(property);
     IS_PROPERTY_CHANGING = true;
     this.model.syncProperties(true);
     IS_PROPERTY_CHANGING = false;
@@ -142,7 +142,6 @@ export class SARViewerVertical extends SARViewerBase {
 
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
-    // this.viewerGrid = this.model._sarVGrid;
     this.model.sarViewerVertical ??= this;
 
     this.subs.push(this.model.onSARVGridChanged.subscribe((data) => {
@@ -150,19 +149,20 @@ export class SARViewerVertical extends SARViewerBase {
       this.render();
     }));
     
-    await this.model.updateDefault();
+    this.model.updateDefault();
+    this.viewerGrid = this.model._sarVGrid;
 
     this.initialized = true;
-    // this.render();
+    this.render();
   }
 
   isInitialized(): DG.Grid {return this.model?._sarVGrid;}
 
-  async onPropertyChanged(property: DG.Property): Promise<void> {
+  onPropertyChanged(property: DG.Property): void {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)
       return;
 
-    await super.onPropertyChanged(property);
+    super.onPropertyChanged(property);
     IS_PROPERTY_CHANGING = true;
     this.model.syncProperties(false);
     IS_PROPERTY_CHANGING = false;
