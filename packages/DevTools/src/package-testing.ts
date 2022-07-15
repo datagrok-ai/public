@@ -90,7 +90,11 @@ async function collectTests(testFromUrl: ITestFromUrl, packageName?: string): Pr
   for (let f of testFunctions) {
     await delay(4000); // will be removed with new version of js-api
     await f.package.load({ file: f.options.file });
-    const allPackageTests = f.package.getModule(f.options.file).tests;
+    const testModule = f.package.getModule(f.options.file);
+    if (!testModule) {
+      console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
+    }
+    const allPackageTests = testModule ? testModule.tests : {};
     let testsWithPackNameAndActFlag: { [cat: string]: ICategory } = {};
     if (allPackageTests) {
       const normalizedPackName = f.package.name.toLowerCase();
