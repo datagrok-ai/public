@@ -252,7 +252,7 @@ export async function compositionAnalysis(): Promise<void> {
 //name: sdfToJsonLib
 //input: dataframe table
 export async function sdfToJsonLib(table: DG.DataFrame) {
-  const jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);   
+  const jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
 }
 
 // helper function for importFasta

@@ -46,14 +46,16 @@ export function convert(col: DG.Column): void {
       .show();
 
     convertDialogSubs.push(convertDialog.onClose.subscribe((value) => {
-      convertDialogSubs.forEach((s) => {s.unsubscribe(); });
+      convertDialogSubs.forEach((s) => { s.unsubscribe(); });
       convertDialogSubs = [];
       convertDialog = null;
     }));
   }
 }
 
-export async function convertDo(srcCol: DG.Column, targetNotation: NOTATION, separator: string | null): Promise<DG.Column> {
+export async function convertDo(
+  srcCol: DG.Column, targetNotation: NOTATION, separator: string | null
+): Promise<DG.Column> {
   const converter = new NotationConverter(srcCol);
   const newColumn = converter.convert(targetNotation, separator);
   srcCol.dataFrame.columns.add(newColumn);

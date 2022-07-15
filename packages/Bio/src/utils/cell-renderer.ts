@@ -219,7 +219,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
       g.restore();
       return;
-
     }
   }
 }
