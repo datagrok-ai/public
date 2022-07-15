@@ -761,11 +761,12 @@ export class WebLogo extends DG.JsViewer {
   }
 
   private static helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
+  private static helmWrappersRe = /(R\(|D\(|\)P)/g;
 
   public static splitterAsHelm(seq: any) {
     WebLogo.helmRe.lastIndex = 0;
     const ea: RegExpExecArray | null = WebLogo.helmRe.exec(seq.toString());
-    const inSeq: string | null = ea ? ea[2] : null;
+    const inSeq: string | null = ea ? ea[2].replace(WebLogo.helmWrappersRe, '') : null;
 
     const res: string[] = inSeq ? inSeq.split('.') : [];
     return res;
