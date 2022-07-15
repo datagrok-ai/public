@@ -113,6 +113,7 @@ MWRSWY-CKHP
     testIdCsv = 'testIdCsv',
     testSmilesCsv = 'testSmilesCsv',
     testSmiles2Csv = 'testSmiles2Csv',
+    testCerealCsv = 'testCerealCsv',
   }
 
   const samples: { [key: string]: string } = {
@@ -128,6 +129,7 @@ MWRSWY-CKHP
     'testIdCsv': 'System:AppData/Bio/tests/testId.csv',
     'testSmilesCsv': 'System:AppData/Bio/tests/testSmiles.csv',
     'testSmiles2Csv': 'System:AppData/Bio/tests/testSmiles2.csv',
+    'testCerealCsv': 'System:AppData/Bio/tests/testCereal.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -305,6 +307,10 @@ MWRSWY-CKHP
 
   test('samplesFastaPtPosSequence', async () => {
     await (_testPos(readSamples(Samples.fastaPtCsv), 'sequence', 'fasta:SEQ:PT'));
+  });
+
+  test('samplesTestCerealNegativeCerealName', async () => {
+    await (_testNeg(readSamples(Samples.testCerealCsv), 'cereal_name'));
   });
 });
 

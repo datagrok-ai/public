@@ -113,7 +113,7 @@ class BioPackageDetectors extends DG.Package {
     const noSeparatorAlphaDigitRe = /[\dA-Z]/i;
     const noSeparatorBracketsRe = /[\[\]()<>{}]/i;
     const cleanFreq = Object.assign({}, ...Object.entries(freq)
-      .filter(([m, f]) => m != ' ' &&
+      .filter(([m, f]) => m != ' ' && m != '_' &&
         !noSeparatorChemRe.test(m) && !noSeparatorAlphaDigitRe.test(m) && !noSeparatorBracketsRe.test(m) &&
         !BioPackageDetectors.PeptideFastaAlphabet.has(m) &&
         !BioPackageDetectors.DnaFastaAlphabet.has(m))
