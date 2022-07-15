@@ -14,6 +14,7 @@ export const _package = new DG.Package();
 const lru = new DG.LruCache<any, any>();
 const STORAGE_NAME = 'Libraries';
 let i = 0;
+const LIB_PATH = 'libraries/';
 
 
 //tags: init
@@ -52,7 +53,8 @@ export function editMoleculeCell(cell: DG.GridCell): void {
     ui.dialog({ showHeader: false, showFooter: true })
     .add(view)
     .onOK(() => {
-      cell.cell.value = app.canvas.getHelm(true);
+      const val = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+      cell.cell.value = val;
     }).show({ modal: true, fullScreen: true});
   }
   else if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === "fasta:SEQ:PT") {
@@ -207,12 +209,12 @@ function getRS(smiles: string) {
 async function monomerManager(value: string) {
   let df: any[];
   if(value.endsWith('.sdf')) {
-    const file = await _package.files.readAsBytes(value.split('/')[1]);
+    const file = await _package.files.readAsBytes(`${LIB_PATH}${value.split('/')[2]}`);
     const dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
     df = createJsonMonomerLibFromSdf(dfSdf[0]);
 
   } else {
-    const file = await _package.files.readAsText(value.split('/')[1]);
+    const file = await _package.files.readAsText(`${LIB_PATH}${value.split('/')[2]}`);
     df = JSON.parse(file);
   }
   
