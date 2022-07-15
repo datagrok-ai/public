@@ -8,7 +8,7 @@ module.exports = {
     test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
   },
   resolve: {
-    extensions: ['.js', '.json', '.ts'],
+    extensions: ['.ts', '.js', '.json'],
   },
   module: {
     rules: [
