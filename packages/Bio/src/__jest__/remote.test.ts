@@ -10,7 +10,7 @@ let browser: puppeteer.Browser;
 let page: puppeteer.Page;
 
 beforeAll(async () => {
-  let out = await utils.getBrowserPage(puppeteer);
+  const out = await utils.getBrowserPage(puppeteer);
   browser = out.browser;
   page = out.page;
 }, P_START_TIMEOUT);
@@ -36,31 +36,31 @@ expect.extend({
 });
 
 it('TEST', async () => {
-  const target_package:string = process.env.TARGET_PACKAGE ?? 'Bio';
-  console.log(`Testing ${target_package} package`);
+  const targetPackage:string = process.env.TARGET_PACKAGE ?? 'Bio';
+  console.log(`Testing ${targetPackage} package`);
 
-  let r = await page.evaluate((target_package):Promise<object> => {
+  const r = await page.evaluate((targetPackage):Promise<object> => {
     return new Promise<object>((resolve, reject) => {
-      (<any>window).grok.functions.eval(target_package + ':test()').then((df: any) => {
-        let cStatus = df.columns.byName('success');
-        let cMessage = df.columns.byName('result');
-        let cCat = df.columns.byName('category');
-        let cName = df.columns.byName('name');
+      (<any>window).grok.functions.eval(targetPackage + ':test()').then((df: any) => {
+        const cStatus = df.columns.byName('success');
+        const cMessage = df.columns.byName('result');
+        const cCat = df.columns.byName('category');
+        const cName = df.columns.byName('name');
         let failed = false;
         let passReport = '';
         let failReport = '';
         for (let i = 0; i < df.rowCount; i++) {
           if (cStatus.get(i)) {
-            passReport += `Test result : ${target_package}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+            passReport += `Test result : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           } else {
             failed = true;
-            failReport += `Test result : ${target_package}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+            failReport += `Test result : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           }
         }
         resolve({failReport, passReport, failed});
       }).catch((e: any) => reject(e));
     });
-  }, target_package);
+  }, targetPackage);
   // @ts-ignore
   console.log(r.passReport);
   // @ts-ignore

@@ -36,12 +36,12 @@ expect.extend({
 });
 
 it('TEST', async () => {
-  const target_package:string = process.env.TARGET_PACKAGE ?? 'SequenceTranslator';
-  console.log(`Testing ${target_package} package`);
+  const targetPackage:string = process.env.TARGET_PACKAGE ?? 'SequenceTranslator';
+  console.log(`Testing ${targetPackage} package`);
 
-  let r = await page.evaluate((target_package):Promise<object> => {
+  let r = await page.evaluate((targetPackage):Promise<object> => {
     return new Promise<object>((resolve, reject) => {
-      (<any>window).grok.functions.eval(target_package + ':test()').then((df: any) => {
+      (<any>window).grok.functions.eval(targetPackage + ':test()').then((df: any) => {
         let cStatus = df.columns.byName('success');
         let cMessage = df.columns.byName('result');
         let cCat = df.columns.byName('category');
@@ -51,16 +51,16 @@ it('TEST', async () => {
         let failReport = '';
         for (let i = 0; i < df.rowCount; i++) {
           if (cStatus.get(i)) {
-            passReport += `Test result : ${target_package}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+            passReport += `Test result : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           } else {
             failed = true;
-            failReport += `Test result : ${target_package}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+            failReport += `Test result : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           }
         }
         resolve({failReport, passReport, failed});
       }).catch((e: any) => reject(e));
     });
-  }, target_package);
+  }, targetPackage);
   // @ts-ignore
   console.log(r.passReport);
   // @ts-ignore
