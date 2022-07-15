@@ -29,48 +29,45 @@ export async function initChem(): Promise<void> {
 //description: Macromolecule
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell): void {
-  const view = ui.div();
+  let view = ui.div();
   org.helm.webeditor.MolViewer.molscale = 0.8;
-  const app = new scil.helm.App(view, {
-    showabout: false,
-    mexfontsize: '90%',
-    mexrnapinontab: true,
-    topmargin: 20,
-    mexmonomerstab: true,
-    sequenceviewonly: false,
-    mexfavoritefirst: true,
-    mexfilter: true
-  });
-  const sizes = app.calculateSizes();
+  let app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
+  var sizes = app.calculateSizes();
   app.canvas.resize(sizes.rightwidth, sizes.topheight - 210);
-  let s = {width: sizes.rightwidth + 'px', height: sizes.bottomheight + 'px'};
+  var s = { width: sizes.rightwidth + "px", height: sizes.bottomheight + "px" };
   //@ts-ignore
   scil.apply(app.sequence.style, s);
   //@ts-ignore
   scil.apply(app.notation.style, s);
-  s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + app.toolbarheight) + 'px'};
+  s = { width: sizes.rightwidth + "px", height: (sizes.bottomheight + app.toolbarheight) + "px" };
   //@ts-ignore
   scil.apply(app.properties.parent.style, s);
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
-
-  let dialogValue: string;
-  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'HELM') {
-    dialogValue = cell.cell.value;
-  } else {
-    const converter: NotationConverter = new NotationConverter(cell.cell.column);
-    dialogValue = converter.convertStringToHelm(cell.cell.value);
+  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === "HELM"){
+    setTimeout(function() {
+      app.canvas.helm.setSequence(cell.cell.value , 'HELM');
+    }, 200);
+    //@ts-ignore
+    ui.dialog({ showHeader: false, showFooter: true })
+    .add(view)
+    .onOK(() => {
+      cell.cell.value = app.canvas.getHelm(true);
+    }).show({ modal: true, fullScreen: true});
   }
-
-  setTimeout(function() {
-    app.canvas.helm.setSequence(dialogValue, 'HELM');
-  }, 200);
-  //@ts-ignore
-  ui.dialog({showHeader: false, showFooter: true})
+  else if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === "fasta:SEQ:PT") {
+    const converter = new NotationConverter(cell.gridColumn.column);
+    const resStr = converter.convertFastaStringToHelm(null, null, cell.cell.value);
+    setTimeout(function() {
+      app.canvas.helm.setSequence(resStr , 'HELM');
+    }, 200);
+    //@ts-ignore
+    ui.dialog({ showHeader: false, showFooter: true })
     .add(view)
     .onOK(() => {
       cell.cell.value;
-    }).show({modal: true, fullScreen: true});
+    }).show({ modal: true, fullScreen: true});
+  }
 }
 
 //name: Details
