@@ -123,8 +123,8 @@ export class FileInput {
     const newIcon = ui.iconFA('cloud-upload', () => this.hiddenInput.click());
     this.icon.replaceWith(newIcon);
     this.icon = newIcon;
-    this.visibleInput.value = this.initialText;
-    this.uploadedFile$.next(this.initialValue);
+    this.visibleInput.value = 'Drag-n-drop here';
+    this.uploadedFile$.next(null);
   }
 
   private clear() {
