@@ -67,7 +67,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
       }).show({modal: true, fullScreen: true});
   } else if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'fasta:SEQ:PT') {
     const converter = new NotationConverter(cell.gridColumn.column);
-    const resStr = converter.convertStringToHelm(cell.cell.value, '-', '*');
+    const resStr = converter.convertStringToHelm(cell.cell.value, '-');
     setTimeout(function() {
       app.canvas.helm.setSequence(resStr, 'HELM');
     }, 200);
