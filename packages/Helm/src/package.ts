@@ -5,8 +5,8 @@ import * as DG from 'datagrok-api/dg';
 //import {lru} from '../../Bio/src/utils/cell-renderer';
 import {NotationConverter, NOTATION} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import { createJsonMonomerLibFromSdf } from './utils';
-import { MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES } from './constants';
+import {createJsonMonomerLibFromSdf} from './utils';
+import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 //import {ConverterFunc, DfReaderFunc} from '../../Bio/src/tests/types';
 
 export const _package = new DG.Package();
@@ -32,43 +32,51 @@ export async function initChem(): Promise<void> {
 export function editMoleculeCell(cell: DG.GridCell): void {
   let view = ui.div();
   org.helm.webeditor.MolViewer.molscale = 0.8;
-  let app = new scil.helm.App(view, { showabout: false, mexfontsize: "90%", mexrnapinontab: true, topmargin: 20, mexmonomerstab: true, sequenceviewonly: false, mexfavoritefirst: true, mexfilter: true });
+  let app = new scil.helm.App(view, {
+    showabout: false,
+    mexfontsize: '90%',
+    mexrnapinontab: true,
+    topmargin: 20,
+    mexmonomerstab: true,
+    sequenceviewonly: false,
+    mexfavoritefirst: true,
+    mexfilter: true
+  });
   var sizes = app.calculateSizes();
   app.canvas.resize(sizes.rightwidth, sizes.topheight - 210);
-  var s = { width: sizes.rightwidth + "px", height: sizes.bottomheight + "px" };
+  var s = {width: sizes.rightwidth + 'px', height: sizes.bottomheight + 'px'};
   //@ts-ignore
   scil.apply(app.sequence.style, s);
   //@ts-ignore
   scil.apply(app.notation.style, s);
-  s = { width: sizes.rightwidth + "px", height: (sizes.bottomheight + app.toolbarheight) + "px" };
+  s = {width: sizes.rightwidth + 'px', height: (sizes.bottomheight + app.toolbarheight) + 'px'};
   //@ts-ignore
   scil.apply(app.properties.parent.style, s);
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
-  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === "HELM"){
+  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'HELM') {
     setTimeout(function() {
-      app.canvas.helm.setSequence(cell.cell.value , 'HELM');
+      app.canvas.helm.setSequence(cell.cell.value, 'HELM');
     }, 200);
     //@ts-ignore
-    ui.dialog({ showHeader: false, showFooter: true })
-    .add(view)
-    .onOK(() => {
-      const val = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-      cell.cell.value = val;
-    }).show({ modal: true, fullScreen: true});
-  }
-  else if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === "fasta:SEQ:PT") {
+    ui.dialog({showHeader: false, showFooter: true})
+      .add(view)
+      .onOK(() => {
+        const val = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+        cell.cell.value = val;
+      }).show({modal: true, fullScreen: true});
+  } else if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'fasta:SEQ:PT') {
     const converter = new NotationConverter(cell.gridColumn.column);
-    const resStr = converter.convertFastaStringToHelm(null, null, cell.cell.value);
+    const resStr = converter.convertStringToHelm(cell.cell.value, '-', '*');
     setTimeout(function() {
-      app.canvas.helm.setSequence(resStr , 'HELM');
+      app.canvas.helm.setSequence(resStr, 'HELM');
     }, 200);
     //@ts-ignore
-    ui.dialog({ showHeader: false, showFooter: true })
-    .add(view)
-    .onOK(() => {
-      cell.cell.value;
-    }).show({ modal: true, fullScreen: true});
+    ui.dialog({showHeader: false, showFooter: true})
+      .add(view)
+      .onOK(() => {
+        cell.cell.value;
+      }).show({modal: true, fullScreen: true});
   }
 }
 
@@ -94,7 +102,7 @@ export function detailsPanel(helmString: string) {
 }
 
 
-async function loadDialog () {
+async function loadDialog() {
   //@ts-ignore
   let res = await grok.dapi.files.list('System:AppData/Helm/libraries', false, '');
   //@ts-ignore
@@ -103,13 +111,13 @@ async function loadDialog () {
   let FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
   let grid = grok.shell.tv.grid;
   ui.dialog('Load library from file')
-  .add(FilesList)
-  .onOK(async () => {
-    await monomerManager(FilesList.value);
-    grok.dapi.userDataStorage.postValue(STORAGE_NAME, i.toString(), FilesList.value, true);
-    i += 1;
-    grid.invalidate()
-  }).show();
+    .add(FilesList)
+    .onOK(async () => {
+      await monomerManager(FilesList.value);
+      grok.dapi.userDataStorage.postValue(STORAGE_NAME, i.toString(), FilesList.value, true);
+      i += 1;
+      grid.invalidate();
+    }).show();
 };
 
 //name: Manage Libraries
@@ -208,8 +216,8 @@ function getRS(smiles: string) {
 
 async function monomerManager(value: string) {
   let df: any[];
-  const libName = value.substring(value.lastIndexOf("/") + 1);
-  if(value.endsWith('.sdf')) {
+  const libName = value.substring(value.lastIndexOf('/') + 1);
+  if (value.endsWith('.sdf')) {
     const file = await _package.files.readAsBytes(`${LIB_PATH}${libName}`);
     const dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
     df = createJsonMonomerLibFromSdf(dfSdf[0]);
@@ -218,7 +226,7 @@ async function monomerManager(value: string) {
     const file = await _package.files.readAsText(`${LIB_PATH}${libName}`);
     df = JSON.parse(file);
   }
-  
+
   df.forEach(monomer => {
     const m = {};
     Object.keys(MONOMER_MANAGER_MAP).forEach(field => {
@@ -236,7 +244,7 @@ async function monomerManager(value: string) {
       m['at'] = getRS(df[SMILES].toString());
     }
     org.helm.webeditor.Monomers.addOneMonomer(m);
-  })
+  });
 }
 
 //name: helmColumnToSmiles
@@ -245,9 +253,6 @@ export function helmColumnToSmiles(helmColumn: DG.Column) {
   //todo: add column with smiles to col.dataFrame.
 }
 
-// Synonym to overcome eslint error
-const GetMonomerSet = scil.helm.Monomers.getMonomerSet;
-
 //name: findMonomers
 //input: string helmString { semType: Macromolecule }
 export async function findMonomers(helmString: string) {
@@ -255,6 +260,8 @@ export async function findMonomers(helmString: string) {
   const monomers = [];
   const monomerNames = [];
   for (let i = 0; i < types.length; i++) {
+    // Synonym to overcome eslint error
+    const GetMonomerSet = scil.helm.Monomers.getMonomerSet;
     monomers.push(new GetMonomerSet(types[i]));
     Object.keys(monomers[i]).forEach((k) => {
       monomerNames.push(monomers[i][k].id);
