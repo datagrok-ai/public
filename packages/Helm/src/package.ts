@@ -102,12 +102,8 @@ export function detailsPanel(helmString: string) {
 }
 
 
-async function loadDialog() {
-  //@ts-ignore
-  let res = await grok.dapi.files.list('System:AppData/Helm/libraries', false, '');
-  //@ts-ignore
-  res = res.map((e) => e.path);
-  //@ts-ignore
+async function loadDialog () {
+  let res = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
   let FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
   let grid = grok.shell.tv.grid;
   ui.dialog('Load library from file')
@@ -128,7 +124,7 @@ export async function libraryPanel(helmColumn: DG.Column) {
   //@ts-ignore
   let loadButton = ui.button('Load Library');
   loadButton.addEventListener('click', loadDialog);
-  let list = (await grok.dapi.files.list('System:AppData/Helm/libraries', false, '')).toString().split(',');
+  let list = (await  _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
   let usedLibraries = [];
   for (let j = 0; j <= i; j++) {
     usedLibraries.push(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, j.toString(), true));
@@ -216,14 +212,13 @@ function getRS(smiles: string) {
 
 async function monomerManager(value: string) {
   let df: any[];
-  const libName = value.substring(value.lastIndexOf('/') + 1);
-  if (value.endsWith('.sdf')) {
-    const file = await _package.files.readAsBytes(`${LIB_PATH}${libName}`);
+  if(value.endsWith('.sdf')) {
+    const file = await _package.files.readAsBytes(`${LIB_PATH}${value}`);
     const dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
     df = createJsonMonomerLibFromSdf(dfSdf[0]);
 
   } else {
-    const file = await _package.files.readAsText(`${LIB_PATH}${libName}`);
+    const file = await _package.files.readAsText(`${LIB_PATH}${value}`);
     df = JSON.parse(file);
   }
 
