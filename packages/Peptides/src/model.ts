@@ -151,6 +151,8 @@ export class PeptidesModel {
         this._substitutionTableSubject.next(this.substitutionsInfo);
         this._isSubstInitialized = true;
       }
+      if (forceUpdate)
+        this.updateBarchart();
       // this.updateBarchart();
       this.invalidateSelection();
 
