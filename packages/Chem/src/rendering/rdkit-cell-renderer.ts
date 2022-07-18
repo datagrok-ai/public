@@ -190,11 +190,30 @@ M  END
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     molString: string, scaffoldMolString: string, highlightScaffold: boolean,
-    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): void {
+    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, vertical: boolean = false): void {
+    if (vertical) {
+      h += w;
+      w = h - w;
+      h -= w;
+      w -= 30;
+    }
     const offscreenCanvas = this._fetchRender(w, h, molString, scaffoldMolString,
       highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
+    // console.log(offscreenCanvas.getContext('2d')!);
     const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);
-    onscreenCanvas.getContext('2d')!.putImageData(image, x, y);
+    if (vertical) {
+      let ctx = onscreenCanvas.getContext('2d')!
+      ctx.save();
+      ctx.translate(x , y - 150);
+      ctx.rotate(Math.PI/2);
+      console.log(offscreenCanvas.width);
+      console.log(offscreenCanvas.height);
+      console.log(w);
+      console.log(h);
+      ctx.drawImage(offscreenCanvas, 0, - (h / 2));
+      ctx.restore();
+    } else
+      onscreenCanvas.getContext('2d')!.putImageData(image, x, y);
   }
 
   _initScaffoldString(colTemp: any, tagName: string) {
@@ -219,7 +238,7 @@ M  END
 
     // value-based drawing (coming from HtmlCellRenderer.renderValue)
     if (gridCell.cell.column == null) {
-      this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, false, false);
+      this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, false, false, cellStyle.textVertical);
       return;
     }
 
@@ -232,7 +251,7 @@ M  END
 
     if (singleScaffoldMolString) {
       this._drawMolecule(x, y, w, h, g.canvas,
-        molString, singleScaffoldMolString, true, false, false);
+        molString, singleScaffoldMolString, true, false, false, cellStyle.textVertical);
     } else {
       let molRegenerateCoords = colTemp && colTemp['regenerate-coords'] === 'true';
       let scaffoldRegenerateCoords = false;
@@ -253,14 +272,14 @@ M  END
 
       if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.cell.column.name) {
         // regular drawing
-        this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, molRegenerateCoords, false);
+        this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, molRegenerateCoords, false, cellStyle.textVertical);
       } else {
         // drawing with a per-row scaffold
         const idx = gridCell.tableRowIndex; // TODO: supposed to be != null?
         const scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
         const highlightScaffold = colTemp && colTemp['highlight-scaffold'] === 'true';
         this._drawMolecule(x, y, w, h, g.canvas,
-          molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
+          molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle.textVertical);
       }
     }
   }
