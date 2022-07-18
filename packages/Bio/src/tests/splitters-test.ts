@@ -27,11 +27,30 @@ category('splitters', () => {
       ['meI', 'hHis', 'Aca', 'N', 'T', 'dK', 'Thr_PO3H2', 'Aca',
         'D-Tyr_Et', 'D-Dap', 'dV', 'E', 'N', 'pnG', 'Phe_4Me']
     ],
+
+    testHelm1: [
+      'RNA1{R(U)P.R(T)P.R(G)P.R(C)P.R(A)}$$$$',
+      ['R(U)P', 'R(T)P', 'R(G)P', 'R(C)P', 'R(A)']
+    ],
+
+    testHelm2: [
+      'RNA1{P.R(U)P.R(T)}$$$$',
+      ['P', 'R(U)P', 'R(T)']
+    ],
+    testHelm3: [
+      'RNA1{P.R(U).P.R(T)}$$$$',
+      ['P', 'R(U)', 'P', 'R(T)']
+    ],
   };
 
   test('helm1', async () => { await _testHelmSplitter(data.helm1[0], data.helm1[1]); });
   test('helm2', async () => { await _testHelmSplitter(data.helm2[0], data.helm2[1]); });
   test('helm3-multichar', async () => { await _testHelmSplitter(data.helm3[0], data.helm3[1]); });
+
+  // examples from Helm/tests/test.csv file
+  test('testHelm1', async () => { await _testHelmSplitter(data.testHelm1[0], data.testHelm1[1]); });
+  test('testHelm2', async () => { await _testHelmSplitter(data.testHelm2[0], data.testHelm2[1]); });
+  test('testHelm3', async () => { await _testHelmSplitter(data.testHelm3[0], data.testHelm3[1]); });
 });
 
 export async function _testHelmSplitter(src: string, tgt: string[]) {
