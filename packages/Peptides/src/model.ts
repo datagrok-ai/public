@@ -545,7 +545,7 @@ export class PeptidesModel {
             table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
           const currentAAR = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
 
-          this.showTooltip(currentAAR, currentPosition, x, y);
+          this.showTooltipAt(currentAAR, currentPosition, x, y);
         }
       }
       return true;
@@ -555,7 +555,7 @@ export class PeptidesModel {
     sarVGrid.onCellTooltip(showTooltip);
   }
 
-  showTooltip(aar: string, position: string, x: number, y: number): void {
+  showTooltipAt(aar: string, position: string, x: number, y: number): void {
     const currentStatsDf = this.statsDf.rows.match({Pos: position, AAR: aar}).toDataFrame();
     const activityCol = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
     const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);

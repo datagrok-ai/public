@@ -316,6 +316,6 @@ export class StackedBarChart extends DG.JsViewer {
       event.shiftKey ? this.model.modifyCurrentSelection(aar, position) :
         this.model.initCurrentSelection(aar, position);
     } else
-      this.model.showTooltip(aar, position, event.clientX, event.clientY);
+      this.model.showTooltipAt(aar, position, event.clientX, event.clientY);
   }
 }
