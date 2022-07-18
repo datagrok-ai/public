@@ -474,13 +474,17 @@ import {AwesomeViewer} from './awesome-viewer.js'
 //name: AwesomeViewer
 //description: Creates an awesome viewer
 //tags: viewer
+//meta.icon: images/icon.svg
 //output: viewer result
 export function awesome() {
   return new AwesomeViewer();
 }
 ```
 
-The above way is typically preferred. There is also a less common form:
+The above way is typically preferred. The optional parameter `meta.icon`
+accepts a path to a viewer icon file in the package.
+
+There is also a less common form to register a viewer:
 
 ```js
 grok.shell.registerViewer('AwesomeViewer', 'Creates an awesome viewer', () => new AwesomeViewer());
