@@ -30,14 +30,6 @@ export class PeptidesModel {
   isBitsetChangedInitialized = false;
   isCellChanging = false;
 
-  //viewer properties
-  // _filterMode!: boolean;
-  // _twoColorMode!: boolean;
-  // _activityScaling!: string;
-  // _isSubstitutionOn!: boolean;
-  // _activityLimit!: number;
-  // _maxSubstitutions!: number;
-
   _sarGrid!: DG.Grid;
   _sarVGrid!: DG.Grid;
   _sourceGrid!: DG.Grid;
@@ -58,7 +50,7 @@ export class PeptidesModel {
   sarViewer!: SARViewer;
   sarViewerVertical!: SARViewerVertical;
 
-  usedProperties: {[propName: string]: string | number | boolean} = {};
+  _usedProperties: {[propName: string]: string | number | boolean} = {};
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
@@ -97,6 +89,15 @@ export class PeptidesModel {
     this.invalidateSelection();
   }
 
+  get usedProperties(): {[propName: string]: string | number | boolean} {
+    this._usedProperties = JSON.parse(this._dataFrame.tags['sarProperties'] ?? '{}');
+    return this._usedProperties;
+  }
+  set usedProperties(properties: {[propName: string]: string | number | boolean}) {
+    this._dataFrame.tags['sarProperties'] = JSON.stringify(properties);
+    this._usedProperties = properties;
+  }
+
   invalidateSelection(): void {
     this.fireBitsetChanged();
     this.invalidateGrids();
@@ -112,53 +113,6 @@ export class PeptidesModel {
     return acc;
   }
 
-  // updateProperties(): void {
-  //   this._activityScaling = this._dataFrame.tags['scaling'];
-  //   this._filterMode = stringToBool(this._dataFrame.tags['filterMode']);
-  //   this._twoColorMode = stringToBool(this._dataFrame.tags['bidirectionalAnalysis']);
-  //   this._isSubstitutionOn = stringToBool(this._dataFrame.tags['showSubstitution']);
-  //   this._maxSubstitutions = parseInt(this._dataFrame.tags['maxSubstitutions']);
-  //   this._activityLimit = parseFloat(this._dataFrame.tags['activityLimit']);
-  // }
-
-  // setProperties(
-  //   activityScaling: string, filterMode: boolean, twoColorMode: boolean, isSubstitutionOn: boolean,
-  //   maxSubstitutions: number, activityLimit: number, forceUpdate = false,
-  // ): void {
-  //   const chooseAction =
-  //     (value: string, defaultValue: string | boolean | number): string | boolean | number =>
-  //       forceUpdate ? value : defaultValue ?? value;
-  //   this._dataFrame.tags['scaling'] = chooseAction(`${activityScaling}`, this._dataFrame.tags['scaling']);
-  //   this._dataFrame.tags['filterMode'] = chooseAction(`${filterMode}`, this._dataFrame.tags['filterMode']);
-  //   this._dataFrame.tags['bidirectionalAnalysis'] =
-  //     chooseAction(`${twoColorMode}`, this._dataFrame.tags['bidirectionalAnalysis']);
-  //   this._dataFrame.tags['showSubstitution'] =
-  //     chooseAction(`${isSubstitutionOn}`, this._dataFrame.tags['showSubstitution']);
-  //   this._dataFrame.tags['maxSubstitutions'] =
-  //     chooseAction(`${maxSubstitutions}`, this._dataFrame.tags['maxSubstitutions']);
-  //   this._dataFrame.tags['activityLimit'] = chooseAction(`${activityLimit}`, this._dataFrame.tags['activityLimit']);
-
-  //   this.updateProperties();
-  // }
-
-  // async updateData(
-  //   activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, activityLimit?: number,
-  //   maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
-  // ): Promise<void> {
-  //   //FIXME: threre are too many assignments, some are duplicating
-  //   this._activityScaling = activityScaling ?? this._activityScaling;
-  //   this._sourceGrid = sourceGrid ?? this._sourceGrid;
-  //   this._twoColorMode = twoColorMode ?? this._twoColorMode;
-  //   this._activityLimit = activityLimit ?? this._activityLimit;
-  //   this._maxSubstitutions = maxSubstitutions ?? this._maxSubstitutions;
-  //   this._isSubstitutionOn = isSubstitutionOn ?? this._isSubstitutionOn;
-  //   this._filterMode = filterMode ?? this._filterMode;
-  //   this.setProperties(this._activityScaling, this._filterMode, this._twoColorMode, this._isSubstitutionOn,
-  //     this._maxSubstitutions, this._activityLimit, true);
-
-  //   await this.updateDefault();
-  // }
-
   getViewer(): SARViewerBase {
     const viewer = this.sarViewer ?? this.sarViewerVertical;
     if (!viewer)
@@ -170,14 +124,16 @@ export class PeptidesModel {
     const viewer = this.getViewer();
     const viewerProps = viewer.props.getProperties();
     let result = false;
+    const tempProps = this.usedProperties;
     for (const property of viewerProps) {
       const propName = property.name;
       const propVal = property.get(viewer);
-      if (this.usedProperties[propName] != propVal) {
-        this.usedProperties[propName] = propVal;
+      if (tempProps[propName] != propVal) {
+        tempProps[propName] = propVal;
         result = true;
       }
     }
+    this.usedProperties = tempProps;
     return result;
   }
 
@@ -911,8 +867,14 @@ export class PeptidesModel {
       const [sourceViewer, targetViewer] = isSourceSAR ? [this.sarViewer, this.sarViewerVertical] :
         [this.sarViewerVertical, this.sarViewer];
       const properties = sourceViewer.props.getProperties();
-      for (const property of properties)
-        targetViewer.props.set(property.name, property.get(sourceViewer));
+      const newProps: {[propName: string]: string | number | boolean} = {};
+      for (const property of properties) {
+        const propName = property.name;
+        const propVal = property.get(sourceViewer);
+        targetViewer.props.set(propName, propVal);
+        newProps[propName] = propVal;
+      }
+      this.usedProperties = newProps;
     } else
       console.warn('Warning: could not sync viewer properties, one of the viewers is not initialized');
   }

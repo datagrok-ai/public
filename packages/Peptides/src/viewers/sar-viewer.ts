@@ -39,6 +39,16 @@ export class SARViewerBase extends DG.JsViewer {
     // this.model.init(this.dataFrame);
     this.helpUrl = '/help/domains/bio/peptides.md';
     // await this.requestDataUpdate();
+
+    this.initProperties();
+  }
+
+  initProperties() {
+    const props = this.model.usedProperties;
+    IS_PROPERTY_CHANGING = true;
+    for (const [propName, propVal] of Object.entries(props))
+      this.props.set(propName, propVal as any as object);
+    IS_PROPERTY_CHANGING = false;
   }
 
   detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
@@ -109,7 +119,7 @@ export class SARViewer extends SARViewerBase {
       this.render();
     }));
 
-    this.model.updateDefault();
+    this.model.updateDefault(true);
     this.viewerGrid = this.model._sarGrid;
     this.initialized = true;
     this.render();
@@ -149,7 +159,7 @@ export class SARViewerVertical extends SARViewerBase {
       this.render();
     }));
     
-    this.model.updateDefault();
+    this.model.updateDefault(true);
     this.viewerGrid = this.model._sarVGrid;
 
     this.initialized = true;
