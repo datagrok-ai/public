@@ -761,22 +761,24 @@ export class WebLogo extends DG.JsViewer {
   }
 
   private static helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
-  private static helmWrappersRe = /(R\(|D\(|\)P)/g;
   private static helmPp1Re = /\[([^\[\]]+)]/g;
 
-  public static splitterAsHelm(seq: any) {
+  /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
+   * @param {string} seq Source string of HELM notation
+   * @return {string[]}
+   */
+  public static splitterAsHelm(seq: any): string[] {
     WebLogo.helmRe.lastIndex = 0;
     const ea: RegExpExecArray | null = WebLogo.helmRe.exec(seq.toString());
-    const inSeq: string | null = ea ? ea[2].replace(WebLogo.helmWrappersRe, '') : null;
+    const inSeq: string | null = ea ? ea[2] : null;
 
     const mmPostProcess = (mm: string): string => {
       WebLogo.helmPp1Re.lastIndex = 0;
       const pp1M = WebLogo.helmPp1Re.exec(mm);
-      if (pp1M && pp1M.length >= 2) {
+      if (pp1M && pp1M.length >= 2)
         return pp1M[1];
-      } else {
+      else
         return mm;
-      }
     };
 
     const mmList: string[] = inSeq ? inSeq.split('.') : [];

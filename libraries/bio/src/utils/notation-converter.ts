@@ -271,6 +271,7 @@ export class NotationConverter {
     if (this.toSeparator(tgtNotation as NOTATION) && tgtSeparator === '')
       tgtSeparator = this.separator;
 
+    const helmWrappersRe = /(R\(|D\(|\)P)/g;
     const newColumn = this.getNewColumn(tgtNotation as NOTATION);
     // assign the values to the empty column
     newColumn.init((idx: number) => {
@@ -279,7 +280,7 @@ export class NotationConverter {
       const helmItemsArray = this.splitter(helmPolymer);
       const tgtMonomersArray: string[] = [];
       for (let i = 0; i < helmItemsArray.length; i++) {
-        const item = helmItemsArray[i];
+        const item = helmItemsArray[i].replace(helmWrappersRe, '');
         if (item === this._defaultGapSymbolsDict.HELM) {
           tgtMonomersArray.push(tgtGapSymbol!);
         } else if (this.toFasta(tgtNotation as NOTATION) && item.length > 1) {
@@ -302,7 +303,7 @@ export class NotationConverter {
 
   /** Dispatcher method for notation conversion
    *
-   * @param {NOTATION} targetNotation   Notation we want to convert to
+   * @param {NOTATION} tgtNotation   Notation we want to convert to
    * @param {string | null} tgtSeparator   Possible separator
    * @return {DG.Column}                Converted column
    */
