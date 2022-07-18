@@ -43,8 +43,8 @@ export function editMoleculeCell(cell: DG.GridCell): void {
     mexfilter: true
   });
   var sizes = app.calculateSizes();
-  app.canvas.resize(sizes.rightwidth, sizes.topheight - 210);
-  var s = {width: sizes.rightwidth + 'px', height: sizes.bottomheight + 'px'};
+  app.canvas.resize(sizes.rightwidth -100, sizes.topheight - 210);
+  var s = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
   //@ts-ignore
   scil.apply(app.sequence.style, s);
   //@ts-ignore
