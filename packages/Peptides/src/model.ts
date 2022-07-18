@@ -188,11 +188,11 @@ export class PeptidesModel {
         setAARRenderer(dfCol, this._sourceGrid);
     }
 
-    this.sortSourceGrid(this._sourceGrid);
+    this.sortSourceGrid();
 
     const viewer = this.getViewer();
 
-    this.createScaledCol(viewer.scaling, this._dataFrame, this._sourceGrid, splitSeqDf);
+    this.createScaledCol(viewer.scaling, splitSeqDf);
 
     //unpivot a table and handle duplicates
     let matrixDf = splitSeqDf.groupBy(positionColumns).aggregate();
@@ -235,7 +235,7 @@ export class PeptidesModel {
 
     this.setBitsetCallback();
 
-    this.postProcessGrids(this._sourceGrid, invalidIndexes, sarGrid, sarVGrid);
+    this.postProcessGrids(invalidIndexes, sarGrid, sarVGrid);
 
     //TODO: return class instead
     return [sarGrid, sarVGrid, this.statsDf];
@@ -339,45 +339,41 @@ export class PeptidesModel {
     this.currentView.name = name;
   }
 
-  sortSourceGrid(sourceGrid: DG.Grid): void {
-    if (sourceGrid) {
-      const colNames: DG.GridColumn[] = [];
-      for (let i = 1; i < sourceGrid.columns.length; i++)
-        colNames.push(sourceGrid.columns.byIndex(i)!);
+  sortSourceGrid(): void {
+    const colNames: DG.GridColumn[] = [];
+    for (let i = 1; i < this._sourceGrid.columns.length; i++)
+      colNames.push(this._sourceGrid.columns.byIndex(i)!);
 
-      colNames.sort((a, b)=>{
-        if (a.column!.semType == C.SEM_TYPES.AMINO_ACIDS) {
-          if (b.column!.semType == C.SEM_TYPES.AMINO_ACIDS)
-            return 0;
-          return -1;
-        }
+    colNames.sort((a, b)=>{
+      if (a.column!.semType == C.SEM_TYPES.AMINO_ACIDS) {
         if (b.column!.semType == C.SEM_TYPES.AMINO_ACIDS)
-          return 1;
-        return 0;
-      });
-      sourceGrid.columns.setOrder(colNames.map((v) => v.name));
-    }
+          return 0;
+        return -1;
+      }
+      if (b.column!.semType == C.SEM_TYPES.AMINO_ACIDS)
+        return 1;
+      return 0;
+    });
+    this._sourceGrid.columns.setOrder(colNames.map((v) => v.name));
   }
 
   //TODO: make sync
-  createScaledCol(
-    activityScaling: string, df: DG.DataFrame, sourceGrid: DG.Grid, splitSeqDf: DG.DataFrame,
-  ): void {
+  createScaledCol(activityScaling: string, splitSeqDf: DG.DataFrame): void {
     const [scaledDf, newColName] = PeptidesModel.scaleActivity(
-      activityScaling, df, df.tags[C.COLUMNS_NAMES.ACTIVITY]);
+      activityScaling, this._dataFrame, this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY]);
     //TODO: make another func
     const scaledCol = scaledDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     scaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
     splitSeqDf.columns.add(scaledCol);
-    const oldScaledCol = df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    df.columns.replace(oldScaledCol, scaledCol);
-    const gridCol = sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    const oldScaledCol = this._dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    this._dataFrame.columns.replace(oldScaledCol, scaledCol);
+    const gridCol = this._sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     if (gridCol !== null) {
       gridCol.name = newColName;
-      df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newColName;
+      this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newColName;
     }
 
-    sourceGrid.columns.setOrder([newColName]);
+    this._sourceGrid.columns.setOrder([newColName]);
   }
 
   //TODO: move out
@@ -709,8 +705,8 @@ export class PeptidesModel {
   // getBiteset(): DG.BitSet {return this._filterMode ? this._dataFrame.filter : this._dataFrame.selection;}
 
   //TODO: move out
-  postProcessGrids(sourceGrid: DG.Grid, invalidIndexes: number[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
-    sourceGrid.onCellPrepare((cell: DG.GridCell) => {
+  postProcessGrids(invalidIndexes: number[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
+    this._sourceGrid.onCellPrepare((cell: DG.GridCell) => {
       const currentRowIndex = cell.tableRowIndex;
       if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader)
         cell.style.backColor = DG.Color.lightLightGray;
