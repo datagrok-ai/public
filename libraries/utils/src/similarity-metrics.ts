@@ -206,7 +206,7 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
       (i) => Math.min.apply(Math, subset.map(function(val, index) {
         return dist(i, val);
       })));
-    if (idx) {
+    if (idx != null) {
       subset.push(idx);
       complement.delete(idx);
     }
