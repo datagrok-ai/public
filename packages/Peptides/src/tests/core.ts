@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, delay} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package-test';
 import {startAnalysis} from '../widgets/analyze-peptides';
@@ -20,7 +20,7 @@ category('Core', () => {
   let complexAlignedSeqCol: DG.Column<string>;
   let complexScaledDf: DG.DataFrame;
   let complexScaledColName: string;
-  const alignedSeuqnceCol = 'AlignedSequence';
+  const alignedSequenceCol = 'AlignedSequence';
 
   let model: PeptidesModel | null = null;
 
@@ -28,10 +28,10 @@ category('Core', () => {
     const simpleActivityColName = 'IC50';
     simpleTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned.csv'));
     simpleActivityCol = simpleTable.getCol(simpleActivityColName);
-    simpleAlignedSeqCol = simpleTable.getCol(alignedSeuqnceCol);
+    simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
     simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
     [simpleScaledDf, simpleScaledColName] =
-      await PeptidesModel.scaleActivity('-lg', simpleTable, simpleActivityColName, true);
+      PeptidesModel.scaleActivity('-lg', simpleTable, simpleActivityColName, true);
 
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName, _package);
@@ -44,16 +44,13 @@ category('Core', () => {
   });
 
   test('Start analysis: сomplex', async () => {
-    const measureCategory = 'interleukin 23 receptor_h_wt_DC_HEK293_SPR_biotin_BIND Dose Response (Kd (uM):koff)';
-    const complexActivityColName = 'Value';
+    const complexActivityColName = 'Activity';
     complexTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned_2.csv'));
-    const measuredCol: DG.Column<string> = complexTable.getCol('Measured');
-    complexTable.filter.init((idx) => measuredCol.get(idx) == measureCategory);
     complexActivityCol = complexTable.getCol(complexActivityColName);
-    complexAlignedSeqCol = complexTable.getCol(alignedSeuqnceCol);
+    complexAlignedSeqCol = complexTable.getCol('MSA');
     complexAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
     [complexScaledDf, complexScaledColName] =
-      await PeptidesModel.scaleActivity('-lg', complexTable, complexActivityColName, true);
+      PeptidesModel.scaleActivity('-lg', complexTable, complexActivityColName, true);
 
     model = await startAnalysis(
       complexActivityCol, complexAlignedSeqCol, complexTable, complexScaledDf, complexScaledColName, _package);
@@ -63,5 +60,42 @@ category('Core', () => {
       model.currentSelection = {'13': ['-']};
       grok.shell.closeTable(model._dataFrame);
     }
+  });
+
+  test('Save and load project', async () => {
+    const simpleActivityColName = 'IC50';
+    simpleTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned.csv'));
+    simpleActivityCol = simpleTable.getCol(simpleActivityColName);
+    simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
+    simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
+    [simpleScaledDf, simpleScaledColName] =
+      PeptidesModel.scaleActivity('-lg', simpleTable, simpleActivityColName, true);
+
+    model = await startAnalysis(
+      simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName, _package);
+    let v = grok.shell.getTableView('Peptides analysis');
+    const d = v.dataFrame;
+    const layout = v.saveLayout();
+    const tableInfo = d.getTableInfo();
+
+    const project = DG.Project.create();
+    project.name = 'Peptides project unique test';
+    project.addChild(tableInfo);
+    project.addChild(layout);
+    const sl = await grok.dapi.layouts.save(layout);
+    await grok.dapi.tables.uploadDataFrame(d);
+    const sti =  await grok.dapi.tables.save(tableInfo);
+    const sp = await grok.dapi.projects.save(project);
+
+    grok.shell.closeTable(d);
+    await delay(500);
+
+    await grok.dapi.projects.open('Peptides project unique test');
+    v = grok.shell.getTableView('Peptides analysis');
+    grok.shell.closeTable(v.dataFrame);
+
+    await grok.dapi.layouts.delete(sl);
+    await grok.dapi.tables.delete(sti);
+    await grok.dapi.projects.delete(sp);
   });
 });
