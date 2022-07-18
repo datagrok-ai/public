@@ -50,7 +50,7 @@ category('Viewers: Network Diagram', () => {
     if (networkDiagram.props.node2ColumnName != 'race')
         throw 'Node2 column has not been set'     
     if (networkDiagram.props.edgeColorColumnName != 'height')
-        throw 'Edge golumn has not been set'   
+        throw 'Edge column has not been set'   
     if (networkDiagram.props.edgeWidth != 0.15)
         throw 'edgeWidth prooerty has not been set'    
 
@@ -61,7 +61,7 @@ category('Viewers: Network Diagram', () => {
     }); await delay(500);
 
     if (networkDiagram.props.title != 'Test Network Diagram')
-        throw 'Title property has not been set to box' 
+        throw 'Title property has not been set' 
     if (networkDiagram.props.node1Shape != 'box')
         throw 'node1Shape property has not been set to box' 
     if (!networkDiagram.props.suspendSimulation)

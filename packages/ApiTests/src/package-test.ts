@@ -63,6 +63,7 @@ import './gui/density-plot'
 import './gui/scatter-plot-3d.ts'
 import './gui/word-cloud'
 import './gui/network-diagram'
+import './gui/box-plot'
 
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
