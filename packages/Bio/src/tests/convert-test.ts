@@ -1,9 +1,9 @@
-import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {category, expectArray, test} from '@datagrok-libraries/utils/src/test';
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {ConverterFunc, DfReaderFunc} from './types';
+import {ConverterFunc} from './types';
 import {NOTATION, NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 
 // import {mmSemType} from '../const';
@@ -76,21 +76,19 @@ RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$
 `,
 
     fastaGaps: `seq
-FW-PH-EY
--YNRQWYV-
-MKP---SEYV
+FW-PH-EYY
+FYNRQWYV-
+FKP-Q-SEYV
 `,
-
     separatorGaps: `seq
-F/W//P/H//E/Y
-/Y/N/R/Q/W/Y/V/
-M/K/P////S/E/Y/V
+F/W//P/H//E/Y/Y
+F/Y/N/R/Q/W/Y/V/
+F/K/P//Q//S/E/Y/V
 `,
-
     helmGaps: `seq
-PEPTIDE1{F.W.*.P.H.*.E.Y}$$$
-PEPTIDE1{*.Y.N.R.Q.W.Y.V.*}$$$
-PEPTIDE1{M.K.P.*.*.*.S.E.Y.V}$$$
+PEPTIDE1{F.W.*.P.H.*.E.Y.Y}$$$
+PEPTIDE1{F.Y.N.R.Q.W.Y.V.*}$$$
+PEPTIDE1{F.K.P.*.Q.*.S.E.Y.V}$$$
 `,
   };
 
@@ -113,6 +111,9 @@ PEPTIDE1{M.K.P.*.*.*.S.E.Y.V}$$$
   };
 
   function converter(tgtNotation: NOTATION, tgtSeparator: string | null = null): ConverterFunc {
+    if (tgtNotation === NOTATION.SEPARATOR && !tgtSeparator)
+      throw new Error(`Argument 'separator' is missed for notation '${tgtNotation.toString()}'.`);
+
     return function(srcCol: DG.Column): DG.Column {
       const converter = new NotationConverter(srcCol);
       const resCol = converter.convert(tgtNotation, tgtSeparator);
@@ -206,7 +207,7 @@ PEPTIDE1{M.K.P.*.*.*.S.E.Y.V}$$$
 
   // helm -> separator
   test('HelmDnaToSeparator', async () => {
-    await _testConvert(Samples.helmDna, converter(NOTATION.SEPARATOR), Samples.separatorDna);
+    await _testConvert(Samples.helmDna, converter(NOTATION.SEPARATOR, '/'), Samples.separatorDna);
   });
   test('HelmRnaToSeparator', async () => {
     await _testConvert(Samples.helmRna, converter(NOTATION.SEPARATOR, '*'), Samples.separatorRna);
