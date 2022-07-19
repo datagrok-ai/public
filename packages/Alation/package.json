@@ -11,7 +11,7 @@
 		}
 	],
 	"dependencies": {
-		"datagrok-api": "^1.0.0",
+		"datagrok-api": "^1.5.0",
 		"cash-dom": "latest",
 		"dayjs": "latest",
 		"uuid-by-string": "latest",

@@ -8,6 +8,7 @@ import $ from 'cash-dom';
 import * as alationApi from './alation-api';
 import * as utils from './utils';
 import * as view from './view';
+import * as types from './types';
 
 export const _package = new DG.Package();
 let baseUrl: string;
@@ -41,12 +42,17 @@ export async function Alation() {
   $(treeHost).append([tree.root]);
 
   grok.events.onContextMenu.subscribe((args: any) => {
-    const tableObject = args.args.item.value;
-    if (typeof tableObject.table_type == 'undefined')
-      return;
-    const name = (tableObject.title || tableObject.name).trim() || `Unnamed table id ${tableObject.id}`;
+    const obj = args.args.item.value as types.table & types.query;
     const contextMenu = args.args.menu;
-    contextMenu.item('Open table', async () => view.connectToDb(tableObject, name));
+    if (obj.ds_id && obj.table_type) {
+      contextMenu.item('Open table', async () => {
+        await view.connectToDb(obj.ds_id, async (conn: DG.DataConnection) => {await view.getTable(conn, obj);});
+      });
+    } else if (obj.datasource_id && obj.content) {
+      contextMenu.item('Run query', async () => {
+        await view.connectToDb(obj.datasource_id, async (conn: DG.DataConnection) => {await view.runQuery(conn, obj);});
+      });
+    }
   });
 
   progressIndicator.close();
