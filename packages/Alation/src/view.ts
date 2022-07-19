@@ -28,9 +28,14 @@ export function createTree(
       const item = treeRootNode!.item(name, queryObject);
       $(item.root).children().first().before(iconElement);
 
+      item.root.addEventListener('dblclick', async () => {
+        await connectToDb(queryObject.datasource_id,
+          async (conn: DG.DataConnection) => {await runQuery(conn, queryObject)});
+      });
       item.root.addEventListener('mousedown', async (ev) => {
         if (ev.button != 0 || isSettingDescription)
           return;
+
         isSettingDescription = true;
         const description = queryObject.description
           .replaceAll('src="/', `src="${await getBaseURL()}`)
@@ -49,10 +54,13 @@ export function createTree(
         (tableObject.title || tableObject.name).trim() || `Unnamed table id ${tableObject.id}`;
       const item = treeRootNode!.item(name, tableObject);
       $(item.root).children().first().before(iconElement);
-      item.root.addEventListener('dblclick', async () => connectToDb(tableObject, name));
+      item.root.addEventListener('dblclick', async () => {
+        await connectToDb(tableObject.ds_id, async (conn: DG.DataConnection) => {await getTable(conn, tableObject);});
+      });
       item.root.addEventListener('mousedown', async (ev) => {
         if (ev.button != 0 || isSettingDescription)
           return;
+
         isSettingDescription = true;
         const description = tableObject.description
           .replaceAll('src="/', `src="${await getBaseURL()}`)
@@ -106,6 +114,7 @@ export function createTree(
     queryGroup.root.addEventListener('mousedown', async (ev) => {
       if (ev.button != 0 || isSettingDescription)
         return;
+
       isSettingDescription = true;
       const pi = DG.TaskBarProgressIndicator.create('Loading child entities...');
 
@@ -127,6 +136,7 @@ async function getChildren(
   objectType: types.specialType, currentId: number, group: DG.TreeViewNode): Promise<DG.TreeViewNode> {
   let dataList: types.baseEntity[];
   let nextObjectType: types.specialType;
+
   switch (objectType) {
   case 'data-source':
     dataList = await alationApi.getSchemas(currentId);
@@ -146,17 +156,42 @@ async function getChildren(
   return createTree(dataList, nextObjectType, group);
 }
 
-export async function connectToDb(tableObject: types.table, name: string): Promise<void> {
-  const dataSource = await alationApi.getDataSourceById(tableObject.ds_id);
+export async function runQuery(conn: DG.DataConnection, queryObject: types.query): Promise<void> {
+  let query = conn.query(queryObject.title, queryObject.content);
+  query = await grok.dapi.queries.save(query);
+  const df = await query.executeTable();
+  df.name = queryObject.title;
+  grok.shell.addTableView(df);
+}
+
+export async function connectToDb(
+  dataSrouceId: number, handler: (conn: DG.DataConnection) => Promise<void>): Promise<void> {
+  const dataSource = await alationApi.getDataSourceById(dataSrouceId);
   const dsId = getUuid(`${dataSource.dbname}_id${dataSource.id}`, 5);
   let dsConnection: DG.DataConnection | null = null;
+
   try {
     dsConnection = await grok.dapi.connections.find(dsId);
-    await getTable(dsConnection, tableObject);
+    await handler(dsConnection);
     return;
   } catch {
     console.warn(`Couldn't find connection with id '${dsId}', creating new...`);
   }
+  connectToDbDialog(dataSource, dsId, handler);
+}
+
+function connectToDbDialog(
+  dataSource: types.dataSource, dsId: string, func: (conn: DG.DataConnection) => Promise<void>) {
+  let dbType: string | null = null;
+  for (const dsType of constants.DATA_SOURCE_TYPES) {
+    if (dataSource.dbtype === dsType.toLowerCase()) {
+      dbType = dsType;
+      break;
+    }
+  }
+
+  if (dbType === null)
+    throw new Error(`DBTypeError: Unsupported DB type '${dataSource.dbtype}'`);
 
   const helpText = ui.inlineText(['The database credentials are stored in the secure ',
     ui.link('Datagrok Credentials Management Service', 'https://datagrok.ai/help/govern/security#credentials'),
@@ -167,37 +202,25 @@ export async function connectToDb(tableObject: types.table, name: string): Promi
   const usernameField = ui.stringInput('Login', '');
   const passwordField = ui.stringInput('Password', '');
   $(passwordField.root as HTMLInputElement).children('.ui-input-editor').attr('type', 'password');
-  const dialog = ui.dialog(`Open ${name}`);
-  dialog
+
+  const dialog = ui.dialog(`Connect to ${dataSource.title || dataSource.dbname || dataSource.qualified_name}`)
     .add(ui.divV([helpHost, usernameField, passwordField]))
     .onOK(async () => {
-      if (!dsConnection) {
-        let dbType: string | null = null;
-        for (const dsType of constants.DATA_SOURCE_TYPES) {
-          if (dataSource.dbtype === dsType.toLowerCase()) {
-            dbType = dsType;
-            break;
-          }
-        }
+      const dcParams = {
+        dataSource: dbType!,
+        server: `${dataSource.host}:${dataSource.port}`,
+        db: dataSource.dbname,
+        login: usernameField.stringValue,
+        password: passwordField.value,
+      };
+      let dsConnection = DG.DataConnection.createDB(dataSource.dbname, dcParams);
+      dsConnection.id = dsId;
+      dsConnection = await grok.dapi.connections.save(dsConnection);
 
-        if (dbType === null)
-          throw new Error(`DBTypeError: Unsupported DB type '${dataSource.dbtype}'`);
-
-        const dcParams = {
-          dataSource: dbType,
-          server: `${dataSource.host}:${dataSource.port}`,
-          db: dataSource.dbname,
-          login: usernameField.stringValue,
-          password: passwordField.value,
-        };
-        dsConnection = DG.DataConnection.createDB(dataSource.dbname, dcParams);
-        dsConnection.id = dsId;
-        dsConnection = await grok.dapi.connections.save(dsConnection);
-      }
-
-      await getTable(dsConnection, tableObject);
+      await func(dsConnection);
     })
     .show();
+  return dialog;
 }
 
 export async function getTable(dsConnection: DG.DataConnection, tableObject: types.table): Promise<DG.TableView> {
