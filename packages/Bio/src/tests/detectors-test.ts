@@ -114,6 +114,7 @@ MWRSWY-CKHP
     testSmilesCsv = 'testSmilesCsv',
     testSmiles2Csv = 'testSmiles2Csv',
     testCerealCsv = 'testCerealCsv',
+    testActivityCliffsCsv = 'testActivityCliffsCsv',
   }
 
   const samples: { [key: string]: string } = {
@@ -129,6 +130,7 @@ MWRSWY-CKHP
     'testIdCsv': 'System:AppData/Bio/tests/testId.csv',
     'testSmilesCsv': 'System:AppData/Bio/tests/testSmiles.csv',
     'testSmiles2Csv': 'System:AppData/Bio/tests/testSmiles2.csv',
+    'testActivityCliffsCsv': 'System:AppData/Bio/tests/testActivityCliffs.csv', // smiles
     'testCerealCsv': 'System:AppData/Bio/tests/testCereal.csv',
   };
 
@@ -305,12 +307,16 @@ MWRSWY-CKHP
     await _testNeg(readSamples(Samples.testSmiles2Csv), 'SMILES');
   });
 
+  test('samplesTestActivityCliffsNegativeSmiles', async () => {
+    await _testNeg(readSamples(Samples.testActivityCliffsCsv), 'smiles');
+  });
+
   test('samplesFastaPtPosSequence', async () => {
-    await (_testPos(readSamples(Samples.fastaPtCsv), 'sequence', 'fasta:SEQ:PT'));
+    await _testPos(readSamples(Samples.fastaPtCsv), 'sequence', 'fasta:SEQ:PT');
   });
 
   test('samplesTestCerealNegativeCerealName', async () => {
-    await (_testNeg(readSamples(Samples.testCerealCsv), 'cereal_name'));
+    await _testNeg(readSamples(Samples.testCerealCsv), 'cereal_name');
   });
 });
 

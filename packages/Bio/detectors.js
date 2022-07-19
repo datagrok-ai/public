@@ -23,8 +23,8 @@ class BioPackageDetectors extends DG.Package {
   static RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
 
   static SmilesRawAlphabet = new Set([
-    'O', 'C', 'c', 'N', 'S', 'F', '(', ')',
-    '1', '2', '3', '4', '5', '6', '7',
+    'B', 'C', 'c', 'E', 'H', 'L', 'M', 'N', 'O', 'S', 'F', '(', ')',
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     '+', '-', '@', '[', ']', '/', '\\', '#', '=']);
 
   /** @param s {String} - string to check
@@ -58,7 +58,7 @@ class BioPackageDetectors extends DG.Package {
     // TODO: Lazy calculations could be helpful for performance and convenient for expressing classification logic.
     const statsAsChars = BioPackageDetectors.getStats(col, 5, BioPackageDetectors.splitterAsChars);
 
-    const decoy = BioPackageDetectors.detectAlphabet(statsAsChars.freq, decoyAlphabets, null, 0.5);
+    const decoy = BioPackageDetectors.detectAlphabet(statsAsChars.freq, decoyAlphabets, null, 0.35);
     if (decoy != 'UN') return null;
 
     if (statsAsChars.sameLength) {
@@ -110,10 +110,10 @@ class BioPackageDetectors extends DG.Package {
     // !!! What is the difference between the gap symbol and separator symbol in stats terms?
     // const noSeparatorRe = /[a-z\d]+$/i;
     const noSeparatorChemRe = /[HBCNOFPSKVYI]/i; // Mendeleev's periodic table single char elements
-    const noSeparatorAlphaDigitRe = /[\dA-Z]/i;
+    const noSeparatorAlphaDigitRe = /[\dA-Z,& _]/i; // ..., comma, ampersand, space, underscore
     const noSeparatorBracketsRe = /[\[\]()<>{}]/i;
     const cleanFreq = Object.assign({}, ...Object.entries(freq)
-      .filter(([m, f]) => m != ' ' && m != '_' &&
+      .filter(([m, f]) =>
         !noSeparatorChemRe.test(m) && !noSeparatorAlphaDigitRe.test(m) && !noSeparatorBracketsRe.test(m) &&
         !BioPackageDetectors.PeptideFastaAlphabet.has(m) &&
         !BioPackageDetectors.DnaFastaAlphabet.has(m))

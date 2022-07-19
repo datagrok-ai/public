@@ -1,7 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import {WebLogo, SplitterFunc} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import * as grok from 'datagrok-api/grok';
-import { CAP_GROUP_NAME, CAP_GROUP_SMILES, jsonSdfMonomerLibDict, MONOMER_SYMBOL, RGROUP_ALTER_ID, RGROUP_FIELD, RGROUP_LABEL, SDF_MONOMER_NAME } from '../const';
+import {
+  CAP_GROUP_NAME, CAP_GROUP_SMILES, jsonSdfMonomerLibDict, MONOMER_SYMBOL,
+  RGROUP_ALTER_ID, RGROUP_FIELD, RGROUP_LABEL, SDF_MONOMER_NAME
+} from '../const';
 
 export const HELM_CORE_LIB_FILENAME = '/samples/HELMCoreLibrary.json';
 export const HELM_CORE_LIB_MONOMER_SYMBOL = 'symbol';
@@ -50,7 +53,7 @@ export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
   const resultLib = [];
   for (let i = 0; i < table.rowCount; i++) {
     const monomer: { [key: string]: string | any } = {};
-    Object.keys(jsonSdfMonomerLibDict).forEach(key => {
+    Object.keys(jsonSdfMonomerLibDict).forEach((key) => {
       if (key === MONOMER_SYMBOL) {
         const monomerSymbol = table.get(jsonSdfMonomerLibDict[key], i);
         monomer[key] = monomerSymbol === '.' ? table.get(SDF_MONOMER_NAME, i) : monomerSymbol;
@@ -59,21 +62,20 @@ export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
         const jsonRgroups: any[] = [];
         rgroups.forEach((g: string) => {
           const rgroup: { [key: string]: string | any } = {};
-          const altAtom = g.substring(g.lastIndexOf("]") + 1);
-          let radicalNum = g.match(/\[R(\d+)\]/)![1];
+          const altAtom = g.substring(g.lastIndexOf(']') + 1);
+          const radicalNum = g.match(/\[R(\d+)\]/)![1];
           rgroup[CAP_GROUP_SMILES] = altAtom === 'H' ? `[*:${radicalNum}][H]` : `O[*:${radicalNum}]`;
           rgroup[RGROUP_ALTER_ID] = altAtom === 'H' ? `R${radicalNum}-H` : `R${radicalNum}-OH`;
           rgroup[CAP_GROUP_NAME] = altAtom === 'H' ? `H` : `OH`;
           rgroup[RGROUP_LABEL] = `R${radicalNum}`;
           jsonRgroups.push(rgroup);
-        })
+        });
         monomer[key] = jsonRgroups;
       } else {
-        if((jsonSdfMonomerLibDict as { [key: string]: string | any })[key]) {
+        if ((jsonSdfMonomerLibDict as { [key: string]: string | any })[key])
           monomer[key] = table.get((jsonSdfMonomerLibDict as { [key: string]: string | any })[key], i);
-        }
       }
-    })
+    });
     resultLib.push(monomer);
   }
   return resultLib;
