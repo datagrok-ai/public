@@ -858,7 +858,7 @@ export class Column<T = any> {
    *            intColumn.setString('42');
    * @param {number} i
    * @param {string} str
-   * @param {boolean} notify
+   * @param {boolean} notify - whether DataFrame's `changed` event should be fired
    * @returns {boolean} */
   setString(i: number, str: string, notify: boolean = true): boolean {
     return api.grok_Column_SetString(this.dart, i, str, notify);
@@ -868,7 +868,7 @@ export class Column<T = any> {
    * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
    * @param {number} i
    * @param value
-   * @param {boolean} notify
+   * @param {boolean} notify - whether DataFrame's `changed` event should be fired
    */
   set(i: number, value: T | null, notify: boolean = true): void {
     api.grok_Column_SetValue(this.dart, i, toDart(value), notify);
@@ -1097,7 +1097,7 @@ export class ColumnList {
 
   /** Adds a column, and optionally notifies the parent dataframe.
    * @param {Column} column
-   * @param {boolean} notify
+   * @param {boolean} notify - whether DataFrame's `changed` event should be fired
    * @returns {Column} */
   add(column: Column, notify: boolean = true): Column {
     api.grok_ColumnList_Add(this.dart, column.dart, notify);
@@ -1106,7 +1106,7 @@ export class ColumnList {
 
   /** Inserts a column, and optionally notifies the parent dataframe.
    * @param {Column} column
-   * @param {boolean} notify
+   * @param {boolean} notify - whether DataFrame's `changed` event should be fired
    * @param {int} index
    * @returns {Column} */
   insert(column: Column, index: number | null = null, notify: boolean = true): Column {
@@ -1548,7 +1548,7 @@ export class BitSet {
 
   /** Sets all bits to x
    * @param {boolean} x
-   * @param {boolean} notify
+   * @param {boolean} notify - whether BitSet's `changed` event should be fired
    * @returns {BitSet} */
   setAll(x: boolean, notify: boolean = true): BitSet {
     api.grok_BitSet_SetAll(this.dart, x, notify);
@@ -1581,7 +1581,8 @@ export class BitSet {
   /** Sets i-th bit to x
    * @param {number} i
    * @param {boolean} x
-   * @param {boolean} notify */
+   * @param {boolean} notify - whether BitSet's `changed` event should be fired
+   * */
   set(i: number, x: boolean, notify: boolean = true): void {
     api.grok_BitSet_SetBit(this.dart, i, x, notify);
   }
@@ -1599,7 +1600,7 @@ export class BitSet {
 
   /** Sets all bits by setting i-th bit to the results of f(i)
    * @param {Function} f - function that accepts bit index and returns bit value
-   * @param notify - whether BitSet's `changed` event should be fired
+   * @param {boolean} notify - whether BitSet's `changed` event should be fired
    * @returns {BitSet} - this
    * */
   init(f: IndexPredicate, notify: boolean = true): BitSet {
