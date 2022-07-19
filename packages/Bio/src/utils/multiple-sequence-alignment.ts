@@ -30,9 +30,10 @@ function _fastaToStrings(fasta: string): string[] {
  *
  * @param {DG.Column} srcCol Column with sequences.
  * @param {boolean} isAligned Whether the column is aligned.
+ * @param {string} unUsedName
  * @return {Promise<DG.Column>} Aligned sequences.
  */
-export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName:string = ''): Promise<DG.Column> {
+export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName: string = ''): Promise<DG.Column> {
   let sequences = srcCol.toList();
 
   if (isAligned)
