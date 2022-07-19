@@ -74,19 +74,20 @@ export class ComputationView extends FunctionView {
   override buildRibbonMenu() {
     super.buildRibbonMenu();
 
-    if (!this.exportConfig && !this.reportBug && !this.getHelp && !this.getMocks) return;
+    if (!this.exportConfig && !this.reportBug && !this.getHelp && !this.getMocks && !this.getTemplates) return;
 
     const ribbonMenu = this.ribbonMenu.group('Model');
 
     if (this.getMocks && this.getMocks.length > 0) {
-      const dataGroup = ribbonMenu
-        .group('Input data mocks');
-
-      this.getMocks.forEach((val) => {
-        dataGroup.item(val.mockName, val.action);
-      });
-
-      ribbonMenu.endGroup();
+      if (this.getMocks.length === 1) {
+        ribbonMenu.item('Input data mock', this.getMocks[0].action);
+      } else {
+        const dataGroup = ribbonMenu.group('Input data mocks');
+        this.getMocks.forEach((val) => {
+          dataGroup.item(val.mockName, val.action);
+        });
+        ribbonMenu.endGroup();
+      }
     }
 
     if (this.getTemplates && this.getTemplates.length > 0) {
