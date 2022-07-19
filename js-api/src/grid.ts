@@ -850,6 +850,14 @@ export class GridCellStyle {
   set element(x: HTMLElement) {
     api.grok_GridCellStyle_Set_Element(this.dart, x);
   }
+
+  get textVertical(): boolean {
+    return api.grok_GridCellStyle_Get_TextVertical(this.dart);
+  }
+
+  set textVertical(x: boolean) {
+    api.grok_GridCellStyle_Set_TextVertical(this.dart, x);
+  }
 }
 
 
