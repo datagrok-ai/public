@@ -1,6 +1,17 @@
 import * as DG from 'datagrok-api/dg';
 import {GridCellRendererEx} from "../renderer/GridCellRendererEx";
+import * as TextUtils from "./TextUtils";
+import * as GridUtils from '../utils/GridUtils';
 
+/*
+const canvas = ui.canvas(200*r, 300*r);
+
+cellGrid.renderer.render(10, 10, 200, 300);
+
+const r = window.devicePixelRatio;
+x = r * x; y = r * y;
+w = r * w; h = r * h;
+*/
 
 export function isRowHeader(colGrid : DG.GridColumn) : boolean {
   return colGrid.idx === 0;
@@ -125,4 +136,38 @@ export function fillVisibleViewportGridCells(arColRowIdxs : Array<number>, grid 
   arColRowIdxs[1] = arColIdxs.length === 0 ? -2 : arColIdxs[arColIdxs.length -1];
   arColRowIdxs[2] = nRowMin;
   arColRowIdxs[3] = nRowMax;
+}
+
+export function paintColHeaderCell(g : CanvasRenderingContext2D | null, nX : number, nY : number, nW: number, nH: number, colGrid : DG.GridColumn) {
+
+  if(g === null)
+    return;
+
+  g.fillStyle = "white";
+  g.fillRect(nX*window.devicePixelRatio, nY*window.devicePixelRatio, nW*window.devicePixelRatio, nH*window.devicePixelRatio);
+
+  const grid = colGrid.grid;
+  const options : any = grid.getOptions(true);
+
+  const font = options.look.colHeaderFont == null || options.look.colHeaderFont === undefined ? "bold 14px Volta Text, Arial" : options.look.colHeaderFont;
+  const nFontSize = TextUtils.getFontSize(font);
+  const fontNew = TextUtils.setFontSize(font, Math.ceil(nFontSize * window.devicePixelRatio));
+  g.font = fontNew;
+
+  let str = TextUtils.trimText(colGrid.name, g, nW);
+
+  const tm = g.measureText(str);
+  const nWLabel = tm.width;
+
+  const nAscent = Math.abs(tm.actualBoundingBoxAscent);
+  const nDescent = tm.actualBoundingBoxDescent;
+  const nHFont =  nAscent + nDescent;// + 2*nYInset;
+
+  const nHH = nH*window.devicePixelRatio;
+
+  g.textAlign = 'start';
+  g.fillStyle = "Black";
+  const nXX = nX*window.devicePixelRatio + Math.ceil(3*window.devicePixelRatio);//((nW*window.devicePixelRatio - nWLabel) >> 1);
+  const nYY = (nY*window.devicePixelRatio + nHH - Math.ceil(3*window.devicePixelRatio));//-2*window.devicePixelRatio);
+  g.fillText(str, nXX, nYY);
 }

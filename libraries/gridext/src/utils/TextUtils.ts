@@ -1,4 +1,46 @@
 
+export function getFontSize(strFont : string) : number {
+  const nIdxPX = strFont.indexOf("px", 0);
+  if(nIdxPX < 0) {
+    return -1;
+  }
+
+  let strSize = "";
+  for(let n=nIdxPX-1; n >=0;  --n) {
+    if(strFont.charAt(n) === ' ') {
+      strSize = strFont.substring(n+1, nIdxPX);
+      const nSize = parseInt(strSize);
+      return nSize;
+    }
+  }
+
+  strSize = strFont.substring(0, nIdxPX);
+  const nSize = parseInt(strSize);
+  return nSize;
+}
+
+export function setFontSize(strFont : string, nSize : number) : string {
+  const nIdxPX = strFont.indexOf("px", 0);
+  if(nIdxPX < 0) {
+    return strFont;
+  }
+
+  let strSize = "";
+  for(let n=nIdxPX-1; n >=0;  --n) {
+    if(strFont.charAt(n) === ' ') {
+      strSize = strFont.substring(n+1, nIdxPX);
+      const str = strFont.replace(strSize, nSize.toString());
+      return str;
+    }
+  }
+
+  strSize = strFont.substring(0, nIdxPX);
+  const str = strFont.replace(strSize, nSize.toString());
+  return str;
+}
+
+
+
 export function trimText(str : string, g : CanvasRenderingContext2D, nWidth : number) : string {
   let tm = g.measureText(str);
   let nW  = tm.width;
