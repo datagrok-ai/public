@@ -30,7 +30,8 @@ class BioPackageDetectors extends DG.Package {
   /** @param s {String} - string to check
    * @returns {boolean} */
   static isHelm(s) {
-    return s.startsWith('PEPTIDE1{') || s.startsWith('RNA1{') || s.startsWith('CHEM1{') || s.startsWith('BLOB1{');
+    return s.startsWith('PEPTIDE1{') || s.startsWith('CHEM1{') || s.startsWith('BLOB1{') ||
+      s.startsWith('RNA1{') || s.startsWith('DNA1{');
   }
 
   //tags: semTypeDetector
