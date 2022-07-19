@@ -15,12 +15,45 @@ function getGrid(colGrid : DG.GridColumn) : DG.Grid | null {
   return grid;
 }
 
+
+export function getTotalPinnedRowsHeight(grid : DG.Grid) : number {
+
+  const dart = DG.toDart(grid);
+
+  const nPinnedRowsCounnt = dart.m_arPinnedRows === undefined ? 0 : dart.m_arPinnedRows.length;
+  let rowPinned = null;
+  let nHeight = 0;
+  for(let nR=0; nR<nPinnedRowsCounnt; ++nR) {
+    rowPinned = dart.m_arPinnedRows[nR];
+    nHeight += rowPinned.getHeight();
+  }
+
+  return nHeight;
+}
+
+
+export function getTotalPinnedColsWidth(grid : DG.Grid) : number {
+
+  const dart = DG.toDart(grid);
+
+  const nPinnedColsCounnt = dart.m_arPinnedCols === undefined ? 0 : dart.m_arPinnedCols.length;
+  let colPinned = null;
+  let nWidth = 0;
+  for(let nR=0; nR<nPinnedColsCounnt; ++nR) {
+    colPinned = dart.m_arPinnedCols[nR];
+    nWidth += colPinned.getWidth();
+  }
+
+  return nWidth;
+}
+
+
 export function findPinnedColumnByRoot(eCanvas : HTMLCanvasElement, grid : DG.Grid) : PinnedColumn | null {
   const dart = DG.toDart(grid);
   let colPinned = null;
-  const nPinnedColCount =dart.m_arRowHeaders === undefined ? 0 : dart.m_arRowHeaders.length;
+  const nPinnedColCount =dart.m_arPinnedCols === undefined ? 0 : dart.m_arPinnedCols.length;
   for(let n=0; n<nPinnedColCount; ++n) {
-    colPinned = dart.m_arRowHeaders[n];
+    colPinned = dart.m_arPinnedCols[n];
     if(colPinned.getRoot() === eCanvas) {
       return colPinned;
     }
@@ -30,8 +63,23 @@ export function findPinnedColumnByRoot(eCanvas : HTMLCanvasElement, grid : DG.Gr
 
 export function getPinnedColumnCount(grid : DG.Grid) : number {
   const dart = DG.toDart(grid);
-  const nPinnedColCount =dart.m_arRowHeaders === undefined ? 0 : dart.m_arRowHeaders.length;
+  const nPinnedColCount =dart.m_arPinnedCols === undefined ? 0 : dart.m_arPinnedCols.length;
   return nPinnedColCount;
+}
+
+
+export function getPinnedColumn(nIdx : number, grid : DG.Grid) : PinnedColumn {
+  if(nIdx < 0) {
+    throw new Error("Pinned column index cannot be negative: " + nIdx);
+  }
+
+  const dart = DG.toDart(grid);
+  const nPinnedColCount =dart.m_arPinnedCols === undefined ? 0 : dart.m_arPinnedCols.length;
+  if(nIdx >= nPinnedColCount) {
+    throw new Error("Pinned column index cis out of bounds [0,: " + (nPinnedColCount -1) + "]");
+  }
+
+  return dart.m_arPinnedCols[nIdx];
 }
 
 export function addPinnedColumn(colGrid : DG.GridColumn) : PinnedColumn {
@@ -42,9 +90,9 @@ export function addPinnedColumn(colGrid : DG.GridColumn) : PinnedColumn {
 export function closeAllPinnedColumns(grid : DG.Grid) : void {
   const dart = DG.toDart(grid);
   let colPinned = null;
-  const nPinnedColCount =dart.m_arRowHeaders === undefined ? 0 : dart.m_arRowHeaders.length;
+  const nPinnedColCount =dart.m_arPinnedCols === undefined ? 0 : dart.m_arPinnedCols.length;
   for(let n=1; n<nPinnedColCount; ++n) {
-    colPinned = dart.m_arRowHeaders[1]; //0 is not a bug
+    colPinned = dart.m_arPinnedCols[1]; //0 is not a bug
     colPinned.close();
   }
 }
@@ -91,13 +139,13 @@ export function isPinnedColumn(colGrid : DG.GridColumn) : boolean {
   const grid = getGrid(colGrid);
   const dart = DG.toDart(grid);
 
-  if(dart.m_arRowHeaders === undefined)
+  if(dart.m_arPinnedCols === undefined)
     return false;
 
   let colPinned = null;
-  const nPinnedColCount = dart.m_arRowHeaders.length;
+  const nPinnedColCount = dart.m_arPinnedCols.length;
   for(let nColPin=0; nColPin<nPinnedColCount; ++nColPin) {
-    colPinned = dart.m_arRowHeaders[nColPin];
+    colPinned = dart.m_arPinnedCols[nColPin];
     if(DG.toDart(colPinned.m_colGrid) === DG.toDart(colGrid))
       return true;
   }
@@ -134,6 +182,10 @@ export function isPinnableColumn(colGrid : DG.GridColumn) : boolean {
 
   return true;
 }
+
+
+
+
 
 
 export function handleContextMenu(args : any, fnMenuCallback : Function) : void {

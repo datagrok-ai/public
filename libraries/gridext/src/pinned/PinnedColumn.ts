@@ -84,16 +84,16 @@ function notifyAllPinnedColsRowsResized(colPinnedSource : PinnedColumn, nHRows :
 
   const grid = getGrid(colGridSource);
   const dart = DG.toDart(grid);
-  if(dart.m_arRowHeaders === undefined) {
+  if(dart.m_arPinnedCols === undefined) {
     throw new Error('Pinned Columns are not installed.');
   }
 
   let renderer : GridCellRendererEx | null = null
   let colPinned = null;
   let colGrid = null;
-  const nPinnedColCount = dart.m_arRowHeaders.length;
+  const nPinnedColCount = dart.m_arPinnedCols.length;
   for(let nColPin=0; nColPin<nPinnedColCount; ++nColPin) {
-    colPinned = dart.m_arRowHeaders[nColPin];
+    colPinned = dart.m_arPinnedCols[nColPin];
     colGrid = colPinned.m_colGrid;
     if(colGrid === null) {
       throw new Error('Pinned Column is detached.');
@@ -117,6 +117,7 @@ export class PinnedColumn {
   private static ACTIVE_CELL_COLOR = ColorUtils.toRgb(ColorUtils.currentRow); //"rgba(153, 237, 82, 0.25)";
   private static Y_RESIZE_SENSITIVITY = 2;
 
+  private m_fDevicePixelRatio : number;
   private m_colGrid : DG.GridColumn | null;
   private m_root : HTMLCanvasElement | null;
   private m_nWidthBug : number;
@@ -146,19 +147,21 @@ export class PinnedColumn {
       throw new Error("Column '" + colGrid.name + "' cannot be pinned. It either pinned or HTML.");
     }
 
+    this.m_fDevicePixelRatio = window.devicePixelRatio;
+
     const dart = DG.toDart(grid);
 
-    if(dart.m_arRowHeaders === undefined)
-      dart.m_arRowHeaders = [];
+    if(dart.m_arPinnedCols === undefined)
+      dart.m_arPinnedCols = [];
 
-
-    if(dart.m_arRowHeaders.length === 0 && !GridUtils.isRowHeader(colGrid)) {
+    if(dart.m_arPinnedCols.length === 0 && !GridUtils.isRowHeader(colGrid)) {
       const colGrid0 = grid.columns.byIndex(0);
       if(colGrid0 !== null && colGrid0 !== undefined)
       new PinnedColumn(colGrid0);
     }
 
-    dart.m_arRowHeaders.push(this);
+    const nWTotalPinnedCols = PinnedUtils.getTotalPinnedColsWidth(grid);
+    dart.m_arPinnedCols.push(this);
 
     const viewTable = grid.view;
     const dframe = grid.dataFrame;
@@ -167,7 +170,7 @@ export class PinnedColumn {
     this.m_colGrid = colGrid;
     this.m_nWidthBug = -1;
     try {
-      colGrid.visible = false;
+      colGrid.visible = true;//my changes false;
     }
     catch(e) {
       //DG bug
@@ -186,7 +189,7 @@ export class PinnedColumn {
         colGrid.settings = {};
 
       colGrid.settings.isPinned = true; //this will be saved with the layout
-      colGrid.settings.idxPinned = dart.m_arRowHeaders.length - 1;
+      colGrid.settings.idxPinned = dart.m_arPinnedCols.length - 1;
     }
 
     grid.canvas.style.left = (grid.canvas.offsetLeft + nW).toString() + "px";
@@ -195,15 +198,27 @@ export class PinnedColumn {
     grid.canvas.style.width = (grid.canvas.offsetWidth - nW).toString() + "px";
     grid.overlay.style.width= (grid.overlay.offsetWidth - nW).toString() + "px";
 
-    const eCanvasThis = ui.canvas(nW, 2500);
+    const nHeight = grid.canvas.height;//canvas pixel height
+    const eCanvasThis = ui.canvas(nW*window.devicePixelRatio, nHeight);
+    const tabIndex =  grid.canvas.getAttribute("tabIndex");
+    if(tabIndex !== null)
+     eCanvasThis.setAttribute("tabIndex", tabIndex);
+
+    eCanvasThis.style.position = "absolute";
+    eCanvasThis.style.left = nWTotalPinnedCols + "px";
+    eCanvasThis.style.top = grid.canvas.offsetTop + "px";
+    eCanvasThis.style.width = nW + "px";
+    eCanvasThis.style.height = Math.round(nHeight/window.devicePixelRatio) + "px";
+
+    //console.log("h " + grid.canvas.height + " offset " + grid.canvas.offsetHeight);
 
     if(grid.canvas.parentNode === null)
-      throw new Error("Parent node for canvas cannot bre null.");
+      throw new Error("Parent node for canvas cannot be null.");
 
     grid.canvas.parentNode.insertBefore(eCanvasThis, grid.canvas);
     this.m_root = eCanvasThis;
 
-    /* my chamges
+
     const colGrid0 = grid.columns.byIndex(0);
     if(colGrid0 !== null && colGrid0 !== undefined) {//DG Bug from reading layout
     try{
@@ -213,7 +228,6 @@ export class PinnedColumn {
         console.error("ERROR: Couldn't hide row header.");
       }
     }
-*/
 
 
     //OnResize Row header
@@ -224,18 +238,28 @@ export class PinnedColumn {
         headerThis.paint(g, grid);
       }
     });
-
-
-
     this.m_observerResize.observe(headerThis.m_root);*/
 
-    //OnResize Row header
+
+
+    //OnResize Grid
     this.m_observerResizeGrid = new ResizeObserver(entries => {
 
       const bCurrent =  DG.toDart(grok.shell.v) === DG.toDart(viewTable);
       if(!bCurrent)
         return;
 
+      if(this.m_fDevicePixelRatio !== window.devicePixelRatio || grid.canvas.height !== eCanvasThis.height) {
+        eCanvasThis.width = nW*window.devicePixelRatio;
+        eCanvasThis.height = grid.canvas.height;
+        eCanvasThis.style.top = grid.canvas.offsetTop + "px";
+        eCanvasThis.style.width = nW + "px";
+        eCanvasThis.style.height = Math.round(grid.canvas.height/window.devicePixelRatio) + "px";
+
+        this.m_fDevicePixelRatio = window.devicePixelRatio;
+      }
+
+      //console.log("Grid Resize: " + grid.canvas.height + " " + window.devicePixelRatio);
       //eCanvasThis.style.height = grid.root.style.height;
 /*
       const eCanvasNew = ui.canvas(nW, grid.root.offsetHeight);
@@ -246,11 +270,11 @@ export class PinnedColumn {
       //headerThis.m_root.height = grid.root.offsetHeight;
       const g = eCanvasThis.getContext('2d');
       for (let entry of entries) {
-        setTimeout(()=> {headerThis.paint(g, grid);}, 200);
+        setTimeout(()=> {headerThis.paint(g, grid);}, 100);
       }
     });
 
-    this.m_observerResizeGrid.observe(grid.root);
+    this.m_observerResizeGrid.observe(grid.canvas);
 
     const scrollVert = grid.vertScroll;
     this.m_handlerVScroll = scrollVert.onValuesChanged.subscribe(() => {
@@ -504,7 +528,7 @@ export class PinnedColumn {
         notifyAllColsRowsResized(grid, nHRowGrid, true);
 
         let header = null;
-        const ar = grid.dart.m_arRowHeaders;
+        const ar = grid.dart.m_arPinnedCols;
         for(let n=0; n<ar.length; ++n) {
           header = ar[n];
           g = header.m_root.getContext('2d');
@@ -619,7 +643,7 @@ export class PinnedColumn {
     return this.m_root === null ? -1 : this.m_root.offsetWidth;
   }
 
-  getRoot() {
+  getRoot() : HTMLCanvasElement | null {
     return this.m_root;
   }
 
@@ -678,14 +702,19 @@ export class PinnedColumn {
     }
 
     const dart = DG.toDart(grid);
-    const ar = dart.m_arRowHeaders;
+    const ar = dart.m_arPinnedCols;
     const nIdx = ar.indexOf(this);
     ar.splice(nIdx, 1);
+
+    if(this.m_root === null)
+      throw new Error('Root cannot be null');
 
     let nIdxPinned = -1;
     let colGridTmp= null;
     for(let n=nIdx; n<ar.length; ++n) {
       colGridTmp = ar[n];
+      colGridTmp.m_root.style.left = (colGridTmp.m_root.offsetLeft - this.m_root.offsetWidth).toString() + "px";
+
       nIdxPinned =  colGridTmp.m_colGrid.settings.idxPinned;
       colGridTmp.m_colGrid.settings.idxPinned = n;
     }
@@ -716,10 +745,6 @@ export class PinnedColumn {
 
 
 
-
-    if(this.m_root === null)
-      throw new Error('Root cannot be null');
-
     grid.canvas.style.left = (grid.canvas.offsetLeft - this.m_root.offsetWidth).toString() + "px";
     grid.overlay.style.left= (grid.overlay.offsetLeft - this.m_root.offsetWidth).toString() + "px";
     grid.canvas.style.width = (grid.canvas.offsetWidth + this.m_root.offsetWidth).toString() + "px";
@@ -730,13 +755,13 @@ export class PinnedColumn {
 
     this.m_root = null;
 
-    if (dart.m_arRowHeaders.length === 1 && dart.m_arRowHeaders[0].m_colGrid.idx === 0 && this.m_colGrid.idx !== 0) {
+    if (dart.m_arPinnedCols.length === 1 && dart.m_arPinnedCols[0].m_colGrid.idx === 0 && this.m_colGrid.idx !== 0) {
 
         // try{colGrid0.visible = true;}
         try {
-          dart.m_arRowHeaders[0].close();
+          dart.m_arPinnedCols[0].close();
         } catch (e) {
-          console.error("ERROR: Couldn't close pinned column '" + dart.m_arRowHeaders[0].m_colGrid.name + "' ");
+          console.error("ERROR: Couldn't close pinned column '" + dart.m_arPinnedCols[0].m_colGrid.name + "' ");
         }
     }
     this.m_colGrid = null;
@@ -762,7 +787,7 @@ export class PinnedColumn {
     const nH = this.m_root.offsetHeight;
 
     g.fillStyle = "white";
-    g.fillRect(0,0, nW, nH);
+    g.fillRect(0,0, nW*window.devicePixelRatio, nH*window.devicePixelRatio);
 
     if(this.m_colGrid.name === null)
       return;
@@ -773,7 +798,12 @@ export class PinnedColumn {
 
     //column Header
     const options : any = grid.getOptions(true);
-    g.font = options.look.colHeaderFont == null || options.look.colHeaderFont === undefined ? "bold 14px Volta Text, Arial" : options.look.colHeaderFont;
+
+    const font = options.look.colHeaderFont == null || options.look.colHeaderFont === undefined ? "bold 14px Volta Text, Arial" : options.look.colHeaderFont;
+    const nFontSize = TextUtils.getFontSize(font);
+    const fontNew = TextUtils.setFontSize(font, Math.ceil(nFontSize * window.devicePixelRatio));
+    g.font = fontNew;
+
     let str = TextUtils.trimText(this.m_colGrid.name, g, nW);
 
     const tm = g.measureText(str);
@@ -783,23 +813,23 @@ export class PinnedColumn {
     const nDescent = tm.actualBoundingBoxDescent;
     const nHFont =  nAscent + nDescent;// + 2*nYInset;
 
+    //let cellCH = grid.cell(this.m_colGrid.name, -1);
+    //let renderer = cellCH.renderer;
+
     let nX = 0;
     let nY = 0;
-    const nHCH = GridUtils.getGridColumnHeaderHeight(grid);
-    g.translate(0,0);
+    const nHCH = GridUtils.getGridColumnHeaderHeight(grid)*window.devicePixelRatio;
     g.textAlign = 'start';
     g.fillStyle = "Black";
-    const nXX = nX + ((nW - nWLabel) >> 1);
-    const nYY = nY + nHCH-2;
+    let nYOffset = Math.floor((nHCH - nHFont)/2);
+    const nXX = nX + ((nW*window.devicePixelRatio - nWLabel) >> 1);
+    let nYY = (nY + nHCH - Math.ceil(3*window.devicePixelRatio));//-2*window.devicePixelRatio);
     //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nHCH);
     g.fillText(str, nXX, nYY);
 
     //if(options.look.showRowGridlines) {
-      g.strokeStyle = "Gainsboro";
-      g.beginPath();
-      g.moveTo(0, nY);
-      g.lineTo(0, nY + nHCH-1);
-      g.stroke();
+
+
     //}
 
 
@@ -815,80 +845,107 @@ export class PinnedColumn {
 
     //console.log(nRowMin + " " + nRowMax);
     const nHRow = GridUtils.getGridRowHeight(grid);
-    const nYOffset = nHCH;
-    const nHRowGrid = nHRow;
+    nYOffset = nHCH;
+    const nHRowGrid = nHRow*window.devicePixelRatio;
     let cellRH = null;
 
+    let nWW = nW*window.devicePixelRatio;
+    //const nHH = nHRowGrid;
+
+    const arTableRows = new Array(nRowMax - nRowMin +1);
     let nRowTable = -1;
-    nY = -1;
     let bSel = false;
-    for(let nRG=nRowMin; nRG<=nRowMax; ++nRG)
-    {
-      try{cellRH = grid.cell(this.m_colGrid.name, nRG);}
-      catch(e) //to address DG bug when everything is filtered
+    for(let nRG=nRowMin; nRG<=nRowMax; ++nRG) {
+      try {
+        cellRH = grid.cell(this.m_colGrid.name, nRG);
+      } catch (e) //to address DG bug when everything is filtered
       {
         continue;
       }
 
-      if(cellRH.tableRowIndex === undefined)//DG bug
+      if (cellRH.tableRowIndex === undefined)//DG bug
         continue;
 
       nRowTable = cellRH.tableRowIndex === null ? -1 : cellRH.tableRowIndex;
-      nY = nYOffset + (nRG - nRowMin)*nHRowGrid;
+      arTableRows[nRG - nRowMin] = nRowTable;
 
-      let renderer : any = GridUtils.getGridColumnRenderer(cellRH.gridColumn);
-      if(renderer === null) {
-        try{renderer = cellRH.renderer;}
-        catch(e) {
-          console.error("Could not obtain renderer for DG cell. DG bug " + this.m_colGrid.name + " row "  + nRG);
+      nYY = nYOffset + (nRG - nRowMin) * nHRowGrid;
+
+      let renderer: any = GridUtils.getGridColumnRenderer(cellRH.gridColumn);
+      if (renderer === null) {
+        try {
+          renderer = cellRH.renderer;
+        } catch (e) {
+          console.error("Could not obtain renderer for DG cell. DG bug " + this.m_colGrid.name + " row " + nRG);
           continue;
         }
       }
 
-      if(renderer === null || renderer === undefined) {
-        console.error("Could find renderer for pinned column " + this.m_colGrid.name + " row "  + nRG);
+      if (renderer === null || renderer === undefined) {
+        console.error("Couldn't find renderer for pinned column " + this.m_colGrid.name + " row " + nRG);
         continue;
       }
 
+      //let nYY = nY;//*window.devicePixelRatio;
 
-      if(nW > 0 && nHRowGrid > 0) { //to address a bug caused either DG or client app
-        try {
-          let nYY = nY;
-          let nWW = nW;
-          let nHH = nHRowGrid;
-          if(renderer.name === 'Molecule' && window.devicePixelRatio > 1.0) {
-            nYY /= window.devicePixelRatio;
-            nWW /= window.devicePixelRatio;
-            nHH /= window.devicePixelRatio;
-          }
 
-         renderer.render(g, 0, nYY, nWW, nHH, cellRH, cellRH.style);
-        } catch(e) {
-          console.error("Could not paint cell for pinned column " + this.m_colGrid.name + " row "  + nRG);
-          continue;
-           //throw e;
-        }
+      const font = cellRH.style.font;
+      const nFontSize = TextUtils.getFontSize(font);
+      const fontNew = TextUtils.setFontSize(font, Math.ceil(nFontSize * window.devicePixelRatio));
+      if (fontNew !== null) {
+        cellRH.style.font = fontNew;
       }
 
+      if (nW > 0 && nHRowGrid > 0) { //to address a bug caused either DG or client app
+        try {
+          if (renderer.name === 'Molecule') {
+            renderer.render(g, 0, nYY/window.devicePixelRatio, nWW/window.devicePixelRatio, nHRowGrid/window.devicePixelRatio, cellRH, cellRH.style);
+          } else renderer.render(g, 0, nYY, nWW, nHRowGrid, cellRH, cellRH.style);
+
+        } catch (e) {
+          console.error("Could not paint cell for pinned column " + this.m_colGrid.name + " row " + nRG);
+          continue;
+          //throw e;
+        }
+      }
+    }
+
+
+    //Paint Grid
+    g.strokeStyle = "Gainsboro";
+    g.beginPath();
+    g.moveTo(0, nY*window.devicePixelRatio);
+    g.lineTo(0, (nY + nHCH-1*window.devicePixelRatio));
+    g.stroke();
+
+    g.beginPath();
+    g.moveTo(0, nYOffset + 1);
+    g.lineTo(nWW, nYOffset + 1);
+    g.stroke();
+
+    for(let nRG=nRowMin; nRG<=nRowMax; ++nRG)
+    {
+      nYY = nYOffset + (nRG - nRowMin) * nHRowGrid;
+
       //if(options.look.showRowGridlines) {
-        g.strokeStyle = "Gainsboro";
+
         g.beginPath();
-        g.moveTo(0, nY + nHRowGrid);
-        g.lineTo(nW - 1, nY + nHRowGrid);
+        g.moveTo(0, nYY + nHRowGrid+1);
+        g.lineTo(nWW, nYY + nHRowGrid+1);
         g.stroke();
 
         g.beginPath();
-        g.moveTo(0, nY);
-        g.lineTo(0, nY + nHRowGrid -1);
+        g.moveTo(0, nYY);
+        g.lineTo(0, nYY + nHRowGrid+1);
         g.stroke();
       //}
-
+      nRowTable = arTableRows[nRG - nRowMin];
       bSel = nRowTable < 0 ? false : bitsetSel.get(nRowTable);
       if(bSel)
       {
         g.globalAlpha = 0.2;
         g.fillStyle = PinnedColumn.SELECTION_COLOR;
-        g.fillRect(0, nY, nW, nHRowGrid);
+        g.fillRect(0, nYY, nWW, nHRowGrid);
         g.globalAlpha = 1;
       }
 
@@ -896,7 +953,7 @@ export class PinnedColumn {
       {
         g.globalAlpha = 0.2;
         g.fillStyle = PinnedColumn.ACTIVE_CELL_COLOR;
-        g.fillRect(0, nY, nW, nHRowGrid);
+        g.fillRect(0, nYY, nWW, nHRowGrid);
         g.globalAlpha = 1;
       }
     }
