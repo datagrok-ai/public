@@ -195,25 +195,26 @@ M  END
       h += w;
       w = h - w;
       h -= w;
-      w -= 30;
     }
     const offscreenCanvas = this._fetchRender(w, h, molString, scaffoldMolString,
       highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
-    // console.log(offscreenCanvas.getContext('2d')!);
-    const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);
+    
     if (vertical) {
       let ctx = onscreenCanvas.getContext('2d')!
       ctx.save();
-      ctx.translate(x , y - 150);
+      let scl = ctx.getTransform();
+      ctx.resetTransform();
+      ctx.translate(x , y);
       ctx.rotate(Math.PI/2);
-      console.log(offscreenCanvas.width);
-      console.log(offscreenCanvas.height);
-      console.log(w);
-      console.log(h);
-      ctx.drawImage(offscreenCanvas, 0, - (h / 2));
+      if (scl.m11 < 1 || scl.m22 < 1)
+        ctx.scale(scl.m11, scl.m22)
+      ctx.drawImage(offscreenCanvas, 0, - (h));
       ctx.restore();
-    } else
+    } else {
+      const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);
       onscreenCanvas.getContext('2d')!.putImageData(image, x, y);
+    }
+      
   }
 
   _initScaffoldString(colTemp: any, tagName: string) {
