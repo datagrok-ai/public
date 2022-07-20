@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './utils/constants';
 
-import {AlignedSequenceDifferenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
 import {StackedBarChart} from './viewers/stacked-barchart-viewer';
 
 import {analyzePeptidesWidget} from './widgets/analyze-peptides';
@@ -144,14 +143,6 @@ export function stackedBarChart(): DG.JsViewer {
   return new StackedBarChart();
 }
 
-//name: aminoAcidsCellRenderer
-//tags: cellRenderer
-//meta.cellType: aminoAcids
-//output: grid_cell_renderer result
-export function aminoAcidsCellRenderer(): AminoAcidsCellRenderer {
-  return new AminoAcidsCellRenderer();
-}
-
 //name: Manual Alignment
 //tags: panel, widgets
 //input: string _monomer {semType: aminoAcids}
@@ -239,14 +230,6 @@ export function getPeptidesStructure(col: DG.Column): DG.Widget {
     }
   }, getButtonTooltip);
   return new DG.Widget(getButton);
-}
-
-//name: alignedSequenceDifferenceCellRenderer
-//tags: cellRenderer
-//meta.cellType: alignedSequenceDifference
-//output: grid_cell_renderer result
-export function alignedSequenceDifferenceCellRenderer(): AlignedSequenceDifferenceCellRenderer {
-  return new AlignedSequenceDifferenceCellRenderer();
 }
 
 function getOrDefine(dataframe?: DG.DataFrame, column?: DG.Column | null): [DG.DataFrame, DG.Column] {

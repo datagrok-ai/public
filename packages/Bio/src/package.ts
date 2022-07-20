@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
+import {AlignedSequenceDifferenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
 import {WebLogo, SeqColStats} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
@@ -346,4 +347,20 @@ export function importFasta(fileContent: string): DG.DataFrame [] {
 //input: column col {semType: Macromolecule}
 export function convertPanel(col: DG.Column): void {
   convert(col);
+}
+
+//name: aminoAcidsCellRenderer
+//tags: cellRenderer
+//meta.cellType: aminoAcids
+//output: grid_cell_renderer result
+export function aminoAcidsCellRenderer(): AminoAcidsCellRenderer {
+  return new AminoAcidsCellRenderer();
+}
+
+//name: alignedSequenceDifferenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: alignedSequenceDifference
+//output: grid_cell_renderer result
+export function alignedSequenceDifferenceCellRenderer(): AlignedSequenceDifferenceCellRenderer {
+  return new AlignedSequenceDifferenceCellRenderer();
 }

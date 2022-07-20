@@ -16,10 +16,8 @@ import * as types from './types';
  * @param {number} [maxSize=650] Maximum column width.
  * @param {number} [timeout=500] Timeout value.
  */
-export function expandColumn(
-  col: DG.Column, grid: DG.Grid, cellRenderSize: (cellVal: string) => number,
-  textSizeMult = 10, minSize = 30, maxSize = 650, timeout = 500,
-): void {
+export function expandColumn(col: DG.Column, grid: DG.Grid, cellRenderSize: (cellVal: string) => number,
+  textSizeMult = 10, minSize = 30, maxSize = 650, timeout = 500): void {
   let maxLen = 0;
   col.categories.forEach((ent: string) => {
     const len = cellRenderSize(ent);
@@ -40,11 +38,9 @@ export function expandColumn(
  * @param {(DG.Grid | null)} [grid=null] Grid that contains the col column.
  * @param {boolean} [grouping=false] Is grouping enabled.
  */
-export function setAARRenderer(col: DG.Column, grid: DG.Grid | null = null, grouping = false): void {
+export function setAARRenderer(col: DG.Column, grid: DG.Grid | null = null): void {
   col.semType = C.SEM_TYPES.AMINO_ACIDS;
   col.setTag('cell.renderer', C.SEM_TYPES.AMINO_ACIDS);
-  if (grouping)
-    col.setTag('groups', `${grouping}`);
 
   if (grid)
     expandColumn(col, grid, (ent) => measureAAR(ent));
@@ -130,144 +126,6 @@ function printLeftOrCentered(
     const dx = (w - textSize.width) / 2;
     draw(dx, dx + colorTextSize.width);
     return x + dx + colorTextSize.width;
-  }
-}
-
-export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
-  chemPalette: ChemPalette | null;
-
-  get name(): string {return 'aminoAcidsCR';}
-
-  get cellType(): string {return C.SEM_TYPES.AMINO_ACIDS;}
-
-  get defaultHeight(): number {return 15;}
-
-  get defaultWidth(): number {return 30;}
-
-  constructor() {
-    super();
-    this.chemPalette = null;
-  }
-
-  /**
-     * Cell renderer function.
-     *
-     * @param {CanvasRenderingContext2D} g Canvas rendering context.
-     * @param {number} x x coordinate on the canvas.
-     * @param {number} y y coordinate on the canvas.
-     * @param {number} w width of the cell.
-     * @param {number} h height of the cell.
-     * @param {DG.GridCell} gridCell Grid cell.
-     * @param {DG.GridCellStyle} cellStyle Cell style.
-     */
-  render(
-    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle): void {
-    y -= 2;
-    g.save();
-    g.beginPath();
-    g.rect(x, y, w, h);
-    g.clip();
-    g.font = `12px monospace`;
-    g.textBaseline = 'top';
-    const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
-    let [color, outerS, innerS, pivot] = ChemPalette.getColorAAPivot(s);
-    if (innerS)
-      outerS = s;
-
-    printLeftOrCentered(x, y, w, h, g, outerS, color, pivot, false, true);
-    g.restore();
-  }
-}
-
-export function processSequence(subParts: string[]): [string[], boolean] {
-  const simplified = !subParts.some((amino, index) =>
-    amino.length > 1 &&
-    index != 0 &&
-    index != subParts.length - 1);
-
-  const text: string[] = [];
-  const gap = simplified ? '' : ' ';
-  subParts.forEach((amino: string, index) => {
-    if (index < subParts.length)
-      amino += `${amino ? '' : '-'}${gap}`;
-
-    text.push(amino);
-  });
-  return [text, simplified];
-}
-
-export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
-  get name(): string {return 'alignedSequenceDifferenceCR';}
-
-  get cellType(): string {return C.SEM_TYPES.ALIGNED_SEQUENCE_DIFFERENCE;}
-
-  get defaultHeight(): number {return 30;}
-
-  get defaultWidth(): number {return 230;}
-
-  /**
-   * Cell renderer function.
-   *
-   * @param {CanvasRenderingContext2D} g Canvas rendering context.
-   * @param {number} x x coordinate on the canvas.
-   * @param {number} y y coordinate on the canvas.
-   * @param {number} w width of the cell.
-   * @param {number} h height of the cell.
-   * @param {DG.GridCell} gridCell Grid cell.
-   * @param {DG.GridCellStyle} cellStyle Cell style.
-   * @memberof AlignedSequenceDifferenceCellRenderer
-   */
-  render(
-    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle): void {
-    const grid = gridCell.grid;
-    const cell = gridCell.cell;
-
-    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-    g.save();
-    g.beginPath();
-    g.rect(x, y, w, h);
-    g.clip();
-    g.font = '12px monospace';
-    g.textBaseline = 'top';
-    const s: string = cell.value ?? '';
-
-    //TODO: can this be replaced/merged with splitSequence?
-    const [s1, s2] = s.split('#');
-    const separator = gridCell.tableColumn!.tags[C.TAGS.SEPARATOR];
-    const subParts1 = s1.split(separator);
-    const subParts2 = s2.split(separator);
-    const [text] = processSequence(subParts1);
-    const textSize = g.measureText(text.join(''));
-    let updatedX = Math.max(x, x + (w - (textSize.width + subParts1.length * 4)) / 2);
-    // 28 is the height of the two substitutions on top of each other + space
-    const updatedY = Math.max(y, y + (h - 28) / 2);
-
-    let amino2;
-    let updatedAmino1: string;
-    let updatedAmino2: string;
-    subParts1.forEach((amino1: string, index) => {
-      amino2 = subParts2[index];
-      const [color1, amino1Outer, amino1Inner, pivot1] = ChemPalette.getColorAAPivot(amino1);
-      const [color2, amino2Outer, amino2Inner, pivot2] = ChemPalette.getColorAAPivot(amino2);
-
-      updatedAmino1 = amino1Outer + (amino1Inner !== '' ? '(' + amino1Inner + ')' : '');
-      updatedAmino1 = updatedAmino1 === '' ? '-' : updatedAmino1;
-
-      if (amino1 != amino2) {
-        updatedAmino2 = amino2Outer + (amino2Inner !== '' ? '(' + amino2Inner + ')' : '');
-        updatedAmino2 = updatedAmino2 === '' ? '-' : updatedAmino2;
-
-        const vShift = 7;
-        const subX0 = printLeftOrCentered(updatedX, updatedY - vShift, w, h, g, updatedAmino1, color1, pivot1, true);
-        const subX1 = printLeftOrCentered(updatedX, updatedY + vShift, w, h, g, updatedAmino2, color2, pivot2, true);
-        updatedX = Math.max(subX1, subX0);
-      } else
-        updatedX = printLeftOrCentered(updatedX, updatedY, w, h, g, updatedAmino1, color1, pivot1, true, true, 0.5);
-      updatedX += 4;
-    });
-    g.restore();
   }
 }
 
