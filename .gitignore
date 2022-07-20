@@ -55,3 +55,6 @@ Sessionx.vim
 .netrwhist
 *~
 [._]*.un~
+
+# ack
+.ackrc

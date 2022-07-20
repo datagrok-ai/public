@@ -25,7 +25,14 @@ category('converters', () => {
 
     fastaGaps = 'fastaGaps',
     separatorGaps = 'separatorGaps',
-    helmGaps = 'helmGaps'
+    helmGaps = 'helmGaps',
+
+    helmLoneDeoxyribose = 'helmLoneDeoxyribose',
+    helmLoneRibose = 'helmLoneRibose',
+    helmLonePhosphorus = 'helmLonePhosphorus',
+    fastaLoneDeoxyribose = 'fastaLoneDeoxyribose',
+    fastaLoneRibose = 'fastaLoneRibose',
+    fastaLonePhosphorus = 'fastaLonePhosphorus',
   }
 
   const _csvTxts: { [key: string]: string } = {
@@ -74,7 +81,6 @@ RNA1{R(A)P.R(C)P.R(G)P.R(U)P.R(C)P}$$$
 RNA1{R(C)P.R(A)P.R(G)P.R(U)P.R(G)P.R(U)P}$$$
 RNA1{R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P}$$$
 `,
-
     fastaGaps: `seq
 FW-PH-EYY
 FYNRQWYV-
@@ -89,6 +95,21 @@ F/K/P//Q//S/E/Y/V
 PEPTIDE1{F.W.*.P.H.*.E.Y.Y}$$$
 PEPTIDE1{F.Y.N.R.Q.W.Y.V.*}$$$
 PEPTIDE1{F.K.P.*.Q.*.S.E.Y.V}$$$
+`,
+    helmLoneDeoxyribose: `seq
+DNA1{D(A).D(C).D(G).D(T).D(C)}$$$
+DNA1{D(C).D(A).D(G).D(T).D(G).D(T)P}$$$
+DNA1{D(T).D(T).D(C).D(A).D(A).D(C)P}$$$
+`,
+    helmLoneRibose: `seq
+RNA1{R(A).R(C).R(G).R(U).R(C)}$$$
+RNA1{R(C).R(A).R(G).R(U).R(G).R(U)P}$$$
+RNA1{R(U).R(U).R(C).R(A).R(A).R(C)P}$$$
+`,
+    helmLonePhosphorus: `seq
+RNA1{P.P.R(A)P.R(C)P.R(G)P.R(U)P.R(C)P}$$$
+RNA1{P.P.R(C)P.R(A)P.P.R(G)P.R(U)P.R(G)P.R(U)P}$$$
+RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
 `,
   };
 
@@ -195,24 +216,35 @@ PEPTIDE1{F.K.P.*.Q.*.S.E.Y.V}$$$
 
   // HELM tests
   // helm -> fasta
-  test('HelmDnaToFasta', async () => {
+  test('testHelmDnaToFasta', async () => {
     await _testConvert(Samples.helmDna, converter(NOTATION.FASTA), Samples.fastaDna);
   });
-  test('HelmRnaToFasta', async () => {
+  test('testHelmRnaToFasta', async () => {
     await _testConvert(Samples.helmRna, converter(NOTATION.FASTA), Samples.fastaRna);
   });
-  test('HelmPtToFasta', async () => {
+  test('testHelmPtToFasta', async () => {
     await _testConvert(Samples.helmPt, converter(NOTATION.FASTA), Samples.fastaPt);
   });
 
   // helm -> separator
-  test('HelmDnaToSeparator', async () => {
+  test('testHelmDnaToSeparator', async () => {
     await _testConvert(Samples.helmDna, converter(NOTATION.SEPARATOR, '/'), Samples.separatorDna);
   });
-  test('HelmRnaToSeparator', async () => {
+  test('testHelmRnaToSeparator', async () => {
     await _testConvert(Samples.helmRna, converter(NOTATION.SEPARATOR, '*'), Samples.separatorRna);
   });
-  test('HelmPtToSeparator', async () => {
+  test('testHelmPtToSeparator', async () => {
     await _testConvert(Samples.helmPt, converter(NOTATION.SEPARATOR, '-'), Samples.separatorPt);
+  });
+
+  // helm miscellaneous
+  test('testHelmLoneRibose', async () => {
+    await _testConvert(Samples.helmLoneRibose, converter(NOTATION.FASTA), Samples.fastaRna);
+  });
+  test('testHelmLoneDeoxyribose', async () => {
+    await _testConvert(Samples.helmLoneDeoxyribose, converter(NOTATION.SEPARATOR, '/'), Samples.separatorDna);
+  });
+  test('testHelmLonePhosphorus', async () => {
+    await _testConvert(Samples.helmLonePhosphorus, converter(NOTATION.FASTA), Samples.fastaRna);
   });
 });
