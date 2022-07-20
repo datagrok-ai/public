@@ -257,6 +257,7 @@ export class AddNewColumnDialog {
     this.uiColumns = await this.initUiColumns();
     this.uiFunctions = await this.initUiFunctions();
 
+    let flexStyle = {display: 'flex', flexGrow: '1'};
     let layout =
         ui.div([
             ui.block50([
@@ -264,18 +265,17 @@ export class AddNewColumnDialog {
                 ui.block([this.inputType!.root], { style: { width: '35%' } }),
                 ui.block([this.inputExpression!.root]),
                 ui.block([this.uiPreview])
-            ], { style: { paddingRight: '20px' } }),
+            ], { style:  Object.assign({}, { paddingRight: '20px', flexDirection: 'column'}, flexStyle) }),
 
             ui.block25([
-                ui.block([this.uiColumns])
-            ], { style: { paddingRight: '20px' } }),
+                ui.block([this.uiColumns], {style: Object.assign({}, {flexDirection: 'column'}, flexStyle)})
+            ], { style: Object.assign({}, { paddingRight: '20px'}, flexStyle) }),
 
             ui.block25([
                 ui.block([this.uiFunctions])
             ])
         ]);
     layout.classList.add('ui-addnewcolumn-layout');
-
     return layout;
   }
 
