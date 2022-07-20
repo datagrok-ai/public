@@ -24,7 +24,7 @@ export class TopSourcesViewer extends UaFilterableQueryViewer {
                 null,
                 null,
                 [new UaDataFrameQueryViewer(
-                  'Functions Of Source',
+                  'Functions',
                   'TopFunctionsOfSource',
                   (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
                   null as any,
@@ -33,7 +33,7 @@ export class TopSourcesViewer extends UaFilterableQueryViewer {
                   false
               ),
               new UaDataFrameQueryViewer(
-                  'Users Of Source',
+                  'Users',
                   'TopUsersOfSource',
                   (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
                   null as any,
@@ -47,7 +47,10 @@ export class TopSourcesViewer extends UaFilterableQueryViewer {
 
             grok.shell.o = pp.getRoot();
           });
-          return viewer.root;
+          if (t.rowCount > 0)
+            return viewer.root
+          else
+            return ui.divText('Not enough data', {style:{color:'var(--red-3)', paddingBottom:'25px'}})
         }
     );
   }

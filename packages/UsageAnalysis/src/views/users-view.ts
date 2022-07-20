@@ -21,7 +21,11 @@ export class UsersView extends UaView {
         this.uaToolbox.filterStream,
         'Unique Users',
         'UniqueUsers',
-        (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
+        (t: DG.DataFrame) => {
+          let viewer = DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root;
+          viewer.style.maxHeight = '150px';
+          return viewer;
+        }
     );
     this.viewers.push(uniqueUsersViewer);
 
@@ -45,9 +49,9 @@ export class UsersView extends UaView {
     this.viewers.push(topPackagesByUsers);
 
     this.root.append(ui.divV([
-      ui.divH([ui.block([topUsersViewer.root])]),
+      ui.divH([ui.block([uniqueUsersViewer.root])]),
       ui.divH([ui.block([usageViewer.root])]),
-      ui.divH([ui.block([uniqueUsersViewer.root])])
+      ui.divH([ui.block([topUsersViewer.root])]),
     ]));
 
   }

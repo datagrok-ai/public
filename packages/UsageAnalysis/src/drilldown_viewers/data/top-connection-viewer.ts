@@ -26,7 +26,7 @@ export class TopConnectionsViewer extends UaFilterableQueryViewer {
                 null,
                 [
                 new UaDataFrameQueryViewer(
-                    'Users Of Connection',
+                    'Users',
                     'TopUsersOfConnection',
                     (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
                     null as any,
@@ -40,7 +40,10 @@ export class TopConnectionsViewer extends UaFilterableQueryViewer {
 
             grok.shell.o = pp.getRoot();
           });
-          return viewer.root;
+          if (t.rowCount > 0)
+            return viewer.root
+          else
+            return ui.divText('Not enough data', {style:{color:'var(--red-3)', paddingBottom:'25px'}})
         }
     );
   }

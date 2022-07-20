@@ -51,9 +51,9 @@ export abstract class UaViewer {
     if (this.setStyle)
       this.setStyle(host);
 
-    let nameDiv = ui.divH([]);
+    let nameDiv = ui.divH([], {style:{alignItems:'center'}});
     if (this.showName)
-      nameDiv.append(ui.h1(this.name));
+      nameDiv.append(ui.h1(this.name, {style:{margin:'6px 0'}}));
     host.appendChild(nameDiv);
 
     let loader = ui.loader();

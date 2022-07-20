@@ -66,7 +66,10 @@ export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
             ]);
 
           });
-          return viewer.root;
+          if (t.rowCount > 0)
+            return viewer.root
+          else
+            return ui.divText('Not enough data', {style:{color:'var(--red-3)', paddingBottom:'25px'}})
         },
         null,
         staticFilter,
