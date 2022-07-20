@@ -31,16 +31,18 @@ export function convert(col: DG.Column): void {
   const separatorInput = ui.choiceInput('Separator', separatorArray[0], separatorArray);
 
   // hide the separator input for non-SEPARATOR target notations
-  if (targetNotationInput.value !== NOTATION.SEPARATOR)
-    $(separatorInput.root).hide();
-  else
-    $(separatorInput.root).show();
-
-  targetNotationInput.onChanged(async () => {
+  const toggleSeparator = () => {
     if (targetNotationInput.value !== NOTATION.SEPARATOR)
       $(separatorInput.root).hide();
     else
       $(separatorInput.root).show();
+  };
+
+  // set correct visibility on init
+  toggleSeparator();
+
+  targetNotationInput.onChanged( () => {
+    toggleSeparator();
   });
 
   if (convertDialog == null) {
