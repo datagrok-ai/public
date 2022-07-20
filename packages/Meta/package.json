@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.1.19",
+  "version": "1.1.20",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -941,6 +941,9 @@
         },
         "0.0.5": {
           "datagrok-api": "^0.94.10"
+        },
+        "0.0.6": {
+          "datagrok-api": "^1.0.0"
         }
       },
       "description": "BioSignals is a package for the [Datagrok](https://datagrok.ai) platfrom. The goal of the project is to offer an efficient and automated biosignal processing routine.",
@@ -949,14 +952,15 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/BioSignals"
       },
-      "category": "Bioinformatics"
+      "category": "Digital Health"
     },
     "dsp": {
       "dependencies": {
         "0.0.3": {
           "datagrok-api": ">0.94.10"
         },
-        "0.0.5": {}
+        "0.0.5": {},
+        "0.0.6": {}
       },
       "description": "A pack of various digital signal processing tools",
       "repository": {
@@ -964,7 +968,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/DSP"
       },
-      "category": "Bioinformatics"
+      "category": "Digital Health"
     },
     "chembl-browser": {
       "dependencies": {
@@ -1336,7 +1340,8 @@
         },
         "0.1.1": {
           "datagrok-api": "^0.151.6"
-        }
+        },
+        "0.1.2": {}
       },
       "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
       "repository": {
@@ -1450,7 +1455,8 @@
         },
         "0.1.1": {
           "datagrok-api": "^0.151.6"
-        }
+        },
+        "0.1.2": {}
       },
       "description": "Pedometer for accelerometer signals",
       "repository": {
@@ -1458,7 +1464,7 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/Pedometer"
       },
-      "category": "Development"
+      "category": "Digital Health"
     },
     "cli": {
       "dependencies": {
