@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/pedometer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "fullName": "Pedometer",
   "description": "Pedometer for accelerometer signals",
   "repository": {
@@ -12,5 +12,5 @@
   ],
   "canEdit": [ "Developers" ],
   "canView": [ "All users" ],
-  "category": "Development"
+  "category": "Digital Health"
 }
