@@ -35,7 +35,7 @@ If no keys specified in 'Keys Columns' joining in performed by row indexes.
 
 Samples:
 
-* [Join Tables](https://public.datagrok.ai/js/samples/data-frame/join-tables)
+* [Join Tables](https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables)
 
 See also:
 
