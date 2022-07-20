@@ -2,7 +2,7 @@
 	"name": "@datagrok/dsp",
 	"fullName": "DSP",
 	"beta": true,
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"description": "A pack of various digital signal processing tools",
 	"repository": {
     "type": "git",
@@ -26,5 +26,5 @@
 	],
 	"canEdit": [ "Developers" ],
 	"canView": [ "All users" ],
-  "category": "Bioinformatics"
+  "category": "Digital Health"
 }
