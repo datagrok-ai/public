@@ -7,7 +7,7 @@ import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-log
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as ui from 'datagrok-api/ui';
 
-const lru = new DG.LruCache<any, any>();
+export const lru = new DG.LruCache<any, any>();
 const undefinedColor = 'rgb(100,100,100)';
 const grayColor = '#808080'
 
@@ -155,6 +155,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         if (!formula) {
           gridCell.element = ui.divText(gridCell.cell.value, {style: {color: 'red'}});
         }
+        const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
+        const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
+        const molfile = canvas.getMolfile();
+        const result = formula + ', ' + molWeight + ', ' + coef + ', ' + molfile;
+        lru.set(gridCell.cell.value, result);
         return;
       }
       if (monomers.size > 0) {
