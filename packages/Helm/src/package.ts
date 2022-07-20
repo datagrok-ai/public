@@ -26,6 +26,11 @@ export async function initHelm(): Promise<void> {
   grid.invalidate();
 }
 
+//name: getLru
+export async function getLru() {
+  return await grok.functions.call('Bio:Lru');
+}
+
 //tags: cellEditor
 //description: Macromolecule
 //input: grid_cell cell
@@ -85,7 +90,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 //input: string helmString {semType: Macromolecule}
 //output: widget result
 export function detailsPanel(helmString: string) {
-  //return new DG.Widget(ui.divText(lru.get(helmString)));
+  const lru = await getLru();
   const result = lru.get(helmString).split(',');
   return new DG.Widget(
     ui.tableFromMap({
