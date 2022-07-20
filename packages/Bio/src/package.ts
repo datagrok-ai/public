@@ -20,7 +20,7 @@ import {createJsonMonomerLibFromSdf, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME}
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
-import {lru} from './utils/cell-renderer'; 
+import {lru} from './utils/cell-renderer';
 
 //tags: init
 export async function initBio(): Promise<void> {
@@ -363,4 +363,54 @@ export function aminoAcidsCellRenderer(): AminoAcidsCellRenderer {
 //output: grid_cell_renderer result
 export function alignedSequenceDifferenceCellRenderer(): AlignedSequenceDifferenceCellRenderer {
   return new AlignedSequenceDifferenceCellRenderer();
+}
+
+//name: testDetectMacromolecule
+//input: string path {choices: ['Demo:Files/', 'System:AppData/']}
+//output: dataframe result
+export async function testDetectMacromolecule(path: string): Promise<DG.DataFrame> {
+  const pi = DG.TaskBarProgressIndicator.create('Test detectMacromolecule...');
+
+  const fileList = await grok.dapi.files.list(path, true, '');
+  const fileListToTest = fileList.filter((fi) => fi.fileName.endsWith('.csv'));
+
+  let readyCount = 0;
+  const res = [];
+
+  for (const fileInfo of fileListToTest) {
+    try {
+      const csv = await grok.dapi.files.readAsText(path + fileInfo.fullPath);
+      const df = DG.DataFrame.fromCsv(csv);
+
+      for (const col of df.columns) {
+        const semType = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+        if (semType === DG.SEMTYPE.MACROMOLECULE) {
+          //console.warn(`file: ${fileInfo.path}, column: ${col.name}, ` +
+          //  `semType: ${semType}, units: ${col.getTag(DG.TAGS.UNITS)}`);
+          // console.warn('file: "' + fileInfo.path + '", semType: "' + semType + '", ' +
+          //   'units: "' + col.getTag('units') + '"');
+
+          res.push({
+            file: fileInfo.path, result: 'detected', column: col.name,
+            message: `units: ${col.getTag('units')}`
+          });
+        }
+      }
+    } catch (err: unknown) {
+      // console.error('file: ' + fileInfo.path + ', error: ' + ex.toString());
+      res.push({
+        file: fileInfo.path, result: 'error', column: null,
+        message: err instanceof Error ? err.message : (err as Object).toString(),
+      });
+    } finally {
+      readyCount += 1;
+      pi.update(100 * readyCount / fileListToTest.length, `Test ${fileInfo.fileName}`);
+    }
+  }
+
+  grok.shell.info('Test Demo:Files for detectMacromolecule finished.');
+  pi.close();
+  const resDf = DG.DataFrame.fromObjects(res)!;
+  resDf.name = `datasets_detectMacromolecule_${path}`;
+  return resDf;
 }

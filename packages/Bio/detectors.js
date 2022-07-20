@@ -55,6 +55,20 @@ class BioPackageDetectors extends DG.Package {
       ['RNA', BioPackageDetectors.RnaFastaAlphabet],
     ];
 
+    // Check for url column, maybe it is too heavy check
+    const isUrlCheck = (s) => {
+      let res = true;
+      try {
+        const url = new URL(s);
+        res = true;
+      } catch {
+        res = false;
+      }
+      return res;
+    };
+    const isUrl = DG.Detector.sampleCategories(col, isUrlCheck, 1);
+    if (isUrl) return null;
+
     // TODO: Detect HELM sequence
     // TODO: Lazy calculations could be helpful for performance and convenient for expressing classification logic.
     const statsAsChars = BioPackageDetectors.getStats(col, 5, BioPackageDetectors.splitterAsChars);
@@ -199,7 +213,7 @@ class BioPackageDetectors extends DG.Package {
     const alphabetA = [];
     for (const m of keys) {
       freqA.push(m in freq ? freq[m] : 0);
-      alphabetA.push(alphabet.has(m) ? 1 : 0);
+      alphabetA.push(alphabet.has(m) ? 10 : -10 /* penalty for character outside alphabet set*/);
     }
     /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
     const cos = BioPackageDetectors.vectorDotProduct(freqA, alphabetA) / (BioPackageDetectors.vectorLength(freqA) * BioPackageDetectors.vectorLength(alphabetA));
