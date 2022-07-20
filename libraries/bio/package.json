@@ -5,7 +5,7 @@
   },
   "beta": true,
   "friendlyName": "Datagrok bio library",
-  "version": "2.8.4",
+  "version": "2.8.5",
   "description": "",
   "dependencies": {
     "@datagrok-libraries/utils": "^1.0.0",

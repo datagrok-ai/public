@@ -21,7 +21,7 @@ declare module 'datagrok-api/src/grid' {
 
 declare global {
   interface HTMLCanvasElement {
-    getCursorPosition(event: MouseEvent): DG.Point;
+    getCursorPosition(event: MouseEvent, r: number): DG.Point;
   }
 }
 
@@ -29,9 +29,13 @@ export type MonomerFreqs = { [m: string]: number };
 export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }
 export type SplitterFunc = (seq: string) => string[];
 
-HTMLCanvasElement.prototype.getCursorPosition = function(event: MouseEvent): DG.Point {
+/**@param {MouseEvent} event
+ * @param {number} r devicePixelRation
+ * @return {DG.Point} canvas related cursor position
+ */
+HTMLCanvasElement.prototype.getCursorPosition = function(event: MouseEvent, r: number): DG.Point {
   const rect = this.getBoundingClientRect();
-  return new DG.Point(event.clientX - rect.left, event.clientY - rect.top);
+  return new DG.Point((event.clientX - rect.left) * r, (event.clientY - rect.top) * r);
 };
 
 DG.Rect.prototype.contains = function(x: number, y: number): boolean {
@@ -200,14 +204,18 @@ export class WebLogo extends DG.JsViewer {
         return;
 
       const args = e as MouseEvent;
-      const [jPos, monomer] = getMonomer(this.canvas.getCursorPosition(args));
+
+      const r: number = window.devicePixelRatio;
+      const cursorP: DG.Point = this.canvas.getCursorPosition(args, r);
+      const [jPos, monomer] = getMonomer(cursorP);
 
       if (this.dataFrame && this.seqCol && this.splitter && monomer) {
-        ui.tooltip.showRowGroup(this.dataFrame, (iRow) => {
+        const rowCount = wu.count().take(this.dataFrame.rowCount).filter((iRow: number) => {
           const seq = this.seqCol!.get(iRow);
           const seqM = seq ? this.splitter!(seq)[this.startPosition + jPos] : null;
-          return seqM === monomer && this.dataFrame.filter.get(iRow);
-        }, args.x + 16, args.y + 16);
+          return ((seqM === monomer) || (seqM === '' && monomer === '-')) && this.dataFrame.filter.get(iRow);
+        }).reduce<number>((count, iRow) => count + 1, 0);
+        ui.tooltip.show(ui.div([ui.div(`${monomer}`), ui.div(`${rowCount} rows`)]), args.x + 16, args.y + 16);
       } else {
         ui.tooltip.hide();
       }
@@ -218,14 +226,15 @@ export class WebLogo extends DG.JsViewer {
         return;
 
       const args = e as MouseEvent;
-      const [jPos, monomer] = getMonomer(this.canvas.getCursorPosition(args));
+      const r: number = window.devicePixelRatio;
+      const [jPos, monomer] = getMonomer(this.canvas.getCursorPosition(args, r));
 
       // prevents deselect all rows if we miss monomer bounds
       if (this.dataFrame && this.seqCol && this.splitter && monomer) {
         this.dataFrame.selection.init((iRow) => {
           const seq = this.seqCol!.get(iRow);
           const seqM = seq ? this.splitter!(seq)[this.startPosition + jPos] : null;
-          return seqM === monomer && this.dataFrame.filter.get(iRow);
+          return ((seqM === monomer) || (seqM === '' && monomer === '-')) && this.dataFrame.filter.get(iRow);
         });
       }
     }));
@@ -389,7 +398,7 @@ export class WebLogo extends DG.JsViewer {
     return '';
   }
 
-  protected _calculate() {
+  protected _calculate(r: number) {
     if (!this.canvas || !this.host || !this.seqCol || !this.dataFrame)
       return;
 
@@ -437,7 +446,6 @@ export class WebLogo extends DG.JsViewer {
     }
     //#endregion
 
-    const r = window.devicePixelRatio;
     const maxHeight = this.canvas.height - this.axisHeight * r;
     // console.debug(`WebLogo<${this.viewerId}>._calculate() maxHeight=${maxHeight}.`);
 
@@ -487,8 +495,10 @@ export class WebLogo extends DG.JsViewer {
     const g = this.canvas.getContext('2d');
     if (!g) return;
 
+    const r = window.devicePixelRatio;
+
     if (recalc)
-      this._calculate();
+      this._calculate(r);
 
     g.resetTransform();
     g.fillStyle = 'white';
@@ -500,10 +510,11 @@ export class WebLogo extends DG.JsViewer {
       return;
 
     //#region Plot positionNames
+    const positionFontSize = 10 * r;
     g.resetTransform();
     g.fillStyle = 'black';
     g.textAlign = 'center';
-    g.font = '10px Roboto, Roboto Local, sans-serif';
+    g.font = `${positionFontSize.toFixed(1)}px Roboto, Roboto Local, sans-serif`;
     const posNameMaxWidth = Math.max(...this.positions.map((pos) => g.measureText(pos.name).width));
     const hScale = posNameMaxWidth < (this._positionWidth - 2) ? 1 : (this._positionWidth - 2) / posNameMaxWidth;
 
@@ -554,7 +565,9 @@ export class WebLogo extends DG.JsViewer {
     if (!this.canvas || !this.host)
       return;
 
-    let width: number = this.Length * this.positionWidth;
+    const r: number = window.devicePixelRatio;
+
+    let width: number = this.Length * this.positionWidth / r;
     let height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
 
     if (this.fitArea) {
@@ -566,7 +579,6 @@ export class WebLogo extends DG.JsViewer {
       this._positionWidth = this.positionWidth * scale;
     }
 
-    const r = window.devicePixelRatio;
     this.canvas.width = width * r;
     this.canvas.style.width = `${width}px`;
 
