@@ -189,6 +189,7 @@ export class PeptidesModel {
     let splitSeqDf: DG.DataFrame | undefined;
     let invalidIndexes: number[];
     const col: DG.Column = this._dataFrame.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
+    const alphabet = col.tags[DG.TAGS.UNITS].split(':')[2];
     [splitSeqDf, invalidIndexes] = PeptidesModel.splitAlignedPeptides(col);
 
     const positionColumns = splitSeqDf.columns.names();
@@ -201,7 +202,7 @@ export class PeptidesModel {
 
     for (const dfCol of this._dataFrame.columns) {
       if (positionColumns.includes(dfCol.name))
-        setAARRenderer(dfCol, this._sourceGrid);
+        setAARRenderer(dfCol, alphabet, this._sourceGrid);
     }
 
     this.sortSourceGrid();
@@ -236,7 +237,7 @@ export class PeptidesModel {
     if (viewer.showSubstitution || !this._isSubstInitialized)
       this.calcSubstitutions();
 
-    const [sarGrid, sarVGrid] = this.createGrids(matrixDf, positionColumns, sequenceDf);
+    const [sarGrid, sarVGrid] = this.createGrids(matrixDf, positionColumns, sequenceDf, alphabet);
 
     this._sarGrid = sarGrid;
     this._sarVGrid = sarVGrid;
@@ -469,7 +470,8 @@ export class PeptidesModel {
     return sequenceDf;
   }
 
-  createGrids(matrixDf: DG.DataFrame, positionColumns: string[], sequenceDf: DG.DataFrame): DG.Grid[] {
+  createGrids(
+    matrixDf: DG.DataFrame, positionColumns: string[], sequenceDf: DG.DataFrame, alphabet: string): DG.Grid[] {
     const sarGrid = matrixDf.plot.grid();
     sarGrid.sort([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]);
     sarGrid.columns.setOrder([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE].concat(positionColumns as C.COLUMNS_NAMES[]));
@@ -482,11 +484,11 @@ export class PeptidesModel {
 
     let tempCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
     if (tempCol)
-      setAARRenderer(tempCol, sarGrid);
+      setAARRenderer(tempCol, alphabet, sarGrid);
 
     tempCol = sequenceDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
     if (tempCol)
-      setAARRenderer(tempCol, sarGrid);
+      setAARRenderer(tempCol, alphabet, sarGrid);
 
     return [sarGrid, sarVGrid];
   }

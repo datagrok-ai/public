@@ -260,7 +260,7 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
     g.font = `12px monospace`;
     g.textBaseline = 'top';
 
-    const palette = getPalleteByType('PT');
+    const palette = getPalleteByType(gridCell.tableColumn!.tags[C.TAGS.ALPHABET]);
     const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
     const color = palette.get(s);
 
@@ -316,7 +316,7 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
     // 28 is the height of the two substitutions on top of each other + space
     const updatedY = Math.max(y, y + (h - 28) / 2);
 
-    const palette = getPalleteByType('PT');
+    const palette = getPalleteByType(gridCell.tableColumn!.tags[C.TAGS.ALPHABET]);
     for (let i = 0; i < subParts1.length; i++) {
       const amino1 = subParts1[i]
       const amino2 = subParts2[i];
