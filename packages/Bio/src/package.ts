@@ -19,6 +19,7 @@ import {createJsonMonomerLibFromSdf, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME}
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
+import {lru} from './utils/cell-renderer'; 
 
 //tags: init
 export async function initBio(): Promise<void> {
@@ -27,6 +28,12 @@ export async function initBio(): Promise<void> {
     // @ts-ignore
     dojo.ready(function() { resolve(null); });
   });
+}
+
+//name: Lru
+//output: object lruCache
+export function Lru() {
+  return lru;
 }
 
 
