@@ -29,7 +29,7 @@ specify a relevant semantic type either from a script or from a panel function w
 # name: string length
 # language: python
 # tags: panel
-# input: string s {semtype: text}
+# input: string s {semType: text}
 # output: int length
 # condition: true
 
