@@ -155,7 +155,8 @@ export class PeptidesModel {
 
   updateDefault(forceUpdate: boolean = false): void {
     const viewer = this.getViewer();
-    if (this._sourceGrid && !this._isUpdating && (this.isPropertyChanged() || forceUpdate)) {
+    if ((this._sourceGrid && !this._isUpdating && this.isPropertyChanged()) || !this.isInitialized) {
+      this.isInitialized = true;
       this._isUpdating = true;
       const [viewerGrid, viewerVGrid, statsDf] = this.initializeViewersComponents();
       //FIXME: modify during the initializeViewersComponents stages
@@ -875,7 +876,6 @@ export class PeptidesModel {
   async init(): Promise<void> {
     if (this.isInitialized)
       return;
-    this.isInitialized = true;
 
     this.currentView = this._dataFrame.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
       grok.shell.addTableView(this._dataFrame);
