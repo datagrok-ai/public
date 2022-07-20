@@ -38,9 +38,10 @@ export function expandColumn(col: DG.Column, grid: DG.Grid, cellRenderSize: (cel
  * @param {(DG.Grid | null)} [grid=null] Grid that contains the col column.
  * @param {boolean} [grouping=false] Is grouping enabled.
  */
-export function setAARRenderer(col: DG.Column, grid: DG.Grid | null = null): void {
+export function setAARRenderer(col: DG.Column, alphabet: string, grid?: DG.Grid): void {
   col.semType = C.SEM_TYPES.AMINO_ACIDS;
   col.setTag('cell.renderer', C.SEM_TYPES.AMINO_ACIDS);
+  col.tags[C.TAGS.ALPHABET] = alphabet;
 
   if (grid)
     expandColumn(col, grid, (ent) => measureAAR(ent));

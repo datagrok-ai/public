@@ -53,6 +53,7 @@ export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): 
   const substCol = DG.Column.fromStrings('Substiutions', substitutionsArray);
   substCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE_DIFFERENCE;
   substCol.tags[C.TAGS.SEPARATOR] = alignedSeqCol.tags[C.TAGS.SEPARATOR];
+  substCol.tags[C.TAGS.ALPHABET] = alignedSeqCol.tags[DG.TAGS.UNITS].split(':')[2];
   const toColName = '~to';
   const hiddenSubstToAarCol = DG.Column.fromStrings(toColName, substitutedToArray);
   const substTable =
