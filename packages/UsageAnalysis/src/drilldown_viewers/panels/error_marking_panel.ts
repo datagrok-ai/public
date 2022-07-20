@@ -15,6 +15,7 @@ export class ErrorMarkingPanel {
     acc.addPane('ErrorInfo', () => {
 
       let button = ui.buttonsInput([ui.bigButton('Save', () => {
+        //@ts-ignore
         error.isError = isError.value;
         error.comment = comment.value;
         grok.dapi.logTypes.save(error);

@@ -21,7 +21,11 @@ export class FunctionErrorsView extends UaView {
         this.uaToolbox.filterStream,
         'Function Errors',
         'FunctionErrors',
-        (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
+        (t: DG.DataFrame) => {
+          let viewer = DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root;
+          viewer.style.maxHeight = '150px';
+          return viewer;
+        }
     );
     this.viewers.push(functionErrorsViewer);
 

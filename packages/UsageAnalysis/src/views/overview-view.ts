@@ -56,7 +56,7 @@ export class OverviewView extends UaView {
 
     let uniqueUsersListViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
-        'Unique Users',
+        'Users',
         'UniqueUsersList',
         (t: DG.DataFrame) => {
           let ids = Array.from(t.getCol('id').values());
@@ -88,6 +88,20 @@ export class OverviewView extends UaView {
     this.topPackagesViewer = new TopPackagesViewer('Packages', 'TopPackages', this.uaToolbox.filterStream);
     this.viewers.push(this.topPackagesViewer);
 
+    this.root.className = 'grok-view ui-box';
+
+    this.root.append(ui.splitH([
+      ui.splitV([
+        ui.panel([ui.h1('Groups')]),
+        ui.panel([uniqueUsersListViewer.root])
+      ], {style:{maxWidth:'300px'}}),
+      ui.panel([
+        ui.block([uniqueUsersViewer.root]),
+        ui.block([this.topPackagesViewer.root]),
+      ])
+    ]))
+
+    /*
     this.root.append(ui.block25([
       ui.block([totalUsersViewer.root]),
       ui.block([uniqueUsersListViewer.root]),
@@ -97,6 +111,7 @@ export class OverviewView extends UaView {
       ui.block([uniqueUsersViewer.root]),
       ui.block([this.topPackagesViewer.root]),
     ]));
+    */
   }
 
   handleUrlParams(params: Map<string,string>) : void {

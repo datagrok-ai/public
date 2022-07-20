@@ -21,7 +21,11 @@ export class DataView extends UaView {
         this.uaToolbox.filterStream,
         'Queries',
         'Queries1',
-        (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
+        (t: DG.DataFrame) => {
+          let viewer = DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root;
+          viewer.style.maxHeight = '150px';
+          return viewer;
+        }
     );
     this.viewers.push(queriesViewer);
 

@@ -33,7 +33,11 @@ export class EventsView extends UaView {
         this.uaToolbox.filterStream,
         'Events',
         'Events1',
-        (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
+        (t: DG.DataFrame) => {
+          let viewer = DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root;
+          viewer.style.maxHeight = '150px';
+          return viewer;
+        }
     );
     this.viewers.push(eventsViewer);
 

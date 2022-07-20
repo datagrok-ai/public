@@ -47,9 +47,16 @@ export abstract class UaQueryViewer extends UaViewer{
         raw = !raw;
       });
 
-      tableIcon.style.marginLeft = '8px';
+      tableIcon.style.padding = '3px';
+      tableIcon.style.margin = '0 3px';
+      tableIcon.style.color = 'var(--grey-4)';
 
-      nameDiv.append(tableIcon);
+      tableIcon.addEventListener("mouseover",function(){tableIcon.style.color = 'var(--blue-1)'});
+      tableIcon.addEventListener("mouseleave",function(){tableIcon.style.color = 'var(--grey-4)'});
+
+      
+
+      nameDiv.append(ui.tooltip.bind(tableIcon, 'Show grid'));
 
       host.appendChild(viewer);
       host.removeChild(loader);

@@ -23,7 +23,10 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
             this.categorySelected(args.args.categories[0]);
           });
-          return viewer.root;
+          if (t.rowCount > 0)
+            return viewer.root
+          else
+            return ui.divText('Not enough data', {style:{color:'var(--red-3)', paddingBottom:'25px'}})
         }
     );    
   }
@@ -52,7 +55,7 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
         ),
         [
       new UaDataFrameQueryViewer(
-          'Functions Of Package',
+          'Functions',
           'TopFunctionsOfPackage',
           (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
           null as any,
@@ -61,7 +64,7 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
           false
       ),
       new UaDataFrameQueryViewer(
-          'Users Of Package',
+          'Users',
           'TopUsersOfPackage',
           (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
           null as any,
@@ -69,7 +72,7 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
           this.filterSubscription.getValue(),
           false
       ),
-      new TopFunctionErrorsViewer('Errors Of Package','TopErrorsOfPackage', this.filterSubscription, {name: category}, false),
+      new TopFunctionErrorsViewer('Errors','TopErrorsOfPackage', this.filterSubscription, {name: category}, false),
     ],
     `Packages: ${category}`,
     'Packages');
