@@ -8,7 +8,7 @@ import {ChemPalette} from './utils/chem-palette';
 import {MonomerLibrary} from './monomer-library';
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {getTypedArrayConstructor, stringToBool} from './utils/misc';
+import {getTypedArrayConstructor} from './utils/misc';
 import {_package} from './package';
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
@@ -45,8 +45,7 @@ export class PeptidesModel {
 
   isPeptideSpaceChangingBitset = false;
   isChangingEdfBitset = false;
-  // _splitByPos = false;
-  // _splitByAAR = false;
+
   sarViewer!: SARViewer;
   sarViewerVertical!: SARViewerVertical;
 
@@ -54,7 +53,6 @@ export class PeptidesModel {
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
-    // this.updateProperties();
   }
 
   static async getInstance(dataFrame: DG.DataFrame, dgPackage?: DG.Package): Promise<PeptidesModel> {
@@ -157,7 +155,6 @@ export class PeptidesModel {
 
   updateDefault(forceUpdate: boolean = false): void {
     const viewer = this.getViewer();
-    // if (this._activityScaling && this._sourceGrid && this._twoColorMode !== null && !this._isUpdating) {
     if (this._sourceGrid && !this._isUpdating && (this.isPropertyChanged() || forceUpdate)) {
       this._isUpdating = true;
       const [viewerGrid, viewerVGrid, statsDf] = this.initializeViewersComponents();
@@ -171,7 +168,6 @@ export class PeptidesModel {
       }
       if (forceUpdate)
         this.updateBarchart();
-      // this.updateBarchart();
       this.invalidateSelection();
 
       this._isUpdating = false;
@@ -240,7 +236,6 @@ export class PeptidesModel {
     if (viewer.showSubstitution || !this._isSubstInitialized)
       this.calcSubstitutions();
 
-    //TODO: move everything below out to controller
     const [sarGrid, sarVGrid] = this.createGrids(matrixDf, positionColumns, sequenceDf);
 
     this._sarGrid = sarGrid;
@@ -261,7 +256,6 @@ export class PeptidesModel {
     return [sarGrid, sarVGrid, this.statsDf];
   }
 
-  //TODO: move to controller?
   calcSubstitutions(): void {
     const activityValues: DG.Column<number> = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
     const columnList: DG.Column<string>[] = this._dataFrame.columns.bySemTypeAll(C.SEM_TYPES.AMINO_ACIDS);
@@ -377,7 +371,6 @@ export class PeptidesModel {
     this._sourceGrid.columns.setOrder(colNames.map((v) => v.name));
   }
 
-  //TODO: make sync
   createScaledCol(activityScaling: string, splitSeqDf: DG.DataFrame): void {
     const [scaledDf, newColName] = PeptidesModel.scaleActivity(
       activityScaling, this._dataFrame, this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY]);
@@ -396,7 +389,6 @@ export class PeptidesModel {
     this._sourceGrid.columns.setOrder([newColName]);
   }
 
-  //TODO: move out
   calculateStatistics(matrixDf: DG.DataFrame): DG.DataFrame {
     matrixDf = matrixDf.groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]).aggregate();
 
@@ -417,7 +409,6 @@ export class PeptidesModel {
       const mask = DG.BitSet.create(sourceDfLen, (j) => this._dataFrame.get(position, j) == aar);
       const stats = getStats(activityCol, mask);
 
-      //TODO: store as object in a single column
       mdCol.set(i, stats.meanDifference);
       pValCol.set(i, stats.pValue);
       countCol.set(i, stats.count);
@@ -431,13 +422,11 @@ export class PeptidesModel {
     return matrixDf as DG.DataFrame;
   }
 
-  //TODO: make sync
   setCategoryOrder(matrixDf: DG.DataFrame): void {
     let sortArgument: string = C.COLUMNS_NAMES.MEAN_DIFFERENCE;
     if (this.getViewer().bidirectionalAnalysis) {
       const mdCol = this.statsDf.getCol(sortArgument);
       sortArgument = 'Absolute Mean difference';
-      // await this.statsDf.columns.addNewCalculated(absMD, 'Abs(${Mean difference})');
       const absMDCol = this.statsDf.columns.addNewFloat(sortArgument);
       absMDCol.init(i => Math.abs(mdCol.get(i)));
     }
@@ -502,7 +491,6 @@ export class PeptidesModel {
     return [sarGrid, sarVGrid];
   }
 
-  //TODO: move out
   setCellRenderers(renderColNames: string[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
     const mdCol = this.statsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     //decompose into two different renering funcs
@@ -592,7 +580,6 @@ export class PeptidesModel {
     ui.tooltip.show(tooltip, x, y);
   }
 
-  //TODO: think about it, move out?
   setInteractionCallback(): void {
     const sarDf = this._sarGrid.dataFrame;
     const sarVDf = this._sarVGrid.dataFrame;
@@ -667,11 +654,9 @@ export class PeptidesModel {
   setBitsetCallback(): void {
     if (this.isBitsetChangedInitialized)
       return;
-    // const filter = this._dataFrame.filter;
     const selection = this._dataFrame.selection;
 
     const changeBitset = (currentBitset: DG.BitSet): void => {
-      // previousBitset.setAll(!this._filterMode, false);
 
       const edfSelection = this.edf?.selection;
       if (this.isPeptideSpaceChangingBitset) {
@@ -709,7 +694,6 @@ export class PeptidesModel {
       updateEdfSelection();
     };
 
-    // filter.onChanged.subscribe(() => changeBitset(filter, selection));
     selection.onChanged.subscribe(() => changeBitset(selection));
     this.isBitsetChangedInitialized = true;
   }
@@ -722,9 +706,6 @@ export class PeptidesModel {
     this.isPeptideSpaceChangingBitset = false;
   }
 
-  // getBiteset(): DG.BitSet {return this._filterMode ? this._dataFrame.filter : this._dataFrame.selection;}
-
-  //TODO: move out
   postProcessGrids(invalidIndexes: number[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
     this._sourceGrid.onCellPrepare((cell: DG.GridCell) => {
       const currentRowIndex = cell.tableRowIndex;
@@ -766,16 +747,13 @@ export class PeptidesModel {
   }
 
   modifyOrCreateSplitCol(): void {
-    // const bs = this.getBiteset();
     const bs = this._dataFrame.selection;
     this.splitCol = this._dataFrame.col(C.COLUMNS_NAMES.SPLIT_COL) ??
       this._dataFrame.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
-    // this.splitCol.setRawData(bs.getBuffer());
     this.splitCol.init((i) => bs.get(i));
     this.splitCol.compact();
   }
 
-  //TODO: make sync
   static scaleActivity(
     activityScaling: string, df: DG.DataFrame, originalActivityName?: string, cloneBitset = false,
   ): [DG.DataFrame, string] {
@@ -785,19 +763,16 @@ export class PeptidesModel {
     currentActivityColName = flag ? currentActivityColName : C.COLUMNS_NAMES.ACTIVITY;
     const tempDf = df.clone(cloneBitset ? df.filter : null, [currentActivityColName]);
 
-    // let formula = '${' + currentActivityColName + '}';
     let formula = (v: number) => v;
     let newColName = 'activity';
     switch (activityScaling) {
     case 'none':
       break;
     case 'lg':
-      // formula = `Log10(${formula})`;
       formula = (v: number) => Math.log10(v);
       newColName = `Log10(${newColName})`;
       break;
     case '-lg':
-      // formula = `-1*Log10(${formula})`;
       formula = (v: number) => -Math.log10(v);
       newColName = `-Log10(${newColName})`;
       break;
@@ -805,7 +780,6 @@ export class PeptidesModel {
       throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
     }
 
-    // await tempDf.columns.addNewCalculated(C.COLUMNS_NAMES.ACTIVITY_SCALED, formula);
     const asCol = tempDf.columns.addNewFloat(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     const activityCol = df.getCol(currentActivityColName);
     asCol.init(i => formula(activityCol.get(i)));
@@ -946,7 +920,6 @@ export class PeptidesModel {
       dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
     }
 
-    // await this.updateData(this._dataFrame.tags['scaling'], sourceGrid, false, 1, 2, true, false);
     this.updateDefault();
     await this.updateBarchart();
 
