@@ -53,6 +53,7 @@ predictive models, integration with the external utilities, data augmentation, a
 
 *Prerequisites:* basic TypeScript or JavaScript knowledge.
 *Useful links:*
+
 * [Datagrok tools](https://www.npmjs.com/package/datagrok-tools)
 * [Naming conventions](https://datagrok.ai/help/develop/develop#naming-conventions)
 
@@ -67,7 +68,9 @@ predictive models, integration with the external utilities, data augmentation, a
    `<yourFirstName>-sequence` using datagrok-tools:
    `grok create <yourFirstName>-sequence` with specifying the `--ts` option to create a package with TypeScript
    configuration
-   (if you are new to TypeScript, you can specify the `--js` option); Note that detectors.js file should be in JavaScript anyway. Also you can add `--eslint` key to add eslint checker feature to the package
+   (if you are new to TypeScript, you can specify the `--js` option);
+   Note that detectors.js file should be in JavaScript anyway.
+   Also you can add `--eslint` option to add eslint checker feature to the package
 5. Run `npm install` to link the dependencies mentioned in `package.json` file of your package
 6. Upload it to the server: run `webpack` and `grok publish dev` (see other
    options [here](../develop.md#deployment-modes))
@@ -176,8 +179,8 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
    The `panel` and `widgets` tags and output type `widget` allows Datagrok to determine how the result of
    `complementWidget` function will appear in the system. Listed above block of comments will
-   instruct the platform to use the `complementWidget` function for providing additional information for string values of
-   the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell in the `sequence`
+   instruct the platform to use the `complementWidget` function for providing additional information for string values 
+   of the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell in the `sequence`
    column, and find the `complementWidget` property in the panel on the right as it is shown on screenshot:
    ![exercises-complement-data-panel](exercises-complement-data-panel.png)
 
@@ -777,7 +780,7 @@ contained in a currently selected grid cell.
    ```javascript
     //name: ENA Sequence
     //tags: panel, widgets
-    //input: string cellText
+    //input: string cellText {semType: ENA}
     //output: widget result
     //condition: isPotentialENAId(cellText)
     export async function enaSequence(cellText) {
