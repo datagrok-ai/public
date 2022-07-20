@@ -45,8 +45,8 @@ export class PeptidesModel {
 
   isPeptideSpaceChangingBitset = false;
   isChangingEdfBitset = false;
-  splitByPos = false;
-  splitByAAR = false;
+  // _splitByPos = false;
+  // _splitByAAR = false;
   sarViewer!: SARViewer;
   sarViewerVertical!: SARViewerVertical;
 
@@ -96,6 +96,24 @@ export class PeptidesModel {
   set usedProperties(properties: {[propName: string]: string | number | boolean}) {
     this._dataFrame.tags['sarProperties'] = JSON.stringify(properties);
     this._usedProperties = properties;
+  }
+
+  get splitByPos() {
+    const splitByPosFlag = (this._dataFrame.tags['distributionSplit'] ?? '00')[0];
+    return splitByPosFlag == '1' ? true : false;
+  }
+  set splitByPos(flag: boolean) {
+    const splitByAARFlag = (this._dataFrame.tags['distributionSplit'] ?? '00')[1];
+    this._dataFrame.tags['distributionSplit'] = `${flag ? 1 : 0}${splitByAARFlag}`;
+  }
+
+  get splitByAAR() {
+    const splitByPosFlag = (this._dataFrame.tags['distributionSplit'] ?? '00')[1];
+    return splitByPosFlag == '1' ? true : false;
+  }
+  set splitByAAR(flag: boolean) {
+    const splitByAARFlag = (this._dataFrame.tags['distributionSplit'] ?? '00')[0];
+    this._dataFrame.tags['distributionSplit'] = `${splitByAARFlag}${flag ? 1 : 0}`;
   }
 
   invalidateSelection(): void {
