@@ -5,6 +5,35 @@ import * as echarts from 'echarts';
 
 
 export class Utils {
+  static aggToStat(dataframe: DG.DataFrame, columnName: string, aggregation: DG.AggregationType): number | null {
+    const colStatsCall = 'dataframe.getCol(columnName).stats.';
+    const stats = {
+      avg: colStatsCall + 'avg',
+      count: colStatsCall + 'totalCount',
+      kurt: colStatsCall + 'kurt',
+      max: colStatsCall + 'max',
+      med: colStatsCall + 'med',
+      min: colStatsCall + 'min',
+      nulls: colStatsCall + 'missingValueCount',
+      q1: colStatsCall + 'q1',
+      q2: colStatsCall + 'q2',
+      q3: colStatsCall + 'q3',
+      skew: colStatsCall + 'skew',
+      stdev: colStatsCall + 'stdev',
+      sum: colStatsCall + 'sum',
+      unique: colStatsCall + 'uniqueCount',
+      values: colStatsCall + 'valuesCount',
+      variance: colStatsCall + 'variance',
+      '#selected': 'dataframe.selection.trueCount',
+      first: 'dataframe.getCol(columnName).get(0)',
+    };
+    //https://stackoverflow.com/questions/64616994/typescript-type-narrowing-not-working-for-in-when-key-is-stored-in-a-variable
+    function hasProp<T>(obj: T, key: PropertyKey): key is keyof T {
+      return key in obj;
+    }
+    return hasProp(stats, aggregation) ? eval(stats[aggregation]) : null;
+  }
+
   static toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: treeDataType) => void) | null = null, aggregations:
       aggregationInfo[] = [], linkSelection: boolean = true): treeDataType {
@@ -21,7 +50,7 @@ export class Utils {
       .whereRowMask(rowMask);
 
     for (const aggregation of aggregations) {
-      data[aggregation.propertyName] = 0;
+      data[aggregation.propertyName] = Utils.aggToStat(dataFrame, aggregation.columnName, aggregation.type);
       data[`${aggregation.propertyName}-meta`] = {};
       builder.add(aggregation.type, aggregation.columnName, aggregation.propertyName);
     }
