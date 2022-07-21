@@ -1,5 +1,7 @@
 import * as DG from 'datagrok-api/dg';
-import { EChartViewer, Utils } from './echart-viewer';
+import { EChartViewer } from './echart-viewer';
+import { TreeUtils, treeDataType } from './utils/tree-utils';
+import * as utils from './utils/utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 export class TreeViewer extends EChartViewer {
@@ -18,6 +20,7 @@ export class TreeViewer extends EChartViewer {
   aggregations: string[] = Object.values(DG.AGG).filter((f) => f !== DG.AGG.KEY && f !== DG.AGG.PIVOT);
   colorColumnName: string;
   colorAggrType: DG.AggregationType;
+  selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
 
   constructor() {
     super();
@@ -111,22 +114,15 @@ export class TreeViewer extends EChartViewer {
     this.initChartEventListeners();
   }
 
-  _mapToRange(x: number, min1: number, max1: number, min2: number, max2: number) {
-    const range1 = max1 - min1;
-    const range2 = max2 - min2;
-    return (((x - min1) * range2) / range1) + min2;
-  }
-
-  _colorCodeTree(data: any): void {
+  colorCodeTree(data: treeDataType): void {
     const min = data['color-meta']['min'];
     const max = data['color-meta']['max'];
-    function setItemStyle(data: any) {
-      const selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
+    const setItemStyle = (data: treeDataType) => {
       const nodeColor = DG.Color.toRgb(DG.Color.scaleColor(data.color, min, max));
       data.itemStyle = data.itemStyle ?? {};
-      data.itemStyle.color = data.itemStyle.color === selectionColor ? selectionColor : nodeColor;
+      data.itemStyle.color = data.itemStyle.color === this.selectionColor ? this.selectionColor : nodeColor;
       if (data.children)
-        data.children.forEach((child: any) => setItemStyle(child));
+        data.children.forEach((child) => setItemStyle(child));
     }
     setItemStyle(data);
   }
@@ -138,7 +134,7 @@ export class TreeViewer extends EChartViewer {
     if (this.colorColumnName)
       aggregations.push({ type: <DG.AggregationType>this.colorAggrType, columnName: this.colorColumnName, propertyName: 'color' });
 
-    return [Utils.toTree(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter, null, aggregations)];
+    return [TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter, null, aggregations)];
   }
 
   render() {
@@ -148,11 +144,11 @@ export class TreeViewer extends EChartViewer {
     this.option.series[0].data = this.getSeriesData();
 
     this.option.series[0]['symbolSize'] = this.sizeColumnName ?
-      (value: number, params: {[key: string]: any}) => this._mapToRange(
+      (value: number, params: {[key: string]: any}) => utils.data.mapToRange(
       params.data.size, this.option.series[0].data[0]['size-meta']['min'],
-      this.option.series[0].data[0]['size-meta']['max'], 5, 20) : this.symbolSize;
+      this.option.series[0].data[0]['size-meta']['max'], ...this.symbolSizeRange) : this.symbolSize;
     if (this.colorColumnName)
-      this._colorCodeTree(this.option.series[0].data[0]);
+      this.colorCodeTree(this.option.series[0].data[0]);
 
     this.chart.setOption(this.option);
   }

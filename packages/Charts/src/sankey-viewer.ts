@@ -1,4 +1,5 @@
-import { EChartViewer, Utils } from './echart-viewer';
+import { EChartViewer } from './echart-viewer';
+import { TreeUtils } from './utils/tree-utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 export class SankeyViewer extends EChartViewer {
@@ -31,7 +32,7 @@ export class SankeyViewer extends EChartViewer {
       nodes.push({name: name});
 
     this.option.series[0].data = nodes;
-    this.option.series[0].links = Utils.mapRowsToObjects(this.dataFrame, ['source', 'target', 'value']);
+    this.option.series[0].links = TreeUtils.mapRowsToObjects(this.dataFrame, ['source', 'target', 'value']);
 
     this.chart.setOption(this.option);
   }

@@ -1,4 +1,5 @@
-import { EChartViewer, Utils } from './echart-viewer';
+import { EChartViewer } from './echart-viewer';
+import { TreeUtils } from './utils/tree-utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 export class SunburstViewer extends EChartViewer {
@@ -21,7 +22,7 @@ export class SunburstViewer extends EChartViewer {
   }
 
   getSeriesData() {
-    return Utils.toForest(
+    return TreeUtils.toForest(
       this.dataFrame,
       ['sex', 'race', 'dis_pop'],
       this.dataFrame.filter);
