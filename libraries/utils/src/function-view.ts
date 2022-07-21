@@ -208,13 +208,15 @@ export class FunctionView extends DG.ViewBase {
   public buildHistoryBlock(): HTMLElement {
     const newHistoryBlock = ui.iconFA('history', () => {
       this.pullRuns().then(async (historicalRuns) => {
+        console.log(historicalRuns);
         const menu = DG.Menu.popup();
-        let i = 0;
         for (const run of historicalRuns) {
-          //@ts-ignore
-          menu.item(`${run.func.friendlyName} — ${i}`, async () => this.historicalRunService.loadRun(run.id));
-          i++;
+          menu.item(`${run.func.friendlyName} — ${run.id}`, async () => {
+            const loadedRun = await this.loadRun(run.id);
+            console.log(loadedRun);
+          });
         }
+
         menu.show();
       });
     });
@@ -255,7 +257,6 @@ export class FunctionView extends DG.ViewBase {
    * @stability Experimental
  */
   public async saveRun(): Promise<DG.FuncCall> {
-    //@ts-ignore
     return await grok.dapi.functions.calls.save(this.lastCall!);
   }
 
@@ -274,7 +275,8 @@ export class FunctionView extends DG.ViewBase {
    * @stability Experimental
  */
   public async pullRuns(): Promise<DG.FuncCall[]> {
-    const list = grok.dapi.functions.calls.filter(`func.id="${this.func?.id}"`).list();
+    const filter = grok.dapi.functions.calls.filter(`func.id="${this.func?.id}"`);
+    const list = filter.list();
     return list;
   }
 
@@ -282,10 +284,10 @@ export class FunctionView extends DG.ViewBase {
     if (!this.funcCall) throw new Error('The correspoding function is not specified');
 
     try {
-      this.lastCall = await this.funcCall.call(true, undefined, {processed: true});
-      console.log('before:', this._funcCall);
+      this.lastCall = this.funcCall.clone();
+      this.lastCall.newId();
+      await this.lastCall.call(true, undefined, {processed: true}); // mutates the lastCall field
       await this.saveRun();
-      console.log('after:', this._funcCall);
     } catch (e) {
 
     }
