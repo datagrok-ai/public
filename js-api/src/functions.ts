@@ -1,6 +1,6 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
-import {Entity, Func, Property} from "./entities";
+import {DateTime, Entity, Func, Property, User} from "./entities";
 import {DartWidget, InputBase, ProgressIndicator,} from "./widgets";
 import {MapProxy, _toIterable} from "./utils";
 import {Observable} from "rxjs";
@@ -229,6 +229,11 @@ export class FuncCall extends Entity {
 
   get parentCall(): FuncCall { return toJs(api.grok_FuncCall_Get_ParentCall(this.dart)); }
   set parentCall(c: FuncCall) {api.grok_FuncCall_Set_ParentCall(this.dart, c.dart)}
+
+  get started(): DateTime { return toJs(api.grok_FuncCall_Get_Started(this.dart)); }
+  get finished(): DateTime { return toJs(api.grok_FuncCall_Get_Finished(this.dart)); }
+
+  override get author(): User { return toJs(api.grok_FuncCall_Get_Author(this.dart)) }
 
   /** Returns function call parameter value
    * @param {string} name
