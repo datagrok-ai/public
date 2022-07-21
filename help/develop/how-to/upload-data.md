@@ -35,3 +35,6 @@ curl --location --request POST 'http://localhost:8080/api/files/alex.aprm/upload
 --data-raw 'a,b
 1,2'
 ```
+
+See also:
+* [Layouts](layouts.md)

@@ -2,18 +2,20 @@
 
 # Layouts
 
-[Layouts](../../visualize/view-layout.md) capture how visualizations are displayed relative to each other in a table
-view. This allows reusing visual templates across different data. Such UI-first approach, when you sketch out the
-desired view and save the state to come back to it later, forms a contrast to the programmatic step-by-step construction
-of the view in the code (see JavaScript API for [viewers](manipulate-viewers.md) and [grid](customize-grid.md)). Layouts
+[Layouts](../../visualize/view-layout.md) define the way visualizations are positioned in a table view,
+allowing to reuse them for different datasets. Layouts
 contain viewer settings, positions, and relevant metadata that determine where a layout can be further suggested.
+
+A layout can be created either manually by adding viewers, setting their properties, and docking them, 
+or [programmatically](manipulate-viewers.md).
 
 Table of contents:
 
 - [Creating Layouts](#creating-layouts)
-- [Working with Layouts via Server API](#server-api)
-- [Applying Layouts to New Data](#applying-layouts-to-new-data)
+- [Saving and searching](#saving-and-searching)
+- [Applying Layouts to new data](#applying-layouts-to-new-data)
 - [Storing Metadata in Layouts](#storing-metadata)
+- [Using the REST API](#saving-data-with-layouts-using-the-rest-api)
 
 ## Creating layouts
 
@@ -81,7 +83,7 @@ let layout = view.saveLayout();
 view.loadLayout(DG.ViewLayout.fromViewState(layout.viewState));
 ```
 
-## Server API
+## Saving and searching
 
 The `grok.dapi.layouts` endpoint provides common functionality inherited from
 [HttpDataSource](https://datagrok.ai/js-api/classes/dg.HttpDataSource) that is responsible for handling collections of
@@ -120,8 +122,15 @@ that, layouts as
 
 See also:
 
+- [Upload data with layouts using the server API](upload-data.md#layout)
 - [View layout](../../visualize/view-layout.md)
 - [Table view](../../overview/table-view.md)
 - [User data storage](user-data-storage.md)
 - [JavaScript API Samples: Layout permissions and metadata](https://public.datagrok.ai/js/samples/dapi/layouts-and-permissions)
 - [JavaScript API Samples: Saving layouts to user data storage](https://public.datagrok.ai/js/samples/ui/views/layouts)
+
+# Saving data with layouts using the REST API
+
+To create a dashboard consisting of a dataset that resides externally, and a pre-created layout
+(common case for visualizing a dataset created as a result of a data pipeline), 
+use the [data upload API](upload-data.md).
