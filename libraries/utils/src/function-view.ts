@@ -207,7 +207,7 @@ export class FunctionView extends DG.ViewBase {
  */
   public buildHistoryBlock(): HTMLElement {
     const newHistoryBlock = ui.iconFA('history', () => {
-      this.pullRuns().then(async (historicalRuns) => {
+      this.pullRuns(this.func!.id).then(async (historicalRuns) => {
         console.log(historicalRuns);
         const menu = DG.Menu.popup();
         for (const run of historicalRuns) {
@@ -254,14 +254,18 @@ export class FunctionView extends DG.ViewBase {
 
   /**
    * Saves the computation results to the historical results, returns its id. See also {@link loadRun}.
+   * @param callToSave FuncCall object to save
+   * @returns Saved FuncCall
    * @stability Experimental
  */
-  public async saveRun(): Promise<DG.FuncCall> {
-    return await grok.dapi.functions.calls.save(this.lastCall!);
+  public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
+    return await grok.dapi.functions.calls.save(callToSave);
   }
 
   /**
    * Loads the specified historical run. See also {@link saveRun}.
+   * @param funcCallId ID of FuncCall to look for. Get it using {@link funcCall.id} field
+   * @returns FuncCall augemented with inputs' and outputs' values
    * @stability Experimental
  */
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
@@ -271,11 +275,13 @@ export class FunctionView extends DG.ViewBase {
   /**
    * Loads all the function call of this function.
    * Designed to pull hstorical runs in fast manner and the call {@link loadRun} with specified run ID.
-   * WARNING: FuncCall inputs/outputs are not included
+   * WARNING: FuncCall inputs/outputs fields are not included
+   * @param funcId ID of Func which calls we are looking for. Get it using {@link func.id} field
+   * @returns Promise on array of FuncCalls corresponding to the passed Func ID
    * @stability Experimental
  */
-  public async pullRuns(): Promise<DG.FuncCall[]> {
-    const filter = grok.dapi.functions.calls.filter(`func.id="${this.func?.id}"`);
+  public async pullRuns(funcId: string): Promise<DG.FuncCall[]> {
+    const filter = grok.dapi.functions.calls.filter(`func.id="${funcId}"`);
     const list = filter.list();
     return list;
   }
@@ -287,7 +293,7 @@ export class FunctionView extends DG.ViewBase {
       this.lastCall = this.funcCall.clone();
       this.lastCall.newId();
       await this.lastCall.call(true, undefined, {processed: true}); // mutates the lastCall field
-      await this.saveRun();
+      await this.saveRun(this.lastCall);
     } catch (e) {
 
     }
@@ -463,7 +469,6 @@ export class FunctionView extends DG.ViewBase {
       const runButton = ui.bigButton('Run', async () => {
         call.aux['view'] = this.dart;
         await this.run();
-        // this.saveRun();
       });
       const editor = ui.div();
       const inputs: DG.InputBase[] = await call.buildEditor(editor, {condensed: true});
