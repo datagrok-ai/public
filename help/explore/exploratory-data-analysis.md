@@ -52,8 +52,7 @@ With Datagrok, you can:
 
 * Perform calculations on data using predefined statistical [functions](../overview/functions/function.md).
 * Get details on demand using a variety of [widgets](../visualize/widgets.md), including customizable
-  [tooltips](../explore/select-tooltip-columns.md#viewer-tooltips) and context-driven [info
-  panels](../discover/info-panels.md).
+  [tooltips](../explore/select-tooltip-columns.md#viewer-tooltips) and context-driven [info panels](../discover/info-panels.md).
 
 * Build on collective knowledge of Datagrok users. Using built-in [data augmentation capabilities](../discover/data-augmentation.md), Datagrok
   understands the nature of your data, and offers actionable insights based on it. For example, the platform
@@ -73,7 +72,7 @@ With Datagrok, anyone can use their domain knowledge and perceptive abilities to
 <div class="card" style={{width:"512px",}}>
 <iframe src="https://www.youtube.com/embed/67LzPsdNrEc?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
-    <h2 class="card-title">Interactive Data Visualization</h3>
+    <h3 class="card-title">Interactive Data Visualization</h3>
     <p class="card-text">An overview of some of the visualization capabilities of the Datagrok platform, including the concepts of views, viewers, selection, filter, and layouts.</p>
     </div>
 </div>
@@ -81,7 +80,7 @@ With Datagrok, anyone can use their domain knowledge and perceptive abilities to
 <div class="card" style={{width:"512px",}}>
 <iframe src="https://www.youtube.com/embed/tVwpRB8fikQ?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
-    <h2 class="card-title">Coffee Company</h3>
+    <h3 class="card-title">Coffee Company</h3>
     <p class="card-text">How do we choose the best location for a new coffee place, given the historical sales data? Datagrok to the rescue! In less than 20 minutes, we achieve the following:<br />
                          • Retrieve historical data from the Postgres database<br />
                          • Explore, visualize, and clean the dataset<br />
