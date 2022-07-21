@@ -21,6 +21,7 @@ export class FunctionView extends DG.ViewBase {
 
     this.parentCall = grok.functions.getCurrentCall();
     this.parentView = grok.functions.getCurrentCall().parentCall.aux['view'];
+    this.basePath = `/${grok.functions.getCurrentCall()?.func.name}`;
 
     if (!funcCall) return;
 
