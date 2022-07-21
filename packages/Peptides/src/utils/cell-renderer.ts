@@ -1,4 +1,3 @@
-import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
@@ -58,76 +57,6 @@ export function measureAAR(s: string): number {
   const end = s.lastIndexOf(')');
   const beg = s.indexOf('(');
   return end == beg ? s.length : s.length - (end - beg) + 1;
-}
-
-/**
- * A function that prints a string aligned to left or centered.
- *
- * @param {number} x x coordinate.
- * @param {number} y y coordinate.
- * @param {number} w Width.
- * @param {number} h Height.
- * @param {CanvasRenderingContext2D} g Canvas rendering context.
- * @param {string} s String to print.
- * @param {string} [color=ChemPalette.undefinedColor] String color.
- * @param {number} [pivot=0] Pirvot.
- * @param {boolean} [left=false] Is left aligned.
- * @param {boolean} [hideMod=false] Hide amino acid redidue modifications.
- * @param {number} [transparencyRate=0.0] Transparency rate where 1.0 is fully transparent
- * @return {number} x coordinate to start printing at.
- */
-function printLeftOrCentered(
-  x: number, y: number, w: number, h: number,
-  g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
-  pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
-): number {
-  g.textAlign = 'start';
-  let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
-  if (colorPart.length == 1)
-    colorPart = colorPart.toUpperCase();
-
-  if (colorPart.length >= 3) {
-    if (colorPart.substring(0, 3) in ChemPalette.AAFullNames)
-      colorPart = ChemPalette.AAFullNames[s.substring(0, 3)] + colorPart.substring(3);
-    else if (colorPart.substring(1, 4) in ChemPalette.AAFullNames)
-      colorPart = colorPart[0] + ChemPalette.AAFullNames[s.substring(1, 4)] + colorPart.substring(4);
-  }
-  let grayPart = pivot == -1 ? '' : s.substring(pivot);
-  if (hideMod) {
-    let end = colorPart.lastIndexOf(')');
-    let beg = colorPart.indexOf('(');
-    if (beg > -1 && end > -1 && end - beg > 2)
-      colorPart = colorPart.substring(0, beg) + '(+)' + colorPart.substring(end + 1);
-
-
-    end = grayPart.lastIndexOf(')');
-    beg = grayPart.indexOf('(');
-    if (beg > -1 && end > -1 && end - beg > 2)
-      grayPart = grayPart.substring(0, beg) + '(+)' + grayPart.substring(end + 1);
-  }
-  const textSize = g.measureText(colorPart + grayPart);
-  const indent = 5;
-
-  const colorTextSize = g.measureText(colorPart);
-  const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
-
-  function draw(dx1: number, dx2: number): void {
-    g.fillStyle = color;
-    g.globalAlpha = transparencyRate;
-    g.fillText(colorPart, x + dx1, y + dy);
-    g.fillStyle = ChemPalette.undefinedColor;
-    g.fillText(grayPart, x + dx2, y + dy);
-  }
-
-
-  if (left || textSize.width > w) {
-    draw(indent, indent + colorTextSize.width);
-    return x + colorTextSize.width + g.measureText(grayPart).width;
-  } else {
-    const dx = (w - textSize.width) / 2;
-    draw(dx, dx + colorTextSize.width);
-    return x + dx + colorTextSize.width;
-  }
 }
 
 export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAAR: string, currentPosition: string,

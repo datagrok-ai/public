@@ -37,7 +37,8 @@
     "puppeteer": "^13.7.0"
   },
   "sources": [
-    "common/ngl_viewer/ngl.js"
+    "common/ngl_viewer/ngl.js",
+    "helm/JSDraw/Pistoia.HELM.js"
   ],
   "scripts": {
     "link-api": "npm link datagrok-api",

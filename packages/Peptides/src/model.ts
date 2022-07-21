@@ -4,8 +4,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {Subject, Observable} from 'rxjs';
 import {addViewerToHeader, StackedBarChart} from './viewers/stacked-barchart-viewer';
-import {ChemPalette} from './utils/chem-palette';
-import {MonomerLibrary} from './monomer-library';
 import * as C from './utils/constants';
 import * as type from './utils/types';
 import {getTypedArrayConstructor} from './utils/misc';
@@ -50,24 +48,19 @@ export class PeptidesModel {
   sarViewerVertical!: SARViewerVertical;
 
   _usedProperties: {[propName: string]: string | number | boolean} = {};
+  monomerMap: {[key: string]: {molfile: string, fullName: string}} = {};
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
   }
 
-  static async getInstance(dataFrame: DG.DataFrame, dgPackage?: DG.Package): Promise<PeptidesModel> {
-    if (dataFrame.temp[MonomerLibrary.id] === null) {
-      const sdf = await (dgPackage ?? _package).files.readAsText('HELMMonomers_June10.sdf');
-      dataFrame.temp[MonomerLibrary.id] ??= new MonomerLibrary(sdf);
-    }
+  static async getInstance(dataFrame: DG.DataFrame): Promise<PeptidesModel> {
     dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel(dataFrame);
     await (dataFrame.temp[PeptidesModel.modelName] as PeptidesModel).init();
     return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
   }
 
   static get modelName(): string {return PeptidesModel._modelName;}
-
-  static get chemPalette(): typeof ChemPalette {return ChemPalette;}
 
   get onStatsDataFrameChanged(): Observable<DG.DataFrame> {return this._statsDataFrameSubject.asObservable();}
 
@@ -541,18 +534,17 @@ export class PeptidesModel {
     const showTooltip = (cell: DG.GridCell, x: number, y: number): boolean => {
       const tableCol = cell.tableColumn;
       const tableColName = tableCol?.name;
+      const tableRowIndex = cell.tableRowIndex;
 
-      if (!cell.isRowHeader && !cell.isColHeader && tableCol !== null) {
-        const tableRowIndex = cell.tableRowIndex;
+      if (!cell.isRowHeader && !cell.isColHeader && tableCol && tableRowIndex) {
+        const table = cell.grid.table;
+        const currentAAR = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
 
         if (tableCol.semType == C.SEM_TYPES.AMINO_ACIDS) {
-          const monomerLib = this._dataFrame.temp[MonomerLibrary.id];
-          ChemPalette.showTooltip(cell, x, y, monomerLib);
-        } else if (cell.cell.value !== null && tableRowIndex !== null && renderColNames.includes(tableColName!)) {
-          const table = cell.grid.table;
+          this.showMonomerTooltip(currentAAR, x, y);
+        } else if (cell.cell.value && renderColNames.includes(tableColName!)) {
           const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
             table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
-          const currentAAR = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
 
           this.showTooltipAt(currentAAR, currentPosition, x, y);
         }
@@ -562,6 +554,27 @@ export class PeptidesModel {
 
     sarGrid.onCellTooltip(showTooltip);
     sarVGrid.onCellTooltip(showTooltip);
+    this._sourceGrid.onCellTooltip((cell, x, y) => {
+      const col = cell.tableColumn;
+      const cellValue = cell.cell.value;
+      if (cellValue && col && col.semType === C.SEM_TYPES.AMINO_ACIDS)
+        this.showMonomerTooltip(cellValue, x, y);
+      return true;
+    });
+  }
+
+  showMonomerTooltip(aar: string, x: number, y: number): void {
+    const tooltipElements: HTMLDivElement[] = [];
+    //@ts-ignore: no types for org
+    const monomer: type.HELMMonomer = org.helm.webeditor.monomers.getMonomer("HELM_AA", aar);
+    if (monomer) {
+      tooltipElements.push(ui.div(monomer.n));
+      const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+      tooltipElements.push(grok.chem.svgMol(monomer.m, undefined, undefined, options));
+    } else {
+      tooltipElements.push(ui.div(aar));
+    }
+    ui.tooltip.show(ui.divV(tooltipElements), x, y);
   }
 
   showTooltipAt(aar: string, position: string, x: number, y: number): void {
@@ -876,6 +889,21 @@ export class PeptidesModel {
   async init(): Promise<void> {
     if (this.isInitialized)
       return;
+  
+    //@ts-ignore
+    // const orgHelm = org.helm;
+    // //@ts-ignore
+    // const types = Object.keys(org.helm.webeditor.monomerTypeList());
+    // for (const type of types) {
+    //   //@ts-ignore
+    //   const GetMonomerSet = scil.helm.Monomers.getMonomerSet;
+    //   const monomerSet: type.MonomerSet = new GetMonomerSet(type);
+    //   for (const monomer of Object.values(monomerSet)) {
+    //     if (this.monomerMap.hasOwnProperty(monomer.id))
+    //       continue;
+    //     this.monomerMap[monomer.id] = {molfile: monomer.m, fullName: monomer.n};
+    //   }
+    // }
 
     this.currentView = this._dataFrame.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
       grok.shell.addTableView(this._dataFrame);

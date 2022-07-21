@@ -64,9 +64,11 @@ export async function peptideMoleculeWidget(pep: string, currentTable: DG.DataFr
   return new DG.Widget(widgetHost);
 }
 
+//FIXME: doesn't work after removing chemPalette
 export function getMolecule(pep: string, separator: string): string {
   const split = pep.split(separator);
   const mols = [];
+  //@ts-ignore
   const chemPalette = PeptidesModel.chemPalette;
   for (let i = 1; i < split.length - 1; i++) {
     if (split[i] in chemPalette.AASmiles) {
