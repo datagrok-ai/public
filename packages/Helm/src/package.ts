@@ -48,7 +48,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
     mexfilter: true
   });
   var sizes = app.calculateSizes();
-  app.canvas.resize(sizes.rightwidth -100, sizes.topheight - 210);
+  app.canvas.resize(sizes.rightwidth - 100, sizes.topheight - 210);
   var s = {width: sizes.rightwidth - 100 + 'px', height: sizes.bottomheight + 'px'};
   //@ts-ignore
   scil.apply(app.sequence.style, s);
@@ -89,7 +89,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 //tags: panel, widgets
 //input: string helmString {semType: Macromolecule}
 //output: widget result
-export function detailsPanel(helmString: string) {
+export async function detailsPanel(helmString: string) {
   const lru = await getLru();
   const result = lru.get(helmString).split(',');
   return new DG.Widget(
@@ -107,7 +107,7 @@ export function detailsPanel(helmString: string) {
 }
 
 
-async function loadDialog () {
+async function loadDialog() {
   let res = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
   let FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
   let grid = grok.shell.tv.grid;
@@ -129,7 +129,7 @@ export async function libraryPanel(helmColumn: DG.Column) {
   //@ts-ignore
   let loadButton = ui.button('Load Library');
   loadButton.addEventListener('click', loadDialog);
-  let list = (await  _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
+  let list = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
   let usedLibraries = [];
   for (let j = 0; j <= i; j++) {
     usedLibraries.push(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, j.toString(), true));
@@ -217,11 +217,10 @@ function getRS(smiles: string) {
 
 async function monomerManager(value: string) {
   let df: any[];
-  if(value.endsWith('.sdf')) {
+  if (value.endsWith('.sdf')) {
     const file = await _package.files.readAsBytes(`${LIB_PATH}${value}`);
     const dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
     df = createJsonMonomerLibFromSdf(dfSdf[0]);
-
   } else {
     const file = await _package.files.readAsText(`${LIB_PATH}${value}`);
     df = JSON.parse(file);
