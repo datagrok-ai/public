@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import { EChartViewer, Utils } from './echart-viewer';
+import { EChartViewer } from './echart-viewer';
+import { TreeUtils } from './utils/tree-utils';
 
 
 export class ChordViewer extends EChartViewer {
@@ -70,7 +71,7 @@ export class ChordViewer extends EChartViewer {
     };
 
     this.option.series[0].data = nodes;
-    this.option.series[0].links = Utils.mapRowsToObjects(this.dataFrame, ['source', 'target', 'value']);
+    this.option.series[0].links = TreeUtils.mapRowsToObjects(this.dataFrame, ['source', 'target', 'value']);
 
     this.chart.setOption(this.option);
   }
