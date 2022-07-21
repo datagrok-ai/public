@@ -53,6 +53,7 @@ export class ModelHandler extends DG.ObjectHandler {
     if (x instanceof DG.Script) {
       return this.getLanguageIcon(x.language);
     }
+    x = DG.Func.find({package: x.package.name, name: x.name})[0];
     let iconUrl = x.package.getIconUrl();
     if (x.options['icon'] != null) {
       let packagePathSegments = iconUrl.split('/');
