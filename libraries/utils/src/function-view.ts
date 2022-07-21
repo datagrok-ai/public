@@ -19,12 +19,9 @@ export class FunctionView extends DG.ViewBase {
     this.box = true;
     this.context = DG.Context.cloneDefault();
 
-    this.parentCall = grok.functions.getCurrentCall();
-    this.parentView = grok.functions.getCurrentCall().parentCall.aux['view'];
-    this.basePath = `/${grok.functions.getCurrentCall()?.func.name}`;
-
     if (!funcCall) return;
 
+    this.basePath = `/${funcCall.func.name}`;
     this.linkFunccall(funcCall);
     this.init();
     this.build();
@@ -286,6 +283,9 @@ export class FunctionView extends DG.ViewBase {
 
     try {
       this.lastCall = await this.funcCall.call(true, undefined, {processed: true});
+      console.log('before:', this._funcCall);
+      await this.saveRun();
+      console.log('after:', this._funcCall);
     } catch (e) {
 
     }
