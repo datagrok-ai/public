@@ -2,9 +2,26 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
+import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
+import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
+import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {MonomerLibrary} from '../monomer-library';
 
+export function getPalleteByType(paletteType: string): SeqPalette {
+  switch (paletteType) {
+  case 'PT':
+    return AminoacidsPalettes.GrokGroups;
+  case 'NT':
+  case 'DNA':
+  case 'RNA':
+    return NucleotidesPalettes.Chromatogram;
+    // other
+  default:
+    return UnknownSeqPalettes.Color;
+  }
+}
 
 export class ChemPalette {
   cp: StringDictionary = {};
