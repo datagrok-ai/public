@@ -5,6 +5,8 @@ import {MonomerLibrary} from '../monomer-library';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
+import { getPalleteByType } from '../utils/chem-palette';
+import {SeqPaletteBase} from '@datagrok-libraries/bio/src/seq-palettes';
 
 export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): void {
   if (grid.temp['containsBarchart'])
@@ -30,17 +32,6 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): voi
   //Setting grid options
   grid.setOptions({'colHeaderHeight': 130});
 
-  grid.onCellTooltip((cell, x, y) => {
-    const colSemType = cell.tableColumn?.semType as C.SEM_TYPES;
-    if (colSemType == C.SEM_TYPES.MACROMOLECULE || colSemType == C.SEM_TYPES.AMINO_ACIDS) {
-      if (!cell.isColHeader) {
-        const monomerLib = cell.cell.dataFrame.temp[MonomerLibrary.id];
-        PeptidesModel.chemPalette.showTooltip(cell, x, y, monomerLib);
-      }
-    }
-    return true;
-  });
-
   grid.onCellRender.subscribe((args) => {
     const context = args.g;
     const boundX = args.bounds.x;
@@ -53,8 +44,8 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): voi
     context.rect(boundX, boundY, boundWidth, boundHeight);
     context.clip();
 
-    if (cell.isColHeader && barchart.aminoColumnNames.includes(cell.gridColumn.name)) {
-      barchart.renderBarToCanvas(context, cell, boundX, boundY, boundWidth, boundHeight);
+    if (cell.isColHeader && barchart.aminoColumnNames.includes(cell.tableColumn?.name!)) {
+      barchart.renderBarToCanvas(context, cell.tableColumn!, boundX, boundY, boundWidth, boundHeight);
       args.preventDefault();
     }
     context.restore();
@@ -104,7 +95,6 @@ export class StackedBarChart extends DG.JsViewer {
   async onTableAttached(): Promise<void> {
     this.init();
     this.model = await PeptidesModel.getInstance(this.dataFrame);
-    // this.controller.init(this.dataFrame);
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.computeData()));
       this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.computeData()));
@@ -184,8 +174,9 @@ export class StackedBarChart extends DG.JsViewer {
     this.max = this.dataFrame.filter.trueCount;
   }
 
-  renderBarToCanvas(g: CanvasRenderingContext2D, cell: DG.GridCell, x: number, y: number, w: number, h: number): void {
-    const name = cell.tableColumn!.name;
+  renderBarToCanvas(g: CanvasRenderingContext2D, col: DG.Column, x: number, y: number, w: number, h: number): void {
+    const colorPalette = getPalleteByType(col.tags[C.TAGS.ALPHABET]);
+    const name = col.name;
     const colNameSize = g.measureText(name).width;
     const barData = this.barStats[name];
     const margin = 0.2;
@@ -208,18 +199,19 @@ export class StackedBarChart extends DG.JsViewer {
     g.fillText(name, x + (w - colNameSize) / 2, y + h + h * margin / 4);
 
     barData.forEach((obj) => {
+      const monomer = obj['name'];
       const sBarHeight = h * obj['count'] / this.max;
       const gapSize = sBarHeight * innerMargin;
       const verticalShift = (this.max - sum) / this.max;
-      const [color, aarOuter] = PeptidesModel.chemPalette.getColorAAPivot(obj['name']);
-      const textSize = g.measureText(aarOuter);
+      const color = colorPalette.get(obj['name']);
+      const textSize = g.measureText(monomer);
       const fontSize = 11;
-      const leftMargin = (w - (aarOuter.length > 1 ? fontSize : textSize.width - 8)) / 2;
+      const leftMargin = (w - (monomer.length > 1 ? fontSize : textSize.width - 8)) / 2;
       const subBartHeight = sBarHeight - gapSize;
       const yStart = h * verticalShift + gapSize / 2;
       const xStart = (w - barWidth) / 2;
       const absX = x + leftMargin;
-      const absY = y + yStart + subBartHeight / 2 + (aarOuter.length == 1 ? + 4 : 0);
+      const absY = y + yStart + subBartHeight / 2 + (monomer.length == 1 ? 4 : 0);
       const eps = 0.1;
 
       g.strokeStyle = color;
@@ -227,7 +219,7 @@ export class StackedBarChart extends DG.JsViewer {
       if (textSize.width <= subBartHeight) {
         const origTransform = g.getTransform();
 
-        if (color != PeptidesModel.chemPalette.undefinedColor) {
+        if (color != SeqPaletteBase.undefinedColor) {
           g.fillRect(x + xStart, y + yStart, barWidth, subBartHeight);
           g.fillStyle = 'black';
         } else
@@ -237,13 +229,13 @@ export class StackedBarChart extends DG.JsViewer {
         g.textAlign = 'center';
         g.textBaseline = 'bottom';
 
-        if (aarOuter.length > 1) {
+        if (monomer.length > 1) {
           g.translate(absX, absY);
           g.rotate(Math.PI / 2);
           g.translate(-absX, -absY);
         }
 
-        g.fillText(aarOuter, absX, absY);
+        g.fillText(monomer, absX, absY);
         g.setTransform(origTransform);
       } else
         g.fillRect(x + xStart, y + yStart, barWidth, subBartHeight);
