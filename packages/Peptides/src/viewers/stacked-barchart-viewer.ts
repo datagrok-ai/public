@@ -1,11 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {MonomerLibrary} from '../monomer-library';
 
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
-import { getPalleteByType } from '../utils/chem-palette';
+import {getPalleteByType} from '../utils/misc';
 import {SeqPaletteBase} from '@datagrok-libraries/bio/src/seq-palettes';
 
 export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): void {
@@ -16,7 +15,6 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): voi
     const cell = grid.hitTest(ev.offsetX, ev.offsetY);
     if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.AMINO_ACIDS) {
       const newBarPart = barchart.findAARandPosition(cell, ev);
-      // barchart._currentBarPart = newBarPart;
       barchart.requestAction(ev, newBarPart);
       barchart.computeData();
     }

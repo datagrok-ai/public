@@ -104,7 +104,7 @@ export async function startAnalysis(
     newDf.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
     // newDf.tags[C.PEPTIDES_ANALYSIS] = 'true';
 
-    model = await PeptidesModel.getInstance(newDf, dgPackage ?? _package);
+    model = await PeptidesModel.getInstance(newDf);
   } else
     grok.shell.error('The activity column must be of floating point number type!');
   progress.close();
