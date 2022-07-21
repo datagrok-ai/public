@@ -1,19 +1,18 @@
 set package_dir=%cd%
 
+set dirs=^
+\..\..\js-api\ ^
+\..\..\libraries\ml\ ^
+\..\..\libraries\utils\ ^
+\..\..\libraries\bio\ ^
+\..\..\packages\Bio\ ^
+\..\..\packages\Helm\ ^
+\..\..\packages\MolecularLiabilityBrowserData ^
+\
+
 call npm uninstall -g datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio @datagrok/bio @datagrok/molecular-liability-browser-data
 
-cd "%package_dir%/../../js-api/"                                 & rmdir /s /q "node_modules"
-cd "%package_dir%/../../libraries/utils/"                        & rmdir /s /q "node_modules"
-cd "%package_dir%/../../libraries/ml/"                           & rmdir /s /q "node_modules"
-cd "%package_dir%/../../libraries/bio/"                          & rmdir /s /q "node_modules"
-cd "%package_dir%/../../packages/Bio/"                           & rmdir /s /q "node_modules"
-cd "%package_dir%/../../packages/MolecularLiabilityBrowserData"  & rmdir /s /q "node_modules"
-cd "%package_dir%/"                                              & rmdir /s /q "node_modules"
+for %%p in (%dirs%) do cd %package_dir%\%%p & rmdir /s /q node_modules
+for %%p in (%dirs%) do cd %package_dir%\%%p & rmdir /s /q dist
 
-rem cd "%package_dir%/../../js-api/"                                 & del "package-lock.json"
-rem cd "%package_dir%/../../libraries/utils/"                        & del "package-lock.json"
-rem cd "%package_dir%/../../libraries/ml/"                           & del "package-lock.json"
-rem cd "%package_dir%/../../libraries/bio/"                          & del "package-lock.json"
-rem cd "%package_dir%/../../packages/Bio/"                           & del "package-lock.json"
-rem cd "%package_dir%/../../packages/MolecularLiabilityBrowserData"  & del "package-lock.json"
-rem cd "%package_dir%/"                                              & del "package-lock.json"
+rem for %%p in (%dirs%) do cd %package_dir%\%%p & del "package-lock.json"

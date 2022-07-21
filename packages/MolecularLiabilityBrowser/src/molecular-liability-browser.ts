@@ -112,6 +112,11 @@ export class MolecularLiabilityBrowser {
       await this.setView();
       await this.setViewFilters();
       await this.setViewTwinPViewer();
+    } catch (err: unknown) {
+      if (err instanceof Error)
+        console.error(err);
+      else
+        console.error((err as Object).toString());
     } finally {
       grok.events.onViewRemoved.subscribe((v) => {
         if (v.type === DG.VIEW_TYPE.TABLE_VIEW && (v as DG.TableView).dataFrame.id === this.mlbDf.id)
@@ -122,6 +127,7 @@ export class MolecularLiabilityBrowser {
 
   setReloadInput(): HTMLElement {
     this.reloadIcon = ui.tooltip.bind(ui.iconFA('reload', () => {
+      // window.setTimeout is used to adapt call async loadData() from handler (not async)
       window.setTimeout(async () => { await this.loadData(); }, 10);
     }), 'Reload');
     this.reloadIcon.classList.value = 'grok-icon reload';
@@ -160,7 +166,8 @@ export class MolecularLiabilityBrowser {
       this.antigenPopup.hidden = true;
 
       const antigenName: string = agCol.get(agDf.currentRow.idx);
-      window.setTimeout(this.onAntigenChanged.bind(this), 10, antigenName);
+      // window.setTimeout is used to adapt call async loadData() from handler (not async)
+      this.onAntigenChanged(antigenName);
     });
 
     this.antigenInput.root.addEventListener('input', (event: Event) => {
@@ -368,7 +375,10 @@ export class MolecularLiabilityBrowser {
       `${chain} chain sequence`,
       (i: number) => positionColumns.map((v) => df.get(v, i)).join('')
     );
-    seqCol.semType = Aminoacids.SemTypeMultipleAlignment;
+    seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    seqCol.setTag(DG.TAGS.UNITS, 'fasta:SEQ.MSA:PT');
+    seqCol.setTag('separator', '');
+    seqCol.setTag('gap.symbol', '-');
 
     const positionNamesTxt = positionNames.join(', '); /* Spaces are for word wrap */
     seqCol.setTag('positionNames', positionNamesTxt);
@@ -446,24 +456,21 @@ export class MolecularLiabilityBrowser {
       }
     });
 
+    // set width for columns of properties filter
+    for (const pfName of this.pf.names)
+      this.mlbGrid.col(pfName).width = 150;
+
     console.debug(`MLB: MolecularLiabilityBrowser.setView() end ${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
   setViewFilters(): void {
     console.debug(`MLB: MolecularLiabilityBrowser.setViewFilters() start, ` +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
+    const filterList = MolecularLiabilityBrowser.buildFilterList(this.pf);
 
-    const filterList: { type: string, column?: string, label?: string }[] = [];
-
-    for (const pfName of this.pf.names) {
-      // this.mlbTable.columns.byName(pfName).width = 150;
-      this.mlbView.grid.col(pfName).width = 150;
-      filterList.push({type: 'histogram', column: pfName});
-    }
-    filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter'});
-
-    this.filterView = this.mlbView.filters({filters: filterList}) as DG.FilterGroup;
-    this.filterViewDn = this.mlbView.dockManager.dock(this.filterView, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.25);
+    // Recreate filterView on every destroyView/buildView
+    // this.filterView = this.mlbView.filters({filters: filterList}) as DG.FilterGroup;
+    // this.filterViewDn = this.mlbView.dockManager.dock(this.filterView, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.25);
 
     grok.events.onTooltipShown.subscribe((args) => {
       if (args.args.context instanceof DG.Column) {
@@ -501,6 +508,16 @@ export class MolecularLiabilityBrowser {
       `${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
+  private static buildFilterList(pf: FilterPropertiesType) {
+    const filterList: { type: string, column?: string, label?: string }[] = [];
+
+    for (const pfName of pf.names)
+      filterList.push({type: 'histogram', column: pfName});
+
+    filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter'});
+    return filterList;
+  }
+
   async setViewTwinPViewer(): Promise<void> {
     const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
       await Promise.all([
@@ -531,6 +548,15 @@ export class MolecularLiabilityBrowser {
 
     // this.mlbView.dockManager.rootNode.removeChild(this.filterViewDn);
 
+    if (this.filterView !== null) {
+      try {
+        this.filterView.removeFromView();
+        this.filterViewDn.detachFromParent();
+        this.filterView = null;
+        this.filterViewDn = null;
+      } catch {}
+    }
+
     this.viewSubs.forEach((sub) => sub.unsubscribe());
     this.viewSubs = [];
 
@@ -559,10 +585,17 @@ export class MolecularLiabilityBrowser {
       this.mlbView = grok.shell.addTableView(this.mlbDf);
       this.mlbGrid = this.mlbView.grid;
     } else {
-      // this.mlbView.dataFrame = this.mlbDf;
+      //this.mlbView.dataFrame = this.mlbDf;
       this.mlbGrid.dataFrame = this.mlbDf;
+      this.mlbGrid.dataFrame.filter.setAll(true);
       const k = 11;
     }
+
+    const filterList = MolecularLiabilityBrowser.buildFilterList(this.pf);
+    this.filterView = this.mlbView.filters({filters: filterList}) as DG.FilterGroup;
+    this.filterViewDn = this.mlbView.dockManager.dock(this.filterView, DG.DOCK_TYPE.LEFT,
+      this.mlbView.dockNode, 'Filters', 0.18);
+    this.filterView.dataFrame = this.mlbDf;
 
     if (this.treeBrowser === null) {
       const tempDf = DG.DataFrame.fromCsv(['"v id"'].join(','));
@@ -642,6 +675,7 @@ export class MolecularLiabilityBrowser {
 
   onMLBGridCurrentRowChanged(args: any) {
     this.vid = this.mlbDf.currentRow['v id'];
+    // window.setTimeout is used to adapt call async changeVid() from handler (not async)
     window.setTimeout(async () => { await this.changeVid(true); }, 10);
   }
 
@@ -653,6 +687,7 @@ export class MolecularLiabilityBrowser {
       this.antigenInput.value = this.antigenName;
 
     this.urlParams.set('antigen', this.antigenName);
+    // window.setTimeout is used to adapt call async loadData() from handler (not async)
     window.setTimeout(async () => { await this.loadData(); }, 10);
 
     // const treeDf: DG.DataFrame = await this.dataLoader.getTreeByAntigen(this.antigenName);
@@ -667,6 +702,7 @@ export class MolecularLiabilityBrowser {
       this.schemeInput.value = this.schemeName;
 
     this.urlParams.set('scheme', this.schemeName);
+    // window.setTimeout is used to adapt call async loadData() from handler (not async)
     window.setTimeout(async () => { await this.loadData(); }, 10);
   }
 
@@ -676,6 +712,7 @@ export class MolecularLiabilityBrowser {
       this.cdrInput.value = this.cdrName;
 
     this.urlParams.set('cdr', this.cdrName);
+    // window.setTimeout is used to adapt call async loadData() from handler (not async)
     window.setTimeout(async () => {
       await this.loadData()
         .then(() => {
@@ -692,6 +729,7 @@ export class MolecularLiabilityBrowser {
 
     this.urlParams.set('vid', this.vid);
 
+    // window.setTimeout is used to adapt call async changeVid() from handler (not async)
     window.setTimeout(async () => { await this.changeVid(); }, 10);
   }
 
@@ -708,7 +746,11 @@ export class MolecularLiabilityBrowser {
           this.dataLoader.getAnarci(this.schemeName, 'light', this.antigenName),
           this.dataLoader.getTreeByAntigen(this.antigenName),
           this.dataLoader.getLayoutBySchemeCdr(this.schemeName, this.cdrName),
-        ]);
+        ])
+          .catch((reason) => {
+            grok.shell.error(reason.toString());
+            throw reason;
+          });
       const t2 = Date.now();
       console.debug(`MLB: MolecularLiabilityBrowser.loadData() load ET, ${((t2 - t1) / 1000).toString()} s`);
 
@@ -720,6 +762,11 @@ export class MolecularLiabilityBrowser {
 
       const t3 = Date.now();
       console.debug(`MLB: MolecularLiabilityBrowser.loadData() prepare ET, ${((t3 - t2) / 1000).toString()} s`);
+    } catch (err: unknown) {
+      if (err instanceof Error)
+        console.error(err);
+      else
+        console.error((err as Object).toString());
     } finally {
       pi.close();
     }

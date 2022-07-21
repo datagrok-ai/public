@@ -57,7 +57,7 @@ export class TwinPviewer {
   pdbStr: PdbType;
   jsonObsPtm: ObsPtmType;
 
-  subs: Subscription[];
+  subs: Subscription[] | null;
 
   constructor(dataLoader: DataLoader) {
     this.dataLoader = dataLoader;
@@ -132,6 +132,7 @@ export class TwinPviewer {
         mlbView.dockManager.dock(this.sequenceTabs.root, DG.DOCK_TYPE.DOWN, this.nglNode, 'Sequence', 0.225);
       MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs.root);
 
+      this.subs = [];
       this.subs.push(grok.events.onCustomEvent(MlbEvents.CdrChanged).subscribe((value: string) => {
         const key = this.schemesList.find((v) => v.toUpperCase() == value.toUpperCase());
         console.debug(`MLB: CompositionPviewer.onCustomEvent(${MlbEvents.CdrChanged}) ` +
@@ -155,6 +156,7 @@ export class TwinPviewer {
       mlbView.dockManager.close(this.sequenceNode);
 
     this.subs.forEach((sub) => sub.unsubscribe());
+    this.subs = null;
 
     this.isOpened = false;
   }
