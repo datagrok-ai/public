@@ -1,4 +1,5 @@
-import { EChartViewer, Utils } from './echart-viewer';
+import { EChartViewer } from './echart-viewer';
+import { TreeUtils } from './utils/tree-utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 export class TreeMapViewer extends EChartViewer {
@@ -30,7 +31,7 @@ export class TreeMapViewer extends EChartViewer {
     this.onPropertyChanged(null);
     this.chart.on('click', (params: { [key: string]: any }) => {
       console.log(params);
-      const pattern = Utils.pathToPattern(this.getColumnNames(), params.data.path);
+      const pattern = TreeUtils.pathToPattern(this.getColumnNames(), params.data.path);
       this.dataFrame.rows.match(pattern).select();
     });
   }
@@ -40,7 +41,7 @@ export class TreeMapViewer extends EChartViewer {
   }
 
   getSeriesData() {
-    return Utils.toForest(
+    return TreeUtils.toForest(
       this.dataFrame,
       this.getColumnNames(),
       this.dataFrame.filter);
