@@ -28,6 +28,10 @@ export class ComputationView extends FunctionView {
   constructor(funcName?: string) {
     super();
 
+    this.parentCall = grok.functions.getCurrentCall();
+    this.parentView = grok.functions.getCurrentCall().parentCall.aux['view'];
+    this.basePath = `/${grok.functions.getCurrentCall()?.func.name}`;
+
     ui.setUpdateIndicator(this.root, true);
     if (funcName) {
       grok.functions.eval(funcName).then(async (func: DG.Func) => {
