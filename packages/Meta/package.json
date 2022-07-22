@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.1.24",
+  "version": "1.1.25",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -896,9 +896,12 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.4.11"
+        },
+        "1.0.3": {
+          "datagrok-api": "^1.4.11"
         }
       },
-      "description": "Charts package provides visualizations built using\\nthe [ECharts](https://echarts.apache.org/en/index.html) library.",
+      "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
