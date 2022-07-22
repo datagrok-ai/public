@@ -166,7 +166,7 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
       
   return DG.Widget.fromRoot(ui.divV([
     ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], { style: { 'align-items': 'baseline' } }),
-    ...links.map((link: HTMLAnchorElement | [HTMLAnchorElement]) =>
+    ...links.map((link: HTMLAnchorElement | HTMLAnchorElement[]) =>
       Array.isArray(link) ? ui.div([ui.divText('See also:'), ...link]) : link),
     ...((type in tags) ? [getGroupInput(type)] : []),
     ui.div(formSnippetSection(snippets), 'dt-snippet-section'),
