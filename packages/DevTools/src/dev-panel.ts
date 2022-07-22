@@ -94,7 +94,9 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
   }
 
   let links = helpUrls[type] || [];
-  links = Object.keys(links).map(key => ui.link(`${type} ${key}`, links[key], `Open ${key} reference`));
+  links = Object.keys(links).map((key) => key === 'additional' ?
+    Object.keys(links[key]).map((title) => ui.link(title, links[key][title], 'Open wiki reference'))
+    : ui.link(`${type} ${key}`, links[key], `Open ${key} reference`));
 
   let editor = ui.textInput('', template);
   (editor.input as HTMLInputElement).style.height = '200px';
@@ -164,7 +166,8 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
       
   return DG.Widget.fromRoot(ui.divV([
     ui.divH([ui.divText(`${type} ${ent.name}:`), topEditorBtn, browserLogBtn], { style: { 'align-items': 'baseline' } }),
-    ...links,
+    ...links.map((link: HTMLAnchorElement | [HTMLAnchorElement]) =>
+      Array.isArray(link) ? ui.div([ui.divText('See also:'), ...link]) : link),
     ...((type in tags) ? [getGroupInput(type)] : []),
     ui.div(formSnippetSection(snippets), 'dt-snippet-section'),
     ui.divV([playBtn, clipboardBtn, editorBtn, resetBtn, editor.root], 'dt-textarea-box'),

@@ -33,7 +33,8 @@ export const helpUrls = {
   DataQuery: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.DataQuery' },
   FileInfo: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.FileInfo' },
   Script: { wiki: 'https://datagrok.ai/help/compute/scripting', class: 'https://datagrok.ai/js-api/classes/dg.Script' },
-  ViewLayout: { wiki: 'https://datagrok.ai/help/develop/how-to/layouts', class: 'https://datagrok.ai/js-api/classes/dg.ViewLayout' },
+  ViewLayout: { wiki: 'https://datagrok.ai/help/develop/how-to/layouts', class: 'https://datagrok.ai/js-api/classes/dg.ViewLayout',
+    additional: { 'How to upload data': 'https://datagrok.ai/help/develop/how-to/upload-data' } },
   View: { wiki: 'https://datagrok.ai/help/develop/ui#views', class: 'https://datagrok.ai/js-api/classes/dg.View' },
 };
 
