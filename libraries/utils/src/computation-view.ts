@@ -49,6 +49,8 @@ export class ComputationView extends FunctionView {
         ui.setUpdateIndicator(this.root, false);
       }, 0);
     }
+
+    grok.shell.o = this.historyRoot;
   }
 
   /** Override to customize getting mocks
@@ -118,5 +120,60 @@ export class ComputationView extends FunctionView {
 
     if (this.getHelp)
       ribbonMenu.item('Help', () => this.getHelp!());
+  }
+
+  override buildHistoryBlock(): HTMLElement {
+    const mainAcc = ui.accordion();
+    mainAcc.root.style.width = '100%';
+    mainAcc.addTitle(ui.h1('History'));
+    const dateInput = ui.stringInput('Date', 'Any time');
+    dateInput.addPatternMenu('datetime');
+
+    mainAcc.addPane('Filter', () => {
+      const form =ui.divV([
+        ui.choiceInput('User', 'Current user', ['Current user']),
+        dateInput,
+      ], 'ui-form-condensed ui-form');
+      form.style.marginLeft = '0px';
+
+      return form;
+    });
+
+    const renderSavedCard = async (funcCall: DG.FuncCall) => {
+      const currentUser = await grok.dapi.users.current();
+
+      return ui.divV([
+        ui.h3(funcCall.aux['Title'] ?? 'My custom title'),
+        ui.divText(funcCall.aux['Annotation'] ?? 'My custom annotation with some details'),
+        ui.render(currentUser),
+      ]);
+    };
+
+    const renderHistoryCard = async (funcCall: DG.FuncCall) => {
+      const currentUser = await grok.dapi.users.current();
+
+      return ui.divV([
+        ui.h3(funcCall.aux['Title'] ?? 'My custom title'),
+        ui.render(currentUser),
+      ]);
+    };
+
+    mainAcc.addPane('Saved', () => ui.wait(async () => {
+      const historicalRuns = await this.pullRuns(this.func!.id);
+
+      return ui.divV(historicalRuns.filter((run) => run.id.lastIndexOf('0') > 14).map((run) => ui.wait(() => renderSavedCard(run))));
+    }));
+
+    mainAcc.addPane('History', () => ui.wait(async () => {
+      const historicalRuns = await this.pullRuns(this.func!.id);
+
+      return ui.divV(historicalRuns.map((run) => ui.wait(() => renderHistoryCard(run))));
+    }));
+
+    const newHistoryBlock = mainAcc.root;
+    ui.empty(this.historyRoot);
+    this.historyRoot.style.removeProperty('justify-content');
+    this.historyRoot.append(newHistoryBlock);
+    return newHistoryBlock;
   }
 }
