@@ -45,7 +45,8 @@ let zoom = false;
 // Searches for activity cliffs in a chemical dataset by selected cutoff
 export async function getActivityCliffs(
     df: DG.DataFrame, 
-    seqCol: DG.Column, 
+    seqCol: DG.Column,
+    encodedCol: DG.Column, 
     axesNames: string[],
     scatterTitle: string,
     activities: DG.Column, 
@@ -64,7 +65,7 @@ export async function getActivityCliffs(
   const initialSimilarityLimit = automaticSimilarityLimit ? MIN_SIMILARITY : similarity / 100;
 
   const {distance, coordinates} = await seqSpaceFunc({
-    seqCol: seqCol,
+    seqCol: encodedCol ?? seqCol,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: axesNames,
