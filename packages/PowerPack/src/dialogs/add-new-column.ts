@@ -89,7 +89,7 @@ export class AddNewColumnDialog {
     this.uiDialog
         .add(await this.initUiLayout())
         .onOK(async () => await this.addNewColumnAction())
-        .show();
+        .show({resizable: true});
 
     this.uiDialog.history(
       () => this.saveInputHistory(),
@@ -419,6 +419,6 @@ export class AddNewColumnDialog {
 
   /** Opens Add New Column Dialog Window. */
   open(): void {
-    this.uiDialog!.show();
+    this.uiDialog!.show({resizable: true});
   }
 }
