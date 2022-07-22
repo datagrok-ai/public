@@ -184,7 +184,7 @@ export class FunctionView extends DG.ViewBase {
     if (!this.funcCall) return this.controlsRoot;
 
     const funcDiv = ui.div([this.renderRunSection(this.funcCall)], 'ui-div');
-    this.controlsRoot.innerHTML = '';
+    ui.empty(this.controlsRoot);
     this.controlsRoot.appendChild(funcDiv);
     return this.controlsRoot;
   }
@@ -195,7 +195,7 @@ export class FunctionView extends DG.ViewBase {
    * @stability Stable
  */
   public buildOutputBlock(): HTMLElement {
-    this.resultsRoot.innerHTML = '';
+    ui.empty(this.resultsRoot);
     this.resultsRoot.appendChild(this.resultsDiv);
     return this.resultsRoot;
   }
@@ -220,7 +220,7 @@ export class FunctionView extends DG.ViewBase {
         menu.show();
       });
     });
-    this.historyRoot.innerHTML = '';
+    ui.empty(this.historyRoot);
     this.historyRoot.append(newHistoryBlock);
     return newHistoryBlock;
   }
