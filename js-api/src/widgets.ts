@@ -1620,3 +1620,10 @@ export class PropertyGrid extends DartWidget {
     api.grok_PropertyGrid_Update(this.dart, src, props.map((x) => toDart(x)));
   }
 }
+
+/** File browser widget */
+export class FilesWidget extends DartWidget {
+  static create(params: {connection?: string, path?: string} = {}): FilesWidget {
+    return toJs(api.grok_FilesWidget(params));
+  }
+}

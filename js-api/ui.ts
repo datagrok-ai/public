@@ -6,7 +6,7 @@
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
 import {VirtualView} from './src/views/view';
-import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider, RangeSliderStyle} from './src/widgets';
+import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider, RangeSliderStyle, FilesWidget} from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
@@ -1273,6 +1273,10 @@ export function setDisplay(element: HTMLElement, show: boolean) {
   else
     element.style.display = 'none';
   return element;
+}
+
+export function fileBrowser(params: {connection?: string, path?: string} = {}): Widget {
+  return FilesWidget.create(params);
 }
 
 export namespace tools {
