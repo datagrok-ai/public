@@ -502,15 +502,6 @@ export async function inchiToSmiles(id: string) {
   return mol.get_smiles();
 }
 
-//name: openChemLibSketch
-//description: Sketches a molecule
-//top-menu: Chem | OpenChemLib Sketch
-export function openChemLibSketch(): void {
-  ui.dialog()
-    .add(openChemLibSketcher().root)
-    .showModal(true);
-}
-
 //name: Open Chem Sketcher
 //tags: moleculeSketcher
 //output: widget sketcher
