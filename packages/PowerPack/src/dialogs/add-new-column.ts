@@ -217,9 +217,13 @@ export class AddNewColumnDialog {
         props.allowBlockSelection = false;
         props.colHeaderFont = props.defaultCellFont;
 
-    let control = ui.div();
+    let previewRoot = this.gridPreview.root;
+    previewRoot.setAttribute('style', 'height: -webkit-fill-available !important;; min-height:225px;');
+
+    let control = ui.div(previewRoot);
         control.append(this.gridPreview.root);
         control.classList.add('ui-addnewcolumn-preview');
+        control.style.flexGrow = '1';
     ui.tooltip.bind(control, this.tooltips['preview']);
 
     return control;
@@ -243,11 +247,10 @@ export class AddNewColumnDialog {
     this.widgetFunctions = await DG.Func.byName('FunctionsWidget').apply();
     this.widgetFunctions!.props.visibleTags = this.visibleTags.join(',');
     this.widgetFunctions!.props.showSignature = true;
-
     let control = ui.box();
         control.append(this.widgetFunctions!.root);
         control.classList.add('ui-widget-addnewcolumn-functions');
-
+        control.style.height = 'inherit';
     return control;
   }
 
@@ -264,7 +267,7 @@ export class AddNewColumnDialog {
                 ui.block([this.inputName!.root], { style: { width: '65%' } }),
                 ui.block([this.inputType!.root], { style: { width: '35%' } }),
                 ui.block([this.inputExpression!.root]),
-                ui.block([this.uiPreview])
+                ui.block([this.uiPreview], { style: flexStyle })
             ], { style:  Object.assign({}, { paddingRight: '20px', flexDirection: 'column'}, flexStyle) }),
 
             ui.block25([
@@ -272,8 +275,8 @@ export class AddNewColumnDialog {
             ], { style: Object.assign({}, { paddingRight: '20px'}, flexStyle) }),
 
             ui.block25([
-                ui.block([this.uiFunctions])
-            ])
+                ui.block([this.uiFunctions], { style: flexStyle })
+            ], { style: flexStyle })
         ]);
     layout.classList.add('ui-addnewcolumn-layout');
     return layout;
