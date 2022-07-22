@@ -641,15 +641,15 @@ export class Dialog extends DartWidget {
   /** @returns {Dialog}
    * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
    * */
-  show(options?: { modal?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string;}): Dialog {
-    api.grok_Dialog_Show(this.dart, options?.modal, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor);
+  show(options?: {modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string;}): Dialog {
+    api.grok_Dialog_Show(this.dart, options?.modal, options?.resizable, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor);
     return this;
   }
 
   /** @returns {Dialog}
    * @param {boolean} fullScreen  */
   showModal(fullScreen: boolean): Dialog {
-    api.grok_Dialog_Show(this.dart, true, fullScreen, false, null, null, null, null, null, null);
+    api.grok_Dialog_Show(this.dart, true, null, fullScreen, false, null, null, null, null, null, null);
     return this;
   }
 

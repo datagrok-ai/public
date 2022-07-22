@@ -840,7 +840,7 @@ export class FormulaLinesDialog {
     this.dialog
       .add(layout)
       .onOK(this._onOKAction.bind(this))
-      .show({width: 850, height: 650});
+      .show({resizable: true, width: 850, height: 650});
   }
 
   _initHost(src: DG.DataFrame | DG.Viewer): Host {
