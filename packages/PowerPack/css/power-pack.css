@@ -131,8 +131,16 @@
 }
 
 .ui-addnewcolumn-layout {
-  width: 740px;
-  height: 400px;
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.ui-addnewcolumn-element {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    padding-right: '20px';
 }
 
 .ui-input-addnewcolumn-name, .ui-input-addnewcolumn-type {
@@ -160,7 +168,12 @@
 }
 
 .ui-widget-addnewcolumn-columns, .ui-widget-addnewcolumn-functions {
-  height: 400px !important;
+  display: flex;
+  flex-grow: 1;
+}
+
+.dlg-add-new-column{
+    flex-direction: row;
 }
 
 .ui-grid-with-thin-scrollbars > .d4-grid-horz-scroll {
