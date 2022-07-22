@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {WebLogo, SplitterFunc} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import * as grok from 'datagrok-api/grok';
 import {
-  CAP_GROUP_NAME, CAP_GROUP_SMILES, jsonSdfMonomerLibDict, MONOMER_SYMBOL,
+  CAP_GROUP_NAME, CAP_GROUP_SMILES, jsonSdfMonomerLibDict, MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, MONOMER_SYMBOL,
   RGROUP_ALTER_ID, RGROUP_FIELD, RGROUP_LABEL, SDF_MONOMER_NAME
 } from '../const';
 
@@ -10,6 +10,33 @@ export const HELM_CORE_LIB_FILENAME = '/samples/HELMCoreLibrary.json';
 export const HELM_CORE_LIB_MONOMER_SYMBOL = 'symbol';
 export const HELM_CORE_LIB_MOLFILE = 'molfile';
 export const HELM_CORE_FIELDS = ['symbol', 'molfile', 'rgroups', 'name'];
+
+
+export function encodeMonomers(col: DG.Column): DG.Column | null {
+  let encodeSymbol = MONOMER_ENCODE_MIN;
+  const monomerSymbolDict:  { [key: string]: number }= {};
+  const units = col.tags[DG.TAGS.UNITS];
+  const sep = col.getTag('separator');
+  const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, sep);
+  const encodedStringArray = [];
+  for (let i = 0; i < col.length; ++i) {
+    let encodedMonomerStr = '';
+    const monomers = splitterFunc(col.get(i));
+    monomers.forEach(m => {
+      if(!monomerSymbolDict[m]) {
+        if(encodeSymbol > MONOMER_ENCODE_MAX) {
+          grok.shell.error(`Not enougth symbols to encode monomers`);
+          return null;
+        }
+        monomerSymbolDict[m] = encodeSymbol;
+        encodeSymbol++;
+      }
+      encodedMonomerStr += String.fromCodePoint(monomerSymbolDict[m]);
+    })
+    encodedStringArray.push(encodedMonomerStr);
+  }
+  return DG.Column.fromStrings('encodedMolecules', encodedStringArray);
+}
 
 export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): any[][] | null {
   const units = col.tags[DG.TAGS.UNITS];

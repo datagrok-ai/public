@@ -23,3 +23,8 @@ export const CAP_GROUP_NAME = 'capGroupName';
 export const RGROUP_LABEL = 'label';
 export const MONOMER_SYMBOL = 'symbol';
 export const SDF_MONOMER_NAME = 'MonomerName';
+
+// range of hex nubers used in PepSea library to endode monomers
+export const MONOMER_ENCODE_MIN = 0x100;
+export const MONOMER_ENCODE_MAX = 0x40A;
+

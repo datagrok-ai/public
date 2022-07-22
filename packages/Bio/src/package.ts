@@ -16,7 +16,7 @@ import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
 import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cliffs';
-import {createJsonMonomerLibFromSdf, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
+import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
@@ -112,7 +112,9 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
   similarity: number, methodName: string): Promise<void> {
   if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
     return;
-
+  const encodedCol = encodeMonomers(macroMolecule);
+  if (!encodedCol)
+    return;
   const axesNames = getEmbeddingColsNames(df);
   const options = {
     'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
@@ -121,6 +123,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
   await getActivityCliffs(
     df,
     macroMolecule,
+    encodedCol,
     axesNames,
     'Activity cliffs',
     activities,
@@ -146,10 +149,12 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<void> {
   if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
     return;
-
+  const encodedCol = encodeMonomers(macroMolecule);
+  if (!encodedCol)
+    return;
   const embedColsNames = getEmbeddingColsNames(table);
   const chemSpaceParams = {
-    seqCol: macroMolecule,
+    seqCol: encodedCol,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: embedColsNames

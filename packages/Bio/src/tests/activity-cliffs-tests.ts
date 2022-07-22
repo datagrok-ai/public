@@ -7,6 +7,7 @@ import {readDataframe} from './utils';
 import {getEmbeddingColsNames, sequenceSpace} from '../utils/sequence-space';
 import {drawTooltip, sequenceGetSimilarities} from '../utils/sequence-activity-cliffs';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import { encodeMonomers } from '../utils/utils';
 
 
 category('activityCliffs', async () => {
@@ -31,9 +32,11 @@ category('activityCliffs', async () => {
     const options = {
       'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
     };
+    const encodedCol = encodeMonomers(actCliffsDf.col('MSA')!) as DG.Column;
     const scatterPlot = await getActivityCliffs(
       actCliffsDf,
       actCliffsDf.col('MSA')!,
+      encodedCol,
       axesNames,
       'Activity cliffs',
       actCliffsDf.col('Activity')!,
