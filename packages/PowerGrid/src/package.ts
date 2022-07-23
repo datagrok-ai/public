@@ -43,6 +43,7 @@ export function hyperlinkCellRenderer() {
 //name: testCellRenderer
 //tags: cellRenderer
 //meta.cellType: test
+//meta.columnTag.units: bar
 //output: grid_cell_renderer result
 export function testCellRenderer() {
   return new TestCellRenderer();
