@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Template} from "./template";
 import {TemplateHandler} from "./template_handler";
+import {hitTriageView} from "./hit-triage-view";
 
 export let _package = new DG.Package();
 export let templates: Array<Template>;
@@ -26,13 +27,14 @@ export function init() {
 
 //tags: app
 //name: Hit Triage
-export async function app() {
-  let v = grok.shell.newView('Hit Triage Templates');
-  let templateFiles = await _package.files.list('templates/', false);
-  templates = await Promise.all(templateFiles.map(async (f) => {
-    return Object.assign(new Template(), JSON.parse(await _package.files.readAsText(f)));
-  }));
-  v.append(ui.list(templates));
+export async function hitTriageApp() {
+  grok.shell.addView(hitTriageView());
+  // let v = grok.shell.newView('Hit Triage Templates');
+  // let templateFiles = await _package.files.list('templates/', false);
+  // templates = await Promise.all(templateFiles.map(async (f) => {
+  //   return Object.assign(new Template(), JSON.parse(await _package.files.readAsText(f)));
+  // }));
+  // v.append(ui.list(templates));
 }
 
 
