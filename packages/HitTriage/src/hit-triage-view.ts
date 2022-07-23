@@ -8,7 +8,7 @@ import {HitTriageSession} from "./hit-triage-session";
 const session = HitTriageSession.demo();
 
 export function hitTriageView(): DG.MultiView {
-  return new DG.MultiView({
+  const multiView = new DG.MultiView({
     viewFactories: {
       '0. Info': () => new InfoView(),
       '1. Get molecules': () => new GetMoleculesView(),
@@ -17,11 +17,24 @@ export function hitTriageView(): DG.MultiView {
       '4. Submit': () => new SubmitView(),
     }
   });
+
+  multiView.tabs.onTabChanged.subscribe((_) => {
+    if (multiView.currentView instanceof HitTriageBaseView)
+      (multiView.currentView as HitTriageBaseView).onActivated();
+  });
+
+  return multiView;
 }
 
 
 class HitTriageBaseView extends DG.ViewBase {
+  constructor() {
+    super();
+    this.root.style.display = 'flex';
+  }
 
+  /** Override to initialize the view based on the session. */
+  onActivated(): void {}
 }
 
 
@@ -41,8 +54,14 @@ export class GetMoleculesView extends HitTriageBaseView {
     super();
     this.name = 'Source Molecules';
 
+    const from = ui.choiceInput('From', 'file', ['file', 'database', 'webservice']);
     const content = ui.divV([
-      ui.h1('Getting molecules'),
+      ui.divH([
+        ui.divText('Ingest', {style: {'font-weight': 'bold'}}),
+        from.root,
+        ui.divText(session.sourceDescription)],
+        {style: {'display': 'flex', 'align-items': 'center', 'gap': '12px'}}
+      ),
       session.sourceDataFrame!.plot.grid()
     ])
 
@@ -75,8 +94,12 @@ export class EnrichView extends HitTriageBaseView {
  * */
 function getFilterView() {
   const view = DG.TableView.create(session.sourceDataFrame!, false);
-  view.scatterPlot();
-  view.filters();
+  setTimeout(function () {
+    view._onAdded();
+    view.scatterPlot();
+    view.filters();
+    view.dataFrame.onFilterChanged.subscribe((_) => session.filterDescriptions = Array.from(view.dataFrame.rows.filters))
+  }, 100);
   return view;
 }
 
@@ -85,14 +108,16 @@ export class SubmitView extends HitTriageBaseView {
 
   constructor() {
     super();
+    this.render();
+  }
 
+  render(): void {
+    ui.empty(this.root);
     const content = ui.divV([
-      ui.h1('This is it!'),
-      ui.bigButton('SUBMIT', () => grok.shell.info('Good job!'))
+      ui.h1('Summary'),
+      ui.div([ui.tableFromMap(session.getSummary())]),
+      ui.divH([ui.bigButton('SUBMIT', () => grok.shell.info('Good job!'))])
     ])
-
     this.root.appendChild(content);
   }
 }
-
-

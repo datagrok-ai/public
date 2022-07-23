@@ -2112,6 +2112,10 @@ export class DataFrameMetaHelper {
 
   readonly formulaLines: DataFrameFormulaLinesHelper;
 
+  async detectSemanticTypes() {
+    await grok.data.detectSemanticTypes(this._df);
+  }
+
   constructor(df: DataFrame) {
     this._df = df;
     this.formulaLines = new DataFrameFormulaLinesHelper(this._df);
