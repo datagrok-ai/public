@@ -82,10 +82,17 @@ export function _WordCloudViewer() {
   return new WordCloudViewer();
 }
 
+//name: TimelinesViewer
+//tags: viewer
+//output: viewer result
+export function _TimelinesViewer() {
+  return new TimelinesViewer();
+}
+
+
 //tags: init
 export function init() {
-  grok.shell.registerViewer('TimelinesViewer', 'Creates TimelinesViewer viewer', () => new TimelinesViewer());
-  grok.events.onContextMenu.subscribe((args) => {
+  grok.events.onContextMenu.subscribe((args: any) => {
     if (args.args.context instanceof TimelinesViewer) {
       args.args.menu.item('Reset View', () => {
         args.args.context.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
