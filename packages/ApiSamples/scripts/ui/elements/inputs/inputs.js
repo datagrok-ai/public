@@ -1,3 +1,9 @@
+// Different input types
+
+// Adding an icon to each input that lets you inspect the value
+// grok.events.onInputCreated.subscribe(
+//  (i) => i.root.appendChild(ui.iconFA('eye', () => grok.shell.o = i.value)));
+
 let v = grok.shell.newView('demo: inputs');
 
 let name = ui.stringInput('Name', 'Arthur Dent');
