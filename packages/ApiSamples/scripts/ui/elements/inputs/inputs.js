@@ -9,7 +9,7 @@ let friends = ui.multiChoiceInput('Friends', ['Ford', 'Fenchurch'], ['Ford', 'Fe
 let active = ui.switchInput('Active', true);
 let color = ui.colorInput('Favorite color', '#ff0000');
 let details = ui.tableInput('Details', null);
-let inputs = [name, age, sex, date, alien, friends, details];
+let memo = ui.tableInput('Details', null);
 
 let inputs = [name, age, sex, date, alien, friends, active, details, color];
 let container = ui.div();
