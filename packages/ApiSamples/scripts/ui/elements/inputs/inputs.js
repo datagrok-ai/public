@@ -8,8 +8,10 @@ let alien = ui.boolInput('Alien', false);
 let friends = ui.multiChoiceInput('Friends', ['Ford', 'Fenchurch'], ['Ford', 'Fenchurch', 'Zaphod', 'Slartibartfast']);
 let active = ui.switchInput('Active', true);
 let color = ui.colorInput('Favorite color', '#ff0000');
+let details = ui.tableInput('Details', null);
+let inputs = [name, age, sex, date, alien, friends, details];
 
-let inputs = [name, age, sex, date, alien, friends, active];
+let inputs = [name, age, sex, date, alien, friends, active, details, color];
 let container = ui.div();
 v.append(container);
 container.appendChild(ui.inputs(inputs));
