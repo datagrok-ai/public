@@ -30,6 +30,7 @@ export function hitTriageView(): DG.MultiView {
 class HitTriageBaseView extends DG.ViewBase {
   constructor() {
     super();
+    this.root.classList.add('grok-hit-triage-view');
     this.root.style.display = 'flex';
   }
 
