@@ -21,6 +21,7 @@ import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {lru} from './utils/cell-renderer';
+import {representationsWidget} from './widgets/representations';
 
 //tags: init
 export async function initBio(): Promise<void> {
@@ -36,7 +37,6 @@ export async function initBio(): Promise<void> {
 export function Lru() {
   return lru;
 }
-
 
 //name: macromoleculeSequenceCellRenderer
 //tags: cellRenderer
@@ -278,6 +278,17 @@ function parseMacromolecule(
   const seq = fileContent.slice(startOfSequence, endOfSequence);
   const seqArray = seq.split(/\s/);
   return seqArray.join('');
+}
+
+//name: Representations
+//tags: panel, widgets
+//input: cell macroMolecule {semType: Macromolecule}
+//output: widget result
+export async function peptideMolecule(macroMolecule: DG.Cell): Promise<DG.Widget> {
+  const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
+  const monomersLibObject: any[] = JSON.parse(monomersLibFile);
+  
+  return representationsWidget(macroMolecule, monomersLibObject);
 }
 
 //name: importFasta
