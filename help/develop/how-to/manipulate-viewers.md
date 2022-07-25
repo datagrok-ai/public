@@ -43,7 +43,7 @@ method differs in that it can be used with all viewers, both native and custom-b
 ```javascript
 view.addViewer('Leaflet').setOptions({
     latitudeColumnName: 'lat',
-    longitudeColumnName: 'lon',
+    longitudeColumnName: 'lng',
     renderType: 'heat map'
 });
 ```

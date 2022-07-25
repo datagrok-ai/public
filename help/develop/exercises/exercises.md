@@ -179,7 +179,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
    The `panel` and `widgets` tags and output type `widget` allows Datagrok to determine how the result of
    `complementWidget` function will appear in the system. Listed above block of comments will
-   instruct the platform to use the `complementWidget` function for providing additional information for string values 
+   instruct the platform to use the `complementWidget` function for providing additional information for string values
    of the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell in the `sequence`
    column, and find the `complementWidget` property in the panel on the right as it is shown on screenshot:
    ![exercises-complement-data-panel](exercises-complement-data-panel.png)
