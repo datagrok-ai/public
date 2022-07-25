@@ -58,9 +58,10 @@ Every column has:
 
 `.tags` play key role in platform extensibility, allowing to introduce custom behavior and new data types.
 
+[//]: # (TODO: Add link to 'adding rows')
 A column which is already constructed, either by an [initialization from a list][117], or being part of some dataframe
 from its creation, isn't a subject to changing its length, if taken standalone. This is due to its memory-optimized
-nature. However, the columns length is changed with [adding rows][] to the embodying dataframe.
+nature. However, the columns length is changed with adding rows to the embodying dataframe.
 
 #### Semantic type
 
@@ -116,9 +117,10 @@ Learn more about supported formats in this article: [Link][108].
 
 #### Refresh the state after modifying the column
 
-Some column associated structures, such as [categories][137], won't be automatically updated after the column data
-modification with `.setString`, `.set` and similar. This is intentional for performance reasons. After the modification
-is meant to be completed, it is possible to refresh the column `col` representation, including categories:
+[//]: # (TODO: Add link to 'categories')
+Some column associated structures, such as categories, won't be automatically updated after the column data modification
+with `.setString`, `.set` and similar. This is intentional for performance reasons. After the modification is meant to
+be completed, it is possible to refresh the column `col` representation, including categories:
 
 ```
 col.compact();
@@ -259,7 +261,8 @@ Enum value: `DG.COLUMN_TYPE.BIG_INT`
 
 The type for working with integers that do not fit into 53 bits.
 
-`BIG_INT` won't be rendered by a [grid viewer][119] and won't become part of [aggregations][120]. It is introduced for
+[//]: # (TODO: Add link to 'aggregations')
+`BIG_INT` won't be rendered by a [grid viewer][119] and won't become part of aggregations. It is introduced for
 compatibility with `BIG_INT` types in databases.
 
 #### Dataframe
@@ -282,11 +285,11 @@ with ability to efficiently store the numbers and perform arithmetic operations 
 packing/unpacking. The qualifier part is valued to one of: `1` (`LESS`), `2` (`EXACT`), or `3` (`GREATER`). This
 way, `QNums` are compared using regular floating point number comparison.
 
+[//]: # (TODO: Add link to '`DG.Qnum` class')
 There is no special internal data type, as the values are 64-bit IEEE754 floats. In most cases the isn't need to check
 whether the value is qualified or not, since the result for the most operations (rendering, using for visualization,
 arithmetic operations) will be the same. However, in cases it does matter the programmer has to keep track of whether
-the values are qualified, and pack/unpack accordingly. This is achieved with [`DG.Qnum` class][] class containing helper
-methods:
+the values are qualified, and pack/unpack accordingly. This is achieved with `DG.Qnum` class containing helper methods:
 
 ```javascript
 let col = DG.Column.qnum('col', 3);
@@ -345,13 +348,15 @@ Check
 
 Dataframes may be obtained through the JavaSript or TypeScript code in various ways:
 
+[//]: # (TODO: Add links where they are missed)
+
 * a new dataframe constructed from predefined data: [Link][122]
 * a new dataframe from precreated Datagrok columns: [Link][122]
-* a table already being rendered by a table view: [Link][]
-* a dataframe constructed from a file in a file share: [Link][]
+* a table already being rendered by a table view
+* a dataframe constructed from a file in a file share
 * a CSV file uploaded to a browser
-* a dataframe returned by a script: [Link][]
-* as calculated on the flight for aggregations: [Link][]
+* a dataframe returned by a script
+* as calculated on the flight for aggregations
 
 #### Construct from in-place content
 
@@ -484,9 +489,9 @@ To add, remove or replace columns in a dataframe:
 
 * for an existing instance `column` of `Column`:
   * `.add(column)` adds it as a last column of the dataframe
-  * `.insert(column, index)` adds it _before_ the column position which is currently at position `index`, starting
-      count from `0`. The default value of `index` is `null`, which corresponds to adding the column at the end of the
-      columns list
+  * `.insert(column, index)` adds it _before_ the column position which is currently at position `index`, starting count
+    from `0`. The default value of `index` is `null`, which corresponds to adding the column at the end of the columns
+    list
 * `.addNew` adds a new empty column at the end of the column list
 * `.addNew<TypeName>(name)` (`.addNewInt`, `.addNewString` etc) adds a new empty column of a [type][105]
   `<TypeName>` at the end of the column list
@@ -501,9 +506,10 @@ Examples:
 
 #### Add a column by a formula
 
+[//]: # (TODO: Add link for 'any function')
 The `.columns` property of `DataFrame` provides for a method to create a column by a mathematical formula, specified
-with a string, which may also involve any [function][132] registered within the platform. For example, in a
-dataframe `df` with columns `X` and `Y` it's possible to add a new column `Z`, specified as follows:
+with a string, which may also involve any function registered within the platform. For example, in a dataframe `df` with
+columns `X` and `Y` it's possible to add a new column `Z`, specified as follows:
 
 ```javascript
 df.columns.addNewCalculated('Z', 'Sin({X}+${Y})/2');
@@ -607,7 +613,8 @@ grok.shell.info(table.row(1).personalData.state); // will emit 'New York'
 grok.shell.add(table);
 ```
 
-The platform uses `.toString` method to render the virtual column contents in the [grid][].
+[//]: # (TODO: Add link for 'the grid')
+The platform uses `.toString` method to render the virtual column contents in the grid.
 
 As such objects are virtual, a direct modification of their fields won't take any effect on the column's data, unless
 the object class is implemented in such way that it modifies the original dataframe (for example, in a JavaScript

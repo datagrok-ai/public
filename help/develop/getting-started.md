@@ -102,7 +102,7 @@ extensions.
 
 [datagrok-tools overview (part 2)]: https://www.youtube.com/watch?v=0QxzllnBreI&t=4657s
 
-[Building a UI]: ./ui.md
+[//]: # ([Building a UI]: ./ui.md)
 
 [VS Code Integration]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=870s
 
@@ -122,7 +122,7 @@ extensions.
 
 [Cheminformatics]: https://github.com/datagrok-ai/public/tree/master/packages/Chem
 
-[Natural Language Processing]: https://github.com/datagrok-ai/public/tree/master/packages/NLP
+[//]: # ([Natural Language Processing]: https://github.com/datagrok-ai/public/tree/master/packages/NLP)
 
 [Cell renderers]:https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit-api.ts
 
