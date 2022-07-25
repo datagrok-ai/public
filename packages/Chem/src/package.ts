@@ -256,7 +256,8 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 };
  await getActivityCliffs(
   df, 
-  smiles, 
+  smiles,
+  null as any, 
   axesNames,
   'Activity cliffs',
   activities, 
