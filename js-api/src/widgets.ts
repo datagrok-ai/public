@@ -1498,9 +1498,19 @@ export class TreeViewNode {
     return rootNode;
   }
 
-
   /**  */
   get onNodeExpanding(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-expanding', this.dart); }
+  get onNodeAdded(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-added', this.dart); }
+  get onNodeCheckBoxToggled(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-checkbox-toggled', this.dart); }
+  get onChildNodeExpandedChanged(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-expanded-changed', this.dart); }
+  get onChildNodeExpanding(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-expanding', this.dart); }
+  get onChildNodeContextMenu(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-context-menu', this.dart); }
+  get onNodeContextMenu(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-context-menu', this.dart); }
+  get onSelectedNodeChanged(): Observable<TreeViewNode> { return __obs('d4-tree-view-selected-node-changed', this.dart); }
+  get onNodeMouseEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-enter', this.dart); }
+  get onNodeMouseLeave(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-leave', this.dart); }
+  get onNodeEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-enter', this.dart); }
+  get onSelected(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-current', this.dart); }
 }
 
 
