@@ -1,112 +1,24 @@
+/* Do not change these import lines to match external modules in webpack configuration */
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {SplitterFunc, WebLogo} from '../viewers/web-logo';
-
-/** enum type to simplify setting "user-friendly" notation if necessary */
-export const enum NOTATION {
-  FASTA = 'FASTA',
-  SEPARATOR = 'SEPARATOR',
-  HELM = 'HELM'
-}
+import {UnitsHandler, NOTATION} from './units-handler';
 
 /** Class for handling conversion of notation systems in Macromolecule columns */
-export class NotationConverter {
-  private readonly _sourceColumn: DG.Column; // the column to be converted
-  private _sourceUnits: string; // units, of the form fasta:SEQ:NT, etc.
-  private _sourceNotation: NOTATION; // current notation (without :SEQ:NT, etc.)
-  private _defaultGapSymbol: string;
-  private _defaultGapSymbolsDict = {
-    HELM: '*',
-    SEPARATOR: '',
-    FASTA: '-',
-  };
-
+export class NotationConverter extends UnitsHandler {
   private _splitter: SplitterFunc | null = null;
   protected get splitter(): SplitterFunc {
     if (this._splitter === null)
-      this._splitter = WebLogo.getSplitterForColumn(this._sourceColumn);
+      this._splitter = WebLogo.getSplitterForColumn(this.column);
     return this._splitter;
   };
-
-
-  private get sourceUnits(): string { return this._sourceUnits; }
-
-  private get sourceColumn(): DG.Column { return this._sourceColumn; }
-
-  public get sourceNotation(): NOTATION { return this._sourceNotation; }
-
-  public get defaultGapSymbol(): string { return this._defaultGapSymbol; }
-
-  public get separator(): string {
-    const separator = this.sourceColumn.getTag('separator');
-    if (separator !== null)
-      return separator;
-    else
-      throw new Error('Separator not set');
-  }
-
-  public isFasta(): boolean { return this.sourceNotation === NOTATION.FASTA; }
-
-  public isSeparator(): boolean { return this.sourceNotation === NOTATION.SEPARATOR; }
-
-  public isHelm(): boolean { return this.sourceNotation === NOTATION.HELM; }
 
   public toFasta(targetNotation: NOTATION): boolean { return targetNotation === NOTATION.FASTA; }
 
   public toSeparator(targetNotation: NOTATION): boolean { return targetNotation === NOTATION.SEPARATOR; }
 
   public toHelm(targetNotation: NOTATION): boolean { return targetNotation === NOTATION.HELM; }
-
-  public isRna(): boolean { return this.sourceUnits.toLowerCase().endsWith('rna'); }
-
-  public isDna(): boolean { return this.sourceUnits.toLowerCase().endsWith('dna'); }
-
-  public isPeptide(): boolean { return this.sourceUnits.toLowerCase().endsWith('pt'); }
-
-  /** Associate notation types with the corresponding units */
-  /**
-   * @return {NOTATION}     Notation associated with the units type
-   */
-  private getSourceNotation(): NOTATION {
-    if (this.sourceUnits.toLowerCase().startsWith('fasta'))
-      return NOTATION.FASTA;
-    else if (this.sourceUnits.toLowerCase().startsWith('separator'))
-      return NOTATION.SEPARATOR;
-    else if (this.sourceUnits.toLowerCase().startsWith('helm'))
-      return NOTATION.HELM;
-    else
-      throw new Error('The column has units that do not correspond to any notation');
-  }
-
-  /**
-   * Create a new empty column of the specified notation type and the same
-   * length as sourceColumn
-   *
-   * @param {NOTATION} targetNotation
-   * @return {DG.Column}
-   */
-  private getNewColumn(targetNotation: NOTATION): DG.Column {
-    const col = this.sourceColumn;
-    const len = col.length;
-    const name = targetNotation.toLowerCase() + '(' + col.name + ')';
-    const newColName = col.dataFrame.columns.getUnusedName(name);
-    // dummy code
-    const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(''));
-    newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    newColumn.setTag(
-      DG.TAGS.UNITS,
-      this.sourceUnits.replace(
-        this.sourceNotation.toLowerCase().toString(),
-        targetNotation.toLowerCase().toString()
-      )
-    );
-    // TODO: specify cell renderers for all cases
-    if (this.toFasta(targetNotation)) {
-      newColumn.setTag(
-        DG.TAGS.CELL_RENDERER,
-        'Macromolecule');
-    }
-    return newColumn;
-  }
 
   /**
    * Convert a Macromolecule column from FASTA to SEPARATOR notation
@@ -122,7 +34,7 @@ export class NotationConverter {
     const newColumn = this.getNewColumn(NOTATION.SEPARATOR);
     // assign the values to the newly created empty column
     newColumn.init((idx: number) => {
-      const fastaPolymer = this.sourceColumn.get(idx);
+      const fastaPolymer = this.column.get(idx);
       const fastaMonomersArray = this.splitter(fastaPolymer);
       for (let i = 0; i < fastaMonomersArray.length; i++) {
         if (fastaMonomersArray[i] === fastaGapSymbol)
@@ -208,7 +120,7 @@ export class NotationConverter {
     const newColumn = this.getNewColumn(NOTATION.HELM);
     // assign the values to the empty column
     newColumn.init((idx: number) => {
-      const sourcePolymer = this.sourceColumn.get(idx);
+      const sourcePolymer = this.column.get(idx);
       return this.convertToHelmHelper(sourcePolymer, sourceGapSymbol!, prefix, leftWrapper, rightWrapper, postfix);
     });
     return newColumn;
@@ -227,7 +139,7 @@ export class NotationConverter {
     const newColumn = this.getNewColumn(NOTATION.FASTA);
     // assign the values to the empty column
     newColumn.init((idx: number) => {
-      const separatorPolymer = this.sourceColumn.get(idx);
+      const separatorPolymer = this.column.get(idx);
       // items can be monomers or separators
       const separatorItemsArray = this.splitter(separatorPolymer);
       const fastaMonomersArray: string[] = [];
@@ -277,7 +189,7 @@ export class NotationConverter {
     const newColumn = this.getNewColumn(tgtNotation as NOTATION);
     // assign the values to the empty column
     newColumn.init((idx: number) => {
-      const helmPolymer = this.sourceColumn.get(idx);
+      const helmPolymer = this.column.get(idx);
 
       // we cannot use isDna() or isRna() because source helm columns can
       // contain DNA, RNA and PT in different cells, so the corresponding
@@ -319,7 +231,7 @@ export class NotationConverter {
    */
   public convert(tgtNotation: NOTATION, tgtSeparator: string | null = null): DG.Column {
     // possible exceptions
-    if (this.sourceNotation === tgtNotation)
+    if (this.notation === tgtNotation)
       throw new Error('tgt notation is invalid');
     if (this.toSeparator(tgtNotation) && tgtSeparator === null)
       throw new Error('tgt separator is not specified');
@@ -337,15 +249,6 @@ export class NotationConverter {
   }
 
   public constructor(col: DG.Column) {
-    this._sourceColumn = col;
-    const units = this._sourceColumn.tags[DG.TAGS.UNITS];
-    if (units !== null)
-      this._sourceUnits = units;
-    else
-      throw new Error('Units are not specified in column');
-    this._sourceNotation = this.getSourceNotation();
-    this._defaultGapSymbol = (this.isFasta()) ? this._defaultGapSymbolsDict.FASTA :
-      (this.isHelm()) ? this._defaultGapSymbolsDict.HELM :
-        this._defaultGapSymbolsDict.SEPARATOR;
+    super(col);
   }
 }
