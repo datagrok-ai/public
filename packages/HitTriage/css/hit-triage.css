@@ -1,4 +1,4 @@
 .grok-hit-triage-view .d4-grid {
-    width: initial;
-    height: initial;
+    width: initial !important;
+    height: initial !important;
 }
