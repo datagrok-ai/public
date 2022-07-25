@@ -22,11 +22,11 @@ Here you can find an overview of the platform's key capabilities as well as the 
 [projects](project.md) and more.
 
 The welcome page consists of several visual components: a sidebar, [toolbox](#toolbox), main
-view, [property panel](#properties), and [context help](#context-help). Typically, the view resides in the center
-and occupies all available area in the screen. The sidebar and toolbox are placed on the left. The sidebar contains
-controls over the main functionality, while the toolbox displays options specific to the current view. The property
-panel and context help are docked to the right. This appearance is fully customizable, you can manage the displayed
-windows from the sidebar
+view, [property panel](#properties), and [context help](#context-help). Typically, the view resides in the center and
+occupies all available area in the screen. The sidebar and toolbox are placed on the left. The sidebar contains controls
+over the main functionality, while the toolbox displays options specific to the current view. The property panel and
+context help are docked to the right. This appearance is fully customizable, you can manage the displayed windows from
+the sidebar
 (`Windows`), or turn them on/off with the following shortcuts:
 
 |    Menu Option         |      Shortcut               |         Action                |

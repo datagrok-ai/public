@@ -2,11 +2,11 @@
 
 # Layouts
 
-[Layouts](../../visualize/view-layout.md) define the way visualizations are positioned in a table view,
-allowing to reuse them for different datasets. Layouts
-contain viewer settings, positions, and relevant metadata that determine where a layout can be further suggested.
+[Layouts](../../visualize/view-layout.md) define the way visualizations are positioned in a table view, allowing to
+reuse them for different datasets. Layouts contain viewer settings, positions, and relevant metadata that determine
+where a layout can be further suggested.
 
-A layout can be created either manually by adding viewers, setting their properties, and docking them, 
+A layout can be created either manually by adding viewers, setting their properties, and docking them,
 or [programmatically](manipulate-viewers.md).
 
 Table of contents:
@@ -63,11 +63,17 @@ The `JSON` representation of a layout has the following main fields:
 ```json
 {
   "#type": "ViewLayout",
-  "viewStateMap": {...},
-  "columns": [...],
+  "viewStateMap": {
+    ...
+  },
+  "columns": [
+    ...
+  ],
   "name": "LayoutName",
   "friendlyName": "Layout Name",
-  "author": {...},
+  "author": {
+    ...
+  },
   "createdOn": "YYYY-MM-DDTHH:mm:ss.sssZ"
 }
 ```
@@ -132,5 +138,5 @@ See also:
 # Saving data with layouts using the REST API
 
 To create a dashboard consisting of a dataset that resides externally, and a pre-created layout
-(common case for visualizing a dataset created as a result of a data pipeline), 
-use the [data upload API](upload-data.md).
+(common case for visualizing a dataset created as a result of a data pipeline), use
+the [data upload API](upload-data.md).
