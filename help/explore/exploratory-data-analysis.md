@@ -110,7 +110,7 @@ With Datagrok, anyone can use their domain knowledge and perceptive abilities to
 
 <!-- markdownlint-restore -->
 
-## See also:
+## See also
 
 * [Viewers](../visualize/viewers.md)
 * [Data science](../learn/data-science.md)

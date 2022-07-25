@@ -61,17 +61,17 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
 2. Set the Datagrok image version with the `DATAGROK_VERSION` environment variable. It can be any tag from
    [Docker Hub](https://hub.docker.com/r/datagrok/datagrok/tags). The default value is `latest`.
 
-For Windows users:
+    For Windows users:
 
-```shell
-set DATAGROK_VERSION='latest'
-```
+    ```shell
+    set DATAGROK_VERSION='latest'
+    ```
 
-For Unix/Linux users:
+    For Unix/Linux users:
 
-```shell
-export DATAGROK_VERSION='latest'
-```
+    ```shell
+    export DATAGROK_VERSION='latest'
+    ```
 
 3. Set environment variables for mapped ports: `DATAGROK_PORT` (the default value is `8080`), `DATAGROK_DB_PORT` (the
    default value is `5432`), `DATAGROK_CVM_PORT` (the default value is `8090`)
@@ -79,27 +79,27 @@ export DATAGROK_VERSION='latest'
    , `DATAGROK_GROK_SPAWNER_PORT` (the default value is `8000`). To start the second stand properly the values should
    differ from the ports of the existing stands. For example, you can increment every port value by 1.
 
-For Windows users:
+    For Windows users:
 
-```shell
-set DATAGROK_PORT='8081'
-set DATAGROK_DB_PORT='5433'
-set DATAGROK_CVM_PORT='8091'
-set DATAGROK_H2O_PORT='54322'
-set DATAGROK_H2O_HELPER_PORT='5006'
-set DATAGROK_GROK_SPAWNER_PORT='8001'
-```
+    ```shell
+    set DATAGROK_PORT='8081'
+    set DATAGROK_DB_PORT='5433'
+    set DATAGROK_CVM_PORT='8091'
+    set DATAGROK_H2O_PORT='54322'
+    set DATAGROK_H2O_HELPER_PORT='5006'
+    set DATAGROK_GROK_SPAWNER_PORT='8001'
+    ```
 
-For Unix/Linux users:
+    For Unix/Linux users:
 
-```shell
-export DATAGROK_PORT='8081'
-export DATAGROK_DB_PORT='5433'
-export DATAGROK_CVM_PORT='8091'
-export DATAGROK_H2O_PORT='54322'
-export DATAGROK_H2O_HELPER_PORT='5006'
-export DATAGROK_GROK_SPAWNER_PORT='8001'
-```
+    ```shell
+    export DATAGROK_PORT='8081'
+    export DATAGROK_DB_PORT='5433'
+    export DATAGROK_CVM_PORT='8091'
+    export DATAGROK_H2O_PORT='54322'
+    export DATAGROK_H2O_HELPER_PORT='5006'
+    export DATAGROK_GROK_SPAWNER_PORT='8001'
+    ```
 
 4. The last step is to run the second stand. It is important to change the project name to start the second Datagrok
    stand. The project name in [the standard instructions](#instructions), which were used for the first stand,
