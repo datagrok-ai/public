@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {importFasta, multipleSequenceAlignmentAny} from '../package';
 import {readDataframe} from './utils';
 import {convertDo} from '../utils/convert';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 category('renderers', () => {
   let tvList: DG.TableView[];

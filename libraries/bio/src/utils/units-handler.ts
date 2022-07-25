@@ -1,0 +1,117 @@
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+
+/** enum type to simplify setting "user-friendly" notation if necessary */
+export const enum NOTATION {
+  FASTA = 'FASTA',
+  SEPARATOR = 'SEPARATOR',
+  HELM = 'HELM'
+}
+
+// type GapSymbolDict = {
+//   HELM: string,
+//   SEPARATOR: string,
+//   FASTA: string,
+// }
+
+/** Class for handling notation units in Macromolecule columns */
+export class UnitsHandler {
+  protected readonly _column: DG.Column; // the column to be converted
+  protected _units: string; // units, of the form fasta:SEQ:NT, etc.
+  protected _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
+  protected _defaultGapSymbol: string;
+  protected _defaultGapSymbolsDict = {
+    HELM: '*',
+    SEPARATOR: '',
+    FASTA: '-',
+  };
+
+  protected get units(): string { return this._units; }
+
+  protected get column(): DG.Column { return this._column; }
+
+  public get notation(): NOTATION { return this._notation; }
+
+  public get defaultGapSymbol(): string { return this._defaultGapSymbol; }
+
+  public get separator(): string {
+    const separator = this.column.getTag('separator');
+    if (separator !== null)
+      return separator;
+    else
+      throw new Error('Separator not set');
+  }
+
+  public isFasta(): boolean { return this.notation === NOTATION.FASTA; }
+
+  public isSeparator(): boolean { return this.notation === NOTATION.SEPARATOR; }
+
+  public isHelm(): boolean { return this.notation === NOTATION.HELM; }
+
+  public isRna(): boolean { return this.units.toLowerCase().endsWith('rna'); }
+
+  public isDna(): boolean { return this.units.toLowerCase().endsWith('dna'); }
+
+  public isPeptide(): boolean { return this.units.toLowerCase().endsWith('pt'); }
+
+  /** Associate notation types with the corresponding units */
+  /**
+   * @return {NOTATION}     Notation associated with the units type
+   */
+  protected getNotation(): NOTATION {
+    if (this.units.toLowerCase().startsWith('fasta'))
+      return NOTATION.FASTA;
+    else if (this.units.toLowerCase().startsWith('separator'))
+      return NOTATION.SEPARATOR;
+    else if (this.units.toLowerCase().startsWith('helm'))
+      return NOTATION.HELM;
+    else
+      throw new Error('The column has units that do not correspond to any notation');
+  }
+
+  /**
+   * Create a new empty column of the specified notation type and the same
+   * length as column
+   *
+   * @param {NOTATION} targetNotation
+   * @return {DG.Column}
+   */
+  protected getNewColumn(targetNotation: NOTATION): DG.Column {
+    const col = this.column;
+    const len = col.length;
+    const name = targetNotation.toLowerCase() + '(' + col.name + ')';
+    const newColName = col.dataFrame.columns.getUnusedName(name);
+    const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(''));
+    newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
+    newColumn.setTag(
+      DG.TAGS.UNITS,
+      this.units.replace(
+        this.notation.toLowerCase().toString(),
+        targetNotation.toLowerCase().toString()
+      )
+    );
+    newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule');
+
+    // TODO: specify cell renderers for all cases
+    // if (targetNotation === NOTATION.FASTA) {
+    //   newColumn.setTag(
+    //     DG.TAGS.CELL_RENDERER,
+    //     'Macromolecule');
+    // }
+    return newColumn;
+  }
+
+  public constructor(col: DG.Column) {
+    this._column = col;
+    const units = this._column.tags[DG.TAGS.UNITS];
+    if (units !== null)
+      this._units = units;
+    else
+      throw new Error('Units are not specified in column');
+    this._notation = this.getNotation();
+    this._defaultGapSymbol = (this.isFasta()) ? this._defaultGapSymbolsDict.FASTA :
+      (this.isHelm()) ? this._defaultGapSymbolsDict.HELM :
+        this._defaultGapSymbolsDict.SEPARATOR;
+  }
+}
