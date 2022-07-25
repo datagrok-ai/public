@@ -35,8 +35,8 @@ We recommend this method if you want to jump-start with Datagrok on your local m
    in Administrator mode (this is a [known issue](https://github.com/docker/compose/issues/4531) of Docker on some
    computers).
 3. Once the server is up and running, the Login page should be available
-   at [http://localhost:8080](http://localhost:8080). For a quick setup, login to Datagrok using a username `admin`
-   and a password `admin`.
+   at [http://localhost:8080](http://localhost:8080). For a quick setup, login to Datagrok using the username `admin`
+   and the password `admin`.
 4. After Datagrok the first time deployment, you can shut it down using the command:
 
    ```shell
@@ -58,7 +58,7 @@ We recommend this method if you want to jump-start with Datagrok on your local m
 It is possible to run multiple stands of Datagrok on one host machine. To do so:
 
 1. Run the first stand [as usual](#instructions)
-2. Set Datagrok image version with `DATAGROK_VERSION` environment variable. It can be any tag from
+2. Set the Datagrok image version with the `DATAGROK_VERSION` environment variable. It can be any tag from
    [Docker Hub](https://hub.docker.com/r/datagrok/datagrok/tags). The default value is `latest`.
 
 For Windows users:
@@ -101,8 +101,8 @@ export DATAGROK_H2O_HELPER_PORT='5006'
 export DATAGROK_GROK_SPAWNER_PORT='8001'
 ```
 
-4. The last step is to actually run the second stand. It is important to change the project name to start the second
-   Datagrok stand. The project name in [the standard instructions](#instructions), which were used for the first stand,
+4. The last step is to run the second stand. It is important to change the project name to start the second Datagrok
+   stand. The project name in [the standard instructions](#instructions), which were used for the first stand,
    is `datagrok`. For example, you can add an increment to the project name: `datagrok_2`
 
    ```shell
@@ -133,7 +133,7 @@ If you need CVM features only, you can run only CVM application containers:
 docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile cvm up -d
 ```
 
-To run Datagrok with exact CVM features, specify them in the command-line using `--profile` flag
+To run Datagrok with exact CVM features, specify them in the command line using the `--profile` flag
 
 * Cheminformatics
 
@@ -199,7 +199,7 @@ To run Datagrok with exact CVM features, specify them in the command-line using 
      * Cvm Split: `true`
      * API Url: `http://datagrok:8080/api`
 
-2. Check containers logs for any possible errors and report the problem if there is any
+2. Check containers logs for any possible errors and report the problem if there are any
 
    ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all logs
