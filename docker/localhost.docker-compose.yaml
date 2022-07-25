@@ -1,98 +1,7 @@
 version: "3"
 services:
-  db:
-    image: postgres:12.9
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432/tcp"
-    networks:
-      datagrok:
-        aliases:
-          - database
-    volumes:
-      - datagrok_db:/var/lib/postgresql/data
-    restart: on-failure
-    profiles: [ "all", "db" ]
-
-  northwind:
-    image: datagrok/demo_db:latest
-    environment:
-      POSTGRES_DB: northwind
-    ports:
-      - "5433:5432/tcp"
-    networks:
-      datagrok:
-        aliases:
-          - northwind
-    volumes:
-      - datagrok_postgres_northwind:/var/lib/postgresql/data
-    restart: on-failure
-    profiles: [ "demo", "postgres_northwind", "northwind" ]
-
-  chembl:
-    image: datagrok/demo_db_chembl:latest
-    environment:
-      POSTGRES_DB: chembl
-    ports:
-      - "5434:5432/tcp"
-    networks:
-      datagrok:
-        aliases:
-          - chembl
-    volumes:
-      - datagrok_postgres_chembl:/var/lib/postgresql/data
-    restart: on-failure
-    profiles: [ "demo", "postgres_chembl", "chembl" ]
-
-  unichem:
-    image: datagrok/demo_db_unichem:latest
-    environment:
-      POSTGRES_DB: unichem
-    ports:
-      - "5435:5432/tcp"
-    networks:
-      datagrok:
-        aliases:
-          - unichem
-    volumes:
-      - datagrok_postgres_unichem:/var/lib/postgresql/data
-    restart: on-failure
-    profiles: [ "demo", "postgres_unichem", "unichem" ]
-
-  starbucks:
-    image: datagrok/demo_db:latest
-    environment:
-      POSTGRES_DB: starbucks
-    ports:
-      - "5436:5432/tcp"
-    networks:
-      datagrok:
-        aliases:
-          - starbucks
-    volumes:
-      - datagrok_postgres_starbucks:/var/lib/postgresql/data
-    restart: on-failure
-    profiles: [ "demo", "postgres_starbucks", "starbucks" ]
-
-  world:
-    image: datagrok/demo_db:latest
-    environment:
-      POSTGRES_DB: world
-    ports:
-      - "5437:5432/tcp"
-    networks:
-      datagrok:
-        aliases:
-          - world
-    volumes:
-      - datagrok_postgres_world:/var/lib/postgresql/data
-    restart: on-failure
-    profiles: [ "demo", "postgres_world", "world" ]
-
   datagrok:
-    image: datagrok/datagrok:latest
+    image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
     environment:
       GROK_PARAMETERS:  |
         {
@@ -108,7 +17,7 @@ services:
           "isolatesCount": 2
         }
     ports:
-      - "8080:8080/tcp"
+      - "${DATAGROK_PORT:-8080}:8080/tcp"
     networks:
       datagrok:
         aliases:
@@ -124,6 +33,8 @@ services:
     user: root
     environment:
       X_API_KEY: test-x-api-key
+    ports:
+      - "${DATAGROK_GROK_SPAWNER_PORT:-8000}:8000/tcp"
     networks:
       datagrok:
         aliases:
@@ -142,6 +53,18 @@ services:
     restart: unless-stopped
     profiles: [ "all", "grok_connect" ]
 
+  cvm_nginx:
+    image: datagrok/cvm_nginx:latest
+    ports:
+      - "${DATAGROK_CVM_PORT:-8090}:8090/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - cvm
+          - nginx_cvm
+    restart: unless-stopped
+    profiles: [ "all", "nginx", "cvm", "chem", "jupyter_notebook", "scripting" ]
+
   grok_compute:
     image: datagrok/grok_compute:latest
     environment:
@@ -152,18 +75,6 @@ services:
           - grok_compute
     restart: unless-stopped
     profiles: [ "all", "cvm", "chem" ]
-
-  cvm_nginx:
-    image: datagrok/cvm_nginx:latest
-    ports:
-      - "8090:8090/tcp"
-    networks:
-      datagrok:
-        aliases:
-          - cvm
-          - nginx_cvm
-    restart: unless-stopped
-    profiles: [ "all", "nginx", "cvm", "chem", "jupyter_notebook", "scripting" ]
 
   jupyter_notebook:
     image: datagrok/jupyter_notebook:latest
@@ -186,8 +97,8 @@ services:
   h2o:
     image: datagrok/h2o:latest
     ports:
-      - "54321:54321/tcp"
-      - "5005:5005/tcp"
+      - "${DATAGROK_H2O_PORT:-54321}:54321/tcp"
+      - "${DATAGROK_H2O_HELPER_PORT:-5005}:5005/tcp"
     networks:
       datagrok:
         aliases:
@@ -195,15 +106,106 @@ services:
     restart: unless-stopped
     profiles: [ "all", "cvm", "modeling" ]
 
+  db:
+    image: postgres:12.9
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "${DATAGROK_DB_PORT:-5432}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - database
+    volumes:
+      - datagrok_db:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: [ "all", "db" ]
+
+  northwind:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: northwind
+    ports:
+      - "${DATAGROK_DEMO_POSTGRES_NORTHWIND:-5433}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - northwind
+    volumes:
+      - datagrok_demo_postgres_northwind:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: [ "demo", "postgres_northwind", "northwind" ]
+
+  chembl:
+    image: datagrok/demo_db_chembl:latest
+    environment:
+      POSTGRES_DB: chembl
+    ports:
+      - "${DATAGROK_DEMO_POSTGRES_CHEMBL:-5434}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - chembl
+    volumes:
+      - datagrok_demo_postgres_chembl:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: [ "demo", "postgres_chembl", "chembl" ]
+
+  unichem:
+    image: datagrok/demo_db_unichem:latest
+    environment:
+      POSTGRES_DB: unichem
+    ports:
+      - "${DATAGROK_DEMO_POSTGRES_UNICHEM:-5435}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - unichem
+    volumes:
+      - datagrok_demo_postgres_unichem:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: [ "demo", "postgres_unichem", "unichem" ]
+
+  starbucks:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: starbucks
+    ports:
+      - "${DATAGROK_DEMO_POSTGRES_STARBUCKS:-5436}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - starbucks
+    volumes:
+      - datagrok_demo_postgres_starbucks:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: [ "demo", "postgres_starbucks", "starbucks" ]
+
+  world:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: world
+    ports:
+      - "${DATAGROK_DEMO_POSTGRES_WORLD:-5437}:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - world
+    volumes:
+      - datagrok_demo_postgres_world:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: [ "demo", "postgres_world", "world" ]
+
 volumes:
   datagrok_db:
   datagrok_data:
   datagrok_cfg:
-  datagrok_postgres_northwind:
-  datagrok_postgres_chembl:
-  datagrok_postgres_starbucks:
-  datagrok_postgres_world:
-  datagrok_postgres_unichem:
+  datagrok_demo_postgres_northwind:
+  datagrok_demo_postgres_chembl:
+  datagrok_demo_postgres_starbucks:
+  datagrok_demo_postgres_world:
+  datagrok_demo_postgres_unichem:
 
 networks:
   datagrok:
