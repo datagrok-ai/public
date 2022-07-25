@@ -15,6 +15,7 @@ export async function _testActivityCliffsOpen(df: DG.DataFrame) {
    const scatterPlot = await getActivityCliffs(
      df, 
      df.col('smiles')!, 
+     undefined as any,
      axesNames, 
      'Activity cliffs',
      df.col('Activity')!, 
