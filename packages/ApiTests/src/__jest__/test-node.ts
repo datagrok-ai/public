@@ -75,7 +75,7 @@ export async function getBrowserPage(puppeteer: any): Promise<{browser: any, pag
   await page.goto(url);
   try {
     await page.waitForSelector('.grok-preloader');
-    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 7200000000});
+    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 7200000});
   } catch (error) {
     throw error;
   }
