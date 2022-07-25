@@ -64,7 +64,7 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
     For Windows users:
 
     ```shell
-    set DATAGROK_VERSION='latest'
+    set DATAGROK_VERSION=latest
     ```
 
     For Unix/Linux users:
@@ -82,12 +82,12 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
     For Windows users:
 
     ```shell
-    set DATAGROK_PORT='8081'
-    set DATAGROK_DB_PORT='5433'
-    set DATAGROK_CVM_PORT='8091'
-    set DATAGROK_H2O_PORT='54322'
-    set DATAGROK_H2O_HELPER_PORT='5006'
-    set DATAGROK_GROK_SPAWNER_PORT='8001'
+    set DATAGROK_PORT=8081
+    set DATAGROK_DB_PORT=5433
+    set DATAGROK_CVM_PORT=8091
+    set DATAGROK_H2O_PORT=54322
+    set DATAGROK_H2O_HELPER_PORT=5006
+    set DATAGROK_GROK_SPAWNER_PORT=8001
     ```
 
     For Unix/Linux users:
