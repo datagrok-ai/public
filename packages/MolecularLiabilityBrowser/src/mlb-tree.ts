@@ -223,7 +223,6 @@ export class TreeBrowser extends DG.JsViewer {
    * Adds a grid with simple tree statistics.
    * @param {string} treesColumnName Column containing trees in Newick format.
    * @param {string[]} [baseColumnNames=[]] Columns to include into creating grid.
-   * @return  {DG.Grid} Grid with statistics.
    */
   private buildTreeGrid(treesColumnName: string, baseColumnNames: string[] = []): void {
     const treesColumn = this.treeDf.col(treesColumnName);

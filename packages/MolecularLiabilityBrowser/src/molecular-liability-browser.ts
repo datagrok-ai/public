@@ -630,9 +630,6 @@ export class MolecularLiabilityBrowser {
       await this.treeBrowser.setData(this.treeDf, this.mlbDf);
     }
 
-    this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(() => {
-      this.treePopup.hidden = true;
-
     this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
 
     if (this.treeGrid === null) {
