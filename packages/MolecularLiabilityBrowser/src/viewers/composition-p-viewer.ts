@@ -27,7 +27,7 @@ export class CompostionPviewer {
 
   isOpen: boolean;
 
-  subs: Subscription[];
+  subs: Subscription[] = [];
 
   #splitAlignedPeptides(peptideColumn: DG.Column) {
     let splitPeptidesArray: string[][] = [];
