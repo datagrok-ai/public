@@ -9,12 +9,6 @@ export const enum NOTATION {
   HELM = 'HELM'
 }
 
-// type GapSymbolDict = {
-//   HELM: string,
-//   SEPARATOR: string,
-//   FASTA: string,
-// }
-
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
   protected readonly _column: DG.Column; // the column to be converted
@@ -93,12 +87,67 @@ export class UnitsHandler {
     );
     newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule');
 
-    // TODO: specify cell renderers for all cases
-    // if (targetNotation === NOTATION.FASTA) {
-    //   newColumn.setTag(
-    //     DG.TAGS.CELL_RENDERER,
-    //     'Macromolecule');
-    // }
+    return newColumn;
+  }
+
+  /**
+   * Create a new empty column using templateCol as a template
+   *
+   * @param {DG.Column} templateCol  the properties and units of this column are used as a
+   * template to build the new one
+   * @return {DG.Column}
+   */
+  public static getNewColumn(templateCol: DG.Column): DG.Column {
+    const col: UnitsHandler = new UnitsHandler(templateCol);
+    const targetNotation = col.notation;
+    return col.getNewColumn(targetNotation);
+  }
+
+  /**
+   * A helper function checking the validity of the 'units' string
+   *
+   * @param {string} units  the string to be validated
+   * @return {boolean}
+   */
+  public static unitsStringIsValid(units: string): boolean {
+    units = units.toLowerCase();
+    const prefixes = new Set([NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.HELM]);
+    const postfixes = new Set(['rna', 'dna', 'pt']);
+
+    let prefixCriterion = false;
+    prefixes.forEach((item) => {
+      prefixCriterion ||= units.startsWith(item.toLowerCase());
+    });
+
+    let postfixCriterion = false;
+    postfixes.forEach((item) => {
+      postfixCriterion ||= units.endsWith(item); // already lowercase
+    });
+    return prefixCriterion && postfixCriterion;
+  }
+
+  /**
+   * Construct a new column of semantic type MACROMOLECULE from the list of
+   * specified parameters
+   *
+   * @param {number}    len  the length of the new column
+   * @param {string}    name  the name of the new column
+   * @param {string}    units  the units of the new column
+   * @return {DG.Column}
+   */
+  public static getNewColumnFromParams(
+    len: number,
+    name: string,
+    units: string
+  ): DG.Column {
+    // WARNING: in this implementation is is impossible to verify the uniqueness
+    // of the new column's name
+    // TODO: verify the validity of units parameter
+    if (!UnitsHandler.unitsStringIsValid(units))
+      throw new Error('Invalid format of \'units\' parameter');
+    const newColumn = DG.Column.fromList('string', name, new Array(len).fill(''));
+    newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
+    newColumn.setTag(DG.TAGS.UNITS, units);
     return newColumn;
   }
 
