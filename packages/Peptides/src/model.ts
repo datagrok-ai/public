@@ -6,7 +6,7 @@ import {Subject, Observable} from 'rxjs';
 import {addViewerToHeader, StackedBarChart} from './viewers/stacked-barchart-viewer';
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {getSeparator, getTypedArrayConstructor} from './utils/misc';
+import {getTypedArrayConstructor, splitAlignedPeptides} from './utils/misc';
 import {_package} from './package';
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
@@ -180,14 +180,11 @@ export class PeptidesModel {
       throw new Error(`Source grid is not initialized`);
 
     //Split the aligned sequence into separate AARs
-    let splitSeqDf: DG.DataFrame | undefined;
-    let invalidIndexes: number[];
     const col: DG.Column = this._dataFrame.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
     const alphabet = col.tags[DG.TAGS.UNITS].split(':')[2];
-    [splitSeqDf, invalidIndexes] = PeptidesModel.splitAlignedPeptides(col);
+    const splitSeqDf = splitAlignedPeptides(col);
 
     const positionColumns = splitSeqDf.columns.names();
-    const renderColNames: string[] = splitSeqDf.columns.names();
 
     const activityCol = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY)!;
     splitSeqDf.columns.add(activityCol);
@@ -226,7 +223,6 @@ export class PeptidesModel {
 
     // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
     const sequenceDf = this.createVerticalTable();
-    renderColNames.push(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
 
     if (viewer.showSubstitution || !this._isSubstInitialized)
       this.calcSubstitutions();
@@ -236,16 +232,18 @@ export class PeptidesModel {
     this._sarGrid = sarGrid;
     this._sarVGrid = sarVGrid;
 
-    this.setCellRenderers(renderColNames, sarGrid, sarVGrid);
+    positionColumns.push(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
+
+    this.setCellRenderers(positionColumns, sarGrid, sarVGrid);
 
     // show all the statistics in a tooltip over cell
-    this.setTooltips(renderColNames, sarGrid, sarVGrid);
+    this.setTooltips(positionColumns, sarGrid, sarVGrid);
 
     this.setInteractionCallback();
 
     this.setBitsetCallback();
 
-    this.postProcessGrids(invalidIndexes, sarGrid, sarVGrid);
+    this.postProcessGrids(sarGrid, sarVGrid);
 
     //TODO: return class instead
     return [sarGrid, sarVGrid, this.statsDf];
@@ -722,13 +720,7 @@ export class PeptidesModel {
     this.isPeptideSpaceChangingBitset = false;
   }
 
-  postProcessGrids(invalidIndexes: number[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
-    this._sourceGrid.onCellPrepare((cell: DG.GridCell) => {
-      const currentRowIndex = cell.tableRowIndex;
-      if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader)
-        cell.style.backColor = DG.Color.lightLightGray;
-    });
-
+  postProcessGrids(sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
     const mdCol: DG.GridColumn = sarVGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
     mdCol.name = 'Diff';
 
@@ -804,70 +796,6 @@ export class PeptidesModel {
     return [tempDf, newColName];
   }
 
-  static splitAlignedPeptides(peptideColumn: DG.Column<string>, filter: boolean = true): [DG.DataFrame, number[]] {
-    const separator = getSeparator(peptideColumn);
-    const splitPeptidesArray: string[][] = [];
-    let currentSplitPeptide: string[];
-    let modeMonomerCount = 0;
-    let currentLength;
-    const colLength = peptideColumn.length;
-
-    // splitting data
-    const monomerLengths: {[index: string]: number} = {};
-    for (let i = 0; i < colLength; i++) {
-      currentSplitPeptide = peptideColumn.get(i)!.split(separator).map((value: string) => value ? value : '-');
-      splitPeptidesArray.push(currentSplitPeptide);
-      currentLength = currentSplitPeptide.length;
-      monomerLengths[currentLength + ''] =
-        monomerLengths[currentLength + ''] ? monomerLengths[currentLength + ''] + 1 : 1;
-    }
-    modeMonomerCount =
-      parseInt(Object.keys(monomerLengths).reduce((a, b) => monomerLengths[a] > monomerLengths[b] ? a : b));
-
-    // making sure all of the sequences are of the same size
-    // and marking invalid sequences
-    let nTerminal: string;
-    const invalidIndexes: number[] = [];
-    let splitColumns: string[][] = Array.from({length: modeMonomerCount}, (_) => []);
-    modeMonomerCount--; // minus N-terminal
-    for (let i = 0; i < colLength; i++) {
-      currentSplitPeptide = splitPeptidesArray[i];
-      nTerminal = currentSplitPeptide.pop()!; // it is guaranteed that there will be at least one element
-      currentLength = currentSplitPeptide.length;
-      if (currentLength !== modeMonomerCount)
-        invalidIndexes.push(i);
-
-      for (let j = 0; j < modeMonomerCount; j++)
-        splitColumns[j].push(j < currentLength ? currentSplitPeptide[j] : '-');
-
-      splitColumns[modeMonomerCount].push(nTerminal);
-    }
-    modeMonomerCount--; // minus C-terminal
-
-    //create column names list
-    const columnNames = Array.from({length: modeMonomerCount}, (_, index) => `${index + 1 < 10 ? 0 : ''}${index + 1 }`);
-    columnNames.splice(0, 0, 'N');
-    columnNames.push('C');
-
-    // filter out the columns with the same values
-    if (filter) {
-      splitColumns = splitColumns.filter((positionArray, index) => {
-        const isRetained = new Set(positionArray).size > 1;
-        if (!isRetained)
-          columnNames.splice(index, 1);
-
-        return isRetained;
-      });
-    }
-
-    return [
-      DG.DataFrame.fromColumns(splitColumns.map((positionArray, index) => {
-        return DG.Column.fromList('string', columnNames[index], positionArray);
-      })),
-      invalidIndexes,
-    ];
-  }
-
   syncProperties(isSourceSAR = true): void {
     if (this.sarViewer && this.sarViewerVertical) {
       const [sourceViewer, targetViewer] = isSourceSAR ? [this.sarViewer, this.sarViewerVertical] :
@@ -889,21 +817,6 @@ export class PeptidesModel {
   async init(): Promise<void> {
     if (this.isInitialized)
       return;
-  
-    //@ts-ignore
-    // const orgHelm = org.helm;
-    // //@ts-ignore
-    // const types = Object.keys(org.helm.webeditor.monomerTypeList());
-    // for (const type of types) {
-    //   //@ts-ignore
-    //   const GetMonomerSet = scil.helm.Monomers.getMonomerSet;
-    //   const monomerSet: type.MonomerSet = new GetMonomerSet(type);
-    //   for (const monomer of Object.values(monomerSet)) {
-    //     if (this.monomerMap.hasOwnProperty(monomer.id))
-    //       continue;
-    //     this.monomerMap[monomer.id] = {molfile: monomer.m, fullName: monomer.n};
-    //   }
-    // }
 
     this.currentView = this._dataFrame.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
       grok.shell.addTableView(this._dataFrame);
