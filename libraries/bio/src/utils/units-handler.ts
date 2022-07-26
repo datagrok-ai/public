@@ -111,18 +111,11 @@ export class UnitsHandler {
    */
   public static unitsStringIsValid(units: string): boolean {
     units = units.toLowerCase();
-    const prefixes = new Set([NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.HELM]);
-    const postfixes = new Set(['rna', 'dna', 'pt']);
+    const prefixes = [NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.HELM];
+    const postfixes = ['rna', 'dna', 'pt'];
 
-    let prefixCriterion = false;
-    prefixes.forEach((item) => {
-      prefixCriterion ||= units.startsWith(item.toLowerCase());
-    });
-
-    let postfixCriterion = false;
-    postfixes.forEach((item) => {
-      postfixCriterion ||= units.endsWith(item); // already lowercase
-    });
+    const prefixCriterion = prefixes.some((p) => units.startsWith(p.toLowerCase()));
+    const postfixCriterion = postfixes.some((p) => units.endsWith(p)); // already lowercase;
     return prefixCriterion && postfixCriterion;
   }
 
