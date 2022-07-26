@@ -6,7 +6,7 @@ import {Subject, Observable} from 'rxjs';
 import {addViewerToHeader, StackedBarChart} from './viewers/stacked-barchart-viewer';
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {getTypedArrayConstructor} from './utils/misc';
+import {getSeparator, getTypedArrayConstructor} from './utils/misc';
 import {_package} from './package';
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
@@ -805,7 +805,7 @@ export class PeptidesModel {
   }
 
   static splitAlignedPeptides(peptideColumn: DG.Column<string>, filter: boolean = true): [DG.DataFrame, number[]] {
-    const separator = peptideColumn.tags[C.TAGS.SEPARATOR];
+    const separator = getSeparator(peptideColumn);
     const splitPeptidesArray: string[][] = [];
     let currentSplitPeptide: string[];
     let modeMonomerCount = 0;
