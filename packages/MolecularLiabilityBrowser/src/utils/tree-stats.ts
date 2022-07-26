@@ -32,6 +32,11 @@ export class TreeAnalyzer {
     this._inspectors.push(inspector);
   }
 
+  /** For debug purposes */
+  get items(): string[] {
+    return Array.from(this._items);
+  }
+
   /**
    * Sets items which find against of.
    * @param {string[]} items Items to intersect with.
@@ -177,7 +182,7 @@ export interface PhylocanvasTreeNode {
   id: string;
   isCollapsed: boolean;
   isHidden: boolean;
-  isLeaf: boolean
+  isLeaf: boolean;
   name: string;
   postIndex: number;
   preIndex: number;
@@ -207,15 +212,15 @@ const _nullStats: TreeStats = {
  * Represents tree traversal object.
  * @interface PhylocanvasTreeTraversal
  */
-interface PhylocanvasTreeTraversal{
-    nodeById: TreeNodeTraverseInfo;
-    rootNode: PhylocanvasTreeNode;
-    postorderTraversal: PhylocanvasTreeNode[];
-    preorderTraversal: PhylocanvasTreeNode[];
+interface PhylocanvasTreeTraversal {
+  nodeById: TreeNodeTraverseInfo;
+  rootNode: PhylocanvasTreeNode;
+  postorderTraversal: PhylocanvasTreeNode[];
+  preorderTraversal: PhylocanvasTreeNode[];
 }
 
 type TreeStatsKeys = keyof TreeStats;
 // eslint-disable-next-line no-unused-vars
-type TreeStatColumns = {[key in TreeStatsKeys]: number[]};
-type TreeNodeTraverseInfo = {[id: string]: PhylocanvasTreeNode};
+type TreeStatColumns = { [key in TreeStatsKeys]: number[] };
+type TreeNodeTraverseInfo = { [id: string]: PhylocanvasTreeNode };
 type TreeNodeInspector = (node: PhylocanvasTreeNode, treeIndex: number) => PhylocanvasTreeNode;
