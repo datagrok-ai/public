@@ -9,11 +9,14 @@ export class HitTriageSessionSummary {
 
 
 export class HitTriageSession {
+  project: string = 'New project';
+
   sourceQuery?: DG.FuncCall;
   sourceDataFrame?: DG.DataFrame;
   sourceType: string = 'file';
   sourceDescription: string = '';
 
+  enrichedDataFrame?: DG.DataFrame;
   enrichmentSteps: string[] = [];
   enrichmentDescriptions: string[] = [];
 
@@ -31,6 +34,7 @@ export class HitTriageSession {
 
   static demo(): HitTriageSession {
     const session = new HitTriageSession();
+    session.project = 'Demo project';
     session.sourceDataFrame = grok.data.demo.molecules(20000);
     session.sourceDataFrame.meta.detectSemanticTypes().then((_) => {});
     session.sourceType = 'file';

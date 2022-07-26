@@ -96,21 +96,11 @@ export class ViewBase {
     this._name = s;
   }
 
-  get parentCall(): FuncCall | undefined  {
-    return toJs(api.grok_View_Get_ParentCall(this.dart));
-  }
+  get parentCall(): FuncCall | undefined { return toJs(api.grok_View_Get_ParentCall(this.dart)); }
+  set parentCall(s: FuncCall | undefined) { api.grok_View_Set_ParentCall(this.dart, toDart(s)); }
 
-  set parentCall(s: FuncCall | undefined) {
-    api.grok_View_Set_ParentCall(this.dart, toDart(s));
-  }
-
-  get parentView(): ViewBase {
-    return toJs(api.grok_View_Get_ParentView(this.dart));
-  }
-
-  set parentView(s: ViewBase) {
-    api.grok_View_Set_ParentView(this.dart, toDart(s));
-  }
+  get parentView(): ViewBase { return toJs(api.grok_View_Get_ParentView(this.dart)); }
+  set parentView(s: ViewBase) { api.grok_View_Set_ParentView(this.dart, toDart(s)); }
 
   get description(): string { return ''; }
   set description(s: string) { }
@@ -118,9 +108,7 @@ export class ViewBase {
   get entity(): object | null { return null; }
   set entity(e: object | null) { }
 
-  /**
-   *  View type URI. Note that {@link path} is specific to the instance of the view.
-   *  @type {string} */
+  /** View type URI. Note that {@link path} is specific to the instance of the view. */
   get basePath(): string { return api.grok_View_Get_BasePath(this.dart); }
   set basePath(s: string) { api.grok_View_Set_BasePath(this.dart, s); }
 
@@ -133,6 +121,10 @@ export class ViewBase {
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon} */
   get ribbonMenu(): Menu { return new Menu(api.grok_View_Get_RibbonMenu(this.dart)); }
   set ribbonMenu(menu: Menu) { api.grok_View_Set_RibbonMenu(this.dart, menu.dart); }
+
+  /** Status bar panels to be shown on the bottom */
+  get statusBarPanels(): HTMLDivElement[] { return api.grok_View_Get_StatusBarPanels(this.dart); }
+  set statusBarPanels(panels: HTMLDivElement[]) { api.grok_View_Set_StatusBarPanels(this.dart, panels); }
 
   /** Whether the view is currently closing. */
   get closing(): boolean { return this._closing; }

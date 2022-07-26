@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from "./package";
 import {HitTriageSession} from "./hit-triage-session";
+import {divText} from "datagrok-api/ui";
 
 const session = HitTriageSession.demo();
 
@@ -32,10 +33,13 @@ class HitTriageBaseView extends DG.ViewBase {
     super();
     this.root.classList.add('grok-hit-triage-view');
     this.root.style.display = 'flex';
+    this.statusBarPanels = [divText('Hit Triage')]
   }
 
   /** Override to initialize the view based on the session. */
   onActivated(): void {}
+
+  async process(): Promise<any> {}
 }
 
 
@@ -76,15 +80,29 @@ export class GetMoleculesView extends HitTriageBaseView {
  **/
 export class EnrichView extends HitTriageBaseView {
 
+  grid: DG.Grid;
+
   constructor() {
     super();
 
+    this.grid = session.sourceDataFrame!.plot.grid()
     const content = ui.divV([
       ui.h1('This is where we enrich our data'),
-      session.sourceDataFrame!.plot.grid()
+      this.grid
     ])
 
     this.root.appendChild(content);
+  }
+
+  onActivated() {
+    super.onActivated();
+    this.process().then(() => {});
+  }
+
+  async process(): Promise<any> {
+    session.enrichedDataFrame = session.sourceDataFrame;
+    await session.enrichedDataFrame!.columns.addNewCalculated("length", "length(${smiles})");
+    this.grid.dataFrame = session.enrichedDataFrame!;
   }
 }
 
