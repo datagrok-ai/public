@@ -15,6 +15,7 @@ import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
 import {msaWidget} from './widgets/multiple-sequence-alignment';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
+import { getSeparator } from './utils/misc';
 
 export const _package = new DG.Package();
 let currentTable: DG.DataFrame;
@@ -169,7 +170,7 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 //output: widget result
 export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
   [currentTable, alignedSequenceColumn] = getOrDefine();
-  const smiles = getMolecule(peptide, alignedSequenceColumn.tags[C.TAGS.SEPARATOR]);
+  const smiles = getMolecule(peptide, getSeparator(alignedSequenceColumn));
   return grok.functions.call('Chem:molfile', {'smiles': smiles}) as Promise<DG.Widget>;
 }
 

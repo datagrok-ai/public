@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
+import { getSeparator } from '../utils/misc';
 
 /**
  * 3D representation widget of peptide molecule.
@@ -13,7 +14,7 @@ import {PeptidesModel} from '../model';
  */
 export async function peptideMoleculeWidget(pep: string, currentTable: DG.DataFrame): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
-  const separator = currentTable.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!.tags[C.TAGS.SEPARATOR];
+  const separator = getSeparator(currentTable.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!);
 
   let widgetHost;
   let smiles = '';

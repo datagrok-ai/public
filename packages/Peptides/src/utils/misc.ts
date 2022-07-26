@@ -1,3 +1,6 @@
+import * as DG from 'datagrok-api/dg';
+import * as C from './constants';
+
 import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
 import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
@@ -22,4 +25,8 @@ export function getTypedArrayConstructor(
   return maxNum < 256 ? Uint8Array :
     maxNum < 65536 ? Uint16Array :
       Uint32Array;
+}
+
+export function getSeparator(col: DG.Column<string>): string {
+  return col.getTag(C.TAGS.SEPARATOR) ?? '';
 }
