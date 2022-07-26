@@ -269,6 +269,15 @@ export class MolecularLiabilityBrowser {
     ]);
   }
 
+  // -- static --
+
+  private static getViewPath(urlParams: URLSearchParams, baseUri: string) {
+    const urlParamsTxt = Array.from(urlParams.entries())
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
+
+    return `${baseUri}?${urlParamsTxt}`;
+  }
+
   static prepareDataMlbDf(
     df: DG.DataFrame, hChainDf: DG.DataFrame, lChainDf: DG.DataFrame,
     antigen: string, numberingScheme: string, pf: FilterPropertiesType
@@ -386,6 +395,8 @@ export class MolecularLiabilityBrowser {
     return seqCol;
   }
 
+  // -- View --
+
   private _mlbDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
   private _regions: VdRegion[] = [];
   private _treeDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
@@ -401,6 +412,7 @@ export class MolecularLiabilityBrowser {
     console.debug(`MLB: MolecularLiabilityBrowser.setData() start, ${((Date.now() - _startInit) / 1000).toString()} s`);
     await this.destroyView();
     this._mlbDf = mlbDf;
+
     this._treeDf = treeDf;
     this._regions = regions;
     await this.buildView();
@@ -519,6 +531,9 @@ export class MolecularLiabilityBrowser {
   }
 
   async setViewTwinPViewer(): Promise<void> {
+    console.debug('MLB: MolecularLiabilityBrowser.setViewTwinPViewer() start, ' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
+
     const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
       await Promise.all([
         this.dataLoader.loadJson(this.vid),
@@ -532,11 +547,20 @@ export class MolecularLiabilityBrowser {
         })()
       ]));
 
+    console.debug('MLB: MolecularLiabilityBrowser.setViewTwinPViewer() data loaded, ' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
+
     this.twinPviewer = new TwinPviewer(this.dataLoader);
     this.twinPviewer.init(jsonStr, pdbStr, jsonStrObsPtm);
 
+    console.debug('MLB: MolecularLiabilityBrowser.setViewTwinPViewer() init, ' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
+
     await this.twinPviewer.open(this.mlbView);
     await this.twinPviewer.show(this.mlbView);
+
+    console.debug('MLB: MolecularLiabilityBrowser.setViewTwinPViewer() show, ' +
+      `${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
   async destroyView(): Promise<void> {
@@ -598,8 +622,7 @@ export class MolecularLiabilityBrowser {
     this.filterView.dataFrame = this.mlbDf;
 
     if (this.treeBrowser === null) {
-      const tempDf = DG.DataFrame.fromCsv(['"v id"'].join(','));
-      this.treeBrowser = (await tempDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
+      this.treeBrowser = (await this.treeDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
       this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.FILL, null, 'Clone');
       await this.treeBrowser.setData(this.treeDf, this.mlbDf);
       //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
@@ -610,8 +633,7 @@ export class MolecularLiabilityBrowser {
     this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(() => {
       this.treePopup.hidden = true;
 
-      const k = 11;
-    }));
+    this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
 
     if (this.treeGrid === null) {
       this.treeGrid = this.treeDf.plot.grid({
@@ -652,10 +674,8 @@ export class MolecularLiabilityBrowser {
   updateView() {
     console.debug('MLB: MolecularLiabilityBrowser.updateView() start,' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
-    const urlParamsTxt = Array.from(this.urlParams.entries())
-      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
 
-    this.mlbView.path = `${this.baseUri}?${urlParamsTxt}`;
+    this.mlbView.path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
 
     // Leonid instructed to hide the columns
     const mlbColumnsToHide = [].concat(...[
@@ -722,6 +742,20 @@ export class MolecularLiabilityBrowser {
           console.error(e);
         });
     }, 10);
+  }
+
+  onTreeChanged(treeName: string): void {
+    this.treeName = treeName;
+    if (this.treeInput.value != this.treeName)
+      this.treeInput.value = this.treeName;
+
+    this.urlParams.set('tree', this.treeName);
+    this.mlbView.path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
+
+    const treeIndex = this.treeDf.col('CLONE').toList().findIndex((v) => v == this.treeName);
+    this.treeDf.currentRowIdx = treeIndex;
+
+    this.treeBrowser.selectTree(treeIndex);
   }
 
   onVidChanged(vid: string): void {
@@ -831,5 +865,14 @@ export class MolecularLiabilityBrowser {
 
   async changeTree() {
     const k = 11;
+  }
+
+  // -- Handle controls' events --
+
+  treeDfOnCurrentRowChanged(): void {
+    this.treePopup.hidden = true;
+
+    const treeName = this.treeDf.get('CLONE', this.treeDf.currentRowIdx);
+    this.onTreeChanged(treeName);
   }
 }
