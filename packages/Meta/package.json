@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.1.29",
+  "version": "1.1.30",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -835,7 +835,8 @@
         "1.0.2": {},
         "1.0.3": {},
         "1.0.6": {},
-        "1.0.8": {}
+        "1.0.8": {},
+        "1.0.9": {}
       },
       "description": "Chembl integration",
       "repository": {
