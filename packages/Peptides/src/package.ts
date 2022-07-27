@@ -70,7 +70,7 @@ export async function Peptides(): Promise<void> {
     ui.divH([
       ui.button('Simple demo', () => main('aligned.csv'), ''),
       ui.button('Complex demo', () => main('aligned_2.csv'), ''),
-
+      ui.button('HELM demo', () => main('aligned_3.csv'), ''),
     ]),
   ]);
 }
