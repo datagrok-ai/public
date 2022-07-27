@@ -16,14 +16,14 @@
 		"ws": "^7.5.1"
 	},
 	"scripts": {
-		"debug-multiplot": "grok publish --rebuild",
-		"release-multiplot": "grok publish --rebuild --release",
+		"debug-multiplot": "grok publish",
+		"release-multiplot": "grok publish --release",
 		"build-multiplot": "webpack",
 		"build": "webpack",
-		"debug-multiplot-dev": "grok publish dev --rebuild",
-		"release-multiplot-dev": "grok publish dev --rebuild --release",
-		"debug-multiplot-public": "grok publish public --rebuild",
-		"release-multiplot-public": "grok publish public --rebuild --release"
+		"debug-multiplot-dev": "grok publish dev",
+		"release-multiplot-dev": "grok publish dev --release",
+		"debug-multiplot-public": "grok publish public",
+		"release-multiplot-public": "grok publish public --release"
 	},
 	"devDependencies": {
 		"@typescript-eslint/eslint-plugin": "^4.28.2",

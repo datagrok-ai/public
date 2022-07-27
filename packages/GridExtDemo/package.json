@@ -31,7 +31,7 @@
     "link-all": "npm link datagrok-api @datagrok-libraries/gridext",
     "build": "tsc",
     "debug-gridext-nibr": "webpack && grok publish nibr",
-    "release-gridext-nibr": "grok publish nibr --rebuild --release",
+    "release-gridext-nibr": "grok publish nibr --release",
     "debug-gridext-dg-dev": "webpack && grok publish dev"
   },
   "canEdit": [

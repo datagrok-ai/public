@@ -25,13 +25,13 @@
 	"scripts": {
 		"link-api": "npm link datagrok-api",
 		"debug-hittriage": "webpack && grok publish ",
-		"release-hittriage": "grok publish --rebuild --release",
+		"release-hittriage": "grok publish --release",
 		"build-hittriage": "webpack",
 		"build": "webpack",
-		"debug-hittriage-dev": "grok publish dev --rebuild",
-		"release-hittriage-dev": "grok publish dev --rebuild --release",
-		"debug-hittriage-public": "grok publish public --rebuild",
-		"release-hittriage-public": "grok publish public --rebuild --release"
+		"debug-hittriage-dev": "grok publish dev",
+		"release-hittriage-dev": "grok publish dev --release",
+		"debug-hittriage-public": "grok publish public",
+		"release-hittriage-public": "grok publish public --release"
 	},
 	"canEdit": [
 		"Developers"

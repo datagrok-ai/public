@@ -43,14 +43,14 @@
 		"build-compute": "webpack",
 		"build": "webpack",
 		"build-compute-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build",
-		"debug-compute-dev": "webpack && grok publish dev --rebuild",
+		"debug-compute-dev": "webpack && grok publish dev",
 		"release-compute-dev": "grok publish dev --release",
-		"debug-compute-local": "grok publish local --rebuild",
-		"release-compute-local": "grok publish local --rebuild --release",
-		"debug-compute-localhost": "grok publish localhost --rebuild",
-		"release-compute-localhost": "grok publish localhost --rebuild --release",
-		"debug-compute-compose": "grok publish compose --rebuild",
-		"release-compute-compose": "grok publish compose --rebuild --release"
+		"debug-compute-local": "grok publish local",
+		"release-compute-local": "grok publish local --release",
+		"debug-compute-localhost": "grok publish localhost",
+		"release-compute-localhost": "grok publish localhost --release",
+		"debug-compute-compose": "grok publish compose",
+		"release-compute-compose": "grok publish compose --release"
 	},
 	"canEdit": [
 		"Developers"

@@ -14,10 +14,10 @@
 		"release-cdm": "webpack && grok publish --release",
 		"build-cdm": "webpack",
 		"build": "webpack",
-		"debug-cdm-dev": "grok publish dev --rebuild",
-		"release-cdm-dev": "grok publish dev --rebuild --release",
-		"debug-cdm-public": "grok publish public --rebuild",
-		"release-cdm-public": "grok publish public --rebuild --release"
+		"debug-cdm-dev": "grok publish dev",
+		"release-cdm-dev": "grok publish dev --release",
+		"debug-cdm-public": "grok publish public",
+		"release-cdm-public": "grok publish public --release"
 	},
 	"devDependencies": {
 		"datagrok-api": "^0.148.0",

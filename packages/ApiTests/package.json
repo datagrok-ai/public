@@ -36,7 +36,7 @@
 	},
 	"scripts": {
 		"debug-js-api-tests": "webpack && grok publish localhost",
-		"release-js-api-tests": "grok publish localhost --rebuild --release",
+		"release-js-api-tests": "grok publish localhost --release",
 		"link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",
 		"link-utils": "npm link @datagrok-libraries/utils",
 		"link-api": "npm link datagrok-api",
@@ -45,12 +45,12 @@
 		"test": "jest",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix",
-		"debug-js-api-tests-dev": "grok publish dev --rebuild",
+		"debug-js-api-tests-dev": "grok publish dev",
 		"release-js-api-tests-dev": "webpack && grok publish dev  --release",
-		"debug-js-api-tests-public": "grok publish public --rebuild",
-		"release-js-api-tests-public": "grok publish public --rebuild --release",
-		"debug-js-api-tests-local": "grok publish local --rebuild",
-		"release-js-api-tests-local": "grok publish local --rebuild --release"
+		"debug-js-api-tests-public": "grok publish public",
+		"release-js-api-tests-public": "grok publish public --release",
+		"debug-js-api-tests-local": "grok publish local",
+		"release-js-api-tests-local": "grok publish local --release"
 	},
 	"canEdit": [
 		"Developers"

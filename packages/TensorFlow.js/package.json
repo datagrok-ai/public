@@ -24,14 +24,14 @@
 	"scripts": {
 		"link-api": "npm link datagrok-api",
 		"install-dependencies": "npm install",
-		"debug-tensorflow-dev": "grok publish --rebuild",
-		"release-tensorflow-dev": "grok publish --rebuild --release",
+		"debug-tensorflow-dev": "grok publish",
+		"release-tensorflow-dev": "grok publish --release",
 		"build-tensorflow-dev": "webpack",
 		"build": "webpack",
-		"debug-tensorflow-dev-public": "grok publish public --rebuild",
-		"release-tensorflow-dev-public": "grok publish public --rebuild --release",
-		"debug-tensorflow-dev-local": "grok publish local --rebuild",
-		"release-tensorflow-dev-local": "grok publish local --rebuild --release"
+		"debug-tensorflow-dev-public": "grok publish public",
+		"release-tensorflow-dev-public": "grok publish public --release",
+		"debug-tensorflow-dev-local": "grok publish local",
+		"release-tensorflow-dev-local": "grok publish local --release"
 	},
 	"canEdit": [ "Developers" ],
 	"canView": [ "All users" ],

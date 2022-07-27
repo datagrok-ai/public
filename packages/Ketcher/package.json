@@ -29,14 +29,14 @@
 		"worker-loader": "^3.0.8"
 	},
 	"scripts": {
-		"debug-ketcher": "grok publish --rebuild",
-		"release-ketcher": "grok publish --rebuild --release",
+		"debug-ketcher": "grok publish",
+		"release-ketcher": "grok publish --release",
 		"build-ketcher": "webpack",
 		"build": "webpack",
-		"debug-ketcher-dev": "grok publish dev --rebuild",
-		"release-ketcher-dev": "grok publish dev --rebuild --release",
-		"debug-ketcher-public": "grok publish public --rebuild",
-		"release-ketcher-public": "grok publish public --rebuild --release"
+		"debug-ketcher-dev": "grok publish dev",
+		"release-ketcher-dev": "grok publish dev --release",
+		"debug-ketcher-public": "grok publish public",
+		"release-ketcher-public": "grok publish public --release"
 	},
 	"canEdit": [
 		"Developers"

@@ -28,13 +28,13 @@
 	},
 	"sources": [],
 	"scripts": {
-		"debug-simpkpd": "grok publish --rebuild",
-		"release-simpkpd": "grok publish --rebuild --release",
+		"debug-simpkpd": "grok publish",
+		"release-simpkpd": "grok publish --release",
 		"build-simpkpd": "webpack",
-		"debug-simpkpd-public": "grok publish public --rebuild",
-		"release-simpkpd-public": "grok publish public --rebuild --release",
-		"debug-simpkpd-local": "grok publish local --rebuild",
-		"release-simpkpd-local": "grok publish local --rebuild --release"
+		"debug-simpkpd-public": "grok publish public",
+		"release-simpkpd-public": "grok publish public --release",
+		"debug-simpkpd-local": "grok publish local",
+		"release-simpkpd-local": "grok publish local --release"
 	},
 	"canEdit": [ "Developers" ],
 	"canView": [ "All users" ]
