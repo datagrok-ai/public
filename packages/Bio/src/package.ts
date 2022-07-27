@@ -22,6 +22,7 @@ import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {lru} from './utils/cell-renderer';
 import {representationsWidget} from './widgets/representations';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 //tags: init
 export async function initBio(): Promise<void> {
@@ -241,25 +242,52 @@ export async function compositionAnalysis(): Promise<void> {
   const tv = grok.shell.tv;
   const df = tv.dataFrame;
 
-  const col: DG.Column | null = WebLogo.pickUpSeqCol2(df);
-  if (!col) {
+  const colList: DG.Column[] = df.columns.toList().filter((col) => {
+    if (col.semType != DG.SEMTYPE.MACROMOLECULE)
+      return false;
+
+    const colUH = new UnitsHandler(col);
+    // TODO: prevent for cyclic, branched or multiple chains in Helm
+    return true;
+  });
+
+  const handler = async (col: DG.Column) => {
+    if (!checkInputColumn(col, 'Composition'))
+      return;
+
+    const wlViewer = tv.addViewer('WebLogo', {sequenceColumnName: col.name});
+    grok.shell.tv.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.25);
+  };
+
+  let col: DG.Column | null = null;
+  if (colList.length == 0) {
     grok.shell.error('Current table does not contain sequences');
     return;
+  } else if (colList.length > 1) {
+    const colListNames: string [] = colList.map((col) => col.name);
+    const colInput: DG.InputBase = ui.choiceInput('Column', colListNames[0], colListNames);
+    ui.dialog({
+      title: 'R-Groups Analysis',
+      helpUrl: '/help/domains/bio/macromolecules.md#composition-analysis'
+    })
+      .add(ui.div([
+        colInput,
+      ]))
+      .onOK(async () => {
+        const col: DG.Column | null = colList.find((col) => col.name == colInput.value) ?? null;
+
+        if (col)
+          await handler(col);
+      })
+      .show();
+  } else {
+    col = colList[0];
   }
 
-  if (!checkInputColumn(col, 'Composition'))
+  if (!col)
     return;
 
-  const allowedNotations: string[] = ['fasta', 'separator'];
-  const units = col.getTag(DG.TAGS.UNITS);
-  if (!allowedNotations.some((n) => units.toUpperCase().startsWith(n.toUpperCase()))) {
-    grok.shell.warning('Composition analysis is allowed for ' +
-      `notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')}.`);
-    return;
-  }
-
-  const wlViewer = tv.addViewer('WebLogo', {sequenceColumnName: col.name});
-  grok.shell.tv.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.25);
+  await handler(col);
 }
 
 //top-menu: Bio | Sdf to Json lib...
@@ -287,7 +315,7 @@ function parseMacromolecule(
 export async function peptideMolecule(macroMolecule: DG.Cell): Promise<DG.Widget> {
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-  
+
   return representationsWidget(macroMolecule, monomersLibObject);
 }
 
