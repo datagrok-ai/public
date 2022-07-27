@@ -6,7 +6,7 @@ import {Subject, Observable} from 'rxjs';
 import {addViewerToHeader, StackedBarChart} from './viewers/stacked-barchart-viewer';
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {getTypedArrayConstructor, splitAlignedPeptides} from './utils/misc';
+import {getTypedArrayConstructor, scaleActivity, splitAlignedPeptides} from './utils/misc';
 import {_package} from './package';
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
@@ -16,7 +16,7 @@ import {getDistributionAndStats, getDistributionWidget} from './widgets/distribu
 import {getStats, Stats} from './utils/filtering-statistics';
 
 export class PeptidesModel {
-  static _modelName = 'peptidesModel';
+  static modelName = 'peptidesModel';
 
   _statsDataFrameSubject = new Subject<DG.DataFrame>();
   _sarGridSubject = new Subject<DG.Grid>();
@@ -59,8 +59,6 @@ export class PeptidesModel {
     await (dataFrame.temp[PeptidesModel.modelName] as PeptidesModel).init();
     return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
   }
-
-  static get modelName(): string {return PeptidesModel._modelName;}
 
   get onStatsDataFrameChanged(): Observable<DG.DataFrame> {return this._statsDataFrameSubject.asObservable();}
 
@@ -365,8 +363,8 @@ export class PeptidesModel {
   }
 
   createScaledCol(activityScaling: string, splitSeqDf: DG.DataFrame): void {
-    const [scaledDf, newColName] = PeptidesModel.scaleActivity(
-      activityScaling, this._dataFrame, this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY]);
+    const [scaledDf, newColName] =
+      scaleActivity(activityScaling, this._dataFrame, this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY]);
     //TODO: make another func
     const scaledCol = scaledDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     scaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
@@ -760,40 +758,6 @@ export class PeptidesModel {
       this._dataFrame.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
     this.splitCol.init((i) => bs.get(i));
     this.splitCol.compact();
-  }
-
-  static scaleActivity(
-    activityScaling: string, df: DG.DataFrame, originalActivityName?: string, cloneBitset = false,
-  ): [DG.DataFrame, string] {
-    let currentActivityColName = originalActivityName ?? C.COLUMNS_NAMES.ACTIVITY;
-    const flag = df.columns.names().includes(currentActivityColName) &&
-      currentActivityColName === originalActivityName;
-    currentActivityColName = flag ? currentActivityColName : C.COLUMNS_NAMES.ACTIVITY;
-    const tempDf = df.clone(cloneBitset ? df.filter : null, [currentActivityColName]);
-
-    let formula = (v: number) => v;
-    let newColName = 'activity';
-    switch (activityScaling) {
-    case 'none':
-      break;
-    case 'lg':
-      formula = (v: number) => Math.log10(v);
-      newColName = `Log10(${newColName})`;
-      break;
-    case '-lg':
-      formula = (v: number) => -Math.log10(v);
-      newColName = `-Log10(${newColName})`;
-      break;
-    default:
-      throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
-    }
-
-    const asCol = tempDf.columns.addNewFloat(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    const activityCol = df.getCol(currentActivityColName);
-    asCol.init(i => formula(activityCol.get(i)));
-    df.tags['scaling'] = activityScaling;
-
-    return [tempDf, newColName];
   }
 
   syncProperties(isSourceSAR = true): void {

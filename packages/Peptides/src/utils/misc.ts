@@ -53,3 +53,37 @@ export function splitAlignedPeptides(peptideColumn: DG.Column<string>): DG.DataF
 
   return resultDf;
 } 
+
+export function scaleActivity(
+  activityScaling: string, df: DG.DataFrame, originalActivityName?: string, cloneBitset = false,
+): [DG.DataFrame, string] {
+  let currentActivityColName = originalActivityName ?? C.COLUMNS_NAMES.ACTIVITY;
+  const flag = df.columns.names().includes(currentActivityColName) &&
+    currentActivityColName === originalActivityName;
+  currentActivityColName = flag ? currentActivityColName : C.COLUMNS_NAMES.ACTIVITY;
+  const tempDf = df.clone(cloneBitset ? df.filter : null, [currentActivityColName]);
+
+  let formula = (v: number) => v;
+  let newColName = 'activity';
+  switch (activityScaling) {
+  case 'none':
+    break;
+  case 'lg':
+    formula = (v: number) => Math.log10(v);
+    newColName = `Log10(${newColName})`;
+    break;
+  case '-lg':
+    formula = (v: number) => -Math.log10(v);
+    newColName = `-Log10(${newColName})`;
+    break;
+  default:
+    throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
+  }
+
+  const asCol = tempDf.columns.addNewFloat(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+  const activityCol = df.getCol(currentActivityColName);
+  asCol.init(i => formula(activityCol.get(i)));
+  df.tags['scaling'] = activityScaling;
+
+  return [tempDf, newColName];
+}
