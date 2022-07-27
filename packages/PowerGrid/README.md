@@ -26,6 +26,20 @@ To add an image, double-click on the cell and choose the file. Supported extensi
 
 ![](../../help/develop/how-to/binary-cell-renderer.gif "adding image")
 
+### Linked images
+
+Datagrok automatically detects and visualizes images saved as URLs (those starting with "http://"
+or "https://", and ending with one of the supported image extensions). In case the image did not
+get automatically detected, click on the column, press `F2` to open the column properties, and set
+the following:
+* `quality` to `ImageUrl`
+* `cell.renderer` to `ImageUrl`.
+
+The images might not occur instantaneously. If this happens, clone the layout (Layout | Clone).
+We are working to get that fixed.
+
+![](images/image-url-detection.png)
+
 See also:
 
 * [Viewers](https://datagrok.ai/help/visualize/viewers)
