@@ -289,4 +289,13 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
   test('diversitySearchViewerOpen', async () => {
     await _testDiversitySearchViewerOpen();
   });
+  
+  test('chemblIdToSmiles', async () => {
+    const query = 'Chembl:ChemblIdToSmiles';
+    expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL1185'}), 'CN(C)CCc1c[nH]c2ccc(C[C@H]3COC(=O)N3)cc12');
+    expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL45'}), 'COc1ccc2[nH]cc(CCNC(C)=O)c2c1');
+    expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL7784'}), 'CC(C)(CCCOc1ccc(OCCCC(C)(C)C(=O)O)c(-c2ccccc2Cl)c1)C(=O)O');
+    expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL6781'}), 'CCOC(=O)c1cc2ccccn2c(=O)n1');
+    expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL9812'}), 'COCCOC1(C2=NCCN2)COc2ccccc2O1');
+  });
 });
