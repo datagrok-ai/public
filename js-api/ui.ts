@@ -612,7 +612,7 @@ export function bindInputs(inputs: InputBase[]): StreamSubscription[] {
   inputs.map((i) => {
     inputs.map((j) => {
       if (j != i)
-        s.push(j.onChanged((_) => {
+        s.push(j.onChanged(() => {
           i.notify = false;
           i.stringValue = j.stringValue;
           i.notify = true;
