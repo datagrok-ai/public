@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.1.31",
+  "version": "1.1.32",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -263,6 +263,9 @@
         },
         "1.0.9": {
           "datagrok-api": "^1.4.13"
+        },
+        "1.0.12": {
+          "datagrok-api": "^1.5.1"
         }
       },
       "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis",
