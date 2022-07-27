@@ -10,7 +10,7 @@ import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, Ra
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
-import {__obs} from './src/events';
+import {__obs, StreamSubscription} from './src/events';
 import {_isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
@@ -607,6 +607,21 @@ export function makeDroppable<T>(e: Element,
   );
 }
 
+export function bindInputs(inputs: InputBase[]): StreamSubscription[] {
+  let s: StreamSubscription[] = [];
+  inputs.map((i) => {
+    inputs.map((j) => {
+      if (j != i)
+        s.push(j.onChanged((_) => {
+          i.notify = false;
+          i.stringValue = j.stringValue;
+          i.notify = true;
+        }));
+    })
+  });
+  return s;
+}
+
 export function inputs(inputs: Iterable<InputBase>, options: any = null) {
   return form([...inputs], options);
 }
@@ -652,9 +667,18 @@ export namespace input {
   // }
 }
 
+export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
+  let d = div([label(name, 'ui-label ui-input-label')], 'ui-input-root ui-input-row');
+  d.appendChild(div(inputs));
+  return d;
+}
 
 export function intInput(name: string, value: number | null, onValueChanged: Function | null = null): InputBase<number | null> {
   return new InputBase(api.grok_IntInput(name, value), onValueChanged);
+}
+
+export function sliderInput(name: string, value: number | null, min: number, max: number, onValueChanged: Function | null = null): InputBase<number | null> {
+  return new InputBase(api.grok_SliderInput(name, value, min, max), onValueChanged);
 }
 
 export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): InputBase<T | null> {
@@ -1203,6 +1227,12 @@ export function form(children: InputBase[] = [], options: {} | null = null): HTM
 export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
   let d = form(children, options);
   $(d).addClass('ui-form-condensed');
+  return d;
+}
+
+export function wideForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
+  let d = form(children, options);
+  $(d).addClass('ui-form-wide');
   return d;
 }
 

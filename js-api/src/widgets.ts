@@ -1030,6 +1030,11 @@ export class InputBase<T = any> {
     api.grok_InputBase_AddPostfix(this.dart, postfix);
   };
 
+  /** Adds the specified options */
+  addOptions(options: HTMLElement): void {
+    api.grok_InputBase_AddOptions(this.dart, options);
+  };
+
   /** Adds a usage example to the input's hamburger menu */
   addPatternMenu(pattern: any): void {
     api.grok_InputBase_AddPatternMenu(this.dart, pattern);
@@ -1039,6 +1044,8 @@ export class InputBase<T = any> {
   setTooltip(msg: string, tooltipCheck: (() => boolean) | null = null): void {
     api.grok_InputBase_SetTooltip(this.dart, msg, tooltipCheck);
   };
+
+  get classList(): DOMTokenList { return this.root.classList; }
 }
 
 
