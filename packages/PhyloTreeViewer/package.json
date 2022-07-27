@@ -36,7 +36,8 @@
 		"All users"
 	],
 	"devDependencies": {
-		"webpack-cli": "^4.9.2"
+		"webpack": "latest",
+		"webpack-cli": "latest"
 	},
   "category": "Visualizations"
 }
