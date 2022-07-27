@@ -20,14 +20,14 @@
 		"phylotree/underscore-min.js"
 	],
 	"scripts": {
-		"debug-phylotreeviewer": "grok publish --rebuild",
-		"release-phylotreeviewer": "grok publish --rebuild --release",
+		"debug-phylotreeviewer": "grok publish",
+		"release-phylotreeviewer": "grok publish --release",
 		"build-phylotreeviewer": "webpack",
 		"build": "webpack",
-		"debug-phylotreeviewer-public": "grok publish public --rebuild",
-		"release-phylotreeviewer-public": "grok publish public --rebuild --release",
-		"debug-phylotreeviewer-local": "grok publish local --rebuild",
-		"release-phylotreeviewer-local": "grok publish local --rebuild --release"
+		"debug-phylotreeviewer-public": "grok publish public",
+		"release-phylotreeviewer-public": "grok publish public --release",
+		"debug-phylotreeviewer-local": "grok publish local",
+		"release-phylotreeviewer-local": "grok publish local --release"
 	},
 	"canEdit": [
 		"Developers"

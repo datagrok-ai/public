@@ -25,16 +25,16 @@
 		"webpack-cli": "^4.2.0"
 	},
 	"scripts": {
-		"debug-viewers": "grok publish --rebuild",
-		"release-viewers": "grok publish --rebuild --release",
+		"debug-viewers": "grok publish",
+		"release-viewers": "grok publish --release",
 		"build-viewers": "webpack && grok publish",
 		"build": "webpack",
-		"debug-viewers-public": "grok publish public --rebuild",
-		"release-viewers-public": "grok publish public --rebuild --release",
-		"debug-viewers-local": "grok publish local --rebuild",
-		"release-viewers-local": "grok publish local --rebuild --release",
-		"debug-viewers-localhost": "grok publish localhost --rebuild",
-		"release-viewers-localhost": "grok publish localhost --rebuild --release"
+		"debug-viewers-public": "grok publish public",
+		"release-viewers-public": "grok publish public --release",
+		"debug-viewers-local": "grok publish local",
+		"release-viewers-local": "grok publish local --release",
+		"debug-viewers-localhost": "grok publish localhost",
+		"release-viewers-localhost": "grok publish localhost --release"
 	},
 	"canEdit": [ "Developers" ],
 	"canView": [ "All users" ],

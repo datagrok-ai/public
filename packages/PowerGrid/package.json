@@ -28,16 +28,16 @@
 		"lint-fix": "eslint src --ext .ts --fix",
 		"link-all": "npm link datagrok-api  @datagrok-libraries/utils",
 		"link-api": "npm link datagrok-api ",
-		"debug-powergrid": "grok publish --rebuild",
-		"release-powergrid": "grok publish --rebuild --release",
+		"debug-powergrid": "grok publish",
+		"release-powergrid": "grok publish --release",
 		"build-powergrid": "webpack",
 		"powergrid-deploy": "webpack & grok publish",
 		"build": "webpack",
-		"debug-powergrid-dev": "grok publish dev --rebuild",
-		"release-powergrid-dev": "grok publish dev --rebuild --release",
-		"debug-powergrid-public": "grok publish public --rebuild",
-		"release-powergrid-public": "grok publish public --rebuild --release",
-		"debug-powergrid-local": "grok publish local --rebuild"
+		"debug-powergrid-dev": "grok publish dev",
+		"release-powergrid-dev": "grok publish dev --release",
+		"debug-powergrid-public": "grok publish public",
+		"release-powergrid-public": "grok publish public --release",
+		"debug-powergrid-local": "grok publish local"
 	},
   "category": "Development"
 }

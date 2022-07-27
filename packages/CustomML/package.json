@@ -17,14 +17,14 @@
     "webpack-cli": "latest"
   },
   "scripts": {
-    "debug-customml": "grok publish --rebuild",
-    "release-customml": "grok publish --rebuild --release",
+    "debug-customml": "grok publish",
+    "release-customml": "grok publish --release",
     "build-customml": "webpack",
     "build": "webpack",
-    "debug-customml-dev": "grok publish dev --rebuild",
-    "release-customml-dev": "grok publish dev --rebuild --release",
-    "debug-customml-local": "grok publish local --rebuild",
-    "release-customml-local": "grok publish local --rebuild --release"
+    "debug-customml-dev": "grok publish dev",
+    "release-customml-dev": "grok publish dev --release",
+    "debug-customml-local": "grok publish local",
+    "release-customml-local": "grok publish local --release"
   },
   "canEdit": [
     "Developers"

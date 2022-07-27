@@ -18,16 +18,16 @@
     "webpack-cli": "latest"
   },
   "scripts": {
-    "debug-demo": "grok publish --rebuild",
-    "release-demo": "grok publish --release",
+    "debug-demo": "grok publish",
+    "release-demo": "grok publish localhost --release",
     "build-demo": "webpack",
     "build": "tsc && webpack",
-    "debug-demo-dev": "grok publish dev --rebuild",
-    "release-demo-dev": "grok publish dev --rebuild --release",
-    "debug-demo-public": "grok publish public --rebuild",
-    "release-demo-public": "grok publish public --rebuild --release",
-    "debug-demo-local": "grok publish local --rebuild",
-    "release-demo-local": "grok publish local --rebuild --release"
+    "debug-demo-dev": "grok publish dev",
+    "release-demo-dev": "grok publish dev --release",
+    "debug-demo-public": "grok publish public",
+    "release-demo-public": "grok publish public --release",
+    "debug-demo-local": "grok publish local",
+    "release-demo-local": "grok publish local --release"
   },
   "canView": [
     "All users"
