@@ -7,7 +7,7 @@ import {_package} from '../package-test';
 import {startAnalysis} from '../widgets/analyze-peptides';
 import {PeptidesModel} from '../model';
 import * as C from '../utils/constants';
-import { scaleActivity } from '../utils/misc';
+import {scaleActivity} from '../utils/misc';
 
 category('Core', () => {
   let simpleTable: DG.DataFrame;
@@ -39,7 +39,7 @@ category('Core', () => {
 
     if (model != null) {
       model.currentSelection = {'11': ['D']};
-      grok.shell.closeTable(model._dataFrame);
+      grok.shell.closeTable(model.df);
     }
   });
 
@@ -57,7 +57,7 @@ category('Core', () => {
 
     if (model != null) {
       model.currentSelection = {'13': ['-']};
-      grok.shell.closeTable(model._dataFrame);
+      grok.shell.closeTable(model.df);
     }
   });
 
@@ -82,7 +82,7 @@ category('Core', () => {
     project.addChild(layout);
     const sl = await grok.dapi.layouts.save(layout);
     await grok.dapi.tables.uploadDataFrame(d);
-    const sti =  await grok.dapi.tables.save(tableInfo);
+    const sti = await grok.dapi.tables.save(tableInfo);
     const sp = await grok.dapi.projects.save(project);
 
     grok.shell.closeTable(d);
