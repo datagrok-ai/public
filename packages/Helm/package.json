@@ -2,7 +2,7 @@
   "name": "@datagrok/helm",
   "beta": false,
   "friendlyName": "Helm",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "",
   "dependencies": {
     "datagrok-api": "^1.4.12",
