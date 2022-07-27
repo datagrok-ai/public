@@ -9,6 +9,7 @@ import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
 import {_package} from '../package';
 import $ from 'cash-dom';
+import { scaleActivity } from '../utils/misc';
 
 /** Peptide analysis widget.
  *
@@ -34,8 +35,7 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
     async (currentMethod: string): Promise<void> => {
       const currentActivityCol = activityColumnChoice.value?.name;
 
-      [scaledDf, newScaledColName] = await PeptidesModel.scaleActivity(
-        currentMethod, currentDf, currentActivityCol, true);
+      [scaledDf, newScaledColName] = scaleActivity(currentMethod, currentDf, currentActivityCol, true);
 
       const hist = scaledDf.plot.histogram({
         filteringEnabled: false,
