@@ -3,17 +3,18 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Subject, Observable} from 'rxjs';
-import {addViewerToHeader, StackedBarChart} from './viewers/stacked-barchart-viewer';
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {getTypedArrayConstructor, scaleActivity, splitAlignedPeptides} from './utils/misc';
+import {calculateBarsData, getTypedArrayConstructor, scaleActivity, splitAlignedPeptides} from './utils/misc';
 import {_package} from './package';
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
-import {renderSARCell, setAARRenderer} from './utils/cell-renderer';
+import {renderBarchart, renderSARCell, setAARRenderer} from './utils/cell-renderer';
 import {substitutionsWidget} from './widgets/subst-table';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
 import {getStats, Stats} from './utils/filtering-statistics';
+import * as rxjs from 'rxjs';
+
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -31,9 +32,8 @@ export class PeptidesModel {
   _sarGrid!: DG.Grid;
   _sarVGrid!: DG.Grid;
   _sourceGrid!: DG.Grid;
-  _dataFrame: DG.DataFrame;
+  df: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
-  stackedBarchart!: StackedBarChart;
   edf: DG.DataFrame | null = null;
   statsDf!: DG.DataFrame;
   _currentSelection!: type.SelectionObject;
@@ -49,9 +49,11 @@ export class PeptidesModel {
 
   _usedProperties: {[propName: string]: string | number | boolean} = {};
   monomerMap: {[key: string]: {molfile: string, fullName: string}} = {};
+  barData: type.MonomerDfStats = {};
+  barsBounds: {[position: string]: type.BarCoordinates} = {};
 
   private constructor(dataFrame: DG.DataFrame) {
-    this._dataFrame = dataFrame;
+    this.df = dataFrame;
   }
 
   static async getInstance(dataFrame: DG.DataFrame): Promise<PeptidesModel> {
@@ -69,40 +71,41 @@ export class PeptidesModel {
   get onSubstTableChanged(): Observable<type.SubstitutionsInfo> {return this._substitutionTableSubject.asObservable();}
 
   get currentSelection(): type.SelectionObject {
-    this._currentSelection ??= JSON.parse(this._dataFrame.tags[C.TAGS.SELECTION] || '{}');
+    this._currentSelection ??= JSON.parse(this.df.tags[C.TAGS.SELECTION] || '{}');
     return this._currentSelection;
   }
   set currentSelection(selection: type.SelectionObject) {
     this._currentSelection = selection;
-    this._dataFrame.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
+    this.df.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
     this.invalidateSelection();
+    this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.AMINO_ACIDS), this.df.selection);
   }
 
   get usedProperties(): {[propName: string]: string | number | boolean} {
-    this._usedProperties = JSON.parse(this._dataFrame.tags['sarProperties'] ?? '{}');
+    this._usedProperties = JSON.parse(this.df.tags['sarProperties'] ?? '{}');
     return this._usedProperties;
   }
   set usedProperties(properties: {[propName: string]: string | number | boolean}) {
-    this._dataFrame.tags['sarProperties'] = JSON.stringify(properties);
+    this.df.tags['sarProperties'] = JSON.stringify(properties);
     this._usedProperties = properties;
   }
 
   get splitByPos() {
-    const splitByPosFlag = (this._dataFrame.tags['distributionSplit'] ?? '00')[0];
+    const splitByPosFlag = (this.df.tags['distributionSplit'] ?? '00')[0];
     return splitByPosFlag == '1' ? true : false;
   }
   set splitByPos(flag: boolean) {
-    const splitByAARFlag = (this._dataFrame.tags['distributionSplit'] ?? '00')[1];
-    this._dataFrame.tags['distributionSplit'] = `${flag ? 1 : 0}${splitByAARFlag}`;
+    const splitByAARFlag = (this.df.tags['distributionSplit'] ?? '00')[1];
+    this.df.tags['distributionSplit'] = `${flag ? 1 : 0}${splitByAARFlag}`;
   }
 
   get splitByAAR() {
-    const splitByPosFlag = (this._dataFrame.tags['distributionSplit'] ?? '00')[1];
+    const splitByPosFlag = (this.df.tags['distributionSplit'] ?? '00')[1];
     return splitByPosFlag == '1' ? true : false;
   }
   set splitByAAR(flag: boolean) {
-    const splitByAARFlag = (this._dataFrame.tags['distributionSplit'] ?? '00')[0];
-    this._dataFrame.tags['distributionSplit'] = `${splitByAARFlag}${flag ? 1 : 0}`;
+    const splitByAARFlag = (this.df.tags['distributionSplit'] ?? '00')[0];
+    this.df.tags['distributionSplit'] = `${splitByAARFlag}${flag ? 1 : 0}`;
   }
 
   invalidateSelection(): void {
@@ -113,9 +116,9 @@ export class PeptidesModel {
   createAccordion() {
     const acc = ui.accordion();
     acc.root.style.width = '100%';
-    acc.addTitle(ui.h1(`${this._dataFrame.selection.trueCount} selected rows`));
-    acc.addPane('Substitutions', () => substitutionsWidget(this._dataFrame, this).root, true);
-    acc.addPane('Distribtution', () => getDistributionWidget(this._dataFrame, this).root, true);
+    acc.addTitle(ui.h1(`${this.df.selection.trueCount} selected rows`));
+    acc.addPane('Substitutions', () => substitutionsWidget(this.df, this).root, true);
+    acc.addPane('Distribtution', () => getDistributionWidget(this.df, this).root, true);
 
     return acc;
   }
@@ -144,7 +147,7 @@ export class PeptidesModel {
     return result;
   }
 
-  updateDefault(forceUpdate: boolean = false): void {
+  updateDefault(): void {
     const viewer = this.getViewer();
     if ((this._sourceGrid && !this._isUpdating && this.isPropertyChanged()) || !this.isInitialized) {
       this.isInitialized = true;
@@ -158,19 +161,11 @@ export class PeptidesModel {
         this._substitutionTableSubject.next(this.substitutionsInfo);
         this._isSubstInitialized = true;
       }
-      if (forceUpdate)
-        this.updateBarchart();
+
       this.invalidateSelection();
 
       this._isUpdating = false;
     }
-  }
-
-  //TODO: make sync
-  async updateBarchart(): Promise<void> {
-    this.stackedBarchart ??= await this._dataFrame?.plot.fromType('StackedBarChartAA') as StackedBarChart;
-    if (this.stackedBarchart && this._sourceGrid)
-      addViewerToHeader(this._sourceGrid, this.stackedBarchart);
   }
 
   initializeViewersComponents(): [DG.Grid, DG.Grid, DG.DataFrame] {
@@ -178,18 +173,20 @@ export class PeptidesModel {
       throw new Error(`Source grid is not initialized`);
 
     //Split the aligned sequence into separate AARs
-    const col: DG.Column = this._dataFrame.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
+    const col: DG.Column = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
     const alphabet = col.tags[DG.TAGS.UNITS].split(':')[2];
     const splitSeqDf = splitAlignedPeptides(col);
 
+    this.barData = calculateBarsData(splitSeqDf.columns.toList(), this.df.selection);
+
     const positionColumns = splitSeqDf.columns.names();
 
-    const activityCol = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY)!;
+    const activityCol = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY)!;
     splitSeqDf.columns.add(activityCol);
 
     this.joinDataFrames(positionColumns, splitSeqDf);
 
-    for (const dfCol of this._dataFrame.columns) {
+    for (const dfCol of this.df.columns) {
       if (positionColumns.includes(dfCol.name))
         setAARRenderer(dfCol, alphabet, this._sourceGrid);
     }
@@ -232,6 +229,8 @@ export class PeptidesModel {
 
     positionColumns.push(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
 
+    this.setBarChartInteraction();
+
     this.setCellRenderers(positionColumns, sarGrid, sarVGrid);
 
     // show all the statistics in a tooltip over cell
@@ -248,15 +247,15 @@ export class PeptidesModel {
   }
 
   calcSubstitutions(): void {
-    const activityValues: DG.Column<number> = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
-    const columnList: DG.Column<string>[] = this._dataFrame.columns.bySemTypeAll(C.SEM_TYPES.AMINO_ACIDS);
+    const activityValues: DG.Column<number> = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+    const columnList: DG.Column<string>[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.AMINO_ACIDS);
     const nCols = columnList.length;
     if (nCols == 0)
       throw new Error(`Couldn't find any column of semType '${C.SEM_TYPES.AMINO_ACIDS}'`);
 
     const viewer = this.getViewer();
     this.substitutionsInfo = new Map();
-    const nRows = this._dataFrame.rowCount;
+    const nRows = this.df.rowCount;
     for (let seq1Idx = 0; seq1Idx < nRows - 1; seq1Idx++) {
       for (let seq2Idx = seq1Idx + 1; seq2Idx < nRows; seq2Idx++) {
         let substCounter = 0;
@@ -334,13 +333,13 @@ export class PeptidesModel {
 
   joinDataFrames(positionColumns: string[], splitSeqDf: DG.DataFrame): void {
     // append splitSeqDf columns to source table and make sure columns are not added more than once
-    const name = this._dataFrame.name;
-    const dfColsSet = new Set(this._dataFrame.columns.names());
+    const name = this.df.name;
+    const dfColsSet = new Set(this.df.columns.names());
     if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
-      this._dataFrame.join(splitSeqDf, [C.COLUMNS_NAMES.ACTIVITY], [C.COLUMNS_NAMES.ACTIVITY],
-        this._dataFrame.columns.names(), positionColumns, 'inner', true);
+      this.df.join(splitSeqDf, [C.COLUMNS_NAMES.ACTIVITY], [C.COLUMNS_NAMES.ACTIVITY],
+        this.df.columns.names(), positionColumns, 'inner', true);
     }
-    this._dataFrame.name = name;
+    this.df.name = name;
     this.currentView.name = name;
   }
 
@@ -364,17 +363,17 @@ export class PeptidesModel {
 
   createScaledCol(activityScaling: string, splitSeqDf: DG.DataFrame): void {
     const [scaledDf, newColName] =
-      scaleActivity(activityScaling, this._dataFrame, this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY]);
+      scaleActivity(activityScaling, this.df, this.df.tags[C.COLUMNS_NAMES.ACTIVITY]);
     //TODO: make another func
     const scaledCol = scaledDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     scaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
     splitSeqDf.columns.add(scaledCol);
-    const oldScaledCol = this._dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    this._dataFrame.columns.replace(oldScaledCol, scaledCol);
+    const oldScaledCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    this.df.columns.replace(oldScaledCol, scaledCol);
     const gridCol = this._sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     if (gridCol !== null) {
       gridCol.name = newColName;
-      this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newColName;
+      this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newColName;
     }
 
     this._sourceGrid.columns.setOrder([newColName]);
@@ -391,13 +390,13 @@ export class PeptidesModel {
     const ratioCol = matrixCols.addNewFloat(C.COLUMNS_NAMES.RATIO);
     const aarCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
     const posCol = matrixDf.getCol(C.COLUMNS_NAMES.POSITION);
-    const activityCol: number[] = this._dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).toList();
+    const activityCol: number[] = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).toList();
     const sourceDfLen = activityCol.length;
 
     for (let i = 0; i < matrixDf.rowCount; i++) {
       const position: string = posCol.get(i);
       const aar: string = aarCol.get(i);
-      const mask = DG.BitSet.create(sourceDfLen, (j) => this._dataFrame.get(position, j) == aar);
+      const mask = DG.BitSet.create(sourceDfLen, (j) => this.df.get(position, j) == aar);
       const stats = getStats(activityCol, mask);
 
       mdCol.set(i, stats.meanDifference);
@@ -419,7 +418,7 @@ export class PeptidesModel {
       const mdCol = this.statsDf.getCol(sortArgument);
       sortArgument = 'Absolute Mean difference';
       const absMDCol = this.statsDf.columns.addNewFloat(sortArgument);
-      absMDCol.init(i => Math.abs(mdCol.get(i)));
+      absMDCol.init((i) => Math.abs(mdCol.get(i)));
     }
 
     const aarWeightsDf = this.statsDf.groupBy([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]).sum(sortArgument, 'weight')
@@ -483,6 +482,45 @@ export class PeptidesModel {
     return [sarGrid, sarVGrid];
   }
 
+  setBarChartInteraction() {
+    const eventAction = (ev: MouseEvent): void => {
+      const cell = this._sourceGrid.hitTest(ev.offsetX, ev.offsetY);
+      if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.AMINO_ACIDS) {
+        const newBarPart = this.findAARandPosition(cell, ev);
+        this.requestAction(ev, newBarPart);
+      }
+    };
+
+    // The following events makes the barchart interactive
+    rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+    rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'click').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+    // rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'mouseout').subscribe(() => barchart.computeData());
+  }
+
+  findAARandPosition(cell: DG.GridCell, ev: MouseEvent) {
+    const barCoords = this.barsBounds[cell.tableColumn!.name];
+    for (const [monomer, coords] of Object.entries(barCoords)) {
+      const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
+      const isIntersectingY = ev.offsetY >= coords.y && ev.offsetY <= coords.y + coords.height;
+      if (isIntersectingX && isIntersectingY)
+        return {monomer: monomer, position: cell.tableColumn!.name};
+    }
+
+    return null;
+  }
+
+  requestAction(ev: MouseEvent, barPart: {position: string, monomer: string} | null) {
+    if (!barPart)
+      return;
+    const monomer = barPart.monomer;
+    const position = barPart.position;
+    if (ev.type === 'click') {
+      ev.shiftKey ? this.modifyCurrentSelection(monomer, position) :
+        this.initCurrentSelection(monomer, position);
+    } else
+      this.showTooltipAt(monomer, position, ev.clientX, ev.clientY);
+  }
+
   setCellRenderers(renderColNames: string[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
     const mdCol = this.statsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     //decompose into two different renering funcs
@@ -524,6 +562,26 @@ export class PeptidesModel {
     };
     sarGrid.onCellRender.subscribe(renderCell);
     sarVGrid.onCellRender.subscribe(renderCell);
+
+    this._sourceGrid.setOptions({'colHeaderHeight': 130});
+    this._sourceGrid.onCellRender.subscribe((gcArgs) => {
+      const context = gcArgs.g;
+      const bounds = gcArgs.bounds;
+      const col = gcArgs.cell.tableColumn;
+
+      context.save();
+      context.beginPath();
+      context.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+      context.clip();
+
+      if (gcArgs.cell.isColHeader && col?.semType == C.SEM_TYPES.AMINO_ACIDS) {
+        const barBounds = renderBarchart(context, col, this.barData[col.name], bounds, this.df.filter.trueCount);
+        this.barsBounds[col.name] = barBounds;
+        gcArgs.preventDefault();
+      }
+
+      context.restore();
+    });
   }
 
   setTooltips(renderColNames: string[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
@@ -536,9 +594,9 @@ export class PeptidesModel {
         const table = cell.grid.table;
         const currentAAR = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
 
-        if (tableCol.semType == C.SEM_TYPES.AMINO_ACIDS) {
+        if (tableCol.semType == C.SEM_TYPES.AMINO_ACIDS)
           this.showMonomerTooltip(currentAAR, x, y);
-        } else if (cell.cell.value && renderColNames.includes(tableColName!)) {
+        else if (cell.cell.value && renderColNames.includes(tableColName!)) {
           const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
             table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
 
@@ -562,22 +620,22 @@ export class PeptidesModel {
   showMonomerTooltip(aar: string, x: number, y: number): void {
     const tooltipElements: HTMLDivElement[] = [];
     //@ts-ignore: no types for org
-    const monomer: type.HELMMonomer = org.helm.webeditor.monomers.getMonomer("HELM_AA", aar);
+    const monomer: type.HELMMonomer = org.helm.webeditor.monomers.getMonomer('HELM_AA', aar);
     if (monomer) {
       tooltipElements.push(ui.div(monomer.n));
       const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
       tooltipElements.push(grok.chem.svgMol(monomer.m, undefined, undefined, options));
-    } else {
+    } else
       tooltipElements.push(ui.div(aar));
-    }
+
     ui.tooltip.show(ui.divV(tooltipElements), x, y);
   }
 
   showTooltipAt(aar: string, position: string, x: number, y: number): void {
     const currentStatsDf = this.statsDf.rows.match({Pos: position, AAR: aar}).toDataFrame();
-    const activityCol = this._dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+    const activityCol = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
     const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
-    const currentPosCol = this._dataFrame.getCol(position);
+    const currentPosCol = this.df.getCol(position);
     splitCol.init((i) => currentPosCol.get(i) == aar);
     const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
     const stats: Stats = {
@@ -586,8 +644,10 @@ export class PeptidesModel {
       pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
       meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
     };
-    const tooltip = getDistributionAndStats(
-      distributionTable, stats, `${position} : ${aar}`, 'Other', true);
+    if (!stats.count)
+      return;
+
+    const tooltip = getDistributionAndStats(distributionTable, stats, `${position} : ${aar}`, 'Other', true);
 
     ui.tooltip.show(tooltip, x, y);
   }
@@ -666,10 +726,9 @@ export class PeptidesModel {
   setBitsetCallback(): void {
     if (this.isBitsetChangedInitialized)
       return;
-    const selection = this._dataFrame.selection;
+    const selection = this.df.selection;
 
     const changeBitset = (currentBitset: DG.BitSet): void => {
-
       const edfSelection = this.edf?.selection;
       if (this.isPeptideSpaceChangingBitset) {
         if (edfSelection == null)
@@ -695,7 +754,7 @@ export class PeptidesModel {
       //TODO: move out
       const getBitAt = (i: number) => {
         for (const position of positionList) {
-          const positionCol: DG.Column<string> = this._dataFrame.getCol(position);
+          const positionCol: DG.Column<string> = this.df.getCol(position);
           if (this._currentSelection[position].includes(positionCol.get(i)!))
             return true;
         }
@@ -712,7 +771,7 @@ export class PeptidesModel {
 
   fireBitsetChanged(isPeptideSpaceSource: boolean = false): void {
     this.isPeptideSpaceChangingBitset = isPeptideSpaceSource;
-    this._dataFrame.selection.fireChanged();
+    this.df.selection.fireChanged();
     this.modifyOrCreateSplitCol();
     grok.shell.o = this.createAccordion().root;
     this.isPeptideSpaceChangingBitset = false;
@@ -748,14 +807,14 @@ export class PeptidesModel {
   }
 
   getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
-    const currentAAR = this._dataFrame.get(position, index) as string;
+    const currentAAR = this.df.get(position, index) as string;
     return currentAAR === aar ? aarLabel : C.CATEGORIES.OTHER;
   }
 
   modifyOrCreateSplitCol(): void {
-    const bs = this._dataFrame.selection;
-    this.splitCol = this._dataFrame.col(C.COLUMNS_NAMES.SPLIT_COL) ??
-      this._dataFrame.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
+    const bs = this.df.selection;
+    this.splitCol = this.df.col(C.COLUMNS_NAMES.SPLIT_COL) ??
+      this.df.columns.addNewBool(C.COLUMNS_NAMES.SPLIT_COL);
     this.splitCol.init((i) => bs.get(i));
     this.splitCol.compact();
   }
@@ -782,17 +841,17 @@ export class PeptidesModel {
     if (this.isInitialized)
       return;
 
-    this.currentView = this._dataFrame.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
-      grok.shell.addTableView(this._dataFrame);
+    this.currentView = this.df.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
+      grok.shell.addTableView(this.df);
     this._sourceGrid = this.currentView.grid;
-    if (this._dataFrame.tags[C.PEPTIDES_ANALYSIS] == 'true')
+    if (this.df.tags[C.PEPTIDES_ANALYSIS] == 'true')
       return;
 
-    this._dataFrame.tags[C.PEPTIDES_ANALYSIS] = 'true';
-    this._sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
-    this._sourceGrid.columns.setOrder([this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
+    this.df.tags[C.PEPTIDES_ANALYSIS] = 'true';
+    this._sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
+    this._sourceGrid.columns.setOrder([this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
 
-    this._dataFrame.temp[C.EMBEDDING_STATUS] = false;
+    this.df.temp[C.EMBEDDING_STATUS] = false;
     const adjustCellSize = (grid: DG.Grid): void => {
       const colNum = grid.columns.length;
       for (let i = 0; i < colNum; ++i) {
@@ -805,30 +864,29 @@ export class PeptidesModel {
     for (let i = 0; i < this._sourceGrid.columns.length; i++) {
       const aarCol = this._sourceGrid.columns.byIndex(i);
       if (aarCol && aarCol.name && aarCol.column?.semType !== C.SEM_TYPES.AMINO_ACIDS &&
-        aarCol.name !== this._dataFrame.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED])
+        aarCol.name !== this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED])
         aarCol.visible = false;
     }
 
-    const options = {scaling: this._dataFrame.tags['scaling']};
+    const options = {scaling: this.df.tags['scaling']};
 
     const dockManager = this.currentView.dockManager;
 
-    this.sarViewer = await this._dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
+    this.sarViewer = await this.df.plot.fromType('peptide-sar-viewer', options) as SARViewer;
 
     this.sarViewerVertical =
-      await this._dataFrame.plot.fromType('peptide-sar-viewer-vertical', options) as SARViewerVertical;
+      await this.df.plot.fromType('peptide-sar-viewer-vertical', options) as SARViewerVertical;
 
     const sarViewersGroup: viewerTypes[] = [this.sarViewer, this.sarViewerVertical];
 
-    if (this._dataFrame.rowCount <= 10000) {
+    if (this.df.rowCount <= 10000) {
       const peptideSpaceViewerOptions = {method: 'UMAP', measure: 'Levenshtein', cyclesCount: 100};
       const peptideSpaceViewer =
-        await this._dataFrame.plot.fromType('peptide-space-viewer', peptideSpaceViewerOptions) as PeptideSpaceViewer;
+        await this.df.plot.fromType('peptide-space-viewer', peptideSpaceViewerOptions) as PeptideSpaceViewer;
       dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
     }
 
     this.updateDefault();
-    await this.updateBarchart();
 
     dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 

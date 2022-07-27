@@ -9,7 +9,7 @@ import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
 import {_package} from '../package';
 import $ from 'cash-dom';
-import { scaleActivity } from '../utils/misc';
+import {scaleActivity} from '../utils/misc';
 
 /** Peptide analysis widget.
  *

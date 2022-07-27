@@ -5,8 +5,6 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './utils/constants';
 
-import {StackedBarChart} from './viewers/stacked-barchart-viewer';
-
 import {analyzePeptidesWidget} from './widgets/analyze-peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
@@ -15,7 +13,7 @@ import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
 import {msaWidget} from './widgets/multiple-sequence-alignment';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
-import { getSeparator } from './utils/misc';
+import {getSeparator} from './utils/misc';
 
 export const _package = new DG.Package();
 let currentTable: DG.DataFrame;
@@ -135,13 +133,6 @@ export async function peptideMolecule2(_aar: string): Promise<DG.Widget> {
   [currentTable, alignedSequenceColumn] = getOrDefine();
   const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
   return peptideMolecule(peptide);
-}
-
-//name: StackedBarChartAA
-//tags: viewer
-//output: viewer result
-export function stackedBarChart(): DG.JsViewer {
-  return new StackedBarChart();
 }
 
 //name: Manual Alignment

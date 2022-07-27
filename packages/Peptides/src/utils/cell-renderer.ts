@@ -1,6 +1,8 @@
+import {SeqPalette, SeqPaletteBase} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
+import {getPalleteByType} from './misc';
 import * as types from './types';
 
 /**
@@ -117,4 +119,88 @@ export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAA
     canvasContext.lineWidth = 1;
     canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);
   }
+}
+
+export function renderBarchart(ctx: CanvasRenderingContext2D, col: DG.Column, monomerColStats: types.MonomerColStats,
+  bounds: DG.Rect, max: number): types.BarCoordinates {
+  let sum = col.length - (monomerColStats['-']?.count ?? 0);
+  const colorPalette = getPalleteByType(col.tags[C.TAGS.ALPHABET]);
+  const name = col.name;
+  const colNameSize = ctx.measureText(name);
+  const margin = 0.2;
+  const innerMargin = 0.02;
+  const selectLineRatio = 0.1;
+  const fontSize = 11;
+
+  const xMargin = bounds.x + bounds.width * margin;
+  const yMargin = bounds.y + bounds.height * margin / 4;
+  const wMargin = bounds.width - bounds.width * margin * 2;
+  const hMargin = bounds.height - bounds.height * margin;
+  const barWidth = wMargin - 10;
+  ctx.fillStyle = 'black';
+  ctx.textBaseline = 'top';
+  ctx.font = `${hMargin * margin / 2}px`;
+  ctx.fillText(name, xMargin + (wMargin - colNameSize.width) / 2, yMargin + hMargin + hMargin * margin / 4);
+
+
+  const barCoordinates: types.BarCoordinates = {};
+
+  const xStart = xMargin + (wMargin - barWidth) / 2;
+  for (const [monomer, monomerStats] of Object.entries(monomerColStats)) {
+    if (monomer == '-')
+      continue;
+
+    const count = monomerStats.count;
+    const sBarHeight = hMargin * count / max;
+    const gapSize = sBarHeight * innerMargin;
+    const verticalShift = (max - sum) / max;
+    const textSize = ctx.measureText(monomer);
+    const subBarHeight = sBarHeight - gapSize;
+    const yStart = yMargin + hMargin * verticalShift + gapSize / 2;
+    barCoordinates[monomer] = new DG.Rect(xStart, yStart, barWidth, subBarHeight);
+
+    const color = colorPalette.get(monomer);
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+
+    if (textSize.width <= subBarHeight) {
+      if (color != SeqPaletteBase.undefinedColor)
+        ctx.fillRect(xStart, yStart, barWidth, subBarHeight);
+      else {
+        ctx.strokeRect(xStart + 0.5, yStart, barWidth - 1, subBarHeight);
+        barCoordinates[monomer].x -= 0.5;
+        barCoordinates[monomer].width -= 1;
+      }
+
+      const leftMargin = (wMargin - (monomer.length > 1 ? fontSize : textSize.width - 8)) / 2;
+      const absX = xMargin + leftMargin;
+      const absY = yStart + subBarHeight / 2 + (monomer.length == 1 ? 4 : 0);
+      const origTransform = ctx.getTransform();
+
+      if (monomer.length > 1) {
+        ctx.translate(absX, absY);
+        ctx.rotate(Math.PI / 2);
+        ctx.translate(-absX, -absY);
+      }
+
+      ctx.fillStyle = 'black';
+      ctx.font = `${fontSize}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(monomer, absX, absY);
+      ctx.setTransform(origTransform);
+    } else
+      ctx.fillRect(xStart, yStart, barWidth, subBarHeight);
+
+    const selectedCount = monomerStats.selected;
+    if (selectedCount) {
+      ctx.fillStyle = 'rgb(255,165,0)';
+      ctx.fillRect(xStart - wMargin * selectLineRatio * 2, yStart,
+        barWidth * selectLineRatio, hMargin * selectedCount / max - gapSize);
+    }
+
+    sum -= count;
+  }
+
+  return barCoordinates;
 }

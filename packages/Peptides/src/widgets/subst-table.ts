@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
-import { getSeparator } from '../utils/misc';
+import {getSeparator} from '../utils/misc';
 
 export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   const substInfo = model.substitutionsInfo;

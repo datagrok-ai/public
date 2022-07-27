@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
+import * as type from './types';
 
 import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
 import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
@@ -52,7 +53,7 @@ export function splitAlignedPeptides(peptideColumn: DG.Column<string>): DG.DataF
   }
 
   return resultDf;
-} 
+}
 
 export function scaleActivity(
   activityScaling: string, df: DG.DataFrame, originalActivityName?: string, cloneBitset = false,
@@ -82,8 +83,34 @@ export function scaleActivity(
 
   const asCol = tempDf.columns.addNewFloat(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const activityCol = df.getCol(currentActivityColName);
-  asCol.init(i => formula(activityCol.get(i)));
+  asCol.init((i) => formula(activityCol.get(i)));
   df.tags['scaling'] = activityScaling;
 
   return [tempDf, newColName];
+}
+
+export function calculateBarsData(columns: DG.Column<string>[], selection: DG.BitSet): type.MonomerDfStats {
+  const dfStats: type.MonomerDfStats = {};
+  const columnsLen = columns.length;
+
+  for (let colIndex = 0; colIndex < columnsLen; colIndex++) {
+    const col = columns[colIndex];
+    dfStats[col.name] = calculateBarData(col, selection);
+  }
+
+  return dfStats;
+}
+
+export function calculateBarData(col: DG.Column<string>, selection: DG.BitSet): type.MonomerColStats {
+  const colLen = col.length;
+  const colStats: type.MonomerColStats = {};
+  col.categories.forEach((monomer) => colStats[monomer] = {count: 0, selected: 0});
+
+  for (let rowIndex = 0; rowIndex < colLen; rowIndex++) {
+    const monomerStats = colStats[col.get(rowIndex)!];
+    monomerStats.count += 1;
+    monomerStats.selected += +selection.get(rowIndex);
+  }
+
+  return colStats;
 }

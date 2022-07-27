@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
-import { getSeparator } from '../utils/misc';
+import {getSeparator} from '../utils/misc';
 
 /**
  * 3D representation widget of peptide molecule.
