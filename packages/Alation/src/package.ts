@@ -46,11 +46,24 @@ export async function Alation() {
     const contextMenu = args.args.menu;
     if (obj.ds_id && obj.table_type) {
       contextMenu.item('Open table', async () => {
-        await view.connectToDb(obj.ds_id, async (conn: DG.DataConnection) => {await view.getTable(conn, obj);});
+        const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
+        try {
+          await view.connectToDb(obj.ds_id, async (conn: DG.DataConnection) => {await view.getTable(conn, obj);});
+        } catch {
+          grok.shell.error('Couldn\'t retrieve table');
+        }
+        progressIndicator.close();
       });
     } else if (obj.datasource_id && obj.content) {
       contextMenu.item('Run query', async () => {
-        await view.connectToDb(obj.datasource_id, async (conn: DG.DataConnection) => {await view.runQuery(conn, obj);});
+        const progressIndicator = DG.TaskBarProgressIndicator.create('Running query...');
+        try {
+          await view.connectToDb(obj.datasource_id,
+            async (conn: DG.DataConnection) => {await view.runQuery(conn, obj);});
+        } catch {
+          grok.shell.error('Couldn\'t retrieve table');
+        }
+        progressIndicator.close();
       });
     }
   });

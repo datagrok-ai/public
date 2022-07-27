@@ -29,8 +29,14 @@ export function createTree(
       $(item.root).children().first().before(iconElement);
 
       item.root.addEventListener('dblclick', async () => {
-        await connectToDb(queryObject.datasource_id,
-          async (conn: DG.DataConnection) => {await runQuery(conn, queryObject)});
+        const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
+        try {
+          await connectToDb(queryObject.datasource_id,
+            async (conn: DG.DataConnection) => {await runQuery(conn, queryObject)});
+        } catch {
+          grok.shell.error('Couldn\'t retrieve table');
+        }
+        progressIndicator.close();
       });
       item.root.addEventListener('mousedown', async (ev) => {
         if (ev.button != 0 || isSettingDescription)
@@ -55,7 +61,13 @@ export function createTree(
       const item = treeRootNode!.item(name, tableObject);
       $(item.root).children().first().before(iconElement);
       item.root.addEventListener('dblclick', async () => {
-        await connectToDb(tableObject.ds_id, async (conn: DG.DataConnection) => {await getTable(conn, tableObject);});
+        const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
+        try {
+          await connectToDb(tableObject.ds_id, async (conn: DG.DataConnection) => {await getTable(conn, tableObject);});
+        } catch {
+          grok.shell.error('Couldn\'t retrieve table');
+        }
+        progressIndicator.close();
       });
       item.root.addEventListener('mousedown', async (ev) => {
         if (ev.button != 0 || isSettingDescription)
