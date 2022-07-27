@@ -11,8 +11,6 @@
 
 class BioPackageDetectors extends DG.Package {
 
-  static mmSemType = 'Macromolecule';
-
   static PeptideFastaAlphabet = new Set([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
     'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
@@ -40,9 +38,12 @@ class BioPackageDetectors extends DG.Package {
   detectMacromolecule(col) {
     // To collect alphabet freq three strategies can be used:
     // as chars, as fasta (single or within square brackets), as with the separator.
-    if (DG.Detector.sampleCategories(col, (s) => BioPackageDetectors.isHelm(s), 1)) {
+    if (
+      !(col.categories.length == 1 && !col.categories[0]) && // TODO: Remove with tests for single empty category value
+      DG.Detector.sampleCategories(col, (s) => BioPackageDetectors.isHelm(s), 1)
+    ) {
       col.setTag(DG.TAGS.UNITS, 'HELM');
-      return BioPackageDetectors.mmSemType;
+      return DG.SEMTYPE.MACROMOLECULE;
     }
 
     const decoyAlphabets = [
@@ -72,6 +73,7 @@ class BioPackageDetectors extends DG.Package {
     // TODO: Detect HELM sequence
     // TODO: Lazy calculations could be helpful for performance and convenient for expressing classification logic.
     const statsAsChars = BioPackageDetectors.getStats(col, 5, BioPackageDetectors.splitterAsChars);
+    // if (Object.keys(statsAsChars.freq).length === 0) return;
 
     const decoy = BioPackageDetectors.detectAlphabet(statsAsChars.freq, decoyAlphabets, null, 0.35);
     if (decoy != 'UN') return null;
@@ -83,7 +85,7 @@ class BioPackageDetectors extends DG.Package {
 
         const units = `fasta:SEQ.MSA:${alphabet}`;
         col.setTag(DG.TAGS.UNITS, units);
-        return BioPackageDetectors.mmSemType;
+        return DG.SEMTYPE.MACROMOLECULE;
       }
     } else {
       const separator = BioPackageDetectors.detectSeparator(statsAsChars.freq);
@@ -107,7 +109,7 @@ class BioPackageDetectors extends DG.Package {
         const units = `${format}:${seqType}:${alphabet}`;
         col.setTag(DG.TAGS.UNITS, units);
         if (separator) col.setTag('separator', separator);
-        return BioPackageDetectors.mmSemType;
+        return DG.SEMTYPE.MACROMOLECULE;
       }
     }
   }

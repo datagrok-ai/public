@@ -14,6 +14,13 @@ category('detectors', () => {
 2
 3`;
 
+  const csvDfEmpty: string = `id,col1
+1,
+2,
+3,
+4,
+5,`;
+
   const csvDf2: string = `col1
 4
 5
@@ -179,6 +186,7 @@ MWRSWY-CKHP
     };
   };
 
+  test('NegativeEmpty', async () => {await _testNeg(readCsv('csvDfEmpty', csvDfEmpty), 'col1'); });
   test('Negative1', async () => { await _testNeg(readCsv('csvDf1', csvDf1), 'col1'); });
   test('Negative2', async () => { await _testNeg(readCsv('csvDf2', csvDf2), 'col1'); });
   test('Negative3', async () => { await _testNeg(readCsv('csvDf3', csvDf3), 'col1'); });
