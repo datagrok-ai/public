@@ -3,7 +3,7 @@
  * TODO: add description here
 */
 //base import
-//import * as grok from 'datagrok-api/grok';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 //QJuery import
@@ -13,18 +13,21 @@ import $ from 'cash-dom';
 import {OpenLayers} from '../src/gis-openlayer';
 import {Coordinate} from '../src/gis-openlayer';
 import {OLCallbackParam} from '../src/gis-openlayer';
+import { LogEventParameter } from 'datagrok-api/dg';
 
 
-type Pair<T, K> = [T, K];
+//type Pair<T, K> = [T, K]; //used Coordinate instead if it
 
 export class GisViewer extends DG.JsViewer {
   latitudeColumnName: string;
   longitudeColumnName: string;
   valuesColumnName: string;
   renderType: string;
+  weightedMarkers: boolean;
   markerSize: number;
   markerOpacity: number;
-  weightedMarkers: boolean;
+  heatmapRadius: number;
+  heatmapBlur: number;
 
   //ui elements
   panelLeft: HTMLElement | null = null;
@@ -40,7 +43,6 @@ export class GisViewer extends DG.JsViewer {
   layers = [];
   coordinates: Coordinate[] = [];
   values: Array<string | number> = [];
-  // coordinates: Pair<number, number>[] = [];
 
   constructor() {
     super();
@@ -52,9 +54,16 @@ export class GisViewer extends DG.JsViewer {
     this.latitudeColumnName = this.string('latitudeColumnName');
     this.longitudeColumnName = this.string('longitudeColumnName');
     this.valuesColumnName = this.string('valuesColumnName');
-    this.markerSize = this.int('markerSize', 10);
+    this.weightedMarkers = this.bool('weightedMarkers', false);
+    this.markerSize = this.int('markerSize', 5);
     this.markerOpacity = this.float('markerOpacity', 0.8);
-    this.weightedMarkers = this.bool('weightedMarkers', true);
+
+    this.heatmapRadius = this.int('heatmapRadius', 10);
+    this.heatmapBlur = this.int('heatmapBlur', 20);
+
+    // const markerOpacityProp = this.getProperty('markerOpacity');
+    // if (markerOpacityProp) markerOpacityProp.options;
+    // DG.Property
 
     this.renderType = this.string('renderType', 'markers');
     const renderTypeProp = this.getProperty('renderType');
@@ -65,7 +74,7 @@ export class GisViewer extends DG.JsViewer {
     //create UI>>
     this.lblStatusCoords = ui.div('long, lat');
     this.lblStatusCoords.id = 'lbl-coord';
-    const divStatusBody = ui.divH([ui.div('status bar: '), this.lblStatusCoords]);
+    const divStatusBody = ui.divH([ui.div('coord :'), this.lblStatusCoords]);
     this.panelBottom = ui.box(divStatusBody);
     this.panelBottom.style.maxHeight = '20px';
     this.panelBottom.style.background = '#f2f2f5';
@@ -75,26 +84,32 @@ export class GisViewer extends DG.JsViewer {
     this.panelTop.style.maxHeight = '36px';
 
     this.panelLeft = ui.box();
-    this.panelLeft.style.maxWidth = '90px';
+    this.panelLeft.style.maxWidth = '110px';
+    this.panelLeft.style.minWidth = '50px';
     this.panelLeft.style.border = 'solid 1px darkgray';
 
     this.panelRight = ui.box();
     this.panelRight.style.maxWidth = '10px';
+    this.panelRight.style.minWidth = '2px';
     //this.panelRight.style.border = 'solid 1px darkgray';
     //menu bar icons>>
-    const leftPanelBtn = ui.button('Left panel', ()=>{
-      // this.panelLeft.style.visibility = (this.panelLeft.style.visibility == 'visible') ? 'hidden' : 'visible';
+
+    // ui.icons.settings
+
+    // const leftPanelBtn = ui.button('Left panel', ()=>{
+    const leftPanelBtn = ui.button(ui.iconFA('layer-group'), ()=>{ //cogs
       if (this.panelLeft) {
         if (this.panelLeft.style.visibility == 'visible') {
           this.panelLeft.style.visibility = 'hidden';
           this.panelLeft.style.maxWidth = '2px';
+          this.panelLeft.style.minWidth = '2px';
         } else {
           this.panelLeft.style.visibility = 'visible';
-          this.panelLeft.style.maxWidth = '90px';
+          this.panelLeft.style.maxWidth = '110px';
+          this.panelLeft.style.minWidth = '50px';
         }
       }
       this.rootOnSizeChanged(null);
-      //$(this.panelLeft).hide();
     });
     const rightPanelBtn = ui.button('Right panel', ()=>{
       // if (this.panelRight)
@@ -103,20 +118,26 @@ export class GisViewer extends DG.JsViewer {
         if (this.panelRight.style.visibility == 'visible') {
           this.panelRight.style.visibility = 'hidden';
           this.panelRight.style.maxWidth = '2px';
+          this.panelRight.style.minWidth = '2px';
         } else {
           this.panelRight.style.visibility = 'visible';
           this.panelRight.style.maxWidth = '10px';
+          this.panelRight.style.minWidth = '2px';
         }
       }
       this.rootOnSizeChanged(null);
       //$(this.panelRight).hide();
     });
+    $(rightPanelBtn).hide(); //temporary hide this button
+
     const heatmapBtn = ui.button('HM', ()=>{
       this.renderHeat();
-      //$(this.panelRight).hide();
+      this.updateLayersList();
     });
-    //add buttont to top menu panel
+
+    //add buttons to top menu panel
     this.panelTop.append(ui.divH([leftPanelBtn, rightPanelBtn, heatmapBtn]));
+    //this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn]));
 
     //left panel icons>>
     const l1 = ui.div(' <l1>');
@@ -124,17 +145,22 @@ export class GisViewer extends DG.JsViewer {
     this.divLayersList = ui.divV([l1, l2]);
     this.panelLeft.append(this.divLayersList);
 
-    this.panelLeft.style.visibility = 'visible';
-    this.panelRight.style.visibility = 'visible';
-    // $(this.panelLeft).hide();
-    // $(this.panelRight).hide();
+    leftPanelBtn.click();
+    // this.panelLeft.style.visibility = 'hidden';
+    // this.panelLeft.style.maxWidth = '2px';
+    // this.panelLeft.style.minWidth = '2px';
+    this.panelRight.style.visibility = 'hidden';
+    this.panelRight.style.maxWidth = '2px';
+    this.panelRight.style.minWidth = '2px';
 
     const body = ui.box();
     body.id = 'map-container';
+    body.style.border = 'solid 1px darkgray';
+    body.style.minWidth = '100px';
 
     this.viewerContainer = ui.splitV(
       [this.panelTop,
-        ui.splitH([this.panelLeft, body, this.panelRight]),
+        ui.splitH([this.panelLeft, body, this.panelRight], null, true),
         this.panelBottom]);
 
     this.viewerContainer.style.border = 'solid 2px lightgray';
@@ -144,31 +170,92 @@ export class GisViewer extends DG.JsViewer {
   }
 
   init() {
-    this.initUi();
-    this.ol.initMap('map-container');
+    try {
+      ui.setUpdateIndicator(this.root, true);
 
-    this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
+      this.initUi();
+      this.ol.initMap('map-container');
 
-    this.ol.setMapPointermoveCallback(this.showCoordsInStatus);
-    this.ol.labelStatus = this.lblStatusCoords; //TODO: remove this construction - all interactions through callback!!
+      //TODO: refactor here>
+      this.ol.markerSize = this.markerSize;
+      this.ol.markerOpacity = this.markerOpacity;
+      this.ol.weightedMarkers = this.weightedMarkers;
+      this.ol.heatmapRadius = this.heatmapRadius;
+      this.ol.heatmapBlur = this.heatmapBlur;
 
-    this.updateLayersList();
+      this.updateLayersList();
 
-    this.initialized = true;
+      //subscribe to events
+      this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
+      //setup callbacks
+      this.ol.setMapPointermoveCallback(this.showCoordsInStatus);
+
+      this.initialized = true;
+    }
+    catch (e: any) {
+      this.initialized = false;
+      grok.shell.error(e.toString())
+      this.root.appendChild(
+        ui.divV([ui.div('Error loading GIS map!'), ui.div(e.toString())]));
+    }
+    finally {
+      ui.setUpdateIndicator(this.root, false);
+    }
   }
 
+  // updateLayersList() {
+  //   if (!this.ol) return;
+  //   if (!this.panelLeft) return;
+  //   if (!this.divLayersList) return;
+
+  //   while (this.divLayersList.lastChild) this.divLayersList.removeChild(this.divLayersList.lastChild);
+  //   const layersNames = this.ol.getLayersNamesList();
+
+  //   for (let i = 0; i < layersNames.length; i++) {
+  //     // const l2 = ui.div(layersNames[i]);
+  //     let divLayer = ui.div(layersNames[i], {style: {'border': 'solid 1px blue'}});
+  //     this.divLayersList.append(divLayer);
+  //   }
+  // }
+
   updateLayersList() {
-    if (!this.ol) return;
-    if (!this.panelLeft) return;
-    if (!this.divLayersList) return;
+    if ((!this.ol) || (!this.panelLeft) || (!this.divLayersList)) return;
+    // let htmlStyle: DG.ElementOptions = { };
 
-    //while (this.divLayersList.lastChild) this.divLayersList.lastChild.remove;
-    while (this.divLayersList.lastChild) this.divLayersList.removeChild(this.divLayersList.lastChild);
-    const layersNames = this.ol.getLayersList();
+    while (this.divLayersList.lastChild)
+      this.divLayersList.removeChild(this.divLayersList.lastChild);
 
-    for (let i = 0; i < layersNames.length; i++) {
-      // const l2 = ui.div(layersNames[i]);
-      this.divLayersList.append(ui.div(layersNames[i], {style: {'border': 'solid 1px blue'}}));
+    const layersArr = this.ol.getLayersList();
+
+    for (let i = 0; i < layersArr.length; i++) {
+      let layerName = layersArr[i].get('layerName');
+      if ((layerName === undefined) || (layerName === null) ) layerName = '';
+      // if ((layerName === 'undefined') || (layerName === 'null') ) layerName = '';
+      let layerId = layersArr[i].get('layerId');
+
+      let divLayer = ui.div(i+' '+layerName, {style: {'border': 'solid 1px lightgray'}});
+      let isVisible = layersArr[i].getVisible();
+      divLayer.setAttribute('layerName', layerName);
+      divLayer.setAttribute('layerId', layerId);
+      if (isVisible) divLayer.style.background = 'lightblue';
+      else divLayer.style.background = 'darkgray';
+
+      divLayer.onclick = (evt)=>{
+        const divLayer = (evt.currentTarget as HTMLElement);
+        // const layerName = divLayer.getAttribute('layerName');
+        const layerId = divLayer.getAttribute('layerId');
+        //if (!layerName) return;
+        // let layer = this.ol.getLayerByName(layerName);
+        if (!layerId) return;
+        const layer = this.ol.getLayerById(layerId);
+        if (!layer) return;
+        const isVisible = layer.getVisible();
+        layer.setVisible(!isVisible);
+        if (!isVisible) divLayer.style.background = 'lightblue';
+        else divLayer.style.background = 'darkgray';
+      };
+
+      this.divLayersList.append(divLayer);
     }
   }
 
@@ -185,7 +272,7 @@ export class GisViewer extends DG.JsViewer {
     setTimeout( function(m) {m.updateSize();}, 200, this.ol.olMap);
   }
 
-  onTableAttached() {
+  onTableAttached(): void {
     this.init();
 
     const latLngColumns = this.dataFrame.columns.bySemTypesExact([DG.SEMTYPE.LATITUDE, DG.SEMTYPE.LONGITUDE]);
@@ -194,26 +281,33 @@ export class GisViewer extends DG.JsViewer {
       this.longitudeColumnName = latLngColumns[1].name;
     }
 
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
+    // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.render(true);
   }
 
-  onPropertyChanged(prop: any) {
-    if (this.initialized)
-      this.render();
+  onPropertyChanged(prop: any): void {
+    if (!this.initialized) return;
+
+    this.render();
   }
 
-  detach() {
+  detach(): void {
     //TODO - release map
     // this.map.remove();
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
-  render(fit: boolean = false) {
+  render(fit: boolean = false): void {
     // for (const layer of this.layers)
     //   this.map.removeLayer(layer);
     // this.layers.length = 0;
+
+    this.ol.markerSize = this.markerSize;
+    this.ol.markerOpacity = this.markerOpacity;
+    this.ol.weightedMarkers = this.weightedMarkers;
+    this.ol.heatmapRadius = this.heatmapRadius;
+    this.ol.heatmapBlur = this.heatmapBlur;
 
     if (this.latitudeColumnName == null || this.longitudeColumnName == null)
       return;
@@ -231,7 +325,7 @@ export class GisViewer extends DG.JsViewer {
     this.updateLayersList();
   }
 
-  getCoordinates() {
+  getCoordinates(): void {
     this.coordinates.length = 0;
     this.values.length = 0;
     const indexes = this.dataFrame.filter.getSelectedIndexes();
@@ -242,6 +336,8 @@ export class GisViewer extends DG.JsViewer {
     lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
     lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
     // val = this.dataFrame.getCol(this.valuesColumnName).getRawData();
+
+    if ((!lat) || (!lon)) return;
 
     // col = this.dataFrame.getCol(this.latitudeColumnName);
     // if (col) lat = col.getRawData();
@@ -256,38 +352,30 @@ export class GisViewer extends DG.JsViewer {
     }
 
     for (let i = 0; i < indexes.length; i++) {
-      if ((i < lat.length ) && (i < lon.length )) {
+      if ((i < lat.length) && (i < lon.length)) {
         this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
         this.values.push(val[indexes[i]]);
       }
     }
   }
 
-  renderHeat() {
-    // this.layers.push(L.heatLayer(this.coordinates, {radius: this.markerSize}).addTo(this.map));
+  renderHeat(): void {
     this.getCoordinates();
-    const layer = this.ol.addNewHeatMap('heatLayer');
+    let colName = this.valuesColumnName;
+    if (colName === 'null') colName = this.dataFrame.name;
+    if (colName === null) colName = this.dataFrame.name;
+
+    let layer = this.ol.getLayerByName('HL: ' + colName);
+    if (!layer) layer = this.ol.addNewHeatMap('HL: ' + colName);
+
+    this.ol.clearLayer(layer);
     for (let i = 0; i < this.coordinates.length; i++)
       this.ol.addPoint(this.coordinates[i], this.values[i], layer);
   }
 
-  renderMarkers() {
+  renderMarkers(): void {
     this.ol.clearLayer(); //TODO: clear exact layer
     for (let i = 0; i < this.coordinates.length; i++)
       this.ol.addPoint(this.coordinates[i], this.values[i]);
-
-    // let markerOptions = {
-    //   radius: this.markerSize,
-    //   fillColor: "#ff7800",
-    //   color: "#000",
-    //   weight: 1,
-    //   opacity: 1,
-    //   fillOpacity: this.markerOpacity
-    // };
-
-    // let markers = [];
-    // for (let i = 0; i < this.coordinates.length; i++)
-    //   markers.push(L.circleMarker(this.coordinates[i], markerOptions));
-    // this.layers.push(L.featureGroup(markers).addTo(this.map));
   }
 }
