@@ -10,21 +10,11 @@ export class FastaFileHandler {
   private _fileContent: string;
   private _descriptionsArray: string[] = []; // parsed FASTA descriptions
   private _sequencesArray: string[] = []; // parsed FASTA sequeces
-  private _columnsParsed: boolean = false;
+  // private _columnsParsed: boolean = false;
 
-  public get descriptionsArray(): string[] {
-    if (this._columnsParsed)
-      return this._descriptionsArray;
-    else
-      throw new Error('Run parseColumns first');
-  }
+  public get descriptionsArray(): string[] { return this._descriptionsArray; }
 
-  public get sequencesArray(): string[] {
-    if (this._columnsParsed)
-      return this._sequencesArray;
-    else
-      throw new Error('Run parseColumns first');
-  }
+  public get sequencesArray(): string[] { return this._sequencesArray; }
 
   /**
    * Helper method to parse a macromolecule from a FASTA file (string)
@@ -45,7 +35,6 @@ export class FastaFileHandler {
 
   /** Parse descriptions and sequences from a FASTA string */
   private parseColumns() {
-    // parse description and content
     const regex = /^>(.*)$/gm; // match 'description' lines starting with >
 
     let startOfSequence = 0;
@@ -59,7 +48,7 @@ export class FastaFileHandler {
     }
     this._sequencesArray.push(this.parseMacromolecule(startOfSequence, -1));
 
-    this._columnsParsed = true;
+    // this._columnsParsed = true;
   }
 
   /**
@@ -68,7 +57,6 @@ export class FastaFileHandler {
    * @return {DG.DataFrame[]} dataframe with parsed FASTA content
    */
   public importFasta(): DG.DataFrame [] {
-    this.parseColumns();
     const descriptionsArrayCol = DG.Column.fromStrings('description', this.descriptionsArray);
     const sequenceCol = DG.Column.fromStrings('sequence', this.sequencesArray);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
@@ -84,5 +72,6 @@ export class FastaFileHandler {
 
   constructor(fileContent: string) {
     this._fileContent = fileContent;
+    this.parseColumns();
   }
 }
