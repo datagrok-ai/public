@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@biowasm/aioli": ">=2.4.0",
-    "@datagrok-libraries/bio": "^2.8.7",
+    "@datagrok-libraries/bio": "^2.8.8",
     "@datagrok-libraries/ml": "^3.0.0",
     "@datagrok-libraries/utils": "^1.4.0",
     "cash-dom": "latest",
@@ -33,7 +33,7 @@
     "puppeteer": "^13.7.0",
     "ts-jest": "^27.0.0",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "^4.10.0"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",

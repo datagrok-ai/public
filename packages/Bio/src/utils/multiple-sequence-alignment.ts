@@ -1,4 +1,9 @@
+/* Do not change these import lines to match external modules in webpack configuration */
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 
 //@ts-ignore
 import Aioli from '@biowasm/aioli';
@@ -13,16 +18,6 @@ import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encod
  */
 function _stringsToFasta(sequences: string[]): string {
   return sequences.reduce((a, v, i) => a + `>sample${i + 1}\n${v}\n`, '');
-}
-
-/**
- * Extracts array of sequences from simple fasta string.
- *
- * @param {string} fasta Fasta-formatted string.
- * @return {string[]} Output list of sequences.
- */
-function _fastaToStrings(fasta: string): string[] {
-  return fasta.replace(/>sample\d+(\r\n|\r|\n)/g, '').split('\n');
 }
 
 /**
@@ -56,7 +51,8 @@ export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName
   if (!buf)
     throw new Error(`kalign output no result`);
 
-  const aligned = _fastaToStrings(buf).slice(0, sequences.length);
+  const ffh = new FastaFileHandler(buf);
+  const aligned = ffh.sequencesArray; // array of sequences extracted from FASTA
   const tgtCol = DG.Column.fromStrings(unUsedName, aligned);
 
   // units
