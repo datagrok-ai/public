@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser-data",
   "friendlyName": "MolecularLiabilityBrowserData",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Data for MolecularLiabilityBrowser",
   "repository": {
     "type": "git",
