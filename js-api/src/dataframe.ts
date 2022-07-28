@@ -227,13 +227,12 @@ export class DataFrame {
   /** Sets a tag to the specified value.
    * @param {string} tag - Key.
    * @param {string} value - Value. */
-  setTag(tag: string, value: string): void {
-    const valueType: string = typeof(value);
-    if (valueType === 'string') {
-      api.grok_DataFrame_Set_Tag(this.dart, tag, value);
-    } else {
-      throw new Error(`Tags must be strings, passed '${valueType}'`);
-    }
+  setTag(tag: string, value: string): DataFrame {
+    if (typeof(value) !== 'string')
+      throw new Error(`Tags must be strings, passed '${typeof(value)}'`);
+
+    api.grok_DataFrame_Set_Tag(this.dart, tag, value);
+    return this;
   }
 
   /** Returns i-th row.
