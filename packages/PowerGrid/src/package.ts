@@ -1,5 +1,5 @@
 /* Do not change these import lines to match external modules in webpack configuration */
-// import * as grok from 'datagrok-api/grok';
+import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -38,15 +38,6 @@ export function binaryImageCellRenderer() {
 //output: grid_cell_renderer result
 export function hyperlinkCellRenderer() {
   return new HyperlinkCellRenderer();
-}
-
-//name: testCellRenderer
-//tags: cellRenderer
-//meta.cellType: test
-//meta.columnTag.units: bar
-//output: grid_cell_renderer result
-export function testCellRenderer() {
-  return new TestCellRenderer();
 }
 
 //name: htestCellRenderer
@@ -99,4 +90,33 @@ export function piechartCellRenderer() {
 //output: grid_cell_renderer result
 export function radarCellRenderer() {
   return new RadarChartCellRender();
+}
+
+//name: testUnitsKgCellRenderer
+//tags: cellRenderer
+//meta.cellType: testUnitsKg
+//meta.columnTags: units=kg
+//output: grid_cell_renderer result
+export function testUnitsKgCellRenderer() {
+  return new TestCellRenderer();
+}
+
+//name: testUnitsTonCellRenderer
+//tags: cellRenderer
+//meta.cellType: testUnitsTon
+//meta.columnTags: units=ton
+//output: grid_cell_renderer result
+export function testUnitsTonCellRenderer() {
+  return new HtmlTestCellRenderer();
+}
+
+//name: demoTestUnitsCellRenderer
+export function demoTestUnitsCellRenderer() {
+  let t = DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('kg', ['a', 'b']).setTag('quality', 'test').setTag('units', 'kg'),
+    DG.Column.fromStrings('ton', ['a', 'b']).setTag('quality', 'test').setTag('units', 'ton')
+  ]);
+
+  grok.shell.addTable(t);
+  grok.shell.info('Different renderers even though semantic types are the same');
 }
