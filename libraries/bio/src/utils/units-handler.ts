@@ -2,6 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
+import {WebLogo, SeqColStats} from '../viewers/web-logo';
+
 /** enum type to simplify setting "user-friendly" notation if necessary */
 export const enum NOTATION {
   FASTA = 'FASTA',
@@ -20,6 +22,35 @@ export class UnitsHandler {
     SEPARATOR: '',
     FASTA: '-',
   };
+
+  public static readonly PeptideFastaAlphabet = new Set([
+    'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
+    'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
+  ]);
+  public static readonly DnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
+  public static readonly RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
+
+  public static setUnitsToFastaColumn(col: DG.Column) {
+    if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
+      throw new Error('Fasta column must be MACROMOLECULE');
+
+    const stats: SeqColStats = WebLogo.getStats(col, 5, WebLogo.splitterAsFasta);
+    const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
+
+    const alphabetCandidates: [string, Set<string>][] = [
+      ['PT', UnitsHandler.PeptideFastaAlphabet],
+      ['DNA', UnitsHandler.DnaFastaAlphabet],
+      ['RNA', UnitsHandler.RnaFastaAlphabet],
+    ];
+
+    // Calculate likelihoods for alphabet_candidates
+    const alphabetCandidatesSim: number[] = alphabetCandidates.map(
+      (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));
+    const maxCos = Math.max(...alphabetCandidatesSim);
+    const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
+    const units: string = `fasta:${seqType}:${alphabet}`;
+    col.setTag(DG.TAGS.UNITS, units);
+  }
 
   protected get units(): string { return this._units; }
 
