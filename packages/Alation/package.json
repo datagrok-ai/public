@@ -1,7 +1,7 @@
 {
 	"name": "alation",
 	"friendlyName": "Alation",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
 	"properties": [
 		{

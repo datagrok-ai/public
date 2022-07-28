@@ -12,9 +12,18 @@ import * as types from './types';
 
 export const _package = new DG.Package();
 let baseUrl: string;
+let _p: DG.Package;
+
+export function setPackage(p: DG.Package): void {
+  _p = p;
+}
+
+export function getPackage(): DG.Package {
+  return _p ?? _package;
+}
 
 export async function getBaseURL() {
-  const properties = await _package.getProperties() as {[key: string]: any};
+  const properties = await getPackage().getProperties() as {[key: string]: any};
   baseUrl = properties['Base URL'] as string;
   if (!baseUrl)
     throw new Error('PackagePropertyError: Base URL is not set!');
