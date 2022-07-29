@@ -776,6 +776,7 @@ export class WebLogo extends DG.JsViewer {
   private static helmPp1Re = /\[([^\[\]]+)]/g;
 
   /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
+   * Only for linear polymers, does not split RNA for ribose and phosphate monomers.
    * @param {string} seq Source string of HELM notation
    * @return {string[]}
    */
