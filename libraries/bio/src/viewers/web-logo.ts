@@ -51,9 +51,9 @@ export class PositionMonomerInfo {
    */
   bounds: DG.Rect;
 
-  constructor() {
-    this.count = 0;
-    this.bounds = new DG.Rect(0, 0, 0, 0);
+  constructor(count: number = 0, bounds: DG.Rect = new DG.Rect(0, 0, 0, 0)) {
+    this.count = count;
+    this.bounds = bounds;
   }
 }
 
@@ -65,10 +65,10 @@ export class PositionInfo {
   /** freq = {}, rowCount = 0
    * @param {string} name Name of position ('111A', '111.1', etc)
    */
-  constructor(name: string) {
+  constructor(name: string, freq: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0) {
     this.name = name;
-    this.freq = {};
-    this.rowCount = 0;
+    this.freq = freq;
+    this.rowCount = rowCount;
   }
 }
 
