@@ -781,6 +781,11 @@ export class Menu {
     return toJs(api.grok_Menu_Find(this.dart, text));
   }
 
+  /** simulates click on the menu */
+  click(): void {
+    api.grok_Menu_Click(this.dart);
+  }
+    
   /** Removes a child menu item with the specified text.
    * @param {string} text */
   remove(text: string): void {
