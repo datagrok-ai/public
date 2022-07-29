@@ -287,6 +287,7 @@ async function runAllTests (activeTests: IPackageTest[], tree: DG.TreeViewNode, 
       updateTestResultsIcon(tree, t.packageName, t.test.category, t.test.name, res.get('success', 0));
       if(completedTestsCount === activeTests.length) {
         grok.shell.closeAll();
+        grok.shell.v = view;
       }
     })
   })
