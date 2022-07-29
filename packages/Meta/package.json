@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.1.36",
+  "version": "1.1.37",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -1505,9 +1505,17 @@
       "dependencies": {
         "0.0.1": {
           "datagrok-api": "^1.0.0"
+        },
+        "1.0.1": {
+          "datagrok-api": "^1.5.0"
         }
       },
-      "description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+      "description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/Alation"
+      }
     },
     "arrow": {
       "dependencies": {
