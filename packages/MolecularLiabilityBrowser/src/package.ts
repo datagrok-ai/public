@@ -12,6 +12,7 @@ import {TreeBrowser} from './mlb-tree';
 export let _startInit: number;
 export const _package = new DG.Package();
 const dataPackageName: string = 'MolecularLiabilityBrowserData';
+const packageName: string = 'MolecularLiabilityBrowser';
 
 /** DataLoader instance
  */
@@ -45,7 +46,7 @@ export async function initMlb() {
       grok.functions.call(`${dataPackageName}:getPackageProperty`, {propertyName: 'DataSource'}),
       catchToLog( // this call checks database connection also
         'MLB database error \'getListVersion\': ',
-        () => { return grok.functions.call(`${_package.name}:getListVersion`); }),
+        () => { return grok.functions.call(`${packageName}:getListVersion`); }),
     ]);
     console.debug('MLB: initMlb() MLB-Data property + serverListVersion, ' + `${fromStartInit()}`);
 
