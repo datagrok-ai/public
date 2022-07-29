@@ -13,7 +13,7 @@
     "@datagrok-libraries/utils": "latest",
     "apache-arrow": "^8.0.0",
     "cash-dom": "latest",
-    "datagrok-api": "latest",
+    "datagrok-api": "^1.5.0",
     "dayjs": "latest",
     "file-loader": "^6.2.0",
     "parquet-wasm": "^0.3.1"
