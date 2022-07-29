@@ -55,5 +55,14 @@ category('sketcher testing', () => {
         }
 
     });
+    
+     test('molfileV2000', async () => {
+        const data = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
+        const sketcher = new Sketcher();
+        for (let i = 0; i < data.rowCount; i++) {
+            sketcher.setMolFile(data.get('molecule', i));
+            return sketcher.getMolFile();
+        }
+    });
 
 });
