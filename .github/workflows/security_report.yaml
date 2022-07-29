@@ -20,7 +20,7 @@ jobs:
         target: [ 'connectors', 'packages', 'tools', 'js-api', 'libraries' ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up JDK 8
         if: matrix.target == 'connectors'
         uses: actions/setup-java@v2

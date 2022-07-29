@@ -21,7 +21,7 @@ jobs:
       continue: ${{ steps.generate-matrix.outputs.continue }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 3
       - name: Generate matrix
@@ -94,7 +94,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.metadata.outputs.publish_matrix) }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           token: ${{ secrets.WRITE_TOKEN }}
       - name: Check library properties

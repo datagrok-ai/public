@@ -21,7 +21,7 @@ jobs:
       publish: ${{ steps.generate-matrix.outputs.publish }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 3
       - name: Generate matrix
@@ -103,7 +103,7 @@ jobs:
     outputs:
       push: ${{ steps.info.outputs.push }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           token: ${{ secrets.WRITE_TOKEN }}
       - name: Check package properties
@@ -277,13 +277,16 @@ jobs:
     if: always() && needs.publish.outputs.push == 'yes'
     runs-on: ubuntu-20.04
     environment: Prod
-    concurrency:
-      group: metadata
-      cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v2
+      - name: Set branch parameter
+        id: branch
+        run: |
+          branch=$(echo ${GITHUB_REF#refs/heads/})
+          echo "::set-output name=branch::${branch}"
+      - uses: actions/checkout@v3
         with:
           token: ${{ secrets.WRITE_TOKEN }}
+          branch: ${{ steps.branch.outputs.branch }}
       - name: Download all workflow run artifacts
         id: download
         uses: actions/download-artifact@v3
