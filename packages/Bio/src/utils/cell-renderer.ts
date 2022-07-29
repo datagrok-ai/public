@@ -9,7 +9,7 @@ import * as ui from 'datagrok-api/ui';
 
 export const lru = new DG.LruCache<any, any>();
 const undefinedColor = 'rgb(100,100,100)';
-const grayColor = '#808080'
+const grayColor = '#808080';
 
 function getPalleteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
@@ -68,9 +68,7 @@ function printLeftOrCentered(
   separator: string = '', last: boolean = false): number {
   g.textAlign = 'start';
   const colorPart = s.substring(0);
-  let grayPart = separator;
-  if (last)
-    grayPart = '';
+  let grayPart =  last ? '' : separator;
 
   const textSize = g.measureText(colorPart + grayPart);
   const indent = 5;
@@ -142,7 +140,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const cell = gridCell.cell;
     const tag = gridCell.cell.column.getTag(DG.TAGS.UNITS);
     if (tag === 'HELM') {
-      console.log(findMonomers(cell.value));
       const monomers = findMonomers(cell.value);
       if (monomers.size == 0) {
         const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
@@ -173,17 +170,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         let x1 = x;
         const s: string = cell.value ?? '';
         let subParts: string[] = WebLogo.splitterAsHelm(s);
-        let color = undefinedColor;
         subParts.forEach((amino, index) => {
-          if (monomers.has(amino)) {
-            color = 'red';
-          } else {
-            color = grayColor;
-          }
+          let color = monomers.has(amino) ? 'red' : grayColor;
           g.fillStyle = undefinedColor;
-          let last = false;
-          if (index === subParts.length - 1)
-            last = true;
+          let last = index === subParts.length - 1;
           x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, '/', last);
         });
         g.restore();
@@ -215,10 +205,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       subParts.forEach((amino, index) => {
         color = palette.get(amino);
         g.fillStyle = undefinedColor;
-        let last = false;
-        if (index === subParts.length - 1)
-          last = true;
-
+        let last = index === subParts.length - 1;
         x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last);
       });
 
@@ -239,16 +226,16 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
   get defaultWidth(): number {return 30;}
 
   /**
-     * Cell renderer function.
-     *
-     * @param {CanvasRenderingContext2D} g Canvas rendering context.
-     * @param {number} x x coordinate on the canvas.
-     * @param {number} y y coordinate on the canvas.
-     * @param {number} w width of the cell.
-     * @param {number} h height of the cell.
-     * @param {DG.GridCell} gridCell Grid cell.
-     * @param {DG.GridCellStyle} cellStyle Cell style.
-     */
+   * Cell renderer function.
+   *
+   * @param {CanvasRenderingContext2D} g Canvas rendering context.
+   * @param {number} x x coordinate on the canvas.
+   * @param {number} y y coordinate on the canvas.
+   * @param {number} w width of the cell.
+   * @param {number} h height of the cell.
+   * @param {DG.GridCell} gridCell Grid cell.
+   * @param {DG.GridCellStyle} cellStyle Cell style.
+   */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle): void {
@@ -318,7 +305,7 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
 
     const palette = getPalleteByType(gridCell.tableColumn!.tags[C.TAGS.ALPHABET]);
     for (let i = 0; i < subParts1.length; i++) {
-      const amino1 = subParts1[i]
+      const amino1 = subParts1[i];
       const amino2 = subParts2[i];
       const color1 = palette.get(amino1);
       const color2 = palette.get(amino2);
