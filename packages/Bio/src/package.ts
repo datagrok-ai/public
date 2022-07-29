@@ -25,13 +25,18 @@ import {representationsWidget} from './widgets/representations';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 
+
+
 //tags: init
 export async function initBio(): Promise<void> {
   // apparently HELMWebEditor requires dojo to be initialized first
+  if (DG.Func.find({package: 'Helm', name: 'initHelm'}) != null) {
+    grok.functions.call('Helm:initHelp');
+  }
   return new Promise((resolve, reject) => {
     // @ts-ignore
     dojo.ready(function() { resolve(null); });
-  });
+  });  
 }
 
 //name: Lru
@@ -242,7 +247,7 @@ export async function compositionAnalysis(): Promise<void> {
   // Higher priority for columns with MSA data to show with WebLogo.
   const tv = grok.shell.tv;
   const df = tv.dataFrame;
-
+  //@ts-ignore
   const colList: DG.Column[] = df.columns.toList().filter((col) => {
     if (col.semType != DG.SEMTYPE.MACROMOLECULE)
       return false;
@@ -351,6 +356,7 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
   const pi = DG.TaskBarProgressIndicator.create('Test detectMacromolecule...');
 
   const fileList = await grok.dapi.files.list(path, true, '');
+  //@ts-ignore
   const fileListToTest = fileList.filter((fi) => fi.fileName.endsWith('.csv'));
 
   let readyCount = 0;
