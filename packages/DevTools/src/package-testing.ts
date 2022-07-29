@@ -88,7 +88,7 @@ async function collectTests(testFromUrl: ITestFromUrl, packageName?: string): Pr
   if (packageName) testFunctions = testFunctions.filter((f: DG.Func) => f.package.name === packageName);
   const packagesTestsList: IPackageTests[] = [];
   for (let f of testFunctions) {
-    await delay(4000); // will be removed with new version of js-api
+    //await delay(4000); // will be removed with new version of js-api
     await f.package.load({ file: f.options.file });
     const testModule = f.package.getModule(f.options.file);
     if (!testModule) {
@@ -286,7 +286,7 @@ async function runAllTests (activeTests: IPackageTest[], tree: DG.TreeViewNode, 
       }
       updateTestResultsIcon(tree, t.packageName, t.test.category, t.test.name, res.get('success', 0));
       if(completedTestsCount === activeTests.length) {
-      //  grok.shell.closeAll();
+        grok.shell.closeAll();
       }
     })
   })
