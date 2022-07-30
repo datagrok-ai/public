@@ -101,7 +101,16 @@ export class EnrichView extends HitTriageBaseView {
 
   async process(): Promise<any> {
     session.enrichedDataFrame = session.sourceDataFrame;
+
     await session.enrichedDataFrame!.columns.addNewCalculated("length", "length(${smiles})");
+
+    // descriptors
+    let descriptors = ["HeavyAtomCount", "NHOHCount"];
+    await grok.chem.descriptors(session.enrichedDataFrame!, session.sourceMoleculeColumn, descriptors);
+
+    // another way to invoke calculations
+    //await grok.functions.call('ChemDescriptors', {table: session.enrichedDataFrame, smiles: session.sourceMoleculeColumn, descriptors: descriptors});
+
     this.grid.dataFrame = session.enrichedDataFrame!;
   }
 }
