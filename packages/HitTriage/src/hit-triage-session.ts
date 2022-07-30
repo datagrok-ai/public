@@ -13,6 +13,7 @@ export class HitTriageSession {
 
   sourceQuery?: DG.FuncCall;
   sourceDataFrame?: DG.DataFrame;
+  sourceMoleculeColumn: string = '';
   sourceType: string = 'file';
   sourceDescription: string = '';
 
@@ -36,6 +37,7 @@ export class HitTriageSession {
     const session = new HitTriageSession();
     session.project = 'Demo project';
     session.sourceDataFrame = grok.data.demo.molecules(20000);
+    session.sourceMoleculeColumn = 'smiles';
     session.sourceDataFrame.meta.detectSemanticTypes().then((_) => {});
     session.sourceType = 'file';
     session.sourceDescription = 'AppData:/HitTriage/campaigns/bfg9000.csv';
