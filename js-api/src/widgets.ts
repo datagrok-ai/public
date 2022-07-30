@@ -766,28 +766,25 @@ export class Menu {
     return toJs(api.grok_Menu());
   }
 
-  /** Creates a popup menu.
-   * @returns {Menu} */
+  /** Creates a popup menu. */
   static popup(): Menu {
     return toJs(api.grok_Menu_Context());
   }
 
   get root(): HTMLElement { return api.grok_Menu_Get_Root(this.dart); }
 
-  /** Finds a child menu item with the specified text.
-   * @param {string} text
-   * @returns {Menu} */
+  /** Finds a child menu item with the specified text. */
   find(text: string): Menu {
     return toJs(api.grok_Menu_Find(this.dart, text));
   }
 
-  /** simulates click on the menu */
+  /** Executes the onClick function for that menu item.
+   * Only works for items, not groups. */
   click(): void {
     api.grok_Menu_Click(this.dart);
   }
     
-  /** Removes a child menu item with the specified text.
-   * @param {string} text */
+  /** Removes a child menu item with the specified text. */
   remove(text: string): void {
     api.grok_Menu_Remove(this.dart, text);
   }
