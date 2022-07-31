@@ -102,8 +102,9 @@ function addColumnWithTranslatedSequences(
   const columnWithInputSequences = columns.byName(columnName);
   return columns.addNewString(nameOfNewColumn).init((i: number) => {
     return columnWithInputSequences.getString(i) == '' ?
-    '' :
-    translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, startModification, endModification, firstPtoExist);
+      '' :
+      translateSequence(columnWithInputSequences.getString(i), bases, ptoLinkages, startModification, endModification,
+        firstPtoExist);
   });
 }
 

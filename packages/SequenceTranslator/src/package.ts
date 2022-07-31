@@ -2,7 +2,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full.js';
 import $ from 'cash-dom';
 import {defineAxolabsPattern} from './defineAxolabsPattern';
 import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
@@ -10,7 +9,8 @@ import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-mono
 import {convertSequence, undefinedInputSequence, isValidSequence, getFormat} from
   './structures-works/sequence-codes-tools';
 import {map, COL_NAMES, MODIFICATIONS} from './structures-works/map';
-import {siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs} from './structures-works/converters';
+import {siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
+} from './structures-works/converters';
 import {SALTS_CSV} from './salts';
 import {USERS_CSV} from './users';
 import {ICDS} from './ICDs';
@@ -321,10 +321,16 @@ export function autostartOligoSdFileSubscription() {
               return siRnaAxolabsToGcrs(seqCol.get(i));
             });
           });
-        } else if (DG.Detector.sampleCategories(seqCol, (s) => /^[fmpsACGU]{6,}$/.test(s))) {
+        } else if (DG.Detector.sampleCategories(seqCol, (s) => /^[fmpsACGU]{6,}$/.test(s)) ||
+        DG.Detector.sampleCategories(seqCol, (s) => /^(?=.*moe)(?=.*5mC)(?=.*ps){6,}/.test(s))) {
           args.args.menu.item('Convert GCRS to raw', () => {
             args.args.context.table.columns.addNewString(seqCol.name + ' to raw').init((i: number) => {
               return gcrsToNucleotides(seqCol.get(i));
+            });
+          });
+          args.args.menu.item('Convert GCRS to MM12', () => {
+            args.args.context.table.columns.addNewString(seqCol.name + ' to MM12').init((i: number) => {
+              return gcrsToMermade12(seqCol.get(i));
             });
           });
         } else if (DG.Detector.sampleCategories(seqCol, (s) => /^[*56789ATGC]{6,}$/.test(s))) {

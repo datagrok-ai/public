@@ -1,5 +1,3 @@
-import * as OCL from 'openchemlib/full.js';
-
 const PHOSHATE = `
 Datagrok monomer library Nucleotides
 
@@ -254,6 +252,7 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false, oclRe
 }
 
 function rotateNucleotidesV3000(molecule: string) {
+  // @ts-ignore
   let molBlock = molecule.includes('M  END') ? molecule : OCL.Molecule.fromSmiles(molecule).toMolfileV3();
   const coordinates = extractAtomDataV3000(molBlock);
   const natom = coordinates.atomIndex.length;
@@ -320,6 +319,7 @@ function rotateNucleotidesV3000(molecule: string) {
 }
 
 function invertNucleotidesV3000(molecule: string) {
+  // @ts-ignore
   let molBlock = molecule.includes('M  END') ? molecule : OCL.Molecule.fromSmiles(molecule).toMolfileV3();
   const coordinates = extractAtomDataV3000(molBlock);
   const natom = coordinates.atomIndex.length;
