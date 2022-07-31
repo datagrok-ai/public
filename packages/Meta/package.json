@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.1.40",
+  "version": "1.1.41",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -585,6 +585,9 @@
         },
         "0.0.6": {
           "datagrok-api": "^0.94.10"
+        },
+        "1.0.0": {
+          "datagrok-api": "^1.5.3"
         }
       },
       "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
