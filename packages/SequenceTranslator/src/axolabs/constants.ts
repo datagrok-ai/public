@@ -94,7 +94,7 @@ export const axolabsMap:
     color: invAbasicColor,
   },
   '2\'-OMe-U(o)': {
-    fullName: 'Nucleotide Uridine with 2’O-Methyl protection (overhang)',
+    fullName: 'Nucleotide Uridine with 2\'O-Methyl protection (overhang)',
     symbols: ['mU', 'mU', 'mU', 'mU'],
     color: 'rgb(65,233,80)',
   },

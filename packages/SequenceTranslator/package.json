@@ -14,10 +14,10 @@
     "datagrok-api": "^1.1.7",
     "datagrok-tools": "^4.1.2",
     "npm": "^8.11.0",
+    "openchemlib": "6.0.1",
     "save-svg-as-png": "^1.4.17",
     "ts-loader": "latest",
-    "typescript": "latest",
-    "openchemlib": "6.0.1"
+    "typescript": "latest"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -38,18 +38,19 @@
     "vendors/openchemlib-full.js"
   ],
   "devDependencies": {
+    "@types/jest": "^27.0.0",
+    "@types/jquery": "^3.5.14",
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
     "cash-dom": "^8.1.0",
     "eslint": "^7.32.0",
     "eslint-config-google": "^0.14.0",
-    "webpack": "^5.31.0",
-    "webpack-cli": "^4.6.0",
-    "jest-html-reporter": "^3.5.0",
     "jest": "^27.0.0",
-    "@types/jest": "^27.0.0",
+    "jest-html-reporter": "^3.5.0",
+    "puppeteer": "^13.7.0",
     "ts-jest": "^27.0.0",
-    "puppeteer": "^13.7.0"
+    "webpack": "^5.31.0",
+    "webpack-cli": "^4.6.0"
   },
   "category": "Bioinformatics"
 }

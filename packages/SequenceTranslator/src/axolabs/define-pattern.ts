@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as svg from 'save-svg-as-png';
 import $ from 'cash-dom';
 
-import {drawAxolabsPattern} from './drawSvg';
+import {drawAxolabsPattern} from './draw-svg';
 import {axolabsMap} from './constants';
 
 const baseChoices: string[] = Object.keys(axolabsMap);
