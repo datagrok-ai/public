@@ -1,4 +1,3 @@
-/* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -6,8 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import * as svg from 'save-svg-as-png';
 import $ from 'cash-dom';
 
-import {drawAxolabsPattern} from './drawAxolabsPattern';
-import {axolabsMap} from './axolabsMap';
+import {drawAxolabsPattern} from './drawSvg';
+import {axolabsMap} from './constants';
 
 const baseChoices: string[] = Object.keys(axolabsMap);
 const defaultBase: string = baseChoices[0];

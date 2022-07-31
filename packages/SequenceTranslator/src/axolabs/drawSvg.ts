@@ -1,4 +1,4 @@
-import {axolabsMap} from './axolabsMap';
+import {axolabsMap} from './constants';
 
 // https://uxdesign.cc/star-rating-make-svg-great-again-d4ce4731347e
 function getPointsToDrawStar(centerX: number, centerY: number): string {
