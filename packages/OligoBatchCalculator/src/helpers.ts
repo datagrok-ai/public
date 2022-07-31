@@ -2,6 +2,14 @@ import * as DG from 'datagrok-api/dg';
 import {map, normalizedObj} from './map';
 import {COL_NAMES} from './additional-modifications';
 
+export const UNITS = {
+  OPTICAL_DENSITY: 'OD',
+  MICRO_GRAM: 'µg',
+  MILLI_GRAM: 'mg',
+  MICRO_MOLE: 'µmole',
+  NANO_MOLE: 'nmole',
+};
+
 export function normalizeSequence(sequence: string, synthesizer: string | null, technology: string | null,
   additionalModsDf: DG.DataFrame): string {
   const additionalCodesCol = additionalModsDf.getCol(COL_NAMES.ABBREVIATION);
