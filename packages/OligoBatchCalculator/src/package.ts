@@ -13,10 +13,16 @@ export const _package = new DG.Package();
 const NAME_OF_COLUMN_WITH_SEQUENCES = 'Sequence';
 
 
+//name: getUnits
+//output: list<string> units
+export function getUnits(): string[] {
+  return Object.values(UNITS);
+}
+
 //name: opticalDensity
 //input: string sequence
 //input: double amount
-//input: string outputUnits {choices: ['OD', 'nmole', 'mg', 'µg']}
+//input: string outputUnits {choices: OligoBatchCalculator: getUnits}
 //output: double opticalDensity
 export async function opticalDensity(sequence: string, amount: number, outputUnits: string, extCoefsObj:
   {[index: string]: number}): Promise<number> {
@@ -32,7 +38,7 @@ export async function opticalDensity(sequence: string, amount: number, outputUni
 //name: nMole
 //input: string sequence
 //input: double amount
-//input: string outputUnits {choices: ['OD', 'mg', 'µg']}
+//input: string outputUnits {choices: OligoBatchCalculator: getUnits}
 //output: double nMole
 export async function nMole(sequence: string, amount: number, outputUnits: string, extinctionCoefficientsObj:
   {[index: string]: number}, weightsObj: {[index: string]: number}): Promise<number> {
@@ -45,7 +51,7 @@ export async function nMole(sequence: string, amount: number, outputUnits: strin
 //name: molecularMass
 //input: string sequence
 //input: double amount
-//input: string outputUnits {choices: ['OD', 'mg']}
+//input: string outputUnits {choices: OligoBatchCalculator: getUnits}
 //output: double molecularMass
 export async function molecularMass(sequence: string, amount: number, outputUnits: string): Promise<number> {
   const additionalModificationsDf = await getAdditionalModifications();
