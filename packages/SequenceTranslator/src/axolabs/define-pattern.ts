@@ -56,10 +56,10 @@ function getUserName(patternName: string): string[] {
 
 function translateSequence(
   sequence: string,
-  bases: any,
-  ptoLinkages: any,
-  startModification: any,
-  endModification: any,
+  bases: DG.InputBase[],
+  ptoLinkages: DG.InputBase[],
+  startModification: DG.InputBase,
+  endModification: DG.InputBase,
   firstPtoExist: boolean): string {
   let counter: number = -1;
   let mainSequence = sequence.replace(/[AUGC]/g, function(x: string) {
@@ -89,10 +89,10 @@ function addColumnWithIds(tableName: string, columnName: string, patternName: st
 function addColumnWithTranslatedSequences(
   tableName: string,
   columnName: string,
-  bases: any,
-  ptoLinkages: any,
-  startModification: any,
-  endModification: any,
+  bases: DG.InputBase[],
+  ptoLinkages: DG.InputBase[],
+  startModification: DG.InputBase,
+  endModification: DG.InputBase,
   firstPtoExist: boolean) {
   const nameOfNewColumn = 'Axolabs ' + columnName;
   const columns = grok.shell.table(tableName).columns;
