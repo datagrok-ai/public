@@ -242,11 +242,13 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false, oclRe
   macroMolBlock += 'M  V30 BEGIN BOND\n';
   macroMolBlock += bondBlock;
   macroMolBlock += 'M  V30 END BOND\n';
-  macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
-  macroMolBlock += collectionBlock;
-  macroMolBlock += 'M  V30 END COLLECTION\n';
+  //macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
+  //macroMolBlock += collectionBlock;
+  //macroMolBlock += 'M  V30 END COLLECTION\n';
   macroMolBlock += 'M  V30 END CTAB\n';
   macroMolBlock += 'M  END\n';
+
+  macroMolBlock = macroMolBlock.replaceAll('CFG=1', '').replaceAll('CFG=2', '').replaceAll('CFG=3', '').replaceAll('CFG=4', '');
 
   return macroMolBlock;
 }
