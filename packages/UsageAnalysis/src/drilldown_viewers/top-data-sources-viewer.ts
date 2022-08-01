@@ -19,10 +19,7 @@ export class TopDataSourcesViewer extends UaFilterableQueryViewer {
             let viewer = new TopQueriesUsingDataSource(args.args.categories[0], filterStream);
             grok.shell.o = ui.block([viewer.root]);
           });
-          if (t.rowCount > 0)
-            return viewer.root
-          else
-            return ui.divText('Not enough data', {style:{color:'var(--red-3)', paddingBottom:'25px'}})
+          return viewer.root;
         }
     );
   }
