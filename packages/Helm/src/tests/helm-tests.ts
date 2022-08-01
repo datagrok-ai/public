@@ -28,19 +28,21 @@ category('Helm', () => {
   //   expect(await helmToPeptide('PEPTIDE1{A.R.C.A.A.K.T.C.D.A}$PEPTIDE1,PEPTIDE1,8:R3-3:R3$$$'), 'ARCAAKTCDA');
   // });
 
-  test('detectMacromolecule', async () => {
-    const file = await _package.files.readAsText('tests/test.csv');
-    const df = DG.DataFrame.fromCsv(file);
-    const col = df.columns.byName('HELM string');
-    await grok.data.detectSemanticTypes(df);
-    expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
-  });
+  // detectMacromolecule is a function of Bio package
+  // test('detectMacromolecule', async () => {
+  //   const file = await _package.files.readAsText('tests/test.csv');
+  //   const df = DG.DataFrame.fromCsv(file);
+  //   const col = df.columns.byName('HELM string');
+  //   await grok.data.detectSemanticTypes(df);
+  //   expect(col.semType, DG.SEMTYPE.MACROMOLECULE);
+  // });
 
-  test('detectHelm', async () => {
-    const file = await _package.files.readAsText('tests/test.csv');
-    const df = DG.DataFrame.fromCsv(file);
-    const col = df.columns.byName('HELM string');
-    await grok.data.detectSemanticTypes(df);
-    expect(col.tags[DG.TAGS.UNITS], 'HELM');
-  });
+  // semType and units tags are detecting by Bio package function detectMacromolecule
+  // test('detectHelm', async () => {
+  //   const file = await _package.files.readAsText('tests/test.csv');
+  //   const df = DG.DataFrame.fromCsv(file);
+  //   const col = df.columns.byName('HELM string');
+  //   await grok.data.detectSemanticTypes(df);
+  //   expect(col.tags[DG.TAGS.UNITS], 'HELM');
+  // });
 });
