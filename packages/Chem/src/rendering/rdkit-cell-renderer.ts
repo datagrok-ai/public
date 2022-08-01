@@ -190,7 +190,9 @@ M  END
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     molString: string, scaffoldMolString: string, highlightScaffold: boolean,
-    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, vertical: boolean = false): void {
+    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, cellStyle: DG.GridCellStyle): void {
+    const vertical = cellStyle !== undefined ? cellStyle.textVertical : false;
+
     if (vertical) {
       h += w;
       w = h - w;
@@ -239,7 +241,7 @@ M  END
 
     // value-based drawing (coming from HtmlCellRenderer.renderValue)
     if (gridCell.cell.column == null) {
-      this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, false, false, cellStyle.textVertical);
+      this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, false, false, cellStyle);
       return;
     }
 
@@ -252,7 +254,7 @@ M  END
 
     if (singleScaffoldMolString) {
       this._drawMolecule(x, y, w, h, g.canvas,
-        molString, singleScaffoldMolString, true, false, false, cellStyle.textVertical);
+        molString, singleScaffoldMolString, true, false, false, cellStyle);
     } else {
       let molRegenerateCoords = colTemp && colTemp['regenerate-coords'] === 'true';
       let scaffoldRegenerateCoords = false;
@@ -273,14 +275,14 @@ M  END
 
       if (rowScaffoldCol == null || rowScaffoldCol.name === gridCell.cell.column.name) {
         // regular drawing
-        this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, molRegenerateCoords, false, cellStyle.textVertical);
+        this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, molRegenerateCoords, false, cellStyle);
       } else {
         // drawing with a per-row scaffold
         const idx = gridCell.tableRowIndex; // TODO: supposed to be != null?
         const scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
         const highlightScaffold = colTemp && colTemp['highlight-scaffold'] === 'true';
         this._drawMolecule(x, y, w, h, g.canvas,
-          molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle.textVertical);
+          molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords, cellStyle);
       }
     }
   }
