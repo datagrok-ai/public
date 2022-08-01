@@ -3,12 +3,10 @@
 HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage. It does
 it in a managed, reproducible manner, with the triage template consisting of separate steps.
 
-Technically, HitTriage is a [package](https://datagrok.ai/help/develop/develop#packages)
-for the [Datagrok](https://datagrok.ai) platform that contains the the `HitTriage` application. There are multiple ways
-to start it:
+![](images/hit-triage-workflow.gif)
 
-* Open the `Apps` pane and double-click on the `HitTriage` app
-* Open it via the direct link: [https://public.datagrok.ai/apps/HitTriage](https://public.datagrok.ai/apps/HitTriage)
+To start the Hit Triage app, open the `Apps` pane and double-click on the `HitTriage` app.
+Alternatively, you can open it via the direct link: [https://public.datagrok.ai/apps/HitTriage](https://public.datagrok.ai/apps/HitTriage)
 
 There are two outcomes for each project:
 
