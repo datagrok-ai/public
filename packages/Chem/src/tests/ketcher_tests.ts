@@ -82,5 +82,19 @@ category('sketcher testing', () => {
             }
         }
     });
+    
+    test('molfileV3000', async () => {
+        const data = DG.DataFrame.fromCsv(await _package.files.readAsText('v3000_sample.csv'));
+        const funcs = Func.find({tags: ['moleculeSketcher']});
+        for (let f of funcs) {
+            for (let i = 0; i < data.rowCount; i++) {
+                // @ts-ignore
+               const sketcher = await f!.apply();
+               const molV3000 = data.get('molecule', i);
+               sketcher.setMolFile(molV3000);
+               return sketcher.getMolFile();
+            }
+        }
+    });
 
 });
