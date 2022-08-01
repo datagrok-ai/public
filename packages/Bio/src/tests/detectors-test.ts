@@ -125,6 +125,7 @@ MWRSWY-CKHP
     testSpgi100 = 'testSpgi100',
     testUnichemSources = 'testUnichemSources',
     testDmvOffices = 'testDmvOffices',
+    testAlertCollection = 'testAlertCollection',
   }
 
   const samples: { [key: string]: string } = {
@@ -145,6 +146,7 @@ MWRSWY-CKHP
     'testSpgi100': 'System:AppData/Bio/tests/testSpgi100.csv',
     'testUnichemSources': 'System:AppData/Bio/tests/testUnichemSources.csv',
     'testDmvOffices': 'System:AppData/Bio/tests/testDmvOffices.csv',
+    'testAlertCollection': 'System:AppData/Bio/tests/testAlertCollection.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -342,6 +344,9 @@ MWRSWY-CKHP
   test('samplesTestSpgi100NegativePrimaryScaffoldName', async () => {
     await _testNeg(readSamples(Samples.testSpgi100), 'Primary Scaffold Name');
   });
+  test('samplesTestSpgi100NegativeSampleName', async () => {
+    await _testNeg(readSamples(Samples.testSpgi100), 'Sample Name');
+  });
 
   test('samplesTestUnichemSourcesNegativeSrcUrl', async () => {
     await _testNeg(readSamples(Samples.testUnichemSources), 'src_url');
@@ -355,6 +360,10 @@ MWRSWY-CKHP
   });
   test('samplesTestDmvOfficesNegativeCity', async () => {
     await _testNeg(readSamples(Samples.testDmvOffices), 'City');
+  });
+
+  test('samplesTestAlertCollectionNegativeSmarts', async () => {
+    await _testNeg(readSamples(Samples.testAlertCollection), 'smarts');
   });
 });
 
