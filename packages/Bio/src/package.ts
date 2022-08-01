@@ -26,17 +26,18 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 
 
-
 //tags: init
 export async function initBio(): Promise<void> {
   // apparently HELMWebEditor requires dojo to be initialized first
-  if (DG.Func.find({package: 'Helm', name: 'initHelm'}) != null) {
-    grok.functions.call('Helm:initHelp');
-  }
+  const funcList: DG.Func[] = DG.Func.find({package: 'Helm', name: 'initHelm'});
+  console.debug(`Bio: initBio() funcList.length = ${funcList.length}`);
+  if (funcList.length === 1)
+    await grok.functions.call('Helm:initHelp');
+
   return new Promise((resolve, reject) => {
     // @ts-ignore
     dojo.ready(function() { resolve(null); });
-  });  
+  });
 }
 
 //name: Lru
