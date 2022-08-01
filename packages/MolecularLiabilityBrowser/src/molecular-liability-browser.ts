@@ -547,6 +547,21 @@ export class MolecularLiabilityBrowser {
         })()
       ]));
 
+    const hNumberingStr = jsonNums.heavy_numbering;
+    const lNumberingStr = jsonNums.light_numbering;
+  
+    const hNumbering = [];
+    const lNumbering = [];
+  
+    for (let i = 0; i < hNumberingStr.length; i++)
+      hNumbering.push(parseInt(hNumberingStr[i].replaceAll(' ', '')));
+  
+    for (let i = 0; i < lNumberingStr.length; i++)
+      lNumbering.push(parseInt(lNumberingStr[i].replaceAll(' ', '')));
+  
+    jsonStr['map_H'] = hNumbering;
+    jsonStr['map_L'] = lNumbering;
+
     console.debug('MLB: MolecularLiabilityBrowser.setViewTwinPViewer() data loaded, ' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
 
