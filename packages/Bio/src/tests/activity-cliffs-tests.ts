@@ -7,7 +7,7 @@ import {readDataframe} from './utils';
 import {getEmbeddingColsNames, sequenceSpace} from '../utils/sequence-space';
 import {drawTooltip, sequenceGetSimilarities} from '../utils/sequence-activity-cliffs';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import { encodeMonomers } from '../utils/utils';
+import {encodeMonomers} from '../utils/utils';
 
 
 category('activityCliffs', async () => {
@@ -53,6 +53,6 @@ category('activityCliffs', async () => {
 
     const cliffsLink = (Array.from(scatterPlot.root.children) as Element[])
       .filter((it) => it.className === 'ui-btn ui-btn-ok');
-    expect((cliffsLink[0] as HTMLElement).innerText, '105 cliffs');
+    expect((cliffsLink[0] as HTMLElement).innerText, '2362 cliffs');
   });
 });
