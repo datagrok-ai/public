@@ -1,10 +1,10 @@
-import { View } from './view';
+import { CardView } from './card_view';
 import { toJs } from '../wrappers';
 let api = <any>window;
 
 
 /** File browser view. Contains the file tree, search panel and preview components. */
-export class FilesView extends View {
+export class FilesView extends CardView {
   static create(options?: any): FilesView {
     return new FilesView(api.grok_FilesView_Create(options));
   }
@@ -28,6 +28,4 @@ export class FilesView extends View {
     this.showPreview = !s;
     this.showSearch = !s;
   }
-
-  refresh() { api.grok_FilesView_Refresh(this.dart); }
 }
