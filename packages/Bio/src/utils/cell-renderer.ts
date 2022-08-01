@@ -44,6 +44,7 @@ export function processSequence(subParts: string[]): [string[], boolean] {
   return [text, simplified];
 }
 
+
 /**
  * A function that prints a string aligned to left or centered.
  *
@@ -65,15 +66,19 @@ function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false): number {
+  separator: string = '', last: boolean = false, drawStyle: string = 'classic', maxWord: string = ''): number {
   g.textAlign = 'start';
   const colorPart = s.substring(0);
-  let grayPart =  last ? '' : separator;
+  let grayPart = last ? '' : separator;
 
-  const textSize = g.measureText(colorPart + grayPart);
+  let textSize = g.measureText(colorPart + grayPart);
   const indent = 5;
 
-  const colorTextSize = g.measureText(colorPart);
+  let colorTextSize = g.measureText(colorPart);
+  if (drawStyle === 'msa') {
+    colorTextSize = g.measureText(maxWord);
+    textSize = g.measureText(maxWord + grayPart);
+  }
   const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
 
   function draw(dx1: number, dx2: number): void {
@@ -83,7 +88,6 @@ function printLeftOrCentered(
     g.fillStyle = grayColor;
     g.fillText(grayPart, x + dx2, y + dy);
   }
-
 
   if (left || textSize.width > w) {
     draw(indent, indent + colorTextSize.width);
@@ -199,14 +203,27 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator'));
 
       const subParts: string[] = splitterFunc(cell.value);
-      // console.log(subParts);
       let x1 = x;
       let color = undefinedColor;
+      // get max length word in subParts
+      let tagUnits = gridCell.cell.column.getTag(DG.TAGS.UNITS);
+      let maxLength = 0;
+      let maxWord = '';
+      let drawStyle = 'classic';
+      if (tagUnits.includes('MSA')) {
+        subParts.forEach(part => {
+          if (part.length > maxLength) {
+            maxLength = part.length;
+            maxWord = part;
+            drawStyle = 'msa';
+          }
+        });
+      }
       subParts.forEach((amino, index) => {
         color = palette.get(amino);
         g.fillStyle = undefinedColor;
         let last = index === subParts.length - 1;
-        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last);
+        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last, drawStyle, maxWord);
       });
 
       g.restore();
