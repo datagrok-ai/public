@@ -21,9 +21,10 @@ class BioPackageDetectors extends DG.Package {
   static RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
 
   static SmilesRawAlphabet = new Set([
-    'B', 'C', 'c', 'E', 'H', 'L', 'M', 'N', 'O', 'S', 'F', '(', ')',
+    'A', 'B', 'C', 'E', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'Z',
+    'a', 'c', 'e', 'g', 'i', 'l', 'n', 'o', 'r', 's', 't', 'u',
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-    '+', '-', '@', '[', ']', '/', '\\', '#', '=']);
+    '+', '-', '.', , '/', '\\', '@', '[', ']', '(', ')', '#', '%', '=']);
 
   /** @param s {String} - string to check
    * @returns {boolean} */
@@ -215,7 +216,7 @@ class BioPackageDetectors extends DG.Package {
     const alphabetA = [];
     for (const m of keys) {
       freqA.push(m in freq ? freq[m] : 0);
-      alphabetA.push(alphabet.has(m) ? 10 : -10 /* penalty for character outside alphabet set*/);
+      alphabetA.push(alphabet.has(m) ? 10 : -20 /* penalty for character outside alphabet set*/);
     }
     /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
     const cos = BioPackageDetectors.vectorDotProduct(freqA, alphabetA) / (BioPackageDetectors.vectorLength(freqA) * BioPackageDetectors.vectorLength(alphabetA));

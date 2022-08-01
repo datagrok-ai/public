@@ -124,6 +124,7 @@ MWRSWY-CKHP
     testActivityCliffsCsv = 'testActivityCliffsCsv',
     testSpgi100 = 'testSpgi100',
     testUnichemSources = 'testUnichemSources',
+    testDmvOffices = 'testDmvOffices',
   }
 
   const samples: { [key: string]: string } = {
@@ -143,6 +144,7 @@ MWRSWY-CKHP
     'testCerealCsv': 'System:AppData/Bio/tests/testCereal.csv',
     'testSpgi100': 'System:AppData/Bio/tests/testSpgi100.csv',
     'testUnichemSources': 'System:AppData/Bio/tests/testUnichemSources.csv',
+    'testDmvOffices': 'System:AppData/Bio/tests/testDmvOffices.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -347,6 +349,14 @@ MWRSWY-CKHP
   test('samplesTestUnichemSourcesNegativeBaseIdUrl', async () => {
     await _testNeg(readSamples(Samples.testUnichemSources), 'base_id_url');
   });
+
+  test('samplesTestDmvOfficesNegativeOfficeName', async () => {
+    await _testNeg(readSamples(Samples.testDmvOffices), 'Office Name');
+  });
+  test('samplesTestDmvOfficesNegativeCity', async () => {
+    await _testNeg(readSamples(Samples.testDmvOffices), 'City');
+  });
+
 });
 
 export async function _testNeg(readDf: DfReaderFunc, colName: string) {
