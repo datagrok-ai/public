@@ -759,11 +759,14 @@ export function defineAxolabsPattern() {
     ]),
   ], 'ui-form');
 
+  const downloadButton = ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value,
+    {backgroundColor: 'white'}));
+
   const mainSection = ui.panel([
     ui.block([
       svgDiv,
     ], {style: {overflowX: 'scroll'}}),
-    ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value)),
+    downloadButton,
     isEnumerateModificationsDiv,
     ui.div([
       ui.div([
