@@ -2,7 +2,7 @@
   "name": "@datagrok/bio",
   "beta": false,
   "friendlyName": "Bio",
-  "version": "1.7.19",
+  "version": "1.7.20",
   "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
   "repository": {
     "type": "git",
@@ -60,7 +60,11 @@
     "Developers"
   ],
   "sources": [
-    "css/helm.css"
+    "css/helm.css",
+    "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js",
+    "helm/JSDraw/Scilligence.JSDraw2.Lite.js",
+    "helm/JSDraw/Scilligence.JSDraw2.Resources.js",
+    "helm/JSDraw/Pistoia.HELM-uncompressed.js"
   ],
   "category": "Bioinformatics"
 }
