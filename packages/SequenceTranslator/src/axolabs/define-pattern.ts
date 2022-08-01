@@ -239,8 +239,9 @@ export function defineAxolabsPattern() {
   }
 
   function updateInputExamples() {
-    ssInputExample.value = generateExample(ssLength.value!, sequenceBase.value!);
-    if (createAsStrand.value)
+    if (inputSsColumn.value == '')
+      ssInputExample.value = generateExample(ssLength.value!, sequenceBase.value!);
+    if (createAsStrand.value && inputAsColumn.value == '')
       asInputExample.value = generateExample(asLength.value!, sequenceBase.value!);
   }
 
@@ -332,7 +333,7 @@ export function defineAxolabsPattern() {
   }
 
   function checkWhetherAllValuesInColumnHaveTheSameLength(colName: string): boolean {
-    const col = tables.value!.columns.byName(colName);
+    const col = tables.value!.getCol(colName);
     let allLengthsAreTheSame = true;
     for (let i = 1; i < col.length; i++) {
       if (col.get(i - 1).length != col.get(i).length && col.get(i).length != 0) {
@@ -509,26 +510,26 @@ export function defineAxolabsPattern() {
   const asLength = ui.intInput('AS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
   const asLengthDiv = ui.div([asLength.root]);
 
-  function validateSsColumn(colName: string) {
+  function validateSsColumn(colName: string): void {
     const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
-    const firstSequence = tables.value!.columns.byName(colName).get(0);
+    const firstSequence = tables.value!.getCol(colName).get(0);
     if (allLengthsAreTheSame && firstSequence.length != ssLength.value)
-      ssLength.value = tables.value!.columns.byName(colName).get(0).length;
+      ssLength.value = tables.value!.getCol(colName).get(0).length;
     ssInputExample.value = firstSequence;
   }
 
-  function validateAsColumn(colName: string) {
+  function validateAsColumn(colName: string): void {
     const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
-    const firstSequence = tables.value!.columns.byName(colName).get(0);
+    const firstSequence = tables.value!.getCol(colName).get(0);
     if (allLengthsAreTheSame && firstSequence.length != asLength.value)
-      asLength.value = tables.value!.columns.byName(colName).get(0).length;
-    asLengthDiv.innerHTML = '';
-    asLengthDiv.append(asLength.root);
+      asLength.value = tables.value!.getCol(colName).get(0).length;
+    // asLengthDiv.innerHTML = '';
+    // asLengthDiv.append(asLength.root);
     asInputExample.value = firstSequence;
   }
 
   function validateIdsColumn(colName: string) {
-    const col = tables.value!.columns.byName(colName);
+    const col = tables.value!.getCol(colName);
     if (col.type != DG.TYPE.INT)
       grok.shell.error('Column should contain integers only');
     else if (col.categories.filter((e) => e != '').length < col.toList().filter((e) => e != '').length) {
@@ -669,8 +670,8 @@ export function defineAxolabsPattern() {
       dialog
         .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
         .addButton('YES', () => {
-          ssLength.value = tables.value!.columns.byName(inputSsColumn.value!).getString(0).length;
-          asLength.value = tables.value!.columns.byName(inputAsColumn.value!).getString(0).length;
+          ssLength.value = tables.value!.getCol(inputSsColumn.value!).getString(0).length;
+          asLength.value = tables.value!.getCol(inputAsColumn.value!).getString(0).length;
           dialog.close();
         })
         .show();
