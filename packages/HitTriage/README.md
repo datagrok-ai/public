@@ -60,9 +60,7 @@ same database.
 ## User Interactions
 
 Users would use the built-in Datagrok facilities for filtering that allow interactive filtering for both compounds and
-calculated properties. The UI would look like that:
-
-![](images/hit-triage-filtering.png)
+calculated properties. 
 
 Users will be able to filter out compounds manually, with an optional explanation.
 
