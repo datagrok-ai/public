@@ -1,8 +1,8 @@
 {
-	"name": "gis",
-	"beta": true,
+	"name": "@datagrok/gis",
+	"beta": false,
 	"friendlyName": "GIS",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "",
 	"dependencies": {
 		"@datagrok-libraries/utils": "latest",
