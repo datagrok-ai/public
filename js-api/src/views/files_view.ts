@@ -21,5 +21,13 @@ export class FilesView extends View {
   get showSearch(): boolean { return toJs(api.grok_FilesView_Get_ShowSearch(this.dart)); }
   set showSearch(s: boolean) { api.grok_FilesView_Set_ShowSearch(this.dart, s); }
 
+  /** Shows the tree component only. Similar to [FilesWidget]. */
+  get showTreeOnly(): boolean { return this.showTree && !this.showPreview && !this.showSearch; }
+  set showTreeOnly(s: boolean) {
+    this.showTree = true;
+    this.showPreview = !s;
+    this.showSearch = !s;
+  }
+
   refresh() { api.grok_FilesView_Refresh(this.dart); }
 }
