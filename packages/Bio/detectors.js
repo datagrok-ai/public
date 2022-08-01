@@ -76,7 +76,7 @@ class BioPackageDetectors extends DG.Package {
     const statsAsChars = BioPackageDetectors.getStats(col, 5, BioPackageDetectors.splitterAsChars);
     // if (Object.keys(statsAsChars.freq).length === 0) return;
 
-    const decoy = BioPackageDetectors.detectAlphabet(statsAsChars.freq, decoyAlphabets, null, 0.35);
+    const decoy = BioPackageDetectors.detectAlphabet(statsAsChars.freq, decoyAlphabets, null, 0.30);
     if (decoy != 'UN') return null;
 
     if (statsAsChars.sameLength) {

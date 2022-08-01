@@ -188,7 +188,7 @@ MWRSWY-CKHP
     };
   };
 
-  test('NegativeEmpty', async () => {await _testNeg(readCsv('csvDfEmpty', csvDfEmpty), 'col1'); });
+  test('NegativeEmpty', async () => { await _testNeg(readCsv('csvDfEmpty', csvDfEmpty), 'col1'); });
   test('Negative1', async () => { await _testNeg(readCsv('csvDf1', csvDf1), 'col1'); });
   test('Negative2', async () => { await _testNeg(readCsv('csvDf2', csvDf2), 'col1'); });
   test('Negative3', async () => { await _testNeg(readCsv('csvDf3', csvDf3), 'col1'); });
@@ -356,7 +356,6 @@ MWRSWY-CKHP
   test('samplesTestDmvOfficesNegativeCity', async () => {
     await _testNeg(readSamples(Samples.testDmvOffices), 'City');
   });
-
 });
 
 export async function _testNeg(readDf: DfReaderFunc, colName: string) {
