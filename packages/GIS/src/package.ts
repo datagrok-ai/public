@@ -31,12 +31,13 @@ export function gisKMLFileViewer(file: DG.FileInfo): DG.View {
   let htmlStyle: DG.ElementOptions = {style: {'width': '100%', 'height': '100%', 'border': 'solid 1px yellow'}};
   // const boxMap = ui.box(null, htmlStyle);
   const boxMap = ui.box(ui.div(file.fullPath), htmlStyle);
-  //file.path
-
   boxMap.id = 'map-container'; //boxMap - div that contains map
-
-
   viewFile.append(boxMap);
+
+  // let strBuf = await file.readAsString();
+  // const boxMap2 = ui.box(ui.div(strBuf), htmlStyle);
+
+  // viewFile.append(boxMap2);
   // const ol = new OpenLayers();
   // ol.initMap('map-container');
 

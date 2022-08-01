@@ -22,6 +22,7 @@ import Style, {StyleLike} from 'ol/style/Style';
 import {DragAndDrop, defaults as defaultInteractions} from 'ol/interaction';
 import {GPX, GeoJSON, IGC, KML, TopoJSON} from 'ol/format';
 import Source from 'ol/source/Source';
+import {Attribution, defaults as defaultControls} from 'ol/control';
 
 export {Coordinate} from 'ol/coordinate';
 //interface for callback functions parameter
@@ -29,6 +30,12 @@ export interface OLCallbackParam {
   coord: Coordinate; //[number, number];
   pixel: [number, number];
 }
+
+// const info = $('#info');
+// info.tooltip({
+//   animation: false,
+//   trigger: 'manual',
+// });
 
 let OLG: OpenLayers; //TODo: remove this terrible stuff!
 
@@ -78,6 +85,7 @@ export class OpenLayers {
 
     this.olMap = new OLMap({
       target: targetName,
+      controls: defaultControls({attribution: false, rotate: false}),
       view: new OLView({
         center: OLProj.fromLonLat([34.109565, 45.452962]),
         zoom: 7,
@@ -101,11 +109,12 @@ export class OpenLayers {
     const sourceVector = new VectorSource({
       features: event.features,
     });
-    // OLG.addNewVectorLayer(event.file.name, sourceVector);
-    OLG.olMap.addLayer(
-      new VectorLayer({
-        source: sourceVector,
-      }));
+    OLG.addNewVectorLayer(event.file.name, null, null, sourceVector);
+    //TODO: if case above is workable we should add an layerID somewhere here>>
+    // OLG.olMap.addLayer(
+    //   new VectorLayer({
+    //     source: sourceVector,
+    //   }));
     // this.olMap.getView().fit(sourceVector.getExtent());
     OLG.olMap.getView().fit(sourceVector.getExtent());
   }
@@ -152,7 +161,8 @@ export class OpenLayers {
     if (this.olMap) {
       const layersArr = this.olMap.getAllLayers();
       for (let i = 0; i < layersArr.length; i++) {
-        if (layerId === layersArr[i].get('layerId'))
+        let lId = layersArr[i].get('layerId');
+        if (layerId == lId)
           layerResult = layersArr[i];
       }
     }
@@ -160,7 +170,7 @@ export class OpenLayers {
   }
 
   addLayer(layerToAdd: BaseLayer) {
-    layerToAdd.set('layerId', Date.now());
+    layerToAdd.set('layerId', Date.now()+'|'+(Math.random()*100));
     this.olMap.addLayer(layerToAdd);
     this.olCurrentLayer = layerToAdd;
   }
@@ -168,7 +178,8 @@ export class OpenLayers {
   // addNewTileLayer(layerToAdd: BaseLayer) //TODO: add
 
   //adds arbitrary Vector layer
-  addNewVectorLayer(lrName?: string, opt?: Object, style?: StyleLike, src?: VectorSource): VectorLayer<VectorSource> {
+  addNewVectorLayer(lrName?: string, opt?: Object|null,
+    style?: StyleLike|null, src?: VectorSource|null): VectorLayer<VectorSource> {
     let sourceVector: VectorSource;
     if (src) sourceVector = src;
     else sourceVector = new VectorSource();
@@ -177,7 +188,8 @@ export class OpenLayers {
     if (lrName) newLayer.set('layerName', lrName);
     if (opt) newLayer.setProperties(opt);
     if (style) newLayer.setStyle(style);
-    this.olMap.addLayer(newLayer);
+    // this.olMap.addLayer(newLayer);
+    this.addLayer(newLayer);
     return newLayer;
   }
 
@@ -195,7 +207,8 @@ export class OpenLayers {
     if (layerName) newLayer.set('layerName', layerName);
     else newLayer.set('layerName', 'Sattelite');
     if (options) newLayer.setProperties(options);
-    this.olMap.addLayer(newLayer);
+    // this.olMap.addLayer(newLayer);
+    this.addLayer(newLayer);
     return newLayer;
   }
   //adds Open Street Maps layer
@@ -208,7 +221,8 @@ export class OpenLayers {
     if (layerName) newLayer.set('layerName', layerName);
     else newLayer.set('layerName', 'OpenStreet');
     if (options) newLayer.setProperties(options);
-    this.olMap.addLayer(newLayer);
+    // this.olMap.addLayer(newLayer);
+    this.addLayer(newLayer);
     return newLayer;
   }
 
@@ -225,7 +239,8 @@ export class OpenLayers {
     });
     if (layerName) newLayer.set('layerName', layerName);
     if (options) newLayer.setProperties(options);
-    this.olMap.addLayer(newLayer);
+    // this.olMap.addLayer(newLayer);
+    this.addLayer(newLayer);
     return newLayer;
   }
 
@@ -248,6 +263,21 @@ export class OpenLayers {
     });
     return style;
   }
+
+  // displayFeatureInfo = function (pixel) {
+  //   info.css({
+  //     left: pixel[0] + 'px',
+  //     top: pixel[1] - 15 + 'px',
+  //   });
+  //   const feature = map.forEachFeatureAtPixel(pixel, function (feature) {
+  //     return feature;
+  //   });
+  //   if (feature) {
+  //     info.attr('data-original-title', feature.get('name')).tooltip('show');
+  //   } else {
+  //     info.tooltip('hide');
+  //   }
+  // };
 
   //map base events handlers>>
   onMapClick(evt: MapBrowserEvent<any>) {
@@ -273,8 +303,14 @@ export class OpenLayers {
       pixel: [evt.pixel[0], evt.pixel[1]]
     };
 
+    // const feature = this.olMap.forEachFeatureAtPixel(evt.pixel, function(feature) {
+    //   return feature;
+    // });
+    // let featuredata: string = ' / Value';
+    // if (feature) featuredata = featuredata + feature.get('fieldValue');
     //TODO: remove this crutch - only callback fn
     let lbl = document.getElementById('lbl-coord');
+    // if (lbl) lbl.innerHTML = evt.coordinate[0] + ', ' + evt.coordinate[1] + ' ' + featuredata;
     if (lbl) lbl.innerHTML = evt.coordinate[0] + ', ' + evt.coordinate[1];
 
     if (this.onPointermoveCallback)
@@ -312,20 +348,33 @@ export class OpenLayers {
     aLayer = this.olMarkersLayer;
     if (layer) aLayer = layer;
 
+    const maxradius = 60;
     if (aLayer) {
       let val = value;
       if (typeof(val) !== 'number') val = 1;
-
+      let rad = this.markerSize;
+      if (this.weightedMarkers) {
+        rad = val;
+        if (val > maxradius) rad = maxradius;
+      }
+      let stroke = 1;
+      if (this.weightedMarkers) {
+        // (val>maxradius) ? ((val/10>maxradius/2) ? (maxradius/2+2) : (val/10) ) : 1
+        stroke = val;
+        if ((val > maxradius) && (val/10 > maxradius/2)) stroke = maxradius/2+2;
+        else stroke = val/10;
+      }
       const marker = new Feature(new Point(OLProj.fromLonLat(coord)));
       const style = new Style({
         image: new OLStyle.Circle({
-          radius: this.weightedMarkers ? val*1 : this.markerSize,
+          radius: rad,
           fill: new OLStyle.Fill({
             color: `rgba(255, 153, 0, ${this.markerOpacity})`,
           }),
           stroke: new OLStyle.Stroke({
             color: `rgba(255, 204, 0, ${this.markerOpacity-0.2})`,
-            width: 1,
+            width: stroke,
+            // width: (val>maxradius) ? ((val/10>maxradius/2) ? (maxradius/2+2) : (val/10) ) : 1,
           }),
         }),
       });

@@ -13,7 +13,6 @@ import $ from 'cash-dom';
 import {OpenLayers} from '../src/gis-openlayer';
 import {Coordinate} from '../src/gis-openlayer';
 import {OLCallbackParam} from '../src/gis-openlayer';
-import { LogEventParameter } from 'datagrok-api/dg';
 
 
 //type Pair<T, K> = [T, K]; //used Coordinate instead if it
@@ -37,6 +36,8 @@ export class GisViewer extends DG.JsViewer {
   viewerContainer: HTMLElement | null = null;
   lblStatusCoords: HTMLElement | null = null;
   divLayersList: HTMLElement | null = null;
+  leftPanelWidth: string = '110px';
+  rightPanelWidth: string = '50px';
 
   initialized: boolean;
   ol: OpenLayers;
@@ -56,18 +57,61 @@ export class GisViewer extends DG.JsViewer {
     this.valuesColumnName = this.string('valuesColumnName');
     this.weightedMarkers = this.bool('weightedMarkers', false);
     this.markerSize = this.int('markerSize', 5);
-    this.markerOpacity = this.float('markerOpacity', 0.8);
+    this.markerOpacity = this.float('markerOpacity', 0.8, {editor: 'slider', min: 0.1, max: 1});
 
     this.heatmapRadius = this.int('heatmapRadius', 10);
     this.heatmapBlur = this.int('heatmapBlur', 20);
-
-    // const markerOpacityProp = this.getProperty('markerOpacity');
-    // if (markerOpacityProp) markerOpacityProp.options;
     // DG.Property
+    //JsViewer
 
     this.renderType = this.string('renderType', 'markers');
     const renderTypeProp = this.getProperty('renderType');
     if (renderTypeProp) renderTypeProp.choices = ['markers', 'heat map'];
+  }
+
+  layerUIElement(num: number, layerName: string, layerId: string): HTMLElement {
+    const l1 = ui.div(num+': '+layerName);
+    l1.style.overflow = 'hidden';
+    (l1.lastElementChild as HTMLElement).style.overflow = 'hidden';
+    //TODO: add tooltip to base element with layer name
+
+    function setupBtn(el: HTMLElement, layerName: string, layerId: string) {
+    // el.style.border = '1px solid black';
+      el.style.height = '14px';
+      el.style.width = '18px';
+      el.style.marginLeft = '4px';
+      el.setAttribute('layerName', layerName);
+      el.setAttribute('layerId', layerId);
+    }
+    //l1.style.border = '1px solid blue';
+    // const btnVisible = ui.button(ui.iconFA('eye'), ()=>{
+    const btnVisible = ui.iconFA('eye', (evt)=>{ //cogs
+      const divLayer = (evt.currentTarget as HTMLElement);
+      const layerId = divLayer.getAttribute('layerId');
+      if (!layerId) return;
+      const layer = this.ol.getLayerById(layerId);
+      if (!layer) return;
+      const isVisible = layer.getVisible();
+      layer.setVisible(!isVisible);
+      if (!isVisible) divLayer.style.background = 'lightblue';
+      else divLayer.style.background = 'lightgray';
+    }, 'Show/hide layer');
+    setupBtn(btnVisible, layerName, layerId);
+    //Setup button>>
+    const btnSetup = ui.iconFA('cogs', ()=>{ //cogs
+    }, 'Layer properties');
+    setupBtn(btnSetup, layerName, layerId);
+    //Delete button>>
+    const btnDelete = ui.iconFA('trash', ()=>{
+    }, 'Delete layer');
+    setupBtn(btnDelete, layerName, layerId);
+
+    const panelButtons = ui.divH([btnVisible, btnSetup, btnDelete]);
+
+    const divLayerUI = ui.divV([l1, panelButtons]);
+    divLayerUI.style.border = '1px solid darkgray';
+    // divLayerUI.style.overflow = 'hidden';
+    return divLayerUI;
   }
 
   initUi(shortUI: boolean = false): HTMLElement {
@@ -95,21 +139,26 @@ export class GisViewer extends DG.JsViewer {
     //menu bar icons>>
 
     // ui.icons.settings
+    // return ui.iconSvg('project');
 
-    // const leftPanelBtn = ui.button('Left panel', ()=>{
+    // const iconLayers = ui.iconImage('Layers', '/icons/layers-svgrepo.svg');
+    //const leftPanelBtn = ui.button(iconLayers, ()=>{ //cogs
     const leftPanelBtn = ui.button(ui.iconFA('layer-group'), ()=>{ //cogs
       if (this.panelLeft) {
         if (this.panelLeft.style.visibility == 'visible') {
           this.panelLeft.style.visibility = 'hidden';
+          this.leftPanelWidth = this.panelLeft.style.maxWidth;
           this.panelLeft.style.maxWidth = '2px';
           this.panelLeft.style.minWidth = '2px';
         } else {
           this.panelLeft.style.visibility = 'visible';
-          this.panelLeft.style.maxWidth = '110px';
+          this.panelLeft.style.maxWidth = this.leftPanelWidth;
+          // this.panelLeft.style.maxWidth = '110px';
           this.panelLeft.style.minWidth = '50px';
+          this.updateLayersList();
         }
       }
-      this.rootOnSizeChanged(null);
+      this.rootOnSizeChanged(this.root);
     });
     const rightPanelBtn = ui.button('Right panel', ()=>{
       // if (this.panelRight)
@@ -119,13 +168,14 @@ export class GisViewer extends DG.JsViewer {
           this.panelRight.style.visibility = 'hidden';
           this.panelRight.style.maxWidth = '2px';
           this.panelRight.style.minWidth = '2px';
+          //ui.splitH.r
         } else {
           this.panelRight.style.visibility = 'visible';
           this.panelRight.style.maxWidth = '10px';
           this.panelRight.style.minWidth = '2px';
         }
       }
-      this.rootOnSizeChanged(null);
+      this.rootOnSizeChanged(this.root);
       //$(this.panelRight).hide();
     });
     $(rightPanelBtn).hide(); //temporary hide this button
@@ -140,9 +190,7 @@ export class GisViewer extends DG.JsViewer {
     //this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn]));
 
     //left panel icons>>
-    const l1 = ui.div(' <l1>');
-    const l2 = ui.div(' <l2>');
-    this.divLayersList = ui.divV([l1, l2]);
+    this.divLayersList = ui.divV([]);
     this.panelLeft.append(this.divLayersList);
 
     leftPanelBtn.click();
@@ -156,11 +204,12 @@ export class GisViewer extends DG.JsViewer {
     const body = ui.box();
     body.id = 'map-container';
     body.style.border = 'solid 1px darkgray';
-    body.style.minWidth = '100px';
+    //body.style.minWidth = '100px';
 
     this.viewerContainer = ui.splitV(
       [this.panelTop,
-        ui.splitH([this.panelLeft, body, this.panelRight], null, true),
+        // ui.splitH([this.panelLeft, body, this.panelRight], null, true),
+        ui.splitH([this.panelLeft, body], null, true),
         this.panelBottom]);
 
     this.viewerContainer.style.border = 'solid 2px lightgray';
@@ -172,8 +221,8 @@ export class GisViewer extends DG.JsViewer {
   init() {
     try {
       ui.setUpdateIndicator(this.root, true);
-
       this.initUi();
+      // ui.setUpdateIndicator(this.panelTop!, true);
       this.ol.initMap('map-container');
 
       //TODO: refactor here>
@@ -187,36 +236,24 @@ export class GisViewer extends DG.JsViewer {
 
       //subscribe to events
       this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
+      this.subs.push(ui.onSizeChanged((this.panelLeft as HTMLElement)).subscribe(this.rootOnSizeChanged.bind(this)));
       //setup callbacks
-      this.ol.setMapPointermoveCallback(this.showCoordsInStatus);
+      this.ol.setMapPointermoveCallback(this.showCoordsInStatus.bind(this));
+      this.ol.setMapClickCallback(this.showCoordsInStatus.bind(this));
 
       this.initialized = true;
     }
     catch (e: any) {
       this.initialized = false;
-      grok.shell.error(e.toString())
+      grok.shell.error(e.toString());
       this.root.appendChild(
         ui.divV([ui.div('Error loading GIS map!'), ui.div(e.toString())]));
     }
     finally {
       ui.setUpdateIndicator(this.root, false);
+      // ui.setUpdateIndicator(this.panelTop!, true);
     }
   }
-
-  // updateLayersList() {
-  //   if (!this.ol) return;
-  //   if (!this.panelLeft) return;
-  //   if (!this.divLayersList) return;
-
-  //   while (this.divLayersList.lastChild) this.divLayersList.removeChild(this.divLayersList.lastChild);
-  //   const layersNames = this.ol.getLayersNamesList();
-
-  //   for (let i = 0; i < layersNames.length; i++) {
-  //     // const l2 = ui.div(layersNames[i]);
-  //     let divLayer = ui.div(layersNames[i], {style: {'border': 'solid 1px blue'}});
-  //     this.divLayersList.append(divLayer);
-  //   }
-  // }
 
   updateLayersList() {
     if ((!this.ol) || (!this.panelLeft) || (!this.divLayersList)) return;
@@ -230,44 +267,45 @@ export class GisViewer extends DG.JsViewer {
     for (let i = 0; i < layersArr.length; i++) {
       let layerName = layersArr[i].get('layerName');
       if ((layerName === undefined) || (layerName === null) ) layerName = '';
-      // if ((layerName === 'undefined') || (layerName === 'null') ) layerName = '';
-      let layerId = layersArr[i].get('layerId');
+      const layerId = layersArr[i].get('layerId');
 
-      let divLayer = ui.div(i+' '+layerName, {style: {'border': 'solid 1px lightgray'}});
-      let isVisible = layersArr[i].getVisible();
+      // const divLayer = ui.div(i+' '+layerName, {style: {'border': 'solid 1px lightgray'}});
+      const divLayer = this.layerUIElement(i, layerName, layerId);
+      const isVisible = layersArr[i].getVisible();
       divLayer.setAttribute('layerName', layerName);
       divLayer.setAttribute('layerId', layerId);
       if (isVisible) divLayer.style.background = 'lightblue';
-      else divLayer.style.background = 'darkgray';
+      else divLayer.style.background = 'lightgray';
 
       divLayer.onclick = (evt)=>{
-        const divLayer = (evt.currentTarget as HTMLElement);
-        // const layerName = divLayer.getAttribute('layerName');
-        const layerId = divLayer.getAttribute('layerId');
-        //if (!layerName) return;
-        // let layer = this.ol.getLayerByName(layerName);
-        if (!layerId) return;
-        const layer = this.ol.getLayerById(layerId);
-        if (!layer) return;
-        const isVisible = layer.getVisible();
-        layer.setVisible(!isVisible);
-        if (!isVisible) divLayer.style.background = 'lightblue';
-        else divLayer.style.background = 'darkgray';
+        // const divLayer = (evt.currentTarget as HTMLElement);
+        // // const layerName = divLayer.getAttribute('layerName');
+        // // if (!layerName) return;
+        // // const layer = this.ol.getLayerByName(layerName);
+        // const layerId = divLayer.getAttribute('layerId');
+        // if (!layerId) return;
+        // const layer = this.ol.getLayerById(layerId);
+        // if (!layer) return;
+        // const isVisible = layer.getVisible();
+        // layer.setVisible(!isVisible);
+        // if (!isVisible) divLayer.style.background = 'lightblue';
+        // else divLayer.style.background = 'lightgray';
       };
 
       this.divLayersList.append(divLayer);
+      // this.divLayersList.append(this.layerUIElement(layerName, layerId));
     }
   }
 
   showCoordsInStatus(p: OLCallbackParam): void {
     if (this.lblStatusCoords) {
       if (p)
-        this.lblStatusCoords.innerText = p.coord[0] + ', ' + p.coord[1];
+        this.lblStatusCoords.innerText = p.coord[0] + ' !!! ' + p.coord[1];
     }
   }
 
   private rootOnSizeChanged(args: any): void {
-    //this.ol.olMap.setSize(this.root.clientWidth, this.root.clientHeight);
+    this.ol.olMap.setSize([this.root.clientWidth, this.root.clientHeight]);
     //this.ol.olMap.updateSize();
     setTimeout( function(m) {m.updateSize();}, 200, this.ol.olMap);
   }
@@ -286,8 +324,9 @@ export class GisViewer extends DG.JsViewer {
     this.render(true);
   }
 
-  onPropertyChanged(prop: any): void {
+  onPropertyChanged(prop: DG.Property): void {
     if (!this.initialized) return;
+    //property.name
 
     this.render();
   }
@@ -299,10 +338,7 @@ export class GisViewer extends DG.JsViewer {
   }
 
   render(fit: boolean = false): void {
-    // for (const layer of this.layers)
-    //   this.map.removeLayer(layer);
-    // this.layers.length = 0;
-
+    //TODO: refactor this>
     this.ol.markerSize = this.markerSize;
     this.ol.markerOpacity = this.markerOpacity;
     this.ol.weightedMarkers = this.weightedMarkers;
@@ -313,7 +349,6 @@ export class GisViewer extends DG.JsViewer {
       return;
 
     this.getCoordinates(); //not only coordinates but a data at all
-    // this.renderMarkers();
 
     if (this.renderType === 'heat map')
       this.renderHeat();
@@ -329,25 +364,19 @@ export class GisViewer extends DG.JsViewer {
     this.coordinates.length = 0;
     this.values.length = 0;
     const indexes = this.dataFrame.filter.getSelectedIndexes();
-    let lat: Int32Array | Float32Array | Float64Array | Uint32Array;
-    let lon: Int32Array | Float32Array | Float64Array | Uint32Array;
     let val: Int32Array | Float32Array | Float64Array | Uint32Array;
 
-    lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
-    lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
+    const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
+    const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
     // val = this.dataFrame.getCol(this.valuesColumnName).getRawData();
 
     if ((!lat) || (!lon)) return;
 
-    // col = this.dataFrame.getCol(this.latitudeColumnName);
-    // if (col) lat = col.getRawData();
-    // col = this.dataFrame.getCol(this.longitudeColumnName);
-    // if (col) lon = col.getRawData();
     const col = this.dataFrame.getCol(this.valuesColumnName);
     //TODO: change it to filling array of objects with all table data
     if (col) val = col.getRawData();
     else {
-      val = new Int32Array(lat.length); //lat.copyWithin(0, 0);
+      val = new Float32Array(lat.length);
       val.fill(1);
     }
 
