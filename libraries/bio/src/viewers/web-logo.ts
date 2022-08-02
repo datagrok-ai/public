@@ -122,6 +122,9 @@ export class WebLogo extends DG.JsViewer {
 
   /** For startPosition equals to endPosition Length is 1 */
   private get Length(): number {
+    if (this.skipEmptyPositions) {
+      return this.positions.length;
+    }
     return this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
   }
 
@@ -398,13 +401,34 @@ export class WebLogo extends DG.JsViewer {
     return '';
   }
 
+  protected _removeEmptyPositions() {
+    if (this.skipEmptyPositions) {
+      let removePositions = [];
+      for (let jPos = 0; jPos < this.positions.length; jPos++) {
+        console.log(this.positions[jPos]);
+        if (this.positions[jPos] != null) {
+          if (this.positions[jPos].freq['-'] != null) {
+            if (this.positions[jPos].freq['-'].count === this.positions[jPos].rowCount) {
+              removePositions.push(jPos);
+            }
+          }
+        }
+      }
+      // remove element with indexes in removePositions
+      removePositions.sort((a, b) => b - a);
+      removePositions.forEach((jPos) => {
+        this.positions.splice(jPos, 1);
+      });
+    }
+  }
+
   protected _calculate(r: number) {
     if (!this.canvas || !this.host || !this.seqCol || !this.dataFrame)
       return;
 
     this.calcSize();
 
-    this.positions = new Array(this.Length);
+    this.positions = new Array(this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0);
     for (let jPos = 0; jPos < this.Length; jPos++) {
       const posName: string = this.positionNames[this.startPosition + jPos];
       this.positions[jPos] = new PositionInfo(posName);
@@ -445,6 +469,8 @@ export class WebLogo extends DG.JsViewer {
         this.positions[jPos].rowCount += this.positions[jPos].freq[m].count;
     }
     //#endregion
+    this._removeEmptyPositions();
+
 
     const maxHeight = this.canvas.height - this.axisHeight * r;
     // console.debug(`WebLogo<${this.viewerId}>._calculate() maxHeight=${maxHeight}.`);
