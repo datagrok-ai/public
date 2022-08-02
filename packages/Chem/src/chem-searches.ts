@@ -133,8 +133,6 @@ async function getUint8ArrayFingerprints(
     if (fgsCheck)
       return fgsCheck;
     else {
-      if (useSection)
-        await chemBeginCriticalSection();
       await _invalidate(molCol);
       const fingerprints = await (await getRdKitService()).getFingerprints(fingerprintsType);
       saveFingerprintsToCol(molCol, fingerprints, fingerprintsType);
