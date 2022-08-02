@@ -23,7 +23,7 @@ export class CardView extends View {
     super(dart);
   }
 
-  /** Creates a new CardView object with the specifed options. */
+  /** Creates a new CardView object with the specified options. */
   static create(options?: any): CardView {
     return new CardView(api.grok_CardView_Create(options));
   }
