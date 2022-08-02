@@ -51,6 +51,7 @@ export class PeptidesModel {
   monomerMap: {[key: string]: {molfile: string, fullName: string}} = {};
   barData: type.MonomerDfStats = {};
   barsBounds: {[position: string]: type.BarCoordinates} = {};
+  cachedBarchartTooltip: {bar: string, tooltip: null | HTMLDivElement} = {bar: '', tooltip: null};
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -487,14 +488,13 @@ export class PeptidesModel {
       const cell = this._sourceGrid.hitTest(ev.offsetX, ev.offsetY);
       if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.AMINO_ACIDS) {
         const newBarPart = this.findAARandPosition(cell, ev);
-        this.requestAction(ev, newBarPart);
+        this.requestBarchartAction(ev, newBarPart);
       }
     };
 
     // The following events makes the barchart interactive
     rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
     rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'click').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
-    // rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'mouseout').subscribe(() => barchart.computeData());
   }
 
   findAARandPosition(cell: DG.GridCell, ev: MouseEvent) {
@@ -509,7 +509,7 @@ export class PeptidesModel {
     return null;
   }
 
-  requestAction(ev: MouseEvent, barPart: {position: string, monomer: string} | null) {
+  requestBarchartAction(ev: MouseEvent, barPart: {position: string, monomer: string} | null): void {
     if (!barPart)
       return;
     const monomer = barPart.monomer;
@@ -517,8 +517,13 @@ export class PeptidesModel {
     if (ev.type === 'click') {
       ev.shiftKey ? this.modifyCurrentSelection(monomer, position) :
         this.initCurrentSelection(monomer, position);
-    } else
-      this.showTooltipAt(monomer, position, ev.clientX, ev.clientY);
+    } else {
+      const bar = `${monomer}:${position}`;
+      if (this.cachedBarchartTooltip.bar == bar)
+        ui.tooltip.show(this.cachedBarchartTooltip.tooltip!, ev.clientX, ev.clientY);
+      else
+        this.cachedBarchartTooltip = {bar: bar, tooltip: this.showTooltipAt(monomer, position, ev.clientX, ev.clientY)};
+    }
   }
 
   setCellRenderers(renderColNames: string[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
@@ -631,7 +636,7 @@ export class PeptidesModel {
     ui.tooltip.show(ui.divV(tooltipElements), x, y);
   }
 
-  showTooltipAt(aar: string, position: string, x: number, y: number): void {
+  showTooltipAt(aar: string, position: string, x: number, y: number): HTMLDivElement | null {
     const currentStatsDf = this.statsDf.rows.match({Pos: position, AAR: aar}).toDataFrame();
     const activityCol = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
     const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
@@ -645,11 +650,13 @@ export class PeptidesModel {
       meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
     };
     if (!stats.count)
-      return;
+      return null;
 
     const tooltip = getDistributionAndStats(distributionTable, stats, `${position} : ${aar}`, 'Other', true);
 
     ui.tooltip.show(tooltip, x, y);
+
+    return tooltip;
   }
 
   setInteractionCallback(): void {
