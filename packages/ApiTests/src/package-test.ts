@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import './dataframe/dataframe';
+import './dataframe/detector';
 import './dataframe/calculated-columns';
 import './dataframe/events';
 import './functions/functions';
@@ -65,6 +66,8 @@ import './gui/scatter-plot-3d.ts'
 import './gui/word-cloud'
 import './gui/network-diagram'
 import './gui/box-plot'
+import './gui/chem-similarity-search'
+import './gui/r-groups-analysis'
 
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();

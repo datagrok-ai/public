@@ -766,23 +766,25 @@ export class Menu {
     return toJs(api.grok_Menu());
   }
 
-  /** Creates a popup menu.
-   * @returns {Menu} */
+  /** Creates a popup menu. */
   static popup(): Menu {
     return toJs(api.grok_Menu_Context());
   }
 
   get root(): HTMLElement { return api.grok_Menu_Get_Root(this.dart); }
 
-  /** Finds a child menu item with the specified text.
-   * @param {string} text
-   * @returns {Menu} */
+  /** Finds a child menu item with the specified text. */
   find(text: string): Menu {
     return toJs(api.grok_Menu_Find(this.dart, text));
   }
 
-  /** Removes a child menu item with the specified text.
-   * @param {string} text */
+  /** Executes the onClick function for that menu item.
+   * Only works for items, not groups. */
+  click(): void {
+    api.grok_Menu_Click(this.dart);
+  }
+    
+  /** Removes a child menu item with the specified text. */
   remove(text: string): void {
     api.grok_Menu_Remove(this.dart, text);
   }
@@ -1030,6 +1032,11 @@ export class InputBase<T = any> {
     api.grok_InputBase_AddPostfix(this.dart, postfix);
   };
 
+  /** Adds the specified options */
+  addOptions(options: HTMLElement): void {
+    api.grok_InputBase_AddOptions(this.dart, options);
+  };
+
   /** Adds a usage example to the input's hamburger menu */
   addPatternMenu(pattern: any): void {
     api.grok_InputBase_AddPatternMenu(this.dart, pattern);
@@ -1039,6 +1046,8 @@ export class InputBase<T = any> {
   setTooltip(msg: string, tooltipCheck: (() => boolean) | null = null): void {
     api.grok_InputBase_SetTooltip(this.dart, msg, tooltipCheck);
   };
+
+  get classList(): DOMTokenList { return this.root.classList; }
 }
 
 
@@ -1394,11 +1403,6 @@ export class TreeViewNode {
     this.dart = dart;
   }
 
-  /** Creates new tree */
-  static tree(): TreeViewNode {
-    return toJs(api.grok_TreeViewNode_Tree());
-  }
-
   /** Visual root */
   get root(): HTMLElement {
     return api.grok_TreeViewNode_Root(this.dart);
@@ -1425,36 +1429,26 @@ export class TreeViewNode {
   get value(): object { return api.grok_TreeViewNode_Get_Value(this.dart); };
   set value(v: object) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
 
-  /** Gets all node items */
-  get items(): TreeViewNode[] {
-    return api.grok_TreeViewNode_Items(this.dart).map((i: any) => toJs(i));
-  }
-
-  /** Adds new group */
-  group(text: string, value: object | null = null, expanded: boolean = true): TreeViewNode {
-    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded));
-  }
-
-  /** Returns existing, or creates a new node group */
-  getOrCreateGroup(text: string, value: object | null = null, expanded: boolean = true): TreeViewNode {
-    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.dart, text, expanded));
-  }
-
-  /** Adds new item to group */
-  item(text: string | Element, value: object | null = null): TreeViewNode {
-    return toJs(api.grok_TreeViewNode_Item(this.dart, text, value));
-  }
-
   /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {
     api.grok_TreeViewNode_EnableCheckBox(this.dart, checked);
   }
 
+  /**  */
+  get onSelected(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-current', this.dart); }
+}
+
+export class TreeViewGroup extends TreeViewNode {
+  /** Creates new tree */
+  static tree(): TreeViewGroup {
+    return toJs(api.grok_TreeViewNode_Tree());
+  }
+
   static fromItemCategories(items: any[], props: string[], options?: {
     removeEmpty: boolean, itemToElement?: (item:any) => Element, itemToString?: (item: any) => string, itemToValue?: (item: any) => any
-  }): TreeViewNode {
+  }): TreeViewGroup {
 
-    function init(node: TreeViewNode, path: string[]) {
+    function init(node: TreeViewGroup, path: string[]) {
 
       //
       const pathItems = items
@@ -1484,14 +1478,42 @@ export class TreeViewNode {
       }
     }
 
-    let rootNode = TreeViewNode.tree();
+    let rootNode = TreeViewGroup.tree();
     init(rootNode, []);
     return rootNode;
   }
 
+  /** Gets all node items */
+  get items(): TreeViewNode[] {
+    return api.grok_TreeViewNode_Items(this.dart).map((i: any) => toJs(i));
+  }
 
-  /**  */
-  get onNodeExpanding(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-expanding', this.dart); }
+  /** Adds new group */
+  group(text: string, value: object | null = null, expanded: boolean = true): TreeViewGroup {
+    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded));
+  }
+
+  /** Returns existing, or creates a new node group */
+  getOrCreateGroup(text: string, value: object | null = null, expanded: boolean = true): TreeViewGroup {
+    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.dart, text, value, expanded));
+  }
+
+  /** Adds new item to group */
+  item(text: string | Element, value: object | null = null): TreeViewNode {
+    return toJs(api.grok_TreeViewNode_Item(this.dart, text, value));
+  }
+
+  get onNodeExpanding(): Observable<TreeViewGroup> { return __obs('d4-tree-view-node-expanding', this.dart); }
+  get onNodeAdded(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-added', this.dart); }
+  get onNodeCheckBoxToggled(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-checkbox-toggled', this.dart); }
+  get onChildNodeExpandedChanged(): Observable<TreeViewGroup> { return __obs('d4-tree-view-child-node-expanded-changed', this.dart); }
+  get onChildNodeExpanding(): Observable<TreeViewGroup> { return __obs('d4-tree-view-child-node-expanding', this.dart); }
+  // get onChildNodeContextMenu(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-context-menu', this.dart); }
+  get onNodeContextMenu(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-context-menu', this.dart); }
+  get onSelectedNodeChanged(): Observable<TreeViewNode> { return __obs('d4-tree-view-selected-node-changed', this.dart); }
+  get onNodeMouseEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-enter', this.dart); }
+  get onNodeMouseLeave(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-leave', this.dart); }
+  get onNodeEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-enter', this.dart); }
 }
 
 

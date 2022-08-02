@@ -35,8 +35,8 @@ We recommend this method if you want to jump-start with Datagrok on your local m
    in Administrator mode (this is a [known issue](https://github.com/docker/compose/issues/4531) of Docker on some
    computers).
 3. Once the server is up and running, the Login page should be available
-   at [http://localhost:8080](http://localhost:8080). For a quick setup, login to Datagrok using a username `admin`
-   and a password `admin`.
+   at [http://localhost:8080](http://localhost:8080). For a quick setup, login to Datagrok using the username `admin`
+   and the password `admin`.
 4. After Datagrok the first time deployment, you can shut it down using the command:
 
    ```shell
@@ -52,6 +52,62 @@ We recommend this method if you want to jump-start with Datagrok on your local m
    ```
 
 ## Advanced usage
+
+### Multiple stands
+
+It is possible to run multiple stands of Datagrok on one host machine. To do so:
+
+1. Run the first stand [as usual](#instructions)
+2. Set the Datagrok image version with the `DATAGROK_VERSION` environment variable. It can be any tag from
+   [Docker Hub](https://hub.docker.com/r/datagrok/datagrok/tags). The default value is `latest`.
+
+    For Windows users:
+
+    ```shell
+    set DATAGROK_VERSION=latest
+    ```
+
+    For Unix/Linux users:
+
+    ```shell
+    export DATAGROK_VERSION='latest'
+    ```
+
+3. Set environment variables for mapped ports: `DATAGROK_PORT` (the default value is `8080`), `DATAGROK_DB_PORT` (the
+   default value is `5432`), `DATAGROK_CVM_PORT` (the default value is `8090`)
+   , `DATAGROK_H2O_PORT` (the default value is `54321`), `DATAGROK_H2O_HELPER_PORT` (the default value is `5005`)
+   , `DATAGROK_GROK_SPAWNER_PORT` (the default value is `8000`). To start the second stand properly the values should
+   differ from the ports of the existing stands. For example, you can increment every port value by 1.
+
+    For Windows users:
+
+    ```shell
+    set DATAGROK_PORT=8081
+    set DATAGROK_DB_PORT=5433
+    set DATAGROK_CVM_PORT=8091
+    set DATAGROK_H2O_PORT=54322
+    set DATAGROK_H2O_HELPER_PORT=5006
+    set DATAGROK_GROK_SPAWNER_PORT=8001
+    ```
+
+    For Unix/Linux users:
+
+    ```shell
+    export DATAGROK_PORT='8081'
+    export DATAGROK_DB_PORT='5433'
+    export DATAGROK_CVM_PORT='8091'
+    export DATAGROK_H2O_PORT='54322'
+    export DATAGROK_H2O_HELPER_PORT='5006'
+    export DATAGROK_GROK_SPAWNER_PORT='8001'
+    ```
+
+4. The last step is to run the second stand. It is important to change the project name to start the second Datagrok
+   stand. The project name in [the standard instructions](#instructions), which were used for the first stand,
+   is `datagrok`. For example, you can add an increment to the project name: `datagrok_2`
+
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok_2 --profile all up -d
+   ```
 
 ### Demo Databases
 
@@ -77,7 +133,7 @@ If you need CVM features only, you can run only CVM application containers:
 docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile cvm up -d
 ```
 
-To run Datagrok with exact CVM features, specify them in the command-line using `--profile` flag
+To run Datagrok with exact CVM features, specify them in the command line using the `--profile` flag
 
 * Cheminformatics
 
@@ -130,20 +186,20 @@ To run Datagrok with exact CVM features, specify them in the command-line using 
 ## Troubleshooting
 
 1. In case of any issues, check the settings in the Datagrok (Tools | Settings...).
-    * Connectors
-        * External Host: grok_connect
-    * Scripting:
-        * CVM Url: `http://cvm:8090`
-        * CVM URL Client: `http://localhost:8090`
-        * H2o Url: `http://h2o:54321`
-        * API Url: `http://datagrok:8080/api`
-        * Cvm Split: `true`
-    * Dev:
-        * CVM Url: `http://localhost:8090`
-        * Cvm Split: `true`
-        * API Url: `http://datagrok:8080/api`
+   * Connectors
+     * External Host: `grok_connect`
+   * Scripting:
+     * CVM Url: `http://cvm:8090`
+     * CVM URL Client: `http://localhost:8090`
+     * H2o Url: `http://h2o:54321`
+     * API Url: `http://datagrok:8080/api`
+     * Cvm Split: `true`
+   * Dev:
+     * CVM Url: `http://localhost:8090`
+     * Cvm Split: `true`
+     * API Url: `http://datagrok:8080/api`
 
-2. Check containers logs for any possible errors and report the problem if there is any
+2. Check containers logs for any possible errors and report the problem if there are any
 
    ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all logs

@@ -1,5 +1,3 @@
-import * as OCL from 'openchemlib/full.js';
-
 const PHOSHATE = `
 Datagrok monomer library Nucleotides
 
@@ -244,16 +242,19 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false, oclRe
   macroMolBlock += 'M  V30 BEGIN BOND\n';
   macroMolBlock += bondBlock;
   macroMolBlock += 'M  V30 END BOND\n';
-  macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
-  macroMolBlock += collectionBlock;
-  macroMolBlock += 'M  V30 END COLLECTION\n';
+  //macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
+  //macroMolBlock += collectionBlock;
+  //macroMolBlock += 'M  V30 END COLLECTION\n';
   macroMolBlock += 'M  V30 END CTAB\n';
   macroMolBlock += 'M  END\n';
+
+  macroMolBlock = macroMolBlock.replaceAll('CFG=1', '').replaceAll('CFG=2', '').replaceAll('CFG=3', '').replaceAll('CFG=4', '');
 
   return macroMolBlock;
 }
 
 function rotateNucleotidesV3000(molecule: string) {
+  // @ts-ignore
   let molBlock = molecule.includes('M  END') ? molecule : OCL.Molecule.fromSmiles(molecule).toMolfileV3();
   const coordinates = extractAtomDataV3000(molBlock);
   const natom = coordinates.atomIndex.length;
@@ -320,6 +321,7 @@ function rotateNucleotidesV3000(molecule: string) {
 }
 
 function invertNucleotidesV3000(molecule: string) {
+  // @ts-ignore
   let molBlock = molecule.includes('M  END') ? molecule : OCL.Molecule.fromSmiles(molecule).toMolfileV3();
   const coordinates = extractAtomDataV3000(molBlock);
   const natom = coordinates.atomIndex.length;

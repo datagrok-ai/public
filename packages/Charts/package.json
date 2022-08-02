@@ -1,8 +1,8 @@
 {
   "name": "@datagrok/charts",
   "fullName": "Charts",
-  "version": "1.0.2",
-  "description": "Charts package provides visualizations built using\nthe [ECharts](https://echarts.apache.org/en/index.html) library.",
+  "version": "1.0.3",
+  "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -18,15 +18,15 @@
   "scripts": {
     "link-api": "npm link datagrok-api",
     "charts-local": "webpack && grok publish local --release",
-    "release-charts": "grok publish --rebuild --release",
+    "release-charts": "grok publish --release",
     "build-charts": "webpack && grok publish",
     "build": "webpack",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "debug-charts-dev": "grok publish dev --rebuild",
-    "release-charts-dev": "grok publish dev --rebuild --release",
-    "debug-charts-public": "grok publish public --rebuild",
-    "release-charts-public": "grok publish public --rebuild --release"
+    "debug-charts-dev": "grok publish dev",
+    "release-charts-dev": "grok publish dev --release",
+    "debug-charts-public": "grok publish public",
+    "release-charts-public": "grok publish public --release"
   },
   "canEdit": [
     "Developers"

@@ -27,7 +27,7 @@ To apply a layout, use the `?layout` parameter in the following way:
    name is ambiguous.
 4. Pass ID or Name as a `?layout` parameter to the request.
 
-![](upload-data-layout.png)
+![upload-data-layout](upload-data-layout.png)
 
 # Example
 
@@ -39,4 +39,5 @@ curl --location --request POST 'http://localhost:8080/api/files/alex.aprm/upload
 ```
 
 See also:
+
 * [Layouts](layouts.md)

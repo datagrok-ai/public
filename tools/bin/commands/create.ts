@@ -106,6 +106,9 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
         copyFilePath = path.join(packageDir, '.gitignore');
         if (ts) contents += '\n# Emitted *.js files\nsrc/**/*.js\n';
       }
+      if (file === 'npmignore') {
+        copyFilePath = path.join(packageDir, '.npmignore');
+      }
       fs.writeFileSync(copyFilePath, contents, 'utf8');
     } else if (stats.isDirectory()) {
       if (file === '.vscode' && !(ide == 'vscode' && platform == 'win32')) return;

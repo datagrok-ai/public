@@ -20,14 +20,14 @@
 		"webpack-cli": "^4.2.0"
 	},
 	"scripts": {
-		"debug-nlp": "grok publish --rebuild",
-		"release-nlp": "grok publish --rebuild --release",
+		"debug-nlp": "grok publish",
+		"release-nlp": "grok publish --release",
 		"build-nlp": "webpack",
 		"build": "webpack",
-		"debug-nlp-public": "grok publish public --rebuild",
-		"release-nlp-public": "grok publish public --rebuild --release",
-		"debug-nlp-local": "grok publish local --rebuild",
-		"release-nlp-local": "grok publish local --rebuild --release",
+		"debug-nlp-public": "grok publish public",
+		"release-nlp-public": "grok publish public --release",
+		"debug-nlp-local": "grok publish local",
+		"release-nlp-local": "grok publish local --release",
 		"debug-nlp-localhost": "webpack && grok publish localhost",
 		"release-nlp-localhost": "webpack && grok publish localhost --release"
 	},

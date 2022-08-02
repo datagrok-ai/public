@@ -19,14 +19,14 @@
 		"webpack-cli": "latest"
 	},
 	"scripts": {
-		"debug-seldon": "grok publish --rebuild",
-		"release-seldon": "grok publish --rebuild --release",
+		"debug-seldon": "grok publish",
+		"release-seldon": "grok publish --release",
 		"build-seldon": "webpack",
 		"build": "webpack",
-		"debug-seldon-dev": "grok publish dev --rebuild",
-		"release-seldon-dev": "grok publish dev --rebuild --release",
-		"debug-seldon-public": "grok publish public --rebuild",
-		"release-seldon-public": "grok publish public --rebuild --release"
+		"debug-seldon-dev": "grok publish dev",
+		"release-seldon-dev": "grok publish dev --release",
+		"debug-seldon-public": "grok publish public",
+		"release-seldon-public": "grok publish public --release"
 	},
 	"canEdit": [ "Developers" ],
 	"canView": [ "All users" ],

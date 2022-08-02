@@ -1,8 +1,7 @@
 {
-	"name": "alation",
-	"beta": true,
+	"name": "@datagrok/alation",
 	"friendlyName": "Alation",
-	"version": "0.0.1",
+	"version": "1.0.1",
 	"description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
 	"properties": [
 		{
@@ -10,8 +9,13 @@
 			"propertyType": "string"
 		}
 	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/Alation"
+	},
 	"dependencies": {
-		"datagrok-api": "^1.0.0",
+		"datagrok-api": "^1.5.0",
 		"cash-dom": "latest",
 		"dayjs": "latest",
 		"uuid-by-string": "latest",
@@ -41,8 +45,8 @@
 		"release-alation": "webpack && grok publish --release",
 		"build-alation": "webpack",
 		"build": "webpack",
-		"debug-alation-eval": "grok publish eval --rebuild",
-		"release-alation-eval": "grok publish eval --rebuild --release",
+		"debug-alation-eval": "grok publish eval",
+		"release-alation-eval": "grok publish eval --release",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix",
 		"test": "set HOST=dev && jest",

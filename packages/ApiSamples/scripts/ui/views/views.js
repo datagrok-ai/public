@@ -15,6 +15,8 @@ v.setRibbonPanels([
   [ui.divText('Custom panel')]
 ]);
 
+v.statusBarPanels = [ui.divText('Mission Accomplished')];
+
 let acc = ui.accordion();
 acc.addPane('header 1', () => ui.divText('Dynamic content'));
 acc.addPane('header 2', () => ui.divText('More dynamic content'));

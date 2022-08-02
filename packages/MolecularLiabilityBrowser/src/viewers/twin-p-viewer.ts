@@ -45,8 +45,8 @@ export class TwinPviewer {
     'colPara': '#b0c4de',
     'colHighlight': '#45d145',
     'colHighlightCdr': '#FFFF00',
-    'colPartopes_low': 'rgb(176,196,222)', //col_para in rgb
-    'colPartopes_high': 'rgb(255, 0, 255)',
+    'colParatopesLow': 'rgb(176,196,222)', //col_para in rgb
+    'colParatopesHigh': 'rgb(255,0,255)',
   };
 
   ngl: NglAspect;

@@ -14,7 +14,7 @@ export const HELM_CORE_FIELDS = ['symbol', 'molfile', 'rgroups', 'name'];
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
-  const monomerSymbolDict:  { [key: string]: number }= {};
+  const monomerSymbolDict: { [key: string]: number } = {};
   const units = col.tags[DG.TAGS.UNITS];
   const sep = col.getTag('separator');
   const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, sep);
@@ -22,9 +22,9 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   for (let i = 0; i < col.length; ++i) {
     let encodedMonomerStr = '';
     const monomers = splitterFunc(col.get(i));
-    monomers.forEach(m => {
-      if(!monomerSymbolDict[m]) {
-        if(encodeSymbol > MONOMER_ENCODE_MAX) {
+    monomers.forEach((m) => {
+      if (!monomerSymbolDict[m]) {
+        if (encodeSymbol > MONOMER_ENCODE_MAX) {
           grok.shell.error(`Not enougth symbols to encode monomers`);
           return null;
         }
@@ -32,7 +32,7 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
         encodeSymbol++;
       }
       encodedMonomerStr += String.fromCodePoint(monomerSymbolDict[m]);
-    })
+    });
     encodedStringArray.push(encodedMonomerStr);
   }
   return DG.Column.fromStrings('encodedMolecules', encodedStringArray);
@@ -45,7 +45,8 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
   const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
   for (let i = 0; i < col.length; ++i) {
-    const monomers = splitterFunc(col.get(i));
+    const macroMolecule = col.get(i);
+    const monomers = splitterFunc(macroMolecule);
     const molFilesForSeq = [];
     for (let j = 0; j < monomers.length; ++j) {
       if (monomers[j]) {
@@ -58,6 +59,28 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
     }
     molFiles.push(molFilesForSeq);
   }
+  return molFiles;
+}
+
+export function getMolfilesFromSingleSeq(cell: DG.Cell, monomersLibObject: any[]): any[][] | null {
+  const units = cell.column.tags[DG.TAGS.UNITS];
+  const sep = cell.column!.getTag('separator');
+  const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, sep);
+  const monomersDict = createMomomersMolDict(monomersLibObject);
+  const molFiles = [];
+  const macroMolecule = cell.value;
+  const monomers = splitterFunc(macroMolecule);
+  const molFilesForSeq = [];
+  for (let j = 0; j < monomers.length; ++j) {
+    if (monomers[j]) {
+      if (!monomersDict[monomers[j]]) {
+        grok.shell.warning(`Monomer ${monomers[j]} is missing in HELM library. Structure cannot be created`);
+        return null;
+      }
+      molFilesForSeq.push(JSON.parse(JSON.stringify(monomersDict[monomers[j]])));
+    }
+  }
+  molFiles.push(molFilesForSeq);
   return molFiles;
 }
 

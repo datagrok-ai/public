@@ -2,7 +2,7 @@
 	"name": "@datagrok/ketcher",
 	"beta": false,
 	"friendlyName": "Ketcher",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
 	"repository": {
 		"type": "git",
@@ -10,14 +10,12 @@
 		"directory": "packages/Ketcher"
 	},
 	"dependencies": {
-		"@types/react": "^17.0.39",
 		"@types/react-dom": "^17.0.9",
 		"datagrok-api": "^1.4.1",
 		"file-loader": "^6.2.0",
-		"ketcher-core": "^1.4.0",
-		"ketcher-react": "^2.5.0",
+		"ketcher-core": "^1.5.0",
+		"ketcher-react": "^2.5.1",
 		"ketcher-standalone": "^1.4.0",
-		"ketcher-polymer-editor-react": "2.0.7",
 		"miew": "^0.10.0",
 		"ts-loader": "latest",
 		"typescript": "latest",
@@ -31,14 +29,14 @@
 		"worker-loader": "^3.0.8"
 	},
 	"scripts": {
-		"debug-ketcher": "grok publish --rebuild",
-		"release-ketcher": "grok publish --rebuild --release",
+		"debug-ketcher": "grok publish",
+		"release-ketcher": "grok publish --release",
 		"build-ketcher": "webpack",
 		"build": "webpack",
-		"debug-ketcher-dev": "grok publish dev --rebuild",
-		"release-ketcher-dev": "grok publish dev --rebuild --release",
-		"debug-ketcher-public": "grok publish public --rebuild",
-		"release-ketcher-public": "grok publish public --rebuild --release"
+		"debug-ketcher-dev": "grok publish dev",
+		"release-ketcher-dev": "grok publish dev --release",
+		"debug-ketcher-public": "grok publish public",
+		"release-ketcher-public": "grok publish public --release"
 	},
 	"canEdit": [
 		"Developers"

@@ -247,11 +247,11 @@ Full video: [link](https://youtu.be/2xuxJjpjXi4)
 
 [User-Defined Classes]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=2220s
 
-[Q&A Part]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=2506s
+[User-Defined Classes Q&A Part]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=2506s
 
 [Cheminformatics Demo]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=2689s
 
-[Q&A Part]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=2828s
+[Cheminformatics Demo Q&A Part]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=2828s
 
 [Custom Viewers: Leaflet]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=3268s
 
@@ -259,7 +259,7 @@ Full video: [link](https://youtu.be/2xuxJjpjXi4)
 
 [JS API Samples]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=3916s
 
-[Q&A Part]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=4445s
+[JS API Samples Q&A Part]: https://www.youtube.com/watch?v=YR17h4_0Mc8&t=4445s
 
 [Opening Local Files]: https://www.youtube.com/watch?v=dKrCk38A1m8&t=336s
 
@@ -335,7 +335,7 @@ Full video: [link](https://youtu.be/2xuxJjpjXi4)
 
 [Pie Chart]: https://www.youtube.com/watch?v=7MBXWzdC0-I&t=1486s
 
-[Trellis Plot]: https://www.youtube.com/watch?v=7MBXWzdC0-I&t=1560s
+[Trellis Plot details]: https://www.youtube.com/watch?v=7MBXWzdC0-I&t=1560s
 
 [Matrix Plot]: https://www.youtube.com/watch?v=7MBXWzdC0-I&t=1653s
 
@@ -399,7 +399,7 @@ Full video: [link](https://youtu.be/2xuxJjpjXi4)
 
 [Digital Signal Processing Using WebAssembly]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=3535s
 
-[Advanced filtering, Natural Language Processing]: https://www.youtube.com/watch?v=GM3XixUFFU
+[Advanced filtering, Natural Language Processing video]: https://www.youtube.com/watch?v=GM3XixUFFU
 
 [NLP Overview]: https://www.youtube.com/watch?v=GM3XixUFFUs&t=94s
 

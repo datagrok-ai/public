@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
 import {TreeAnalyzer, PhylocanvasTreeNode} from './utils/tree-stats';
-import {Subscription} from 'rxjs';
+import {Subscription, Unsubscribable} from 'rxjs';
 
 export class TreeBrowser extends DG.JsViewer {
   static treeGridColumnsNameMapping = {
@@ -21,7 +21,8 @@ export class TreeBrowser extends DG.JsViewer {
   treeDiv: HTMLDivElement;
   phyloTreeViewer: PhylocanvasGL;
 
-  treeGrid: DG.Grid = null;
+  _treeGrid: DG.Grid = null;
+  _treeGridSubs: Unsubscribable[] = null;
 
   cloneIndex: TreeLeaves = {};
   leavesIndex: TreeLeavesMap = {};
@@ -72,6 +73,7 @@ export class TreeBrowser extends DG.JsViewer {
    */
   private _collectLeavesMapping(node: PhylocanvasTreeNode, treeIndex: number) {
     if (node.isLeaf) {
+      console.debug(`MLB: TreeBrowser._collectLeavesMapping( node: ${node.name}, treeIndex: ${treeIndex} )`);
       const id = node.id;
       const cloneId = this._getCloneIdAt(treeIndex);
 
@@ -140,7 +142,7 @@ export class TreeBrowser extends DG.JsViewer {
       for (let i = 0; i < col.length; ++i) {
         const id: string = col.get(i);
 
-        if (!mapper[id])
+        if (!(id in mapper))
           mapper[id] = [];
 
         mapper[id].push(i);
@@ -174,27 +176,28 @@ export class TreeBrowser extends DG.JsViewer {
     const sourceDf = this.mlbDf;
     const selectedVIdIndices = new Set(sourceDf.filter.getSelectedIndexes());
 
-    this.treeAnalyser.items = TreeBrowser._calcFilteredItems(this.mlbDf, this.vIdIndex);
+    this.treeAnalyser.items = TreeBrowser._calcFilteredItems(sourceDf, this.vIdIndex);
 
-    treeDf.rows.filter((row: DG.Row) => {
-      const cloneId = this._getCloneIdAt(row.idx);
-
-      if (this.cloneIndex[cloneId]) {
-        const cloneVIds = this.cloneIndex[cloneId].items;
-
-        for (const vId of cloneVIds) {
-          const indices = this.vIdIndex[vId];
-
-          if (indices) {
-            for (const i of indices) {
-              if (selectedVIdIndices.has(i))
-                return true;
-            }
-          }
-        }
-      }
-      return false;
-    });
+    // Filtering of the data loaded for an antigen is not required.
+    // treeDf.rows.filter((row: DG.Row) => {
+    //   const cloneId = this._getCloneIdAt(row.idx);
+    //
+    //   if (this.cloneIndex[cloneId]) {
+    //     const cloneVIds = this.cloneIndex[cloneId].items;
+    //
+    //     for (const vId of cloneVIds) {
+    //       const indices = this.vIdIndex[vId];
+    //
+    //       if (indices) {
+    //         for (const i of indices) {
+    //           if (selectedVIdIndices.has(i))
+    //             return true;
+    //         }
+    //       }
+    //     }
+    //   }
+    //   return false;
+    // });
     //treeDf.rows.requestFilter
   }
 
@@ -210,13 +213,18 @@ export class TreeBrowser extends DG.JsViewer {
     }
   }
 
+  private destroyTreeGrid() {
+    this._treeGridSubs.forEach((s) => { s.unsubscribe(); });
+    this._treeGridSubs = null;
+    this._treeGrid = null;
+  }
+
   /**
    * Adds a grid with simple tree statistics.
    * @param {string} treesColumnName Column containing trees in Newick format.
    * @param {string[]} [baseColumnNames=[]] Columns to include into creating grid.
-   * @return  {DG.Grid} Grid with statistics.
    */
-  private _makeTreeGrid(treesColumnName: string, baseColumnNames: string[] = []): DG.Grid {
+  private buildTreeGrid(treesColumnName: string, baseColumnNames: string[] = []): void {
     const treesColumn = this.treeDf.col(treesColumnName);
     const stats = this.treeAnalyser.analyze(treesColumn.toList());
     const df = DG.DataFrame.fromColumns(baseColumnNames.map((v) => this.treeDf.col(v)));
@@ -229,18 +237,19 @@ export class TreeBrowser extends DG.JsViewer {
     // TODO: fix this ad hoc.
     // df.rows.removeAt(0);
 
-    (df.columns as DG.ColumnList).add(treesColumn);
-    df.col(treesColumnName).semType = this.treeSemanticType;
+    const treesCol: DG.Column = df.columns.add(treesColumn);
+    treesCol.semType = this.treeSemanticType;
 
     const grid = DG.Viewer.grid(df, {
-      //rowHeight: 160,
+      rowHeight: 160,
     });
 
     grid.col('TREE').visible = false;
 
-    grid.onCellRender.subscribe(this._onTreeGridCellRender.bind(this));
-    grid.onCellTooltip(this.onTreeGridCellTooltip.bind(this));
-    return grid;
+    this._treeGrid = grid;
+    this._treeGridSubs = [];
+    this._treeGridSubs.push(grid.onCellRender.subscribe(this._onTreeGridCellRender.bind(this)));
+    this._treeGridSubs.push(grid.onCellTooltip(this.onTreeGridCellTooltip.bind(this)));
   }
 
   private rootOnSizeChanged(args: any): void {
@@ -267,6 +276,13 @@ export class TreeBrowser extends DG.JsViewer {
   private async destroyView() {
     this.phyloTreeViewer.destroy();
     this.treeDiv.remove();
+
+    this.destroyTreeGrid();
+
+    this.cloneIndex = {};
+    this.leavesIndex = {};
+    this.vIdIndex = {};
+
     this.treeAnalyser = null;
 
     this.viewSubs.forEach((s: Subscription) => { s.unsubscribe(); });
@@ -279,10 +295,9 @@ export class TreeBrowser extends DG.JsViewer {
     this.treeAnalyser = new TreeAnalyzer(itemsToFind);
     this.treeAnalyser.addNodeInspector(this._collectLeavesMapping.bind(this));
 
-    if (this.treeGrid === null)
-      this.treeGrid = this._makeTreeGrid('TREE', ['CLONE']);
-    else
-      this.treeGrid.dataFrame = this.treeDf;
+    // Rebuild treeGrid is required because of this.treeAnalyser.analyze() call required
+    this.buildTreeGrid('TREE', ['CLONE']);
+
 
     //const color: string = `#bbff${Math.ceil(128 + Math.random() * 127).toString(16)}`;
     this.treeDiv = ui.div([], {
@@ -428,8 +443,10 @@ export class TreeBrowser extends DG.JsViewer {
     const currentRowIdx = this.treeDf.currentRowIdx;
     const cloneId = this._getCloneIdAt(currentRowIdx);
 
-    if (this.cloneIndex[cloneId])
-      this.selectTree(this.cloneIndex[cloneId]['index'][0]);
+    if (cloneId in this.cloneIndex) {
+      const treeIndex: number = this.cloneIndex[cloneId]['index'][0];
+      this.selectTree(treeIndex);
+    }
   }
 
   /**

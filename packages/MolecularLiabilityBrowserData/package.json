@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser-data",
   "friendlyName": "MolecularLiabilityBrowserData",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Data for MolecularLiabilityBrowser",
   "repository": {
     "type": "git",
@@ -44,12 +44,12 @@
     "release-molecularliabilitybrowser-data": "webpack && grok publish --release",
     "build-molecularliabilitybrowser-data": "webpack",
     "build": "webpack",
-    "debug-molecularliabilitybrowser-data-dev": "grok publish dev --rebuild",
-    "release-molecularliabilitybrowser-data-dev": "grok publish dev --rebuild --release",
-    "debug-molecularliabilitybrowser-data-public": "grok publish public --rebuild",
-    "release-molecularliabilitybrowser-data-public": "grok publish public --rebuild --release",
+    "debug-molecularliabilitybrowser-data-dev": "grok publish dev",
+    "release-molecularliabilitybrowser-data-dev": "grok publish dev --release",
+    "debug-molecularliabilitybrowser-data-public": "grok publish public",
+    "release-molecularliabilitybrowser-data-public": "grok publish public --release",
     "local-mlb-data": "grok publish local",
-    "debug-mlb-data": "grok publish local --rebuild",
+    "debug-mlb-data": "grok publish local",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix"
   },

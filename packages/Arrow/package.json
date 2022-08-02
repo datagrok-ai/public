@@ -1,8 +1,8 @@
 {
-  "name": "arrow",
+  "name": "@datagrok/arrow",
   "beta": true,
   "friendlyName": "Arrow",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "description": "Arrow is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides us with the opportunity to work with parquet and feather file formats.",
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
     "@datagrok-libraries/utils": "latest",
     "apache-arrow": "^8.0.0",
     "cash-dom": "latest",
-    "datagrok-api": "latest",
+    "datagrok-api": "^1.5.0",
     "dayjs": "latest",
     "file-loader": "^6.2.0",
     "parquet-wasm": "^0.3.1"
@@ -41,10 +41,10 @@
     "release-parquettest": "webpack && grok publish --release",
     "build-parquettest": "webpack",
     "build": "webpack",
-    "debug-parquettest-dev": "grok publish dev --rebuild",
-    "release-parquettest-dev": "grok publish dev --rebuild --release",
-    "debug-parquettest-local": "grok publish local --rebuild",
-    "release-parquettest-local": "grok publish local --rebuild --release",
+    "debug-parquettest-dev": "grok publish dev",
+    "release-parquettest-dev": "grok publish dev --release",
+    "debug-parquettest-local": "grok publish local",
+    "release-parquettest-local": "grok publish local --release",
     "test": "set HOST=dev && jest",
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"

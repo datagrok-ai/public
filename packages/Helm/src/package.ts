@@ -26,6 +26,11 @@ export async function initHelm(): Promise<void> {
   grid.invalidate();
 }
 
+//name: initHelp
+export function initHelp(){
+  return;
+}
+
 //name: getLru
 export async function getLru() {
   return await grok.functions.call('Bio:Lru');

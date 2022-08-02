@@ -12,7 +12,7 @@ jobs:
     name: Security check for IaaC scripts
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run contract with Snyk to check Infrastructure as Code files for issues
         uses: snyk/actions/iac@master
         env:

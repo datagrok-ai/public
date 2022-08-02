@@ -1,10 +1,10 @@
-import {category, test} from '@datagrok-libraries/utils/src/test';
-import {
-  _testMSAIsCorrect,
-  _testTableIsNotEmpty,
-} from './utils';
-
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+
+import {runKalign} from '../utils/multiple-sequence-alignment';
 //import * as grok from 'datagrok-api/grok';
 
 export const _package = new DG.Package();
@@ -13,22 +13,47 @@ export const _package = new DG.Package();
 category('MSA', async () => {
   //table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
   const fromCsv = `seq
-  FWRWYVKHP
-  YNRWYVKHP
-  MWRSWYCKHP`;
+FWRWYVKHP
+YNRWYVKHP
+MWRSWYCKHP`;
   const toCsv = `seq
-  -F-W-R--W-Y-V-K-H-P
-  -Y-N-R--W-Y-V-K-H-P
-  -M-W-R-S-W-Y-C-K-H-P`;
-  const table: DG.DataFrame = DG.DataFrame.fromCsv(fromCsv);
-  const toTable: DG.DataFrame = DG.DataFrame.fromCsv(toCsv);
-  const alignedSequencesColumn = toTable.getCol('seq');
+FWR-WYVKHP
+YNR-WYVKHP
+MWRSWYCKHP`;
 
-  test('test_table.is_not_empty', async () => {
-    await _testTableIsNotEmpty(table);
+  const longFromCsv = `seq
+FWRWYVKHPFWRWYVKHPFWRWYVKHPFWRWYVKHPFWRWYVKHPFWRWYVKHPFWRWYVKHPFWRWYVKHP
+YNRWYVKHPYNRWYVKHPYNRWYVKHPYNRWYVKHPYNRWYVKHPYNRWYVKHPYNRWYVKHPYNRWYVKHP
+MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP`;
+
+  const longToCsv = `seq
+FWR-WYVKHPFWR-WYVKHPFWR-WYVKHPFWR-WYVKHPFWR-WYVKHPFWR-WYVKHPFWR-WYVKHPFWR-WYVKHP
+YNR-WYVKHPYNR-WYVKHPYNR-WYVKHPYNR-WYVKHPYNR-WYVKHPYNR-WYVKHPYNR-WYVKHPYNR-WYVKHP
+MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP`;
+
+  // test('test_table.is_not_empty', async () => {
+  //   await _testTableIsNotEmpty(table);
+  // });
+
+  test('isCorrect', async () => {
+    await _testMsaIsCorrect(fromCsv, toCsv);
   });
 
-  test('is_correct', async () => {
-    await _testMSAIsCorrect(alignedSequencesColumn);
+  test('isCorrectLong', async () => {
+    await _testMsaIsCorrect(longFromCsv, longToCsv);
   });
 });
+
+async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> {
+  const srcDf: DG.DataFrame = DG.DataFrame.fromCsv(srcCsv);
+  const tgtDf: DG.DataFrame = DG.DataFrame.fromCsv(tgtCsv);
+
+  const srcCol: DG.Column = srcDf.getCol('seq')!;
+  const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: srcCol});
+  if (semType)
+    srcCol.semType = semType;
+
+  const tgtCol: DG.Column = tgtDf.getCol('seq')!;
+  const msaCol: DG.Column = await runKalign(srcCol, true);
+  expectArray(msaCol.toList(), tgtCol.toList());
+}

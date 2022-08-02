@@ -2,7 +2,7 @@
   "name": "@datagrok/oligo-batch-calculator",
   "beta": false,
   "friendlyName": "Oligo Batch Calculator",
-  "version": "0.0.6",
+  "version": "1.0.0",
   "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
   "repository": {
     "type": "git",
@@ -10,7 +10,7 @@
     "directory": "packages/OligoBatchCalculator"
   },
   "dependencies": {
-    "datagrok-api": "^1.0.1",
+    "datagrok-api": "^1.5.3",
     "ts-loader": "latest",
     "typescript": "latest",
     "@datagrok-libraries/utils": "^0.2.9"
@@ -32,14 +32,14 @@
     "@types/node-fetch": "^2.6.1"
   },
   "scripts": {
-    "debug-oligobatchcalculator": "grok publish --rebuild",
-    "release-oligobatchcalculator": "grok publish --rebuild --release",
+    "debug-oligobatchcalculator": "grok publish",
+    "release-oligobatchcalculator": "grok publish --release",
     "build-oligobatchcalculator": "webpack",
     "build": "webpack",
-    "debug-oligobatchcalculator-public": "grok publish public --rebuild",
-    "release-oligobatchcalculator-public": "grok publish public --rebuild --release",
-    "debug-oligobatchcalculator-local": "grok publish local --rebuild",
-    "release-oligobatchcalculator-local": "grok publish local --rebuild --release",
+    "debug-oligobatchcalculator-public": "grok publish public",
+    "release-oligobatchcalculator-public": "grok publish public --release",
+    "debug-oligobatchcalculator-local": "grok publish local",
+    "release-oligobatchcalculator-local": "grok publish local --release",
     "test": "set HOST=dev && jest",
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"

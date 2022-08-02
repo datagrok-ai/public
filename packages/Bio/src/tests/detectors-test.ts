@@ -14,6 +14,13 @@ category('detectors', () => {
 2
 3`;
 
+  const csvDfEmpty: string = `id,col1
+1,
+2,
+3,
+4,
+5,`;
+
   const csvDf2: string = `col1
 4
 5
@@ -117,6 +124,8 @@ MWRSWY-CKHP
     testActivityCliffsCsv = 'testActivityCliffsCsv',
     testSpgi100 = 'testSpgi100',
     testUnichemSources = 'testUnichemSources',
+    testDmvOffices = 'testDmvOffices',
+    testAlertCollection = 'testAlertCollection',
   }
 
   const samples: { [key: string]: string } = {
@@ -136,6 +145,8 @@ MWRSWY-CKHP
     'testCerealCsv': 'System:AppData/Bio/tests/testCereal.csv',
     'testSpgi100': 'System:AppData/Bio/tests/testSpgi100.csv',
     'testUnichemSources': 'System:AppData/Bio/tests/testUnichemSources.csv',
+    'testDmvOffices': 'System:AppData/Bio/tests/testDmvOffices.csv',
+    'testAlertCollection': 'System:AppData/Bio/tests/testAlertCollection.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -179,6 +190,7 @@ MWRSWY-CKHP
     };
   };
 
+  test('NegativeEmpty', async () => { await _testNeg(readCsv('csvDfEmpty', csvDfEmpty), 'col1'); });
   test('Negative1', async () => { await _testNeg(readCsv('csvDf1', csvDf1), 'col1'); });
   test('Negative2', async () => { await _testNeg(readCsv('csvDf2', csvDf2), 'col1'); });
   test('Negative3', async () => { await _testNeg(readCsv('csvDf3', csvDf3), 'col1'); });
@@ -332,12 +344,26 @@ MWRSWY-CKHP
   test('samplesTestSpgi100NegativePrimaryScaffoldName', async () => {
     await _testNeg(readSamples(Samples.testSpgi100), 'Primary Scaffold Name');
   });
+  test('samplesTestSpgi100NegativeSampleName', async () => {
+    await _testNeg(readSamples(Samples.testSpgi100), 'Sample Name');
+  });
 
   test('samplesTestUnichemSourcesNegativeSrcUrl', async () => {
     await _testNeg(readSamples(Samples.testUnichemSources), 'src_url');
   });
   test('samplesTestUnichemSourcesNegativeBaseIdUrl', async () => {
     await _testNeg(readSamples(Samples.testUnichemSources), 'base_id_url');
+  });
+
+  test('samplesTestDmvOfficesNegativeOfficeName', async () => {
+    await _testNeg(readSamples(Samples.testDmvOffices), 'Office Name');
+  });
+  test('samplesTestDmvOfficesNegativeCity', async () => {
+    await _testNeg(readSamples(Samples.testDmvOffices), 'City');
+  });
+
+  test('samplesTestAlertCollectionNegativeSmarts', async () => {
+    await _testNeg(readSamples(Samples.testAlertCollection), 'smarts');
   });
 });
 

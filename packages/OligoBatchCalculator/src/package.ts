@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {weightsObj, individualBases, nearestNeighbour, SYNTHESIZERS} from './map';
 import {validate} from './validation';
-import {deleteWord, saveAsCsv, sortByStringLengthInDescOrder, mergeOptions, normalizeSequence} from './helpers';
+import {UNITS, deleteWord, saveAsCsv, sortByStringLengthInDescOrder, mergeOptions, normalizeSequence} from './helpers';
 import {COL_NAMES, CURRENT_USER, STORAGE_NAME, ADMIN_USERS, getAdditionalModifications, addModificationButton,
   deleteAdditionalModification} from './additional-modifications';
 
@@ -13,31 +13,37 @@ export const _package = new DG.Package();
 const NAME_OF_COLUMN_WITH_SEQUENCES = 'Sequence';
 
 
+//name: getUnits
+//output: list<string> units
+export function getUnits(): string[] {
+  return Object.values(UNITS);
+}
+
 //name: opticalDensity
 //input: string sequence
 //input: double amount
-//input: string outputUnits {choices: ['NMole', 'Milligrams', 'Micrograms']}
+//input: string outputUnits {choices: OligoBatchCalculator: getUnits}
 //output: double opticalDensity
 export async function opticalDensity(sequence: string, amount: number, outputUnits: string, extCoefsObj:
   {[index: string]: number}): Promise<number> {
   const ec = await extinctionCoefficient(sequence, extCoefsObj);
-  if (outputUnits == 'Milligrams' || outputUnits == 'Micrograms' || outputUnits == 'mg' || outputUnits == 'µg')
-    return (outputUnits == 'Milligrams' ? 1 : 0.001) * amount * ec / molecularWeight(sequence);
-  if (outputUnits == 'OD')
+  if (outputUnits == UNITS.MILLI_GRAM && outputUnits == UNITS.MICRO_GRAM)
+    return (outputUnits == UNITS.MICRO_GRAM ? 1 : 0.001) * amount * ec / molecularWeight(sequence);
+  if (outputUnits == UNITS.OPTICAL_DENSITY)
     return amount;
-  const coefficient = (outputUnits == 'NMole') ? 1000000 : (outputUnits == 'Milligrams') ? 1 : 1000;
+  const coefficient = (outputUnits == UNITS.NANO_MOLE) ? 1000000 : (outputUnits == UNITS.MILLI_GRAM) ? 1 : 1000;
   return amount * ec / coefficient;
 }
 
 //name: nMole
 //input: string sequence
 //input: double amount
-//input: string outputUnits {choices: ['Optical Density', 'Milligrams', 'Micrograms']}
+//input: string outputUnits {choices: OligoBatchCalculator: getUnits}
 //output: double nMole
 export async function nMole(sequence: string, amount: number, outputUnits: string, extinctionCoefficientsObj:
   {[index: string]: number}, weightsObj: {[index: string]: number}): Promise<number> {
   const ec = await extinctionCoefficient(sequence, extinctionCoefficientsObj);
-  return (outputUnits == 'Optical Density') ?
+  return (outputUnits == UNITS.OPTICAL_DENSITY) ?
     1000000 * amount / ec :
     1000 * amount / molecularWeight(sequence, weightsObj);
 }
@@ -45,7 +51,7 @@ export async function nMole(sequence: string, amount: number, outputUnits: strin
 //name: molecularMass
 //input: string sequence
 //input: double amount
-//input: string outputUnits {choices: ['Optical Density', 'Milligrams', 'Micromoles', 'Millimoles']}
+//input: string outputUnits {choices: OligoBatchCalculator: getUnits}
 //output: double molecularMass
 export async function molecularMass(sequence: string, amount: number, outputUnits: string): Promise<number> {
   const additionalModificationsDf = await getAdditionalModifications();
@@ -62,12 +68,12 @@ export async function molecularMass(sequence: string, amount: number, outputUnit
   const ec = await extinctionCoefficient(sequence, extinctionCoefficientsObj);
   const od = await opticalDensity(sequence, amount, outputUnits, extinctionCoefficientsObj);
   const nm = await nMole(sequence, amount, outputUnits, extinctionCoefficientsObj, additionalWeightsObj);
-  if (outputUnits == 'Optical Density' || outputUnits == 'OD') {
+  if (outputUnits == UNITS.OPTICAL_DENSITY) {
     return (ec == 0) ?
       amount * molecularWeight(sequence, additionalWeightsObj) :
       1000 * amount * molecularWeight(sequence, additionalWeightsObj) / ec;
   }
-  const coefficient = (outputUnits == 'Milligrams' || outputUnits == 'Micromoles') ? 1 : 1000;
+  const coefficient = (outputUnits == UNITS.MILLI_GRAM) ? 1 : 1000;
   return amount / ec * molecularWeight(sequence) * coefficient * od / nm;
 }
 
@@ -166,10 +172,10 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
           try {
             molecularWeights[i] = molecularWeight(sequence, additionalWeightsObj);
             extinctionCoefficients[i] = await extinctionCoefficient(normalizedSequences[i], extinctionCoeffsObj);
-            nMoles[i] = await nMole(sequence, yieldAmount.value, units.value, extinctionCoeffsObj,
+            nMoles[i] = await nMole(sequence, yieldAmount.value!, units.value!, extinctionCoeffsObj,
               additionalWeightsObj);
-            opticalDensities[i] = await opticalDensity(sequence, yieldAmount.value, units.value, extinctionCoeffsObj);
-            molecularMasses[i] = await molecularMass(sequence, yieldAmount.value, units.value);
+            opticalDensities[i] = await opticalDensity(sequence, yieldAmount.value!, units.value!, extinctionCoeffsObj);
+            molecularMasses[i] = await molecularMass(sequence, yieldAmount.value!, units.value!);
           } catch (e) {
             reasonsOfError[i] = 'Unknown error, please report it to Datagrok team';
             indicesOfFirstNotValidCharacter[i] = 0;
@@ -188,17 +194,22 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       }
     };
 
-    const moleName1 = (units.value == 'µmole' || units.value == 'mg') ? 'µmole' : 'nmole';
-    const moleName2 = (units.value == 'µmole') ? 'µmole' : 'nmole';
-    const massName = (units.value == 'µmole') ? 'mg' : (units.value == 'mg') ? units.value : 'µg';
-    const c = (units.value == 'mg' || units.value == 'µmole') ? 1000 : 1;
+    const moleColumnName = (units.value == UNITS.MICRO_MOLE || units.value == UNITS.MILLI_GRAM) ?
+      UNITS.MICRO_MOLE : UNITS.NANO_MOLE;
+    const moleName2 = (units.value == UNITS.MICRO_MOLE) ? UNITS.MICRO_MOLE : UNITS.NANO_MOLE;
+    const massName = (units.value == UNITS.MICRO_MOLE) ?
+      UNITS.MILLI_GRAM :
+      (units.value == UNITS.MILLI_GRAM) ?
+        units.value :
+        UNITS.MICRO_GRAM;
+    const c = (units.value == UNITS.MILLI_GRAM || units.value == UNITS.MICRO_MOLE) ? 1000 : 1;
 
     mainGrid.dataFrame = DG.DataFrame.fromColumns([
       DG.Column.fromList('int', 'Item', Array(...Array(sequences.length + 1).keys()).slice(1)),
       DG.Column.fromStrings(NAME_OF_COLUMN_WITH_SEQUENCES, sequences),
       DG.Column.fromList('int', 'Length', normalizedSequences.map((s) => s.length / 2)),
       DG.Column.fromList('double', 'OD 260', opticalDensities),
-      DG.Column.fromList('double', moleName1, nMoles),
+      DG.Column.fromList('double', moleColumnName, nMoles),
       DG.Column.fromList('double', 'Mass [' + massName + ']', molecularMasses),
       DG.Column.fromList('double', moleName2 + '/OD', nMoles.map(function(n, i) {return c * n / opticalDensities[i];})),
       DG.Column.fromList('double', 'µg/OD', molecularMasses.map(function(n, i) {return c * n / opticalDensities[i];})),
@@ -233,7 +244,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
 
   const inputSequences = ui.textInput('', defaultInput, (txt: string) => render(txt));
   const yieldAmount = ui.floatInput('', 1, () => render(inputSequences.value));
-  const units = ui.choiceInput('', 'OD', ['OD', 'µg', 'mg', 'µmole', 'nmole'], () => render(inputSequences.value));
+  const units = ui.choiceInput('', UNITS.OPTICAL_DENSITY, Object.values(UNITS), () => render(inputSequences.value))!;
 
   await render(defaultInput);
 

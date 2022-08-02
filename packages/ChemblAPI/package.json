@@ -23,14 +23,14 @@
 	"scripts": {
 		"link-api": "npm link datagrok-api",
 		"install-dependencies": "npm install",
-		"debug-chemblapi": "grok publish --rebuild",
-		"release-chemblapi": "grok publish --rebuild --release",
+		"debug-chemblapi": "grok publish",
+		"release-chemblapi": "grok publish --release",
 		"build-chemblapi": "webpack",
 		"build": "webpack",
-		"debug-chemblapi-dev": "grok publish dev --rebuild",
-		"release-chemblapi-dev": "grok publish dev --rebuild --release",
-		"debug-chemblapi-local": "grok publish local --rebuild",
-		"release-chemblapi-local": "grok publish local --rebuild --release"
+		"debug-chemblapi-dev": "grok publish dev",
+		"release-chemblapi-dev": "grok publish dev --release",
+		"debug-chemblapi-local": "grok publish local",
+		"release-chemblapi-local": "grok publish local --release"
 	},
 	"category": "Cheminformatics"
 }

@@ -13,7 +13,7 @@
       "password": "datagrok"
     }
   },
-  "dataSource": "PostgreSQL",
+  "dataSource": "PostgresNet",
   "description": "CHEMBL DB",
   "tags": ["demo", "chem"]
 }

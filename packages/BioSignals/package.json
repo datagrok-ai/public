@@ -14,16 +14,16 @@
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
-    "debug-biosignals": "grok publish --rebuild",
-    "release-biosignals": "grok publish --rebuild --release",
+    "debug-biosignals": "grok publish",
+    "release-biosignals": "grok publish --release",
     "build-biosignals": "webpack",
     "build": "webpack",
-    "debug-biosignals-dev": "grok publish dev --rebuild",
-    "release-biosignals-dev": "grok publish dev --rebuild --release",
-    "debug-biosignals-public": "grok publish public --rebuild",
-    "release-biosignals-public": "grok publish public --rebuild --release",
-    "debug-biosignals-local": "grok publish local --rebuild",
-    "release-biosignals-local": "grok publish local --rebuild --release"
+    "debug-biosignals-dev": "grok publish dev",
+    "release-biosignals-dev": "grok publish dev --release",
+    "debug-biosignals-public": "grok publish public",
+    "release-biosignals-public": "grok publish public --release",
+    "debug-biosignals-local": "grok publish local",
+    "release-biosignals-local": "grok publish local --release"
   },
   "devDependencies": {
     "webpack": "^4.44.2",

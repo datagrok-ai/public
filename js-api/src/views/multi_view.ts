@@ -8,17 +8,17 @@ class EmptyView extends View {
   }
 }
 
-type ViewDescription = {factory: () => View, allowClose: boolean};
-type ViewFactory = () => View;
+type ViewDescription = {factory: () => ViewBase, allowClose: boolean};
+type ViewFactory = () => ViewBase;
 
 export interface MultiViewOptions {
   viewFactories?: {[name: string]: ViewFactory | ViewDescription};
 }
 
 export class MultiView extends ViewBase {
-  _views: Map<String, View> = new Map();
+  _views: Map<String, ViewBase> = new Map();
   _options?: MultiViewOptions;
-  _currentView: View = new EmptyView();
+  _currentView: ViewBase = new EmptyView();
   tabs: TabControl = TabControl.create();
   private _fixedName: string | undefined;
 
@@ -63,7 +63,7 @@ export class MultiView extends ViewBase {
     return factory;
   }
 
-  getView(name: string): View {
+  getView(name: string): ViewBase {
     if (!this._views.has(name)) {
       let factory = this._getFactory(this._options?.viewFactories![name]!);
       this._views.set(name, (<ViewFactory>factory)()!);
@@ -80,7 +80,7 @@ export class MultiView extends ViewBase {
     this._fixedName = s;
   }
 
-  get currentView(): View { return this._currentView; }
+  get currentView(): ViewBase { return this._currentView; }
   set currentView(x) {
     this._currentView = x;
     this.toolbox = x.toolbox;

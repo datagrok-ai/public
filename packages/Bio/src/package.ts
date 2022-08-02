@@ -21,10 +21,19 @@ import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {lru} from './utils/cell-renderer';
+import {representationsWidget} from './widgets/representations';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
+
 
 //tags: init
 export async function initBio(): Promise<void> {
   // apparently HELMWebEditor requires dojo to be initialized first
+  const funcList: DG.Func[] = DG.Func.find({package: 'Helm', name: 'initHelm'});
+  console.debug(`Bio: initBio() funcList.length = ${funcList.length}`);
+  if (funcList.length === 1)
+    await grok.functions.call('Helm:initHelp');
+
   return new Promise((resolve, reject) => {
     // @ts-ignore
     dojo.ready(function() { resolve(null); });
@@ -36,7 +45,6 @@ export async function initBio(): Promise<void> {
 export function Lru() {
   return lru;
 }
-
 
 //name: macromoleculeSequenceCellRenderer
 //tags: cellRenderer
@@ -240,26 +248,53 @@ export async function compositionAnalysis(): Promise<void> {
   // Higher priority for columns with MSA data to show with WebLogo.
   const tv = grok.shell.tv;
   const df = tv.dataFrame;
+  //@ts-ignore
+  const colList: DG.Column[] = df.columns.toList().filter((col) => {
+    if (col.semType != DG.SEMTYPE.MACROMOLECULE)
+      return false;
 
-  const col: DG.Column | null = WebLogo.pickUpSeqCol2(df);
-  if (!col) {
+    const colUH = new UnitsHandler(col);
+    // TODO: prevent for cyclic, branched or multiple chains in Helm
+    return true;
+  });
+
+  const handler = async (col: DG.Column) => {
+    if (!checkInputColumn(col, 'Composition'))
+      return;
+
+    const wlViewer = tv.addViewer('WebLogo', {sequenceColumnName: col.name});
+    grok.shell.tv.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.25);
+  };
+
+  let col: DG.Column | null = null;
+  if (colList.length == 0) {
     grok.shell.error('Current table does not contain sequences');
     return;
+  } else if (colList.length > 1) {
+    const colListNames: string [] = colList.map((col) => col.name);
+    const colInput: DG.InputBase = ui.choiceInput('Column', colListNames[0], colListNames);
+    ui.dialog({
+      title: 'R-Groups Analysis',
+      helpUrl: '/help/domains/bio/macromolecules.md#composition-analysis'
+    })
+      .add(ui.div([
+        colInput,
+      ]))
+      .onOK(async () => {
+        const col: DG.Column | null = colList.find((col) => col.name == colInput.value) ?? null;
+
+        if (col)
+          await handler(col);
+      })
+      .show();
+  } else {
+    col = colList[0];
   }
 
-  if (!checkInputColumn(col, 'Composition'))
+  if (!col)
     return;
 
-  const allowedNotations: string[] = ['fasta', 'separator'];
-  const units = col.getTag(DG.TAGS.UNITS);
-  if (!allowedNotations.some((n) => units.toUpperCase().startsWith(n.toUpperCase()))) {
-    grok.shell.warning('Composition analysis is allowed for ' +
-      `notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')}.`);
-    return;
-  }
-
-  const wlViewer = tv.addViewer('WebLogo', {sequenceColumnName: col.name});
-  grok.shell.tv.dockManager.dock(wlViewer, DG.DOCK_TYPE.DOWN, null, 'Composition analysis', 0.25);
+  await handler(col);
 }
 
 //top-menu: Bio | Sdf to Json lib...
@@ -269,15 +304,15 @@ export async function sdfToJsonLib(table: DG.DataFrame) {
   const jsonMonomerLibrary = createJsonMonomerLibFromSdf(table);
 }
 
-// helper function for importFasta
-function parseMacromolecule(
-  fileContent: string,
-  startOfSequence: number,
-  endOfSequence: number
-): string {
-  const seq = fileContent.slice(startOfSequence, endOfSequence);
-  const seqArray = seq.split(/\s/);
-  return seqArray.join('');
+//name: Representations
+//tags: panel, widgets
+//input: cell macroMolecule {semType: Macromolecule}
+//output: widget result
+export async function peptideMolecule(macroMolecule: DG.Cell): Promise<DG.Widget> {
+  const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
+  const monomersLibObject: any[] = JSON.parse(monomersLibFile);
+
+  return representationsWidget(macroMolecule, monomersLibObject);
 }
 
 //name: importFasta
@@ -287,63 +322,8 @@ function parseMacromolecule(
 //input: string fileContent
 //output: list tables
 export function importFasta(fileContent: string): DG.DataFrame [] {
-  const regex = /^>(.*)$/gm; // match lines starting with >
-  const descriptionsArray = [];
-  const sequencesArray: string[] = [];
-  let startOfSequence = 0;
-  let match; // match.index is the beginning of the matched line
-  while (match = regex.exec(fileContent)) {
-    const description = fileContent.substring(match.index + 1, regex.lastIndex);
-    descriptionsArray.push(description);
-    if (startOfSequence !== 0)
-      sequencesArray.push(parseMacromolecule(fileContent, startOfSequence, match.index));
-    startOfSequence = regex.lastIndex + 1;
-  }
-  sequencesArray.push(parseMacromolecule(fileContent, startOfSequence, -1));
-  const descriptionsArrayCol = DG.Column.fromStrings('description', descriptionsArray);
-  const sequenceCol = DG.Column.fromStrings('sequence', sequencesArray);
-  sequenceCol.semType = 'Macromolecule';
-  const stats: SeqColStats = WebLogo.getStats(sequenceCol, 5, WebLogo.splitterAsFasta);
-  const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
-
-  const PeptideFastaAlphabet = new Set([
-    'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
-    'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
-  ]);
-
-  const DnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
-
-  const RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
-
-  //const SmilesRawAlphabet = new Set([
-  //  'O', 'C', 'c', 'N', 'S', 'F', '(', ')',
-  //  '1', '2', '3', '4', '5', '6', '7',
-  //  '+', '-', '@', '[', ']', '/', '\\', '#', '=']);
-
-  const alphabetCandidates: [string, Set<string>][] = [
-    ['PT', PeptideFastaAlphabet],
-    ['DNA', DnaFastaAlphabet],
-    ['RNA', RnaFastaAlphabet],
-  ];
-
-  //const alphabetCandidates: [string, Set<string>][] = [
-  //  ['NT', new Set(Object.keys(Nucleotides.Names))],
-  //  ['PT', new Set(Object.keys(Aminoacids.Names))],
-  //];
-
-  // Calculate likelihoods for alphabet_candidates
-  const alphabetCandidatesSim: number[] = alphabetCandidates.map(
-    (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));
-  const maxCos = Math.max(...alphabetCandidatesSim);
-  const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
-  sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
-  const units: string = `fasta:${seqType}:${alphabet}`;
-  sequenceCol.setTag(DG.TAGS.UNITS, units);
-
-  return [DG.DataFrame.fromColumns([
-    descriptionsArrayCol,
-    sequenceCol,
-  ])];
+  const ffh = new FastaFileHandler(fileContent);
+  return ffh.importFasta();
 }
 
 //name: Bio | Convert ...
@@ -377,6 +357,7 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
   const pi = DG.TaskBarProgressIndicator.create('Test detectMacromolecule...');
 
   const fileList = await grok.dapi.files.list(path, true, '');
+  //@ts-ignore
   const fileListToTest = fileList.filter((fi) => fi.fileName.endsWith('.csv'));
 
   let readyCount = 0;

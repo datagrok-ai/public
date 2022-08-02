@@ -23,32 +23,6 @@ export async function testToken(
   return response.json();
 }
 
-export async function createRefreshToken(
-  username: string, password: string, name: string): Promise<types.createRefreshTokenResponse> {
-  const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.create_refresh_token}/`;
-  const params = {
-    method: 'POST',
-    headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
-    body: JSON.stringify({username: username, password: password, name: name}),
-  };
-
-  const response = await grok.dapi.fetchProxy(url, params);
-  return response.json();
-}
-
-export async function regenerateRefreshToken(
-  refreshToken: string, userId: number): Promise<types.createRefreshTokenResponse> {
-  const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.regenerate_refresh_token}/`;
-  const params = {
-    method: 'POST',
-    headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
-    body: JSON.stringify({refresh_token: refreshToken, user_id: userId}),
-  };
-
-  const response = await grok.dapi.fetchProxy(url, params);
-  return response.json();
-}
-
 export async function createAPIAccessToken(
   refreshToken: string, userId: number): Promise<types.createApiTokenResponse> {
   const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.create_api_token}/`;
@@ -66,7 +40,6 @@ export async function getDataSources(): Promise<types.dataSource[]> {
   const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP['datasource']}/`;
   return getResponseFor(url) as Promise<types.dataSource[]>;
 }
-
 
 export async function getSchemas(dataSourceId: number): Promise<types.schema[]> {
   const url = `${await getBaseURL()}integration/v2/${constants.URI_MAP.schema}/?ds_id=${dataSourceId}&limit=100&skip=0`;
@@ -108,6 +81,22 @@ async function getResponseFor(
 
   const response = await grok.dapi.fetchProxy(url, params);
   return returnJson ? response.json() : response.text();
+}
+
+export async function getQueries(
+  dataSourceId: number, saved: boolean = true, published: boolean = true): Promise<types.query[]> {
+  const urlParams = `datasource_id=${dataSourceId}&saved=${saved}&published=${published}`;
+  const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.query}/?${urlParams}`;
+  const params = {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'TOKEN': await utils.getApiToken(),
+    },
+  };
+
+  const response = await grok.dapi.fetchProxy(url, params);
+  return response.json();
 }
 
 export async function testQuery(execResultId: number): Promise<string> {

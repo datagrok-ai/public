@@ -49,4 +49,5 @@ See also:
 * [File shares](file-shares.md)
 
 [NglViewer]: https://github.com/datagrok-ai/public/tree/master/packages/NglViewer#readme
-[Notebooks]: https://github.com/datagrok-ai/public/tree/master/packages/Notebooks#readme
+
+[//]: # ([Notebooks]: https://github.com/datagrok-ai/public/tree/master/packages/Notebooks#readme)

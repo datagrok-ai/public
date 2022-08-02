@@ -15,13 +15,13 @@
 	"dependencies": {
 		"@datagrok-libraries/utils": "^0.0.16",
 		"cash-dom": "latest",
-		"datagrok-api": "^1.0.0",
+		"datagrok-api": "^1.5.1",
 		"rxjs": "^6.5.5"
 	},
 	"devDependencies": {
 		"@types/jest": "^27.0.0",
 		"jest": "^27.0.0",
-		"jest-html-reporter": "^3.5.0",
+		"jest-html-reporter": "^3.6.0",
 		"path": "^0.12.7",
 		"puppeteer": "^13.7.0",
 		"ts-jest": "^27.0.0",
@@ -40,9 +40,9 @@
 		"build-powerpack": "webpack && grok publish",
 		"build": "webpack",
 		"debug-powerpack-dev": "webpack && grok publish dev",
-		"release-powerpack-dev": "grok publish dev --rebuild --release",
-		"debug-powerpack-public": "grok publish public --rebuild",
-		"release-powerpack-public": "grok publish public --rebuild --release",
+		"release-powerpack-dev": "grok publish dev --release",
+		"debug-powerpack-public": "grok publish public",
+		"release-powerpack-public": "grok publish public --release",
 		"test": "set HOST=dev && jest",
 		"test-dev": "set HOST=dev && jest",
 		"test-local": "set HOST=localhost && jest"

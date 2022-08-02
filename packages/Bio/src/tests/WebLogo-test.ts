@@ -146,3 +146,4 @@ export async function _testPickupPaletteAA2(dfAA2: DG.DataFrame) {
 
   expect(cp instanceof AminoacidsPalettes, true);
 }
+

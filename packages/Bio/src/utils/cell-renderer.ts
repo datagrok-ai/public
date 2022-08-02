@@ -9,7 +9,7 @@ import * as ui from 'datagrok-api/ui';
 
 export const lru = new DG.LruCache<any, any>();
 const undefinedColor = 'rgb(100,100,100)';
-const grayColor = '#808080'
+const grayColor = '#808080';
 
 function getPalleteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
@@ -44,6 +44,7 @@ export function processSequence(subParts: string[]): [string[], boolean] {
   return [text, simplified];
 }
 
+
 /**
  * A function that prints a string aligned to left or centered.
  *
@@ -65,17 +66,19 @@ function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false): number {
+  separator: string = '', last: boolean = false, drawStyle: string = 'classic', maxWord: string = ''): number {
   g.textAlign = 'start';
   const colorPart = s.substring(0);
-  let grayPart = separator;
-  if (last)
-    grayPart = '';
+  let grayPart = last ? '' : separator;
 
-  const textSize = g.measureText(colorPart + grayPart);
+  let textSize = g.measureText(colorPart + grayPart);
   const indent = 5;
 
-  const colorTextSize = g.measureText(colorPart);
+  let colorTextSize = g.measureText(colorPart);
+  if (drawStyle === 'msa') {
+    colorTextSize = g.measureText(maxWord);
+    textSize = g.measureText(maxWord + grayPart);
+  }
   const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
 
   function draw(dx1: number, dx2: number): void {
@@ -85,7 +88,6 @@ function printLeftOrCentered(
     g.fillStyle = grayColor;
     g.fillText(grayPart, x + dx2, y + dy);
   }
-
 
   if (left || textSize.width > w) {
     draw(indent, indent + colorTextSize.width);
@@ -142,7 +144,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const cell = gridCell.cell;
     const tag = gridCell.cell.column.getTag(DG.TAGS.UNITS);
     if (tag === 'HELM') {
-      console.log(findMonomers(cell.value));
       const monomers = findMonomers(cell.value);
       if (monomers.size == 0) {
         const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
@@ -173,17 +174,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         let x1 = x;
         const s: string = cell.value ?? '';
         let subParts: string[] = WebLogo.splitterAsHelm(s);
-        let color = undefinedColor;
         subParts.forEach((amino, index) => {
-          if (monomers.has(amino)) {
-            color = 'red';
-          } else {
-            color = grayColor;
-          }
+          let color = monomers.has(amino) ? 'red' : grayColor;
           g.fillStyle = undefinedColor;
-          let last = false;
-          if (index === subParts.length - 1)
-            last = true;
+          let last = index === subParts.length - 1;
           x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, '/', last);
         });
         g.restore();
@@ -209,17 +203,27 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator'));
 
       const subParts: string[] = splitterFunc(cell.value);
-      // console.log(subParts);
       let x1 = x;
       let color = undefinedColor;
+      // get max length word in subParts
+      let tagUnits = gridCell.cell.column.getTag(DG.TAGS.UNITS);
+      let maxLength = 0;
+      let maxWord = '';
+      let drawStyle = 'classic';
+      if (tagUnits.includes('MSA')) {
+        subParts.forEach(part => {
+          if (part.length > maxLength) {
+            maxLength = part.length;
+            maxWord = part;
+            drawStyle = 'msa';
+          }
+        });
+      }
       subParts.forEach((amino, index) => {
         color = palette.get(amino);
         g.fillStyle = undefinedColor;
-        let last = false;
-        if (index === subParts.length - 1)
-          last = true;
-
-        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last);
+        let last = index === subParts.length - 1;
+        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last, drawStyle, maxWord);
       });
 
       g.restore();
@@ -239,16 +243,16 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
   get defaultWidth(): number {return 30;}
 
   /**
-     * Cell renderer function.
-     *
-     * @param {CanvasRenderingContext2D} g Canvas rendering context.
-     * @param {number} x x coordinate on the canvas.
-     * @param {number} y y coordinate on the canvas.
-     * @param {number} w width of the cell.
-     * @param {number} h height of the cell.
-     * @param {DG.GridCell} gridCell Grid cell.
-     * @param {DG.GridCellStyle} cellStyle Cell style.
-     */
+   * Cell renderer function.
+   *
+   * @param {CanvasRenderingContext2D} g Canvas rendering context.
+   * @param {number} x x coordinate on the canvas.
+   * @param {number} y y coordinate on the canvas.
+   * @param {number} w width of the cell.
+   * @param {number} h height of the cell.
+   * @param {DG.GridCell} gridCell Grid cell.
+   * @param {DG.GridCellStyle} cellStyle Cell style.
+   */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle): void {
@@ -318,7 +322,7 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
 
     const palette = getPalleteByType(gridCell.tableColumn!.tags[C.TAGS.ALPHABET]);
     for (let i = 0; i < subParts1.length; i++) {
-      const amino1 = subParts1[i]
+      const amino1 = subParts1[i];
       const amino2 = subParts2[i];
       const color1 = palette.get(amino1);
       const color2 = palette.get(amino2);

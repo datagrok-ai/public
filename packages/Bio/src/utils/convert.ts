@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import $ from 'cash-dom';
 
 import {Subscription} from 'rxjs';
-import {NotationConverter, NOTATION} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 
 let convertDialog: DG.Dialog | null = null;
@@ -17,7 +18,7 @@ let convertDialogSubs: Subscription[] = [];
  */
 export function convert(col: DG.Column): void {
   const converter = new NotationConverter(col);
-  const current: NOTATION = converter.sourceNotation;
+  const currentNotation: NOTATION = converter.notation;
   //TODO: read all notations
   const notations = [
     NOTATION.FASTA,
@@ -25,7 +26,7 @@ export function convert(col: DG.Column): void {
     NOTATION.HELM
   ];
   const separatorArray = ['-', '.', '/'];
-  const filteredNotations = notations.filter((e) => e !== current);
+  const filteredNotations = notations.filter((e) => e !== currentNotation);
   const targetNotationInput = ui.choiceInput('Convert to', filteredNotations[0], filteredNotations);
 
   const separatorInput = ui.choiceInput('Separator', separatorArray[0], separatorArray);
@@ -48,7 +49,7 @@ export function convert(col: DG.Column): void {
   if (convertDialog == null) {
     convertDialog = ui.dialog('Convert sequence notation')
       .add(ui.div([
-        ui.h1('Current notation: ' + current),
+        ui.h1('Current notation: ' + currentNotation),
         targetNotationInput.root,
         separatorInput.root
       ]))

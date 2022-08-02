@@ -13,16 +13,16 @@
 		"datagrok-api": "^1.0.0"
 	},
 	"scripts": {
-		"debug-vdjtools": "grok publish --rebuild",
-		"release-vdjtools": "grok publish --rebuild --release",
+		"debug-vdjtools": "grok publish",
+		"release-vdjtools": "grok publish --release",
 		"build-vdjtools": "webpack",
 		"build": "webpack",
-		"debug-vdjtools-dev": "grok publish dev --rebuild",
-		"release-vdjtools-dev": "grok publish dev --rebuild --release",
-		"debug-vdjtools-public": "grok publish public --rebuild",
-		"release-vdjtools-public": "grok publish public --rebuild --release",
-		"debug-vdjtools-local": "grok publish local --rebuild",
-		"release-vdjtools-local": "grok publish local --rebuild --release"
+		"debug-vdjtools-dev": "grok publish dev",
+		"release-vdjtools-dev": "grok publish dev --release",
+		"debug-vdjtools-public": "grok publish public",
+		"release-vdjtools-public": "grok publish public --release",
+		"debug-vdjtools-local": "grok publish local",
+		"release-vdjtools-local": "grok publish local --release"
 	},
 	"canEdit": [ "Developers" ],
 	"canView": [ "All users" ],

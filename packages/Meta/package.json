@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.1.24",
+  "version": "1.1.49",
   "description": "Meta information for @datagrok scope",
   "repository": {
     "type": "git",
@@ -83,6 +83,12 @@
           "datagrok-api": "^1.4.5"
         },
         "1.3.9": {
+          "datagrok-api": "^1.4.5"
+        },
+        "1.3.10": {
+          "datagrok-api": "^1.4.5"
+        },
+        "1.3.11": {
           "datagrok-api": "^1.4.5"
         }
       },
@@ -263,6 +269,15 @@
         },
         "1.0.9": {
           "datagrok-api": "^1.4.13"
+        },
+        "1.0.12": {
+          "datagrok-api": "^1.5.1"
+        },
+        "1.0.13": {
+          "datagrok-api": "^1.5.3"
+        },
+        "1.0.14": {
+          "datagrok-api": "^1.5.2"
         }
       },
       "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis",
@@ -355,6 +370,9 @@
           "datagrok-api": "^1.1.7"
         },
         "1.0.3": {
+          "datagrok-api": "^1.1.7"
+        },
+        "1.0.4": {
           "datagrok-api": "^1.1.7"
         }
       },
@@ -576,6 +594,9 @@
         },
         "0.0.6": {
           "datagrok-api": "^0.94.10"
+        },
+        "1.0.0": {
+          "datagrok-api": "^1.5.3"
         }
       },
       "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
@@ -635,6 +656,9 @@
           "datagrok-api": "^0.145.0"
         },
         "0.0.5": {
+          "datagrok-api": "^1.0.0"
+        },
+        "0.0.6": {
           "datagrok-api": "^1.0.0"
         }
       },
@@ -835,7 +859,8 @@
         "1.0.2": {},
         "1.0.3": {},
         "1.0.6": {},
-        "1.0.8": {}
+        "1.0.8": {},
+        "1.0.9": {}
       },
       "description": "Chembl integration",
       "repository": {
@@ -896,9 +921,12 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.4.11"
+        },
+        "1.0.3": {
+          "datagrok-api": "^1.4.11"
         }
       },
-      "description": "Charts package provides visualizations built using\\nthe [ECharts](https://echarts.apache.org/en/index.html) library.",
+      "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -1052,6 +1080,9 @@
         },
         "1.0.0": {
           "datagrok-api": "^1.4.1"
+        },
+        "1.0.1": {
+          "datagrok-api": "^1.4.1"
         }
       },
       "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
@@ -1177,6 +1208,24 @@
         },
         "1.7.12": {
           "datagrok-api": "^1.4.12"
+        },
+        "1.7.13": {
+          "datagrok-api": "^1.5.1"
+        },
+        "1.7.14": {
+          "datagrok-api": "^1.5.1"
+        },
+        "1.7.16": {
+          "datagrok-api": "^1.5.0"
+        },
+        "1.7.19": {
+          "datagrok-api": "^1.5.0"
+        },
+        "1.7.20": {
+          "datagrok-api": "^1.5.0"
+        },
+        "1.7.21": {
+          "datagrok-api": "^1.5.0"
         }
       },
       "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
@@ -1443,6 +1492,9 @@
         },
         "1.2.5": {
           "datagrok-api": "^1.4.12"
+        },
+        "1.2.6": {
+          "datagrok-api": "^1.4.12"
         }
       },
       "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
@@ -1463,6 +1515,9 @@
         },
         "1.1.0": {
           "datagrok-api": "^1.1.5"
+        },
+        "1.1.1": {
+          "datagrok-api": "^1.1.5"
         }
       },
       "description": "Data for MolecularLiabilityBrowser",
@@ -1471,20 +1526,31 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/MolecularLiabilityBrowserData"
       },
-      "category": "Data Access"
+      "category": "Bioinformatics"
     },
     "alation": {
       "dependencies": {
         "0.0.1": {
           "datagrok-api": "^1.0.0"
+        },
+        "1.0.1": {
+          "datagrok-api": "^1.5.0"
         }
       },
-      "description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+      "description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/Alation"
+      }
     },
     "arrow": {
       "dependencies": {
         "0.0.1": {
           "datagrok-api": "latest"
+        },
+        "1.0.1": {
+          "datagrok-api": "^1.5.0"
         }
       },
       "description": "",
@@ -1539,6 +1605,15 @@
         },
         "1.0.8": {
           "datagrok-api": "^1.4.12"
+        },
+        "1.0.9": {
+          "datagrok-api": "^1.4.12"
+        },
+        "1.0.10": {
+          "datagrok-api": "^1.4.12"
+        },
+        "2.0.0": {
+          "datagrok-api": "^1.4.12"
         }
       },
       "description": "",
@@ -1548,6 +1623,19 @@
         "directory": "packages/Helm"
       },
       "category": "Bioinformatics"
+    },
+    "gis": {
+      "dependencies": {
+        "0.0.2": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/GIS"
+      }
     }
   }
 }

@@ -12,7 +12,7 @@ jobs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Check version was changed
         id: check-version
         working-directory: ./js-api
@@ -36,7 +36,7 @@ jobs:
     environment: Prod
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           token: ${{ secrets.WRITE_TOKEN }}
       - name: Setup Node

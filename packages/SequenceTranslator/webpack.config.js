@@ -24,7 +24,7 @@ module.exports = {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
-    'openchemlib/full.js': 'OCL',
+    // 'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
     'rxjs/operators': 'rxjs.operators'
   },

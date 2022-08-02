@@ -3,7 +3,7 @@ import * as rxjsOperators from 'rxjs/operators';
 import { toJs } from './wrappers';
 import { Observable } from "rxjs";
 import {FileInfo, Package} from './entities';
-import { Accordion, Dialog } from "./widgets";
+import {Accordion, Dialog, InputBase} from "./widgets";
 import { View, ViewLayout } from './views/view';
 import { Viewer } from "./viewer";
 import { Column } from "./dataframe";
@@ -100,6 +100,8 @@ export class Events {
   get onCurrentObjectChanged(): rxjs.Observable<any> { return __obs('d4-current-object-changed'); }
 
   get onCurrentCellChanged(): rxjs.Observable<any> { return __obs('d4-current-cell-changed'); }
+
+  get onInputCreated(): rxjs.Observable<InputBase> { return __obs('d4-input-created'); }
 
   get onDialogShown(): rxjs.Observable<Dialog> { return __obs('d4-dialog-showed'); }
 

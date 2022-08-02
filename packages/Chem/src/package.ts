@@ -256,7 +256,8 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 };
  await getActivityCliffs(
   df, 
-  smiles, 
+  smiles,
+  null as any, 
   axesNames,
   'Activity cliffs',
   activities, 
@@ -452,7 +453,13 @@ export function convertMolecule(molecule: string, from: string, to: string): str
 export function editMoleculeCell(cell: DG.GridCell): void {
   const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
-  sketcher.setMolecule(cell.cell.value);
+
+  let molecule = ''
+  if(unit == 'smiles'){
+    molecule = grok.chem.convert(cell.cell.value, 'smiles', 'mol');;
+  } else
+  molecule = cell.cell.value;
+  sketcher.setMolFile(molecule)
   ui.dialog()
     .add(sketcher)
     .onOK(() => {

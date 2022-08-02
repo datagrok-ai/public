@@ -20,7 +20,7 @@ class PowerGridPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectImageColumn(col) {
-    if (DG.Detector.sampleCategories(col, (s) => PowerGridPackageDetectors.likelyImageUrl(s)))
+    if (DG.Detector.sampleCategories(col, (s) => PowerGridPackageDetectors.likelyImageUrl(s), 3))
       return 'ImageUrl';
   }
 

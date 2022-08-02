@@ -50,8 +50,7 @@ pubspec.lock
 [._]s[a-rt-v][a-z]
 [._]ss[a-gi-z]
 [._]sw[a-p]
-Session.vim
-Sessionx.vim
+*.vim
 .netrwhist
 *~
 [._]*.un~
