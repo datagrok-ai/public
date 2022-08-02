@@ -82,18 +82,22 @@ export class PtmFilter extends DG.Filter {
     this.indexes = (dataFrame.clone(null, ['v id']).join(tempDf, ['v id'], ['v_id'], [], ['index'], 'left', false)
       .getCol('index').getRawData() as Int32Array);
 
-    this.subs.push(grok.events.onCustomEvent(MlbEvents.CdrChanged).subscribe((value: string) => {
-      const key: string = this.cdrKeys.find((v) => v.toUpperCase() == value.toUpperCase());
-      console.debug(`MLB: PtmFilter.onCustomEvent(${MlbEvents.CdrChanged}) value ="${value}" -> key="${key}".`);
-      this.cdrInput.value = key ? key : 'None';
-    }));
-
     this.render();
     console.debug(`MLB: PtmFilter.attach() end, ${((Date.now() - _startInit) / 1000).toString()}`);
   }
 
-  applyState(state: string) {
+  applyState(state: any) {
     super.applyState(state);
+
+    // OnPropertyChanged() is not called when setting a property in TableView.filters() argument,
+    // but applyState() is called with that value
+    if ('currentCdr' in state) {
+      let value: string = state['currentCdr'];
+      const key: string = this.cdrKeys.find((v) => v.toUpperCase() == value.toUpperCase());
+      console.debug(`MLB: PtmFilter.applyState(${MlbEvents.CdrChanged}) value ="${value}" -> key="${key}".`);
+      this.currentCdr = key ?? 'None';
+    }
+
     this.render();
   }
 
