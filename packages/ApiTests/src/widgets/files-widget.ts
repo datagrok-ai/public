@@ -21,5 +21,15 @@ category('Widgets', () => {
     expect(fw.root.classList.contains('d4-tree-view-root'), true);
     expect(ui.fileBrowser() instanceof DG.FilesWidget, true)
 
+    if (testConnection) {
+      const testFW = ui.fileBrowser({path: testConnection.nqName});
+      $(testFW.root).ready(() => {
+        const selector = '.d4-tree-view-tri.d4-tree-view-tri-expanded + i + .d4-tree-view-group-label';
+        const label = $(testFW.root).find(selector)[0];
+        expect(label != null, true);
+        expect(label!.textContent, testConnection.name);
+      });
+    }
+
   });
 });
