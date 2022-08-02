@@ -126,14 +126,15 @@ function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[], fingerprintsTy
 
 async function getUint8ArrayFingerprints(
   molCol: DG.Column, fingerprintsType: Fingerprint = Fingerprint.Morgan, useSection = true): Promise<Uint8Array[]> {
-  if (useSection)
-    await chemBeginCriticalSection();
-
+  let sectionStarted = false;
   try {
     const fgsCheck = checkForFingerprintsColumn(molCol, fingerprintsType);
     if (fgsCheck)
       return fgsCheck;
     else {
+      if (useSection)
+        await chemBeginCriticalSection();
+      sectionStarted = true;
       await _invalidate(molCol);
       const fingerprints = await (await getRdKitService()).getFingerprints(fingerprintsType);
       saveFingerprintsToCol(molCol, fingerprints, fingerprintsType);
@@ -141,8 +142,9 @@ async function getUint8ArrayFingerprints(
       return fingerprints;
     }
   } finally {
-    if (useSection)
+    if (useSection && sectionStarted)
       chemEndCriticalSection();
+  }
 }
 
 function substructureSearchPatternsMatch(molString: string, querySmarts: string, fgs: Uint8Array[]): BitArray {
