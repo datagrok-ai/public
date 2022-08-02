@@ -8,6 +8,8 @@ import {before, category, expect, test} from '@datagrok-libraries/utils/src/test
 category('Widgets', () => {
   let testConnection: DG.DataConnection;
   let packageDataConnection: DG.DataConnection;
+  const timeout = 2500;
+  const labelSelector = '.d4-tree-view-tri.d4-tree-view-tri-expanded + i + .d4-tree-view-group-label';
 
   before(async () => {
     testConnection = await grok.dapi.connections.filter('shortName = "Home"').first();
@@ -23,13 +25,26 @@ category('Widgets', () => {
 
     if (testConnection) {
       const testFW = ui.fileBrowser({path: testConnection.nqName});
-      $(testFW.root).ready(() => {
-        const selector = '.d4-tree-view-tri.d4-tree-view-tri-expanded + i + .d4-tree-view-group-label';
-        const label = $(testFW.root).find(selector)[0];
+      setTimeout(() => {
+        const label = $(testFW.root).find(labelSelector)[0];
         expect(label != null, true);
-        expect(label!.textContent, testConnection.name);
-      });
+        expect(label!.textContent, testConnection.friendlyName);
+      }, timeout);
     }
 
+    if (packageDataConnection) {
+      const packageName = 'ApiTests';
+      const packageDir = 'datasets';
+      const testFW = ui.fileBrowser({path: `${packageDataConnection.nqName}/${packageName}/${packageDir}`});
+      setTimeout(() => {
+        const labels = $(testFW.root).find(labelSelector);
+        expect(labels[0] != null, true);
+        expect(labels[0]!.textContent, packageDataConnection.friendlyName);
+        expect(labels[1] != null, true);
+        expect(labels[1]!.textContent, packageName);
+        expect(labels[2] != null, true);
+        expect(labels[2]!.textContent, packageDir);
+      }, timeout);
+    }
   });
 });
