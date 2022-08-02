@@ -67,7 +67,7 @@ function colInvalidated(col: DG.Column): Boolean {
 async function _invalidate(molCol: DG.Column) {
   if (!colInvalidated(molCol)) {
     const {molIdxToHash, hashToMolblock} =
-        await (await getRdKitService()).initMoleculesStructures(molCol.toList(), false, false);
+        await (await getRdKitService()).initMoleculesStructures(molCol.toList(), false);
     let i = 0;
     if (molIdxToHash.length > 0) {
       let needsUpdate = false;
@@ -126,7 +126,8 @@ function saveFingerprintsToCol(col: DG.Column, fgs: Uint8Array[], fingerprintsTy
 
 async function getUint8ArrayFingerprints(
   molCol: DG.Column, fingerprintsType: Fingerprint = Fingerprint.Morgan, useSection = true): Promise<Uint8Array[]> {
-  let sectionStarted = false;
+  if (useSection)
+    await chemBeginCriticalSection();
   try {
     const fgsCheck = checkForFingerprintsColumn(molCol, fingerprintsType);
     if (fgsCheck)
@@ -134,7 +135,6 @@ async function getUint8ArrayFingerprints(
     else {
       if (useSection)
         await chemBeginCriticalSection();
-      sectionStarted = true;
       await _invalidate(molCol);
       const fingerprints = await (await getRdKitService()).getFingerprints(fingerprintsType);
       saveFingerprintsToCol(molCol, fingerprints, fingerprintsType);
@@ -142,7 +142,7 @@ async function getUint8ArrayFingerprints(
       return fingerprints;
     }
   } finally {
-    if (useSection && sectionStarted)
+    if (useSection)
       chemEndCriticalSection();
   }
 }
