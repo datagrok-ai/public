@@ -1275,7 +1275,7 @@ export function setDisplay(element: HTMLElement, show: boolean) {
   return element;
 }
 
-export function fileBrowser(params: {connection?: string, path?: string} = {}): Widget {
+export function fileBrowser(params: {path?: string} = {}): Widget {
   return FilesWidget.create(params);
 }
 
