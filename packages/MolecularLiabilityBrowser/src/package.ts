@@ -91,9 +91,6 @@ export function ptmFilter() {
 //tags: app
 export async function MolecularLiabilityBrowserApp() {
   try {
-
-    let t1 = Date.now();
-
     if (!dl)
       throw new Error('Data loader is not initialized.');
 
@@ -104,11 +101,6 @@ export async function MolecularLiabilityBrowserApp() {
     const app = new MolecularLiabilityBrowser(dl);
     console.debug(`MLB.package.MolecularLiabilityBrowserApp() before ` +
       `app init ${((Date.now() - _startInit) / 1000).toString()} s`);
-
-
-    let t2 = Date.now();
-    console.debug(`MLB: Before init, ${((t2 - t1) / 1000).toString()} s`);
-    
     await app.init(urlParams);
     console.debug(`MLB.package.MolecularLiabilityBrowserApp() after ` +
       `app.init ${((Date.now() - _startInit) / 1000).toString()} s`);

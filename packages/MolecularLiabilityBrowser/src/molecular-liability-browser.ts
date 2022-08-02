@@ -648,10 +648,12 @@ export class MolecularLiabilityBrowser {
       if (this.treeBrowser === null) {
         this.treeBrowser = (await this.treeDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
         this.mlbView.dockManager.dock(this.treeBrowser.root, DG.DOCK_TYPE.FILL, this.mlbGridDn, 'Clone');
-        await this.treeBrowser.setData(this.treeDf, this.mlbDf);
+        //TODO: check the await
+        this.treeBrowser.setData(this.treeDf, this.mlbDf);
         //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
       } else {
-        await this.treeBrowser.setData(this.treeDf, this.mlbDf);
+        //TODO: check the await
+        this.treeBrowser.setData(this.treeDf, this.mlbDf);
       }
 
       this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
@@ -683,14 +685,17 @@ export class MolecularLiabilityBrowser {
       if (this.regionsViewer === null) {
         const tempDf = DG.DataFrame.fromObjects([{}]);
         this.regionsViewer = (await tempDf.plot.fromType('VdRegions')) as unknown as VdRegionsViewer;
-        await this.regionsViewer.setDf(this.mlbDf, this.regions);
-        this.mlbView.dockManager.dock(this.regionsViewer.root, DG.DOCK_TYPE.DOWN, this.mlbGridDn, 'Regions', 0.3);
+        //TODO: check the await
+        this.regionsViewer.setDf(this.mlbDf, this.regions).then(() => {
+          this.mlbView.dockManager.dock(this.regionsViewer.root, DG.DOCK_TYPE.DOWN, this.mlbGridDn, 'Regions', 0.3);
+        });
       } else {
         // this.regionsViewer.numberingScheme = this.schemeName;
         // this.regionsViewer.setOptions({numberingScheme: this.schemeName});
 
         // TODO: Set all required props before setDf (or together with)
-        await this.regionsViewer.setDf(this.mlbDf, this.regions);
+        //TODO: check the await
+        this.regionsViewer.setDf(this.mlbDf, this.regions);
       }
 
       this.updateView();
@@ -807,45 +812,22 @@ export class MolecularLiabilityBrowser {
     try {
       let t1 = Date.now();
       let t2 = Date.now();
-      const mlbDf = await this.dataLoader.getMlbByAntigen(this.antigenName);
-      t2 = Date.now();
-      console.debug(`MLB: LOAD 1, ${((t2 - t1) / 1000).toString()} s`);
-      t1 = Date.now();
 
-      const hChainDf = await this.dataLoader.getAnarci(this.schemeName, 'heavy', this.antigenName);
-      t2 = Date.now();
-      console.debug(`MLB: LOAD 2, ${((t2 - t1) / 1000).toString()} s`);
-      t1 = Date.now();
+      const [mlbDf, hChainDf, lChainDf, treeDf, regions]:
+        [DG.DataFrame, DG.DataFrame, DG.DataFrame, DG.DataFrame, VdRegion[]] =
+        await Promise.all([
+          this.dataLoader.getMlbByAntigen(this.antigenName),
+          this.dataLoader.getAnarci(this.schemeName, 'heavy', this.antigenName),
+          this.dataLoader.getAnarci(this.schemeName, 'light', this.antigenName),
+          this.dataLoader.getTreeByAntigen(this.antigenName),
+          this.dataLoader.getLayoutBySchemeCdr(this.schemeName, this.cdrName),
+        ])
+          .catch((reason) => {
+            grok.shell.error(reason.toString());
+            throw reason;
+          });
 
-      const lChainDf = await this.dataLoader.getAnarci(this.schemeName, 'light', this.antigenName);
-      t2 = Date.now();
-      console.debug(`MLB: LOAD 3, ${((t2 - t1) / 1000).toString()} s`);
-      t1 = Date.now();
-
-      const treeDf = await this.dataLoader.getTreeByAntigen(this.antigenName);
-      t2 = Date.now();
-      console.debug(`MLB: LOAD 4, ${((t2 - t1) / 1000).toString()} s`);
-      t1 = Date.now();
-
-      const regions = await this.dataLoader.getLayoutBySchemeCdr(this.schemeName, this.cdrName);
-      t2 = Date.now();
-      console.debug(`MLB: LOAD 5, ${((t2 - t1) / 1000).toString()} s`);
-      t1 = Date.now();
-      // const [mlbDf, hChainDf, lChainDf, treeDf, regions]:
-      //   [DG.DataFrame, DG.DataFrame, DG.DataFrame, DG.DataFrame, VdRegion[]] =
-      //   await Promise.all([
-      //     this.dataLoader.getMlbByAntigen(this.antigenName),
-      //     this.dataLoader.getAnarci(this.schemeName, 'heavy', this.antigenName),
-      //     this.dataLoader.getAnarci(this.schemeName, 'light', this.antigenName),
-      //     this.dataLoader.getTreeByAntigen(this.antigenName),
-      //     this.dataLoader.getLayoutBySchemeCdr(this.schemeName, this.cdrName),
-      //   ])
-      //     .catch((reason) => {
-      //       grok.shell.error(reason.toString());
-      //       throw reason;
-      //     });
-
-      //console.debug(`MLB: MolecularLiabilityBrowser.loadData() load ET, ${((t2 - t1) / 1000).toString()} s`);
+      console.debug(`MLB: MolecularLiabilityBrowser.loadData() load ET, ${((t2 - t1) / 1000).toString()} s`);
 
       await this.setData(
         MolecularLiabilityBrowser.prepareDataMlbDf(mlbDf, hChainDf, lChainDf,
@@ -853,12 +835,8 @@ export class MolecularLiabilityBrowser {
         MolecularLiabilityBrowser.prepareDataTreeDf(treeDf),
         regions);
 
-        t2 = Date.now();
-        console.debug(`MLB: LOAD 6, ${((t2 - t1) / 1000).toString()} s`);
-        t1 = Date.now();
-
-      // const t3 = Date.now();
-      // console.debug(`MLB: MolecularLiabilityBrowser.loadData() prepare ET, ${((t3 - t2) / 1000).toString()} s`);
+      const t3 = Date.now();
+      console.debug(`MLB: MolecularLiabilityBrowser.loadData() prepare ET, ${((t3 - t2) / 1000).toString()} s`);
     } catch (err: unknown) {
       if (err instanceof Error)
         console.error(err);
