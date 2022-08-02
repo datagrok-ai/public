@@ -409,6 +409,7 @@ export namespace chem {
 
     async setSketcher(name: string, molString?: string) {
       ui.empty(this.host);
+      ui.setUpdateIndicator(this.host, true);
       this.changedSub?.unsubscribe();
 
       let funcs = Func.find({tags: ['moleculeSketcher']});
@@ -421,6 +422,7 @@ export namespace chem {
       this.host!.style.minWidth = '500px';
       this.host!.style.minHeight = '400px';
       this.host.appendChild(this.sketcher!.root);
+      ui.setUpdateIndicator(this.host, false);
       await ui.tools.waitForElementInDom(this.root);
       await this.sketcher!.init(this);
       molString ? this.setMolecule(molString) : this.sketcherCreated.next(true);

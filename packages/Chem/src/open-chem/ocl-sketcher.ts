@@ -34,25 +34,29 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
-    return this._sketcher? this._sketcher.getSmiles(): this.host?.getSmiles();;
+    return this._sketcher ? this._sketcher.getSmiles(): this.host?.getSmiles();
   }
   set smiles(s) {
-    this._sketcher?.setSmiles(s);
+    this._sketcher.setSmiles(s);
   }
 
   get molFile() {
-    return this._sketcher? this._sketcher.getMolFile() : this.host?.getMolFile();
+    return this._sketcher ? this._sketcher.getMolFile() : this.host?.getMolFile();
   }
 
   set molFile(s) {
-    this._sketcher?.setMolFile(s);
+    this._sketcher.setMolFile(s);
   }
 
   async getSmarts(): Promise<string> {
-    const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this.molFile);
-    const smarts = mol.get_smarts();
-    mol?.delete();
-    return smarts;
+    if (this._sketcher) {
+      const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this.molFile);
+      const smarts = mol.get_smarts();
+      mol?.delete();
+      return smarts;
+    } else {
+      return await this.host!.getSmarts() as string;
+    }
   }
 
   set smarts(s: string) {
