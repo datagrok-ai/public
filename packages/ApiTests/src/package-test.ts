@@ -29,6 +29,7 @@ import './dapi/users';
 import './shell/ml';
 import './ui/divs';
 import './ui/buttons';
+import './widgets/files-widget';
 import './widgets/legend';
 import './ui/icons';
 import './ui/tables';

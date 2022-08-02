@@ -17,6 +17,7 @@ export * from './src/grid';
 export * from './src/widgets';
 export * from './src/views/view';
 export * from './src/views/card_view';
+export * from './src/views/files_view';
 export * from './src/views/multi_view';
 export * from './src/viewer';
 export * from './src/docking';
