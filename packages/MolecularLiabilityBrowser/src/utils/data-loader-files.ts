@@ -158,7 +158,7 @@ export class DataLoaderFiles extends DataLoader {
 
     this.cache = new MlbDatabase();
     this.cache.init(this._serverListVersionDf);
-
+    //load numbering schemes 
     await Promise.all([
       this.cache.getData<IScheme, string[]>('scheme',
         () => catchToLog<Promise<DG.DataFrame>>(
@@ -170,6 +170,7 @@ export class DataLoaderFiles extends DataLoader {
         console.debug('MLB: DataLoaderFiles.init2() set schemes, ' + `${this.fromStartInit()} s`);
         this._schemes = value;
       }),
+      //load cdr definition list
       this.cache.getData<ICdr, string[]>('cdr',
         () => catchToLog<Promise<DG.DataFrame>>(
           'MLB database error \'listCdrs\': ',
@@ -180,6 +181,7 @@ export class DataLoaderFiles extends DataLoader {
         console.debug('MLB: DataLoaderFiles.init2() set cdrs, ' + `${this.fromStartInit()} s`);
         this._cdrs = value;
       }),
+      //load antigen list
       this.cache.getData<IAntigen, DG.DataFrame>('antigen',
         () => catchToLog<Promise<DG.DataFrame>>(
           'MLB database error \'listAntigens\': ',
@@ -192,6 +194,7 @@ export class DataLoaderFiles extends DataLoader {
         console.debug('MLB: DataLoaderFiles.init2() set antigens, ' + `${this.fromStartInit()} s`);
         this._antigens = value;
       }),
+      //load available Vids
       this.cache.getData<IVid, string[]>('vid',
         () => new Promise((resolve, reject) => {
           const df: DG.DataFrame = DG.DataFrame.fromObjects(
@@ -205,6 +208,7 @@ export class DataLoaderFiles extends DataLoader {
         console.debug(`MLB: DataLoaderFiles.init() set vids, ${this.fromStartInit()} s`);
         this._vids = value;
       }),
+      //load observed PTM data
       this.cache.getData<IVidObsPtm, string[]>('vidObsPtm',
         () => new Promise((resolve, reject) => {
           const df: DG.DataFrame = DG.DataFrame.fromObjects([{v_id: 'VR000000044'}]);
@@ -217,6 +221,7 @@ export class DataLoaderFiles extends DataLoader {
         console.debug(`MLB: DataLoaderFiles.init2() set obsPtmVids, ${this.fromStartInit()} s`);
         this._vidsObsPtm = value;
       }),
+      //load properties data
       this.cache.getObject<FilterPropertiesType>(this._files.filterProps,
         async () => {
           const txt: string = await grok.dapi.files
@@ -227,6 +232,7 @@ export class DataLoaderFiles extends DataLoader {
           console.debug(`MLB: DataLoaderFiles.init2() set filterProperties, ${this.fromStartInit()} s`);
           this._filterProperties = value;
         }),
+      //load mutcodes data
       this.cache.getObject<MutcodesDataType>(this._files.mutcodes,
         async () => {
           const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.mutcodes}`);
@@ -236,6 +242,7 @@ export class DataLoaderFiles extends DataLoader {
           console.debug(`MLB: DataLoaderFiles.init2() set mutcodes, ${this.fromStartInit()} s`);
           this._mutcodes = value;
         }),
+      //load ptm map data  
       this.cache.getObject<PtmMapType>(this._files.ptmMap,
         async () => {
           const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.ptmMap}`);
@@ -245,6 +252,7 @@ export class DataLoaderFiles extends DataLoader {
           console.debug(`MLB: DataLoaderFiles.init2() set ptmMap, ${this.fromStartInit()} s`);
           this._ptmMap = value;
         }),
+      //load cdr map data  
       this.cache.getObject<CdrMapType>(this._files.cdrMap,
         async () => {
           const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.cdrMap}`);
@@ -254,6 +262,8 @@ export class DataLoaderFiles extends DataLoader {
           console.debug(`MLB: DataLoaderFiles.init2() set cdrMap, ${this.fromStartInit()} s`);
           this._cdrMap = value;
         }),
+      //load ptm in cdr
+      //TODO move data to DB, get only usefull VR ids
       this.cache.getObject<string>(this._files.ptmInCdr,
         async () => {
           const t1: number = Date.now();

@@ -9,7 +9,6 @@ SELECT v_id,
        negative_cdr_charge,
        SFvCSP
 FROM mlb.mlb_main
--- NGL column removed from query 2022-04-08 (atanas/lstolbov)
 --end
 
 --name: getObservedPtmVids
