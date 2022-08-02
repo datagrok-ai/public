@@ -1623,7 +1623,9 @@ export class PropertyGrid extends DartWidget {
 
 /** File browser widget */
 export class FilesWidget extends DartWidget {
-  static create(params: {connection?: string, path?: string} = {}): FilesWidget {
+  /** Creates a [FilesWidget] and opens a directory, if [path] is specified.
+   * [path] accepts a full-qualified name (see [Entity.nqName]). */
+  static create(params: {path?: string} = {}): FilesWidget {
     return toJs(api.grok_FilesWidget(params));
   }
 }
