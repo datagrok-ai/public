@@ -1,23 +1,31 @@
 import * as grok from 'datagrok-api/grok';
+import { chem } from 'datagrok-api/grok';
 import * as OCL from 'openchemlib/full';
+import { Subject } from 'rxjs';
+import { getRdKitModule } from '../utils/chem-common-rdkit';
 
 let sketcherId = 0;
 
 export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   // @ts-ignore
-  _sketcher: OCL.StructureEditor;
+  setSmartsSubj = new Subject<string>();
 
   constructor() {
     super();
   }
 
-  async init(): Promise<void> {
+  async init(host: chem.Sketcher): Promise<void> {
+    this.host = host;
     const id = `ocl-sketcher-${sketcherId++}`;
     this.root.id = id;
-
     this._sketcher = OCL.StructureEditor.createSVGEditor(id, 1);
     this._sketcher.setChangeListenerCallback((id: any, molecule: any) => {
       this.onChanged.next(null);
+    });
+    this.setSmartsSubj.subscribe(async (s: string) => {
+      const mol = await getRdKitModule().get_mol(s);
+      this._sketcher?.setMolFile(mol.get_molblock());
+      mol?.delete();
     });
   }
 
@@ -26,14 +34,14 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
-    return this._sketcher ? this._sketcher.getSmiles() : '';
+    return this._sketcher? this._sketcher.getSmiles(): this.host?.getSmiles();;
   }
   set smiles(s) {
     this._sketcher?.setSmiles(s);
   }
 
   get molFile() {
-    return this._sketcher ? this._sketcher.getMolFile() : '';
+    return this._sketcher? this._sketcher.getMolFile() : this.host?.getMolFile();
   }
 
   set molFile(s) {
@@ -41,11 +49,14 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   async getSmarts(): Promise<string> {
-    return this.smiles;
+    const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this.molFile);
+    const smarts = mol.get_smarts();
+    mol?.delete();
+    return smarts;
   }
 
-  setSmarts(s: string): void {
-    this.smiles = s;
+  set smarts(s: string) {
+    this.setSmartsSubj.next(s);
   }
 
   detach(): void {

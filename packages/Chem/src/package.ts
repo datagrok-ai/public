@@ -453,20 +453,14 @@ export function convertMolecule(molecule: string, from: string, to: string): str
 export function editMoleculeCell(cell: DG.GridCell): void {
   const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
-
-  let molecule = ''
-  if(unit == 'smiles'){
-    molecule = grok.chem.convert(cell.cell.value, 'smiles', 'mol');;
-  } else
-  molecule = cell.cell.value;
-  sketcher.setMolFile(molecule)
+  sketcher.setMolecule(cell.cell.value);
   ui.dialog()
-    .add(sketcher)
-    .onOK(() => {
+      .add(sketcher)
+      .onOK(() => {
       cell.cell.value = unit == 'molblock' ? sketcher.getMolFile() : sketcher.getSmiles();
       Sketcher.addRecent(sketcher.getMolFile());
-    })
-    .show();
+  })
+  .show();
 }
 
 //name: SimilaritySearchViewer
