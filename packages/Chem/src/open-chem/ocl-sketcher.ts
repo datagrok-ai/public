@@ -7,8 +7,6 @@ import { getRdKitModule } from '../utils/chem-common-rdkit';
 let sketcherId = 0;
 
 export class OpenChemLibSketcher extends grok.chem.SketcherBase {
-  // @ts-ignore
-  setSmartsSubj = new Subject<string>();
 
   constructor() {
     super();
@@ -21,11 +19,6 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     this._sketcher = OCL.StructureEditor.createSVGEditor(id, 1);
     this._sketcher.setChangeListenerCallback((id: any, molecule: any) => {
       this.onChanged.next(null);
-    });
-    this.setSmartsSubj.subscribe(async (s: string) => {
-      const mol = await getRdKitModule().get_mol(s);
-      this._sketcher?.setMolFile(mol.get_molblock());
-      mol?.delete();
     });
   }
 
@@ -60,11 +53,17 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   set smarts(s: string) {
-    this.setSmartsSubj.next(s);
+    this.convertAndSetSmarts(s);
   }
 
   detach(): void {
     console.log('OCL sketcher detached');
     super.detach();
+  }
+
+  private async convertAndSetSmarts(s: string) {
+    const mol = await getRdKitModule().get_mol(s);
+    this._sketcher?.setMolFile(mol.get_molblock());
+    mol?.delete();
   }
 }

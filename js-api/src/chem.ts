@@ -422,9 +422,9 @@ export namespace chem {
       this.host!.style.minWidth = '500px';
       this.host!.style.minHeight = '400px';
       this.host.appendChild(this.sketcher!.root);
-      ui.setUpdateIndicator(this.host, false);
       await ui.tools.waitForElementInDom(this.root);
       await this.sketcher!.init(this);
+      ui.setUpdateIndicator(this.host, false);
       molString ? this.setMolecule(molString) : this.sketcherCreated.next(true);
       this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
         this.onChanged.next(null);
