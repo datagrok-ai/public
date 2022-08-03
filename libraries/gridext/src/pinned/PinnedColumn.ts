@@ -170,7 +170,7 @@ export class PinnedColumn {
     this.m_colGrid = colGrid;
     this.m_nWidthBug = -1;
     try {
-      colGrid.visible = true;//my changes false;
+      colGrid.visible = false;
     }
     catch(e) {
       //DG bug
@@ -799,10 +799,11 @@ export class PinnedColumn {
     //column Header
     const options : any = grid.getOptions(true);
 
-    const font = options.look.colHeaderFont == null || options.look.colHeaderFont === undefined ? "bold 14px Volta Text, Arial" : options.look.colHeaderFont;
-    const nFontSize = TextUtils.getFontSize(font);
-    const fontNew = TextUtils.setFontSize(font, Math.ceil(nFontSize * window.devicePixelRatio));
-    g.font = fontNew;
+    const fontCellDefault = options.look.defaultCellFont;
+
+    let font = options.look.colHeaderFont == null || options.look.colHeaderFont === undefined ? "bold 14px Volta Text, Arial" : options.look.colHeaderFont;
+    let fontScaled = GridUtils.scaleFont(font, window.devicePixelRatio);
+    g.font = fontScaled;
 
     let str = TextUtils.trimText(this.m_colGrid.name, g, nW);
 
@@ -889,18 +890,18 @@ export class PinnedColumn {
       //let nYY = nY;//*window.devicePixelRatio;
 
 
-      const font = cellRH.style.font;
-      const nFontSize = TextUtils.getFontSize(font);
-      const fontNew = TextUtils.setFontSize(font, Math.ceil(nFontSize * window.devicePixelRatio));
-      if (fontNew !== null) {
-        cellRH.style.font = fontNew;
+      font = cellRH.style.font;
+      fontScaled = GridUtils.scaleFont(font, window.devicePixelRatio);
+      if (fontScaled !== null) {
+        cellRH.style.font = fontScaled;
       }
 
       if (nW > 0 && nHRowGrid > 0) { //to address a bug caused either DG or client app
         try {
           if (renderer.name === 'Molecule') {
             renderer.render(g, 0, nYY/window.devicePixelRatio, nWW/window.devicePixelRatio, nHRowGrid/window.devicePixelRatio, cellRH, cellRH.style);
-          } else renderer.render(g, 0, nYY, nWW, nHRowGrid, cellRH, cellRH.style);
+          }
+          else renderer.render(g, 0, nYY, nWW, nHRowGrid, cellRH, cellRH.style);
 
         } catch (e) {
           console.error("Could not paint cell for pinned column " + this.m_colGrid.name + " row " + nRG);
