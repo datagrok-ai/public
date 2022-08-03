@@ -12,6 +12,7 @@ import './viewer/viewer';
 import './views/docking';
 import './views/events';
 import './views/layouts';
+import './views/files-view';
 import './dapi/files';
 import './dapi/fetch';
 import './dapi/admin';
