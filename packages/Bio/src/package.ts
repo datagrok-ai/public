@@ -241,6 +241,14 @@ export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.
   return msaCol;
 }
 
+//name: Bio | MSA
+//tags: bio, panel
+//input: column sequence { semType: Macromolecule }
+//output: column result
+export async function panelMSA(col: DG.Column): Promise<DG.Column | null> {
+  return multipleSequenceAlignmentAny(col.dataFrame, col);
+}
+
 //name: Composition Analysis
 //top-menu: Bio | Composition Analysis
 //output: viewer result
