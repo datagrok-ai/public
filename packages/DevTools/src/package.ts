@@ -10,6 +10,8 @@ import {testManagerView, _renderTestManagerPanel} from "./package-testing";
 import { functionSignatureEditor } from './function-signature-editor';
 import { addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel } from './dev-panel';
 
+import { _testDetectorsDialog } from './utils/test-detectors'
+
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
 
@@ -81,4 +83,10 @@ export function _IconTool(): void {
 export async function testManager(): Promise<void> {
   c = grok.functions.getCurrentCall(); 
   await testManagerView(); 
+}
+
+//name: TestDetectors
+//top-menu: Tools | Dev | Test Detectors
+export function testDetectors() {
+  _testDetectorsDialog();
 }

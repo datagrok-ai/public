@@ -16,7 +16,7 @@
     "codemirror": "^5.65.0",
     "datagrok-api": "^1.4.5",
     "js-yaml": "^4.1.0",
-    "rxjs": "^7.5.1"
+    "rxjs": "^6.5.5"
   },
   "devDependencies": {
     "@types/jest": "^27.0.0",
