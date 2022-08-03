@@ -301,3 +301,10 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     lru.set(gridCell.cell.value, result);
   }
 }
+
+//name: getMonomerLib
+//input: string type
+//output: string monomerSetJSON
+export function getMonomerLib(type: string): string {
+  return JSON.stringify(scil.helm.Monomers.getMonomerSet(type));
+}
