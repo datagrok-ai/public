@@ -61,12 +61,18 @@ function translateSequence(
   startModification: DG.InputBase,
   endModification: DG.InputBase,
   firstPtoExist: boolean): string {
-  let counter: number = -1;
+  let i: number = -1;
   let mainSequence = sequence.replace(/[AUGC]/g, function(x: string) {
-    counter++;
+    i++;
     const indexOfSymbol = axolabsMap['RNA']['symbols'].indexOf(x);
-    const symbol = axolabsMap[bases[counter].value]['symbols'][indexOfSymbol];
-    return (ptoLinkages[counter].value) ? symbol + 's' : symbol;
+    let symbol = axolabsMap[bases[i].value]['symbols'][indexOfSymbol];
+    if (bases[i].value.slice(-3) == '(o)') {
+      if (i < sequence.length / 2 && bases[i + 1].value.slice(-3) != '(o)')
+        symbol = symbol + x + 'f';
+      else if (i > sequence.length / 2 && bases[i - 1].value.slice(-3) != '(o)')
+        symbol = x + 'f' + symbol;
+    }
+    return (ptoLinkages[i].value) ? symbol + 's' : symbol;
   });
   if (mainSequence.slice(0, 5).split('mU').length == 3)
     mainSequence = '(uu)' + mainSequence.slice(4);
@@ -523,8 +529,6 @@ export function defineAxolabsPattern() {
     const firstSequence = tables.value!.getCol(colName).get(0);
     if (allLengthsAreTheSame && firstSequence.length != asLength.value)
       asLength.value = tables.value!.getCol(colName).get(0).length;
-    // asLengthDiv.innerHTML = '';
-    // asLengthDiv.append(asLength.root);
     asInputExample.value = firstSequence;
   }
 
@@ -692,10 +696,7 @@ export function defineAxolabsPattern() {
     }
   });
 
-  const ssInputExample = ui.textInput('Sense Strand', generateExample(ssLength.value!, sequenceBase.value!), () => {
-    ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages,
-      ssFiveModification, ssThreeModification, firstSsPto.value!);
-  });
+  const ssInputExample = ui.textInput('Sense Strand', generateExample(ssLength.value!, sequenceBase.value!));
   const ssOutputExample = ui.textInput(' ', translateSequence(
     ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value!));
   (ssInputExample.input as HTMLElement).style.resize = 'none';
@@ -713,10 +714,7 @@ export function defineAxolabsPattern() {
     ], 'ui-input-options'),
   );
 
-  const asInputExample = ui.textInput('Antisense Strand', generateExample(asLength.value!, sequenceBase.value!), () => {
-    asOutputExample.value = translateSequence(
-      asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstSsPto.value!);
-  });
+  const asInputExample = ui.textInput('Antisense Strand', generateExample(asLength.value!, sequenceBase.value!));
   const asOutputExample = ui.textInput(' ', translateSequence(
     asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstSsPto.value!));
   (asInputExample.input as HTMLElement).style.resize = 'none';
