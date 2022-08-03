@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
-import {AlignedSequenceDifferenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
+import {MacromoleculeDifferenceCellRenderer, MonomerCellRenderer} from './utils/cell-renderer';
 import {WebLogo, SeqColStats} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
@@ -334,20 +334,20 @@ export function convertPanel(col: DG.Column): void {
   convert(col);
 }
 
-//name: aminoAcidsCellRenderer
+//name: monomerCellRenderer
 //tags: cellRenderer
-//meta.cellType: aminoAcids
+//meta.cellType: Monomer
 //output: grid_cell_renderer result
-export function aminoAcidsCellRenderer(): AminoAcidsCellRenderer {
-  return new AminoAcidsCellRenderer();
+export function monomerCellRenderer(): MonomerCellRenderer {
+  return new MonomerCellRenderer();
 }
 
-//name: alignedSequenceDifferenceCellRenderer
+//name: MacromoleculeDifferenceCellRenderer
 //tags: cellRenderer
-//meta.cellType: alignedSequenceDifference
+//meta.cellType: MacromoleculeDifference
 //output: grid_cell_renderer result
-export function alignedSequenceDifferenceCellRenderer(): AlignedSequenceDifferenceCellRenderer {
-  return new AlignedSequenceDifferenceCellRenderer();
+export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCellRenderer {
+  return new MacromoleculeDifferenceCellRenderer();
 }
 
 //name: testDetectMacromolecule

@@ -40,8 +40,8 @@ export function expandColumn(col: DG.Column, grid: DG.Grid, cellRenderSize: (cel
  * @param {boolean} [grouping=false] Is grouping enabled.
  */
 export function setAARRenderer(col: DG.Column, alphabet: string, grid?: DG.Grid): void {
-  col.semType = C.SEM_TYPES.AMINO_ACIDS;
-  col.setTag('cell.renderer', C.SEM_TYPES.AMINO_ACIDS);
+  col.semType = C.SEM_TYPES.MONOMER;
+  col.setTag('cell.renderer', C.SEM_TYPES.MONOMER);
   col.tags[C.TAGS.ALPHABET] = alphabet;
 
   if (grid)

@@ -118,7 +118,7 @@ function findMonomers(helmString: string) {
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   get name(): string { return 'macromoleculeSequence'; }
 
-  get cellType(): string { return C.SEM_TYPES.Macro_Molecule; }
+  get cellType(): string { return C.SEM_TYPES.MACROMOLECULE; }
 
   get defaultHeight(): number { return 30; }
 
@@ -233,10 +233,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 }
 
 
-export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
-  get name(): string {return 'aminoAcidsCR';}
+export class MonomerCellRenderer extends DG.GridCellRenderer {
+  get name(): string {return 'MonomerCR';}
 
-  get cellType(): string {return C.SEM_TYPES.AMINO_ACIDS;}
+  get cellType(): string {return C.SEM_TYPES.MONOMER;}
 
   get defaultHeight(): number {return 15;}
 
@@ -273,10 +273,10 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
   }
 }
 
-export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
-  get name(): string {return 'alignedSequenceDifferenceCR';}
+export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
+  get name(): string {return 'MacromoleculeDifferenceCR';}
 
-  get cellType(): string {return C.SEM_TYPES.ALIGNED_SEQUENCE_DIFFERENCE;}
+  get cellType(): string {return C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;}
 
   get defaultHeight(): number {return 30;}
 
