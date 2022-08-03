@@ -138,6 +138,25 @@ export function fillVisibleViewportGridCells(arColRowIdxs : Array<number>, grid 
   arColRowIdxs[3] = nRowMax;
 }
 
+const m_mapScaledFonts = new Map();
+
+export function scaleFont(font : string, fFactor : number) : string {
+  if(fFactor === 1.0) {
+    return font;
+  }
+
+  const strKey = font + fFactor.toString();
+  let fontScaled = m_mapScaledFonts.get(strKey);
+  if(fontScaled !== undefined)
+    return fontScaled;
+
+  const nFontSize : number = TextUtils.getFontSize(font);
+  fontScaled = TextUtils.setFontSize(font, Math.ceil(nFontSize * fFactor));
+  m_mapScaledFonts.set(strKey, fontScaled);
+
+  return fontScaled;
+}
+
 export function paintColHeaderCell(g : CanvasRenderingContext2D | null, nX : number, nY : number, nW: number, nH: number, colGrid : DG.GridColumn) {
 
   if(g === null)
@@ -150,8 +169,7 @@ export function paintColHeaderCell(g : CanvasRenderingContext2D | null, nX : num
   const options : any = grid.getOptions(true);
 
   const font = options.look.colHeaderFont == null || options.look.colHeaderFont === undefined ? "bold 14px Volta Text, Arial" : options.look.colHeaderFont;
-  const nFontSize = TextUtils.getFontSize(font);
-  const fontNew = TextUtils.setFontSize(font, Math.ceil(nFontSize * window.devicePixelRatio));
+  const fontNew = scaleFont(font, window.devicePixelRatio);
   g.font = fontNew;
 
   let str = TextUtils.trimText(colGrid.name, g, nW);
