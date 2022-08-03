@@ -104,6 +104,16 @@ export async function startAnalysis(
     newDf.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
     // newDf.tags[C.PEPTIDES_ANALYSIS] = 'true';
 
+    const alignedSeqColUnits = alignedSeqCol.getTag(DG.TAGS.UNITS);
+    let monomerType = 'HELM_AA';
+    if (alignedSeqColUnits == 'HELM') {
+      const sampleSeq = alignedSeqCol.get(0)!;
+      monomerType = sampleSeq.startsWith('PEPTIDE') ? 'HELM_AA' : 'HELM_BASE';
+    } else {
+      monomerType = alignedSeqColUnits.split(':')[2] == 'PT' ? 'HELM_AA' : 'HELM_BASE';
+    }
+    newDf.setTag('monomerType', monomerType);
+
     model = await PeptidesModel.getInstance(newDf);
   } else
     grok.shell.error('The activity column must be of floating point number type!');
