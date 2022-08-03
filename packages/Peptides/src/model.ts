@@ -52,6 +52,7 @@ export class PeptidesModel {
   barData: type.MonomerDfStats = {};
   barsBounds: {[position: string]: type.BarCoordinates} = {};
   cachedBarchartTooltip: {bar: string, tooltip: null | HTMLDivElement} = {bar: '', tooltip: null};
+  monomerLib: any;
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -625,7 +626,9 @@ export class PeptidesModel {
   showMonomerTooltip(aar: string, x: number, y: number): void {
     const tooltipElements: HTMLDivElement[] = [];
     //@ts-ignore: no types for org
-    const monomer: type.HELMMonomer = org.helm.webeditor.monomers.getMonomer('HELM_AA', aar);
+    // const monomer: type.HELMMonomer = org.helm.webeditor.monomers.getMonomer('HELM_AA', aar);
+    const monomer: type.HELMMonomer = this.monomerLib[aar.toLowerCase()];
+
     if (monomer) {
       tooltipElements.push(ui.div(monomer.n));
       const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
@@ -847,6 +850,9 @@ export class PeptidesModel {
   async init(): Promise<void> {
     if (this.isInitialized)
       return;
+
+    this.monomerLib =
+      JSON.parse(await grok.functions.call('Helm:getMonomerLib', {type: this.df.getTag('monomerType')}));
 
     this.currentView = this.df.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
       grok.shell.addTableView(this.df);
