@@ -132,8 +132,8 @@ export class PeptidesModel {
     return viewer;
   }
 
-  isPropertyChanged(): boolean {
-    const viewer = this.getViewer();
+  isPropertyChanged(viewer: SARViewerBase): boolean {
+    // const viewer = this.getViewer();
     const viewerProps = viewer.props.getProperties();
     let result = false;
     const tempProps = this.usedProperties;
@@ -151,7 +151,8 @@ export class PeptidesModel {
 
   updateDefault(): void {
     const viewer = this.getViewer();
-    if ((this._sourceGrid && !this._isUpdating && this.isPropertyChanged()) || !this.isInitialized) {
+    const proprtyChanged = this.isPropertyChanged(this.sarViewer) || this.isPropertyChanged(this.sarViewerVertical);
+    if ((this._sourceGrid && !this._isUpdating && proprtyChanged) || !this.isInitialized) {
       this.isInitialized = true;
       this._isUpdating = true;
       const [viewerGrid, viewerVGrid, statsDf] = this.initializeViewersComponents();
