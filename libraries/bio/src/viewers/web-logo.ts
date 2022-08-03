@@ -405,7 +405,6 @@ export class WebLogo extends DG.JsViewer {
     if (this.skipEmptyPositions) {
       let removePositions = [];
       for (let jPos = 0; jPos < this.positions.length; jPos++) {
-        console.log(this.positions[jPos]);
         if (this.positions[jPos] != null) {
           if (this.positions[jPos].freq['-'] != null) {
             if (this.positions[jPos].freq['-'].count === this.positions[jPos].rowCount) {
