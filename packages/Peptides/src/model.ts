@@ -79,7 +79,7 @@ export class PeptidesModel {
     this._currentSelection = selection;
     this.df.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
     this.invalidateSelection();
-    this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.AMINO_ACIDS), this.df.selection);
+    this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
   }
 
   get usedProperties(): {[propName: string]: string | number | boolean} {
@@ -249,10 +249,10 @@ export class PeptidesModel {
 
   calcSubstitutions(): void {
     const activityValues: DG.Column<number> = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
-    const columnList: DG.Column<string>[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.AMINO_ACIDS);
+    const columnList: DG.Column<string>[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
     const nCols = columnList.length;
     if (nCols == 0)
-      throw new Error(`Couldn't find any column of semType '${C.SEM_TYPES.AMINO_ACIDS}'`);
+      throw new Error(`Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
 
     const viewer = this.getViewer();
     this.substitutionsInfo = new Map();
@@ -350,12 +350,12 @@ export class PeptidesModel {
       colNames.push(this._sourceGrid.columns.byIndex(i)!);
 
     colNames.sort((a, b)=>{
-      if (a.column!.semType == C.SEM_TYPES.AMINO_ACIDS) {
-        if (b.column!.semType == C.SEM_TYPES.AMINO_ACIDS)
+      if (a.column!.semType == C.SEM_TYPES.MONOMER) {
+        if (b.column!.semType == C.SEM_TYPES.MONOMER)
           return 0;
         return -1;
       }
-      if (b.column!.semType == C.SEM_TYPES.AMINO_ACIDS)
+      if (b.column!.semType == C.SEM_TYPES.MONOMER)
         return 1;
       return 0;
     });
@@ -486,7 +486,7 @@ export class PeptidesModel {
   setBarChartInteraction() {
     const eventAction = (ev: MouseEvent): void => {
       const cell = this._sourceGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.AMINO_ACIDS) {
+      if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.MONOMER) {
         const newBarPart = this.findAARandPosition(cell, ev);
         this.requestBarchartAction(ev, newBarPart);
       }
@@ -579,7 +579,7 @@ export class PeptidesModel {
       context.rect(bounds.x, bounds.y, bounds.width, bounds.height);
       context.clip();
 
-      if (gcArgs.cell.isColHeader && col?.semType == C.SEM_TYPES.AMINO_ACIDS) {
+      if (gcArgs.cell.isColHeader && col?.semType == C.SEM_TYPES.MONOMER) {
         const barBounds = renderBarchart(context, col, this.barData[col.name], bounds, this.df.filter.trueCount);
         this.barsBounds[col.name] = barBounds;
         gcArgs.preventDefault();
@@ -599,7 +599,7 @@ export class PeptidesModel {
         const table = cell.grid.table;
         const currentAAR = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
 
-        if (tableCol.semType == C.SEM_TYPES.AMINO_ACIDS)
+        if (tableCol.semType == C.SEM_TYPES.MONOMER)
           this.showMonomerTooltip(currentAAR, x, y);
         else if (cell.cell.value && renderColNames.includes(tableColName!)) {
           const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
@@ -616,7 +616,7 @@ export class PeptidesModel {
     this._sourceGrid.onCellTooltip((cell, x, y) => {
       const col = cell.tableColumn;
       const cellValue = cell.cell.value;
-      if (cellValue && col && col.semType === C.SEM_TYPES.AMINO_ACIDS)
+      if (cellValue && col && col.semType === C.SEM_TYPES.MONOMER)
         this.showMonomerTooltip(cellValue, x, y);
       return true;
     });
@@ -870,7 +870,7 @@ export class PeptidesModel {
 
     for (let i = 0; i < this._sourceGrid.columns.length; i++) {
       const aarCol = this._sourceGrid.columns.byIndex(i);
-      if (aarCol && aarCol.name && aarCol.column?.semType !== C.SEM_TYPES.AMINO_ACIDS &&
+      if (aarCol && aarCol.name && aarCol.column?.semType !== C.SEM_TYPES.MONOMER &&
         aarCol.name !== this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED])
         aarCol.visible = false;
     }
