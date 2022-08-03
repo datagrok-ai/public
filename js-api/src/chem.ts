@@ -154,7 +154,7 @@ export namespace chem {
     async getSmarts(): Promise<string | null> {
       let returnConvertedSmarts = async() => { // in case getter is called before sketcher initialized
         if(this._smiles) {
-          const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(chem.convert(this._smiles, 'smiles', 'mol'));
+          const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this._smiles);
           this._smarts = mol.get_smarts();
           mol?.delete();
           return this._smarts;
@@ -184,13 +184,21 @@ export namespace chem {
     }
 
     /** Sets the molecule, supports either SMILES or MOLBLOCK formats */
-    setMolecule(molString: string, substructure: boolean = false) {
+    async setMolecule(molString: string, substructure: boolean = false) {
       if(substructure)
         this.setSmarts(molString)
       else if (isMolBlock(molString))
         this.setMolFile(molString)
-      else
-       this.setSmiles(molString);
+      else {
+        const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molString);
+        if (!mol.has_coords())
+          mol.set_new_coords();
+        mol.normalize_depiction();
+        mol.straighten_depiction();
+        this._molfile = mol.get_molblock();
+        this.setMolFile(this._molfile);
+        mol?.delete();
+      }
     }
 
     setChangeListenerCallback(callback: () => void) {
