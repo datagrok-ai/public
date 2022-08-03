@@ -159,7 +159,7 @@ export class WebLogo extends DG.JsViewer {
       {choices: ['left', 'center', 'right']});
     this.fitArea = this.bool('fitArea', true);
     this.shrinkEmptyTail = this.bool('shrinkEmptyTail', true);
-    this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
+    this.skipEmptyPositions = this.bool('skipEmptyPositions', true);
   }
 
   private async init(): Promise<void> {
@@ -401,14 +401,26 @@ export class WebLogo extends DG.JsViewer {
     return '';
   }
 
+  protected removeWhere(array: Array<any>, predicate: (T: any) => boolean): Array<any> {
+    let length = array.length;
+    let updateIterator = 0;
+    for (let deleteIterator = 0; deleteIterator < length; deleteIterator++) {
+      if (!predicate(array[deleteIterator])) {
+        array[updateIterator] = array[deleteIterator];
+        updateIterator++;
+      }
+    }
+    array.length = updateIterator;
+    return array;
+  }
+
+
   protected _removeEmptyPositions() {
     if (this.skipEmptyPositions) {
       let length = this.positions.length;
-      for (let jPos = length; jPos >= 0; jPos--) {
-        if (this.positions[jPos] != null && this.positions[jPos].freq['-'] != null && this.positions[jPos].freq['-'].count === this.positions[jPos].rowCount) {
-          this.positions.splice(jPos, 1);
-        }
-      }
+      // write for item
+      let predicate = (item: any) => {return item != null && item.freq['-'] != null && item.freq['-'].count === item.rowCount;};
+      this.removeWhere(this.positions, predicate);
     }
   }
 
