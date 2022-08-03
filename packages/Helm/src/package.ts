@@ -134,19 +134,36 @@ export async function libraryPanel(helmColumn: DG.Column) {
   //@ts-ignore
   let loadButton = ui.button('Load Library');
   loadButton.addEventListener('click', loadDialog);
+  //@ts-ignore
+  let filesButton = ui.button('Manage');
+  filesButton.addEventListener('click', manageFiles);
   let list = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
   let usedLibraries = [];
   for (let j = 0; j <= i; j++) {
     usedLibraries.push(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, j.toString(), true));
   }
   let unusedLibraries = list.filter(x => !usedLibraries.includes(x));
-  return new DG.Widget(
-    ui.tableFromMap({
-      'Uploaded libraries': ui.divText(usedLibraries.toString()),
-      'Not used libraries': ui.divText(unusedLibraries.toString()),
-      'Upload new library': ui.divH([loadButton]),
-    })
-  );
+  return new DG.Widget(ui.splitV([
+    ui.splitH([
+      ui.tableFromMap({
+        'Uploaded libraries': ui.divText(usedLibraries.toString()),
+        'Not used libraries': ui.divText(unusedLibraries.toString()),
+      })
+    ]),
+    ui.splitH([
+      ui.divH([loadButton]),
+      ui.divH([filesButton]),
+    ])
+  ]));
+}
+
+//name: manageFiles
+export async function manageFiles() {
+  ui.dialog({title:'Manage files'})
+  .add(ui.fileBrowser({path: 'System:AppData/Helm/libraries'}).root)
+  .onOK(() => {
+  })
+  .show();
 }
 
 async function accessServer(url: string, key: string) {
