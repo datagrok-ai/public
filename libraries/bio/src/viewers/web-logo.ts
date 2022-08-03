@@ -480,7 +480,7 @@ export class WebLogo extends DG.JsViewer {
       const freq: { [c: string]: PositionMonomerInfo } = this.positions[jPos].freq;
       const rowCount = this.positions[jPos].rowCount;
 
-      let y: number = this.axisHeight;
+      let y: number = this.axisHeight * r;
 
       const entries = Object.entries(freq).sort((a, b) => {
         if (a[0] !== '-' && b[0] !== '-')
