@@ -2,7 +2,7 @@ import * as C from './constants';
 import * as DG from 'datagrok-api/dg';
 import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
 import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
-import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
+import {UnknownSeqPalette, UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as ui from 'datagrok-api/ui';
@@ -232,7 +232,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   }
 }
 
-
 export class MonomerCellRenderer extends DG.GridCellRenderer {
   get name(): string {return 'MonomerCR';}
 
@@ -312,23 +311,28 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
     const separator = gridCell.tableColumn!.tags[C.TAGS.SEPARATOR];
-    const subParts1 = s1.split(separator);
-    const subParts2 = s2.split(separator);
+    const units: string = gridCell.tableColumn!.tags[DG.TAGS.UNITS];
+    const splitter = WebLogo.getSplitter(units, separator);
+    const subParts1 = splitter(s1);
+    const subParts2 = splitter(s2);
     const [text] = processSequence(subParts1);
     const textSize = g.measureText(text.join(''));
     let updatedX = Math.max(x, x + (w - (textSize.width + subParts1.length * 4)) / 2);
     // 28 is the height of the two substitutions on top of each other + space
     const updatedY = Math.max(y, y + (h - 28) / 2);
 
-    const palette = getPalleteByType(gridCell.tableColumn!.tags[C.TAGS.ALPHABET]);
+    let palette: SeqPalette = UnknownSeqPalettes.Color;
+    if (units != 'HELM')
+      palette = getPalleteByType(units.substring(units.length - 2));
+
+    const vShift = 7;
     for (let i = 0; i < subParts1.length; i++) {
       const amino1 = subParts1[i];
       const amino2 = subParts2[i];
       const color1 = palette.get(amino1);
-      const color2 = palette.get(amino2);
 
       if (amino1 != amino2) {
-        const vShift = 7;
+        const color2 = palette.get(amino2);
         const subX0 = printLeftOrCentered(updatedX, updatedY - vShift, w, h, g, amino1, color1, 0, true);
         const subX1 = printLeftOrCentered(updatedX, updatedY + vShift, w, h, g, amino2, color2, 0, true);
         updatedX = Math.max(subX1, subX0);
