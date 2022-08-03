@@ -450,15 +450,21 @@ export function convertMolecule(molecule: string, from: string, to: string): str
 //tags: cellEditor
 //description: Molecule
 //input: grid_cell cell
-export function editMoleculeCell(cell: DG.GridCell): void {
+export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
 
   let molecule = ''
   if(unit == 'smiles'){
-    molecule = grok.chem.convert(cell.cell.value, 'smiles', 'mol');;
-  } else
-  molecule = cell.cell.value;
+    const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(cell.cell.value);
+        if (!mol.has_coords())
+          mol.set_new_coords();
+        mol.normalize_depiction();
+        mol.straighten_depiction();
+        molecule = mol.get_molblock();
+  } else {
+    molecule = cell.cell.value;
+  }
   sketcher.setMolFile(molecule)
   ui.dialog()
     .add(sketcher)
