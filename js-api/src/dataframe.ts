@@ -982,6 +982,24 @@ export class Column<T = any> {
     return api.grok_Object_ToString(this.dart);
   }
 }
+export class BigIntColumn extends Column<BigInt> {
+  /**
+   * Gets [i]-th value.
+   */
+  get(row: number): BigInt | null {
+    let v = api.grok_BigIntColumn_GetValue(this.dart, row);
+    if (v == null)
+      return null;
+    return BigInt(v);
+  }
+
+  /**
+   * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
+   */
+  set(i: number, value: BigInt | null, notify: boolean = true): void {
+    api.grok_BigIntColumn_SetValue(this.dart, i, value?.toString(), notify);
+  }
+}
 
 export class DateTimeColumn extends Column<dayjs.Dayjs> {
   /**
