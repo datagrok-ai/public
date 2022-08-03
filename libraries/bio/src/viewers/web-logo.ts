@@ -403,21 +403,12 @@ export class WebLogo extends DG.JsViewer {
 
   protected _removeEmptyPositions() {
     if (this.skipEmptyPositions) {
-      let removePositions = [];
-      for (let jPos = 0; jPos < this.positions.length; jPos++) {
-        if (this.positions[jPos] != null) {
-          if (this.positions[jPos].freq['-'] != null) {
-            if (this.positions[jPos].freq['-'].count === this.positions[jPos].rowCount) {
-              removePositions.push(jPos);
-            }
-          }
+      let length = this.positions.length;
+      for (let jPos = length; jPos >= 0; jPos--) {
+        if (this.positions[jPos] != null && this.positions[jPos].freq['-'] != null && this.positions[jPos].freq['-'].count === this.positions[jPos].rowCount) {
+          this.positions.splice(jPos, 1);
         }
       }
-      // remove element with indexes in removePositions
-      removePositions.sort((a, b) => b - a);
-      removePositions.forEach((jPos) => {
-        this.positions.splice(jPos, 1);
-      });
     }
   }
 
