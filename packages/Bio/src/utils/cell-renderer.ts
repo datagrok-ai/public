@@ -66,36 +66,46 @@ function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false, drawStyle: string = 'classic', maxWord: string = ''): number {
+  separator: string = '', last: boolean = false, drawStyle: string = 'classic', maxWord:any={}, maxWordIdx:number=0, gridCell:any = {}): number {
   g.textAlign = 'start';
   const colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
+  if (drawStyle === 'msa') {
+    grayPart = ' ';
+  }
 
-  let textSize = g.measureText(colorPart + grayPart);
+  let textSize: any = g.measureText(colorPart + grayPart);
   const indent = 5;
 
-  let colorTextSize = g.measureText(colorPart);
-  if (drawStyle === 'msa') {
-    colorTextSize = g.measureText(maxWord);
-    textSize = g.measureText(maxWord + grayPart);
-  }
+  let colorTextSize = g.measureText(colorPart).width;
   const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
+  textSize = textSize.width;
+  if (drawStyle === 'msa') {
+    if (colorTextSize > maxWord) {
+      maxWord[maxWordIdx] = colorTextSize;
+      gridCell.cell.column.temp = maxWord;
+    }
+    colorTextSize = maxWord[maxWordIdx];
+    textSize = maxWord[maxWordIdx];
+  }
 
   function draw(dx1: number, dx2: number): void {
     g.fillStyle = color;
     g.globalAlpha = transparencyRate;
     g.fillText(colorPart, x + dx1, y + dy);
-    g.fillStyle = grayColor;
-    g.fillText(grayPart, x + dx2, y + dy);
+    if (drawStyle === 'classic') {
+      g.fillStyle = grayColor;
+      g.fillText(grayPart, x + dx2, y + dy);
+    }
   }
 
-  if (left || textSize.width > w) {
-    draw(indent, indent + colorTextSize.width);
-    return x + colorTextSize.width + g.measureText(grayPart).width;
+  if (left || textSize > w) {
+    draw(indent, indent + colorTextSize);
+    return x + colorTextSize + g.measureText(grayPart).width;
   } else {
-    const dx = (w - textSize.width) / 2;
-    draw(dx, dx + colorTextSize.width);
-    return x + dx + colorTextSize.width;
+    const dx = (w - textSize) / 2;
+    draw(dx, dx + colorTextSize);
+    return x + dx + colorTextSize;
   }
 }
 
@@ -202,6 +212,29 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const separator = gridCell.cell.column.getTag('separator') ?? '';
       const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator'));
 
+      // обработка новых елементов
+      const columns = gridCell.cell.column.categories;
+      let maxLengthWords = {};
+      // check if gridCell.cell.column.temp is array
+      if (gridCell.cell.column.getTag('.calculatedCellRender') !== 'exist') {
+        for (let i = 0; i < columns.length; i++) {
+          let subParts: string[] = splitterFunc(columns[i]);
+          subParts.forEach((amino, index) => {
+            //@ts-ignore
+            let textSizeWidth = g.measureText(WebLogo.monomerToText(amino) + ' ');
+            //@ts-ignore
+            if (textSizeWidth.width > (maxLengthWords[index] ?? 0)) {
+              //@ts-ignore
+              maxLengthWords[index] = textSizeWidth.width;
+            }
+          });
+        }
+        gridCell.cell.column.temp = maxLengthWords;
+        gridCell.cell.column.setTag('.calculatedCellRender', 'exist');
+      } else {
+        maxLengthWords = gridCell.cell.column.temp;
+      }
+
       const subParts: string[] = splitterFunc(cell.value);
       let x1 = x;
       let color = undefinedColor;
@@ -223,7 +256,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         color = palette.get(amino);
         g.fillStyle = undefinedColor;
         let last = index === subParts.length - 1;
-        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last, drawStyle, maxWord);
+        x1 = printLeftOrCentered(x1, y, w, h, g, WebLogo.monomerToText(amino), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell);
       });
 
       g.restore();
