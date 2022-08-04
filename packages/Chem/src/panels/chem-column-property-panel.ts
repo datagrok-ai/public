@@ -79,7 +79,11 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     const sketcher = new DG.chem.chem.Sketcher();
     sketcher.syncCurrentObject = false;
     sketcher.setMolFile(col.tags['chem-scaffold']);
-    sketcher.onChanged.subscribe((_: any) => col.tags['chem-scaffold'] = sketcher.getMolFile());
+    sketcher.onChanged.subscribe((_: any) => {
+      const molFile = sketcher.getMolFile();
+      col.tags['chem-scaffold'] = molFile;
+      col.temp['chem-scaffold'] = molFile;
+    });
     return sketcher.root;
   });
 
