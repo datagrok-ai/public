@@ -1,5 +1,5 @@
 
-import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS} from './map';
+import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, delimiter} from './map';
 import {asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, asoGapmersGcrsToNucleotides,
   asoGapmersGcrsToBioSpring, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
@@ -208,7 +208,7 @@ export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
   let codes: string[] = [];
   for (const technology of Object.keys(map[synthesizer]))
     codes = codes.concat(Object.keys(map[synthesizer][technology]));
-  return codes.concat(Object.keys(MODIFICATIONS)).concat(',');
+  return codes.concat(Object.keys(MODIFICATIONS)).concat(delimiter);
 }
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): string[] {

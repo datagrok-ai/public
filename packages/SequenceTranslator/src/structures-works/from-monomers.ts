@@ -1,4 +1,4 @@
-import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS} from './map';
+import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, delimiter} from './map';
 import {isValidSequence} from './sequence-codes-tools';
 import {getNucleotidesMol} from './mol-transformations';
 
@@ -12,7 +12,7 @@ export function sequenceToMolV3000(sequence: string, inverted: boolean = false, 
   const links = ['s', 'ps', '*'];
   const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
-  codes = codes.concat(dropdowns).concat(',');
+  codes = codes.concat(dropdowns).concat(delimiter);
   while (i < sequence.length) {
     const code = codes.find((s: string) => s == sequence.slice(i, i + s.length))!;
     i += code.length;
@@ -48,7 +48,7 @@ export function sequenceToSmiles(sequence: string, inverted: boolean = false, fo
   const links = ['s', 'ps', '*'];
   const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
-  codes = codes.concat(dropdowns).concat(',');
+  codes = codes.concat(dropdowns).concat(delimiter);
   while (i < sequence.length) {
     const code = codes.find((s: string) => s == sequence.slice(i, i + s.length))!;
     i += code.length;
@@ -98,7 +98,7 @@ function getObjectWithCodesAndSmiles(sequence: string, format: string) {
         obj[code] = map[format][technology][code].SMILES;
     }
   }
-  obj[','] = '';
+  obj[delimiter] = '';
   // TODO: create object based from synthesizer type to avoid key(codes) duplicates
   const output = isValidSequence(sequence, format);
   if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12))
