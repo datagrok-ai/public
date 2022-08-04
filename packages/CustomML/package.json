@@ -1,6 +1,10 @@
 {
   "name": "@datagrok/custom-ml",
   "beta": true,
+  "author": {
+    "name": "Konstantin Doncov",
+    "email": "kdoncov@datagrok.ai"
+  },
   "friendlyName": "CustomML",
   "version": "0.0.5",
   "description": "CustomML is a [package](https://datagrok.ai/help/develop/develop#packages) for the [custom machine learning models](https://datagrok.ai/help/learn/custom-ml-models).",

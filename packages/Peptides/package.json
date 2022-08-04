@@ -1,6 +1,10 @@
 {
   "name": "@datagrok/peptides",
   "version": "1.0.1",
+  "author": {
+    "name": "Volodymyr Dyma",
+    "email": "vdyma@datagrok.ai"
+  },
   "description": "Provides advanced tools for analyzing collections of peptides.",
   "repository": {
     "type": "git",

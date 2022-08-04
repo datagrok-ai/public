@@ -2,6 +2,10 @@
   "name": "@datagrok/pubchem-api",
   "friendlyName": "PubChem",
   "version": "0.2.2",
+  "author": {
+    "name": "Volodymyr Dyma",
+    "email": "vdyma@datagrok.ai"
+  },
   "description": "",
   "repository": {
     "type": "git",

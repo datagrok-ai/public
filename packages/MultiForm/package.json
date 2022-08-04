@@ -1,6 +1,10 @@
 {
   "name": "@datagrok/multi-form",
   "version": "0.2.1",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
   "fullName": "MultiForm",
   "description": "MultiForm viewer provides a convenient way to visualize a set of selected rows.",
   "repository": {

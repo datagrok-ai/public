@@ -1,7 +1,0 @@
-entity:
-  properties:
-    kind: string
-    description: string
-    domain: string
-    dateCreated: datetime
-    dateModified: datetime

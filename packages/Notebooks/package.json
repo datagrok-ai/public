@@ -2,6 +2,10 @@
   "name": "@datagrok/notebooks",
   "fullName": "Notebooks",
   "version": "1.0.0",
+  "author": {
+    "name": "Alexander Paramonov",
+    "email": "aparamomov@datagrok.ai"
+  },
   "description": "JupyterLab Notebooks integration package",
   "repository": {
     "type": "git",

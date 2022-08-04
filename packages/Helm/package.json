@@ -3,6 +3,10 @@
   "beta": false,
   "friendlyName": "Helm",
   "version": "2.0.2",
+  "author": {
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
+  },
   "description": "",
   "dependencies": {
     "datagrok-api": "^1.5.0",

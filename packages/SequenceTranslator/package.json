@@ -2,6 +2,10 @@
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
   "version": "1.0.4",
+  "author": {
+    "name": "Vadym Kovadlo",
+    "email": "vkovadlo@datagrok.ai"
+  },
   "description": "SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform, used to translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
   "repository": {
     "type": "git",

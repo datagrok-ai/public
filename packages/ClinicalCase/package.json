@@ -1,6 +1,10 @@
 {
   "name": "@datagrok/clinical-case",
   "friendlyName": "Clinical Case",
+  "author": {
+    "name": "Maria Dolotova",
+    "email": "maria.dolotova@arcadia.spb.ru"
+  },
   "version": "0.1.2",
   "description": "Provides support for dealing with clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
   "repository": {

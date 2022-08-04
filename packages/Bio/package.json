@@ -2,6 +2,10 @@
   "name": "@datagrok/bio",
   "beta": false,
   "friendlyName": "Bio",
+  "author": {
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
+  },
   "version": "1.7.22",
   "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
   "repository": {

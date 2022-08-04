@@ -6,6 +6,10 @@
 		"css/viewers-gallery.css"
 	],
 	"version": "1.0.3",
+	"author": {
+		"name": "Andrew Skalkin",
+		"email": "askalkin@datagrok.ai"
+	},
 	"description": "",
 	"repository": {
 		"type": "git",

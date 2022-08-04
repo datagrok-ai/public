@@ -2,6 +2,10 @@
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
 	"version": "0.9.1",
+	"author": {
+		"name": "Aufar Zakiev",
+		"email": "aufar.zakiev@arcadia.spb.ru"
+	},
 	"description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)",
 	"repository": {
     "type": "git",

@@ -1,6 +1,10 @@
 {
   "name": "@datagrok/swaggers",
   "version": "0.1.1",
+  "author": {
+    "name": "Alexander Paramonov",
+    "email": "aparamomov@datagrok.ai"
+  },
   "fullName": "Swaggers",
   "description": "Collection of Swagger",
   "repository": {

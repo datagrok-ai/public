@@ -2,6 +2,10 @@
   "name": "@datagrok/meta",
   "version": "1.1.55",
   "description": "Meta information for @datagrok scope",
+  "author": {
+    "name": "Alexander Paramonov",
+    "email": "aparamomov@datagrok.ai"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

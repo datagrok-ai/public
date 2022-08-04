@@ -2,6 +2,10 @@
 	"name": "@datagrok/cdm",
 	"friendlyName": "CDM",
 	"version": "0.0.1",
+	"author": {
+		"name": "Maria Dolotova",
+		"email": "maria.dolotova@arcadia.spb.ru"
+	},
 	"description": "",
 	"dependencies": {
 		"ts-loader": "latest",

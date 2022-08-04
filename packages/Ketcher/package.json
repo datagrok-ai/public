@@ -3,6 +3,10 @@
 	"beta": false,
 	"friendlyName": "Ketcher",
 	"version": "1.0.1",
+	"author": {
+		"name": "Maria Dolotova",
+		"email": "maria.dolotova@arcadia.spb.ru"
+	},
 	"description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
 	"repository": {
 		"type": "git",
