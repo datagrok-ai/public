@@ -417,8 +417,7 @@ export class WebLogo extends DG.JsViewer {
 
   protected _removeEmptyPositions() {
     if (this.skipEmptyPositions) {
-      let predicate = (item: any) => {return item != null && item.freq['-'] != null && item.freq['-'].count === item.rowCount;};
-      this.removeWhere(this.positions, predicate);
+      this.removeWhere(this.positions, item => item?.freq['-']?.count === item.rowCount);
     }
   }
 
