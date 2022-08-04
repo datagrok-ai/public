@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 //import {lru} from '../../Bio/src/utils/cell-renderer';
-import {NotationConverter, NOTATION} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {createJsonMonomerLibFromSdf} from './utils';
 import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
@@ -27,7 +28,7 @@ export async function initHelm(): Promise<void> {
 }
 
 //name: initHelp
-export function initHelp(){
+export function initHelp() {
   return;
 }
 
@@ -159,11 +160,11 @@ export async function libraryPanel(helmColumn: DG.Column) {
 
 //name: manageFiles
 function manageFiles() {
-  let a = ui.dialog({title:'Manage files'})
-  //@ts-ignore
-  .add(ui.fileBrowser({path: 'System:AppData/Helm/libraries'}).root)
-  .addButton('OK', () => a.close())
-  .show();
+  const a = ui.dialog({title: 'Manage files'})
+    //@ts-ignore
+    .add(ui.fileBrowser({path: 'System:AppData/Helm/libraries'}).root)
+    .addButton('OK', () => a.close())
+    .show();
 }
 
 async function accessServer(url: string, key: string) {
