@@ -214,7 +214,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
       const columns = gridCell.cell.column.categories;
       let monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
-      let maxLengthOfMonomer = 5;
+      let maxLengthOfMonomer = 8;
 
       let maxLengthWords = {};
       // check if gridCell.cell.column.temp is array
