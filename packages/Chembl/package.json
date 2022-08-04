@@ -1,9 +1,10 @@
 {
   "name": "@datagrok/chembl",
-  "tags": [
-    "chem"
-  ],
-  "version": "1.0.10",
+  "version": "1.0.11",
+  "author": {
+		"name": "Leonid Stolbov",
+		"email": "lstolbov@datagrok.ai"
+	},
   "fullName": "Chembl",
   "description": "Chembl integration",
   "repository": {
@@ -44,9 +45,5 @@
 	"canView": [
 		"All users"
 	],
-	"category": "Cheminformatics",
-  "author": {
-    "name" : "Leonid Stolbov",
-    "email" : "lstolbov@datagrok.ai"
-  }
+	"category": "Cheminformatics"
 }
