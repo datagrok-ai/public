@@ -39,7 +39,7 @@ function molecularWeight(sequence: string, weightsObj: {[index: string]: number}
   while (i < sequence.length) {
     const matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
     weight += weightsObj[sequence.slice(i, i + matchedCode.length)];
-    i += matchedCode!.length;
+    i += matchedCode.length;
   }
   return weight - 61.97;
 }
@@ -56,10 +56,10 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   const typeColumn = table.getCol(COL_NAMES.TYPE);
   let result = '';
   for (let i = 0; i < table.rowCount; i++) {
-    const format = getFormat(structureColumn.get(i));
+    const format = getFormat(structureColumn.get(i))!;
     result += (typeColumn.get(i) == 'SS') ?
-      sequenceToMolV3000(structureColumn.get(i), false, true, format!) + '\n' + `>  <Sequence>\nSense Strand\n\n` :
-      sequenceToMolV3000(structureColumn.get(i), true, true, format!) + '\n' + `>  <Sequence>\nAnti Sense\n\n`;
+      sequenceToMolV3000(structureColumn.get(i), false, true, format) + '\n' + `>  <Sequence>\nSense Strand\n\n` :
+      sequenceToMolV3000(structureColumn.get(i), true, true, format) + '\n' + `>  <Sequence>\nAnti Sense\n\n`;
     for (const col of table.columns) {
       if (col.name != COL_NAMES.SEQUENCE)
         result += `>  <${col.name}>\n${col.get(i)}\n\n`;
@@ -72,7 +72,6 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   element.click();
 }
 
-//tags: autostart
 export function autostartOligoSdFileSubscription() {
   grok.events.onViewAdded.subscribe((v: any) => {
     if (v.type == 'TableView') {
@@ -126,7 +125,7 @@ export function oligoSdFile(table: DG.DataFrame) {
 
   function addColumns(t: DG.DataFrame, saltsDf: DG.DataFrame) {
     if (t.columns.contains(COL_NAMES.COMPOUND_NAME))
-      return grok.shell.error('Columns already exist!');
+      return grok.shell.error('Columns already exist');
 
     const sequence = t.getCol(COL_NAMES.SEQUENCE);
     const salt = t.getCol(COL_NAMES.SALT);
