@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {getAllCodesOfSynthesizer} from './sequence-codes-tools';
 
+export const delimiter = ';';
 export const SYNTHESIZERS = {
   RAW_NUCLEOTIDES: 'Raw Nucleotides',
   BIOSPRING: 'BioSpring Codes',
