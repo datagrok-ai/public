@@ -1,0 +1,33 @@
+.funccall-card:hover {
+    box-shadow: 0px 0px 3px #b8bac0;
+    cursor: pointer;
+}
+
+.funccall-card {
+    padding: 5px;
+    justify-content: space-between;
+}
+
+.funccall-card-icons {
+    align-items: center;
+}
+
+.funccall-card-icons .grok-icon{
+    margin: 5px;
+}
+
+.funccall-card .title {
+    font-size: 13px;
+    color: var(--grey-5);
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.funccall-card .description {
+    margin-bottom: 2px;
+}
+
+.funccall-card .date {
+    color: var(--grey-3);
+    margin-left: 5px;
+}

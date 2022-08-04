@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FunctionView} from './function-view';
+import '../css/computation-view.css';
 
 /**
  * Base class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md).
@@ -26,6 +27,12 @@ export class ComputationView extends FunctionView {
     * @stability Stable
   */
   constructor(funcName?: string) {
+    const url = new URL(grok.shell.startUri);
+    const runId = url.searchParams.get('id');
+    console.log(grok.shell.startUri);
+    console.log('url ', url);
+    console.log('runId ', runId);
+
     super();
 
     this.parentCall = grok.functions.getCurrentCall();
@@ -33,21 +40,30 @@ export class ComputationView extends FunctionView {
     this.basePath = `/${grok.functions.getCurrentCall()?.func.name}`;
 
     ui.setUpdateIndicator(this.root, true);
-    if (funcName) {
-      grok.functions.eval(funcName).then(async (func: DG.Func) => {
-        const funccall = func.prepare({});
-        this.linkFunccall(funccall);
-        await this.init();
-        this.build();
-      }).finally(() => {
-        ui.setUpdateIndicator(this.root, false);
-      });
-    } else {
+    if (runId) {
       setTimeout(async () => {
+        this.linkFunccall(await this.loadRun(runId));
         await this.init();
         this.build();
         ui.setUpdateIndicator(this.root, false);
       }, 0);
+    } else {
+      if (funcName) {
+        grok.functions.eval(funcName).then(async (func: DG.Func) => {
+          const funccall = func.prepare({});
+          this.linkFunccall(funccall);
+          await this.init();
+          this.build();
+        }).finally(() => {
+          ui.setUpdateIndicator(this.root, false);
+        });
+      } else {
+        setTimeout(async () => {
+          await this.init();
+          this.build();
+          ui.setUpdateIndicator(this.root, false);
+        }, 0);
+      }
     }
 
     grok.shell.o = this.historyRoot;
@@ -72,6 +88,24 @@ export class ComputationView extends FunctionView {
     * @stability Stable
   */
   reportBug: (() => Promise<void>) | null = null;
+
+  override buildRibbonPanels() {
+    super.buildRibbonPanels();
+
+    const historyButton = ui.iconFA('history', () => {
+      grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
+      historyButton.classList.toggle('d4-current');
+    });
+
+    historyButton.classList.add('d4-toggle-button');
+
+    const newRibbonPanels = [
+      ...this.getRibbonPanels(),
+      [ui.div(historyButton)] as HTMLElement[]
+    ];
+    this.setRibbonPanels(newRibbonPanels);
+    return newRibbonPanels;
+  }
 
   /**
    * Looks for {@link reportBug}, {@link getHelp} and {@link exportConfig} members and creates model menus
@@ -139,40 +173,108 @@ export class ComputationView extends FunctionView {
       return form;
     });
 
-    const renderSavedCard = async (funcCall: DG.FuncCall) => {
-      const currentUser = await grok.dapi.users.current();
+    const showPinDialog = (funcCall: DG.FuncCall) => {
+      let title = funcCall.options['title'] ?? '';
+      let annotation = funcCall.options['annotation'] ?? '';
 
-      return ui.divV([
-        ui.h3(funcCall.aux['Title'] ?? 'My custom title'),
-        ui.divText(funcCall.aux['Annotation'] ?? 'My custom annotation with some details'),
-        ui.render(currentUser),
-      ]);
+      ui.dialog({title: 'Pin run'})
+        .add(ui.form([
+          ui.stringInput('Title', title, (s: string) => { title = s; }, {clearIcon: true, placeholder: 'Enter run title here...'}),
+          ui.stringInput('Annotation', annotation, (s: string) => { annotation = s; }, {clearIcon: true, placeholder: 'Enter annotation title here...'}),
+        ]))
+        .onOK(async () => {
+          if (title.length > 0) {
+            funcCall.options['title'] = title;
+            funcCall.options['annotation'] = annotation;
+            await this.pinRun(funcCall);
+          } else { showPinDialog(funcCall); }
+        })
+        .show();
+    };
+
+    const renderPinnedCard = async (funcCall: DG.FuncCall) => {
+      // FIXME: black magic to get author
+      const author = DG.toJs(funcCall.dart.x2.a);
+
+      const card = ui.divH([
+        ui.divV([
+          ui.divText(funcCall.options['title'] ?? 'Default title', 'title'),
+          ...(funcCall.options['annotation']) ? [ui.divText(funcCall.options['annotation'], 'description')]: [],
+          ui.divH([ui.render(author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
+        ]),
+        ui.divH([
+          ui.iconFA('pen', async (ev) => {
+            showPinDialog(funcCall);
+            ev.stopPropagation();
+          }, 'Edit run metadata')
+        ], 'funccall-card-icons')
+      ], 'funccall-card');
+
+      return card;
     };
 
     const renderHistoryCard = async (funcCall: DG.FuncCall) => {
-      const currentUser = await grok.dapi.users.current();
+      // FIXME: black magic to get author
+      const author: DG.User = DG.toJs(funcCall.dart.x2.a);
+      const icon = author.picture as HTMLElement;
+      icon.style.width = '25px';
+      icon.style.height = '25px';
+      icon.style.fontSize = '20px';
+      icon.style.marginRight = '3px';
+      icon.style.alignSelf = 'center';
+      const userLabel = ui.label(author.friendlyName, 'd4-link-label');
+      ui.bind(author, userLabel);
 
-      return ui.divV([
-        ui.h3(funcCall.aux['Title'] ?? 'My custom title'),
-        ui.render(currentUser),
-      ]);
+      const card = ui.divH([
+        ui.divH([
+          icon,
+          ui.divV([
+            userLabel,
+            ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})])
+          ]),
+        ]),
+        ui.divH([
+          ui.iconFA('star', async (ev) => {
+            showPinDialog(funcCall);
+            ev.stopPropagation();
+          }, 'Pin the run'),
+          ui.iconFA('share-alt', async (ev) => {
+            const url = grok.shell.startUri.substring(0, grok.shell.startUri.indexOf(`?id`));
+            await navigator.clipboard.writeText(`${url}?id=${funcCall.id}`);
+            ev.stopPropagation();
+          }, 'Copy link to the run'),
+          ui.iconFA('trash-alt', async (ev) => {
+            await this.deleteRun(funcCall);
+            ev.stopPropagation();
+          }, 'Delete the run'),
+        ], 'funccall-card-icons')
+      ], 'funccall-card');
+
+      card.addEventListener('click', async () => {
+        await this.loadRun(funcCall.id);
+      });
+
+      return card;
     };
 
-    mainAcc.addPane('Saved', () => ui.wait(async () => {
+    mainAcc.addPane('Pinned', () => ui.wait(async () => {
       const historicalRuns = await this.pullRuns(this.func!.id);
-
-      return ui.divV(historicalRuns.filter((run) => run.id.lastIndexOf('0') > 14).map((run) => ui.wait(() => renderSavedCard(run))));
+      const pinnedRuns = historicalRuns.filter((run) => run.options['isPinned']);
+      if (pinnedRuns.length > 0)
+        return ui.divV(pinnedRuns.map((run) => ui.wait(() => renderPinnedCard(run))));
+      else
+        return ui.divText('Pin run in history panel to have quick access to it', 'description');
     }));
 
     mainAcc.addPane('History', () => ui.wait(async () => {
       const historicalRuns = await this.pullRuns(this.func!.id);
-
       return ui.divV(historicalRuns.map((run) => ui.wait(() => renderHistoryCard(run))));
     }));
 
     const newHistoryBlock = mainAcc.root;
     ui.empty(this.historyRoot);
     this.historyRoot.style.removeProperty('justify-content');
+    this.historyRoot.style.width = '100%';
     this.historyRoot.append(newHistoryBlock);
     return newHistoryBlock;
   }
