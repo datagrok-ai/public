@@ -357,6 +357,10 @@ export class WebLogo extends DG.JsViewer {
       this.updatePositions();
       this.render(true);
       break;
+    case 'skipEmptyPositions':
+      this.updatePositions();
+      this.render(true);
+      break;
     }
   }
 
