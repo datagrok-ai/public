@@ -12,7 +12,7 @@ export function sequenceToMolV3000(sequence: string, inverted: boolean = false, 
   const links = ['s', 'ps', '*'];
   const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
-  codes = codes.concat(dropdowns);
+  codes = codes.concat(dropdowns).concat(',');
   while (i < sequence.length) {
     const code = codes.find((s: string) => s == sequence.slice(i, i + s.length))!;
     i += code.length;
@@ -48,7 +48,7 @@ export function sequenceToSmiles(sequence: string, inverted: boolean = false, fo
   const links = ['s', 'ps', '*'];
   const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
-  codes = codes.concat(dropdowns);
+  codes = codes.concat(dropdowns).concat(',');
   while (i < sequence.length) {
     const code = codes.find((s: string) => s == sequence.slice(i, i + s.length))!;
     i += code.length;
@@ -98,6 +98,7 @@ function getObjectWithCodesAndSmiles(sequence: string, format: string) {
         obj[code] = map[format][technology][code].SMILES;
     }
   }
+  obj[','] = '';
   // TODO: create object based from synthesizer type to avoid key(codes) duplicates
   const output = isValidSequence(sequence, format);
   if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12))
