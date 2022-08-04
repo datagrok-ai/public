@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser",
   "fullName": "MolecularLiabilityBrowser",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
@@ -21,8 +21,8 @@
     "css/vd-regions-viewer.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^3.0.1",
-    "@datagrok/bio": "^1.7.22",
+    "@datagrok-libraries/bio": "^3.0.2",
+    "@datagrok/bio": "^1.7.23",
     "@datagrok/molecular-liability-browser-data": "^1.1.2",
     "@deck.gl/core": "^8.7.5",
     "@deck.gl/layers": "^8.7.5",

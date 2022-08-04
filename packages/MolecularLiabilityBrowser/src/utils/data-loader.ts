@@ -98,6 +98,8 @@ export abstract class DataLoader {
 
   abstract get cdrMap(): CdrMapType;
 
+  abstract get refDfPromise(): Promise<void>;
+
   abstract get refDf(): DG.DataFrame;
 
   abstract init(startInit: number, serverListVersionDf: DG.DataFrame);

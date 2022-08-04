@@ -39,6 +39,8 @@ export class DataLoaderDb extends DataLoader {
   private _mutcodes: MutcodesDataType;
   private _ptmMap: PtmMapType;
   private _cdrMap: CdrMapType;
+
+  private _refDfPromise: Promise<void>;
   private _refDf: DG.DataFrame;
 
 
@@ -59,6 +61,8 @@ export class DataLoaderDb extends DataLoader {
   get ptmMap(): PtmMapType { return this._ptmMap; }
 
   get cdrMap(): CdrMapType { return this._cdrMap; }
+
+  get refDfPromise(): Promise<void> { return this._refDfPromise; }
 
   get refDf(): DG.DataFrame { return this._refDf; }
 
@@ -81,6 +85,34 @@ export class DataLoaderDb extends DataLoader {
 
     this.cache = new MlbDatabase();
     this.cache.init(this._serverListVersionDf);
+
+    //TODO move data to DB, get only usefull VR ids
+    //load ptm in cdr
+    this._refDfPromise = this.cache.getObject<string>(this._files.ptmInCdr,
+      async () => {
+        const t1: number = Date.now();
+        const data: Uint8Array = await grok.dapi.files
+          .readAsBytes(`System:AppData/${this._pName}/${this._files.ptmInCdr}`);
+        const t2: number = Date.now();
+        const txtBase64: string = encodeToBase64(data);
+        const t3: number = Date.now();
+        console.debug('MLB: DataLoaderDb.init2() refDf ' +
+          `loading bytes ET ${((t2 - t1) / 1000).toString()} s, ` +
+          `encode base64 ET ${((t3 - t2) / 1000).toString()} s`);
+        return txtBase64;
+      })
+      .then((txtBase64: string) => {
+        const t1: number = Date.now();
+        const data: Uint8Array = decodeFromBase64(txtBase64);
+        const t2: number = Date.now();
+        const df: DG.DataFrame = DG.DataFrame.fromByteArray(data);
+        const t3: number = Date.now();
+        console.debug('MLB: DataLoaderDb.init2() refDf ' +
+          `decode base64 ET ${((t2 - t1) / 1000).toString()} s, ` +
+          `fromByteArray ET ${((t3 - t2) / 1000).toString()} s`);
+        console.debug(`MLB: DataLoaderDb.init2() set refDf, ${this.fromStartInit()} s`);
+        this._refDf = df;
+      });
 
     await Promise.all([
       //load numbering schemes
@@ -185,33 +217,6 @@ export class DataLoaderDb extends DataLoader {
           console.debug(`MLB: DataLoaderDb.init2() set cdrMap, ${this.fromStartInit()} s`);
           this._cdrMap = value;
         }),
-      //load ptm in cdr
-      //TODO move data to DB, get only usefull VR ids
-      this.cache.getObject<string>(this._files.ptmInCdr,
-        async () => {
-          const t1: number = Date.now();
-          const data: Uint8Array = await grok.dapi.files
-            .readAsBytes(`System:AppData/${this._pName}/${this._files.ptmInCdr}`);
-          const t2: number = Date.now();
-          const txtBase64: string = encodeToBase64(data);
-          const t3: number = Date.now();
-          console.debug('MLB: DataLoaderDb.init2() refDf ' +
-            `loading bytes ET ${((t2 - t1) / 1000).toString()} s, ` +
-            `encode base64 ET ${((t3 - t2) / 1000).toString()} s`);
-          return txtBase64;
-        })
-        .then((txtBase64: string) => {
-          const t1: number = Date.now();
-          const data: Uint8Array = decodeFromBase64(txtBase64);
-          const t2: number = Date.now();
-          const df: DG.DataFrame = DG.DataFrame.fromByteArray(data);
-          const t3: number = Date.now();
-          console.debug('MLB: DataLoaderDb.init2() refDf ' +
-            `decode base64 ET ${((t2 - t1) / 1000).toString()} s, ` +
-            `fromByteArray ET ${((t3 - t2) / 1000).toString()} s`);
-          console.debug(`MLB: DataLoaderDb.init2() set refDf, ${this.fromStartInit()} s`);
-          this._refDf = df;
-        }),
     ]);
 
     console.debug('MLB: DataLoaderDb.init2() end, ' + `${this.fromStartInit()} s`);
@@ -227,10 +232,6 @@ export class DataLoaderDb extends DataLoader {
     return df;
   }
 
-  // async load3D(vid:string): Promise<[JsonType, string, NumsType, ObsPtmType]>{
-  //
-  // }
-
   async loadMlbDf(): Promise<DG.DataFrame> {
     const df = await grok.functions.call(`${this._pName}:GetMolecularLiabilityBrowser`);
     // 'ngl' column have been removed from query 2022-04
@@ -241,6 +242,34 @@ export class DataLoaderDb extends DataLoader {
   async loadTreeDf(): Promise<DG.DataFrame> {
     const dfTxt: string = await grok.dapi.files.readAsText(`System:Data/${this._pName}/${this._files.tree}`);
     return DG.DataFrame.fromCsv(dfTxt);
+  }
+
+  // -- 3D --
+
+  async loadJson(vid: string): Promise<JsonType> {
+    if (!this.vids.includes(vid))
+      return null;
+
+    const df = await grok.functions.call(`${this._pName}:getJsonByVid`, {vid: vid});
+    const jsonTxt = df.columns.byIndex(0).get(0);
+    return jsonTxt ? JSON.parse(jsonTxt) : null;
+  }
+
+  async loadPdb(vid: string): Promise<string> {
+    if (!this.vids.includes(vid))
+      return null;
+
+    return (await grok.functions.call(`${this._pName}:getPdbByVid`, {vid: vid}))
+      .columns.byIndex(0).get(0);
+  }
+
+  async loadRealNums(vid: string): Promise<NumsType> {
+    if (!this.vids.includes(vid))
+      return null;
+
+    const jsonTxt = (await grok.functions.call(`${this._pName}:getJsonComplementByVid`, {vid: vid}))
+      .columns.byIndex(0).get(0);
+    return jsonTxt ? JSON.parse(jsonTxt) : null;
   }
 
   // -- 3D --
