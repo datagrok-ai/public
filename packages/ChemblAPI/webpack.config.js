@@ -1,25 +1,40 @@
 const path = require('path');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
+const mode = 'production';
+const webpack = require('webpack');
 
 module.exports = {
-  mode: 'development',
+  mode: mode,
   entry: {
-    package: './src/package.js'
+    test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
+    package: './src/package.ts'
+  },
+  resolve: {
+    fallback: { "url": false },
+    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+  },
+  module: {
+    rules: [
+      { test: /\.tsx?$/, loader: 'ts-loader' },
+      { test: /\.css$/, use: ['style-loader', 'css-loader'] },
+      { test: /\.(jpe?g|gif|png|svg|sdf)$/, loader: "file-loader" }
+    ],
   },
   devtool: 'inline-source-map',
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
-    'datagrok-api/ui': 'ui',
-    'openchemlib/full.js': 'OCL',
-    'rxjs': 'rxjs',
-    'rxjs/operators': 'rxjs.operators',
-    'cash-dom': '$',
-    'dayjs': 'dayjs',
+    'datagrok-api/ui': 'ui'
   },
   output: {
     filename: '[name].js',
-    library: 'chemblapi',
+    library: packageName,
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
+  plugins:[
+    new webpack.DefinePlugin({
+        process: {env: {}}
+    })
+  ]
 };
