@@ -159,7 +159,7 @@ export class WebLogo extends DG.JsViewer {
       {choices: ['left', 'center', 'right']});
     this.fitArea = this.bool('fitArea', true);
     this.shrinkEmptyTail = this.bool('shrinkEmptyTail', true);
-    this.skipEmptyPositions = this.bool('skipEmptyPositions', true);
+    this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
   }
 
   private async init(): Promise<void> {
