@@ -240,10 +240,18 @@ function getRS(smiles: string) {
 
 async function monomerManager(value: string) {
   let df: any[];
+  let file;
+  let dfSdf;
   if (value.endsWith('.sdf')) {
-    const file = await _package.files.readAsBytes(`${LIB_PATH}${value}`);
-    const dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
-    df = createJsonMonomerLibFromSdf(dfSdf[0]);
+    const funcList: DG.Func[] = DG.Func.find({package: 'Chem', name: 'importSdf'});
+    console.debug(`Helm: initHelm() funcList.length = ${funcList.length}`);
+    if (funcList.length === 1) {
+      file = await _package.files.readAsBytes(`${LIB_PATH}${value}`);
+      dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
+      df = createJsonMonomerLibFromSdf(dfSdf[0]);
+    } else {
+      grok.shell.warning("Chem package is not installed");
+    }
   } else {
     const file = await _package.files.readAsText(`${LIB_PATH}${value}`);
     df = JSON.parse(file);
