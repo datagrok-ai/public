@@ -409,7 +409,10 @@ export class TreeBrowser extends DG.JsViewer {
     const treeItems = this.cloneIndex[cloneId].items;
 
     this.treeDf.currentRowIdx = index;
-    this.phyloTreeViewer.setProps({source: this._takeTreeAt(index)});
+    const treeTxt: string = this._takeTreeAt(index);
+    const treeClosePos: number = treeTxt.substring(0, treeTxt.length - 2).lastIndexOf(')');
+    const treeTxtClean = treeTxt.substring(1, treeClosePos + 1) + ';';
+    this.phyloTreeViewer.setProps({source: treeTxtClean});
 
     /**
      * Modifies node styles to mark intersected node ids.

@@ -162,10 +162,10 @@ export class TwinPviewer {
   }
 
   public async show(mlbView: DG.TableView) {
-    const reload = async (val: boolean) => {
+    const doReload = async (reload: boolean) => {
       this.pViz.render('H');
       this.pViz.render('L');
-      this.ngl.render(val);
+      this.ngl.render(reload);
       MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs.root);
     };
 
@@ -186,40 +186,40 @@ export class TwinPviewer {
 
     this.repChoiceInput.onChanged(async () => {
       this.ngl.repChoice = this.repChoiceInput;
-      reload(true);
+      doReload(true);
     });
 
     this.cdrSchemeInput.onChanged(async () => {
       this.ngl.cdrScheme = this.cdrSchemeInput;
       this.pViz.cdrMapping(this.cdrSchemeInput);
-      reload(false);
+      doReload(false);
     });
 
     this.paratopesInput.onChanged(async () => {
       this.ngl.paratopes = this.paratopesInput;
       this.pViz.parMapping(this.paratopesInput);
-      reload(false);
+      doReload(false);
     });
 
     this.ptmChoicesInput.onChanged(async () => {
       this.pViz.ptmMapping(this.ptmChoicesInput.value, this.ptmProbInput.value);
-      reload(false);
+      doReload(false);
     });
 
     this.ptmProbInput.onChanged(async () => {
       this.pViz.ptmMapping(this.ptmChoicesInput.value, this.ptmProbInput.value);
-      reload(false);
+      doReload(false);
     });
 
     this.ptmMotifChoicesInput.onChanged(async () => {
       this.pViz.motMapping(this.ptmMotifChoicesInput.value, this.ptmProbInput.value);
-      reload(false);
+      doReload(false);
     });
 
     if (this.ptmObsChoicesInput !== undefined) {
       this.ptmObsChoicesInput.onChanged(async () => {
         this.pViz.obsMapping(this.ptmObsChoicesInput.value);
-        reload(false);
+        doReload(false);
       });
     }
   }

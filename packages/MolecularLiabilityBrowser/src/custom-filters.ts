@@ -20,7 +20,7 @@ export class PtmFilter extends DG.Filter {
   chainType: ChainTypeType;
   ptmMap: { [key: string]: string; };
   cdrMap: { [key: string]: string; };
-  referenceDf: DG.DataFrame;
+  refDf: DG.DataFrame;
   ptmKeys: string[];
   cdrKeys: string[];
   normalizedCDRMap: { [key: string]: string };
@@ -30,15 +30,13 @@ export class PtmFilter extends DG.Filter {
   ptmInputValue: string[];
   currentCdr: string;
 
-  constructor(
-    ptmMap: { [key: string]: string }, cdrMap: { [key: string]: string }, referenceDf: DG.DataFrame
-  ) {
+  constructor(ptmMap: { [key: string]: string }, cdrMap: { [key: string]: string }, refDf: DG.DataFrame) {
     super();
     this.root = ui.divV(null, 'd4-mlb-filter');
     this.subs = [];
     this.ptmMap = ptmMap;
     this.cdrMap = cdrMap;
-    this.referenceDf = referenceDf;
+    this.refDf = refDf;
 
     this.ptmKeys = [...new Set(Object.keys(ptmMap).map((v) => v.slice(2)))];
     this.normalizedCDRMap = {};
@@ -74,16 +72,20 @@ export class PtmFilter extends DG.Filter {
   }
 
   attach(dataFrame: DG.DataFrame) {
-    console.debug(`MLB: PtmFilter.attach() start, ${((Date.now() - _startInit) / 1000).toString()}`);
-    super.attach(dataFrame);
+    try {
+      console.debug(`MLB: PtmFilter.attach() start, ${((Date.now() - _startInit) / 1000).toString()}`);
+      super.attach(dataFrame);
 
-    const tempDf = this.referenceDf.clone(null, ['v_id']);
-    tempDf.columns.addNewInt('index').init((i) => i);
-    this.indexes = (dataFrame.clone(null, ['v id']).join(tempDf, ['v id'], ['v_id'], [], ['index'], 'left', false)
-      .getCol('index').getRawData() as Int32Array);
+      const tempDf = this.refDf.clone(null, ['v_id']);
+      tempDf.columns.addNewInt('index').init((i) => i);
+      this.indexes = (dataFrame.clone(null, ['v id']).join(tempDf, ['v id'], ['v_id'], [], ['index'], 'left', false)
+        .getCol('index').getRawData() as Int32Array);
 
-    this.render();
-    console.debug(`MLB: PtmFilter.attach() end, ${((Date.now() - _startInit) / 1000).toString()}`);
+      this.render();
+      console.debug(`MLB: PtmFilter.attach() end, ${((Date.now() - _startInit) / 1000).toString()}`);
+    } catch (err: unknown) {
+      console.error(err instanceof Error ? err.message : (err as Object).toString());
+    }
   }
 
   applyState(state: any) {
@@ -107,36 +109,40 @@ export class PtmFilter extends DG.Filter {
   }
 
   applyFilter() {
-    console.debug(`MLB: PtmFilter.applyFilter() start, ${((Date.now() - _startInit) / 1000).toString()}`);
+    try {
+      console.debug(`MLB: PtmFilter.applyFilter() start, ${((Date.now() - _startInit) / 1000).toString()}`);
 
-    const getStateFor = (index: number) => {
-      for (const chosenPTM of this.ptmInputValue) {
-        const binStr = this.referenceDf.get(this.ptmMap[`${this.chainType} ${chosenPTM}`], this.indexes[index]);
-        if (typeof binStr === 'undefined' || binStr === '')
-          return false;
+      const getStateFor = (index: number) => {
+        for (const chosenPTM of this.ptmInputValue) {
+          const binStr = this.refDf.get(this.ptmMap[`${this.chainType} ${chosenPTM}`], this.indexes[index]);
+          if (typeof binStr === 'undefined' || binStr === '')
+            return false;
 
-        const cdrs = JSON.parse(binStr);
-        if (!Object.keys(cdrs).includes(this.currentCdr))
-          return false;
+          const cdrs = JSON.parse(binStr);
+          if (!Object.keys(cdrs).includes(this.currentCdr))
+            return false;
 
-        const currentProbability = cdrs[this.currentCdr];
-        if (
-          typeof currentProbability === 'undefined' ||
-          currentProbability > this.cMax || currentProbability < this.cMin
-        ) return false;
-      }
+          const currentProbability = cdrs[this.currentCdr];
+          if (
+            typeof currentProbability === 'undefined' ||
+            currentProbability > this.cMax || currentProbability < this.cMin
+          ) return false;
+        }
 
-      return true;
-    };
+        return true;
+      };
 
-    const filter = this.dataFrame.filter;
-    const rowCount = this.dataFrame.rowCount;
+      const filter = this.dataFrame.filter;
+      const rowCount = this.dataFrame.rowCount;
 
-    for (let i = 0; i < rowCount; i++)
-      filter.set(i, filter.get(i) && getStateFor(i), false);
+      for (let i = 0; i < rowCount; i++)
+        filter.set(i, filter.get(i) && getStateFor(i), false);
 
-    filter.fireChanged();
-    console.debug(`MLB: PtmFilter.applyFilter() end, ${((Date.now() - _startInit) / 1000).toString()}`);
+      filter.fireChanged();
+      console.debug(`MLB: PtmFilter.applyFilter() end, ${((Date.now() - _startInit) / 1000).toString()}`);
+    } catch (err: unknown) {
+      console.error(err instanceof Error ? err.message : (err as Object).toString());
+    }
   }
 
   render() {
