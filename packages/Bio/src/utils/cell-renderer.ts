@@ -66,7 +66,7 @@ function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false, drawStyle: string = 'classic', maxWord:any={}, maxWordIdx:number=0, gridCell:any = {}): number {
+  separator: string = '', last: boolean = false, drawStyle: string = 'classic', maxWord: any = {}, maxWordIdx: number = 0, gridCell: any = {}): number {
   g.textAlign = 'start';
   const colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
@@ -212,8 +212,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       const separator = gridCell.cell.column.getTag('separator') ?? '';
       const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator'));
 
-      // обработка новых елементов
       const columns = gridCell.cell.column.categories;
+      let monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
+      let maxLengthOfMonomer = 5;
+
       let maxLengthWords = {};
       // check if gridCell.cell.column.temp is array
       if (gridCell.cell.column.getTag('.calculatedCellRender') !== 'exist') {
@@ -221,7 +223,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
           let subParts: string[] = splitterFunc(columns[i]);
           subParts.forEach((amino, index) => {
             //@ts-ignore
-            let textSizeWidth = g.measureText(WebLogo.monomerToText(amino) + ' ');
+            let textSizeWidth = g.measureText(monomerToShortFunction(amino, maxLengthOfMonomer));
             //@ts-ignore
             if (textSizeWidth.width > (maxLengthWords[index] ?? 0)) {
               //@ts-ignore
@@ -240,23 +242,15 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       let color = undefinedColor;
       // get max length word in subParts
       let tagUnits = gridCell.cell.column.getTag(DG.TAGS.UNITS);
-      let maxLength = 0;
-      let maxWord = '';
       let drawStyle = 'classic';
       if (tagUnits.includes('MSA')) {
-        subParts.forEach(part => {
-          if (part.length > maxLength) {
-            maxLength = part.length;
-            maxWord = part;
-            drawStyle = 'msa';
-          }
-        });
+        drawStyle = 'msa';
       }
       subParts.forEach((amino, index) => {
         color = palette.get(amino);
         g.fillStyle = undefinedColor;
         let last = index === subParts.length - 1;
-        x1 = printLeftOrCentered(x1, y, w, h, g, WebLogo.monomerToText(amino), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell);
+        x1 = printLeftOrCentered(x1, y, w, h, g, monomerToShortFunction(amino, maxLengthOfMonomer), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell);
       });
 
       g.restore();
