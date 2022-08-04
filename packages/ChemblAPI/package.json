@@ -1,40 +1,41 @@
 {
 	"name": "@datagrok/chembl-api",
-	"beta": true,
 	"friendlyName": "ChemblAPI",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"author": {
 		"name": "Leonid Stolbov",
 		"email": "lstolbov@datagrok.ai"
 	},
-	"description": "ChemblAPI is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
-	"repository": {
-    "type": "git",
-    "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/ChemblAPI"
+  "sources": [
+  ],
+  "dependencies": {
+    "datagrok-api": "^1.5.0",
+		"@types/react-dom": "^17.0.9",
+		"file-loader": "^6.2.0",
+		"ts-loader": "latest",
+		"typescript": "latest"
   },
-	"dependencies": {
-		"datagrok-api": "^1.0.0",
-		"cash-dom": "latest",
-		"dayjs": "latest"
-	},
-	"devDependencies": {
-		"@types/d3": "^7.0.0",
-		"@types/jquery": "^3.5.6",
+  "devDependencies": {
+		"css-loader": "latest",
+		"style-loader": "latest",
 		"webpack": "latest",
 		"webpack-cli": "latest"
-	},
-	"scripts": {
-		"link-api": "npm link datagrok-api",
-		"install-dependencies": "npm install",
-		"debug-chemblapi": "grok publish",
-		"release-chemblapi": "grok publish --release",
-		"build-chemblapi": "webpack",
+  },
+  "scripts": {
+		"debug-chembl-api": "grok publish",
+		"release-chembl-api": "grok publish --release",
+		"build-chembl-api": "webpack",
 		"build": "webpack",
-		"debug-chemblapi-dev": "grok publish dev",
-		"release-chemblapi-dev": "grok publish dev --release",
-		"debug-chemblapi-local": "grok publish local",
-		"release-chemblapi-local": "grok publish local --release"
-	},
+		"debug-chembl-api-dev": "grok publish dev",
+		"release-chembl-api-dev": "grok publish dev --release",
+		"debug-chembl-api-public": "grok publish public",
+		"release-chembl-api-public": "grok publish public --release"
+  },
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
 	"category": "Cheminformatics"
 }
