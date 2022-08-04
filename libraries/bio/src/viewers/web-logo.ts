@@ -897,4 +897,8 @@ export class WebLogo extends DG.JsViewer {
       }
     }
   }
+
+  public static monomerToShort(amino: string, maxLengthOfMonomer: number): string {
+    return amino.length <= maxLengthOfMonomer ? amino : amino.substring(0, maxLengthOfMonomer) + '…';
+  }
 }
