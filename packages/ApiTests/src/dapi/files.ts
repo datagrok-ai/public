@@ -6,7 +6,7 @@ import {_package} from '../package-test';
 
 
 category('Dapi: files', () => {
-  const filePrefix = 'Demo:TestJobs:Files:DemoFiles/';
+  const filePrefix = 'System:AppData/ApiTests/';
   const testTextFileName = 'js-api-testTextFile';
   const testTextFilePath = filePrefix + testTextFileName;
 
