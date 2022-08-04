@@ -37,18 +37,22 @@ export async function getBaseURL() {
 export async function Alation() {
   const progressIndicator = DG.TaskBarProgressIndicator.create('Loading Alation...');
 
-  const treeHost = ui.div();
-  const descriptionHost = ui.div(undefined, 'alation-description');
-  const rightPanelHost = ui.divV([ui.h1('Data Sources'), treeHost]);
-  descriptionHost.style.maxWidth = '50%';
-  descriptionHost.style.margin = '10px';
-  grok.shell.newView('Alation Browser', [ui.divH([rightPanelHost, descriptionHost])]);
+  const treeHost = ui.box();
 
+  const descriptionHost = ui.panel(undefined, 'alation-description');
+  const title = ui.box(ui.h1('Data Sources'), {style: {maxHeight: '30px', margin: '5px'}});
+  const rightPanelHost = ui.splitV([title, treeHost], {style:{maxWidth: '300px'}});
+  
+  const host = ui.splitH([rightPanelHost, descriptionHost]);
+  
+  let v = grok.shell.newView('Alation Browser', [host]);
+  v.box = true;
+  
   await utils.retrieveKeys();
-
+  
   const dataSourcesList = await alationApi.getDataSources();
   const tree = view.createTree(dataSourcesList, 'data-source');
-  $(treeHost).append([tree.root]);
+  treeHost.append(tree.root);
 
   grok.events.onContextMenu.subscribe((args: any) => {
     const obj = args.args.item.value as types.table & types.query;
