@@ -62,6 +62,9 @@ Tesla, Model S,  ,          1.6,    120000`);
   const df = DG.DataFrame.create(4);
   df.columns.add(DG.Column.fromStrings('countries', ['USA', 'Canada', 'France', 'Mexico']));
   df.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([1, 4, 2, 3])));
+  const df3 = DG.DataFrame.create(4);
+  df3.columns.add(DG.Column.fromStrings('countries', ['USA', 'Canada', 'France', 'Mexico']));
+  df3.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([1, 4, 2, 3])));
 
   test('append method', async () => {
     df1.append(df2);
@@ -141,32 +144,33 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('column list addNewBool', async () => {
-    df.columns.addNewBool('newColumn');
-    expect(typeof(df.get('newColumn', 1)), 'boolean');
+    df.columns.addNewBool('newColumnBool');
+    expect(typeof(df.get('newColumnBool', 1)), 'boolean');
   });
 
   test('column list addNewDateTime', async () => {
-    return df.columns.addNewDateTime('newColumn');
+    df.columns.addNewDateTime('newColumnDateTime');
+    expect(typeof(df.get('newColumnDateTime', 1)), 'datetime');
   });
 
   test('column list addNewFloat', async () => {
-    df.columns.addNewFloat('newColumn');
+    df.columns.addNewFloat('newColumnFloat');
     expect(typeof(df.get('newColumn', 1)), 'number');
   });
 
   test('column list addNewInt', async () => {
-    df.columns.addNewInt('newColumn');
-    expect(typeof(df.get('newColumn', 1)), 'number');
+    df.columns.addNewInt('newColumnInt');
+    expect(typeof(df.get('newColumnInt', 1)), 'number');
   });
 
   test('column list addNewQnum', async () => {
-    df.columns.addNewQnum('newColumn');
-    expect(typeof(df.get('newColumn', 1)), 'number');
+    df.columns.addNewQnum('newColumnQnum');
+    expect(typeof(df.get('newColumnQnum', 1)), 'number');
   });
 
   test('column list addNewString', async () => {
-    df.columns.addNewString('newColumn');
-    expect(typeof(df.get('newColumn', 1)), 'string');
+    df.columns.addNewString('newColumnAtring');
+    expect(typeof(df.get('newColumnString', 1)), 'string');
   });
 
   test('column list byIndex', async () => {
@@ -206,12 +210,12 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('column list names', async () => {
-    expect(df.columns.names().toString(), 'countries,population');
+    expect(df3.columns.names().toString(), 'countries,population');
   });
 
   test('column list remove', async () => {
     df.columns.remove('population');
-    expect(df.columns.names().toString(), 'countries');
+    expect(df3.columns.names().toString(), 'countries');
   });
 
   test('column list replace', async () => {
