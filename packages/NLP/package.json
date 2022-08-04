@@ -3,8 +3,8 @@
 	"fullName": "NLP",
 	"version": "1.0.3",
 	"author": {
-		"name": "Diana Onufrienko",
-		"email": "donufrienko@datagrok.ai"
+		"name": "Diana Onufriienko",
+		"email": "donufriienko@datagrok.ai"
 	},
 	"description": "Natural Language Processing Package",
 	"repository": {

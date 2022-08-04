@@ -4,8 +4,8 @@
   "fullName": "ChaRPy",
   "version": "1.0.4",
   "author": {
-    "name": "Diana Onufrienko",
-    "email": "donufrienko@datagrok.ai"
+    "name": "Diana Onufriienko",
+    "email": "donufriienko@datagrok.ai"
   },
   "description": "ChaRPy package extends Datagrok viewers with two commands 'To Python script' and 'To R script', which translate a selected viewer to Python or R code, respectively, along with executing this code for displaying the resulting plot. The two commands are available via a hamburger menu (a top-left button in a viewer's header), and supported for most of the viewers in Datagrok.",
   "repository": {

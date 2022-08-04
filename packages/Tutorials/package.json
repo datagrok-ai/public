@@ -4,8 +4,8 @@
   "friendlyName": "Tutorials",
   "version": "1.1.3",
   "author": {
-    "name": "Diana Onufrienko",
-    "email": "donufrienko@datagrok.ai"
+    "name": "Diana Onufriienko",
+    "email": "donufriienko@datagrok.ai"
   },
   "description": "The package contains a collection of interactive materials helping users explore the [Datagrok](https://datagrok.ai) platform.",
   "repository": {
