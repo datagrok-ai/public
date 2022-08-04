@@ -115,6 +115,11 @@ export class FunctionView extends DG.ViewBase {
  */
   public linkFunccall(funcCall: DG.FuncCall) {
     this._funcCall = funcCall;
+
+    this.path = `?id=${this._funcCall.id}`;
+
+    if (funcCall.options['isHistorical'])
+      this.name = `${this.name}: ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
   }
 
   /**
@@ -252,6 +257,28 @@ export class FunctionView extends DG.ViewBase {
 
   }
 
+  public async onBeforePinRun(callToPin: DG.FuncCall) { }
+
+  public async onAfterPinRun(pinnedCall: DG.FuncCall) { }
+
+  /**
+   * Saves the computation results to the historical results, returns its id. See also {@link loadRun}.
+   * @param callToPin FuncCall object to save
+   * @returns Saved FuncCall
+   * @stability Experimental
+ */
+  public async pinRun(callToPin: DG.FuncCall): Promise<DG.FuncCall> {
+    callToPin.options['isPinned'] = true;
+    await this.onBeforePinRun(callToPin);
+    const pinnedSave = await grok.dapi.functions.calls.save(callToPin);
+    await this.onAfterPinRun(pinnedSave);
+    return pinnedSave;
+  }
+
+  public async onBeforeSaveRun(callToSave: DG.FuncCall) { }
+
+  public async onAfterSaveRun(savedCall: DG.FuncCall) { }
+
   /**
    * Saves the computation results to the historical results, returns its id. See also {@link loadRun}.
    * @param callToSave FuncCall object to save
@@ -259,8 +286,41 @@ export class FunctionView extends DG.ViewBase {
    * @stability Experimental
  */
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
-    return await grok.dapi.functions.calls.save(callToSave);
+    await this.onBeforeSaveRun(callToSave);
+    const savedCall = await grok.dapi.functions.calls.save(callToSave);
+    await this.onAfterSaveRun(savedCall);
+    return savedCall;
   }
+
+  public async onBeforeDeleteRun(callToDelete: DG.FuncCall) { }
+
+  public async onAfterDeleteRun(deletedCall: DG.FuncCall) { }
+
+  /**
+   * Deleters the computation results to the historical results, returns its id. See also {@link loadRun}.
+   * @param callToDelete FuncCall object to delete
+   * @returns ID of deleted historical run
+   * @stability Experimental
+ */
+  public async deleteRun(callToDelete: DG.FuncCall): Promise<string> {
+    await this.onBeforeDeleteRun(callToDelete);
+    await grok.dapi.functions.calls.delete(callToDelete);
+    await this.onAfterDeleteRun(callToDelete);
+    return callToDelete.id;
+  }
+
+  /**
+   * Called before fetching the historical run data in {@link loadRun}.
+   * @stability Experimental
+ */
+  public async onBeforeLoadRun() {}
+
+  /**
+   * Called after fetching the historical run data in {@link loadRun}.
+   * @param funcCall FuncCall fetched from server during {@link loadRun}
+   * @stability Experimental
+ */
+  public async onAfterLoadRun(funcCall: DG.FuncCall) {}
 
   /**
    * Loads the specified historical run. See also {@link saveRun}.
@@ -269,7 +329,11 @@ export class FunctionView extends DG.ViewBase {
    * @stability Experimental
  */
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
-    return await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
+    await this.onBeforeLoadRun();
+    const pulledRun = await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
+    pulledRun.options['isHistorical'] = true;
+    await this.onAfterLoadRun(pulledRun);
+    return pulledRun;
   }
 
   /**
@@ -281,8 +345,8 @@ export class FunctionView extends DG.ViewBase {
    * @stability Experimental
  */
   public async pullRuns(funcId: string): Promise<DG.FuncCall[]> {
-    const filter = grok.dapi.functions.calls.filter(`func.id="${funcId}"`);
-    const list = filter.list();
+    const filter = grok.dapi.functions.calls.filter(`func.id="${funcId}"`).include('session.user, options');
+    const list = filter.list({pageSize: 20});
     return list;
   }
 
