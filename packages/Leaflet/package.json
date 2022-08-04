@@ -2,6 +2,10 @@
   "name": "@datagrok/leaflet",
   "version": "1.0.0",
   "fullName": "Leaflet",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
   "description": "Interactive map with a number of extensions that uses Leaflet.js",
   "repository": {
     "type": "git",

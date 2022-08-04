@@ -1,5 +1,0 @@
-auto:
-  properties:
-    name: string
-    year: int
-    hasTags: bool

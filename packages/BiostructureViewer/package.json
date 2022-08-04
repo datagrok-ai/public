@@ -2,6 +2,10 @@
   "name": "biostructureviewer",
   "beta": false,
   "friendlyName": "BiostructureViewer",
+  "author": {
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
+  },
   "version": "0.2.5",
   "description": "BiostructureViewer is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
   "repository": {

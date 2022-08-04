@@ -3,6 +3,10 @@
   "beta": false,
   "friendlyName": "DrugBank",
   "version": "0.0.5",
+  "author": {
+    "name": "Volodymyr Dyma",
+    "email": "vdyma@datagrok.ai"
+  },
   "description": "DrugBank is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
   "repository": {
     "type": "git",

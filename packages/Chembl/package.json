@@ -1,5 +1,9 @@
 {
   "name": "@datagrok/chembl",
+  "author": {
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
+  },
   "tags": [
     "chem"
   ],

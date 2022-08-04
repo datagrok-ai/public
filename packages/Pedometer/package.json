@@ -1,5 +1,9 @@
 {
   "name": "@datagrok/pedometer",
+  "author": {
+    "name": "Alexander Paramonov",
+    "email": "aparamomov@datagrok.ai"
+  },
   "version": "0.1.2",
   "fullName": "Pedometer",
   "description": "Pedometer for accelerometer signals",

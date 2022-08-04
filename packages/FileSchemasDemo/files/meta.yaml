@@ -1,9 +1,0 @@
-description: A folder with pictures for demonstrating the usage of metadata
-
-meta:
-  /:
-    - entity/kind: picture
-  /animals:
-    - entity/domain: mammals
-  /cars:
-    - entity/domain: auto

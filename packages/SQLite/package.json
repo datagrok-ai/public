@@ -2,6 +2,10 @@
   "name": "@datagrok/sqlite",
   "beta": false,
   "friendlyName": "SQLite",
+  "author": {
+    "name": "Volodymyr Dyma",
+    "email": "vdyma@datagrok.ai"
+  },
   "version": "0.1.3",
   "description": "SQLite is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides support for importing and previewing SQLite files.",
   "repository": {
