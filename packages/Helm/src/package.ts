@@ -158,11 +158,11 @@ export async function libraryPanel(helmColumn: DG.Column) {
 }
 
 //name: manageFiles
-export async function manageFiles() {
-  ui.dialog({title:'Manage files'})
+function manageFiles() {
+  let a = ui.dialog({title:'Manage files'})
+  //@ts-ignore
   .add(ui.fileBrowser({path: 'System:AppData/Helm/libraries'}).root)
-  .onOK(() => {
-  })
+  .addButton('OK', () => a.close())
   .show();
 }
 
