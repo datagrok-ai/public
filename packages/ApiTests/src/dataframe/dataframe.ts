@@ -150,7 +150,7 @@ Tesla, Model S,  ,          1.6,    120000`);
 
   test('column list addNewDateTime', async () => {
     df.columns.addNewDateTime('newColumnDateTime');
-    expect(typeof(df.get('newColumnDateTime', 1)), 'datetime');
+    expect(typeof(df.get('newColumnDateTime', 1)), 'object');
   });
 
   test('column list addNewFloat', async () => {
@@ -169,7 +169,7 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('column list addNewString', async () => {
-    df.columns.addNewString('newColumnAtring');
+    df.columns.addNewString('newColumnString');
     expect(typeof(df.get('newColumnString', 1)), 'string');
   });
 
@@ -214,7 +214,7 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('column list remove', async () => {
-    df.columns.remove('population');
+    df3.columns.remove('population');
     expect(df3.columns.names().toString(), 'countries');
   });
 
