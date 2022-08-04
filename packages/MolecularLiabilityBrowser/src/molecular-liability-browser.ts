@@ -550,18 +550,20 @@ export class MolecularLiabilityBrowser {
   }
 
   async setViewTwinPViewer(): Promise<void> {
-    const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
-      await Promise.all([
-        this.dataLoader.loadJson(this.vid),
-        this.dataLoader.loadPdb(this.vid),
-        this.dataLoader.loadRealNums(this.vid),
-        ((): Promise<ObsPtmType> => {
-          let res: Promise<ObsPtmType> = null;
-          if (this.vidsObsPTMs.includes(this.vid))
-            res = this.dataLoader.loadObsPtm(this.vid);
-          return res;
-        })()
-      ]));
+    // const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
+    //   await Promise.all([
+    //     this.dataLoader.loadJson(this.vid),
+    //     this.dataLoader.loadPdb(this.vid),
+    //     this.dataLoader.loadRealNums(this.vid),
+    //     ((): Promise<ObsPtmType> => {
+    //       let res: Promise<ObsPtmType> = null;
+    //       if (this.vidsObsPTMs.includes(this.vid))
+    //         res = this.dataLoader.loadObsPtm(this.vid);
+    //       return res;
+    //     })()
+    //   ]));
+    const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]:
+      [JsonType, string, NumsType, ObsPtmType] = await this.dataLoader.load3D(this.vid);
 
     const hNumberingStr = jsonNums.heavy_numbering;
     const lNumberingStr = jsonNums.light_numbering;
@@ -588,6 +590,10 @@ export class MolecularLiabilityBrowser {
   async destroyView(): Promise<void> {
     console.debug('MLB: MolecularLiabilityBrowser.destroyView() start, ' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
+
+    this.viewSubs.forEach((sub) => sub.unsubscribe());
+    this.viewSubs = [];
+
     // DG.TableView.dataFrame cannot be null
     // if (this.mlbView !== null)
     //    this.mlbView.dataFrame = null;
@@ -602,9 +608,6 @@ export class MolecularLiabilityBrowser {
         this.filterViewDn = null;
       } catch {}
     }
-
-    this.viewSubs.forEach((sub) => sub.unsubscribe());
-    this.viewSubs = [];
 
     this.idMapping = {};
     this.allIds = null;
@@ -649,7 +652,7 @@ export class MolecularLiabilityBrowser {
         this.treeBrowser = (await this.treeDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
         this.mlbView.dockManager.dock(this.treeBrowser.root, DG.DOCK_TYPE.FILL, this.mlbGridDn, 'Clone');
         //TODO: check the await
-        this.treeBrowser.setData(this.treeDf, this.mlbDf);
+        this.treeBrowser.setData(this.treeDf, this.mlbDf); // fires treeDfOnCurrentRowChanged
         //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
       } else {
         //TODO: check the await
@@ -869,18 +872,20 @@ export class MolecularLiabilityBrowser {
     //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
     const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
-    const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
-      await Promise.all([
-        this.dataLoader.loadJson(this.vid),
-        this.dataLoader.loadPdb(this.vid),
-        this.dataLoader.loadRealNums(this.vid),
-        ((): Promise<ObsPtmType> => {
-          let res: Promise<ObsPtmType> = null;
-          if (this.vidsObsPTMs.includes(this.vid))
-            res = this.dataLoader.loadObsPtm(this.vid);
-          return res;
-        })()
-      ]));
+    // const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
+    //   await Promise.all([
+    //     this.dataLoader.loadJson(this.vid),
+    //     this.dataLoader.loadPdb(this.vid),
+    //     this.dataLoader.loadRealNums(this.vid),
+    //     ((): Promise<ObsPtmType> => {
+    //       let res: Promise<ObsPtmType> = null;
+    //       if (this.vidsObsPTMs.includes(this.vid))
+    //         res = this.dataLoader.loadObsPtm(this.vid);
+    //       return res;
+    //     })()
+    //   ]));
+    const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]:
+      [JsonType, string, NumsType, ObsPtmType] = await this.dataLoader.load3D(this.vid);
 
     const hNumberingStr = jsonNums.heavy_numbering;
     const lNumberingStr = jsonNums.light_numbering;

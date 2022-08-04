@@ -162,16 +162,16 @@ export abstract class DataLoader {
 
   abstract loadTreeDf(): Promise<DG.DataFrame>;
 
-  abstract loadJson(vid: string): Promise<JsonType>;
+  // -- 3D --
 
-  /**
-   */
-  abstract loadPdb(vid: string): Promise<string>;
+  // abstract loadJson(vid: string): Promise<JsonType>;
+  //
+  // abstract loadPdb(vid: string): Promise<string>;
+  //
+  // abstract loadRealNums(vid: string): Promise<NumsType>;
+  //
+  // /** Get post observable translational modifications data for 'v_id' */
+  // abstract loadObsPtm(vid: string): Promise<ObsPtmType>;
 
-  abstract loadRealNums(vid: string): Promise<NumsType>;
-
-  /**
-   * Get post observable translational modifications data for 'v_id'
-   */
-  abstract loadObsPtm(vid: string): Promise<ObsPtmType>;
+  abstract load3D(vid: string): Promise<[JsonType, string, NumsType, ObsPtmType]>;
 }

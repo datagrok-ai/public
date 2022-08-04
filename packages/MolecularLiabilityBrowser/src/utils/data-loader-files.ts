@@ -46,7 +46,9 @@ export class DataLoaderFiles extends DataLoader {
   private _ptmMap: PtmMapType;
   private _cdrMap: CdrMapType;
   private _refDf: DG.DataFrame;
+
   private _realNums: any;
+
 
   get schemes(): string[] { return this._schemes; }
 
@@ -160,6 +162,7 @@ export class DataLoaderFiles extends DataLoader {
     this.cache.init(this._serverListVersionDf);
     //load numbering schemes 
     await Promise.all([
+      //load numbering schemes
       this.cache.getData<IScheme, string[]>('scheme',
         () => catchToLog<Promise<DG.DataFrame>>(
           'MLB database error \'listSchemes\': ',
@@ -242,7 +245,7 @@ export class DataLoaderFiles extends DataLoader {
           console.debug(`MLB: DataLoaderFiles.init2() set mutcodes, ${this.fromStartInit()} s`);
           this._mutcodes = value;
         }),
-      //load ptm map data  
+      //load ptm map data
       this.cache.getObject<PtmMapType>(this._files.ptmMap,
         async () => {
           const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.ptmMap}`);
@@ -252,7 +255,7 @@ export class DataLoaderFiles extends DataLoader {
           console.debug(`MLB: DataLoaderFiles.init2() set ptmMap, ${this.fromStartInit()} s`);
           this._ptmMap = value;
         }),
-      //load cdr map data  
+      //load cdr map data
       this.cache.getObject<CdrMapType>(this._files.cdrMap,
         async () => {
           const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.cdrMap}`);
@@ -334,34 +337,45 @@ export class DataLoaderFiles extends DataLoader {
     return JSON.parse(jsonTxt);
   }
 
-  async loadJson(vid: string): Promise<JsonType> {
-    // Always return example data due TwinPViewer inability to work with null data
-    // if (!this.vids.includes(vid))
-    //   return null;
+  // -- 3D --
 
-    return (await this.loadFileJson(this._files.example)) as JsonType;
-  }
+  // async loadJson(vid: string): Promise<JsonType> {
+  //   // Always return example data due TwinPViewer inability to work with null data
+  //   // if (!this.vids.includes(vid))
+  //   //   return null;
+  //
+  //   return (await this.loadFileJson(this._files.example)) as JsonType;
+  // }
+  //
+  // /** Load PDB structure data
+  //  * @param {string} vid Molecule id
+  //  */
+  // async loadPdb(vid: string): Promise<string> {
+  //   // Always return example data due TwinPViewer inability to work with null data
+  //   // if (!this.vids.includes(vid))
+  //   //   return null;
+  //
+  //   // TODO: Check for only allowed vid of example
+  //   return (await this.loadFileJson(this._files.examplePDB))['pdb'];
+  // }
+  //
+  // async loadRealNums(vid: string): Promise<NumsType> {
+  //   return (await this.loadFileJson(this._files.realNums)) as NumsType;
+  // }
+  //
+  // async loadObsPtm(vid: string): Promise<ObsPtmType> {
+  //   if (!this.vidsObsPtm.includes(vid))
+  //     return null;
+  //
+  //   return (await this.loadFileJson(this._files.exampleOptm))['ptm_observed'] as ObsPtmType;
+  // }
 
-  /** Load PDB structure data
-   * @param {string} vid Molecule id
-   */
-  async loadPdb(vid: string): Promise<string> {
-    // Always return example data due TwinPViewer inability to work with null data
-    // if (!this.vids.includes(vid))
-    //   return null;
-
-    // TODO: Check for only allowed vid of example
-    return (await this.loadFileJson(this._files.examplePDB))['pdb'];
-  }
-
-  async loadRealNums(vid: string): Promise<NumsType> {
-    return (await this.loadFileJson(this._files.realNums)) as NumsType;
-  }
-
-  async loadObsPtm(vid: string): Promise<ObsPtmType> {
-    if (!this.vidsObsPtm.includes(vid))
-      return null;
-
-    return (await this.loadFileJson(this._files.exampleOptm))['ptm_observed'] as ObsPtmType;
+  async load3D(vid: string): Promise<[JsonType, string, NumsType, ObsPtmType]> {
+    return Promise.all([
+      this.loadFileJson(this._files.example).then((value) => value as JsonType),
+      this.loadFileJson(this._files.examplePDB).then((value) => value['pdb']),
+      this.loadFileJson(this._files.realNums).then((value) => value as NumsType),
+      this.loadFileJson(this._files.exampleOptm).then((value) => value['ptm_observerd'] as ObsPtmType),
+    ]);
   }
 }

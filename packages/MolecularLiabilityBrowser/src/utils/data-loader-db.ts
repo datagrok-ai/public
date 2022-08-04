@@ -41,6 +41,7 @@ export class DataLoaderDb extends DataLoader {
   private _cdrMap: CdrMapType;
   private _refDf: DG.DataFrame;
 
+
   get schemes(): string[] { return this._schemes; }
 
   get cdrs(): string[] { return this._cdrs; }
@@ -82,7 +83,7 @@ export class DataLoaderDb extends DataLoader {
     this.cache.init(this._serverListVersionDf);
 
     await Promise.all([
-      //load numbering schemes 
+      //load numbering schemes
       this.cache.getData<IScheme, string[]>('scheme',
         () => catchToLog<Promise<DG.DataFrame>>(
           'MLB database error \'listSchemes\': ',
@@ -162,7 +163,7 @@ export class DataLoaderDb extends DataLoader {
           console.debug(`MLB: DataLoaderDb.init2() set mutcodes, ${this.fromStartInit()} s`);
           this._mutcodes = value;
         }),
-      //load ptm map data  
+      //load ptm map data
       this.cache.getObject<PtmMapType>(this._files.ptmMap,
         async () => {
           const jsonTxt: string = await grok.dapi.files
@@ -173,7 +174,7 @@ export class DataLoaderDb extends DataLoader {
           console.debug(`MLB: DataLoaderDb.init2() set ptmMap, ${this.fromStartInit()} s`);
           this._ptmMap = value;
         }),
-      //load cdr map data  
+      //load cdr map data
       this.cache.getObject<CdrMapType>(this._files.cdrMap,
         async () => {
           const jsonTxt: string = await grok.dapi.files
@@ -214,8 +215,6 @@ export class DataLoaderDb extends DataLoader {
     ]);
 
     console.debug('MLB: DataLoaderDb.init2() end, ' + `${this.fromStartInit()} s`);
-
-    console.debug(`MLB: DataLoaderDb.init() preload_data, ${this.fromStartInit()} s`);
   }
 
   async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {
@@ -228,31 +227,9 @@ export class DataLoaderDb extends DataLoader {
     return df;
   }
 
-  async loadJson(vid: string): Promise<JsonType> {
-    if (!this.vids.includes(vid))
-      return null;
-
-    const df = await grok.functions.call(`${this._pName}:getJsonByVid`, {vid: vid});
-    const jsonTxt = df.columns.byIndex(0).get(0);
-    return jsonTxt ? JSON.parse(jsonTxt) : null;
-  }
-
-  async loadPdb(vid: string): Promise<string> {
-    if (!this.vids.includes(vid))
-      return null;
-
-    return (await grok.functions.call(`${this._pName}:getPdbByVid`, {vid: vid}))
-      .columns.byIndex(0).get(0);
-  }
-
-  async loadRealNums(vid: string): Promise<NumsType> {
-    if (!this.vids.includes(vid))
-      return null;
-
-    const jsonTxt = (await grok.functions.call(`${this._pName}:getJsonComplementByVid`, {vid: vid}))
-      .columns.byIndex(0).get(0);
-    return jsonTxt ? JSON.parse(jsonTxt) : null;
-  }
+  // async load3D(vid:string): Promise<[JsonType, string, NumsType, ObsPtmType]>{
+  //
+  // }
 
   async loadMlbDf(): Promise<DG.DataFrame> {
     const df = await grok.functions.call(`${this._pName}:GetMolecularLiabilityBrowser`);
@@ -261,17 +238,65 @@ export class DataLoaderDb extends DataLoader {
     return df;
   }
 
-  async loadObsPtm(vid: string): Promise<ObsPtmType> {
-    if (!this.vidsObsPtm.includes(vid))
-      return null;
-
-    const df = await grok.functions.call(`${this._pName}:getJsonObsByVid`, {vid: vid});
-    const jsonTxt = df.columns.byIndex(0).get(0);
-    return JSON.parse(jsonTxt);
-  }
-
   async loadTreeDf(): Promise<DG.DataFrame> {
     const dfTxt: string = await grok.dapi.files.readAsText(`System:Data/${this._pName}/${this._files.tree}`);
     return DG.DataFrame.fromCsv(dfTxt);
+  }
+
+  // -- 3D --
+
+  // async loadJson(vid: string): Promise<JsonType> {
+  //   if (!this.vids.includes(vid))
+  //     return null;
+  //
+  //   const df = await grok.functions.call(`${this._pName}:getJsonByVid`, {vid: vid});
+  //   const jsonTxt = df.columns.byIndex(0).get(0);
+  //   return jsonTxt ? JSON.parse(jsonTxt) : null;
+  // }
+  //
+  // async loadPdb(vid: string): Promise<string> {
+  //   if (!this.vids.includes(vid))
+  //     return null;
+  //
+  //   return (await grok.functions.call(`${this._pName}:getPdbByVid`, {vid: vid}))
+  //     .columns.byIndex(0).get(0);
+  // }
+  //
+  // async loadRealNums(vid: string): Promise<NumsType> {
+  //   if (!this.vids.includes(vid))
+  //     return null;
+  //
+  //   const jsonTxt = (await grok.functions.call(`${this._pName}:getJsonComplementByVid`, {vid: vid}))
+  //     .columns.byIndex(0).get(0);
+  //   return jsonTxt ? JSON.parse(jsonTxt) : null;
+  // }
+  //
+  // async loadObsPtm(vid: string): Promise<ObsPtmType> {
+  //   if (!this.vidsObsPtm.includes(vid))
+  //     return null;
+  //
+  //   const df = await grok.functions.call(`${this._pName}:getJsonObsByVid`, {vid: vid});
+  //   const jsonTxt = df.columns.byIndex(0).get(0);
+  //   return JSON.parse(jsonTxt);
+  // }
+
+  async load3D(vid: string): Promise<[JsonType, string, NumsType, ObsPtmType]> {
+    try {
+      const df: DG.DataFrame = await grok.functions.call(`${this._pName}:get3D`, {vid: vid});
+
+      const jsonTxt = df.get('json', 0);
+      const pdbTxt = df.get('pdb', 0);
+      const realNumsTxt = df.get('real_nums', 0);
+      const obsPtmTxt = df.get('obs_ptm', 0);
+
+      const jsonValue: JsonType = jsonTxt ? JSON.parse(jsonTxt) : null;
+      const pdbValue: string = pdbTxt;
+      const realNumsValue: NumsType = realNumsTxt ? JSON.parse(realNumsTxt) : null;
+      const obsPtmValue: ObsPtmType = obsPtmTxt ? JSON.parse(obsPtmTxt)['ptm_observed'] : null;
+
+      return [jsonValue, pdbValue, realNumsValue, obsPtmValue];
+    } catch (err: unknown) {
+      console.error(`load3D('${vid}' error: ${err instanceof Error ? err.message : (err as Object).toString()}`);
+    }
   }
 }
