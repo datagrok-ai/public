@@ -24,6 +24,7 @@ import {lru} from './utils/cell-renderer';
 import {representationsWidget} from './widgets/representations';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils'
 
 
 //tags: init
@@ -161,16 +162,22 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   if (!encodedCol)
     return;
   const embedColsNames = getEmbeddingColsNames(table);
+  const withoutEmptyValues = DG.DataFrame.fromColumns([macroMolecule]).clone();
+  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, encodedCol);
+
   const chemSpaceParams = {
-    seqCol: encodedCol,
+    seqCol: withoutEmptyValues.col(macroMolecule.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: embedColsNames
   };
   const sequenceSpaceRes = await sequenceSpace(chemSpaceParams);
   const embeddings = sequenceSpaceRes.coordinates;
-  for (const col of embeddings)
-    table.columns.add(col);
+  for (const col of embeddings) {
+      const listValues = col.toList();
+      emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
+      table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
+  }   
   if (plotEmbeddings) {
     for (const v of grok.shell.views) {
       if (v.name === table.name)
