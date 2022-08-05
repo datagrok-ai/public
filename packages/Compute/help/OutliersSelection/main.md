@@ -13,7 +13,7 @@ It returns
 3) Enter the reason why the selected plot points are considered as outliers
 4) Click `OK`
 
-<img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/Compute/help/outliers_selection/manual_selection_demo.gif"/>
+<img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/Compute/help/OutliersSelection/manual-selection-demo.gif"/>
 
 ## Automatic detection
 
@@ -22,5 +22,6 @@ It returns
 3) Fill the corresponding function input parameters
 4) Click `OK`
 
-<img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/Compute/help/outliers_selection/auto_detection_demo.gif"/>
+<img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/Compute/help/OutliersSelection/auto-detection-
+demo.gif"/>
 
