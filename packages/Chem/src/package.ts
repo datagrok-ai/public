@@ -36,6 +36,7 @@ import {RDMol} from './rdkit-api';
 import Sketcher = chem.Sketcher;
 import { Viewer } from 'datagrok-api/dg';
 import { getActivityCliffs } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils'
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -283,16 +284,21 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, m
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
 
     const embedColsNames = getEmbeddingColsNames(table);
+    const withoutEmptyValues = DG.DataFrame.fromColumns([smiles]).clone();
+    const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, smiles);
     const chemSpaceParams = {
-      seqCol: smiles,
+      seqCol: withoutEmptyValues.col(smiles.name)!,
       methodName: methodName,
       similarityMetric: similarityMetric,
       embedAxesNames: embedColsNames
     }
     const chemSpaceRes = await chemSpace(chemSpaceParams);
     const embeddings = chemSpaceRes.coordinates;
-    for (const col of embeddings)
-      table.columns.add(col);
+    for (const col of embeddings) {
+      const listValues = col.toList();
+      emptyValsIdxs.forEach(ind => listValues.splice(ind, 0, null));
+      table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
+    }
     if (plotEmbeddings) {
       for (let v of grok.shell.views) {
         if (v.name === table.name)
