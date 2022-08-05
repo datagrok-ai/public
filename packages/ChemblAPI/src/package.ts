@@ -4,9 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 export let _package = new DG.Package();
 
-//name: ChemblSubstructureSearch
-//input: string mol {semType: Molecule}
-//output: dataframe dbResult
+
 export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFrame> {
   try {
     let df = await grok.data.query(`${_package.name}:SubstructureSmile`, {'smile': mol})
@@ -21,21 +19,17 @@ export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFram
   }
 }
 
-//name: ChemblSimilaritySearch
-//input: string molecule {semType: Molecule}
-//output: dataframe drbResult
-export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataFrame | null> {
+export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataFrame> {
   try {
     let df = await grok.data.query(`${_package.name}:SimilaritySmileScore`, {'smile': molecule, 'score': 40})
     df = df.clone(null, ['canonical_smiles', 'molecule_chembl_id']);
-    if (df == null) {
+    if (df == null)
       return DG.DataFrame.create();
-    }
-    return df;
 
+    return df;
   } catch (e: any) {
-    console.error(e);
-    return null;
+    console.error("In SimilaritySearch: " + e.toString());
+    throw e;
   }
 
 }
@@ -45,7 +39,7 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
 //input: string mol {semType: Molecule}
 //input: string searchType
 //output: widget result
-export function ChemblSearchWidget(mol: string, substructure: boolean = false): DG.Widget {
+export function chemblSearchWidget(mol: string, substructure: boolean = false): DG.Widget {
   const headerHost = ui.divH([]);
   const compsHost = ui.divH([ui.loader(), headerHost]);
   const panel = ui.divV([compsHost]);
@@ -114,8 +108,8 @@ export async function getById(id: string): Promise<DG.DataFrame | null> {
 //input: string mol {semType: Molecule}
 //output: widget result
 //condition: true
-export function ChemblSubstructureSearchPanel(mol: string): DG.Widget {
-  return ChemblSearchWidget(mol, true);
+export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
+  return chemblSearchWidget(mol, true);
 }
 
 //name: Chembl Similarity Search Widget
@@ -123,6 +117,6 @@ export function ChemblSubstructureSearchPanel(mol: string): DG.Widget {
 //input: string mol {semType: Molecule}
 //output: widget result
 //condition: true
-export function ChemblSimilaritySearchPanel(mol: string): DG.Widget {
-  return ChemblSearchWidget(mol);
+export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
+  return chemblSearchWidget(mol);
 }
