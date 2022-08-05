@@ -1,16 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { scriptEditor } from "./script-editor";
-import { IconTool } from "./icon-tool";
-import { EntityType } from './constants';
+import {scriptEditor} from './script-editor';
+import {IconTool} from './icon-tool';
+import {EntityType} from './constants';
 import './styles.css';
-import * as tests from "./tests/test-examples";
-import {testManagerView, _renderTestManagerPanel} from "./package-testing";
-import { functionSignatureEditor } from './function-signature-editor';
-import { addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel } from './dev-panel';
+import * as tests from './tests/test-examples';
+import {testManagerView, _renderTestManagerPanel} from './package-testing';
+import {functionSignatureEditor} from './function-signature-editor';
+import {addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel} from './dev-panel';
 
-import { _testDetectorsDialog } from './utils/test-detectors'
+import {_testDetectorsDialog} from './utils/test-detectors';
 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
@@ -39,8 +39,8 @@ export function describeCurrentObj(): void {
 
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
-    if (ent == null) return; 
-    let devPane = acc.getPane('Dev');
+    if (ent == null) return;
+    const devPane = acc.getPane('Dev');
     if (!devPane)
       acc.addPane('Dev', () => ui.wait(async () => (await renderDevPanel(ent)).root));
     if (!acc.getPane('Test manager'))
@@ -55,16 +55,16 @@ export function describeCurrentObj(): void {
 
 //description: ScriptEditor
 //tags: autostart
-export function _scriptEditor(): void { 
+export function _scriptEditor(): void {
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type == 'ScriptView')
-    scriptEditor(view);
+      scriptEditor(view);
   });
 }
 
 //description: FunctionSignatureEditor
 //tags: autostart
-export function _functionSignatureEditor(): void { 
+export function _functionSignatureEditor(): void {
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type == 'ScriptView')
       functionSignatureEditor(view);
@@ -72,7 +72,7 @@ export function _functionSignatureEditor(): void {
 }
 
 //description: IconTool
-export function _IconTool(): void { 
+export function _IconTool(): void {
   grok.shell.newView('Icon Tool', [new IconTool('Icon Tool')]);
 }
 
@@ -81,8 +81,8 @@ export function _IconTool(): void {
 //top-menu: Tools | Dev | Test Manager
 //tags: app
 export async function testManager(): Promise<void> {
-  c = grok.functions.getCurrentCall(); 
-  await testManagerView(); 
+  c = grok.functions.getCurrentCall();
+  await testManagerView();
 }
 
 //name: TestDetectors
