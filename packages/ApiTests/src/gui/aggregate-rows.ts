@@ -14,7 +14,7 @@ category('Dialog: Aggregate Rows', () => {
   });
 
   test('dialogs.aggregateRows', async () => {
-    grok.shell.topMenu.find('Data').find('Aggregate Rows...').root.click(); await delay(1000);
+    grok.shell.topMenu.find('Data').find('Aggregate Rows...').click(); await delay(1000);
 
     const okButton = document.getElementsByClassName('ui-btn ui-btn-ok')[0] as HTMLElement;
         okButton!.click(); await delay(2000);
