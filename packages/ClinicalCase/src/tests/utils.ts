@@ -7,7 +7,7 @@ import { createBaselineEndpointDataframe, createHysLawDataframe, createLabValues
 import { AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_NAME } from "../constants/columns-constants";
 import { dataframeContentToRow } from "../data-preparation/utils";
 import { createValidationDataFrame } from "../sdtm-validation/validation-utils";
-import { vaidateDMDomain } from "../sdtm-validation/services/validation-service";
+import { vaidateAEDomain, vaidateDMDomain } from "../sdtm-validation/services/validation-service";
 import { ALT, BILIRUBIN } from "../constants/constants";
 import { StudyVisit } from "../model/study-visit";
 import { PatientVisit } from "../model/patient-visit";
@@ -17,16 +17,21 @@ import { LABORATORY_VIEW_NAME } from "../constants/view-names-constants";
 export const allViews = [
   'Summary', 
   'Timelines', 
+  'Laboratory', 
   'Patient Profile', 
   'Adverse Events', 
-  'Laboratory', 
+  'AE Risk Assessment',
   'Survival Analysis', 
   'Distributions', 
   'Correlations', 
   'Time Profile', 
   'Tree map', 
   'Medical History', 
-  'Visits'];
+  'Visits',
+  'Study Configuration',
+  'Validation',
+  'Cohort',
+  'Questionnaires'];
 
   export const allTableViews = ['AE Browser'];
 
@@ -37,15 +42,9 @@ export async function requireText(name: string): Promise<string> {
 export async function _testOpenApp() {
   await createTableView('dm.csv');
   await grok.functions.call("Clinicalcase:clinicalCaseApp");
-  await delay(1000);
+  await delay(3000);
   expect(grok.shell.v.name === 'Summary', true);
-}
-
-export async function _testAllViewsCreated() { 
   expect(allViews.every(item => grok.shell.view(item) !== undefined), true);
-}
-
-export async function _testAllTableViewsCreated() { 
   expect(allTableViews.every(item => grok.shell.view(item) !== undefined), true);
 }
 
@@ -53,16 +52,19 @@ export async function _testCumulativeEnrollment() {
   const df = await readDataframe('dm.csv');
   const cumulativeEnrDf = cumulativeEnrollemntByDay(df, SUBJ_REF_STDT, SUBJECT_ID, 'CUMULATIVE_ENROLLMENT');
   expect(cumulativeEnrDf.rowCount, 5);
-  expect(cumulativeEnrDf.get(SUBJ_REF_STDT, 0).toString(), '2012-08-04 23:00:00.000');
+  const date = cumulativeEnrDf.get(SUBJ_REF_STDT, 0)
+  expect(date.date(), 4);
+  expect(date.month(), 7);
+  expect(date.year(), 2012);
   expect(cumulativeEnrDf.get('CUMULATIVE_ENROLLMENT', 4), 6);
 }
 
 export async function _testValidation() {
-  const df = await readDataframe('dm.csv');
+  const ae = await readDataframe('ae.csv');
   const validationDf = createValidationDataFrame();
-  vaidateDMDomain(df, validationDf);
-  expect(validationDf.rowCount, 4);
-  testRowValues(validationDf, 0, {'Column':'RFSTDTC', 'Row number': 6, 'Value': '', 'Violated rule ID': 'SD0003'});
+  vaidateAEDomain(ae, validationDf);
+  expect(validationDf.rowCount, 17);
+  testRowValues(validationDf, 0, {'Column':'AESTDY', 'Row number': 0, 'Value': '2', 'Violated rule ID': 'SD0012'});
 }
 
 export async function _testHysLaw() {

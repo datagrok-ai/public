@@ -106,7 +106,7 @@ export class VisitsView extends ClinicalCaseViewBase {
     private eventsSinceLastVisitCols() {
         const eventsSinceLastVisit = { 'ae': { column: VIEWS_CONFIG[this.name][AE_START_DAY_FIELD] }, 'cm': { column: VIEWS_CONFIG[this.name][CON_MED_START_DAY_FIELD] } };
         const filtered = Object.assign({}, ...
-            Object.entries(eventsSinceLastVisit).filter(([k,v]) => study.domains[k].col(v.column)).map(([k,v]) => ({[k]:v}))
+            Object.entries(eventsSinceLastVisit).filter(([k,v]) => study.domains[k] && study.domains[k].col(v.column)).map(([k,v]) => ({[k]:v}))
         );
         return filtered;
     }
@@ -409,7 +409,7 @@ export class VisitsView extends ClinicalCaseViewBase {
             return df ? df.rowCount === 1 && df.getCol(SUBJECT_ID).isNone(0) ? 0 : df.rowCount : 0;
         }
 
-        if (this.studyVisit.exAtVisit && this.studyVisit.exAtVisit.columns.names().includes(this.studyVisit.exAtVisit)) {
+        if (this.studyVisit.exAtVisit && this.studyVisit.exAtVisit.columns.names().includes(this.studyVisit.extrtWithDoseColName)) {
             acc.addPane('Drug exposure', () => {
                 if (!getRowNumber(this.studyVisit.exAtVisit)) {
                     return ui.divText('No records found');
