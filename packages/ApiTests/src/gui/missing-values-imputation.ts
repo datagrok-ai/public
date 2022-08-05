@@ -16,7 +16,7 @@ category('Dialog: Missing Values Imputation', () => {
   });
 
   test('dialogs.missingValuesImputation', async () => {
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Missing Values Imputation...').root.click();
+    grok.shell.topMenu.find('Tools').find('Data Science').find('Missing Values Imputation...').click();
     await delay(1000);
     isDialogPresent('Missing Values Imputation');
 

@@ -14,7 +14,7 @@ category('Dialog: SPE', () => {
   });
 
   test('dialogs.spe', async () => {
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Stochastic Proximity Embedding...').root.click(); await delay(1000);
+    grok.shell.topMenu.find('Tools').find('Data Science').find('Stochastic Proximity Embedding...').click(); await delay(1000);
 
     const okButton = document.getElementsByClassName('ui-btn ui-btn-ok')[0] as HTMLElement;
         okButton!.click(); await delay(2000);

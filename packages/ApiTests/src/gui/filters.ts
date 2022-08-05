@@ -14,7 +14,7 @@ category('Grid: Filters', () => {
   });
 
   test('grid.filters', async () => {
-    grok.shell.topMenu.find('Select').find('Random...').root.click(); await delay(1000);
+    grok.shell.topMenu.find('Select').find('Random...').click(); await delay(1000);
     isDialogPresent('Select Random Rows')
   
     let input25 = document.getElementsByName('label-25%')[0] as HTMLElement;

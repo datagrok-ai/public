@@ -18,7 +18,7 @@ category('Chem: Similarity Search', () => {
     
     smiles.currentRowIdx = 0;
 
-    grok.shell.topMenu.find('Chem').find('Similarity Search...').root.click(); await delay(2000);
+    grok.shell.topMenu.find('Chem').find('Similarity Search...').click(); await delay(2000);
 
     isViewerPresent(Array.from(v.viewers), 'SimilaritySearchViewer');
 
