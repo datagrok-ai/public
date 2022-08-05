@@ -8,7 +8,7 @@ non-natural monomers and complex attachment points.
 [Andrew Skalkin](https://github.com/skalkin) | 
 [issue tracker](https://github.com/datagrok-ai/public/issues/700) | beta
 
-![](images/helm-rendering.png)
+![](vendor/helm-rendering.png)
 
 ### Features
 * Automatic detection of HELM values in datasets

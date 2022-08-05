@@ -15,6 +15,9 @@
 <script type="text/javascript">
   dojo.ready(function () {
     var jsd = new JSDraw("Div2", { width: 800, height: 400, skin: "w8", viewonly: true });
+    var mol = jsd.getMolfile();
+    var m = new JSDraw2.Mol();
+    console.log(JSDraw2.FormulaParser.getAtomStats(m.setMolfile(mol)));
   });
 </script>
 </body>
