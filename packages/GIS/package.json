@@ -1,6 +1,5 @@
 {
 	"name": "@datagrok/gis",
-	"beta": false,
 	"friendlyName": "GIS",
 	"version": "0.0.2",
 	"author": {

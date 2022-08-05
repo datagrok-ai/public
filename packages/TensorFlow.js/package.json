@@ -1,6 +1,5 @@
 {
 	"name": "@datagrok/tensorflow-dev",
-	"beta": true,
 	"friendlyName": "TensorFlow.js",
 	"author": {
 		"name": "Volodymyr Dyma",

@@ -1,7 +1,6 @@
 {
 	"name": "@datagrok/dsp",
 	"fullName": "DSP",
-	"beta": true,
 	"author": {
 		"name": "Maksym Shvyrlo",
 		"email": "mshvyrlo@datagrok.ai"

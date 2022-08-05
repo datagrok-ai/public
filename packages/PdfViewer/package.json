@@ -1,6 +1,5 @@
 {
   "name": "@datagrok/file-editors",
-  "beta": true,
   "version": "0.1.1",
   "author": {
     "name": "Andrew Skalkin",

@@ -1,6 +1,5 @@
 {
   "name": "@datagrok/custom-ml",
-  "beta": true,
   "author": {
     "name": "Konstantin Doncov",
     "email": "kdoncov@datagrok.ai"
