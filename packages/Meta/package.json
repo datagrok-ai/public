@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.1.67",
+  "version": "1.1.68",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1025,9 +1025,12 @@
       "dependencies": {
         "0.0.4": {
           "datagrok-api": "latest"
+        },
+        "1.0.0": {
+          "datagrok-api": "^1.5.0"
         }
       },
-      "description": "ChemblAPI is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+      "description": "Chem package extensiions. Features for similarity and substructure search in ChEMBL using API",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
