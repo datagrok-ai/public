@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/molecular-liability-browser",
   "fullName": "MolecularLiabilityBrowser",
-  "version": "1.2.10",
+  "version": "1.2.11",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
   },
-  "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+  "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform to analyse variable region sequences of antibodies.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -15,7 +15,7 @@
   "sources": [
     "css/ngl.css",
     "css/pviz-core.css",
-    "css/additionalStyles.css",
+    "css/additional-styles.css",
     "vendor/pviz-bundle.min.js",
     "common/ngl_viewer/ngl.js",
     "css/vd-regions-viewer.css"
@@ -34,9 +34,7 @@
     "dexie": "^3.2.2",
     "logojs-react": "^2.1.1",
     "rxjs": "^6.5.5",
-    "ts-loader": "^9.2.5",
     "ts-transformer-keys": "^0.4.3",
-    "typescript": "^4.5.4",
     "uint8-to-base64": "^0.2.0",
     "weighted": "^1.0.0"
   },
@@ -46,6 +44,8 @@
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
     "eslint-config-google": "latest",
+    "ts-loader": "^9.2.5",
+    "typescript": "^4.5.4",
     "webpack": "^5.66.0",
     "webpack-cli": "latest"
   },
