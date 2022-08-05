@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {scriptEditor} from './script-editor';
 import {IconTool} from './icon-tool';
 import {EntityType} from './constants';
-import './styles.css';
+import '../css/styles.css';
 import * as tests from './tests/test-examples';
 import {testManagerView, _renderTestManagerPanel} from './package-testing';
 import {functionSignatureEditor} from './function-signature-editor';
