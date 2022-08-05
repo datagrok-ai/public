@@ -53,7 +53,7 @@
 		"release-alation-eval": "grok publish eval --release",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix",
-		"test": "set HOST=dev && jest",
+		"test": "jest",
 		"test-dev": "set HOST=dev && jest",
 		"test-local": "set HOST=localhost && jest"
 	},

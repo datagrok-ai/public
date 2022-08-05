@@ -47,7 +47,7 @@
 		"release-powerpack-dev": "grok publish dev --release",
 		"debug-powerpack-public": "grok publish public",
 		"release-powerpack-public": "grok publish public --release",
-		"test": "set HOST=dev && jest",
+		"test": "jest",
 		"test-dev": "set HOST=dev && jest",
 		"test-local": "set HOST=localhost && jest"
 	},

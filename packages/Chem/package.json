@@ -79,7 +79,7 @@
     "build": "webpack",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
-    "test": "set HOST=dev && jest",
+    "test": "jest",
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"
   },

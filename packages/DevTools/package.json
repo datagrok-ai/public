@@ -56,7 +56,7 @@
     "release-dev-tools-local": "grok publish local --release",
     "release-local": "grok publish local --release",
     "debug-local": "grok publish local",
-    "test": "set HOST=dev && jest",
+    "test": "jest",
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"
   },
