@@ -4,29 +4,22 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 // The file is imported from a WebWorker. Don't use Datagrok imports
 import {getRdKitModule, drawMoleculeToCanvas, getRdKitWebRoot} from '../utils/chem-common-rdkit';
+import {RDMol} from '../rdkit-api';
 
-let _alertsSmarts: string[] = [];
-let _alertsDescriptions: string[] = [];
-const _smartsMap: Map<string, any> = new Map();
-let _data: string[] | null = null;
-
-
-function loadAlertsCollection(smarts: string[]): void {
-  _data = smarts;
-  for (const currentSmarts of smarts)
-    _smartsMap.set(currentSmarts, getRdKitModule().get_qmol(currentSmarts));
-}
+let alertsDf: DG.DataFrame | null = null;
+const _smartsMap: Map<string, RDMol> = new Map();
 
 export async function getStructuralAlerts(smiles: string): Promise<number[]> {
-  if (_data === null)
+  if (alertsDf == null)
     await loadSADataset();
   const alerts: number[] = [];
   const mol = getRdKitModule().get_mol(smiles);
   //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
   // const lib = new _structuralAlertsRdKitModule.SubstructLibrary();
   // lib.add_smiles(smiles);
-  for (let i = 0; i < _data!.length; i++) {
-    const subMol = _smartsMap.get(_data![i]);
+  const smartsCol = alertsDf!.getCol('smarts');
+  for (let i = 0; i < smartsCol.length; i++) {
+    const subMol = _smartsMap.get(smartsCol.get(i))!;
     // lib.count_matches(subMol);
     const matches = mol.get_substruct_matches(subMol);
     if (matches !== '{}')
@@ -36,38 +29,36 @@ export async function getStructuralAlerts(smiles: string): Promise<number[]> {
   return alerts;
 }
 
-export function initStructuralAlertsContext(
-  alertsSmarts: string[], alertsDescriptions: string[]): void {
-  _alertsSmarts = alertsSmarts;
-  _alertsDescriptions = alertsDescriptions;
-  loadAlertsCollection(_alertsSmarts);
-  // await (await getRdKitService()).initStructuralAlerts(_alertsSmarts);
-}
-
 async function loadSADataset(): Promise<void> {
   const path = getRdKitWebRoot() + 'files/alert-collection.csv';
-  const table = await grok.data.loadTable(path);
-  const alertsSmartsList = table.columns.byName('smarts').toList();
-  const alertsDescriptionsList = table.columns.byName('description').toList();
-  initStructuralAlertsContext(alertsSmartsList, alertsDescriptionsList);
+  alertsDf = await grok.data.loadTable(path);
+  const smartsCol = alertsDf.getCol('smarts');
+
+  for (let i = 0; i < smartsCol.length; i++) {
+    const currentSmarts = smartsCol.get(i);
+    _smartsMap.set(currentSmarts, getRdKitModule().get_qmol(currentSmarts));
+  }
 }
 
 export async function structuralAlertsWidget(smiles: string): Promise<DG.Widget> {
   const alerts = await getStructuralAlerts(smiles);
   if (alerts.length === 0)
     return new DG.Widget(ui.divText('No alerts'));
-  // await (await getRdKitService()).getStructuralAlerts(smiles); // getStructuralAlerts(smiles);
+
   const width = 200;
   const height = 100;
+  const descriptionCol = alertsDf!.getCol('description');
+  const smartsCol = alertsDf!.getCol('smarts');
+
   const list = ui.div(alerts.map((i) => {
-    const description = ui.divText(_alertsDescriptions[i]);
+    const description = ui.divText(descriptionCol.get(i));
     const imageHost = ui.canvas(width, height);
     const r = window.devicePixelRatio;
     imageHost.width = width * r;
     imageHost.height = height * r;
     imageHost.style.width = width.toString() + 'px';
     imageHost.style.height = height.toString() + 'px';
-    drawMoleculeToCanvas(0, 0, width * r, height * r, imageHost, smiles, _alertsSmarts[i]);
+    drawMoleculeToCanvas(0, 0, width * r, height * r, imageHost, smiles, smartsCol.get(i));
     const host = ui.div([description, imageHost], 'd4-flex-col');
     host.style.margin = '5px';
     return host;
