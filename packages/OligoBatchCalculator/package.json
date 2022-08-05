@@ -44,7 +44,7 @@
     "release-oligobatchcalculator-public": "grok publish public --release",
     "debug-oligobatchcalculator-local": "grok publish local",
     "release-oligobatchcalculator-local": "grok publish local --release",
-    "test": "set HOST=dev && jest",
+    "test": "jest",
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"
   },

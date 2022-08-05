@@ -52,7 +52,7 @@
     "release-parquettest-dev": "grok publish dev --release",
     "debug-parquettest-local": "grok publish local",
     "release-parquettest-local": "grok publish local --release",
-    "test": "set HOST=dev && jest",
+    "test": "jest",
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"
   },

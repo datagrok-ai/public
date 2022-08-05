@@ -64,7 +64,7 @@
     "release-biostructureviewer-local": "grok publish local --release",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "test": "set HOST=dev && jest",
+    "test": "jest",
     "test-dev": "set HOST=dev && jest",
     "test-localhost": "set HOST=localhost && jest"
   },

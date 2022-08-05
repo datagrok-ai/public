@@ -53,7 +53,7 @@
     "release-tutorials-local": "grok publish local --release",
     "debug-tutorials-localhost": "grok publish localhost",
     "release-tutorials-localhost": "grok publish localhost --release",
-    "test": "set HOST=dev && jest",
+    "test": "jest",
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"
   },
