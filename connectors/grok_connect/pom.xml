@@ -190,17 +190,17 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-io</artifactId>
-            <version>9.4.43.v20210629</version>
+            <version>9.4.48.v20220622</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-webapp</artifactId>
-            <version>9.4.43.v20210629</version>
+            <version>9.4.48.v20220622</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
-            <version>10.0.10</version>
+            <version>9.4.48.v20220622</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
