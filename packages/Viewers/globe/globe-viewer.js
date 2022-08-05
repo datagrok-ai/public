@@ -27,14 +27,14 @@ export class GlobeViewer extends DG.JsViewer {
 
   init() {
     this.globe = new ThreeGlobe()
-      .globeImageUrl(`${_package.webRoot}globe/earth-blue-marble.jpg`)
-      .bumpImageUrl(`${_package.webRoot}globe/earth-topology.png`);
+      .globeImageUrl(`${_package.webRoot}globe/images/earth-blue-marble.jpg`)
+      .bumpImageUrl(`${_package.webRoot}globe/images/earth-topology.png`);
 
     this.width = this.root.parentElement.clientWidth;
     this.height = this.root.parentElement.clientHeight;
 
     this.renderer = new THREE.WebGLRenderer({alpha: true});
-    this.renderer.domElement.style.backgroundImage = `url(${_package.webRoot}globe/night-sky.png)`;
+    this.renderer.domElement.style.backgroundImage = `url(${_package.webRoot}globe/images/night-sky.png)`;
     this.renderer.setSize(this.width, this.height);
     this.root.appendChild(this.renderer.domElement);
 
