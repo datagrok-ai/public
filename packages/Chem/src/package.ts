@@ -34,9 +34,9 @@ import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import {RDMol} from './rdkit-api';
 import Sketcher = chem.Sketcher;
-import {Viewer} from 'datagrok-api/dg';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
+import {checkForStructuralAlerts} from './panels/structural-alerts';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -586,4 +586,11 @@ export function detectSmiles(col: DG.Column, min: number) {
     col.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;
   }
+}
+
+//name: Chem | Structural Alerts...
+//tags: panel, chem, widgets
+//input: column col { semType: Molecule }
+export async function getStructuralAlerts(col: DG.Column<string>): Promise<void> {
+  await checkForStructuralAlerts(col);
 }
