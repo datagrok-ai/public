@@ -1,11 +1,11 @@
 {
   "#type": "DataConnection",
-  "name": "CassandraNorthwind",
-  "friendlyName": "Northwind",
+  "name": "CassandraMovieLens",
+  "friendlyName": "MovieLens",
   "parameters": {
     "server": "dev.datagrok.ai",
     "port": 29042,
-    "db": "northwind"
+    "db": "movielens"
   },
   "credentials" : {
     "parameters" : {
@@ -14,6 +14,6 @@
     }
   },
   "dataSource": "Cassandra",
-  "description": "Northwind sample database",
+  "description": "MovieLens sample database",
   "tags": ["demo"]
 }

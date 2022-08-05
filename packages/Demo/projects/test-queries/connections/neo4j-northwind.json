@@ -4,13 +4,13 @@
   "friendlyName":"Northwind",
   "parameters": {
     "server":"dev.datagrok.ai",
-    "db":"Northwind",
+    "db":"northwind",
     "port": 27687
   },
   "credentials" : {
     "parameters" : {
       "login": "neo4j",
-      "password": "northwind"
+      "password": "datagrok"
     }
   },
   "dataSource":"Neo4j",

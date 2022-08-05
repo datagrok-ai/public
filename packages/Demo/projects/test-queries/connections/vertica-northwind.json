@@ -1,19 +1,19 @@
 {
   "#type": "DataConnection",
-  "name": "VerticaNorthwind",
-  "friendlyName": "Northwind",
+  "name": "VerticaVMart",
+  "friendlyName": "VMart",
   "parameters": {
     "server": "dev.datagrok.ai",
     "port": 25433,
-    "db": "northwind"
+    "db": "datagrok"
   },
   "credentials" : {
     "parameters" : {
       "login": "datagrok",
-      "password": "datagrok"
+      "password": "Datagrok!"
     }
   },
   "dataSource": "Vertica",
-  "description": "Northwind sample database",
+  "description": "VMart example database",
   "tags": ["demo"]
 }
