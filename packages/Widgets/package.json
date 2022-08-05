@@ -1,6 +1,5 @@
 {
 	"name": "@datagrok/widgets",
-	"beta": true,
 	"friendlyName": "Widgets",
 	"version": "0.2.1",
 	"author": {

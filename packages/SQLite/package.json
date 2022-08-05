@@ -1,6 +1,5 @@
 {
   "name": "@datagrok/sqlite",
-  "beta": false,
   "friendlyName": "SQLite",
   "author": {
     "name": "Volodymyr Dyma",

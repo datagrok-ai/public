@@ -1,6 +1,5 @@
 {
 	"name": "@datagrok/hit-triage",
-	"beta": true,
 	"friendlyName": "HitTriage",
 	"version": "0.0.3",
 	"author": {

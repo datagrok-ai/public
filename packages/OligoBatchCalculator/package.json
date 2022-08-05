@@ -1,6 +1,5 @@
 {
   "name": "@datagrok/oligo-batch-calculator",
-  "beta": false,
   "friendlyName": "Oligo Batch Calculator",
   "author": {
     "name": "Vadym Kovadlo",

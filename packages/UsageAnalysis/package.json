@@ -1,6 +1,5 @@
 {
   "name": "@datagrok/usage-analysis",
-  "beta": false,
   "author": {
     "name": "Konstantin Doncov",
     "email": "kdoncov@datagrok.ai"
