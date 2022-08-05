@@ -11,12 +11,12 @@ export async function _testDetectors(path: string, detector: DG.Func): Promise<D
   const fileList = await grok.dapi.files.list(path, true, '');
   const csvList = fileList.filter((fi) => fi.fileName.endsWith('.csv'));
 
-  
+
   let readyCount = 0;
   const res = [];
 
   for (const fileInfo of csvList) {
-    try{
+    try {
       const csv = await grok.dapi.files.readAsText(path + fileInfo.fullPath);
       const df = DG.DataFrame.fromCsv(csv);
       for (const col of df.columns) {
@@ -24,18 +24,16 @@ export async function _testDetectors(path: string, detector: DG.Func): Promise<D
         if (semType !== null) {
           res.push({
             file: fileInfo.path, result: 'detected', column: col.name,
-            message: `semType is ${semType}`
+            message: `semType is ${semType}`,
           });
         }
       }
-    }
-    catch (err: unknown) {
+    } catch (err: unknown) {
       res.push({
         file: fileInfo.path, result: 'error', column: null,
         message: err instanceof Error ? err.message : (err as Object).toString(),
       });
-    }
-    finally {
+    } finally {
       readyCount += 1;
       pi.update(100 * readyCount / csvList.length, `Test ${fileInfo.fileName}`);
     }
@@ -62,7 +60,7 @@ export function _testDetectorsDialog(): void {
     testDialog = ui.dialog('Test semType detectors')
       .add(ui.div([
         pathInput.root,
-        detectorInput.root
+        detectorInput.root,
       ]))
       .onOK(async () => {
         const path = pathInput.value;
@@ -73,7 +71,7 @@ export function _testDetectorsDialog(): void {
       .show();
 
     testDialogSubs.push(testDialog.onClose.subscribe((value) => {
-      testDialogSubs.forEach((s) => { s.unsubscribe(); });
+      testDialogSubs.forEach((s) => {s.unsubscribe();});
       testDialogSubs = [];
       testDialog = null;
     }));
