@@ -1,10 +1,10 @@
-
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PositionInfo, PositionMonomerInfo, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+
 category('WebLogo-positions', () => {
   let tvList: DG.TableView[];
   let dfList: DG.DataFrame[];
@@ -35,6 +35,9 @@ category('WebLogo-positions', () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
     const tv: DG.TableView = grok.shell.addTableView(df);
 
+    df.getCol('seq').semType = 'Macromolecule';
+    df.getCol('seq').setTag('units', 'fasta:SEQ.MSA:DNA');
+
     const wlViewer: WebLogo = await df.plot.fromType('WebLogo') as unknown as WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
@@ -57,9 +60,9 @@ category('WebLogo-positions', () => {
       new PositionInfo('11', {'-': new PositionMonomerInfo(5)}),
       new PositionInfo('12', {'-': new PositionMonomerInfo(5)})
     ];
-    console.log(positions);
-    expect(positions.length,resAllDf1.length);
-    // check all positions are equal resAllDf1
+
+    expect(positions.length, resAllDf1.length);
+
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
       for (const key in positions[i].freq) {
@@ -71,6 +74,9 @@ category('WebLogo-positions', () => {
   test('positions with shrinkEmptyTail option', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
     const tv: DG.TableView = grok.shell.addTableView(df);
+
+    df.getCol('seq').semType = 'Macromolecule';
+    df.getCol('seq').setTag('units', 'fasta:SEQ.MSA:DNA');
 
     const wlViewer: WebLogo = await df.plot.fromType('WebLogo', {'shrinkEmptyTail': true}) as unknown as WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
@@ -93,7 +99,8 @@ category('WebLogo-positions', () => {
       new PositionInfo('10', {'C': new PositionMonomerInfo(5)})
     ];
 
-    console.log(positions);
+    expect(positions.length, resAllDf1.length);
+
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
       for (const key in positions[i].freq) {
@@ -107,7 +114,10 @@ category('WebLogo-positions', () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
     const tv: DG.TableView = grok.shell.addTableView(df);
 
-    const wlViewer: WebLogo = await df.plot.fromType('WebLogo', {'skipEmptyPositions': false}) as unknown as WebLogo;
+    df.getCol('seq').semType = 'Macromolecule';
+    df.getCol('seq').setTag('units', 'fasta:SEQ.MSA:DNA');
+
+    const wlViewer: WebLogo = await df.plot.fromType('WebLogo', {'skipEmptyPositions': true}) as unknown as WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
     tvList.push(tv);
@@ -126,7 +136,8 @@ category('WebLogo-positions', () => {
       new PositionInfo('9', {'G': new PositionMonomerInfo(5)}),
       new PositionInfo('10', {'C': new PositionMonomerInfo(5)})
     ];
-    console.log(positions);
+
+    expect(positions.length, resAllDf1.length);
 
     for (let i = 0; i < positions.length; i++) {
       expect(positions[i].name, resAllDf1[i].name);
