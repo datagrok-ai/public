@@ -71,7 +71,7 @@ function printLeftOrCentered(
   const colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
   if (drawStyle === 'msa') {
-    grayPart = ' ';
+    grayPart = '';
   }
 
   let textSize: any = g.measureText(colorPart + grayPart);
