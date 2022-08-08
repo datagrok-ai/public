@@ -28,6 +28,8 @@ export class GisViewer extends DG.JsViewer {
   heatmapRadius: number;
   heatmapBlur: number;
 
+  isRowFocusing: boolean = true;
+
   //ui elements
   panelLeft: HTMLElement | null = null;
   panelRight: HTMLElement | null = null;
@@ -98,11 +100,15 @@ export class GisViewer extends DG.JsViewer {
     }, 'Show/hide layer');
     setupBtn(btnVisible, layerName, layerId);
     //Setup button>>
-    const btnSetup = ui.iconFA('cogs', ()=>{ //cogs
+    const btnSetup = ui.iconFA('cogs', (evt)=>{ //cogs
     }, 'Layer properties');
     setupBtn(btnSetup, layerName, layerId);
     //Delete button>>
-    const btnDelete = ui.iconFA('trash', ()=>{
+    const btnDelete = ui.iconFA('trash', (evt)=>{
+      const divLayer = (evt.currentTarget as HTMLElement);
+      const layerId = divLayer.getAttribute('layerId');
+      if (layerId) this.ol.removeLayerById(layerId);
+      this.updateLayersList();
     }, 'Delete layer');
     setupBtn(btnDelete, layerName, layerId);
 
@@ -179,14 +185,16 @@ export class GisViewer extends DG.JsViewer {
       //$(this.panelRight).hide();
     });
     $(rightPanelBtn).hide(); //temporary hide this button
-
+    const btnRowFocusing = ui.button(ui.iconFA('bullseye'), ()=>{
+      this.isRowFocusing = !this.isRowFocusing;
+    });
     const heatmapBtn = ui.button('HM', ()=>{
       this.renderHeat();
       this.updateLayersList();
     });
 
     //add buttons to top menu panel
-    this.panelTop.append(ui.divH([leftPanelBtn, rightPanelBtn, heatmapBtn]));
+    this.panelTop.append(ui.divH([leftPanelBtn, rightPanelBtn, heatmapBtn, btnRowFocusing]));
     //this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn]));
 
     //left panel icons>>
@@ -239,7 +247,8 @@ export class GisViewer extends DG.JsViewer {
       this.subs.push(ui.onSizeChanged((this.panelLeft as HTMLElement)).subscribe(this.rootOnSizeChanged.bind(this)));
       //setup callbacks
       this.ol.setMapPointermoveCallback(this.showCoordsInStatus.bind(this));
-      this.ol.setMapClickCallback(this.showCoordsInStatus.bind(this));
+      // this.ol.setMapClickCallback(this.showCoordsInStatus.bind(this));
+      this.ol.setMapClickCallback(this.handlerOnMapClick.bind(this));
 
       this.initialized = true;
     }
@@ -300,7 +309,19 @@ export class GisViewer extends DG.JsViewer {
   showCoordsInStatus(p: OLCallbackParam): void {
     if (this.lblStatusCoords) {
       if (p)
-        this.lblStatusCoords.innerText = p.coord[0] + ' !!! ' + p.coord[1];
+        this.lblStatusCoords.innerText = (p.coord[0]).toFixed(3) + ' / ' + (p.coord[1]).toFixed(3);
+    }
+  }
+
+  handlerOnMapClick(p: OLCallbackParam): void {
+    if (this.lblStatusCoords) {
+      if (p) {
+        if (this.isRowFocusing) {
+          // this.lblStatusCoords.innerText = (p.coord[0]).toFixed(3) + ' / ' + (p.coord[1]).toFixed(3);
+          this.dataFrame.rows.select(
+            (row) => ((row[this.latitudeColumnName] == p.coord[0]) && (row[this.longitudeColumnName] == p.coord[1])));
+        }
+      }
     }
   }
 
