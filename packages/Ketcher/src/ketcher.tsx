@@ -14,7 +14,6 @@ import {_jsThen} from "datagrok-api/src/utils";
 let sketcherId = 0;
 
 export class KetcherSketcher extends grok.chem.SketcherBase {
-  declare _ketcher: Ketcher;
 
   constructor() {
     super();
@@ -29,12 +28,18 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         console.log("Skecther error", message);
       },
       onInit: (ketcher: Ketcher) => {
-        this._ketcher = ketcher;
-        (this._ketcher.editor as any).subscribe("change", async (e: any) => {
-          await this.setSmilesSmartsMolfile();
+        //@ts-ignore
+        this._sketcher = ketcher;
+        //@ts-ignore
+        (this._sketcher.editor as any).subscribe("change", async (e: any) => {
+          //@ts-ignore
+          this.host._smiles = await this._sketcher!.getSmiles();
+          //@ts-ignore
+          this.host._molfile = await this._sketcher!.getMolfile();
           this.onChanged.next(null);
         });
-        this._ketcher.editor.zoom(0.5);
+        //@ts-ignore
+        this._sketcher.editor.zoom(0.5);
       },
     };
 
@@ -47,7 +52,10 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.root.appendChild(host);
   }
 
-  async init() {
+  //@ts-ignore
+  async init(host: chem.Sketcher) {
+    //@ts-ignore
+    this.host = host;
     let id = `ketcher-${sketcherId++}`;
     this.root.id = id;
     this.onChanged.next(null);
@@ -58,66 +66,40 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
-    return this._smiles;
+    //@ts-ignore
+    return this._sketcher ? this.host._smiles : this.host.getSmiles();
   }
 
   set smiles(smiles) {
-    this.setSmiles(smiles);
-  }
-
-  async getSmiles(): Promise<string> {
-    return await this._ketcher?.getSmiles();
-  }
-
-  async setSmiles(smiles: string) {
     this.setKetcherMolecule(smiles);
   }
 
-  async getMolFile(): Promise<string> {
-    return await this._ketcher?.getMolfile();
-  }
-
   get molFile() {
-    return this._molFile;
+    //@ts-ignore
+    return this._sketcher ? this.host._molfile : this.host.getMolFile();
   }
 
   set molFile(molfile: string) {
-    this.setMolFile(molfile);
-  }
-
-  async setMolFile(molfile: string) {
     this.setKetcherMolecule(molfile);
   }
 
-  get smarts() {
-    return this._smarts;
+  async getSmarts(): Promise<string> {
+    //@ts-ignore
+    return this._sketcher ? await this._sketcher.getSmarts() : await this.host.getSmarts();
   }
 
   set smarts(smarts: string) {
-    this.setSmarts(smarts);
-  }
-
-  async getSmarts(): Promise<string> {
-    return this._smarts;
-  }
-
-  async setSmarts(smarts: string) {
     this.setKetcherMolecule(smarts);
   }
 
   setKetcherMolecule(molecule: string) {
     try {
-      this._ketcher?.setMolecule(molecule);
+      //@ts-ignore
+      this._sketcher?.setMolecule(molecule);
     } catch (e) {
       console.log(e);
       return;
     }
-  }
-
-  async setSmilesSmartsMolfile(){
-    this._smiles = await this.getSmiles();
-    this._molFile = await this.getMolFile();
-    this._smarts = await this.getSmarts();
   }
 
   detach() {
