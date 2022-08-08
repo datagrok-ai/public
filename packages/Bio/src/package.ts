@@ -20,40 +20,57 @@ import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CO
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
-import {lru} from './utils/cell-renderer';
 import {representationsWidget} from './widgets/representations';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils'
 
 
-//tags: init
-export async function initBio(): Promise<void> {
-  // apparently HELMWebEditor requires dojo to be initialized first
-  const funcList: DG.Func[] = DG.Func.find({package: 'Helm', name: 'initHelm'});
-  console.debug(`Bio: initBio() funcList.length = ${funcList.length}`);
-  if (funcList.length === 1)
-    await grok.functions.call('Helm:initHelp');
-
-  return new Promise((resolve, reject) => {
-    // @ts-ignore
-    dojo.ready(function() { resolve(null); });
-  });
-}
-
-//name: Lru
-//output: object lruCache
-export function Lru() {
-  return lru;
-}
-
-//name: macromoleculeSequenceCellRenderer
+//name: PTSequenceCellRenderer
 //tags: cellRenderer
-//meta.cellType: Macromolecule
+//meta.cellType: Sequence
+//meta.columnTags: units=fasta:SEQ:PT
 //output: grid_cell_renderer result
-export function macromoleculeSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+export function PTSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
 }
+
+//name: DNASequenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: Sequence
+//meta.columnTags: units=fasta:SEQ:DNA
+//output: grid_cell_renderer result
+export function DNASequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+  return new MacromoleculeSequenceCellRenderer();
+}
+
+//name: RNASequenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: Sequence
+//meta.columnTags: units=fasta:SEQ:RNA
+//output: grid_cell_renderer result
+export function RNASequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+  return new MacromoleculeSequenceCellRenderer();
+}
+
+//name: SepMSASequenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: Sequence
+//meta.columnTags: units=separator:SEQ.MSA:UN
+//output: grid_cell_renderer result
+export function SepMSASequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+  return new MacromoleculeSequenceCellRenderer();
+}
+
+//name: SepPTSequenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: Sequence
+//meta.columnTags: units=separator:SEQ:PT
+//output: grid_cell_renderer result
+export function SepPTSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+  return new MacromoleculeSequenceCellRenderer();
+}
+
 
 function checkInputColumn(col: DG.Column, name: string,
   allowedNotations: string[] = [], allowedAlphabets: string[] = []): boolean {
