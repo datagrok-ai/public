@@ -22,7 +22,7 @@ import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {_rdKitModule} from './utils/chem-common-rdkit';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
-import {convertMoleculeImpl, isMolBlock, MolNotation, molToMolblock} from './utils/chem-utils';
+import {convertMoleculeImpl, isMolBlock, MolNotation} from './utils/chem-utils';
 import '../css/chem.css';
 import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
@@ -34,7 +34,6 @@ import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import {RDMol} from './rdkit-api';
 import Sketcher = chem.Sketcher;
-import {Viewer} from 'datagrok-api/dg';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 
@@ -231,6 +230,8 @@ export function descriptorsApp(): void {
 //description: Save as SDF
 //tags: fileExporter
 export function saveAsSdf(): void {
+  // let dlg: DG.Dialog | null = null;
+  // let dialogSubs: Subscription[] = [];
   saveAsSdfDialog();
 }
 
@@ -246,26 +247,26 @@ export function saveAsSdf(): void {
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
   similarity: number, methodName: string) : Promise<void> {
- const axesNames = getEmbeddingColsNames(df);
- const options = {
-  'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
-};
- await getActivityCliffs(
-  df, 
-  smiles,
-  null as any, 
-  axesNames,
-  'Activity cliffs',
-  activities, 
-  similarity, 
-  'Tanimoto',
-  methodName,
-  DG.SEMTYPE.MOLECULE,
-  'smiles',
-  chemSpace,
-  chemSearches.chemGetSimilarities,
-  drawTooltip,
-  (options as any)[methodName]);
+  const axesNames = getEmbeddingColsNames(df);
+  const options = {
+    'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
+  };
+  await getActivityCliffs(
+    df,
+    smiles,
+    null as any,
+    axesNames,
+    'Activity cliffs',
+    activities,
+    similarity,
+    'Tanimoto',
+    methodName,
+    DG.SEMTYPE.MOLECULE,
+    'smiles',
+    chemSpace,
+    chemSearches.chemGetSimilarities,
+    drawTooltip,
+    (options as any)[methodName]);
 }
 
 //top-menu: Chem | Chemical Space...
@@ -453,14 +454,25 @@ export function convertMolecule(molecule: string, from: string, to: string): str
 export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
-  sketcher.setMolecule(cell.cell.value);
+
+  let molecule = '';
+  if (unit == 'smiles') {
+    const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(cell.cell.value);
+    if (!mol.has_coords())
+      mol.set_new_coords();
+    mol.normalize_depiction();
+    mol.straighten_depiction();
+    molecule = mol.get_molblock();
+  } else
+    molecule = cell.cell.value;
+  sketcher.setMolFile(molecule);
   ui.dialog()
-      .add(sketcher)
-      .onOK(() => {
+    .add(sketcher)
+    .onOK(() => {
       cell.cell.value = unit == 'molblock' ? sketcher.getMolFile() : sketcher.getSmiles();
       Sketcher.addRecent(sketcher.getMolFile());
-  })
-  .show();
+    })
+    .show();
 }
 
 //name: SimilaritySearchViewer
