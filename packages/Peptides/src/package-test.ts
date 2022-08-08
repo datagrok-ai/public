@@ -11,7 +11,6 @@ export {tests};
 //input: string category {optional: true}
 //input: string test {optional: true}
 //output: dataframe result
-//top-menu: Tools | Dev | JS API Tests
 export async function test(category: string, test: string): Promise<DG.DataFrame> {
   const data = await runTests({category, test: test});
   return DG.DataFrame.fromObjects(data)!;
