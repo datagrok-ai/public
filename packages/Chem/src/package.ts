@@ -26,7 +26,7 @@ import {convertMoleculeImpl, isMolBlock, MolNotation, molToMolblock} from './uti
 import '../css/chem.css';
 import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
-import {_saveAsSdf} from './utils/sdf-utils';
+import {saveAsSdfDialog} from './utils/sdf-utils';
 import {Fingerprint} from './utils/chem-common';
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
@@ -34,9 +34,9 @@ import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import {RDMol} from './rdkit-api';
 import Sketcher = chem.Sketcher;
-import { Viewer } from 'datagrok-api/dg';
-import { getActivityCliffs } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils'
+import {Viewer} from 'datagrok-api/dg';
+import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -236,7 +236,7 @@ export function descriptorsApp(): void {
 //description: Save as SDF
 //tags: fileExporter
 export function saveAsSdf(): void {
-  _saveAsSdf();
+  saveAsSdfDialog();
 }
 
 //#region Top menu
@@ -282,30 +282,29 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //input: bool plotEmbeddings = true
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
-
-    const embedColsNames = getEmbeddingColsNames(table);
-    const withoutEmptyValues = DG.DataFrame.fromColumns([smiles]).clone();
-    const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, smiles);
-    const chemSpaceParams = {
-      seqCol: withoutEmptyValues.col(smiles.name)!,
-      methodName: methodName,
-      similarityMetric: similarityMetric,
-      embedAxesNames: embedColsNames
-    }
-    const chemSpaceRes = await chemSpace(chemSpaceParams);
-    const embeddings = chemSpaceRes.coordinates;
-    for (const col of embeddings) {
-      const listValues = col.toList();
-      emptyValsIdxs.forEach(ind => listValues.splice(ind, 0, null));
-      table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
-    }
-    if (plotEmbeddings) {
-      for (let v of grok.shell.views) {
-        if (v.name === table.name)
-          (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
-      }
-    }
+  const embedColsNames = getEmbeddingColsNames(table);
+  const withoutEmptyValues = DG.DataFrame.fromColumns([smiles]).clone();
+  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, smiles);
+  const chemSpaceParams = {
+    seqCol: withoutEmptyValues.col(smiles.name)!,
+    methodName: methodName,
+    similarityMetric: similarityMetric,
+    embedAxesNames: embedColsNames,
   };
+  const chemSpaceRes = await chemSpace(chemSpaceParams);
+  const embeddings = chemSpaceRes.coordinates;
+  for (const col of embeddings) {
+    const listValues = col.toList();
+    emptyValsIdxs.forEach((ind) => listValues.splice(ind, 0, null));
+    table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
+  }
+  if (plotEmbeddings) {
+    for (const v of grok.shell.views) {
+      if (v.name === table.name)
+        (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+    }
+  }
+};
 
 //name: R-Groups Analysis
 //top-menu: Chem | R-Groups Analysis...
@@ -460,18 +459,17 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
 
-  let molecule = ''
-  if(unit == 'smiles'){
+  let molecule = '';
+  if(unit == 'smiles') {
     const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(cell.cell.value);
-        if (!mol.has_coords())
-          mol.set_new_coords();
-        mol.normalize_depiction();
-        mol.straighten_depiction();
-        molecule = mol.get_molblock();
-  } else {
+    if (!mol.has_coords())
+      mol.set_new_coords();
+    mol.normalize_depiction();
+    mol.straighten_depiction();
+    molecule = mol.get_molblock();
+  } else
     molecule = cell.cell.value;
-  }
-  sketcher.setMolFile(molecule)
+  sketcher.setMolFile(molecule);
   ui.dialog()
     .add(sketcher)
     .onOK(() => {
