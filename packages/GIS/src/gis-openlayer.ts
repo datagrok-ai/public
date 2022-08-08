@@ -119,6 +119,14 @@ export class OpenLayers {
     OLG.olMap.getView().fit(sourceVector.getExtent());
   }
 
+  addKMLLayerFromStream(stream: string) {
+    const sourceVector = new VectorSource({
+      features: new KML().readFeatures(stream),
+    });
+    this.addNewVectorLayer('file.name', null, null, sourceVector);
+    this.olMap.getView().fit(sourceVector.getExtent());
+  }
+
   addNewView(options?: Object | undefined) {
     const newView = new OLView({});
     if (options) newView.setProperties(options);
@@ -162,13 +170,22 @@ export class OpenLayers {
       const layersArr = this.olMap.getAllLayers();
       for (let i = 0; i < layersArr.length; i++) {
         let lId = layersArr[i].get('layerId');
-        if (layerId == lId)
+        if (layerId === lId)
           layerResult = layersArr[i];
       }
     }
     return (layerResult as VectorLayer<VectorSource>);
   }
-
+  removeLayerById(layerId: string): void {
+    if (this.olMap) {
+      const layersArr = this.olMap.getAllLayers();
+      for (let i = 0; i < layersArr.length; i++) {
+        const lId = layersArr[i].get('layerId');
+        if (layerId === lId)
+          this.olMap.removeLayer(layersArr[i]);
+      }
+    }
+  }
   addLayer(layerToAdd: BaseLayer) {
     layerToAdd.set('layerId', Date.now()+'|'+(Math.random()*100));
     this.olMap.addLayer(layerToAdd);
@@ -288,6 +305,12 @@ export class OpenLayers {
       pixel: [evt.pixel[0], evt.pixel[1]]
     };
 
+    const features = this.olMap.getFeaturesAtPixel(evt.pixel);
+    if (features) {
+      //(features[0].getGeometry).
+    }
+
+
     if (this.onClickCallback)
       this.onClickCallback(res);
     else {
@@ -309,12 +332,15 @@ export class OpenLayers {
     // let featuredata: string = ' / Value';
     // if (feature) featuredata = featuredata + feature.get('fieldValue');
     //TODO: remove this crutch - only callback fn
-    let lbl = document.getElementById('lbl-coord');
-    // if (lbl) lbl.innerHTML = evt.coordinate[0] + ', ' + evt.coordinate[1] + ' ' + featuredata;
-    if (lbl) lbl.innerHTML = evt.coordinate[0] + ', ' + evt.coordinate[1];
+    // let lbl = document.getElementById('lbl-coord');
+    // if (lbl) lbl.innerHTML = evt.coordinate[0] + ', ' + evt.coordinate[1];
 
     if (this.onPointermoveCallback)
       this.onPointermoveCallback(res);
+    else {
+      if (OLG) //TODO: remove this stuff (use bind)
+        if (OLG.onPointermoveCallback) OLG.onPointermoveCallback(res);
+    }
   }
 
   //map events management functions>>

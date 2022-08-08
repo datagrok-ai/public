@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import { category, before, test, after, expect, delay, assure } from '@datagrok-libraries/utils/src/test';
-import { EntityType } from '../constants';
+import {category, before, test, after, expect, delay, assure} from '@datagrok-libraries/utils/src/test';
+import {EntityType} from '../constants';
 
 
 category('Dev panel', () => {
@@ -54,8 +54,8 @@ category('Dev panel', () => {
     const snippetSection = devPane.root.querySelector('.dt-snippet-section');
     const textArea = devPane.root.querySelector('.dt-textarea-box');
     [devPaneContainer, snippetSection, textArea].forEach((el) => {
-      console.log(el)
-      assure.notNull(el)
+      console.log(el);
+      assure.notNull(el);
     });
   });
 

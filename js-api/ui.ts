@@ -6,7 +6,7 @@
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
 import {VirtualView} from './src/views/view';
-import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider, RangeSliderStyle} from './src/widgets';
+import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewGroup, Widget, RangeSlider, RangeSliderStyle, FilesWidget} from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
@@ -628,9 +628,9 @@ export function inputs(inputs: Iterable<InputBase>, options: any = null) {
 
 /** Creates new nodes tree.
  * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
- * @returns {TreeViewNode} */
-export function tree(): TreeViewNode {
-  return TreeViewNode.tree();
+ * @returns {TreeViewGroup} */
+export function tree(): TreeViewGroup {
+  return TreeViewGroup.tree();
 }
 
 
@@ -1303,6 +1303,10 @@ export function setDisplay(element: HTMLElement, show: boolean) {
   else
     element.style.display = 'none';
   return element;
+}
+
+export function fileBrowser(params: {path?: string} = {}): Widget {
+  return FilesWidget.create(params);
 }
 
 export namespace tools {

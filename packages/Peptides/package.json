@@ -1,6 +1,10 @@
 {
   "name": "@datagrok/peptides",
-  "version": "1.0.1",
+  "version": "1.0.2",
+  "author": {
+    "name": "Volodymyr Dyma",
+    "email": "vdyma@datagrok.ai"
+  },
   "description": "Provides advanced tools for analyzing collections of peptides.",
   "repository": {
     "type": "git",
@@ -9,7 +13,7 @@
   },
   "dependencies": {
     "@biowasm/aioli": ">=2.4.0",
-    "@datagrok-libraries/bio": "^2.6.0",
+    "@datagrok-libraries/bio": "^2.8.6",
     "@datagrok-libraries/ml": "^2.0.1",
     "@datagrok-libraries/statistics": "^0.1.6",
     "@datagrok-libraries/utils": "^0.4.1",
@@ -37,7 +41,8 @@
     "puppeteer": "^13.7.0"
   },
   "sources": [
-    "common/ngl_viewer/ngl.js"
+    "common/ngl_viewer/ngl.js",
+    "helm/JSDraw/Pistoia.HELM.js"
   ],
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -59,7 +64,7 @@
     "release-peptides-local": "grok publish local --release",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
-    "test": "set HOST=dev && jest",
+    "test": "jest",
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"
   },

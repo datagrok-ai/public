@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { EntityType } from './constants';
-import { Test } from '@datagrok-libraries/utils/src/test';
-import { c, _package } from './package';
-import {delay} from "@datagrok-libraries/utils/src/test";
+import {EntityType} from './constants';
+import {Test} from '@datagrok-libraries/utils/src/test';
+import {c, _package} from './package';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 interface ITestManagerUI {
   runButton: HTMLButtonElement;
@@ -48,76 +48,76 @@ export function addView(view: DG.ViewBase): DG.ViewBase {
 
 export async function testManagerView(): Promise<void> {
   let pathSegments = window.location.pathname.split('/');
-  pathSegments = pathSegments.map(it => it ? it.toLowerCase() : undefined);
+  pathSegments = pathSegments.map((it) => it ? it.toLowerCase() : undefined);
   packagesTests = await collectTests({
-    packName: pathSegments[4], 
-    catName: pathSegments[5], 
+    packName: pathSegments[4],
+    catName: pathSegments[5],
     testName: pathSegments[6]});
-  let v = DG.View.create();
+  const v = DG.View.create();
   const testUIElements: ITestManagerUI = createTestManagerUI(true, v);
-  v.name = 'Test Manager'
+  v.name = 'Test Manager';
   addView(v);
   v.temp['ignoreCloseAll'] = true;
   v.setRibbonPanels(
-    [ [ testUIElements.runButton ] ],
+    [[testUIElements.runButton]],
   );
   v.append(testUIElements.testsTree.root);
-  runActiveTests(testUIElements.testsTree, v);  
+  runActiveTests(testUIElements.testsTree, v);
 }
 
 
 export async function _renderTestManagerPanel(ent: EntityType): Promise<DG.Widget> {
-  if (ent == null) {
-    return DG.Widget.fromRoot(ui.divText('Entity does not exist.', { style: { color: 'var(--failure)' } }));
-  }
+  if (ent == null)
+    return DG.Widget.fromRoot(ui.divText('Entity does not exist.', {style: {color: 'var(--failure)'}}));
+
   if (ent.constructor.name === 'Package' || ent instanceof eval(`DG.Package`)) {
     packagesTests = await collectTests(undefined, ent.name);
     const testUIElements: ITestManagerUI = createTestManagerUI();
     const panelDiv = ui.divV([
       testUIElements.runButton,
-      testUIElements.testsTree
+      testUIElements.testsTree,
     ]);
     return DG.Widget.fromRoot(panelDiv);
   };
-  return DG.Widget.fromRoot(ui.divText(`Entity is not of 'Package' type`, { style: { color: 'var(--failure)' } }));
+  return DG.Widget.fromRoot(ui.divText(`Entity is not of 'Package' type`, {style: {color: 'var(--failure)'}}));
 }
 
 
-async function collectTests(testFromUrl: ITestFromUrl, packageName?: string): Promise<IPackageTests[]>  {
-  let testFunctions = DG.Func.find({ name: 'Test' , meta: {file: 'package-test.js'}});
+async function collectTests(testFromUrl: ITestFromUrl, packageName?: string): Promise<IPackageTests[]> {
+  let testFunctions = DG.Func.find({name: 'Test', meta: {file: 'package-test.js'}});
   if (packageName) testFunctions = testFunctions.filter((f: DG.Func) => f.package.name === packageName);
   const packagesTestsList: IPackageTests[] = [];
-  for (let f of testFunctions) {
+  for (const f of testFunctions) {
     //await delay(4000); // will be removed with new version of js-api
-    await f.package.load({ file: f.options.file });
+    await f.package.load({file: f.options.file});
     const testModule = f.package.getModule(f.options.file);
-    if (!testModule) {
+    if (!testModule)
       console.error(`Error getting tests from '${f.package.name}/${f.options.file}' module.`);
-    }
+
     const allPackageTests = testModule ? testModule.tests : {};
-    let testsWithPackNameAndActFlag: { [cat: string]: ICategory } = {};
+    const testsWithPackNameAndActFlag: { [cat: string]: ICategory } = {};
     if (allPackageTests) {
       const normalizedPackName = f.package.name.toLowerCase();
       const packActive = testFromUrl ? testFromUrl.packName === normalizedPackName && !testFromUrl.catName : false;
       Object.keys(allPackageTests).forEach((cat) => {
-        let catTests: IPackageTest[] = [];
+        const catTests: IPackageTest[] = [];
         const normalizedCatName = cat.replace(/ /g, '').toLowerCase();
-        const catActive = testFromUrl ? 
-        packActive || testFromUrl.packName === normalizedPackName && testFromUrl.catName === normalizedCatName && !testFromUrl.testName : 
-        false;
+        const catActive = testFromUrl ?
+          packActive || testFromUrl.packName === normalizedPackName && testFromUrl.catName === normalizedCatName && !testFromUrl.testName :
+          false;
         allPackageTests[cat].tests
           .forEach((t) => catTests.push({
-            test: t, 
-            active: testFromUrl ? catActive || testFromUrl.packName === normalizedPackName && testFromUrl.catName === normalizedCatName && testFromUrl.testName === t.name.replace(/ /g, '').toLowerCase() : false, 
+            test: t,
+            active: testFromUrl ? catActive || testFromUrl.packName === normalizedPackName && testFromUrl.catName === normalizedCatName && testFromUrl.testName === t.name.replace(/ /g, '').toLowerCase() : false,
             packageName: f.package.name}));
 
         testsWithPackNameAndActFlag[cat] = {
-          active: catActive, 
+          active: catActive,
           tests: catTests};
       });
       packagesTestsList.push({
-        friendlyName: f.package.friendlyName, 
-        active: packActive, 
+        friendlyName: f.package.friendlyName,
+        active: packActive,
         categories: testsWithPackNameAndActFlag});
     }
   }
@@ -126,85 +126,83 @@ async function collectTests(testFromUrl: ITestFromUrl, packageName?: string): Pr
 
 
 function createTestManagerUI(labelClick?: boolean, view?: DG.View): ITestManagerUI {
-
-  let addCheckboxAndLabelClickListener = (item: DG.TreeViewNode, checked: boolean, isGroup: boolean, onChangeFunction: () => void, onItemClickFunction: () => void) => {
+  const addCheckboxAndLabelClickListener = (item: DG.TreeViewNode, checked: boolean, isGroup: boolean, onChangeFunction: () => void, onItemClickFunction: () => void) => {
     item.enableCheckBox(checked);
     item.checkBox?.addEventListener('change', onChangeFunction);
     if (labelClick) {
-      const label = isGroup ? item.root.children[ 0 ].children[ 2 ] : item.root.children[ 1 ];
+      const label = isGroup ? item.root.children[0].children[2] : item.root.children[1];
       label.addEventListener('click', onItemClickFunction);
     }
   };
 
-  let getTestsInfoAcc = (condition: string) => {
-    let acc = ui.accordion();
-    let accIcon = ui.element('i');
+  const getTestsInfoAcc = (condition: string) => {
+    const acc = ui.accordion();
+    const accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
-    acc.addTitle(ui.span([ accIcon, ui.label(`Tests details`) ]));
-    let grid = getTestsInfoGrid(condition);
+    acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
+    const grid = getTestsInfoGrid(condition);
     acc.addPane('Results', () => ui.div(grid), true);
     return acc.root;
-  }
+  };
 
-  let getTestsInfoGrid = (condition: string) => {
+  const getTestsInfoGrid = (condition: string) => {
     let grid;
     if (testsResultsDf) {
-      let testInfo = testsResultsDf
+      const testInfo = testsResultsDf
         .groupBy(testsResultsDf.columns.names())
         .where(condition)
         .aggregate();
       if (testInfo.rowCount === 1 && !testInfo.col('result').isNone(0)) {
         const gridMap = {};
-        testInfo.columns.names().forEach(col => {
-          gridMap[ col ] = testInfo.get(col, 0);
+        testInfo.columns.names().forEach((col) => {
+          gridMap[col] = testInfo.get(col, 0);
         });
         grid = ui.tableFromMap(gridMap);
-      } else {
+      } else
         grid = testInfo.plot.grid().root;
-      }
     }
     return grid;
-  }
+  };
 
   const tree = ui.tree();
   tree.root.style.width = '100%';
-  packagesTests.forEach(pack => {
+  packagesTests.forEach((pack) => {
     const packageGroup = tree.group(pack.friendlyName);
     addCheckboxAndLabelClickListener(packageGroup, pack.active, true, () => {
       pack.active = packageGroup.checked;
-      Object.keys(pack.categories).forEach(cat => {
+      Object.keys(pack.categories).forEach((cat) => {
         pack.categories[cat].active = packageGroup.checked;
-        pack.categories[cat].tests.forEach(t => t.active = packageGroup.checked);
+        pack.categories[cat].tests.forEach((t) => t.active = packageGroup.checked);
       });
     },
-      () => {
-        grok.shell.o = getTestsInfoAcc(`Package = ${Object.values(pack.categories)[0].tests[0].packageName}`);
-      });
-    Object.keys(pack.categories).forEach(cat => {
+    () => {
+      grok.shell.o = getTestsInfoAcc(`Package = ${Object.values(pack.categories)[0].tests[0].packageName}`);
+    });
+    Object.keys(pack.categories).forEach((cat) => {
       const catGroup = packageGroup.group(cat);
       addCheckboxAndLabelClickListener(catGroup, pack.categories[cat].active, true, () => {
         pack.categories[cat].active = catGroup.checked;
-        pack.categories[ cat ].tests.forEach(t => {
+        pack.categories[cat].tests.forEach((t) => {
           t.active = catGroup.checked;
         });
       },
-        () => {
-          grok.shell.o = getTestsInfoAcc(`Package = ${pack.categories[ cat ].tests[ 0 ].packageName} and category = ${cat}`);
-        });
-      pack.categories[ cat ].tests.forEach(t => {
-        let testPassed = ui.div();
-        let itemDiv = ui.splitH([
+      () => {
+        grok.shell.o = getTestsInfoAcc(`Package = ${pack.categories[cat].tests[0].packageName} and category = ${cat}`);
+      });
+      pack.categories[cat].tests.forEach((t) => {
+        const testPassed = ui.div();
+        const itemDiv = ui.splitH([
           testPassed,
-          ui.divText(t.test.name)
-        ], { style: { display: 'block' } });
-        let item = catGroup.item(itemDiv);
+          ui.divText(t.test.name),
+        ], {style: {display: 'block'}});
+        const item = catGroup.item(itemDiv);
         item.root.id = `${t.packageName}|${cat}|${t.test.name}`;
         addCheckboxAndLabelClickListener(item, t.active, false, () => {
           t.active = item.checked;
         },
-          () => {
-            grok.shell.o = getTestsInfoAcc(`Package = ${t.packageName} and category = ${cat} and name =  ${t.test.name}`);
-          });
+        () => {
+          grok.shell.o = getTestsInfoAcc(`Package = ${t.packageName} and category = ${cat} and name =  ${t.test.name}`);
+        });
         ui.tooltip.bind(item.root, () => getTestsInfoGrid(`Package = ${t.packageName} and category = ${cat} and name =  ${t.test.name}`));
       });
     });
@@ -214,50 +212,48 @@ function createTestManagerUI(labelClick?: boolean, view?: DG.View): ITestManager
     runActiveTests(tree, view);
   });
 
-  return { runButton: runTestsButton, testsTree: tree };
+  return {runButton: runTestsButton, testsTree: tree};
 }
 
 function runActiveTests(tree: DG.TreeViewNode, view?: DG.View) {
-  let actTests = collectActiveTests();
-  actTests.forEach(t => updateTestResultsIcon(tree, t.packageName, t.test.category, t.test.name));
-  if (actTests.length) {
+  const actTests = collectActiveTests();
+  actTests.forEach((t) => updateTestResultsIcon(tree, t.packageName, t.test.category, t.test.name));
+  if (actTests.length)
     runAllTests(actTests, tree, view);
-  }
 }
 
-function collectActiveTests () {
+function collectActiveTests() {
   let activeTests: IPackageTest[] = [];
-  packagesTests.forEach(pack => {
-    Object.keys(pack.categories).forEach(cat => {
-      const active = pack.categories[ cat ].tests.filter(t => t.active);
-      if (active.length > 0){
+  packagesTests.forEach((pack) => {
+    Object.keys(pack.categories).forEach((cat) => {
+      const active = pack.categories[cat].tests.filter((t) => t.active);
+      if (active.length > 0) {
 
       }
-      activeTests = activeTests.concat(pack.categories[ cat ].tests.filter(t => t.active));
+      activeTests = activeTests.concat(pack.categories[cat].tests.filter((t) => t.active));
     });
   });
-  const actPacks = [...new Set(activeTests.map(it => it.packageName))];
+  const actPacks = [...new Set(activeTests.map((it) => it.packageName))];
   testPath = '';
-  if(actPacks.length === 1) {
+  if (actPacks.length === 1) {
     testPath += `/${actPacks[0]}`;
-    const actCats = [...new Set(activeTests.map(it => it.test.category))];
+    const actCats = [...new Set(activeTests.map((it) => it.test.category))];
     if (actCats.length === 1) {
       testPath += `/${actCats[0]}`;
-      if (activeTests.length === 1) {
+      if (activeTests.length === 1)
         testPath += `/${activeTests[0].test.name}`;
-      }
     }
   }
   return activeTests;
 }
 
-function updateTestResultsIcon (tree: DG.TreeViewNode, pack: string, cat: string, name: string, success?: boolean) {
+function updateTestResultsIcon(tree: DG.TreeViewNode, pack: string, cat: string, name: string, success?: boolean) {
   const items = tree.items;
-  const item = items.filter(it => it.root.id === `${pack}|${cat}|${name}`)[ 0 ];
-  success === undefined ? item.root.children[ 1 ].children[ 0 ].children[ 0 ].innerHTML = '' : updateIcon(success, item.root.children[ 1 ].children[ 0 ].children[ 0 ]);
+  const item = items.filter((it) => it.root.id === `${pack}|${cat}|${name}`)[0];
+  success === undefined ? item.root.children[1].children[0].children[0].innerHTML = '' : updateIcon(success, item.root.children[1].children[0].children[0]);
 }
 
-function updateIcon (passed: boolean, iconDiv: Element) {
+function updateIcon(passed: boolean, iconDiv: Element) {
   const icon = passed ? ui.iconFA('check') : ui.iconFA('ban');
   icon.style.fontWeight = 'bold';
   icon.style.paddingRight = '5px';
@@ -265,16 +261,16 @@ function updateIcon (passed: boolean, iconDiv: Element) {
   iconDiv.append(icon);
 }
 
-async function runAllTests (activeTests: IPackageTest[], tree: DG.TreeViewNode, view?: DG.View) {
+async function runAllTests(activeTests: IPackageTest[], tree: DG.TreeViewNode, view?: DG.View) {
   let completedTestsCount = 0;
   if (view) view.path = '/' + view.name.replace(' ', '') + testPath.replace(/ /g, '');
-  activeTests.forEach(t => {
+  activeTests.forEach((t) => {
     const start = Date.now();
     grok.functions.call(
       `${t.packageName}:test`, {
-      "category": t.test.category,
-      "test": t.test.name
-    }).then((res) => {
+        'category': t.test.category,
+        'test': t.test.name,
+      }).then((res) => {
       completedTestsCount +=1;
       if (!testsResultsDf) {
         testsResultsDf = res;
@@ -285,20 +281,20 @@ async function runAllTests (activeTests: IPackageTest[], tree: DG.TreeViewNode, 
         testsResultsDf = testsResultsDf.append(res);
       }
       updateTestResultsIcon(tree, t.packageName, t.test.category, t.test.name, res.get('success', 0));
-      if(completedTestsCount === activeTests.length) {
+      if (completedTestsCount === activeTests.length) {
         grok.shell.closeAll();
         grok.shell.v = view;
       }
-    })
-  })
+    });
+  });
 };
 
-function addPackageAndTimeInfo (df: DG.DataFrame, start: number, pack: string) {
+function addPackageAndTimeInfo(df: DG.DataFrame, start: number, pack: string) {
   df.columns.addNewInt('time, ms').init(() => Date.now() - start);
   df.columns.addNewString('package').init(() => pack);
 }
 
-function removeTestRow (pack: string, cat: string, test: string) {
+function removeTestRow(pack: string, cat: string, test: string) {
   for (let i = 0; i < testsResultsDf.rowCount; i++) {
     if (testsResultsDf.get('package', i) === pack && testsResultsDf.get('category', i) === cat && testsResultsDf.get('name', i) === test) {
       testsResultsDf.rows.removeAt(i);
@@ -306,6 +302,5 @@ function removeTestRow (pack: string, cat: string, test: string) {
     }
   }
 }
-
 
 

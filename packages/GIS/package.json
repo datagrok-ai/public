@@ -1,8 +1,11 @@
 {
 	"name": "@datagrok/gis",
-	"beta": false,
 	"friendlyName": "GIS",
 	"version": "0.0.2",
+	"author": {
+		"name": "Maksym Shvyrlo",
+		"email": "mshvyrlo@datagrok.ai"
+	},
 	"description": "",
 	"dependencies": {
 		"@datagrok-libraries/utils": "latest",

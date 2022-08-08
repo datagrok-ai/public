@@ -5,16 +5,13 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './utils/constants';
 
-import {StackedBarChart} from './viewers/stacked-barchart-viewer';
-
 import {analyzePeptidesWidget} from './widgets/analyze-peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
-import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
-import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
-import {msaWidget} from './widgets/multiple-sequence-alignment';
+
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
+import {getSeparator} from './utils/misc';
 
 export const _package = new DG.Package();
 let currentTable: DG.DataFrame;
@@ -69,7 +66,7 @@ export async function Peptides(): Promise<void> {
     ui.divH([
       ui.button('Simple demo', () => main('aligned.csv'), ''),
       ui.button('Complex demo', () => main('aligned_2.csv'), ''),
-
+      ui.button('HELM demo', () => main('aligned_3.csv'), ''),
     ]),
   ]);
 }
@@ -107,45 +104,9 @@ export function peptideSpace(): PeptideSpaceViewer {
   return new PeptideSpaceViewer();
 }
 
-//name: StackedBarchart Widget
-//tags: panel, widgets
-//input: column col {semType: aminoAcids}
-//output: widget result
-export async function stackedBarchartWidget(col: DG.Column): Promise<DG.Widget> {
-  const viewer = await col.dataFrame.plot.fromType('StackedBarChartAA');
-  const panel = ui.divH([viewer.root]);
-  return new DG.Widget(panel);
-}
-
-//name: Peptide Molecule
-//tags: panel, widgets
-//input: string peptide {semType: Macromolecule}
-//output: widget result
-export async function peptideMolecule(peptide: string): Promise<DG.Widget> {
-  [currentTable, alignedSequenceColumn] = getOrDefine();
-  return peptideMoleculeWidget(peptide, currentTable);
-}
-
-//name: Peptide Molecule
-//tags: panel, widgets
-//input: string _aar {semType: aminoAcids}
-//output: widget result
-export async function peptideMolecule2(_aar: string): Promise<DG.Widget> {
-  [currentTable, alignedSequenceColumn] = getOrDefine();
-  const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
-  return peptideMolecule(peptide);
-}
-
-//name: StackedBarChartAA
-//tags: viewer
-//output: viewer result
-export function stackedBarChart(): DG.JsViewer {
-  return new StackedBarChart();
-}
-
 //name: Manual Alignment
 //tags: panel, widgets
-//input: string _monomer {semType: aminoAcids}
+//input: string _monomer {semType: Monomer}
 //output: widget result
 export function manualAlignment(_monomer: string): DG.Widget {
   [currentTable, alignedSequenceColumn] = getOrDefine();
@@ -163,52 +124,27 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   return widget.draw();
 }
 
+/*
 //name: Molfile
 //tags: panel, widgets
 //input: string peptide {semType: Macromolecule}
 //output: widget result
 export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
   [currentTable, alignedSequenceColumn] = getOrDefine();
-  const smiles = getMolecule(peptide, alignedSequenceColumn.tags[C.TAGS.SEPARATOR]);
+  const smiles = getMolecule(peptide, getSeparator(alignedSequenceColumn));
   return grok.functions.call('Chem:molfile', {'smiles': smiles}) as Promise<DG.Widget>;
 }
 
 //name: Molfile
 //tags: panel, widgets
-//input: string _aar {semType: aminoAcids}
+//input: string _aar {semType: Monomer}
 //output: widget result
 export async function peptideMolfile2(_aar: string): Promise<DG.Widget> {
   [currentTable, alignedSequenceColumn] = getOrDefine();
   const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
   return peptideMolfile(peptide);
 }
-
-//name: Multiple sequence alignment
-//tags: panel
-//input: column col {semType: Macromolecule}
-//output: dataframe result
-export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.DataFrame> {
-  return msaWidget(col);
-}
-
-//name: Multiple sequence alignment for any column
-//input: dataframe table
-//input: column col
-//output: dataframe result
-export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<DG.DataFrame> {
-  const msaCol = await runKalign(col, false);
-  table.columns.add(msaCol);
-  return table;
-}
-
-//name: Test multiple sequence alignment for any column
-//input: dataframe _table
-//input: column col
-//output: column result
-export async function runTestMSAEnoughMemory(_table: DG.DataFrame, col: DG.Column<string>): Promise<DG.Column<string>> {
-  await testMSAEnoughMemory(col);
-  return col;
-}
+*/
 
 //name: Get Peptides Structure
 //tags: panel, widgets

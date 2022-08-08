@@ -1,64 +1,71 @@
 {
-	"name": "@datagrok/api-tests",
-	"friendlyName": "API Tests",
-	"version": "0.0.6",
-	"description": "js-api-tests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/ApiTests"
-	},
-	"dependencies": {
-		"@datagrok-libraries/utils": "0.4.0",
-		"datagrok-api": "^1.0.0",
-		"rxjs": "^6.6.7",
-		"wu": "latest",
-		"dayjs": "latest"
-	},
-	"devDependencies": {
-		"@types/jest": "^27.0.0",
-		"@types/wu": "^2.1.42",
-		"@typescript-eslint/eslint-plugin": "^5.26.0",
-		"@typescript-eslint/parser": "^5.26.0",
-		"datagrok-tools": "latest",
-		"eslint": "^8.16.0",
-		"eslint-config-google": "^0.14.0",
-		"jest": "^27.0.0",
-		"jest-html-reporter": "^3.5.0",
-		"js-yaml": "^4.1.0",
-		"puppeteer": "^13.7.0",
-		"root-require": "latest",
-		"ts-jest": "^27.0.0",
-		"ts-loader": "^9.2.6",
-		"typescript": "^4.4.4",
-		"webpack": "^5.59.1",
-		"webpack-cli": "^4.9.1"
-	},
-	"scripts": {
-		"debug-js-api-tests": "webpack && grok publish localhost",
-		"release-js-api-tests": "grok publish localhost --release",
-		"link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",
-		"link-utils": "npm link @datagrok-libraries/utils",
-		"link-api": "npm link datagrok-api",
-		"build-js-api-tests": "webpack",
-		"build": "webpack",
-		"test": "jest",
-		"lint": "eslint src --ext .ts",
-		"lint-fix": "eslint src --ext .ts --fix",
+  "name": "@datagrok/api-tests",
+  "friendlyName": "API Tests",
+  "version": "0.0.6",
+  "author": {
+    "name": "Alexander Paramonov",
+    "email": "aparamomov@datagrok.ai"
+  },
+  "description": "js-api-tests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/ApiTests"
+  },
+  "dependencies": {
+    "@datagrok-libraries/utils": "0.4.0",
+    "cash-dom": "^8.1.1",
+    "datagrok-api": "^1.5.3",
+    "dayjs": "latest",
+    "rxjs": "^6.6.7",
+    "wu": "latest"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.0.0",
+    "@types/wu": "^2.1.42",
+    "@typescript-eslint/eslint-plugin": "^5.26.0",
+    "@typescript-eslint/parser": "^5.26.0",
+    "datagrok-tools": "latest",
+    "eslint": "^8.16.0",
+    "eslint-config-google": "^0.14.0",
+    "jest": "^27.0.0",
+    "jest-html-reporter": "^3.5.0",
+    "js-yaml": "^4.1.0",
+    "puppeteer": "^13.7.0",
+    "root-require": "latest",
+    "ts-jest": "^27.0.0",
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.4.4",
+    "webpack": "^5.59.1",
+    "webpack-cli": "^4.9.1"
+  },
+  "scripts": {
+    "debug-js-api-tests": "webpack && grok publish localhost",
+    "release-js-api-tests": "grok publish localhost --release",
+    "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-api": "npm link datagrok-api",
+    "build-js-api-tests": "webpack",
+    "build": "webpack",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
     "debug-local": "grok publish local",
     "release-local": "grok publish local --release",
     "debug-js-api-tests-dev": "grok publish dev",
-		"release-js-api-tests-dev": "webpack && grok publish dev  --release",
-		"debug-js-api-tests-public": "grok publish public",
-		"release-js-api-tests-public": "grok publish public --release",
-		"debug-js-api-tests-local": "grok publish local",
-		"release-js-api-tests-local": "grok publish local --release"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	],
+    "release-js-api-tests-dev": "webpack && grok publish dev  --release",
+    "debug-js-api-tests-public": "grok publish public",
+    "release-js-api-tests-public": "grok publish public --release",
+    "debug-js-api-tests-local": "grok publish local",
+    "release-js-api-tests-local": "grok publish local --release",
+    "debug-js-api-tests-localhost": "grok publish localhost",
+    "release-js-api-tests-localhost": "webpack && grok publish localhost --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
   "category": "Development"
 }

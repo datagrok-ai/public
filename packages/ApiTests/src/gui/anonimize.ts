@@ -14,7 +14,7 @@ category('Dialog: Anonimize', () => {
   });
 
   test('dialogs.anonimize', async () => {
-    grok.shell.topMenu.find('Data').find('Anonimize...').root.click(); await delay(1000);
+    grok.shell.topMenu.find('Data').find('Anonimize...').click(); await delay(1000);
     isDialogPresent('Anonimize Data');
 
     setDialogInputValue('Anonymize Data', 'Number randomization factor', 1);

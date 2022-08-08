@@ -119,7 +119,7 @@ export class SARViewer extends SARViewerBase {
       this.render();
     }));
 
-    this.model.updateDefault(true);
+    this.model.updateDefault();
     this.viewerGrid = this.model._sarGrid;
     this.initialized = true;
     this.render();
@@ -158,8 +158,8 @@ export class SARViewerVertical extends SARViewerBase {
       this.viewerGrid = data;
       this.render();
     }));
-    
-    this.model.updateDefault(true);
+
+    this.model.updateDefault();
     this.viewerGrid = this.model._sarVGrid;
 
     this.initialized = true;

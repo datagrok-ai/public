@@ -50,6 +50,9 @@ export class VdRegionsViewer extends DG.JsViewer {
   public chains: string[];
   public sequenceColumnNamePostfix: string;
 
+  public skipEmptyPositions: boolean;
+
+
   public get df(): DG.DataFrame {
     return this.dataFrame;
   }
@@ -72,6 +75,8 @@ export class VdRegionsViewer extends DG.JsViewer {
     this.chains = this.stringList('chains', ['Heavy', 'Light'],
       {choices: ['Heavy', 'Light']});
     this.sequenceColumnNamePostfix = this.string('sequenceColumnNamePostfix', 'chain sequence');
+
+    this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
   }
 
   public async init() {
@@ -118,6 +123,17 @@ export class VdRegionsViewer extends DG.JsViewer {
       case 'chains':
         break;
       case 'sequenceColumnNamePostfix':
+        break;
+      case 'skipEmptyPositions':
+        // for (let orderI = 0; orderI < this.logos.length; orderI++) {
+        //   for (let chainI = 0; chainI < this.chains.length; chainI++) {
+        //     const chain: string = this.chains[chainI];
+        //     this.logos[orderI][chain].setOptions({skipEmptyPositions: this.skipEmptyPositions});
+        //   }
+        // }
+        // this.calcSize();
+        await this.destroyView();
+        await this.buildView();
         break;
       }
     }
@@ -188,6 +204,7 @@ export class VdRegionsViewer extends DG.JsViewer {
           startPositionName: region!.positionStartName,
           endPositionName: region!.positionEndName,
           fixWidth: true,
+          skipEmptyPositions: this.skipEmptyPositions,
         })) as unknown as WebLogo;
       }
       // WebLogo creation fires onRootSizeChanged event even before control being added to this.logos

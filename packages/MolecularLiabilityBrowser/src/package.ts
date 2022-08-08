@@ -79,7 +79,7 @@ export async function initMlb() {
 //description: PTM filter
 //tags: filter
 //output: filter result
-export function ptmFilter() {
+export function ptmFilter(refDf: DG.DataFrame) {
   if (!(dl.ptmMap && dl.cdrMap && dl.refDf))
     throw new Error(`MLB: Filter data is not initialized!`);
 
@@ -94,16 +94,19 @@ export async function MolecularLiabilityBrowserApp() {
     if (!dl)
       throw new Error('Data loader is not initialized.');
 
+    let t1 = Date.now();
+
     console.debug('MLB.package.MolecularLiabilityBrowserApp()');
     grok.shell.windows.showToolbox = false;
     const urlParams: URLSearchParams = new URLSearchParams(window.location.search);
 
     const app = new MolecularLiabilityBrowser(dl);
-    console.debug(`MLB.package.MolecularLiabilityBrowserApp() before ` +
-      `app init ${((Date.now() - _startInit) / 1000).toString()} s`);
+    console.debug('MLB.package.MolecularLiabilityBrowserApp() before app init' + `${fromStartInit()} s`);
     await app.init(urlParams);
-    console.debug(`MLB.package.MolecularLiabilityBrowserApp() after ` +
-      `app.init ${((Date.now() - _startInit) / 1000).toString()} s`);
+    console.debug('MLB.package.MolecularLiabilityBrowserApp() after app.init ' + `${fromStartInit()} s`);
+
+    let t2 = Date.now();
+    console.debug(`MLB.package.MolecularLiabilityBrowserApp(), ${((t2 - t1) / 1000).toString()} s`);
   } catch (err: unknown) {
     const msg: string = 'MolecularLiabilityBrowser app error: ' +
       `${err instanceof Error ? err.message : (err as Object).toString()}`;

@@ -1,6 +1,10 @@
 {
   "name": "@datagrok/enamine-store",
   "version": "0.2.1",
+  "author": {
+    "name": "Maksym Shvyrlo",
+    "email": "mshvyrlo@datagrok.ai"
+  },
   "fullName": "Enamine Store",
   "description": "Enamine Store API demo",
   "repository": {

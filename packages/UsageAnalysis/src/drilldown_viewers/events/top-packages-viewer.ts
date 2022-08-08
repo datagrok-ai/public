@@ -10,6 +10,7 @@ import {UaDataFrameQueryViewer} from "../../viewers/ua-data-frame-query-viewer";
 import {BehaviorSubject} from "rxjs"
 import {TopFunctionErrorsViewer} from "../function_errors/top-function-errors-viewer";
 import { ViewHandler } from "../../view-handler";
+import {TopPackageFunctionsViewer} from "./top-package-functions-viewer";
 
 export class TopPackagesViewer extends UaFilterableQueryViewer {
 
@@ -23,10 +24,7 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
             this.categorySelected(args.args.categories[0]);
           });
-          if (t.rowCount > 0)
-            return viewer.root
-          else
-            return ui.divText('Not enough data', {style:{color:'var(--red-3)', paddingBottom:'25px'}})
+          return viewer.root;
         }
     );    
   }
@@ -54,13 +52,11 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
             false
         ),
         [
-      new UaDataFrameQueryViewer(
+      new TopPackageFunctionsViewer(
           'Functions',
           'TopFunctionsOfPackage',
-          (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
-          null as any,
-          {name: category},
-          this.filterSubscription.getValue(),
+          this.filterSubscription,
+          category,
           false
       ),
       new UaDataFrameQueryViewer(

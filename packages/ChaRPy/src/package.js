@@ -2,8 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import mapR from "./mapR.json";
-import mapPy from "./mapPy.json";
+import mapR from "./map-r.json";
+import mapPy from "./map-py.json";
 
 export let _package = new DG.Package();
 

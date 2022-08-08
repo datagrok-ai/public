@@ -78,15 +78,18 @@ export class MolecularLiabilityBrowserOld {
     const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
     ////////////////////////////////////////////////////
-    const jsonStr: JsonType = await this.dataLoader.loadJson(this.vIdInput.value);
+    // const jsonStr: JsonType = await this.dataLoader.loadJson(this.vIdInput.value);
+    //
+    // const pdbStr: PdbType = await this.dataLoader.loadPdb(this.vIdInput.value);
+    //
+    // const jsonNums: NumsType = await this.dataLoader.loadRealNums(this.vIdInput.value);
+    //
+    // let jsonStrObsPtm: ObsPtmType = null;
+    // if (this.vidsObsPTMs.includes(this.vIdInput.value))
+    //   jsonStrObsPtm = await this.dataLoader.loadObsPtm(this.vIdInput.value);
+    const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]:
+      [JsonType, string, NumsType, ObsPtmType] = await this.dataLoader.load3D(this.vIdInput.value);
 
-    const pdbStr: PdbType = await this.dataLoader.loadPdb(this.vIdInput.value);
-
-    const jsonNums: NumsType = await this.dataLoader.loadRealNums(this.vIdInput.value);
-
-    let jsonStrObsPtm: ObsPtmType = null;
-    if (this.vidsObsPTMs.includes(this.vIdInput.value))
-      jsonStrObsPtm = await this.dataLoader.loadObsPtm(this.vIdInput.value);
     ////////////////////////////////////////////////////
     // #region
 

@@ -11,11 +11,11 @@ import {BehaviorSubject} from "rxjs"
 
 export class TopPackageFunctionsViewer extends UaFilterableQueryViewer {
 
-  public constructor(filterStream: BehaviorSubject<UaFilter>) {
+  public constructor(name: string, queryName: string, filterStream: BehaviorSubject<UaFilter>, packageName: string | null, showName: boolean) {
     super(
         filterStream,
-        'Package Functions',
-        'TopPackageFunctions',
+        name,
+        queryName,
         (t: DG.DataFrame) => {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args) => {
@@ -47,11 +47,11 @@ export class TopPackageFunctionsViewer extends UaFilterableQueryViewer {
 
             grok.shell.o = pp.getRoot();
           });
-          if (t.rowCount > 0)
-            return viewer.root
-          else
-            return ui.divText('Not enough data', {style:{color:'var(--red-3)', paddingBottom:'25px'}})
-        }
+          return viewer.root;
+        },
+        null,
+        {name: packageName},
+        showName
     );
   }
 

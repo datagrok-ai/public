@@ -3,11 +3,15 @@
 	"fullName": "Viewers",
 	"version": "0.0.4",
 	"description": "Set of custom JavaScript viewers",
+	"author": {
+		"name": "Diana Onufriienko",
+		"email": "donufriienko@datagrok.ai"
+	},
 	"repository": {
-    "type": "git",
-    "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/Viewers"
-  },
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/Viewers"
+	},
 	"dependencies": {
 		"datagrok-api": "^1.0.0",
 		"circos": "^2.1.0",

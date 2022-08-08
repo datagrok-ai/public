@@ -1,7 +1,10 @@
 {
   "name": "biostructureviewer",
-  "beta": false,
   "friendlyName": "BiostructureViewer",
+  "author": {
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
+  },
   "version": "0.2.5",
   "description": "BiostructureViewer is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
   "repository": {
@@ -60,7 +63,7 @@
     "release-biostructureviewer-local": "grok publish local --release",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "test": "set HOST=dev && jest",
+    "test": "jest",
     "test-dev": "set HOST=dev && jest",
     "test-localhost": "set HOST=localhost && jest"
   },

@@ -122,6 +122,9 @@ export class WebLogo extends DG.JsViewer {
 
   /** For startPosition equals to endPosition Length is 1 */
   private get Length(): number {
+    if (this.skipEmptyPositions) {
+      return this.positions.length;
+    }
     return this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
   }
 
@@ -354,6 +357,10 @@ export class WebLogo extends DG.JsViewer {
       this.updatePositions();
       this.render(true);
       break;
+    case 'skipEmptyPositions':
+      this.updatePositions();
+      this.render(true);
+      break;
     }
   }
 
@@ -398,13 +405,33 @@ export class WebLogo extends DG.JsViewer {
     return '';
   }
 
+  protected removeWhere(array: Array<any>, predicate: (T: any) => boolean): Array<any> {
+    let length = array.length;
+    let updateIterator = 0;
+    for (let deleteIterator = 0; deleteIterator < length; deleteIterator++) {
+      if (!predicate(array[deleteIterator])) {
+        array[updateIterator] = array[deleteIterator];
+        updateIterator++;
+      }
+    }
+    array.length = updateIterator;
+    return array;
+  }
+
+
+  protected _removeEmptyPositions() {
+    if (this.skipEmptyPositions) {
+      this.removeWhere(this.positions, item => item?.freq['-']?.count === item.rowCount);
+    }
+  }
+
   protected _calculate(r: number) {
     if (!this.canvas || !this.host || !this.seqCol || !this.dataFrame)
       return;
 
     this.calcSize();
 
-    this.positions = new Array(this.Length);
+    this.positions = new Array(this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0);
     for (let jPos = 0; jPos < this.Length; jPos++) {
       const posName: string = this.positionNames[this.startPosition + jPos];
       this.positions[jPos] = new PositionInfo(posName);
@@ -445,6 +472,8 @@ export class WebLogo extends DG.JsViewer {
         this.positions[jPos].rowCount += this.positions[jPos].freq[m].count;
     }
     //#endregion
+    this._removeEmptyPositions();
+
 
     const maxHeight = this.canvas.height - this.axisHeight * r;
     // console.debug(`WebLogo<${this.viewerId}>._calculate() maxHeight=${maxHeight}.`);
@@ -454,7 +483,7 @@ export class WebLogo extends DG.JsViewer {
       const freq: { [c: string]: PositionMonomerInfo } = this.positions[jPos].freq;
       const rowCount = this.positions[jPos].rowCount;
 
-      let y: number = this.axisHeight;
+      let y: number = this.axisHeight * r;
 
       const entries = Object.entries(freq).sort((a, b) => {
         if (a[0] !== '-' && b[0] !== '-')
@@ -867,5 +896,9 @@ export class WebLogo extends DG.JsViewer {
         return resTxt;
       }
     }
+  }
+
+  public static monomerToShort(amino: string, maxLengthOfMonomer: number): string {
+    return amino.length <= maxLengthOfMonomer ? amino : amino.substring(0, maxLengthOfMonomer) + '…';
   }
 }

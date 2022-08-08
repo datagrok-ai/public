@@ -1,6 +1,5 @@
 {
 	"name": "@datagrok/vdj-tools",
-  	"beta": true,
 	"fullName": "VDJtools",
 	"version": "0.0.4",
 	"description": "VDJtools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",

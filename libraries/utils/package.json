@@ -4,13 +4,12 @@
     "access": "public"
   },
   "fullName": "Utils",
-  "version": "1.5.2",
+  "version": "1.5.4",
   "description": "Common utilities",
   "dependencies": {
     "@types/node": "^14.14.37",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.5.0",
-    "dts-bundle": "^0.7.3",
     "exceljs": "^4.3.0",
     "html2canvas": "^1.4.1",
     "node-fetch": "^2.6.0",
@@ -21,6 +20,7 @@
     "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "^5.11.0",
     "@typescript-eslint/parser": "^5.11.0",
+    "dts-bundle-generator": "^6.12.0",
     "eslint": "^8.18.0",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.2.6",

@@ -1,5 +1,7 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {Fingerprint} from '../utils/chem-common';
+import { BitSet } from 'datagrok-api/dg';
 
 export class RdKitService {
   workerCount: number;
@@ -28,9 +30,8 @@ export class RdKitService {
   }
 
   async _doParallel(
-      fooScatter: (i: number, workerCount: number) => Promise<any>,
-      fooGather = (_: any) => []): Promise<any> {
-
+    fooScatter: (i: number, workerCount: number) => Promise<any>,
+    fooGather = (_: any) => []): Promise<any> {
     const promises = [];
     const workerCount = this.workerCount;
     for (let i = 0; i < workerCount; i++)
@@ -56,12 +57,11 @@ export class RdKitService {
     );
   }
 
-  async initMoleculesStructures(dict: string[], normalizeCoordinates = false, usePatternFingerprints: boolean = false)
+  async initMoleculesStructures(dict: string[], normalizeCoordinates = false)
     : Promise<any> {
     return this._initParallelWorkers(dict, (i: number, segment: any) =>
-      this.parallelWorkers[i].initMoleculesStructures(segment, normalizeCoordinates, usePatternFingerprints),
+      this.parallelWorkers[i].initMoleculesStructures(segment, normalizeCoordinates),
     (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
-      item = item || {molIdxToHash: [], hashToMolblock: {}};
       return {
         molIdxToHash: [...acc.molIdxToHash, ...item.molIdxToHash],
         hashToMolblock: {...acc.hashToMolblock, ...item.hashToMolblock},
@@ -69,42 +69,37 @@ export class RdKitService {
     }, {molIdxToHash: [], hashToMolblock: {}}));
   }
 
-  async searchSubstructure(query: string, queryMolBlockFailover: string): Promise<any> {
+  async searchSubstructure(query: string, queryMolBlockFailover: string, bitset?: BitArray): Promise<number[]> {
     const t = this;
     return this._doParallel(
-      (i: number, _: number) => {
-        return t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover);
+      (i: number, nWorkers: number) => {
+        return bitset ?
+          t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover, i < (nWorkers - 1) ?
+            bitset.getRangeAsList(i * this.segmentLength, (i + 1) * this.segmentLength) :
+            bitset.getRangeAsList(i * this.segmentLength, bitset.length)) :
+          t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover);
       },
       (data: any) => {
         for (let k = 0; k < data.length; ++k) {
+          // check for parse neccessity
           data[k] = JSON.parse(data[k]);
           data[k] = data[k].map((a: number) => a + t.segmentLength * k);
         }
-        return [].concat.apply([], data);
+        return [].concat(...data);
       });
   }
 
-  async initMorganFingerprints(): Promise<any> {
-    return this._doParallel(
-      (i: number, _: number) => {
-        return this.parallelWorkers[i].initMorganFingerprints();
-      }, (_: any) => {
-        return [];
-      },
-    );
-  }
-
-  async getMorganFingerprints(): Promise<any> {
+  async getFingerprints(fingerprintType: Fingerprint): Promise<Uint8Array[]> {
     const t = this;
     return (await this._doParallel(
       (i: number, _: number) => {
-        return t.parallelWorkers[i].getMorganFingerprints();
+        return t.parallelWorkers[i].getFingerprints(fingerprintType);
       },
       (data: any) => {
-        return [].concat.apply([], data);
+        return [].concat(...data);
       })).map(
       (obj: any) =>
       // We deliberately choose Uint32Array over DG.BitSet here
-        new BitArray(new Uint32Array(obj.data), obj.length));
+        obj.data);
   }
 }

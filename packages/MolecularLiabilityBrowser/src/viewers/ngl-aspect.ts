@@ -109,7 +109,7 @@ export class NglAspect {
       }
     }
 
-    if (reload) {
+    if (reload || this.stage.compList.length === 0) {
       this.stage.removeAllComponents();
       await this.loadPdb(this.pdbStr, this.repChoice, {color: schemeId});
 

@@ -31,5 +31,6 @@ module.exports = {
     library: 'apitests',
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
+    clean: true,
   },
 };

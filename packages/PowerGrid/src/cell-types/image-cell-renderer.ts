@@ -33,14 +33,14 @@ export class ImageCellRenderer extends DG.GridCellRenderer {
     if (!img.complete || img.naturalWidth == 0)
       return;
 
-    g.save();
+    // g.save();
     g.rect(x, y, w, h);
-    g.clip();
+    let bounds = new DG.Rect(x, y, w, h).fit(img.width, img.height);
 
     // const width: number = (img.naturalWidth * (cellStyle.imageScale ?? 1)).toInt();
     // int height = (img.naturalHeight * (cellStyle.imageScale ?? 1)).toInt();
 
-    g.drawImage(img, x, y);
+    g.drawImage(img, bounds.x, bounds.y, bounds.width, bounds.height);
 
     // if (img.naturalHeight > 0 && cellStyle.imageScale == null)
     //   g.drawImageToRect(img, bounds.fit(new Size(width, height)));
@@ -56,6 +56,6 @@ export class ImageCellRenderer extends DG.GridCellRenderer {
     //   }
     // }
 
-    g.restore();
+    // g.restore();
   }
 }

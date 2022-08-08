@@ -1,8 +1,11 @@
 {
   "name": "@datagrok/bio",
-  "beta": false,
   "friendlyName": "Bio",
-  "version": "1.7.19",
+  "author": {
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
+  },
+  "version": "1.7.24",
   "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
   "repository": {
     "type": "git",
@@ -11,9 +14,9 @@
   },
   "dependencies": {
     "@biowasm/aioli": ">=2.4.0",
-    "@datagrok-libraries/bio": "^3.0.0",
-    "@datagrok-libraries/ml": "^3.0.0",
-    "@datagrok-libraries/utils": "^1.4.0",
+    "@datagrok-libraries/bio": "^3.0.3",
+    "@datagrok-libraries/ml": "^3.0.3",
+    "@datagrok-libraries/utils": "^1.5.4",
     "cash-dom": "latest",
     "datagrok-api": "^1.5.0",
     "dayjs": "^1.11.4",
@@ -60,7 +63,11 @@
     "Developers"
   ],
   "sources": [
-    "css/helm.css"
+    "css/helm.css",
+    "https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js",
+    "helm/JSDraw/Scilligence.JSDraw2.Lite.js",
+    "helm/JSDraw/Scilligence.JSDraw2.Resources.js",
+    "helm/JSDraw/Pistoia.HELM-uncompressed.js"
   ],
   "category": "Bioinformatics"
 }

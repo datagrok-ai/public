@@ -1,15 +1,66 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full';
+import $ from 'cash-dom';
 
-export function _saveAsSdf(): void {
+// import {Subscription} from 'rxjs';
+
+// let dlg: DG.Dialog | null = null;
+// let dialogSubs: Subscription[] = [];
+
+
+/**  Dialog for SDF file exporter */
+export function saveAsSdfDialog() {
+  // here one should propose a choice of semtype, or pass it as a parameter from
+  // ui
+  // const structureColumn = table.columns.bySemType('Molecule');
+  const table = grok.shell.t;
+  const moleculeCols = table.columns.bySemTypeAll('Molecule');
+  const macromoleculeCols = table.columns.bySemTypeAll('Macromolecule');
+  if (moleculeCols.length === 0 && macromoleculeCols.length === 0) {
+    const dlg = ui.dialog({title: 'Save as SDF'})
+      .add(
+        ui.divText(
+          'This table does not contain Molecule/Macromolecule columns, unable to save as SDF',
+          {style:
+            {
+              'box-sizing': 'border-box',
+              'width': '200px',
+              'padding': '5px',
+              'display': 'inline-block',
+              'text-align': 'center',
+            },
+          },
+        ),
+      )
+      .onOK(() => {});
+    $(dlg.getButton('CANCEL')).hide();
+    dlg.show({x: 350, y: 100});
+  } else {
+    const cols = moleculeCols.concat(macromoleculeCols);
+    const colsInput = ui.choiceInput('Choose column:', cols[0], cols);
+    const dlg = ui.dialog({title: 'Save as SDF'})
+      .add(ui.div([
+        colsInput.root,
+      ]))
+      .onOK(() => {
+        const structureColumn = colsInput.value;
+        _saveAsSdf(table, structureColumn!);
+      });
+    dlg.show({x: 350, y: 100});
+  }
+}
+
+export function _saveAsSdf(
+  table: DG.DataFrame,
+  structureColumn: DG.Column,
+): void {
   //todo: load OpenChemLib (or use RDKit?)
   //todo: open dialog
   //todo: UI for choosing structure column if necessary
   //todo: UI for choosing columns with properties
 
-  const table = grok.shell.t;
-  const structureColumn = table.columns.bySemType('Molecule');
   if (structureColumn == null)
     return;
 

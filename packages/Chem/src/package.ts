@@ -26,7 +26,7 @@ import {convertMoleculeImpl, isMolBlock, MolNotation, molToMolblock} from './uti
 import '../css/chem.css';
 import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
-import {_saveAsSdf} from './utils/sdf-utils';
+import {saveAsSdfDialog} from './utils/sdf-utils';
 import {Fingerprint} from './utils/chem-common';
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
@@ -34,8 +34,9 @@ import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import {RDMol} from './rdkit-api';
 import Sketcher = chem.Sketcher;
-import { Viewer } from 'datagrok-api/dg';
-import { getActivityCliffs } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {Viewer} from 'datagrok-api/dg';
+import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -202,22 +203,17 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //name: searchSubstructure
 //input: column molStringsColumn
 //input: string molString
-//input: bool substructLibrary
 //input: string molBlockFailover
 //output: column result
 export async function searchSubstructure(
   molStringsColumn: DG.Column, molString: string,
-  substructLibrary: boolean, molBlockFailover: string) : Promise<DG.Column<any>> {
+  molBlockFailover: string) : Promise<DG.Column<any>> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
-  assure.notNull(substructLibrary, 'substructLibrary');
   assure.notNull(molBlockFailover, 'molBlockFailover');
 
   try {
-    const result =
-      substructLibrary ?
-        await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molBlockFailover) :
-        chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
+    const result = await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molBlockFailover);
     return DG.Column.fromList('object', 'bitset', [result]); // TODO: should return a bitset itself
   } catch (e: any) {
     console.error('Chem | In substructureSearch: ' + e.toString());
@@ -235,7 +231,7 @@ export function descriptorsApp(): void {
 //description: Save as SDF
 //tags: fileExporter
 export function saveAsSdf(): void {
-  _saveAsSdf();
+  saveAsSdfDialog();
 }
 
 //#region Top menu
@@ -281,25 +277,29 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //input: bool plotEmbeddings = true
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
-
-    const embedColsNames = getEmbeddingColsNames(table);
-    const chemSpaceParams = {
-      seqCol: smiles,
-      methodName: methodName,
-      similarityMetric: similarityMetric,
-      embedAxesNames: embedColsNames
-    }
-    const chemSpaceRes = await chemSpace(chemSpaceParams);
-    const embeddings = chemSpaceRes.coordinates;
-    for (const col of embeddings)
-      table.columns.add(col);
-    if (plotEmbeddings) {
-      for (let v of grok.shell.views) {
-        if (v.name === table.name)
-          (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
-      }
-    }
+  const embedColsNames = getEmbeddingColsNames(table);
+  const withoutEmptyValues = DG.DataFrame.fromColumns([smiles]).clone();
+  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, smiles);
+  const chemSpaceParams = {
+    seqCol: withoutEmptyValues.col(smiles.name)!,
+    methodName: methodName,
+    similarityMetric: similarityMetric,
+    embedAxesNames: embedColsNames,
   };
+  const chemSpaceRes = await chemSpace(chemSpaceParams);
+  const embeddings = chemSpaceRes.coordinates;
+  for (const col of embeddings) {
+    const listValues = col.toList();
+    emptyValsIdxs.forEach((ind) => listValues.splice(ind, 0, null));
+    table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
+  }
+  if (plotEmbeddings) {
+    for (const v of grok.shell.views) {
+      if (v.name === table.name)
+        (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+    }
+  }
+};
 
 //name: R-Groups Analysis
 //top-menu: Chem | R-Groups Analysis...
@@ -450,10 +450,16 @@ export function convertMolecule(molecule: string, from: string, to: string): str
 //tags: cellEditor
 //description: Molecule
 //input: grid_cell cell
-export function editMoleculeCell(cell: DG.GridCell): void {
+export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
-  sketcher.setMolecule(cell.cell.value);
+
+  let molecule = ''
+  if(unit == 'smiles'){
+    molecule = grok.chem.convert(cell.cell.value, 'smiles', 'mol');;
+  } else
+  molecule = cell.cell.value;
+  sketcher.setMolFile(molecule)
   ui.dialog()
       .add(sketcher)
       .onOK(() => {

@@ -1,7 +1,10 @@
 {
 	"name": "@datagrok/tensorflow-dev",
-	"beta": true,
 	"friendlyName": "TensorFlow.js",
+	"author": {
+		"name": "Volodymyr Dyma",
+		"email": "vdyma@datagrok.ai"
+	},
 	"version": "0.0.5",
 	"description": "TensorFlow.js is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform which provies support for training and applying TensorFlow.js-based predictive models.",
 	"repository": {

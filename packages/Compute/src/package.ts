@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model-handler';
-import {_functionParametersGrid} from './function-views/function-parameters-grid';
+import {_functionParametersGrid} from './function-parameters-grid';
 import {ModelCatalogView} from './model-catalog-view';
 import wu from 'wu';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';

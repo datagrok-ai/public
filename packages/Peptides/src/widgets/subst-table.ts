@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
+import {getSeparator} from '../utils/misc';
 
 export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   const substInfo = model.substitutionsInfo;
@@ -51,9 +52,9 @@ export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): 
     return new DG.Widget(ui.label('No substitution table generated'));
 
   const substCol = DG.Column.fromStrings('Substiutions', substitutionsArray);
-  substCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE_DIFFERENCE;
-  substCol.tags[C.TAGS.SEPARATOR] = alignedSeqCol.tags[C.TAGS.SEPARATOR];
-  substCol.tags[C.TAGS.ALPHABET] = alignedSeqCol.tags[DG.TAGS.UNITS].split(':')[2];
+  substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
+  substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
+  substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
   const toColName = '~to';
   const hiddenSubstToAarCol = DG.Column.fromStrings(toColName, substitutedToArray);
   const substTable =

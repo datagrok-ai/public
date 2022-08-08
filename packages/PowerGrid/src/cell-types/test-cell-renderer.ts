@@ -6,7 +6,7 @@ import * as grok from 'datagrok-api/grok';
 export class TestCellRenderer extends DG.GridCellRenderer {
   get name() { return 'test'; }
 
-  get cellType() { return 'test'; }
+  get cellType() { return 'testUnitsKg'; }
 
   get defaultWidth(): number | null { return 200; }
 
@@ -57,7 +57,7 @@ export class TestCellRenderer extends DG.GridCellRenderer {
 export class HtmlTestCellRenderer extends DG.GridCellRenderer {
   get name() { return 'htest'; }
 
-  get cellType() { return 'htest'; }
+  get cellType() { return 'testUnitsTon'; }
 
   get defaultWidth(): number | null { return 200; }
 

@@ -1,7 +1,11 @@
 {
 	"name": "@datagrok/alation",
 	"friendlyName": "Alation",
-	"version": "1.0.1",
+	"version": "1.0.2",
+	"author": {
+		"name": "Volodymyr Dyma",
+		"email": "vdyma@datagrok.ai"
+	},
 	"description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
 	"properties": [
 		{
@@ -49,7 +53,7 @@
 		"release-alation-eval": "grok publish eval --release",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix",
-		"test": "set HOST=dev && jest",
+		"test": "jest",
 		"test-dev": "set HOST=dev && jest",
 		"test-local": "set HOST=localhost && jest"
 	},

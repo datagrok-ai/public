@@ -6,7 +6,7 @@ import {_package} from '../package-test';
 
 
 category('Dapi: files', () => {
-  const filePrefix = 'Demo:TestJobs:Files:DemoFiles/';
+  const filePrefix = 'System:AppData/ApiTests/';
   const testTextFileName = 'js-api-testTextFile';
   const testTextFilePath = filePrefix + testTextFileName;
 
@@ -51,7 +51,7 @@ category('Dapi: files', () => {
   });
 
   test('Dapi: package files', async () => {
-    const files = await _package.files.list('', false, 'csv');
+    const files = await _package.files.list('datasets', false, 'csv');
     expect(files.length > 0, true);
     files.every((f) => expect(f.extension, 'csv'));
   });

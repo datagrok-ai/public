@@ -14,7 +14,7 @@ category('Dialog: Unpivot', () => {
   });
 
   test('dialogs.unpivot', async () => {
-    grok.shell.topMenu.find('Data').find('Unpivot...').root.click(); await delay(1000);
+    grok.shell.topMenu.find('Data').find('Unpivot...').click(); await delay(1000);
 
     let raceInput = document.getElementsByName('input-race')[0] as HTMLInputElement;
     let sexInput = document.getElementsByName('input-sex')[0] as HTMLInputElement;

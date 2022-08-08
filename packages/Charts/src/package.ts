@@ -6,7 +6,7 @@ import {TimelinesViewer} from './timelines/timelines-viewer';
 import {SankeyViewer} from './sankey-viewer';
 import {ChordViewer} from './chord-viewer';
 import { WordCloudViewer } from './word-cloud-viewer';
-import './timelines/styles.css';
+import '../css/styles.css';
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';

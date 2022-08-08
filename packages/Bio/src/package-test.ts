@@ -11,6 +11,7 @@ import './tests/activity-cliffs-tests';
 import './tests/splitters-test';
 import './tests/renderers-test';
 import './tests/convert-test';
+import './tests/fasta-handler-test';
 import './tests/WebLogo-positions-test';
 
 export const _package = new DG.Package();
@@ -21,7 +22,6 @@ export {tests};
 //input: string category {optional: true}
 //input: string test {optional: true}
 //output: dataframe result
-//top-menu: Tools | Dev | JS API Tests
 export async function test(category: string, test: string): Promise<DG.DataFrame> {
   const data = await runTests({category, test});
   return DG.DataFrame.fromObjects(data)!;

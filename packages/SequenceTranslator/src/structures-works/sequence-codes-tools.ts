@@ -1,5 +1,5 @@
 
-import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS} from './map';
+import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, delimiter} from './map';
 import {asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, asoGapmersGcrsToNucleotides,
   asoGapmersGcrsToBioSpring, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
@@ -167,35 +167,35 @@ export function isValidSequence(sequence: string, format: string | null): {
   //     .show();
   // } else if (possibleTechnologies.length == 0)
   if (possibleTechnologies.length == 0)
-    return {indexOfFirstNotValidChar: 0, synthesizer: null, technology: null};
+    return {indexOfFirstNotValidChar: 0, synthesizer: [possibleSynthesizers[3]], technology: null};
 
   outputIndex = 0;
 
-  possibleTechnologies.forEach((technology: string) => {
-    const codes = Object.keys(map[possibleSynthesizers[0]][technology]);
-    while (outputIndex < sequence.length) {
-      const matchedCode = codes.find((c) => c == sequence.slice(outputIndex, outputIndex + c.length));
+  // possibleTechnologies.forEach((technology: string) => {
+  //   const codes = Object.keys(map[possibleSynthesizers[0]][technology]);
+  //   while (outputIndex < sequence.length) {
+  //     const matchedCode = codes.find((c) => c == sequence.slice(outputIndex, outputIndex + c.length));
 
-      if (matchedCode == null)
-        break;
+  //     if (matchedCode == null)
+  //       break;
 
-      if ( // for mistake pattern 'rAA'
-        outputIndex > 1 &&
-        nucleotides.includes(sequence[outputIndex]) &&
-        firstUniqueCharacters.includes(sequence[outputIndex - 2])
-      ) break;
+  //     if ( // for mistake pattern 'rAA'
+  //       outputIndex > 1 &&
+  //       nucleotides.includes(sequence[outputIndex]) &&
+  //       firstUniqueCharacters.includes(sequence[outputIndex - 2])
+  //     ) break;
 
-      if ( // for mistake pattern 'ArA'
-        firstUniqueCharacters.includes(sequence[outputIndex + 1]) &&
-        nucleotides.includes(sequence[outputIndex])
-      ) {
-        outputIndex++;
-        break;
-      }
+  //     if ( // for mistake pattern 'ArA'
+  //       firstUniqueCharacters.includes(sequence[outputIndex + 1]) &&
+  //       nucleotides.includes(sequence[outputIndex])
+  //     ) {
+  //       outputIndex++;
+  //       break;
+  //     }
 
-      outputIndex += matchedCode.length;
-    }
-  });
+  //     outputIndex += matchedCode.length;
+  //   }
+  // });
 
   return {
     indexOfFirstNotValidChar: indexOfFirstNotValidChar,
@@ -208,7 +208,7 @@ export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
   let codes: string[] = [];
   for (const technology of Object.keys(map[synthesizer]))
     codes = codes.concat(Object.keys(map[synthesizer][technology]));
-  return codes.concat(Object.keys(MODIFICATIONS)).concat(',');
+  return codes.concat(Object.keys(MODIFICATIONS)).concat(delimiter);
 }
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): string[] {

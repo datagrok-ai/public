@@ -1,7 +1,10 @@
 {
   "name": "@datagrok/cli",
-  "beta": true,
   "version": "0.1.1",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
   "fullName": "CLI",
   "description": "Demonstrates integration with command-line tools",
   "repository": {

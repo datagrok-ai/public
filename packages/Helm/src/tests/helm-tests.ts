@@ -7,7 +7,7 @@ import * as grok from 'datagrok-api/grok';
 
 category('Helm', () => {
 
-  // These tests require webservice that is not present on test stand
+  //These tests require webservice that is not present on test stand
   // test('helmToFasta', async () => {
   //   expect(await helmToFasta('RNA1{R(U)P.R(T)P.R(G)P.R(C)P.R(A)}$$$$'), '>RNA1UTGCA');
   //   expect(await helmToFasta('RNA1{P.R(U).P.R(T)}$$$$'), '>RNA1UT');

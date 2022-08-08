@@ -51,10 +51,10 @@ it('TEST', async () => {
         let failReport = '';
         for (let i = 0; i < df.rowCount; i++) {
           if (cStatus.get(i)) {
-            passReport += `Test result : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+            passReport += `Test result : Success : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           } else {
             failed = true;
-            failReport += `Test result : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+            failReport += `Test result : Failed : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           }
         }
         resolve({failReport, passReport, failed});

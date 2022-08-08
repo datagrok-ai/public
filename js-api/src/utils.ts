@@ -435,6 +435,7 @@ export function _identityInt32(length: number): Int32Array {
 
 
 /**
+ * Least recently used cache.
  * Inspired by https://github.com/Yomguithereal/mnemonist/blob/master/lru-cache.js
  * */
 export class LruCache<K = any, V = any> {
