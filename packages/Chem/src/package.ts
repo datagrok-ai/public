@@ -453,13 +453,7 @@ export function convertMolecule(molecule: string, from: string, to: string): str
 export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
-
-  let molecule = ''
-  if(unit == 'smiles'){
-    molecule = grok.chem.convert(cell.cell.value, 'smiles', 'mol');;
-  } else
-  molecule = cell.cell.value;
-  sketcher.setMolFile(molecule)
+  sketcher.setMolecule(cell.cell.value);
   ui.dialog()
       .add(sketcher)
       .onOK(() => {
