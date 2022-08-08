@@ -1,0 +1,33 @@
+name: "Java CodeQL Scan"
+
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+    paths:
+      - '**/*.java'
+      - '**/*.kt'
+
+jobs:
+  codeql:
+    name: CodeQL static analysis
+    runs-on: ubuntu-20.04
+    permissions:
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+          cache: maven
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: java
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2

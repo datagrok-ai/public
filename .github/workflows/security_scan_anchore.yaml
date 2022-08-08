@@ -1,0 +1,27 @@
+name: "Anchore Security Scan"
+
+on:
+  schedule:
+    - cron:  '30 0 * * 0'
+
+jobs:
+  anchore:
+    runs-on: ubuntu-20.04
+    name: Anchore vulnerability scan
+    permissions:
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Scan for GitHub Secutiry
+        uses: anchore/scan-action@v3
+        id: scan
+        with:
+          path: "."
+          fail-build: false # Change to true after all fixes
+          severity-cutoff: high
+          acs-report-enable: true
+      - name: Upload Anchore scan SARIF report
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
