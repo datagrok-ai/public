@@ -9,7 +9,7 @@ import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {createJsonMonomerLibFromSdf} from './utils';
 import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 //import {ConverterFunc, DfReaderFunc} from '../../Bio/src/tests/types';
-import {printLeftOrCentered} from '@datagrok/bio/src/utils/cell-renderer';
+import {printLeftOrCentered} from '../../Bio/src/utils/cell-renderer';
 
 export const _package = new DG.Package();
 
@@ -290,7 +290,7 @@ export function helmColumnToSmiles(helmColumn: DG.Column) {
   //todo: add column with smiles to col.dataFrame.
 }
 
-export async function findMonomers(helmString: string) {
+function findMonomers(helmString: string) {
   //@ts-ignore
   const types = Object.keys(org.helm.webeditor.monomerTypeList());
   const monomers: any = [];
