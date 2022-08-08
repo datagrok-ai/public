@@ -1,43 +1,38 @@
 {
   "name": "@datagrok/chembl",
-  "version": "1.0.11",
+  "version": "1.0.13",
+	"description": "Chembl integration, commonly used queries and browser",
   "author": {
 		"name": "Leonid Stolbov",
 		"email": "lstolbov@datagrok.ai"
 	},
   "fullName": "Chembl",
-  "description": "Chembl integration",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Chembl"
   },
-  "sources": [
-  ],
   "dependencies": {
-    "datagrok-api": "^1.5.0",
+		"@datagrok-libraries/utils": "^0.4.1",
 		"@types/react-dom": "^17.0.9",
+    "datagrok-api": "^1.5.0",
 		"file-loader": "^6.2.0",
 		"ts-loader": "latest",
-		"typescript": "latest",
-		"worker-loader": "latest"
+		"typescript": "latest"
   },
   "devDependencies": {
+		"@types/jest": "^27.0.0",
 		"css-loader": "latest",
+		"jest-html-reporter": "^3.5.0",
+    "jest": "^27.0.0",
+    "ts-jest": "^27.0.0",
+		"puppeteer": "^13.7.0",
 		"style-loader": "latest",
 		"webpack": "latest",
-		"webpack-cli": "latest",
-		"worker-loader": "^3.0.8"
+		"webpack-cli": "latest"
   },
   "scripts": {
-		"debug-chembl": "grok publish",
-		"release-chembl": "grok publish --release",
-		"build-chembl": "webpack",
-		"build": "webpack",
-		"debug-chembl-dev": "grok publish dev",
-		"release-chembl-dev": "grok publish dev --release",
-		"debug-chembl-public": "grok publish public",
-		"release-chembl-public": "grok publish public --release"
+		"build": "webpack"
   },
 	"canEdit": [
 		"Developers"
