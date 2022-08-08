@@ -49,7 +49,17 @@ export function convert(col: DG.Column): void {
   if (convertDialog == null) {
     convertDialog = ui.dialog('Convert sequence notation')
       .add(ui.div([
-        ui.h1('Current notation: ' + currentNotation),
+        ui.divText(
+          'Current notation: ' + currentNotation,
+          {
+            style: {
+              'text-align': 'center',
+              'font-weight': 'bold',
+              'font-size': '14px',
+              'padding': '5px',
+            }
+          }
+        ),
         targetNotationInput.root,
         separatorInput.root
       ]))
@@ -59,7 +69,7 @@ export function convert(col: DG.Column): void {
 
         await convertDo(col, targetNotation, separator);
       })
-      .show();
+      .show({x: 350, y: 100});
 
     convertDialogSubs.push(convertDialog.onClose.subscribe((value) => {
       convertDialogSubs.forEach((s) => { s.unsubscribe(); });

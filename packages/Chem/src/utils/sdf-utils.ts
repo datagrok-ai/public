@@ -6,15 +6,9 @@ import $ from 'cash-dom';
 
 // import {Subscription} from 'rxjs';
 
-// let dlg: DG.Dialog | null = null;
-// let dialogSubs: Subscription[] = [];
-
 
 /**  Dialog for SDF file exporter */
 export function saveAsSdfDialog() {
-  // here one should propose a choice of semtype, or pass it as a parameter from
-  // ui
-  // const structureColumn = table.columns.bySemType('Molecule');
   const table = grok.shell.t;
   const moleculeCols = table.columns.bySemTypeAll('Molecule');
   const macromoleculeCols = table.columns.bySemTypeAll('Macromolecule');
@@ -39,16 +33,20 @@ export function saveAsSdfDialog() {
     dlg.show({x: 350, y: 100});
   } else {
     const cols = moleculeCols.concat(macromoleculeCols);
-    const colsInput = ui.choiceInput('Choose column:', cols[0], cols);
-    const dlg = ui.dialog({title: 'Save as SDF'})
-      .add(ui.div([
-        colsInput.root,
-      ]))
-      .onOK(() => {
-        const structureColumn = colsInput.value;
-        _saveAsSdf(table, structureColumn!);
-      });
-    dlg.show({x: 350, y: 100});
+    if (cols.length === 1)
+      _saveAsSdf(table, cols[0]);
+    else {
+      const colsInput = ui.choiceInput('Choose column:', cols[0], cols);
+      const dlg = ui.dialog({title: 'Save as SDF'})
+        .add(ui.div([
+          colsInput.root,
+        ]))
+        .onOK(() => {
+          const structureColumn = colsInput.value;
+          _saveAsSdf(table, structureColumn!);
+        });
+      dlg.show({x: 350, y: 100});
+    }
   }
 }
 
@@ -58,7 +56,6 @@ export function _saveAsSdf(
 ): void {
   //todo: load OpenChemLib (or use RDKit?)
   //todo: open dialog
-  //todo: UI for choosing structure column if necessary
   //todo: UI for choosing columns with properties
 
   if (structureColumn == null)
