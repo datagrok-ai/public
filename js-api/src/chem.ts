@@ -482,15 +482,12 @@ export namespace chem {
    * @returns {Promise<BitSet>}
    * */
   export async function searchSubstructure(column: Column, pattern: string = '', settings: {
-    substructLibrary?: boolean;
     molBlockFailover?: string;
   } = {}): Promise<BitSet> {
 
     return (await grok.functions.call('Chem:searchSubstructure', {
       'molStringsColumn': column,
       'molString': pattern,
-      'substructLibrary':
-        !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary),
       'molBlockFailover': (settings.hasOwnProperty('molBlockFailover') ? settings.molBlockFailover : '') ?? ''
     })).get(0);
   }
@@ -583,7 +580,7 @@ export namespace chem {
    * @returns {Promise<BitSet>}
    * */
   export async function substructureSearch(column: Column, molecule: string = '', settings: {
-    substructLibrary: boolean;
+    molBlockFailover?: string | undefined;
   }): Promise<BitSet> {
     return searchSubstructure(column, molecule, settings);
   }
