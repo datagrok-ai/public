@@ -1,0 +1,27 @@
+name: "JS CodeQL Scan"
+
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+    paths:
+      - '**/*.js'
+      - '**/*.ts'
+
+jobs:
+  codeql:
+    name: CodeQL static analysis
+    runs-on: ubuntu-20.04
+    permissions:
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: 'javascript'
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
