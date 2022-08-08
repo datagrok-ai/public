@@ -62,7 +62,8 @@ limit 50;
 --input: list users
 --connection: System:Datagrok
 select pp.name, count(1) from event_types et
-join published_packages pp on et.package_id = pp.id
+join entities en on et.id = en.id
+join published_packages pp on en.package_id = pp.id
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id
 join users u on u.id = s.user_id

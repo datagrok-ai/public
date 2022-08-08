@@ -20,7 +20,8 @@ where name = @name;
 --input: list users
 --connection: System:Datagrok
 select u.name, count(e.id) from event_types et
-join published_packages pp on et.package_id = pp.id
+join entities en on et.id = en.id
+join published_packages pp on en.package_id = pp.id
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id
 join users u on u.id = s.user_id
@@ -45,7 +46,8 @@ limit 50
 --input: string name
 --connection: System:Datagrok
 select et.name, count(1) from event_types et
-join published_packages pp on et.package_id = pp.id
+join entities en on et.id = en.id
+join published_packages pp on en.package_id = pp.id
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id
 join users u on u.id = s.user_id
@@ -70,7 +72,8 @@ limit 50;
 --input: string name
 --connection: System:Datagrok
 select e.error_message || '(' || e.friendly_name || ')' as error_and_event, e.error_message, e.friendly_name, count(1) from event_types et
-join published_packages pp on et.package_id = pp.id
+join entities en on et.id = en.id
+join published_packages pp on en.package_id = pp.id
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id
 join users u on u.id = s.user_id
