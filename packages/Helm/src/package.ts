@@ -118,7 +118,7 @@ export async function detailsPanel(helmString: string) {
 }
 
 
-async function loadDialog() {
+export async function loadDialog() {
   let res = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
   let FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
   let grid = grok.shell.tv.grid;
@@ -164,7 +164,7 @@ export async function libraryPanel(helmColumn: DG.Column) {
 }
 
 //name: manageFiles
-function manageFiles() {
+export async function manageFiles() {
   const a = ui.dialog({title: 'Manage files'})
     //@ts-ignore
     .add(ui.fileBrowser({path: 'System:AppData/Helm/libraries'}).root)
@@ -245,7 +245,9 @@ function getRS(smiles: string) {
   return res;
 }
 
-async function monomerManager(value: string) {
+//name: monomerManager
+//input: string value
+export async function monomerManager(value: string) {
   let df: any[];
   let file;
   let dfSdf;
