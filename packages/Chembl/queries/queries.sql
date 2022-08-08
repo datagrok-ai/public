@@ -444,7 +444,7 @@ select count(from_id) from src10src11
 
 
 --name: allChemblStructures
---connection: chembl:Chembl
+--connection: Chembl
 select
   canonical_smiles, molregno
 from
@@ -454,7 +454,7 @@ limit 1000
 
 
 --name: FindByMolregno
---connection: chembl:Chembl
+--connection: Chembl
 --input: int molregno
 select
   compound_structures.canonical_smiles,
@@ -477,7 +477,7 @@ where
 
 
 --name: ChemblBrowserQuery
---connection: chembl:Chembl
+--connection: Chembl
 --input: string substructure
 --input: string molecule_type
 --input: string subname
@@ -509,7 +509,7 @@ where
 
 
 --name: compoundsSelectiveToOneTargetOverSecond
---connection: chembl:Chembl
+--connection: Chembl
 --input: string selectiveFor = CHEMBL301
 --input: string over = CHEMBL4036
 SELECT md.chembl_id,
@@ -541,7 +541,7 @@ AND td.chembl_id              = @over;
 
 
 --name: compoundActivityDetailsForTarget
---connection: chembl:Chembl
+--connection: Chembl
 --input: string target = CHEMBL1827
 SELECT m.chembl_id AS compound_chembl_id,
 s.canonical_smiles,
