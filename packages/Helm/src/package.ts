@@ -2,13 +2,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-//import {lru} from '../../Bio/src/utils/cell-renderer';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
-//import {NOTATION} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {createJsonMonomerLibFromSdf} from './utils';
 import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
-//import {ConverterFunc, DfReaderFunc} from '../../Bio/src/tests/types';
 import {printLeftOrCentered} from '../../Bio/src/utils/cell-renderer';
 
 export const _package = new DG.Package();
