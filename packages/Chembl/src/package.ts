@@ -5,6 +5,107 @@ import $ from 'cash-dom';
 
 export let _package = new DG.Package();
 
+
+export async function chemblSubstructureSearch(molecule: string): Promise<DG.DataFrame> {
+    try {
+        let df = await grok.data.query(`${_package.name}:patternSubstructureSearch`, {'pattern': molecule});
+        df = df.clone(null, ['similarity', 'smiles']);
+        if (df == null)
+            return DG.DataFrame.create();
+        return df;
+    } catch (e: any) {
+        console.error('In SubstructureSearch: ' + e.toString());
+        throw e;
+    }
+}
+
+export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataFrame> {
+    try {
+        let df = await grok.data.query(`${_package.name}:patternSimilaritySearch`, {'pattern': molecule, 'maxRows': 100});
+        if (df == null)
+            return DG.DataFrame.create();
+        return df;
+    } catch (e: any) {
+        console.error('In SimilaritySearch: ' + e.toString());
+        throw e;
+    }
+
+}
+//name: chemblSearchWidgetLocalDb
+//tags: widgets
+//input: string mol {semType: Molecule}
+//input: string searchType
+//output: widget result
+export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = false): DG.Widget {
+    const headerHost = ui.divH([]);
+    const compsHost = ui.divH([ui.loader(), headerHost]);
+    const panel = ui.divV([compsHost]);
+    const searchFunc = substructure ?
+      async () => chemblSubstructureSearch(mol) :
+      async () => chemblSimilaritySearch(mol);
+
+    searchFunc().then((t: any) => {
+          compsHost.removeChild(compsHost.firstChild!);
+          if (t == null) {
+
+              compsHost.appendChild(ui.divText('No matches'));
+              return;
+          }
+          t.col('canonical_smiles').semType = 'Molecule';
+          t.col('canonical_smiles').setTag('cell.renderer', 'Molecule');
+
+
+          const grid = t.plot.grid();
+          const col = grid.columns.byName('molecule_chembl_id');
+          col.cellType = 'html';
+          grid.onCellPrepare(function(gc: DG.GridCell) {
+              if (gc.isTableCell && gc.gridColumn.name === 'molecule_chembl_id') {
+                  const link = `https://www.ebi.ac.uk/chembl/compound_report_card/${gc.cell.value}/`;
+                  gc.style.element = ui.divV([
+                      ui.link(gc.cell.value, link, link)
+                  ]);
+              }
+          });
+          compsHost.appendChild(grid.root);
+          headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
+              t.name = `"DrugBank Similarity Search"`;
+              grok.shell.addTableView(t);
+          }, 'Open compounds as table'));
+          compsHost.style.overflowY = 'auto';
+      }
+    )
+      .catch((err: any) => {
+          if (compsHost.children.length > 0) {
+              compsHost.removeChild(compsHost.firstChild!);
+          }
+          const div = ui.divText('No matches');
+          ui.tooltip.bind(div, `${err}`);
+          compsHost.appendChild(div);
+      });
+    return new DG.Widget(panel);
+}
+
+
+//name: chemblSubstructureSearchPanel
+//tags: panel, widgets
+//input: string mol {semType: Molecule}
+//output: widget result
+//condition: true
+export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
+    return chemblSearchWidgetLocalDb(mol, true);
+}
+
+//name: chemblSimilaritySearchPanel
+//tags: panel, widgets
+//input: string mol {semType: Molecule}
+//output: widget result
+//condition: true
+export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
+    return chemblSearchWidgetLocalDb(mol);
+}
+
+
+
 //name: ChemblBrowser
 //tags: app
 export async function Browser() {
