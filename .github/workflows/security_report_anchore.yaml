@@ -1,12 +1,8 @@
 name: "Security Report"
 
 on:
-  push:
-    paths-ignore:
-      - '**/*.md'
-      - '**/*.txt'
-    branches-ignore:
-      - 'dependabot/**'
+  schedule:
+    - cron:  '30 0 */2 * *'
 
 jobs:
   report:

@@ -2,7 +2,7 @@ name: "Anchore Security Scan"
 
 on:
   schedule:
-    - cron:  '30 0 * * 0'
+    - cron:  '30 0 */2 * *'
 
 jobs:
   anchore:
