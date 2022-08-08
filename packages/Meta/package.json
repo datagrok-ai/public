@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.1.68",
+  "version": "1.1.69",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -891,9 +891,12 @@
         },
         "1.0.11": {
           "datagrok-api": "^1.5.0"
+        },
+        "1.0.13": {
+          "datagrok-api": "^1.5.0"
         }
       },
-      "description": "Chembl integration",
+      "description": "Chembl integration, commonly used queries and browser",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
