@@ -49,11 +49,6 @@ export function saveAsSdfDialog() {
         _saveAsSdf(table, structureColumn!);
       });
     dlg.show({x: 350, y: 100});
-
-    // dialogSubs.push(dlg.onClose.subscribe((value) => {
-    //   dialogSubs.forEach((s) => {s.unsubscribe();});
-    //   dialogSubs = [];
-    }));
   }
 }
 
