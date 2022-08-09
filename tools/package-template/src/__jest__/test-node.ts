@@ -68,6 +68,7 @@ export async function getBrowserPage(puppeteer: any): Promise<{browser: any, pag
 
   let page = await browser.newPage();
   await page.goto(`${url}/oauth/`);
+  await page.setDefaultNavigationTimeout(0);
   await page.setCookie({name: 'auth', value: token});
   await page.evaluate((token: any) => {
     window.localStorage.setItem('auth', token);
