@@ -19,8 +19,8 @@ import sqlalchemy.engine as sae
 import sqlalchemy.orm as sao
 
 meta_public = sa.MetaData(schema='public')
-meta_v2 = sa.MetaData(schema='db_v2')
-Base_v2 = sao.declarative_base(metadata=meta_v2)
+meta_mlb = sa.MetaData(schema='mlb')
+Base_v2 = sao.declarative_base(metadata=meta_mlb)
 
 
 def vladimir_script(jsons_sdf: pd.DataFrame, ptm_map: dict[str, str], cdr_map: dict[str, str], dst_sdf: pd.DataFrame):
@@ -108,8 +108,8 @@ def vladimir_script(jsons_sdf: pd.DataFrame, ptm_map: dict[str, str], cdr_map: d
 
 
 def build_schema(ptm_map) -> SimpleNamespace:
-    # ptm_in_cdr = sa.Table(
-    #     'ptm_in_cdr', meta_v2,
+    # ptm_predicted = sa.Table(
+    #     'ptm_predicted', meta_v2,
     #     sa.Column('v_id', sa.String(), primary_key=True, nullable=False),
     #     sa.Column('a', sa.LargeBinary, nullable=True),  # H Hydroxylysine
     #     sa.Column('b', sa.LargeBinary, nullable=True),  # H Hydroxyproline
@@ -161,28 +161,28 @@ def build_schema(ptm_map) -> SimpleNamespace:
     #     sa.Column('V', sa.LargeBinary, nullable=True),  # H Integrinbinding(RGDRYDLDV)
     # )
 
-    ptm_in_cdr_columns = [
+    ptm_predicted_columns = [
         sa.Column('v_id', sa.String(), primary_key=True, nullable=False),
     ]
     for (key, value) in ptm_map.items():
         col_name: str = value
         col_comment: str = key
-        ptm_in_cdr_columns.append(sa.Column(col_name, sa.LargeBinary, nullable=True, comment=col_comment))
-    ptm_in_cdr = sa.Table('ptm_in_cdr', meta_v2, *ptm_in_cdr_columns)
+        ptm_predicted_columns.append(sa.Column(col_name, sa.LargeBinary, nullable=True, comment=col_comment))
+    ptm_predicted = sa.Table('ptm_predicted', meta_mlb, *ptm_predicted_columns)
 
     return SimpleNamespace(
-        ptm_in_cdr=ptm_in_cdr,
+        ptm_predicted=ptm_predicted,
     )
 
 
-def load_data_ptm_in_cdr(conn: sae.Connection, ptm_map: dict[str, str], cdr_map: dict[str, str],
-                         ptm_in_cdr: sa.Table):
-    jsons_sdf: pd.DataFrame = pd.read_sql_table(table_name='json_files', schema=ptm_in_cdr.schema, con=conn);
-    ptm_in_cdr_sdf: pd.DataFrame = pd.read_sql_table(table_name=ptm_in_cdr.name, schema=ptm_in_cdr.schema, con=conn);
+def load_data_ptm_predicted(conn: sae.Connection, ptm_map: dict[str, str], cdr_map: dict[str, str],
+                            ptm_predicted: sa.Table):
+    jsons_sdf: pd.DataFrame = pd.read_sql_table(table_name='json_files', schema=ptm_predicted.schema, con=conn);
+    ptm_predicted_sdf: pd.DataFrame = pd.read_sql_table(table_name=ptm_predicted.name, schema=ptm_predicted.schema, con=conn);
 
-    vladimir_script(jsons_sdf, ptm_map, cdr_map, ptm_in_cdr_sdf)
+    vladimir_script(jsons_sdf, ptm_map, cdr_map, ptm_predicted_sdf)
 
-    ptm_in_cdr_sdf.to_sql(name=ptm_in_cdr.name, schema=ptm_in_cdr.schema, con=conn, index=False, if_exists='append')
+    ptm_predicted_sdf.to_sql(name=ptm_predicted.name, schema=ptm_predicted.schema, con=conn, index=False, if_exists='append')
 
 
 @click.group(cls=DefaultGroup, default='main')
@@ -207,9 +207,9 @@ def main(ctx, conn_str, ptm_map_f, cdr_map_f):
     s = build_schema(ptm_map)
 
     engine = sa.create_engine(conn_str)
-    meta_v2.create_all(bind=engine)
+    meta_mlb.create_all(bind=engine)
     with engine.begin() as conn:
-        load_data_ptm_in_cdr(conn, ptm_map, cdr_map, s.ptm_in_cdr)
+        load_data_ptm_predicted(conn, ptm_map, cdr_map, s.ptm_predicted)
 
 
 if __name__ == '__main__':
