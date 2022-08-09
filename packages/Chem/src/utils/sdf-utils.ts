@@ -4,17 +4,22 @@ import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full';
 import $ from 'cash-dom';
 
-// import {Subscription} from 'rxjs';
+import {Subscription} from 'rxjs';
 
+let sdfDialog: DG.Dialog | null = null;
+let sdfDialogSubs: Subscription[] = [];
 
 /**  Dialog for SDF file exporter */
 export function saveAsSdfDialog() {
   const table = grok.shell.t;
-  const moleculeCols = table.columns.bySemTypeAll('Molecule');
-  const macromoleculeCols = table.columns.bySemTypeAll('Macromolecule');
-  if (moleculeCols.length === 0 && macromoleculeCols.length === 0) {
-    const dlg = ui.dialog({title: 'Save as SDF'})
-      .add(
+  let cols = table.columns.bySemTypeAll('Molecule');
+  cols = cols.concat(table.columns.bySemTypeAll('Macromolecule'));
+  if (cols.length === 1)
+    _saveAsSdf(table, cols[0]);
+  else if (sdfDialog === null) {
+    sdfDialog = ui.dialog({title: 'Save as SDF'});
+    if (cols.length === 0) {
+      sdfDialog.add(
         ui.divText(
           'This table does not contain Molecule/Macromolecule columns, unable to save as SDF',
           {style:
@@ -28,25 +33,24 @@ export function saveAsSdfDialog() {
           },
         ),
       )
-      .onOK(() => {});
-    $(dlg.getButton('CANCEL')).hide();
-    dlg.show({x: 350, y: 100});
-  } else {
-    const cols = moleculeCols.concat(macromoleculeCols);
-    if (cols.length === 1)
-      _saveAsSdf(table, cols[0]);
-    else {
+        .onOK(() => {});
+      $(sdfDialog.getButton('CANCEL')).hide();
+    } else {
       const colsInput = ui.choiceInput('Choose column:', cols[0], cols);
-      const dlg = ui.dialog({title: 'Save as SDF'})
-        .add(ui.div([
-          colsInput.root,
-        ]))
+      sdfDialog.add(ui.div([
+        colsInput.root,
+      ]))
         .onOK(() => {
           const structureColumn = colsInput.value;
           _saveAsSdf(table, structureColumn!);
         });
-      dlg.show({x: 350, y: 100});
     }
+    sdfDialog.show({x: 350, y: 100});
+    sdfDialogSubs.push(sdfDialog.onClose.subscribe((value) => {
+      sdfDialogSubs.forEach((s) => {s.unsubscribe();});
+      sdfDialogSubs = [];
+      sdfDialog = null;
+    }));
   }
 }
 
@@ -57,6 +61,8 @@ export function _saveAsSdf(
   //todo: load OpenChemLib (or use RDKit?)
   //todo: open dialog
   //todo: UI for choosing columns with properties
+
+  const pi = DG.TaskBarProgressIndicator.create('Saving as SDF...');
 
   if (structureColumn == null)
     return;
@@ -83,4 +89,5 @@ export function _saveAsSdf(
   }
 
   DG.Utils.download(table.name + '.sdf', result);
+  pi.close();
 }
