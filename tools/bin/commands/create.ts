@@ -72,7 +72,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
             'jest': '^27.0.0',
             '@types/jest': '^27.0.0',
             'js-yaml': '^4.1.0',
-            '@types/js-yaml': "^4.1.0",
+            '@types/js-yaml': "^4.0.5",
             '@types/node-fetch': '^2.6.2',
             'node-fetch': '^2.6.7'
           }, ts ? {
