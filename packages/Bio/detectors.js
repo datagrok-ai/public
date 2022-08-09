@@ -94,8 +94,11 @@ class BioPackageDetectors extends DG.Package {
         const alphabet = BioPackageDetectors.detectAlphabet(statsAsChars.freq, candidateAlphabets, '-');
         if (alphabet === 'UN') return null;
 
-        const units = `fasta:SEQ.MSA:${alphabet}`;
+        //const units = `fasta:SEQ.MSA:${alphabet}`;
+        const units = 'fasta';
         col.setTag(DG.TAGS.UNITS, units);
+        col.setTag('aligned', 'SEQ.MSA');
+        col.setTag('alphabet', alphabet);
         return DG.SEMTYPE.MACROMOLECULE;
       }
     } else {
@@ -117,8 +120,10 @@ class BioPackageDetectors extends DG.Package {
 
       // const forbidden = BioPackageDetectors.checkForbiddenWoSeparator(stats.freq);
       if (separator || alphabet != 'UN') {
-        const units = `${format}:${seqType}:${alphabet}`;
-        col.setTag(DG.TAGS.UNITS, units);
+        //const units = `${format}:${seqType}:${alphabet}`;
+        col.setTag(DG.TAGS.UNITS, format);
+        col.setTag('aligned', seqType);
+        col.setTag('alphabet', alphabet);
         if (separator) col.setTag('separator', separator);
         return DG.SEMTYPE.MACROMOLECULE;
       }
