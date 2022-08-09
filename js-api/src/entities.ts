@@ -803,8 +803,14 @@ export class Package extends Entity {
     }, (e: any) => reject(e)));
   }
 
+  private _files: FileSource | null = null;
+
   /** Global application data */
-  files: FileSource = new FileSource(`System:AppData/${this.name}`);
+  get files(): FileSource {
+    if (this._files == null)
+      this._files = new FileSource(`System:AppData/${this.name}`);
+    return this._files;
+  }
 }
 
 
