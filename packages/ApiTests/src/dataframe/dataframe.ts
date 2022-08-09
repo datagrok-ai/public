@@ -119,7 +119,7 @@ Tesla, Model S,  ,          1.6,    120000`);
     expect(5, df1.get('population', 1));
   });
 
-  test('get density method', async () => {
+  test('DataFrame.getDensity', async () => {
     const t = DG.DataFrame.create(3);
     t.columns.add(DG.Column.fromInt32Array('numbers', Int32Array.from([1, 4, 2])));
     t.columns.add(DG.Column.fromInt32Array('digits', Int32Array.from([2, 1, 3])));
