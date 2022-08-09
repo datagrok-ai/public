@@ -1,13 +1,13 @@
 import * as DG from 'datagrok-api/dg';
 
-import {drugBankSearchWidget} from './widgets';
+import {drugBankSearchWidget, drugNameMoleculeWidget} from './widgets';
 
 export const _package = new DG.Package();
 
 let dbdf: DG.DataFrame;
 
 //tags: init
-export async function initDrugBank() {
+export async function initDrugBank(): Promise<void> {
   dbdf = DG.DataFrame.fromCsv(await _package.files.readAsText('db.csv'));
 }
 
@@ -16,7 +16,9 @@ export async function initDrugBank() {
 //input: string mol {semType: Molecule}
 //output: widget result
 //condition: true
-export async function drugBankSubstructureSearchPanel(mol: string) {
+export async function drugBankSubstructureSearchPanel(mol: string): Promise<DG.Widget> {
+  if (!dbdf)
+    await initDrugBank();
   return drugBankSearchWidget(mol, 'substructure', dbdf);
 }
 
@@ -25,7 +27,9 @@ export async function drugBankSubstructureSearchPanel(mol: string) {
 //input: string mol {semType: Molecule}
 //output: widget result
 //condition: true
-export async function drugBankSimilaritySearchPanel(mol: string) {
+export async function drugBankSimilaritySearchPanel(mol: string): Promise<DG.Widget> {
+  if (!dbdf)
+    await initDrugBank();
   return drugBankSearchWidget(mol, 'similarity', dbdf);
 }
 
@@ -35,11 +39,8 @@ export async function drugBankSimilaritySearchPanel(mol: string) {
 //connection: DrugBank
 //input: string id
 //output: string smiles { semType: Molecule }
-export async function drugNameMolecule(id: string) {
-  const drugName = id.slice(3);
-  for (var i = 0; i < dbdf.rowCount; i++) {
-    if (dbdf.get('SYNONYMS', i).toLowerCase().includes(drugName)) {
-      return dbdf.get('Smiles', i);
-    }
-  }
+export async function drugNameMolecule(id: string): Promise<string> {
+  if (!dbdf)
+    await initDrugBank();
+  return drugNameMoleculeWidget(id, dbdf) ?? '';
 }
