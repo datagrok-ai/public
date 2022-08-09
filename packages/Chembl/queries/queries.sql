@@ -10,6 +10,23 @@ order by morganbv_fp(mol_from_smiles($1::cstring))<%>mfp2
 limit @maxRows
 --end
 
+--name: patternSimilaritySearchWithThreshold
+--connection: Chembl
+--meta.batchMode: true
+--input: string pattern {semType: Molecule}
+--input: double threshold = 0.7
+set rdkit.tanimoto_threshold=@threshold;
+--batch
+select * from get_mfp2_neighbors(@pattern);
+--end
+
+--name: patternSubstructureSearch
+--connection: Chembl
+--input: string pattern {semType: Substructure}
+--input: int maxRows = 1000
+ select molregno,m as smiles from rdk.mols where m@>@pattern::qmol
+ limit @maxRows
+--end
 
 
 
@@ -35,7 +52,6 @@ where d.chembl_id = @id
 select canonical_smiles from compound_structures where molregno = @molregno
 --end
 
-
 --name: nameToSmiles
 --connection: Chembl
 --input: string compoundName
@@ -52,68 +68,10 @@ inner join
 --end
 
 
---name: _compoundNames
---connection: Chembl
---input: string sub
---tags: unit-test
-select distinct compound_name from compound_structures
-where compound_name ilike '%' || @sub || '%'
-limit 50
---end
-
-
---name: _organisms
---connection: Chembl
---input: string sub
---tags: unit-test
-select distinct organism from target_dictionary
-where organism ilike '%' || @sub || '%'
-limit 50
---end
-
-
---name: _proteinTypes
---connection: Chembl
---input: string sub
---tags: unit-test
-select distinct short_name from protein_classification
-where short_name ilike '%' || @sub || '%'
-limit 50
---end
-
-
---name: _targetTypes
---connection: Chembl
---input: string sub
-select target_type from target_type
-where target_type ilike '%' || @sub || '%'
-limit 50
---end
-
-
---name: _assayTypes
---connection: Chembl
---input: string sub
-select assay_type from assay_type
-where assay_type ilike '%' || @sub || '%'
-limit 50
---end
-
-
---name: _relationshipTypes
---connection: Chembl
---input: string sub
-select relationship_type from relationship_type
-where relationship_type ilike '%' || @sub || '%'
-limit 50
---end
-
-
 --name: protein classification
 --connection: Chembl
 select protein_class_id, parent_id, pref_name, definition, class_level from protein_classification
 --end
-
 
 --name: bioactivity data for bacterial targets for @organism
 --connection: Chembl
@@ -135,7 +93,6 @@ FROM target_dictionary td
     AND td.organism = @organism
     AND oc.L1 = 'Bacteria';
 --end
-
 
 --name: activity details for compound and all its salts which have an IC50 bioactivity value in nM against a target of interest
 --connection: Chembl
@@ -205,7 +162,6 @@ AND act.standard_value        > 200
 AND td.chembl_id              = @over;
 --end
 
-
 --name: target ChEMBL_ID, target_name, target_type, protein accessions and sequences for all protein targets
 --connection: Chembl
 SELECT t.chembl_id AS target_chembl_id,
@@ -219,7 +175,6 @@ FROM target_dictionary t
   JOIN component_sequences c ON tc.component_id = c.component_id
 AND tt.parent_type  = 'PROTEIN';
 --end
-
 
 --name: PK data from 'Curated Drug Pharmacokinetic Data' source for @drug
 --connection: Chembl
@@ -261,7 +216,6 @@ GROUP BY d.title, a.assay_id, a.description, cr.molregno, cr.compound_name, act.
 ORDER BY cr.compound_name, act.toid, act.standard_type;
 --end
 
-
 --name: compound activity details for all targets containing @protein
 --connection: Chembl
 --input: string protein = "P08172"
@@ -291,7 +245,6 @@ FROM compound_structures s
     AND cs.accession = @protein;
 --end
 
-
 --name: compound activity details for @target
 --connection: Chembl
 --input: string target = "CHEMBL1827"
@@ -320,24 +273,6 @@ AND a.tid            = t.tid
 AND t.chembl_id      = @target;
 --end
 
-
---name: @pattern substructure search
---connection: Chembl
---input: string pattern {semType: Substructure}
---input: int maxRows = 1000
- select molregno,m as smiles from rdk.mols where m@>@pattern::qmol
- limit @maxRows
---end
-
---name: @pattern similarity search with @threshold
---connection: Chembl
---input: string pattern {semType: Substructure}
---input: double threshold
-set rdkit.tanimoto_threshold=@threshold;
-select * from get_mfp2_neighbors(@pattern)
---end
-
-
 --name: all chembl ids with inchi keys
 --connection: Chembl
 select
@@ -361,7 +296,6 @@ from
   order by ids.order
 --end
 
-
 --name: inchiKeyToSmiles
 --connection: Chembl
 --input: dataframe ids
@@ -373,7 +307,6 @@ from
   order by ids.order
 --end
 
-
 --name: inchiKeyToInchi
 --connection: Chembl
 --input: dataframe ids
@@ -384,7 +317,6 @@ from
   right join ids on compound_structures.standard_inchi_key = ids.key
   order by ids.order
 --end
-
 
 --name: chemblToSmiles
 --connection: Chembl
@@ -398,7 +330,6 @@ from
   order by ids.order
 --end
 
-
 --name: chemblToInchi
 --connection: Chembl
 --input: dataframe ids
@@ -410,7 +341,6 @@ from
   right join ids on molecule_dictionary.chembl_id = ids.key
   order by ids.order
 --end
-
 
 --name: chemblToInchiKey
 --connection: Chembl
@@ -424,7 +354,6 @@ from
   order by ids.order
 --end
 
-
 --name: allChemblStructures
 --connection: Chembl
 select
@@ -433,7 +362,6 @@ from
   compound_structures
 --end
 
-
 --name: unichemUnitTestQuery
 --connection: Unichem
 --tags: unit-test
@@ -441,7 +369,56 @@ from
 select count(from_id) from src10src11
 --end
 
+--name: _compoundNames
+--connection: Chembl
+--input: string sub
+--tags: unit-test
+select distinct compound_name from compound_structures
+where compound_name ilike '%' || @sub || '%'
+limit 50
+--end
 
+--name: _organisms
+--connection: Chembl
+--input: string sub
+--tags: unit-test
+select distinct organism from target_dictionary
+where organism ilike '%' || @sub || '%'
+limit 50
+--end
+
+--name: _proteinTypes
+--connection: Chembl
+--input: string sub
+--tags: unit-test
+select distinct short_name from protein_classification
+where short_name ilike '%' || @sub || '%'
+limit 50
+--end
+
+--name: _targetTypes
+--connection: Chembl
+--input: string sub
+select target_type from target_type
+where target_type ilike '%' || @sub || '%'
+limit 50
+--end
+
+--name: _assayTypes
+--connection: Chembl
+--input: string sub
+select assay_type from assay_type
+where assay_type ilike '%' || @sub || '%'
+limit 50
+--end
+
+--name: _relationshipTypes
+--connection: Chembl
+--input: string sub
+select relationship_type from relationship_type
+where relationship_type ilike '%' || @sub || '%'
+limit 50
+--end
 
 
 
@@ -455,7 +432,6 @@ from
   compound_structures
 limit 1000
 --end
-
 
 --name: FindByMolregno
 --connection: Chembl
@@ -477,8 +453,6 @@ from
 where
  compound_records.molregno = @molregno
 --end
-
-
 
 --name: ChemblBrowserQuery
 --connection: Chembl
@@ -511,7 +485,6 @@ where
  limit 10000
 --end
 
-
 --name: compoundsSelectiveToOneTargetOverSecond
 --connection: Chembl
 --input: string selectiveFor = CHEMBL301
@@ -542,7 +515,6 @@ AND act.standard_units        = 'nM'
 AND act.standard_value        > 200
 AND td.chembl_id              = @over;
 --end
-
 
 --name: compoundActivityDetailsForTarget
 --connection: Chembl
