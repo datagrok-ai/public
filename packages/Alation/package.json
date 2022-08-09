@@ -1,66 +1,68 @@
 {
-	"name": "@datagrok/alation",
-	"friendlyName": "Alation",
-	"version": "1.0.2",
-	"author": {
-		"name": "Volodymyr Dyma",
-		"email": "vdyma@datagrok.ai"
-	},
-	"description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
-	"properties": [
-		{
-			"name": "Base URL",
-			"propertyType": "string"
-		}
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/Alation"
-	},
-	"dependencies": {
-		"datagrok-api": "^1.5.0",
-		"cash-dom": "latest",
-		"dayjs": "latest",
-		"uuid-by-string": "latest",
-		"@datagrok-libraries/utils": "latest",
-		"rxjs": "^6.5.5"
-	},
-	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"eslint": "latest",
-		"eslint-config-google": "latest",
-		"@typescript-eslint/eslint-plugin": "latest",
-		"@typescript-eslint/parser": "latest",
-		"@types/jest": "^27.0.0",
-		"jest": "^27.0.0",
-		"jest-html-reporter": "^3.5.0",
-		"puppeteer": "^13.7.0",
-		"ts-jest": "^27.0.0",
-		"@types/js-yaml": "^4.0.5",
-		"@types/node-fetch": "^2.6.1"
-	},
-	"scripts": {
-		"link-all": "",
-		"debug-alation": "webpack && grok publish ",
-		"release-alation": "webpack && grok publish --release",
-		"build-alation": "webpack",
-		"build": "webpack",
-		"debug-alation-eval": "grok publish eval",
-		"release-alation-eval": "grok publish eval --release",
-		"lint": "eslint src --ext .ts",
-		"lint-fix": "eslint src --ext .ts --fix",
-		"test": "jest",
-		"test-dev": "set HOST=dev && jest",
-		"test-local": "set HOST=localhost && jest"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	]
+  "name": "@datagrok/alation",
+  "friendlyName": "Alation",
+  "version": "1.0.2",
+  "author": {
+    "name": "Volodymyr Dyma",
+    "email": "vdyma@datagrok.ai"
+  },
+  "description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+  "properties": [
+    {
+      "name": "Base URL",
+      "propertyType": "string"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Alation"
+  },
+  "dependencies": {
+    "datagrok-api": "^1.5.0",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "uuid-by-string": "latest",
+    "@datagrok-libraries/utils": "latest",
+    "rxjs": "^6.5.5"
+  },
+  "devDependencies": {
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "@types/jest": "^27.0.0",
+    "jest": "^27.0.0",
+    "jest-html-reporter": "^3.5.0",
+    "puppeteer": "^13.7.0",
+    "ts-jest": "^27.0.0",
+    "@types/js-yaml": "^4.1.0",
+    "js-yaml": "^4.1.0",
+    "@types/node-fetch": "^2.6.2",
+    "node-fetch": "^2.6.7"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-alation": "webpack && grok publish ",
+    "release-alation": "webpack && grok publish --release",
+    "build-alation": "webpack",
+    "build": "webpack",
+    "debug-alation-eval": "grok publish eval",
+    "release-alation-eval": "grok publish eval --release",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "test": "jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }
