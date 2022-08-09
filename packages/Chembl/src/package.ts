@@ -31,6 +31,7 @@ export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataF
     }
 
 }
+
 //name: chemblSearchWidgetLocalDb
 //tags: widgets
 //input: string mol {semType: Molecule}
@@ -85,7 +86,6 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
     return new DG.Widget(panel);
 }
 
-
 //name: chemblSubstructureSearchPanel
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
@@ -103,8 +103,6 @@ export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
 export function chemblSimilaritySearchPanel(mol: string): DG.Widget {
     return chemblSearchWidgetLocalDb(mol);
 }
-
-
 
 //name: ChemblBrowser
 //tags: app
@@ -149,7 +147,7 @@ export async function Browser() {
       if (pathSegments.length === 2 && pathSegments[1].includes("molregno")) {
           let parsedMolregno = parseInt(pathSegments[1].split("=")[1]);
           molregno.value = parsedMolregno.toString();
-          let data = await grok.data.query(`${_package.name}:FindByMolregno`, {'molregno': parsedMolregno});
+          let data = await grok.data.query(`${_package.name}:cbFindByMolregno`, {'molregno': parsedMolregno});
           data.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
           v = grok.shell.newView('Chembl Browser');
           r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, data);
@@ -181,7 +179,7 @@ export async function Browser() {
           maxPhase.value = parsedMaxPhase.toString();
           molecule_type.value = parsedMoleculeType;
 
-          let data = await grok.data.query(`${_package.name}:ChemblBrowserQuery`, queryParameters);
+          let data = await grok.data.query(`${_package.name}:cbChemblBrowserQuery`, queryParameters);
           data.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
           v = grok.shell.newView('Chembl Browser');
           r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, data);
@@ -189,7 +187,7 @@ export async function Browser() {
           v.toolbox = ui.div(controlPanel);
           v.box = true;
       } else {
-          let data = await grok.data.query(`${_package.name}:allChemblStructures`, {});
+          let data = await grok.data.query(`${_package.name}:cbAllChemblStructures`, {});
           data.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
           v = grok.shell.newView('Chembl Browser');
           r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, data);
@@ -209,7 +207,7 @@ export async function Browser() {
           'max_phase': max_phase,
           'molecule_type': molecule_type.value
       };
-      let query = await grok.data.query(`${_package.name}:ChemblBrowserQuery`, queryParameters);
+      let query = await grok.data.query(`${_package.name}:cbChemblBrowserQuery`, queryParameters);
       if (query.rowCount == 0) {
           grok.shell.info("No results for this filter were found")
       } else {
@@ -227,7 +225,7 @@ export async function Browser() {
   }
 
   async function findByMolregno() {
-      let query = await grok.data.query(`${_package.name}:FindByMolregno`, {'molregno': parseInt(molregno.value)});
+      let query = await grok.data.query(`${_package.name}:cbFindByMolregno`, {'molregno': parseInt(molregno.value)});
       if (query.rowCount == 0) {
           grok.shell.info("No results for this filter were found")
       } else {
