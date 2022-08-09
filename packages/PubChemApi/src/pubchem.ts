@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {anyObject, paramsType, pubChemIdType, pubChemSearchType, urlParamsFromObject} from './utils';
@@ -85,7 +86,7 @@ export async function init(id: pubChemIdType): Promise<HTMLElement> {
     return ui.div('Not found in PubChem.');
 
   const url = `${pubChemRest}/pug_view/data/compound/${id}/JSON`;
-  const response = await fetch(url);
+  const response = await grok.dapi.fetchProxy(url);
   const json = await response.json();
   const acc = ui.accordion('pubChem');
   acc.header = ui.label(`pubchem: ${id}`);
@@ -152,7 +153,7 @@ export async function getBy(
   idType: string, idTypeReturn: string, id: pubChemIdType, params?: anyObject): Promise<anyObject> {
   params ??= {};
   const url = `${pubChemPug}/compound/${idType}/${id}/${idTypeReturn}/JSON?${urlParamsFromObject(params)}`;
-  const response = await fetch(url);
+  const response = await grok.dapi.fetchProxy(url);
   const json = await response.json();
   return json;
 }
@@ -163,7 +164,7 @@ export async function _getListById(
   const properties = propertyList.length ? `/property/${propertyList.join(',')}` : '';
   const url =
     `${pubChemPug}/compound/listkey/${listId}${properties}/JSON?${urlParamsFromObject(params)}`;
-  const response = await fetch(url);
+  const response = await grok.dapi.fetchProxy(url);
   const json = await response.json();
   return json.PropertyTable?.Properties ?? json['PC_Compounds'] ?? await _getListById(listId, propertyList, params);
 }
@@ -174,7 +175,7 @@ export async function _asyncSearchId(
   params['MaxRecords'] ??= 20;
   const url =
     `${pubChemPug}/compound/${searchType}/${idType}/${encodeURIComponent(id)}/JSON?${urlParamsFromObject(params)}`;
-  const response = await fetch(url);
+  const response = await grok.dapi.fetchProxy(url);
   const json: anyObject = await response.json();
   return json['Waiting']['ListKey'];
 }

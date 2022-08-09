@@ -1,7 +1,8 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {init, smilesToPubChem} from './pubchem';
+import {getBy, init, smilesToPubChem} from './pubchem';
 import {pubChemSearchWidget} from './widget';
 
 export const _package = new DG.Package();
@@ -50,27 +51,11 @@ export async function pubChemIdentitySearch(molString: string): Promise<DG.Widge
 //meta.inputRegexp: ([0-9]+)
 //connection: PubChemApi
 export async function pubChem(id: string) {
-  const url = `${pubChemRest}/pug_view/data/compound/${id}/JSON`;
-  const response = await fetch(url);
+  const url = `${pubChemRest}/pug/compound/cid/${id}/property/CanonicalSMILES/JSON`;
+  const response = await grok.dapi.fetchProxy(url);
   const json = await response.json();
-  const recordJson = json['Record'];
-  var sections = recordJson['Section'];
-  var smiles;
-  for (var i = 0; i < sections.length; i++) {
-    if (sections[i]['TOCHeading'] === 'Names and Identifiers') 
-      for (var j = 0; j < recordJson['Section'][i]['Section'].length; j++){
-        sections = recordJson['Section'][i]['Section'];
-        if (sections[j]['TOCHeading'] === 'Computed Descriptors')
-          for (var k = 0; k < recordJson['Section'][i]['Section'][j]['Section'].length; k++){
-            sections = recordJson['Section'][i]['Section'][j]['Section'];
-            if (sections[k]['TOCHeading'] === 'Canonical SMILES')
-              smiles = sections[k]['Information'][0]['Value']['StringWithMarkup'][0].String;
-          }
-      }
-  }
-  return smiles; 
+  return json['PropertyTable']['Properties']['CanonicalSMILES'];
 }
-
 
 //name: inchiKeys
 //input: string id
