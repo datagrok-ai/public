@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PositionInfo, PositionMonomerInfo, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {Column} from 'datagrok-api/dg';
 
 category('WebLogo-positions', () => {
   let tvList: DG.TableView[];
@@ -17,8 +18,6 @@ category('WebLogo-positions', () => {
     -TC-GCTTGC--
     -TC-GCTTGC--`;
 
-
-  const resShrinkEmptyTailDf1: PositionInfo[] = [];
 
   before(async () => {
     tvList = [];
@@ -71,14 +70,27 @@ category('WebLogo-positions', () => {
     }
 
   });
-  test('positions with shrinkEmptyTail option', async () => {
-    const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
+  test('positions with shrinkEmptyTail option true (filterd)', async () => {
+    let csvDf2 = `seq 
+    -TC-G-TTGC--
+    -TC-GCTTGC--
+    -T--C-GT-
+    -T--C-GT-
+    -T--C-GT-
+    -T--CCGT-`;
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf2);
     const tv: DG.TableView = grok.shell.addTableView(df);
 
     df.getCol('seq').semType = 'Macromolecule';
     df.getCol('seq').setTag('units', 'fasta:SEQ.MSA:DNA');
 
+    let seq: Column = df.getCol('seq');
+    df.filter.init((i) => {
+      return i > 2;
+    });
+    df.filter.fireChanged();
     const wlViewer: WebLogo = await df.plot.fromType('WebLogo', {'shrinkEmptyTail': true}) as unknown as WebLogo;
+
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
     tvList.push(tv);
@@ -87,16 +99,15 @@ category('WebLogo-positions', () => {
     const positions: PositionInfo[] = wlViewer['positions'];
 
     const resAllDf1: PositionInfo[] = [
-      new PositionInfo('1', {'A': new PositionMonomerInfo(2), '-': new PositionMonomerInfo(3)}),
-      new PositionInfo('2', {'T': new PositionMonomerInfo(5)}),
-      new PositionInfo('3', {'C': new PositionMonomerInfo(5)}),
-      new PositionInfo('4', {'-': new PositionMonomerInfo(5)}),
-      new PositionInfo('5', {'G': new PositionMonomerInfo(5)}),
-      new PositionInfo('6', {'-': new PositionMonomerInfo(3), 'C': new PositionMonomerInfo(2)}),
-      new PositionInfo('7', {'T': new PositionMonomerInfo(5)}),
-      new PositionInfo('8', {'T': new PositionMonomerInfo(5)}),
-      new PositionInfo('9', {'G': new PositionMonomerInfo(5)}),
-      new PositionInfo('10', {'C': new PositionMonomerInfo(5)})
+      new PositionInfo('1', {'-': new PositionMonomerInfo(3)}),
+      new PositionInfo('2', {'T': new PositionMonomerInfo(3)}),
+      new PositionInfo('3', {'-': new PositionMonomerInfo(3)}),
+      new PositionInfo('4', {'-': new PositionMonomerInfo(3)}),
+      new PositionInfo('5', {'C': new PositionMonomerInfo(3)}),
+      new PositionInfo('6', {'-': new PositionMonomerInfo(2), 'C': new PositionMonomerInfo(1)}),
+      new PositionInfo('7', {'G': new PositionMonomerInfo(3)}),
+      new PositionInfo('8', {'T': new PositionMonomerInfo(3)}),
+      new PositionInfo('9', {'-': new PositionMonomerInfo(3)}),
     ];
 
     expect(positions.length, resAllDf1.length);
