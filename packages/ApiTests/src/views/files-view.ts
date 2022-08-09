@@ -6,11 +6,6 @@ import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 category('FilesView', () => {
   test('Creation', async () => {
-// category('FilesView', () => {
-//   test('Creation', async () => {
-//     const v = DG.FilesView.create();
-//     expect(v instanceof DG.FilesView, true);
-//   });
     const v = DG.FilesView.create();
     expect(v instanceof DG.FilesView, true);
   });
