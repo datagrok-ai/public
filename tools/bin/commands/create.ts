@@ -70,7 +70,11 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
           Object.assign(_package.devDependencies, {
             'jest-html-reporter': '^3.5.0',
             'jest': '^27.0.0',
-            '@types/jest': '^27.0.0'
+            '@types/jest': '^27.0.0',
+            'js-yaml': '^4.1.0',
+            '@types/js-yaml': "^4.1.0",
+            '@types/node-fetch': '^2.6.2',
+            'node-fetch': '^2.6.7'
           }, ts ? {
             'ts-jest': '^27.0.0',
             'puppeteer': '^13.7.0'
