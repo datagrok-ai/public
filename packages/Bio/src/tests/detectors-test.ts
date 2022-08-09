@@ -190,6 +190,7 @@ MWRSWY-CKHP
     };
   };
 
+
   test('NegativeEmpty', async () => { await _testNeg(readCsv('csvDfEmpty', csvDfEmpty), 'col1'); });
   test('Negative1', async () => { await _testNeg(readCsv('csvDf1', csvDf1), 'col1'); });
   test('Negative2', async () => { await _testNeg(readCsv('csvDf2', csvDf2), 'col1'); });
@@ -197,44 +198,44 @@ MWRSWY-CKHP
   test('NegativeSmiles', async () => { await _testNeg(readCsv('csvDfSmiles', csvDfSmiles), 'col1'); });
 
   test('Dna1', async () => {
-    await _testPos(readCsv('csvDfDna1', csvDfDna1), 'seq', 'fasta:SEQ:DNA');
+    await _testPos(readCsv('csvDfDna1', csvDfDna1), 'seq', 'fasta', 'SEQ', 'DNA');
   });
   test('Rna1', async () => {
-    await _testPos(readCsv('csvDfRna1', csvDfRna1), 'seq', 'fasta:SEQ:RNA');
+    await _testPos(readCsv('csvDfRna1', csvDfRna1), 'seq', 'fasta', 'SEQ', 'RNA');
   });
   test('AA1', async () => {
-    await _testPos(readCsv('csvDfPt1', csvDfPt1), 'seq', 'fasta:SEQ:PT');
+    await _testPos(readCsv('csvDfPt1', csvDfPt1), 'seq', 'fasta', 'SEQ', 'PT');
   });
   test('MsaDna1', async () => {
-    await _testPos(readCsv('csvDfMsaDna1', csvDfMsaDna1), 'seq', 'fasta:SEQ.MSA:DNA');
+    await _testPos(readCsv('csvDfMsaDna1', csvDfMsaDna1), 'seq', 'fasta', 'SEQ.MSA', 'DNA');
   });
 
   test('MsaAA1', async () => {
-    await _testPos(readCsv('csvDfMsaPt1', csvDfMsaPt1), 'seq', 'fasta:SEQ.MSA:PT');
+    await _testPos(readCsv('csvDfMsaPt1', csvDfMsaPt1), 'seq', 'fasta', 'SEQ.MSA', 'PT');
   });
 
   test('SepDna', async () => {
-    await _testPos(readCsv('csvDfSepDna', csvDfSepDna), 'seq', 'separator:SEQ:DNA', '*');
+    await _testPos(readCsv('csvDfSepDna', csvDfSepDna), 'seq', 'separator', 'SEQ', 'DNA', '*');
   });
   test('SepRna', async () => {
-    await _testPos(readCsv('csvDfSepRna', csvDfSepRna), 'seq', 'separator:SEQ:RNA', '*');
+    await _testPos(readCsv('csvDfSepRna', csvDfSepRna), 'seq', 'separator', 'SEQ', 'RNA', '*');
   });
   test('SepPt', async () => {
-    await _testPos(readCsv('csvDfSepPt', csvDfSepPt), 'seq', 'separator:SEQ:PT', '-');
+    await _testPos(readCsv('csvDfSepPt', csvDfSepPt), 'seq', 'separator', 'SEQ', 'PT', '-');
   });
   test('SepUn1', async () => {
-    await _testPos(readCsv('csvDfSepUn1', csvDfSepUn1), 'seq', 'separator:SEQ:UN', '-');
+    await _testPos(readCsv('csvDfSepUn1', csvDfSepUn1), 'seq', 'separator', 'SEQ', 'UN', '-');
   });
   test('SepUn2', async () => {
-    await _testPos(readCsv('csvDfSepUn2', csvDfSepUn2), 'seq', 'separator:SEQ:UN', '/');
+    await _testPos(readCsv('csvDfSepUn2', csvDfSepUn2), 'seq', 'separator', 'SEQ', 'UN', '/');
   });
 
   test('SepMsaN1', async () => {
-    await _testPos(readCsv('csvDfSepMsaDna1', csvDfSepMsaDna1), 'seq', 'separator:SEQ.MSA:DNA', '-');
+    await _testPos(readCsv('csvDfSepMsaDna1', csvDfSepMsaDna1), 'seq', 'separator', 'SEQ.MSA', 'DNA', '-');
   });
 
   test('SamplesFastaCsvPt', async () => {
-    await _testPos(readSamples(Samples.fastaCsv), 'sequence', 'fasta:SEQ:PT');
+    await _testPos(readSamples(Samples.fastaCsv), 'sequence', 'fasta', 'SEQ', 'PT');
   });
   test('SamplesFastaCsvNegativeEntry', async () => {
     await _testNeg(readSamples(Samples.fastaCsv), 'Entry');
@@ -247,7 +248,7 @@ MWRSWY-CKHP
   });
 
   test('SamplesFastaFastaPt', async () => {
-    await _testPos(readSamples(Samples.fastaFasta, readFileFasta), 'sequence', 'fasta:SEQ:PT');
+    await _testPos(readSamples(Samples.fastaFasta, readFileFasta), 'sequence', 'fasta', 'SEQ', 'PT');
   });
 
   // peptidesComplex contains monomers with spaces in AlignedSequence columns, which are forbidden
@@ -265,7 +266,7 @@ MWRSWY-CKHP
   });
 
   test('samplesMsaComplexUn', async () => {
-    await _testPos(readSamples(Samples.msaComplex), 'MSA', 'separator:SEQ.MSA:UN', '/');
+    await _testPos(readSamples(Samples.msaComplex), 'MSA', 'separator', 'SEQ.MSA', 'UN', '/');
   });
   test('samplesMsaComplexNegativeActivity', async () => {
     await _testNeg(readSamples(Samples.msaComplex), 'Activity');
@@ -280,7 +281,7 @@ MWRSWY-CKHP
   });
 
   test('samplesHelmCsvHELM', async () => {
-    await _testPos(readSamples(Samples.helmCsv), 'HELM', 'HELM', null);
+    await _testPos(readSamples(Samples.helmCsv), 'HELM', 'HELM', null, null, null);
   });
 
   test('samplesHelmCsvNegativeActivity', async () => {
@@ -296,7 +297,7 @@ MWRSWY-CKHP
     await _testNeg(readSamples(Samples.testHelmCsv), 'Test type');
   });
   test('samplesTestHelmPositiveHelmString', async () => {
-    await _testPos(readSamples(Samples.testHelmCsv), 'HELM string', 'HELM');
+    await _testPos(readSamples(Samples.testHelmCsv), 'HELM string', 'HELM', null, null, null);
   });
   test('samplesTestHelmNegativeValid', async () => {
     await _testNeg(readSamples(Samples.testHelmCsv), 'Valid?');
@@ -328,7 +329,7 @@ MWRSWY-CKHP
   });
 
   test('samplesFastaPtPosSequence', async () => {
-    await _testPos(readSamples(Samples.fastaPtCsv), 'sequence', 'fasta:SEQ:PT');
+    await _testPos(readSamples(Samples.fastaPtCsv), 'sequence', 'fasta', 'SEQ', 'PT');
   });
 
   test('samplesTestCerealNegativeCerealName', async () => {
@@ -383,7 +384,7 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
   }
 }
 
-export async function _testPos(readDf: DfReaderFunc, colName: string, units: string, separator: string | null = null) {
+export async function _testPos(readDf: DfReaderFunc, colName: string, units: string, aligned: string | null, alphabet: string | null, separator: string | null = null) {
   const df: DG.DataFrame = await readDf();
   const col: DG.Column = df.col(colName)!;
   const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
@@ -392,6 +393,8 @@ export async function _testPos(readDf: DfReaderFunc, colName: string, units: str
 
   expect(col.semType === DG.SEMTYPE.MACROMOLECULE, true);
   expect(col.getTag(DG.TAGS.UNITS), units);
+  expect(col.getTag('aligned'), aligned);
+  expect(col.getTag('alphabet'), alphabet);
   if (separator)
     expect(col.getTag('separator'), separator);
 }

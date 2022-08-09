@@ -26,51 +26,23 @@ import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler'
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils'
 
 
-//name: PTSequenceCellRenderer
+//name: fastaSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: Sequence
-//meta.columnTags: units=fasta:SEQ:PT
+//meta.columnTags: units=fasta
 //output: grid_cell_renderer result
-export function PTSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
 }
 
-//name: DNASequenceCellRenderer
+//name: separatorSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: Sequence
-//meta.columnTags: units=fasta:SEQ:DNA
+//meta.columnTags: units=separator
 //output: grid_cell_renderer result
-export function DNASequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
 }
-
-//name: RNASequenceCellRenderer
-//tags: cellRenderer
-//meta.cellType: Sequence
-//meta.columnTags: units=fasta:SEQ:RNA
-//output: grid_cell_renderer result
-export function RNASequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
-  return new MacromoleculeSequenceCellRenderer();
-}
-
-//name: SepMSASequenceCellRenderer
-//tags: cellRenderer
-//meta.cellType: Sequence
-//meta.columnTags: units=separator:SEQ.MSA:UN
-//output: grid_cell_renderer result
-export function SepMSASequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
-  return new MacromoleculeSequenceCellRenderer();
-}
-
-//name: SepPTSequenceCellRenderer
-//tags: cellRenderer
-//meta.cellType: Sequence
-//meta.columnTags: units=separator:SEQ:PT
-//output: grid_cell_renderer result
-export function SepPTSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
-  return new MacromoleculeSequenceCellRenderer();
-}
-
 
 function checkInputColumn(col: DG.Column, name: string,
   allowedNotations: string[] = [], allowedAlphabets: string[] = []): boolean {
