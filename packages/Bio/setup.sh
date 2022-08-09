@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./setup-unlink-clean
+./setup-unlink-clean.sh
 
 GREEN='\e[0;32m'
 NO_COLOR='\e[0m'
