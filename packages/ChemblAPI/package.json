@@ -30,7 +30,7 @@
     "style-loader": "latest",
     "webpack": "latest",
     "webpack-cli": "latest",
-    "@types/js-yaml": "^4.1.0",
+    "@types/js-yaml": "^4.0.5",
     "js-yaml": "^4.1.0",
     "@types/node-fetch": "^2.6.2",
     "node-fetch": "^2.6.7"
