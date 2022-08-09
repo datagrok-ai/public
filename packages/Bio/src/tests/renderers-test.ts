@@ -43,14 +43,18 @@ category('renderers', () => {
       `semType="${srcSeqCol!.semType}", units="${srcSeqCol!.getTag(DG.TAGS.UNITS)}", ` +
       `cell.renderer="${srcSeqCol!.getTag('cell.renderer')}"`);
     expect(srcSeqCol!.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(srcSeqCol!.getTag(DG.TAGS.UNITS), 'fasta:SEQ:PT');
+    expect(srcSeqCol!.getTag(DG.TAGS.UNITS), 'fasta');
+    expect(srcSeqCol!.getTag('aligned'), 'SEQ');
+    expect(srcSeqCol!.getTag('alphabet'), 'PT');
     expect(srcSeqCol!.getTag('cell.renderer'), 'Macromolecule');
 
     const msaSeqCol: DG.Column | null = await multipleSequenceAlignmentAny(df, srcSeqCol!);
     tv.grid.invalidate();
 
     expect(msaSeqCol!.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(msaSeqCol!.getTag(DG.TAGS.UNITS), 'fasta:SEQ.MSA:PT');
+    expect(msaSeqCol!.getTag(DG.TAGS.UNITS), 'fasta');
+    expect(msaSeqCol!.getTag('aligned'), 'SEQ.MSA');
+    expect(msaSeqCol!.getTag('alphabet'), 'PT');
     expect(msaSeqCol!.getTag('cell.renderer'), 'Macromolecule');
 
     dfList.push(df);

@@ -14,7 +14,7 @@ export const enum NOTATION {
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
   protected readonly _column: DG.Column; // the column to be converted
-  protected _units: string; // units, of the form fasta, separator     fasta:SEQ:NT, etc.
+  protected _units: string; // units, of the form fasta, separator
   protected _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
   protected _defaultGapSymbol: string;
   protected _defaultGapSymbolsDict = {
@@ -48,8 +48,7 @@ export class UnitsHandler {
       (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));
     const maxCos = Math.max(...alphabetCandidatesSim);
     const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
-    //Set tags here!!!!
-    //const units: string = `fasta:${seqType}:${alphabet}`;
+    
     const units: string = 'fasta';
     col.setTag(DG.TAGS.UNITS, units);
     col.setTag('aligned', seqType);
@@ -168,7 +167,6 @@ export class UnitsHandler {
     const postfixes = ['rna', 'dna', 'pt'];
 
     const prefixCriterion = prefixes.some((p) => units.startsWith(p.toLowerCase()));
-    //const postfixCriterion = postfixes.some((p) => units.endsWith(p)); // already lowercase;
     return prefixCriterion;
   }
 
