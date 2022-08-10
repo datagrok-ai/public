@@ -8,7 +8,7 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 
 interface ITestManagerUI {
   runButton: HTMLButtonElement;
-  testsTree: DG.TreeViewNode;
+  testsTree: DG.TreeViewGroup;
 }
 
 interface IPackageTests {
@@ -215,7 +215,7 @@ function createTestManagerUI(labelClick?: boolean, view?: DG.View): ITestManager
   return {runButton: runTestsButton, testsTree: tree};
 }
 
-function runActiveTests(tree: DG.TreeViewNode, view?: DG.View) {
+function runActiveTests(tree: DG.TreeViewGroup, view?: DG.View) {
   const actTests = collectActiveTests();
   actTests.forEach((t) => updateTestResultsIcon(tree, t.packageName, t.test.category, t.test.name));
   if (actTests.length)
@@ -247,7 +247,7 @@ function collectActiveTests() {
   return activeTests;
 }
 
-function updateTestResultsIcon(tree: DG.TreeViewNode, pack: string, cat: string, name: string, success?: boolean) {
+function updateTestResultsIcon(tree: DG.TreeViewGroup, pack: string, cat: string, name: string, success?: boolean) {
   const items = tree.items;
   const item = items.filter((it) => it.root.id === `${pack}|${cat}|${name}`)[0];
   success === undefined ? item.root.children[1].children[0].children[0].innerHTML = '' : updateIcon(success, item.root.children[1].children[0].children[0]);
@@ -261,7 +261,7 @@ function updateIcon(passed: boolean, iconDiv: Element) {
   iconDiv.append(icon);
 }
 
-async function runAllTests(activeTests: IPackageTest[], tree: DG.TreeViewNode, view?: DG.View) {
+async function runAllTests(activeTests: IPackageTest[], tree: DG.TreeViewGroup, view?: DG.View) {
   let completedTestsCount = 0;
   if (view) view.path = '/' + view.name.replace(' ', '') + testPath.replace(/ /g, '');
   activeTests.forEach((t) => {
