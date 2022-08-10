@@ -40,9 +40,11 @@ category('Dapi: groups', () => {
 
   test('Dapi: groups - include member', async () => {
     let subgroup = null as any;
+    let demoGroup = null as any;
     try {
       const localTestGroupName = 'js-api-test-group1';
-      const demoGroup = await grok.dapi.groups.filter('demo').first();
+      const localTestGroup2Name = 'js-api-test-group2';
+      demoGroup = await grok.dapi.groups.createNew(localTestGroup2Name);
       subgroup = DG.Group.create(localTestGroupName);
       subgroup.includeTo(demoGroup);
       const adminUser = await grok.dapi.users.filter('login = "admin"').first();
@@ -60,6 +62,7 @@ category('Dapi: groups', () => {
       if (!hasAdmin)
         throw 'Member not added';
     } finally {
+      await grok.dapi.groups.delete(demoGroup);
       await grok.dapi.groups.delete(subgroup);
     }
   });
