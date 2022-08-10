@@ -80,7 +80,7 @@ export class MolecularLiabilityBrowser {
 
   async init(urlParams: URLSearchParams) {
     try {
-//remove
+      //remove
       this.urlParams = urlParams;
 
       this.pf = this.dataLoader.filterProperties;
@@ -122,7 +122,8 @@ export class MolecularLiabilityBrowser {
       if (!this.vid)
         this.vid = this.vids[0];
 
-      let t1, t2;
+      let t1;
+      let t2;
 
       t1 = Date.now();
       await this.loadData();
@@ -143,7 +144,6 @@ export class MolecularLiabilityBrowser {
       await this.setViewTwinPViewer();
       t2 = Date.now();
       console.debug(`MLB: TwinP set, ${((t2 - t1) / 1000).toString()} s`);
-
     } catch (err: unknown) {
       if (err instanceof Error)
         console.error(err);
@@ -675,7 +675,8 @@ export class MolecularLiabilityBrowser {
       this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
 
       // if (this.tree3Browser === null) {
-      //   //let path = _package.webRoot + 'src/examples/AB_AG_data_PSMW30_db-pass_parse-select_clone-pass_germ-pass_igphyml-pass.csv';
+      //   //let path = _package.webRoot +
+      //   //   'src/examples/AB_AG_data_PSMW30_db-pass_parse-select_clone-pass_germ-pass_igphyml-pass.csv';
       //   const treeCsv = await _package.files.readAsText('tree3.csv');
       //   const df = DG.DataFrame.fromCsv(treeCsv);
       //   this.tree3Browser = new Tree3Browser();
@@ -836,9 +837,7 @@ export class MolecularLiabilityBrowser {
   async loadData(): Promise<void> {
     const pi = DG.TaskBarProgressIndicator.create('Loading data...');
     try {
-      let t1 = Date.now();
-      let t2 = Date.now();
-
+      const t1 = Date.now();
       const [mlbDf, hChainDf, lChainDf, treeDf, regions]:
         [DG.DataFrame, DG.DataFrame, DG.DataFrame, DG.DataFrame, VdRegion[]] =
         await Promise.all([
@@ -852,7 +851,7 @@ export class MolecularLiabilityBrowser {
             grok.shell.error(reason.toString());
             throw reason;
           });
-
+      const t2 = Date.now();
       console.debug(`MLB: MolecularLiabilityBrowser.loadData() load ET, ${((t2 - t1) / 1000).toString()} s`);
 
       await this.setData(

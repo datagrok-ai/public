@@ -94,7 +94,7 @@ export class PtmFilter extends DG.Filter {
     // OnPropertyChanged() is not called when setting a property in TableView.filters() argument,
     // but applyState() is called with that value
     if ('currentCdr' in state) {
-      let value: string = state['currentCdr'];
+      const value: string = state['currentCdr'];
       const key: string = this.cdrKeys.find((v) => v.toUpperCase() == value.toUpperCase());
       console.debug(`MLB: PtmFilter.applyState(${MlbEvents.CdrChanged}) value ="${value}" -> key="${key}".`);
       this.currentCdr = key ?? 'None';
