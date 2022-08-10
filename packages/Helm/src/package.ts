@@ -6,7 +6,7 @@ import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-conv
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {createJsonMonomerLibFromSdf} from './utils';
 import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
-import {printLeftOrCentered} from '../../Bio/src/utils/cell-renderer';
+import {printLeftOrCentered} from '@datagrok/bio/src/utils/cell-renderer';
 
 export const _package = new DG.Package();
 
