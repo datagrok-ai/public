@@ -8,8 +8,7 @@ export let _package = new DG.Package();
 
 export async function chemblSubstructureSearch(molecule: string): Promise<DG.DataFrame> {
     try {
-        let df = await grok.data.query(`${_package.name}:patternSubstructureSearch`, {'pattern': molecule});
-        df = df.clone(null, ['similarity', 'smiles']);
+        let df = await grok.data.query(`${_package.name}:patternSubstructureSearch`, {'pattern': molecule, 'maxRows': 100});
         if (df == null)
             return DG.DataFrame.create();
         return df;
@@ -52,21 +51,11 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
               compsHost.appendChild(ui.divText('No matches'));
               return;
           }
-          t.col('canonical_smiles').semType = 'Molecule';
-          t.col('canonical_smiles').setTag('cell.renderer', 'Molecule');
+          t.col('smiles').semType = 'Molecule';
+          t.col('smiles').setTag('cell.renderer', 'Molecule');
 
 
           const grid = t.plot.grid();
-          const col = grid.columns.byName('molecule_chembl_id');
-          col.cellType = 'html';
-          grid.onCellPrepare(function(gc: DG.GridCell) {
-              if (gc.isTableCell && gc.gridColumn.name === 'molecule_chembl_id') {
-                  const link = `https://www.ebi.ac.uk/chembl/compound_report_card/${gc.cell.value}/`;
-                  gc.style.element = ui.divV([
-                      ui.link(gc.cell.value, link, link)
-                  ]);
-              }
-          });
           compsHost.appendChild(grid.root);
           headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
               t.name = `"DrugBank Similarity Search"`;
@@ -86,7 +75,7 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
     return new DG.Widget(panel);
 }
 
-//name: chemblSubstructureSearchPanel
+//name: Chembl Substructure Search Panel
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
@@ -95,7 +84,7 @@ export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
     return chemblSearchWidgetLocalDb(mol, true);
 }
 
-//name: chemblSimilaritySearchPanel
+//name: Chembl Similarity Search Panel
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result

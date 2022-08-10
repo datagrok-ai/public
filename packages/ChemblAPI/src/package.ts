@@ -9,7 +9,7 @@ export async function chemblSubstructureSearch(mol: string): Promise<DG.DataFram
   try {
     let df = await grok.data.query(`${_package.name}:SubstructureSmile`, {'smile': mol})
     df = df.clone(null, ['canonical_smiles', 'molecule_chembl_id']);
-    if (df == null) 
+    if (df == null)
       return DG.DataFrame.create();
 
     return df;
@@ -43,10 +43,10 @@ export function chemblSearchWidget(mol: string, substructure: boolean = false): 
   const headerHost = ui.divH([]);
   const compsHost = ui.divH([ui.loader(), headerHost]);
   const panel = ui.divV([compsHost]);
-  const searchFunc = substructure ? 
-                     async () => chemblSubstructureSearch(mol) : 
+  const searchFunc = substructure ?
+                     async () => chemblSubstructureSearch(mol) :
                      async () => chemblSimilaritySearch(mol);
-  
+
   searchFunc().then((t: any) => {
       compsHost.removeChild(compsHost.firstChild!);
       if (t == null) {
@@ -103,7 +103,7 @@ export async function getById(id: string): Promise<DG.DataFrame | null> {
   }
 }
 
-//name: Chembl Substructure Search Widget
+//name: ChemblAPI Substructure Search Widget
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
@@ -112,7 +112,7 @@ export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
   return chemblSearchWidget(mol, true);
 }
 
-//name: Chembl Similarity Search Widget
+//name: ChemblAPI Similarity Search Widget
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
