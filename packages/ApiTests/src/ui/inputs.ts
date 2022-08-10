@@ -13,19 +13,20 @@ category('UI: Inputs', () => {
 
   before(async () => {
     inputs = {
-      'stringInput': ui.stringInput('', ''),
-      'intInput': ui.intInput('', 0),
-      'floatInput': ui.floatInput('', 0.00),
-      'boolInput': ui.boolInput('', true),
-      'switchInput': ui.switchInput('', true),
-      'choiceInput': ui.choiceInput('', '1', ['1', '2', '3']),
+      'stringInput': ui.stringInput(' ', ''),
+      'intInput': ui.intInput(' ', 0),
+      'floatInput': ui.floatInput(' ', 0.00),
+      'boolInput': ui.boolInput(' ', true),
+      'switchInput': ui.switchInput(' ', true),
+      'choiceInput': ui.choiceInput(' ', '1', ['1', '2', '3']),
       'multiChoiceInput': ui.multiChoiceInput('', [], []),
-      'dateInput': ui.dateInput('', DG.DateTime.fromDate(new Date(2000, 1, 1))),
-      'textInput': ui.textInput('', ''),
-      'searchInput': ui.searchInput('', ''),
-      'columnInput': ui.columnInput('', t, t.col('age')),
-      'columnsInput': ui.columnsInput('', t, () => null),
-      'tableInput': ui.tableInput('', tables[0], tables),
+      'dateInput': ui.dateInput(' ', DG.DateTime.fromDate(new Date(2000, 1, 1))),
+      'textInput': ui.textInput(' ', ''),
+      'searchInput': ui.searchInput(' ', ''),
+      'columnInput': ui.columnInput(' ', t, t.col('age')),
+      'columnsInput': ui.columnsInput(' ', t, () => null),
+      'tableInput': ui.tableInput(' ', tables[0], tables),
+      'colorInput': ui.colorInput(' ', '#ff0000')
     };
     v = grok.shell.newView('');
   });
@@ -81,7 +82,7 @@ category('UI: Inputs', () => {
         onChanged(key, value, false);
         break;
       case 'dateInput':
-        onChanged(key, value, DG.DateTime.fromDate(new Date()));
+        onChanged(key, value, DG.DateTime.fromDate(new Date(2022, 1, 1)));
         break;
       case 'choiceInput':
         onChanged(key, value, '2');
