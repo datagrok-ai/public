@@ -3,19 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import { expect } from '@datagrok-libraries/utils/src/test';
 import { chemSpace } from '../analysis/chem-space';
 import { getSimilaritiesMarix, getSimilaritiesMarixFromDistances } from '../utils/similarity-utils';
+import { chemSpaceTopMenu } from '../package';
 var { jStat } = require('jstat')
 
 
-export async function _testChemSpaceReturnsResult(col: DG.Column, algorithm: string) {
-  const chemSpaceParams = {
-    seqCol: col,
-    methodName: algorithm,
-    similarityMetric: 'Tanimoto',
-    embedAxesNames: ['Embed_X', 'Embed_Y']
-  }
-  const { distance, coordinates } = await chemSpace(chemSpaceParams);
-  expect(distance != undefined, true);
-  expect(coordinates != undefined, true);
+export async function _testChemSpaceReturnsResult(df: DG.DataFrame, algorithm: string) {
+  const sp = await chemSpaceTopMenu(df, df.col('smiles')!, algorithm, 'Tanimoto', true);
+  expect(sp != null, true);
 }
 
 export async function _testDimensionalityReducer(col: DG.Column, algorithm: string) {

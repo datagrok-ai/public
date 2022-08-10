@@ -22,7 +22,7 @@ import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {_rdKitModule} from './utils/chem-common-rdkit';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
-import {convertMoleculeImpl, isMolBlock, MolNotation} from './utils/chem-utils';
+import {convertMoleculeImpl, isMolBlock, MolNotation, molToMolblock} from './utils/chem-utils';
 import '../css/chem.css';
 import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
@@ -34,6 +34,7 @@ import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import {RDMol} from './rdkit-api';
 import Sketcher = chem.Sketcher;
+import {Viewer} from 'datagrok-api/dg';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 
@@ -230,8 +231,6 @@ export function descriptorsApp(): void {
 //description: Save as SDF
 //tags: fileExporter
 export function saveAsSdf(): void {
-  // let dlg: DG.Dialog | null = null;
-  // let dialogSubs: Subscription[] = [];
   saveAsSdfDialog();
 }
 
@@ -246,27 +245,28 @@ export function saveAsSdf(): void {
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string) : Promise<void> {
-  const axesNames = getEmbeddingColsNames(df);
-  const options = {
-    'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
-  };
-  await getActivityCliffs(
-    df,
-    smiles,
-    null as any,
-    axesNames,
-    'Activity cliffs',
-    activities,
-    similarity,
-    'Tanimoto',
-    methodName,
-    DG.SEMTYPE.MOLECULE,
-    'smiles',
-    chemSpace,
-    chemSearches.chemGetSimilarities,
-    drawTooltip,
-    (options as any)[methodName]);
+  similarity: number, methodName: string) : Promise<DG.Viewer> {
+ const axesNames = getEmbeddingColsNames(df);
+ const options = {
+  'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
+};
+ const sp = await getActivityCliffs(
+  df, 
+  smiles,
+  null as any, 
+  axesNames,
+  'Activity cliffs',
+  activities, 
+  similarity, 
+  'Tanimoto',
+  methodName,
+  DG.SEMTYPE.MOLECULE,
+  'smiles',
+  chemSpace,
+  chemSearches.chemGetSimilarities,
+  drawTooltip,
+  (options as any)[methodName]);
+  return sp;
 }
 
 //top-menu: Chem | Chemical Space...
@@ -277,7 +277,7 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<DG.Viewer|undefined> {
   const embedColsNames = getEmbeddingColsNames(table);
   const withoutEmptyValues = DG.DataFrame.fromColumns([smiles]).clone();
   const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, smiles);
@@ -291,15 +291,17 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, m
   const embeddings = chemSpaceRes.coordinates;
   for (const col of embeddings) {
     const listValues = col.toList();
-    emptyValsIdxs.forEach((ind) => listValues.splice(ind, 0, null));
+    emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
     table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
   }
+  let sp;
   if (plotEmbeddings) {
     for (const v of grok.shell.views) {
       if (v.name === table.name)
-        (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+        sp = (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
     }
   }
+  return sp;
 };
 
 //name: R-Groups Analysis
@@ -454,25 +456,14 @@ export function convertMolecule(molecule: string, from: string, to: string): str
 export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
-
-  let molecule = '';
-  if (unit == 'smiles') {
-    const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(cell.cell.value);
-    if (!mol.has_coords())
-      mol.set_new_coords();
-    mol.normalize_depiction();
-    mol.straighten_depiction();
-    molecule = mol.get_molblock();
-  } else
-    molecule = cell.cell.value;
-  sketcher.setMolFile(molecule);
+  sketcher.setMolecule(cell.cell.value);
   ui.dialog()
-    .add(sketcher)
-    .onOK(() => {
+      .add(sketcher)
+      .onOK(() => {
       cell.cell.value = unit == 'molblock' ? sketcher.getMolFile() : sketcher.getSmiles();
       Sketcher.addRecent(sketcher.getMolFile());
-    })
-    .show();
+  })
+  .show();
 }
 
 //name: SimilaritySearchViewer

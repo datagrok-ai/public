@@ -13,6 +13,8 @@ category('activityCliffs', async () => {
 
   let actCliffsTableView: DG.TableView;
   let actCliffsDf: DG.DataFrame;
+  let actCliffsEmptyRowsTableView: DG.TableView;
+  let actCliffsEmptyRowsDf: DG.DataFrame
 
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -21,14 +23,21 @@ category('activityCliffs', async () => {
     }
     actCliffsTableView = await createTableView('activity_cliffs.csv');
     actCliffsDf = await readDataframe('activity_cliffs.csv');
+    actCliffsEmptyRowsTableView = await createTableView('tests/activity_cliffs_empty_rows.csv');
+    actCliffsEmptyRowsDf = await readDataframe('tests/activity_cliffs_empty_rows.csv');
   });
 
   test('activityCliffsOpen', async () => {
-    await _testActivityCliffsOpen(actCliffsDf);
+    await _testActivityCliffsOpen(actCliffsDf, 92);
+  });
+
+  test('activityCliffsWithEmptyRows', async () => {
+    await _testActivityCliffsOpen(actCliffsEmptyRowsDf, 91);
   });
 
   after(async () => {
     actCliffsTableView.close();
+    actCliffsEmptyRowsTableView.close();
   });
 
 });
