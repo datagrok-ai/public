@@ -76,7 +76,6 @@ category('Text functions', () => {
 
   test('ReplaceAll', () => check({
     'ReplaceAll("New York", "York", "Orleans")': 'New Orleans',
-    'ReplaceAll("every", "", ".")': '.e.v.e.r.y.',
     'ReplaceAll("day-to-day", "-", " ")': 'day to day',
     'ReplaceAll("spaceless", " ", "-")': 'spaceless',
   }));

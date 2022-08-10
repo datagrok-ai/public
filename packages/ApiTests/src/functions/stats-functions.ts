@@ -10,8 +10,8 @@ category('Statistical functions', () => {
     'Avg([5.123])': 5.123,
     'Avg([-1, -2, 3])': 0,
     'Avg([1, null, 2, 3])': 2,
-    'Avg([])': undefined,
-    'Avg([null, null])': undefined,
+    'Avg([])': null,
+    'Avg([null, null])': DG.FLOAT_NULL,
   }));
 
   test('Kurt', () => check({
@@ -26,7 +26,7 @@ category('Statistical functions', () => {
     'Max([1, null, 2, 3])': 3,
     'Max([null, 1, 0.7, 0.3])': 1,
     'Max([1.5, -2, 1.9])': 1.9,
-    'Max([null, null])': undefined,
+    'Max([null, null])': DG.FLOAT_NULL,
   }));
 
   test('Med', () => check({
@@ -44,7 +44,7 @@ category('Statistical functions', () => {
     'Min([1, 2, 4, 3])': 1,
     'Min([2, null, 0, 3])': 0,
     'Min([null, 1, 0.7, 0.3])': 0.3,
-    'Min([null, null])': undefined,
+    'Min([null, null])': DG.FLOAT_NULL,
   }));
 
   test('MissingValueCount', () => check({
@@ -60,8 +60,8 @@ category('Statistical functions', () => {
     'Percentile([1, 2, 3, 4], 0.40)': 2,
     'Percentile([1, 2, 3, 4], 0.75)': 4,
     'Percentile([1, 2, null, 3, 4], 0.25)': 2,
-    'Percentile([null], 0.4)': undefined,
-    'Percentile([], 0.4)': undefined,
+    'Percentile([null], 0.4)': null,
+    'Percentile([], 0.4)': null,
   }));
 
   test('Q1', () => check({
@@ -119,7 +119,7 @@ category('Statistical functions', () => {
     'TotalCount([1, 2, 4])': 3,
     'TotalCount([null, null])': 2,
     'TotalCount([100])': 1,
-    'TotalCount([])': undefined,
+    'TotalCount([])': null,
   }));
 
   test('ValueCount', () => check({
@@ -128,7 +128,7 @@ category('Statistical functions', () => {
     'ValueCount([1, 2, 4])': 3,
     'ValueCount([null, null])': 0,
     'ValueCount([100])': 1,
-    'ValueCount([])': undefined,
+    'ValueCount([])': null,
   }));
 
   test('Variance', () => check({
