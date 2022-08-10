@@ -52,10 +52,15 @@ Tesla, Model S,  ,          1.6,    120000`);
     ]);
   });
 
+  const createDf = (): DG.DataFrame => {
+    const df = DG.DataFrame.create(2);
+    df.columns.add(DG.Column.fromStrings('countries', ['USA', 'Canada']));
+    df.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([1, 4])));
+    return df;
+  };
+
   //creation of dataframes used in testing
-  const df1 = DG.DataFrame.create(2);
-  df1.columns.add(DG.Column.fromStrings('countries', ['USA', 'Canada']));
-  df1.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([1, 4])));
+  const df1 = createDf();
   const df2 = DG.DataFrame.create(2);
   df2.columns.add(DG.Column.fromStrings('countries', ['France', 'Mexico']));
   df2.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([2, 3])));
@@ -65,6 +70,9 @@ Tesla, Model S,  ,          1.6,    120000`);
   const df3 = DG.DataFrame.create(4);
   df3.columns.add(DG.Column.fromStrings('countries', ['USA', 'Canada', 'France', 'Mexico']));
   df3.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([1, 4, 2, 3])));
+  const df4 = createDf();
+  const df5 = createDf();
+  const df6 = createDf();
 
   test('append method', async () => {
     df1.append(df2);
@@ -155,7 +163,7 @@ Tesla, Model S,  ,          1.6,    120000`);
 
   test('column list addNewFloat', async () => {
     df.columns.addNewFloat('newColumnFloat');
-    expect(typeof(df.get('newColumn', 1)), 'number');
+    expect(typeof(df.get('newColumnFloat', 1)), 'number');
   });
 
   test('column list addNewInt', async () => {
@@ -220,8 +228,8 @@ Tesla, Model S,  ,          1.6,    120000`);
 
   test('column list replace', async () => {
     const newColumn = DG.Column.fromStrings('data', ['12', '34']);
-    df1.columns.replace('countries', newColumn);
-    expect(df1.columns.names().toString(), 'data,population');
+    df4.columns.replace('countries', newColumn);
+    expect(df4.columns.names().toString(), 'data,population');
   });
 
   test('column list toList', async () => {
@@ -233,8 +241,8 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('row list addNew', async () => {
-    df1.rows.addNew(['12', '23']);
-    expect(df1.get('countries', 2).toString(), '12');
+    df5.rows.addNew(['12', 23]);
+    expect(df5.get('countries', df5.rowCount - 1).toString(), '12');
   });
 
   test('row list filter', async () => {
@@ -242,19 +250,19 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('row list insertAt', async () => {
-    df1.rows.insertAt(2, 2);
-    expect(df1.get('countries', 2), '');
+    df6.rows.insertAt(2, 2);
+    expect(df6.get('countries', 2), '');
   });
 
   test('row list match', async () => {
-    return df1.rows.match('countries = USA').highlight();
+    return df5.rows.match('countries = USA').highlight();
   });
 
   test('datetime column', async () => {
     const t = grok.data.testData('demog');
     const c = t.columns.byName('started');
     c.set(1, dayjs('2022-01-01'));
-    expect(c.get(1).valueOf(), 1640984400000);
+    expect(c.get(1).valueOf(), 1640973600000);
     c.set(1, null);
     expect(c.get(1), null);
     const v = grok.shell.addTableView(t);
