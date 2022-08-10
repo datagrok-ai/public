@@ -54,7 +54,7 @@ export async function pubChem(id: string) {
   const url = `${pubChemRest}/pug/compound/cid/${id}/property/CanonicalSMILES/JSON`;
   const response = await grok.dapi.fetchProxy(url);
   const json = await response.json();
-  return json['PropertyTable']['Properties']['CanonicalSMILES'];
+  return json['PropertyTable']['Properties'][0]['CanonicalSMILES'];
 }
 
 //name: inchiKeys
