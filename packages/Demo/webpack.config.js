@@ -3,7 +3,8 @@ const path = require('path');
 module.exports = {
   mode: 'production',
   entry: {
-    package: './src/package.ts'
+    test: {filename: 'package-test.js', library: {type: 'var', name:`demo_test`}, import: './src/package-test.ts'},
+    package: './src/package.ts',
   },
   resolve: {
     extensions: ['.js', '.json', '.ts'],
