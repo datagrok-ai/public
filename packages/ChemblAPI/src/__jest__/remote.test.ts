@@ -36,7 +36,7 @@ expect.extend({
 });
 
 it('TEST', async () => {
-  const targetPackage:string = process.env.TARGET_PACKAGE ?? 'Peptides';
+  const targetPackage:string = process.env.TARGET_PACKAGE ?? 'ChemblAPI';
   console.log(`Testing ${targetPackage} package`);
 
   const r = await page.evaluate((targetPackage):Promise<object> => {
