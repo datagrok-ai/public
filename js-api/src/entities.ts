@@ -401,7 +401,7 @@ export class DataConnection extends Entity {
    * @param {string} name - Connection name
    * @param {DataConnectionDBParams} parameters - Database connection info and credentials
    * @returns {DataConnection} */
-   static createDB(name: string, parameters: DataConnectionDBParams): DataConnection {
+   static create(name: string, parameters: DataConnectionDBParams): DataConnection {
     return toJs(api.grok_DataConnection_Create(
       name, parameters.dataSource, parameters.server, parameters.db, parameters.login, parameters.password));
   }
