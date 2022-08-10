@@ -11,7 +11,7 @@ category('Statistical functions', () => {
     'Avg([-1, -2, 3])': 0,
     'Avg([1, null, 2, 3])': 2,
     'Avg([])': undefined,
-    'Avg([null, null])': DG.FLOAT_NULL,
+    'Avg([null, null])': undefined,
   }));
 
   test('Kurt', () => check({
@@ -26,7 +26,7 @@ category('Statistical functions', () => {
     'Max([1, null, 2, 3])': 3,
     'Max([null, 1, 0.7, 0.3])': 1,
     'Max([1.5, -2, 1.9])': 1.9,
-    'Max([null, null])': DG.FLOAT_NULL,
+    'Max([null, null])': undefined,
   }));
 
   test('Med', () => check({
@@ -44,7 +44,7 @@ category('Statistical functions', () => {
     'Min([1, 2, 4, 3])': 1,
     'Min([2, null, 0, 3])': 0,
     'Min([null, 1, 0.7, 0.3])': 0.3,
-    'Min([null, null])': DG.FLOAT_NULL,
+    'Min([null, null])': undefined,
   }));
 
   test('MissingValueCount', () => check({
