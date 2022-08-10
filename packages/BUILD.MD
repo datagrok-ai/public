@@ -102,7 +102,8 @@ section by the following code
         source: %FULL_PATH_TO_BUILD_JS_API%
         target: /home/grok/datagrok/html.build/web/js/api
 ```
-3. Clear browser cache, refresh browser page. 
+3. Restart docker containers as it is described in local Docker [instructions](https://datagrok.ai/help/develop/admin/docker-compose)
+4. Clear browser cache, refresh browser page. 
 
 ## Package injection
 
