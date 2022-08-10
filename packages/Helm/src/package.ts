@@ -114,7 +114,7 @@ export async function detailsPanel(helmString: string) {
   );
 }
 
-
+//name: loadDialog
 export async function loadDialog() {
   let res = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
   let FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);

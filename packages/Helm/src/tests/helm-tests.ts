@@ -52,7 +52,7 @@ category('Helm', () => {
   });
 
   test('loadDialog', async() => {
-    return await loadDialog();
+    return await grok.functions.call('Helm:loadDialog');
   });
 
   test('monomerManager', async() => {
