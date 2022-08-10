@@ -18,6 +18,7 @@ limit @maxRows
 select set_config('rdkit.tanimoto_threshold', @threshold, true);
 --batch
 select * from get_mfp2_neighbors(@pattern);
+--end
 
 --name: patternSubstructureSearch
 --connection: Chembl
