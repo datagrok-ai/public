@@ -16,7 +16,7 @@ category('Shell', () => {
     expect(grok.shell.v instanceof DG.TableView, true);
     expect((grok.shell.v as DG.TableView).dataFrame, demog);
     v.close();
-    expect(grok.shell.v, null);
+    expect(grok.shell.v != v, true);
     expect(grok.shell.table(demog.name), demog);
     grok.shell.closeTable(v.dataFrame);
   });
