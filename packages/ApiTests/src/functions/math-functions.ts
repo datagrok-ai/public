@@ -40,7 +40,8 @@ category('Math functions', () => {
   }));
 
   test('Atan2', () => check({
-    'Atan2(0, -0)': 3.142,
+    'Atan2(1, 0)': 1.5707,
+    'Atan2(0, -0)': 0,
     'Atan2(0, 1)': 0,
     'Atan2(-1, 2)': -0.464,
     'Atan2(1, -2)': 2.678,
@@ -204,7 +205,7 @@ category('Math functions', () => {
     'Round10(12340.12345, -3.8)': 12000,
     'Round10(12340.12345, -4.2)': 10000,
     'Round10(12340.12345, -5)': 0,
-    'Round10(null, 2)': undefined,
+    'Round10(null, 2)': null,
   }));
 
   test('Sin', () => check({
