@@ -612,7 +612,7 @@ export class PvizAspect {
       const obsProbObj = {};
 
       ptmChoices.forEach((ptm) => {
-        const ptmTree = this.jsonObs.ptm_observed[chain][ptm.replace(' ', '_')];
+        const ptmTree = this.jsonObs[chain][ptm.replace(' ', '_')];
         if (ptmTree !== undefined) {
           const obsColorArr = [];
           const obsElArr = [];
@@ -620,7 +620,7 @@ export class PvizAspect {
           const obsTypesProbsArr = [];
 
           Object.keys(ptmTree).forEach((type) => {
-            const point = this.jsonObs.ptm_observed[chain][ptm.replace(' ', '_')][type];
+            const point = this.jsonObs[chain][ptm.replace(' ', '_')][type];
             if (!obsElArr.includes(point[0]))
               obsElArr.push(point[0]);
           });
@@ -630,7 +630,7 @@ export class PvizAspect {
             const typesProbs = [];
             let prob = -1;
             Object.keys(ptmTree).forEach((type) => {
-              const point = this.jsonObs.ptm_observed[chain][ptm][type];
+              const point = this.jsonObs[chain][ptm][type];
               if (point[0] === position) {
                 types.push(type);
                 typesProbs.push(point[1]);
