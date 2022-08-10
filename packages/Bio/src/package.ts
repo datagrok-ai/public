@@ -108,7 +108,7 @@ export function vdRegionViewer() {
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string): Promise<void> {
+  similarity: number, methodName: string): Promise<DG.Viewer | undefined> {
   if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
     return;
   const encodedCol = encodeMonomers(macroMolecule);
@@ -119,7 +119,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
   };
   const units = macroMolecule!.tags[DG.TAGS.UNITS];
-  await getActivityCliffs(
+  const sp = await getActivityCliffs(
     df,
     macroMolecule,
     encodedCol,
@@ -135,6 +135,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     sequenceGetSimilarities,
     drawTooltip,
     (options as any)[methodName]);
+    return sp;
 }
 
 //top-menu: Bio | Sequence Space...
@@ -145,7 +146,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 //input: string similarityMetric { choices:["Levenshtein", "Tanimoto"] }
 //input: bool plotEmbeddings = true
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<void> {
+  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<DG.Viewer|undefined> {
   if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
     return;
   const encodedCol = encodeMonomers(macroMolecule);
@@ -167,13 +168,15 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
       const listValues = col.toList();
       emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
       table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
-  }   
+  }
+  let sp;   
   if (plotEmbeddings) {
     for (const v of grok.shell.views) {
       if (v.name === table.name)
-        (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+        sp = (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
     }
   }
+  return sp;
 };
 
 //top-menu: Bio | To Atomic Level...
