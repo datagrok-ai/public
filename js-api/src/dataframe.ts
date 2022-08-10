@@ -1348,9 +1348,10 @@ export class RowList {
 
   /** Sets values for the specified row.
    * @param {number} idx - Row index.
-   * @param values - List of values (length and types should match columns) */
-  setValues(idx: number, values: any[]): void {
-    api.grok_RowList_SetValues(this.dart, idx, values);
+   * @param values - List of values (length and types should match columns)
+   * @param notify - Raise onDataChanged event */
+  setValues(idx: number, values: any[], notify: boolean = true): void {
+    api.grok_RowList_SetValues(this.dart, idx, values, notify);
   }
 
   /**
