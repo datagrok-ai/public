@@ -15,7 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "latest",
     "codemirror": "^5.65.0",
-    "datagrok-api": "^1.4.5",
+    "datagrok-api": "^1.5.4",
     "js-yaml": "^4.1.0",
     "rxjs": "^6.5.5"
   },
