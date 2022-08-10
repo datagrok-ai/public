@@ -8,8 +8,8 @@ import {drugBankSearchTypes, getTooltip} from './utils';
 
 export async function drugBankSearchWidget(
   molString: string, searchType: drugBankSearchTypes, dbdf: DG.DataFrame): Promise<DG.Widget> {
-  const headerHost = ui.divH([]);
-  const compsHost = ui.divH([]);
+  const headerHost = ui.div();
+  const compsHost = ui.divV([]);
   const panel = ui.divV([compsHost]);
 
   let table: DG.DataFrame | null;
@@ -18,7 +18,7 @@ export async function drugBankSearchWidget(
     table = await drugBankSimilaritySearch(molString, 20, 0, dbdf);
     break;
   case 'substructure':
-    table = await drugBankSubstructureSearch(molString, false, dbdf);
+    table = await drugBankSubstructureSearch(molString, dbdf);
     break;
   default:
     throw new Error(`DrugBankSearch: No such search type ${searchType}`);
@@ -34,18 +34,20 @@ export async function drugBankSearchWidget(
 
   const bitsetIndexes = table.filter.getSelectedIndexes();
   const iterations = Math.min(bitsetIndexes.length, 20);
-  const smilesCol: DG.Column<string> = table.getCol('SMILES');
+  const moleculeCol: DG.Column<string> = table.getCol('molecule');
   const idCol: DG.Column<string> = table.getCol('DRUGBANK_ID');
-  const linkCol: DG.Column<string> = table.getCol('link');
+  const nameCol: DG.Column<string> = table.getCol('COMMON_NAME');
+  // const linkCol: DG.Column<string> = table.getCol('link');
   for (let n = 0; n < iterations; n++) {
     const piv = bitsetIndexes[n];
     const molHost = ui.canvas();
-    const smiles = smilesCol.get(piv)!;
-    const molecule = OCL.Molecule.fromSmiles(smiles);
+    const molfile = moleculeCol.get(piv)!;
+    const molecule = OCL.Molecule.fromMolfile(molfile);
     OCL.StructureView.drawMolecule(molHost, molecule, {'suppressChiralText': true});
 
-    ui.tooltip.bind(molHost, () => getTooltip(idCol.get(piv)!));
-    molHost.addEventListener('click', () => window.open(linkCol.get(piv)!, '_blank'));
+    ui.tooltip.bind(molHost, () => getTooltip(nameCol.get(piv)!));
+    // molHost.addEventListener('click', () => window.open(linkCol.get(piv)!, '_blank'));
+    molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));
     compsHost.appendChild(molHost);
   }
   headerHost.appendChild(
