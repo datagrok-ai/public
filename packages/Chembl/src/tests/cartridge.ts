@@ -15,16 +15,17 @@ category('Cartridge usage', () => {
   });
 });
 
-// category('Cartridge usage', () => {
-//   test('Similarity threshold pattern', async () => {
-//     const df = await grok.data.query(`${_package.name}:patternSimilaritySearchWithThreshold`, {'pattern': 'c1ccc(O)cc1', 'maxRows': 1000});
+category('Cartridge usage', () => {
+  test('Similarity threshold pattern', async () => {
+    const df = await grok.data.query(`${_package.name}:patternSimilaritySearchWithThreshold`,
+      {'pattern': 'Cc1ccc2nc(N(C)CC(=O)O)sc2c1', 'threshold': '0.7'});
 
-//     expect(df!.rowCount, 25);
+    expect(df!.rowCount, 25);
 
-//     if (df != null)
-//       grok.shell.closeTable(df);
-//   });
-// });
+    if (df != null)
+      grok.shell.closeTable(df);
+  });
+});
 
 category('Cartridge usage', () => {
   test('Substructure pattern', async () => {
