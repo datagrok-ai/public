@@ -46,15 +46,16 @@ export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRender
 
 function checkInputColumn(col: DG.Column, name: string,
   allowedNotations: string[] = [], allowedAlphabets: string[] = []): boolean {
-  const units: string = col.getTag(DG.TAGS.UNITS);
+  const notation: string = col.getTag(DG.TAGS.UNITS);
+  const alphabet: string = col.getTag('alphabet')
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE) {
     grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
     return false;
   } else if (
     (allowedAlphabets.length > 0 &&
-      !allowedAlphabets.some((a) => units.toUpperCase().endsWith(a.toUpperCase()))) ||
+      !allowedAlphabets.some((a) => alphabet.toUpperCase() == (a.toUpperCase()))) ||
     (allowedNotations.length > 0 &&
-      !allowedNotations.some((n) => units.toUpperCase().startsWith(n.toUpperCase())))
+      !allowedNotations.some((n) => notation.toUpperCase() == (n.toUpperCase())))
   ) {
     const notationAdd = allowedNotations.length == 0 ? 'any notation' :
       (`notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} `);

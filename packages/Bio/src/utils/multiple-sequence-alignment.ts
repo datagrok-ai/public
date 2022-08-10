@@ -57,9 +57,15 @@ export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName
 
   // units
   const srcUnits = srcCol.getTag(DG.TAGS.UNITS);
-  const tgtUnits = srcUnits.split(':').map((p, i) => i == 1 ? p + '.MSA' : p).join(':');
+  //aligned
+  const srcAligned = srcCol.getTag('aligned');
+  const tgtAligned = srcAligned + '.MSA';
+  //alphabet
+  const srcAlphabet = srcCol.getTag('alphabet');
 
-  tgtCol.setTag(DG.TAGS.UNITS, tgtUnits);
+  tgtCol.setTag(DG.TAGS.UNITS, srcUnits);
+  tgtCol.setTag('aligned', tgtAligned);
+  tgtCol.setTag('alphabet', srcAlphabet);
   tgtCol.semType = DG.SEMTYPE.MACROMOLECULE;
   return tgtCol;
 }
