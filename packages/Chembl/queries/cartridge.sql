@@ -14,11 +14,10 @@ limit @maxRows
 --connection: Chembl
 --meta.batchMode: true
 --input: string pattern {semType: Molecule}
---input: double threshold = 0.7
-set rdkit.tanimoto_threshold=@threshold;
+--input: string threshold = "0.6"
+select set_config('rdkit.tanimoto_threshold', @threshold, true);
 --batch
 select * from get_mfp2_neighbors(@pattern);
---end
 
 --name: patternSubstructureSearch
 --connection: Chembl
