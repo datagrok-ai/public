@@ -11,7 +11,7 @@ order by event_time desc
 --end
 
 --name: Log Actions Summary
---input: string eventTime = today {pattern: datetime}
+--input: string eventTime = "today" {pattern: datetime}
 --connection: System:Datagrok
 
 select u.login, t.name, t.source, count(*) as runs from events e
@@ -24,7 +24,7 @@ order by 1,2,4 desc
 --end
 
 --name: Log Actions Summary by Hours
---input: string eventTime = today {pattern: datetime}
+--input: string eventTime = "today" {pattern: datetime}
 --connection: System:Datagrok
 
 select u.login, t.name, t.source, date_part('hour', e.event_time) as hour, count(*) as runs from events e
@@ -38,7 +38,7 @@ order by 1,2,4 desc
 
 
 --name: Test Activity Summary
---input: string eventTime = today {pattern: datetime}
+--input: string eventTime = "today" {pattern: datetime}
 --connection: System:TestTrack
 
 select t.file_path || t.file_name as test, a.result, count(a.date) from test_scenario t inner join test_activity a on a.scenario_id = t.id

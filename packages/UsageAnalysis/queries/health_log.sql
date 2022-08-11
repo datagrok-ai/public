@@ -16,7 +16,7 @@ where not exists(select * from health_log l where l.key = h.key and l.time = h.t
 --end
 
 --name: Health Log Summary
---input: string eventTime = today {pattern: datetime}
+--input: string eventTime = "today" {pattern: datetime}
 --connection: System:TestTrack
 select key, (select count(*) from health_log _l where _l.key = l.key and status ='Running') running_events,
 (select count(*) from health_log _l where _l.key = l.key and status ='Failed') failed_events
