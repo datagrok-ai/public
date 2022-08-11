@@ -1,5 +1,5 @@
 import {Property} from "./entities";
-import {TYPE, TYPES_SCALAR} from "./const";
+import {FLOAT_NULL, TYPE, TYPES_SCALAR} from "./const";
 import {TypedEventArgs} from "./viewer";
 import dayjs from "dayjs";
 
@@ -28,7 +28,9 @@ export function paramsToJs(params: any): any {
  * */
 export function toJs(dart: any, check: boolean = false): any {
   let type = (<any>window).grok_GetType(dart);
-  if (type === TYPE.MAP) {
+  if (dart == FLOAT_NULL)
+    return null;
+  else if (type === TYPE.MAP) {
     let wrapper = (<any>window).grok_GetWrapper(dart);
     for (let key in wrapper) {
       if (wrapper.hasOwnProperty(key)) {
