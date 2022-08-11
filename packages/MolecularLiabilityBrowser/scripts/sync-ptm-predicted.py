@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""
+Author: atanas
+Description loads data from source table db_v2.json_files (from database)
+and converts data to splitted to columns by ptm_map (modification name encoded with symbol)
+in every cell probability values as json encoded by cdr_map (cdr name encoded with symbol).
+"""
 
 import os.path
 from types import SimpleNamespace
@@ -73,16 +79,15 @@ def vladimir_script(jsons_sdf: pd.DataFrame, ptm_map: dict[str, str], cdr_map: d
                             if key_get_or_create(current_ptm, 'max', current_max) < current_max:
                                 current_ptm['max'] = current_max
                 if current_ptm:
-                    result_string = ''
-                    for key, value in current_ptm.items():
-                        result_string += f'{key}:{value};'
+                    result_string = '{{ {0} }}'.format(
+                        ','.join([f'"{key}": {value}' for (key, value) in current_ptm.items()]))
 
                     v_id: str = jsons_sdf.iloc[i, jsons_sdf.columns.get_loc('v_id')];
                     # jsons_sdf.iloc[i, jsons_sdf.columns.get_loc(ptm_mini_name)] = result_string[:-1]
                     v_id_dst_idx = (dst_sdf[dst_sdf['v_id'] == v_id].index.to_list()[:1] or [None])[0]
                     if v_id_dst_idx is None:
                         dst_sdf.loc[len(dst_sdf), 'v_id'] = v_id
-                    dst_sdf.loc[dst_sdf['v_id'] == v_id, ptm_mini_name] = result_string[:-1]
+                    dst_sdf.loc[dst_sdf['v_id'] == v_id, ptm_mini_name] = result_string
 
     # jsons_sdf.head()
 
@@ -167,8 +172,8 @@ def build_schema(ptm_map) -> SimpleNamespace:
     for (key, value) in ptm_map.items():
         col_name: str = value
         col_comment: str = key
-        ptm_predicted_columns.append(sa.Column(col_name, sa.LargeBinary, nullable=True, comment=col_comment))
-    ptm_predicted = sa.Table('ptm_predicted', meta_mlb, *ptm_predicted_columns)
+        ptm_predicted_columns.append(sa.Column(col_name, sa.String(), nullable=True, comment=col_comment))
+    ptm_predicted = sa.Table('ptm_predicted_v2', meta_mlb, *ptm_predicted_columns)
 
     return SimpleNamespace(
         ptm_predicted=ptm_predicted,
@@ -177,12 +182,14 @@ def build_schema(ptm_map) -> SimpleNamespace:
 
 def load_data_ptm_predicted(conn: sae.Connection, ptm_map: dict[str, str], cdr_map: dict[str, str],
                             ptm_predicted: sa.Table):
-    jsons_sdf: pd.DataFrame = pd.read_sql_table(table_name='json_files', schema=ptm_predicted.schema, con=conn);
-    ptm_predicted_sdf: pd.DataFrame = pd.read_sql_table(table_name=ptm_predicted.name, schema=ptm_predicted.schema, con=conn);
+    jsons_sdf: pd.DataFrame = pd.read_sql_table(table_name='json_files', schema='db_v2', con=conn);
+    ptm_predicted_sdf: pd.DataFrame = pd.read_sql_table(
+        table_name=ptm_predicted.name, schema=ptm_predicted.schema, con=conn);
 
     vladimir_script(jsons_sdf, ptm_map, cdr_map, ptm_predicted_sdf)
 
-    ptm_predicted_sdf.to_sql(name=ptm_predicted.name, schema=ptm_predicted.schema, con=conn, index=False, if_exists='append')
+    ptm_predicted_sdf.to_sql(
+        name=ptm_predicted.name, schema=ptm_predicted.schema, con=conn, index=False, if_exists='append')
 
 
 @click.group(cls=DefaultGroup, default='main')
