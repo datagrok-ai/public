@@ -10,7 +10,7 @@ category('Dapi: connection', () => {
     dataSource: 'PostgreSQL', server: 'localhost:5432', db: 'datagrok_dev', login: 'datagrok_dev', password: '123'};
 
   test('Create, save, delete', async () => {
-    let dc = DG.DataConnection.createDB('Local DG Test', dcParams);
+    let dc = DG.DataConnection.create('Local DG Test', dcParams);
     dc = await GDC.save(dc);
     expectObject(dc.parameters, {server: 'localhost:5432', db: 'datagrok_dev'});
     expect(await dc.test(), 'ok');

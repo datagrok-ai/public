@@ -225,7 +225,7 @@ function connectToDbDialog(
         login: usernameField.stringValue,
         password: passwordField.value,
       };
-      let dsConnection = DG.DataConnection.createDB(dataSource.dbname, dcParams);
+      let dsConnection = DG.DataConnection.create(dataSource.dbname, dcParams);
       dsConnection.id = dsId;
       dsConnection = await grok.dapi.connections.save(dsConnection);
 
