@@ -81,7 +81,7 @@ export async function getActivityCliffs(
   for (const col of coordinates) {
       const listValues = col.toList();
       emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-      df.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
+      df.columns.add(DG.Column.fromList('double', col.name, listValues));
   }
 
   const dfSeq = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'seq', dimensionalityReduceCol.toList())]);
