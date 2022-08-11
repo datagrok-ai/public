@@ -145,7 +145,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   ): void {
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
     const cell = gridCell.cell;
-    const tag = gridCell.cell.column.getTag(DG.TAGS.UNITS);
     const [type, subtype, paletteType] = gridCell.cell.column.getTag(DG.TAGS.UNITS).split(':');
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
     g.save();
@@ -191,19 +190,15 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     const subParts: string[] = splitterFunc(cell.value);
     let x1 = x;
-    let color = undefinedColor;
-    // get max length word in subParts
-    let tagUnits = gridCell.cell.column.getTag(DG.TAGS.UNITS);
+    let color = undefinedColor;;
     let drawStyle = 'classic';
     if (gridCell.cell.column.getTag('aligned').includes('MSA')) {
       drawStyle = 'msa';
     }
     subParts.forEach((amino, index) => {
       color = palette.get(amino);
-      let textSizeWidth = g.measureText(monomerToShortFunction(amino, maxLengthOfMonomer)).width;
       g.fillStyle = undefinedColor;
       let last = index === subParts.length - 1;
-      //@ts-ignore
       x1 = printLeftOrCentered(x1, y, w, h, g, monomerToShortFunction(amino, maxLengthOfMonomer), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell);
     });
 
