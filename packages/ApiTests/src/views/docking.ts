@@ -14,11 +14,11 @@ category('Docking', () => {
   });
 
   test('TableView.dockManager.dock', async () => {
+    expect(wu(tv.viewers).find((v) => v.tags['test']), undefined);
     const viewer = df.plot.scatter();
-    viewer.temp['test'] = true;
-    expect(wu(tv.viewers).find((v) => v.temp['test']), undefined);
+    viewer.tags['test'] = 'true';
     tv.dockManager.dock(viewer, DG.DOCK_TYPE.DOWN);
-    expect(wu(tv.viewers).find((v) => v.temp['test'])?.temp['test'], true);
+    expect(wu(tv.viewers).find((v) => v.tags['test'])?.tags['test'], 'true');
   });
 
   after(async () => {
