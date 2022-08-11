@@ -22,7 +22,7 @@
   ],
   "dependencies": {
     "@datagrok-libraries/bio": "^3.0.2",
-    "@datagrok/bio": "^1.7.23",
+    "@datagrok/bio": "^1.7.25",
     "@datagrok/molecular-liability-browser-data": "^1.1.2",
     "@deck.gl/core": "^8.7.5",
     "@deck.gl/layers": "^8.7.5",
@@ -36,7 +36,8 @@
     "rxjs": "^6.5.5",
     "ts-transformer-keys": "^0.4.3",
     "uint8-to-base64": "^0.2.0",
-    "weighted": "^1.0.0"
+    "weighted": "^1.0.0",
+    "wu": "latest"
   },
   "devDependencies": {
     "@types/node": "^17.0.24",
