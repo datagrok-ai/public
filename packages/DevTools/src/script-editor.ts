@@ -214,7 +214,7 @@ function setScriptRibbon(v: DG.View, doc: any) {
         doc.replaceRange('ui.stringInput(\'Label\',\'Value\', (value)=>{})\n', cursor);
         break;
       case 'Date':
-        doc.replaceRange('ui.dateInput(\'Label\', DG.DateTime.fromDate(new Date(1970, 5, 10)), (value)=>{})\n', cursor);
+        doc.replaceRange('ui.dateInput(\'Label\', dayjs(\'1970-05-10\'), (value)=>{})\n', cursor);
         break;
       case 'Bool':
         doc.replaceRange('ui.boolInput(\'Label\',true, (value)=>{})\n', cursor);

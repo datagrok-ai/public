@@ -20,7 +20,7 @@ import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
 import {Grid} from "./grid";
 import {ScatterPlotViewer, Viewer} from "./viewer";
-import {DateTime, Property, TableInfo} from "./entities";
+import {Property, TableInfo} from "./entities";
 import {FormulaLinesHelper} from "./helpers";
 import dayjs from "dayjs";
 

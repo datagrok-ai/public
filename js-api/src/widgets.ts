@@ -10,6 +10,7 @@ import {Rect} from "./grid";
 import $ from "cash-dom";
 import {Viewer} from "./viewer";
 import {MapProxy} from "./utils";
+import dayjs from "dayjs";
 
 declare let grok: any;
 declare let DG: any;
@@ -1050,6 +1051,18 @@ export class InputBase<T = any> {
   get classList(): DOMTokenList { return this.root.classList; }
 }
 
+
+export class DateInput extends InputBase<dayjs.Dayjs> {
+  dart: any;
+
+  constructor(dart: any, onChanged: any = null) {
+    super(dart, onChanged);
+  }
+
+  get value(): dayjs.Dayjs { return dayjs(api.grok_DateInput_Get_Value(this.dart)); }
+  set value(x: dayjs.Dayjs) { toDart(api.grok_DateInput_Set_Value(this.dart, x.valueOf())); }
+
+}
 
 export class ProgressIndicator {
   dart: any;
