@@ -400,8 +400,8 @@ export class VisitsView extends ClinicalCaseViewBase {
             return ui.tableFromMap({
                 'Visit day': this.studyVisit.day,
                 'Total patients': this.studyVisit.totalPatients,
-                'Min visit date': this.studyVisit.minVisitDate,
-                'Max visit dae': this.studyVisit.maxVisitDate,
+                'Min visit date': this.studyVisit.minVisitDate.toLocaleDateString(),
+                'Max visit dae': this.studyVisit.maxVisitDate.toLocaleDateString(),
             })
         });
 
