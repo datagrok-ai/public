@@ -5,7 +5,6 @@ import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
 import {UnknownSeqPalette, UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import * as ui from 'datagrok-api/ui';
 
 const undefinedColor = 'rgb(100,100,100)';
 const grayColor = '#808080';
@@ -105,9 +104,6 @@ export function printLeftOrCentered(
 
   if (left || textSize > w) {
     draw(indent, indent + maxColorTextSize);
-    if (drawStyle === 'msa') {
-      return x + maxColorTextSize;
-    }
     return x + maxColorTextSize + g.measureText(grayPart).width;
 
   } else {
