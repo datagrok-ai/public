@@ -1,6 +1,6 @@
 --name: latest_scenario_results
 --connection: System:TestTrack
---input: string date = today {pattern: datetime}
+--input: string date = "today" {pattern: datetime}
 select ts.*, ta.date, ta1.result, ta1.env
 from test_scenario ts
 left join

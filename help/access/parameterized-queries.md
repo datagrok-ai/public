@@ -99,10 +99,10 @@ Options for supported types are described in the [Scripting](../compute/scriptin
 Examples:
 
 ```sql
---input: string shipCountry = France {choices: ['France', 'Italy', 'Germany']}
---input: string shipCountry = France {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
---input: string shipCountry = France {choices: Demo:northwind:countries}
---input: string shipCountry = France {suggestions: Demo:northwind:countries}
+--input: string shipCountry = "France" {choices: ['France', 'Italy', 'Germany']}
+--input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
+--input: string shipCountry = "France" {choices: Demo:northwind:countries}
+--input: string shipCountry = "France" {suggestions: Demo:northwind:countries}
 ```
 
 #### Re-using input parameters
@@ -111,8 +111,8 @@ It's possible to re-use one or more existing input parameters as values inside p
 queries:
 
 ```sql
---input: string firstLetter = F
---input: string shipCountry = France {choices: Query("SELECT DISTINCT shipCountry FROM Orders WHERE shipCountry LIKE @firstLetter || '%')}
+--input: string firstLetter = "F"
+--input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders WHERE shipCountry LIKE @firstLetter || '%')}
 SELECT * FROM Orders WHERE (shipCountry = @shipCountry)
 ```
 
@@ -149,7 +149,7 @@ select * from Orders where @freightValue(freight)
 A `datetime` type is supported as well:
 
 ```sql
---input: string orderDate = after 1/1/1995 {pattern: datetime}
+--input: string orderDate = "after 1/1/1995" {pattern: datetime}
 select * from orders where @orderDate(orderDate)
 ```
 
@@ -203,11 +203,11 @@ Here is an example of the parameterized query applicable to the "Northwind" data
 --input: int employeeId = 5
 --input: string shipVia = = 3 {pattern: int}
 --input: double freight = 10.0
---input: string shipCountry = France {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
---input: string shipCity = starts with r {pattern: string}
+--input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
+--input: string shipCity = "starts with r" {pattern: string}
 --input: bool freightLess1000 = true
---input: datetime requiredDate = 1/1/1995
---input: string orderDate = after 1/1/1995 {pattern: datetime}
+--input: datetime requiredDate = "1/1/1995"
+--input: string orderDate = "after 1/1/1995" {pattern: datetime}
 SELECT * FROM Orders WHERE (employeeId = @employeeId)
     AND (freight >= @freight)
     AND @shipVia(shipVia)

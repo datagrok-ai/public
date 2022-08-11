@@ -67,7 +67,7 @@ tags are:
 --meta.role: converter
 --meta.inputRegexp: (CHEMBL[0-9]+)
 --connection: Chembl
---input: string id = CHEMBL1185
+--input: string id = "CHEMBL1185"
 --output: string smiles { semType: Molecule }
 select canonical_smiles from compound_structures s
 join molecule_dictionary d on s.molregno = d.molregno
