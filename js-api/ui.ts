@@ -6,7 +6,7 @@
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
 import {VirtualView} from './src/views/view';
-import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewGroup, Widget, RangeSlider, RangeSliderStyle, FilesWidget} from './src/widgets';
+import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewGroup, Widget, RangeSlider, RangeSliderStyle, FilesWidget, DateInput} from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
@@ -14,8 +14,9 @@ import {__obs, StreamSubscription} from './src/events';
 import {_isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
-import {DateTime, Entity, Property} from './src/entities';
+import {Entity, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
+import dayjs from "dayjs";
 
 
 let api = <any>window;
@@ -701,8 +702,8 @@ export function floatInput(name: string, value: number | null, onValueChanged: F
   return new InputBase(api.grok_FloatInput(name, value), onValueChanged);
 }
 
-export function dateInput(name: string, value: DateTime, onValueChanged: Function | null = null): InputBase<DateTime | null> {
-  return new InputBase(api.grok_DateInput(name, value.dart), onValueChanged);
+export function dateInput(name: string, value: dayjs.Dayjs, onValueChanged: Function | null = null): DateInput {
+  return new DateInput(api.grok_DateInput(name, value.valueOf()), onValueChanged);
 }
 
 export function boolInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase<boolean | null> {
