@@ -10,7 +10,7 @@ import {testManagerView, _renderTestManagerPanel} from './package-testing';
 import {functionSignatureEditor} from './function-signature-editor';
 import {addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel} from './dev-panel';
 
-import {_testDetectorsDialog} from './utils/test-detectors';
+import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detectors';
 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
@@ -89,4 +89,12 @@ export async function testManager(): Promise<void> {
 //top-menu: Tools | Dev | Test Detectors
 export function testDetectors() {
   _testDetectorsDialog();
+}
+
+//name: TestDetectorsStandard
+//top-menu: Test Detectors Standard
+export async function TestDetectorsStandard() {
+  const detectorsArray = DG.Func.find({tags: ['semTypeDetector']});
+  const df = await _testDetectorsStandard(detectorsArray);
+  grok.shell.addTableView(df);
 }
