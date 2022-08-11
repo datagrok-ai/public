@@ -132,8 +132,12 @@ export async function _testStudyVisit(){
   const studyVisit = new StudyVisit();
   studyVisit.updateStudyVisit(domains, 28, 'WEEK 4', 14);
   expect(studyVisit.totalPatients, 6);
-  expect(studyVisit.minVisitDate, '02.09.2012');
-  expect(studyVisit.maxVisitDate, '29.07.2014');
+  expect(studyVisit.minVisitDate.getDate(), 2);
+  expect(studyVisit.minVisitDate.getMonth(), 8);
+  expect(studyVisit.minVisitDate.getFullYear(), 2012);
+  expect(studyVisit.maxVisitDate.getDate(), 29);
+  expect(studyVisit.maxVisitDate.getMonth(), 6);
+  expect(studyVisit.maxVisitDate.getFullYear(), 2014);
   expect(studyVisit.lbAtVisit.rowCount, 191);
   expect(studyVisit.aeSincePreviusVisit.rowCount, 4);
 }
