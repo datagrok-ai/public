@@ -2,6 +2,10 @@
   "name": "@datagrok/sequence",
   "version": "0.1.1",
   "fullName": "Sequence",
+  "author": {
+    "name": "Aleksandr Tanas",
+    "email": "atanas@datagrok.ai"
+  },
   "description": "Support for the biological sequences (DNA, RNA, proteins), including FASTA readers, 3D visualization of molecules, MSA viewer, and functions for working with sequences",
   "repository": {
     "type": "git",

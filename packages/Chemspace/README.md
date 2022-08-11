@@ -1,4 +1,4 @@
-Chamspace is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) 
+Chemspace is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) 
 platform that provides integration with the [Chemspace](https://chem-space.com/), a service for online
 shopping for the chemical building blocks.
 

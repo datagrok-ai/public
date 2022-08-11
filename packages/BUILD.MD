@@ -84,17 +84,29 @@ You can publish built package to any Datagrok server for testing and debugging, 
 ## Platform injection 
 
 There is a way to inject your js-api inside local Docker container. Use [Docker Volumes](https://docs.docker.com/storage/volumes/) to map folder with pre-built js-api to your local folder
-Run `npm run build` inside `js-api` folder, by default, it saves a bundle to `../../xamgle/web/js/api` folder. Map this folder to Datagrok Docker:
+1. Run `npm run build` inside `js-api` folder. By default, it saves a bundle to `../../xamgle/web/js/api` folder. Remember this path.
+2. Map this folder to Datagrok Docker:
+ - Open the `localhost.docker-compose.yaml` file (in `public\docker` folder).
+ - Replace 
+```
+volumes:
+      - datagrok_data:/home/grok/data
+      - datagrok_cfg:/home/grok/cfg
+``` 
+section by the following code
 ```
     volumes:
+      - datagrok_data:/home/grok/data
+      - datagrok_cfg:/home/grok/cfg
       - type: bind
-        source: c/path/xamgle/web/js/api
+        source: %FULL_PATH_TO_BUILD_JS_API%
         target: /home/grok/datagrok/html.build/web/js/api
 ```
-Clear browser cache, refresh browser page.
+3. Restart docker containers as it is described in local Docker [instructions](https://datagrok.ai/help/develop/admin/docker-compose)
+4. Clear browser cache, refresh browser page. 
 
 ## Package injection
- 
+
 Remove `datagrok-api` from externals section of your `webpack.config.js` file:
 ```
     'datagrok-api/dg': 'DG',

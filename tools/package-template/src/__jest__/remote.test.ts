@@ -5,7 +5,7 @@
 import * as utils from './test-node';
 import puppeteer from 'puppeteer';
 
-const P_START_TIMEOUT: number = 100000;
+const P_START_TIMEOUT: number = 3600000;
 let browser: puppeteer.Browser;
 let page: puppeteer.Page;
 
@@ -46,4 +46,4 @@ it('TEST', async () => {
   console.log(r.report);
   // @ts-ignore
   expect(r.failed).toBe(false);
-}, 100000);
+}, 3600000);

@@ -982,6 +982,24 @@ export class Column<T = any> {
     return api.grok_Object_ToString(this.dart);
   }
 }
+export class BigIntColumn extends Column<BigInt> {
+  /**
+   * Gets [i]-th value.
+   */
+  get(row: number): BigInt | null {
+    let v = api.grok_BigIntColumn_GetValue(this.dart, row);
+    if (v == null)
+      return null;
+    return BigInt(v);
+  }
+
+  /**
+   * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
+   */
+  set(i: number, value: BigInt | null, notify: boolean = true): void {
+    api.grok_BigIntColumn_SetValue(this.dart, i, value?.toString(), notify);
+  }
+}
 
 export class DateTimeColumn extends Column<dayjs.Dayjs> {
   /**
@@ -1101,6 +1119,12 @@ export class ColumnList {
   add(column: Column, notify: boolean = true): Column {
     api.grok_ColumnList_Add(this.dart, column.dart, notify);
     return column;
+  }
+
+  getOrCreate(name: string, type: ColumnType, length: number): Column {
+    return this.contains(name) ?
+    this.byName(name) :
+    this.add(DG.Column.fromType(type, name, length));
   }
 
   /** Inserts a column, and optionally notifies the parent dataframe.
@@ -1324,9 +1348,10 @@ export class RowList {
 
   /** Sets values for the specified row.
    * @param {number} idx - Row index.
-   * @param values - List of values (length and types should match columns) */
-  setValues(idx: number, values: any[]): void {
-    api.grok_RowList_SetValues(this.dart, idx, values);
+   * @param values - List of values (length and types should match columns)
+   * @param notify - Raise onDataChanged event */
+  setValues(idx: number, values: any[], notify: boolean = true): void {
+    api.grok_RowList_SetValues(this.dart, idx, values, notify);
   }
 
   /**

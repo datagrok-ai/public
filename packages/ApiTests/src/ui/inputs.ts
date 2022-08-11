@@ -1,4 +1,4 @@
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -55,7 +55,7 @@ category('UI: Inputs', () => {
       stringValue(key, value, '.ui-input-editor');
   });
 
-  test('input.ebabled', async () => {
+  test('input.enabled', async () => {
     for (const [key, value] of Object.entries(inputs))
       enabled(key, value, v, '.ui-input-root');
   });
@@ -68,28 +68,31 @@ category('UI: Inputs', () => {
   test('input.onChanged', async () => {
     for (const [key, value] of Object.entries(inputs)) {
       switch (key) {
-      case 'stringInput': case 'textInput': case 'searchInput':
+      case 'stringInput':
+      case 'textInput':
+      case 'searchInput':
         onChanged(key, value, 'test');
         break;
-      case 'intInput': case 'floatInput':
+      case 'intInput':
+      case 'floatInput':
         onChanged(key, value, 100);
         break;
-      case 'boolInput': case 'switchInput':
+      case 'boolInput':
         onChanged(key, value, false);
         break;
-      case 'dateInput': case 'switchInput':
+      case 'dateInput':
         onChanged(key, value, DG.DateTime.fromDate(new Date()));
         break;
-      case 'choiceInput': case 'switchInput':
+      case 'choiceInput':
         onChanged(key, value, '2');
         break;
-      case 'columnInput': case 'switchInput':
+      case 'columnInput':
         onChanged(key, value, t.col('height'));
         break;
-      case 'columnsInput': case 'switchInput':
+      case 'columnsInput':
         onChanged(key, value, [t.col('height'), t.col('weight')]);
         break;
-      case 'tableInput': case 'switchInput':
+      case 'tableInput':
         grok.shell.addTableView(grok.data.demo.demog());
         grok.shell.addTableView(grok.data.demo.randomWalk());
         onChanged(key, value, [t.col('height'), t.col('weight')]);
@@ -169,7 +172,7 @@ category('UI: Inputs', () => {
 
     input.fireChanged();
 
-    if (changed == false)
+    if (!changed)
       throw `"${name}": OnChange value error`;
 
     input.value = value;

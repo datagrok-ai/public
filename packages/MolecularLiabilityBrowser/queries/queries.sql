@@ -9,7 +9,6 @@ SELECT v_id,
        negative_cdr_charge,
        SFvCSP
 FROM mlb.mlb_main
--- NGL column removed from query 2022-04-08 (atanas/lstolbov)
 --end
 
 --name: getObservedPtmVids
@@ -206,4 +205,23 @@ SELECT ma.*
 FROM mlb.antibody_anarci_aho_light as ma
          JOIN mlb.antibody2antigen as ab2ag ON ab2ag."v_id" = ma."Id"
 WHERE ab2ag.antigen = @antigen;
+--end
+
+--name: get3D
+--connection: MolecularLiabilityBrowserData:MLB
+--input: string vid = "VR000030945"
+SELECT
+    (select encode(json_data, 'escape')
+     from db_v2.json_files
+     where v_id = @vid) as "json",
+    (select encode(pdb_data, 'escape')
+     from db_v2.pdb_files
+     where v_id = @vid) as "pdb",
+    (select json
+     from mlb.jsons_new
+     where v_id = @vid) as "real_nums",
+    (select json
+     from mlb.ptm_observed_v2
+     where v_id = @vid
+     limit 1) as "obs_ptm";
 --end

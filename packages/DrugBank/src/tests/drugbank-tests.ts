@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, before} from '@datagrok-libraries/utils/src/test';
+import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {drugBankSearchWidget} from '../widgets';
+import {drugBankSearchWidget, drugNameMoleculeWidget} from '../widgets';
 
 category('DrugBank', () => {
   const molString = 'C';
@@ -20,8 +20,8 @@ category('DrugBank', () => {
   });
   
   test('drugNameMolecule', async () => {
-    expect(await drugNameMolecule('db:aspirin'), 'CC(Oc(cccc1)c1C(O)=O)=O');
-    expect(await drugNameMolecule('db:carbono'), '[C]');
-    expect(await drugNameMolecule('db:gadolinio'), '[Gd]');
+    expect(drugNameMoleculeWidget('db:aspirin', dbdf), 'CC(Oc(cccc1)c1C(O)=O)=O');
+    expect(drugNameMoleculeWidget('db:carbono', dbdf), '[C]');
+    expect(drugNameMoleculeWidget('db:gadolinio', dbdf), '[Gd]');
   });
 });

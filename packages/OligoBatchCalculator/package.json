@@ -1,7 +1,10 @@
 {
   "name": "@datagrok/oligo-batch-calculator",
-  "beta": false,
   "friendlyName": "Oligo Batch Calculator",
+  "author": {
+    "name": "Vadym Kovadlo",
+    "email": "vkovadlo@datagrok.ai"
+  },
   "version": "1.0.0",
   "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
   "repository": {
@@ -29,7 +32,9 @@
     "puppeteer": "^13.7.0",
     "ts-jest": "^27.0.0",
     "@types/js-yaml": "^4.0.5",
-    "@types/node-fetch": "^2.6.1"
+    "js-yaml": "^4.1.0",
+    "@types/node-fetch": "^2.6.2",
+    "node-fetch": "^2.6.7"
   },
   "scripts": {
     "debug-oligobatchcalculator": "grok publish",
@@ -40,7 +45,7 @@
     "release-oligobatchcalculator-public": "grok publish public --release",
     "debug-oligobatchcalculator-local": "grok publish local",
     "release-oligobatchcalculator-local": "grok publish local --release",
-    "test": "set HOST=dev && jest",
+    "test": "jest",
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"
   },

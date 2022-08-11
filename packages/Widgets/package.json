@@ -1,8 +1,11 @@
 {
 	"name": "@datagrok/widgets",
-	"beta": true,
 	"friendlyName": "Widgets",
 	"version": "0.2.1",
+	"author": {
+		"name": "Andrew Skalkin",
+		"email": "askalkin@datagrok.ai"
+	},
 	"description": "A collection of commonly used widgets, viewers, filters, and cell renderers.",
 	"repository": {
 		"type": "git",

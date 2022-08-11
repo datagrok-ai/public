@@ -1,18 +1,42 @@
 {
   "name": "@datagrok/chembl",
-  "tags": [
-    "chem"
-  ],
-  "version": "1.0.9",
+  "version": "1.0.15",
+  "description": "Chembl integration, commonly used queries and browser",
+  "author": {
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
+  },
   "fullName": "Chembl",
-  "description": "Chembl integration",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Chembl"
   },
+  "dependencies": {
+    "@datagrok-libraries/utils": "^0.4.1",
+    "@types/react-dom": "^17.0.9",
+    "datagrok-api": "^1.5.0",
+    "file-loader": "^6.2.0",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.0.0",
+    "css-loader": "latest",
+    "jest-html-reporter": "^3.5.0",
+    "jest": "^27.0.0",
+    "ts-jest": "^27.0.0",
+    "puppeteer": "^13.7.0",
+    "style-loader": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "@types/js-yaml": "^4.0.5",
+    "js-yaml": "^4.1.0",
+    "@types/node-fetch": "^2.6.2",
+    "node-fetch": "^2.6.7"
+  },
   "scripts": {
-    "deploy": "grok publish"
+    "build": "webpack"
   },
   "canEdit": [
     "Developers"
@@ -20,5 +44,5 @@
   "canView": [
     "All users"
   ],
-	"category": "Cheminformatics"
+  "category": "Cheminformatics"
 }

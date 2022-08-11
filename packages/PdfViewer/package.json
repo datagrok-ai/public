@@ -1,7 +1,10 @@
 {
   "name": "@datagrok/file-editors",
-  "beta": true,
   "version": "0.1.1",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
   "fullName": "File Editors",
   "description": "Support for editing end previewing multiple file formats (PDF, SVG)",
   "repository": {

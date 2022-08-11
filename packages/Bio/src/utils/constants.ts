@@ -23,12 +23,11 @@ export enum TAGS {
 }
 
 export enum SEM_TYPES {
-  AMINO_ACIDS = 'aminoAcids',
-  ALIGNED_SEQUENCE = 'alignedSequence',
-  ALIGNED_SEQUENCE_DIFFERENCE = 'alignedSequenceDifference',
+  MONOMER = 'Monomer',
+  MACROMOLECULE_DIFFERENCE = 'MacromoleculeDifference',
   ACTIVITY = 'activity',
   ACTIVITY_SCALED = 'activityScaled',
-  Macro_Molecule = 'Macromolecule',
+  MACROMOLECULE = 'Macromolecule',
 }
 
 export const STATS = 'stats';

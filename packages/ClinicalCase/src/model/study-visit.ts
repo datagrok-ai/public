@@ -59,11 +59,13 @@ export class StudyVisit {
     }
 
     private createEventSincePeviousVisitDf(domain: any) {
-        const startDayColName = `${domain.name.toUpperCase()}STDY`;
-        if (domain && this.previsousVisitDay && domain.col(startDayColName)) {
-            return domain.groupBy(domain.columns.names())
-                .where(`${startDayColName} > ${this.previsousVisitDay} and ${startDayColName} <= ${this.day}`)
-                .aggregate();
+        if (domain) {
+            const startDayColName = `${domain.name.toUpperCase()}STDY`;
+            if (domain && this.previsousVisitDay && domain.col(startDayColName)) {
+                return domain.groupBy(domain.columns.names())
+                    .where(`${startDayColName} > ${this.previsousVisitDay} and ${startDayColName} <= ${this.day}`)
+                    .aggregate();
+            }
         }
         return null;
     }

@@ -16,7 +16,7 @@ category('Dialog: Multivariate Analysis', () => {
   });
 
   test('dialogs.multivariateAnalysis', async () => {
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Multivariate Analysis (PLS)...').root.click();
+    grok.shell.topMenu.find('Tools').find('Data Science').find('Multivariate Analysis (PLS)...').click();
     await delay(1000);
     isDialogPresent('Multivariate Analysis (PLS)');
 

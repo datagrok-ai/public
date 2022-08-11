@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
-import {AlignedSequenceDifferenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
+import {MacromoleculeDifferenceCellRenderer, MonomerCellRenderer} from './utils/cell-renderer';
 import {WebLogo, SeqColStats} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
@@ -20,50 +20,42 @@ import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CO
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
-import {lru} from './utils/cell-renderer';
 import {representationsWidget} from './widgets/representations';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils'
 
 
-
-//tags: init
-export async function initBio(): Promise<void> {
-  // apparently HELMWebEditor requires dojo to be initialized first
-  if (DG.Func.find({package: 'Helm', name: 'initHelm'}) != null) {
-    grok.functions.call('Helm:initHelp');
-  }
-  return new Promise((resolve, reject) => {
-    // @ts-ignore
-    dojo.ready(function() { resolve(null); });
-  });  
-}
-
-//name: Lru
-//output: object lruCache
-export function Lru() {
-  return lru;
-}
-
-//name: macromoleculeSequenceCellRenderer
+//name: fastaSequenceCellRenderer
 //tags: cellRenderer
-//meta.cellType: Macromolecule
+//meta.cellType: Sequence
+//meta.columnTags: units=fasta
 //output: grid_cell_renderer result
-export function macromoleculeSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+  return new MacromoleculeSequenceCellRenderer();
+}
+
+//name: separatorSequenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: Sequence
+//meta.columnTags: units=separator
+//output: grid_cell_renderer result
+export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
 }
 
 function checkInputColumn(col: DG.Column, name: string,
   allowedNotations: string[] = [], allowedAlphabets: string[] = []): boolean {
-  const units: string = col.getTag(DG.TAGS.UNITS);
+  const notation: string = col.getTag(DG.TAGS.UNITS);
+  const alphabet: string = col.getTag('alphabet')
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE) {
     grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
     return false;
   } else if (
     (allowedAlphabets.length > 0 &&
-      !allowedAlphabets.some((a) => units.toUpperCase().endsWith(a.toUpperCase()))) ||
+      !allowedAlphabets.some((a) => alphabet.toUpperCase() == (a.toUpperCase()))) ||
     (allowedNotations.length > 0 &&
-      !allowedNotations.some((n) => units.toUpperCase().startsWith(n.toUpperCase())))
+      !allowedNotations.some((n) => notation.toUpperCase() == (n.toUpperCase())))
   ) {
     const notationAdd = allowedNotations.length == 0 ? 'any notation' :
       (`notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} `);
@@ -116,7 +108,7 @@ export function vdRegionViewer() {
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string): Promise<void> {
+  similarity: number, methodName: string): Promise<DG.Viewer | undefined> {
   if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
     return;
   const encodedCol = encodeMonomers(macroMolecule);
@@ -127,7 +119,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
   };
   const units = macroMolecule!.tags[DG.TAGS.UNITS];
-  await getActivityCliffs(
+  const sp = await getActivityCliffs(
     df,
     macroMolecule,
     encodedCol,
@@ -143,6 +135,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     sequenceGetSimilarities,
     drawTooltip,
     (options as any)[methodName]);
+    return sp;
 }
 
 //top-menu: Bio | Sequence Space...
@@ -153,29 +146,37 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 //input: string similarityMetric { choices:["Levenshtein", "Tanimoto"] }
 //input: bool plotEmbeddings = true
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<void> {
+  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<DG.Viewer|undefined> {
   if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
     return;
   const encodedCol = encodeMonomers(macroMolecule);
   if (!encodedCol)
     return;
   const embedColsNames = getEmbeddingColsNames(table);
+  const withoutEmptyValues = DG.DataFrame.fromColumns([macroMolecule]).clone();
+  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, encodedCol);
+
   const chemSpaceParams = {
-    seqCol: encodedCol,
+    seqCol: withoutEmptyValues.col(macroMolecule.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: embedColsNames
   };
   const sequenceSpaceRes = await sequenceSpace(chemSpaceParams);
   const embeddings = sequenceSpaceRes.coordinates;
-  for (const col of embeddings)
-    table.columns.add(col);
+  for (const col of embeddings) {
+      const listValues = col.toList();
+      emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
+      table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
+  }
+  let sp;   
   if (plotEmbeddings) {
     for (const v of grok.shell.views) {
       if (v.name === table.name)
-        (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+        sp = (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
     }
   }
+  return sp;
 };
 
 //top-menu: Bio | To Atomic Level...
@@ -238,6 +239,14 @@ export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.
   // const tv: DG.TableView = grok.shell.tv;
   // tv.grid.invalidate();
   return msaCol;
+}
+
+//name: Bio | MSA
+//tags: bio, panel
+//input: column sequence { semType: Macromolecule }
+//output: column result
+export async function panelMSA(col: DG.Column): Promise<DG.Column | null> {
+  return multipleSequenceAlignmentAny(col.dataFrame, col);
 }
 
 //name: Composition Analysis
@@ -333,20 +342,20 @@ export function convertPanel(col: DG.Column): void {
   convert(col);
 }
 
-//name: aminoAcidsCellRenderer
+//name: monomerCellRenderer
 //tags: cellRenderer
-//meta.cellType: aminoAcids
+//meta.cellType: Monomer
 //output: grid_cell_renderer result
-export function aminoAcidsCellRenderer(): AminoAcidsCellRenderer {
-  return new AminoAcidsCellRenderer();
+export function monomerCellRenderer(): MonomerCellRenderer {
+  return new MonomerCellRenderer();
 }
 
-//name: alignedSequenceDifferenceCellRenderer
+//name: MacromoleculeDifferenceCellRenderer
 //tags: cellRenderer
-//meta.cellType: alignedSequenceDifference
+//meta.cellType: MacromoleculeDifference
 //output: grid_cell_renderer result
-export function alignedSequenceDifferenceCellRenderer(): AlignedSequenceDifferenceCellRenderer {
-  return new AlignedSequenceDifferenceCellRenderer();
+export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCellRenderer {
+  return new MacromoleculeDifferenceCellRenderer();
 }
 
 //name: testDetectMacromolecule

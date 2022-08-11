@@ -95,7 +95,7 @@ export function radarCellRenderer() {
 //name: testUnitsKgCellRenderer
 //tags: cellRenderer
 //meta.cellType: testUnitsKg
-//meta.columnTags: units=kg
+//meta.columnTags: foo=bar,units=kg
 //output: grid_cell_renderer result
 export function testUnitsKgCellRenderer() {
   return new TestCellRenderer();
@@ -104,7 +104,7 @@ export function testUnitsKgCellRenderer() {
 //name: testUnitsTonCellRenderer
 //tags: cellRenderer
 //meta.cellType: testUnitsTon
-//meta.columnTags: units=ton
+//meta.columnTags: foo=bar,units=ton
 //output: grid_cell_renderer result
 export function testUnitsTonCellRenderer() {
   return new HtmlTestCellRenderer();
@@ -113,10 +113,10 @@ export function testUnitsTonCellRenderer() {
 //name: demoTestUnitsCellRenderer
 export function demoTestUnitsCellRenderer() {
   let t = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('kg', ['a', 'b']).setTag('quality', 'test').setTag('units', 'kg'),
-    DG.Column.fromStrings('ton', ['a', 'b']).setTag('quality', 'test').setTag('units', 'ton')
+    DG.Column.fromStrings('kg', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar').setTag('units', 'kg'),
+    DG.Column.fromStrings('ton', ['a', 'b']).setTag('quality', 'test').setTag('foo', 'bar').setTag('units', 'ton')
   ]);
 
-  grok.shell.addTable(t);
+  grok.shell.addTableView(t);
   grok.shell.info('Different renderers even though semantic types are the same');
 }

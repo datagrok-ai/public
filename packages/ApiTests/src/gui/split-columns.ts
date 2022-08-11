@@ -14,7 +14,7 @@ category('Dialog: Split Column', () => {
   });
 
   test('dialogs.splitColumn', async () => {
-    grok.shell.topMenu.find('Data').find('Split Column...').root.click(); await delay(1000);
+    grok.shell.topMenu.find('Data').find('Split Column...').click(); await delay(1000);
 
     let studyColumn = demog.columns.byName('study');
     setDialogInputValue('Split Column', 'Column', studyColumn);

@@ -2,7 +2,11 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.0.12",
+  "version": "1.0.18",
+  "author": {
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
+  },
   "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis",
   "repository": {
     "type": "git",
@@ -26,9 +30,9 @@
     "common/openchemlib-full.js"
   ],
   "dependencies": {
-    "datagrok-api": "^1.5.1",
-    "@datagrok-libraries/ml": "^3.0.0",
-    "@datagrok-libraries/utils": "^1.0.0",
+    "datagrok-api": "^1.5.4",
+    "@datagrok-libraries/ml": "^3.0.3",
+    "@datagrok-libraries/utils": "^1.5.4",
     "cash-dom": "latest",
     "dayjs": "latest",
     "file-loader": "latest",
@@ -58,7 +62,11 @@
     "style-loader": "latest",
     "css-loader": "latest",
     "ts-loader": "latest",
-    "puppeteer": "^13.7.0"
+    "puppeteer": "^13.7.0",
+    "@types/js-yaml": "^4.0.5",
+    "js-yaml": "^4.1.0",
+    "@types/node-fetch": "^2.6.2",
+    "node-fetch": "^2.6.7"
   },
   "browser": {
     "fs": false,
@@ -75,7 +83,7 @@
     "build": "webpack",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
-    "test": "set HOST=dev && jest",
+    "test": "jest",
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"
   },

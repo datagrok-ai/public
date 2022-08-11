@@ -627,7 +627,7 @@ export class UserDataStorage {
    * @param {string} name Storage name
    * @param {string} key
    * @param {string} value
-   * @param {boolean} currentUser Value should be available only for current user
+   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used.
    * @returns {Promise}*/
   postValue(name: string, key: string, value: string, currentUser: boolean = true): Promise<void> {
     return api.grok_Dapi_UserDataStorage_PostValue(name, key, value, currentUser);
@@ -636,7 +636,7 @@ export class UserDataStorage {
   /** Saves a map to Users Data Storage, will be appended to existing data
    * @param {string} name Storage name
    * @param {Map} data
-   * @param {boolean} currentUser Value should be available only for current user
+   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used.
    * @returns {Promise}*/
   post(name: string, data: any, currentUser: boolean = true): Promise<void> {
     return api.grok_Dapi_UserDataStorage_Post(name, data, currentUser);
@@ -645,7 +645,7 @@ export class UserDataStorage {
   /** Saves a map to Users Data Storage, will replace existing data
    * @param {string} name Storage name
    * @param {Map} data
-   * @param {boolean} currentUser Value should be available only for current user
+   * @param {boolean} currentUser Value should be available only for current user. If false, shared storage is used.
    * @returns {Promise}*/
   put(name: string, data: any, currentUser: boolean = true): Promise<void> {
     return api.grok_Dapi_UserDataStorage_Put(name, data, currentUser);
@@ -653,7 +653,7 @@ export class UserDataStorage {
 
   /** Retrieves a map from Users Data Storage
    * @param {string} name - Storage name
-   * @param {boolean} currentUser - get a value from a current user storage
+   * @param {boolean} currentUser - get a value from a current user storage. If false, shared storage is used.
    * @returns {Promise<Map>} */
   get(name: string, currentUser: boolean = true): Promise<any> {
     return api.grok_Dapi_UserDataStorage_Get(name, currentUser);
@@ -662,7 +662,7 @@ export class UserDataStorage {
   /** Retrieves a single value from Users Data Storage
    * @param {string} name Storage name
    * @param {string} key Value key
-   * @param {boolean} currentUser get a value from a current user storage
+   * @param {boolean} currentUser get a value from a current user storage. If false, shared storage is used.
    * @returns {Promise<string>} */
   getValue(name: string, key: string, currentUser: boolean = true): Promise<string> {
     return api.grok_Dapi_UserDataStorage_GetValue(name, key, currentUser);
@@ -671,7 +671,7 @@ export class UserDataStorage {
   /** Removes a single value from Users Data Storage
    * @param {string} name Storage name
    * @param {string} key Value key
-   * @param {boolean} currentUser get a value from a current user storage
+   * @param {boolean} currentUser get a value from a current user storage. If false, shared storage is used.
    * @returns {Promise} */
   remove(name: string, key: string, currentUser: boolean = true): Promise<void> {
     return api.grok_Dapi_UserDataStorage_Delete(name, key, currentUser);

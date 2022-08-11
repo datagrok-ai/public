@@ -78,14 +78,3 @@ export async function _testPeptideSimilaritySpaceViewer(table: DG.DataFrame, ali
   for (const ax of axes)
     expect(ax.every((v) => v !== null && v !== NaN), true);
 }
-
-/**
- * Tests if MSA works and returns consistent result.
- *
- * @export
- * @param {DG.Column} col Aligned sequences column.
- */
-export async function _testMSAIsCorrect(col: DG.Column): Promise<void> {
-  const msaCol = await runKalign(col, true);
-  expect(msaCol.toList().every((v, i) => v == col.get(i)), true);
-}

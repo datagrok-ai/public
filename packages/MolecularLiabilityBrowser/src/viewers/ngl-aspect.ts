@@ -41,8 +41,8 @@ export class NglAspect {
     const colLightChain = this.colorScheme['colLightChain'];
     const colCdr = this.colorScheme['colCdr'];
     const colPara = this.colorScheme['colPara'];
-    const colPartopesLow = this.colorScheme['colPartopesLow']; //col_para in rgb
-    const colPartopesHigh = this.colorScheme['colPartopesHigh'];
+    const colParatopesLow = this.colorScheme['colParatopesLow']; //col_para in rgb
+    const colParatopesHigh = this.colorScheme['colParatopesHigh'];
     const colHighlight = (this.cdrScheme.value === 'default' || this.paratopes.value === true) ?
       this.colorScheme['colHighlight'] : this.colorScheme['colHighlightCdr'];
 
@@ -59,7 +59,7 @@ export class NglAspect {
 
     let schemeId;
     if (this.paratopes.value === true) {
-      const palette = MiscMethods.interpolateColors(colPartopesLow, colPartopesHigh, 100);
+      const palette = MiscMethods.interpolateColors(colParatopesLow, colParatopesHigh, 100);
       Object.keys(this.json.parapred_predictions).forEach((chain) => {
         Object.keys(this.json.parapred_predictions[chain]).forEach((index) => {
           const nindex = chain === 'H' ? this.json.map_H[index] : this.json.map_L[index];
@@ -109,7 +109,7 @@ export class NglAspect {
       }
     }
 
-    if (reload) {
+    if (reload || this.stage.compList.length === 0) {
       this.stage.removeAllComponents();
       await this.loadPdb(this.pdbStr, this.repChoice, {color: schemeId});
 

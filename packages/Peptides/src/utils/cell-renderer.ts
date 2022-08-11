@@ -1,7 +1,8 @@
-import {ChemPalette} from './chem-palette';
+import {SeqPalette, SeqPaletteBase} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
+import {getPalleteByType} from './misc';
 import * as types from './types';
 
 /**
@@ -39,8 +40,8 @@ export function expandColumn(col: DG.Column, grid: DG.Grid, cellRenderSize: (cel
  * @param {boolean} [grouping=false] Is grouping enabled.
  */
 export function setAARRenderer(col: DG.Column, alphabet: string, grid?: DG.Grid): void {
-  col.semType = C.SEM_TYPES.AMINO_ACIDS;
-  col.setTag('cell.renderer', C.SEM_TYPES.AMINO_ACIDS);
+  col.semType = C.SEM_TYPES.MONOMER;
+  col.setTag('cell.renderer', C.SEM_TYPES.MONOMER);
   col.tags[C.TAGS.ALPHABET] = alphabet;
 
   if (grid)
@@ -58,76 +59,6 @@ export function measureAAR(s: string): number {
   const end = s.lastIndexOf(')');
   const beg = s.indexOf('(');
   return end == beg ? s.length : s.length - (end - beg) + 1;
-}
-
-/**
- * A function that prints a string aligned to left or centered.
- *
- * @param {number} x x coordinate.
- * @param {number} y y coordinate.
- * @param {number} w Width.
- * @param {number} h Height.
- * @param {CanvasRenderingContext2D} g Canvas rendering context.
- * @param {string} s String to print.
- * @param {string} [color=ChemPalette.undefinedColor] String color.
- * @param {number} [pivot=0] Pirvot.
- * @param {boolean} [left=false] Is left aligned.
- * @param {boolean} [hideMod=false] Hide amino acid redidue modifications.
- * @param {number} [transparencyRate=0.0] Transparency rate where 1.0 is fully transparent
- * @return {number} x coordinate to start printing at.
- */
-function printLeftOrCentered(
-  x: number, y: number, w: number, h: number,
-  g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
-  pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
-): number {
-  g.textAlign = 'start';
-  let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
-  if (colorPart.length == 1)
-    colorPart = colorPart.toUpperCase();
-
-  if (colorPart.length >= 3) {
-    if (colorPart.substring(0, 3) in ChemPalette.AAFullNames)
-      colorPart = ChemPalette.AAFullNames[s.substring(0, 3)] + colorPart.substring(3);
-    else if (colorPart.substring(1, 4) in ChemPalette.AAFullNames)
-      colorPart = colorPart[0] + ChemPalette.AAFullNames[s.substring(1, 4)] + colorPart.substring(4);
-  }
-  let grayPart = pivot == -1 ? '' : s.substring(pivot);
-  if (hideMod) {
-    let end = colorPart.lastIndexOf(')');
-    let beg = colorPart.indexOf('(');
-    if (beg > -1 && end > -1 && end - beg > 2)
-      colorPart = colorPart.substring(0, beg) + '(+)' + colorPart.substring(end + 1);
-
-
-    end = grayPart.lastIndexOf(')');
-    beg = grayPart.indexOf('(');
-    if (beg > -1 && end > -1 && end - beg > 2)
-      grayPart = grayPart.substring(0, beg) + '(+)' + grayPart.substring(end + 1);
-  }
-  const textSize = g.measureText(colorPart + grayPart);
-  const indent = 5;
-
-  const colorTextSize = g.measureText(colorPart);
-  const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
-
-  function draw(dx1: number, dx2: number): void {
-    g.fillStyle = color;
-    g.globalAlpha = transparencyRate;
-    g.fillText(colorPart, x + dx1, y + dy);
-    g.fillStyle = ChemPalette.undefinedColor;
-    g.fillText(grayPart, x + dx2, y + dy);
-  }
-
-
-  if (left || textSize.width > w) {
-    draw(indent, indent + colorTextSize.width);
-    return x + colorTextSize.width + g.measureText(grayPart).width;
-  } else {
-    const dx = (w - textSize.width) / 2;
-    draw(dx, dx + colorTextSize.width);
-    return x + dx + colorTextSize.width;
-  }
 }
 
 export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAAR: string, currentPosition: string,
@@ -188,4 +119,88 @@ export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAA
     canvasContext.lineWidth = 1;
     canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);
   }
+}
+
+export function renderBarchart(ctx: CanvasRenderingContext2D, col: DG.Column, monomerColStats: types.MonomerColStats,
+  bounds: DG.Rect, max: number): types.BarCoordinates {
+  let sum = col.length - (monomerColStats['-']?.count ?? 0);
+  const colorPalette = getPalleteByType(col.tags[C.TAGS.ALPHABET]);
+  const name = col.name;
+  const colNameSize = ctx.measureText(name);
+  const margin = 0.2;
+  const innerMargin = 0.02;
+  const selectLineRatio = 0.1;
+  const fontSize = 11;
+
+  const xMargin = bounds.x + bounds.width * margin;
+  const yMargin = bounds.y + bounds.height * margin / 4;
+  const wMargin = bounds.width - bounds.width * margin * 2;
+  const hMargin = bounds.height - bounds.height * margin;
+  const barWidth = wMargin - 10;
+  ctx.fillStyle = 'black';
+  ctx.textBaseline = 'top';
+  ctx.font = `${hMargin * margin / 2}px`;
+  ctx.fillText(name, xMargin + (wMargin - colNameSize.width) / 2, yMargin + hMargin + hMargin * margin / 4);
+
+
+  const barCoordinates: types.BarCoordinates = {};
+
+  const xStart = xMargin + (wMargin - barWidth) / 2;
+  for (const [monomer, monomerStats] of Object.entries(monomerColStats)) {
+    if (monomer == '-')
+      continue;
+
+    const count = monomerStats.count;
+    const sBarHeight = hMargin * count / max;
+    const gapSize = sBarHeight * innerMargin;
+    const verticalShift = (max - sum) / max;
+    const textSize = ctx.measureText(monomer);
+    const subBarHeight = sBarHeight - gapSize;
+    const yStart = yMargin + hMargin * verticalShift + gapSize / 2;
+    barCoordinates[monomer] = new DG.Rect(xStart, yStart, barWidth, subBarHeight);
+
+    const color = colorPalette.get(monomer);
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+
+    if (textSize.width <= subBarHeight) {
+      if (color != SeqPaletteBase.undefinedColor)
+        ctx.fillRect(xStart, yStart, barWidth, subBarHeight);
+      else {
+        ctx.strokeRect(xStart + 0.5, yStart, barWidth - 1, subBarHeight);
+        barCoordinates[monomer].x -= 0.5;
+        barCoordinates[monomer].width -= 1;
+      }
+
+      const leftMargin = (wMargin - (monomer.length > 1 ? fontSize : textSize.width - 8)) / 2;
+      const absX = xMargin + leftMargin;
+      const absY = yStart + subBarHeight / 2 + (monomer.length == 1 ? 4 : 0);
+      const origTransform = ctx.getTransform();
+
+      if (monomer.length > 1) {
+        ctx.translate(absX, absY);
+        ctx.rotate(Math.PI / 2);
+        ctx.translate(-absX, -absY);
+      }
+
+      ctx.fillStyle = 'black';
+      ctx.font = `${fontSize}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(monomer, absX, absY);
+      ctx.setTransform(origTransform);
+    } else
+      ctx.fillRect(xStart, yStart, barWidth, subBarHeight);
+
+    const selectedCount = monomerStats.selected;
+    if (selectedCount) {
+      ctx.fillStyle = 'rgb(255,165,0)';
+      ctx.fillRect(xStart - wMargin * selectLineRatio * 2, yStart,
+        barWidth * selectLineRatio, hMargin * selectedCount / max - gapSize);
+    }
+
+    sum -= count;
+  }
+
+  return barCoordinates;
 }

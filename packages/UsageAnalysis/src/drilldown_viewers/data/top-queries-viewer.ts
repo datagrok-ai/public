@@ -40,10 +40,7 @@ export class TopQueriesViewer extends UaFilterableQueryViewer {
 
             grok.shell.o = pp.getRoot();
           });
-          if (t.rowCount > 0)
-            return viewer.root
-          else
-            return ui.divText('Not enough data', {style:{color:'var(--red-3)', paddingBottom:'25px'}})
+          return viewer.root;
         }
     );
   }

@@ -8,7 +8,7 @@ export async function sequenceGetSimilarities(col: DG.Column, seq: string): Prom
   const stringArray = col.toList();
   const distances = new Array(stringArray.length).fill(0.0);
   for (let i = 0; i < stringArray.length; ++i)
-    distances[i] = getSimilarityFromDistance(AvailableMetrics['String']['Levenshtein'](stringArray[i], seq));
+    distances[i] = stringArray[i] ? getSimilarityFromDistance(AvailableMetrics['String']['Levenshtein'](stringArray[i], seq)) : 0;
   return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances', distances);
 }
 

@@ -7,6 +7,7 @@ import {_package} from '../package-test';
 import {startAnalysis} from '../widgets/analyze-peptides';
 import {PeptidesModel} from '../model';
 import * as C from '../utils/constants';
+import {scaleActivity} from '../utils/misc';
 
 category('Core', () => {
   let simpleTable: DG.DataFrame;
@@ -30,8 +31,7 @@ category('Core', () => {
     simpleActivityCol = simpleTable.getCol(simpleActivityColName);
     simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
     simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
-    [simpleScaledDf, simpleScaledColName] =
-      PeptidesModel.scaleActivity('-lg', simpleTable, simpleActivityColName, true);
+    [simpleScaledDf, simpleScaledColName] = scaleActivity('-lg', simpleTable, simpleActivityColName, true);
 
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName, _package);
@@ -39,7 +39,7 @@ category('Core', () => {
 
     if (model != null) {
       model.currentSelection = {'11': ['D']};
-      grok.shell.closeTable(model._dataFrame);
+      grok.shell.closeTable(model.df);
     }
   });
 
@@ -49,8 +49,7 @@ category('Core', () => {
     complexActivityCol = complexTable.getCol(complexActivityColName);
     complexAlignedSeqCol = complexTable.getCol('MSA');
     complexAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
-    [complexScaledDf, complexScaledColName] =
-      PeptidesModel.scaleActivity('-lg', complexTable, complexActivityColName, true);
+    [complexScaledDf, complexScaledColName] = scaleActivity('-lg', complexTable, complexActivityColName, true);
 
     model = await startAnalysis(
       complexActivityCol, complexAlignedSeqCol, complexTable, complexScaledDf, complexScaledColName, _package);
@@ -58,7 +57,7 @@ category('Core', () => {
 
     if (model != null) {
       model.currentSelection = {'13': ['-']};
-      grok.shell.closeTable(model._dataFrame);
+      grok.shell.closeTable(model.df);
     }
   });
 
@@ -68,8 +67,7 @@ category('Core', () => {
     simpleActivityCol = simpleTable.getCol(simpleActivityColName);
     simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
     simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
-    [simpleScaledDf, simpleScaledColName] =
-      PeptidesModel.scaleActivity('-lg', simpleTable, simpleActivityColName, true);
+    [simpleScaledDf, simpleScaledColName] = scaleActivity('-lg', simpleTable, simpleActivityColName, true);
 
     model = await startAnalysis(
       simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName, _package);
@@ -84,7 +82,7 @@ category('Core', () => {
     project.addChild(layout);
     const sl = await grok.dapi.layouts.save(layout);
     await grok.dapi.tables.uploadDataFrame(d);
-    const sti =  await grok.dapi.tables.save(tableInfo);
+    const sti = await grok.dapi.tables.save(tableInfo);
     const sp = await grok.dapi.projects.save(project);
 
     grok.shell.closeTable(d);

@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import { Matrix } from '@datagrok-libraries/utils/src/type-declarations';
 import { getSimilarityFromDistance } from '@datagrok-libraries/utils/src/similarity-metrics';
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils'
 
 export interface ILine {
   id: number;
@@ -64,23 +65,31 @@ export async function getActivityCliffs(
 
   const initialSimilarityLimit = automaticSimilarityLimit ? MIN_SIMILARITY : similarity / 100;
 
+  const dimensionalityReduceCol = encodedCol ?? seqCol;
+  const withoutEmptyValues = DG.DataFrame.fromColumns([dimensionalityReduceCol]).clone();
+    //@ts-ignore
+  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, dimensionalityReduceCol);
+
   const {distance, coordinates} = await seqSpaceFunc({
-    seqCol: encodedCol ?? seqCol,
+    seqCol: withoutEmptyValues.col(dimensionalityReduceCol.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: axesNames,
     options: options
   });
 
-  for (const col of coordinates)
-    df.columns.add(col);
+  for (const col of coordinates) {
+      const listValues = col.toList();
+      emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
+      df.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
+  }
 
-  const dfSeq = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'seq', seqCol.toList())]);
-  const dim = seqCol.length;
+  const dfSeq = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'seq', dimensionalityReduceCol.toList())]);
+  const dim = dimensionalityReduceCol.length;
   const simArr: DG.Column[] = Array(dim - 1);
 
-  if (!distance)
-    await getSimilaritiesMarix(dim, seqCol, dfSeq, simArr, simFunc);
+  if (!distance || emptyValsIdxs.length !== 0)
+    await getSimilaritiesMarix(dim, dimensionalityReduceCol, dfSeq, simArr, simFunc);
   else
     getSimilaritiesMarixFromDistances(dim, distance, simArr);
 
@@ -93,7 +102,7 @@ export async function getActivityCliffs(
 
   for (let i = 0; i != dim - 1; ++i) {
     for (let j = 0; j != dim - 1 - i; ++j) {
-      const sim: number = simArr[i].get(j);
+      const sim: number = simArr[i] ? simArr[i].get(j) : 0;
 
       if (sim >= optSimilarityLimit) {
         n1.push(i);

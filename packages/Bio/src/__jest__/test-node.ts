@@ -68,6 +68,7 @@ export async function getBrowserPage(puppeteer: any): Promise<{ browser: any, pa
   });
 
   const page = await browser.newPage();
+  await page.setDefaultNavigationTimeout(0);
   await page.goto(`${url}/oauth/`);
   await page.setCookie({name: 'auth', value: token});
   await page.evaluate((token: any) => {
@@ -75,8 +76,8 @@ export async function getBrowserPage(puppeteer: any): Promise<{ browser: any, pa
   }, token);
   await page.goto(url);
   try {
-    await page.waitForSelector('.grok-preloader');
-    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 500000});
+    await page.waitForSelector('.grok-preloader', { timeout: 1800000 });
+    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 3600000});
   } catch (error) {
     throw error;
   }

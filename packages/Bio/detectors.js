@@ -21,9 +21,19 @@ class BioPackageDetectors extends DG.Package {
   static RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
 
   static SmilesRawAlphabet = new Set([
-    'B', 'C', 'c', 'E', 'H', 'L', 'M', 'N', 'O', 'S', 'F', '(', ')',
+    'A', 'B', 'C', 'E', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'Z',
+    'a', 'c', 'e', 'g', 'i', 'l', 'n', 'o', 'r', 's', 't', 'u',
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-    '+', '-', '@', '[', ']', '/', '\\', '#', '=']);
+    '+', '-', '.', , '/', '\\', '@', '[', ']', '(', ')', '#', '%', '=']);
+
+  static SmartsRawAlphabet = new Set([
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    '!', '#', '$', '&', '(', ')', '*', '+', ',', '-', '.', ':', ';', '=', '@', '~', '[', ']',
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M',
+    'N', 'O', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'k', 'l', 'm',
+    'n', 'o', 'p', 'r', 's', 't', 'u', 'v', 'y',
+  ]);
 
   /** @param s {String} - string to check
    * @returns {boolean} */
@@ -47,13 +57,14 @@ class BioPackageDetectors extends DG.Package {
     }
 
     const decoyAlphabets = [
-      ['SMILES', BioPackageDetectors.SmilesRawAlphabet],
+      ['SMILES', BioPackageDetectors.SmilesRawAlphabet, 0.30],
+      ['SMARTS', BioPackageDetectors.SmartsRawAlphabet, 0.45],
     ];
 
     const candidateAlphabets = [
-      ['PT', BioPackageDetectors.PeptideFastaAlphabet],
-      ['DNA', BioPackageDetectors.DnaFastaAlphabet],
-      ['RNA', BioPackageDetectors.RnaFastaAlphabet],
+      ['PT', BioPackageDetectors.PeptideFastaAlphabet, 0.55],
+      ['DNA', BioPackageDetectors.DnaFastaAlphabet, 0.55],
+      ['RNA', BioPackageDetectors.RnaFastaAlphabet, 0.55],
     ];
 
     // Check for url column, maybe it is too heavy check
@@ -75,7 +86,7 @@ class BioPackageDetectors extends DG.Package {
     const statsAsChars = BioPackageDetectors.getStats(col, 5, BioPackageDetectors.splitterAsChars);
     // if (Object.keys(statsAsChars.freq).length === 0) return;
 
-    const decoy = BioPackageDetectors.detectAlphabet(statsAsChars.freq, decoyAlphabets, null, 0.35);
+    const decoy = BioPackageDetectors.detectAlphabet(statsAsChars.freq, decoyAlphabets, null);
     if (decoy != 'UN') return null;
 
     if (statsAsChars.sameLength) {
@@ -83,8 +94,10 @@ class BioPackageDetectors extends DG.Package {
         const alphabet = BioPackageDetectors.detectAlphabet(statsAsChars.freq, candidateAlphabets, '-');
         if (alphabet === 'UN') return null;
 
-        const units = `fasta:SEQ.MSA:${alphabet}`;
+        const units = 'fasta';
         col.setTag(DG.TAGS.UNITS, units);
+        col.setTag('aligned', 'SEQ.MSA');
+        col.setTag('alphabet', alphabet);
         return DG.SEMTYPE.MACROMOLECULE;
       }
     } else {
@@ -106,8 +119,9 @@ class BioPackageDetectors extends DG.Package {
 
       // const forbidden = BioPackageDetectors.checkForbiddenWoSeparator(stats.freq);
       if (separator || alphabet != 'UN') {
-        const units = `${format}:${seqType}:${alphabet}`;
-        col.setTag(DG.TAGS.UNITS, units);
+        col.setTag(DG.TAGS.UNITS, format);
+        col.setTag('aligned', seqType);
+        col.setTag('alphabet', alphabet);
         if (separator) col.setTag('separator', separator);
         return DG.SEMTYPE.MACROMOLECULE;
       }
@@ -147,9 +161,11 @@ class BioPackageDetectors extends DG.Package {
     return sepFreq / otherSumFreq > freqThreshold ? sep : null;
   }
 
-  /** With a separator, spaces are nor allowed in monomer names. */
+  /** With a separator, spaces are nor allowed in monomer names.
+   * The monomer name/label cannot contain digits only.
+   */
   static checkForbiddenWithSeparators(freq) {
-    const forbiddenRe = /[ ]/i;
+    const forbiddenRe = /[ ]|^\d+$/i;
     return Object.keys(freq).filter((m) => forbiddenRe.test(m)).length > 0;
   }
 
@@ -190,16 +206,16 @@ class BioPackageDetectors extends DG.Package {
    * @param freq       frequencies of monomers in sequence set
    * @param candidates  an array of pairs [name, monomer set]
    * */
-  static detectAlphabet(freq, candidates, gapSymbol, cut = 0.55) {
+  static detectAlphabet(freq, candidates, gapSymbol) {
     const candidatesSims = candidates.map((c) => {
       const sim = BioPackageDetectors.getAlphabetSimilarity(freq, c[1], gapSymbol);
-      return [c[0], c[1], freq, sim];
+      return [c[0], c[1], c[2], freq, sim];
     });
 
     let alphabetName;
-    const maxSim = Math.max(...candidatesSims.map((cs) => cs[3]));
-    if (maxSim > cut) {
-      const sim = candidatesSims.find((cs) => cs[3] == maxSim);
+    const maxSim = Math.max(...candidatesSims.map((cs) => cs[4] > cs[2] ? cs[4] : -1));
+    if (maxSim > 0) {
+      const sim = candidatesSims.find((cs) => cs[4] == maxSim);
       alphabetName = sim[0];
     } else {
       alphabetName = 'UN';
@@ -215,7 +231,7 @@ class BioPackageDetectors extends DG.Package {
     const alphabetA = [];
     for (const m of keys) {
       freqA.push(m in freq ? freq[m] : 0);
-      alphabetA.push(alphabet.has(m) ? 10 : -10 /* penalty for character outside alphabet set*/);
+      alphabetA.push(alphabet.has(m) ? 10 : -20 /* penalty for character outside alphabet set*/);
     }
     /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
     const cos = BioPackageDetectors.vectorDotProduct(freqA, alphabetA) / (BioPackageDetectors.vectorLength(freqA) * BioPackageDetectors.vectorLength(alphabetA));

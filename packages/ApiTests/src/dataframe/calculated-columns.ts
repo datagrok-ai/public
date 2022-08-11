@@ -28,30 +28,44 @@ category('DataFrame', () => {
 
   test('Add new column dialog', async () => {
     let tv: DG.TableView;
-    subs.push(grok.events.onDialogShown.subscribe((d) => {
-      expect(d.title, 'Add New Column');
-      dialogs.push(d);
-    }));
-    try {
-      tv = grok.shell.addTableView(df);
-      df.dialogs.addNewColumn();
-    } finally {
-      tv!.close();
-      grok.shell.closeTable(df);
-    }
+    await new Promise(async (resolve, reject) => {
+      subs.push(grok.events.onDialogShown.subscribe((d) => {
+        if (d.title == 'Add New Column')
+          resolve('OK');
+        dialogs.push(d);
+      }));
+      setTimeout(() => {
+        // eslint-disable-next-line prefer-promise-reject-errors
+        reject('Dialog not found');
+      }, 50);
+      try {
+        tv = grok.shell.addTableView(df);
+        await df.dialogs.addNewColumn();
+      } finally {
+        tv!.close();
+        grok.shell.closeTable(df);
+      }
+    });
   });
 
   test('Edit formula dialog', async () => {
-    subs.push(grok.events.onDialogShown.subscribe((d) => {
-      expect(d.title, 'Edit Column Formula');
-      dialogs.push(d);
-    }));
-    try {
-      const column = await df.columns.addNewCalculated('editable', '0');
-      column.dialogs.editFormula();
-    } finally {
-      df.columns.remove('editable');
-    }
+    await new Promise(async (resolve, reject) => {
+      subs.push(grok.events.onDialogShown.subscribe((d) => {
+        if (d.title == 'Add New Column')
+          resolve('OK');
+        dialogs.push(d);
+      }));
+      try {
+        setTimeout(() => {
+          // eslint-disable-next-line prefer-promise-reject-errors
+          reject('Dialog not found');
+        }, 50);
+        const column = await df.columns.addNewCalculated('editable', '0');
+        column.dialogs.editFormula();
+      } finally {
+        df.columns.remove('editable');
+      }
+    });
   });
 
   test('Calculated columns addition event', async () => {

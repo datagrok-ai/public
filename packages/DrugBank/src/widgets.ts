@@ -54,3 +54,12 @@ export async function drugBankSearchWidget(
 
   return new DG.Widget(panel);
 }
+
+export function drugNameMoleculeWidget(id: string, dbdf: DG.DataFrame): string | null {
+  const drugName = id.slice(3);
+  for (var i = 0; i < dbdf.rowCount; i++) {
+    if (dbdf.get('SYNONYMS', i).toLowerCase().includes(drugName))
+      return dbdf.get('Smiles', i);
+  }
+  return null;
+}

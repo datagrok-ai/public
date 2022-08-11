@@ -33,7 +33,12 @@ export abstract class UaQueryViewer extends UaViewer{
       if (dataFrame.columns.byName('count') != null)
         dataFrame.columns.byName('count').tags['format'] = '#';
 
-      let viewer = this.viewerFunction(dataFrame);
+      let viewer: HTMLElement;
+      if (dataFrame.rowCount > 0)
+        viewer = this.viewerFunction(dataFrame);
+      else
+        viewer = ui.divText('No data', {style:{color:'var(--red-3)', paddingBottom:'25px'}})
+
       let grid = DG.Viewer.grid(dataFrame);
       grid.props.allowColSelection = false;
       let raw = false;

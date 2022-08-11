@@ -1,4 +1,5 @@
 import {category, test, expect} from '@datagrok-libraries/utils/src/test';
+import {inchiKeys, pubChem} from '../package';
 import {pubChemSearchWidget} from '../widget';
 
 category('PubChem API', () => {

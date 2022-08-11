@@ -2,6 +2,10 @@
   "name": "@datagrok/ngl-viewer",
   "version": "0.1.2",
   "fullName": "NGL Viewer",
+  "author": {
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
+  },
   "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
   "repository": {
     "type": "git",

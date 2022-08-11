@@ -1,6 +1,9 @@
 {
   "name": "@datagrok/usage-analysis",
-  "beta": false,
+  "author": {
+    "name": "Konstantin Doncov",
+    "email": "kdoncov@datagrok.ai"
+  },
   "friendlyName": "Usage Analysis",
   "version": "0.0.4",
   "description": "Usage Analysis System",
@@ -31,7 +34,7 @@
     "release-usageanalysis-dev": "grok publish dev --release",
     "debug-usageanalysis-public": "grok publish public",
     "release-usageanalysis-public": "grok publish public --release",
-    "test": "set HOST=dev && jest",
+    "test": "jest",
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"
   },
@@ -42,7 +45,11 @@
     "jest-html-reporter": "^3.5.0",
     "puppeteer": "^13.7.0",
     "ts-jest": "^27.0.0",
-    "webpack-cli": "^4.7.2"
+    "webpack-cli": "^4.7.2",
+    "@types/js-yaml": "^4.0.5",
+    "js-yaml": "^4.1.0",
+    "@types/node-fetch": "^2.6.2",
+    "node-fetch": "^2.6.7"
   },
   "canEdit": [
     "Developers"

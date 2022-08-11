@@ -401,7 +401,7 @@ export class DataConnection extends Entity {
    * @param {string} name - Connection name
    * @param {DataConnectionDBParams} parameters - Database connection info and credentials
    * @returns {DataConnection} */
-   static createDB(name: string, parameters: DataConnectionDBParams): DataConnection {
+   static create(name: string, parameters: DataConnectionDBParams): DataConnection {
     return toJs(api.grok_DataConnection_Create(
       name, parameters.dataSource, parameters.server, parameters.db, parameters.login, parameters.password));
   }
@@ -780,16 +780,15 @@ export class Package extends Entity {
     else
       return null;
   }
+
   get meta() { return (this.dart == null) ? null : toJs(api.grok_Package_Get_Meta(this.dart)); }
 
-  /** Loads package
-   * @returns {Promise<Package>} */
+  /** Loads package. */
   async load(options?: {file: String}): Promise<Package> {
     return new api.grok_Dapi_Packages_Load(this.dart, options?.file);
   }
 
-  /** Returns credentials for package
-   * @returns {Promise<Credentials>} */
+  /** Returns credentials for package. */
   getCredentials(): Promise<Credentials> {
     return new Promise((resolve, reject) => api.grok_Package_Get_Credentials(this.name, (c: any) => {
       let cred = toJs(c);
@@ -805,6 +804,8 @@ export class Package extends Entity {
   }
 
   private _files: FileSource | null = null;
+
+  /** Global application data */
   get files(): FileSource {
     if (this._files == null)
       this._files = new FileSource(`System:AppData/${this.name}`);

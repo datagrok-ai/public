@@ -15,7 +15,7 @@ category('Chem: R Groups Analysis', () => {
   });
 
   test('rGroupsAnalysis.ui', async () => {    
-    grok.shell.topMenu.find('Chem').find('R-Groups Analysis......').root.click(); await delay(2000);
+    grok.shell.topMenu.find('Chem').find('R-Groups Analysis......').click(); await delay(2000);
 
     isDialogPresent('R-Groups Analysis');
 

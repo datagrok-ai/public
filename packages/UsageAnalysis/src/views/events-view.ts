@@ -23,7 +23,7 @@ export class EventsView extends UaView {
     let topFunctionsViewer = new TopFunctionsViewer(this.uaToolbox.filterStream);
     this.viewers.push(topFunctionsViewer);
 
-    let topPackageFunctionsViewer = new TopPackageFunctionsViewer(this.uaToolbox.filterStream);
+    let topPackageFunctionsViewer = new TopPackageFunctionsViewer('Package Functions','TopPackageFunctions', this.uaToolbox.filterStream, null,true);
     this.viewers.push(topPackageFunctionsViewer);
 
     this.topPackagesViewer = new TopPackagesViewer('Packages', 'TopPackages', this.uaToolbox.filterStream);

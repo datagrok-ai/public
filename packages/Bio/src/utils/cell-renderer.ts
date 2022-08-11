@@ -2,12 +2,11 @@ import * as C from './constants';
 import * as DG from 'datagrok-api/dg';
 import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
 import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
-import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
+import {UnknownSeqPalette, UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as ui from 'datagrok-api/ui';
 
-export const lru = new DG.LruCache<any, any>();
 const undefinedColor = 'rgb(100,100,100)';
 const grayColor = '#808080';
 
@@ -44,6 +43,7 @@ export function processSequence(subParts: string[]): [string[], boolean] {
   return [text, simplified];
 }
 
+
 /**
  * A function that prints a string aligned to left or centered.
  *
@@ -61,60 +61,58 @@ export function processSequence(subParts: string[]): [string[], boolean] {
  * @param {boolean} [last=false] Is checker if element last or not.
  * @return {number} x coordinate to start printing at.
  */
-function printLeftOrCentered(
+export function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false): number {
+  separator: string = '', last: boolean = false, drawStyle: string = 'classic', maxWord: any = {}, maxWordIdx: number = 0, gridCell: any = {}): number {
   g.textAlign = 'start';
   const colorPart = s.substring(0);
-  let grayPart =  last ? '' : separator;
+  let grayPart = last ? '' : separator;
+  if (drawStyle === 'msa') {
+    grayPart = '';
+  }
 
-  const textSize = g.measureText(colorPart + grayPart);
+  let textSize: any = g.measureText(colorPart + grayPart);
   const indent = 5;
 
-  const colorTextSize = g.measureText(colorPart);
+  let colorTextSize = g.measureText(colorPart).width;
   const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
+  textSize = textSize.width;
+  if (drawStyle === 'msa') {
+    if (colorTextSize > maxWord) {
+      maxWord[maxWordIdx] = colorTextSize;
+      gridCell.cell.column.temp = maxWord;
+    }
+    colorTextSize = maxWord[maxWordIdx];
+    textSize = maxWord[maxWordIdx];
+  }
 
   function draw(dx1: number, dx2: number): void {
     g.fillStyle = color;
     g.globalAlpha = transparencyRate;
     g.fillText(colorPart, x + dx1, y + dy);
-    g.fillStyle = grayColor;
-    g.fillText(grayPart, x + dx2, y + dy);
+    if (drawStyle === 'classic') {
+      g.fillStyle = grayColor;
+      g.fillText(grayPart, x + dx2, y + dy);
+    }
   }
 
-
-  if (left || textSize.width > w) {
-    draw(indent, indent + colorTextSize.width);
-    return x + colorTextSize.width + g.measureText(grayPart).width;
+  if (left || textSize > w) {
+    draw(indent, indent + colorTextSize);
+    return x + colorTextSize + g.measureText(grayPart).width;
   } else {
-    const dx = (w - textSize.width) / 2;
-    draw(dx, dx + colorTextSize.width);
-    return x + dx + colorTextSize.width;
+    const dx = (w - textSize) / 2;
+    draw(dx, dx + colorTextSize);
+    return x + dx + colorTextSize;
   }
 }
 
-function findMonomers(helmString: string) {
-  //@ts-ignore
-  const types = Object.keys(org.helm.webeditor.monomerTypeList());
-  const monomers: any = [];
-  const monomer_names: any = [];
-  for (var i = 0; i < types.length; i++) {
-    //@ts-ignore
-    monomers.push(new scil.helm.Monomers.getMonomerSet(types[i]));
-    Object.keys(monomers[i]).forEach(k => {
-      monomer_names.push(monomers[i][k].id);
-    });
-  }
-  const split_string = WebLogo.splitterAsHelm(helmString);
-  return new Set(split_string.filter(val => !monomer_names.includes(val)));
-}
 
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
-  get name(): string { return 'macromoleculeSequence'; }
+  get name(): string { return 'sequence'; }
 
-  get cellType(): string { return C.SEM_TYPES.Macro_Molecule; }
+  get cellType(): string { return 'sequence'; }
 
   get defaultHeight(): number { return 30; }
 
@@ -139,87 +137,74 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
     const cell = gridCell.cell;
     const tag = gridCell.cell.column.getTag(DG.TAGS.UNITS);
-    if (tag === 'HELM') {
-      const monomers = findMonomers(cell.value);
-      if (monomers.size == 0) {
-        const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
-        host.setAttribute('dataformat', 'helm');
-        host.setAttribute('data', gridCell.cell.value);
-        gridCell.element = host;
-        //@ts-ignore
-        const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
-        const formula = canvas.getFormula(true);
-        if (!formula) {
-          gridCell.element = ui.divText(gridCell.cell.value, {style: {color: 'red'}});
-        }
-        const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
-        const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
-        const molfile = canvas.getMolfile();
-        const result = formula + ', ' + molWeight + ', ' + coef + ', ' + molfile;
-        lru.set(gridCell.cell.value, result);
-        return;
-      }
-      if (monomers.size > 0) {
-        w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-        g.save();
-        g.beginPath();
-        g.rect(x, y, w, h);
-        g.clip();
-        g.font = '12px monospace';
-        g.textBaseline = 'top';
-        let x1 = x;
-        const s: string = cell.value ?? '';
-        let subParts: string[] = WebLogo.splitterAsHelm(s);
+    const [type, subtype, paletteType] = gridCell.cell.column.getTag(DG.TAGS.UNITS).split(':');
+    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+    g.save();
+    g.beginPath();
+    g.rect(x, y, w, h);
+    g.clip();
+    g.font = '12px monospace';
+    g.textBaseline = 'top';
+    const s: string = cell.value ?? '';
+
+    //TODO: can this be replaced/merged with splitSequence?
+    const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
+
+    const palette = getPalleteByType(paletteType);
+
+    const separator = gridCell.cell.column.getTag('separator') ?? '';
+    const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator'));
+
+    const columns = gridCell.cell.column.categories;
+    let monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
+    let maxLengthOfMonomer = 8;
+
+    let maxLengthWords = {};
+    // check if gridCell.cell.column.temp is array
+    if (gridCell.cell.column.getTag('.calculatedCellRender') !== 'exist') {
+      for (let i = 0; i < columns.length; i++) {
+        let subParts: string[] = splitterFunc(columns[i]);
         subParts.forEach((amino, index) => {
-          let color = monomers.has(amino) ? 'red' : grayColor;
-          g.fillStyle = undefinedColor;
-          let last = index === subParts.length - 1;
-          x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, '/', last);
+          //@ts-ignore
+          let textSizeWidth = g.measureText(monomerToShortFunction(amino, maxLengthOfMonomer));
+          //@ts-ignore
+          if (textSizeWidth.width > (maxLengthWords[index] ?? 0)) {
+            //@ts-ignore
+            maxLengthWords[index] = textSizeWidth.width;
+          }
         });
-        g.restore();
-        return;
       }
+      gridCell.cell.column.temp = maxLengthWords;
+      gridCell.cell.column.setTag('.calculatedCellRender', 'exist');
     } else {
-      const [type, subtype, paletteType] = gridCell.cell.column.getTag(DG.TAGS.UNITS).split(':');
-      w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-      g.save();
-      g.beginPath();
-      g.rect(x, y, w, h);
-      g.clip();
-      g.font = '12px monospace';
-      g.textBaseline = 'top';
-      const s: string = cell.value ?? '';
-
-      //TODO: can this be replaced/merged with splitSequence?
-      const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
-
-      const palette = getPalleteByType(paletteType);
-
-      const separator = gridCell.cell.column.getTag('separator') ?? '';
-      const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, gridCell.cell.column.getTag('separator'));
-
-      const subParts: string[] = splitterFunc(cell.value);
-      // console.log(subParts);
-      let x1 = x;
-      let color = undefinedColor;
-      subParts.forEach((amino, index) => {
-        color = palette.get(amino);
-        g.fillStyle = undefinedColor;
-        let last = index === subParts.length - 1;
-        x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last);
-      });
-
-      g.restore();
-      return;
+      maxLengthWords = gridCell.cell.column.temp;
     }
+
+    const subParts: string[] = splitterFunc(cell.value);
+    let x1 = x;
+    let color = undefinedColor;
+    // get max length word in subParts
+    let tagUnits = gridCell.cell.column.getTag(DG.TAGS.UNITS);
+    let drawStyle = 'classic';
+    if (tagUnits.includes('MSA')) {
+      drawStyle = 'msa';
+    }
+    subParts.forEach((amino, index) => {
+      color = palette.get(amino);
+      g.fillStyle = undefinedColor;
+      let last = index === subParts.length - 1;
+      x1 = printLeftOrCentered(x1, y, w, h, g, monomerToShortFunction(amino, maxLengthOfMonomer), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell);
+    });
+
+    g.restore();
+    return;
   }
 }
 
+export class MonomerCellRenderer extends DG.GridCellRenderer {
+  get name(): string {return 'MonomerCR';}
 
-export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
-  get name(): string {return 'aminoAcidsCR';}
-
-  get cellType(): string {return C.SEM_TYPES.AMINO_ACIDS;}
+  get cellType(): string {return C.SEM_TYPES.MONOMER;}
 
   get defaultHeight(): number {return 15;}
 
@@ -256,10 +241,10 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
   }
 }
 
-export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
-  get name(): string {return 'alignedSequenceDifferenceCR';}
+export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
+  get name(): string {return 'MacromoleculeDifferenceCR';}
 
-  get cellType(): string {return C.SEM_TYPES.ALIGNED_SEQUENCE_DIFFERENCE;}
+  get cellType(): string {return C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;}
 
   get defaultHeight(): number {return 30;}
 
@@ -295,23 +280,28 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
     const separator = gridCell.tableColumn!.tags[C.TAGS.SEPARATOR];
-    const subParts1 = s1.split(separator);
-    const subParts2 = s2.split(separator);
+    const units: string = gridCell.tableColumn!.tags[DG.TAGS.UNITS];
+    const splitter = WebLogo.getSplitter(units, separator);
+    const subParts1 = splitter(s1);
+    const subParts2 = splitter(s2);
     const [text] = processSequence(subParts1);
     const textSize = g.measureText(text.join(''));
     let updatedX = Math.max(x, x + (w - (textSize.width + subParts1.length * 4)) / 2);
     // 28 is the height of the two substitutions on top of each other + space
     const updatedY = Math.max(y, y + (h - 28) / 2);
 
-    const palette = getPalleteByType(gridCell.tableColumn!.tags[C.TAGS.ALPHABET]);
+    let palette: SeqPalette = UnknownSeqPalettes.Color;
+    if (units != 'HELM')
+      palette = getPalleteByType(units.substring(units.length - 2));
+
+    const vShift = 7;
     for (let i = 0; i < subParts1.length; i++) {
       const amino1 = subParts1[i];
       const amino2 = subParts2[i];
       const color1 = palette.get(amino1);
-      const color2 = palette.get(amino2);
 
       if (amino1 != amino2) {
-        const vShift = 7;
+        const color2 = palette.get(amino2);
         const subX0 = printLeftOrCentered(updatedX, updatedY - vShift, w, h, g, amino1, color1, 0, true);
         const subX1 = printLeftOrCentered(updatedX, updatedY + vShift, w, h, g, amino2, color2, 0, true);
         updatedX = Math.max(subX1, subX0);

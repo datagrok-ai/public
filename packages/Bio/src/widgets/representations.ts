@@ -9,6 +9,7 @@ import {getMacroMol} from '../utils/atomic-works';
  *
  * @export
  * @param {DG.Cell} macroMolecule macromolecule cell.
+ * @param {any[]} monomersLibObject
  * @return {Promise<DG.Widget>} Widget.
  */
 export async function representationsWidget(macroMolecule: DG.Cell, monomersLibObject: any[]): Promise<DG.Widget> {

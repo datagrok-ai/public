@@ -35,6 +35,10 @@ export function isMolBlock(s: string | null) {
 /** Cheminformatics-related routines */
 export namespace chem {
 
+  export const SMILES = 'smiles';
+  export const MOLV2000 = 'molv2000';
+  export const SMARTS = 'smarts';
+
   export enum SKETCHER_MODE {
     INPLACE = 'Inplace',
     EXTERNAL = 'External'
@@ -42,71 +46,44 @@ export namespace chem {
 
   /** A common interface that all sketchers should implement */
   export abstract class SketcherBase extends Widget {
-    readonly SMILES: string = 'smiles';
-    readonly SMARTS = 'smarts';
-    readonly MOL = 'mol';
 
+    _sketcher: any;
     onChanged: Subject<any> = new Subject<any>();
-    _smiles: string;
-    _smarts: string;
-    _molFile: string;
-    _mode: string;
+    host?: Sketcher;
 
     constructor() {
       super(ui.box());
-
-      this._smiles = this.addProperty('smiles', TYPE.STRING);
-      this._smarts = this.addProperty('smarts', TYPE.STRING);
-      this._molFile = this.addProperty('molFile', TYPE.STRING);
-      this._mode = this.addProperty('mode', TYPE.STRING, SKETCHER_MODE.EXTERNAL, { choices: [ SKETCHER_MODE.EXTERNAL, SKETCHER_MODE.INPLACE ] });
     }
 
     /** SMILES representation of the molecule */
     get smiles(): string {
-      return this._smiles;
+      return this.host!._smiles;
     }
 
-    set smiles(s: string) {
-      this._smiles = s;
+    set smiles(s: string) { }
+
+    /** MolFile representation of the molecule */
+    get molFile(): string {
+      return this.host!._molfile;
     }
+
+    set molFile(s: string) { }    
+
+    /** SMARTS query */
+    async getSmarts(): Promise<string> {
+      return this.host!._smarts;
+    }
+
+    set smarts(s: string) { }
+
 
     get supportedExportFormats(): string[] {
       return [];
     }
 
-    async exportStructure(_format: string): Promise<string> {
-      return 'dummy';
-    }
-
-    /** SMARTS query */
-    async getSmarts(): Promise<string> {
-      return this.exportStructure('smarts');
-    }
-
-    setSmarts(s: string) {
-      this._smarts = s;
-    }
-
-    /** MolFile representation of the molecule */
-    get molFile(): string {
-      return this._molFile;
-    }
-
-    set molFile(s: string) {
-      this._molFile = s;
-    }
-
-    /** Sketcher mode */
-    get mode(): string {
-      return this._mode;
-    }
-
-    set mode(s: string) {
-      this._mode = s;
-    }
-
     /** Override to provide custom initialization. At this point, the root is already in the DOM. */
-    async init() {
+    async init(host: Sketcher) {
+      this.host = host;
     }
   }
 
@@ -123,74 +100,105 @@ export namespace chem {
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
     selectedSketcherName?: string = '';
+    sketcherCreated = new Subject<boolean>();
 
     /** Whether the currently drawn molecule becomes the current object as you sketch it */
     syncCurrentObject: boolean = true;
 
     listeners: Function[] = [];
-
-    _smiles: string = '';
-    _molFile: string = '';
-    _smarts: string = '';
     _mode = SKETCHER_MODE.INPLACE;
+    _smiles = '';
+    _molfile = '';
+    _smarts = '';
+    unitsBeforeInit = '';
 
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
-
-    getMode(): string {
-      return this.sketcher ? this.sketcher.mode : this._mode;
-    }
-
-    setMode(x: SKETCHER_MODE) {
-      this._mode = x;
-      if (this.sketcher != null)
-        this.sketcher!.mode = x;
-    }
+    inplaceSketcherDiv: HTMLDivElement|null = null;
 
     getSmiles(): string {
-      return this.sketcher ? this.sketcher.smiles : this._smiles;
+      let returnConvertedSmiles = () => { // in case getter is called before sketcher initialized
+        if(this._molfile) {
+          this._smiles = chem.convert(this._molfile, 'mol', 'smiles');
+          return this._smiles;
+        } else {
+          return this._smarts; //to do - convert from smarts to smiles
+        }
+      }
+      return this.sketcher && this.sketcher._sketcher ? this.sketcher.smiles : !this._smiles ? returnConvertedSmiles() : this._smiles;
     }
 
-    setSmiles(x: string) {
+    setSmiles(x: string): void {
       this._smiles = x;
-      this._smarts = x;
-      this._molFile = convert(x, 'smiles', 'mol');
-      if (this.sketcher != null)
-        this.sketcher!.smiles = x;
+      this.sketcher && this.sketcher._sketcher ? this.sketcher!.smiles = x : this.unitsBeforeInit = SMILES;
       this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
     getMolFile(): string {
-      return this.sketcher ? this.sketcher.molFile : this._molFile;
+      let returnConvertedMolfile = () => { // in case getter is called before sketcher initialized
+        if(this._smiles) {
+          this._molfile = chem.convert(this._smiles, 'smiles', 'mol');
+          return this._molfile;
+        } else {
+          return this._smarts; //to do - convert from smarts to molfile
+        }
+      }
+      return this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : !this._molfile ? returnConvertedMolfile() : this._molfile;
     }
 
-    setMolFile(x: string) {
-      this._molFile = x;
-      this._smiles = convert(x, 'mol', 'smiles');
-
-      if (this.sketcher != null)
-        this.sketcher!.molFile = x;
+    setMolFile(x: string): void {
+      this._molfile = x;
+      this.sketcher && this.sketcher._sketcher ? this.sketcher!.molFile = x : this.unitsBeforeInit = MOLV2000;
       this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
-    get isEmpty(): boolean {
-      return (this.getSmiles() == null || this.getSmiles() == '') &&
-        (this.getMolFile() == null || this.getMolFile() == '' || this.getMolFile().split("\n")[3].trimStart()[0] === '0');
+    async getSmarts(): Promise<string | null> {
+      let returnConvertedSmarts = async() => { // in case getter is called before sketcher initialized
+        if(this._smiles) {
+          const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this._smiles);
+          this._smarts = mol.get_smarts();
+          mol?.delete();
+          return this._smarts;
+        } else {
+          const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this._molfile);
+          this._smarts = mol.get_smarts();
+          mol?.delete();
+          return this._smarts;
+        }
+      }
+      return this.sketcher && this.sketcher._sketcher ? await this.sketcher.getSmarts() : !this._smarts ? await returnConvertedSmarts() : this._smarts;
     }
 
-    /** Sets the molecule, supports either SMILES or MOLBLOCK formats */
-    setMolecule(molString: string) {
-      if (isMolBlock(molString))
-        this.setMolFile(molString)
-      else
-        this.setSmiles(molString);
+    setSmarts(x: string): void {
+      this._smarts = x;
+      this.sketcher ? this.sketcher!.smarts = x : this.unitsBeforeInit = SMARTS;
+      this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
     get supportedExportFormats(): string[] {
       return this.sketcher ? this.sketcher.supportedExportFormats : [];
     }
 
-    async getSmarts(): Promise<string> {
-      return this.sketcher ? await this.sketcher.getSmarts() : '';
+    isEmpty(): boolean {
+      const molFile = this.getMolFile();
+      return (molFile == null || molFile == '' || molFile.split("\n")[3].trimStart()[0] === '0');
+    }
+
+    /** Sets the molecule, supports either SMILES or MOLBLOCK formats */
+    async setMolecule(molString: string, substructure: boolean = false) {
+      if(substructure)
+        this.setSmarts(molString)
+      else if (isMolBlock(molString))
+        this.setMolFile(molString)
+      else {
+        const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molString);
+        if (!mol.has_coords())
+          mol.set_new_coords();
+        mol.normalize_depiction();
+        mol.straighten_depiction();
+        this._molfile = mol.get_molblock();
+        this.setMolFile(this._molfile);
+        mol?.delete();
+      }
     }
 
     setChangeListenerCallback(callback: () => void) {
@@ -216,15 +224,19 @@ export namespace chem {
     constructor(mode?: SKETCHER_MODE) {
       super(ui.div());
       if (mode)
-        this.setMode(mode);
+        this._mode = mode;
       this.root.append(ui.div([ ui.divText('') ]));
+      this.sketcherCreated.subscribe(() => {
+        const molecule = this.unitsBeforeInit === SMILES ? this._smiles : this.unitsBeforeInit === MOLV2000 ? this._molfile : this._smarts;
+        this.setMolecule(molecule, this.unitsBeforeInit === SMARTS);
+      })
       setTimeout(() => this.createSketcher(), 100);
     }
 
     /** In case sketcher is opened in filter panel use EXTERNAL mode*/
     setExternalModeForSubstrFilter() {
       if (this.root.closest('.d4-filter'))
-        this.setMode(SKETCHER_MODE.EXTERNAL);
+        this._mode = SKETCHER_MODE.EXTERNAL;
     }
 
     createSketcher() {
@@ -242,14 +254,14 @@ export namespace chem {
     }
 
     updateExtSketcherContent(extSketcherDiv: HTMLElement) {
-      if (!this.isEmpty && extSketcherDiv.parentElement) {
+      if (!(this.isEmpty()) && extSketcherDiv.parentElement) {
         const width = extSketcherDiv.parentElement!.clientWidth;
         const height = width / 2;
         ui.empty(this.extSketcherDiv);
         let canvas = ui.canvas(width, height);
         canvas.style.height = '100%';
         canvas.style.width = '100%';
-        canvasMol(0, 0, width, height, canvas, this.getMolFile())
+        canvasMol(0, 0, width, height, canvas, this.getMolFile()!)
           .then((_) => {
             ui.empty(this.extSketcherDiv);
             this.extSketcherDiv.append(canvas);
@@ -267,17 +279,18 @@ export namespace chem {
       ui.tooltip.bind(this.extSketcherDiv, 'Click to edit filter');
 
       this.extSketcherDiv.addEventListener('mousedown', () => {
+
         let savedMolFile = this.getMolFile();
         savedMolFile = savedMolFile == '' ?  WHITE_MOLBLOCK : savedMolFile;
 
         let dlg = ui.dialog();
-        dlg.add(this.createInplaceModeSketcher())
+        dlg.add(this.createInplaceModeSketcher(savedMolFile!))
           .onOK(() => {
             this.updateExtSketcherContent(this.extSketcherDiv);
-            Sketcher.addRecent(savedMolFile);
+            Sketcher.addRecent(savedMolFile!);
           })
           .onCancel(() => {
-            this.setMolFile(savedMolFile);
+            this.setMolFile(savedMolFile!);
           })
           .show();
       });
@@ -290,7 +303,7 @@ export namespace chem {
       return this.extSketcherDiv;
     }
 
-    createInplaceModeSketcher(): HTMLElement {
+    createInplaceModeSketcher(molStr?: string): HTMLElement {
       const molInputDiv = ui.div();
       grok.dapi.userDataStorage.getValue(STORAGE_NAME, KEY, true).then((sname: string) => {
         let funcs = Func.find({ tags: [ 'moleculeSketcher' ] });
@@ -344,29 +357,33 @@ export namespace chem {
 
       let optionsIcon = ui.iconFA('bars', () => {
         Menu.popup()
-          .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
-          .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
+          .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))
+          .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.getMolFile()))
           .group('Recent')
             .items(Sketcher.getRecent().map((m) => ui.tools.click(svgMol(m, 100, 70), () => this.setMolecule(m))), () => { })
           .endGroup()
           .group('Favorites')
-            .item('Add to Favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
+            .item('Add to Favorites', () => Sketcher.addFavorite(this.getMolFile()))
             .separator()
             .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 100, 70), () => this.setMolecule(m))), () => { })
           .endGroup()
           .separator()
-          .items(funcs.map((f) => f.friendlyName), (name: string) => this.setSketcher(name),
+          .items(funcs.map((f) => f.friendlyName), (name: string) => {
+            this.setSketcher(name, this.getMolFile())
+          },
             { isChecked: (item) => item === this.selectedSketcherName, toString: item => item })
           .show();
       });
       $(optionsIcon).addClass('d4-input-options');
         molInputDiv.append(ui.div([ this.molInput, optionsIcon ], 'grok-sketcher-input'));
-        this.setSketcher(fr!.friendlyName);
+        this.setSketcher(fr!.friendlyName, molStr);
       });
 
-      return ui.div([
+      this.inplaceSketcherDiv = ui.div([
         molInputDiv,
         this.host]);
+
+      return this.inplaceSketcherDiv;
     }
 
     static readonly FAVORITES_KEY = 'chem-molecule-favorites';
@@ -395,14 +412,13 @@ export namespace chem {
     detach() {
       this.changedSub?.unsubscribe();
       this.sketcher?.detach();
-      super.detach();
+      super.detach(); 
     }
 
-    async setSketcher(name: string) {
+    async setSketcher(name: string, molString?: string) {
       ui.empty(this.host);
+      ui.setUpdateIndicator(this.host, true);
       this.changedSub?.unsubscribe();
-
-      if (this.sketcher?.molFile) this._molFile = this.sketcher?.molFile;
 
       let funcs = Func.find({tags: ['moleculeSketcher']});
       let f = funcs.find(e => e.friendlyName == name || e.name == name);
@@ -415,21 +431,18 @@ export namespace chem {
       this.host!.style.minHeight = '400px';
       this.host.appendChild(this.sketcher!.root);
       await ui.tools.waitForElementInDom(this.root);
-      await this.sketcher!.init();
+      await this.sketcher!.init(this);
+      ui.setUpdateIndicator(this.host, false);
+      molString ? this.setMolecule(molString) : this.sketcherCreated.next(true);
       this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
         this.onChanged.next(null);
         for (let callback of this.listeners)
           callback();
-        if (this.syncCurrentObject)
-          grok.shell.o = SemanticValue.fromValueType(this.sketcher!.molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
+        if (this.syncCurrentObject) {
+          const molFile = this.getMolFile();
+          grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
+        }
       });
-
-      if (!Utils.isEmpty(this._smarts))
-        this.sketcher!.setSmarts(this._smarts);
-      else if (!Utils.isEmpty(this._molFile))
-        this.sketcher!.molFile = this._molFile;
-      else if (!Utils.isEmpty(this._smiles))
-        this.sketcher!.smiles = this._smiles;
     }
   }
 
@@ -482,15 +495,12 @@ export namespace chem {
    * @returns {Promise<BitSet>}
    * */
   export async function searchSubstructure(column: Column, pattern: string = '', settings: {
-    substructLibrary?: boolean;
     molBlockFailover?: string;
   } = {}): Promise<BitSet> {
 
     return (await grok.functions.call('Chem:searchSubstructure', {
       'molStringsColumn': column,
       'molString': pattern,
-      'substructLibrary':
-        !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary),
       'molBlockFailover': (settings.hasOwnProperty('molBlockFailover') ? settings.molBlockFailover : '') ?? ''
     })).get(0);
   }
@@ -583,7 +593,7 @@ export namespace chem {
    * @returns {Promise<BitSet>}
    * */
   export async function substructureSearch(column: Column, molecule: string = '', settings: {
-    substructLibrary: boolean;
+    molBlockFailover?: string | undefined;
   }): Promise<BitSet> {
     return searchSubstructure(column, molecule, settings);
   }

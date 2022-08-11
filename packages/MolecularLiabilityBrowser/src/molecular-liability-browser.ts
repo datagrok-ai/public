@@ -13,7 +13,11 @@ import {TwinPviewer} from './viewers/twin-p-viewer';
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {_startInit} from './package';
 import {MlbEvents} from './const';
+import {Tree3Browser} from './tree3';
 
+import {_package} from './package';
+
+type FilterDesc = { type: string, column?: string, label?: string, [p: string]: any };
 
 export class MolecularLiabilityBrowser {
   dataLoader: DataLoader;
@@ -50,10 +54,14 @@ export class MolecularLiabilityBrowser {
 
   mlbView: DG.TableView = null;
   mlbGrid: DG.Grid = null;
+  mlbGridDn: DG.DockNode = null;
+  filterHost: HTMLElement = null;
+  filterHostDn: DG.DockNode = null;
   filterView: DG.FilterGroup = null;
   filterViewDn: DG.DockNode = null;
   regionsViewer: VdRegionsViewer = null;
   treeBrowser: TreeBrowser = null;
+  tree3Browser: Tree3Browser = null;
   twinPviewer: TwinPviewer;
 
   reloadIcon: HTMLElement = null;
@@ -72,6 +80,7 @@ export class MolecularLiabilityBrowser {
 
   async init(urlParams: URLSearchParams) {
     try {
+      //remove
       this.urlParams = urlParams;
 
       this.pf = this.dataLoader.filterProperties;
@@ -102,16 +111,39 @@ export class MolecularLiabilityBrowser {
         return this.cdrChoices.includes(cdrUrlParam) ? cdrUrlParam : this.cdrChoices[0];
       })();
 
+      this.treeName = ((): string => {
+        const treeUrlParam = this.urlParams.get('tree');
+        return treeUrlParam;
+      })();
+
       this.vids = this.dataLoader.vids;
       this.vidsObsPTMs = this.dataLoader.vidsObsPtm;
 
       if (!this.vid)
         this.vid = this.vids[0];
 
+      let t1;
+      let t2;
+
+      t1 = Date.now();
       await this.loadData();
+      t2 = Date.now();
+      console.debug(`MLB: Data loaded, ${((t2 - t1) / 1000).toString()} s`);
+
+      t1 = Date.now();
       await this.setView();
-      await this.setViewFilters();
+      t2 = Date.now();
+      console.debug(`MLB: View set, ${((t2 - t1) / 1000).toString()} s`);
+
+      t1 = Date.now();
+      this.setViewFilters();
+      t2 = Date.now();
+      console.debug(`MLB: Filters set, ${((t2 - t1) / 1000).toString()} s`);
+
+      t1 = Date.now();
       await this.setViewTwinPViewer();
+      t2 = Date.now();
+      console.debug(`MLB: TwinP set, ${((t2 - t1) / 1000).toString()} s`);
     } catch (err: unknown) {
       if (err instanceof Error)
         console.error(err);
@@ -422,8 +454,6 @@ export class MolecularLiabilityBrowser {
 
   /** Sets controls' layout. Called once from init(). */
   async setView(): Promise<void> {
-    console.debug(`MLB: MolecularLiabilityBrowser.setView() start ${((Date.now() - _startInit) / 1000).toString()} s`);
-
     grok.shell.windows.showProperties = false;
     grok.shell.windows.showHelp = false;
     this.setRibbonPanels();
@@ -471,16 +501,11 @@ export class MolecularLiabilityBrowser {
     // set width for columns of properties filter
     for (const pfName of this.pf.names)
       this.mlbGrid.col(pfName).width = 150;
-
-    console.debug(`MLB: MolecularLiabilityBrowser.setView() end ${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
   setViewFilters(): void {
-    console.debug(`MLB: MolecularLiabilityBrowser.setViewFilters() start, ` +
-      `${((Date.now() - _startInit) / 1000).toString()} s`);
-    const filterList = MolecularLiabilityBrowser.buildFilterList(this.pf);
-
     // Recreate filterView on every destroyView/buildView
+    // const filterList: FilterDesc[] = MolecularLiabilityBrowser.buildFilterList(this.pf);
     // this.filterView = this.mlbView.filters({filters: filterList}) as DG.FilterGroup;
     // this.filterViewDn = this.mlbView.dockManager.dock(this.filterView, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.25);
 
@@ -515,57 +540,65 @@ export class MolecularLiabilityBrowser {
         }
       }
     });
-
-    console.debug(`MLB: MolecularLiabilityBrowser.setViewFilters() end, ` +
-      `${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
-  private static buildFilterList(pf: FilterPropertiesType) {
-    const filterList: { type: string, column?: string, label?: string }[] = [];
+  private static buildFilterList(pf: FilterPropertiesType, cdrName: string): FilterDesc[] {
+    const filterList: FilterDesc[] = [];
 
     for (const pfName of pf.names)
       filterList.push({type: 'histogram', column: pfName});
 
-    filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter'});
+    filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter', currentCdr: cdrName});
     return filterList;
   }
 
   async setViewTwinPViewer(): Promise<void> {
-    console.debug('MLB: MolecularLiabilityBrowser.setViewTwinPViewer() start, ' +
-      `${((Date.now() - _startInit) / 1000).toString()} s`);
+    // const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
+    //   await Promise.all([
+    //     this.dataLoader.loadJson(this.vid),
+    //     this.dataLoader.loadPdb(this.vid),
+    //     this.dataLoader.loadRealNums(this.vid),
+    //     ((): Promise<ObsPtmType> => {
+    //       let res: Promise<ObsPtmType> = null;
+    //       if (this.vidsObsPTMs.includes(this.vid))
+    //         res = this.dataLoader.loadObsPtm(this.vid);
+    //       return res;
+    //     })()
+    //   ]));
+    const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]:
+      [JsonType, string, NumsType, ObsPtmType] = await this.dataLoader.load3D(this.vid);
 
-    const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
-      await Promise.all([
-        this.dataLoader.loadJson(this.vid),
-        this.dataLoader.loadPdb(this.vid),
-        this.dataLoader.loadRealNums(this.vid),
-        ((): Promise<ObsPtmType> => {
-          let res: Promise<ObsPtmType> = null;
-          if (this.vidsObsPTMs.includes(this.vid))
-            res = this.dataLoader.loadObsPtm(this.vid);
-          return res;
-        })()
-      ]));
+    const hNumberingStr = jsonNums.heavy_numbering;
+    const lNumberingStr = jsonNums.light_numbering;
 
-    console.debug('MLB: MolecularLiabilityBrowser.setViewTwinPViewer() data loaded, ' +
-      `${((Date.now() - _startInit) / 1000).toString()} s`);
+    const hNumbering = [];
+    const lNumbering = [];
+
+    for (let i = 0; i < hNumberingStr.length; i++)
+      hNumbering.push(parseInt(hNumberingStr[i].replaceAll(' ', '')));
+
+    for (let i = 0; i < lNumberingStr.length; i++)
+      lNumbering.push(parseInt(lNumberingStr[i].replaceAll(' ', '')));
+
+    jsonStr['map_H'] = hNumbering;
+    jsonStr['map_L'] = lNumbering;
 
     this.twinPviewer = new TwinPviewer(this.dataLoader);
     this.twinPviewer.init(jsonStr, pdbStr, jsonStrObsPtm);
 
-    console.debug('MLB: MolecularLiabilityBrowser.setViewTwinPViewer() init, ' +
-      `${((Date.now() - _startInit) / 1000).toString()} s`);
-
     await this.twinPviewer.open(this.mlbView);
     await this.twinPviewer.show(this.mlbView);
 
-    console.debug('MLB: MolecularLiabilityBrowser.setViewTwinPViewer() show, ' +
-      `${((Date.now() - _startInit) / 1000).toString()} s`);
+    grok.events.fireCustomEvent(MlbEvents.CdrChanged, this.cdrName);
   }
 
   async destroyView(): Promise<void> {
     console.debug('MLB: MolecularLiabilityBrowser.destroyView() start, ' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
+
+    this.viewSubs.forEach((sub) => sub.unsubscribe());
+    this.viewSubs = [];
+
     // DG.TableView.dataFrame cannot be null
     // if (this.mlbView !== null)
     //    this.mlbView.dataFrame = null;
@@ -574,15 +607,13 @@ export class MolecularLiabilityBrowser {
 
     if (this.filterView !== null) {
       try {
-        this.filterView.removeFromView();
-        this.filterViewDn.detachFromParent();
-        this.filterView = null;
-        this.filterViewDn = null;
-      } catch {}
+        this.filterView.close();
+      } catch { /* skip the erroneous exception /**/ }
+      this.filterView.removeFromView();
+      this.filterViewDn.detachFromParent();
+      this.filterView = null;
+      this.filterViewDn = null;
     }
-
-    this.viewSubs.forEach((sub) => sub.unsubscribe());
-    this.viewSubs = [];
 
     this.idMapping = {};
     this.allIds = null;
@@ -609,6 +640,11 @@ export class MolecularLiabilityBrowser {
         this.mlbDf.name = 'Molecular Liability Browser'; // crutch for window/tab name support
         this.mlbView = grok.shell.addTableView(this.mlbDf);
         this.mlbGrid = this.mlbView.grid;
+
+        this.mlbGridDn = this.mlbView.dockManager.findNode(this.mlbGrid.root);
+        this.filterHost = ui.box();
+        this.filterHostDn = this.mlbView.dockManager.dock(
+          this.filterHost, DG.DOCK_TYPE.LEFT, this.mlbGridDn, '', 0.18);
       } else {
         //this.mlbView.dataFrame = this.mlbDf;
         this.mlbGrid.dataFrame = this.mlbDf;
@@ -616,22 +652,38 @@ export class MolecularLiabilityBrowser {
         const k = 11;
       }
 
-      const filterList = MolecularLiabilityBrowser.buildFilterList(this.pf);
+      await this.dataLoader.refDfPromise;
+      const filterList: FilterDesc[] = MolecularLiabilityBrowser.buildFilterList(this.pf, this.cdrName);
       this.filterView = this.mlbView.filters({filters: filterList}) as DG.FilterGroup;
-      this.filterViewDn = this.mlbView.dockManager.dock(this.filterView, DG.DOCK_TYPE.LEFT,
-        this.mlbView.dockNode, 'Filters', 0.18);
+      this.filterViewDn = this.mlbView.dockManager.dock(
+        this.filterView, DG.DOCK_TYPE.FILL, this.filterHostDn, 'Filter in box');
+      // const newFilterViewDn: DG.DockNode = this.mlbView.dockManager.dock(newFilterView, DG.DOCK_TYPE.LEFT,
+      //   this.mlbGridDn, 'Filters', 0.18);
       this.filterView.dataFrame = this.mlbDf;
 
       if (this.treeBrowser === null) {
         this.treeBrowser = (await this.treeDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
-        this.mlbView.dockManager.dock(this.treeBrowser.root, DG.DOCK_TYPE.FILL, null, 'Clone');
-        await this.treeBrowser.setData(this.treeDf, this.mlbDf);
+        this.mlbView.dockManager.dock(this.treeBrowser.root, DG.DOCK_TYPE.FILL, this.mlbGridDn, 'Clone');
+        //TODO: check the await
+        await this.treeBrowser.setData(this.treeDf, this.mlbDf);// fires treeDfOnCurrentRowChanged
         //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
       } else {
+        //TODO: check the await
         await this.treeBrowser.setData(this.treeDf, this.mlbDf);
       }
 
       this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
+
+      // if (this.tree3Browser === null) {
+      //   //let path = _package.webRoot +
+      //   //   'src/examples/AB_AG_data_PSMW30_db-pass_parse-select_clone-pass_germ-pass_igphyml-pass.csv';
+      //   const treeCsv = await _package.files.readAsText('tree3.csv');
+      //   const df = DG.DataFrame.fromCsv(treeCsv);
+      //   this.tree3Browser = new Tree3Browser();
+      //   await this.tree3Browser.init(df, this.mlbView);
+      // } else {
+      //   //await this.treeBrowser.setData(this.treeDf, this.mlbDf);
+      // }
 
       if (this.treeGrid === null) {
         this.treeGrid = this.treeDf.plot.grid({
@@ -650,14 +702,18 @@ export class MolecularLiabilityBrowser {
       if (this.regionsViewer === null) {
         const tempDf = DG.DataFrame.fromObjects([{}]);
         this.regionsViewer = (await tempDf.plot.fromType('VdRegions')) as unknown as VdRegionsViewer;
-        await this.regionsViewer.setDf(this.mlbDf, this.regions);
-        this.mlbView.dockManager.dock(this.regionsViewer.root, DG.DOCK_TYPE.DOWN, null, 'Regions', 0.3);
+        //TODO: check the await
+        await this.regionsViewer.setDf(this.mlbDf, this.regions).then(() => {
+          this.mlbView.dockManager.dock(this.regionsViewer.root, DG.DOCK_TYPE.DOWN, this.mlbGridDn, 'Regions', 0.3);
+        });
       } else {
         // this.regionsViewer.numberingScheme = this.schemeName;
         // this.regionsViewer.setOptions({numberingScheme: this.schemeName});
 
         // TODO: Set all required props before setDf (or together with)
+        //TODO: check the await
         await this.regionsViewer.setDf(this.mlbDf, this.regions);
+        this.mlbView.dockManager.dock(this.regionsViewer.root, DG.DOCK_TYPE.DOWN, this.mlbGridDn, 'Regions', 0.3);
       }
 
       this.updateView();
@@ -690,8 +746,20 @@ export class MolecularLiabilityBrowser {
         gridColumn.visible = false;
     }
 
+    this.updateViewTree();
+
     console.debug('MLB: MolecularLiabilityBrowser.updateView() end,' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
+  }
+
+  updateViewTree() {
+    const treeIndex = this.treeDf.col('CLONE').toList().findIndex((v) => v == this.treeName);
+    if (this.treeDf.rowCount > 0) {
+      const treeDfIndex = treeIndex !== -1 ? treeIndex : 0;
+      this.treeDf.currentRowIdx = treeDfIndex;
+      this.treeBrowser.selectTree(treeDfIndex);
+      this.treeName = this.treeDf.get('CLONE', treeDfIndex);
+    }
   }
 
   onMLBGridCurrentRowChanged(args: any) {
@@ -753,10 +821,7 @@ export class MolecularLiabilityBrowser {
     this.urlParams.set('tree', this.treeName);
     this.mlbView.path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
 
-    const treeIndex = this.treeDf.col('CLONE').toList().findIndex((v) => v == this.treeName);
-    this.treeDf.currentRowIdx = treeIndex;
-
-    this.treeBrowser.selectTree(treeIndex);
+    this.updateViewTree();
   }
 
   onVidChanged(vid: string): void {
@@ -829,18 +894,20 @@ export class MolecularLiabilityBrowser {
     //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
     const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
-    const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
-      await Promise.all([
-        this.dataLoader.loadJson(this.vid),
-        this.dataLoader.loadPdb(this.vid),
-        this.dataLoader.loadRealNums(this.vid),
-        ((): Promise<ObsPtmType> => {
-          let res: Promise<ObsPtmType> = null;
-          if (this.vidsObsPTMs.includes(this.vid))
-            res = this.dataLoader.loadObsPtm(this.vid);
-          return res;
-        })()
-      ]));
+    // const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
+    //   await Promise.all([
+    //     this.dataLoader.loadJson(this.vid),
+    //     this.dataLoader.loadPdb(this.vid),
+    //     this.dataLoader.loadRealNums(this.vid),
+    //     ((): Promise<ObsPtmType> => {
+    //       let res: Promise<ObsPtmType> = null;
+    //       if (this.vidsObsPTMs.includes(this.vid))
+    //         res = this.dataLoader.loadObsPtm(this.vid);
+    //       return res;
+    //     })()
+    //   ]));
+    const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]:
+      [JsonType, string, NumsType, ObsPtmType] = await this.dataLoader.load3D(this.vid);
 
     const hNumberingStr = jsonNums.heavy_numbering;
     const lNumberingStr = jsonNums.light_numbering;
@@ -864,14 +931,11 @@ export class MolecularLiabilityBrowser {
     pi.close();
   };
 
-  async changeTree() {
-    const k = 11;
-  }
-
   // -- Handle controls' events --
 
   treeDfOnCurrentRowChanged(): void {
-    this.treePopup.hidden = true;
+    if (this.treePopup)
+      this.treePopup.hidden = true;
 
     const treeName = this.treeDf.get('CLONE', this.treeDf.currentRowIdx);
     this.onTreeChanged(treeName);

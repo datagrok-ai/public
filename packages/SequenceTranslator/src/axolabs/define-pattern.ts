@@ -61,12 +61,18 @@ function translateSequence(
   startModification: DG.InputBase,
   endModification: DG.InputBase,
   firstPtoExist: boolean): string {
-  let counter: number = -1;
+  let i: number = -1;
   let mainSequence = sequence.replace(/[AUGC]/g, function(x: string) {
-    counter++;
+    i++;
     const indexOfSymbol = axolabsMap['RNA']['symbols'].indexOf(x);
-    const symbol = axolabsMap[bases[counter].value]['symbols'][indexOfSymbol];
-    return (ptoLinkages[counter].value) ? symbol + 's' : symbol;
+    let symbol = axolabsMap[bases[i].value]['symbols'][indexOfSymbol];
+    if (bases[i].value.slice(-3) == '(o)') {
+      if (i < sequence.length / 2 && bases[i + 1].value.slice(-3) != '(o)')
+        symbol = symbol + x + 'f';
+      else if (i > sequence.length / 2 && bases[i - 1].value.slice(-3) != '(o)')
+        symbol = x + 'f' + symbol;
+    }
+    return (ptoLinkages[i].value) ? symbol + 's' : symbol;
   });
   if (mainSequence.slice(0, 5).split('mU').length == 3)
     mainSequence = '(uu)' + mainSequence.slice(4);
@@ -239,8 +245,9 @@ export function defineAxolabsPattern() {
   }
 
   function updateInputExamples() {
-    ssInputExample.value = generateExample(ssLength.value!, sequenceBase.value!);
-    if (createAsStrand.value)
+    if (inputSsColumn.value == '')
+      ssInputExample.value = generateExample(ssLength.value!, sequenceBase.value!);
+    if (createAsStrand.value && inputAsColumn.value == '')
       asInputExample.value = generateExample(asLength.value!, sequenceBase.value!);
   }
 
@@ -332,7 +339,7 @@ export function defineAxolabsPattern() {
   }
 
   function checkWhetherAllValuesInColumnHaveTheSameLength(colName: string): boolean {
-    const col = tables.value!.columns.byName(colName);
+    const col = tables.value!.getCol(colName);
     let allLengthsAreTheSame = true;
     for (let i = 1; i < col.length; i++) {
       if (col.get(i - 1).length != col.get(i).length && col.get(i).length != 0) {
@@ -509,26 +516,24 @@ export function defineAxolabsPattern() {
   const asLength = ui.intInput('AS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
   const asLengthDiv = ui.div([asLength.root]);
 
-  function validateSsColumn(colName: string) {
+  function validateSsColumn(colName: string): void {
     const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
-    const firstSequence = tables.value!.columns.byName(colName).get(0);
+    const firstSequence = tables.value!.getCol(colName).get(0);
     if (allLengthsAreTheSame && firstSequence.length != ssLength.value)
-      ssLength.value = tables.value!.columns.byName(colName).get(0).length;
+      ssLength.value = tables.value!.getCol(colName).get(0).length;
     ssInputExample.value = firstSequence;
   }
 
-  function validateAsColumn(colName: string) {
+  function validateAsColumn(colName: string): void {
     const allLengthsAreTheSame: boolean = checkWhetherAllValuesInColumnHaveTheSameLength(colName);
-    const firstSequence = tables.value!.columns.byName(colName).get(0);
+    const firstSequence = tables.value!.getCol(colName).get(0);
     if (allLengthsAreTheSame && firstSequence.length != asLength.value)
-      asLength.value = tables.value!.columns.byName(colName).get(0).length;
-    asLengthDiv.innerHTML = '';
-    asLengthDiv.append(asLength.root);
+      asLength.value = tables.value!.getCol(colName).get(0).length;
     asInputExample.value = firstSequence;
   }
 
   function validateIdsColumn(colName: string) {
-    const col = tables.value!.columns.byName(colName);
+    const col = tables.value!.getCol(colName);
     if (col.type != DG.TYPE.INT)
       grok.shell.error('Column should contain integers only');
     else if (col.categories.filter((e) => e != '').length < col.toList().filter((e) => e != '').length) {
@@ -669,8 +674,8 @@ export function defineAxolabsPattern() {
       dialog
         .add(ui.divText('Length of sequences in columns doesn\'t match entered length. Update length value?'))
         .addButton('YES', () => {
-          ssLength.value = tables.value!.columns.byName(inputSsColumn.value!).getString(0).length;
-          asLength.value = tables.value!.columns.byName(inputAsColumn.value!).getString(0).length;
+          ssLength.value = tables.value!.getCol(inputSsColumn.value!).getString(0).length;
+          asLength.value = tables.value!.getCol(inputAsColumn.value!).getString(0).length;
           dialog.close();
         })
         .show();
@@ -691,10 +696,7 @@ export function defineAxolabsPattern() {
     }
   });
 
-  const ssInputExample = ui.textInput('Sense Strand', generateExample(ssLength.value!, sequenceBase.value!), () => {
-    ssOutputExample.value = translateSequence(ssInputExample.value, ssBases, ssPtoLinkages,
-      ssFiveModification, ssThreeModification, firstSsPto.value!);
-  });
+  const ssInputExample = ui.textInput('Sense Strand', generateExample(ssLength.value!, sequenceBase.value!));
   const ssOutputExample = ui.textInput(' ', translateSequence(
     ssInputExample.value, ssBases, ssPtoLinkages, ssThreeModification, ssFiveModification, firstSsPto.value!));
   (ssInputExample.input as HTMLElement).style.resize = 'none';
@@ -712,10 +714,7 @@ export function defineAxolabsPattern() {
     ], 'ui-input-options'),
   );
 
-  const asInputExample = ui.textInput('Antisense Strand', generateExample(asLength.value!, sequenceBase.value!), () => {
-    asOutputExample.value = translateSequence(
-      asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstSsPto.value!);
-  });
+  const asInputExample = ui.textInput('Antisense Strand', generateExample(asLength.value!, sequenceBase.value!));
   const asOutputExample = ui.textInput(' ', translateSequence(
     asInputExample.value, asBases, asPtoLinkages, asFiveModification, asThreeModification, firstSsPto.value!));
   (asInputExample.input as HTMLElement).style.resize = 'none';
@@ -759,11 +758,14 @@ export function defineAxolabsPattern() {
     ]),
   ], 'ui-form');
 
+  const downloadButton = ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value,
+    {backgroundColor: 'white'}));
+
   const mainSection = ui.panel([
     ui.block([
       svgDiv,
     ], {style: {overflowX: 'scroll'}}),
-    ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value)),
+    downloadButton,
     isEnumerateModificationsDiv,
     ui.div([
       ui.div([

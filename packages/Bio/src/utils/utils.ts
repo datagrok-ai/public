@@ -14,7 +14,7 @@ export const HELM_CORE_FIELDS = ['symbol', 'molfile', 'rgroups', 'name'];
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
-  const monomerSymbolDict:  { [key: string]: number }= {};
+  const monomerSymbolDict: { [key: string]: number } = {};
   const units = col.tags[DG.TAGS.UNITS];
   const sep = col.getTag('separator');
   const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, sep);
@@ -22,9 +22,9 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   for (let i = 0; i < col.length; ++i) {
     let encodedMonomerStr = '';
     const monomers = splitterFunc(col.get(i));
-    monomers.forEach(m => {
-      if(!monomerSymbolDict[m]) {
-        if(encodeSymbol > MONOMER_ENCODE_MAX) {
+    monomers.forEach((m) => {
+      if (!monomerSymbolDict[m]) {
+        if (encodeSymbol > MONOMER_ENCODE_MAX) {
           grok.shell.error(`Not enougth symbols to encode monomers`);
           return null;
         }
@@ -32,7 +32,7 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
         encodeSymbol++;
       }
       encodedMonomerStr += String.fromCodePoint(monomerSymbolDict[m]);
-    })
+    });
     encodedStringArray.push(encodedMonomerStr);
   }
   return DG.Column.fromStrings('encodedMolecules', encodedStringArray);

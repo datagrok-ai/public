@@ -1,18 +1,10 @@
 import { category, test } from "@datagrok-libraries/utils/src/test";
-import { _testAllTableViewsCreated, _testAllViewsCreated, _testBaselineEndpoint, _testCumulativeEnrollment, _testHysLaw, _testLabChangesBetweenMinMax, _testLabChangesComparedToBaseline, _testLabChangesRelatedToRef, _testLabValuesByVisit, _testOpenApp, _testPatientVisit, _testStudyVisit, _testSurvivalDataframe, _testValidation } from "./utils";
+import { _testBaselineEndpoint, _testCumulativeEnrollment, _testHysLaw, _testLabChangesBetweenMinMax, _testLabChangesComparedToBaseline, _testLabChangesRelatedToRef, _testLabValuesByVisit, _testOpenApp, _testPatientVisit, _testStudyVisit, _testSurvivalDataframe, _testValidation } from "./utils";
 
 category('clinicalCase', () => {
 
     test('clinicalCase.openApp', async () => {
         await _testOpenApp();
-    })
-
-    test('clinicalCase.viewsCreated', async () => {
-        await _testAllViewsCreated();
-    })
-
-    test('clinicalCase.tableViewsCreated', async () => {
-        await _testAllTableViewsCreated();
     })
 
     test('clinicalCase.cumulativeEnrollment', async () => {

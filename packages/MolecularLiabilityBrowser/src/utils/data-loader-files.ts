@@ -45,8 +45,12 @@ export class DataLoaderFiles extends DataLoader {
   private _mutcodes: MutcodesDataType;
   private _ptmMap: PtmMapType;
   private _cdrMap: CdrMapType;
+
+  private _refDfPromise: Promise<void>;
   private _refDf: DG.DataFrame;
+
   private _realNums: any;
+
 
   get schemes(): string[] { return this._schemes; }
 
@@ -65,6 +69,8 @@ export class DataLoaderFiles extends DataLoader {
   get ptmMap(): PtmMapType { return this._ptmMap; }
 
   get cdrMap(): CdrMapType { return this._cdrMap; }
+
+  get refDfPromise(): Promise<void> { return this._refDfPromise; }
 
   get refDf(): DG.DataFrame { return this._refDf; }
 
@@ -159,7 +165,36 @@ export class DataLoaderFiles extends DataLoader {
     this.cache = new MlbDatabase();
     this.cache.init(this._serverListVersionDf);
 
+    //TODO move data to DB, get only usefull VR ids
+    //load ptm in cdr
+    this._refDfPromise = this.cache.getObject<string>(this._files.ptmInCdr,
+      async () => {
+        const t1: number = Date.now();
+        const data: Uint8Array = await grok.dapi.files
+          .readAsBytes(`System:AppData/${this._pName}/${this._files.ptmInCdr}`);
+        const t2: number = Date.now();
+        const txtBase64: string = encodeToBase64(data);
+        const t3: number = Date.now();
+        console.debug('MLB: DataLoaderFiles.init2() refDf ' +
+          `loading bytes ET ${((t2 - t1) / 1000).toString()} s, ` +
+          `encode base64 ET ${((t3 - t2) / 1000).toString()} s`);
+        return txtBase64;
+      })
+      .then((txtBase64: string) => {
+        const t1: number = Date.now();
+        const data: Uint8Array = decodeFromBase64(txtBase64);
+        const t2: number = Date.now();
+        const df: DG.DataFrame = DG.DataFrame.fromByteArray(data);
+        const t3: number = Date.now();
+        console.debug('MLB: DataLoaderFiles.init2() refDf ' +
+          `decode base64 ET ${((t2 - t1) / 1000).toString()} s, ` +
+          `fromByteArray ET ${((t3 - t2) / 1000).toString()} s`);
+        console.debug(`MLB: DataLoaderFiles.init2() set refDf, ${this.fromStartInit()} s`);
+        this._refDf = df;
+      });
+
     await Promise.all([
+      //load numbering schemes
       this.cache.getData<IScheme, string[]>('scheme',
         () => catchToLog<Promise<DG.DataFrame>>(
           'MLB database error \'listSchemes\': ',
@@ -170,6 +205,7 @@ export class DataLoaderFiles extends DataLoader {
         console.debug('MLB: DataLoaderFiles.init2() set schemes, ' + `${this.fromStartInit()} s`);
         this._schemes = value;
       }),
+      //load cdr definition list
       this.cache.getData<ICdr, string[]>('cdr',
         () => catchToLog<Promise<DG.DataFrame>>(
           'MLB database error \'listCdrs\': ',
@@ -180,6 +216,7 @@ export class DataLoaderFiles extends DataLoader {
         console.debug('MLB: DataLoaderFiles.init2() set cdrs, ' + `${this.fromStartInit()} s`);
         this._cdrs = value;
       }),
+      //load antigen list
       this.cache.getData<IAntigen, DG.DataFrame>('antigen',
         () => catchToLog<Promise<DG.DataFrame>>(
           'MLB database error \'listAntigens\': ',
@@ -192,6 +229,7 @@ export class DataLoaderFiles extends DataLoader {
         console.debug('MLB: DataLoaderFiles.init2() set antigens, ' + `${this.fromStartInit()} s`);
         this._antigens = value;
       }),
+      //load available Vids
       this.cache.getData<IVid, string[]>('vid',
         () => new Promise((resolve, reject) => {
           const df: DG.DataFrame = DG.DataFrame.fromObjects(
@@ -205,6 +243,7 @@ export class DataLoaderFiles extends DataLoader {
         console.debug(`MLB: DataLoaderFiles.init() set vids, ${this.fromStartInit()} s`);
         this._vids = value;
       }),
+      //load observed PTM data
       this.cache.getData<IVidObsPtm, string[]>('vidObsPtm',
         () => new Promise((resolve, reject) => {
           const df: DG.DataFrame = DG.DataFrame.fromObjects([{v_id: 'VR000000044'}]);
@@ -217,6 +256,7 @@ export class DataLoaderFiles extends DataLoader {
         console.debug(`MLB: DataLoaderFiles.init2() set obsPtmVids, ${this.fromStartInit()} s`);
         this._vidsObsPtm = value;
       }),
+      //load properties data
       this.cache.getObject<FilterPropertiesType>(this._files.filterProps,
         async () => {
           const txt: string = await grok.dapi.files
@@ -227,6 +267,7 @@ export class DataLoaderFiles extends DataLoader {
           console.debug(`MLB: DataLoaderFiles.init2() set filterProperties, ${this.fromStartInit()} s`);
           this._filterProperties = value;
         }),
+      //load mutcodes data
       this.cache.getObject<MutcodesDataType>(this._files.mutcodes,
         async () => {
           const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.mutcodes}`);
@@ -236,6 +277,7 @@ export class DataLoaderFiles extends DataLoader {
           console.debug(`MLB: DataLoaderFiles.init2() set mutcodes, ${this.fromStartInit()} s`);
           this._mutcodes = value;
         }),
+      //load ptm map data
       this.cache.getObject<PtmMapType>(this._files.ptmMap,
         async () => {
           const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.ptmMap}`);
@@ -245,6 +287,7 @@ export class DataLoaderFiles extends DataLoader {
           console.debug(`MLB: DataLoaderFiles.init2() set ptmMap, ${this.fromStartInit()} s`);
           this._ptmMap = value;
         }),
+      //load cdr map data
       this.cache.getObject<CdrMapType>(this._files.cdrMap,
         async () => {
           const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.cdrMap}`);
@@ -253,31 +296,6 @@ export class DataLoaderFiles extends DataLoader {
         .then((value: CdrMapType) => {
           console.debug(`MLB: DataLoaderFiles.init2() set cdrMap, ${this.fromStartInit()} s`);
           this._cdrMap = value;
-        }),
-      this.cache.getObject<string>(this._files.ptmInCdr,
-        async () => {
-          const t1: number = Date.now();
-          const data: Uint8Array = await grok.dapi.files
-            .readAsBytes(`System:AppData/${this._pName}/${this._files.ptmInCdr}`);
-          const t2: number = Date.now();
-          const txtBase64: string = encodeToBase64(data);
-          const t3: number = Date.now();
-          console.debug('MLB: DataLoaderFiles.init2() refDf ' +
-            `loading bytes ET ${((t2 - t1) / 1000).toString()} s, ` +
-            `encode base64 ET ${((t3 - t2) / 1000).toString()} s`);
-          return txtBase64;
-        })
-        .then((txtBase64: string) => {
-          const t1: number = Date.now();
-          const data: Uint8Array = decodeFromBase64(txtBase64);
-          const t2: number = Date.now();
-          const df: DG.DataFrame = DG.DataFrame.fromByteArray(data);
-          const t3: number = Date.now();
-          console.debug('MLB: DataLoaderFiles.init2() refDf ' +
-            `decode base64 ET ${((t2 - t1) / 1000).toString()} s, ` +
-            `fromByteArray ET ${((t3 - t2) / 1000).toString()} s`);
-          console.debug(`MLB: DataLoaderFiles.init2() set refDf, ${this.fromStartInit()} s`);
-          this._refDf = df;
         }),
     ]);
 
@@ -324,34 +342,53 @@ export class DataLoaderFiles extends DataLoader {
     return JSON.parse(jsonTxt);
   }
 
-  async loadJson(vid: string): Promise<JsonType> {
-    // Always return example data due TwinPViewer inability to work with null data
-    // if (!this.vids.includes(vid))
-    //   return null;
+  // -- 3D --
 
-    return (await this.loadFileJson(this._files.example)) as JsonType;
-  }
+  // async loadJson(vid: string): Promise<JsonType> {
+  //   // Always return example data due TwinPViewer inability to work with null data
+  //   // if (!this.vids.includes(vid))
+  //   //   return null;
+  //
+  //   return (await this.loadFileJson(this._files.example)) as JsonType;
+  // }
+  //
+  // /** Load PDB structure data
+  //  * @param {string} vid Molecule id
+  //  */
+  // async loadPdb(vid: string): Promise<string> {
+  //   // Always return example data due TwinPViewer inability to work with null data
+  //   // if (!this.vids.includes(vid))
+  //   //   return null;
+  //
+  //   // TODO: Check for only allowed vid of example
+  //   return (await this.loadFileJson(this._files.examplePDB))['pdb'];
+  // }
+  //
+  // async loadRealNums(vid: string): Promise<NumsType> {
+  //   return (await this.loadFileJson(this._files.realNums)) as NumsType;
+  // }
+  //
+  // async loadObsPtm(vid: string): Promise<ObsPtmType> {
+  //   if (!this.vidsObsPtm.includes(vid))
+  //     return null;
+  //
+  //   return (await this.loadFileJson(this._files.exampleOptm))['ptm_observed'] as ObsPtmType;
+  // }
 
-  /** Load PDB structure data
-   * @param {string} vid Molecule id
-   */
-  async loadPdb(vid: string): Promise<string> {
-    // Always return example data due TwinPViewer inability to work with null data
-    // if (!this.vids.includes(vid))
-    //   return null;
-
-    // TODO: Check for only allowed vid of example
-    return (await this.loadFileJson(this._files.examplePDB))['pdb'];
-  }
-
-  async loadRealNums(vid: string): Promise<NumsType> {
-    return (await this.loadFileJson(this._files.realNums)) as NumsType;
-  }
-
-  async loadObsPtm(vid: string): Promise<ObsPtmType> {
-    if (!this.vidsObsPtm.includes(vid))
-      return null;
-
-    return (await this.loadFileJson(this._files.exampleOptm))['ptm_observed'] as ObsPtmType;
+  async load3D(vid: string): Promise<[JsonType, string, NumsType, ObsPtmType]> {
+    return Promise.all([
+      this.loadFileJson(this._files.example).then((value) => {
+        return value as JsonType;
+      }),
+      this.loadFileJson(this._files.examplePDB).then((value) => {
+        return value['pdb'];
+      }),
+      this.loadFileJson(this._files.realNums).then((value) => {
+        return value as NumsType;
+      }),
+      this.loadFileJson(this._files.exampleOptm).then((value) => {
+        return value['ptm_observed'] as ObsPtmType;
+      }),
+    ]);
   }
 }

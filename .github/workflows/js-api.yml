@@ -5,11 +5,12 @@ on:
     paths:
       - 'js-api/**'
 jobs:
-  check:
+  version:
     name: Check version was changed
     runs-on: ubuntu-20.04
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
+      matrix: ${{ steps.packages.outputs.matrix }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -28,11 +29,32 @@ jobs:
           echo '::echo::on'
           echo "::set-output name=changed_version::${changed_version}"
           echo '::echo::off'
+      - name: Check version was changed
+        id: packages
+        run: |
+          MATRIX_JSON="["
+          for PACKAGE in $(grep -lr datagrok-api packages/*/package.json | awk -F'/' '{print $2}' | sort -u); do
+            MATRIX_JSON+="{\"package\": \"${PACKAGE}\""
+
+            DIR="packages/${PACKAGE}"
+            if [ -f "${DIR}/package.json" ]; then
+              scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
+              if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                MATRIX_JSON+=", \"build\": \"true\""
+              fi
+            fi
+            MATRIX_JSON+="}"
+          done
+
+          MATRIX_JSON="${MATRIX_JSON//\}\{/\}, \{}"
+          MATRIX_JSON+="]"
+          JSON="{\"include\": ${MATRIX_JSON}}"
+          echo "::set-output name=matrix::${JSON}"
 
   build:
     name: Build and publish to npm
     runs-on: ubuntu-20.04
-    needs: check
+    needs: version
     environment: Prod
     steps:
       - name: Checkout
@@ -58,9 +80,10 @@ jobs:
         working-directory: ./js-api
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: needs.check.outputs.changed_version == 'true'
+        if: needs.version.outputs.changed_version == 'true'
       - name: Commit package-lock.json
-        if: github.ref == 'refs/heads/master' && needs.check.outputs.changed_version == 'true'
+        continue-on-error: true
+        if: github.ref == 'refs/heads/master' && needs.version.outputs.changed_version == 'true'
         run: |
           if [ -n "$(git status -s js-api/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
@@ -83,3 +106,35 @@ jobs:
               fi
             done
           fi
+
+# TODO: Build only compatible packages and not all of them
+  check:
+    name: Check compatibility
+    runs-on: ubuntu-20.04
+    needs:
+      - build
+      - version
+    environment: Prod
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.version.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.WRITE_TOKEN }}
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - name: npm version
+        run: npm version
+      - run: npm install
+        working-directory: packages/${{ matrix.package }}
+      - name: Build package
+        if: ${{ matrix.build == 'true' }}
+        run: npm run build
+        working-directory: packages/${{ matrix.package }}

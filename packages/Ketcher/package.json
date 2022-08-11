@@ -1,8 +1,11 @@
 {
 	"name": "@datagrok/ketcher",
-	"beta": false,
 	"friendlyName": "Ketcher",
 	"version": "1.0.1",
+	"author": {
+		"name": "Maria Dolotova",
+		"email": "maria.dolotova@arcadia.spb.ru"
+	},
 	"description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
 	"repository": {
 		"type": "git",
@@ -12,21 +15,21 @@
 	"dependencies": {
 		"@types/react-dom": "^17.0.9",
 		"datagrok-api": "^1.4.1",
+		"@datagrok-libraries/utils": "^1.5.4",
 		"file-loader": "^6.2.0",
 		"ketcher-core": "^1.5.0",
 		"ketcher-react": "^2.5.1",
 		"ketcher-standalone": "^1.4.0",
-		"miew": "^0.10.0",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"worker-loader": "latest"
+		"miew": "^0.10.0"
 	},
 	"devDependencies": {
 		"css-loader": "latest",
 		"style-loader": "latest",
 		"webpack": "latest",
 		"webpack-cli": "latest",
-		"worker-loader": "^3.0.8"
+		"ts-loader": "latest",
+		"typescript": "latest",
+		"worker-loader": "latest"
 	},
 	"scripts": {
 		"debug-ketcher": "grok publish",

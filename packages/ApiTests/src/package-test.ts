@@ -12,6 +12,7 @@ import './viewer/viewer';
 import './views/docking';
 import './views/events';
 import './views/layouts';
+import './views/files-view';
 import './dapi/files';
 import './dapi/fetch';
 import './dapi/admin';
@@ -29,6 +30,7 @@ import './dapi/users';
 import './shell/ml';
 import './ui/divs';
 import './ui/buttons';
+import './widgets/files-widget';
 import './widgets/legend';
 import './ui/icons';
 import './ui/tables';
@@ -54,17 +56,17 @@ import './gui/data-search';
 import './gui/delete-rows-columns';
 import './gui/filters';
 import './gui/unpivot';
-import './gui/scatter-plot'
-import './gui/bar-chart'
-import './gui/pie-chart'
-import './gui/histogram'
-import './gui/matrix-plot'
-import './gui/pc-plot'
-import './gui/density-plot'
-import './gui/scatter-plot-3d.ts'
-import './gui/word-cloud'
-import './gui/network-diagram'
-import './gui/box-plot'
+import './gui/viewers/scatter-plot'
+import './gui/viewers/bar-chart'
+import './gui/viewers/pie-chart'
+import './gui/viewers/histogram'
+import './gui/viewers/matrix-plot'
+import './gui/viewers/pc-plot'
+import './gui/viewers/density-plot'
+import './gui/viewers/scatter-plot-3d.ts'
+import './gui/viewers/word-cloud'
+import './gui/viewers/network-diagram'
+import './gui/viewers/box-plot'
 import './gui/chem-similarity-search'
 import './gui/r-groups-analysis'
 
