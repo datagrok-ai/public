@@ -32,7 +32,7 @@ category('Dapi: user data storage', () => {
     expect(JSON.stringify(receivedValue), JSON.stringify(value2));
   });
 
-  test('Dapi: user data storage - put', async () => {
+  test('Dapi: user data storage - delete', async () => {
     const storageName = 'js-api-storage-name4';
     const key = 'postValueKey';
     const value = 'value';
@@ -41,6 +41,6 @@ category('Dapi: user data storage', () => {
     await grok.dapi.userDataStorage.remove(storageName, key);
 
     const receivedValue = await grok.dapi.userDataStorage.getValue(storageName, key);
-    expect(receivedValue, '');
+    expect(receivedValue, undefined);
   });
 });
