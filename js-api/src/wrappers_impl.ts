@@ -30,6 +30,8 @@ export function toJs(dart: any, check: boolean = false): any {
   let type = (<any>window).grok_GetType(dart);
   if (dart == FLOAT_NULL)
     return null;
+  else if (dart == undefined)
+    return null;
   else if (type === TYPE.MAP) {
     let wrapper = (<any>window).grok_GetWrapper(dart);
     for (let key in wrapper) {
