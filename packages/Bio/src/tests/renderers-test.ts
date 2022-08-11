@@ -46,7 +46,7 @@ category('renderers', () => {
     expect(srcSeqCol!.getTag(DG.TAGS.UNITS), 'fasta');
     expect(srcSeqCol!.getTag('aligned'), 'SEQ');
     expect(srcSeqCol!.getTag('alphabet'), 'PT');
-    expect(srcSeqCol!.getTag('cell.renderer'), 'Macromolecule');
+    expect(srcSeqCol!.getTag('cell.renderer'), 'sequence');
 
     const msaSeqCol: DG.Column | null = await multipleSequenceAlignmentAny(df, srcSeqCol!);
     tv.grid.invalidate();
@@ -55,7 +55,7 @@ category('renderers', () => {
     expect(msaSeqCol!.getTag(DG.TAGS.UNITS), 'fasta');
     expect(msaSeqCol!.getTag('aligned'), 'SEQ.MSA');
     expect(msaSeqCol!.getTag('alphabet'), 'PT');
-    expect(msaSeqCol!.getTag('cell.renderer'), 'Macromolecule');
+    expect(msaSeqCol!.getTag('cell.renderer'), 'sequence');
 
     dfList.push(df);
     tvList.push(tv);
@@ -69,7 +69,7 @@ category('renderers', () => {
 
     const srcCol: DG.Column = df.col('sequence')!;
     const tgtCol: DG.Column = await convertDo(srcCol, NOTATION.SEPARATOR, '/');
-    expect(tgtCol.getTag('cell.renderer'), 'Macromolecule');
+    expect(tgtCol.getTag('cell.renderer'), 'sequence');
 
     tvList.push(tv);
     dfList.push(df);
