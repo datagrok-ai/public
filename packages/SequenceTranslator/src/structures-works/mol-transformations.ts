@@ -78,7 +78,7 @@ M  V30 END COLLECTION
 M  V30 END CTAB
 M  END`;
 
-export function getNucleotidesMol(smilesCodes: string[], oclRender: boolean = false) {
+export function getNucleotidesMol(smilesCodes: string[]) {
   const molBlocks: string[] = [];
 
   for (let i = 0; i < smilesCodes.length - 1; i++) {
@@ -88,10 +88,10 @@ export function getNucleotidesMol(smilesCodes: string[], oclRender: boolean = fa
           molBlocks.push(rotateNucleotidesV3000(smilesCodes[i]));
   }
 
-  return linkV3000(molBlocks, false, oclRender);
+  return linkV3000(molBlocks, false);
 }
 
-export function linkV3000(molBlocks: string[], twoChains: boolean = false, oclRender: boolean = false) {
+export function linkV3000(molBlocks: string[], twoChains: boolean = false) {
   let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
   macroMolBlock += '  0  0  0  0  0  0            999 V3000\n';
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
@@ -213,14 +213,14 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false, oclRe
   const entries = 4;
   const collNumber = Math.ceil(collection.length / entries);
 
-  if (oclRender) {
-    collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length;
+  //if (oclRender) {
+    // collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length;
 
-    for (let j = 0; j < collection.length; j++)
-      collectionBlock += ' ' + collection[j];
+    // for (let j = 0; j < collection.length; j++)
+    //   collectionBlock += ' ' + collection[j];
 
-    collectionBlock += ')\n';
-  } else {
+    // collectionBlock += ')\n';
+  //} else {
     collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length + ' -\n';
     for (let i = 0; i < collNumber; i++) {
       collectionBlock += 'M  V30 ';
@@ -231,7 +231,7 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false, oclRe
           collection[entries*i + j] + ' ';
       }
     }
-  }
+  //}
 
   //generate file
   twoChains? natom : natom++;
