@@ -124,7 +124,7 @@ export function compareColumns() {
     ui.divH([t1.root, t2.root], {}),
     columnsInputs,
     outputs
-  ];
+  ]);
 
   ui.dialog('Compare Columns')
     .add(inputSection)

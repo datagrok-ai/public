@@ -23,9 +23,11 @@ export class DataLoaderDb extends DataLoader {
   private _files: { [name: string]: string } = {
     filterProps: 'properties.json',
     mutcodes: 'mutcodes.json',
-    ptmMap: 'ptm_map.json',
-    cdrMap: 'cdr_map.json',
-    ptmInCdr: 'ptm_in_cdr.d42'
+    predictedPtmMap: 'ptm_map.json',
+    predictedCdrMap: 'cdr_map.json',
+    observedPtmMap: 'obs_ptm_map.json',
+    observedCdrMap: 'obs_cdr_map.json',
+    predictedPtm: 'ptm_in_cdr.d42'
   };
 
   private cache!: MlbDatabase;
@@ -37,11 +39,14 @@ export class DataLoaderDb extends DataLoader {
   private _vidsObsPtm: string[];
   private _filterProperties: FilterPropertiesType;
   private _mutcodes: MutcodesDataType;
-  private _ptmMap: PtmMapType;
-  private _cdrMap: CdrMapType;
 
-  private _refDfPromise: Promise<void>;
-  private _refDf: DG.DataFrame;
+  private _predictedPtmMap: PtmMapType;
+  private _predictedCdrMap: CdrMapType;
+  private _observedPtmMap: PtmMapType;
+  private _observedCdrMap: CdrMapType;
+
+  // private _refDfPromise: Promise<void>;
+  // private _refDf: DG.DataFrame;
 
 
   get schemes(): string[] { return this._schemes; }
@@ -58,13 +63,13 @@ export class DataLoaderDb extends DataLoader {
 
   get mutcodes(): MutcodesDataType { return this._mutcodes; }
 
-  get ptmMap(): PtmMapType { return this._ptmMap; }
+  get predictedPtmMap(): PtmMapType { return this._predictedPtmMap; }
 
-  get cdrMap(): CdrMapType { return this._cdrMap; }
+  get predictedCdrMap(): CdrMapType { return this._predictedCdrMap; }
 
-  get refDfPromise(): Promise<void> { return this._refDfPromise; }
+  get observedPtmMap(): PtmMapType { return this._observedPtmMap; }
 
-  get refDf(): DG.DataFrame { return this._refDf; }
+  get observedCdrMap(): CdrMapType { return this._observedCdrMap; }
 
   private fromStartInit(): string {
     return ((Date.now() - this._startInit) / 1000).toString();
@@ -85,34 +90,6 @@ export class DataLoaderDb extends DataLoader {
 
     this.cache = new MlbDatabase();
     this.cache.init(this._serverListVersionDf);
-
-    //TODO move data to DB, get only usefull VR ids
-    //load ptm in cdr
-    this._refDfPromise = this.cache.getObject<string>(this._files.ptmInCdr,
-      async () => {
-        const t1: number = Date.now();
-        const data: Uint8Array = await grok.dapi.files
-          .readAsBytes(`System:AppData/${this._pName}/${this._files.ptmInCdr}`);
-        const t2: number = Date.now();
-        const txtBase64: string = encodeToBase64(data);
-        const t3: number = Date.now();
-        console.debug('MLB: DataLoaderDb.init2() refDf ' +
-          `loading bytes ET ${((t2 - t1) / 1000).toString()} s, ` +
-          `encode base64 ET ${((t3 - t2) / 1000).toString()} s`);
-        return txtBase64;
-      })
-      .then((txtBase64: string) => {
-        const t1: number = Date.now();
-        const data: Uint8Array = decodeFromBase64(txtBase64);
-        const t2: number = Date.now();
-        const df: DG.DataFrame = DG.DataFrame.fromByteArray(data);
-        const t3: number = Date.now();
-        console.debug('MLB: DataLoaderDb.init2() refDf ' +
-          `decode base64 ET ${((t2 - t1) / 1000).toString()} s, ` +
-          `fromByteArray ET ${((t3 - t2) / 1000).toString()} s`);
-        console.debug(`MLB: DataLoaderDb.init2() set refDf, ${this.fromStartInit()} s`);
-        this._refDf = df;
-      });
 
     await Promise.all([
       //load numbering schemes
@@ -195,28 +172,50 @@ export class DataLoaderDb extends DataLoader {
           console.debug(`MLB: DataLoaderDb.init2() set mutcodes, ${this.fromStartInit()} s`);
           this._mutcodes = value;
         }),
-      //load ptm map data
-      this.cache.getObject<PtmMapType>(this._files.ptmMap,
+      //load predicted ptm map data
+      this.cache.getObject<PtmMapType>(this._files.predictedPtmMap,
         async () => {
           const jsonTxt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${this._pName}/${this._files.ptmMap}`);
+            .readAsText(`System:AppData/${this._pName}/${this._files.predictedPtmMap}`);
           return JSON.parse(jsonTxt);
         })
         .then((value: PtmMapType) => {
-          console.debug(`MLB: DataLoaderDb.init2() set ptmMap, ${this.fromStartInit()} s`);
-          this._ptmMap = value;
+          console.debug(`MLB: DataLoaderDb.init2() set predictedPtmMap, ${this.fromStartInit()} s`);
+          this._predictedPtmMap = value;
         }),
-      //load cdr map data
-      this.cache.getObject<CdrMapType>(this._files.cdrMap,
+      //load predicted cdr map data
+      this.cache.getObject<CdrMapType>(this._files.predictedCdrMap,
         async () => {
           const jsonTxt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${this._pName}/${this._files.cdrMap}`);
+            .readAsText(`System:AppData/${this._pName}/${this._files.predictedCdrMap}`);
           return JSON.parse(jsonTxt);
         })
         .then((value: CdrMapType) => {
-          console.debug(`MLB: DataLoaderDb.init2() set cdrMap, ${this.fromStartInit()} s`);
-          this._cdrMap = value;
+          console.debug(`MLB: DataLoaderDb.init2() set predictedCdrMap, ${this.fromStartInit()} s`);
+          this._predictedCdrMap = value;
         }),
+      //load observed ptm map data
+      this.cache.getObject<PtmMapType>(this._files.observedPtmMap,
+        async () => {
+          const jsonTxt: string = await grok.dapi.files
+            .readAsText(`System:AppData/${this._pName}/${this._files.observedPtmMap}`);
+          return JSON.parse(jsonTxt);
+        })
+        .then((value: PtmMapType) => {
+          console.debug(`MLB: DataLoaderDb.init2() set observedPtmMap, ${this.fromStartInit()} s`);
+          this._observedPtmMap = value;
+        }),
+      // load observed cdr map data
+      this.cache.getObject<CdrMapType>(this._files.observedCdrMap,
+        async () => {
+          const jsonTxt: string = await grok.dapi.files
+            .readAsText(`System:AppData/${this._pName}/${this._files.observedCdrMap}`);
+          return JSON.parse(jsonTxt);
+        })
+        .then((value: CdrMapType) => {
+          console.debug(`MLB: DataLoaderDb.init2() set observedCdrMap, ${this.fromStartInit()} s`);
+          this._observedCdrMap = value;
+        })
     ]);
 
     console.debug('MLB: DataLoaderDb.init2() end, ' + `${this.fromStartInit()} s`);
@@ -244,70 +243,19 @@ export class DataLoaderDb extends DataLoader {
     return DG.DataFrame.fromCsv(dfTxt);
   }
 
-  // -- 3D --
+  // -- PTM --
 
-  async loadJson(vid: string): Promise<JsonType> {
-    if (!this.vids.includes(vid))
-      return null;
-
-    const df = await grok.functions.call(`${this._pName}:getJsonByVid`, {vid: vid});
-    const jsonTxt = df.columns.byIndex(0).get(0);
-    return jsonTxt ? JSON.parse(jsonTxt) : null;
+  async getPredictedPtmByAntigen(antigen: string): Promise<DG.DataFrame> {
+    const df = await grok.functions.call(`${this._pName}:getPredictedPtmByAntigen`, {antigen: antigen});
+    return df;
   }
 
-  async loadPdb(vid: string): Promise<string> {
-    if (!this.vids.includes(vid))
-      return null;
-
-    return (await grok.functions.call(`${this._pName}:getPdbByVid`, {vid: vid}))
-      .columns.byIndex(0).get(0);
-  }
-
-  async loadRealNums(vid: string): Promise<NumsType> {
-    if (!this.vids.includes(vid))
-      return null;
-
-    const jsonTxt = (await grok.functions.call(`${this._pName}:getJsonComplementByVid`, {vid: vid}))
-      .columns.byIndex(0).get(0);
-    return jsonTxt ? JSON.parse(jsonTxt) : null;
+  async getObservedPtmByAntigen(antigen: string): Promise<DG.DataFrame> {
+    const df = await grok.functions.call(`${this._pName}:getObservedPtmByAntigen`, {antigen: antigen});
+    return df;
   }
 
   // -- 3D --
-
-  // async loadJson(vid: string): Promise<JsonType> {
-  //   if (!this.vids.includes(vid))
-  //     return null;
-  //
-  //   const df = await grok.functions.call(`${this._pName}:getJsonByVid`, {vid: vid});
-  //   const jsonTxt = df.columns.byIndex(0).get(0);
-  //   return jsonTxt ? JSON.parse(jsonTxt) : null;
-  // }
-  //
-  // async loadPdb(vid: string): Promise<string> {
-  //   if (!this.vids.includes(vid))
-  //     return null;
-  //
-  //   return (await grok.functions.call(`${this._pName}:getPdbByVid`, {vid: vid}))
-  //     .columns.byIndex(0).get(0);
-  // }
-  //
-  // async loadRealNums(vid: string): Promise<NumsType> {
-  //   if (!this.vids.includes(vid))
-  //     return null;
-  //
-  //   const jsonTxt = (await grok.functions.call(`${this._pName}:getJsonComplementByVid`, {vid: vid}))
-  //     .columns.byIndex(0).get(0);
-  //   return jsonTxt ? JSON.parse(jsonTxt) : null;
-  // }
-  //
-  // async loadObsPtm(vid: string): Promise<ObsPtmType> {
-  //   if (!this.vidsObsPtm.includes(vid))
-  //     return null;
-  //
-  //   const df = await grok.functions.call(`${this._pName}:getJsonObsByVid`, {vid: vid});
-  //   const jsonTxt = df.columns.byIndex(0).get(0);
-  //   return JSON.parse(jsonTxt);
-  // }
 
   async load3D(vid: string): Promise<[JsonType, string, NumsType, ObsPtmType]> {
     try {

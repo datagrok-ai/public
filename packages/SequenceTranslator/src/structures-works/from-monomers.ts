@@ -36,7 +36,7 @@ export function sequenceToMolV3000(sequence: string, inverted: boolean = false, 
     }
   }
 
-  return getNucleotidesMol(smilesCodes, oclRender);
+  return getNucleotidesMol(smilesCodes);
 }
 
 export function sequenceToSmiles(sequence: string, inverted: boolean = false, format: string): string {

@@ -8,7 +8,7 @@ let dbdf: DG.DataFrame;
 
 //tags: init
 export async function initDrugBank(): Promise<void> {
-  dbdf = DG.DataFrame.fromCsv(await _package.files.readAsText('db.csv'));
+  dbdf = (await _package.files.readBinaryDataFrames('drugbank-open-structures.d42'))[0];
 }
 
 //name: DrugBank Substructure Search

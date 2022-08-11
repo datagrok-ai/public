@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.1.74",
+  "version": "1.1.77",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -94,9 +94,12 @@
         },
         "1.3.11": {
           "datagrok-api": "^1.4.5"
+        },
+        "1.3.12": {
+          "datagrok-api": "^1.5.4"
         }
       },
-      "description": "DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. Its purpose is to simplify and assist in the development of platform extensions. This is achieved through familiarizing developers with Datagrok's [object](https://datagrok.ai/help/overview/objects) model and providing them with reproducible code snippets that fit their data. This approach allows to explore the key functionality from the interface, learn by example, jump to the [documentation](https://datagrok.ai/help/) or [API](https://datagrok.ai/js-api/) reference in one click, and much more. It also helps focus on the problem you are trying to solve: you can interact with your data from the outset while some of the program's building blocks are generated for you.",
+      "description": "DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. Its purpose is to simplify and assist in the development of platform extensions.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -685,6 +688,9 @@
         },
         "0.0.6": {
           "datagrok-api": "^1.0.0"
+        },
+        "1.0.0": {
+          "datagrok-api": "^1.5.4"
         }
       },
       "description": "js-api-tests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
@@ -1567,6 +1573,9 @@
           "datagrok-api": "^1.5.0"
         },
         "1.2.12": {
+          "datagrok-api": "^1.5.0"
+        },
+        "1.2.13": {
           "datagrok-api": "^1.5.0"
         }
       },

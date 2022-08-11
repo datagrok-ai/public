@@ -1,29 +1,26 @@
-import { after, before, category, delay, expect, test } from '@datagrok-libraries/utils/src/test';
+import {after, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { checkHTMLElement } from '../ui/utils';
-import {DataFrame} from 'datagrok-api/dg';
 
-category('Connections: Demo Queries', () => {
+category('Connections', () => {
+  test('demoQueries', async () => {
+    const queries = await grok.dapi.queries.filter('#unit-test').include('params').list();
 
-  test('connections.demoQueries', async () => {
-    let queries = await grok.dapi.queries.filter('#unit-test').include('params').list();
+    for (const query of queries) {
+      const call = query.prepare();
 
-    for (let query of queries) {
-      let call = query.prepare();
+      for (const property of query.inputs)
+        property.set(call, property.defaultValue == null ? property.defaultValue : await grok.functions.eval(`${property.defaultValue}`));
 
-      for (let property of query.inputs) {
-        property.set(call, await grok.functions.eval(property.defaultValue));
-      }
+      await call.call();
 
-      await call.call()
+      const t = call.getOutputParamValue() as DG.DataFrame;
+      if (t == null)
+        throw ' Result of ' + query.name + 'is not a DataFrame';
 
-      let t = call.getOutputParamValue() as DataFrame;
-
-      if (t.rowCount != query.options.testExpected) {
+      if (t.rowCount != query.options.testExpected)
+        // eslint-disable-next-line no-throw-literal
         throw ' Rows number in' + query.name + 'table is not as expected';
-      }
     }
   });
 });

@@ -998,7 +998,7 @@ export class Property {
   static fromOptions(options: PropertyOptions): Property { return Property.js(options.name!, options.type! as TYPE, options); }
 }
 
-
+/*
 export class DateTime {
   public dart: any;
 
@@ -1013,7 +1013,7 @@ export class DateTime {
   static fromMillisecondsSinceEpoch(millisecondsSinceEpoch: number): DateTime {
     return new DateTime(api.grok_DateTime_FromMillisecondsSinceEpoch(millisecondsSinceEpoch));
   }
-}
+}*/
 
 export class HistoryEntry {
   public dart: any;

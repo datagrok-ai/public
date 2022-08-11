@@ -1,5 +1,5 @@
 --name: Log Error Summary
---input: string eventTime = today {pattern: datetime}
+--input: string eventTime = "today" {pattern: datetime}
 --connection: System:Datagrok
 
 select v.value, count(*) from events e

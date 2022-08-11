@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {caption, enabled, checkHTMLElement} from './utils';
+import dayjs from 'dayjs';
 
 
 category('UI: Inputs', () => {
@@ -20,12 +21,13 @@ category('UI: Inputs', () => {
       'switchInput': ui.switchInput('', true),
       'choiceInput': ui.choiceInput('', '1', ['1', '2', '3']),
       'multiChoiceInput': ui.multiChoiceInput('', [], []),
-      'dateInput': ui.dateInput('', DG.DateTime.fromDate(new Date(2000, 1, 1))),
+      'dateInput': ui.dateInput('', dayjs('2001-01-01')),
       'textInput': ui.textInput('', ''),
       'searchInput': ui.searchInput('', ''),
       'columnInput': ui.columnInput('', t, t.col('age')),
       'columnsInput': ui.columnsInput('', t, () => null),
       'tableInput': ui.tableInput('', tables[0], tables),
+      'colorInput': ui.colorInput('', '#ff0000'),
     };
     v = grok.shell.newView('');
   });
@@ -81,7 +83,7 @@ category('UI: Inputs', () => {
         onChanged(key, value, false);
         break;
       case 'dateInput':
-        onChanged(key, value, DG.DateTime.fromDate(new Date()));
+        onChanged(key, value, dayjs('2022-01-01'));
         break;
       case 'choiceInput':
         onChanged(key, value, '2');

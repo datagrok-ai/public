@@ -6,7 +6,8 @@ import './tests/detector-tests';
 import './tests/widgets-tests';
 import './tests/chem-space-tests';
 import './tests/activity-cliffs-tests';
-import './tests/ketcher_tests'
+import './tests/ketcher_tests';
+import './tests/panels-tests';
 
 
 export const _package = new DG.Package();

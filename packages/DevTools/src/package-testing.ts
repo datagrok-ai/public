@@ -264,13 +264,13 @@ function updateIcon(passed: boolean, iconDiv: Element) {
 async function runAllTests(activeTests: IPackageTest[], tree: DG.TreeViewGroup, view?: DG.View) {
   let completedTestsCount = 0;
   if (view) view.path = '/' + view.name.replace(' ', '') + testPath.replace(/ /g, '');
-  activeTests.forEach((t) => {
+  for (let t of activeTests) {
     const start = Date.now();
-    grok.functions.call(
+    const res = await grok.functions.call(
       `${t.packageName}:test`, {
         'category': t.test.category,
         'test': t.test.name,
-      }).then((res) => {
+      });
       completedTestsCount +=1;
       if (!testsResultsDf) {
         testsResultsDf = res;
@@ -285,8 +285,7 @@ async function runAllTests(activeTests: IPackageTest[], tree: DG.TreeViewGroup, 
         grok.shell.closeAll();
         grok.shell.v = view;
       }
-    });
-  });
+  }
 };
 
 function addPackageAndTimeInfo(df: DG.DataFrame, start: number, pack: string) {

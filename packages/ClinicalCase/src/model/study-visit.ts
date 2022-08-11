@@ -9,8 +9,8 @@ export class StudyVisit {
     num: number;
     previsousVisitDay = null;
     totalPatients = 0;
-    minVisitDate: string;
-    maxVisitDate: string;
+    minVisitDate: Date;
+    maxVisitDate: Date;
     visitDataframe: DG.DataFrame;
     aeSincePreviusVisit: DG.DataFrame;
     conmedSincePreviusVisit: DG.DataFrame;
@@ -32,8 +32,8 @@ export class StudyVisit {
         .where(`${VISIT_NAME} = ${this.name}`)
         .aggregate();
         this.totalPatients = this.visitDataframe.getCol(SUBJECT_ID).stats.uniqueCount;
-        this.minVisitDate = new Date(this.visitDataframe.getCol(VISIT_START_DATE).stats.min * 1e-3).toLocaleDateString();
-        this.maxVisitDate = new Date(this.visitDataframe.getCol(VISIT_START_DATE).stats.max * 1e-3).toLocaleDateString();
+        this.minVisitDate = new Date(this.visitDataframe.getCol(VISIT_START_DATE).stats.min * 1e-3);
+        this.maxVisitDate = new Date(this.visitDataframe.getCol(VISIT_START_DATE).stats.max * 1e-3);
         this.aeSincePreviusVisit = this.createEventSincePeviousVisitDf(domains['ae']);
         this.conmedSincePreviusVisit = this.createEventSincePeviousVisitDf(domains['cm']);
         if (domains.ex && domains.ex.columns.names().includes(VISIT_NAME)) {

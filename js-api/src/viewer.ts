@@ -1,7 +1,7 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {Column, DataFrame} from "./dataframe.js";
-import {DateTime, Property, PropertyOptions} from "./entities";
+import {Property, PropertyOptions} from "./entities";
 import {Menu, ObjectPropertyBag, Widget} from "./widgets";
 import {_toJson, MapProxy} from "./utils";
 import {toJs} from "./wrappers";
@@ -11,6 +11,7 @@ import {Subscription} from "rxjs";
 import {map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper} from "./helpers";
+import dayjs from "dayjs";
 
 declare let DG: any;
 declare let ui: any;
@@ -323,7 +324,7 @@ export class JsViewer extends Viewer {
   }
 
   /** Registers a datetime property with the specified name and defaultValue */
-  protected dateTime(propertyName: ViewerPropertyType, defaultValue: DateTime | null = null, options: { [key: string]: any } & PropertyOptions | null = null): DateTime {
+  protected dateTime(propertyName: ViewerPropertyType, defaultValue: dayjs.Dayjs | null = null, options: { [key: string]: any } & PropertyOptions | null = null): dayjs.Dayjs {
     return this.addProperty(propertyName, TYPE.DATE_TIME, defaultValue, options);
   }
 }

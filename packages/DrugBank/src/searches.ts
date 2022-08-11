@@ -4,9 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import {drugBankSearchResult} from './utils';
 
 export async function drugBankSubstructureSearch(
-  molString: string, substructLibrary: boolean, dbdf: DG.DataFrame): Promise<drugBankSearchResult> {
-  const bitset = await grok.chem.searchSubstructure(
-    dbdf!.getCol('SMILES'), molString, {'substructLibrary': substructLibrary});
+  molString: string, dbdf: DG.DataFrame): Promise<drugBankSearchResult> {
+  const bitset = await grok.chem.searchSubstructure(dbdf!.getCol('molecule'), molString);
 
   if (bitset === null)
     return null;
@@ -17,7 +16,7 @@ export async function drugBankSubstructureSearch(
 
 export async function drugBankSimilaritySearch(
   molString: string, limit: number, cutoff: number, dbdf: DG.DataFrame): Promise<drugBankSearchResult> {
-  const searchdf = await grok.chem.findSimilar(dbdf!.getCol('SMILES'), molString, {'limit': limit, 'cutoff': cutoff});
+  const searchdf = await grok.chem.findSimilar(dbdf!.getCol('molecule'), molString, {'limit': limit, 'cutoff': cutoff});
 
   if (searchdf == null)
     return null;
@@ -25,5 +24,5 @@ export async function drugBankSimilaritySearch(
   if (dbdf!.col('index') === null)
     (dbdf!.columns as DG.ColumnList).addNewInt('index').init((i) => i);
 
-  return dbdf!.join(searchdf, ['index'], ['index'], ['SMILES'], ['SMILES'], DG.JOIN_TYPE.INNER, true);
+  return dbdf!.join(searchdf, ['index'], ['index'], ['molecule'], ['molecule'], DG.JOIN_TYPE.INNER, true);
 }

@@ -94,13 +94,13 @@ export abstract class DataLoader {
 
   abstract get mutcodes(): MutcodesDataType;
 
-  abstract get ptmMap(): PtmMapType;
+  abstract get predictedPtmMap(): PtmMapType;
 
-  abstract get cdrMap(): CdrMapType;
+  abstract get predictedCdrMap(): CdrMapType;
 
-  abstract get refDfPromise(): Promise<void>;
+  abstract get observedPtmMap(): PtmMapType;
 
-  abstract get refDf(): DG.DataFrame;
+  abstract get observedCdrMap(): CdrMapType;
 
   abstract init(startInit: number, serverListVersionDf: DG.DataFrame);
 
@@ -163,6 +163,11 @@ export abstract class DataLoader {
   abstract loadMlbDf(): Promise<DG.DataFrame>;
 
   abstract loadTreeDf(): Promise<DG.DataFrame>;
+
+  // -- PTM --
+  abstract getPredictedPtmByAntigen(antigen: string): Promise<DG.DataFrame>;
+
+  abstract getObservedPtmByAntigen(antigen: string): Promise<DG.DataFrame>;
 
   // -- 3D --
 

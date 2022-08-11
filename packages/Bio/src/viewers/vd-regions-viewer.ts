@@ -51,6 +51,7 @@ export class VdRegionsViewer extends DG.JsViewer {
   public sequenceColumnNamePostfix: string;
 
   public skipEmptyPositions: boolean;
+  public positionWidth: number;
 
 
   public get df(): DG.DataFrame {
@@ -77,6 +78,7 @@ export class VdRegionsViewer extends DG.JsViewer {
     this.sequenceColumnNamePostfix = this.string('sequenceColumnNamePostfix', 'chain sequence');
 
     this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
+    this.positionWidth = this.float('positionWidth', 16);
   }
 
   public async init() {
@@ -132,6 +134,10 @@ export class VdRegionsViewer extends DG.JsViewer {
         //   }
         // }
         // this.calcSize();
+        await this.destroyView();
+        await this.buildView();
+        break;
+      case 'positionWidth':
         await this.destroyView();
         await this.buildView();
         break;
@@ -205,6 +211,7 @@ export class VdRegionsViewer extends DG.JsViewer {
           endPositionName: region!.positionEndName,
           fixWidth: true,
           skipEmptyPositions: this.skipEmptyPositions,
+          positionWidth: this.positionWidth,
         })) as unknown as WebLogo;
       }
       // WebLogo creation fires onRootSizeChanged event even before control being added to this.logos

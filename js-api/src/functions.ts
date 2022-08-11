@@ -1,11 +1,12 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
-import {DateTime, Entity, Func, Property, User} from "./entities";
+import {Entity, Func, Property, User} from "./entities";
 import {DartWidget, InputBase, ProgressIndicator,} from "./widgets";
 import {MapProxy, _toIterable} from "./utils";
 import {Observable} from "rxjs";
 import {__obs, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
+import dayjs from "dayjs";
 declare let grok: any;
 declare let DG: any;
 let api = <any>window;
@@ -230,8 +231,8 @@ export class FuncCall extends Entity {
   get parentCall(): FuncCall { return toJs(api.grok_FuncCall_Get_ParentCall(this.dart)); }
   set parentCall(c: FuncCall) {api.grok_FuncCall_Set_ParentCall(this.dart, c.dart)}
 
-  get started(): DateTime { return toJs(api.grok_FuncCall_Get_Started(this.dart)); }
-  get finished(): DateTime { return toJs(api.grok_FuncCall_Get_Finished(this.dart)); }
+  get started(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Started(this.dart)); }
+  get finished(): dayjs.Dayjs { return dayjs(api.grok_FuncCall_Get_Finished(this.dart)); }
 
   override get author(): User { return toJs(api.grok_FuncCall_Get_Author(this.dart)) }
 

@@ -1,4 +1,3 @@
-import * as DG from 'datagrok-api/dg';
 import {category, test} from '@datagrok-libraries/utils/src/test';
 import {check} from './utils';
 
@@ -10,8 +9,8 @@ category('Statistical functions', () => {
     'Avg([5.123])': 5.123,
     'Avg([-1, -2, 3])': 0,
     'Avg([1, null, 2, 3])': 2,
-    'Avg([])': undefined,
-    'Avg([null, null])': undefined,
+    'Avg([])': null,
+    'Avg([null, null])': null,
   }));
 
   test('Kurt', () => check({
@@ -26,7 +25,7 @@ category('Statistical functions', () => {
     'Max([1, null, 2, 3])': 3,
     'Max([null, 1, 0.7, 0.3])': 1,
     'Max([1.5, -2, 1.9])': 1.9,
-    'Max([null, null])': undefined,
+    'Max([null, null])': null,
   }));
 
   test('Med', () => check({
@@ -44,7 +43,7 @@ category('Statistical functions', () => {
     'Min([1, 2, 4, 3])': 1,
     'Min([2, null, 0, 3])': 0,
     'Min([null, 1, 0.7, 0.3])': 0.3,
-    'Min([null, null])': undefined,
+    'Min([null, null])': null,
   }));
 
   test('MissingValueCount', () => check({
@@ -60,8 +59,8 @@ category('Statistical functions', () => {
     'Percentile([1, 2, 3, 4], 0.40)': 2,
     'Percentile([1, 2, 3, 4], 0.75)': 4,
     'Percentile([1, 2, null, 3, 4], 0.25)': 2,
-    'Percentile([null], 0.4)': undefined,
-    'Percentile([], 0.4)': undefined,
+    'Percentile([null], 0.4)': null,
+    'Percentile([], 0.4)': null,
   }));
 
   test('Q1', () => check({
@@ -100,7 +99,7 @@ category('Statistical functions', () => {
   test('StDev', () => check({
     'StDev([1, 2, 3])': 1,
     'StDev([1, null, 2, 3])': 1,
-    'StDev([null, null])': DG.FLOAT_NULL,
+    'StDev([null, null])': 0,
     'StDev([7, 14, 21])': 7,
     'StDev([-15, -5, 5, 15])': 12.91,
   }));
@@ -110,7 +109,7 @@ category('Statistical functions', () => {
     'Sum([-1, 4, 12, 5])': 20,
     'Sum([2, null, 0, 3])': 5,
     'Sum([null, 1, 0.7, 0.3])': 2,
-    'Sum([null, null])': DG.FLOAT_NULL,
+    'Sum([null, null])': 0,
     'Sum([-0])': 0,
   }));
 
@@ -119,7 +118,8 @@ category('Statistical functions', () => {
     'TotalCount([1, 2, 4])': 3,
     'TotalCount([null, null])': 2,
     'TotalCount([100])': 1,
-    'TotalCount([])': undefined,
+    'TotalCount([])': 0,
+    'TotalCount(null)': null,
   }));
 
   test('ValueCount', () => check({
@@ -128,13 +128,14 @@ category('Statistical functions', () => {
     'ValueCount([1, 2, 4])': 3,
     'ValueCount([null, null])': 0,
     'ValueCount([100])': 1,
-    'ValueCount([])': undefined,
+    'ValueCount([])': 0,
+    'ValueCount(null)': null,
   }));
 
   test('Variance', () => check({
     'Variance([1, 2, 3])': 1,
     'Variance([1, null, 2, 3])': 1,
-    'Variance([null, null])': DG.FLOAT_NULL,
+    'Variance([null, null])': 0,
     'Variance([7, 14, 21])': 49,
     'Variance([-15, -5, 5, 15])': 166.667,
   }));

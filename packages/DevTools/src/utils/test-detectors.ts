@@ -3,9 +3,79 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {Subscription} from 'rxjs';
+export async function _testDetectorsStandard(detectorsArray: DG.Func[])
+  : Promise<DG.DataFrame> {
+  const pi = DG.TaskBarProgressIndicator.create('Test detectors...');
 
-export async function _testDetectors(path: string, detector: DG.Func): Promise<DG.DataFrame> {
+  // TODO: specify the correct path
+  const path = 'System:AppData/DevTools/test_detectors/';
+
+  const csvList = await grok.dapi.files.list(path, true, '');
+  const cols = [];
+  cols.push(
+    DG.Column.fromStrings(
+      'files',
+      csvList.map((fi) => fi.fileName),
+    ),
+  );
+
+  let readyCount = 0;
+
+  for (const detector of detectorsArray) {
+    const hits: string[] = [];
+    for (const fileInfo of csvList) {
+      try {
+        const csv = await grok.dapi.files.readAsText(path + fileInfo.fileName);
+        const df = DG.DataFrame.fromCsv(csv);
+        // df.columns[1][0] should contain the name of the appropriate detector
+        const col = df.getCol('data');
+        const semType: string | null = await detector.apply({col: col});
+        if (
+          detector.name === df.get('detectorName', 0) &&
+          ((semType !== null) && fileInfo.name.includes(semType.toLowerCase()))
+        )
+          hits.push(''); // True Positive
+        else if (
+          detector.name === df.get('detectorName', 0) &&
+          ((semType === null) || !fileInfo.name.includes(semType.toLowerCase()))
+        )
+          hits.push('FN'); // False Negative
+        else if (
+          detector.name !== df.get('detectorName', 0) &&
+          ((semType !== null) && fileInfo.name.includes(semType.toLowerCase()))
+        )
+          hits.push('FP'); // False Positive
+        else
+          hits.push(''); // True Negative
+      } catch (err: unknown) {
+        hits.push(err instanceof Error ? err.message : (err as Object).toString()); // Error
+      } finally {
+        readyCount += 1;
+        pi.update(100 * readyCount / csvList.length, `Test ${fileInfo.fileName}`);
+      }
+    }
+    cols.push(
+      DG.Column.fromStrings(detector.name, hits),
+    );
+  }
+
+  // grok.shell.info(`Test for detectors finished`);
+  pi.close();
+  const resDf = DG.DataFrame.fromColumns(cols);
+  resDf.name = `test_detectors`;
+  return resDf;
+}
+
+/**
+ * Function to test detectors from all available packages against all .csv files
+ * from Demo and AppData
+ *
+ * @param {string} path   Path to the directory with .csv datasets
+ * @param {DG.Func} detector   A particular detector we want to test
+ * @return {Promise<DG.DataFrame>} Table containing the information about the
+ * test run
+ */
+export async function _testDetectorsComprehensive(path: string, detector: DG.Func): Promise<DG.DataFrame> {
   const pi = DG.TaskBarProgressIndicator.create('Test detectors...');
 
   const fileList = await grok.dapi.files.list(path, true, '');
@@ -45,9 +115,7 @@ export async function _testDetectors(path: string, detector: DG.Func): Promise<D
   return resDf;
 }
 
-let testDialog: DG.Dialog | null = null;
-let testDialogSubs: Subscription[] = [];
-
+/** UI for _testDetectorsComprehensive function */
 export function _testDetectorsDialog(): void {
   const funcArray = DG.Func.find({tags: ['semTypeDetector']});
   // TODO: consider automatic choice of connections
@@ -56,24 +124,16 @@ export function _testDetectorsDialog(): void {
   const pathInput = ui.choiceInput('Path', dirsArray[0], dirsArray);
   const detectorInput = ui.choiceInput('Detector', funcArray[0], funcArray);
 
-  if (testDialog == null) {
-    testDialog = ui.dialog('Test semType detectors')
-      .add(ui.div([
-        pathInput.root,
-        detectorInput.root,
-      ]))
-      .onOK(async () => {
-        const path = pathInput.value;
-        const detector: DG.Func = detectorInput.value;
-        const df = await _testDetectors(path, detector);
-        grok.shell.addTableView(df);
-      })
-      .show();
-
-    testDialogSubs.push(testDialog.onClose.subscribe((value) => {
-      testDialogSubs.forEach((s) => {s.unsubscribe();});
-      testDialogSubs = [];
-      testDialog = null;
-    }));
-  }
+  ui.dialog('Test semType detectors')
+    .add(ui.div([
+      pathInput.root,
+      detectorInput.root,
+    ]))
+    .onOK(async () => {
+      const path = pathInput.value;
+      const detector: DG.Func = detectorInput.value;
+      const df = await _testDetectorsComprehensive(path, detector);
+      grok.shell.addTableView(df);
+    })
+    .show({x: 350, y: 100});
 }

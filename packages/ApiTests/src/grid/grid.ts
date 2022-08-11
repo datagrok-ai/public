@@ -14,31 +14,28 @@ category('Grid', () => {
     grid = v.grid;
   });
 
-  test('grid.setOrder', async () => {
+  test('setOrder', async () => {
     grid.columns.setOrder(['race', 'age']);
-    const firstCol = grid.columns.byIndex(1);
-    const secondCol = grid.columns.byIndex(2);
-    if (firstCol?.dart.columnName != 'race' || secondCol?.dart.columnName != 'age')
+    const firstCol = grid.columns.byIndex(4);
+    const secondCol = grid.columns.byIndex(6);
+    if (firstCol?.name != 'race' || secondCol?.name != 'age')
+      // eslint-disable-next-line no-throw-literal
       throw 'grid.setOrder does not work';
   });
 
-  test('grid.resizeColumn', async () => {
-    let check = false;
-
-    grid.onColumnResized.subscribe((_) => {check = true;});
+  test('resizeColumn', async () => {
     grid.columns.byName('age')!.width = 200;
-
-    if (check == false)
-      throw 'Column Resize error';
+    expect(grid.columns.byName('age')!.width, 200);
   });
 
-  test('grid.filter', async () => {
+  test('filter', async () => {
     demog.rows.match('sex = M').filter();
     if (demog.filter.trueCount != 605)
+      // eslint-disable-next-line no-throw-literal
       throw 'Filtering error';
   });
 
-  test('grid.colorCoding', async () => {
+  test('colorCoding', async () => {
     grid.col('race')!.categoryColors = {
       'Asian': 0xFF0000FF,
       'Black': 0xFF800080,
@@ -54,41 +51,57 @@ category('Grid', () => {
 
     //categorical RACE column check
     const raceTags: string[] = Array.from(demog.col('race')!.tags);
-    if (!hasTag(raceTags, '.color-coding-categorical') || !hasTag(raceTags, '{"Asian":4278190335,"Black":4286578816,"Caucasian":4278547786,"Other":4293188935}'))
+    if (!hasTag(raceTags, '.color-coding-categorical') ||
+      !hasTag(raceTags, '{"Asian":4278190335,"Black":4286578816,"Caucasian":4278547786,"Other":4293188935}'))
+      // eslint-disable-next-line no-throw-literal
       throw 'Categorical Color Coding error';
 
     //numerical HEIGHT column check for Conditional ColorCoding
     const heightTags: string[] = Array.from(demog.col('height')!.tags);
-    if (!hasTag(heightTags, '.color-coding-type') || !hasTag(heightTags, 'Conditional') || !hasTag(heightTags, '.color-coding-conditional') || !hasTag(heightTags, '{"20-170":"#00FF00","170-190":"#220505"}'))
+    if (!hasTag(heightTags, '.color-coding-type') ||
+      !hasTag(heightTags, 'Conditional') ||
+      !hasTag(heightTags, '.color-coding-conditional') ||
+      !hasTag(heightTags, '{"20-170":"#00FF00","170-190":"#220505"}'))
+      // eslint-disable-next-line no-throw-literal
       throw 'Conditional Color Coding error';
 
     //numerical AGE column check for Linear ColorCoding
     const ageTags: string[] = Array.from(demog.col('age')!.tags);
-    if (!hasTag(ageTags, '.color-coding-type') || !hasTag(ageTags, 'Linear') || !hasTag(ageTags, '.color-coding-linear') || !hasTag(ageTags, '[4294944000, 4278255360]'))
+    if (!hasTag(ageTags, '.color-coding-type') ||
+      !hasTag(ageTags, 'Linear') ||
+      !hasTag(ageTags, '.color-coding-linear') ||
+      !hasTag(ageTags, '[4294944000, 4278255360]'))
+      // eslint-disable-next-line no-throw-literal
       throw 'Linear Color Coding error';
   });
 
-  test('grid.columnVisibility', async () => {
+  test('columnVisibility', async () => {
     const studyColVisible = grid.columns.byName('~study')!.visible;
 
     grid.columns.setVisible(['age', 'sex', 'race', 'height', 'weight', 'site', 'subj', 'started']);
     const diseaseColVisible = grid.columns.byName('disease')!.visible;
 
-    if (studyColVisible != false)
+    if (studyColVisible)
+      // eslint-disable-next-line no-throw-literal
       throw 'Hiding a column by adding ~ to the name doesn\'t work';
 
-    if (diseaseColVisible != false)
+    if (diseaseColVisible)
+      // eslint-disable-next-line no-throw-literal
       throw 'Hiding a column by using columns.setVisible doesn\'t work';
   });
 
 
-  test('grid.columnControlledValues', async () => {
+  test('columnControlledValues', async () => {
     demog.col('site')!.tags[DG.TAGS.CHOICES] = '["New York", "Buffalo"]';
     demog.col('site')!.tags[DG.TAGS.AUTO_CHOICES] = 'New York';
 
     const siteTags: string[] = Array.from(demog.col('site')!.tags);
 
-    if (!hasTag(siteTags, '.choices') || !hasTag(siteTags, '["New York", "Buffalo"]') || !hasTag(siteTags, '.auto-choices') || !hasTag(siteTags, 'New York'))
+    if (!hasTag(siteTags, '.choices') ||
+      !hasTag(siteTags, '["New York", "Buffalo"]') ||
+      !hasTag(siteTags, '.auto-choices') ||
+      !hasTag(siteTags, 'New York'))
+      // eslint-disable-next-line no-throw-literal
       throw 'Column Controlled Values (Choices) error';
   });
 
@@ -98,11 +111,6 @@ category('Grid', () => {
 
     for (const col of demog.columns.categorical)
       expect(grid.col(col.name)?.renderer.cellType, DG.TYPE.STRING);
-  });
-
-  after(async () => {
-    v.close();
-    grok.shell.closeAll();
   });
 
   function hasTag(colTags: string[], colTagValue: string): boolean {

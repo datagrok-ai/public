@@ -8,7 +8,10 @@ export let _package = new DG.Package();
 
 export async function chemblSubstructureSearch(molecule: string): Promise<DG.DataFrame> {
     try {
-        let df = await grok.data.query(`${_package.name}:patternSubstructureSearch`, {'pattern': molecule, 'maxRows': 100});
+        const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
+        const smarts = mol.get_smarts();
+        mol?.delete();
+        let df = await grok.data.query(`${_package.name}:patternSubstructureSearch`, {'pattern': smarts, 'maxRows': 100});
         if (df == null)
             return DG.DataFrame.create();
         return df;
@@ -75,7 +78,7 @@ export function chemblSearchWidgetLocalDb(mol: string, substructure: boolean = f
     return new DG.Widget(panel);
 }
 
-//name: Chembl Substructure Search Panel
+//name: Chembl Substructure Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
@@ -84,7 +87,7 @@ export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
     return chemblSearchWidgetLocalDb(mol, true);
 }
 
-//name: Chembl Similarity Search Panel
+//name: Chembl Similarity Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result

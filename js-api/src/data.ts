@@ -38,7 +38,7 @@ export class DemoDatasets {
    *
    * @returns {DataFrame} */
   getDemoTable(dataset: DemoDatasetName, rows: number = 10000, columns: number = 3): DataFrame {
-    return new DataFrame(api.grok_TestData(dataset, rows, columns));
+    return toJs(api.grok_TestData(dataset, rows, columns));
   }
 
   /** Wearable sensor data: time, x, y, z, temp, eda

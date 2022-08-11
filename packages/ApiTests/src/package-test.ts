@@ -14,6 +14,7 @@ import './views/events';
 import './views/layouts';
 import './views/files-view';
 import './dapi/files';
+import './dapi/functions';
 import './dapi/fetch';
 import './dapi/admin';
 import './dapi/groups';
@@ -39,36 +40,9 @@ import './ui/accordion';
 import './ui/tab-control';
 import './ui/list';
 import './ui/image';
-import './gui/anonimize';
-import './gui/cluster';
 import './ui/viewers-adding';
 import './grid/grid';
-import './gui/random-data';
-import './gui/missing-values-imputation';
 import './connections/demo_queries';
-import './gui/aggregate-rows';
-import './gui/multivariate-analysis';
-import './gui/pca';
-import './gui/spe';
-import './gui/split-columns';
-import './gui/add-new-column';
-import './gui/data-search';
-import './gui/delete-rows-columns';
-import './gui/filters';
-import './gui/unpivot';
-import './gui/viewers/scatter-plot'
-import './gui/viewers/bar-chart'
-import './gui/viewers/pie-chart'
-import './gui/viewers/histogram'
-import './gui/viewers/matrix-plot'
-import './gui/viewers/pc-plot'
-import './gui/viewers/density-plot'
-import './gui/viewers/scatter-plot-3d.ts'
-import './gui/viewers/word-cloud'
-import './gui/viewers/network-diagram'
-import './gui/viewers/box-plot'
-import './gui/chem-similarity-search'
-import './gui/r-groups-analysis'
 
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();

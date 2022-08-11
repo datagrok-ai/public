@@ -6,6 +6,7 @@ import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils
 import {ClickableTextRenderer} from "@datagrok-libraries/gridext/src/renderer/ClickableTextRenderer";
 import {RendererUIManager} from "@datagrok-libraries/gridext/src/renderer/RendererUIManager";
 import {DateCellRenderer} from "@datagrok-libraries/gridext/src/renderer/DateCellRenderer";
+import dayjs from 'dayjs';
 
 
 //tags: app
@@ -16,7 +17,7 @@ export async function demoDateRenderer() {
   const dframe: DG.DataFrame = grok.data.demo.randomWalk(nRowCount, nColCount);
   const colDate = dframe.columns.addNewDateTime('New Date');
   for (let nR = 0; nR < nRowCount; ++nR) {
-    colDate.set(nR, DG.DateTime.fromDate(new Date()));
+    colDate.set(nR, dayjs());
   }
 
   const view: DG.TableView = grok.shell.addTableView(dframe);
