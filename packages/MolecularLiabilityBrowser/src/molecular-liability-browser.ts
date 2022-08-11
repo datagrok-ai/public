@@ -432,6 +432,9 @@ export class MolecularLiabilityBrowser {
   private _mlbDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
   private _regions: VdRegion[] = [];
   private _treeDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
+  private _predictedPtmDf: DG.DataFrame;
+  private _observedPtmDf: DG.DataFrame;
+
   private viewSubs: Subscription[] = [];
 
   get mlbDf(): DG.DataFrame { return this._mlbDf; }
@@ -440,13 +443,22 @@ export class MolecularLiabilityBrowser {
 
   get treeDf(): DG.DataFrame { return this._treeDf; }
 
-  async setData(mlbDf: DG.DataFrame, treeDf: DG.DataFrame, regions: VdRegion[]): Promise<void> {
+  get predictedPtmDf(): DG.DataFrame { return this._predictedPtmDf; }
+
+  get observedPtmDf(): DG.DataFrame { return this._observedPtmDf; }
+
+  async setData(
+    mlbDf: DG.DataFrame, treeDf: DG.DataFrame, regions: VdRegion[], predictedPtmDf, observedPtmDf
+  ): Promise<void> {
     console.debug(`MLB: MolecularLiabilityBrowser.setData() start, ${((Date.now() - _startInit) / 1000).toString()} s`);
     await this.destroyView();
     this._mlbDf = mlbDf;
 
     this._treeDf = treeDf;
     this._regions = regions;
+    this._predictedPtmDf = predictedPtmDf;
+    this._observedPtmDf = observedPtmDf;
+
     await this.buildView();
 
     console.debug(`MLB: MolecularLiabilityBrowser.setData() end, ${((Date.now() - _startInit) / 1000).toString()} s`);
@@ -542,13 +554,20 @@ export class MolecularLiabilityBrowser {
     });
   }
 
-  private static buildFilterList(pf: FilterPropertiesType, cdrName: string): FilterDesc[] {
+  private static buildFilterList(
+    pf: FilterPropertiesType, cdrName: string, predictedPtmCsv: string, observedPtmCsv: string
+  ): FilterDesc[] {
     const filterList: FilterDesc[] = [];
 
     for (const pfName of pf.names)
       filterList.push({type: 'histogram', column: pfName});
 
-    filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter', currentCdr: cdrName});
+    filterList.push({
+      type: 'MolecularLiabilityBrowser:ptmFilter',
+      currentCdr: cdrName,
+      predictedPtm: predictedPtmCsv,
+      observedPtm: observedPtmCsv
+    });
     return filterList;
   }
 
@@ -652,8 +671,9 @@ export class MolecularLiabilityBrowser {
         const k = 11;
       }
 
-      await this.dataLoader.refDfPromise;
-      const filterList: FilterDesc[] = MolecularLiabilityBrowser.buildFilterList(this.pf, this.cdrName);
+      // await this.dataLoader.refDfPromise;
+      const filterList: FilterDesc[] = MolecularLiabilityBrowser.buildFilterList(
+        this.pf, this.cdrName, this.predictedPtmDf.toCsv(), this.observedPtmDf.toCsv());
       this.filterView = this.mlbView.filters({filters: filterList}) as DG.FilterGroup;
       this.filterViewDn = this.mlbView.dockManager.dock(
         this.filterView, DG.DOCK_TYPE.FILL, this.filterHostDn, 'Filter in box');
@@ -701,20 +721,12 @@ export class MolecularLiabilityBrowser {
 
       if (this.regionsViewer === null) {
         const tempDf = DG.DataFrame.fromObjects([{}]);
-        this.regionsViewer = (await tempDf.plot.fromType('VdRegions')) as unknown as VdRegionsViewer;
-        //TODO: check the await
-        await this.regionsViewer.setDf(this.mlbDf, this.regions).then(() => {
-          this.mlbView.dockManager.dock(this.regionsViewer.root, DG.DOCK_TYPE.DOWN, this.mlbGridDn, 'Regions', 0.3);
-        });
-      } else {
-        // this.regionsViewer.numberingScheme = this.schemeName;
-        // this.regionsViewer.setOptions({numberingScheme: this.schemeName});
-
-        // TODO: Set all required props before setDf (or together with)
-        //TODO: check the await
-        await this.regionsViewer.setDf(this.mlbDf, this.regions);
-        this.mlbView.dockManager.dock(this.regionsViewer.root, DG.DOCK_TYPE.DOWN, this.mlbGridDn, 'Regions', 0.3);
+        this.regionsViewer = (await tempDf.plot.fromType(
+          'VdRegions', {skipEmptyPositions: true})) as unknown as VdRegionsViewer;
       }
+      this.mlbView.dockManager.dock(this.regionsViewer.root, DG.DOCK_TYPE.DOWN, this.mlbGridDn, 'Regions', 0.3);
+      //TODO: check the await
+      await this.regionsViewer.setDf(this.mlbDf, this.regions);
 
       this.updateView();
 
@@ -838,14 +850,16 @@ export class MolecularLiabilityBrowser {
     const pi = DG.TaskBarProgressIndicator.create('Loading data...');
     try {
       const t1 = Date.now();
-      const [mlbDf, hChainDf, lChainDf, treeDf, regions]:
-        [DG.DataFrame, DG.DataFrame, DG.DataFrame, DG.DataFrame, VdRegion[]] =
+      const [mlbDf, hChainDf, lChainDf, treeDf, regions, predictedPtmDf, observedPtmDf]:
+        [DG.DataFrame, DG.DataFrame, DG.DataFrame, DG.DataFrame, VdRegion[], DG.DataFrame, DG.DataFrame] =
         await Promise.all([
           this.dataLoader.getMlbByAntigen(this.antigenName),
           this.dataLoader.getAnarci(this.schemeName, 'heavy', this.antigenName),
           this.dataLoader.getAnarci(this.schemeName, 'light', this.antigenName),
           this.dataLoader.getTreeByAntigen(this.antigenName),
           this.dataLoader.getLayoutBySchemeCdr(this.schemeName, this.cdrName),
+          this.dataLoader.getPredictedPtmByAntigen(this.antigenName),
+          this.dataLoader.getObservedPtmByAntigen(this.antigenName),
         ])
           .catch((reason) => {
             grok.shell.error(reason.toString());
@@ -858,7 +872,10 @@ export class MolecularLiabilityBrowser {
         MolecularLiabilityBrowser.prepareDataMlbDf(mlbDf, hChainDf, lChainDf,
           this.antigenName, this.schemeName, this.pf),
         MolecularLiabilityBrowser.prepareDataTreeDf(treeDf),
-        regions);
+        regions,
+        predictedPtmDf,
+        observedPtmDf
+      );
 
       const t3 = Date.now();
       console.debug(`MLB: MolecularLiabilityBrowser.loadData() prepare ET, ${((t3 - t2) / 1000).toString()} s`);

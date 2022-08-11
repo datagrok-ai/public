@@ -207,6 +207,32 @@ FROM mlb.antibody_anarci_aho_light as ma
 WHERE ab2ag.antigen = @antigen;
 --end
 
+
+--name: getPredictedPtmByAntigen
+--connection: MolecularLiabilityBrowserData:MLB
+--input: string antigen
+select
+    ptm_pred.*
+from
+    mlb.ptm_predicted_v2 as ptm_pred
+        JOIN mlb.antibody2antigen as ab2ag ON ab2ag.v_id = ptm_pred.v_id
+        JOIN mlb.antigen as ag ON ag.antigen = ab2ag.antigen
+WHERE ag.antigen = @antigen;
+--end
+
+--name: getObservedPtmByAntigen
+--connection: MolecularLiabilityBrowserData:MLB
+--input: string antigen
+select
+    ptm_obs.*
+from
+    mlb.ptm_observed_v2 as ptm_obs
+        JOIN mlb.antibody2antigen as ab2ag ON ab2ag.v_id = ptm_obs.v_id
+        JOIN mlb.antigen as ag ON ag.antigen = ab2ag.antigen
+WHERE ag.antigen = @antigen;
+--end
+
+
 --name: get3D
 --connection: MolecularLiabilityBrowserData:MLB
 --input: string vid = "VR000030945"

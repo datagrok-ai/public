@@ -80,10 +80,10 @@ export async function initMlb() {
 //tags: filter
 //output: filter result
 export function ptmFilter() {
-  if (!(dl.ptmMap && dl.cdrMap && dl.refDf))
+  if (!(dl.predictedPtmMap && dl.predictedCdrMap && dl.observedPtmMap && dl.observedCdrMap))
     throw new Error(`MLB: Filter data is not initialized!`);
 
-  const flt: PtmFilter = new PtmFilter(dl.ptmMap, dl.cdrMap, dl.refDf);
+  const flt: PtmFilter = new PtmFilter(dl.predictedPtmMap, dl.predictedCdrMap, dl.observedPtmMap, dl.observedCdrMap);
   return flt;
 }
 
