@@ -1,0 +1,19 @@
+{
+  "#type": "DataConnection",
+  "name": "MSSQLTest",
+  "friendlyName": "NorthwindTest",
+  "parameters": {
+    "server": "dev.datagrok.ai",
+    "port": 21433,
+    "db": "northwind"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "MS SQL",
+  "description": "Northwind test database",
+  "tags": ["demo"]
+}

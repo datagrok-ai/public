@@ -4,12 +4,15 @@ import {Subscription} from 'rxjs';
 import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 category('View events', () => {
-  let df = grok.data.demo.demog();
+  let df: DG.DataFrame;
   let tv: DG.TableView;
   const subs: Subscription[] = [];
 
   before(async () => {
     df = grok.data.demo.demog();
+    for (const v of grok.shell.tableViews)
+      if (v.table?.name === df.name)
+        v.close();
     tv = grok.shell.addTableView(df);
   });
   test('On view adding', async () => {
@@ -50,13 +53,19 @@ category('View events', () => {
     }
   });
 
-  test('On view renamed', async () => {
+  test('On view renamed', () => new Promise((resolve, reject) => {
+    const name = tv.name;
     subs.push(grok.events.onViewRenamed.subscribe((view) => {
-      expect(tv.name, view.name);
+      if (view.name === 'new name')
+        resolve('OK');
     }));
-    expect(tv.name, df.name);
-    tv.name = 'new name';
-  });
+    try {
+      tv.name = 'new name';
+      setTimeout(() => reject('Failed to rename a view'), 10);
+    } finally {
+      tv.name = name;
+    }
+  }));
 
   test('On current view changed', async () => {
     const currentView = grok.shell.v;
