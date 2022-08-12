@@ -27,7 +27,7 @@ export class SubmitView extends HitTriageBaseView {
     let folder = `${time}_${grok.shell.user.login}`;
     await _package.files.writeAsText(`${folder}/session.json`, JSON.stringify(this.app.template));
 
-    await _package.files.writeAsText(`${folder}/molecules.csv`, this.app.template.enrichedDataFrame!.toCsv());
+    await _package.files.writeAsText(`${folder}/molecules.csv`, this.app.template.enrichedTable!.toCsv());
 
     grok.shell.info('Submitted successfully.')
   }
