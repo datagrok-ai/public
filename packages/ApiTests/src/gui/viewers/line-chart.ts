@@ -2,7 +2,7 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue} from '../gui-utils';
+import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer} from '../gui-utils';
 import { Viewer } from 'datagrok-api/dg';
 
 category('Viewers: Line Chart', () => {

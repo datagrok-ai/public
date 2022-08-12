@@ -2,7 +2,7 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue} from '../gui-utils';
+import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer} from '../gui-utils';
 import { Viewer } from 'datagrok-api/dg';
 
 category('Viewers: PC Plot', () => {
@@ -74,14 +74,7 @@ category('Viewers: PC Plot', () => {
     }         
   });  
   test('pcPlot.serialization', async () => {
-    let project = DG.Project.create();
-    project.name = 'Test project with PC Plot'
-    project.addChild(demog.getTableInfo());
-    project.addChild(v.saveLayout());  
-    await grok.dapi.layouts.save(v.saveLayout());
-    await grok.dapi.tables.uploadDataFrame(demog);
-    await grok.dapi.tables.save(demog.getTableInfo());
-    await grok.dapi.projects.save(project);
+    await uploadProject('Test project with P C Plot', demog.getTableInfo(), v, demog);
 
     grok.shell.closeAll(); await delay(500);
 
@@ -91,13 +84,8 @@ category('Viewers: PC Plot', () => {
 
     isViewerPresent(Array.from(v.viewers), 'PC Plot');
 
-    let pcPlot:DG.Viewer;
-    for (let i:number = 0; i < Array.from(v.viewers).length; i++) {
-        if (Array.from(v.viewers)[i].type == 'PC Plot') {
-            pcPlot = Array.from(v.viewers)[i];
-            break;
-        }
-    }
+    let pcPlot = findViewer('PC Plot', v);
+
     if (pcPlot!.props.columnNames.length != 3)
         throw 'columnNames property has not been deserialized' 
     if (pcPlot!.props.colorColumnName != 'height')
