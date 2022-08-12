@@ -193,14 +193,11 @@ export class ComputationView extends FunctionView {
     };
 
     const renderPinnedCard = async (funcCall: DG.FuncCall) => {
-      // FIXME: black magic to get author
-      const author = DG.toJs(funcCall.dart.x2.a);
-
       const card = ui.divH([
         ui.divV([
           ui.divText(funcCall.options['title'] ?? 'Default title', 'title'),
           ...(funcCall.options['annotation']) ? [ui.divText(funcCall.options['annotation'], 'description')]: [],
-          ui.divH([ui.render(author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
+          ui.divH([ui.render(funcCall.author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
         ]),
         ui.divH([
           ui.iconFA('pen', async (ev) => {
@@ -214,16 +211,14 @@ export class ComputationView extends FunctionView {
     };
 
     const renderHistoryCard = async (funcCall: DG.FuncCall) => {
-      // FIXME: black magic to get author
-      const author: DG.User = DG.toJs(funcCall.dart.x2.a);
-      const icon = author.picture as HTMLElement;
+      const icon = funcCall.author.picture as HTMLElement;
       icon.style.width = '25px';
       icon.style.height = '25px';
       icon.style.fontSize = '20px';
       icon.style.marginRight = '3px';
       icon.style.alignSelf = 'center';
-      const userLabel = ui.label(author.friendlyName, 'd4-link-label');
-      ui.bind(author, userLabel);
+      const userLabel = ui.label(funcCall.author.friendlyName, 'd4-link-label');
+      ui.bind(funcCall.author, userLabel);
 
       const card = ui.divH([
         ui.divH([
