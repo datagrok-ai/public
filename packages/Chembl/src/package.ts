@@ -23,7 +23,10 @@ export async function chemblSubstructureSearch(molecule: string): Promise<DG.Dat
 
 export async function chemblSimilaritySearch(molecule: string): Promise<DG.DataFrame> {
     try {
-        let df = await grok.data.query(`${_package.name}:patternSimilaritySearch`, {'pattern': molecule, 'maxRows': 100});
+        const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molecule);
+        const smiles = mol.get_smiles();
+        mol?.delete();
+        let df = await grok.data.query(`${_package.name}:patternSimilaritySearch`, {'pattern': smiles, 'maxRows': 100});
         if (df == null)
             return DG.DataFrame.create();
         return df;
