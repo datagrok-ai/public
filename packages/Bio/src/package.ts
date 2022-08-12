@@ -26,6 +26,10 @@ import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler'
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils'
 
 
+//tags: init
+export async function initBio() {
+}
+
 //name: fastaSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: Sequence
@@ -408,3 +412,4 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
   resDf.name = `datasets_detectMacromolecule_${path}`;
   return resDf;
 }
+
