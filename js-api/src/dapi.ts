@@ -821,6 +821,10 @@ export class FileSource {
     return api.grok_Dapi_UserFiles_ReadAsText(file);
   }
 
+  async readCsv(file: FileInfo | string): Promise<DataFrame> {
+    return DataFrame.fromCsv(await this.readAsText(file));
+  }
+
   /** Reads a file as bytes.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file
