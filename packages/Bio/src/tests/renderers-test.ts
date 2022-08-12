@@ -1,4 +1,4 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -12,6 +12,7 @@ category('renderers', () => {
   let dfList: DG.DataFrame[];
 
   before(async () => {
+    await grok.functions.call('Bio:initBio');
     tvList = [];
     dfList = [];
   });
@@ -50,7 +51,7 @@ category('renderers', () => {
 
     const msaSeqCol: DG.Column | null = await multipleSequenceAlignmentAny(df, srcSeqCol!);
     tv.grid.invalidate();
-
+    
     expect(msaSeqCol!.semType, DG.SEMTYPE.MACROMOLECULE);
     expect(msaSeqCol!.getTag(DG.TAGS.UNITS), 'fasta');
     expect(msaSeqCol!.getTag('aligned'), 'SEQ.MSA');
