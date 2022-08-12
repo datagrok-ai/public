@@ -23,6 +23,7 @@ public class GrokConnect {
     private static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Property.class, new PropertyAdapter())
             .create();
+    private static boolean needToReboot = false;
 
     public static void main(String[] args) {
         int port = 1234;
@@ -98,7 +99,8 @@ public class GrokConnect {
 
                 } catch (Throwable ex) {
                     buffer = packException(result,ex);
-
+                    if (ex instanceof OutOfMemoryError)
+                        needToReboot = true;
                 }
                 finally {
                     if (call != null)
@@ -252,6 +254,22 @@ public class GrokConnect {
             SettingsManager.getInstance().setSettings(settings);
             ConnectionPool.getInstance().setTimer();
             return null;
+        });
+
+        get("/health", (request, response) -> {
+            int status;
+            String body;
+            if (needToReboot) {
+                status = 500;
+                body = "Grok connect needs a reboot";
+            }
+            else {
+                status = 200;
+                body = "OK";
+            }
+
+            response.status(status);
+            return body;
         });
     }
 
