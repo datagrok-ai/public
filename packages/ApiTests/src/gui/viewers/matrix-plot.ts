@@ -2,7 +2,7 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue} from '../gui-utils';
+import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer} from '../gui-utils';
 import { Viewer } from 'datagrok-api/dg';
 
 category('Viewers: Matrix Plot', () => {
@@ -58,14 +58,7 @@ category('Viewers: Matrix Plot', () => {
         throw 'cellPlotType property has not been set to "scatter"' 
   });  
   test('matrixPlot.serialization', async () => {
-    let project = DG.Project.create();
-    project.name = 'Test project with Matrix Plot'
-    project.addChild(demog.getTableInfo());
-    project.addChild(v.saveLayout());  
-    await grok.dapi.layouts.save(v.saveLayout());
-    await grok.dapi.tables.uploadDataFrame(demog);
-    await grok.dapi.tables.save(demog.getTableInfo());
-    await grok.dapi.projects.save(project);
+    await uploadProject('Test project with Matrix Plot', demog.getTableInfo(), v, demog);
 
     grok.shell.closeAll(); await delay(500);
 
@@ -75,13 +68,8 @@ category('Viewers: Matrix Plot', () => {
 
     isViewerPresent(Array.from(v.viewers), 'Matrix plot');
 
-    let matrixPlot:DG.Viewer;
-    for (let i:number = 0; i < Array.from(v.viewers).length; i++) {
-        if (Array.from(v.viewers)[i].type == 'Matrix plot') {
-            matrixPlot = Array.from(v.viewers)[i];
-            break;
-        }
-    }
+    let matrixPlot = findViewer('Matrix plot', v);
+    
     if (matrixPlot!.props.xColumnNames.length != 3)
         throw 'xColumnNames property has not been deserialized incorrectly' 
     if (matrixPlot!.props.yColumnNames.length != 3)

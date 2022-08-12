@@ -2,7 +2,7 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue} from '../gui-utils';
+import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer} from '../gui-utils';
 import { Viewer } from 'datagrok-api/dg';
 
 category('Viewers: Pie Chart', () => {
@@ -67,14 +67,7 @@ category('Viewers: Pie Chart', () => {
         throw 'startAngle property (default) has not been set'
   });  
   test('pieChart.serialization', async () => {
-    let project = DG.Project.create();
-    project.name = 'Test project with Pie Chart'
-    project.addChild(demog.getTableInfo());
-    project.addChild(v.saveLayout());  
-    await grok.dapi.layouts.save(v.saveLayout());
-    await grok.dapi.tables.uploadDataFrame(demog);
-    await grok.dapi.tables.save(demog.getTableInfo());
-    await grok.dapi.projects.save(project);
+    await uploadProject('Test project with Pie Chart', demog.getTableInfo(), v, demog);
 
     grok.shell.closeAll(); await delay(500);
 
@@ -84,13 +77,7 @@ category('Viewers: Pie Chart', () => {
 
     isViewerPresent(Array.from(v.viewers), 'Pie chart');
 
-    let pieChart:DG.Viewer;
-    for (let i:number = 0; i < Array.from(v.viewers).length; i++) {
-        if (Array.from(v.viewers)[i].type == 'Pie chart') {
-            pieChart = Array.from(v.viewers)[i];
-            break;
-        }
-    }
+    let pieChart = findViewer('Pie chart', v);
 
     if (pieChart!.props.includeNulls)
         throw 'includeNulls property has not been deserialized' 
