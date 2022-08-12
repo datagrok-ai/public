@@ -247,7 +247,7 @@ SELECT
      from mlb.jsons_new
      where v_id = @vid) as "real_nums",
     (select json
-     from mlb.ptm_observed_v2
+     from db_v2.json_files_observed
      where v_id = @vid
      limit 1) as "obs_ptm";
 --end
