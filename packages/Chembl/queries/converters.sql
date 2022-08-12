@@ -1,7 +1,7 @@
 --name: chemblIdToSmiles
 --meta.role: converter
 --meta.inputRegexp: (CHEMBL[0-9]+)
---connection: Chembl
+--connection: ChemblSql
 --input: string id = "CHEMBL1185"
 --output: string smiles { semType: Molecule }
 --tags: unit-test
@@ -11,14 +11,14 @@ where d.chembl_id = @id
 --end
 
 --name: molregnoToSmiles
---connection: Chembl
+--connection: ChemblSql
 --input: int molregno
 --output: string smiles { semType: Molecule }
 select canonical_smiles from compound_structures where molregno = @molregno
 --end
 
 --name: nameToSmiles
---connection: Chembl
+--connection: ChemblSql
 --input: string compoundName
 --output: string smiles { semType: Molecule }
 select cs.canonical_smiles
@@ -34,7 +34,7 @@ inner join
 
 
 --name: inchiKeyToChembl
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   molecule_dictionary.chembl_id
@@ -46,7 +46,7 @@ from
 --end
 
 --name: inchiKeyToSmiles
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   compound_structures.canonical_smiles
@@ -57,7 +57,7 @@ from
 --end
 
 --name: inchiKeyToInchi
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   compound_structures.standard_inchi
@@ -68,7 +68,7 @@ from
 --end
 
 --name: chemblToSmiles
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   compound_structures.canonical_smiles
@@ -80,7 +80,7 @@ from
 --end
 
 --name: chemblToInchi
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   compound_structures.standard_inchi
@@ -92,7 +92,7 @@ from
 --end
 
 --name: chemblToInchiKey
---connection: Chembl
+--connection: ChemblSql
 --input: dataframe ids
 select
   compound_structures.standard_inchi_key
