@@ -2,7 +2,7 @@
 --friendlyName: Orders
 --connection: MSSQLNorthwind
 --input: int employeeId = 5
---input: string shipVia = = 3 {pattern: int}
+--input: string shipVia = "=3" {pattern: int}
 --input: double freight = 10.0
 --input: string shipCountry = "France" {choices: Query("SELECT DISTINCT shipCountry FROM Orders")}
 --input: string shipCity = "starts with r" {pattern: string}
