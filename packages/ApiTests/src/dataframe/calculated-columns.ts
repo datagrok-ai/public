@@ -26,65 +26,71 @@ category('DataFrame', () => {
     }
   });
 
-  test('Add new column dialog', async () => {
+  test('Add new column dialog', () => new Promise(async (resolve, reject) => {
     let tv: DG.TableView;
-    await new Promise(async (resolve, reject) => {
-      subs.push(grok.events.onDialogShown.subscribe((d) => {
-        if (d.title == 'Add New Column')
-          resolve('OK');
-        dialogs.push(d);
-      }));
+    subs.push(grok.events.onDialogShown.subscribe((d) => {
+      if (d.title == 'Add New Column')
+        resolve('OK');
+      dialogs.push(d);
+    }));
+    setTimeout(() => {
+      // eslint-disable-next-line prefer-promise-reject-errors
+      reject('Dialog not found');
+    }, 50);
+    try {
+      tv = grok.shell.addTableView(df);
+      await df.dialogs.addNewColumn();
+    } finally {
+      tv!.close();
+      grok.shell.closeTable(df);
+    }
+  }));
+
+  test('Edit formula dialog', () => new Promise(async (resolve, reject) => {
+    subs.push(grok.events.onDialogShown.subscribe((d) => {
+      if (d.title == 'Add New Column')
+        resolve('OK');
+      dialogs.push(d);
+    }));
+    try {
       setTimeout(() => {
         // eslint-disable-next-line prefer-promise-reject-errors
         reject('Dialog not found');
       }, 50);
-      try {
-        tv = grok.shell.addTableView(df);
-        await df.dialogs.addNewColumn();
-      } finally {
-        tv!.close();
-        grok.shell.closeTable(df);
-      }
-    });
-  });
+      const column = await df.columns.addNewCalculated('editable', '0');
+      column.dialogs.editFormula();
+    } finally {
+      df.columns.remove('editable');
+    }
+  }));
 
-  test('Edit formula dialog', async () => {
-    await new Promise(async (resolve, reject) => {
-      subs.push(grok.events.onDialogShown.subscribe((d) => {
-        if (d.title == 'Add New Column')
+  test('Calculated columns addition event', () => new Promise(async (resolve, reject) => {
+    const t = df.clone();
+    subs.push(t.onColumnsAdded.subscribe((data) =>
+      data.args.columns.forEach((column: DG.Column) => {
+        if (column.tags.has(DG.TAGS.FORMULA) && column.name === 'calculated column')
           resolve('OK');
-        dialogs.push(d);
-      }));
-      try {
-        setTimeout(() => {
-          // eslint-disable-next-line prefer-promise-reject-errors
-          reject('Dialog not found');
-        }, 50);
-        const column = await df.columns.addNewCalculated('editable', '0');
-        column.dialogs.editFormula();
-      } finally {
-        df.columns.remove('editable');
-      }
-    });
-  });
-
-  test('Calculated columns addition event', async () => {
-    const t = df.clone();
-    subs.push(t.onColumnsAdded.subscribe((data) => data.args.columns.forEach((column: DG.Column) => {
-      expect(column.name, column.tags.has(DG.TAGS.FORMULA) ? 'calculated column' : 'regular column');
     })));
+
+    setTimeout(() => reject('Failed to add a calculated column'), 50);
+    t.columns.addNewInt('regular column').init(1);
+    await t.columns.addNewCalculated('calculated column', '${x}+${y}-${z}');
+  }));
+
+  test('Calculated columns deletion event', () => new Promise(async (resolve, reject) => {
+    const t = df.clone();
+    subs.push(t.onColumnsRemoved.subscribe((data) =>
+      data.args.columns.forEach((column: DG.Column) => {
+        if (column.tags.has(DG.TAGS.FORMULA) && column.name === 'calculated column')
+          resolve('OK');
+    })));
+
+    setTimeout(() => reject('Failed to delete a calculated column'), 50);
     await t.columns.addNewCalculated('calculated column', '${x}+${y}-${z}');
     t.columns.addNewInt('regular column').init(1);
-  });
-
-  test('Calculated columns deletion event', async () => {
-    const t = df.clone();
-    subs.push(t.onColumnsRemoved.subscribe((data) => data.args.columns.forEach((column: DG.Column) => {
-      expect(column.name, column.tags.has(DG.TAGS.FORMULA) ? 'calculated column' : 'regular column');
-    })));
-    await t.columns.addNewCalculated('calculated column', '${x}+${y}-${z}');
-    t.columns.addNewInt('regular column').init(1);
-  });
+    t.columns.remove('regular column');
+    t.columns.remove('calculated column');
+  }));
 
   after(async () => {
     subs.forEach((sub) => sub.unsubscribe());
