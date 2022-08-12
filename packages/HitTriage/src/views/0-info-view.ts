@@ -7,6 +7,8 @@ export class InfoView extends HitTriageBaseView {
 
   constructor(app: HitTriageApp) {
     super(app);
+    this.name = 'Hit Triage';
+
     _package.files.readAsText('README.md').then((md) => {
       this.root.appendChild(ui.markdown(md));
     });

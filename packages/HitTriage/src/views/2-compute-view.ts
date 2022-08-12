@@ -8,14 +8,15 @@ import {HitTriageApp} from "../hit-triage-app";
 /**
  * Enrichment of the molecular dataset.
  **/
-export class EnrichView extends HitTriageBaseView {
+export class ComputeView extends HitTriageBaseView {
 
   grid: DG.Grid;
 
   constructor(app: HitTriageApp) {
     super(app);
+    this.name = 'Hit Triage | Compute';
 
-    this.grid = this.template.sourceDataFrame!.plot.grid()
+    this.grid = this.template.hitsTable!.plot.grid()
     const content = ui.divV([
       ui.h1('This is where we enrich our data'),
       this.grid
@@ -31,17 +32,17 @@ export class EnrichView extends HitTriageBaseView {
   }
 
   async process(): Promise<any> {
-    this.template.enrichedDataFrame = this.template.sourceDataFrame;
+    this.template.enrichedTable = this.template.hitsTable;
 
-    await this.template.enrichedDataFrame!.columns.addNewCalculated("length", "length(${smiles})");
+    await this.template.enrichedTable!.columns.addNewCalculated("length", "length(${smiles})");
 
     // descriptors
     let descriptors = ["HeavyAtomCount", "NHOHCount"];
-    await grok.chem.descriptors(this.template.enrichedDataFrame!, this.template.sourceMoleculeColumn, descriptors);
+    await grok.chem.descriptors(this.template.enrichedTable!, this.template.hitsMolColumn, descriptors);
 
     // another way to invoke calculations
     //await grok.functions.call('ChemDescriptors', {table: session.enrichedDataFrame, smiles: session.sourceMoleculeColumn, descriptors: descriptors});
 
-    this.grid.dataFrame = this.template.enrichedDataFrame!;
+    this.grid.dataFrame = this.template.enrichedTable!;
   }
 }

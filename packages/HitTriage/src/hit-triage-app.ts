@@ -4,8 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitTriageBaseView} from "./views/hit-triage-base-view";
 import {InfoView} from "./views/0-info-view";
-import {GetMoleculesView} from "./views/1-get-molecules-view";
-import {EnrichView} from "./views/2-enrich-view";
+import {GetMoleculesView} from "./views/1-ingest-view";
+import {ComputeView} from "./views/2-compute-view";
 import {SubmitView} from "./views/4-submit-view";
 
 export class HitTriageApp {
@@ -14,7 +14,7 @@ export class HitTriageApp {
 
   private _infoView?: InfoView;
   private _getMoleculesView?: GetMoleculesView;
-  private _enrichView?: EnrichView;
+  private _computeView?: ComputeView;
   private _filterView?: DG.TableView;
   private _submitView?: SubmitView;
 
@@ -34,16 +34,16 @@ export class HitTriageApp {
 
   get infoView(): InfoView { return this._infoView ??= new InfoView(this); }
   get getMoleculesView(): GetMoleculesView { return this._getMoleculesView ??= new GetMoleculesView(this); }
-  get enrichView(): EnrichView { return this._enrichView ??= new EnrichView(this); }
+  get computeView(): ComputeView { return this._computeView ??= new ComputeView(this); }
   get filterView(): DG.TableView { return this._filterView ??= this.getFilterView(); }
   get submitView(): SubmitView { return this._submitView ??= new SubmitView(this); }
 
   get viewFactories() {
     return {
       '0. Info': () => this.infoView,
-      '1. Get molecules': () => this.getMoleculesView,
-      '2. Enrich': () => this.enrichView,
-      '3. Filter': () => this.filterView,
+      '1. Ingest': () => this.getMoleculesView,
+      '2. Compute': () => this.computeView,
+      '3. Pick': () => this.filterView,
       '4. Submit': () => this.submitView,
     }
   }
@@ -54,7 +54,8 @@ export class HitTriageApp {
    * */
   getFilterView(): DG.TableView {
     const template = this.template;
-    const view = DG.TableView.create(template.sourceDataFrame!, false);
+    const view = DG.TableView.create(template.hitsTable!, false);
+    view.name = 'Hit Triage | Pick'
     setTimeout(function () {
       view._onAdded();
       view.scatterPlot();
@@ -70,13 +71,21 @@ export class HitTriageApp {
 export class HitTriageTemplate {
   project: string = 'New project';
 
-  sourceQuery?: DG.FuncCall;
-  sourceDataFrame?: DG.DataFrame;
-  sourceMoleculeColumn: string = '';
+  hitsQuery: string = '';
+  hitsTable?: DG.DataFrame;
+
+  /** Name of the column that contains molecules */
+  hitsMolColumn: string = '';
+  hitsIdColumn: string = '';
   sourceType: string = 'file';
   sourceDescription: string = '';
 
-  enrichedDataFrame?: DG.DataFrame;
+  hitsTargetsQuery: string = '';
+
+  /** Format: Hit, Target */
+  hitsTargetsTable?: DG.DataFrame;
+
+  enrichedTable?: DG.DataFrame;
   enrichmentSteps: string[] = [];
   enrichmentDescriptions: string[] = [];
 
@@ -86,21 +95,35 @@ export class HitTriageTemplate {
     return {
       'From': this.sourceType,
       'Path': this.sourceDescription,
-      'Total Molecules': this.sourceDataFrame!.rowCount,
+      'Total Molecules': this.hitsTable!.rowCount,
       'Enrich': this.enrichmentDescriptions.join('\n'),
       'Filter': this.filterDescriptions,
-      'Result Molecules': this.sourceDataFrame!.filter.trueCount
+      'Result Molecules': this.hitsTable!.filter.trueCount
     }
+  }
+
+  async loadData(): Promise<void> {
+    this.hitsTable = await grok.dapi.files.readCsv(this.hitsQuery);
+    this.hitsTargetsTable = await grok.dapi.files.readCsv(this.hitsTargetsQuery);
+    await this.hitsTable.meta.detectSemanticTypes();
+    await this.hitsTargetsTable.meta.detectSemanticTypes();
   }
 
   static demo(): HitTriageTemplate {
     const session = new HitTriageTemplate();
     session.project = 'Demo project';
-    session.sourceDataFrame = grok.data.demo.molecules(20000);
-    session.sourceMoleculeColumn = 'smiles';
-    session.sourceDataFrame.meta.detectSemanticTypes().then((_) => {});
+    session.hitsQuery = 'System:AppData/HitTriage/campaigns/chembl-101/hits.csv';
+    session.hitsTargetsQuery = 'System:AppData/HitTriage/campaigns/chembl-101/hits-targets.csv';
+    session.hitsTable = grok.data.demo.molecules(20000);
+    session.hitsMolColumn = 'smiles';
+    session.hitsTable.meta.detectSemanticTypes().then((_) => {});
     session.sourceType = 'file';
-    session.sourceDescription = 'AppData:/HitTriage/campaigns/bfg9000.csv';
+    session.sourceDescription = 'AppData:/HitTriage/campaigns/chembl-101';
     return session;
   }
+}
+
+
+export class HitTriageSession {
+
 }
