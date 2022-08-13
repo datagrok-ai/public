@@ -4,7 +4,7 @@ import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {check} from './utils';
 
 
-category('Date functions', () => {
+category('Functions: Date', () => {
   test('Date', () => check({
     'Date(2020, 1, 1)': dayjs('2020-01-01'),
     'Date(2000, 10, 1)': dayjs('2000-10-01'),

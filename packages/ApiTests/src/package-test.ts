@@ -7,7 +7,6 @@ import './dataframe/events';
 import './functions/functions';
 import './shell/shell';
 import './shell/windows';
-import './viewer/viewer';
 import './views/docking';
 import './views/events';
 import './views/layouts';
@@ -38,9 +37,11 @@ import './ui/accordion';
 import './ui/tab-control';
 import './ui/list';
 import './ui/image';
-import './ui/viewers-adding';
+//import './viewers/viewers-adding';
+import './viewers/viewers';
+
 import './grid/grid';
-import './connections/demo_queries';
+//import './connections/demo_queries';
 
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
