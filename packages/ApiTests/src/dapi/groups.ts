@@ -1,4 +1,4 @@
-import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -13,8 +13,7 @@ category('Dapi: groups', () => {
   });
 
   test('Dapi: groups - find group', async () => {
-    if ((await grok.dapi.groups.filter(testGroupName).first()) === undefined)
-      throw 'Group doesn\'t exist';
+    expect((await grok.dapi.groups.filter('unexisting group').first()), undefined);
   });
 
   test('Dapi: groups - create group', async () => {
@@ -68,18 +67,11 @@ category('Dapi: groups', () => {
   });
 
   test('Dapi: groups - delete group', async () => {
-    let localTestGroup = null as any;
-    try {
-      const localTestGroupName = 'js-api-test-group1';
-
-      localTestGroup = await grok.dapi.groups.createNew(localTestGroupName);
-      await grok.dapi.groups.delete(localTestGroup);
-
-      if (await grok.dapi.groups.filter(localTestGroupName).first() !== undefined)
-        throw 'Group not deleted';
-    } finally {
-      await grok.dapi.groups.delete(localTestGroup);
-    }
+    const localTestGroupName = 'js-api-test-group1';
+    const localTestGroup = await grok.dapi.groups.createNew(localTestGroupName);
+    expect((await grok.dapi.groups.filter(localTestGroupName).first())?.name, localTestGroupName);
+    await grok.dapi.groups.delete(localTestGroup);
+    expect((await grok.dapi.groups.filter(localTestGroupName).first()), undefined);
   });
 
   after(async () => {

@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
   mode: 'development',
   entry: {
-    test: {filename: 'package-test.js', library: {type: 'var', name:`apitests_test`}, import: './src/package-test.ts'},
+    test: {filename: 'package-test.js', library: {type: 'var', name: `apitests_test`}, import: './src/package-test.ts'},
     package: './src/package.ts',
   },
   resolve: {
@@ -11,10 +11,11 @@ module.exports = {
   },
   module: {
     rules: [
-      { test: /\.ts$/,
+      {
+        test: /\.ts$/,
         loader: 'ts-loader',
         exclude: /node_modules/,
-      }
+      },
     ],
   },
   devtool: 'inline-source-map',
@@ -24,7 +25,7 @@ module.exports = {
     'datagrok-api/ui': 'ui',
     'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
-    'rxjs/operators': 'rxjs.operators'
+    'rxjs/operators': 'rxjs.operators',
   },
   output: {
     filename: '[name].js',
