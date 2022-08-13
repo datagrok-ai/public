@@ -2,15 +2,15 @@ import {category, test} from '@datagrok-libraries/utils/src/test';
 import {check} from './utils';
 
 
-category('Statistical functions', () => {
+category('Functions: Statistical', () => {
   test('Avg', () => check({
     'Avg([1, 2, 3, 4])': 2.5,
     'Avg([null, 0.3, 0.7])': 0.5,
     'Avg([5.123])': 5.123,
     'Avg([-1, -2, 3])': 0,
     'Avg([1, null, 2, 3])': 2,
-    'Avg([])': null,
-    'Avg([null, null])': null,
+    'Avg([])': undefined,
+    'Avg([null, null])': undefined,
   }));
 
   test('Kurt', () => check({
@@ -25,7 +25,7 @@ category('Statistical functions', () => {
     'Max([1, null, 2, 3])': 3,
     'Max([null, 1, 0.7, 0.3])': 1,
     'Max([1.5, -2, 1.9])': 1.9,
-    'Max([null, null])': null,
+    'Max([null, null])': undefined,
   }));
 
   test('Med', () => check({
@@ -43,7 +43,7 @@ category('Statistical functions', () => {
     'Min([1, 2, 4, 3])': 1,
     'Min([2, null, 0, 3])': 0,
     'Min([null, 1, 0.7, 0.3])': 0.3,
-    'Min([null, null])': null,
+    'Min([null, null])': undefined,
   }));
 
   test('MissingValueCount', () => check({
@@ -59,8 +59,8 @@ category('Statistical functions', () => {
     'Percentile([1, 2, 3, 4], 0.40)': 2,
     'Percentile([1, 2, 3, 4], 0.75)': 4,
     'Percentile([1, 2, null, 3, 4], 0.25)': 2,
-    'Percentile([null], 0.4)': null,
-    'Percentile([], 0.4)': null,
+    'Percentile([null], 0.4)': undefined,
+    'Percentile([], 0.4)': undefined,
   }));
 
   test('Q1', () => check({
@@ -119,7 +119,7 @@ category('Statistical functions', () => {
     'TotalCount([null, null])': 2,
     'TotalCount([100])': 1,
     'TotalCount([])': 0,
-    'TotalCount(null)': null,
+    'TotalCount(null)': undefined,
   }));
 
   test('ValueCount', () => check({
@@ -129,7 +129,7 @@ category('Statistical functions', () => {
     'ValueCount([null, null])': 0,
     'ValueCount([100])': 1,
     'ValueCount([])': 0,
-    'ValueCount(null)': null,
+    'ValueCount(null)': undefined,
   }));
 
   test('Variance', () => check({

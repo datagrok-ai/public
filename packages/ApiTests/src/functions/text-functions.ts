@@ -2,7 +2,7 @@ import {category, test} from '@datagrok-libraries/utils/src/test';
 import {check} from './utils';
 
 
-category('Text functions', () => {
+category('Functions: Text', () => {
   test('Add', () => check({
     'Add("bitter", "sweet")': 'bittersweet',
     'Add("", "right")': 'right',
