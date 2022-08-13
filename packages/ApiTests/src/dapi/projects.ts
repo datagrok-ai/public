@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 category('Dapi: projects', () => {
   test('Dapi: projects - open', async () => {
-    await grok.dapi.projects.open('demog');
+    //move testto demo package
+   // await grok.dapi.projects.open('demog');
   });
 });

@@ -22,12 +22,14 @@ category('Dapi: user data storage', () => {
 
   test('Dapi: user data storage - put', async () => {
     const storageName = 'js-api-storage-name3';
-    const value1 = {'key': 'value1'};
-    const value2 = {'key': 'value2'};
+    const value1 = {'key1': 'value1'};
+    const value2 = {'key2': 'value2'};
 
     await grok.dapi.userDataStorage.post(storageName, value1);
+    await grok.dapi.userDataStorage.post(storageName, value2);
+    expect(JSON.stringify(await grok.dapi.userDataStorage.get(storageName)),
+      JSON.stringify({'key1': 'value1', 'key2': 'value2'}));
     await grok.dapi.userDataStorage.put(storageName, value2);
-
     const receivedValue = await grok.dapi.userDataStorage.get(storageName);
     expect(JSON.stringify(receivedValue), JSON.stringify(value2));
   });
