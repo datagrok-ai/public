@@ -1,18 +1,10 @@
 const path = require('path');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
-  mode: 'production',
+  mode: 'development',
   entry: {
-    test: {filename: 'package-test.js', library: {type: 'var', name:`demo_test`}, import: './src/package-test.ts'},
-    package: './src/package.ts',
-  },
-  resolve: {
-    extensions: ['.js', '.json', '.ts'],
-  },
-  module: {
-    rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' }
-    ],
+    package: './src/package.js'
   },
   devtool: 'inline-source-map',
   externals: {
@@ -24,10 +16,11 @@ module.exports = {
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
     'dayjs': 'dayjs',
+    'wu': 'wu',
   },
   output: {
     filename: '[name].js',
-    library: 'demo',
+    library: packageName,
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
