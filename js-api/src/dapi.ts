@@ -38,6 +38,11 @@ export class Dapi {
   constructor() {
   }
 
+  /** HTTP root for DAPI */
+  get root(): string {
+    return api.grok_Dapi_Root();
+  }
+
   /** Retrieves entities from server by list of IDs
    *  @returns {Promise<Entity[]>} */
   getEntities(ids: string[]): Promise<Entity[]> {
@@ -194,7 +199,7 @@ export class Dapi {
     // @ts-ignore
     params.headers['original-method'] = params.method;
     params.method = 'POST';
-    return fetch('/api/connectors/proxy', params);
+    return fetch(`${this.root}/connectors/proxy`, params);
   }
 
   /** Administering API endpoint

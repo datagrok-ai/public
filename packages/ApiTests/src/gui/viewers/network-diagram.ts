@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {checkHTMLElement} from '../../ui/utils';
-import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue} from '../gui-utils';
+import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer} from '../gui-utils';
 import { Viewer } from 'datagrok-api/dg';
 
 category('Viewers: Network Diagram', () => {
@@ -68,14 +68,7 @@ category('Viewers: Network Diagram', () => {
         throw 'suspendSimulation property has not been set to TRUE'
   });  
   test('networkDiagram.serialization', async () => {
-    let project = DG.Project.create();
-    project.name = 'Test project with Network Diagram'
-    project.addChild(demog.getTableInfo());
-    project.addChild(v.saveLayout());  
-    await grok.dapi.layouts.save(v.saveLayout());
-    await grok.dapi.tables.uploadDataFrame(demog);
-    await grok.dapi.tables.save(demog.getTableInfo());
-    await grok.dapi.projects.save(project);
+    await uploadProject('Test project with Network Diagram', demog.getTableInfo(), v, demog);
 
     grok.shell.closeAll(); await delay(500);
 
@@ -85,13 +78,7 @@ category('Viewers: Network Diagram', () => {
 
     isViewerPresent(Array.from(v.viewers), 'Network diagram');
 
-    let networkDiagram:DG.Viewer;
-    for (let i:number = 0; i < Array.from(v.viewers).length; i++) {
-        if (Array.from(v.viewers)[i].type == 'Network diagram') {
-            networkDiagram = Array.from(v.viewers)[i];
-            break;
-        }
-    }
+    let networkDiagram = findViewer('Network diagram', v);
 
     if (networkDiagram!.props.node1ColumnName != 'age')
         throw 'Node1 column has not been deserialized' 

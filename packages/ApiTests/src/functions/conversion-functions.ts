@@ -2,7 +2,7 @@ import {category, test} from '@datagrok-libraries/utils/src/test';
 import {check} from './utils';
 
 
-category('Conversion functions', () => {
+category('Functions: Conversions', () => {
   test('Boolean', () => check({
     'Boolean(true)': true,
     'Boolean("true")': true,

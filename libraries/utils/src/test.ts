@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import {Observable, Subscription} from "rxjs";
 
 export const tests: {
   [key: string]: {
@@ -46,6 +47,29 @@ export class Test {
       });
     };
   }
+}
+
+export function testEvent<T>(event: Observable<T>,
+  handler: (args: T) => void,
+  trigger: () => void, ms: number = 50): Promise<string> {
+  let sub: Subscription;
+  return new Promise((resolve, reject) => {
+    sub = event.subscribe((args) => {
+      try {
+        handler(args);
+      } catch (e) {
+        reject(e);
+      }
+      sub.unsubscribe();
+      resolve('OK');
+    });
+    setTimeout(() => {
+      sub.unsubscribe();
+      // eslint-disable-next-line prefer-promise-reject-errors
+      reject('timeout');
+    }, ms);
+    trigger();
+  });
 }
 
 export function test(name: string, test: () => Promise<any>, options?: TestOptions): void {
@@ -170,11 +194,13 @@ export async function runTests(options?: { category?: string, test?: string }) {
 
 async function execTest(t: Test, predicate: string | undefined) {
   let r: { category?: string, name?: string, success: boolean, result: string, ms: number };
-  console.log(`Started ${t.category} ${t.name}`);
+  const skip = predicate != undefined && (!t.name.toLowerCase().startsWith(predicate.toLowerCase()));
+  if (!skip)
+    console.log(`Started ${t.category} ${t.name}`);
   const start = new Date();
 
   try {
-    if (predicate != undefined && (!t.name.toLowerCase().startsWith(predicate.toLowerCase())))
+    if (skip)
       r = {success: true, result: 'skipped', ms: 0};
     else
       r = {success: true, result: await t.test() ?? 'OK', ms: 0};
@@ -184,7 +210,8 @@ async function execTest(t: Test, predicate: string | undefined) {
   const stop = new Date();
   // @ts-ignore
   r.ms = stop - start;
-  console.log(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
+  if (!skip)
+    console.log(`Finished ${t.category} ${t.name} for ${r.ms} ms`);
 
   r.category = t.category;
   r.name = t.name;

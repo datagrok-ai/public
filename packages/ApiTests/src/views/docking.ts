@@ -4,7 +4,7 @@ import {after, before, category, expect, test} from '@datagrok-libraries/utils/s
 import wu from 'wu';
 
 
-category('Docking', () => {
+category('View: Docking', () => {
   let df: DG.DataFrame;
   let tv: DG.TableView;
 
@@ -13,7 +13,7 @@ category('Docking', () => {
     tv = grok.shell.addTableView(df);
   });
 
-  test('TableView.dockManager.dock', async () => {
+  test('dock', async () => {
     expect(wu(tv.viewers).find((v) => v.tags['test']), undefined);
     const viewer = df.plot.scatter();
     viewer.tags['test'] = 'true';

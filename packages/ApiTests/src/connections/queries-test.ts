@@ -1,16 +1,17 @@
 import {after, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { _package } from '../package-test';
+import {_package} from "../package-test";
 
 category('Connections', () => {
-  test('queriesTest', async () => {
-    const queries = await grok.dapi.queries.filter(`options.testExpectedRows != null and package.shortName = "${_package.name}"`).include('params').list();
-   
+  test('demoQueries', async () => {
+    const queries = await grok.dapi.queries.filter(`options.expected != null and "${_package.name}"`).include('params').list();
+
     for (const query of queries) {
       const call = query.prepare();
 
-      console.log("NAME: " + query.name);      
+      if (query.name == '')
+        continue;
 
       for (const property of query.inputs)
         property.set(call, property.defaultValue == null ? property.defaultValue : await grok.functions.eval(`${property.defaultValue}`));
@@ -19,11 +20,11 @@ category('Connections', () => {
 
       const t = call.getOutputParamValue() as DG.DataFrame;
       if (t == null)
-        throw 'Result of ' + query.name + 'is not a DataFrame';
+        throw ' Result of ' + query.name + 'is not a DataFrame';
 
-      if (t.rowCount != query.options.testExpectedRows)
+      if (t.rowCount != query.options.testExpected)
         // eslint-disable-next-line no-throw-literal
-        throw 'Rows number in' + query.name + 'table is not as expected';
+        throw ' Rows number in' + query.name + 'table is not as expected';
     }
   });
 });

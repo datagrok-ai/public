@@ -1,4 +1,6 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import { ConsoleMessage } from 'puppeteer';
 
 export function isExceptionElement(action: string):void {
   const exceptionElement = document.getElementsByClassName('grok-global-exception');
@@ -59,4 +61,49 @@ export function returnDialog(dialogTitle:string):DG.Dialog | undefined {
 
 export function setDialogInputValue(dialogTitle:string, inputName:string, value:string | number | boolean | DG.Column | DG.Column[]):void {
     returnDialog(dialogTitle)!.input(inputName).value = value;
+}
+
+export async function uploadProject(projectName:string, tableInfo:DG.TableInfo, view:DG.TableView, df:DG.DataFrame):Promise<void> {
+  let project = DG.Project.create();
+  project.name = projectName;
+  project.addChild(tableInfo);
+  project.addChild(view.saveLayout());  
+  await grok.dapi.layouts.save(view.saveLayout());
+  await grok.dapi.tables.uploadDataFrame(df);
+  await grok.dapi.tables.save(tableInfo);
+  await grok.dapi.projects.save(project);
+}
+
+export function findViewer(viewerName:string, view:DG.TableView,):DG.Viewer | undefined {
+  let viewer:DG.Viewer;
+  for (let i:number = 0; i < Array.from(view.viewers).length; i++) {
+    if (Array.from(view.viewers)[i].type == viewerName) {
+        viewer = Array.from(view.viewers)[i];
+        return viewer;
+    }
+  }
+}
+
+export function checkHTMLElementbyInnerText(className:string, innerText:string):void {
+  let elements = document.getElementsByClassName(className);
+  let check = false;
+  let element;
+  for (let i = 0; i < elements.length; i++ ){        
+      element = elements[i] as HTMLElement
+      if (element.innerText == innerText)
+        check = true;
+  }
+  if (check == false){
+      throw 'element with innerText = "' + innerText + '" not found';
+  }
+}
+
+export function getHTMLElementbyInnerText(className:string, innerText:string):HTMLElement | undefined {
+  let elements = document.getElementsByClassName(className);
+  let element;
+  for (let i = 0; i < elements.length; i++ ){        
+      element = elements[i] as HTMLElement
+      if (element.innerText == innerText)
+        return element;
+  }
 }

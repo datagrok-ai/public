@@ -2,7 +2,7 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue} from '../gui-utils';
+import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer} from '../gui-utils';
 import { Viewer } from 'datagrok-api/dg';
 
 category('Viewers: 3D Scatter Plot', () => {  
@@ -72,14 +72,7 @@ category('Viewers: 3D Scatter Plot', () => {
         throw 'markerOpacity property has not been set'
   });
   test('scatterPlot3D.serialization', async () => {
-    let project = DG.Project.create();
-    project.name = 'Test project with 3D Scatter Plot'
-    project.addChild(demog.getTableInfo());
-    project.addChild(v.saveLayout());  
-    await grok.dapi.layouts.save(v.saveLayout());
-    await grok.dapi.tables.uploadDataFrame(demog);
-    await grok.dapi.tables.save(demog.getTableInfo());
-    await grok.dapi.projects.save(project);
+    await uploadProject('Test project with 3 D Scatter Plot', demog.getTableInfo(), v, demog);
 
     grok.shell.closeAll(); await delay(500);
 
@@ -89,13 +82,7 @@ category('Viewers: 3D Scatter Plot', () => {
 
     isViewerPresent(Array.from(v.viewers), '3d scatter plot');
 
-    let scatterPlot3D:DG.Viewer;
-    for (let i:number = 0; i < Array.from(v.viewers).length; i++) {
-        if (Array.from(v.viewers)[i].type == '3d scatter plot') {
-            scatterPlot3D = Array.from(v.viewers)[i];
-            break;
-        }
-    }
+    let scatterPlot3D = findViewer('3d scatter plot', v);
 
     if (!scatterPlot3D!.props.dynamicCameraMovement)
         throw 'dynamicCameraMovement property has not been deserialized' 

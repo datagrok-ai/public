@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import './dataframe/dataframe';
 import './dataframe/detector';
 import './dataframe/calculated-columns';
@@ -8,7 +7,6 @@ import './dataframe/events';
 import './functions/functions';
 import './shell/shell';
 import './shell/windows';
-import './viewer/viewer';
 import './views/docking';
 import './views/events';
 import './views/layouts';
@@ -16,7 +14,6 @@ import './views/files-view';
 import './dapi/files';
 import './dapi/functions';
 import './dapi/fetch';
-import './dapi/admin';
 import './dapi/groups';
 import './ui/inputs';
 import './ui/forms';
@@ -40,9 +37,11 @@ import './ui/accordion';
 import './ui/tab-control';
 import './ui/list';
 import './ui/image';
-import './ui/viewers-adding';
+//import './viewers/viewers-adding';
+import './viewers/viewers';
+
 import './grid/grid';
-import './connections/demo_queries';
+//import './connections/demo_queries';
 
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();

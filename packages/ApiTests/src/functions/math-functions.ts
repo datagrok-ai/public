@@ -2,7 +2,7 @@ import {category, test} from '@datagrok-libraries/utils/src/test';
 import {check, checkRandomInt} from './utils';
 
 
-category('Math functions', () => {
+category('Functions: Math', () => {
   test('Abs', () => check({
     'Abs(-10)': 10,
     'Abs(10)': 10,
@@ -205,7 +205,7 @@ category('Math functions', () => {
     'Round10(12340.12345, -3.8)': 12000,
     'Round10(12340.12345, -4.2)': 10000,
     'Round10(12340.12345, -5)': 0,
-    'Round10(null, 2)': null,
+    'Round10(null, 2)': undefined,
   }));
 
   test('Sin', () => check({
