@@ -1,0 +1,39 @@
+{
+	"name": "demomodels",
+	"beta": true,
+	"friendlyName": "DemoModels",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest",
+		"@datagrok-libraries/utils": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"link-all": "",
+		"debug-demomodels": "webpack && grok publish",
+		"release-demomodels": "webpack && grok publish --release",
+		"build-demomodels": "webpack",
+		"build": "webpack",
+		"debug-demomodels-dev": "webpack && grok publish dev",
+		"release-demomodels-dev": "webpack && grok publish dev --release",
+		"debug-demomodels-local": "webpack && grok publish local",
+		"release-demomodels-local": "webpack && grok publish local --release"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/DemoModels"
+	}
+}

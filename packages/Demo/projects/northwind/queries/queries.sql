@@ -9,23 +9,29 @@ select distinct country from customers order by country
 
 
 --name: products
+--input: string ProductName = 'Tofu' 
+--meta.testExpectedRows: 1
 select * from products
 --end
 
 
 --name: employees
+--input: string Country = 'UK'
+--meta.testExpectedRows: 4
 select * from employees
 --end
 
 
 --name: customers
+--input: int PostalCode = '05021'
+--meta.testExpectedRows: 1
 select * from customers
 --end
 
 
 --name: order details by @quantity, @productName, @country
---input: int quantity
---input: string productName
+--input: int quantity = '40'
+--input: string productName = 'Manjimup Dried Apples'
 --input: string country { choices: northwind:countries }
 select
   order_details.orderid,
