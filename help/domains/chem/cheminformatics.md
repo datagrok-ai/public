@@ -14,7 +14,7 @@ performed by means of computer simulations, because silicon is the main componen
 complex _in silico_ discipline, serving multiple purposes, such as:
 
 * development of methods for storage and operating chemical data
-* determining the structure-property and structure-activity relations by means of simulation
+* determining the structure-property and structure-activity relationships by means of simulation
 * virtual screening aimed at discovery of most potent drug candidates
 * generation of possible chemical structures
 * synthesis planning and prediction of synthetic routes
@@ -323,7 +323,7 @@ See details [here](info-panels/structural-alerts.md)
 
 Pharmaceutical tasks demand the extensive use of cheminformatics methods aimed at exploration analysis of chemical
 datasets. The datasets typically come with experimental values (e.g. measured biological activity of a compound). One of
-the most common tasks is the evaluation of structure-activity relations. These relations play a crucial role in the
+the most common tasks is the evaluation of structure-activity relationships. These relationships play a crucial role in the
 process of drug development, because they contribute to hit compound identification and lead compound optimization. (Q)
 SAR<!--corr: what is it?--> studies are performed in order to find possible leads in the screening datasets. In contrast
 to physical predictive models, machine learning predictive models do not have any intrinsic knowledge about the physical
@@ -440,26 +440,29 @@ supported by the Grok platform. For example,`#{x.demo:demoscripts:GasteigerParti
 
 #### Accessing cheminformatics tools for a molecule column
 
-To see chemically-related actions applicable for the specified column, right-click on the column, and look
-under `Current column | Chem` and `Current column | Extract`. Alternatively, click on the column of interest, and expand
-the 'Actions' section in the property panel.
+To see chemically-related actions applicable to the specified column, right-click on the column, and navigate to
+`Current column | Chem` and `Current column | Extract`. Alternatively, click on the column of interest, and expand
+the 'Actions' section in the property panel<!--todo: provide pictorial examples-->.
 
+<!--Update the list of functions-->
 * Descriptors – calculates specified descriptors for the whole dataset and adds them to the table
 * Fingerprints – calculates specified fingerprints for the whole dataset and adds them to the table
 * To InchI – extracts InchI identifiiers for the whole dataset and adds them to the table
 * To inchI Key – extracts InchI keys for the whole dataset and adds them to the table
 * Find MCS – adds the most common substructure to the dataset
 
-As always, it is a good idea to search for functionality using the smart search (Alt+Q), or by opening the registry of
-available functions Help | Functions.
+It is a good idea to search for functionality using the smart search (Alt+Q)<!--example?-->, or by opening the registry of
+available functions `Help | Functions`.
 
 #### Accessing cheminformatics tools in the Top-Menu
 
-To see chemically-related actions applicable for the table that includes molecules right-click the top-menu button Chem.
+To see chemically-related actions applicable to a table including molecules, right-click on `Chem` top-menu button.
 
-* Sketcher – calls a sketcher for the filtering purposes, double-right-click on the structure to call the sketcher for
+* Sketcher – calls a sketcher intended for the filtering purposes, double-right-click on the structure to call the
+sketcher for
   structure modification.
-* Chemical space – renders a planar map for dataset chemical space. Options are provided for fingerprints and metrics.
+* Chemical space – renders a planar map for the chemical space associated with the dataset. Options are provided for
+fingerprints and metrics.
 * Similarity search – performs similarity search and adds a view with the most similar structures from the dataset with
   similarity values. Options are provided for fingerprints and metrics.
 * Diversity search – performs diversity search and adds a view with 10 most unsimilar structures from the dataset.
@@ -472,7 +475,8 @@ To see chemically-related actions applicable for the table that includes molecul
 ### Cheminformatics engine
 
 In addition to being a general-purpose extensible platform for scientific computing, Datagrok provides multiple options
-for developing cheminformatics solutions on top of it. Depending on your needs, use one or more of the following ones,
+for developing cheminformatics solutions on top of that. Depending on your needs, you can use one or more of the
+following ones
 or come up with your own solution.
 
 #### Openchemlib.js
@@ -484,12 +488,12 @@ in-memory substructure search. Here is an example of manipulating atoms in a mol
 #### Rdkit in python
 
 RDKit in Python are Python wrappers for RDKit, one of the best open-source toolkits for cheminformatics. While Python
-scripts get executed on a server, they can be seamlessly embedded into Datagrok via Scripting. Here are some RDKit in
-Python-based cheminformatics-related scripts in the public repository.
+scripts get executed on a server, they can be seamlessly embedded into Datagrok via scripting. Here are some RDKit in
+Python-based cheminformatics-related scripts in the public repository<!--links-->.
 
 #### Rdkit in WebAssembly
 
-Recently, Greg Landrum, the author of RDKit, has introduced a way to compile its C++ code to WebAssembly , thus allowing
+Recently, Greg Landrum, the author of RDKit, has introduced a way to compile its C++ code into WebAssembly, thus allowing
 to combine the performance and efficiency of the carefully crafted C++ codebase with the ability to run it in the
 browser. This approach fits perfectly with Datagrok's philosophy of performing as much computations on the client as
 possible, so naturally we've jumped on that opportunity!
