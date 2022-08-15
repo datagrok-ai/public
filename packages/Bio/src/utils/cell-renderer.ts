@@ -87,8 +87,8 @@ export function printLeftOrCentered(
       maxWord[maxWordIdx] = maxColorTextSize;
       gridCell.cell.column.temp = maxWord;
     }
-    if (maxWordIdx > (maxWord['maxIndex'] ?? 0)) {
-      maxWord['maxIndex'] = maxWordIdx;
+    if (maxWordIdx > (maxWord['bio-maxIndex'] ?? 0)) {
+      maxWord['bio-maxIndex'] = maxWordIdx;
       gridCell.cell.column.temp = maxWord;
     }
   }
@@ -129,40 +129,42 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   get defaultWidth(): number { return 230; }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.cell.column.getTag('aligned').includes('MSA')) {
-      let val = gridCell.cell.value;
-      let maxLengthWordsSum = gridCell.cell.column.temp['sum'];
-      let maxIndex = gridCell.cell.column.temp['maxIndex'];
-      //@ts-ignore
-      let argsX = e.layerX;
-      let left = 0;
-      let right = maxIndex;
-      let found = false;
-      maxLengthWordsSum[maxIndex + 1] = argsX + 1;
-      let mid = 0;
-      if (argsX > maxLengthWordsSum[0]) {
-        while (!found) {
-          mid = Math.floor((right + left) / 2);
-          if (argsX >= maxLengthWordsSum[mid] && argsX <= maxLengthWordsSum[mid + 1]) {
-            left = mid;
-            found = true;
-          }
-          if (argsX < maxLengthWordsSum[mid]) {
-            right = mid - 1;
-          }
-          if (argsX > maxLengthWordsSum[mid + 1]) {
-            left = mid + 1;
-          }
-          if (left  == right) {
-            found = true;
-          }
+    if (gridCell.cell.column.getTag('aligned') !== 'SEQ.MSA') {
+      return;
+    }
+    const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
+    if (maxLengthWordsSum == null) {
+      gridCell.cell.column.setTag('.calculatedCellRender', 'unexist');
+    }
+    const maxIndex = gridCell.cell.column.temp['bio-maxIndex'];
+    //@ts-ignore
+    const argsX = e.layerX - gridCell.gridColumn.left - ((gridCell.bounds.x<0) ? gridCell.bounds.x : 0);
+    let left = 0;
+    let right = maxIndex;
+    let found = false;
+    maxLengthWordsSum[maxIndex + 1] = argsX + 1;
+    let mid = 0;
+    if (argsX > maxLengthWordsSum[0]) {
+      while (!found) {
+        mid = Math.floor((right + left) / 2);
+        if (argsX >= maxLengthWordsSum[mid] && argsX <= maxLengthWordsSum[mid + 1]) {
+          left = mid;
+          found = true;
+        } else if (argsX < maxLengthWordsSum[mid]) {
+          right = mid - 1;
+        } else if (argsX > maxLengthWordsSum[mid + 1]) {
+          left = mid + 1;
+        }
+        if (left == right) {
+          found = true;
         }
       }
-      const separator = gridCell.cell.column.getTag('separator') ?? '';
-      const splitterFunc: SplitterFunc = WebLogo.getSplitter('separator', separator);
-      const subParts: string[] = splitterFunc(gridCell.cell.value);
-      ui.tooltip.show(ui.div(subParts[left]), e.x + 16, e.y + 16);
     }
+    left = (argsX >= maxLengthWordsSum[left]) ? left + 1 : left;
+    const separator = gridCell.cell.column.getTag('separator') ?? '';
+    const splitterFunc: SplitterFunc = WebLogo.getSplitter('separator', separator);
+    const subParts: string[] = splitterFunc(gridCell.cell.value);
+    ui.tooltip.show(ui.div(subParts[left]), e.x + 16, e.y + 16);
   }
 
   /**
@@ -205,39 +207,33 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     let monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
     let maxLengthOfMonomer = 8;
 
-    let maxLengthWords = {};
+    let maxLengthWords: any = {};
     if (gridCell.cell.column.getTag('.calculatedCellRender') !== 'exist') {
       for (let i = 0; i < columns.length; i++) {
         let subParts: string[] = splitterFunc(columns[i]);
         subParts.forEach((amino, index) => {
-          //@ts-ignore
           let textSizeWidth = g.measureText(monomerToShortFunction(amino, maxLengthOfMonomer));
-          //@ts-ignore
           if (textSizeWidth.width > (maxLengthWords[index] ?? 0)) {
-            //@ts-ignore
             maxLengthWords[index] = textSizeWidth.width;
           }
-          //@ts-ignore
-          if (index > (maxLengthWords['maxIndex'] ?? 0)) {
-            //@ts-ignore
-            maxLengthWords['maxIndex'] = index;
+          if (index > (maxLengthWords['bio-maxIndex'] ?? 0)) {
+            maxLengthWords['bio-maxIndex'] = index;
           }
         });
       }
-      let maxLengthWordSum = {};
-      //@ts-ignore
-      maxLengthWordSum[-1] = 0;
-      //@ts-ignore
-      for (let i = 0; i <= maxLengthWords['maxIndex']; i++) {
-        //@ts-ignore
+      let maxLengthWordSum: any = {};
+      maxLengthWordSum[0] = maxLengthWords[0];
+      for (let i = 1; i <= maxLengthWords['bio-maxIndex']; i++) {
         maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
       }
-      //@ts-ignore
-      maxLengthWords['sum'] = maxLengthWordSum;
-      gridCell.cell.column.temp = maxLengthWords;
+      gridCell.cell.column.temp = {
+        'bio-sum-maxLengthWords': maxLengthWordSum,
+        'bio-maxIndex': maxLengthWords['bio-maxIndex'],
+        'bio-maxLengthWords': maxLengthWords
+      };
       gridCell.cell.column.setTag('.calculatedCellRender', 'exist');
     } else {
-      maxLengthWords = gridCell.cell.column.temp;
+      maxLengthWords = gridCell.cell.column.temp['bio-maxLengthWords'];
     }
 
     const subParts: string[] = splitterFunc(cell.value);
