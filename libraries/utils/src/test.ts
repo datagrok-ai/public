@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import {Observable, Subscription} from "rxjs";
+import {Observable, Subscription} from 'rxjs';
 
 export const tests: {
   [key: string]: {
@@ -107,7 +107,7 @@ export function expectObject(actual: { [key: string]: any }, expected: { [key: s
   }
 }
 
-export function expectArray(actual: any[], expected: any[]) {
+export function expectArray(actual: ArrayLike<any>, expected: ArrayLike<any>) {
   const actualLength = actual.length;
   const expectedLength = expected.length;
 
