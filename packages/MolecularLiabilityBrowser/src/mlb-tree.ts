@@ -459,14 +459,16 @@ export class TreeBrowser extends DG.JsViewer {
   private _onMLBGridCurrentRowChanged(args: any) {
     const df = this.mlbDf;
     const currentRowIdx = df.currentRowIdx;
-    const clones: string = df.get('clones', currentRowIdx);
-
-    if (!clones || clones.length == 0)
+    const currentCloneListStr: string = df.get('clones', currentRowIdx);
+    if (!currentCloneListStr || currentCloneListStr.length == 0)
       return;
 
-    const cloneId = clones.split('|')[0];
+    const currentCloneList = currentCloneListStr.split('|');
+    const currentCloneId = this.treeDf.get('CLONE', this.treeDf.currentRowIdx);
+    const currentCloneIdStr = currentCloneId.toString();
+    const cloneId = currentCloneList.includes(currentCloneIdStr) ? currentCloneId : currentCloneList[0];
 
-    if (this.cloneIndex[cloneId]) {
+    if (cloneId in this.cloneIndex) {
       const index = this.cloneIndex[cloneId]['index'][0];
 
       this.treeDf.currentRowIdx = index;
