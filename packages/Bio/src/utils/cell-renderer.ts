@@ -138,7 +138,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       let left = 0;
       let right = maxIndex;
       let found = false;
-      maxLengthWordsSum[maxIndex] = argsX + 1;
+      maxLengthWordsSum[maxIndex + 1] = argsX + 1;
       let mid = 0;
       if (argsX > maxLengthWordsSum[0]) {
         while (!found) {
