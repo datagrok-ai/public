@@ -458,11 +458,11 @@ available functions `Help | Functions`.
 
 To see chemically-related actions applicable to a table including molecules, right-click on `Chem` top-menu button.
 
-* Sketcher – calls a sketcher intended for the filtering purposes, double-right-click on the structure to call the
+* Sketcher – opens a sketcher intended for the filtering purposes, double-left-click on the structure to call the
 sketcher for
   structure modification.
-* Chemical space – renders a planar map for the chemical space associated with the dataset. Options are provided for
-fingerprints and metrics.
+* Chemical space – computes and visualizes chemical space based on the distances between molecule fingerprints.
+Options are provided for fingerprints and metrics.
 * Similarity search – performs similarity search and adds a view with the most similar structures from the dataset with
   similarity values. Options are provided for fingerprints and metrics.
 * Diversity search – performs diversity search and adds a view with 10 most unsimilar structures from the dataset.
@@ -475,7 +475,7 @@ fingerprints and metrics.
 ### Cheminformatics engine
 
 In addition to being a general-purpose extensible platform for scientific computing, Datagrok provides multiple options
-for developing cheminformatics solutions on top of that. Depending on your needs, you can use one or more of the
+for developing cheminformatics solutions on top of that. Depending on your needs, use one or more of the
 following ones
 or come up with your own solution.
 
