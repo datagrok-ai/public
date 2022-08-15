@@ -98,3 +98,9 @@ export async function TestDetectorsStandard() {
   const df = await _testDetectorsStandard(detectorsArray);
   grok.shell.addTableView(df);
 }
+
+
+//name: DummyFuncToInit
+export function DummyFuncToInit() {
+  return 0;
+}
