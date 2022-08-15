@@ -175,7 +175,7 @@ export function genRange(begin: number, end: number, endExclusive = false): Int3
   return series;
 }
 
- /**
+/**
  * Returns order of values as if they are sorted.
  *
  * @export
