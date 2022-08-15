@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/api-tests",
   "friendlyName": "API Tests",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamomov@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.6.0",
+    "@datagrok-libraries/utils": "^1.6.1",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.5.4",
     "dayjs": "latest",
