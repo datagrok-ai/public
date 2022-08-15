@@ -194,13 +194,13 @@ export class MolecularLiabilityBrowser {
     agDfGrid.root.style.setProperty('width', '220px');
     this.antigenPopup = ui.div([agDfGrid.root]);
 
-    agDf.onCurrentRowChanged.subscribe(() => {
+    this.viewSubs.push(agDf.onCurrentRowChanged.subscribe(() => {
       this.antigenPopup.hidden = true;
 
       const antigenName: string = agCol.get(agDf.currentRow.idx);
       // window.setTimeout is used to adapt call async loadData() from handler (not async)
       this.onAntigenChanged(antigenName);
-    });
+    }));
 
     this.antigenInput.root.addEventListener('input', (event: Event) => {
       /* Here we should filter dataframe with antigens */
@@ -468,7 +468,6 @@ export class MolecularLiabilityBrowser {
   async setView(): Promise<void> {
     grok.shell.windows.showProperties = false;
     grok.shell.windows.showHelp = false;
-    this.setRibbonPanels();
 
     this.mlbView.name = 'Molecular Liability Browser';
     for (const column of this.mlbDf.columns) {
@@ -664,11 +663,38 @@ export class MolecularLiabilityBrowser {
         this.filterHost = ui.box();
         this.filterHostDn = this.mlbView.dockManager.dock(
           this.filterHost, DG.DOCK_TYPE.LEFT, this.mlbGridDn, '', 0.18);
+
+        this.treeGrid = this.treeDf.plot.grid({
+          allowEdit: false,
+          allowRowSelection: false,
+          allowRowResizing: false,
+          allowRowReordering: false,
+          allowColReordering: false,
+          allowBlockSelection: false,
+          showRowHeader: false,
+        });
+
+        this.treeBrowser = (await this.treeDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
+        this.mlbView.dockManager.dock(this.treeBrowser.root, DG.DOCK_TYPE.FILL, this.mlbGridDn, 'Clone');
+        //TODO: check the await
+        await this.treeBrowser.setData(this.treeDf, this.mlbDf);// fires treeDfOnCurrentRowChanged
+        //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
+
+        const tempDf = DG.DataFrame.fromObjects([{}]);
+        this.regionsViewer = (await tempDf.plot.fromType(
+          'VdRegions', {skipEmptyPositions: true})) as unknown as VdRegionsViewer;
+
+        this.setRibbonPanels();
       } else {
         //this.mlbView.dataFrame = this.mlbDf;
         this.mlbGrid.dataFrame = this.mlbDf;
         this.mlbGrid.dataFrame.filter.setAll(true);
         const k = 11;
+
+        this.treeGrid.dataFrame = this.treeDf;
+
+        //TODO: check the await
+        await this.treeBrowser.setData(this.treeDf, this.mlbDf);
       }
 
       // await this.dataLoader.refDfPromise;
@@ -680,17 +706,6 @@ export class MolecularLiabilityBrowser {
       // const newFilterViewDn: DG.DockNode = this.mlbView.dockManager.dock(newFilterView, DG.DOCK_TYPE.LEFT,
       //   this.mlbGridDn, 'Filters', 0.18);
       this.filterView.dataFrame = this.mlbDf;
-
-      if (this.treeBrowser === null) {
-        this.treeBrowser = (await this.treeDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
-        this.mlbView.dockManager.dock(this.treeBrowser.root, DG.DOCK_TYPE.FILL, this.mlbGridDn, 'Clone');
-        //TODO: check the await
-        await this.treeBrowser.setData(this.treeDf, this.mlbDf);// fires treeDfOnCurrentRowChanged
-        //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
-      } else {
-        //TODO: check the await
-        await this.treeBrowser.setData(this.treeDf, this.mlbDf);
-      }
 
       this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
 
@@ -705,25 +720,7 @@ export class MolecularLiabilityBrowser {
       //   //await this.treeBrowser.setData(this.treeDf, this.mlbDf);
       // }
 
-      if (this.treeGrid === null) {
-        this.treeGrid = this.treeDf.plot.grid({
-          allowEdit: false,
-          allowRowSelection: false,
-          allowRowResizing: false,
-          allowRowReordering: false,
-          allowColReordering: false,
-          allowBlockSelection: false,
-          showRowHeader: false,
-        });
-      } else {
-        this.treeGrid.dataFrame = this.treeDf;
-      }
-
-      if (this.regionsViewer === null) {
-        const tempDf = DG.DataFrame.fromObjects([{}]);
-        this.regionsViewer = (await tempDf.plot.fromType(
-          'VdRegions', {skipEmptyPositions: true})) as unknown as VdRegionsViewer;
-      }
+      // regionsViewer
       this.mlbView.dockManager.dock(this.regionsViewer.root, DG.DOCK_TYPE.DOWN, this.mlbGridDn, 'Regions', 0.3);
       //TODO: check the await
       await this.regionsViewer.setDf(this.mlbDf, this.regions);
@@ -758,13 +755,13 @@ export class MolecularLiabilityBrowser {
         gridColumn.visible = false;
     }
 
-    this.updateViewTree();
+    this.updateViewTreeBrowser();
 
     console.debug('MLB: MolecularLiabilityBrowser.updateView() end,' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
   }
 
-  updateViewTree() {
+  updateViewTreeBrowser() {
     const treeIndex = this.treeDf.col('CLONE').toList().findIndex((v) => v == this.treeName);
     if (this.treeDf.rowCount > 0) {
       const treeDfIndex = treeIndex !== -1 ? treeIndex : 0;
@@ -833,7 +830,7 @@ export class MolecularLiabilityBrowser {
     this.urlParams.set('tree', this.treeName);
     this.mlbView.path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
 
-    this.updateViewTree();
+    this.updateViewTreeBrowser();
   }
 
   onVidChanged(vid: string): void {
