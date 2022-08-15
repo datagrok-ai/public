@@ -5,6 +5,7 @@ import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
 import {UnknownSeqPalette, UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import * as ui from 'datagrok-api/ui';
 
 const undefinedColor = 'rgb(100,100,100)';
 const grayColor = '#808080';
@@ -80,12 +81,16 @@ export function printLeftOrCentered(
   const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
   textSize = textSize.width;
   if (drawStyle === 'msa') {
+    maxColorTextSize = maxWord[maxWordIdx];
+    textSize = maxWord[maxWordIdx];
     if (maxColorTextSize > maxWord) {
       maxWord[maxWordIdx] = maxColorTextSize;
       gridCell.cell.column.temp = maxWord;
     }
-    maxColorTextSize = maxWord[maxWordIdx];
-    textSize = maxWord[maxWordIdx];
+    if (maxWordIdx > (maxWord['maxIndex'] ?? 0)) {
+      maxWord['maxIndex'] = maxWordIdx;
+      gridCell.cell.column.temp = maxWord;
+    }
   }
 
   function draw(dx1: number, dx2: number): void {
@@ -122,6 +127,43 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   get defaultHeight(): number { return 30; }
 
   get defaultWidth(): number { return 230; }
+
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    if (gridCell.cell.column.getTag('aligned').includes('MSA')) {
+      let val = gridCell.cell.value;
+      let maxLengthWordsSum = gridCell.cell.column.temp['sum'];
+      let maxIndex = gridCell.cell.column.temp['maxIndex'];
+      //@ts-ignore
+      let argsX = e.layerX;
+      let left = 0;
+      let right = maxIndex;
+      let found = false;
+      maxLengthWordsSum[maxIndex] = argsX + 1;
+      let mid = 0;
+      if (argsX > maxLengthWordsSum[0]) {
+        while (!found) {
+          mid = Math.floor((right + left) / 2);
+          if (argsX >= maxLengthWordsSum[mid] && argsX <= maxLengthWordsSum[mid + 1]) {
+            left = mid;
+            found = true;
+          }
+          if (argsX < maxLengthWordsSum[mid]) {
+            right = mid - 1;
+          }
+          if (argsX > maxLengthWordsSum[mid + 1]) {
+            left = mid + 1;
+          }
+          if (left  == right) {
+            found = true;
+          }
+        }
+      }
+      const separator = gridCell.cell.column.getTag('separator') ?? '';
+      const splitterFunc: SplitterFunc = WebLogo.getSplitter('separator', separator);
+      const subParts: string[] = splitterFunc(gridCell.cell.value);
+      ui.tooltip.show(ui.div(subParts[left]), e.x + 16, e.y + 16);
+    }
+  }
 
   /**
    * Cell renderer function.
@@ -164,7 +206,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     let maxLengthOfMonomer = 8;
 
     let maxLengthWords = {};
-    // check if gridCell.cell.column.temp is array
     if (gridCell.cell.column.getTag('.calculatedCellRender') !== 'exist') {
       for (let i = 0; i < columns.length; i++) {
         let subParts: string[] = splitterFunc(columns[i]);
@@ -176,8 +217,23 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
             //@ts-ignore
             maxLengthWords[index] = textSizeWidth.width;
           }
+          //@ts-ignore
+          if (index > (maxLengthWords['maxIndex'] ?? 0)) {
+            //@ts-ignore
+            maxLengthWords['maxIndex'] = index;
+          }
         });
       }
+      let maxLengthWordSum = {};
+      //@ts-ignore
+      maxLengthWordSum[-1] = 0;
+      //@ts-ignore
+      for (let i = 0; i <= maxLengthWords['maxIndex']; i++) {
+        //@ts-ignore
+        maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
+      }
+      //@ts-ignore
+      maxLengthWords['sum'] = maxLengthWordSum;
       gridCell.cell.column.temp = maxLengthWords;
       gridCell.cell.column.setTag('.calculatedCellRender', 'exist');
     } else {
@@ -186,7 +242,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     const subParts: string[] = splitterFunc(cell.value);
     let x1 = x;
-    let color = undefinedColor;;
+    let color = undefinedColor;
     let drawStyle = 'classic';
     if (gridCell.cell.column.getTag('aligned').includes('MSA')) {
       drawStyle = 'msa';
