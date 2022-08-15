@@ -13,7 +13,7 @@
     "directory": "packages/DevTools"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "latest",
+    "@datagrok-libraries/utils": "1.6.1",
     "codemirror": "^5.65.0",
     "datagrok-api": "^1.5.4",
     "js-yaml": "^4.1.0",
