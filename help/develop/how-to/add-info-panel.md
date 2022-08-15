@@ -93,6 +93,19 @@ export function translationPanel(file) {
     return new DG.Widget(ui.divText("Lost in Translation"));
 }
 ```
+### Semantic value
+
+There is a special type of input `semantic_value`. It is most commonly used to preserve information about the value's context or its representation in cell. The following code demonstrates how to get the column that contains the value.
+
+```javascript
+//name: get_column
+//tags: panel, widgets
+//input: semantic_value smiles { semType: Molecule }
+//output: widget result
+export function valueWidget(value) {
+    return value ? new DG.Widget(ui.divText('column - ' + value.cell.column.name)) : new DG.Widget(ui.divText('value is empty'));
+}
+```
 
 ## Domain examples
 
