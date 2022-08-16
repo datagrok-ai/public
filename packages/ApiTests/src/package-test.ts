@@ -30,6 +30,7 @@ import './ui/divs';
 import './ui/buttons';
 import './widgets/files-widget';
 import './widgets/legend';
+import './widgets/tree-view';
 import './ui/icons';
 import './ui/tables';
 import './ui/range-slider';
