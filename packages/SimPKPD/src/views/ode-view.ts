@@ -29,7 +29,7 @@ export class ODEview extends DG.ViewBase {
   private updatePlot() {
     ui.setUpdateIndicator(this.mainPlotDiv, true);
     grok.functions.call(
-      "Simpkpd:rxodeCommand", {
+      "Simpkpd:rxodeCommandReal", {
       "inputSD": 3
     }).then((result) => {
       ui.setUpdateIndicator(this.mainPlotDiv, false);
@@ -37,5 +37,4 @@ export class ODEview extends DG.ViewBase {
       updateDivInnerHTML(this.mainPlotDiv, ui.image(`data:image/png;base64,${result[ 'plot' ]}`));
     });
   }
-
 }
