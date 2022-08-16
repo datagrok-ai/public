@@ -19,10 +19,16 @@
     "typescript": "latest"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
     "webpack": "latest",
     "webpack-cli": "latest"
   },
   "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
     "debug-demo": "grok publish",
     "release-demo": "grok publish localhost --release",
     "build-demo": "webpack",

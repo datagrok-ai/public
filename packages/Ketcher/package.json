@@ -1,51 +1,57 @@
 {
-	"name": "@datagrok/ketcher",
-	"friendlyName": "Ketcher",
-	"version": "1.0.1",
-	"author": {
-		"name": "Maria Dolotova",
-		"email": "maria.dolotova@arcadia.spb.ru"
-	},
-	"description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/Ketcher"
-	},
-	"dependencies": {
-		"@types/react-dom": "^17.0.9",
-		"datagrok-api": "^1.4.1",
-		"@datagrok-libraries/utils": "^1.5.4",
-		"file-loader": "^6.2.0",
-		"ketcher-core": "^1.5.0",
-		"ketcher-react": "^2.5.1",
-		"ketcher-standalone": "^1.4.0",
-		"miew": "^0.10.0"
-	},
-	"devDependencies": {
-		"css-loader": "latest",
-		"style-loader": "latest",
-		"webpack": "latest",
-		"webpack-cli": "latest",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"worker-loader": "latest"
-	},
-	"scripts": {
-		"debug-ketcher": "grok publish",
-		"release-ketcher": "grok publish --release",
-		"build-ketcher": "webpack",
-		"build": "webpack",
-		"debug-ketcher-dev": "grok publish dev",
-		"release-ketcher-dev": "grok publish dev --release",
-		"debug-ketcher-public": "grok publish public",
-		"release-ketcher-public": "grok publish public --release"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	],
-	"category": "Cheminformatics"
+  "name": "@datagrok/ketcher",
+  "friendlyName": "Ketcher",
+  "version": "1.0.1",
+  "author": {
+    "name": "Maria Dolotova",
+    "email": "maria.dolotova@arcadia.spb.ru"
+  },
+  "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Ketcher"
+  },
+  "dependencies": {
+    "@types/react-dom": "^17.0.9",
+    "datagrok-api": "^1.4.1",
+    "@datagrok-libraries/utils": "^1.5.4",
+    "file-loader": "^6.2.0",
+    "ketcher-core": "^1.5.0",
+    "ketcher-react": "^2.5.1",
+    "ketcher-standalone": "^1.4.0",
+    "miew": "^0.10.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
+    "css-loader": "latest",
+    "style-loader": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "worker-loader": "latest"
+  },
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "debug-ketcher": "grok publish",
+    "release-ketcher": "grok publish --release",
+    "build-ketcher": "webpack",
+    "build": "webpack",
+    "debug-ketcher-dev": "grok publish dev",
+    "release-ketcher-dev": "grok publish dev --release",
+    "debug-ketcher-public": "grok publish public",
+    "release-ketcher-public": "grok publish public --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "category": "Cheminformatics"
 }

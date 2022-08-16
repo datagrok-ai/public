@@ -1,47 +1,53 @@
 {
-	"name": "@datagrok/phylotree-viewer",
-	"friendlyName": "Phylo Tree",
-	"version": "0.0.6",
-	"author": {
-		"name": "Diana Onufriienko",
-		"email": "donufriienko@datagrok.ai"
-	},
-	"description": "*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees visualization.",
-	"repository": {
+  "name": "@datagrok/phylotree-viewer",
+  "friendlyName": "Phylo Tree",
+  "version": "0.0.6",
+  "author": {
+    "name": "Diana Onufriienko",
+    "email": "donufriienko@datagrok.ai"
+  },
+  "description": "*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees visualization.",
+  "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/PhyloTreeViewer"
   },
-	"dependencies": {
-		"datagrok-api": "^1.0.0"
-	},
-	"sources": [
-		"phylotree/phylotree.css",
-		"phylotree/jquery.js",
-		"phylotree/bootstrap.min.js",
-		"phylotree/d3.v3.min.js",
-		"phylotree/phylotree.js",
-		"phylotree/underscore-min.js"
-	],
-	"scripts": {
-		"debug-phylotreeviewer": "grok publish",
-		"release-phylotreeviewer": "grok publish --release",
-		"build-phylotreeviewer": "webpack",
-		"build": "webpack",
-		"debug-phylotreeviewer-public": "grok publish public",
-		"release-phylotreeviewer-public": "grok publish public --release",
-		"debug-phylotreeviewer-local": "grok publish local",
-		"release-phylotreeviewer-local": "grok publish local --release"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	],
-	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest"
-	},
+  "dependencies": {
+    "datagrok-api": "^1.0.0"
+  },
+  "sources": [
+    "phylotree/phylotree.css",
+    "phylotree/jquery.js",
+    "phylotree/bootstrap.min.js",
+    "phylotree/d3.v3.min.js",
+    "phylotree/phylotree.js",
+    "phylotree/underscore-min.js"
+  ],
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "debug-phylotreeviewer": "grok publish",
+    "release-phylotreeviewer": "grok publish --release",
+    "build-phylotreeviewer": "webpack",
+    "build": "webpack",
+    "debug-phylotreeviewer-public": "grok publish public",
+    "release-phylotreeviewer-public": "grok publish public --release",
+    "debug-phylotreeviewer-local": "grok publish local",
+    "release-phylotreeviewer-local": "grok publish local --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
   "category": "Visualizations"
 }

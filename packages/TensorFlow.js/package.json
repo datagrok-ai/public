@@ -1,42 +1,48 @@
 {
-	"name": "@datagrok/tensorflow-dev",
-	"friendlyName": "TensorFlow.js",
-	"author": {
-		"name": "Volodymyr Dyma",
-		"email": "vdyma@datagrok.ai"
-	},
-	"version": "0.0.5",
-	"description": "TensorFlow.js is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform which provies support for training and applying TensorFlow.js-based predictive models.",
-	"repository": {
+  "name": "@datagrok/tensorflow-dev",
+  "friendlyName": "TensorFlow.js",
+  "author": {
+    "name": "Volodymyr Dyma",
+    "email": "vdyma@datagrok.ai"
+  },
+  "version": "0.0.5",
+  "description": "TensorFlow.js is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform which provies support for training and applying TensorFlow.js-based predictive models.",
+  "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/TensorFlow.js"
   },
-	"dependencies": {
-		"@tensorflow/tfjs": "latest",
-		"cash-dom": "latest",
-		"datagrok-api": "^1.0.0",
-		"dayjs": "latest",
-		"jszip": "latest",
-		"jszip-sync": "^3.2.1-sync"
-	},
-	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest"
-	},
-	"scripts": {
-		"link-api": "npm link datagrok-api",
-		"install-dependencies": "npm install",
-		"debug-tensorflow-dev": "grok publish",
-		"release-tensorflow-dev": "grok publish --release",
-		"build-tensorflow-dev": "webpack",
-		"build": "webpack",
-		"debug-tensorflow-dev-public": "grok publish public",
-		"release-tensorflow-dev-public": "grok publish public --release",
-		"debug-tensorflow-dev-local": "grok publish local",
-		"release-tensorflow-dev-local": "grok publish local --release"
-	},
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ],
+  "dependencies": {
+    "@tensorflow/tfjs": "latest",
+    "cash-dom": "latest",
+    "datagrok-api": "^1.0.0",
+    "dayjs": "latest",
+    "jszip": "latest",
+    "jszip-sync": "^3.2.1-sync"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "link-api": "npm link datagrok-api",
+    "install-dependencies": "npm install",
+    "debug-tensorflow-dev": "grok publish",
+    "release-tensorflow-dev": "grok publish --release",
+    "build-tensorflow-dev": "webpack",
+    "build": "webpack",
+    "debug-tensorflow-dev-public": "grok publish public",
+    "release-tensorflow-dev-public": "grok publish public --release",
+    "debug-tensorflow-dev-local": "grok publish local",
+    "release-tensorflow-dev-local": "grok publish local --release"
+  },
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ],
   "category": "Machine Learning"
 }

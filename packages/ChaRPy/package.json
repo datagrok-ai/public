@@ -16,6 +16,10 @@
     "datagrok-api": "^1.0.0"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
     "@babel/cli": "7.1.2",
     "@babel/core": "7.1.2",
     "@babel/polyfill": "7.0.0",
@@ -26,6 +30,8 @@
     "json5-loader": "^4.0.0"
   },
   "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
     "link-api": "npm link datagrok-api",
     "upload-debug-local": "webpack && grok publish http://localhost:8082 ",
     "upload-debug": "webpack && grok publish https://dev.datagrok.ai/api ",

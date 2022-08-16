@@ -1,41 +1,47 @@
 {
-	"name": "@datagrok/nlp",
-	"fullName": "NLP",
-	"version": "1.0.3",
-	"author": {
-		"name": "Diana Onufriienko",
-		"email": "donufriienko@datagrok.ai"
-	},
-	"description": "Natural Language Processing Package",
-	"repository": {
+  "name": "@datagrok/nlp",
+  "fullName": "NLP",
+  "version": "1.0.3",
+  "author": {
+    "name": "Diana Onufriienko",
+    "email": "donufriienko@datagrok.ai"
+  },
+  "description": "Natural Language Processing Package",
+  "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/NLP"
   },
-	"dependencies": {
-		"aws-sdk": "^2.762.0",
-		"datagrok-api": "^1.0.0",
-		"util": "^0.12.3"
-	},
-	"devDependencies": {
-		"css-loader": "^5.0.0",
-		"style-loader": "^2.0.0",
-		"webpack": "^5.0.0",
-		"webpack-cli": "^4.2.0"
-	},
-	"scripts": {
-		"debug-nlp": "grok publish",
-		"release-nlp": "grok publish --release",
-		"build-nlp": "webpack",
-		"build": "webpack",
-		"debug-nlp-public": "grok publish public",
-		"release-nlp-public": "grok publish public --release",
-		"debug-nlp-local": "grok publish local",
-		"release-nlp-local": "grok publish local --release",
-		"debug-nlp-localhost": "webpack && grok publish localhost",
-		"release-nlp-localhost": "webpack && grok publish localhost --release"
-	},
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ],
-	"category": "Machine Learning"
+  "dependencies": {
+    "aws-sdk": "^2.762.0",
+    "datagrok-api": "^1.0.0",
+    "util": "^0.12.3"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
+    "css-loader": "^5.0.0",
+    "style-loader": "^2.0.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^4.2.0"
+  },
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "debug-nlp": "grok publish",
+    "release-nlp": "grok publish --release",
+    "build-nlp": "webpack",
+    "build": "webpack",
+    "debug-nlp-public": "grok publish public",
+    "release-nlp-public": "grok publish public --release",
+    "debug-nlp-local": "grok publish local",
+    "release-nlp-local": "grok publish local --release",
+    "debug-nlp-localhost": "webpack && grok publish localhost",
+    "release-nlp-localhost": "webpack && grok publish localhost --release"
+  },
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ],
+  "category": "Machine Learning"
 }
