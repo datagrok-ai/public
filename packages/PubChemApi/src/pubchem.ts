@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {anyObject, paramsType, pubChemIdType, pubChemSearchType, urlParamsFromObject} from './utils';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 const pubChemBaseURL = 'https://pubchem.ncbi.nlm.nih.gov';
 const pubChemRest = `${pubChemBaseURL}/rest`;
@@ -156,6 +157,7 @@ export async function _getListById(
   let json: anyObject;
   let maxRequests = 10;
   do {
+    delay(100);
     maxRequests--;
     const response = await grok.dapi.fetchProxy(url);
     json = await response.json();
