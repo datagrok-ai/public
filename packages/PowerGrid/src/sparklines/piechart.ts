@@ -17,7 +17,7 @@ function getSettings(gc: DG.GridColumn): PieChartSettings {
 export class PieChartCellRenderer extends DG.GridCellRenderer {
   get name() { return 'pie ts'; }
 
-  get cellType() { return 'piechart_ts'; }
+  get cellType() { return 'piechart'; }
 
   // getPreferredCellSize(col: DG.GridColumn) {
   //   return new Size(80,80);
@@ -26,6 +26,26 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   get defaultWidth(): number | null { return 80; }
 
   get defaultHeight(): number | null { return 80; }
+
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
+    const settings = getSettings(gridCell.gridColumn);
+    const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames);
+    const vectorX = e.layerX - gridCell.bounds.midX;
+    const vectorY = e.layerY - gridCell.bounds.midY;
+    const atan2 = Math.atan2(vectorY, vectorX);
+    const angle = atan2 < 0 ? atan2 + 2 * Math.PI : atan2;
+    let tooltip = '';
+    for (let i = 0; i < cols.length; i++) {
+        if (cols[i].isNone(gridCell.cell.row.idx))
+            continue;
+        if (angle > 2 * Math.PI * i / cols.length && angle < 2 * Math.PI * (i + 1) / cols.length) {
+          tooltip = cols[i].name;
+          break;
+        }
+    }
+
+    ui.tooltip.show(ui.div(tooltip), e.x + 16, e.y + 16);
+  }
 
   render(
     g: CanvasRenderingContext2D,
