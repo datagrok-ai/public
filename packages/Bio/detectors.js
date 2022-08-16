@@ -52,7 +52,7 @@ class BioPackageDetectors extends DG.Package {
       !(col.categories.length == 1 && !col.categories[0]) && // TODO: Remove with tests for single empty category value
       DG.Detector.sampleCategories(col, (s) => BioPackageDetectors.isHelm(s), 1)
     ) {
-      col.setTag(DG.TAGS.UNITS, 'HELM');
+      col.setTag(DG.TAGS.UNITS, 'helm');
       return DG.SEMTYPE.MACROMOLECULE;
     }
 

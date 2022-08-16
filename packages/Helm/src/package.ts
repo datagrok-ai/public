@@ -33,7 +33,7 @@ export async function initHelm(): Promise<void> {
 //name: helmCellRenderer
 //tags: cellRenderer
 //meta.cellType: helm
-//meta.columnTags: units=HELM
+//meta.columnTags: units=helm
 //output: grid_cell_renderer result
 export function helmCellRenderer(): HelmCellRenderer {
   return new HelmCellRenderer();
@@ -106,10 +106,10 @@ export async function propertiesPanel(helmString: string) {
       'formula': result[0].replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
       'molecular weight': result[1],
       'extinction coefficient': result[2],
-      'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
+      /*'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
       'rna analogue sequence': ui.wait(async () => ui.divText(await helmToRNA(helmString))),
       'smiles': ui.wait(async () => ui.divText(await helmToSmiles(helmString))),
-      //'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),
+      //'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),*/
     })
   );
 }
