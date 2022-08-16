@@ -12,12 +12,13 @@ export function renderInfoName(info: anyObject): string {
 }
 
 export function renderInfoValue(info: anyObject, refs: anyObject): HTMLElement {
-  let text = info['StringValue'] ?? info['NumValue']?.toString() ?? info['DateValue']?.toString() ??
-    info['BoolValue']?.toString() ?? null;
+  const infoValue: {[key: string]: any[]} = info['Value'];
+  let infoValueList = Object.values(infoValue)[0];
+  infoValueList = infoValueList.length ? Object.values(infoValueList[0]) : infoValueList;
+  let text: string = infoValueList.length ? Object.values(infoValueList[0]).toString() : '';
 
   if (text && info['ValueUnit'])
     text += ` ${info['ValueUnit']}`;
-
 
   if (info['Table']) {
     const columnNames: string[] = info['Table']['ColumnName'];
@@ -29,12 +30,12 @@ export function renderInfoValue(info: anyObject, refs: anyObject): HTMLElement {
   }
 
   let result;
-  if (info['StringValue'] && info['URL'])
-    result = ui.div(text.replaceAll(`<img src="/', '<img src="${pubChemBaseURL}`));
+  if (infoValue['String'] && info['URL'])
+    result = ui.div(text.replaceAll('<img src="/', `<img src="${pubChemBaseURL}`));
   else if (text && info['URL'])
     result = ui.link(text, info['URL']);
-  else if (info['StringValueList'])
-    result = ui.list(info['StringValueList']);
+  else if (infoValue['StringList'])
+    result = ui.list(infoValue['StringList']);
   else if (text)
     result = ui.divText(text);
   else if (info['ExternalDataMimeType'] === 'image/png' && info['ExternalDataURL'])
