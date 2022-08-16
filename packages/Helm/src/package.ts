@@ -10,6 +10,7 @@ import {printLeftOrCentered} from '@datagrok/bio/src/utils/cell-renderer';
 export const _package = new DG.Package();
 
 const lru = new DG.LruCache<any, any>();
+const molfiles = new DG.LruCache<any, any>();
 const STORAGE_NAME = 'Libraries';
 let i = 0;
 const LIB_PATH = 'libraries/';
@@ -93,11 +94,11 @@ export function editMoleculeCell(cell: DG.GridCell): void {
   }
 }
 
-//name: Details
+//name: Properties
 //tags: panel, widgets
 //input: string helmString {semType: Macromolecule}
 //output: widget result
-export async function detailsPanel(helmString: string) {
+export async function propertiesPanel(helmString: string) {
   //const lru = await getLru();
   const result = lru.get(helmString).split(',');
   return new DG.Widget(
@@ -105,7 +106,6 @@ export async function detailsPanel(helmString: string) {
       'formula': result[0].replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
       'molecular weight': result[1],
       'extinction coefficient': result[2],
-      'molfile': result[3],
       'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
       'rna analogue sequence': ui.wait(async () => ui.divText(await helmToRNA(helmString))),
       'smiles': ui.wait(async () => ui.divText(await helmToSmiles(helmString))),
@@ -113,6 +113,15 @@ export async function detailsPanel(helmString: string) {
     })
   );
 }
+
+//name: Molfile
+//tags: panel, widgets
+//input: string helmString {semType: Macromolecule}
+//output: widget result
+export async function molfilePanel(helmString: string) {
+  return ui.textInput('', await getMolfile(helmString));
+}
+
 
 //name: loadDialog
 export async function loadDialog() {
@@ -289,6 +298,12 @@ export function helmColumnToSmiles(helmColumn: DG.Column) {
   //todo: add column with smiles to col.dataFrame.
 }
 
+//name: getMolfile
+//input: string helmString {semType: Macromolecule}
+export async function getMolfile(helmString) {
+  return molfiles.get(helmString);
+}
+
 function split(s: string, sep: string) {
   var ret = [];
   var frag = "";
@@ -462,8 +477,9 @@ class HelmCellRenderer extends DG.GridCellRenderer {
         const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
         const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
         const molfile = canvas.getMolfile();
-        const result = formula + ', ' + molWeight + ', ' + coef + ', ' + molfile;
+        const result = formula + ', ' + molWeight + ', ' + coef;
         lru.set(gridCell.cell.value, result);
+        molfiles.set(gridCell.cell.value, molfile);
         return;
       }
       if (monomers.size > 0) {
