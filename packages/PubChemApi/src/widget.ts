@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {pubChemSearchType} from './utils';
+import {anyObject, pubChemSearchType} from './utils';
 import {identitySearch, similaritySearch, substructureSearch} from './pubchem';
 
 export async function pubChemSearchWidget(molString: string, searchType: pubChemSearchType): Promise<DG.Widget> {
@@ -9,23 +9,54 @@ export async function pubChemSearchWidget(molString: string, searchType: pubChem
   const compsHost = ui.divH([ui.loader()]);
   const widget = new DG.Widget(compsHost);
 
-  let table: DG.DataFrame | null;
+  let json: anyObject[] | null;
   switch (searchType) {
   case 'similarity':
-    table = await similaritySearch('smiles', molString);
+    json = await similaritySearch('smiles', molString);
     break;
   case 'substructure':
-    table = await substructureSearch('smiles', molString);
+    json = await substructureSearch('smiles', molString);
     break;
   case 'identity':
-    table = await identitySearch('smiles', molString);
+    json = await identitySearch('smiles', molString);
     break;
   default:
     throw new Error(`DrugBankSearch: Search type \`${searchType}\` not found`);
   }
 
-  compsHost.firstChild?.remove();
-  if (table === null || table.filter.trueCount === 0) {
+  if (json == null) {
+    compsHost.appendChild(ui.divText('No matches'));
+    return widget;
+  }
+
+  if (searchType == 'identity') {
+    const props: {value: anyObject, urn: anyObject}[] = json[0]['props'];
+    const tooltips = [];
+    const result: anyObject = {};
+    const bannedKeys = ['label', 'name', 'implementation', 'datatype'];
+
+    for (const prop of props) {
+      const urn = prop.urn;
+      const label: string = urn.label;
+      const name: string | undefined = urn.name;
+      const value = Object.values(prop.value)[0];
+      const boxedValue = ui.divText(value);
+
+      for (const bannedKey of bannedKeys)
+        delete urn[bannedKey];
+
+      ui.tooltip.bind(boxedValue, () => ui.tableFromMap(urn));
+      result[`${name ? name + ' ' : ''}${label}`] = boxedValue;
+    }
+
+    const resultMap = ui.tableFromMap(result);
+
+    return new DG.Widget(resultMap);
+  }
+
+  const table = DG.DataFrame.fromObjects(json);
+
+  if (!table || table.filter.trueCount === 0) {
     compsHost.appendChild(ui.divText('No matches'));
     return widget;
   }
