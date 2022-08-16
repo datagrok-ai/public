@@ -7,6 +7,12 @@ import { c, _package } from './package';
 import {delay} from "@datagrok-libraries/utils/src/test";
 import { Menu } from 'datagrok-api/dg';
 
+enum NODE_TYPE {
+  PACKAGE = 'Package',
+  CATEGORY = 'Category',
+  TEST = 'TEST'
+}
+
 interface ITestManagerUI {
   testsTree: DG.TreeViewNode;
 }
@@ -14,22 +20,20 @@ interface ITestManagerUI {
 interface IPackageTests {
   name: string;
   friendlyName: string;
-  active: boolean;
   categories: {[index: string]: ICategory}
 }
 
 interface ICategory {
-  active: boolean,
+  name: string,
   tests: IPackageTest[],
   subcategories: {[index: string]: ICategory},
-  fullCatName: string
+  packageName: string,
+  subCatsNames: string[],
 }
 
 interface IPackageTest {
   test: Test,
-  active: boolean,
   packageName: string,
-  fullCatName: string,
   resultDiv: HTMLElement,
 }
 
@@ -43,6 +47,7 @@ let packagesTests: IPackageTests[] = [];
 let testsResultsDf: DG.DataFrame;
 let testPath = '';
 let testFunctions: any[];
+let testManagerView: DG.View;
 
 export function addView(view: DG.ViewBase): DG.ViewBase {
   view.box = true;
@@ -56,12 +61,12 @@ export async function testManagerViewNew(): Promise<void> {
   let pathSegments = window.location.pathname.split('/');
   pathSegments = pathSegments.map(it => it ? it.toLowerCase() : undefined);
   testFunctions = await collectPackages();
-  let v = DG.View.create();
-  const testUIElements: ITestManagerUI = createTestManagerUI(true, v);
-  v.name = 'Test Manager'
-  addView(v);
-  v.temp['ignoreCloseAll'] = true;
-  v.append(testUIElements.testsTree.root); 
+  testManagerView = DG.View.create();
+  const testUIElements: ITestManagerUI = createTestManagerUI();
+  testManagerView.name = 'Test Manager'
+  addView(testManagerView);
+  testManagerView.temp['ignoreCloseAll'] = true;
+  testManagerView.append(testUIElements.testsTree.root); 
 }
 
 async function collectPackages(packageName?: string): Promise<any[]>  {
@@ -70,7 +75,7 @@ async function collectPackages(packageName?: string): Promise<any[]>  {
   return testFunctions;
 }
 
-async function collectPackageTests(packageNode: DG.TreeViewGroup, f: any) {
+async function collectPackageTests(packageNode: DG.TreeViewGroup, f: any, expand: boolean) {
   if (testFunctions.filter(it => it.package.name === f.package.name).length !== 0 &&
     packagesTests.filter(pt => pt.name === f.package.name).length === 0) {
     await f.package.load({ file: f.options.file });
@@ -90,7 +95,9 @@ async function collectPackageTests(packageNode: DG.TreeViewGroup, f: any) {
         let previousCat = packageTestsFinal;
         for (let i = 0; i < subcats.length; i++) {
           if (!packageTestsFinal[subcats[i]]) {
-            previousCat[subcats[i]] = { active: true, tests: [], subcategories: {}, fullCatName: fullCatName };
+            previousCat[subcats[i]] = { tests: [], subcategories: {}, packageName: f.package.name, name: subcats[i], subCatsNames: [cat] };
+          } else {
+            previousCat[subcats[i]].subCatsNames.push(cat);
           };
           if (i === subcats.length - 1) {
             previousCat[subcats[i]].tests = previousCat[subcats[i]].tests ? previousCat[subcats[i]].tests.concat(tests) : tests;
@@ -100,25 +107,24 @@ async function collectPackageTests(packageNode: DG.TreeViewGroup, f: any) {
         }
       });
       Object.keys(packageTestsFinal).forEach(cat => {
-        addCategoryRecursive(packageNode, packageTestsFinal[cat], cat);
+        addCategoryRecursive(packageNode, packageTestsFinal[cat], expand);
       })
       packagesTests.push({
         name: f.package.name,
         friendlyName: f.package.friendlyName,
-        active: true,
         categories: packageTestsFinal
       })
     };
   }
 }
 
-function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, catName: string) {
-  const subnode = node.group(catName, null, false);
-  setRunTestsMenu(subnode, category, null);
+function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, expand: boolean) {
+  const subnode = node.group(category.name, null, expand);
+  setRunTestsMenuAndLabelClick(subnode, category, NODE_TYPE.CATEGORY);
   const subcats = Object.keys(category.subcategories);
   if (subcats.length > 0) {
     subcats.forEach((subcat) => {
-      addCategoryRecursive(subnode, category.subcategories[subcat], subcat);
+      addCategoryRecursive(subnode, category.subcategories[subcat], expand);
     })
   }
   category.tests.forEach(t => {
@@ -129,49 +135,64 @@ function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, catNa
     ]);
     const item = subnode.item(itemDiv);
     t.resultDiv = testPassed;
-    setRunTestsMenu(item, null, t);
+    setRunTestsMenuAndLabelClick(item, t, NODE_TYPE.TEST);
   })
 }
 
 
-function createTestManagerUI(labelClick?: boolean, view?: DG.View): ITestManagerUI {
+function createTestManagerUI(): ITestManagerUI {
 
   const tree = ui.tree();
   tree.root.style.width = '100%';
   testFunctions.forEach(pack => {
     const packNode = tree.group(pack.package.friendlyName, null, false);
     packNode.onNodeExpanding.subscribe(() => {
-      collectPackageTests(packNode, pack);
+      collectPackageTests(packNode, pack, false);
     });
-    setRunTestsMenu(packNode, null, null, pack);
+    setRunTestsMenuAndLabelClick(packNode, pack, NODE_TYPE.PACKAGE);
   });
 
 
   return { testsTree: tree };
 }
 
-function setRunTestsMenu(node: DG.TreeViewGroup | DG.TreeViewNode, category: ICategory, test: IPackageTest, pack?: any) {
+function setRunTestsMenuAndLabelClick(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
   node.captionLabel.addEventListener('contextmenu', (e) => {
     Menu.popup()
-      .item('Run', async () => {      
-        let testsToRun: IPackageTest[] = [];
-        if(pack) {
-          await collectPackageTests(node as  DG.TreeViewGroup, pack);
-          const cats = packagesTests.filter(pt => pt.name === pack.package.name)[0].categories;
-          Object.keys(cats).forEach(cat => {
-            testsToRun = testsToRun.concat(collectTestsToRunRecursive(cats[cat]));
-          })
-        } else if (category){
-          testsToRun = testsToRun.concat(collectTestsToRunRecursive(category));
-        } else {
-          testsToRun = [test];
-        }
+      .item('Run', async () => {
+        let testsToRun = await collectTestsToRun(node, tests, nodeType);
         runAllTests(testsToRun);
       })
       .show();
     e.preventDefault();
     e.stopPropagation();
   });
+  node.captionLabel.addEventListener('click', () => {
+    grok.shell.o = getTestsInfoPanel(node, tests, nodeType);
+  });
+}
+
+async function collectTestsToRun(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE): Promise<IPackageTest[]> {
+  let testsToRun: IPackageTest[] = [];
+  switch (nodeType) {
+    case NODE_TYPE.PACKAGE: {
+      await collectPackageTests(node as DG.TreeViewGroup, tests, true);
+      const cats = packagesTests.filter(pt => pt.name === tests.package.name)[0].categories;
+      Object.keys(cats).forEach(cat => {
+        testsToRun = testsToRun.concat(collectTestsToRunRecursive(cats[cat]));
+      });
+      break;
+    }
+    case NODE_TYPE.CATEGORY: {
+      testsToRun = testsToRun.concat(collectTestsToRunRecursive(tests));
+      break;
+    }
+    case NODE_TYPE.TEST: {
+      testsToRun = [tests];
+      break;
+    }
+  }
+  return testsToRun;
 }
 
 
@@ -192,6 +213,18 @@ function updateTestResultsIcon (resultDiv: HTMLElement, success?: boolean) {
   success === undefined ? resultDiv.innerHTML = '' : updateIcon(success, resultDiv);
 }
 
+function testInProgress (resultDiv: HTMLElement, running: boolean) {
+  let icon = ui.iconFA('spinner-third');
+  icon.classList.add('fa-spin');
+  icon.style.marginTop = '0px';
+  if(running) {
+    resultDiv.innerHTML = '';
+    resultDiv.append(icon);
+  } else {
+    resultDiv.innerHTML = '';
+  }
+}
+
 function updateIcon (passed: boolean, iconDiv: Element) {
   const icon = passed ? ui.iconFA('check') : ui.iconFA('ban');
   icon.style.fontWeight = 'bold';
@@ -202,31 +235,32 @@ function updateIcon (passed: boolean, iconDiv: Element) {
   iconDiv.append(icon);
 }
 
-async function runAllTests (activeTests: IPackageTest[], view?: DG.View) {
+async function runAllTests(activeTests: IPackageTest[], view?: DG.View) {
   let completedTestsCount = 0;
   if (view) view.path = '/' + view.name.replace(' ', '') + testPath.replace(/ /g, '');
   for (let t of activeTests) {
     const start = Date.now();
-    
+    testInProgress(t.resultDiv, true);
     const res = await grok.functions.call(
       `${t.packageName}:test`, {
-        'category': t.test.category,
-        'test': t.test.name,
-      });
-      completedTestsCount +=1;
-      if (!testsResultsDf) {
-        testsResultsDf = res;
-        addPackageAndTimeInfo(testsResultsDf, start, t.packageName);
-      } else {
-        addPackageAndTimeInfo(res, start, t.packageName);
-        removeTestRow(t.packageName, t.test.category, t.test.name);
-        testsResultsDf = testsResultsDf.append(res);
-      }
-      updateTestResultsIcon(t.resultDiv, res.get('success', 0));
-      if (completedTestsCount === activeTests.length) {
-        grok.shell.closeAll();
-       // grok.shell.v = view;
-      }
+      'category': t.test.category,
+      'test': t.test.name,
+    });
+    testInProgress(t.resultDiv, false);
+    completedTestsCount += 1;
+    if (!testsResultsDf) {
+      testsResultsDf = res;
+      addPackageAndTimeInfo(testsResultsDf, start, t.packageName);
+    } else {
+      addPackageAndTimeInfo(res, start, t.packageName);
+      removeTestRow(t.packageName, t.test.category, t.test.name);
+      testsResultsDf = testsResultsDf.append(res);
+    }
+    updateTestResultsIcon(t.resultDiv, res.get('success', 0));
+    if (completedTestsCount === activeTests.length) {
+      grok.shell.closeAll();
+      grok.shell.v = testManagerView;
+    }
   }
 };
 
@@ -243,3 +277,55 @@ function removeTestRow (pack: string, cat: string, test: string) {
     }
   }
 }
+
+function getTestsInfoPanel(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
+  const acc = ui.accordion();
+  const accIcon = ui.element('i');
+  accIcon.className = 'grok-icon svg-icon svg-view-layout';
+  acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
+  const grid = getTestsInfoGrid(resultsGridFilterCondition(tests, nodeType));
+  acc.addPane('Details', () => ui.div(testDetails(node, tests, nodeType)), true);
+  acc.addPane('Results', () => ui.div(grid), false);
+  return acc.root;
+};
+
+function resultsGridFilterCondition(tests: any, nodeType: NODE_TYPE) {
+  return nodeType === NODE_TYPE.PACKAGE ? `Package = ${tests.package.name}` :
+    nodeType === NODE_TYPE.CATEGORY ? `Package = ${tests.packageName} and category IN (${tests.subCatsNames.join(',')})` :
+      `Package = ${tests.packageName} and category = ${tests.test.category} and name =  ${tests.test.name}`
+}
+
+function testDetails(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
+  const detailsMap = nodeType === NODE_TYPE.PACKAGE ? { package: tests.package.name, categories: 'all', tests: 'all' } :
+    nodeType === NODE_TYPE.CATEGORY ? { package: tests.packageName, categories: tests.subCatsNames.join(','), tests: 'all' } :
+      { package: tests.packageName, category: tests.test.category, test: tests.test.name };
+  const detailsTable = ui.tableFromMap(detailsMap);
+  const runButton = ui.bigButton('RUN', async () => {
+    let testsToRun = await collectTestsToRun(node, tests, nodeType);
+    runAllTests(testsToRun);
+  });
+  return ui.divV([
+    detailsTable,
+    runButton
+  ])
+}
+
+
+function getTestsInfoGrid(condition: string) {
+  let grid;
+  if (testsResultsDf) {
+    const testInfo = testsResultsDf
+      .groupBy(testsResultsDf.columns.names())
+      .where(condition)
+      .aggregate();
+    if (testInfo.rowCount === 1 && !testInfo.col('result').isNone(0)) {
+      const gridMap = {};
+      testInfo.columns.names().forEach((col) => {
+        gridMap[col] = testInfo.get(col, 0);
+      });
+      grid = ui.tableFromMap(gridMap);
+    } else
+      grid = testInfo.plot.grid().root;
+  }
+  return grid;
+};
