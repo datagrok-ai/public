@@ -1,32 +1,38 @@
 {
-	"name": "@datagrok/cdm",
-	"friendlyName": "CDM",
-	"version": "0.0.1",
-	"author": {
-		"name": "Maria Dolotova",
-		"email": "maria.dolotova@arcadia.spb.ru"
-	},
-	"description": "",
-	"dependencies": {
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"cash-dom": "^8.1.0"
-	},
-	"scripts": {
-		"link-api": "npm install && npm link datagrok-api",
-		"debug-cdm": "webpack && grok publish local",
-		"release-cdm": "webpack && grok publish --release",
-		"build-cdm": "webpack",
-		"build": "webpack",
-		"debug-cdm-dev": "grok publish dev",
-		"release-cdm-dev": "grok publish dev --release",
-		"debug-cdm-public": "grok publish public",
-		"release-cdm-public": "grok publish public --release"
-	},
-	"devDependencies": {
-		"datagrok-api": "^0.148.0",
-		"webpack": "latest",
-		"webpack-cli": "latest"
-	},
+  "name": "@datagrok/cdm",
+  "friendlyName": "CDM",
+  "version": "0.0.1",
+  "author": {
+    "name": "Maria Dolotova",
+    "email": "maria.dolotova@arcadia.spb.ru"
+  },
+  "description": "",
+  "dependencies": {
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "cash-dom": "^8.1.0"
+  },
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "link-api": "npm install && npm link datagrok-api",
+    "debug-cdm": "webpack && grok publish local",
+    "release-cdm": "webpack && grok publish --release",
+    "build-cdm": "webpack",
+    "build": "webpack",
+    "debug-cdm-dev": "grok publish dev",
+    "release-cdm-dev": "grok publish dev --release",
+    "debug-cdm-public": "grok publish public",
+    "release-cdm-public": "grok publish public --release"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
+    "datagrok-api": "^0.148.0",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
   "category": "Health"
 }

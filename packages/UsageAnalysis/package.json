@@ -27,6 +27,8 @@
     "choices.js": "^10.1.0"
   },
   "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
     "debug-usageanalysis": "webpack && grok publish",
     "build": "webpack",
     "release-usageanalysis": "webpack && grok publish --release",
@@ -39,6 +41,10 @@
     "test-local": "set HOST=localhost && jest"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
     "@types/jest": "^27.0.0",
     "@types/select2": "^4.0.55",
     "jest": "^27.0.0",

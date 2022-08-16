@@ -1,46 +1,52 @@
 {
-	"name": "@datagrok/viewers",
-	"fullName": "Viewers",
-	"version": "0.0.4",
-	"description": "Set of custom JavaScript viewers",
-	"author": {
-		"name": "Diana Onufriienko",
-		"email": "donufriienko@datagrok.ai"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/datagrok-ai/public.git",
-		"directory": "packages/Viewers"
-	},
-	"dependencies": {
-		"datagrok-api": "^1.0.0",
-		"circos": "^2.1.0",
-		"d3": "^6.2.0",
-		"d3-cloud": "^1.2.5",
-		"d3-sankey": "^0.12.3",
-		"three": "^0.133.1",
-		"three-globe": "^2.11.1"
-	},
-	"devDependencies": {
-		"css-loader": "^5.0.0",
-		"datagrok-tools": "^4.0.12",
-		"style-loader": "^2.0.0",
-		"webpack": "^5.10.0",
-		"webpack-cli": "^4.2.0"
-	},
-	"scripts": {
-		"debug-viewers": "grok publish",
-		"release-viewers": "grok publish --release",
-		"build-viewers": "webpack && grok publish",
-		"build": "webpack",
-		"debug-viewers-public": "grok publish public",
-		"release-viewers-public": "grok publish public --release",
-		"debug-viewers-local": "grok publish local",
-		"release-viewers-local": "grok publish local --release",
-		"debug-viewers-localhost": "grok publish localhost",
-		"release-viewers-localhost": "grok publish localhost --release"
-	},
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ],
+  "name": "@datagrok/viewers",
+  "fullName": "Viewers",
+  "version": "0.0.4",
+  "description": "Set of custom JavaScript viewers",
+  "author": {
+    "name": "Diana Onufriienko",
+    "email": "donufriienko@datagrok.ai"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Viewers"
+  },
+  "dependencies": {
+    "datagrok-api": "^1.0.0",
+    "circos": "^2.1.0",
+    "d3": "^6.2.0",
+    "d3-cloud": "^1.2.5",
+    "d3-sankey": "^0.12.3",
+    "three": "^0.133.1",
+    "three-globe": "^2.11.1"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
+    "css-loader": "^5.0.0",
+    "datagrok-tools": "^4.0.12",
+    "style-loader": "^2.0.0",
+    "webpack": "^5.10.0",
+    "webpack-cli": "^4.2.0"
+  },
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "debug-viewers": "grok publish",
+    "release-viewers": "grok publish --release",
+    "build-viewers": "webpack && grok publish",
+    "build": "webpack",
+    "debug-viewers-public": "grok publish public",
+    "release-viewers-public": "grok publish public --release",
+    "debug-viewers-local": "grok publish local",
+    "release-viewers-local": "grok publish local --release",
+    "debug-viewers-localhost": "grok publish localhost",
+    "release-viewers-localhost": "grok publish localhost --release"
+  },
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ],
   "category": "Visualizations"
 }

@@ -1,27 +1,31 @@
 {
-	"name": "@datagrok/simpkpd",
-	"friendlyName": "SimPKPD",
-	"version": "0.0.99",
-	"description": "PKPD simulations tools",
-	"author": {
-		"name": "Leonid Stolbov",
-		"email": "lstolbov@datagrok.ai"
-	},
-	"fullName": "SimPKPD",
-	"repository": {
+  "name": "@datagrok/simpkpd",
+  "friendlyName": "SimPKPD",
+  "version": "0.0.99",
+  "description": "PKPD simulations tools",
+  "author": {
+    "name": "Leonid Stolbov",
+    "email": "lstolbov@datagrok.ai"
+  },
+  "fullName": "SimPKPD",
+  "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/SimPKPD"
   },
-	"dependencies": {
+  "dependencies": {
     "@datagrok-libraries/utils": "^0.4.1",
     "@types/react-dom": "^17.0.9",
     "datagrok-api": "^1.5.0",
     "file-loader": "^6.2.0",
     "ts-loader": "latest",
     "typescript": "latest"
-	},
-	"devDependencies": {
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
     "@types/jest": "^27.0.0",
     "css-loader": "latest",
     "jest-html-reporter": "^3.5.0",
@@ -35,11 +39,13 @@
     "js-yaml": "^4.1.0",
     "@types/node-fetch": "^2.6.2",
     "node-fetch": "^2.6.7"
-	},
-	"sources": [],
-	"scripts": {
+  },
+  "sources": [],
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
     "build": "webpack"
-	},
+  },
   "canEdit": [
     "Developers"
   ],
