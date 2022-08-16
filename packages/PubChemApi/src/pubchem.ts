@@ -105,42 +105,30 @@ export async function init(id: pubChemIdType): Promise<HTMLElement> {
 
 
 export async function similaritySearch(
-  idType: string, id: pubChemIdType, params?: paramsType): Promise<DG.DataFrame | null> {
+  idType: string, id: pubChemIdType, params?: paramsType): Promise<anyObject[] | null> {
   params ??= {};
   const listId = await _asyncSearchId('similarity', idType, id, params);
-  let json: object[];
-  let maxRequests = 10;
-  do {
-    maxRequests--;
-    json = await _getListById(listId);
-  } while (typeof json === 'undefined' && maxRequests > 0);
+  const json: anyObject[] | anyObject | null = await _getListById(listId);
 
-  const df = DG.DataFrame.fromObjects(json);
-  return df ?? null;
+  return Array.isArray(json) ? json : null;
 }
 
 export async function identitySearch(
-  idType: string, id: pubChemIdType, params?: anyObject): Promise<DG.DataFrame | null> {
+  idType: string, id: pubChemIdType, params?: anyObject): Promise<anyObject[] | null> {
   params ??= {};
   const listId = await _asyncSearchId('identity', idType, id, params);
-  const json = await _getListById(listId, [], {});
-  const df = DG.DataFrame.fromObjects(json);
-  return df ?? null;
+  const json: anyObject[] | anyObject | null = await _getListById(listId, [], {});
+
+  return Array.isArray(json) ? json : null;
 }
 
 export async function substructureSearch(
-  idType: string, id: pubChemIdType, params?: anyObject): Promise<DG.DataFrame | null> {
+  idType: string, id: pubChemIdType, params?: anyObject): Promise<anyObject[] | null> {
   params ??= {};
   const listId = await _asyncSearchId('substructure', idType, id, params);
-  let json: object[];
-  let maxRequests = 10;
-  do {
-    maxRequests--;
-    json = await _getListById(listId);
-  } while (typeof json === 'undefined' && maxRequests > 0);
+  const json: anyObject[] | anyObject | null = await _getListById(listId);
 
-  const df = DG.DataFrame.fromObjects(json);
-  return df ?? null;
+  return Array.isArray(json) ? json : null;
 }
 
 export async function smilesToPubChem(smiles: string) {
@@ -159,14 +147,20 @@ export async function getBy(
 }
 
 export async function _getListById(
-  listId: string, propertyList: string[] = ['CanonicalSMILES'], params?: paramsType): Promise<anyObject[]> {
+  listId: string, propertyList: string[] = ['CanonicalSMILES'], params?: paramsType): Promise<anyObject[] | null> {
   params ??= {};
   const properties = propertyList.length ? `/property/${propertyList.join(',')}` : '';
   const url =
     `${pubChemPug}/compound/listkey/${listId}${properties}/JSON?${urlParamsFromObject(params)}`;
-  const response = await grok.dapi.fetchProxy(url);
-  const json = await response.json();
-  return json.PropertyTable?.Properties ?? json['PC_Compounds'] ?? await _getListById(listId, propertyList, params);
+  let json: anyObject;
+  let maxRequests = 10;
+  do {
+    maxRequests--;
+    const response = await grok.dapi.fetchProxy(url);
+    json = await response.json();
+  } while (json.hasOwnProperty('Waiting') && maxRequests > 0);
+  
+  return json.PropertyTable?.Properties ?? json['PC_Compounds'] ?? null;
 }
 
 export async function _asyncSearchId(
