@@ -1,44 +1,50 @@
 {
 	"name": "@datagrok/simpkpd",
 	"friendlyName": "SimPKPD",
-	"version": "0.0.4",
+	"version": "0.0.99",
+	"description": "PKPD simulations tools",
 	"author": {
 		"name": "Leonid Stolbov",
 		"email": "lstolbov@datagrok.ai"
 	},
-	"description": "SimPKPD is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+	"fullName": "SimPKPD",
 	"repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/SimPKPD"
   },
 	"dependencies": {
-		"datagrok-api": "^1.0.0",
-		"cash-dom": "latest",
-		"dayjs": "latest"
+    "@datagrok-libraries/utils": "^0.4.1",
+    "@types/react-dom": "^17.0.9",
+    "datagrok-api": "^1.5.0",
+    "file-loader": "^6.2.0",
+    "ts-loader": "latest",
+    "typescript": "latest"
 	},
 	"devDependencies": {
-		"@types/d3": "^7.0.0",
-		"@types/jquery": "^3.5.6",
-		"@typescript-eslint/eslint-plugin": "^4.29.1",
-		"@typescript-eslint/parser": "^4.29.1",
-		"eslint": "^7.32.0",
-		"eslint-config-google": "^0.14.0",
-		"ts-loader": "^9.2.5",
-		"typescript": "^4.4.3",
-		"webpack": "latest",
-		"webpack-cli": "latest"
+    "@types/jest": "^27.0.0",
+    "css-loader": "latest",
+    "jest-html-reporter": "^3.5.0",
+    "jest": "^27.0.0",
+    "ts-jest": "^27.0.0",
+    "puppeteer": "^13.7.0",
+    "style-loader": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "@types/js-yaml": "^4.0.5",
+    "js-yaml": "^4.1.0",
+    "@types/node-fetch": "^2.6.2",
+    "node-fetch": "^2.6.7"
 	},
 	"sources": [],
 	"scripts": {
-		"debug-simpkpd": "grok publish",
-		"release-simpkpd": "grok publish --release",
-		"build-simpkpd": "webpack",
-		"debug-simpkpd-public": "grok publish public",
-		"release-simpkpd-public": "grok publish public --release",
-		"debug-simpkpd-local": "grok publish local",
-		"release-simpkpd-local": "grok publish local --release"
+    "build": "webpack"
 	},
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "category": "Health"
 }
