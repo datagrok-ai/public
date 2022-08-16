@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
-import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {createJsonMonomerLibFromSdf} from './utils';
 import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {printLeftOrCentered} from '@datagrok/bio/src/utils/cell-renderer';
@@ -289,6 +288,133 @@ export function helmColumnToSmiles(helmColumn: DG.Column) {
   //todo: add column with smiles to col.dataFrame.
 }
 
+function split(s: string, sep: string) {
+  var ret = [];
+  var frag = "";
+  var parentheses = 0;
+  var bracket = 0;
+  var braces = 0;
+  var quote = 0;
+  for (var i = 0; i < s.length; ++i) {
+      var c = s.substring(i, i + 1);
+      if (c == sep && bracket == 0 && parentheses == 0 && braces == 0 && quote == 0) {
+          ret.push(frag);
+          frag = "";
+      }
+      else {
+          frag += c;
+          if (quote > 0) {
+              if (c == '\\' && i + 1 < s.length) {
+                  ++i;
+                  var c2 = s.substring(i, i + 1);
+                  frag += c2;
+                  c += c2;
+              }
+          }
+          if (c == '\"') {
+              if (!(i > 0 && s.substring(i - 1, i) == '\\'))
+                  quote = quote == 0 ? 1 : 0;
+          }
+          else if (c == '[')
+              ++bracket;
+          else if (c == ']')
+              --bracket;
+          else if (c == '(')
+              ++parentheses;
+          else if (c == ')')
+              --parentheses;
+          else if (c == '{')
+              ++braces;
+          else if (c == '}')
+              --braces;
+      }
+  }
+  ret.push(frag);
+  return ret;
+}
+
+function detachAnnotation(s: string) {
+  var ret = _detachAppendix(s, '\"');
+  if (ret.tag != null)
+      return ret;
+
+  var r = _detachAppendix(s, '\'');
+  return { tag: ret.tag, repeat: r.tag, str: r.str };
+}
+
+function _detachAppendix(s: string, c: string) {
+  var tag = null;
+  //@ts-ignore
+  if (scil.Utils.endswith(s, c)) {
+      var p = s.length - 1;
+      while (p > 0) {
+          p = s.lastIndexOf(c, p - 1);
+          if (p <= 0 || s.substring(p - 1, p) != '\\')
+              break;
+      }
+
+      if (p > 0 && p < s.length - 1) {
+          tag = s.substring(p + 1, s.length - 1);
+          s = s.substring(0, p);
+      }
+  }
+  if (tag != null)
+      tag = tag.replace(new RegExp("\\" + c, "g"), c);
+  return { tag: unescape(tag), str: s };
+}
+
+function unescape(s: string) {
+  //@ts-ignore
+  if (scil.Utils.isNullOrEmpty(s))
+      return s;
+
+  return s.replace(/[\\]./g, function (m) {
+      switch (m) {
+          case "\\r":
+              return "\r";
+          case "\\n":
+              return "\n";
+          case "\\t":
+              return "\t";
+          default:
+              return m.substring(1);
+      }
+  });
+}
+
+function parseHelm(s: string) {
+  var sections = split(s, '$');
+  s = sections[0];
+  var monomers = [];
+  //@ts-ignore
+  if (!scil.Utils.isNullOrEmpty(s)) {
+      var seqs = split(s, '|');
+      for (var i = 0; i < seqs.length; ++i) {
+          var e = detachAnnotation(seqs[i]);
+          s = e.str;
+
+          var p = s.indexOf("{");
+          
+          s = s.substring(p + 1);
+          p = s.indexOf('}');
+          s = s.substring(0, p);
+
+          var ss = split(s, '.');
+          for (var monomer of ss) {
+            if (monomer.includes('(') && monomer.includes(')')) {
+                var elements = monomer.replace(/[()]/g, "").split("");
+                for (var el of elements) {
+                    monomers.push(el);
+                }
+            } else {
+                monomers.push(monomer);
+            }
+          }
+      }
+  }
+  return monomers;
+}
+
 function findMonomers(helmString: string) {
   //@ts-ignore
   const types = Object.keys(org.helm.webeditor.monomerTypeList());
@@ -301,7 +427,7 @@ function findMonomers(helmString: string) {
       monomer_names.push(monomers[i][k].id);
     });
   }
-  const split_string = WebLogo.splitterAsHelm(helmString);
+  const split_string = parseHelm(helmString);
   return new Set(split_string.filter(val => !monomer_names.includes(val)));
 }
 
@@ -349,7 +475,7 @@ class HelmCellRenderer extends DG.GridCellRenderer {
         g.textBaseline = 'top';
         let x1 = x;
         const s: string = gridCell.cell.value ?? '';
-        let subParts: string[] = WebLogo.splitterAsHelm(s);
+        let subParts: string[] = parseHelm(s);
         subParts.forEach((amino, index) => {
           let color = monomers.has(amino) ? 'red' : grayColor;
           g.fillStyle = undefinedColor;
