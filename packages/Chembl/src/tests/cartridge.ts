@@ -20,7 +20,7 @@ category('Cartridge usage', () => {
     const df = await grok.data.query(`${_package.name}:patternSimilaritySearchWithThreshold`,
       {'pattern': 'Cc1ccc2nc(N(C)CC(=O)O)sc2c1', 'threshold': '0.7'});
 
-    expect(df!.rowCount, 25);
+    expect(df!.rowCount, 21);
 
     if (df != null)
       grok.shell.closeTable(df);
