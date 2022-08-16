@@ -101,13 +101,12 @@ export function testDetectors() {
 }
 
 //name: TestDetectorsStandard
-//top-menu: Test Detectors Standard
+//top-menu: Tools | Dev | Test Detectors Standard
 export async function TestDetectorsStandard() {
   const detectorsArray = DG.Func.find({tags: ['semTypeDetector']});
   const df = await _testDetectorsStandard(detectorsArray);
   grok.shell.addTableView(df);
 }
-
 
 //name: DummyFuncToInit
 export function DummyFuncToInit() {
