@@ -36,12 +36,12 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const angle = atan2 < 0 ? atan2 + 2 * Math.PI : atan2;
     let tooltip = '';
     for (let i = 0; i < cols.length; i++) {
-        if (cols[i].isNone(gridCell.cell.row.idx))
-            continue;
-        if (angle > 2 * Math.PI * i / cols.length && angle < 2 * Math.PI * (i + 1) / cols.length) {
-          tooltip = cols[i].name;
-          break;
-        }
+      if (cols[i].isNone(gridCell.cell.row.idx))
+        continue;
+      if ((angle > 2 * Math.PI * i / cols.length) && (angle < 2 * Math.PI * (i + 1) / cols.length)) {
+        tooltip = cols[i].name;
+        break;
+      }
     }
 
     ui.tooltip.show(ui.div(tooltip), e.x + 16, e.y + 16);
