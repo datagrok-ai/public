@@ -10,7 +10,9 @@ import VectorSource from 'ol/source/Vector';
 import * as OLProj from 'ol/proj';
 import {Coordinate} from 'ol/coordinate';
 //geometry drawing funtions
+import * as OLGeometry from 'ol/geom/Geometry';
 import * as OLPolygon from 'ol/geom/Polygon';
+//@type {import("../proj/Projection.js").default|undefined}
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import * as OLStyle from 'ol/style';
@@ -23,8 +25,11 @@ import {DragAndDrop, defaults as defaultInteractions} from 'ol/interaction';
 import {GPX, GeoJSON, IGC, KML, TopoJSON} from 'ol/format';
 import Source from 'ol/source/Source';
 import {Attribution, defaults as defaultControls} from 'ol/control';
+//ZIP utilities
+import JSZip from 'jszip';
 
 export {Coordinate} from 'ol/coordinate';
+
 //interface for callback functions parameter
 export interface OLCallbackParam {
   coord: Coordinate; //[number, number];
@@ -38,6 +43,28 @@ export interface OLCallbackParam {
 // });
 
 let OLG: OpenLayers; //TODo: remove this terrible stuff!
+
+// Define a KMZ format class by subclassing ol/format/KML
+
+/*export class KMZ extends KML {
+  constructor(opt_options: any) {
+    const options = opt_options || {};
+    // options.iconUrlFunction = getKMLImage;
+    super(options);
+  }
+  getType(): any {
+    return 'arraybuffer'; // @typedef {'arraybuffer' | 'json' | 'text' | 'xml'} Type
+  }
+  readFeature(source: any, options: any) {
+    const kmlData = getKMLData(source);
+    return super.readFeature(kmlData, options);
+  }
+  readFeatures(source: any, options: any) {
+    const kmlData = getKMLData(source);
+    return super.readFeatures(kmlData, options);
+  }
+}
+*/
 
 export class OpenLayers {
   olMap: OLMap;
@@ -87,6 +114,8 @@ export class OpenLayers {
       target: targetName,
       controls: defaultControls({attribution: false, rotate: false}),
       view: new OLView({
+        // projection: 'EPSG:3857', //'EPSG:4326',
+        projection: 'EPSG:4326',
         center: OLProj.fromLonLat([34.109565, 45.452962]),
         zoom: 7,
       }),
@@ -133,6 +162,10 @@ export class OpenLayers {
 
     this.olCurrentView = newView;
     this.olMap.setView(newView);
+  }
+  setViewOptions(options?: Object | undefined) {
+    const oView = this.olMap.getView();
+    if (options) oView.setProperties(options);
   }
 
   getLayersNamesList(): string[] {

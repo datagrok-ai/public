@@ -95,8 +95,8 @@ export class GisViewer extends DG.JsViewer {
       if (!layer) return;
       const isVisible = layer.getVisible();
       layer.setVisible(!isVisible);
-      if (!isVisible) divLayer.style.background = 'lightblue';
-      else divLayer.style.background = 'lightgray';
+      // if (!isVisible) divLayer.style.background = 'lightblue';
+      // else divLayer.style.background = 'lightgray';
     }, 'Show/hide layer');
     setupBtn(btnVisible, layerName, layerId);
     //Setup button>>
@@ -115,8 +115,8 @@ export class GisViewer extends DG.JsViewer {
     const panelButtons = ui.divH([btnVisible, btnSetup, btnDelete]);
 
     const divLayerUI = ui.divV([l1, panelButtons]);
-    divLayerUI.style.border = '1px solid darkgray';
-    // divLayerUI.style.overflow = 'hidden';
+    // divLayerUI.style.border = '1px solid darkgray';
+    divLayerUI.style.overflow = 'hidden';
     return divLayerUI;
   }
 
@@ -127,26 +127,18 @@ export class GisViewer extends DG.JsViewer {
     const divStatusBody = ui.divH([ui.div('coord :'), this.lblStatusCoords]);
     this.panelBottom = ui.box(divStatusBody);
     this.panelBottom.style.maxHeight = '20px';
-    this.panelBottom.style.background = '#f2f2f5';
-    this.panelBottom.style.border = 'solid 1px darkgray';
+    // this.panelBottom.style.background = '#f2f2f5';
+    this.panelBottom.style.border = 'solid 1px lightgray';
 
     this.panelTop = ui.box();
     this.panelTop.style.maxHeight = '36px';
 
     this.panelLeft = ui.box();
     this.panelLeft.style.maxWidth = '110px';
-    this.panelLeft.style.minWidth = '50px';
-    this.panelLeft.style.border = 'solid 1px darkgray';
+    this.panelLeft.style.minWidth = '60px';
+    // this.panelLeft.style.border = 'solid 1px darkgray';
 
-    this.panelRight = ui.box();
-    this.panelRight.style.maxWidth = '10px';
-    this.panelRight.style.minWidth = '2px';
-    //this.panelRight.style.border = 'solid 1px darkgray';
     //menu bar icons>>
-
-    // ui.icons.settings
-    // return ui.iconSvg('project');
-
     // const iconLayers = ui.iconImage('Layers', '/icons/layers-svgrepo.svg');
     //const leftPanelBtn = ui.button(iconLayers, ()=>{ //cogs
     const leftPanelBtn = ui.button(ui.iconFA('layer-group'), ()=>{ //cogs
@@ -159,32 +151,13 @@ export class GisViewer extends DG.JsViewer {
         } else {
           this.panelLeft.style.visibility = 'visible';
           this.panelLeft.style.maxWidth = this.leftPanelWidth;
-          // this.panelLeft.style.maxWidth = '110px';
-          this.panelLeft.style.minWidth = '50px';
+          this.panelLeft.style.minWidth = '60px';
           this.updateLayersList();
         }
       }
       this.rootOnSizeChanged(this.root);
     });
-    const rightPanelBtn = ui.button('Right panel', ()=>{
-      // if (this.panelRight)
-      //   this.panelRight.style.visibility = (this.panelRight.style.visibility == 'visible') ? 'hidden' : 'visible';
-      if (this.panelRight) {
-        if (this.panelRight.style.visibility == 'visible') {
-          this.panelRight.style.visibility = 'hidden';
-          this.panelRight.style.maxWidth = '2px';
-          this.panelRight.style.minWidth = '2px';
-          //ui.splitH.r
-        } else {
-          this.panelRight.style.visibility = 'visible';
-          this.panelRight.style.maxWidth = '10px';
-          this.panelRight.style.minWidth = '2px';
-        }
-      }
-      this.rootOnSizeChanged(this.root);
-      //$(this.panelRight).hide();
-    });
-    $(rightPanelBtn).hide(); //temporary hide this button
+
     const btnRowFocusing = ui.button(ui.iconFA('bullseye'), ()=>{
       this.isRowFocusing = !this.isRowFocusing;
     });
@@ -194,7 +167,7 @@ export class GisViewer extends DG.JsViewer {
     });
 
     //add buttons to top menu panel
-    this.panelTop.append(ui.divH([leftPanelBtn, rightPanelBtn, heatmapBtn, btnRowFocusing]));
+    this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn, btnRowFocusing]));
     //this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn]));
 
     //left panel icons>>
@@ -205,22 +178,18 @@ export class GisViewer extends DG.JsViewer {
     // this.panelLeft.style.visibility = 'hidden';
     // this.panelLeft.style.maxWidth = '2px';
     // this.panelLeft.style.minWidth = '2px';
-    this.panelRight.style.visibility = 'hidden';
-    this.panelRight.style.maxWidth = '2px';
-    this.panelRight.style.minWidth = '2px';
 
     const body = ui.box();
     body.id = 'map-container';
-    body.style.border = 'solid 1px darkgray';
+    // body.style.border = 'solid 1px darkgray';
     //body.style.minWidth = '100px';
 
     this.viewerContainer = ui.splitV(
       [this.panelTop,
-        // ui.splitH([this.panelLeft, body, this.panelRight], null, true),
         ui.splitH([this.panelLeft, body], null, true),
         this.panelBottom]);
 
-    this.viewerContainer.style.border = 'solid 2px lightgray';
+    // this.viewerContainer.style.border = 'solid 2px lightgray';
     this.root.appendChild(this.viewerContainer);
 
     return this.viewerContainer;
@@ -283,8 +252,8 @@ export class GisViewer extends DG.JsViewer {
       const isVisible = layersArr[i].getVisible();
       divLayer.setAttribute('layerName', layerName);
       divLayer.setAttribute('layerId', layerId);
-      if (isVisible) divLayer.style.background = 'lightblue';
-      else divLayer.style.background = 'lightgray';
+      // if (isVisible) divLayer.style.background = 'lightblue';
+      // else divLayer.style.background = 'lightgray';
 
       divLayer.onclick = (evt)=>{
         // const divLayer = (evt.currentTarget as HTMLElement);

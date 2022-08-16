@@ -6,11 +6,14 @@ import * as DG from 'datagrok-api/dg';
 import {GisViewer} from '../src/gis-viewer';
 //OpenLayers functionality import
 import {OpenLayers} from '../src/gis-openlayer'; //TODO: remove it further (it needs just for preview)
-import {Map as OLMap, MapBrowserEvent, View as OLView} from 'ol';
-import TileLayer from 'ol/layer/Tile';
-import VectorLayer from 'ol/layer/Vector';
-import * as OLProj from 'ol/proj';
-import OSM from 'ol/source/OSM';
+//TODO: remove imports above when we'll be sure we don't need it anymore>>
+// import {Map as OLMap, MapBrowserEvent, View as OLView} from 'ol';
+// import TileLayer from 'ol/layer/Tile';
+// import VectorLayer from 'ol/layer/Vector';
+// import * as OLProj from 'ol/proj';
+// import OSM from 'ol/source/OSM';
+//ZIP utilities
+import JSZip from 'jszip';
 
 export const _package = new DG.Package();
 
@@ -19,13 +22,13 @@ export function info() {
   grok.shell.info('GIS Package info: ' +_package.webRoot);
 }
 
-//name: GISGeocoding
-//description: GIS geocoding - receive coortinates from address
-//input: string address
-//output: string result
-export function gisGeocoding(address: string): string {
-  // return new GisViewer();
-}
+// name: GISGeocoding
+// description: GIS geocoding - receive coortinates from address
+// input: string address
+// output: string result
+// export function gisGeocoding(address: string): string {
+//   // return new GisViewer();
+// }
 
 //name: GISViewer
 //description: GIS map viewer
@@ -35,52 +38,65 @@ export function gisViewer(): GisViewer {
   return new GisViewer();
 }
 
+async function getKMZData(buffer: any): Promise<string> {
+  const zip = new JSZip();
+  let kmlData: string = '';
+  await zip.loadAsync(buffer);
+  const kmlFile = zip.file(/.kml$/i)[0];
+  if (kmlFile)
+    kmlData = await kmlFile.async('string');
+  return kmlData;
+}
+
+//name: gisKMZFileViewer
+//tags: fileViewer, fileViewer-kmz
+//input: file file
+//output: view result
+export async function gisKMZFileViewer(file: DG.FileInfo): Promise<DG.View> {
+  const viewFile = DG.View.create();
+  viewFile.name = 'Preview of: ' + file.name;
+  viewFile.root.id = 'map-container'; //boxMap - div that contains map
+  viewFile.root.style.padding = '0px';
+
+  const strBuf = await file.readAsBytes();
+  const kmlData = await getKMZData(strBuf);
+
+  setTimeout(() => {
+    const ol = new OpenLayers();
+    ol.initMap('map-container');
+    ol.addKMLLayerFromStream(kmlData);
+    ol.setViewOptions({projection: 'EPSG:3857'});
+  }, 200); //should use it because we need visible and active View for map initializing
+
+  return viewFile;
+}
+
 //name: gisKMLFileViewer
 //tags: fileViewer, fileViewer-kml
 //input: file file
 //output: view result
 export async function gisKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
-// export function gisKMLFileViewer(file: DG.FileInfo): DG.View {
-  let htmlStyle: DG.ElementOptions = {style: {'width': '100%', 'height': '100%', 'border': 'solid 1px yellow'}};
   const viewFile = DG.View.create();
-  // const boxMap = ui.box(null, htmlStyle);
-  //const divMap = ui.div(file.fullPath);
-  const divMap = ui.div([], htmlStyle);
-  divMap.id = 'map-cnt'; //boxMap - div that contains map
-  viewFile.append(divMap);
-
-  // const boxMap = ui.box(divMap, htmlStyle);
-  // boxMap.id = 'map-cnt'; //boxMap - div that contains map
+  //alternative way - with embedding additional div into view window>>
+  // const boxMap = ui.box(null);
+  // boxMap.id = 'map-container'; //boxMap - div that contains map
   // viewFile.append(boxMap);
+  viewFile.name = 'Preview of: ' + file.name;
+  viewFile.root.id = 'map-container'; //boxMap - div that contains map
+  viewFile.root.style.padding = '0px';
 
-  let strBuf = await file.readAsString();
-  // const boxMap2 = ui.box(ui.div(strBuf), htmlStyle);
-  // viewFile.append(boxMap2);
+  const strBuf = await file.readAsString();
 
   setTimeout(() => {
-    let ol = new OpenLayers();
-    ol.initMap('map-cnt');
+    const ol = new OpenLayers();
+    ol.initMap('map-container');
+    ol.setViewOptions({
+      projection: 'EPSG:4326',
+      // center: OLProj.fromLonLat([34.109565, 45.452962]),
+      // zoom: 7
+    });
     ol.addKMLLayerFromStream(strBuf);
   }, 200);
-
-  // setTimeout(() => {
-  //   const newLayer = new TileLayer({
-  //     visible: true,
-  //     preload: Infinity,
-  //     source: new OSM()});
-
-  //   olMap = new OLMap({
-  //     target: 'map-cnt',
-  //     layers: [newLayer],
-  //     // controls: defaultControls({attribution: false, rotate: false}),
-  //     view: new OLView({
-  //       center: OLProj.fromLonLat([34.109565, 45.452962]),
-  //       zoom: 7,
-  //     }),
-  //   });
-  // }, 2000);
-
-  // openGISViewer();
 
   return viewFile;
 }
@@ -88,10 +104,10 @@ export async function gisKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
 //name: openGISViewer
 export function openGISViewer(): void {
   let htmlStyle: DG.ElementOptions = { };
-  htmlStyle = {style: {'width': '100%', 'height': '100%', 'border': 'solid 1px yellow'}};
+  htmlStyle = {style: {'width': '100%', 'height': '100%'}};
   const boxMap = ui.box(null, htmlStyle);
   boxMap.id = 'map-container'; //boxMap - div that contains map
-  grok.shell.newView('Leaflet preview view', [boxMap]);
+  grok.shell.newView('OpenLayers preview view', [boxMap]);
 
   const ol = new OpenLayers();
   ol.initMap('map-container');
