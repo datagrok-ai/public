@@ -48,6 +48,7 @@ let testsResultsDf: DG.DataFrame;
 let testPath = '';
 let testFunctions: any[];
 let testManagerView: DG.View;
+let selectedNode: DG.TreeViewGroup|DG.TreeViewNode;
 
 export function addView(view: DG.ViewBase): DG.ViewBase {
   view.box = true;
@@ -119,7 +120,7 @@ async function collectPackageTests(packageNode: DG.TreeViewGroup, f: any, expand
 }
 
 function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, expand: boolean) {
-  const subnode = node.group(category.name, null, expand);
+  const subnode = node.group(category.name, {tests: category, nodeType: NODE_TYPE.CATEGORY}, expand);
   setRunTestsMenuAndLabelClick(subnode, category, NODE_TYPE.CATEGORY);
   const subcats = Object.keys(category.subcategories);
   if (subcats.length > 0) {
@@ -133,7 +134,7 @@ function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, expan
       testPassed,
       ui.divText(t.test.name),
     ]);
-    const item = subnode.item(itemDiv);
+    const item = subnode.item(itemDiv, {tests: t, nodeType: NODE_TYPE.TEST});
     t.resultDiv = testPassed;
     setRunTestsMenuAndLabelClick(item, t, NODE_TYPE.TEST);
   })
@@ -141,11 +142,22 @@ function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, expan
 
 
 function createTestManagerUI(): ITestManagerUI {
-
   const tree = ui.tree();
+  tree.onSelectedNodeChanged.subscribe((res) => {
+    selectedNode = res;
+  });
   tree.root.style.width = '100%';
+  tree.root.addEventListener('keyup', async (e) => {
+    if(e.key === 'Enter') {
+      if (selectedNode) {
+      //@ts-ignore
+      let testsToRun = await collectTestsToRun(selectedNode, selectedNode.value.tests, selectedNode.value.nodeType);
+        runAllTests(testsToRun);
+      }
+    }
+  });
   testFunctions.forEach(pack => {
-    const packNode = tree.group(pack.package.friendlyName, null, false);
+    const packNode = tree.group(pack.package.friendlyName, {tests: pack, nodeType: NODE_TYPE.PACKAGE}, false);
     packNode.onNodeExpanding.subscribe(() => {
       collectPackageTests(packNode, pack, false);
     });
@@ -169,6 +181,10 @@ function setRunTestsMenuAndLabelClick(node: DG.TreeViewGroup | DG.TreeViewNode, 
   });
   node.captionLabel.addEventListener('click', () => {
     grok.shell.o = getTestsInfoPanel(node, tests, nodeType);
+  });
+  node.captionLabel.addEventListener('dblclick', async () => {
+    let testsToRun = await collectTestsToRun(node, tests, nodeType);
+        runAllTests(testsToRun);
   });
 }
 
