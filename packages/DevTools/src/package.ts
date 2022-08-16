@@ -11,6 +11,7 @@ import {functionSignatureEditor} from './function-signature-editor';
 import {addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel} from './dev-panel';
 
 import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detectors';
+import { testManagerViewNew } from './package-testing-new';
 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
@@ -83,6 +84,14 @@ export function _IconTool(): void {
 export async function testManager(): Promise<void> {
   c = grok.functions.getCurrentCall();
   await testManagerView();
+}
+
+//name: TestManager1
+//top-menu: Tools | Dev | Test Manager New
+//tags: app
+export async function testManager1(): Promise<void> {
+  c = grok.functions.getCurrentCall();
+  await testManagerViewNew();
 }
 
 //name: TestDetectors
