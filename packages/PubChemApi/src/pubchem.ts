@@ -157,7 +157,7 @@ export async function _getListById(
   let json: anyObject;
   let maxRequests = 10;
   do {
-    delay(100);
+    await delay(100);
     maxRequests--;
     const response = await grok.dapi.fetchProxy(url);
     json = await response.json();
