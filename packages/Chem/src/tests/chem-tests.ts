@@ -238,7 +238,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
     main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     const v = grok.shell.addTableView(t);
 
-    await grok.functions.call('Chem:CurateChemStructures', {'data': t, 'smiles': 'smiles', 
+    await grok.functions.call('Chem:CurateChemStructures', {'data': t, 'molecules': 'smiles', 
                                                 'kekulization': false, 'normalization': true, 'reionization': true, 
                                                 'neutralization': true, 'tautomerization': true, 'mainFragment': true});
     v.close();

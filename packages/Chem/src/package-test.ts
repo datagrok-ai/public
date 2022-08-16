@@ -6,7 +6,7 @@ import './tests/detector-tests';
 import './tests/widgets-tests';
 import './tests/chem-space-tests';
 import './tests/activity-cliffs-tests';
-import './tests/ketcher_tests';
+import './tests/sketcher-tests';
 import './tests/panels-tests';
 
 
