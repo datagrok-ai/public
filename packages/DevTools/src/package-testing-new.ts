@@ -43,12 +43,14 @@ interface ITestFromUrl {
   testName: string
 }
 
+
 let packagesTests: IPackageTests[] = [];
 let testsResultsDf: DG.DataFrame;
 let testPath = '';
 let testFunctions: any[];
 let testManagerView: DG.View;
 let selectedNode: DG.TreeViewGroup|DG.TreeViewNode;
+const nodeDict: {[id: string]: any} = {};
 
 export function addView(view: DG.ViewBase): DG.ViewBase {
   view.box = true;
@@ -120,7 +122,7 @@ async function collectPackageTests(packageNode: DG.TreeViewGroup, f: any, expand
 }
 
 function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, expand: boolean) {
-  const subnode = node.group(category.name, {tests: category, nodeType: NODE_TYPE.CATEGORY}, expand);
+  const subnode = node.group(category.name, null, expand);
   setRunTestsMenuAndLabelClick(subnode, category, NODE_TYPE.CATEGORY);
   const subcats = Object.keys(category.subcategories);
   if (subcats.length > 0) {
@@ -134,7 +136,7 @@ function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, expan
       testPassed,
       ui.divText(t.test.name),
     ]);
-    const item = subnode.item(itemDiv, {tests: t, nodeType: NODE_TYPE.TEST});
+    const item = subnode.item(itemDiv);
     t.resultDiv = testPassed;
     setRunTestsMenuAndLabelClick(item, t, NODE_TYPE.TEST);
   })
@@ -150,14 +152,15 @@ function createTestManagerUI(): ITestManagerUI {
   tree.root.addEventListener('keyup', async (e) => {
     if(e.key === 'Enter') {
       if (selectedNode) {
+      const id = selectedNode.root.id;
       //@ts-ignore
-      let testsToRun = await collectTestsToRun(selectedNode, selectedNode.value.tests, selectedNode.value.nodeType);
+      let testsToRun = await collectTestsToRun(selectedNode, nodeDict[id].tests, nodeDict[id].nodeType);
         runAllTests(testsToRun);
       }
     }
   });
   testFunctions.forEach(pack => {
-    const packNode = tree.group(pack.package.friendlyName, {tests: pack, nodeType: NODE_TYPE.PACKAGE}, false);
+    const packNode = tree.group(pack.package.friendlyName, null, false);
     packNode.onNodeExpanding.subscribe(() => {
       collectPackageTests(packNode, pack, false);
     });
@@ -182,10 +185,15 @@ function setRunTestsMenuAndLabelClick(node: DG.TreeViewGroup | DG.TreeViewNode, 
   node.captionLabel.addEventListener('click', () => {
     grok.shell.o = getTestsInfoPanel(node, tests, nodeType);
   });
-  node.captionLabel.addEventListener('dblclick', async () => {
-    let testsToRun = await collectTestsToRun(node, tests, nodeType);
-        runAllTests(testsToRun);
-  });
+  if (nodeType === NODE_TYPE.TEST) {
+    node.captionLabel.addEventListener('dblclick', async () => {
+      let testsToRun = await collectTestsToRun(node, tests, nodeType);
+          runAllTests(testsToRun);
+    });
+  }
+    const nodeId = Object.keys(nodeDict).length.toString();
+    node.root.id = nodeId;
+    nodeDict[Object.keys(nodeDict).length] = {tests: tests, nodeType: nodeType};
 }
 
 async function collectTestsToRun(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE): Promise<IPackageTest[]> {
@@ -262,13 +270,14 @@ async function runAllTests(activeTests: IPackageTest[], view?: DG.View) {
       'category': t.test.category,
       'test': t.test.name,
     });
+    const time = Date.now() - start;
     testInProgress(t.resultDiv, false);
     completedTestsCount += 1;
     if (!testsResultsDf) {
       testsResultsDf = res;
-      addPackageAndTimeInfo(testsResultsDf, start, t.packageName);
+      addPackageAndTimeInfo(testsResultsDf, time, t.packageName);
     } else {
-      addPackageAndTimeInfo(res, start, t.packageName);
+      addPackageAndTimeInfo(res, time, t.packageName);
       removeTestRow(t.packageName, t.test.category, t.test.name);
       testsResultsDf = testsResultsDf.append(res);
     }
@@ -280,8 +289,8 @@ async function runAllTests(activeTests: IPackageTest[], view?: DG.View) {
   }
 };
 
-function addPackageAndTimeInfo (df: DG.DataFrame, start: number, pack: string) {
-  df.columns.addNewInt('time, ms').init(() => Date.now() - start);
+function addPackageAndTimeInfo (df: DG.DataFrame, time: number, pack: string) {
+  df.columns.addNewInt('time, ms').init(() => time);
   df.columns.addNewString('package').init(() => pack);
 }
 
@@ -301,7 +310,7 @@ function getTestsInfoPanel(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any,
   acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
   const grid = getTestsInfoGrid(resultsGridFilterCondition(tests, nodeType));
   acc.addPane('Details', () => ui.div(testDetails(node, tests, nodeType)), true);
-  acc.addPane('Results', () => ui.div(grid), false);
+  acc.addPane('Results', () => ui.div(grid), true);
   return acc.root;
 };
 
