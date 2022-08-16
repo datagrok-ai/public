@@ -39,9 +39,9 @@ import './ui/list';
 import './ui/image';
 //import './viewers/viewers-adding';
 import './viewers/viewers';
-
+//import './gui/chem-sketcher';
 import './grid/grid';
-//import './connections/demo_queries';
+import './connections/queries-test';
 
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
