@@ -34,7 +34,8 @@ category('Chem: Info Panels', () => {
     applyBtn!.click(); await delay(2000);
 
     gastaigerPanel!.click(); await delay(500);
-  }); 
+  });
+
   test('chem.infoPanel.identifiers', async () => {
     smiles.currentRowIdx = 5; await delay(500);
     checkHTMLElementbyInnerText('d4-accordion-pane-header', 'Identifiers');
@@ -48,6 +49,7 @@ category('Chem: Info Panels', () => {
         
     identifiersPanel!.click(); await delay(500);
   }); 
+
   test('chem.infoPanel.structure2D', async () => {
     smiles.currentRowIdx = 5; await delay(500);
     checkHTMLElementbyInnerText('d4-accordion-pane-header', 'Structure 2D');
@@ -59,7 +61,8 @@ category('Chem: Info Panels', () => {
         throw 'canvas with structure was not rendered in the panel'    
         
     structure2DPanel!.click(); await delay(500);
-  }); 
+  });
+
   test('chem.infoPanel.structure3D', async () => {
     smiles.currentRowIdx = 5; await delay(500);
     checkHTMLElementbyInnerText('d4-accordion-pane-header', 'Structure 3D');
@@ -71,7 +74,8 @@ category('Chem: Info Panels', () => {
         throw 'canvas with 3D structure was not rendered in the panel'    
         
     structure3DPanel!.click(); await delay(500);
-  }); 
+  });
+
   test('chem.infoPanel.properties', async () => {
     smiles.currentRowIdx = 5; await delay(500);
     checkHTMLElementbyInnerText('d4-accordion-pane-header', 'Properties');
@@ -83,7 +87,8 @@ category('Chem: Info Panels', () => {
         throw 'table with properties was not rendered in the panel'    
         
     propertiesPanel!.click(); await delay(500);
-  }); 
+  });
+
   test('chem.infoPanel.toxicity', async () => {
     smiles.currentRowIdx = 5; await delay(500);
     checkHTMLElementbyInnerText('d4-accordion-pane-header', 'Toxicity');
@@ -95,7 +100,8 @@ category('Chem: Info Panels', () => {
         throw 'table with toxicity was not rendered in the panel'    
         
     toxicityPanel!.click(); await delay(500);
-  });  
+  });
+
   test('chem.infoPanel.drugLikeness', async () => {
     smiles.currentRowIdx = 5; await delay(500);
     checkHTMLElementbyInnerText('d4-accordion-pane-header', 'Drug Likeness');
@@ -107,7 +113,8 @@ category('Chem: Info Panels', () => {
         throw 'number of displayed canvases with molecules does not match the expected'    
         
         drugLikenessPanel!.click(); await delay(500);
-  });  
+  });
+
   test('chem.infoPanel.structuralAlerts', async () => {
     smiles.currentRowIdx = 5; await delay(500);
     checkHTMLElementbyInnerText('d4-accordion-pane-header', 'Structural Alerts');
@@ -119,7 +126,8 @@ category('Chem: Info Panels', () => {
         throw 'number of displayed canvases with alerts does not match the expected'    
         
         structuralAlertsPanel!.click(); await delay(500);
-  });  
+  });
+    
   after(async () => {
     v.close();
     grok.shell.closeAll();

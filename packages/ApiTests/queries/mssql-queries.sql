@@ -9,7 +9,7 @@
 --input: bool freightLess1000 = true
 --input: datetime requiredDate = "1/1/1995"
 --input: string orderDate = "after 1/1/1995" {pattern: datetime}
---meta.testExpectedRows: 1
+
 SELECT * FROM Orders WHERE (employeeId = @employeeId)
     AND (freight >= @freight)
     AND @shipVia(shipVia)
@@ -23,7 +23,6 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 --name: MSSQLProducts
 --friendlyName: Products
 --connection: MSSQLNorthwind
---input: int ProductID = "7"
---meta.testExpectedRows: 1
+--input: int ProductID = 7
 select * from Products where ProductID = @ProductID
 --end
