@@ -4,11 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full';
 import $ from 'cash-dom';
 
-import {Subscription} from 'rxjs';
-
-let sdfDialog: DG.Dialog | null = null;
-let sdfDialogSubs: Subscription[] = [];
-
 /**  Dialog for SDF file exporter */
 export function saveAsSdfDialog() {
   const table = grok.shell.t;
@@ -16,8 +11,8 @@ export function saveAsSdfDialog() {
   cols = cols.concat(table.columns.bySemTypeAll('Macromolecule'));
   if (cols.length === 1)
     _saveAsSdf(table, cols[0]);
-  else if (sdfDialog === null) {
-    sdfDialog = ui.dialog({title: 'Save as SDF'});
+  else {
+    const sdfDialog = ui.dialog({title: 'Save as SDF'});
     if (cols.length === 0) {
       sdfDialog.add(
         ui.divText(
@@ -36,7 +31,9 @@ export function saveAsSdfDialog() {
         .onOK(() => {});
       $(sdfDialog.getButton('CANCEL')).hide();
     } else {
-      const colsInput = ui.choiceInput('Choose column:', cols[0], cols);
+      const colsChoiceDF = DG.DataFrame.fromColumns(cols);
+      // const colsInput = ui.choiceInput('Choose column:', cols[0], cols);
+      const colsInput = ui.columnInput('Choose column', colsChoiceDF, cols[0]);
       sdfDialog.add(ui.div([
         colsInput.root,
       ]))
@@ -46,11 +43,6 @@ export function saveAsSdfDialog() {
         });
     }
     sdfDialog.show({x: 350, y: 100});
-    sdfDialogSubs.push(sdfDialog.onClose.subscribe((value) => {
-      sdfDialogSubs.forEach((s) => {s.unsubscribe();});
-      sdfDialogSubs = [];
-      sdfDialog = null;
-    }));
   }
 }
 

@@ -33,3 +33,6 @@ for dir in ${dirs[@]}; do
   echo -e $GREEN npm run build in$(pwd) $NO_COLOR
   npm run build
 done
+
+cd $package_dir
+npm run link-all
