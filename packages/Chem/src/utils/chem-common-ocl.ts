@@ -10,6 +10,7 @@ export function renderDescription(description: OCL.IParameterizedString[]): HTML
   const molsHost = ui.div([], 'd4-flex-wrap');
   const width = 200;
   const height = 150;
+
   let lastMolCanvas: null | HTMLCanvasElement = null;
   let scaffoldMolString: null | string = null;
   for (const entry of description) {
@@ -32,7 +33,12 @@ export function renderDescription(description: OCL.IParameterizedString[]): HTML
 }
 
 function _molToCanvas(mol: OCL.Molecule, width = 200, height = 100): HTMLCanvasElement {
+  const r = window.devicePixelRatio;
   const canvas = ui.canvas(width, height);
+  canvas!.style.width = width.toString() + 'px';
+  canvas!.style.height = height.toString() + 'px';
+
+
   if (mol !== null)
     OCL.StructureView.drawMolecule(canvas, mol);
 
