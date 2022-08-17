@@ -6,11 +6,9 @@ platform that provides search capabilities in [DrugBank](https://go.drugbank.com
 
 
 ## Features
-- Substructure Search allows one to locate chemical structures that contain a particular connectivity and valence-bond 
-(i.e., bond order) pattern.
+- Substructure Search finds DrugBank structures for the specified substructure
 
-- Similarity Search allows you to locate records that are similar to a chemical structure query using pre-specified 
-similarity thresholds
+- Similarity Search finds similar DrugBank structures for the specified structure
 
 ![DrugBank demo](./images/demo.gif)
 
