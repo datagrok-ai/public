@@ -14,7 +14,7 @@ w = r * w; h = r * h;
 */
 
 export function isRowHeader(colGrid : DG.GridColumn) : boolean {
-  return colGrid.idx === 0;
+  return colGrid.idx === 0 || colGrid.name === 'row header';
 }
 
 export function getInstalledGridForColumn(colGrid : DG.GridColumn) : DG.Grid | null {
