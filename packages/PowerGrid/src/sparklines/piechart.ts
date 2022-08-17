@@ -63,8 +63,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     }
     // get distance from vector to center of cell
     const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
-    const r = cols[activeColumn].scale(row) * gridCell.bounds.width / 2;
-    if ((r >= distance) || (distance <= settings.minRadius)) {
+    let r = cols[activeColumn].scale(row) * gridCell.bounds.width / 2;
+    if (r >= distance) {
       ui.tooltip.show(ui.divV(arr), e.x + 16, e.y + 16);
     } else {
       ui.tooltip.hide();
