@@ -16,6 +16,7 @@ enum NODE_TYPE {
 interface ITestManagerUI {
   testsTree: DG.TreeViewNode;
   runButton: HTMLButtonElement;
+  runAllButton: HTMLButtonElement;
 }
 
 interface IPackageTests {
@@ -75,7 +76,7 @@ export async function testManagerViewNew(): Promise<void> {
   addView(testManagerView);
   testManagerView.temp['ignoreCloseAll'] = true;
   testManagerView.setRibbonPanels(
-    [[testUIElements.runButton]],
+    [[testUIElements.runButton], [testUIElements.runAllButton]],
   );
   testManagerView.append(testUIElements.testsTree.root);
   runTestsForSelectedNode();
@@ -188,7 +189,7 @@ async function createTestManagerUI(testFromUrl: ITestFromUrl): Promise<ITestMana
   for (let pack of testFunctions) {
     const testPassed = ui.div();
     pack.resultDiv = testPassed;
-    const packNode = tree.group(pack.package.friendlyName, null, pack.package.name === testFromUrl.packName);
+    const packNode = tree.group(pack.package.friendlyName, null, testFromUrl && pack.package.name === testFromUrl.packName);
     setRunTestsMenuAndLabelClick(packNode, pack, NODE_TYPE.PACKAGE);
     if (testFromUrl && testFromUrl.packName === pack.package.name) {
       selectedNode = packNode;
@@ -204,13 +205,21 @@ async function createTestManagerUI(testFromUrl: ITestFromUrl): Promise<ITestMana
     runTestsForSelectedNode();
   });
 
-  return {runButton: runTestsButton, testsTree: tree};
+  const runAllButton = ui.bigButton('Run All', async () => {
+    const nodes = tree.items;
+    for (let node of nodes) {
+      selectedNode = node;
+      await runTestsForSelectedNode();
+    }
+  });
+
+  return {runButton: runTestsButton, runAllButton: runAllButton, testsTree: tree};
 }
 
-function runTestsForSelectedNode() {
+async function runTestsForSelectedNode() {
   if (selectedNode) {
     const id = selectedNode.root.id;
-      runAllTests(selectedNode, nodeDict[id].tests, nodeDict[id].nodeType);
+      await runAllTests(selectedNode, nodeDict[id].tests, nodeDict[id].nodeType);
     }
 }
 
