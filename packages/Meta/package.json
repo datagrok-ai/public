@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.1.83",
+  "version": "1.1.84",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1761,6 +1761,20 @@
         "url": "https://github.com/datagrok-ai/public.git",
         "directory": "packages/DemoXL"
       }
+    },
+    "simpkpd": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.5.0"
+        }
+      },
+      "description": "PKPD simulations tools",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/SimPKPD"
+      },
+      "category": "Health"
     }
   }
 }
