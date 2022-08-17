@@ -15,6 +15,7 @@ enum NODE_TYPE {
 
 interface ITestManagerUI {
   testsTree: DG.TreeViewNode;
+  runButton: HTMLButtonElement;
 }
 
 interface IPackageTests {
@@ -70,6 +71,9 @@ export async function testManagerViewNew(): Promise<void> {
   testManagerView.name = 'Test Manager'
   addView(testManagerView);
   testManagerView.temp['ignoreCloseAll'] = true;
+  testManagerView.setRibbonPanels(
+    [[testUIElements.runButton]],
+  );
   testManagerView.append(testUIElements.testsTree.root); 
 }
 
@@ -155,6 +159,12 @@ function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, expan
 
 
 function createTestManagerUI(): ITestManagerUI {
+  let runTestsForSelectedNode = () => {
+    if (selectedNode) {
+      const id = selectedNode.root.id;
+        runAllTests(selectedNode, nodeDict[id].tests, nodeDict[id].nodeType);
+      }
+  }
   const tree = ui.tree();
   tree.onSelectedNodeChanged.subscribe((res) => {
     selectedNode = res;
@@ -162,10 +172,7 @@ function createTestManagerUI(): ITestManagerUI {
   tree.root.style.width = '100%';
   tree.root.addEventListener('keyup', async (e) => {
     if(e.key === 'Enter') {
-      if (selectedNode) {
-      const id = selectedNode.root.id;
-        runAllTests(selectedNode, nodeDict[id].tests, nodeDict[id].nodeType);
-      }
+      runTestsForSelectedNode();
     }
   });
   testFunctions.forEach(pack => {
@@ -179,8 +186,11 @@ function createTestManagerUI(): ITestManagerUI {
     setRunTestsMenuAndLabelClick(packNode, pack, NODE_TYPE.PACKAGE);
   });
 
+  const runTestsButton = ui.bigButton('Run', async () => {
+    runTestsForSelectedNode();
+  });
 
-  return { testsTree: tree };
+  return {runButton: runTestsButton, testsTree: tree};
 }
 
 function setRunTestsMenuAndLabelClick(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
@@ -280,6 +290,7 @@ async function runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any,
       break;
     }
   }
+  grok.shell.closeAll();
 }
 
 async function runTestsRecursive(category: ICategory): Promise<boolean> {
