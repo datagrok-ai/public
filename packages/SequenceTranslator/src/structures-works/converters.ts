@@ -16,9 +16,9 @@ export function gcrsToLcms(sequence: string): string {
   }
   const regExp = new RegExp('(' + arr1.join('|') + ')', 'g');
   let r1 = sequence.replace(regExp, function(code) {return obj[code];});
-  r1 = r1.replace('//', '/');
-  r1 = r1.replace('//', '/');
-  return r1.replace('//', '/');
+  while (r1.indexOf('//') != -1)
+    r1 = r1.replace('//', '/');
+  return r1;
 }
 
 //name: asoGapmersNucleotidesToBioSpring
