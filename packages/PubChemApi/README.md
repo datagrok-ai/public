@@ -6,14 +6,15 @@ platform that provides search capabilities in the [PubChem](https://pubchem.ncbi
 
 ## Features
 
-- [Identity Search](https://pubchem.ncbi.nlm.nih.gov/search/help_search.html#IdSimi) allows you to locate records that 
+- [Identity Search](https://pubchem.ncbi.nlm.nih.gov/search/help_search.html#IdSimi) finds identical PubChem structures 
+for the specified structure
 are identical to the provided chemical structure with different notions of chemical structure identity
 
-- [Substructure Search](https://pubchem.ncbi.nlm.nih.gov/search/help_search.html#SbSp) allows one to locate chemical 
-structures that contain a particular connectivity and valence-bond (i.e., bond order) pattern.
+- [Substructure Search](https://pubchem.ncbi.nlm.nih.gov/search/help_search.html#SbSp) finds PubChem structures for 
+the specified substructure
 
-- [Similarity Search](https://pubchem.ncbi.nlm.nih.gov/search/help_search.html#IdSimi) allows you to locate records 
-that are similar to a chemical structure query using pre-specified similarity thresholds
+- [Similarity Search](https://pubchem.ncbi.nlm.nih.gov/search/help_search.html#IdSimi) finds similar PubChem 
+structures for the specified structure
 
 ![Package demo](./images/demo.gif)
 
