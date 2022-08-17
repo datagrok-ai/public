@@ -1,0 +1,10 @@
+{
+  "dataSource": "Files",
+  "parameters": {
+    "dir": "",
+    "hiddenRoot": "${PROJECT_ROOT}/files/demo",
+    "indexFiles": true
+  },
+  "name": "Files",
+  "friendlyName": "DemoXL Files"
+}
