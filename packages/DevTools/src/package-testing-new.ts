@@ -22,7 +22,8 @@ interface ITestManagerUI {
 interface IPackageTests {
   name: string;
   friendlyName: string;
-  categories: {[index: string]: ICategory}
+  categories: {[index: string]: ICategory};
+  totalTests: number;
 }
 
 interface ICategory {
@@ -33,7 +34,8 @@ interface ICategory {
   packageName: string,
   subCatsNames: string[],
   resultDiv: HTMLElement,
-  expand: boolean
+  expand: boolean,
+  totalTests: number,
 }
 
 interface IPackageTest {
@@ -120,7 +122,8 @@ async function collectPackageTests(packageNode: DG.TreeViewGroup, f: any, testFr
               fullName: subcats.slice(0, i+1).join(':'), 
               subCatsNames: [cat],
               resultDiv: null,
-              expand: subcats[i] === subcatsFromUrl[i]};
+              expand: subcats[i] === subcatsFromUrl[i],
+              totalTests: 0};
           } else {
             previousCat[subcats[i]].subCatsNames.push(cat);
           };
@@ -131,13 +134,15 @@ async function collectPackageTests(packageNode: DG.TreeViewGroup, f: any, testFr
           }
         }
       });
+      let testsNumInPack = 0;
       Object.keys(packageTestsFinal).forEach(cat => {
-        addCategoryRecursive(packageNode, packageTestsFinal[cat], testFromUrl);
+        testsNumInPack += addCategoryRecursive(packageNode, packageTestsFinal[cat], testFromUrl);
       })
       packagesTests.push({
         name: f.package.name,
         friendlyName: f.package.friendlyName,
-        categories: packageTestsFinal
+        categories: packageTestsFinal,
+        totalTests: testsNumInPack,
       })
     };
   }
@@ -155,7 +160,7 @@ function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, testF
   const subcats = Object.keys(category.subcategories);
   if (subcats.length > 0) {
     subcats.forEach((subcat) => {
-      addCategoryRecursive(subnode, category.subcategories[subcat], testFromUrl);
+      category.totalTests += addCategoryRecursive(subnode, category.subcategories[subcat], testFromUrl);
     })
   }
   category.tests.forEach(t => {
@@ -171,7 +176,9 @@ function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, testF
     if (testFromUrl && testFromUrl.catName === category.fullName && testFromUrl.testName === t.test.name) {
       selectedNode = item;
     }
-  })
+  });
+  category.totalTests += category.tests.length;
+  return category.totalTests
 }
 
 
@@ -299,23 +306,30 @@ async function runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any,
   testManagerView.path = '/' + testManagerView.name.replace(' ', '');
   switch (nodeType) {
     case NODE_TYPE.PACKAGE: {
+      const progressBar = DG.TaskBarProgressIndicator.create(tests.package.name);
       testManagerView.path = `/${testManagerView.name.replace(' ', '')}/${tests.package.name}`;
       let testsSucceded = true;
       testInProgress(tests.resultDiv, true);
       await collectPackageTests(node as DG.TreeViewGroup, tests);
-      const cats = packagesTests.filter(pt => pt.name === tests.package.name)[0].categories;
+      const packageTests = packagesTests.filter(pt => pt.name === tests.package.name)[0];
+      const cats = packageTests.categories;
+      let completedTestsNum = 0;
       for (let cat of Object.values(cats)){
         testInProgress(tests.resultDiv, true);
-        const catRes = await runTestsRecursive(cat);
-        if (!catRes)
-        testsSucceded = false;
+        const res = await runTestsRecursive(cat, progressBar, packageTests.totalTests, completedTestsNum, tests.package.name);
+        completedTestsNum = res.completedTests;
+        if (!res.catRes)
+          testsSucceded = false;
       }
       updateTestResultsIcon(tests.resultDiv, testsSucceded);
+      progressBar.close();
       break;
     }
     case NODE_TYPE.CATEGORY: {
+      const progressBar = DG.TaskBarProgressIndicator.create(`${tests.packageName}/${tests.fullName}`);
       testManagerView.path = `/${testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.fullName}`;
-      await runTestsRecursive(tests);
+      await runTestsRecursive(tests, progressBar, tests.totalTests, 0, `${tests.packageName}/${tests.fullName}`);
+      progressBar.close();
       break;
     }
     case NODE_TYPE.TEST: {
@@ -332,25 +346,34 @@ async function runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any,
 
 }
 
-async function runTestsRecursive(category: ICategory): Promise<boolean> {
+async function runTestsRecursive(
+  category: ICategory, 
+  progressBar: DG.TaskBarProgressIndicator, 
+  totalNumTests: number,
+  completedTestsNum: number,
+  progressInfo: string): Promise<any> {
   let testsSucceded = true;
   testInProgress(category.resultDiv, true);
   const subcats = Object.keys(category.subcategories);
   if (subcats.length > 0) {
     for (let subcat of subcats) {
       testInProgress(category.subcategories[subcat].resultDiv, true);
-      const catRes = await runTestsRecursive(category.subcategories[subcat]);
-      if(!catRes)
+      const res = await runTestsRecursive(category.subcategories[subcat], progressBar, totalNumTests, completedTestsNum, progressInfo);
+      if(!res.catRes)
         testsSucceded = false;
+      completedTestsNum = res.completedTests;
     }
   }
   for (let t of category.tests) {
     const res = await runTest(t);
     if (!res)
     testsSucceded = false;
+    completedTestsNum += 1;
+    const percent = Math.floor(completedTestsNum/totalNumTests*100);
+    progressBar.update(percent, `${progressInfo}: ${percent}% completed`);
   }
   updateTestResultsIcon(category.resultDiv, testsSucceded);
-  return testsSucceded;
+  return {completedTests: completedTestsNum, catRes: testsSucceded};
 }
 
 function addPackageAndTimeInfo (df: DG.DataFrame, time: number, pack: string) {
