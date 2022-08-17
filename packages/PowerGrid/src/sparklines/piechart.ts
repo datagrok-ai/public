@@ -5,12 +5,14 @@ import {getSettingsBase, names, SummarySettingsBase} from './shared';
 
 interface PieChartSettings extends SummarySettingsBase {
   radius: number;
+  minRadius: number;
 }
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
   return gc.settings ??= {
     ...getSettingsBase(gc),
     ...{radius: 40},
+    ...{minRadius: 10},
   };
 }
 
@@ -34,17 +36,39 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const vectorY = e.layerY - gridCell.bounds.midY;
     const atan2 = Math.atan2(vectorY, vectorX);
     const angle = atan2 < 0 ? atan2 + 2 * Math.PI : atan2;
-    let tooltip = '';
+    let activeColumn = -1;
     for (let i = 0; i < cols.length; i++) {
       if (cols[i].isNone(gridCell.cell.row.idx))
         continue;
       if ((angle > 2 * Math.PI * i / cols.length) && (angle < 2 * Math.PI * (i + 1) / cols.length)) {
-        tooltip = cols[i].name;
+        activeColumn = i;
         break;
       }
     }
-
-    ui.tooltip.show(ui.div(tooltip), e.x + 16, e.y + 16);
+    const row: number = gridCell.cell.row.idx;
+    let arr: any = [];
+    for (let i = 0; i < cols.length; i++) {
+      arr.push(ui.divH([ui.divText(`${cols[i].name}:`, {
+            style: {
+              margin: '0 10px 0 0',
+              fontWeight: (activeColumn == i) ? 'bold' : 'normal',
+            }
+          }), ui.divText(`${Math.floor(cols[i].get(row) * 100) / 100}`, {
+            style: {
+              fontWeight: (activeColumn == i) ? 'bold' : 'normal',
+            }
+          })]
+        )
+      );
+    }
+    // get distance from vector to center of cell
+    const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
+    const r = cols[activeColumn].scale(row) * gridCell.bounds.width / 2;
+    if ((r >= distance) || (distance <= settings.minRadius)) {
+      ui.tooltip.show(ui.divV(arr), e.x + 16, e.y + 16);
+    } else {
+      ui.tooltip.hide();
+    }
   }
 
   render(
@@ -65,7 +89,8 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       if (cols[i].isNone(row))
         continue;
 
-      const r = cols[i].scale(row) * box.width / 2;
+      let r = cols[i].scale(row) * box.width / 2;
+      r = r < settings.minRadius ? settings.minRadius : r;
       g.beginPath();
       g.moveTo(box.midX, box.midY);
       g.arc(box.midX, box.midY, r,
