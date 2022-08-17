@@ -13,16 +13,6 @@ import {ICDS} from '../ICDs';
 import {SOURCES} from '../sources';
 import {IDPS} from '../IDPs';
 
-const weightsObj: {[code: string]: number} = {};
-for (const synthesizer of Object.keys(map)) {
-  for (const technology of Object.keys(map[synthesizer])) {
-    for (const code of Object.keys(map[synthesizer][technology]))
-      weightsObj[code] ?? map[synthesizer][technology][code].weight;
-  }
-}
-for (const [key, value] of Object.entries(MODIFICATIONS))
-  weightsObj[key] = value.molecularWeight;
-
 
 function sortByStringLengthInDescendingOrder(array: string[]): string[] {
   return array.sort(function(a, b) {return b.length - a.length;});
@@ -142,6 +132,15 @@ export function oligoSdFile(table: DG.DataFrame) {
     );
     const molWeightCol = saltsDf.getCol('MOLWEIGHT');
     const saltNamesList = saltsDf.getCol('DISPLAY').toList();
+    const weightsObj: {[code: string]: number} = {};
+    for (const synthesizer of Object.keys(map)) {
+      for (const technology of Object.keys(map[synthesizer])) {
+        for (const code of Object.keys(map[synthesizer][technology]))
+          weightsObj[code] = map[synthesizer][technology][code].weight!;
+      }
+    }
+    for (const [key, value] of Object.entries(MODIFICATIONS))
+      weightsObj[key] = value.molecularWeight;
     t.columns.addNewFloat(COL_NAMES.CPD_MW)
       .init((i: number) => molecularWeight(sequence.get(i), weightsObj));
     t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
@@ -168,9 +167,10 @@ export function oligoSdFile(table: DG.DataFrame) {
       d.append(
         ui.link('Add Columns', () => {
           addColumns(table, saltsDf);
-          grok.shell.tableView(table.name).grid.columns.setOrder(Object.values(COL_NAMES));
+          // grok.shell.tableView(table.name).grid.columns.setOrder(Object.values(COL_NAMES));
         }, 'Add columns: \'' + [COL_NAMES.COMPOUND_NAME, COL_NAMES.COMPOUND_COMMENTS, COL_NAMES.CPD_MW,
-          COL_NAMES.SALT_MASS, COL_NAMES.BATCH_MW].join('\', \''), ''),
+          COL_NAMES.SALT_MASS, COL_NAMES.BATCH_MW].join('\', \''), '',
+        ),
         ui.button('Save SD file', () => saveTableAsSdFile(addColumnsPressed ? newDf : table)),
       );
 
