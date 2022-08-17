@@ -46,7 +46,7 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   const typeColumn = table.getCol(COL_NAMES.TYPE);
   let result = '';
   for (let i = 0; i < table.rowCount; i++) {
-    const format = getFormat(structureColumn.get(i))!;
+    const format = 'Janssen GCRS Codes'; //getFormat(structureColumn.get(i))!;
     result += (typeColumn.get(i) == 'SS') ?
       sequenceToMolV3000(structureColumn.get(i), false, true, format) + '\n' + `>  <Sequence>\nSense Strand\n\n` :
       sequenceToMolV3000(structureColumn.get(i), true, true, format) + '\n' + `>  <Sequence>\nAnti Sense\n\n`;

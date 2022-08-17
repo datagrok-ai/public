@@ -340,6 +340,12 @@ export const map: {[synthesizer: string]:
             'normalized': '',
             'SMILES': 'OP(=O)(S)O',
           },
+          's': {
+            'name': 'ps linkage',
+            'weight': 16.07,
+            'normalized': '',
+            'SMILES': 'OP(=O)(S)O',
+          },
           'A': {
             'name': 'Adenine',
             'weight': 313.21,
