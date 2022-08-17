@@ -169,9 +169,9 @@ export function isPinnableColumn(colGrid : DG.GridColumn) : boolean {
     }
   }
 
-  if(grid.canvas.offsetWidth <= colGrid.width) {
-    return false;
-  }
+  //temporary disable to allow de-serialization from layout if(grid.canvas.offsetWidth <= colGrid.width) {
+    //return false;
+  //}
 
   if(colGrid.cellType === "html") {
     const renderer = GridUtils.getGridColumnRenderer(colGrid);
