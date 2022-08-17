@@ -77,6 +77,10 @@ export async function molecularMass(sequence: string, amount: number, outputUnit
   return amount / ec * molecularWeight(sequence) * coefficient * od / nm;
 }
 
+//name: molecularWeight
+//input: string sequence
+//input: string additionalWeightsObj
+//output: double molWeight
 export function molecularWeight(sequence: string, additionalWeightsObj?: {[index: string]: number}): number {
   const codes = (additionalWeightsObj == null) ?
     sortByStringLengthInDescOrder(Object.keys(weightsObj)) :
@@ -260,39 +264,6 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   title.style.maxHeight = '40px';
   $(title).children('h2').css('margin', '0px');
 
-  const asoGapmersGrid = DG.Viewer.grid(
-    DG.DataFrame.fromObjects([
-      {'Name': '2\'MOE-5Me-rU', 'Code': 'moeT', 'Weight': 378.27},
-      {'Name': '2\'MOE-rA', 'Code': 'moeA', 'Weight': 387.29},
-      {'Name': '2\'MOE-5Me-rC', 'Code': 'moe5mC', 'Weight': 377.29},
-      {'Name': '2\'MOE-rG', 'Code': 'moeG', 'Weight': 403.28},
-      {'Name': '5-Methyl-dC', 'Code': '5mC', 'Weight': 303.21},
-      {'Name': 'ps linkage', 'Code': 'ps', 'Weight': 16.07},
-      {'Name': 'dA', 'Code': 'A, dA', 'Weight': 313.21},
-      {'Name': 'dC', 'Code': 'C, dC', 'Weight': 289.18},
-      {'Name': 'dG', 'Code': 'G, dG', 'Weight': 329.21},
-      {'Name': 'dT', 'Code': 'T, dT', 'Weight': 304.2},
-      {'Name': 'rA', 'Code': 'rA', 'Weight': 329.21},
-      {'Name': 'rC', 'Code': 'rC', 'Weight': 305.18},
-      {'Name': 'rG', 'Code': 'rG', 'Weight': 345.21},
-      {'Name': 'rU', 'Code': 'rU', 'Weight': 306.17},
-    ])!, {showRowHeader: false, showCellTooltip: false},
-  );
-
-  const omeAndFluoroGrid = DG.Viewer.grid(
-    DG.DataFrame.fromObjects([
-      {'Name': '2\'-fluoro-U', 'Code': 'fU', 'Weight': 308.16},
-      {'Name': '2\'-fluoro-A', 'Code': 'fA', 'Weight': 331.2},
-      {'Name': '2\'-fluoro-C', 'Code': 'fC', 'Weight': 307.18},
-      {'Name': '2\'-fluoro-G', 'Code': 'fG', 'Weight': 347.19},
-      {'Name': '2\'OMe-rU', 'Code': 'mU', 'Weight': 320.2},
-      {'Name': '2\'OMe-rA', 'Code': 'mA', 'Weight': 343.24},
-      {'Name': '2\'OMe-rC', 'Code': 'mC', 'Weight': 319.21},
-      {'Name': '2\'OMe-rG', 'Code': 'mG', 'Weight': 359.24},
-      {'Name': 'ps linkage', 'Code': 'ps', 'Weight': 16.07},
-    ])!, {showRowHeader: false, showCellTooltip: false},
-  );
-
   const additionaModifsGrid = DG.Viewer.grid(additionalModsDf, {showRowHeader: false, showCellTooltip: true});
   additionaModifsGrid.col(COL_NAMES.LONG_NAMES)!.width = 110;
   additionaModifsGrid.col(COL_NAMES.ABBREVIATION)!.width = 80;
@@ -323,10 +294,6 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       ]), {style: {maxHeight: '40px'}},
     ),
     additionaModifsGrid.root,
-    ui.box(ui.h2('ASO Gapmers'), {style: {maxHeight: '40px'}}),
-    asoGapmersGrid.root,
-    ui.box(ui.h2('2\'-OMe and 2\'-F modifications'), {style: {maxHeight: '40px'}}),
-    omeAndFluoroGrid.root,
   ], {style: {maxWidth: '600px'}});
 
   additionalModsDf.getCol(COL_NAMES.BASE_MODIFICATION)
