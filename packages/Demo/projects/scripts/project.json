@@ -2,5 +2,6 @@
   "tags": [
     "demo"
   ],
-  "name": "Grok"
+  "description": "Demo scripts",
+  "name": "Scripts"
 }
