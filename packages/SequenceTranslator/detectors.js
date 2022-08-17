@@ -1,13 +1,15 @@
 class SequenceTranslatorPackageDetectors extends DG.Package {
-  isDnaNucleotides(sequence) {return /^[ATGC]{6,}$/.test(sequence);}
-  isRnaNucleotides(sequence) {return /^[AUGC]{6,}$/.test(sequence);}
-  isAsoGapmerBioSpring(sequence) {return /^[*56789ATGC]{6,}$/.test(sequence);}
+  isDnaNucleotides(sequence) {return /(\(invabasic\)|\(GalNAc-2-JNJ\)|A|T|G|C){6,}$/.test(sequence);}
+  isRnaNucleotides(sequence) {return /(\(invabasic\)|\(GalNAc-2-JNJ\)|A|U|G|C){6,}$/.test(sequence);}
+  isAsoGapmerBioSpring(sequence) {return /(\(invabasic\)|\(GalNAc-2-JNJ\)|\*|5|6|7|8|9|A|T|G|C){6,}$/.test(sequence);}
   isAsoGapmerGcrs(sequence) {return /^(?=.*moe)(?=.*5mC)(?=.*ps){6,}/.test(sequence);}
-  isSiRnaBioSpring(sequence) {return /^[*1-8]{6,}$/.test(sequence);}
-  isSiRnaAxolabs(sequence) {return /^[fsACGUacgu]{6,}$/.test(sequence);}
-  isSiRnaGcrs(sequence) {return /^[fmpsACGU]{6,}$/.test(sequence);} // TODO: insert into detectNucleotides
-  isGcrs(sequence) {return /^[fmpsACGU]{6,}$/.test(sequence);}
-  isMermade12(sequence) {return /^[IiJjKkLlEeFfGgHhQq]{6,}$/.test(sequence);}
+  isSiRnaBioSpring(sequence) {return /(\(invabasic\)|\(GalNAc-2-JNJ\)|\*|1|2|3|4|5|6|7|8){6,}$/.test(sequence);}
+  isSiRnaAxolabs(sequence) {return /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|s|A|C|G|U|a|c|g|u){6,}$/.test(sequence);}
+  isSiRnaGcrs(sequence) {return /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|m|p|s|A|C|G|U){6,}$/.test(sequence);}
+  isGcrs(sequence) {return /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|m|p|s|A|C|G|U){6,}$/.test(sequence);}
+  isMermade12(sequence) {
+    return /(\(invabasic\)|\(GalNAc-2-JNJ\)|I|i|J|j|K|k|L|l|E|e|F|f|G|g|H|h|Q|q){6,}$/.test(sequence);
+  }
   //tags: semTypeDetector
   //input: column col
   //output: string semType

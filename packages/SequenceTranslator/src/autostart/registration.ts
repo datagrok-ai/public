@@ -78,14 +78,16 @@ export function autostartOligoSdFileSubscription() {
       if (v.dataFrame.columns.contains(COL_NAMES.TYPE))
         oligoSdFile(v.dataFrame);
       grok.events.onContextMenu.subscribe((args) => {
-        const seqCol = args.args.context.table.currentCol;
-        if (DG.Detector.sampleCategories(seqCol, (s) => /^[fsACGUacgu]{6,}$/.test(s))) {
+        const seqCol = args.args.context.table.currentCol; // /^[fsACGUacgu]{6,}$/
+        if (DG.Detector.sampleCategories(seqCol,
+          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|s|A|C|G|U|a|c|g|u){6,}$/.test(s))) {
           args.args.menu.item('Convert Axolabs to GCRS', () => {
             args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
               return siRnaAxolabsToGcrs(seqCol.get(i));
             });
-          });
-        } else if (DG.Detector.sampleCategories(seqCol, (s) => /^[fmpsACGU]{6,}$/.test(s)) ||
+          }); // /^[fmpsACGU]{6,}$/
+        } else if (DG.Detector.sampleCategories(seqCol,
+          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
         DG.Detector.sampleCategories(seqCol, (s) => /^(?=.*moe)(?=.*5mC)(?=.*ps){6,}/.test(s))) {
           args.args.menu.item('Convert GCRS to raw', () => {
             args.args.context.table.columns.addNewString(seqCol.name + ' to raw').init((i: number) => {
@@ -96,15 +98,17 @@ export function autostartOligoSdFileSubscription() {
             args.args.context.table.columns.addNewString(seqCol.name + ' to MM12').init((i: number) => {
               return gcrsToMermade12(seqCol.get(i));
             });
-          });
-        } else if (DG.Detector.sampleCategories(seqCol, (s) => /^[*56789ATGC]{6,}$/.test(s))) {
+          }); // /^[*56789ATGC]{6,}$/
+        } else if (DG.Detector.sampleCategories(seqCol,
+          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|\*|5|6|7|8|9|A|T|G|C){6,}$/.test(s))) {
           args.args.menu.item('Convert Biospring to GCRS', () => {
             const seqCol = args.args.context.table.currentCol;
             args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
               return asoGapmersBioSpringToGcrs(seqCol.get(i));
             });
-          });
-        } else if (DG.Detector.sampleCategories(seqCol, (s) => /^[*1-8]{6,}$/.test(s))) {
+          }); // /^[*1-8]{6,}$/
+        } else if (DG.Detector.sampleCategories(seqCol,
+          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|\*|1|2|3|4|5|6|7|8){6,}$/.test(s))) {
           args.args.menu.item('Convert Biospring to GCRS', () => {
             args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
               return siRnaAxolabsToGcrs(seqCol.get(i));

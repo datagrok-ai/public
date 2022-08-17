@@ -35,9 +35,9 @@ export function saveSenseAntiSense() {
   let asInverse = false;
 
   const changeSense = ui.choiceInput('SS direction', straight, [straight, inverse]);
-  changeSense.onChanged(() =>{ ssInverse = changeSense.value == inverse; });
+  changeSense.onChanged(() => {ssInverse = changeSense.value == inverse;});
   const changeAntiSense = ui.choiceInput('AS direction', straight, [straight, inverse]);
-  changeAntiSense.onChanged(() =>{ asInverse = changeAntiSense.value == inverse; });
+  changeAntiSense.onChanged(() => {asInverse = changeAntiSense.value == inverse;});
 
   const saveOption = ui.switchInput('Save as one entity', true);
   const saveBtn = ui.button('Save SDF', () =>
