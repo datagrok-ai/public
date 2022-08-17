@@ -1505,7 +1505,7 @@ export class TreeViewGroup extends TreeViewNode {
   set expanded(isExpanded: boolean) { api.grok_TreeViewNode_Set_Expanded(this.dart, isExpanded); }
 
   /** Adds new group */
-  group(text: string, value: object | null = null, expanded: boolean = true): TreeViewGroup {
+  group(text: string | Element, value: object | null = null, expanded: boolean = true): TreeViewGroup {
     return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded));
   }
 
