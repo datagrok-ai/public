@@ -98,6 +98,8 @@ export class ComputationView extends FunctionView {
     });
 
     historyButton.classList.add('d4-toggle-button');
+    if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
+
 
     const newRibbonPanels = [
       ...this.getRibbonPanels(),
@@ -160,10 +162,10 @@ export class ComputationView extends FunctionView {
     const mainAcc = ui.accordion();
     mainAcc.root.style.width = '100%';
     mainAcc.addTitle(ui.h1('History'));
-    const dateInput = ui.stringInput('Date', 'Any time');
-    dateInput.addPatternMenu('datetime');
 
-    mainAcc.addPane('Filter', () => {
+    const buildFilterPane = () => {
+      const dateInput = ui.stringInput('Date', 'Any time');
+      dateInput.addPatternMenu('datetime');
       const form =ui.divV([
         ui.choiceInput('User', 'Current user', ['Current user']),
         dateInput,
@@ -171,7 +173,13 @@ export class ComputationView extends FunctionView {
       form.style.marginLeft = '0px';
 
       return form;
-    });
+    };
+    let filterPane = mainAcc.addPane('Filter', buildFilterPane);
+    const updateFilterPane = () => {
+      const isExpanded = filterPane.expanded;
+      mainAcc.removePane(filterPane);
+      filterPane = mainAcc.addPane('Filter', buildFilterPane, isExpanded, pinnedListPane);
+    };
 
     const showPinDialog = (funcCall: DG.FuncCall) => {
       let title = funcCall.options['title'] ?? '';
@@ -187,12 +195,21 @@ export class ComputationView extends FunctionView {
             funcCall.options['title'] = title;
             funcCall.options['annotation'] = annotation;
             await this.pinRun(funcCall);
+            updateHistoryPane();
+            updatePinnedPane();
           } else { showPinDialog(funcCall); }
         })
         .show();
     };
 
     const renderPinnedCard = async (funcCall: DG.FuncCall) => {
+      const solidStar = ui.iconFA('star', async (ev) => {
+        ev.stopPropagation();
+        await this.unpinRun(funcCall);
+        updateHistoryPane();
+        updatePinnedPane();
+      }, 'Unpin the run');
+      solidStar.classList.add('fas');
       const card = ui.divH([
         ui.divV([
           ui.divText(funcCall.options['title'] ?? 'Default title', 'title'),
@@ -201,11 +218,16 @@ export class ComputationView extends FunctionView {
         ]),
         ui.divH([
           ui.iconFA('pen', async (ev) => {
-            showPinDialog(funcCall);
             ev.stopPropagation();
-          }, 'Edit run metadata')
+            showPinDialog(funcCall);
+          }, 'Edit run metadata'),
+          solidStar
         ], 'funccall-card-icons')
       ], 'funccall-card');
+
+      card.addEventListener('click', async () => {
+        this.linkFunccall(await this.loadRun(funcCall.id));
+      });
 
       return card;
     };
@@ -230,41 +252,54 @@ export class ComputationView extends FunctionView {
         ]),
         ui.divH([
           ui.iconFA('star', async (ev) => {
-            showPinDialog(funcCall);
             ev.stopPropagation();
+            showPinDialog(funcCall);
           }, 'Pin the run'),
           ui.iconFA('share-alt', async (ev) => {
+            ev.stopPropagation();
             const url = grok.shell.startUri.substring(0, grok.shell.startUri.indexOf(`?id`));
             await navigator.clipboard.writeText(`${url}?id=${funcCall.id}`);
-            ev.stopPropagation();
           }, 'Copy link to the run'),
           ui.iconFA('trash-alt', async (ev) => {
-            await this.deleteRun(funcCall);
             ev.stopPropagation();
+            await this.deleteRun(funcCall);
+            updateHistoryPane();
           }, 'Delete the run'),
         ], 'funccall-card-icons')
       ], 'funccall-card');
 
       card.addEventListener('click', async () => {
-        await this.loadRun(funcCall.id);
+        this.linkFunccall(await this.loadRun(funcCall.id));
       });
 
       return card;
     };
 
-    mainAcc.addPane('Pinned', () => ui.wait(async () => {
+    const buildPinnedList = () => ui.wait(async () => {
       const historicalRuns = await this.pullRuns(this.func!.id);
       const pinnedRuns = historicalRuns.filter((run) => run.options['isPinned']);
       if (pinnedRuns.length > 0)
         return ui.divV(pinnedRuns.map((run) => ui.wait(() => renderPinnedCard(run))));
       else
-        return ui.divText('Pin run in history panel to have quick access to it', 'description');
-    }));
+        return ui.divText('Favorite run in history panel to have quick access to it', 'description');
+    });
+    let pinnedListPane = mainAcc.addPane('Favorites', buildPinnedList);
+    const updatePinnedPane = () => {
+      const isExpanded = pinnedListPane.expanded;
+      mainAcc.removePane(pinnedListPane);
+      pinnedListPane = mainAcc.addPane('Favorites', buildPinnedList, isExpanded, historyPane);
+    };
 
-    mainAcc.addPane('History', () => ui.wait(async () => {
-      const historicalRuns = await this.pullRuns(this.func!.id);
+    const buildHistoryPane = () => ui.wait(async () => {
+      const historicalRuns = (await this.pullRuns(this.func!.id)).filter((run) => !run.options['isPinned']);
       return ui.divV(historicalRuns.map((run) => ui.wait(() => renderHistoryCard(run))));
-    }));
+    });
+    let historyPane = mainAcc.addPane('History', buildHistoryPane);
+    const updateHistoryPane = () => {
+      const isExpanded = historyPane.expanded;
+      mainAcc.removePane(historyPane);
+      historyPane = mainAcc.addPane('History', buildHistoryPane, isExpanded);
+    };
 
     const newHistoryBlock = mainAcc.root;
     ui.empty(this.historyRoot);
