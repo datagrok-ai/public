@@ -73,7 +73,7 @@ M  END
     let mol: RDMol | null = null;
     let substruct = {};
     try {
-      mol = this.rdKitModule.get_mol(molString);
+      mol = this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
       if (!mol.is_valid()) {
         mol.delete();
         mol = null;
@@ -81,7 +81,7 @@ M  END
     } catch (e) { }
     if (!mol)
       try {
-        mol = this.rdKitModule.get_mol(molString, '{"kekulize":false}');
+        mol = this.rdKitModule.get_mol(molString, '{"kekulize":false, "mergeQueryHs":true}');
         if (!mol.is_valid()) {
           mol.delete();
           mol = null;
