@@ -1,10 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { EntityType } from './constants';
-import { runTests, Test } from '@datagrok-libraries/utils/src/test';
+import { Test } from '@datagrok-libraries/utils/src/test';
 import { c, _package } from './package';
-import {delay} from "@datagrok-libraries/utils/src/test";
 import { Menu } from 'datagrok-api/dg';
 
 enum NODE_TYPE {
@@ -53,11 +51,12 @@ interface ITestFromUrl {
 
 let packagesTests: IPackageTests[] = [];
 let testsResultsDf: DG.DataFrame;
-let testPath = '';
 let testFunctions: any[];
 let testManagerView: DG.View;
 let selectedNode: DG.TreeViewGroup|DG.TreeViewNode;
 const nodeDict: {[id: string]: any} = {};
+let debugMode = false;
+let benchmarkMode = false;
 
 export function addView(view: DG.ViewBase): DG.ViewBase {
   view.box = true;
@@ -71,14 +70,18 @@ export async function testManagerViewNew(): Promise<void> {
   pathSegments = pathSegments.map(it => it ? it.replace(/%20/g, ' ') : undefined);
   testFunctions = await collectPackages();
   testManagerView = DG.View.create();
-  const testFromUrl = pathSegments.length > 4 ? 
-  { packName: pathSegments[4], catName: pathSegments[5], testName: pathSegments[6]} : null;
+  const testFromUrl = pathSegments.length > 4 ? { packName: pathSegments[4], catName: pathSegments[5], testName: pathSegments[6]} : null;
   const testUIElements: ITestManagerUI = await createTestManagerUI(testFromUrl);
   testManagerView.name = 'Test Manager'
   addView(testManagerView);
   testManagerView.temp['ignoreCloseAll'] = true;
   testManagerView.setRibbonPanels(
-    [[testUIElements.runButton], [testUIElements.runAllButton]],
+    [
+      [testUIElements.runButton], 
+      [testUIElements.runAllButton], 
+      [ui.boolInput('Debug', false, () => { debugMode = !debugMode; }).root],
+      [ui.switchInput('Benchmark', false, () => { benchmarkMode = !benchmarkMode; }).root]
+    ],
   );
   testManagerView.append(testUIElements.testsTree.root);
   runTestsForSelectedNode();
@@ -172,7 +175,7 @@ function addCategoryRecursive(node: DG.TreeViewGroup, category: ICategory, testF
     const item = subnode.item(itemDiv);
     t.resultDiv = testPassed;
     setRunTestsMenuAndLabelClick(item, t, NODE_TYPE.TEST);
-    ui.tooltip.bind(item.root, () => getTestsInfoGrid( `Package = ${t.packageName} and category = ${t.test.category} and name =  ${t.test.name}`));
+    ui.tooltip.bind(item.root, () => getTestsInfoGrid( `Package = ${t.packageName} and category = ${t.test.category} and name =  ${t.test.name}`, NODE_TYPE.TEST));
     if (testFromUrl && testFromUrl.catName === category.fullName && testFromUrl.testName === t.test.name) {
       selectedNode = item;
     }
@@ -280,7 +283,9 @@ function updateIcon (passed: boolean, iconDiv: Element) {
   iconDiv.append(icon);
 }
 
-async function runTest(t: IPackageTest): Promise<boolean>{
+async function runTest(t: IPackageTest): Promise<boolean> {
+  if (debugMode)
+    debugger;
   const start = Date.now();
   testInProgress(t.resultDiv, true);
   const res = await grok.functions.call(
@@ -395,7 +400,7 @@ function getTestsInfoPanel(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any,
   const accIcon = ui.element('i');
   accIcon.className = 'grok-icon svg-icon svg-view-layout';
   acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
-  const grid = getTestsInfoGrid(resultsGridFilterCondition(tests, nodeType));
+  const grid = getTestsInfoGrid(resultsGridFilterCondition(tests, nodeType), nodeType);
   acc.addPane('Details', () => ui.div(testDetails(node, tests, nodeType)), true);
   acc.addPane('Results', () => ui.div(grid), true);
   return acc.root;
@@ -408,8 +413,8 @@ function resultsGridFilterCondition(tests: any, nodeType: NODE_TYPE) {
 }
 
 function testDetails(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
-  const detailsMap = nodeType === NODE_TYPE.PACKAGE ? { package: tests.package.name, category: 'all', tests: 'all' } :
-    nodeType === NODE_TYPE.CATEGORY ? { package: tests.packageName, category: tests.fullName, tests: 'all' } :
+  const detailsMap = nodeType === NODE_TYPE.PACKAGE ? { package: tests.package.name } :
+    nodeType === NODE_TYPE.CATEGORY ? { package: tests.packageName, category: tests.fullName } :
       { package: tests.packageName, category: tests.test.category, test: tests.test.name };
   const detailsTable = ui.tableFromMap(detailsMap);
   const runButton = ui.bigButton('RUN', async () => {
@@ -422,21 +427,34 @@ function testDetails(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeT
 }
 
 
-function getTestsInfoGrid(condition: string) {
-  let grid;
+function getTestsInfoGrid(condition: string, nodeType: NODE_TYPE) {
+  let info = ui.divText('No tests have been run');
   if (testsResultsDf) {
     const testInfo = testsResultsDf
       .groupBy(testsResultsDf.columns.names())
       .where(condition)
       .aggregate();
-    if (testInfo.rowCount === 1 && !testInfo.col('result').isNone(0)) {
-      const gridMap = {};
-      testInfo.columns.names().forEach((col) => {
-        gridMap[col] = testInfo.get(col, 0);
-      });
-      grid = ui.tableFromMap(gridMap);
+    if (testInfo.rowCount === 1 && testInfo.col('result').isNone(0))
+      return info;
+    if (nodeType === NODE_TYPE.TEST || testInfo.rowCount === 1 && !testInfo.col('result').isNone(0)) {
+      const time = testInfo.get('time, ms', 0);
+      const result = testInfo.get('result', 0);
+      const resColor = testInfo.get('success', 0) ? 'lightgreen' : 'red';
+      info = ui.divV([
+        ui.divText(result, {style: {color: resColor}}),
+        ui.divText(`Time, ms: ${time}`),
+      ]);
+      if (nodeType !== NODE_TYPE.TEST)
+        info.append(ui.divText(`Test: ${testInfo.get('name', 0)}`));
+        if (nodeType === NODE_TYPE.PACKAGE)
+          info.append(ui.divText(`Category: ${testInfo.get('category', 0)}`));     
     } else
-      grid = testInfo.plot.grid().root;
+      info = ui.divV([
+        ui.button('Add to workspace', () => {
+          grok.shell.addTableView(testInfo);
+        }),
+        testInfo.plot.grid().root
+      ])
   }
-  return grid;
+  return info;
 };
