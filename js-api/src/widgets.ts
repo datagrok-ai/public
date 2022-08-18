@@ -1659,11 +1659,13 @@ export class PropertyGrid extends DartWidget {
   }
 }
 
+export type fileShares = 'S3';
+
 /** File browser widget */
 export class FilesWidget extends DartWidget {
   /** Creates a [FilesWidget] and opens a directory, if [path] is specified.
    * [path] accepts a full-qualified name (see [Entity.nqName]). */
-  static create(params: {path?: string} = {}): FilesWidget {
+  static create(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): FilesWidget {
     return toJs(api.grok_FilesWidget(params));
   }
 }
