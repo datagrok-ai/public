@@ -10,6 +10,7 @@ interface BarChartSettings extends SummarySettingsBase {
 function getSettings(gc: DG.GridColumn): BarChartSettings {
   return gc.settings ??= {
     ...getSettingsBase(gc),
+    ...{minH: 0.05},
     // ...{normalize: true},
   };
 }
@@ -18,6 +19,47 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
   get name() { return 'bar ts'; }
 
   get cellType() { return 'barchart'; }
+
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
+    const settings: any = getSettings(gridCell.gridColumn);
+    const df = gridCell.grid.dataFrame;
+    const cols = df.columns.byNames(settings.columnNames);
+    const row = gridCell.cell.row.idx;
+    const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-2, -2);
+    const width = b.width / cols.length;
+    const activeColumn = Math.floor((e.layerX - b.left) / width);
+    if ((activeColumn > cols.length) || (activeColumn < 0)) {
+      ui.tooltip.hide();
+      return;
+    }
+    const bb = b
+      .getLeftPart(cols.length, activeColumn)
+      .getBottomScaled(cols[activeColumn].scale(row) > settings.minH ? cols[activeColumn].scale(row) : settings.minH)
+      .inflateRel(0.9, 1);
+    const maxHeight = b.bottom - b.top;
+    if (e.layerY >= bb.top) {
+      let arr = [];
+      // create tooltip data
+      for (let i = 0; i < cols.length; i++) {
+        arr.push(ui.divH([ui.divText(`${cols[i].name}:`, {
+              style: {
+                margin: '0 10px 0 0',
+                fontWeight: (activeColumn == i) ? 'bold' : 'normal',
+              }
+            }), ui.divText(`${Math.floor(cols[i].get(row) * 100) / 100}`, {
+              style: {
+                fontWeight: (activeColumn == i) ? 'bold' : 'normal',
+              }
+            })]
+          )
+        );
+      }
+      ui.tooltip.show(ui.divV(arr), e.x + 16, e.y + 16);
+    } else {
+      ui.tooltip.hide();
+    }
+
+  }
 
   render(
     g: CanvasRenderingContext2D,
@@ -28,7 +70,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
 
     if (w < 20 || h < 10 || df === void 0) return;
 
-    const settings = getSettings(gridCell.gridColumn);
+    const settings: any = getSettings(gridCell.gridColumn);
     const b = new DG.Rect(x, y, w, h).inflate(-2, -2);
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
@@ -40,7 +82,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
       if (!cols[i].isNone(row)) {
         const bb = b
           .getLeftPart(cols.length, i)
-          .getBottomScaled(cols[i].scale(row))
+          .getBottomScaled(cols[i].scale(row) > settings.minH ? cols[i].scale(row) : settings.minH)
           .inflateRel(0.9, 1);
 
         g.fillRect(bb.left, bb.top, bb.width, bb.height);
