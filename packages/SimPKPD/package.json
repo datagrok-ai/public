@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/simpkpd",
   "friendlyName": "SimPKPD",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PKPD simulations tools",
   "author": {
     "name": "Leonid Stolbov",
