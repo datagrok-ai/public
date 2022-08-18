@@ -332,7 +332,7 @@ M  V30 162 1 155 159
 M  V30 END BOND
 M  V30 END CTAB
 M  END
-",detectMolecule
+",detectMolecules
 "
 Datagrok macromolecule handler
 

@@ -11,7 +11,7 @@ import {functionSignatureEditor} from './function-signature-editor';
 import {addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel} from './dev-panel';
 
 import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detectors';
-import { testManagerViewNew } from './package-testing-new';
+import {testManagerViewNew} from './package-testing-new';
 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
