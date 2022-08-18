@@ -21,6 +21,62 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
 
   get cellType() { return 'sparkline'; }
 
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
+    // basic values and functions for calculations
+    const df = gridCell.grid.dataFrame;
+    const minDistanse = 10;
+
+    if (gridCell.bounds.width < 20 || gridCell.bounds.height < 10 || df === void 0) return;
+
+    const row = gridCell.cell.row.idx;
+    const settings = getSettings(gridCell.gridColumn);
+    const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-3, -2);
+
+    const cols = df.columns.byNames(settings.columnNames);
+    const gmin = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
+    const gmax = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
+
+    function getPos(col: number, row: number): DG.Point {
+      const r: number = settings.globalScale ? (cols[col].get(row) - gmin) / (gmax - gmin) : cols[col].scale(row);
+      return new DG.Point(
+        b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
+        (b.top + b.height) - b.height * r);
+    }
+
+    // need for calculate distance between mouse and point
+    function distance(p1: DG.Point, p2: DG.Point): number {
+      return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
+    }
+
+    const MousePoint = new DG.Point(e.layerX, e.layerY);
+    const activeColumn = Math.floor((MousePoint.x - b.left + minDistanse) / b.width * (cols.length - 1));
+
+    const activePoint = getPos(activeColumn, row);
+
+
+    if (distance(activePoint, MousePoint) < minDistanse) {
+      let arr = [];
+      // create tooltip data
+      for (let i = 0; i < cols.length; i++) {
+        arr.push(ui.divH([ui.divText(`${cols[i].name}:`, {
+              style: {
+                margin: '0 10px 0 0',
+                fontWeight: (activeColumn == i) ? 'bold' : 'normal',
+              }
+            }), ui.divText(`${Math.floor(cols[i].get(row) * 100) / 100}`, {
+              style: {
+                fontWeight: (activeColumn == i) ? 'bold' : 'normal',
+              }
+            })]
+          )
+        );
+      }
+      ui.tooltip.show(ui.divV(arr), e.x + 16, e.y + 16);
+    } else {
+      ui.tooltip.hide();
+    }
+  }
+
   render(
     g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
@@ -72,7 +128,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gridColumn: DG.GridColumn): HTMLElement {
-    gridColumn.settings ??= { globalScale: true };
+    gridColumn.settings ??= {globalScale: true};
     const settings: SparklineSettings = gridColumn.settings;
 
     const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
