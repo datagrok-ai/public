@@ -3,15 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export async function _testDetectorsStandard(detectorsArray: DG.Func[])
-  : Promise<DG.DataFrame> {
+export async function _testDetectorsStandard(detectorsArray: DG.Func[]):
+Promise<DG.DataFrame> {
   const pi = DG.TaskBarProgressIndicator.create('Test detectors...');
 
-  // TODO: specify the correct path
   const path = 'System:AppData/DevTools/test_detectors/';
-
   const csvList = await grok.dapi.files.list(path, true, '');
-  const cols = [];
+  const cols: DG.Column[] = [];
   cols.push(
     DG.Column.fromStrings(
       'files',
@@ -20,22 +18,21 @@ export async function _testDetectorsStandard(detectorsArray: DG.Func[])
   );
 
   let readyCount = 0;
+  const results: string[][] = [];
+  for (let i = 0; i < detectorsArray.length; i++)
+    results.push([]);
 
-  for (const detector of detectorsArray) {
-    const hits: string[] = [];
-    for (const fileInfo of csvList) {
+  for (const fileInfo of csvList) {
+    const csv = await grok.dapi.files.readAsText(path + fileInfo.fileName);
+    const df = DG.DataFrame.fromCsv(csv);
+    // standard df-s have data in the 'data' column
+    const col = df.getCol('data');
+    for (let i = 0; i < detectorsArray.length; i++) {
+      const detector = detectorsArray.at(i);
+      const hits = results.at(i);
       try {
-        const csv = await grok.dapi.files.readAsText(path + fileInfo.fileName);
-        const df = DG.DataFrame.fromCsv(csv);
-        // df.columns[1][0] should contain the name of the appropriate detector
-        const col = df.getCol('data');
         const semType: string | null = await detector.apply({col: col});
         if (
-          detector.name === df.get('detectorName', 0) &&
-          ((semType !== null) && fileInfo.name.includes(semType.toLowerCase()))
-        )
-          hits.push(''); // True Positive
-        else if (
           detector.name === df.get('detectorName', 0) &&
           ((semType === null) || !fileInfo.name.includes(semType.toLowerCase()))
         )
@@ -46,21 +43,28 @@ export async function _testDetectorsStandard(detectorsArray: DG.Func[])
         )
           hits.push('FP'); // False Positive
         else
-          hits.push(''); // True Negative
+          hits.push(''); // True Negative or True Positive
       } catch (err: unknown) {
         hits.push(err instanceof Error ? err.message : (err as Object).toString()); // Error
       } finally {
         readyCount += 1;
-        pi.update(100 * readyCount / csvList.length, `Test ${fileInfo.fileName}`);
+        pi.update(
+          100 * readyCount / (csvList.length * detectorsArray.length),
+          `Test ${fileInfo.fileName} by ${detector.name}`,
+        );
       }
     }
-    cols.push(
-      DG.Column.fromStrings(detector.name, hits),
-    );
   }
 
   // grok.shell.info(`Test for detectors finished`);
   pi.close();
+  for (let i = 0; i < detectorsArray.length; i++) {
+    const detector = detectorsArray[i];
+    const hits = results[i];
+    cols.push(
+      DG.Column.fromStrings(detector.name, hits),
+    );
+  }
   const resDf = DG.DataFrame.fromColumns(cols);
   resDf.name = `test_detectors`;
   return resDf;
