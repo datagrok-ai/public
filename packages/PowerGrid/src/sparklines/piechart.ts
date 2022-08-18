@@ -6,6 +6,8 @@ import {getSettingsBase, names, SummarySettingsBase} from './shared';
 interface PieChartSettings extends SummarySettingsBase {
   radius: number;
   minRadius: number;
+  countColumns: number;
+  style: 'bar chart' | 'pie bar chart';
 }
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
@@ -13,7 +15,18 @@ function getSettings(gc: DG.GridColumn): PieChartSettings {
     ...getSettingsBase(gc),
     ...{radius: 40},
     ...{minRadius: 10},
+    ...{style: 'pie bar chart'},
   };
+}
+
+function getColumnsSum(cols: any, row: any) {
+  let sum = 0;
+  for (let i = 0; i < cols.length; i++) {
+    if (cols[i].isNone(row))
+      continue;
+    sum += cols[i].get(row);
+  }
+  return sum;
 }
 
 export class PieChartCellRenderer extends DG.GridCellRenderer {
@@ -34,19 +47,43 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames);
     const vectorX = e.layerX - gridCell.bounds.midX;
     const vectorY = e.layerY - gridCell.bounds.midY;
+    const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
     const atan2 = Math.atan2(vectorY, vectorX);
     const angle = atan2 < 0 ? atan2 + 2 * Math.PI : atan2;
     let activeColumn = -1;
-    for (let i = 0; i < cols.length; i++) {
-      if (cols[i].isNone(gridCell.cell.row.idx))
-        continue;
-      if ((angle > 2 * Math.PI * i / cols.length) && (angle < 2 * Math.PI * (i + 1) / cols.length)) {
-        activeColumn = i;
-        break;
-      }
-    }
+    let r = 0;
     const row: number = gridCell.cell.row.idx;
     let arr: any = [];
+
+    if (settings.style == 'bar chart') {
+      activeColumn = 0;
+      for (let i = 0; i < cols.length; i++) {
+        if (cols[i].isNone(gridCell.cell.row.idx))
+          continue;
+        if ((angle > 2 * Math.PI * i / cols.length) && (angle < 2 * Math.PI * (i + 1) / cols.length)) {
+          activeColumn = i;
+          break;
+        }
+      }
+      r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
+      r = r < settings.minRadius ? settings.minRadius : r;
+    } else {
+      const sum = getColumnsSum(cols, row);
+      r = (gridCell.bounds.width - 4) / 2;
+
+      let currentAngle = 0;
+      for (let i = 0; i < cols.length; i++) {
+        if (cols[i].isNone(gridCell.cell.row.idx))
+          continue;
+        const endAngle = currentAngle + 2 * Math.PI * cols[i].get(row) / sum;
+        if ((angle > currentAngle) && (angle < endAngle)) {
+          activeColumn = i;
+          break;
+        }
+        currentAngle = endAngle;
+      }
+    }
+    // create tooltip data
     for (let i = 0; i < cols.length; i++) {
       arr.push(ui.divH([ui.divText(`${cols[i].name}:`, {
             style: {
@@ -61,10 +98,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         )
       );
     }
-    // get distance from vector to center of cell
-    const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
-    let r = cols[activeColumn].scale(row) * gridCell.bounds.width / 2;
-    r = r < settings.minRadius ? settings.minRadius : r;
+
     if (r >= distance) {
       ui.tooltip.show(ui.divV(arr), e.x + 16, e.y + 16);
     } else {
@@ -85,21 +119,40 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const row: number = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
+    if (settings.style == 'bar chart') {
+      for (let i = 0; i < cols.length; i++) {
+        if (cols[i].isNone(row))
+          continue;
 
-    for (let i = 0; i < cols.length; i++) {
-      if (cols[i].isNone(row))
-        continue;
+        let r = cols[i].scale(row) * box.width / 2;
+        r = r < settings.minRadius ? settings.minRadius : r;
+        g.beginPath();
+        g.moveTo(box.midX, box.midY);
+        g.arc(box.midX, box.midY, r,
+          2 * Math.PI * i / cols.length, 2 * Math.PI * (i + 1) / cols.length);
+        g.closePath();
 
-      let r = cols[i].scale(row) * box.width / 2;
-      r = r < settings.minRadius ? settings.minRadius : r;
-      g.beginPath();
-      g.moveTo(box.midX, box.midY);
-      g.arc(box.midX, box.midY, r,
-        2 * Math.PI * i / cols.length, 2 * Math.PI * (i + 1) / cols.length);
-      g.closePath();
+        g.fillStyle = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
+        g.fill();
+      }
+    } else {
+      const sum = getColumnsSum(cols, row);
+      let currentAngle = 0;
+      for (let i = 0; i < cols.length; i++) {
+        if (cols[i].isNone(row))
+          continue;
+        const r = box.width / 2;
+        const endAngle = currentAngle + 2 * Math.PI * cols[i].get(row) / sum;
+        g.beginPath();
+        g.moveTo(box.midX, box.midY);
+        g.arc(box.midX, box.midY, r,
+          currentAngle, endAngle);
+        g.closePath();
 
-      g.fillStyle = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
-      g.fill();
+        g.fillStyle = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
+        g.fill();
+        currentAngle = endAngle;
+      }
     }
   }
 
@@ -114,6 +167,10 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       }, {
         available: names(gc.grid.dataFrame.columns.numerical),
         checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
+      }),
+      ui.choiceInput('style', 'pie bar chart', ['bar chart', 'pie bar chart'], function(value: string) {
+        settings.style = value;
+        gc.grid.invalidate();
       }),
     ]);
   }
