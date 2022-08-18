@@ -6,7 +6,7 @@
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
 import {VirtualView} from './src/views/view';
-import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewGroup, Widget, RangeSlider, RangeSliderStyle, FilesWidget, DateInput} from './src/widgets';
+import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewGroup, Widget, RangeSlider, RangeSliderStyle, FilesWidget, DateInput, fileShares} from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
 import $ from 'cash-dom';
@@ -1306,7 +1306,7 @@ export function setDisplay(element: HTMLElement, show: boolean) {
   return element;
 }
 
-export function fileBrowser(params: {path?: string} = {}): Widget {
+export function fileBrowser(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): Widget {
   return FilesWidget.create(params);
 }
 
