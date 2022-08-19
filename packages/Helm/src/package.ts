@@ -40,10 +40,7 @@ export function helmCellRenderer(): HelmCellRenderer {
 }
 
 
-//tags: cellEditor
-//description: Macromolecule
-//input: grid_cell cell
-export function editMoleculeCell(cell: DG.GridCell): void {
+export function webEditor(value: string) {
   let view = ui.div();
   org.helm.webeditor.MolViewer.molscale = 0.8;
   let app = new scil.helm.App(view, {
@@ -68,30 +65,37 @@ export function editMoleculeCell(cell: DG.GridCell): void {
   scil.apply(app.properties.parent.style, s);
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
-  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'HELM') {
-    setTimeout(function() {
-      app.canvas.helm.setSequence(cell.cell.value, 'HELM');
-    }, 200);
-    //@ts-ignore
-    ui.dialog({showHeader: false, showFooter: true})
-      .add(view)
-      .onOK(() => {
-        const val = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-        cell.cell.value = val;
-      }).show({modal: true, fullScreen: true});
-  } else if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'fasta:SEQ:PT') {
-    const converter = new NotationConverter(cell.gridColumn.column);
-    const resStr = converter.convertStringToHelm(cell.cell.value, '-');
-    setTimeout(function() {
-      app.canvas.helm.setSequence(resStr, 'HELM');
-    }, 200);
-    //@ts-ignore
-    ui.dialog({showHeader: false, showFooter: true})
-      .add(view)
-      .onOK(() => {
-        cell.cell.value;
-      }).show({modal: true, fullScreen: true});
-  }
+  setTimeout(function() {
+    app.canvas.helm.setSequence(value, 'HELM');
+  }, 200);
+  //@ts-ignore
+  ui.dialog({showHeader: false, showFooter: true})
+  .add(view)
+  .onOK(() => {
+    const val = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+    value = val;
+  }).show({modal: true, fullScreen: true});
+}
+
+
+//tags: cellEditor
+//description: Macromolecule
+//input: grid_cell cell
+export function editMoleculeCell(cell: DG.GridCell): void {
+  let grid = grok.shell.tv.grid;
+  webEditor(cell.cell.value);
+  grid.invalidate();
+}
+
+//name: Open Helm Web Editor
+//description: Adds editor
+//meta.action: Open Helm Web Editor
+//input: string mol { semType: Macromolecule }
+export function openEditor(mol: string): void {
+  let df = grok.shell.tv.grid.dataFrame;
+  let converter = new NotationConverter(df.col('sequence'));
+  const resStr = converter.convertStringToHelm(mol, '/');
+  webEditor(resStr);
 }
 
 //name: Properties
@@ -431,7 +435,9 @@ function parseHelm(s: string) {
   return monomers;
 }
 
-function findMonomers(helmString: string) {
+//name: findMonomers
+//input: string helmString
+export function findMonomers(helmString: string) {
   //@ts-ignore
   const types = Object.keys(org.helm.webeditor.monomerTypeList());
   const monomers: any = [];

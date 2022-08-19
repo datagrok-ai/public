@@ -95,11 +95,11 @@ export class UnitsHandler {
 
   public isHelm(): boolean { return this.notation === NOTATION.HELM; }
 
-  public isRna(): boolean { return this.alphabet.toLowerCase().endsWith('rna'); }
+  public isRna(): boolean { return this.alphabet.toLowerCase() === 'rna'; }
 
-  public isDna(): boolean { return this.alphabet.toLowerCase().endsWith('dna'); }
+  public isDna(): boolean { return this.alphabet.toLowerCase() === 'dna'; }
 
-  public isPeptide(): boolean { return this.alphabet.toLowerCase().endsWith('pt'); }
+  public isPeptide(): boolean { return this.alphabet.toLowerCase() === 'pt'; }
 
   /** Associate notation types with the corresponding units */
   /**
