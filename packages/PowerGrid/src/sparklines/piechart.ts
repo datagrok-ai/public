@@ -44,7 +44,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   get defaultHeight(): number | null { return 80; }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
-    const settings: any = getSettings(gridCell.gridColumn);
+    const settings = getSettings(gridCell.gridColumn);
     const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames);
     const vectorX = e.layerX - gridCell.bounds.midX;
     const vectorY = e.layerY - gridCell.bounds.midY;

@@ -11,6 +11,7 @@ class it {
 
 interface RadarChartSettings extends SummarySettingsBase {
   // radius: number;
+  minDistance: number;
 }
 
 function getSettings(gc: DG.GridColumn): RadarChartSettings {
@@ -36,7 +37,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
     const df = gridCell.grid.dataFrame;
-    const settings: any = getSettings(gridCell.gridColumn);
+    const settings = getSettings(gridCell.gridColumn);
     const box = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).fitSquare().inflate(-2, -2);
     const cols = df.columns.byNames(settings.columnNames);
     const vectorX = e.layerX - gridCell.bounds.midX;

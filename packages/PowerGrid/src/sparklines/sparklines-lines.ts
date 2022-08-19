@@ -5,6 +5,8 @@ import {createTooltip, distance} from './helper';
 
 interface SparklineSettings extends SummarySettingsBase {
   globalScale: boolean;
+  colorCode: boolean;
+  minDistance: number;
 }
 
 
@@ -13,6 +15,7 @@ function getSettings(gc: DG.GridColumn): SparklineSettings {
     ...getSettingsBase(gc),
     ...{globalScale: false},
     ...{minDistance: 5},
+    ...{colorCode: false},
   };
 }
 
@@ -29,7 +32,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     if (gridCell.bounds.width < 20 || gridCell.bounds.height < 10 || df === void 0) return;
 
     const row = gridCell.cell.row.idx;
-    const settings: any = getSettings(gridCell.gridColumn);
+    const settings = getSettings(gridCell.gridColumn);
     const minDistanse = settings.minDistance;
     const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-3, -2);
 
@@ -102,7 +105,8 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     for (let i = 0; i < cols.length; i++) {
       if (!cols[i].isNone(row)) {
         const p = getPos(i, row);
-        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p.x, p.y, DG.Color.blue, 3);
+        let color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.blue;
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p.x, p.y, color, 3);
       }
     }
   }
@@ -122,6 +126,13 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
     normalizeInput.onChanged(() => gridColumn.grid.invalidate());
 
+    const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
+      description: 'Activates color rendering'
+    });
+
+    const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
+    colorCodeNormalizeInput.onChanged(() => { gridColumn.grid.invalidate(); });
+
     return ui.inputs([
       normalizeInput,
       ui.columnsInput('Sparkline columns', gridColumn.grid.dataFrame, (columns) => {
@@ -131,6 +142,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
         available: names(gridColumn.grid.dataFrame.columns.numerical),
         checked: settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical),
       }),
+      colorCodeNormalizeInput,
     ]);
   }
 }
