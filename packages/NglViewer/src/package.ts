@@ -2,6 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import { BioStructureViewer } from './biostrucure-viewer';
+
+export const _package = new DG.Package();
+
 //tags: fileViewer, fileViewer-mol, fileViewer-mol2, fileViewer-cif, fileViewer-mcif, fileViewer-mmcif, fileViewer-gro, fileViewer-pdb, fileViewer-ent, fileViewer-pqr, fileViewer-mmtf, fileViewer-mtl, fileViewer-sdf, fileViewer-sd
 //input: file file
 //output: view v
@@ -75,4 +79,14 @@ export default function nglViewer(file: any): DG.View {
 
   view.append(host);
   return view;
+}
+
+//name: Docking
+//tags: app
+export async function biostructureApp() {
+
+  let pi = DG.TaskBarProgressIndicator.create('Opening BioStructure Viewer');
+  let app = new BioStructureViewer();
+  await app.init();
+  pi.close();
 }
