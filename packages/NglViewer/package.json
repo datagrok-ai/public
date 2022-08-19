@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/ngl-viewer",
   "version": "0.1.2",
-  "fullName": "NGL Viewer",
+  "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
   },
-  "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
+  "fullName": "NGL Viewer",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -16,6 +16,33 @@
     "css/ngl.css",
     "common/ngl_viewer/ngl.js"
   ],
+  "dependencies": {
+    "@datagrok-libraries/utils": "^0.4.1",
+    "@types/react-dom": "^17.0.9",
+    "datagrok-api": "^1.5.0",
+    "file-loader": "^6.2.0",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.0.0",
+    "@types/js-yaml": "^4.0.5",
+    "@types/node-fetch": "^2.6.2",
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "css-loader": "latest",
+    "eslint": "^8.21.0",
+    "eslint-config-google": "^0.14.0",
+    "jest": "^27.0.0",
+    "jest-html-reporter": "^3.5.0",
+    "js-yaml": "^4.1.0",
+    "node-fetch": "^2.6.7",
+    "puppeteer": "^13.7.0",
+    "style-loader": "latest",
+    "ts-jest": "^27.0.0",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
   "canEdit": [ "Developers" ],
   "canView": [ "All users" ],
   "category": "Bioinformatics"
