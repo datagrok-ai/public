@@ -6,12 +6,10 @@ import {IconTool} from './icon-tool';
 import {EntityType} from './constants';
 import '../css/styles.css';
 import * as tests from './tests/test-examples';
-import {testManagerView, _renderTestManagerPanel} from './package-testing';
+import {createTestManagerView} from './package-testing';
 import {functionSignatureEditor} from './function-signature-editor';
 import {addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel} from './dev-panel';
-
 import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detectors';
-import {testManagerViewNew} from './package-testing-new';
 
 export const _package = new DG.Package();
 let minifiedClassNameMap = {};
@@ -26,13 +24,6 @@ export function renderDevPanel(ent: EntityType): Promise<DG.Widget> {
   return _renderDevPanel(ent, minifiedClassNameMap);
 }
 
-//name: renderTestManagerPanel
-//tags: dev-tools
-//input: object ent
-//output: widget panel
-export function renderTestManagerPanel(ent: EntityType): Promise<DG.Widget> {
-  return _renderTestManagerPanel(ent);
-}
 
 //tags: autostart
 export function describeCurrentObj(): void {
@@ -44,8 +35,6 @@ export function describeCurrentObj(): void {
     const devPane = acc.getPane('Dev');
     if (!devPane)
       acc.addPane('Dev', () => ui.wait(async () => (await renderDevPanel(ent)).root));
-    if (!acc.getPane('Test manager'))
-      acc.addPane('Test manager', () => ui.wait(async () => (await renderTestManagerPanel(ent)).root));
   });
 
   grok.events.onContextMenu.subscribe((args) => {
@@ -83,16 +72,9 @@ export function _IconTool(): void {
 //tags: app
 export async function testManager(): Promise<void> {
   c = grok.functions.getCurrentCall();
-  await testManagerView();
+  await createTestManagerView();
 }
 
-//name: TestManager1
-//top-menu: Tools | Dev | Test Manager New
-//tags: app
-export async function testManager1(): Promise<void> {
-  c = grok.functions.getCurrentCall();
-  await testManagerViewNew();
-}
 
 //name: TestDetectors
 //top-menu: Tools | Dev | Test Detectors
