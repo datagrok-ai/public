@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {SeqPalette} from './seq-palettes';
 
-class MonomerWorks {
+export class MonomerWorks {
   monomerLibs: string[] | null = null;
   acceptedMonomers: Set<string> | null = null;
 
