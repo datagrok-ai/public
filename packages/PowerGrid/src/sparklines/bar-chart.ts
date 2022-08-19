@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {getSettingsBase, names, SummarySettingsBase} from './shared';
+import {createTooltip} from './helper';
 
 
 interface BarChartSettings extends SummarySettingsBase {
@@ -36,25 +37,8 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
       .getLeftPart(cols.length, activeColumn)
       .getBottomScaled(cols[activeColumn].scale(row) > settings.minH ? cols[activeColumn].scale(row) : settings.minH)
       .inflateRel(0.9, 1);
-    const maxHeight = b.bottom - b.top;
     if (e.layerY >= bb.top) {
-      let arr = [];
-      // create tooltip data
-      for (let i = 0; i < cols.length; i++) {
-        arr.push(ui.divH([ui.divText(`${cols[i].name}:`, {
-              style: {
-                margin: '0 10px 0 0',
-                fontWeight: (activeColumn == i) ? 'bold' : 'normal',
-              }
-            }), ui.divText(`${Math.floor(cols[i].get(row) * 100) / 100}`, {
-              style: {
-                fontWeight: (activeColumn == i) ? 'bold' : 'normal',
-              }
-            })]
-          )
-        );
-      }
-      ui.tooltip.show(ui.divV(arr), e.x + 16, e.y + 16);
+      ui.tooltip.show(ui.divV(createTooltip(cols, activeColumn, row)), e.x + 16, e.y + 16);
     } else {
       ui.tooltip.hide();
     }
