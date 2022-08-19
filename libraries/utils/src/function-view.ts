@@ -497,7 +497,7 @@ export class FunctionView extends DG.ViewBase {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await grok.dapi.functions.calls.save(callToSave);
     this.buildHistoryBlock();
-
+    this.path = `?id=${savedCall.id}`;
     await this.onAfterSaveRun(savedCall);
     return savedCall;
   }
