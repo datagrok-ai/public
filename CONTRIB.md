@@ -65,6 +65,12 @@ file with the settings
 In this public repo, we follow some Git best practices:
 
 1. Configure the commit authorship. Set your name and email address correctly.
+
+   ```shell
+   git config user.name "<Name> <Surname>"
+   git config user.email "<email@address>"
+   ```
+
 2. Write descriptive and meaningful commit messages. Commit messages will be included in changelogs
 3. Keep your working branch up to date by frequently fetching changes from the remote server. It will prevent bugs,
    rework, and the tiresome resolve of conflicts
