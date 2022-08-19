@@ -114,11 +114,16 @@ export class FunctionView extends DG.ViewBase {
    * @stability Stable
  */
   public linkFunccall(funcCall: DG.FuncCall) {
+    const isPreviousHistorical = this._funcCall?.options['isHistorical'];
     this._funcCall = funcCall;
 
     if (funcCall.options['isHistorical']) {
       this.path = `?id=${this._funcCall.id}`;
-      this.name = `${this.name}: ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
+      if (!isPreviousHistorical)
+        this.name = `${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
+      else
+        this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
+      document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([this.name]));
     }
   }
 
@@ -257,39 +262,41 @@ export class FunctionView extends DG.ViewBase {
 
   }
 
-  public async onBeforeUnpinRun(callToPin: DG.FuncCall) { }
+  public async onBeforeRemoveRunFromFavorites(callToPin: DG.FuncCall) { }
 
-  public async onAfterUnpinRun(pinnedCall: DG.FuncCall) { }
+  public async onAfterRemoveRunFromFavorites(pinnedCall: DG.FuncCall) { }
 
   /**
    * Saves the run as usual run
-   * @param callToPin FuncCall object to save
+   * @param callToUnfavorite FuncCall object to remove from favorites
    * @returns Saved FuncCall
    * @stability Experimental
  */
-  public async unpinRun(callToPin: DG.FuncCall): Promise<DG.FuncCall> {
-    callToPin.options['isPinned'] = false;
-    await this.onBeforeUnpinRun(callToPin);
-    const pinnedSave = await grok.dapi.functions.calls.save(callToPin);
-    await this.onAfterUnpinRun(pinnedSave);
+  public async removeRunFromFavorites(callToUnfavorite: DG.FuncCall): Promise<DG.FuncCall> {
+    callToUnfavorite.options['title'] = null;
+    callToUnfavorite.options['annotation'] = null;
+    callToUnfavorite.options['isFavorite'] = false;
+    await this.onBeforeRemoveRunFromFavorites(callToUnfavorite);
+    const pinnedSave = await grok.dapi.functions.calls.save(callToUnfavorite);
+    await this.onAfterRemoveRunFromFavorites(pinnedSave);
     return pinnedSave;
   }
 
-  public async onBeforePinRun(callToPin: DG.FuncCall) { }
+  public async onBeforeAddingToFavorites(callToPin: DG.FuncCall) { }
 
-  public async onAfterPinRun(pinnedCall: DG.FuncCall) { }
+  public async onAfterAddingToFavorites(pinnedCall: DG.FuncCall) { }
 
   /**
    * Saves the run as favorite
-   * @param callToPin FuncCall object to save
+   * @param callToFavorite FuncCall object to save
    * @returns Saved FuncCall
    * @stability Experimental
  */
-  public async pinRun(callToPin: DG.FuncCall): Promise<DG.FuncCall> {
-    callToPin.options['isPinned'] = true;
-    await this.onBeforePinRun(callToPin);
-    const pinnedSave = await grok.dapi.functions.calls.save(callToPin);
-    await this.onAfterPinRun(pinnedSave);
+  public async addRunToFavorites(callToFavorite: DG.FuncCall): Promise<DG.FuncCall> {
+    callToFavorite.options['isFavorite'] = true;
+    await this.onBeforeAddingToFavorites(callToFavorite);
+    const pinnedSave = await grok.dapi.functions.calls.save(callToFavorite);
+    await this.onAfterAddingToFavorites(pinnedSave);
     return pinnedSave;
   }
 
@@ -315,7 +322,7 @@ export class FunctionView extends DG.ViewBase {
   public async onAfterDeleteRun(deletedCall: DG.FuncCall) { }
 
   /**
-   * Deleters the computation results to the historical results, returns its id. See also {@link loadRun}.
+   * Deletes the computation results from history, returns its id. See also {@link loadRun}.
    * @param callToDelete FuncCall object to delete
    * @returns ID of deleted historical run
    * @stability Experimental
