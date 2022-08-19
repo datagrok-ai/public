@@ -78,10 +78,6 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
       box.midX + ratio * box.width * Math.cos(2 * Math.PI * col / (cols.length)) / 2,
       box.midY + ratio * box.width * Math.sin(2 * Math.PI * col / (cols.length)) / 2);
 
-    // axes
-    for (let i = 0; i < cols.length; i++)
-      g.line(box.midX, box.midY, p(i, 1).x, p(i, 1).y, DG.Color.lightGray);
-
     // points of axes' labels
     for (let i = 0; i < cols.length; i++) {
       if (!cols[i].isNone(row)) {
@@ -89,6 +85,11 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
         DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, point.x, point.y, DG.Color.blue, 1);
       }
     }
+
+    // axes
+    for (let i = 0; i < cols.length; i++)
+      g.line(box.midX, box.midY, p(i, 1).x, p(i, 1).y, DG.Color.lightGray);
+
 
     // Grid
 

@@ -44,7 +44,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   get defaultHeight(): number | null { return 80; }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
-    const settings = getSettings(gridCell.gridColumn);
+    const settings: any = getSettings(gridCell.gridColumn);
     const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames);
     const vectorX = e.layerX - gridCell.bounds.midX;
     const vectorY = e.layerY - gridCell.bounds.midY;
@@ -56,15 +56,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const row: number = gridCell.cell.row.idx;
 
     if (settings.style == 'bar chart') {
-      activeColumn = 0;
-      for (let i = 0; i < cols.length; i++) {
-        if (cols[i].isNone(gridCell.cell.row.idx))
-          continue;
-        if ((angle > 2 * Math.PI * i / cols.length) && (angle < 2 * Math.PI * (i + 1) / cols.length)) {
-          activeColumn = i;
-          break;
-        }
-      }
+      activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
       r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
       r = r < settings.minRadius ? settings.minRadius : r;
     } else {
