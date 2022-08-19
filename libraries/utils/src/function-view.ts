@@ -216,21 +216,194 @@ export class FunctionView extends DG.ViewBase {
    * @stability Experimental
  */
   public buildHistoryBlock(): HTMLElement {
-    const newHistoryBlock = ui.iconFA('history', () => {
-      this.pullRuns(this.func!.id).then(async (historicalRuns) => {
-        console.log(historicalRuns);
-        const menu = DG.Menu.popup();
-        for (const run of historicalRuns) {
-          menu.item(`${run.func.friendlyName} — ${run.id}`, async () => {
-            const loadedRun = await this.loadRun(run.id);
-            console.log(loadedRun);
-          });
-        }
+    const mainAcc = ui.accordion();
+    mainAcc.root.style.width = '100%';
+    mainAcc.addTitle(ui.span(['History']));
 
-        menu.show();
+    const buildFilterPane = () => {
+      const dateInput = ui.stringInput('Date', 'Any time');
+      dateInput.addPatternMenu('datetime');
+      const form =ui.divV([
+        ui.stringInput('Search', '', () => {}),
+        ui.choiceInput('User', 'Current user', ['Current user']),
+        dateInput,
+      ], 'ui-form-condensed ui-form');
+      form.style.marginLeft = '0px';
+
+      return form;
+    };
+    let filterPane = mainAcc.addPane('Filter', buildFilterPane);
+    const updateFilterPane = () => {
+      const isExpanded = filterPane.expanded;
+      mainAcc.removePane(filterPane);
+      filterPane = mainAcc.addPane('Filter', buildFilterPane, isExpanded, favoritesListPane);
+    };
+
+    const showAddToFavoritesDialog = (funcCall: DG.FuncCall) => {
+      let title = funcCall.options['title'] ?? '';
+      let annotation = funcCall.options['annotation'] ?? '';
+      const titleInput = ui.stringInput('Title', title, (s: string) => {
+        title = s;
+        if (s.length === 0) {
+          titleInput.setTooltip('Title cannot be empty');
+          setTimeout(() => titleInput.input.classList.add('d4-invalid'), 100);
+        } else {
+          titleInput.setTooltip('');
+          setTimeout(() => titleInput.input.classList.remove('d4-invalid'), 100);
+        }
       });
+
+      ui.dialog({title: 'Add to favorites'})
+        .add(ui.form([
+          titleInput,
+          ui.stringInput('Annotation', annotation, (s: string) => { annotation = s; }),
+        ]))
+        .onOK(async () => {
+          if (title.length > 0) {
+            funcCall.options['title'] = title;
+            funcCall.options['annotation'] = annotation;
+            await this.addRunToFavorites(funcCall);
+            updateHistoryPane();
+            updateFavoritesPane();
+          } else {
+            grok.shell.warning('Title cannot be empty');
+          }
+        })
+        .show({center: true});
+    };
+
+    const showDeleteFavoritesDialog = (funcCall: DG.FuncCall) => {
+      ui.dialog({title: 'Delete run'})
+        .add(ui.divText('The deleted run is impossible to restore. Are you sure?'))
+        .onOK(async () => {
+          await this.deleteRun(funcCall);
+          updateHistoryPane();
+        })
+        .show({center: true});
+    };
+
+    let historyCards = [] as HTMLElement[];
+    let favoriteCards = [] as HTMLElement[];
+    const renderFavoriteCards = async (funcCalls: DG.FuncCall[]) => {
+      favoriteCards = funcCalls.map((funcCall) => {
+        const solidStar = ui.iconFA('star', async (ev) => {
+          ev.stopPropagation();
+          await this.removeRunFromFavorites(funcCall);
+          updateHistoryPane();
+          updateFavoritesPane();
+        }, 'Unfavorite the run');
+        solidStar.classList.add('fas');
+
+        const card = ui.divH([
+          ui.divV([
+            ui.divText(funcCall.options['title'] ?? 'Default title', 'title'),
+            ...(funcCall.options['annotation']) ? [ui.divText(funcCall.options['annotation'], 'description')]: [],
+            ui.divH([ui.render(funcCall.author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
+          ]),
+          ui.divH([
+            ui.iconFA('pen', async (ev) => {
+              ev.stopPropagation();
+              showAddToFavoritesDialog(funcCall);
+            }, 'Edit run metadata'),
+            solidStar
+          ], 'funccall-card-icons')
+        ], 'funccall-card');
+
+        card.addEventListener('click', async () => {
+          this.linkFunccall(await this.loadRun(funcCall.id));
+          card.classList.add('clicked');
+        });
+        return card;
+      });
+
+      const allCards =[...historyCards, ...favoriteCards];
+      allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
+
+      return ui.divV(favoriteCards);
+    };
+
+    const renderHistoryCards = async (funcCalls: DG.FuncCall[]) => {
+      historyCards = funcCalls.map((funcCall) => {
+        const icon = funcCall.author.picture as HTMLElement;
+        icon.style.width = '25px';
+        icon.style.height = '25px';
+        icon.style.fontSize = '20px';
+        icon.style.marginRight = '3px';
+        icon.style.alignSelf = 'center';
+        const userLabel = ui.label(funcCall.author.friendlyName, 'd4-link-label');
+        ui.bind(funcCall.author, userLabel);
+
+        const card = ui.divH([
+          ui.divH([
+            icon,
+            ui.divV([
+              userLabel,
+              ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})])
+            ]),
+          ]),
+          ui.divH([
+            ui.iconFA('star', async (ev) => {
+              ev.stopPropagation();
+              showAddToFavoritesDialog(funcCall);
+            }, 'Pin the run'),
+            ui.iconFA('link', async (ev) => {
+              ev.stopPropagation();
+              await navigator.clipboard.writeText(`${window.location.href}`);
+            }, 'Copy link to the run'),
+            ui.iconFA('trash-alt', async (ev) => {
+              ev.stopPropagation();
+              showDeleteFavoritesDialog(funcCall);
+            }, 'Delete the run'),
+          ], 'funccall-card-icons')
+        ], 'funccall-card');
+
+        card.addEventListener('click', async () => {
+          this.linkFunccall(await this.loadRun(funcCall.id));
+          card.classList.add('clicked');
+        });
+
+        return card;
+      });
+
+      const allCards =[...historyCards, ...favoriteCards];
+      allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
+
+      return ui.divV(historyCards);
+    };
+
+    const buildFavoritesList = () => ui.wait(async () => {
+      const historicalRuns = await this.pullRuns(this.func!.id);
+      const pinnedRuns = historicalRuns.filter((run) => run.options['isFavorite']);
+      if (pinnedRuns.length > 0)
+        return ui.wait(() => renderFavoriteCards(pinnedRuns));
+      else
+        return ui.divText('No runs are marked as favorites', 'description');
     });
+    let favoritesListPane = mainAcc.addPane('Favorites', buildFavoritesList, true);
+    const updateFavoritesPane = () => {
+      const isExpanded = favoritesListPane.expanded;
+      mainAcc.removePane(favoritesListPane);
+      favoritesListPane = mainAcc.addPane('Favorites', buildFavoritesList, isExpanded, historyPane);
+    };
+
+    const buildHistoryPane = () => ui.wait(async () => {
+      const historicalRuns = (await this.pullRuns(this.func!.id)).filter((run) => !run.options['isFavorite']);
+      if (historicalRuns.length > 0)
+        return ui.wait(() => renderHistoryCards(historicalRuns));
+      else
+        return ui.divText('No runs are found in history', 'description');
+    });
+    let historyPane = mainAcc.addPane('History', buildHistoryPane, true);
+    const updateHistoryPane = () => {
+      const isExpanded = historyPane.expanded;
+      mainAcc.removePane(historyPane);
+      historyPane = mainAcc.addPane('History', buildHistoryPane, isExpanded);
+    };
+
+    const newHistoryBlock = mainAcc.root;
     ui.empty(this.historyRoot);
+    this.historyRoot.style.removeProperty('justify-content');
+    this.historyRoot.style.width = '100%';
     this.historyRoot.append(newHistoryBlock);
     return newHistoryBlock;
   }
@@ -241,6 +414,15 @@ export class FunctionView extends DG.ViewBase {
    * @stability Stable
  */
   buildRibbonPanels(): HTMLElement[][] {
+    const historyButton = ui.iconFA('history', () => {
+      grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
+      historyButton.classList.toggle('d4-current');
+      grok.shell.o = this.historyRoot;
+    });
+
+    historyButton.classList.add('d4-toggle-button');
+    if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
+
     const newRibbonPanels = [
       ...this.getRibbonPanels(),
       [...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [ui.divH([
@@ -248,7 +430,8 @@ export class FunctionView extends DG.ViewBase {
           ui.iconFA('arrow-to-bottom'),
           this.exportConfig.supportedFormats,
           async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format))),
-      ])]: []]
+      ])]: [],
+      historyButton]
     ];
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
@@ -288,16 +471,16 @@ export class FunctionView extends DG.ViewBase {
 
   /**
    * Saves the run as favorite
-   * @param callToFavorite FuncCall object to save
+   * @param callToFavorite FuncCall object to add to favorites
    * @returns Saved FuncCall
    * @stability Experimental
  */
   public async addRunToFavorites(callToFavorite: DG.FuncCall): Promise<DG.FuncCall> {
     callToFavorite.options['isFavorite'] = true;
     await this.onBeforeAddingToFavorites(callToFavorite);
-    const pinnedSave = await grok.dapi.functions.calls.save(callToFavorite);
-    await this.onAfterAddingToFavorites(pinnedSave);
-    return pinnedSave;
+    const savedFavorite = await grok.dapi.functions.calls.save(callToFavorite);
+    await this.onAfterAddingToFavorites(savedFavorite);
+    return savedFavorite;
   }
 
   public async onBeforeSaveRun(callToSave: DG.FuncCall) { }
@@ -313,6 +496,8 @@ export class FunctionView extends DG.ViewBase {
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await grok.dapi.functions.calls.save(callToSave);
+    this.buildHistoryBlock();
+
     await this.onAfterSaveRun(savedCall);
     return savedCall;
   }
@@ -357,7 +542,6 @@ export class FunctionView extends DG.ViewBase {
     await this.onBeforeLoadRun();
     const pulledRun = await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
     pulledRun.options['isHistorical'] = true;
-    console.log('pulledRun: ', pulledRun);
     await this.onAfterLoadRun(pulledRun);
     return pulledRun;
   }
