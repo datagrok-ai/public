@@ -12,6 +12,7 @@ function getSettings(gc: DG.GridColumn): SparklineSettings {
   return gc.settings ??= {
     ...getSettingsBase(gc),
     ...{globalScale: false},
+    ...{minDistance: 5},
   };
 }
 
@@ -24,12 +25,12 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
     // basic values and functions for calculations
     const df = gridCell.grid.dataFrame;
-    const minDistanse = 10;
 
     if (gridCell.bounds.width < 20 || gridCell.bounds.height < 10 || df === void 0) return;
 
     const row = gridCell.cell.row.idx;
-    const settings = getSettings(gridCell.gridColumn);
+    const settings: any = getSettings(gridCell.gridColumn);
+    const minDistanse = settings.minDistance;
     const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-3, -2);
 
     const cols = df.columns.byNames(settings.columnNames);
@@ -44,7 +45,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     }
 
     const MousePoint = new DG.Point(e.layerX, e.layerY);
-    const activeColumn = Math.floor((MousePoint.x - b.left + minDistanse) / b.width * (cols.length - 1));
+    const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistanse)) / b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
 
     const activePoint = getPos(activeColumn, row);
 
