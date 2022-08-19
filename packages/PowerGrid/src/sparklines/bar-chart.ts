@@ -6,12 +6,15 @@ import {createTooltip} from './helper';
 
 interface BarChartSettings extends SummarySettingsBase {
   // normalize: boolean;
+  minH: number;
+  colorCode: boolean;
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
   return gc.settings ??= {
     ...getSettingsBase(gc),
     ...{minH: 0.05},
+    ...{colorCode: false},
     // ...{normalize: true},
   };
 }
@@ -22,7 +25,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
   get cellType() { return 'barchart'; }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
-    const settings: any = getSettings(gridCell.gridColumn);
+    const settings = getSettings(gridCell.gridColumn);
     const df = gridCell.grid.dataFrame;
     const cols = df.columns.byNames(settings.columnNames);
     const row = gridCell.cell.row.idx;
@@ -59,16 +62,15 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
 
-    // g.fillRect(g, bb, Color.lightGray);
-    g.fillStyle = '#8080ff';
 
     for (let i = 0; i < cols.length; i++) {
       if (!cols[i].isNone(row)) {
+        let color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.blue;
+        g.setFillStyle(DG.Color.toRgb(color));
         const bb = b
           .getLeftPart(cols.length, i)
           .getBottomScaled(cols[i].scale(row) > settings.minH ? cols[i].scale(row) : settings.minH)
           .inflateRel(0.9, 1);
-
         g.fillRect(bb.left, bb.top, bb.width, bb.height);
       }
     }
@@ -78,6 +80,13 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     gc.settings ??= getSettings(gc);
     const settings = gc.settings;
 
+    const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
+      description: 'Activates color rendering'
+    });
+
+    const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
+    colorCodeNormalizeInput.onChanged(() => { gc.grid.invalidate(); });
+
     return ui.inputs([
       ui.columnsInput('Barchart columns', gc.grid.dataFrame, (columns) => {
         settings.columnNames = names(columns);
@@ -86,6 +95,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
         available: names(gc.grid.dataFrame.columns.numerical),
         checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
       }),
+      colorCodeNormalizeInput
     ]);
   }
 }
