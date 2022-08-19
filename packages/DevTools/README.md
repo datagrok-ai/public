@@ -30,21 +30,34 @@ Components:
    
    ![Test manager start](./img/test-mngr-start.png)
 
-   After starting the tool you will see a list of all package tests divided by package name. Inside each package, the tests
-   are divided by category. Using checkboxes you can choose which tests you want to run at a time. You can choose either
-   the whole package or required category or exact tests inside a category. After all required tests are selected click on
-   the `RUN` button at the top.
+   After starting the tool you will see a list of all packages which contain unit tests. Inside each package, the tests
+are divided by category. Categories support multiple nesting (in this case subcategories should be divided by `:`). 
+You can select required package/category/test by clicking on it. Also you can change selection by using `up` and `down` key buttons.
 
-   ![Tests list](./img/test-mngr-tests-list.png)
+![Tests list](./img/test-mngr-tests-list.png)
 
-   Failed tests are marked with a red cancel sign while passed tests are marked with a green tick mark.
+### Running tests
 
-   ![Tests list](./img/test-mngr-results.png)
+There are multiple ways you can run tests:
 
-   You can get more detailed information on test results by clicking on a test/category/package name. Information will be
-   shown on a property panel.
+- by right clicking on package, category or test. Context menu with `Run` button will appear
+- by selecting package, category or test and pushing `Enter`
+- by selecting package, category or test and pushing `Run` on a ribbon panel
+- by selecting package, category or test and pushing `Run` on a property panel
+- individual tests can be run by double click
+- you can run all tests at once using `Run all` button on the ribbon
+- package, category or test can be run by putting the corresponding url into address bar of the browser. The format is the following `your_server_name/apps/DevTools/TestManager/package_name/category_name/test_name`
+Progress bar on the bottom of the page will show the percentage of completed tests. Also you will see the progress icon opposite to active test/category/package which will end up in result icon after completion. In case at least one test fails within category or package the fail icon will be shown.
 
-   ![Tests property panel](./img/test-mngr-property-panel.png)
+![Running tests](./img/running_tests.gif)
+![Progress bar](./img/test_manager_progress_bar.png)
+
+### Reviewing results
+You can get information about test results via tooltip or in the property panel for the selected test, category or package.
+In case category/package contain multiple tests results are shown as a grid which can be added to workspace for further exploration.
+
+![Test results](./img/test_results.gif)
+
 
 
 See also:
