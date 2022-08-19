@@ -50,6 +50,7 @@ There are multiple ways you can run tests:
 Progress bar on the bottom of the page will show the percentage of completed tests. Also you will see the progress icon opposite to active test/category/package which will end up in result icon after completion. In case at least one test fails within category or package the fail icon will be shown.
 
 ![Running tests](./img/running_tests.gif)
+
 ![Progress bar](./img/test_manager_progress_bar.png)
 
 ### Reviewing results
