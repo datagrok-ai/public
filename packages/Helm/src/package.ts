@@ -93,7 +93,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 //input: string mol { semType: Macromolecule }
 export function openEditor(mol: string): void {
   let df = grok.shell.tv.grid.dataFrame;
-  let converter = new NotationConverter(df.col('sequence'));
+  let converter = new NotationConverter(df.columns.bySemType('Macromolecule'));
   const resStr = converter.convertStringToHelm(mol, '/');
   webEditor(resStr);
 }
