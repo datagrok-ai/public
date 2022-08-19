@@ -1,10 +1,11 @@
 {
-  "dataSource": "Files",
+  "dataSource": "S3",
   "parameters": {
-    "dir": "",
-    "hiddenRoot": "${PROJECT_ROOT}/files/demo",
-    "indexFiles": true
-  },
-  "name": "Files",
-  "friendlyName": "DemoXL Files"
+  "dir": "/packages/demo/files/demo",
+  "region": "us-east-2",
+  "bucket": "datagrok-data",
+  "anonymous": true
+},
+"name": "Files",
+"friendlyName": "DemoXL Files"
 }
