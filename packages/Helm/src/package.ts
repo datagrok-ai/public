@@ -82,9 +82,11 @@ export function webEditor(value: string) {
 //description: Macromolecule
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell): void {
-  let grid = grok.shell.tv.grid;
-  webEditor(cell.cell.value);
-  grid.invalidate();
+  if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'helm') {
+    let grid = grok.shell.tv.grid;
+    webEditor(cell.cell.value);
+    grid.invalidate();
+  }
 }
 
 //name: Open Helm Web Editor
