@@ -55,7 +55,7 @@ export async function getActivityCliffs(
     similarityMetric: string, 
     methodName: string, 
     semType: string,
-    units: string,
+    tags: {[index: string]: string},
     seqSpaceFunc: (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>,
     simFunc: (col: DG.Column, mol: string) => Promise<DG.Column | null>,
     tooltipDrawFunc: (params: IDrawTooltipParams) => void,
@@ -160,7 +160,7 @@ export async function getActivityCliffs(
   })) as DG.ScatterPlotViewer;
 
   const canvas = (sp.getInfo() as any)['canvas'];
-  const linesRes = createLines(n1, n2, seqCol, activities, saliVals, semType, units);
+  const linesRes = createLines(n1, n2, seqCol, activities, saliVals, semType, tags);
   const tooltips: any = {};
 
   linesRes.linesDf.onCurrentCellChanged.subscribe(() => {
@@ -341,7 +341,7 @@ function createLines(
   activities: DG.Column, 
   saliVals: number[],
   semType: string,
-  units: string) : IRenderedLines {
+  tags: {[index: string]: string}) : IRenderedLines {
   const lines: ILine[] = [];
   for (let i = 0; i < n1.length; i++) {
     const num1 = n1[i];
@@ -355,11 +355,17 @@ function createLines(
     .init((i: number) => Math.abs(activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1])));
   linesDf.columns.addNewInt('line_index').init((i: number) => i);
   linesDf.columns.addNewFloat('sali').init((i: number) => saliVals[i]);
-  linesDf.col('1_seq')!.tags[DG.TAGS.UNITS] = units;
-  linesDf.col('2_seq')!.tags[DG.TAGS.UNITS] = units;
+  setTags(linesDf.col('1_seq')!, tags);
+  setTags(linesDf.col('2_seq')!, tags);
   linesDf.col('1_seq')!.semType = semType;
   linesDf.col('2_seq')!.semType = semType;
   return {lines, linesDf};
+}
+
+function setTags(col: DG.Column, tags: {[index: string]: string}) {
+  Object.keys(tags).forEach(tag => {
+    col.tags[tag] = tags[tag];
+  })
 }
 
 export async function getSimilaritiesMarix(
