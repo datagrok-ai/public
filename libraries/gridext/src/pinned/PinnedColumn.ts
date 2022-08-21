@@ -132,6 +132,7 @@ export class PinnedColumn {
   private m_handlerRowsSorted : any;
   private m_handlerMouseDown : any;
   private m_handlerMouseUp : any;
+  private m_handlerMouseDblClk: any;
   private m_handlerMouseLeave : any;
   private m_handlerMouseMove : any;
   private m_handlerMouseWheel : any;
@@ -380,6 +381,7 @@ export class PinnedColumn {
       }
 
       const eMouse = e as MouseEvent;
+      //eMouse.
 
       if(nResizeRowGridDragging >= 0) {
         const nHRow = GridUtils.getGridRowHeight(grid);
@@ -492,6 +494,32 @@ export class PinnedColumn {
       }
     });
 
+
+    let bSortedAscending : boolean | null = null;
+    this.m_handlerMouseDblClk = rxjs.fromEvent(eCanvasThis, 'dblclick').subscribe((e) => {
+
+      if (DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
+        return;
+      }
+
+      if(colGrid.name === '')
+        return;
+
+      if(bSortedAscending == null)
+        bSortedAscending = true;
+      else if(bSortedAscending)
+        bSortedAscending = false;
+      else bSortedAscending = true;
+
+      const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
+      const eMouse = e as MouseEvent;
+
+      if(0 <= eMouse.offsetX && eMouse.offsetX <= eCanvasThis.offsetWidth &&
+          0 <= eMouse.offsetY && eMouse.offsetY <= nHHeaderCols)   //on the rows header
+      {
+        grid.sort([colGrid.name], [bSortedAscending]);
+      }
+    });
 
     this.m_handlerMouseMove = rxjs.fromEvent(document, 'mousemove').subscribe((e) => {
 
@@ -680,6 +708,9 @@ export class PinnedColumn {
 
     this.m_handlerSel.unsubscribe();
     this.m_handlerSel = null;
+
+    this.m_handlerMouseDblClk.unsubscribe();
+    this.m_handlerMouseDblClk = null;
 
     this.m_handlerMouseDown.unsubscribe();
     this.m_handlerMouseDown = null;
