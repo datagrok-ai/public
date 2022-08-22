@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
@@ -31,7 +31,7 @@
   ],
   "dependencies": {
     "datagrok-api": "^1.5.4",
-    "@datagrok-libraries/ml": "^3.0.3",
+    "@datagrok-libraries/ml": "^3.0.5",
     "@datagrok-libraries/utils": "^1.5.4",
     "cash-dom": "latest",
     "dayjs": "latest",
