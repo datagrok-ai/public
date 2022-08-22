@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {getSettingsBase, names, SummarySettingsBase} from './shared';
-import {createTooltip} from './helper';
+import {createTooltip, Hit} from './helper';
 
 
 interface BarChartSettings extends SummarySettingsBase {
@@ -19,29 +19,41 @@ function getSettings(gc: DG.GridColumn): BarChartSettings {
   };
 }
 
+function onHit(gridCell: DG.GridCell, e: MouseEvent | any): Hit {
+  const settings = getSettings(gridCell.gridColumn);
+  const df = gridCell.grid.dataFrame;
+  const cols = df.columns.byNames(settings.columnNames);
+  const row = gridCell.cell.row.idx;
+  const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-2, -2);
+  const width = b.width / cols.length;
+  const activeColumn = Math.floor((e.layerX - b.left) / width);
+  let answer: Hit = {
+    isHit: false,
+    activeColumn: activeColumn,
+    row: row,
+    cols: cols,
+  };
+  if ((activeColumn > cols.length) || (activeColumn < 0)) {
+    return answer;
+  }
+  const bb = b
+    .getLeftPart(cols.length, activeColumn)
+    .getBottomScaled(cols[activeColumn].scale(row) > settings.minH ? cols[activeColumn].scale(row) : settings.minH)
+    .inflateRel(0.9, 1);
+  answer.isHit = (e.layerY >= bb.top);
+  return answer;
+}
+
+
 export class BarChartCellRenderer extends DG.GridCellRenderer {
   get name() { return 'bar ts'; }
 
   get cellType() { return 'barchart'; }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
-    const settings = getSettings(gridCell.gridColumn);
-    const df = gridCell.grid.dataFrame;
-    const cols = df.columns.byNames(settings.columnNames);
-    const row = gridCell.cell.row.idx;
-    const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-2, -2);
-    const width = b.width / cols.length;
-    const activeColumn = Math.floor((e.layerX - b.left) / width);
-    if ((activeColumn > cols.length) || (activeColumn < 0)) {
-      ui.tooltip.hide();
-      return;
-    }
-    const bb = b
-      .getLeftPart(cols.length, activeColumn)
-      .getBottomScaled(cols[activeColumn].scale(row) > settings.minH ? cols[activeColumn].scale(row) : settings.minH)
-      .inflateRel(0.9, 1);
-    if (e.layerY >= bb.top) {
-      ui.tooltip.show(ui.divV(createTooltip(cols, activeColumn, row)), e.x + 16, e.y + 16);
+    const hitData = onHit(gridCell, e);
+    if (hitData.isHit) {
+      ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
     } else {
       ui.tooltip.hide();
     }

@@ -6,6 +6,13 @@ export function distance(p1: DG.Point, p2: DG.Point): number {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
 }
 
+export class Hit {
+  activeColumn: number = -1;
+  cols: DG.Column[] = [];
+  row: number = -1;
+  isHit: boolean = false;
+}
+
 export function createTooltip(cols: any, activeColumn: number, row: any): any {
   let arr: any = [];
   for (let i = 0; i < cols.length; i++) {
