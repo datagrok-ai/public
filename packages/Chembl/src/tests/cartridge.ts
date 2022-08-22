@@ -13,9 +13,7 @@ category('Cartridge usage', () => {
     if (df != null)
       grok.shell.closeTable(df);
   });
-});
 
-category('Cartridge usage', () => {
   test('Similarity threshold pattern', async () => {
     const df = await grok.data.query(`${_package.name}:patternSimilaritySearchWithThreshold`,
       {'pattern': 'Cc1ccc2nc(N(C)CC(=O)O)sc2c1', 'threshold': '0.7'});
@@ -25,9 +23,7 @@ category('Cartridge usage', () => {
     if (df != null)
       grok.shell.closeTable(df);
   });
-});
 
-category('Cartridge usage', () => {
   test('Substructure pattern', async () => {
     const df = await grok.data.query(`${_package.name}:patternSubstructureSearch`, {'pattern': 'c1ccccc1', 'maxRows': 1000});
 
