@@ -122,7 +122,12 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
   const options = {
     'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
   };
-  const units = macroMolecule!.tags[DG.TAGS.UNITS];
+  const tags = {
+    'units': macroMolecule.tags['units'],
+    'aligned': macroMolecule.tags['aligned'],
+    'separator': macroMolecule.tags['separator'],
+    'alphabet': macroMolecule.tags['alphabet'],
+  }
   const sp = await getActivityCliffs(
     df,
     macroMolecule,
@@ -134,7 +139,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'Levenshtein',
     methodName,
     DG.SEMTYPE.MACROMOLECULE,
-    units,
+    tags,
     sequenceSpace,
     sequenceGetSimilarities,
     drawTooltip,
@@ -171,7 +176,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   for (const col of embeddings) {
       const listValues = col.toList();
       emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-      table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
+      table.columns.add(DG.Column.fromList('double', col.name, listValues));
   }
   let sp;   
   if (plotEmbeddings) {
@@ -196,22 +201,6 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   if (!checkInputColumn(macroMolecule, 'To Atomic Level'))
     return;
 
-  let currentView: DG.TableView;
-  for (const view of grok.shell.tableViews) {
-    if (df.name === view.name)
-      currentView = view;
-  }
-
-  // Some hack to activate Chem Molecule rendering
-  const file2 = await _package.files.readAsText('tests/sar-small.csv');
-  const df2 = DG.DataFrame.fromCsv(file2);
-  const v2 = grok.shell.addTableView(df2);
-  setTimeout(() => {
-    grok.shell.closeTable(df2);
-    v2.close();
-    grok.shell.v = currentView;
-  }, 100);
-
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
   const atomicCodes = getMolfilesFromSeq(macroMolecule, monomersLibObject);
@@ -221,6 +210,7 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   col.semType = DG.SEMTYPE.MOLECULE;
   col.tags[DG.TAGS.UNITS] = 'molblock';
   df.columns.add(col, true);
+  await grok.data.detectSemanticTypes(df);
 }
 
 
