@@ -90,7 +90,3 @@ export async function TestDetectorsStandard() {
   grok.shell.addTableView(df);
 }
 
-//name: DummyFuncToInit
-export function DummyFuncToInit() {
-  return 0;
-}

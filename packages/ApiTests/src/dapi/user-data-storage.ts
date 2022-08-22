@@ -1,10 +1,10 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 category('Dapi: user data storage', () => {
-  test('Dapi: user data storage - post and get value', async () => {
+  test('post and get value', async () => {
     const storageName = 'js-api-storage-name1';
     const key = 'postValueKey';
     const value = 'value';
@@ -12,7 +12,7 @@ category('Dapi: user data storage', () => {
     expect(await grok.dapi.userDataStorage.getValue(storageName, key), value);
   });
 
-  test('Dapi: user data storage - post and get map', async () => {
+  test('post and get map', async () => {
     const storageName = 'js-api-storage-name2';
     const value = {'key': 'value'};
     await grok.dapi.userDataStorage.post(storageName, value);
@@ -20,21 +20,20 @@ category('Dapi: user data storage', () => {
     expect(JSON.stringify(receivedValue), JSON.stringify(value));
   });
 
-  test('Dapi: user data storage - put', async () => {
+  test('put', async () => {
     const storageName = 'js-api-storage-name3';
     const value1 = {'key1': 'value1'};
     const value2 = {'key2': 'value2'};
 
     await grok.dapi.userDataStorage.post(storageName, value1);
     await grok.dapi.userDataStorage.post(storageName, value2);
-    expect(JSON.stringify(await grok.dapi.userDataStorage.get(storageName)),
-      JSON.stringify({'key1': 'value1', 'key2': 'value2'}));
+    expectObject(await grok.dapi.userDataStorage.get(storageName), {'key1': 'value1', 'key2': 'value2'});
     await grok.dapi.userDataStorage.put(storageName, value2);
     const receivedValue = await grok.dapi.userDataStorage.get(storageName);
-    expect(JSON.stringify(receivedValue), JSON.stringify(value2));
+    expectObject(receivedValue, value2);
   });
 
-  test('Dapi: user data storage - delete', async () => {
+  test('delete', async () => {
     const storageName = 'js-api-storage-name4';
     const key = 'postValueKey';
     const value = 'value';

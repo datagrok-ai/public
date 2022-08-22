@@ -19,7 +19,7 @@ category('Grid', () => {
     const firstCol = grid.columns.byIndex(4);
     const secondCol = grid.columns.byIndex(6);
     if (firstCol?.name != 'race' || secondCol?.name != 'age')
-      // eslint-disable-next-line no-throw-literal
+      
       throw 'grid.setOrder does not work';
   });
 
@@ -31,7 +31,7 @@ category('Grid', () => {
   test('filter', async () => {
     demog.rows.match('sex = M').filter();
     if (demog.filter.trueCount != 605)
-      // eslint-disable-next-line no-throw-literal
+      
       throw 'Filtering error';
   });
 
@@ -53,7 +53,7 @@ category('Grid', () => {
     const raceTags: string[] = Array.from(demog.col('race')!.tags);
     if (!hasTag(raceTags, '.color-coding-categorical') ||
       !hasTag(raceTags, '{"Asian":4278190335,"Black":4286578816,"Caucasian":4278547786,"Other":4293188935}'))
-      // eslint-disable-next-line no-throw-literal
+      
       throw 'Categorical Color Coding error';
 
     //numerical HEIGHT column check for Conditional ColorCoding
@@ -62,7 +62,7 @@ category('Grid', () => {
       !hasTag(heightTags, 'Conditional') ||
       !hasTag(heightTags, '.color-coding-conditional') ||
       !hasTag(heightTags, '{"20-170":"#00FF00","170-190":"#220505"}'))
-      // eslint-disable-next-line no-throw-literal
+      
       throw 'Conditional Color Coding error';
 
     //numerical AGE column check for Linear ColorCoding
@@ -71,7 +71,7 @@ category('Grid', () => {
       !hasTag(ageTags, 'Linear') ||
       !hasTag(ageTags, '.color-coding-linear') ||
       !hasTag(ageTags, '[4294944000, 4278255360]'))
-      // eslint-disable-next-line no-throw-literal
+      
       throw 'Linear Color Coding error';
   });
 
@@ -82,11 +82,11 @@ category('Grid', () => {
     const diseaseColVisible = grid.columns.byName('disease')!.visible;
 
     if (studyColVisible)
-      // eslint-disable-next-line no-throw-literal
+      
       throw 'Hiding a column by adding ~ to the name doesn\'t work';
 
     if (diseaseColVisible)
-      // eslint-disable-next-line no-throw-literal
+      
       throw 'Hiding a column by using columns.setVisible doesn\'t work';
   });
 
@@ -101,7 +101,7 @@ category('Grid', () => {
       !hasTag(siteTags, '["New York", "Buffalo"]') ||
       !hasTag(siteTags, '.auto-choices') ||
       !hasTag(siteTags, 'New York'))
-      // eslint-disable-next-line no-throw-literal
+      
       throw 'Column Controlled Values (Choices) error';
   });
 
