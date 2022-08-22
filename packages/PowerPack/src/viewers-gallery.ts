@@ -222,11 +222,11 @@ export async function viewersGallery() {
                 disabled: false
             }
         });
-
+        /*
         if (i < 7) {
             viewers[i].recommend = true;
         }
-
+        */
         if (cat_comparisons.indexOf(viewers[i].name) != -1) {
             viewers[i].category = 'Comparisons';
         } else if (cat_trends.indexOf(viewers[i].name) != -1) {
