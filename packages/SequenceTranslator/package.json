@@ -15,7 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^0.1.0",
     "@types/react": "^18.0.15",
-    "datagrok-api": "^1.1.7",
+    "datagrok-api": "^1.6.0",
     "datagrok-tools": "^4.1.2",
     "npm": "^8.11.0",
     "openchemlib": "6.0.1",
