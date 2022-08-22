@@ -261,7 +261,7 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
   'Tanimoto',
   methodName,
   DG.SEMTYPE.MOLECULE,
-  'smiles',
+  {'units': smiles.tags['units']},
   chemSpace,
   chemSearches.chemGetSimilarities,
   drawTooltip,
@@ -292,7 +292,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, m
   for (const col of embeddings) {
     const listValues = col.toList();
     emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-    table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
+    table.columns.add(DG.Column.fromList('double', col.name, listValues));
   }
   let sp;
   if (plotEmbeddings) {
