@@ -8,8 +8,10 @@ var { jStat } = require('jstat')
 
 
 export async function _testChemSpaceReturnsResult(df: DG.DataFrame, algorithm: string) {
+  const v = grok.shell.addTableView(df);
   const sp = await chemSpaceTopMenu(df, df.col('smiles')!, algorithm, 'Tanimoto', true);
   expect(sp != null, true);
+  v.close();
 }
 
 export async function _testDimensionalityReducer(col: DG.Column, algorithm: string) {
