@@ -11,6 +11,7 @@ import {
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {assure} from '@datagrok-libraries/utils/src/test';
+import { ScatterPlotViewer, Viewer } from 'datagrok-api/dg';
 
 const enum FING_COL_TAGS{
   invalidatedForVersion = '.invalideted.for.version',

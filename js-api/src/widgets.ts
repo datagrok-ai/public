@@ -114,7 +114,7 @@ export class ObjectPropertyBag {
 
 
 /** Base class for controls that have a visual root and a set of properties. */
-export class Widget {
+export class Widget<TSettings = any> {
 
   /** Contains auxiliary information */
   public temp: any;
@@ -124,7 +124,7 @@ export class Widget {
 
   protected _root: HTMLElement;
   protected _properties: Property[];
-  props: any; //ObjectPropertyBag;
+  props: TSettings & ObjectPropertyBag; //ObjectPropertyBag;
   subs: Subscription[];
   dart: any;
   isDetached: boolean = false;
@@ -139,6 +139,7 @@ export class Widget {
     this._properties = [];
 
     /** @member {ObjectPropertyBag} */
+    // @ts-ignore
     this.props = new ObjectPropertyBag(this);
 
     /** @member {StreamSubscription[]} */

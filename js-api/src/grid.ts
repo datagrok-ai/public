@@ -620,7 +620,7 @@ export class GridColumnList {
 
 
 /** High-performance, flexible spreadsheet control */
-export class Grid extends Viewer {
+export class Grid<TSettings = any> extends Viewer<TSettings> {
 
   constructor(dart: any) {
     super(dart);

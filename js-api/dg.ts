@@ -6,6 +6,7 @@ import $ from 'cash-dom';
 import * as dayjs from 'dayjs';
 import * as wu from 'wu';
 
+export * from './src/interfaces/d4';
 export * from './src/const';
 export * from './src/events';
 export * from './src/dapi';
