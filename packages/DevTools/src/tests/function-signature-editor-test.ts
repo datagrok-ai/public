@@ -7,7 +7,6 @@ const delayForRender = 500;
 
 category('FSE exists', ()=> {
   before(async ()=> {
-    await grok.functions.call('DevTools:DummyFuncToInit');
     const v = DG.View.createByType('ScriptView');
     grok.shell.addView(v);
     await delay(delayForRender);
@@ -27,7 +26,6 @@ category('FSE exists', ()=> {
 
 category('FSE opens', () => {
   before(async ()=> {
-    await grok.functions.call('DevTools:DummyFuncToInit');
     const v = DG.View.createByType('ScriptView');
     grok.shell.addView(v);
     await delay(delayForRender);
@@ -56,7 +54,6 @@ category('FSE opens', () => {
 
 category('FSE closes', () => {
   before(async ()=> {
-    await grok.functions.call('DevTools:DummyFuncToInit');
     const v = DG.View.createByType('ScriptView');
     grok.shell.addView(v);
     await delay(delayForRender);
