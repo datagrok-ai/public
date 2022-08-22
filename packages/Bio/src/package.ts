@@ -16,14 +16,18 @@ import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
 import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cliffs';
-import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
-import {getMacroMol} from './utils/atomic-works';
+import {
+  createJsonMonomerLibFromSdf,
+  encodeMonomers,
+  HELM_CORE_LIB_FILENAME
+} from '@datagrok-libraries/bio/src/utils/monomer-utils';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {representationsWidget} from './widgets/representations';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {_toAtomicLevel} from '@datagrok-libraries/bio/src/utils/to-atomic-level';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
-import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils'
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 
 
 //tags: init
@@ -51,7 +55,7 @@ export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRender
 function checkInputColumn(col: DG.Column, name: string,
   allowedNotations: string[] = [], allowedAlphabets: string[] = []): boolean {
   const notation: string = col.getTag(DG.TAGS.UNITS);
-  const alphabet: string = col.getTag('alphabet')
+  const alphabet: string = col.getTag('alphabet');
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE) {
     grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
     return false;
@@ -122,12 +126,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
   const options = {
     'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
   };
-  const tags = {
-    'units': macroMolecule.tags['units'],
-    'aligned': macroMolecule.tags['aligned'],
-    'separator': macroMolecule.tags['separator'],
-    'alphabet': macroMolecule.tags['alphabet'],
-  }
+  const units = macroMolecule!.tags[DG.TAGS.UNITS];
   const sp = await getActivityCliffs(
     df,
     macroMolecule,
@@ -139,12 +138,13 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'Levenshtein',
     methodName,
     DG.SEMTYPE.MACROMOLECULE,
-    tags,
+    units,
     sequenceSpace,
     sequenceGetSimilarities,
     drawTooltip,
-    (options as any)[methodName]);
-    return sp;
+    (options as any)[methodName]
+  );
+  return sp;
 }
 
 //top-menu: Bio | Sequence Space...
@@ -174,11 +174,11 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   const sequenceSpaceRes = await sequenceSpace(chemSpaceParams);
   const embeddings = sequenceSpaceRes.coordinates;
   for (const col of embeddings) {
-      const listValues = col.toList();
-      emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-      table.columns.add(DG.Column.fromList('double', col.name, listValues));
+    const listValues = col.toList();
+    emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
+    table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
   }
-  let sp;   
+  let sp;
   if (plotEmbeddings) {
     for (const v of grok.shell.views) {
       if (v.name === table.name)
@@ -194,25 +194,12 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
 //input: dataframe df [Input data table]
 //input: column macroMolecule {semType: Macromolecule}
 export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column): Promise<void> {
-  if (DG.Func.find({package: 'Chem', name: 'getRdKitModule'}).length === 0) {
-    grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
-    return;
-  }
   if (!checkInputColumn(macroMolecule, 'To Atomic Level'))
     return;
-
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-  const atomicCodes = getMolfilesFromSeq(macroMolecule, monomersLibObject);
-  const result = await getMacroMol(atomicCodes!);
-
-  const col = DG.Column.fromStrings('regenerated', result);
-  col.semType = DG.SEMTYPE.MOLECULE;
-  col.tags[DG.TAGS.UNITS] = 'molblock';
-  df.columns.add(col, true);
-  await grok.data.detectSemanticTypes(df);
+  _toAtomicLevel(df, macroMolecule, monomersLibObject);
 }
-
 
 //top-menu: Bio | MSA...
 //name: MSA

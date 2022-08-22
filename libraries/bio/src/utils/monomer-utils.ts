@@ -1,16 +1,15 @@
 import * as DG from 'datagrok-api/dg';
-import {WebLogo, SplitterFunc} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {WebLogo, SplitterFunc} from '../../src/viewers/web-logo';
 import * as grok from 'datagrok-api/grok';
 import {
   CAP_GROUP_NAME, CAP_GROUP_SMILES, jsonSdfMonomerLibDict, MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, MONOMER_SYMBOL,
   RGROUP_ALTER_ID, RGROUP_FIELD, RGROUP_LABEL, SDF_MONOMER_NAME
-} from '../const';
+} from './const';
 
 export const HELM_CORE_LIB_FILENAME = '/samples/HELMCoreLibrary.json';
 export const HELM_CORE_LIB_MONOMER_SYMBOL = 'symbol';
 export const HELM_CORE_LIB_MOLFILE = 'molfile';
 export const HELM_CORE_FIELDS = ['symbol', 'molfile', 'rgroups', 'name'];
-
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
@@ -97,7 +96,6 @@ export function createMomomersMolDict(lib: any[]): { [key: string]: string | any
   });
   return dict;
 }
-
 
 export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
   const resultLib = [];

@@ -1,11 +1,20 @@
 import * as OCL from 'openchemlib/full.js';
 import * as grok from 'datagrok-api/grok';
 
+type Indices = {
+  first: number,
+  last: number,
+  remFirst: number,
+  remLast: number,
+  remBondFirst: number,
+  remBondLast: Number
+}
+
 export async function getMacroMol(monomers: any[][]): Promise<string[]> {
-  let result: string[] = [];
+  const result: string[] = [];
   const moduleRdkit = await grok.functions.call('Chem:getRdKitModule');
-  for(let i = 0; i < monomers.length; i++) {
-    for (let j = 0; j < monomers[i].length; j++){
+  for (let i = 0; i < monomers.length; i++) {
+    for (let j = 0; j < monomers[i].length; j++) {
       const mol = moduleRdkit.get_mol(monomers[i][j]['molfile']);
       const a = mol.get_v3Kmolblock();
       const indices = getIndices(monomers[i][j], a);
@@ -20,17 +29,15 @@ export async function getMacroMol(monomers: any[][]): Promise<string[]> {
   return result;
 }
 
-function getIndices(monomer: any, molV3000: string): {first: number, last: number, 
-                                    remFirst: number, remLast: number, 
-                                    remBondFirst: number, remBondLast: Number} {
-  const molfile = monomer["molfile"];
+function getIndices(monomer: any, molV3000: string): Indices {
+  const molfile = monomer['molfile'];
   let indexStart = molfile.indexOf('M  RGP', 0) + 8;
   let indexEnd = molfile.indexOf('\n', indexStart);
   const indicesData = molfile.substring(indexStart, indexEnd).replaceAll('  ', ' ').replaceAll('  ', ' ');
-  let parsedData = indicesData.split(' ')
+  let parsedData = indicesData.split(' ');
   const remFirst = parsedData[2] == '1' ? parseInt(parsedData[1]) : parseInt(parsedData[3]);
   const remLast = parsedData[2] == '2' ? parseInt(parsedData[1]) : parseInt(parsedData[3]);
-  
+
   const numbers = extractAtomsBondsNumbersV3000(molV3000);
   let indexBonds = molV3000.indexOf('M  V30 BEGIN BOND'); // V3000 index for bonds
   indexBonds = molV3000.indexOf('\n', indexBonds);
@@ -43,25 +50,22 @@ function getIndices(monomer: any, molV3000: string): {first: number, last: numbe
   let remBondLast = 0;
 
   for (let j = 0; j < numbers.nbond; j++) {
-    if(first == 0 || last == 0){
+    if (first == 0 || last == 0) {
       indexStart = molV3000.indexOf('V30', indexStart) + 4;
       indexEnd = molV3000.indexOf('\n', indexStart);
       const bondData = molV3000.substring(indexStart, indexEnd).replaceAll('  ', ' ').replaceAll('  ', ' ');
-      parsedData = bondData.split(' ')
+      parsedData = bondData.split(' ');
 
-      if(parseInt(parsedData[2]) == remFirst){
+      if (parseInt(parsedData[2]) == remFirst) {
         first = parseInt(parsedData[3]);
         remBondFirst = parseInt(parsedData[0]);
-      }
-      else if(parseInt(parsedData[3]) == remFirst){
+      } else if (parseInt(parsedData[3]) == remFirst) {
         first = parseInt(parsedData[2]);
         remBondFirst = parseInt(parsedData[0]);
-      }
-      else if(parseInt(parsedData[2]) == remLast){
+      } else if (parseInt(parsedData[2]) == remLast) {
         last = parseInt(parsedData[3]);
         remBondLast = parseInt(parsedData[0]);
-      }
-      else if(parseInt(parsedData[3]) == remLast){
+      } else if (parseInt(parsedData[3]) == remLast) {
         last = parseInt(parsedData[2]);
         remBondLast = parseInt(parsedData[0]);
       }
@@ -93,7 +97,7 @@ async function rotateBackboneV3000(molBlock: string, indices:any): Promise<strin
     angle = coordinates.x[first] > coordinates.x[last] ? Math.PI : 0;
   else {
     const derivative = coordinates.y[first]/coordinates.x[first];
-    if(coordinates.x[first] < coordinates.x[last])
+    if (coordinates.x[first] < coordinates.x[last])
       angle = derivative > 0 ? Math.PI - Math.atan(derivative) : Math.atan(derivative);
     else
       angle = derivative > 0 ? Math.atan(derivative) : Math.PI - Math.atan(derivative);
@@ -174,7 +178,7 @@ function linkV3000(monomers: any[]): string {
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
   let atomBlock = '';
   let bondBlock = '';
-  let collectionBlock = '';
+  const collectionBlock = '';
   const collection: number [] = [];
   let natom = 0;
   let nbond = 0;
@@ -204,10 +208,10 @@ function linkV3000(monomers: any[]): string {
         //rewrite atom number
         index = molfile.indexOf('V30', index) + 4;
         indexEnd = molfile.indexOf(' ', index);
-  
-        let atomNumber = parseInt(molfile.substring(index, indexEnd))
+
+        let atomNumber = parseInt(molfile.substring(index, indexEnd));
         atomNumber = (atomNumber > remFirst && atomNumber > remLast) ? atomNumber - 2 :
-                     (atomNumber > remFirst || atomNumber > remLast) ? atomNumber - 1 : atomNumber;
+          (atomNumber > remFirst || atomNumber > remLast) ? atomNumber - 1 : atomNumber;
         atomNumber += natom;
         molfile = molfile.slice(0, index) + atomNumber + molfile.slice(indexEnd);
 
@@ -247,15 +251,15 @@ function linkV3000(monomers: any[]): string {
       indexEnd = molfile.indexOf(' ', index);
       bondNumber = parseInt(molfile.substring(index, indexEnd));
 
-      if(bondNumber == remBondFirst || bondNumber == remBondLast){
+      if (bondNumber == remBondFirst || bondNumber == remBondLast) {
         indexEnd = molfile.indexOf('\n', index) + 1;
         index -=7;
         molfile = molfile.slice(0, index) + molfile.slice(indexEnd);
-        continue
+        continue;
       }
 
       bondNumber = (bondNumber > remBondFirst && bondNumber > remBondLast) ? bondNumber - 2 :
-                   (bondNumber > remBondFirst || bondNumber > remBondLast) ? bondNumber - 1 : bondNumber;
+        (bondNumber > remBondFirst || bondNumber > remBondLast) ? bondNumber - 1 : bondNumber;
       bondNumber += nbond;
 
       molfile = molfile.slice(0, index) + bondNumber + molfile.slice(indexEnd);
@@ -264,16 +268,16 @@ function linkV3000(monomers: any[]): string {
       index = molfile.indexOf(' ', index) + 1;
       index = molfile.indexOf(' ', index) + 1;
       indexEnd = molfile.indexOf(' ', index);
-      let atomNumber = parseInt(molfile.substring(index, indexEnd))
+      let atomNumber = parseInt(molfile.substring(index, indexEnd));
       atomNumber = (atomNumber > remFirst && atomNumber > remLast) ? atomNumber - 2 :
-                   (atomNumber > remFirst || atomNumber > remLast) ? atomNumber - 1 : atomNumber;
+        (atomNumber > remFirst || atomNumber > remLast) ? atomNumber - 1 : atomNumber;
       atomNumber += natom;
       molfile = molfile.slice(0, index) + atomNumber + molfile.slice(indexEnd);
       index = molfile.indexOf(' ', index) + 1;
       indexEnd = Math.min(molfile.indexOf('\n', index), molfile.indexOf(' ', index));
-      atomNumber = parseInt(molfile.substring(index, indexEnd))
+      atomNumber = parseInt(molfile.substring(index, indexEnd));
       atomNumber = (atomNumber > remFirst && atomNumber > remLast) ? atomNumber - 2 :
-                   (atomNumber > remFirst || atomNumber > remLast) ? atomNumber - 1 : atomNumber;
+        (atomNumber > remFirst || atomNumber > remLast) ? atomNumber - 1 : atomNumber;
       atomNumber += natom;
       molfile = molfile.slice(0, index) + atomNumber + molfile.slice(indexEnd);
 
@@ -299,30 +303,30 @@ function linkV3000(monomers: any[]): string {
     nbond += numbers.nbond - 2;
     xShift += coordinates.x[last] - coordinates.x[first] + 1;
 
-    if(i == monomers.length -1){
+    if (i == monomers.length -1) {
       natom++;
       const shift = xShift + 0.2;
       atomBlock += 'M  V30 ' + natom + ' O ' + shift + ' 0 0.000000 0\n';
     }
     nbond++;
-    if(i == monomers.length -1){
+    if (i == monomers.length -1) {
       const rightTerminal = (last > remFirst && last > remLast) ? last + natom - (numbers.natom - 2) - 3:
-                            (last > remFirst || last > remLast) ? last + natom - (numbers.natom - 2) - 2 : 
-                            last + natom - (numbers.natom - 2) - 1;
+        (last > remFirst || last > remLast) ? last + natom - (numbers.natom - 2) - 2 :
+          last + natom - (numbers.natom - 2) - 1;
       bondBlock += 'M  V30 ' + nbond + ' 1 ' + rightTerminal + ' ' + natom + '\n';
-    } else{
+    } else {
       const rightTerminal = (last > remFirst && last > remLast) ? last + natom - (numbers.natom - 2) - 2:
-                            (last > remFirst || last > remLast) ? last + natom - (numbers.natom - 2) - 1 : 
-                            last + natom - (numbers.natom - 2);
-      
+        (last > remFirst || last > remLast) ? last + natom - (numbers.natom - 2) - 1 :
+          last + natom - (numbers.natom - 2);
+
       const next = monomers[i + 1]['indices'];
       const nextFirst = next['first'];
       const nextRemFirst = next['remFirst'];
       const nextRemLast = next['remLast'];
 
       const leftTerminal = (nextFirst > nextRemFirst && nextFirst > nextRemLast) ? nextFirst + natom - 2 :
-                           (nextFirst > nextRemFirst || nextFirst > nextRemLast) ? nextFirst + natom - 1 :
-                            nextFirst + natom;
+        (nextFirst > nextRemFirst || nextFirst > nextRemLast) ? nextFirst + natom - 1 :
+          nextFirst + natom;
 
       bondBlock += 'M  V30 ' + nbond + ' 1 ' + rightTerminal + ' ' + leftTerminal + '\n';
     }
