@@ -11,7 +11,7 @@ import {Subscription} from "rxjs";
 import {map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper} from "./helpers";
-import { IScatterPlotLookSettings } from "./interfaces/d4";
+import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
 
 declare let DG: any;
@@ -162,27 +162,27 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     api.grok_Viewer_Set_HelpUrl(this.dart, s);
   }
 
-  static grid(t: DataFrame, options: object | null = null): Grid {
+  static grid(t: DataFrame, options: object | null = null): Grid<interfaces.IGridLookSettings> {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
 
-  static histogram(t: DataFrame, options: object | null = null): Viewer {
+  static histogram(t: DataFrame, options: object | null = null): Viewer<interfaces.IHistogramLookSettings> {
     return new Viewer(api.grok_Viewer_Histogram(t.dart, _toJson(options)));
   }
 
-  static barChart(t: DataFrame, options: object | null = null): Viewer {
+  static barChart(t: DataFrame, options: object | null = null): Viewer<interfaces.IBarChartLookSettings> {
     return <Viewer>Viewer.fromType(VIEWER.BAR_CHART, t, options);
   }
 
-  static heatMap(t: DataFrame, options: object | null = null): Viewer {
+  static heatMap(t: DataFrame, options: object | null = null): Viewer<interfaces.IGridLookSettings> {
     return <Viewer>Viewer.fromType(VIEWER.HEAT_MAP, t, options);
   }
 
-  static boxPlot(t: DataFrame, options: object | null = null): Viewer {
+  static boxPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.IBoxPlotLookSettings> {
     return new Viewer(api.grok_Viewer_BoxPlot(t.dart, _toJson(options)));
   }
 
-  static filters(t: DataFrame, options: object | null = null): Viewer {
+  static filters(t: DataFrame, options: object | null = null): Viewer<interfaces.IFiltersLookSettings> {
     return new Viewer(api.grok_Viewer_Filters(t.dart, _toJson(options)));
   }
 
@@ -190,12 +190,68 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return new ScatterPlotViewer(api.grok_Viewer_ScatterPlot(t.dart, _toJson(options)));
   }
 
-  static lineChart(t: DataFrame, options: object | null = null): Viewer {
+  static lineChart(t: DataFrame, options: object | null = null): Viewer<interfaces.ILineChartLookSettings> {
     return new Viewer(api.grok_Viewer_LineChart(t.dart, _toJson(options)));
   }
 
-  static network(t: DataFrame, options: object | null = null): Viewer {
+  static network(t: DataFrame, options: object | null = null): Viewer<interfaces.INetworkDiagramLookSettings> {
     return <Viewer>Viewer.fromType(VIEWER.NETWORK_DIAGRAM, t, options);
+  }
+
+  static calendar(t: DataFrame, options: object | null = null): Viewer<interfaces.ICalendarLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.CALENDAR, t, options);
+  }
+
+  static correlationPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.ICorrelationPlotLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.CORR_PLOT, t, options);
+  }
+
+  static densityPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.IDensityPlotLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.DENSITY_PLOT, t, options);
+  }
+
+  static form(t: DataFrame, options: object | null = null): Viewer<interfaces.IFormLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.FORM, t, options);
+  }
+
+  static markup(t: DataFrame, options: object | null = null): Viewer<interfaces.IMarkupViewerLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.MARKUP, t, options);
+  }
+
+  static matrixPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.IMatrixPlotLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.MATRIX_PLOT, t, options);
+  }
+
+  static pcPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.IPcPlotLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.PC_PLOT, t, options);
+  }
+
+  static pieChart(t: DataFrame, options: object | null = null): Viewer<interfaces.IPieChartLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.PIE_CHART, t, options);
+  }
+
+  static scatterPlot3d(t: DataFrame, options: object | null = null): Viewer<interfaces.IScatterPlot3dLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.SCATTER_PLOT_3D, t, options);
+  }
+
+  static statistics(t: DataFrame, options: object | null = null): Viewer<interfaces.IStatsViewerLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.STATISTICS, t, options);
+  }
+
+  static tile(t: DataFrame, options: object | null = null): Viewer<interfaces.ITileViewerLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.TILE_VIEWER, t, options);
+  }
+
+  static treeMap(t: DataFrame, options: object | null = null): Viewer<interfaces.ITreeMapLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.TREE_MAP, t, options);
+  }
+
+  static trellisPlot(t: DataFrame, options: object | null = null): Viewer<interfaces.ITrellisPlotLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.TRELLIS_PLOT, t, options);
+  }
+
+  static wordCloud(t: DataFrame, options: object | null = null): Viewer<interfaces.IWordCloudLookSettings> {
+    return <Viewer>Viewer.fromType(VIEWER.WORD_CLOUD, t, options);
   }
 
   get onContextMenu(): rxjs.Observable<Menu> {
@@ -353,7 +409,7 @@ export class FilterGroup extends Viewer {
 
 
 /** 2D scatter plot */
-export class ScatterPlotViewer extends Viewer<IScatterPlotLookSettings> {
+export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotLookSettings> {
   constructor(dart: any) {
     super(dart);
   }
