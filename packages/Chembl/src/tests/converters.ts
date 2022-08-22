@@ -80,8 +80,8 @@ category('Converting queries', () => {
       'Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(C#N)cc1', 'Cc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1'];
 
     await compare(csvDf1, expectArr, `${_package.name}:inchiKeyToSmiles`, 'canonical_smiles');
-
   });
+  
   test('converter InchiKey to Inchi', async () => {
     let csvDf1 = `key,order
     OWRSAHYFSSNENM-UHFFFAOYSA-N,1
@@ -94,7 +94,6 @@ category('Converting queries', () => {
       'InChI=1S/C17H13N3O3/c1-11-2-4-12(5-3-11)16(22)13-6-8-14(9-7-13)20-17(23)19-15(21)10-18-20/h2-10H,1H3,(H,19,21,23)'];
 
     await compare(csvDf1, expectArr, `${_package.name}:inchiKeyToInchi`, 'standard_inchi');
-
   });
 
   test('converter Chembl to Smiles', async () => {
@@ -112,8 +111,6 @@ category('Converting queries', () => {
       'Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1'];
 
     await compare(csvDf1, expectArr, `${_package.name}:chemblToSmiles`, 'canonical_smiles');
-
-
   });
 
   test('converter Chembl to Inchi', async () => {
@@ -130,7 +127,6 @@ category('Converting queries', () => {
       'InChI=1S/C17H12ClN3O3/c1-10-8-13(21-17(24)20-15(22)9-19-21)6-7-14(10)16(23)11-2-4-12(18)5-3-11/h2-9H,1H3,(H,20,22,24)'];
 
     await compare(csvDf1, expectArr, `${_package.name}:chemblToInchi`, 'standard_inchi');
-
   });
   test('converter Chembl to InchiKey', async () => {
     let csvDf1 = `key, order
@@ -147,7 +143,6 @@ category('Converting queries', () => {
 
 
     await compare(csvDf1, expectArr, `${_package.name}:chemblToInchiKey`, 'standard_inchi_key');
-
   });
 
 });
