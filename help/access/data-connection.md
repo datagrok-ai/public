@@ -124,7 +124,7 @@ To cache results of individual queries, edit the query (either via Datagrok UI i
 the corresponding .sql file of the package queries)
 and specify the `meta.cache` and `meta.invalidate` fields:
 
-```
+```Grok Script
 --name: getProductNames
 --input: string department
 --meta.cache: true
