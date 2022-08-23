@@ -1,7 +1,8 @@
-import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectFloat, test, delay} from '@datagrok-libraries/utils/src/test';
 import {Func} from "datagrok-api/src/entities";
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
 import { _package } from '../package-test';
@@ -13,12 +14,20 @@ category('sketcher testing', () => {
         const funcs = Func.find({tags: ['moleculeSketcher']});
         for (let f of funcs) {
             const smilesString = exampleSmiles;
-            // @ts-ignore
-            const sketcher = await f!.apply();
-            sketcher.smiles = smilesString;
-            const resultMol = sketcher.molFile;
+            const sw = new Sketcher();
+
+            const dg = ui.dialog().add(sw);
+            dg.show();
+            
+            const fn = f.friendlyName;
+
+            await sw.setSketcher(fn, smilesString);
+            delay(1000);
+
+            const resultMol = sw.getMolFile();
             const convertedSmiles = grok.chem.convert(resultMol, 'mol', 'smiles');
             expect(convertedSmiles, smilesString);
+            dg.close();
         }
 
     });
