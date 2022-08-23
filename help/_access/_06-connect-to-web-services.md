@@ -2,7 +2,7 @@
 
 In addition to all the data sources like files or databases, it's possible to use web services. We can ingest them in
 multiple different ways. Of course it is always possible to write a custom JavaScript / TypeScript code
-using [Datagrok API]() to do exactly what is needed. However, for web services that provide an OpenAPI decription we
+using [Datagrok API](../develop/js-api) to do exactly what is needed. However, for web services that provide an OpenAPI decription we
 have a solution that works out of the box.
 
 OpenAPI, sometimes referred to as Swagger, is an open specification that defines methods, or functions, that a
@@ -19,8 +19,8 @@ platform is smart enough to understand what the file has. After some processing 
 imported and appeared in the property panel. Alternatively we can go to `Web Services` and find the newly created
 connection there.
 
-Once expanded, we can see all the methods supported by the service. Each is a function just like a [query]() or
-a [script](). We can run it and the UI is formed automatically. Hint: it's possible to see the previous runs of the
+Once expanded, we can see all the methods supported by the service. Each is a function just like a [query](../access/data-query) or
+a [script](../compute/scripting). We can run it and the UI is formed automatically. Hint: it's possible to see the previous runs of the
 function using a `Watch` icon.
 
 They are subject to acess control and priveleges as well.
@@ -32,4 +32,3 @@ heuristics to determine the proper level of unnesting.
 
 In general, a transformation to the query output may be applied. There's an ability to intercept the output of the
 Swagger call.
-

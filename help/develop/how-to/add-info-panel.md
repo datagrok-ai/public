@@ -42,7 +42,7 @@ example, set `{semType: Molecule}` to display properties of various chemical str
 types [here](../../discover/semantic-types.md#automatic-semantic-type-detection). Since the type is common to all values
 in a column, it is often convenient to check it in the panel condition like this:
 
-```
+```Grok Script
 condition: columnName.semType == "Molecule"
 ```
 
@@ -93,6 +93,7 @@ export function translationPanel(file) {
     return new DG.Widget(ui.divText("Lost in Translation"));
 }
 ```
+
 ### Semantic value
 
 There is a special type of input `semantic_value`. It is most commonly used to preserve information about the value's context or its representation in cell. The following code demonstrates how to get the column that contains the value.
