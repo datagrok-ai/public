@@ -14,11 +14,11 @@
   },
   "dependencies": {
     "@biowasm/aioli": ">=2.4.0",
-    "@datagrok-libraries/bio": "^3.0.4",
+    "@datagrok-libraries/bio": "^3.1.0",
     "@datagrok-libraries/ml": "^3.0.5",
     "@datagrok-libraries/utils": "^1.5.4",
     "cash-dom": "latest",
-    "datagrok-api": "^1.5.5",
+    "datagrok-api": "^1.6.0",
     "dayjs": "^1.11.4",
     "openchemlib": "6.0.1",
     "rxjs": "^6.5.5",

@@ -62,7 +62,7 @@ Datagrok can ingest data in multiple file formats (such as fasta or csv) and mul
 molecules, aligned and non-aligned forms, nucleotide and amino acid sequences. We support all widely used notation
 systems for molecular representations, and process them in a unified way. The sequences are automatically detected and
 classified, while preserving their initial notation. There are many notations used to store biological sequences, such
-as traditional FASTA (one symbol per monomer) or more complex notations with separators. are used. Another approach is
+as traditional FASTA (one symbol per monomer), as well as more complex notations with separators. Another approach is
 to write long monomer name to FASTA with square brackets. Datagrok allows you to convert sequences between different
 notations as well.
 

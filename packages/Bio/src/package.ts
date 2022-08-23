@@ -6,14 +6,11 @@ import * as DG from 'datagrok-api/dg';
 export const _package = new DG.Package();
 
 import {MacromoleculeDifferenceCellRenderer, MonomerCellRenderer} from './utils/cell-renderer';
-import {WebLogo, SeqColStats} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
-import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
-import {SequenceAlignment, Aligned} from './seq_align';
-import {Nucleotides} from '@datagrok-libraries/bio/src/nucleotides';
-import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
+import {runKalign} from './utils/multiple-sequence-alignment';
+import {SequenceAlignment} from './seq_align';
 import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
-import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cliffs';
 import {
