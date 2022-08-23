@@ -6,8 +6,10 @@ import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import TileImage from 'ol/source/TileImage'; //this is the base class for XYZ, BingMaps etc..
 import VectorSource from 'ol/source/Vector';
+import Collection from 'ol/Collection';
 //Projections working itilities
 import * as OLProj from 'ol/proj';
+import {useGeographic} from 'ol/proj';
 import {Coordinate} from 'ol/coordinate';
 //geometry drawing funtions
 import * as OLGeometry from 'ol/geom/Geometry';
@@ -115,12 +117,12 @@ export class OpenLayers {
       controls: defaultControls({attribution: false, rotate: false}),
       view: new OLView({
         // projection: 'EPSG:3857', //'EPSG:4326',
-        projection: 'EPSG:4326',
+        // projection: 'EPSG:4326',
         center: OLProj.fromLonLat([34.109565, 45.452962]),
         zoom: 7,
       }),
     });
-
+    //useGeographic();
     //add dragNdrop ability
     this.olMap.addInteraction(this.dragAndDropInteraction);
 
@@ -156,6 +158,31 @@ export class OpenLayers {
     this.olMap.getView().fit(sourceVector.getExtent());
   }
 
+  addGeoJSONLayerFromStream(stream: string) {
+    const sourceVector = new VectorSource({
+      //TODO: try it (for universal loader instead of different function for each of loaders)
+      //var format = new ol.format.GeoJSON({
+      //   defaultDataProjection: "EPSG:4326",
+      //   featureProjection: "EPSG:3857"
+      // });
+      // var features = format.readFeatures(result);
+      features: new GeoJSON().readFeatures(stream),
+    });
+    this.addNewVectorLayer('file.name', null, null, sourceVector);
+    this.olMap.getView().fit(sourceVector.getExtent());
+  }
+
+  addTopoJSONLayerFromStream(stream: string, focusOnContent: boolean = true): VectorLayer<VectorSource> {
+    const sourceVector = new VectorSource({
+      // useSpatialIndex: false,
+      features: new TopoJSON().readFeatures(stream),
+    });
+    const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector);
+    if (focusOnContent)
+      this.olMap.getView().fit(sourceVector.getExtent());
+    return newLayer;
+  }
+
   addNewView(options?: Object | undefined) {
     const newView = new OLView({});
     if (options) newView.setProperties(options);
@@ -163,9 +190,11 @@ export class OpenLayers {
     this.olCurrentView = newView;
     this.olMap.setView(newView);
   }
+
   setViewOptions(options?: Object | undefined) {
     const oView = this.olMap.getView();
-    if (options) oView.setProperties(options);
+    if ((options) && (oView))
+      oView.setProperties(options);
   }
 
   getLayersNamesList(): string[] {
@@ -197,6 +226,7 @@ export class OpenLayers {
     }
     return (layerResult as VectorLayer<VectorSource>);
   }
+
   getLayerById(layerId: string): VectorLayer<VectorSource>|HeatmapLayer|null {
     let layerResult = null;
     if (this.olMap) {
@@ -209,6 +239,7 @@ export class OpenLayers {
     }
     return (layerResult as VectorLayer<VectorSource>);
   }
+
   removeLayerById(layerId: string): void {
     if (this.olMap) {
       const layersArr = this.olMap.getAllLayers();
@@ -219,6 +250,7 @@ export class OpenLayers {
       }
     }
   }
+
   addLayer(layerToAdd: BaseLayer) {
     layerToAdd.set('layerId', Date.now()+'|'+(Math.random()*100));
     this.olMap.addLayer(layerToAdd);
@@ -294,6 +326,21 @@ export class OpenLayers {
     return newLayer;
   }
 
+  getFeaturesFromLayer(layer: VectorLayer<VectorSource>): any[] {
+  // dd
+    const featuresColl: any[] = [];
+    const src = layer.getSource();
+    if (!src) return [];
+    // src.setProperties({'useSpatialIndex': true});
+    src.forEachFeature((ft)=>{
+      featuresColl.push(ft.getProperties());
+    });
+    // const featuresColl = src.getFeaturesCollection();
+    // if (featuresColl) return featuresColl.getArray();
+    return featuresColl;
+    // return [];
+  }
+
   //map marker style function>>
   genStyleMarker(feature: Feature): Style {
     let val = feature.get('fieldValue');
@@ -343,7 +390,6 @@ export class OpenLayers {
       //(features[0].getGeometry).
     }
 
-
     if (this.onClickCallback)
       this.onClickCallback(res);
     else {
@@ -351,6 +397,7 @@ export class OpenLayers {
         if (OLG.onClickCallback) OLG.onClickCallback(res);
     }
   }
+
   onMapPointermove(evt: MapBrowserEvent<any>) {
     if (evt.dragging) return;
 
@@ -358,15 +405,6 @@ export class OpenLayers {
       coord: evt.coordinate,
       pixel: [evt.pixel[0], evt.pixel[1]]
     };
-
-    // const feature = this.olMap.forEachFeatureAtPixel(evt.pixel, function(feature) {
-    //   return feature;
-    // });
-    // let featuredata: string = ' / Value';
-    // if (feature) featuredata = featuredata + feature.get('fieldValue');
-    //TODO: remove this crutch - only callback fn
-    // let lbl = document.getElementById('lbl-coord');
-    // if (lbl) lbl.innerHTML = evt.coordinate[0] + ', ' + evt.coordinate[1];
 
     if (this.onPointermoveCallback)
       this.onPointermoveCallback(res);
@@ -407,7 +445,7 @@ export class OpenLayers {
     aLayer = this.olMarkersLayer;
     if (layer) aLayer = layer;
 
-    const maxradius = 60;
+    const maxradius = 30;
     if (aLayer) {
       let val = value;
       if (typeof(val) !== 'number') val = 1;
@@ -444,14 +482,4 @@ export class OpenLayers {
       if (src) src.addFeature(marker);
     }
   }
-  //   addPointsSet(coord: Coordinate, layer?: VectorLayer<VectorSource> | undefined) {
-  //     let aLayer = this.olMarkersLayer;
-  //     if (layer) aLayer = layer;
-
-//     if (aLayer) {
-//       const src = aLayer.getSource();
-// //      src?.addFeatures()
-//       src?.addFeature(new Feature(new Point(OLProj.fromLonLat(coord))));
-//     }
-//   }
 }

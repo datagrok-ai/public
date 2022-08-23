@@ -1,12 +1,14 @@
 {
 	"name": "@datagrok/gis",
 	"friendlyName": "GIS",
+	"fullName": "Opanlayers Map",
 	"version": "0.0.3",
+	"category": "Visualizations",
 	"author": {
 		"name": "Maksym Shvyrlo",
 		"email": "mshvyrlo@datagrok.ai"
 	},
-	"description": "A package with GIS (geographic information system) abilities",
+	"description": "Provides GIS (geographic information system) functionality such as maps and geocoding",
 	"dependencies": {
 		"@datagrok-libraries/utils": "latest",
 		"cash-dom": "latest",

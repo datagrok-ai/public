@@ -13,6 +13,7 @@ import $ from 'cash-dom';
 import {OpenLayers} from '../src/gis-openlayer';
 import {Coordinate} from '../src/gis-openlayer';
 import {OLCallbackParam} from '../src/gis-openlayer';
+import VectorLayer from 'ol/layer/Vector';
 
 
 //type Pair<T, K> = [T, K]; //used Coordinate instead if it
@@ -101,6 +102,19 @@ export class GisViewer extends DG.JsViewer {
     setupBtn(btnVisible, layerName, layerId);
     //Setup button>>
     const btnSetup = ui.iconFA('cogs', (evt)=>{ //cogs
+      const divLayer = (evt.currentTarget as HTMLElement);
+      const layerId = divLayer.getAttribute('layerId');
+      if (!layerId) return;
+      const layer = this.ol.getLayerById(layerId) as VectorLayer<any>;
+      if (!layer) return;
+      const arrFeatures = this.ol.getFeaturesFromLayer(layer);
+      if (arrFeatures) {
+        const df = DG.DataFrame.fromObjects(arrFeatures);
+        if (df) {
+          df.name = layer.get('layerName');
+          grok.shell.addTableView(df as DG.DataFrame);
+        }
+      }
     }, 'Layer properties');
     setupBtn(btnSetup, layerName, layerId);
     //Delete button>>
