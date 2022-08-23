@@ -11,20 +11,20 @@ import {_importSdf} from '../open-chem/sdf-importer';
 
 category('chem', () => {
 
-  test('testSubstructureSearch', async () => {
-    const t = grok.data.demo.molecules();
-    await grok.chem.searchSubstructure(t.col('smiles')!, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
-  });
+  // test('testSubstructureSearch', async () => {
+  //   const t = grok.data.demo.molecules();
+  //   await grok.chem.searchSubstructure(t.col('smiles')!, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
+  // });
 
   test('testDescriptors', async () => {
     const t = grok.data.demo.molecules();
     await grok.chem.descriptors(t, 'smiles', ['MolWt', 'Lipinski']);
   });
 
-  test('testDiversitySearch', async () => {
-    const t = grok.data.demo.molecules();
-    await grok.chem.diversitySearch(t.col('smiles')!);
-  });
+  // test('testDiversitySearch', async () => {
+  //   const t = grok.data.demo.molecules();
+  //   await grok.chem.diversitySearch(t.col('smiles')!);
+  // });
 
   test('testMcs', async () => {
     const t = DG.DataFrame.fromCsv(`smiles

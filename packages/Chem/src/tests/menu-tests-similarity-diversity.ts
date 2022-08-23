@@ -83,11 +83,6 @@ category('top menu similarity/diversity', () => {
     expectFloat(scores.get(5), 0.06349);
   });
 
-  test('testDiversitySearch', async () => {
-    const t = grok.data.demo.molecules();
-    await grok.chem.diversitySearch(t.col('smiles')!);
-  });
-
   test('similaritySearchViewerOpen', async () => {
     await _testSimilaritySearchViewerOpen();
   });

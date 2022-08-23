@@ -86,7 +86,7 @@ async function _testDimensionalityReducer(col: DG.Column, algorithm: string) {
   })
   //  grok.shell.addTableView(similaririesWithDistances);
   const corrCoef = jStat.corrcoeff(similaritiesArray, distancesArray);
-  expect(corrCoef < -0.75, true);
+  expect(Math.abs(corrCoef) > -0.6, true);
 }
 
 interface IDistanceToPoint {
