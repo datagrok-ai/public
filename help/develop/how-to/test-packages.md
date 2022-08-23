@@ -2,8 +2,8 @@
 
 # Package testing
 
-Testing is an essential part of development process. You should ensure that your product works properly at each stage of it's lifecycle. For instance, when developing a new version of a package you should perform regression testing and confirm that new changes haven't affected previous functionality. 
-Each package should include a bunch of unit tests responsible for either UI or logic underneath. And Datagrok provides various capabilities and tools to conveniently run those tests any time during development. 
+Testing is an essential part of development process. You should ensure that your product works properly at each stage of it's lifecycle. For instance, when developing a new version of a package you should perform regression testing and confirm that new changes haven't affected previous functionality.
+Each package should include a bunch of unit tests responsible for either UI or logic underneath. And Datagrok provides various capabilities and tools to conveniently run those tests any time during development.
 
 ## Local testing
 
@@ -63,7 +63,7 @@ To start 'Test manager' go to top menu Tools -> Dev -> Test manager
 ![Test manager start](test-mngr-start.png)
 
 After starting the tool you will see a list of all packages which contain unit tests. Inside each package, the tests
-are divided by category. Categories support multiple nesting (in this case subcategories should be divided by `:`). 
+are divided by category. Categories support multiple nesting (in this case subcategories should be divided by `:`).
 You can select required package/category/test by clicking on it. Also you can change selection by using `up` and `down` key buttons.
 
 ![Tests list](test-mngr-tests-list.png)
@@ -72,13 +72,13 @@ You can select required package/category/test by clicking on it. Also you can ch
 
 There are multiple ways you can run tests:
 
-- by right clicking on package, category or test. Context menu with `Run` button will appear
-- by selecting package, category or test and pushing `Enter`
-- by selecting package, category or test and pushing `Run` on a ribbon panel
-- by selecting package, category or test and pushing `Run` on a property panel
-- individual tests can be run by double click
-- you can run all tests at once using `Run all` button on the ribbon
-- package, category or test can be run by putting the corresponding url into address bar of the browser. The format is the following `your_server_name/apps/DevTools/TestManager/package_name/category_name/test_name`.
+* by right clicking on package, category or test. Context menu with `Run` button will appear
+* by selecting package, category or test and pushing `Enter`
+* by selecting package, category or test and pushing `Run` on a ribbon panel
+* by selecting package, category or test and pushing `Run` on a property panel
+* individual tests can be run by double click
+* you can run all tests at once using `Run all` button on the ribbon
+* package, category or test can be run by putting the corresponding url into address bar of the browser. The format is the following `your_server_name/apps/DevTools/TestManager/package_name/category_name/test_name`.
 You will see the progress icon opposite to active test/category/package which will end up in result icon after completion. In case at least one test fails within category or package the fail icon will be shown.
 
 ![Running tests](running_tests.gif)
@@ -88,6 +88,7 @@ Progress bar on the bottom of the page will show the percentage of completed tes
 ![Progress bar](test_manager_progress_bar.png)
 
 ### Reviewing results
+
 You can get information about test results via tooltip or in the property panel for the selected test, category or package.
 In case category/package contain multiple tests results are shown as a grid which can be added to workspace for further exploration.
 

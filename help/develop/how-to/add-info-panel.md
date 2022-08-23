@@ -21,9 +21,10 @@ the client side, whereas panel scripts get executed on the server.
 
 #### Semantic types
 
-Sometimes it is desirable to show an info panel only for data of a
-specific [semantic type](../../discover/semantic-types.md). To make use of detectors available out of the box, simply
-specify a relevant semantic type either from a script or from a panel function written in JavaScript.
+Sometimes it is desirable to show an info panel only for data of a specific
+[semantic type](../../discover/semantic-types.md). To make use of detectors
+available out of the box, simply specify a relevant semantic type either from a
+script or from a panel function written in JavaScript.
 
 ```python
 # name: string length
