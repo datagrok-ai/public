@@ -9,7 +9,7 @@ import './tests/menu-tests-similarity-diversity';
 import './tests/menu-tests-script-based';
 
 import './tests/col-panel-tests';
-import './tests/widgets-tests';
+import './tests/cell-panel-tests';
 
 import './tests/detector-tests';
 import './tests/rendering-tests';

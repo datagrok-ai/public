@@ -9,9 +9,9 @@ import { _testSearchSubstructure,
 
 import {_importSdf} from '../open-chem/sdf-importer';
 
-category('chem', () => {
+category('top menu script based', () => {
 
-  test('testCurateTopMenu', async () => {
+  test('curate', async () => {
     const t = DG.DataFrame.fromCsv(`Name,smiles
     metal_non,CCC(=O)O[Na]
     metal_st,CCC(=O)[O-].[Na+]
