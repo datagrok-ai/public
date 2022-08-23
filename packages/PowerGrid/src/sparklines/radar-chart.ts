@@ -132,7 +132,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     const settings = gc.settings;
 
     return ui.inputs([
-      ui.columnsInput('Radar columns', gc.grid.dataFrame, (columns) => {
+      ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
         settings.columnNames = names(columns);
         gc.grid.invalidate();
       }, {

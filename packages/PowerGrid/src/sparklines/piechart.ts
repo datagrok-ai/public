@@ -8,7 +8,7 @@ interface PieChartSettings extends SummarySettingsBase {
   radius: number;
   minRadius: number;
   countColumns: number;
-  style: 'bar chart' | 'pie bar chart';
+  style: 'Angle' | 'Radius';
 }
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
@@ -16,7 +16,7 @@ function getSettings(gc: DG.GridColumn): PieChartSettings {
     ...getSettingsBase(gc),
     ...{radius: 40},
     ...{minRadius: 10},
-    ...{style: 'pie bar chart'},
+    ...{style: 'Radius'},
   };
 }
 
@@ -42,7 +42,7 @@ function onHit(e: MouseEvent | any, gridCell: DG.GridCell): Hit {
   let r = 0;
   const row: number = gridCell.cell.row.idx;
 
-  if (settings.style == 'bar chart') {
+  if (settings.style == 'Radius') {
     activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
     r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
     r = r < settings.minRadius ? settings.minRadius : r;
@@ -96,7 +96,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     let r = 0;
     const row: number = gridCell.cell.row.idx;
 
-    if (settings.style == 'bar chart') {
+    if (settings.style == 'Angle') {
       activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
       r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
       r = r < settings.minRadius ? settings.minRadius : r;
@@ -137,7 +137,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const row: number = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
-    if (settings.style == 'bar chart') {
+    if (settings.style == 'Radius') {
       for (let i = 0; i < cols.length; i++) {
         if (cols[i].isNone(row))
           continue;
@@ -179,14 +179,14 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const settings = gc.settings;
 
     return ui.inputs([
-      ui.columnsInput('Radar columns', gc.grid.dataFrame, (columns) => {
+      ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
         settings.columnNames = names(columns);
         gc.grid.invalidate();
       }, {
         available: names(gc.grid.dataFrame.columns.numerical),
         checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
       }),
-      ui.choiceInput('style', 'pie bar chart', ['bar chart', 'pie bar chart'], function(value: string) {
+      ui.choiceInput('Style', 'Radius', ['Angle', 'Radius'], function(value: string) {
         settings.style = value;
         gc.grid.invalidate();
       }),
