@@ -12,24 +12,33 @@ const convertedSmarts = '[#6]-[#6](-[#6](=O)-[#8]-[#6]-[#6]-[#6]-c1cccnc1)-c1ccc
 category('sketcher testing', () => {
     test('smiles-to-mol', async () => {
         const funcs = Func.find({tags: ['moleculeSketcher']});
-        for (let f of funcs) {
-            const smilesString = exampleSmiles;
-            const sw = new Sketcher();
-
-            const dg = ui.dialog().add(sw);
-            dg.show();
-            
-            const fn = f.friendlyName;
-
-            await sw.setSketcher(fn, smilesString);
-            delay(1000);
-
-            const resultMol = sw.getMolFile();
-            const convertedSmiles = grok.chem.convert(resultMol, 'mol', 'smiles');
-            expect(convertedSmiles, smilesString);
-            dg.close();
+        const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(exampleSmiles);
+        const sw = new Sketcher();
+        const dg = ui.dialog().add(sw).show();
+        await initSketcher(sw);
+        for (let func of funcs) {         
+            const fn = func.friendlyName;
+            await sw.setSketcher(fn, exampleSmiles);
+            const t = new Promise((resolve, reject) => {
+                sw.onChanged.subscribe(async (_: any) => {
+                    try {
+                        const resultMol = sw.getMolFile();
+                        resolve(resultMol);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+              });
+            const resMolblock = await t;
+            const mol2 = (await grok.functions.call('Chem:getRdKitModule')).get_mol(resMolblock);
+            const match1 = mol.get_substruct_match(mol2);
+            expect(match1 !== '{}', true);
+            const match2 = mol2.get_substruct_match(mol);
+            expect(match2 !== '{}', true);
+            mol2.delete();
         }
-
+        mol?.delete();
+        dg.close();
     });
 
     test('mol-to-smiles', async () => {
@@ -107,3 +116,17 @@ category('sketcher testing', () => {
     });
 
 });
+
+async function initSketcher(sw: Sketcher) {
+    const t = new Promise((resolve, reject) => {
+        sw.onChanged.subscribe(async (_: any) => {
+            try {
+                resolve(true);
+            } catch (error) {
+                reject(error);
+            }
+        });
+      });
+    sw.setSmiles(exampleSmiles);
+    await t;
+}
