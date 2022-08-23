@@ -21,7 +21,7 @@ class GisPackageDetectors extends DG.Package {
     //TODO: change to map or array or pattern search
     if ((colname.includes('lon')) || (colname.includes('lng'))) colSemType = 'gis_longitude';
     if ((colname.includes('lat')) || (colname.includes('ltt')))
-      if ((col.stats.min > -90) && (col.stats.max < 90)) colSemType = 'gis-latitude';
+      if ((col.stats.min > -90) && (col.stats.max < 90)) colSemType = 'gis_latitude';
     return colSemType;
   }
 }
