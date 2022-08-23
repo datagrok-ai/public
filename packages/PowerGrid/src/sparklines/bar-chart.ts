@@ -100,7 +100,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     colorCodeNormalizeInput.onChanged(() => { gc.grid.invalidate(); });
 
     return ui.inputs([
-      ui.columnsInput('Barchart columns', gc.grid.dataFrame, (columns) => {
+      ui.columnsInput('Columns', gc.grid.dataFrame, (columns) => {
         settings.columnNames = names(columns);
         gc.grid.invalidate();
       }, {

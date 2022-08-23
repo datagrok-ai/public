@@ -146,7 +146,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
 
     return ui.inputs([
       normalizeInput,
-      ui.columnsInput('Sparkline columns', gridColumn.grid.dataFrame, (columns) => {
+      ui.columnsInput('Сolumns', gridColumn.grid.dataFrame, (columns) => {
         settings.columnNames = names(columns);
         gridColumn.grid.invalidate();
       }, {
