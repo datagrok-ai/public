@@ -47,7 +47,6 @@ export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
 export async function _testSearchSubstructureSARSmall(params: any | null = null): Promise<void> {
   const file = await loadFileAsText('sar-small.csv');
 
-  // await grok.functions.call('Chem:initChem');
   const df = DG.DataFrame.fromCsv(file);
   const col = df.columns.byIndex(0);
   const bitset: DG.BitSet = (params !== null) ?

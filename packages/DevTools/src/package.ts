@@ -6,7 +6,7 @@ import {IconTool} from './icon-tool';
 import {EntityType} from './constants';
 import '../css/styles.css';
 import * as tests from './tests/test-examples';
-import {createTestManagerView} from './package-testing';
+import {TestManager} from './package-testing';
 import {functionSignatureEditor} from './function-signature-editor';
 import {addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel} from './dev-panel';
 import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detectors';
@@ -72,7 +72,8 @@ export function _IconTool(): void {
 //tags: app
 export async function testManager(): Promise<void> {
   c = grok.functions.getCurrentCall();
-  await createTestManagerView();
+  const testManager = new TestManager('Test Manager');
+  await testManager.init();
 }
 
 
@@ -90,7 +91,3 @@ export async function TestDetectorsStandard() {
   grok.shell.addTableView(df);
 }
 
-//name: DummyFuncToInit
-export function DummyFuncToInit() {
-  return 0;
-}

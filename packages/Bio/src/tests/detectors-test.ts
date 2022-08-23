@@ -281,7 +281,7 @@ MWRSWY-CKHP
   });
 
   test('samplesHelmCsvHELM', async () => {
-    await _testPos(readSamples(Samples.helmCsv), 'HELM', 'HELM', null, null, null);
+    await _testPos(readSamples(Samples.helmCsv), 'HELM', 'helm', null, null, null);
   });
 
   test('samplesHelmCsvNegativeActivity', async () => {
@@ -297,7 +297,7 @@ MWRSWY-CKHP
     await _testNeg(readSamples(Samples.testHelmCsv), 'Test type');
   });
   test('samplesTestHelmPositiveHelmString', async () => {
-    await _testPos(readSamples(Samples.testHelmCsv), 'HELM string', 'HELM', null, null, null);
+    await _testPos(readSamples(Samples.testHelmCsv), 'HELM string', 'helm', null, null, null);
   });
   test('samplesTestHelmNegativeValid', async () => {
     await _testNeg(readSamples(Samples.testHelmCsv), 'Valid?');

@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {getSettingsBase, names, SummarySettingsBase} from './shared';
-import {createTooltip, distance} from './helper';
+import {createTooltip, distance, Hit} from './helper';
 
 interface SparklineSettings extends SummarySettingsBase {
   globalScale: boolean;
@@ -19,6 +19,43 @@ function getSettings(gc: DG.GridColumn): SparklineSettings {
   };
 }
 
+function onHit(gridCell: DG.GridCell, e: MouseEvent | any): Hit {
+  const df = gridCell.grid.dataFrame;
+
+  if (gridCell.bounds.width < 20 || gridCell.bounds.height < 10 || df === void 0) return {
+    isHit: false,
+    row: -1,
+    cols: [],
+    activeColumn: -1
+  };
+
+  const row = gridCell.cell.row.idx;
+  const settings = getSettings(gridCell.gridColumn);
+  const minDistanse = settings.minDistance;
+  const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-3, -2);
+
+  const cols = df.columns.byNames(settings.columnNames);
+  const gmin = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
+  const gmax = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
+
+  function getPos(col: number, row: number): DG.Point {
+    const r: number = settings.globalScale ? (cols[col].get(row) - gmin) / (gmax - gmin) : cols[col].scale(row);
+    return new DG.Point(
+      b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
+      (b.top + b.height) - b.height * r);
+  }
+
+  const MousePoint = new DG.Point(e.layerX, e.layerY);
+  const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistanse)) / b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
+
+  const activePoint = getPos(activeColumn, row);
+  return {
+    isHit: distance(activePoint, MousePoint) < minDistanse,
+    activeColumn: activeColumn,
+    row: row,
+    cols: cols,
+  };
+}
 
 export class SparklineCellRenderer extends DG.GridCellRenderer {
   get name() { return 'sparkline'; }
@@ -26,35 +63,9 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
   get cellType() { return 'sparkline'; }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
-    // basic values and functions for calculations
-    const df = gridCell.grid.dataFrame;
-
-    if (gridCell.bounds.width < 20 || gridCell.bounds.height < 10 || df === void 0) return;
-
-    const row = gridCell.cell.row.idx;
-    const settings = getSettings(gridCell.gridColumn);
-    const minDistanse = settings.minDistance;
-    const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-3, -2);
-
-    const cols = df.columns.byNames(settings.columnNames);
-    const gmin = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
-    const gmax = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
-
-    function getPos(col: number, row: number): DG.Point {
-      const r: number = settings.globalScale ? (cols[col].get(row) - gmin) / (gmax - gmin) : cols[col].scale(row);
-      return new DG.Point(
-        b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
-        (b.top + b.height) - b.height * r);
-    }
-
-    const MousePoint = new DG.Point(e.layerX, e.layerY);
-    const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistanse)) / b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
-
-    const activePoint = getPos(activeColumn, row);
-
-
-    if (distance(activePoint, MousePoint) < minDistanse) {
-      ui.tooltip.show(ui.divV(createTooltip(cols, activeColumn, row)), e.x + 16, e.y + 16);
+    const hitData = onHit(gridCell, e);
+    if (hitData.isHit) {
+      ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
     } else {
       ui.tooltip.hide();
     }

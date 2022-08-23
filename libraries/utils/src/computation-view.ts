@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FunctionView} from './function-view';
+import '../css/computation-view.css';
 
 /**
  * Base class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md).
@@ -26,6 +27,9 @@ export class ComputationView extends FunctionView {
     * @stability Stable
   */
   constructor(funcName?: string) {
+    const url = new URL(grok.shell.startUri);
+    const runId = url.searchParams.get('id');
+
     super();
 
     this.parentCall = grok.functions.getCurrentCall();
@@ -33,24 +37,32 @@ export class ComputationView extends FunctionView {
     this.basePath = `/${grok.functions.getCurrentCall()?.func.name}`;
 
     ui.setUpdateIndicator(this.root, true);
-    if (funcName) {
-      grok.functions.eval(funcName).then(async (func: DG.Func) => {
-        const funccall = func.prepare({});
-        this.linkFunccall(funccall);
-        await this.init();
-        this.build();
-      }).finally(() => {
-        ui.setUpdateIndicator(this.root, false);
-      });
-    } else {
+    if (runId) {
       setTimeout(async () => {
         await this.init();
+        this.linkFunccall(await this.loadRun(runId));
         this.build();
+        this.linkFunccall(await this.loadRun(runId));
         ui.setUpdateIndicator(this.root, false);
       }, 0);
+    } else {
+      if (funcName) {
+        grok.functions.eval(funcName).then(async (func: DG.Func) => {
+          const funccall = func.prepare({});
+          this.linkFunccall(funccall);
+          await this.init();
+          this.build();
+        }).finally(() => {
+          ui.setUpdateIndicator(this.root, false);
+        });
+      } else {
+        setTimeout(async () => {
+          await this.init();
+          this.build();
+          ui.setUpdateIndicator(this.root, false);
+        }, 0);
+      }
     }
-
-    grok.shell.o = this.historyRoot;
   }
 
   /** Override to customize getting mocks
@@ -120,60 +132,5 @@ export class ComputationView extends FunctionView {
 
     if (this.getHelp)
       ribbonMenu.item('Help', () => this.getHelp!());
-  }
-
-  override buildHistoryBlock(): HTMLElement {
-    const mainAcc = ui.accordion();
-    mainAcc.root.style.width = '100%';
-    mainAcc.addTitle(ui.h1('History'));
-    const dateInput = ui.stringInput('Date', 'Any time');
-    dateInput.addPatternMenu('datetime');
-
-    mainAcc.addPane('Filter', () => {
-      const form =ui.divV([
-        ui.choiceInput('User', 'Current user', ['Current user']),
-        dateInput,
-      ], 'ui-form-condensed ui-form');
-      form.style.marginLeft = '0px';
-
-      return form;
-    });
-
-    const renderSavedCard = async (funcCall: DG.FuncCall) => {
-      const currentUser = await grok.dapi.users.current();
-
-      return ui.divV([
-        ui.h3(funcCall.aux['Title'] ?? 'My custom title'),
-        ui.divText(funcCall.aux['Annotation'] ?? 'My custom annotation with some details'),
-        ui.render(currentUser),
-      ]);
-    };
-
-    const renderHistoryCard = async (funcCall: DG.FuncCall) => {
-      const currentUser = await grok.dapi.users.current();
-
-      return ui.divV([
-        ui.h3(funcCall.aux['Title'] ?? 'My custom title'),
-        ui.render(currentUser),
-      ]);
-    };
-
-    mainAcc.addPane('Saved', () => ui.wait(async () => {
-      const historicalRuns = await this.pullRuns(this.func!.id);
-
-      return ui.divV(historicalRuns.filter((run) => run.id.lastIndexOf('0') > 14).map((run) => ui.wait(() => renderSavedCard(run))));
-    }));
-
-    mainAcc.addPane('History', () => ui.wait(async () => {
-      const historicalRuns = await this.pullRuns(this.func!.id);
-
-      return ui.divV(historicalRuns.map((run) => ui.wait(() => renderHistoryCard(run))));
-    }));
-
-    const newHistoryBlock = mainAcc.root;
-    ui.empty(this.historyRoot);
-    this.historyRoot.style.removeProperty('justify-content');
-    this.historyRoot.append(newHistoryBlock);
-    return newHistoryBlock;
   }
 }

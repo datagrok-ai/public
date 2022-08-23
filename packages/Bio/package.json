@@ -5,7 +5,7 @@
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
   },
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
   "repository": {
     "type": "git",
@@ -15,8 +15,8 @@
   "dependencies": {
     "@biowasm/aioli": ">=2.4.0",
     "@datagrok-libraries/bio": "^3.1.0",
-    "@datagrok-libraries/ml": "^3.0.5",
-    "@datagrok-libraries/utils": "^1.5.4",
+    "@datagrok-libraries/ml": "^3.1.0",
+    "@datagrok-libraries/utils": "^1.6.2",
     "cash-dom": "latest",
     "datagrok-api": "^1.6.0",
     "dayjs": "^1.11.4",

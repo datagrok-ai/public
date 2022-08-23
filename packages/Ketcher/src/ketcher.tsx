@@ -10,6 +10,7 @@ import {Ketcher} from "ketcher-core";
 import "ketcher-react/dist/index.css";
 import "./editor.css";
 import {_jsThen} from "datagrok-api/src/utils";
+import { chem } from "datagrok-api/grok";
 
 let sketcherId = 0;
 
@@ -28,17 +29,12 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         console.log("Skecther error", message);
       },
       onInit: (ketcher: Ketcher) => {
-        //@ts-ignore
         this._sketcher = ketcher;
-        //@ts-ignore
         (this._sketcher.editor as any).subscribe("change", async (e: any) => {
-          //@ts-ignore
-          this.host._smiles = await this._sketcher!.getSmiles();
-          //@ts-ignore
-          this.host._molfile = await this._sketcher!.getMolfile();
+          this.host!._smiles = await this._sketcher!.getSmiles();
+          this.host!._molfile = await this._sketcher!.getMolfile();
           this.onChanged.next(null);
         });
-        //@ts-ignore
         this._sketcher.editor.zoom(0.5);
       },
     };
@@ -52,9 +48,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.root.appendChild(host);
   }
 
-  //@ts-ignore
   async init(host: chem.Sketcher) {
-    //@ts-ignore
     this.host = host;
     let id = `ketcher-${sketcherId++}`;
     this.root.id = id;
@@ -66,8 +60,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
-    //@ts-ignore
-    return this._sketcher ? this.host._smiles : this.host.getSmiles();
+    return this._sketcher ? this.host!._smiles : this.host!.getSmiles();
   }
 
   set smiles(smiles) {
@@ -75,8 +68,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   get molFile() {
-    //@ts-ignore
-    return this._sketcher ? this.host._molfile : this.host.getMolFile();
+    return this._sketcher ? this.host!._molfile : this.host!.getMolFile();
   }
 
   set molFile(molfile: string) {
@@ -84,8 +76,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   async getSmarts(): Promise<string> {
-    //@ts-ignore
-    return this._sketcher ? await this._sketcher.getSmarts() : await this.host.getSmarts();
+    return this._sketcher ? await this._sketcher.getSmarts() : await this.host!.getSmarts();
   }
 
   set smarts(smarts: string) {
@@ -94,7 +85,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
 
   setKetcherMolecule(molecule: string) {
     try {
-      //@ts-ignore
       this._sketcher?.setMolecule(molecule);
     } catch (e) {
       console.log(e);
