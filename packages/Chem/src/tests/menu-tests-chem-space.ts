@@ -11,7 +11,7 @@ import { getSimilaritiesMarix, getSimilaritiesMarixFromDistances } from '../util
 import { chemSpaceTopMenu } from '../package';
 var { jStat } = require('jstat')
 
-category('top menu chemSpace', async () => {
+category('top menu chem space', async () => {
 
   let smallDf: DG.DataFrame;
 
