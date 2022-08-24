@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
-	"version": "0.9.4",
+	"version": "0.9.5",
 	"author": {
 		"name": "Aufar Zakiev",
 		"email": "aufar.zakiev@arcadia.spb.ru"
@@ -13,10 +13,10 @@
     "directory": "packages/Compute"
   },
 	"dependencies": {
-		"@datagrok-libraries/utils": "^1.6.1",
+		"@datagrok-libraries/utils": "^1.7.2",
 		"cash-dom": "latest",
 		"codemirror": "^5.64.0",
-		"datagrok-api": "^1.4.4",
+		"datagrok-api": "latest",
 		"dayjs": "latest",
 		"exceljs": "^4.3.0",
 		"file-saver": "^2.0.5",

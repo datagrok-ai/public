@@ -846,7 +846,7 @@ export class FunctionView extends DG.ViewBase {
       const editor = ui.div();
       const inputs: DG.InputBase[] = await call.buildEditor(editor, {condensed: true});
       editor.classList.add('ui-form');
-      const buttons = ui.divH([this.historyRoot, runButton], {style: {'justify-content': 'space-between'}});
+      const buttons = ui.divH([runButton], {style: {'justify-content': 'space-between'}});
       editor.appendChild(buttons);
       return editor;
     });
