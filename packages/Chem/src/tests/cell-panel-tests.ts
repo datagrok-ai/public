@@ -17,7 +17,7 @@ import {runStructuralAlertsDetection} from '../panels/structural-alerts';
 import {RDMol} from '../rdkit-api';
 
 
-category('widgets', async () => {
+category('cell panel', async () => {
   const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
 
   before(async () => {

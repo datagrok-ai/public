@@ -41,20 +41,8 @@ category('top menu similarity/diversity', () => {
     }
   });
 
-  test('findSimilar.api.sar-small', async () => {
-    await _testFindSimilar(grok.chem.findSimilar);
-  });
-
   test('findSimilar.chem.sar-small', async () => {
     await _testFindSimilar(findSimilar);
-  });
-
-  test('findSimilarServer.api.sar-small', async () => {
-    await _testFindSimilar(grok.chem.findSimilarServer);
-  });
-
-  test('getSimilarities.api.molecules', async () => {
-    await _testGetSimilarities(grok.chem.getSimilarities);
   });
 
   test('getSimilarities.chem.molecules', async () => {
@@ -90,7 +78,7 @@ function getSearchViewer(viewer: DG.Viewer, name: string) {
   }
 }
 
-async function _testFindSimilar(findSimilarFunction: (...args: any) => Promise<DG.DataFrame | null>) {
+export async function _testFindSimilar(findSimilarFunction: (...args: any) => Promise<DG.DataFrame | null>) {
   const dfInput = DG.DataFrame.fromCsv(await loadFileAsText('sar-small.csv'));
   const colInput = dfInput.columns.byIndex(0);
   const dfResult: DG.DataFrame = // shouldn't be null
@@ -131,7 +119,7 @@ async function _testFindSimilar(findSimilarFunction: (...args: any) => Promise<D
   expect(arr[4].index, 25);
 }
 
-async function _testGetSimilarities(getSimilaritiesFunction: (...args: any) => Promise<any>) {
+export async function _testGetSimilarities(getSimilaritiesFunction: (...args: any) => Promise<any>) {
   const df = grok.data.demo.molecules();
   let scores = (await getSimilaritiesFunction(df.columns.byName('smiles'),
     'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))! as any;
@@ -186,7 +174,6 @@ async function _testSimilaritySearchFunctionality(distanceMetric: string, finger
     }
   });
 }
-
 
 async function _testDiversitySearchViewerOpen() {
   const molecules = await createTableView('sar-small.csv');
