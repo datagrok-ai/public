@@ -184,7 +184,7 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
 //input: int limit
 //input: int cutoff
 //output: dataframe result
-export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number, cutoff: number)
+export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number = Number.MAX_VALUE, cutoff: number = 0.0)
   : Promise<DG.DataFrame> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
