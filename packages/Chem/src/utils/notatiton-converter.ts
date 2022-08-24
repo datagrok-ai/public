@@ -14,25 +14,22 @@ export function convertNotation(
   sourceNotation: string,
   targetNotation: string,
 ): string {
+  const admissibleNotations = new Set(['smiles', 'molblockV2000', 'molblockV3000']);
+  if (!admissibleNotations.has(sourceNotation) ||
+    !admissibleNotations.has(targetNotation) ||
+    (sourceNotation == targetNotation)) {
+    throw new Error(
+      `The source notation ${sourceNotation} or target notation ${targetNotation} is incorrect`,
+    );
+  }
   const rdKitModule = getRdKitModule();
   const mol = rdKitModule.get_mol(moleculeString);
   const converter =
-    (sourceNotation == 'smiles' && targetNotation == 'molblockV3000') ?
-      mol.get_v3Kmolblock :
-      (sourceNotation == 'molblockV3000' && targetNotation == 'molblockV2000') ?
-        mol.get_molblock :
-        (sourceNotation == 'molblockV2000' && targetNotation == 'molblockV3000') ?
-          mol.get_v3Kmolblock :
-          ( (sourceNotation == 'molblockV2000' || sourceNotation == 'molblockV3000') && targetNotation == 'smiles'
-          ) ? mol.get_smiles : null;
-  if (converter) {
-    const result = converter();
-    mol?.delete();
-    return result;
-  } else {
-    mol?.delete();
-    throw new Error(
-      'The source notation ${sourceNotation} or target notation ${targetNotation} is incorrect',
-    );
-  }
+    (targetNotation == 'molblockV2000') ?
+      mol.get_molblock :
+      (targetNotation == 'molblockV3000') ?
+        mol.get_v3Kmolblock : mol.get_smiles;
+  const result = converter();
+  mol?.delete();
+  return result;
 }
