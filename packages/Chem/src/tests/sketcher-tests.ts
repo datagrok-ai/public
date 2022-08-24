@@ -125,11 +125,13 @@ category('sketcher testing', () => {
             expect(resSmart, convertedSmarts);
         }
         dg.close();
-    });
+    });*/
     
     test('molfileV2000', async () => {
+        const module = await grok.functions.call('Chem:getRdKitModule');
         const data = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
         const molfileV2000 = data.get('molecule', 0);
+        const mol = module.get_mol(molfileV2000);
         const funcs = Func.find({tags: ['moleculeSketcher']});
         const sw = new Sketcher();
         const dg = ui.dialog().add(sw).show();
@@ -148,12 +150,18 @@ category('sketcher testing', () => {
                 });
               });
             let resMolfile = await t;
-            expect(resMolfile, molfileV2000);
+            const mol2 = module.get_mol(resMolfile);
+            const match1 = mol.get_substruct_match(mol2);
+            expect(match1 !== '{}', true);
+            const match2 = mol2.get_substruct_match(mol);
+            expect(match2 !== '{}', true);
+            mol2.delete();
         }
+        mol.delete();
         dg.close();
     });
     
-    test('smarts', async () => {
+    /*test('smarts', async () => {
         const data = DG.DataFrame.fromCsv(await _package.files.readAsText('test-consistency-smarts-mol.csv'));
         const smarts = data.get('SMARTS', 0);
         const funcs = Func.find({tags: ['moleculeSketcher']});
@@ -177,11 +185,13 @@ category('sketcher testing', () => {
             expect(resSmart, smarts);
         }
         dg.close();
-    });
+    });*/
     
     test('molfileV3000', async () => {
+        const module = await grok.functions.call('Chem:getRdKitModule');
         const data = DG.DataFrame.fromCsv(await _package.files.readAsText('v3000_sample.csv'));
         const molfileV3000 = data.get('molecule', 0);
+        const mol = module.get_mol(molfileV3000);
         const funcs = Func.find({tags: ['moleculeSketcher']});
         const sw = new Sketcher();
         const dg = ui.dialog().add(sw).show();
@@ -200,10 +210,16 @@ category('sketcher testing', () => {
                 });
               });
             let resMolfile = await t;
-            expect(resMolfile, molfileV3000);
+            const mol2 = module.get_mol(resMolfile);
+            const match1 = mol.get_substruct_match(mol2);
+            expect(match1 !== '{}', true);
+            const match2 = mol2.get_substruct_match(mol);
+            expect(match2 !== '{}', true);
+            mol2.delete();
         }
+        mol.delete();
         dg.close();
-    });*/
+    });
 
 });
 
