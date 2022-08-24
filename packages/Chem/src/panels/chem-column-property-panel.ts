@@ -63,20 +63,9 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     col.tags['cell.renderer'] == DG.SEMTYPE.MOLECULE,
     (v: boolean) => col.tags['cell.renderer'] = v ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING);
 
-  const rdKitPane = ui.div([
-    ui.inputs([
-      showStructures,
-      scaffoldColumnChoice,
-      highlightScaffoldsCheckbox,
-      regenerateCoordsCheckbox,
-      moleculeFilteringChoice,
-    ]),
-  ]);
-
   const panes = ui.accordion('chem-settings');
-  panes.addPane('RDKit', () => rdKitPane);
   panes.addPane('Scaffold', () => {
-    const sketcher = new DG.chem.chem.Sketcher();
+    const sketcher = new DG.chem.chem.Sketcher(DG.chem.chem.SKETCHER_MODE.EXTERNAL);
     sketcher.syncCurrentObject = false;
     sketcher.setMolFile(col.tags['chem-scaffold']);
     sketcher.onChanged.subscribe((_: any) => {

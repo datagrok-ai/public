@@ -1,8 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 
-import './tests/chem-tests';
-
 import './tests/menu-tests-chem-space';
 import './tests/menu-tests-cliffs';
 import './tests/menu-tests-similarity-diversity';
@@ -11,10 +9,14 @@ import './tests/menu-tests-script-based';
 import './tests/col-panel-tests';
 import './tests/cell-panel-tests';
 
-import './tests/detector-tests';
+import './tests/substructure-search-tests';
 import './tests/rendering-tests';
 import './tests/sketcher-tests';
-import './tests/substructure-search-tests';
+
+import './tests/detector-tests';
+import './tests/api-based-tests';
+
+
 
 export const _package = new DG.Package();
 export {tests};

@@ -8,6 +8,25 @@ import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 
+/**
+   * Decorator to pass all thrown errors to grok.shell.error
+   * @returns The actual funccall associated with the view
+   * @stability Experimental
+ */
+export const passErrorToShell = () => {
+  return (target: any, memberName: string, descriptor: PropertyDescriptor) => {
+    const original = descriptor.value;
+
+    descriptor.value = async function(...args: any[]) {
+      try {
+        await original.call(this, ...args);
+      } catch (err: any) {
+        grok.shell.error((err as Error).message);
+      }
+    };
+  };
+};
+
 export class FunctionView extends DG.ViewBase {
   protected readonly context: DG.Context;
   protected _funcCall?: DG.FuncCall;
@@ -76,7 +95,8 @@ export class FunctionView extends DG.ViewBase {
   */
   exportConfig: {
     /** Override to provide custom export logic.
-      * Default implementation {@link defaultExport} heavily relies on the default implementation of {@link buildIO}.
+      *
+      *  Default implementation {@link defaultExport} heavily relies on the default implementation of {@link buildIO}.
       * @returns Blob with data to be exported into the file.
       * @stability Stable
     */
@@ -118,13 +138,24 @@ export class FunctionView extends DG.ViewBase {
     this._funcCall = funcCall;
 
     if (funcCall.options['isHistorical']) {
-      this.path = `?id=${this._funcCall.id}`;
-      if (!isPreviousHistorical)
+      if (!isPreviousHistorical) {
         this.name = `${this.name} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
-      else
+        this.setRunViewReadonly();
+      } else {
         this.name = `${this.name.substring(0, this.name.indexOf(' — '))} — ${funcCall.options['title'] ?? new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})}`;
+      }
+
+      // FIX ME: view name does not change in models
       document.querySelector('div.d4-ribbon-name')?.replaceChildren(ui.span([this.name]));
+      this.path = `?id=${this._funcCall.id}`;
+    } else {
+      this.setRunViewEditable();
+      this.path = ``;
+
+      if (isPreviousHistorical)
+        this.name = `${this.name.substring(0, this.name.indexOf(' — '))}`;
     }
+    this.buildRibbonPanels();
   }
 
   /**
@@ -157,10 +188,11 @@ export class FunctionView extends DG.ViewBase {
    * Override to create a fully custom UI including ribbon menus and panels
    * @stability Stable
  */
+  @passErrorToShell()
   public build(): void {
     this.root.appendChild(this.buildIO());
+    this.root.appendChild(this.overlayDiv);
 
-    this.buildRibbonPanels();
     this.buildHistoryBlock();
     this.buildRibbonMenu();
   }
@@ -423,15 +455,20 @@ export class FunctionView extends DG.ViewBase {
     historyButton.classList.add('d4-toggle-button');
     if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
 
+    const cloneRunBtn = ui.button('Clone', async () => {
+      await this.cloneRunAsCurrent();
+    }, 'Clone the run');
+
     const newRibbonPanels = [
-      ...this.getRibbonPanels(),
       [...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [ui.divH([
         ui.comboPopup(
           ui.iconFA('arrow-to-bottom'),
           this.exportConfig.supportedFormats,
           async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format))),
       ])]: [],
-      historyButton]
+      historyButton,
+      ...this.funcCall?.options['isHistorical']? [cloneRunBtn]: [],
+      ]
     ];
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
@@ -455,6 +492,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns Saved FuncCall
    * @stability Experimental
  */
+  @passErrorToShell()
   public async removeRunFromFavorites(callToUnfavorite: DG.FuncCall): Promise<DG.FuncCall> {
     callToUnfavorite.options['title'] = null;
     callToUnfavorite.options['annotation'] = null;
@@ -475,6 +513,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns Saved FuncCall
    * @stability Experimental
  */
+  @passErrorToShell()
   public async addRunToFavorites(callToFavorite: DG.FuncCall): Promise<DG.FuncCall> {
     callToFavorite.options['isFavorite'] = true;
     await this.onBeforeAddingToFavorites(callToFavorite);
@@ -493,6 +532,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns Saved FuncCall
    * @stability Experimental
  */
+  @passErrorToShell()
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await grok.dapi.functions.calls.save(callToSave);
@@ -512,6 +552,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns ID of deleted historical run
    * @stability Experimental
  */
+  @passErrorToShell()
   public async deleteRun(callToDelete: DG.FuncCall): Promise<string> {
     await this.onBeforeDeleteRun(callToDelete);
     await grok.dapi.functions.calls.delete(callToDelete);
@@ -538,12 +579,70 @@ export class FunctionView extends DG.ViewBase {
    * @returns FuncCall augemented with inputs' and outputs' values
    * @stability Experimental
  */
+  @passErrorToShell()
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     await this.onBeforeLoadRun();
     const pulledRun = await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
     pulledRun.options['isHistorical'] = true;
     await this.onAfterLoadRun(pulledRun);
+    this.setRunViewReadonly();
     return pulledRun;
+  }
+
+  public async onBeforeCloneRunAsCurrent() { }
+
+  public async onAfterCloneRunAsCurrent() { }
+
+  @passErrorToShell()
+  public async cloneRunAsCurrent() {
+    if (!this.funcCall) throw new Error('Current Funccall is not set');
+
+    await this.onBeforeCloneRunAsCurrent();
+    const clonedFunccall = this.funcCall.clone();
+    clonedFunccall.newId();
+    clonedFunccall.options['isHistorical'] = false;
+    this.linkFunccall(clonedFunccall);
+    await this.onAfterCloneRunAsCurrent();
+  }
+
+  private overlayDiv = ui.div([], {style: {
+    'background-color': 'gray',
+    'opacity': '0.07',
+    'position': 'absolute',
+    'bottom': '0',
+    'left': '0',
+    'right': '0',
+    'top': '0',
+    'display': 'none',
+    'cursor': 'not-allowed'
+  }});
+
+  private readonlyEventListeners = [
+    (ev: MouseEvent)=> {
+      ev.preventDefault();
+      ev.stopPropagation();
+      this.overlayDiv.style.pointerEvents = 'auto';
+    },
+    () => {
+      this.overlayDiv.style.pointerEvents = 'none';
+    },
+    () => {
+      grok.shell.warning('Clone the run to edit it');
+    }
+  ];
+
+  private setRunViewReadonly(): void {
+    this.overlayDiv.style.removeProperty('display');
+    this.root.addEventListener('mousedown', this.readonlyEventListeners[0]);
+    this.root.addEventListener('mouseup', this.readonlyEventListeners[1]);
+    this.root.addEventListener('click', this.readonlyEventListeners[2]);
+  }
+
+  private setRunViewEditable(): void {
+    this.overlayDiv.style.display = 'none';
+    this.root.removeEventListener('mousedown', this.readonlyEventListeners[0]);
+    this.root.removeEventListener('mouseup', this.readonlyEventListeners[1]);
+    this.root.removeEventListener('click', this.readonlyEventListeners[2]);
   }
 
   /**
