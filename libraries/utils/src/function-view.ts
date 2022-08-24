@@ -8,6 +8,25 @@ import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 
+/**
+   * Decorator to pass all thrown errors to grok.shell.error
+   * @returns The actual funccall associated with the view
+   * @stability Experimental
+ */
+export const passErrorToShell = () => {
+  return (target: any, memberName: string, descriptor: PropertyDescriptor) => {
+    const original = descriptor.value;
+
+    descriptor.value = async function(...args: any[]) {
+      try {
+        await original.call(this, ...args);
+      } catch (err: any) {
+        grok.shell.error((err as Error).message);
+      }
+    };
+  };
+};
+
 export class FunctionView extends DG.ViewBase {
   protected readonly context: DG.Context;
   protected _funcCall?: DG.FuncCall;
@@ -169,6 +188,7 @@ export class FunctionView extends DG.ViewBase {
    * Override to create a fully custom UI including ribbon menus and panels
    * @stability Stable
  */
+  @passErrorToShell()
   public build(): void {
     this.root.appendChild(this.buildIO());
     this.root.appendChild(this.overlayDiv);
@@ -472,6 +492,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns Saved FuncCall
    * @stability Experimental
  */
+  @passErrorToShell()
   public async removeRunFromFavorites(callToUnfavorite: DG.FuncCall): Promise<DG.FuncCall> {
     callToUnfavorite.options['title'] = null;
     callToUnfavorite.options['annotation'] = null;
@@ -492,6 +513,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns Saved FuncCall
    * @stability Experimental
  */
+  @passErrorToShell()
   public async addRunToFavorites(callToFavorite: DG.FuncCall): Promise<DG.FuncCall> {
     callToFavorite.options['isFavorite'] = true;
     await this.onBeforeAddingToFavorites(callToFavorite);
@@ -510,6 +532,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns Saved FuncCall
    * @stability Experimental
  */
+  @passErrorToShell()
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
     const savedCall = await grok.dapi.functions.calls.save(callToSave);
@@ -529,6 +552,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns ID of deleted historical run
    * @stability Experimental
  */
+  @passErrorToShell()
   public async deleteRun(callToDelete: DG.FuncCall): Promise<string> {
     await this.onBeforeDeleteRun(callToDelete);
     await grok.dapi.functions.calls.delete(callToDelete);
@@ -555,6 +579,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns FuncCall augemented with inputs' and outputs' values
    * @stability Experimental
  */
+  @passErrorToShell()
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     await this.onBeforeLoadRun();
     const pulledRun = await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
@@ -568,6 +593,7 @@ export class FunctionView extends DG.ViewBase {
 
   public async onAfterCloneRunAsCurrent() { }
 
+  @passErrorToShell()
   public async cloneRunAsCurrent() {
     if (!this.funcCall) throw new Error('Current Funccall is not set');
 
