@@ -447,9 +447,14 @@ public abstract class JdbcDataProvider extends DataProvider {
                                 colType.equals(Types.STRING))
                             columns.get(c - 1).add((value != null) ? value.toString() : "");
                         else if (isTime(type, typeName)) {
-                            java.util.Date time = (value instanceof java.sql.Timestamp)
-                                    ? java.util.Date.from(((java.sql.Timestamp)value).toInstant())
-                                    : ((java.util.Date) value);
+                            java.util.Date time;
+                            if (value instanceof java.sql.Timestamp)
+                                time = java.util.Date.from(((java.sql.Timestamp)value).toInstant());
+                            else if (value instanceof java.time.ZonedDateTime)
+                                time = java.util.Date.from(((java.time.ZonedDateTime)value).toInstant());
+                            else
+                                time = ((java.util.Date) value);
+
                             columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
                         }
                     } else {
