@@ -61,7 +61,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
     'minFontSize': 9,
     'highlightBondWidthMultiplier': 12,
     'dummyIsotopeLabels': false,
-    'highlightColour': [205/255, 92/255, 92/255],
+    'highlightColour': [58/255, 117/255, 196/255],
     'atomColourPalette': {
       16: [0.498, 0.247, 0.0],
       9: [0.0, 0.498, 0.0],
