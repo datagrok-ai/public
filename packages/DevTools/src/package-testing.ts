@@ -298,8 +298,8 @@ export class TestManager extends DG.ViewBase {
   async runTest(t: IPackageTest): Promise<boolean> {
     if (this.debugMode)
       debugger;
-    const start = Date.now();
     this.testInProgress(t.resultDiv, true);
+    const start = Date.now();
     const res = await grok.functions.call(
       `${t.packageName}:test`, {
       'category': t.test.category,
