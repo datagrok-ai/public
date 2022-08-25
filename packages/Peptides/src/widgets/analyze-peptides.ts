@@ -17,6 +17,9 @@ import {scaleActivity} from '../utils/misc';
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
 export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Column): Promise<DG.Widget> {
+  if (!col.tags['aligned'].includes('MSA'))
+    return new DG.Widget(ui.divText('Peptides analysis only works with aligned sequences'));
+
   const funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
   if (funcs.length == 0)
     return new DG.Widget(ui.label('Bio package is missing or out of date. Please install the latest version.'));
