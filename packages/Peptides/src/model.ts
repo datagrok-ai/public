@@ -177,7 +177,8 @@ export class PeptidesModel {
 
     //Split the aligned sequence into separate AARs
     const col: DG.Column = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
-    const alphabet = col.tags[DG.TAGS.UNITS].split(':')[2];
+    // const alphabet = col.tags[DG.TAGS.UNITS].split(':')[2];
+    const alphabet = col.tags['alphabet'];
     const splitSeqDf = splitAlignedPeptides(col);
 
     this.barData = calculateBarsData(splitSeqDf.columns.toList(), this.df.selection);

@@ -269,9 +269,8 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     // 28 is the height of the two substitutions on top of each other + space
     const updatedY = Math.max(y, y + (h - 28) / 2);
 
-    let palette: SeqPalette = UnknownSeqPalettes.Color;
-    if (units != 'HELM')
-      palette = getPalleteByType(units.substring(units.length - 2));
+    let palette: SeqPalette = units == 'HELM' ? UnknownSeqPalettes.Color :
+      getPalleteByType(gridCell.tableColumn!.tags[C.TAGS.ALPHABET]);
 
     const vShift = 7;
     for (let i = 0; i < subParts1.length; i++) {
