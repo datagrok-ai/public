@@ -35,7 +35,7 @@ export async function sim() {
     lc.dataFrame = t;
   } 
   
-  const v = grok.shell.newView('Sequence Translator', [
+  const v = grok.shell.newView('SimPKPD', [
     ui.panel([
       ui.div([
         ui.div([
