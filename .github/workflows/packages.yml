@@ -183,6 +183,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
       - name: Test Package
         if: ${{ matrix.test == 'true' }}
+        timeout-minutes: 60
         id: test-package
         run: npm run test -- --verbose=false
         env:
