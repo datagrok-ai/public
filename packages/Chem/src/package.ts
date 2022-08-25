@@ -22,7 +22,7 @@ import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {_rdKitModule} from './utils/chem-common-rdkit';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
-import {convertMoleculeImpl, isMolBlock, MolNotation, molToMolblock} from './utils/chem-utils';
+import {convertMoleculeImpl, isMolBlock, MolNotation} from './utils/chem-utils';
 import '../css/chem.css';
 import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
@@ -37,6 +37,7 @@ import Sketcher = chem.Sketcher;
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
+import {_convertNotation} from './utils/notatiton-converter';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -593,4 +594,12 @@ export function detectSmiles(col: DG.Column, min: number) {
 //input: column col { semType: Molecule }
 export async function getStructuralAlerts(col: DG.Column<string>): Promise<void> {
   await checkForStructuralAlerts(col);
+}
+
+//name: convertNotation
+//input: string moleculeString
+//input: string sourceNotation
+//input: string targetNotation
+export async function convertNotation(mol: string, sourceNotation: string, targetNotation: string): Promise<string> {
+  return await _convertNotation(mol, sourceNotation, targetNotation);
 }

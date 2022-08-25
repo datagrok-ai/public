@@ -4,14 +4,13 @@
  * */
 
 import {BitSet, Column, DataFrame} from './dataframe';
-import {FUNC_TYPES, SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, TYPE, UNITS} from './const';
-import {Subject, Subscription} from "rxjs";
-import {Menu, Widget} from "./widgets";
-import {Func} from "./entities";
-import * as ui from "../ui";
-import {SemanticValue} from "./grid";
-import $ from "cash-dom";
-import {Utils} from "./utils";
+import {FUNC_TYPES, SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, UNITS} from './const';
+import {Subject, Subscription} from 'rxjs';
+import {Menu, Widget} from './widgets';
+import {Func} from './entities';
+import * as ui from '../ui';
+import {SemanticValue} from './grid';
+import $ from 'cash-dom';
 
 let api = <any>window;
 declare let grok: any;
@@ -115,10 +114,10 @@ export namespace chem {
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
     inplaceSketcherDiv: HTMLDivElement|null = null;
 
-    getSmiles(): string {
-      let returnConvertedSmiles = () => { // in case getter is called before sketcher initialized
+    async getSmiles(): Promise<string> {
+      let returnConvertedSmiles = async () => { // in case getter is called before sketcher initialized
         if(this._molfile) {
-          this._smiles = chem.convert(this._molfile, 'mol', 'smiles');
+          this._smiles = await chem.convert(this._molfile, 'molblockV2000', 'smiles');
           return this._smiles;
         } else {
           return this._smarts; //to do - convert from smarts to smiles
@@ -133,10 +132,10 @@ export namespace chem {
       this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
-    getMolFile(): string {
-      let returnConvertedMolfile = () => { // in case getter is called before sketcher initialized
+    async getMolFile(): Promise<string> {
+      let returnConvertedMolfile = async () => { // in case getter is called before sketcher initialized
         if(this._smiles) {
-          this._molfile = chem.convert(this._smiles, 'smiles', 'mol');
+          this._molfile = await chem.convert(this._smiles, 'smiles', 'molblockV2000');
           return this._molfile;
         } else {
           return this._smarts; //to do - convert from smarts to molfile
@@ -152,17 +151,11 @@ export namespace chem {
     }
 
     async getSmarts(): Promise<string | null> {
-      let returnConvertedSmarts = async() => { // in case getter is called before sketcher initialized
+      let returnConvertedSmarts = async () => { // in case getter is called before sketcher initialized
         if(this._smiles) {
-          const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this._smiles);
-          this._smarts = mol.get_smarts();
-          mol?.delete();
-          return this._smarts;
+          return await chem.convert(this._smiles, 'smiles', 'smarts');
         } else {
-          const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this._molfile);
-          this._smarts = mol.get_smarts();
-          mol?.delete();
-          return this._smarts;
+          return await chem.convert(this._molfile, 'molblockV2000', 'smarts');
         }
       }
       return this.sketcher && this.sketcher._sketcher ? await this.sketcher.getSmarts() : !this._smarts ? await returnConvertedSmarts() : this._smarts;
@@ -178,8 +171,8 @@ export namespace chem {
       return this.sketcher ? this.sketcher.supportedExportFormats : [];
     }
 
-    isEmpty(): boolean {
-      const molFile = this.getMolFile();
+    async isEmpty(): Promise<boolean> {
+      const molFile = await this.getMolFile();
       return (molFile == null || molFile == '' || molFile.split("\n")[3].trimStart()[0] === '0');
     }
 
@@ -253,7 +246,7 @@ export namespace chem {
       this.extSketcherDiv.append(content);
     }
 
-    updateExtSketcherContent(extSketcherDiv: HTMLElement) {
+    async updateExtSketcherContent(extSketcherDiv: HTMLElement) {
       if (!(this.isEmpty()) && extSketcherDiv.parentElement) {
         const width = extSketcherDiv.parentElement!.clientWidth;
         const height = width / 2;
@@ -261,7 +254,7 @@ export namespace chem {
         let canvas = ui.canvas(width, height);
         canvas.style.height = '100%';
         canvas.style.width = '100%';
-        canvasMol(0, 0, width, height, canvas, this.getMolFile()!)
+        canvasMol(0, 0, width, height, canvas, await this.getMolFile()!)
           .then((_) => {
             ui.empty(this.extSketcherDiv);
             this.extSketcherDiv.append(canvas);
@@ -274,13 +267,13 @@ export namespace chem {
       this._updateExtSketcherInnerHTML(sketchLink);
     };
 
-    createExternalModeSketcher(): HTMLElement {
+    async createExternalModeSketcher(): Promise<HTMLElement> {
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
       ui.tooltip.bind(this.extSketcherDiv, 'Click to edit filter');
 
-      this.extSketcherDiv.addEventListener('mousedown', () => {
+      this.extSketcherDiv.addEventListener('mousedown', async () => {
 
-        let savedMolFile = this.getMolFile();
+        let savedMolFile = await this.getMolFile();
         savedMolFile = savedMolFile == '' ?  WHITE_MOLBLOCK : savedMolFile;
 
         let dlg = ui.dialog();
@@ -673,16 +666,23 @@ export namespace chem {
     return func.apply();
   }
 
-  export function convert(s: string, sourceFormat: string, targetFormat: string) {
-    if (sourceFormat == 'mol' && targetFormat == 'smiles') {
-      // @ts-ignore
-      let mol = new OCL.Molecule.fromMolfile(s);
-      return mol.toSmiles();
-    } else if (sourceFormat == 'smiles' && targetFormat == 'mol'){
-      // @ts-ignore
-      let mol = new OCL.Molecule.fromSmiles(s);
-      return mol.toMolfile();
-    }
+  /**
+   * Convert between any of the notations: SMILES, Molfile V2000 and Molfile V3000
+   *
+   * @param {string} mol  admissible notations: same as possible values
+   * for source/target notation parameters
+   * @param {string} sourceNotation  possible values: 'smiles', 'smarts',
+   * 'molblockV2000', 'molblockV3000'
+   * @param {string} targetNotation  possible values: 'smiles', 'smarts',
+   * 'molblockV2000', 'molblockV3000'
+   * @return {string} the converted representation
+   */
+  export async function convert(mol: string, sourceNotation: string, targetNotation: string): Promise<string> {
+    return await grok.functions.call('Chem:convertNotation', {
+        'mol': mol,
+        'sourceNotation': sourceNotation,
+        'targetNotation': targetNotation,
+      });
   }
 
   export async function showSketcherDialog() {
