@@ -91,7 +91,7 @@ export function getNucleotidesMol(smilesCodes: string[]) {
   return linkV3000(molBlocks, false);
 }
 
-export function linkV3000(molBlocks: string[], twoChains: boolean = false) {
+export function linkV3000(molBlocks: string[], twoChains: boolean = false, useChirality: boolean = true) {
   let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
   macroMolBlock += '  0  0  0  0  0  0            999 V3000\n';
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
@@ -242,9 +242,13 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false) {
   macroMolBlock += 'M  V30 BEGIN BOND\n';
   macroMolBlock += bondBlock;
   macroMolBlock += 'M  V30 END BOND\n';
-  macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
-  macroMolBlock += collectionBlock;
-  macroMolBlock += 'M  V30 END COLLECTION\n';
+  if(useChirality){
+    macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
+    macroMolBlock += collectionBlock;
+    macroMolBlock += 'M  V30 END COLLECTION\n';
+  } else
+    macroMolBlock = macroMolBlock.replace(/ CFG=\d/g, ' ');
+
   macroMolBlock += 'M  V30 END CTAB\n';
   macroMolBlock += 'M  END\n';
 
