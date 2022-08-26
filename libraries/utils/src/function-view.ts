@@ -22,6 +22,7 @@ export const passErrorToShell = () => {
         await original.call(this, ...args);
       } catch (err: any) {
         grok.shell.error((err as Error).message);
+        throw Error;
       }
     };
   };
