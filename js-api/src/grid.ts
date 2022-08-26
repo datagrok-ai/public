@@ -677,6 +677,12 @@ export class Grid<TSettings = any> extends Viewer<TSettings> {
     return api.grok_Grid_Get_Overlay(this.dart);
   }
 
+  /** List of columns the grid is sorted by. */
+  get sortByColumns(): Column[] { return toJs(api.grok_Grid_Get_SortByColumns(this.dart)); }
+
+  /** Sort directions for [sortByColumns]: true = ascending order, false = descending order. */
+  get sortTypes(): boolean[] { return api.grok_Grid_Get_SortTypes(this.dart); }
+
   /**
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-prepare}
    */
