@@ -1,5 +1,5 @@
 
-import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, delimiter} from './map';
+import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, delimiter, gcrsCodesWithoutSmiles} from './map';
 import {asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, asoGapmersGcrsToNucleotides,
   asoGapmersGcrsToBioSpring, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
@@ -88,6 +88,10 @@ export function getFormat(sequence: string): string | null {
   return possibleSynthesizers[0];
 }
 
+function sortByStringLengthInDescendingOrder(array: string[]): string[] {
+  return array.sort(function(a: string, b: string) {return b.length - a.length;});
+}
+
 export function isValidSequence(sequence: string, format: string | null): {
   indexOfFirstNotValidChar: number,
   synthesizer: string[] | null,
@@ -118,7 +122,7 @@ export function isValidSequence(sequence: string, format: string | null): {
   const nucleotides = ['A', 'U', 'T', 'C', 'G'];
 
   possibleSynthesizers.forEach((synthesizer) => {
-    const codes = getAllCodesOfSynthesizer(synthesizer);
+    const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer));
     while (outputIndex < sequence.length) {
       const matchedCode = codes.find((c) => c == sequence.slice(outputIndex, outputIndex + c.length));
 
@@ -212,9 +216,11 @@ export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
 }
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): string[] {
-  const synthesizers: string[] = [];
+  let synthesizers: string[] = [];
   Object.keys(map).forEach((synthesizer: string) => {
-    const codes = getAllCodesOfSynthesizer(synthesizer);
+    let codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer));
+    if (synthesizer == 'Janssen GCRS Codes')
+      codes = codes.concat(gcrsCodesWithoutSmiles);
     //TODO: get first non-dropdown code when there are two modifications
     let start = 0;
     for (let i = 0; i < sequence.length; i++) {
@@ -223,6 +229,8 @@ function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): stri
         break;
       }
     }
+    if (gcrsCodesWithoutSmiles.some((s: string) => s == sequence.slice(start, start + s.length)))
+      synthesizers = ['Janssen GCRS Codes'];
     if (codes.some((s: string) => s == sequence.slice(start, start + s.length)))
       synthesizers.push(synthesizer);
   });
