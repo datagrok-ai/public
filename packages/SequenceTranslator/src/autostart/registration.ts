@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
 } from '../structures-works/converters';
 import {map, COL_NAMES, MODIFICATIONS} from '../structures-works/map';
-import {getFormat} from '../structures-works/sequence-codes-tools';
+import {getFormat, isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 
 import {SALTS_CSV} from '../salts';
@@ -117,18 +117,19 @@ export function oligoSdFile(table: DG.DataFrame) {
   const icdsDf = DG.DataFrame.fromCsv(ICDS);
   const idpsDf = DG.DataFrame.fromCsv(IDPS);
 
-  function addColumns(t: DG.DataFrame, saltsDf: DG.DataFrame) {
+  async function addColumns(t: DG.DataFrame, saltsDf: DG.DataFrame) {
     if (t.columns.contains(COL_NAMES.COMPOUND_NAME))
       return grok.shell.error('Columns already exist');
 
-    const sequence = t.getCol(COL_NAMES.SEQUENCE);
-    const salt = t.getCol(COL_NAMES.SALT);
-    const equivalents = t.getCol(COL_NAMES.EQUIVALENTS);
+    const sequenceCol = t.getCol(COL_NAMES.SEQUENCE);
+    const saltCol = t.getCol(COL_NAMES.SALT);
+    const equivalentsCol = t.getCol(COL_NAMES.EQUIVALENTS);
 
-    t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => sequence.get(i));
+    t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => sequenceCol.get(i));
+
     t.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => (i > 0 && i % 2 == 0) ?
-      sequence.getString(i) + '; duplex of SS: ' + sequence.getString(i - 2) + ' and AS: ' + sequence.getString(i - 1) :
-      sequence.getString(i),
+      sequenceCol.get(i) + '; duplex of SS: ' + sequenceCol.get(i - 2) + ' and AS: ' + sequenceCol.get(i - 1) :
+      sequenceCol.get(i),
     );
     const molWeightCol = saltsDf.getCol('MOLWEIGHT');
     const saltNamesList = saltsDf.getCol('DISPLAY').toList();
@@ -141,14 +142,21 @@ export function oligoSdFile(table: DG.DataFrame) {
     }
     for (const [key, value] of Object.entries(MODIFICATIONS))
       weightsObj[key] = value.molecularWeight;
-    t.columns.addNewFloat(COL_NAMES.CPD_MW)
-      .init((i: number) => molecularWeight(sequence.get(i), weightsObj));
-    t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
-      const saltRowIndex = saltNamesList.indexOf(salt.get(i));
-      const mw = molWeightCol.get(saltRowIndex);
-      return mw * equivalents.get(i);
+
+    t.columns.addNewFloat(COL_NAMES.CPD_MW).init((i: number) => {
+      return (isValidSequence(sequenceCol.get(i), null).indexOfFirstNotValidChar == -1) ?
+        molecularWeight(sequenceCol.get(i), weightsObj) :
+        DG.FLOAT_NULL;
     });
-    t.columns.addNewCalculated(COL_NAMES.BATCH_MW,
+
+    t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
+      const saltRowIndex = saltNamesList.indexOf(saltCol.get(i));
+      return (saltRowIndex == -1) ?
+        DG.FLOAT_NULL :
+        molWeightCol.get(saltRowIndex) * equivalentsCol.get(i);
+    });
+
+    await t.columns.addNewCalculated(COL_NAMES.BATCH_MW,
       '${' + COL_NAMES.CPD_MW + '} + ${' + COL_NAMES.SALT_MASS + '}', DG.COLUMN_TYPE.FLOAT, false,
     );
 
@@ -165,9 +173,9 @@ export function oligoSdFile(table: DG.DataFrame) {
       if (table.getCol(COL_NAMES.IDP).type != DG.COLUMN_TYPE.STRING)
         table.changeColumnType(COL_NAMES.IDP, DG.COLUMN_TYPE.STRING);
       d.append(
-        ui.link('Add Columns', () => {
-          addColumns(table, saltsDf);
-          // grok.shell.tableView(table.name).grid.columns.setOrder(Object.values(COL_NAMES));
+        ui.link('Add Columns', async () => {
+          await addColumns(table, saltsDf);
+          view.grid.columns.setOrder(Object.values(COL_NAMES));
         }, 'Add columns: \'' + [COL_NAMES.COMPOUND_NAME, COL_NAMES.COMPOUND_COMMENTS, COL_NAMES.CPD_MW,
           COL_NAMES.SALT_MASS, COL_NAMES.BATCH_MW].join('\', \''), '',
         ),
