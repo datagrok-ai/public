@@ -85,8 +85,6 @@ export async function _testFindSimilar(findSimilarFunction: (...args: any) => Pr
   const dfResult: DG.DataFrame = // shouldn't be null
     (await findSimilarFunction(colInput, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
 
-  console.log(dfResult.toCsv());
-
   const numRows = dfResult.rowCount;
   const columnNames = [
     dfResult.columns.byIndex(0).name,
@@ -100,7 +98,7 @@ export async function _testFindSimilar(findSimilarFunction: (...args: any) => Pr
     const index: number = dfResult.columns.byIndex(2).get(i);
     first5Rows[i] = { molecule, score, index };
   }
-  //expect(numRows, numRowsOriginal);
+  expect(numRows, numRowsOriginal);
   expect(columnNames[0], 'molecule');
   expect(columnNames[1], 'score');
   expect(columnNames[2], 'index');
