@@ -505,26 +505,29 @@ export namespace chem {
      * @param {number} minScore - Minimum similarity score for a molecule to be included.
      * @returns {Promise<DataFrame>}
      * */
-    export function findSimilarServer(column: Column, molecule: string, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO, limit: number = 10, minScore: number = 0.7): Promise<DataFrame> {
+    export function findSimilarServer(column: Column, molecule: string, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO, limit: number = Number.MAX_VALUE, minScore: number = 0): Promise<DataFrame> {
       return new Promise((resolve, _reject) => api.grok_Chem_SimilaritySearch(column.dart, molecule, metric,
         limit, minScore, (t: any) => resolve(new DataFrame(t))));
     }
   
-
-  /**
+    /**
    * Returns the specified number of most diverse molecules in the column.
    * See example: {@link https://datagrok.ai/help/domains/chem/diversity-search}
    * @async
-   * @param {Column} column - Column with molecules in which to search.
-   * @param {SimilarityMetric} metric - Metric to use.
-   * @param {number} limit - Number of molecules to return.
-   * @returns {Promise<DataFrame>}
+   * @param {Column} column - Column with molecules to search in
+   * @param {Object} settings - Settings
+   * @param {int} settings.limit - Would return top limit molecules
+   * @returns {Promise<DataFrame>} - DataFrame with 1 column:
+   *   - molecule: set of diverse structures
    * */
-  export function diversitySearch(column: Column, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO, limit: number = 10): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Chem_DiversitySearch(column.dart, metric, limit, (mols: any) => resolve(mols), (e: any) => reject(e)));
+  export async function diversitySearch(column: Column, settings = {limit: Number.MAX_VALUE}): Promise<DataFrame> {
+    const result = await grok.functions.call('Chem:getDiversities', {
+      'molStringsColumn': column,
+      'limit': settings.limit
+    });
+    return result;
   }
 
-  
   /**
    * Searches for a molecular pattern in a given column, returning a bitset with hits.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/substructure-search}
@@ -561,7 +564,6 @@ export namespace chem {
       'molBlockFailover': (settings.hasOwnProperty('molBlockFailover') ? settings.molBlockFailover : '') ?? ''
     })).get(0);
   }
-
  
   /**
    * Searches for a molecular pattern in a given column, returning a bitset with hits.

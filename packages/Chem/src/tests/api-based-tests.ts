@@ -31,7 +31,7 @@ category('server features', () => {
   //   await grok.chem.diversitySearch(t.col('smiles')!);
   // });
 
-  test('testMcs', async () => {
+  test('mcs', async () => {
     const t = DG.DataFrame.fromCsv(`smiles
 O=C1CN=C(c2ccccc2N1)C3CCCCC3
 CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
