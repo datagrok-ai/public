@@ -4,9 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import { category, expect, test } from '@datagrok-libraries/utils/src/test';
 import { _testSearchSubstructure,
   _testSearchSubstructureAllParameters,
-  _testSearchSubstructureSARSmall,
-  loadFileAsText } from './utils';
+  _testSearchSubstructureSARSmall } from './utils';
 import { _testFindSimilar, _testGetSimilarities } from './menu-tests-similarity-diversity'
+import { testCsv, testSubstructure } from './substructure-search-tests'
 
 import {_importSdf} from '../open-chem/sdf-importer';
 
@@ -15,11 +15,6 @@ category('server features', () => {
   test('findSimilarServer.api.sar-small', async () => {
     await _testFindSimilar(grok.chem.findSimilarServer);
   });
-
-  // test('testSubstructureSearch', async () => {
-  //   const t = grok.data.demo.molecules();
-  //   await grok.chem.searchSubstructure(t.col('smiles')!, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
-  // });
 
   // test('testDescriptors', async () => {
   //   const t = grok.data.demo.molecules();
@@ -52,5 +47,17 @@ category('chem exported', () => {
 
   test('getSimilarities.api.molecules', async () => {
     await _testGetSimilarities(grok.chem.getSimilarities);
+  });
+
+  test('substructureSearch', async () => {
+    const df = DG.DataFrame.fromCsv(testCsv);
+    const trueIndices = [0, 2];
+    const bitset: DG.BitSet = await grok.chem.searchSubstructure(df.col('smiles')!, testSubstructure);
+    const bitsetString = bitset.toBinaryString();
+    const bitsetArray = [...bitsetString];
+    for (let k = 0; k < trueIndices.length; k++) {
+      expect(bitsetArray[trueIndices[k]] === '1', true);
+      bitsetArray[trueIndices[k]] = '0';
+    }
   });
 });
