@@ -1,25 +1,14 @@
-import {category, expect, delay, test} from "@datagrok-libraries/utils/src/test";
-import * as DG from "datagrok-api/dg";
+import {category, expect, delay, test, before} from "@datagrok-libraries/utils/src/test";
 import * as grok from "datagrok-api/grok";
-import * as ui from "datagrok-api/ui";
 
 category('usageAnalysis', () => {
   const allViewersToView: {[index: string] : string[]} = {
-    'Overview': ['Total Users', 'Unique Users List', 'Unique Users', 'Events', 'Errors'],
+    'Overview': ['Groups', 'Users', 'Unique Users', 'Packages'],
     'Events': ['Events', 'Packages', 'Package Functions', 'Functions', 'Sources'],
     'Errors': ['Errors', 'Errors', 'Disabled Errors', 'Error Sources'],
     'Function Errors': ['Function Errors', 'Function Errors', 'Function Disabled Errors', 'Packages By Errors'],
     'Users': ['Users', 'Usage', 'Unique Users'],
     'Data': ['Queries', 'Queries', 'Connections', 'Data Sources']
-  }
-
-  const canvasViewersToView: {[index: string] : {[index: string] : number}} = {
-    'Overview': {'d4-line-chart': 3},
-    'Events': {'d4-line-chart': 1, 'd4-bar-chart': 4},
-    'Errors': {'d4-line-chart': 1, 'd4-bar-chart': 3},
-    'Function Errors': {'d4-line-chart': 1, 'd4-bar-chart': 3},
-    'Users': {'d4-line-chart': 1, 'd4-scatter-plot': 1, 'd4-bar-chart': 1},
-    'Data': {'d4-line-chart': 1, 'd4-bar-chart': 3}
   }
 
   function changeView(viewName: string) {
@@ -30,8 +19,11 @@ category('usageAnalysis', () => {
     grok.shell.v = view;
   }
 
-  test('openApp', async () => {
+  before(async () => {
     await grok.functions.call("UsageAnalysis:usageAnalysisApp");
+  });
+
+  test('openApp', async () => {
     await delay(5000);
     expect(grok.shell.v.name === 'Overview', true);
   });
@@ -56,18 +48,6 @@ category('usageAnalysis', () => {
         }
       }
       expect(foundedViewersOfView, allViewersToView[viewName].length);
-    }
-  });
-
-  test('canvasViewersTest', async () => {
-    for (let viewName of Object.keys(canvasViewersToView)) {
-      changeView(viewName);
-      await delay(2000);
-
-      for (let viewerName of Object.keys(canvasViewersToView[viewName])) {
-        if (document.getElementsByClassName(viewerName).length !== canvasViewersToView[viewName][viewerName])
-          throw `Not enough ${viewerName} in ${viewName}`;
-      }
     }
   });
 
