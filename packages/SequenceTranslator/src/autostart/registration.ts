@@ -151,9 +151,12 @@ export function oligoSdFile(table: DG.DataFrame) {
 
     t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
       const saltRowIndex = saltNamesList.indexOf(saltCol.get(i));
-      return (saltRowIndex == -1) ?
-        DG.FLOAT_NULL :
-        molWeightCol.get(saltRowIndex) * equivalentsCol.get(i);
+      return (saltRowIndex == -1) ? DG.FLOAT_NULL : molWeightCol.get(saltRowIndex) * equivalentsCol.get(i);
+    });
+
+    t.columns.addNewFloat(COL_NAMES.SALT_MOL_WEIGHT).init((i: number) => {
+      const saltRowIndex = saltNamesList.indexOf(saltCol.get(i));
+      return (saltRowIndex == -1) ? DG.FLOAT_NULL : molWeightCol.get(saltRowIndex);
     });
 
     await t.columns.addNewCalculated(COL_NAMES.BATCH_MW,
