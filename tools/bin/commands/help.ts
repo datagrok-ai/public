@@ -31,6 +31,7 @@ grok add query <name>
 grok add script [tag] <language> <name>
 grok add view <name>
 grok add viewer <name>
+grok add tests
 
 Please note that entity names may only include letters and numbers
 
