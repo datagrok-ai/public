@@ -523,11 +523,9 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
     return toJs(api.grok_DataConnectionsDataSource_Save(this.dart, e.dart, options!.saveCredentials));
   }
 
-  /** Creates connection to the directory
-   * @param path {string} path to the directory
-   * @returns {Promise<DataConnectionsDataSource>} */
-  async subDir(path: string): Promise<DataConnection> {
-    return toJs(await api.grok_DataConnectionsDataSource_SubDir(this.dart, path));
+  /** Creates connection to the subdirectory of connection */
+  async shareFolder(e: DataConnection, path: string): Promise<DataConnection> {
+    return toJs(await api.grok_DataConnectionsDataSource_SubDir(this.dart, e.dart, path));
   }
 }
 
