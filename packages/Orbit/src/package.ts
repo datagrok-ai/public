@@ -41,6 +41,6 @@ export async function app() {
   console.log(newConnection);
 
   // open files view to subfolder with shared connection filter
-  let view = DG.FilesView.create({'t': `shares.connection.id = "${newConnection.id}"`, 'path': newConnection.nqName});
+  let view = DG.FilesView.create({'t': `id = "${newConnection.id}"`, 'path': newConnection.nqName});
   grok.shell.addView(view);
 }
