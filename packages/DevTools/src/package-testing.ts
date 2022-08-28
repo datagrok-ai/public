@@ -89,7 +89,7 @@ export class TestManager extends DG.ViewBase {
       [
         [testUIElements.runButton],
         [testUIElements.runAllButton],
-        [ui.boolInput('Debug', false, () => { this.debugMode = !this.debugMode; }).root],
+        [ui.switchInput('Debug', false, () => { this.debugMode = !this.debugMode; }).root],
         [ui.switchInput('Benchmark', false, () => { this.benchmarkMode = !this.benchmarkMode; }).root]
       ],
     );
@@ -324,7 +324,6 @@ export class TestManager extends DG.ViewBase {
     switch (nodeType) {
       case NODE_TYPE.PACKAGE: {
         const progressBar = DG.TaskBarProgressIndicator.create(tests.package.name);
-        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.package.name}`;
         let testsSucceded = true;
         this.testInProgress(tests.resultDiv, true);
         await this.collectPackageTests(node as DG.TreeViewGroup, tests);
@@ -339,26 +338,27 @@ export class TestManager extends DG.ViewBase {
             testsSucceded = false;
         }
         this.updateTestResultsIcon(tests.resultDiv, testsSucceded);
+        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.package.name}`;
         progressBar.close();
         break;
       }
       case NODE_TYPE.CATEGORY: {
         const progressBar = DG.TaskBarProgressIndicator.create(`${tests.packageName}/${tests.fullName}`);
-        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.fullName}`;
         await this.runTestsRecursive(tests, progressBar, tests.totalTests, 0, `${tests.packageName}/${tests.fullName}`);
+        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.fullName}`;
         progressBar.close();
         break;
       }
       case NODE_TYPE.TEST: {
-        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.test.category}/${tests.test.name}`;
         await this.runTest(tests);
+        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.test.category}/${tests.test.name}`;
         break;
       }
     }
     grok.shell.closeAll();
-    grok.shell.v = this.testManagerView;
     setTimeout(() => {
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType);
+      grok.shell.v = this.testManagerView;
     }, 100);
   
   }

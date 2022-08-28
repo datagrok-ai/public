@@ -178,6 +178,19 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
   }
 }
 
+//name: getDiversities
+//input: column molStringsColumn
+//output: dataframe result
+export async function getDiversities(molStringsColumn: DG.Column, limit: number = Number.MAX_VALUE): Promise<DG.DataFrame> {
+  try {
+    const result = await chemSearches.chemGetDiversities(molStringsColumn, limit);
+    return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
+  } catch (e: any) {
+    console.error('Chem | Catch in getDiversities: ' + e.toString());
+    throw e;
+  }
+}
+
 //name: findSimilar
 //input: column molStringsColumn
 //input: string molString

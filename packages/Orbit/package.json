@@ -1,0 +1,43 @@
+{
+	"name": "orbit",
+	"friendlyName": "Orbit",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "^1.6.2",
+		"cash-dom": "latest",
+		"dayjs": "latest",
+		"@datagrok-libraries/utils": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"scripts": {
+		"link-all": "npm link datagrok-api",
+		"debug-orbit": "webpack && grok publish ",
+		"release-orbit": "webpack && grok publish --release",
+		"build-orbit": "webpack",
+		"build": "webpack",
+		"debug-orbit-dev": "grok publish dev",
+		"release-orbit-dev": "grok publish dev --release",
+		"debug-orbit-unit": "grok publish unit",
+		"release-orbit-unit": "grok publish unit --release",
+		"debug-orbit-release": "grok publish release",
+		"release-orbit-release": "grok publish release --release",
+		"debug-orbit-local": "grok publish local",
+		"release-orbit-local": "grok publish local --release",
+		"debug-orbit-localhost": "grok publish localhost",
+		"release-orbit-localhost": "webpack && grok publish localhost --release",
+		"debug-orbit-unittest": "grok publish unittest",
+		"release-orbit-unittest": "grok publish unittest --release"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
+}

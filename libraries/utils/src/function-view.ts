@@ -19,9 +19,10 @@ export const passErrorToShell = () => {
 
     descriptor.value = async function(...args: any[]) {
       try {
-        await original.call(this, ...args);
+        return await original.call(this, ...args);
       } catch (err: any) {
         grok.shell.error((err as Error).message);
+        throw Error;
       }
     };
   };
@@ -846,7 +847,7 @@ export class FunctionView extends DG.ViewBase {
       const editor = ui.div();
       const inputs: DG.InputBase[] = await call.buildEditor(editor, {condensed: true});
       editor.classList.add('ui-form');
-      const buttons = ui.divH([this.historyRoot, runButton], {style: {'justify-content': 'space-between'}});
+      const buttons = ui.divH([runButton], {style: {'justify-content': 'space-between'}});
       editor.appendChild(buttons);
       return editor;
     });
