@@ -1,5 +1,5 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
-import {isMolBlock} from '../utils/chem-utils';
+import {isMolBlock} from '../utils/convert-notation-utils';
 import {RDModule, RDMol} from '../rdkit-api';
 
 interface InitMoleculesStructuresResult {

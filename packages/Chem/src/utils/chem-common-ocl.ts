@@ -3,7 +3,7 @@
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full';
-import {isMolBlock} from './chem-utils';
+import {isMolBlock} from './convert-notation-utils';
 
 export function renderDescription(description: OCL.IParameterizedString[]): HTMLDivElement {
   const host = ui.div([]);

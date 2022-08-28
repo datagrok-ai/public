@@ -4,13 +4,13 @@
  * */
 
 import {BitSet, Column, DataFrame} from './dataframe';
-import {FUNC_TYPES, SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, UNITS} from './const';
-import {Subject, Subscription} from 'rxjs';
-import {Menu, Widget} from './widgets';
-import {Func} from './entities';
-import * as ui from '../ui';
-import {SemanticValue} from './grid';
-import $ from 'cash-dom';
+import {FUNC_TYPES, SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, TYPE, UNITS} from './const';
+import {Subject, Subscription} from "rxjs";
+import {Menu, Widget} from "./widgets";
+import {Func} from "./entities";
+import * as ui from "../ui";
+import {SemanticValue} from "./grid";
+import $ from "cash-dom";
 
 let api = <any>window;
 declare let grok: any;
@@ -35,7 +35,8 @@ export function isMolBlock(s: string | null) {
 export namespace chem {
 
   export const SMILES = 'smiles';
-  export const MOLV2000 = 'molv2000';
+  export const MOLV2000 = 'molblockV2000';
+  export const MOLV3000 = 'molblockV3000';
   export const SMARTS = 'smarts';
 
   export enum SKETCHER_MODE {
@@ -86,8 +87,6 @@ export namespace chem {
     }
   }
 
-
-
   /**
    * Molecule sketcher that supports multiple dynamically initialized implementations.
    * */
@@ -114,16 +113,17 @@ export namespace chem {
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
     inplaceSketcherDiv: HTMLDivElement|null = null;
 
-    async getSmiles(): Promise<string> {
-      let returnConvertedSmiles = async () => { // in case getter is called before sketcher initialized
-        if(this._molfile) {
-          this._smiles = await chem.convert(this._molfile, 'molblockV2000', 'smiles');
-          return this._smiles;
-        } else {
-          return this._smarts; //to do - convert from smarts to smiles
-        }
-      }
-      return this.sketcher && this.sketcher._sketcher ? this.sketcher.smiles : !this._smiles ? returnConvertedSmiles() : this._smiles;
+    getSmiles(): string {
+      // let returnConvertedSmiles = () => { // in case getter is called before sketcher initialized
+      //   if(this._molfile) {
+      //     this._smiles = chem.convert(this._molfile, 'mol', 'smiles');
+      //     return this._smiles;
+      //   } else {
+      //     return this._smarts; //to do - convert from smarts to smiles
+      //   }
+      // }
+      // return this.sketcher && this.sketcher._sketcher ? this.sketcher.smiles : !this._smiles ? returnConvertedSmiles() : this._smiles;
+      return this.sketcher && this.sketcher._sketcher ? this.sketcher.smiles : this._smiles;
     }
 
     setSmiles(x: string): void {
@@ -132,16 +132,17 @@ export namespace chem {
       this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
-    async getMolFile(): Promise<string> {
-      let returnConvertedMolfile = async () => { // in case getter is called before sketcher initialized
-        if(this._smiles) {
-          this._molfile = await chem.convert(this._smiles, 'smiles', 'molblockV2000');
-          return this._molfile;
-        } else {
-          return this._smarts; //to do - convert from smarts to molfile
-        }
-      }
-      return this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : !this._molfile ? returnConvertedMolfile() : this._molfile;
+    getMolFile(): string {
+      // let returnConvertedMolfile = () => { // in case getter is called before sketcher initialized
+      //   if(this._smiles) {
+      //     this._molfile = chem.convert(this._smiles, 'smiles', 'mol');
+      //     return this._molfile;
+      //   } else {
+      //     return this._smarts; //to do - convert from smarts to molfile
+      //   }
+      // }
+      // return this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : !this._molfile ? returnConvertedMolfile() : this._molfile;
+      return this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : this._molfile;
     }
 
     setMolFile(x: string): void {
@@ -151,11 +152,17 @@ export namespace chem {
     }
 
     async getSmarts(): Promise<string | null> {
-      let returnConvertedSmarts = async () => { // in case getter is called before sketcher initialized
+      let returnConvertedSmarts = async() => { // in case getter is called before sketcher initialized
         if(this._smiles) {
-          return await chem.convert(this._smiles, 'smiles', 'smarts');
+          const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this._smiles);
+          this._smarts = mol.get_smarts();
+          mol?.delete();
+          return this._smarts;
         } else {
-          return await chem.convert(this._molfile, 'molblockV2000', 'smarts');
+          const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this._molfile);
+          this._smarts = mol.get_smarts();
+          mol?.delete();
+          return this._smarts;
         }
       }
       return this.sketcher && this.sketcher._sketcher ? await this.sketcher.getSmarts() : !this._smarts ? await returnConvertedSmarts() : this._smarts;
@@ -171,8 +178,8 @@ export namespace chem {
       return this.sketcher ? this.sketcher.supportedExportFormats : [];
     }
 
-    async isEmpty(): Promise<boolean> {
-      const molFile = await this.getMolFile();
+    isEmpty(): boolean {
+      const molFile = this.getMolFile();
       return (molFile == null || molFile == '' || molFile.split("\n")[3].trimStart()[0] === '0');
     }
 
@@ -246,7 +253,7 @@ export namespace chem {
       this.extSketcherDiv.append(content);
     }
 
-    async updateExtSketcherContent(extSketcherDiv: HTMLElement) {
+    updateExtSketcherContent(extSketcherDiv: HTMLElement) {
       if (!(this.isEmpty()) && extSketcherDiv.parentElement) {
         const width = extSketcherDiv.parentElement!.clientWidth;
         const height = width / 2;
@@ -254,7 +261,7 @@ export namespace chem {
         let canvas = ui.canvas(width, height);
         canvas.style.height = '100%';
         canvas.style.width = '100%';
-        canvasMol(0, 0, width, height, canvas, await this.getMolFile()!)
+        canvasMol(0, 0, width, height, canvas, this.getMolFile()!)
           .then((_) => {
             ui.empty(this.extSketcherDiv);
             this.extSketcherDiv.append(canvas);
@@ -267,13 +274,13 @@ export namespace chem {
       this._updateExtSketcherInnerHTML(sketchLink);
     };
 
-    async createExternalModeSketcher(): Promise<HTMLElement> {
+    createExternalModeSketcher(): HTMLElement {
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
       ui.tooltip.bind(this.extSketcherDiv, 'Click to edit filter');
 
-      this.extSketcherDiv.addEventListener('mousedown', async () => {
+      this.extSketcherDiv.addEventListener('mousedown', () => {
 
-        let savedMolFile = await this.getMolFile();
+        let savedMolFile = this.getMolFile();
         savedMolFile = savedMolFile == '' ?  WHITE_MOLBLOCK : savedMolFile;
 
         let dlg = ui.dialog();
@@ -439,70 +446,69 @@ export namespace chem {
     }
   }
 
-   /**
+ /**
+ * Computes similarity scores for molecules in the input vector based on a preferred similarity score.
+ * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores}
+ * @async
+ * @param {Column} column - Column with molecules to search in
+ * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
+ *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
+ * @param {Object} settings - Properties for the similarity function (type, parameters, etc.)
+ * @returns {Promise<Column>} - Column of corresponding similarity scores
+ * */
+  export async function getSimilarities(column: Column, molecule: string = '', settings: object = {}): Promise<Column | null> {
+
+    const result = await grok.functions.call('Chem:getSimilarities', {
+      'molStringsColumn': column,
+      'molString': molecule
+    });
+    // TODO: figure out what's the state in returning columns from package functions
+    return (molecule.length != 0) ? result.columns.byIndex(0) : null;
+
+  }
+
+  /**
    * Computes similarity scores for molecules in the input vector based on a preferred similarity score.
-   * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores}
+   * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted}
    * @async
    * @param {Column} column - Column with molecules to search in
    * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
    *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
-   * @param {Object} settings - Properties for the similarity function (type, parameters, etc.)
-   * @returns {Promise<Column>} - Column of corresponding similarity scores
+   * @param {Object} settings - Properties for the similarity function
+   * @param {int} settings.limit - Would return top limit molecules based on the score
+   * @param {int} settings.cutoff - Would drop molecules which score is lower than cutoff
+   * @returns {Promise<DataFrame>} - DataFrame with 3 columns:
+   *   - molecule: original molecules string representation from the input column
+   *   - score: similarity scores within the range from 0.0 to 1.0;
+   *            DataFrame is sorted descending by this column
+   *   - index: indices of the molecules in the original input column
    * */
-    export async function getSimilarities(column: Column, molecule: string = '', settings: object = {}): Promise<Column | null> {
+  export async function findSimilar(column: Column, molecule: string = '', settings = {limit: Number.MAX_VALUE, cutoff: 0.0}): Promise<DataFrame | null> {
 
-      const result = await grok.functions.call('Chem:getSimilarities', {
-        'molStringsColumn': column,
-        'molString': molecule
-      });
-      // TODO: figure out what's the state in returning columns from package functions
-      return (molecule.length != 0) ? result.columns.byIndex(0) : null;
-  
-    }
-  
-    /**
-     * Computes similarity scores for molecules in the input vector based on a preferred similarity score.
-     * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted}
-     * @async
-     * @param {Column} column - Column with molecules to search in
-     * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
-     *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
-     * @param {Object} settings - Properties for the similarity function
-     * @param {int} settings.limit - Would return top limit molecules based on the score
-     * @param {int} settings.cutoff - Would drop molecules which score is lower than cutoff
-     * @returns {Promise<DataFrame>} - DataFrame with 3 columns:
-     *   - molecule: original molecules string representation from the input column
-     *   - score: similarity scores within the range from 0.0 to 1.0;
-     *            DataFrame is sorted descending by this column
-     *   - index: indices of the molecules in the original input column
-     * */
-    export async function findSimilar(column: Column, molecule: string = '', settings = {limit: Number.MAX_VALUE, cutoff: 0.0}): Promise<DataFrame | null> {
-  
-      const result = await grok.functions.call('Chem:findSimilar', {
-        'molStringsColumn': column,
-        'molString': molecule,
-        'limit': settings.limit,
-        'cutoff': settings.cutoff
-      });
-      return (molecule.length != 0) ? result : null;
-  
-    }
-  
-    /**
-     * Returns molecules similar to the reference one.
-     * @async
-     * @param {Column} column - Molecule column to search in.
-     * @param {string} molecule - Reference molecule in SMILES format.
-     * @param {SimilarityMetric} metric - Metric to use.
-     * @param {number} limit - Maximum number of results to return.
-     * @param {number} minScore - Minimum similarity score for a molecule to be included.
-     * @returns {Promise<DataFrame>}
-     * */
-    export function findSimilarServer(column: Column, molecule: string, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO, limit: number = 10, minScore: number = 0.7): Promise<DataFrame> {
-      return new Promise((resolve, _reject) => api.grok_Chem_SimilaritySearch(column.dart, molecule, metric,
-        limit, minScore, (t: any) => resolve(new DataFrame(t))));
-    }
-  
+    const result = await grok.functions.call('Chem:findSimilar', {
+      'molStringsColumn': column,
+      'molString': molecule,
+      'limit': settings.limit,
+      'cutoff': settings.cutoff
+    });
+    return (molecule.length != 0) ? result : null;
+
+  }
+
+  /**
+   * Returns molecules similar to the reference one.
+   * @async
+   * @param {Column} column - Molecule column to search in.
+   * @param {string} molecule - Reference molecule in SMILES format.
+   * @param {SimilarityMetric} metric - Metric to use.
+   * @param {number} limit - Maximum number of results to return.
+   * @param {number} minScore - Minimum similarity score for a molecule to be included.
+   * @returns {Promise<DataFrame>}
+   * */
+  export function findSimilarServer(column: Column, molecule: string, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO, limit: number = 10, minScore: number = 0.7): Promise<DataFrame> {
+    return new Promise((resolve, _reject) => api.grok_Chem_SimilaritySearch(column.dart, molecule, metric,
+      limit, minScore, (t: any) => resolve(new DataFrame(t))));
+  }
 
   /**
    * Returns the specified number of most diverse molecules in the column.
@@ -516,7 +522,6 @@ export namespace chem {
   export function diversitySearch(column: Column, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO, limit: number = 10): Promise<DataFrame> {
     return new Promise((resolve, reject) => api.grok_Chem_DiversitySearch(column.dart, metric, limit, (mols: any) => resolve(mols), (e: any) => reject(e)));
   }
-
   
   /**
    * Searches for a molecular pattern in a given column, returning a bitset with hits.
@@ -554,7 +559,6 @@ export namespace chem {
       'molBlockFailover': (settings.hasOwnProperty('molBlockFailover') ? settings.molBlockFailover : '') ?? ''
     })).get(0);
   }
-
  
   /**
    * Searches for a molecular pattern in a given column, returning a bitset with hits.
@@ -636,7 +640,7 @@ export namespace chem {
     return root;
   }
   
-    /**
+  /**
    * Renders a molecule to canvas (using RdKit)
    * TODO: should NOT be async
    * See example: {@link }
@@ -664,25 +668,6 @@ export namespace chem {
   export async function createSketcher(): Promise<SketcherBase> {
     let func = Func.find({name: 'createMarvinSketcher'})[0];
     return func.apply();
-  }
-
-  /**
-   * Convert between any of the notations: SMILES, Molfile V2000 and Molfile V3000
-   *
-   * @param {string} mol  admissible notations: same as possible values
-   * for source/target notation parameters
-   * @param {string} sourceNotation  possible values: 'smiles', 'smarts',
-   * 'molblockV2000', 'molblockV3000'
-   * @param {string} targetNotation  possible values: 'smiles', 'smarts',
-   * 'molblockV2000', 'molblockV3000'
-   * @return {string} the converted representation
-   */
-  export async function convert(mol: string, sourceNotation: string, targetNotation: string): Promise<string> {
-    return await grok.functions.call('Chem:convertNotation', {
-        'mol': mol,
-        'sourceNotation': sourceNotation,
-        'targetNotation': targetNotation,
-      });
   }
 
   export async function showSketcherDialog() {
