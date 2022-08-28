@@ -22,7 +22,7 @@ import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {_rdKitModule} from './utils/chem-common-rdkit';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
-import {_convertNotation, isMolBlock, MolNotation} from './utils/convert-notation-utils';
+import {_convertMolNotation, isMolBlock, MolNotation} from './utils/convert-notation-utils';
 import '../css/chem.css';
 import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
@@ -439,15 +439,15 @@ export async function identifiers(smiles: string): Promise<DG.Widget> {
   return smiles ? await identifiersWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: convertNotation
+//name: convertMolNotation
 //description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
 //tags: unitConverter
 //input: string molecule {semType: Molecule}
-//input: string from {choices:["smiles", "smarts", "molblock", "inchi", "v3Kmolblock"]}
-//input: string to {choices:["smiles", "smarts", "molblock", "inchi", "v3Kmolblock"]}
+//input: string sourceNotation {choices:["smiles", "smarts", "molblock", "inchi", "v3Kmolblock"]}
+//input: string targetNotation {choices:["smiles", "smarts", "molblock", "inchi", "v3Kmolblock"]}
 //output: string result {semType: Molecule}
-export function convertNotation(molecule: string, sourceNotation: string, targetNotation: string): string {
-  return _convertNotation(molecule, sourceNotation, targetNotation, getRdKitModule());
+export function convertMolNotation(molecule: string, sourceNotation: string, targetNotation: string): string {
+  return _convertMolNotation(molecule, sourceNotation, targetNotation, getRdKitModule());
 }
 
 
