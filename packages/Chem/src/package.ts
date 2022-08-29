@@ -14,7 +14,6 @@ import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
-import {drawTooltip} from './analysis/activity-cliffs';
 import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
@@ -37,6 +36,7 @@ import Sketcher = chem.Sketcher;
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
+import { findMcsAndUpdateDrawings } from './analysis/activity-cliffs';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -277,7 +277,7 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
   {'units': smiles.tags['units']},
   chemSpace,
   chemSearches.chemGetSimilarities,
-  drawTooltip,
+  findMcsAndUpdateDrawings,
   (options as any)[methodName]);
   return sp;
 }
