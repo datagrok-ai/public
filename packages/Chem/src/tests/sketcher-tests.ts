@@ -198,24 +198,26 @@ category('sketcher testing', () => {
         await initSketcher(sw);
         for (let func of funcs) {         
             const fn = func.friendlyName;
-            await sw.setMolFile(molfileV3000);
-            const t = new Promise((resolve, reject) => {
-                sw.onChanged.subscribe(async (_: any) => {
-                    try {
-                        const resultMolfile = sw.getMolFile();
-                        resolve(resultMolfile);
-                    } catch (error) {
-                        reject(error);
-                    }
+            if(sw.sketcher?.supportedExportFormats.includes('molV3000')) {
+                await sw.setMolFile(molfileV3000);
+                const t = new Promise((resolve, reject) => {
+                    sw.onChanged.subscribe(async (_: any) => {
+                        try {
+                            const resultMolfile = sw.getMolFile();
+                            resolve(resultMolfile);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    });
                 });
-              });
-            let resMolfile = await t;
-            const mol2 = module.get_mol(resMolfile);
-            const match1 = mol.get_substruct_match(mol2);
-            expect(match1 !== '{}', true);
-            const match2 = mol2.get_substruct_match(mol);
-            expect(match2 !== '{}', true);
-            mol2.delete();
+                let resMolfile = await t;
+                const mol2 = module.get_mol(resMolfile);
+                const match1 = mol.get_substruct_match(mol2);
+                expect(match1 !== '{}', true);
+                const match2 = mol2.get_substruct_match(mol);
+                expect(match2 !== '{}', true);
+                mol2.delete();
+            }
         }
         mol.delete();
         dg.close();
