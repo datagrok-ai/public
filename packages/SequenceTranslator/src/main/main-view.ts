@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import {convertSequence, undefinedInputSequence, isValidSequence} from '../structures-works/sequence-codes-tools';
 import {map, MODIFICATIONS} from '../structures-works/map';
 import {sequenceToSmiles, sequenceToMolV3000} from '../structures-works/from-monomers';
-
 import $ from 'cash-dom';
 
 const defaultInput = 'fAmCmGmAmCpsmU';
@@ -12,7 +11,7 @@ const sequenceWasCopied = 'Copied';
 const tooltipSequence = 'Copy sequence';
 
 export function mainView() {
-  function updateTableAndMolecule(sequence: string, inputFormat: string, isSet: boolean): void {
+  function updateTableAndMolecule(sequence: string, inputFormat: string): void {
     moleculeSvgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
@@ -20,9 +19,8 @@ export function mainView() {
     try {
       sequence = sequence.replace(/\s/g, '');
       const output = isValidSequence(sequence, null);
-      if (isSet)
-        output.synthesizer = [inputFormat];
-      inputFormatChoiceInput.value = output.synthesizer![0];
+      output.synthesizer = [inputFormat];
+      // inputFormatChoiceInput.value = output.synthesizer![0];
       const outputSequenceObj = convertSequence(sequence, output);
       const tableRows = [];
 
@@ -101,14 +99,15 @@ export function mainView() {
     }
   }
 
-  const inputFormatChoiceInput = ui.choiceInput(
-    'Input format: ', 'Janssen GCRS Codes', Object.keys(map), (format: string) => {
-      updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''), format, true);
-    });
+  const inputFormatChoiceInput = ui.choiceInput('Input format: ', 'Janssen GCRS Codes', Object.keys(map));
+  inputFormatChoiceInput.onInput((format: string) => {
+    updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''), format);
+  });
   const moleculeSvgDiv = ui.block([]);
   const outputTableDiv = ui.div([]);
-  const inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => updateTableAndMolecule(sequence,
-      inputFormatChoiceInput.value!, false));
+  const inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => {
+    updateTableAndMolecule(sequence, inputFormatChoiceInput.value!);
+  });
 
   const asoDf = DG.DataFrame.fromObjects([
     {'Name': '2\'MOE-5Me-rU', 'BioSpring': '5', 'Janssen GCRS': 'moeT'},
@@ -151,7 +150,7 @@ export function mainView() {
         DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
       ])!, {showRowHeader: false, showCellTooltip: false},
   );
-  updateTableAndMolecule(defaultInput, inputFormatChoiceInput.value!, true);
+  updateTableAndMolecule(defaultInput, inputFormatChoiceInput.value!);
 
   const codesTablesDiv = ui.splitV([
     ui.box(ui.h2('ASO Gapmers'), {style: {maxHeight: '40px'}}),
