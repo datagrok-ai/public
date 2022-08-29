@@ -15,7 +15,7 @@ import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
 import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cliffs';
+import {drawSequences, sequenceGetSimilarities} from './utils/sequence-activity-cliffs';
 import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
@@ -142,7 +142,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     tags,
     sequenceSpace,
     sequenceGetSimilarities,
-    drawTooltip,
+    drawSequences,
     (options as any)[methodName]);
     return sp;
 }
