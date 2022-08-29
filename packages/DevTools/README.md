@@ -26,13 +26,13 @@ Components:
      The command outputs a code snippet that adds a viewer of this type to the current view. The options you selected are saved and passed to the `addViewer` method. See the [How to manipulate viewers](https://datagrok.ai/help/develop/how-to/manipulate-viewers) article to learn more about API to work with viewers.
 
    3. `Test manager` is a component that provides an interface for running package unit tests and further results exploration.
-   To start `Test manager` you should go to top menu `Tools` -> `Dev` -> `Test manager`
+   To start `Test manager` go to top menu `Tools` -> `Dev` -> `Test manager`
    
    ![Test manager start](./img/test-mngr-start.png)
 
-   After starting the tool you will see a list of all packages which contain unit tests. Inside each package, the tests
-are divided by category. Categories support multiple nesting (in this case subcategories should be divided by `:`). 
-You can select required package/category/test by clicking on it. Also you can change selection by using `up` and `down` key buttons.
+   Application starts showing a list of all packages containing unit tests. Inside each package, tests
+are divided by category. Categories support multiple nesting (subcategories should be divided by `:`). 
+To select a test or a category, click on it, or use keyboard.
 
 ![Tests list](./img/test-mngr-tests-list.png)
 
@@ -40,14 +40,14 @@ You can select required package/category/test by clicking on it. Also you can ch
 
 There are multiple ways you can run tests:
 
-- by right clicking on package, category or test. Context menu with `Run` button will appear
-- by selecting package, category or test and pushing `Enter`
-- by selecting package, category or test and pushing `Run` on a ribbon panel
-- by selecting package, category or test and pushing `Run` on a property panel
+- by right clicking on package, category, or test and selecting `Run` from context menu
+- by selecting package, category, or test and pushing `Enter`
+- by selecting package, category, or test and pushing `Run` on a ribbon panel
+- by selecting package, category, or test and pushing `Run` on a property panel
 - individual tests can be run by double click
 - you can run all tests at once using `Run all` button on the ribbon
-- package, category or test can be run by putting the corresponding url into address bar of the browser. The format is the following `your_server_name/apps/DevTools/TestManager/package_name/category_name/test_name`
- You will see the progress icon opposite to active test/category/package which will end up in result icon after completion. In case at least one test fails within category or package the fail icon will be shown.
+- package, category, or test can be run by putting the corresponding url into address bar of the browser. The format is the following `your_server_name/apps/DevTools/TestManager/package_name/category_name/test_name`
+ Progress icon is shown opposite to active test/category/package, it will end up in result icon after completion. In case at least one test fails within category or package the fail icon will be shown.
 
 ![Running tests](./img/running_tests.gif)
 
@@ -55,7 +55,7 @@ Progress bar on the bottom of the page will show the percentage of completed tes
 ![Progress bar](./img/test_manager_progress_bar.png)
 
 ### Reviewing results
-You can get information about test results via tooltip or in the property panel for the selected test, category or package.
+Information about test results is available via tooltip or in the property panel. Selected test, category, or package to explore results.
 In case category/package contain multiple tests results are shown as a grid which can be added to workspace for further exploration.
 
 ![Test results](./img/test_results.gif)
