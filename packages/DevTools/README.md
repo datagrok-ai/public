@@ -52,6 +52,7 @@ There are multiple ways you can run tests:
 ![Running tests](./img/running_tests.gif)
 
 Progress bar on the bottom of the page will show the percentage of completed tests.
+
 ![Progress bar](./img/test_manager_progress_bar.png)
 
 ### Reviewing results
