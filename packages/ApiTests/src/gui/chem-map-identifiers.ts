@@ -24,7 +24,6 @@ category('Chem: Map Identifiers', () => {
     let actionsPanel:HTMLElement;
     for (let i = 0; i < panels.length; i++ ){        
       actionsPanel = panels[i] as HTMLElement;
-      console.log('PANEL: ' + actionsPanel.innerText);
       if (actionsPanel.innerText == 'Actions')
           break;}
     actionsPanel!.click(); 
