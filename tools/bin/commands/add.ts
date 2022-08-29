@@ -305,12 +305,15 @@ export function add(args: { _: string[] }) {
           return color.error('Entry point not found during config parsing');
   
         const testEntry = "    test: {filename: 'package-test.js', library: " +
-          "{type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},\n";
+          "{type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},";
         fs.writeFileSync(webpackConfigPath, config.slice(0, entryIdx) + testEntry +
           config.slice(entryIdx), 'utf8');
       }
 
       const packageObj = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+      Object.assign(packageObj.dependencies, {
+        '@datagrok-libraries/utils': 'latest',
+      });
       Object.assign(packageObj.devDependencies, {
         'jest-html-reporter': '^3.5.0',
         'jest': '^27.0.0',
@@ -332,6 +335,9 @@ export function add(args: { _: string[] }) {
         fs.writeFileSync(path.join(curDir, 'jest.config.js'), fs.readFileSync(
           path.join(path.dirname(path.dirname(__dirname)), 'package-template',
           'jest.config.js')));
+
+      if (!fs.existsSync(path.join(srcDir, '__jest__')))
+        fs.mkdirSync(path.join(srcDir, '__jest__'));
 
       if (!fs.existsSync(path.join(srcDir, '__jest__', 'remote.test.ts')))
         fs.writeFileSync(path.join(srcDir, '__jest__', 'remote.test.ts'),
