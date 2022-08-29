@@ -6,7 +6,7 @@ import {EntityType} from '../constants';
 
 category('Dev panel', () => {
   const subs = [];
-  const delayDuration = 500;
+  const delayDuration = 1000;
   const entities: EntityType[] = [];
   const showPropertyPanel = grok.shell.windows.showProperties;
   let currentEntity: EntityType;
@@ -35,29 +35,55 @@ category('Dev panel', () => {
     }));
   });
 
-  test('Dev panel opens', async () => {
+  test('Dev panel opens', () => new Promise(async (resolve, reject) => {
     if (!entities.length)
-      throw 'Failed to find entities for the test';
+      reject('Failed to find entities for the test');
+    let result = true;
+    let object = null;
+
+    subs.push(grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
+      currentEntity = acc.context;
+      devPane = acc.getPane('Dev');
+      result = result && devPane != null && (<DG.Entity>currentEntity).id === object.id;
+    }));
+
+    setTimeout(() => reject('Timeout'), delayDuration * (entities.length + 1));
     for (const ent of entities) {
       grok.shell.o = ent;
+      object = ent;
       await delay(delayDuration);
-      assure.notNull(devPane);
-      expect((<DG.Entity>currentEntity).id, (<DG.Entity>ent).id);
-      expect(currentEntity.name, ent.name);
     }
-  });
 
-  test('Dev panel content', async () => {
-    devPane.expanded = true;
-    await delay(1000);
+    if (result)
+      resolve('OK');
+  }));
+
+  test('Dev panel content', () => new Promise(async (resolve, reject) => {
+    if (!entities.length)
+      reject('Failed to find entities for the test');
+
+    subs.push(grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
+      devPane = acc.getPane('Dev');
+      devPane.expanded = true;
+    }));
+
+    grok.shell.o = entities[0];
+    await delay(1500);
+    if (!devPane)
+      reject('Dev panel not constructed');
+
     const devPaneContainer = devPane.root.querySelector('.dt-dev-pane-container');
     const snippetSection = devPane.root.querySelector('.dt-snippet-section');
     const textArea = devPane.root.querySelector('.dt-textarea-box');
-    [devPaneContainer, snippetSection, textArea].forEach((el) => {
-      console.log(el);
-      assure.notNull(el);
-    });
-  });
+
+    if (!devPaneContainer)
+      reject('Missing dev pane container');
+    else if (!snippetSection)
+      reject('Missing snippet section');
+    else if (!textArea)
+      reject('Missing text area');
+    resolve('OK');
+  }));
 
   after(async () => {
     subs.forEach((sub) => sub.unsubscribe());
