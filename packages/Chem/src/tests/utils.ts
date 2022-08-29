@@ -45,14 +45,12 @@ export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
     expect(bitsetArray[i] === '0', true);
 }
 
-export async function _testSearchSubstructureSARSmall(params: any | null = null): Promise<void> {
+export async function _testSearchSubstructureSARSmall(): Promise<void> {
   const file = await loadFileAsText('sar-small.csv');
 
   const df = DG.DataFrame.fromCsv(file);
   const col = df.columns.byIndex(0);
-  const bitset: DG.BitSet = (params !== null) ?
-    (await searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', params.molBlockFailover)) :
-    (await searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', '')).get(0);
+  const bitset: DG.BitSet = (await searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', '')).get(0);
   const countDataframe = col.length;
   const countResult = bitset.trueCount;
   expect(countDataframe, 200);
