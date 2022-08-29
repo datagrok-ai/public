@@ -173,30 +173,3 @@ category('cell panel', async () => {
     getDescriptorsSingle(molStr);
   });
 });
-
-category('widget benchmarks', () => {
-  before(async () => {
-    chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
-    chemCommonRdKit.initRdKitModuleLocal();
-  });
-
-  test('Structural Alerts Benchmark', async () => {
-    const alertsDf = DG.DataFrame.fromCsv(await _package.files.readAsText('alert-collection.csv'));
-    const ruleSetCol = alertsDf.getCol('rule_set_name');
-    const smartsCol = alertsDf.getCol('smarts');
-    const ruleIdCol = alertsDf.getCol('rule_id');
-    const rdkitModule = chemCommonRdKit.getRdKitModule();
-  
-    const smartsMap = new Map<string, RDMol>();
-    for (let i = 0; i < alertsDf.rowCount; i++)
-      smartsMap.set(ruleIdCol.get(i), rdkitModule.get_qmol(smartsCol.get(i)));
-
-    const sarSmall = DG.DataFrame.fromCsv(await _package.files.readAsText('sar-small.csv'));
-    const smilesCol = sarSmall.getCol('smiles');
-    const ruleSetList = ['BMS', 'Dundee', 'Glaxo', 'Inpharmatica', 'LINT', 'MLSMR', 'PAINS', 'SureChEMBL'];
-
-    DG.time('Structural Alerts', () => {
-      runStructuralAlertsDetection(sarSmall, ruleSetList, smilesCol, ruleSetCol, ruleIdCol, smartsMap, rdkitModule);
-    });
-  });
-});
