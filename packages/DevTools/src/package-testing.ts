@@ -356,12 +356,10 @@ export class TestManager extends DG.ViewBase {
         break;
       }
     }
-    grok.shell.closeAll();
     setTimeout(() => {
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType);
       grok.shell.v = this.testManagerView;
-    }, 100);
-  
+    }, 30);
   }
   
   async runTestsRecursive(
