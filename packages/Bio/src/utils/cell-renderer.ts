@@ -7,8 +7,12 @@ import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-log
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as ui from 'datagrok-api/ui';
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import {GridCell} from 'datagrok-api/dg';
 
 const undefinedColor = 'rgb(100,100,100)';
+const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
+const grayColor = '#808080';
+const gapRenderer = 5;
 
 function getPalleteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
@@ -44,6 +48,81 @@ export function processSequence(subParts: string[]): [string[], boolean] {
 }
 
 
+/**
+ * A function that prints a string aligned to left or centered.
+ *
+ * @param {number} x x coordinate.
+ * @param {number} y y coordinate.
+ * @param {number} w Width.
+ * @param {number} h Height.
+ * @param {CanvasRenderingContext2D} g Canvas rendering context.
+ * @param {string} s String to print.
+ * @param {string} [color=undefinedColor] String color.
+ * @param {number} [pivot=0] Pirvot.
+ * @param {boolean} [left=false] Is left aligned.
+ * @param {number} [transparencyRate=0.0] Transparency rate where 1.0 is fully transparent
+ * @param {string} [separator=''] Is separator for sequence.
+ * @param {boolean} [last=false] Is checker if element last or not.
+ * @return {number} x coordinate to start printing at.
+ */
+export function printLeftOrCentered(
+  x: number, y: number, w: number, h: number,
+  g: CanvasRenderingContext2D, s: string, color = undefinedColor,
+  pivot: number = 0, left = false, transparencyRate: number = 1.0,
+  separator: string = '', last: boolean = false, drawStyle: string = 'classic', maxWord: any = {}, maxWordIdx: number = 0, gridCell: any = {}): number {
+  g.textAlign = 'start';
+  const colorPart = s.substring(0);
+  let grayPart = last ? '' : separator;
+  if (drawStyle === 'msa') {
+    grayPart = '';
+  }
+
+  let textSize: any = g.measureText(colorPart + grayPart);
+  const indent = 5;
+
+  let maxColorTextSize = g.measureText(colorPart).width;
+  let colorTextSize = g.measureText(colorPart).width;
+  const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
+  textSize = textSize.width;
+  if (drawStyle === 'msa') {
+    maxColorTextSize = maxWord[maxWordIdx];
+    textSize = maxWord[maxWordIdx];
+    if (maxColorTextSize > maxWord) {
+      maxWord[maxWordIdx] = maxColorTextSize;
+      gridCell.cell.column.temp = maxWord;
+    }
+    if (maxWordIdx > (maxWord['bio-maxIndex'] ?? 0)) {
+      maxWord['bio-maxIndex'] = maxWordIdx;
+      gridCell.cell.column.temp = maxWord;
+    }
+  }
+
+  function draw(dx1: number, dx2: number): void {
+    g.fillStyle = color;
+    g.globalAlpha = transparencyRate;
+    if (drawStyle === 'classic') {
+      g.fillText(colorPart, x + dx1, y + dy);
+      g.fillStyle = grayColor;
+      g.fillText(grayPart, x + dx2, y + dy);
+    }
+    if (drawStyle === 'msa') {
+      g.fillStyle = color;
+      g.fillText(colorPart, x + dx1 + ((maxWord[maxWordIdx] - colorTextSize) / 2), y + dy);
+    }
+  }
+
+  if (left || textSize > w) {
+    draw(indent, indent + maxColorTextSize);
+    return x + maxColorTextSize + g.measureText(grayPart).width;
+
+  } else {
+    const dx = (w - textSize) / 2;
+    draw(dx, dx + maxColorTextSize);
+    return x + dx + maxColorTextSize;
+  }
+}
+
+
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   get name(): string { return 'sequence'; }
 
@@ -58,12 +137,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       return;
     }
     const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
-    if (maxLengthWordsSum == null) {
-      gridCell.cell.column.setTag('.calculatedCellRender', 'unexist');
-    }
     const maxIndex = gridCell.cell.column.temp['bio-maxIndex'];
     //@ts-ignore
-    const argsX = e.layerX - gridCell.gridColumn.left - ((gridCell.bounds.x<0) ? gridCell.bounds.x : 0);
+    const argsX = e.layerX - gridCell.gridColumn.left - ((gridCell.bounds.x < 0) ? gridCell.bounds.x : 0);
     let left = 0;
     let right = maxIndex;
     let found = false;
@@ -128,23 +204,31 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const separator = gridCell.cell.column.getTag('separator') ?? '';
     const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, separator);
 
-    const columns = gridCell.cell.column.categories;
-    let monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
-    let maxLengthOfMonomer = 8;
+
+    const maxLengthOfMonomer = 8;
 
     let maxLengthWords: any = {};
     if (gridCell.cell.column.getTag('.calculatedCellRender') !== 'exist') {
-      for (let i = 0; i < columns.length; i++) {
-        let subParts: string[] = splitterFunc(columns[i]);
+      let samples = 0;
+      while (samples < Math.max(Math.min(gridCell.cell.column.length, 100), gridCell.cell.column.length / 100)) {
+        let column = gridCell.cell.column.get(samples);
+        let subParts: string[] = splitterFunc(column);
         subParts.forEach((amino, index) => {
-          let textSizeWidth = g.measureText(monomerToShortFunction(amino, maxLengthOfMonomer));
-          if (textSizeWidth.width > (maxLengthWords[index] ?? 0)) {
-            maxLengthWords[index] = textSizeWidth.width;
+          let textSize = monomerToShortFunction(amino, maxLengthOfMonomer).length * 7 + gapRenderer;
+          if (textSize > (maxLengthWords[index] ?? 0)) {
+            maxLengthWords[index] = textSize;
           }
           if (index > (maxLengthWords['bio-maxIndex'] ?? 0)) {
             maxLengthWords['bio-maxIndex'] = index;
           }
         });
+        samples += 1;
+      }
+      let minLength = 3 * 7;
+      for (let i = 0; i <= maxLengthWords['bio-maxIndex']; i++) {
+        if (maxLengthWords[i] < minLength) {
+          maxLengthWords[i] = minLength;
+        }
       }
       let maxLengthWordSum: any = {};
       maxLengthWordSum[0] = maxLengthWords[0];
@@ -172,7 +256,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       color = palette.get(amino);
       g.fillStyle = undefinedColor;
       let last = index === subParts.length - 1;
-      x1 = printLeftOrCentered(x1, y, w, h, g, monomerToShortFunction(amino, maxLengthOfMonomer), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell);
+      x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell);
     });
 
     g.restore();
@@ -269,8 +353,9 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     // 28 is the height of the two substitutions on top of each other + space
     const updatedY = Math.max(y, y + (h - 28) / 2);
 
-    let palette: SeqPalette = units == 'HELM' ? UnknownSeqPalettes.Color :
-      getPalleteByType(gridCell.tableColumn!.tags[C.TAGS.ALPHABET]);
+    let palette: SeqPalette = UnknownSeqPalettes.Color;
+    if (units != 'HELM')
+      palette = getPalleteByType(units.substring(units.length - 2));
 
     const vShift = 7;
     for (let i = 0; i < subParts1.length; i++) {
