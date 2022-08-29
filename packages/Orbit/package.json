@@ -1,7 +1,11 @@
 {
-	"name": "orbit",
+	"name": "@datagrok/orbit",
 	"friendlyName": "Orbit",
-	"version": "0.0.1",
+	"version": "0.0.2",
+	"author": {
+		"name": "Alexander Paramonov",
+		"email": "aparamomov@datagrok.ai"
+	},
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "^1.6.2",
