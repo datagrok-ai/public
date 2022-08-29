@@ -16,6 +16,8 @@ import './tests/sketcher-tests';
 import './tests/detector-tests';
 import './tests/api-based-tests';
 
+import './tests/screening-tools';
+
 
 
 export const _package = new DG.Package();
