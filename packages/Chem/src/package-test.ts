@@ -16,6 +16,7 @@ import './tests/sketcher-tests';
 import './tests/detector-tests';
 import './tests/api-based-tests';
 
+import './tests/notation-converter-tests';
 
 
 export const _package = new DG.Package();
