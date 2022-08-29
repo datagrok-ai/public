@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/orbit",
 	"friendlyName": "Orbit",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"author": {
 		"name": "Alexander Paramonov",
 		"email": "aparamomov@datagrok.ai"
@@ -12,6 +12,11 @@
 		"cash-dom": "latest",
 		"dayjs": "latest",
 		"@datagrok-libraries/utils": "latest"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/Orbit"
 	},
 	"devDependencies": {
 		"webpack": "latest",
