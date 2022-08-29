@@ -101,6 +101,7 @@ export class TestManager extends DG.ViewBase {
 
   async collectPackages(packageName?: string): Promise<any[]>  {
     let testFunctions = DG.Func.find({ name: 'Test' , meta: {file: 'package-test.js'}});
+    testFunctions = testFunctions.sort((a, b) => a.package.friendlyName.localeCompare(b.package.friendlyName));
     if (packageName) testFunctions = testFunctions.filter((f: DG.Func) => f.package.name === packageName);
     return testFunctions;
   }
