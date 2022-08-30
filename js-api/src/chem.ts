@@ -539,23 +539,6 @@ export namespace chem {
 
   /**
    * Searches for a molecular pattern in a given column, returning a bitset with hits.
-   * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/substructure-search}
-   * @async
-   * @deprecated
-   * @param {Column} column - Column with molecules to search
-   * @param {string} molecule - Substructure being sought, either one of which RDKit supports:
-   *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
-   * @param settings
-   * @returns {Promise<BitSet>}
-   * */
-   export async function substructureSearch(column: Column, molecule: string = '', settings: {
-    molBlockFailover?: string | undefined;
-  }): Promise<BitSet> {
-    return searchSubstructure(column, molecule, settings);
-  }
-
-  /**
-   * Searches for a molecular pattern in a given column, returning a bitset with hits.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/substructure-search-library}
    * @async
    * @param {Column} column - Column with molecules to search
@@ -574,18 +557,6 @@ export namespace chem {
     })).get(0);
   }
  
-  /**
-   * Searches for a molecular pattern in a given column, returning a bitset with hits.
-   * @async
-   * @param {Column} column - Column with molecules to search.
-   * @param {string} pattern - Pattern, either SMARTS or SMILES.
-   * @param {boolean} isSmarts - Whether the pattern is SMARTS.
-   * @returns {Promise<BitSet>}
-   * */
-  export function searchSubstructureServer(column: Column, pattern: string, isSmarts: boolean = true): Promise<BitSet> {
-    return new Promise((resolve, _reject) => api.grok_Chem_SubstructureSearch(column.dart, pattern, isSmarts, (bs: any) => resolve(new BitSet(bs))));
-  }
-
   /**
    * Performs R-group analysis.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
@@ -606,8 +577,10 @@ export namespace chem {
    * @param {Column} column - Column with SMILES to analyze.
    * @returns {Promise<string>}
    * */
-  export function mcs(column: Column): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_Chem_MCS(column.dart, (mcs: any) => resolve(mcs), (e: any) => reject(e)));
+   export async function mcs(column: Column): Promise<string> {
+    return await grok.functions.call('Chem:searchSubstructure', {
+      'molecules': column
+    });
   }
 
   /**

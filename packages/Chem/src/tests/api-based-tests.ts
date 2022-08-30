@@ -9,31 +9,9 @@ import { testCsv, testSubstructure } from './substructure-search-tests'
 import {_importSdf} from '../open-chem/sdf-importer';
 
 category('server features', () => {
-
-  test('findSimilarServer.api.sar-small', async () => {
-    await _testFindSimilar(grok.chem.findSimilarServer);
-  });
-
-  // test('testDescriptors', async () => {
-  //   const t = grok.data.demo.molecules();
-  //   await grok.chem.descriptors(t, 'smiles', ['MolWt', 'Lipinski']);
-  // });
-
-  // test('testDiversitySearch', async () => {
-  //   const t = grok.data.demo.molecules();
-  //   await grok.chem.diversitySearch(t.col('smiles')!);
-  // });
-
-  test('mcs', async () => {
-    const t = DG.DataFrame.fromCsv(`smiles
-O=C1CN=C(c2ccccc2N1)C3CCCCC3
-CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
-CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
-CC(C)CCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
-O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
-O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
-CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
-    await grok.chem.mcs(t.col('smiles')!);
+  test('testDescriptors', async () => {
+    const t = grok.data.demo.molecules();
+    await grok.chem.descriptors(t, 'smiles', ['MolWt', 'Lipinski']);
   });
 });
 
@@ -57,5 +35,18 @@ category('chem exported', () => {
       expect(bitsetArray[trueIndices[k]] === '1', true);
       bitsetArray[trueIndices[k]] = '0';
     }
+  });
+
+  test('mcs', async () => {
+    const t = DG.DataFrame.fromCsv(`smiles
+      O=C1CN=C(c2ccccc2N1)C3CCCCC3
+      CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      CC(C)CCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
+      O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
+      CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
+    const mcs = await grok.chem.mcs(t.col('smiles')!);
+    expect(mcs, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
   });
 });
