@@ -26,7 +26,7 @@ category('convert mol notation test', () => {
       // 'CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3',
     ],
     smarts: [
-      `[#6]-[#7]1-[#6](=[#8])-[#6]-[#7]=[#6](-[#6]2-[#6]-[#6]-[#6]-[#6]-[#6]-2)-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-1`,
+      '[#6]-[#7]1-[#6](=[#8])-[#6]-[#7]=[#6](-[#6]2-[#6]-[#6]-[#6]-[#6]-[#6]-2)-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-1',
     ],
     molblock: [
 `
@@ -129,9 +129,9 @@ M  V30 END BOND
 M  V30 END CTAB
 M  END
 `    ],
-    inchi: [
-      'InChI=1S/C16N2O/c1-18-14-10-6-5-9-13(14)16(17-11-15(18)19)12-7-3-2-4-8-12',
-    ],
+    // inchi: [
+    //   'InChI=1S/C16H20N2O/c1-18-14-10-6-5-9-13(14)16(17-11-15(18)19)12-7-3-2-4-8-12/h5-6,9-10,12H,2-4,7-8,11H2,1H3'
+    // ],
   };
 
   function _testConvert(srcNotation: MolNotation, tgtNotation: MolNotation) {
@@ -148,31 +148,30 @@ M  END
   test('testSmilesToMolfileV2000', async () => {
     _testConvert(MolNotation.Smiles, MolNotation.MolBlock);
   });
-  // test('testMolfileV2000ToSmiles', async () => {
-  //   _testConvert(MolNotation.MolBlock, MolNotation.Smiles);
-  // });
+  test('testSmilesToSmarts', async () => {
+    _testConvert(MolNotation.Smiles, MolNotation.Smarts);
+  });
+  test('testMolfileV2000ToSmiles', async () => {
+    _testConvert(MolNotation.MolBlock, MolNotation.Smiles);
+  });
+  test('testMolfileV2000ToSmarts', async () => {
+    _testConvert(MolNotation.MolBlock, MolNotation.Smarts);
+  });
   test('testMolfileV2000ToV3000', async () => {
     _testConvert(MolNotation.MolBlock, MolNotation.V3KMolBlock);
   });
-  // test('testMolfileV3000ToV2000', async () => {
-  //   _testConvert(MolNotation.V3KMolBlock, MolNotation.MolBlock);
-  // });
-  // test('testSmartsToMolfileV3000', async () => {
-  //   _testConvert(MolNotation.Smarts, MolNotation.V3KMolBlock);
-  // });
   test('testMolfileV3000ToSmarts', async () => {
     _testConvert(MolNotation.V3KMolBlock, MolNotation.Smarts);
   });
-  test('testSmartsToInchi', async () => {
-    _testConvert(MolNotation.Smarts, MolNotation.Inchi);
+  test('testMolfileV3000ToSmiles', async () => {
+    _testConvert(MolNotation.V3KMolBlock, MolNotation.Smiles);
   });
-  // test('testInchiToSmarts', async () => {
-  //   _testConvert(MolNotation.Inchi, MolNotation.Smarts);
+  // test('testSmartsToSmiles', async () => {
+  //   _testConvert(MolNotation.Smarts, MolNotation.Smiles);
   // });
-  // test('testSmilesToInchi', async () => {
-  //   _testConvert(MolNotation.Smiles, MolNotation.Inchi);
+  // test('testSmartsToInchi', async () => {
+  //   _testConvert(MolNotation.Smarts, MolNotation.Inchi);
+  // test('testInchiToSmiles', async () => {
+  //   _testConvert(MolNotation.Inchi, MolNotation.Smiles);
   // });
-  test('testInchiToSmiles', async () => {
-    _testConvert(MolNotation.Inchi, MolNotation.Smiles);
-  });
 });

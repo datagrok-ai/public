@@ -5,7 +5,7 @@ export enum MolNotation {
   Smarts = 'smarts',
   MolBlock = 'molblock', // molblock V2000
   V3KMolBlock = 'v3Kmolblock', // molblock V3000
-  Inchi = 'inchi',
+  // Inchi = 'inchi', // not fully supported yet
   Unknown = 'unknown',
 }
 
@@ -18,8 +18,8 @@ export function isMolBlock(s: string) {
  *
  * @param {string} moleculeString  admissible notations: listed below
  * @param {string} sourceNotation  possible values: 'smiles', 'smarts',
- * 'molblock' (corresponding to Molfile V2000), 'V3KMolBlock' (corresponding to
- * Molfile V3000) and 'inchi'
+ * 'molblock' (corresponding to Molfile V2000) and 'V3KMolBlock' (corresponding to
+ * Molfile V3000)
  * @param {string} targetNotation  possible values: same as for sourceNotation
  * @param {RDModule} rdKitModule
  * @return {string} the converted representation
@@ -42,25 +42,9 @@ export function _convertMolNotation(
       return mol.get_v3Kmolblock();
     if (targetNotation === MolNotation.Smarts)
       return mol.get_smarts();
-    if (targetNotation === MolNotation.Inchi)
-      return mol.get_inchi();
+    // if (targetNotation === MolNotation.Inchi)
+    //   return mol.get_inchi();
     throw new Error(`Failed to convert molucule notation, target notation unknown: ${targetNotation}`);
-    // const converter =
-    //   (targetNotation === MolNotation.MolBlock) ?
-    //     mol.get_molblock :
-    //     (targetNotation === MolNotation.Smiles) ?
-    //       mol.get_smiles :
-    //       (targetNotation === MolNotation.V3KMolBlock) ?
-    //         mol.get_v3Kmolblock :
-    //         (targetNotation === MolNotation.Smarts) ?
-    //           mol.get_smarts :
-    //           (targetNotation == MolNotation.Inchi) ?
-    //             mol.get_inchi : null;
-    // if (converter) {
-    //   const result = converter(); // for debugging purposes
-    //   return result;
-    // } else
-    //   throw new Error(`Failed to convert molucule notation, target notation unknown: ${targetNotation}`);
   } finally {
     mol?.delete();
   }
