@@ -168,27 +168,31 @@ Once registered, this function is now available across the whole platform, and c
 The package is built according to its configuration file, which typically has the following content:
 
 ```javascript
-const path = require("path");
+const path = require('path');
 
 module.exports = {
-  mode: "development",  // set to "production" to minify the output and enable optimizations for production builds
+  mode: 'development',  // set to "production" to minify the output and enable optimizations for production builds
   entry: {
-    package: "./src/package.js"  // the package is limited to exactly one entry point
+    package: './src/package.js'  // the package is limited to exactly one entry point
   },
-  devtool: "inline-source-map",   // enhances package debugging in the browser devtools
+  devtool: 'inline-source-map',   // enhances package debugging in the browser devtools
   externals: {                    // external modules won't be loaded to the output, but taken from the environment
-    "datagrok-api/dg": "DG",
-    "datagrok-api/grok": "grok",
-    "datagrok-api/ui": "ui",
-    "openchemlib/full.js": "OCL",
-    "rxjs": "rxjs",
-    "rxjs/operators": "rxjs.operators"
+    'datagrok-api/dg': 'DG',
+    'datagrok-api/grok': 'grok',
+    'datagrok-api/ui': 'ui',
+    'openchemlib/full.js': 'OCL',
+    'rxjs': 'rxjs',
+    'rxjs/operators': 'rxjs.operators',
+    'cash-dom': '$',
+    'dayjs': 'dayjs',
+    'wu': 'wu',
+    'exceljs': 'ExcelJS',
   },
   output: {
-    filename: "[name].js",
-    library: "sequence",     // the name of the package in lower case
-    libraryTarget: "var",    // the results will be assigned to a variable `sequence`
-    path: path.resolve(__dirname, "dist"),
+    filename: '[name].js',
+    library: 'sequence',     // the name of the package in lower case
+    libraryTarget: 'var',    // the results will be assigned to a variable `sequence`
+    path: path.resolve(__dirname, 'dist'),
   },
 };
 ```
