@@ -34,7 +34,7 @@
    - `Hide`
    - `Set Default Tooltip`
    - `Set ${Viewer} Tooltip` (only for grid, scatter plot, box plot; may be
-     added for PC plot))
+     added for PC plot)
    - `Use as Group Tooltip`
    - `Remove Group Tooltip`
 
@@ -111,6 +111,8 @@ Preconditions: follow the steps in 'Viewers: form tooltip'
 1. Set 'Show tooltip' to 'show custom tooltip'
 1. Select tooltip columns in the dialog and click 'OK'
    - Scatter plot tooltip is updated so that selected columns are shown
+   - The main grid uses the default tooltip (as well as other scatter plot
+     instances, open a new one to check)
 
 ### Scatter plot: custom form tooltip
 
@@ -122,8 +124,8 @@ Preconditions: follow the steps in 'Viewers: form tooltip'
 1. Select `Sketch form...` in the 'Set custom tooltip' dialog
 1. Make changes to a displayed form and click 'Close and apply'
 1. Hover over the scatter plot
-   - the tooltip should correspond to the template sketched in the previous step
-   - other scatter plots should use the default tooltip (open a new plot to
+   - The tooltip should correspond to the template sketched in the previous step
+   - Other scatter plots should use the default tooltip (open a new plot to
      check)
 
 ### Scatter plot: switch from form default tooltip to custom tooltip with columns
@@ -190,7 +192,7 @@ Preconditions: follow the steps in 'Viewers: form tooltip'
    switch to the default tooltip from the scatter plot context menu
    - The scatter plot now uses the default tooltip, which is updated so that
      the selected columns are shown
-   - Default tooltip for other viewers looks the same
+   - Default tooltip for other viewers looks the same as for the scatter plot
 
 ### Scatter plot: switch from custom tooltip to default form tooltip
 
@@ -201,4 +203,4 @@ Preconditions: follow the steps in 'Viewers: form tooltip'
    - In a sketch view, the provided template should be default
    - The scatter plot now uses the default tooltip, which is updated so that
      the form is shown
-   - Default tooltip for other viewers looks the same
+   - Default tooltip for other viewers looks the same as for the scatter plot
