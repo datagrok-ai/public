@@ -8,7 +8,6 @@ const commands = {
   config: require('./commands/config').config,
   create: require('./commands/create').create,
   publish: require('./commands/publish').publish,
-  migrate: require('./_deprecated/migrate').migrate
 };
 
 const command = argv['_'][0];
