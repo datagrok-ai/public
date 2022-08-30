@@ -378,7 +378,7 @@ export class FunctionView extends DG.ViewBase {
             ui.iconFA('star', async (ev) => {
               ev.stopPropagation();
               showAddToFavoritesDialog(funcCall);
-            }, 'Pin the run'),
+            }, 'Add to favorites'),
             ui.iconFA('link', async (ev) => {
               ev.stopPropagation();
               await navigator.clipboard.writeText(`${window.location.href}`);
@@ -406,9 +406,9 @@ export class FunctionView extends DG.ViewBase {
 
     const buildFavoritesList = () => ui.wait(async () => {
       const historicalRuns = await this.pullRuns(this.func!.id);
-      const pinnedRuns = historicalRuns.filter((run) => run.options['isFavorite']);
-      if (pinnedRuns.length > 0)
-        return ui.wait(() => renderFavoriteCards(pinnedRuns));
+      const favoriteRuns = historicalRuns.filter((run) => run.options['isFavorite'] && !run.options['isImported']);
+      if (favoriteRuns.length > 0)
+        return ui.wait(() => renderFavoriteCards(favoriteRuns));
       else
         return ui.divText('No runs are marked as favorites', 'description');
     });
@@ -420,7 +420,7 @@ export class FunctionView extends DG.ViewBase {
     };
 
     const buildHistoryPane = () => ui.wait(async () => {
-      const historicalRuns = (await this.pullRuns(this.func!.id)).filter((run) => !run.options['isFavorite']);
+      const historicalRuns = (await this.pullRuns(this.func!.id)).filter((run) => !run.options['isFavorite'] && !run.options['isImported']);
       if (historicalRuns.length > 0)
         return ui.wait(() => renderHistoryCards(historicalRuns));
       else
@@ -490,9 +490,9 @@ export class FunctionView extends DG.ViewBase {
 
   }
 
-  public async onBeforeRemoveRunFromFavorites(callToPin: DG.FuncCall) { }
+  public async onBeforeRemoveRunFromFavorites(callToFavorite: DG.FuncCall) { }
 
-  public async onAfterRemoveRunFromFavorites(pinnedCall: DG.FuncCall) { }
+  public async onAfterRemoveRunFromFavorites(favoriteCall: DG.FuncCall) { }
 
   /**
    * Saves the run as usual run
@@ -506,14 +506,14 @@ export class FunctionView extends DG.ViewBase {
     callToUnfavorite.options['annotation'] = null;
     callToUnfavorite.options['isFavorite'] = false;
     await this.onBeforeRemoveRunFromFavorites(callToUnfavorite);
-    const pinnedSave = await grok.dapi.functions.calls.save(callToUnfavorite);
-    await this.onAfterRemoveRunFromFavorites(pinnedSave);
-    return pinnedSave;
+    const favoriteSave = await grok.dapi.functions.calls.save(callToUnfavorite);
+    await this.onAfterRemoveRunFromFavorites(favoriteSave);
+    return favoriteSave;
   }
 
-  public async onBeforeAddingToFavorites(callToPin: DG.FuncCall) { }
+  public async onBeforeAddingToFavorites(callToAddToFavorites: DG.FuncCall) { }
 
-  public async onAfterAddingToFavorites(pinnedCall: DG.FuncCall) { }
+  public async onAfterAddingToFavorites(favoriteCall: DG.FuncCall) { }
 
   /**
    * Saves the run as favorite
@@ -530,15 +530,27 @@ export class FunctionView extends DG.ViewBase {
     return savedFavorite;
   }
 
+  /**
+   * Called before saving the FUncCall results to the historical results, returns the saved call. See also {@link saveRun}.
+   * @param callToSave FuncCall object to save
+   * @returns Saved FuncCall
+   * @stability Stable
+ */
   public async onBeforeSaveRun(callToSave: DG.FuncCall) { }
 
+  /**
+   * Saves the computation results to the historical results, returns the saved call. See also {@link saveRun}.
+   * @param savedCall FuncCall object to save
+   * @returns Saved FuncCall
+   * @stability Stable
+ */
   public async onAfterSaveRun(savedCall: DG.FuncCall) { }
 
   /**
-   * Saves the computation results to the historical results, returns its id. See also {@link loadRun}.
+   * Saves the computation results to the historical results, returns the saved call. See also {@link loadRun}.
    * @param callToSave FuncCall object to save
    * @returns Saved FuncCall
-   * @stability Experimental
+   * @stability Stable
  */
   @passErrorToShell()
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
@@ -550,15 +562,25 @@ export class FunctionView extends DG.ViewBase {
     return savedCall;
   }
 
+  /**
+   * Called before deleting the computation results from history, returns its id. See also {@link loadRun}.
+   * @param callToDelete FuncCall object to be deleted
+   * @stability Stable
+ */
   public async onBeforeDeleteRun(callToDelete: DG.FuncCall) { }
 
+  /**
+   * Called after deleting the computation results from history, returns its id. See also {@link loadRun}.
+   * @param deletedCall deleted FuncCall value
+   * @stability Stable
+ */
   public async onAfterDeleteRun(deletedCall: DG.FuncCall) { }
 
   /**
    * Deletes the computation results from history, returns its id. See also {@link loadRun}.
    * @param callToDelete FuncCall object to delete
    * @returns ID of deleted historical run
-   * @stability Experimental
+   * @stability Stable
  */
   @passErrorToShell()
   public async deleteRun(callToDelete: DG.FuncCall): Promise<string> {
@@ -570,14 +592,14 @@ export class FunctionView extends DG.ViewBase {
 
   /**
    * Called before fetching the historical run data in {@link loadRun}.
-   * @stability Experimental
+   * @stability Stable
  */
   public async onBeforeLoadRun() {}
 
   /**
    * Called after fetching the historical run data in {@link loadRun}.
    * @param funcCall FuncCall fetched from server during {@link loadRun}
-   * @stability Experimental
+   * @stability Stable
  */
   public async onAfterLoadRun(funcCall: DG.FuncCall) {}
 
@@ -585,7 +607,7 @@ export class FunctionView extends DG.ViewBase {
    * Loads the specified historical run. See also {@link saveRun}.
    * @param funcCallId ID of FuncCall to look for. Get it using {@link funcCall.id} field
    * @returns FuncCall augemented with inputs' and outputs' values
-   * @stability Experimental
+   * @stability Stable
  */
   @passErrorToShell()
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
@@ -667,19 +689,33 @@ export class FunctionView extends DG.ViewBase {
     return list;
   }
 
+  /**
+   * Called before actual computations are made {@link run}.
+   * @param funcToCall FuncCall object to be called {@see DG.FuncCall.call()}
+   * @stability Experimental
+  */
+  public async onBeforeRun(funcToCall: DG.FuncCall) {}
+
+  /**
+    * Called after actual computations are made {@link run}.
+    * @param runFunc FuncCall object after call method {@see DG.FuncCall.call()}
+    * @stability Experimental
+   */
+  public async onAfterRun(runFunc: DG.FuncCall) {
+    this.outputParametersToView(this.lastCall!);
+  }
+
+  @passErrorToShell()
   public async run(): Promise<void> {
     if (!this.funcCall) throw new Error('The correspoding function is not specified');
 
-    try {
-      this.lastCall = this.funcCall.clone();
-      this.lastCall.newId();
-      await this.lastCall.call(true, undefined, {processed: true}); // mutates the lastCall field
-      await this.saveRun(this.lastCall);
-    } catch (e) {
+    await this.onBeforeRun(this.funcCall);
+    const pi = DG.TaskBarProgressIndicator.create('Calculating...');
+    await this.funcCall.call(); // mutates the funcCall field
+    pi.close();
+    await this.onAfterRun(this.funcCall);
 
-    }
-
-    this.outputParametersToView(this.lastCall!);
+    this.lastCall = await this.saveRun(this.funcCall);
   }
 
   protected defaultExportFilename = (format: string) => {
