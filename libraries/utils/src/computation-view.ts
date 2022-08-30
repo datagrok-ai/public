@@ -59,6 +59,7 @@ export class ComputationView extends FunctionView {
         setTimeout(async () => {
           await this.init();
           this.build();
+          this.buildRibbonPanels();
           ui.setUpdateIndicator(this.root, false);
         }, 0);
       }

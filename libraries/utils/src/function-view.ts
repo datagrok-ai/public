@@ -447,30 +447,37 @@ export class FunctionView extends DG.ViewBase {
    * @stability Stable
  */
   buildRibbonPanels(): HTMLElement[][] {
-    const historyButton = ui.iconFA('history', () => {
-      grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
-      historyButton.classList.toggle('d4-current');
-      grok.shell.o = this.historyRoot;
-    });
-
-    historyButton.classList.add('d4-toggle-button');
-    if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
-
-    const cloneRunBtn = ui.button('Clone', async () => {
-      await this.cloneRunAsCurrent();
-    }, 'Clone the run');
-
-    const newRibbonPanels = [
+    const newRibbonPanels: HTMLElement[][] = [
       [...(this.exportConfig && this.exportConfig.supportedFormats.length > 0) ? [ui.divH([
         ui.comboPopup(
           ui.iconFA('arrow-to-bottom'),
           this.exportConfig.supportedFormats,
           async (format: string) => DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format))),
-      ])]: [],
-      historyButton,
-      ...this.funcCall?.options['isHistorical']? [cloneRunBtn]: [],
-      ]
-    ];
+      ])]: []
+      ]];
+
+    console.log('export added');
+    if (this.func?.id) {
+      console.log('history added');
+      const historyButton = ui.iconFA('history', () => {
+        grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
+        historyButton.classList.toggle('d4-current');
+        grok.shell.o = this.historyRoot;
+      });
+
+      historyButton.classList.add('d4-toggle-button');
+      if (grok.shell.windows.showProperties) historyButton.classList.add('d4-current');
+
+      const cloneRunBtn = ui.button('Clone', async () => {
+        await this.cloneRunAsCurrent();
+      }, 'Clone the run');
+
+      newRibbonPanels.push([
+        historyButton,
+        ...this.funcCall?.options['isHistorical']? [cloneRunBtn]: [],
+      ]);
+    }
+
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
   }
