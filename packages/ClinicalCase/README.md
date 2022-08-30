@@ -1,45 +1,17 @@
 # ClinicalCase
 
-Provides support for dealing with clinical data represented in the
-[SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.
+Clinical Case is an application for exploration of clinical data represented in [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.
 
-Issue tracker: https://github.com/datagrok-ai/public/milestone/1
+The main goal of the application is to provide users who deal with clinical trials data (such as bio-statisticians, clinical trial investigators, data scientists, site managers and other groups of users) with an effective, flexible and user-friendly tool which helps to analyze data from different perspectives and on different levels (such as study, site or patient level). Clinical Case provides such capabilities through a number of predefined views with various visualizations.
 
-The project objectives include:
+For details also refer to introduction [video](https://www.youtube.com/watch?v=lTg_E5xO-iw&ab_channel=Datagrok).
 
-* Working with either databases or file folders 
-    * Automatic recognition of SDTM data
-* Explaining attribute names
-    * Domains: `CV` -> `Cardiovascular System Findings`
-    * Attributes: `AEMODIFY` -> `Modified Reported Term`
-* Content validation
-    * Completeness (columns with required variables are present)
-    * Data types match
-    * Values comply with controlled terminology
-    * Out-of-range values
-* Patient selection criteria
-    * Global filter with conditions based on the values in any table 
-* Clinical data-specific visualizations
-    * Timelines
-    * Hy's Law
-* Pre-defined views
-    * Study Summary
-      * Dates, cohorts
-    * Patient Profile
-  * Lab Results View
-    * Pre-defined, configurable normal ranges
-* Defining groups (treatment / control)
-    * Automatic discovery of statistically significant changes between groups   
-* Subject profile view (in progress)
-    * Swim lanes
-* Miscellaneous
-    * Automatic calculation of study days, if necessary
+SDTM data detection
+===============
+Clinical case automatically detects data represented in SDTM format. For instance, if you have a folder containing a bunch of SDTM domains (csv files), you will bw offered to launch the application. Also study ID is shown on a panel below files explorer.
+Launch the application by clicking `Run ClinicalCase`.
 
-
-* `Timelines` viewer for visualizing a flow of events (see the [community forum discussion](https://community.datagrok.ai/t/visualization-related-updates/521/4))
-
-
-![](timelines.gif)
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/SDTM_data_detection.PNG"/>
 
 Views
 ===============
