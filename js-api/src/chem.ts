@@ -11,7 +11,6 @@ import {Func} from "./entities";
 import * as ui from "../ui";
 import {SemanticValue} from "./grid";
 import $ from "cash-dom";
-import {Utils} from "./utils";
 
 let api = <any>window;
 declare let grok: any;
@@ -253,10 +252,11 @@ export namespace chem {
       this.extSketcherDiv.append(content);
     }
 
-    updateExtSketcherContent(extSketcherDiv: HTMLElement) {
+    async updateExtSketcherContent(extSketcherDiv: HTMLElement) {
+      await ui.tools.waitForElementInDom(extSketcherDiv);
+      const width = extSketcherDiv.parentElement!.clientWidth;
+      const height = width / 2;
       if (!(this.isEmpty()) && extSketcherDiv.parentElement) {
-        const width = extSketcherDiv.parentElement!.clientWidth;
-        const height = width / 2;
         ui.empty(this.extSketcherDiv);
         let canvas = ui.canvas(width, height);
         canvas.style.height = '100%';
@@ -268,7 +268,16 @@ export namespace chem {
           });
       }
 
-      let sketchLink = ui.button('Sketch', () => this.updateExtSketcherContent(extSketcherDiv));
+      const sketchLinkStyle = {style: {
+        width: `${width}Ъpx`, 
+        height: `${height/2}px`,
+        textAlign: 'center',
+        verticalAlign: 'middle',
+        lineHeight: `${height/2}px`,
+        border: '1px solid #dbdcdf'
+      }}
+      let sketchLink = ui.divText('Click to edit', sketchLinkStyle);
+      sketchLink.onclick = () => this.updateExtSketcherContent(extSketcherDiv);
       sketchLink.style.paddingLeft = '0px';
       sketchLink.style.marginLeft = '0px';
       this._updateExtSketcherInnerHTML(sketchLink);
@@ -276,7 +285,7 @@ export namespace chem {
 
     createExternalModeSketcher(): HTMLElement {
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
-      ui.tooltip.bind(this.extSketcherDiv, 'Click to edit filter');
+      ui.tooltip.bind(this.extSketcherDiv, 'Click to edit');
 
       this.extSketcherDiv.addEventListener('mousedown', () => {
 
