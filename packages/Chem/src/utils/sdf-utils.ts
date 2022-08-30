@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full';
-// import $ from 'cash-dom';
+import $ from 'cash-dom';
 
 /**  Dialog for SDF file exporter */
 export function saveAsSdfDialog() {
@@ -15,10 +15,9 @@ export function saveAsSdfDialog() {
     _saveAsSdf(table, cols[0]);
   else {
     const sdfDialog = ui.dialog({title: 'Save as SDF'});
-    sdfDialog.root.style.width = '300px';
+    sdfDialog.root.style.width = '250px';
     const colsChoiceDF = DG.DataFrame.fromColumns(cols);
     const colsInput = ui.columnInput('Molecules', colsChoiceDF, cols[0]);
-    colsInput.input.style.width = '100%';
 
     sdfDialog.add(colsInput)
       .onOK(() => {
@@ -26,6 +25,8 @@ export function saveAsSdfDialog() {
         _saveAsSdf(table, structureColumn!);
       });
     sdfDialog.show({x: 350, y: 100});
+    $(sdfDialog.root).find('.grok-font-icon-help').remove();
+    $(sdfDialog.root).find('.ui-input-label').css('max-width', 'fit-content');
   }
 }
 
