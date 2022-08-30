@@ -8,13 +8,13 @@ import {getPanelElements, molfileWidget} from '../widgets/molfile';
 import {getPropertiesMap, propertiesWidget} from '../widgets/properties';
 import {getStructuralAlerts, structuralAlertsWidget} from '../widgets/structural-alerts';
 import {getRisks, toxicityWidget} from '../widgets/toxicity';
+import {SubstructureFilter} from '../widgets/chem-substructure-filter';
 import * as utils from './utils';
 import $ from 'cash-dom';
 import { _package } from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import { getDescriptorsSingle } from '../descriptors/descriptors-calculation';
-import {runStructuralAlertsDetection} from '../panels/structural-alerts';
-import {RDMol} from '../rdkit-api';
+import { substructureFilter } from '../package';
 
 
 category('cell panel', async () => {
@@ -114,10 +114,28 @@ category('cell panel', async () => {
     const filter = chem.substructureFilter();
     filter.attach(df);
     grok.shell.addTableView(df);
-    const colChoice = ui.columnInput('Column', filter.dataFrame, filter.column, (col: DG.Column) => {
+    const colChoice = ui.columnInput('Column', filter.dataFrame!, filter.column, (col: DG.Column) => {
       filter.column = col;
-      filter.dataFrame.filter.setAll(true, false);
-      filter.dataFrame.rows.requestFilter();
+      filter.dataFrame!.filter.setAll(true, false);
+      filter.dataFrame!.rows.requestFilter();
+    });
+    ui.dialog({title: 'Chem Filter'})
+      .add(colChoice)
+      .add(filter.root)
+      .show();
+  });
+
+  test('substructure-filter-manual2', async () => {
+    const df = grok.data.demo.molecules(1000);
+    await grok.data.detectSemanticTypes(df);
+    let filter = substructureFilter();
+
+    filter.attach(df);
+    grok.shell.addTableView(df);
+    const colChoice = ui.columnInput('Column', filter.dataFrame!, filter.column, (col: DG.Column) => {
+      filter.column = col;
+      filter.dataFrame!.filter.setAll(true, false);
+      filter.dataFrame!.rows.requestFilter();
     });
     ui.dialog({title: 'Chem Filter'})
       .add(colChoice)
