@@ -23,12 +23,50 @@ import {convert} from './utils/convert';
 import {representationsWidget} from './widgets/representations';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
-import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils'
-
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
+import {generateManySequences, generateLongSequence} from './tests/test-sequnces-generators';
 
 //tags: init
 export async function initBio() {
 }
+
+//name: testManySequencesPerformance
+export function testManySequencesPerformance(): void {
+  const startTime: number = Date.now();
+  const csv = generateManySequences();
+  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+  const col: DG.Column = df.columns.byName('MSA');
+  df.columns.byName('MSA').semType = DG.SEMTYPE.MACROMOLECULE;
+  col.setTag('units', 'separator');
+  col.setTag('aligned', 'SEQ.MSA');
+  col.setTag('alphabet', 'UN');
+  col.setTag('separator', '/');
+  grok.shell.addTableView(df);
+
+  const endTime: number = Date.now();
+  const elapsedTime: number = endTime - startTime;
+  console.log(`Elapsed time: ${elapsedTime}ms`);
+
+}
+//name: testLongSequencesPerformance
+export function testLongSequencesPerformance(): void {
+  const startTime: number = Date.now();
+  const csv = generateLongSequence();
+  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+  const col: DG.Column = df.columns.byName('MSA');
+  df.columns.byName('MSA').semType = DG.SEMTYPE.MACROMOLECULE;
+  col.setTag('units', 'separator');
+  col.setTag('aligned', 'SEQ.MSA');
+  col.setTag('alphabet', 'UN');
+  col.setTag('separator', '/');
+  grok.shell.addTableView(df);
+
+  const endTime: number = Date.now();
+  const elapsedTime: number = endTime - startTime;
+  console.log(`Elapsed time: ${elapsedTime}ms`);
+
+}
+
 
 //name: fastaSequenceCellRenderer
 //tags: cellRenderer
@@ -51,7 +89,7 @@ export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRender
 function checkInputColumn(col: DG.Column, name: string,
   allowedNotations: string[] = [], allowedAlphabets: string[] = []): boolean {
   const notation: string = col.getTag(DG.TAGS.UNITS);
-  const alphabet: string = col.getTag('alphabet')
+  const alphabet: string = col.getTag('alphabet');
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE) {
     grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
     return false;
@@ -127,7 +165,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'aligned': macroMolecule.tags['aligned'],
     'separator': macroMolecule.tags['separator'],
     'alphabet': macroMolecule.tags['alphabet'],
-  }
+  };
   const sp = await getActivityCliffs(
     df,
     macroMolecule,
@@ -144,7 +182,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     sequenceGetSimilarities,
     drawSequences,
     (options as any)[methodName]);
-    return sp;
+  return sp;
 }
 
 //top-menu: Bio | Sequence Space...
@@ -155,7 +193,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 //input: string similarityMetric { choices:["Levenshtein", "Tanimoto"] }
 //input: bool plotEmbeddings = true
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<DG.Viewer|undefined> {
+  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
   if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
     return;
   const encodedCol = encodeMonomers(macroMolecule);
@@ -174,11 +212,11 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   const sequenceSpaceRes = await sequenceSpace(chemSpaceParams);
   const embeddings = sequenceSpaceRes.coordinates;
   for (const col of embeddings) {
-      const listValues = col.toList();
-      emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-      table.columns.add(DG.Column.fromList('double', col.name, listValues));
+    const listValues = col.toList();
+    emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
+    table.columns.add(DG.Column.fromList('double', col.name, listValues));
   }
-  let sp;   
+  let sp;
   if (plotEmbeddings) {
     for (const v of grok.shell.views) {
       if (v.name === table.name)
