@@ -504,21 +504,7 @@ export namespace chem {
   
     }
   
-    /**
-     * Returns molecules similar to the reference one.
-     * @async
-     * @param {Column} column - Molecule column to search in.
-     * @param {string} molecule - Reference molecule in SMILES format.
-     * @param {SimilarityMetric} metric - Metric to use.
-     * @param {number} limit - Maximum number of results to return.
-     * @param {number} minScore - Minimum similarity score for a molecule to be included.
-     * @returns {Promise<DataFrame>}
-     * */
-    export function findSimilarServer(column: Column, molecule: string, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO, limit: number = Number.MAX_VALUE, minScore: number = 0): Promise<DataFrame> {
-      return new Promise((resolve, _reject) => api.grok_Chem_SimilaritySearch(column.dart, molecule, metric,
-        limit, minScore, (t: any) => resolve(new DataFrame(t))));
-    }
-  
+ 
     /**
    * Returns the specified number of most diverse molecules in the column.
    * See example: {@link https://datagrok.ai/help/domains/chem/diversity-search}
@@ -562,12 +548,13 @@ export namespace chem {
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
    * @async
    * @param {DataFrame} table - Table.
-   * @param {string} column - Column name with SMILES to analyze.
-   * @param {string} core - Core in the SMILES format.
+   * @param {string} column - Column name with molecules to analyze.
+   * @param {string} core - Core molecule.
    * @returns {Promise<DataFrame>}
    * */
-  export function rGroup(table: DataFrame, column: string, core: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Chem_RGroup(table.dart, column, core, () => resolve(table), (e: any) => reject(e)));
+  export async function rGroup(table: DataFrame, column: string, core: string): Promise<DataFrame> {
+    return await grok.functions.call('Chem:FindRGroups', {
+      column, table, core, prefix: 'R'});
   }
 
   /**
