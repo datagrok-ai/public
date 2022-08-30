@@ -2,21 +2,21 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
-export async function findMCS(smiles: string, df: DG.DataFrame, smarts?: boolean): Promise<string> {
+export async function findMCS(molecules: string, df: DG.DataFrame, smarts?: boolean): Promise<string> {
   const returnSmarts = !!smarts;
-  return await grok.functions.call('Chem:FindMCS', {smiles, df, returnSmarts});
+  return await grok.functions.call('Chem:FindMCS', {molecules, df, returnSmarts});
 }
 
 export async function findRGroups(
-  smiles: string,
+  molecules: string,
   df: DG.DataFrame,
   core: string,
   prefix: string): Promise<DG.DataFrame> {
-  return await grok.functions.call('Chem:FindRGroups', {smiles, df, core, prefix});
+  return await grok.functions.call('Chem:FindRGroups', {molecules, df, core, prefix});
 }
 
-export async function smilesTo3DCoordinates(smiles: string): Promise<string> {
-  return await grok.functions.call('Chem:SmilesTo3DCoordinates', {smiles});
+export async function smilesTo3DCoordinates(molecule: string): Promise<string> {
+  return await grok.functions.call('Chem:SmilesTo3DCoordinates', {molecule});
 }
 
 export async function getDescriptorsTree(): Promise<any> {

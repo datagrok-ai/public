@@ -89,7 +89,7 @@ export class TestManager extends DG.ViewBase {
       [
         [testUIElements.runButton],
         [testUIElements.runAllButton],
-        [ui.boolInput('Debug', false, () => { this.debugMode = !this.debugMode; }).root],
+        [ui.switchInput('Debug', false, () => { this.debugMode = !this.debugMode; }).root],
         [ui.switchInput('Benchmark', false, () => { this.benchmarkMode = !this.benchmarkMode; }).root]
       ],
     );
@@ -101,6 +101,7 @@ export class TestManager extends DG.ViewBase {
 
   async collectPackages(packageName?: string): Promise<any[]>  {
     let testFunctions = DG.Func.find({ name: 'Test' , meta: {file: 'package-test.js'}});
+    testFunctions = testFunctions.sort((a, b) => a.package.friendlyName.localeCompare(b.package.friendlyName));
     if (packageName) testFunctions = testFunctions.filter((f: DG.Func) => f.package.name === packageName);
     return testFunctions;
   }
@@ -298,8 +299,8 @@ export class TestManager extends DG.ViewBase {
   async runTest(t: IPackageTest): Promise<boolean> {
     if (this.debugMode)
       debugger;
-    const start = Date.now();
     this.testInProgress(t.resultDiv, true);
+    const start = Date.now();
     const res = await grok.functions.call(
       `${t.packageName}:test`, {
       'category': t.test.category,
@@ -324,7 +325,6 @@ export class TestManager extends DG.ViewBase {
     switch (nodeType) {
       case NODE_TYPE.PACKAGE: {
         const progressBar = DG.TaskBarProgressIndicator.create(tests.package.name);
-        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.package.name}`;
         let testsSucceded = true;
         this.testInProgress(tests.resultDiv, true);
         await this.collectPackageTests(node as DG.TreeViewGroup, tests);
@@ -339,28 +339,27 @@ export class TestManager extends DG.ViewBase {
             testsSucceded = false;
         }
         this.updateTestResultsIcon(tests.resultDiv, testsSucceded);
+        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.package.name}`;
         progressBar.close();
         break;
       }
       case NODE_TYPE.CATEGORY: {
         const progressBar = DG.TaskBarProgressIndicator.create(`${tests.packageName}/${tests.fullName}`);
-        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.fullName}`;
         await this.runTestsRecursive(tests, progressBar, tests.totalTests, 0, `${tests.packageName}/${tests.fullName}`);
+        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.fullName}`;
         progressBar.close();
         break;
       }
       case NODE_TYPE.TEST: {
-        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.test.category}/${tests.test.name}`;
         await this.runTest(tests);
+        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.test.category}/${tests.test.name}`;
         break;
       }
     }
-    grok.shell.closeAll();
-    grok.shell.v = this.testManagerView;
     setTimeout(() => {
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType);
-    }, 100);
-  
+      grok.shell.v = this.testManagerView;
+    }, 30);
   }
   
   async runTestsRecursive(

@@ -126,7 +126,7 @@ export const commentMap: Indexable = {
 export const queryExtension = '.sql';
 export const scriptExtensions = ['.jl', '.m', '.py', '.R'];
 export function checkScriptLocation(filepath: string): boolean {
-  if (!filepath.startsWith('scripts/') &&
+  if (!(filepath.startsWith('scripts/') || filepath.startsWith('projects/')) &&
     scriptExtensions.some((ext: any) => filepath.endsWith(ext))) {
     return false;
   }

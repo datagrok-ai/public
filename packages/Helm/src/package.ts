@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {createJsonMonomerLibFromSdf} from './utils';
 import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
-import {printLeftOrCentered} from '@datagrok/bio/src/utils/cell-renderer';
+import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
 export const _package = new DG.Package();
 
@@ -18,16 +18,19 @@ const LIB_PATH = 'libraries/';
 
 //tags: init
 export async function initHelm(): Promise<void> {
-  let grid = grok.shell.tv.grid;
+  return new Promise(async (resolve, reject) => {
+    // @ts-ignore
+    dojo.ready(function() { resolve(null); });
+    await loadLibraries();
+  });
+}
+
+async function loadLibraries() {
+  const grid = grok.shell.tv.grid;
   for (let j = 0; j <= i; j++) {
     await monomerManager(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, j.toString(), true));
   }
   grid.invalidate();
-  
-  return new Promise((resolve, reject) => {
-    // @ts-ignore
-    dojo.ready(function() { resolve(null); });
-  });
 }
 
 //name: helmCellRenderer

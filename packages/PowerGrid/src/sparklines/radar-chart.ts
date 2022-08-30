@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {getSettingsBase, names, SummarySettingsBase} from './shared';
 import {createTooltip, distance, Hit} from './helper';
-import {Column} from '../../../../js-api/src/dataframe';
 
 
 class it {
@@ -44,13 +43,12 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent | any): Hit {
   const point = p(activeColumn, 1);
   const mousePoint = new DG.Point(e.layerX, e.layerY);
   const center = new DG.Point(gridCell.bounds.midX, gridCell.bounds.midY);
-  const answer: Hit = {
+  return {
     activeColumn: activeColumn,
     cols: cols,
     row: gridCell.cell.row.idx,
     isHit: ((distance(center, mousePoint) < distance(center, point)) && (Math.abs(valueForColumn - activeColumn) <= maxAngleDistance)),
   };
-  return answer;
 
 }
 
@@ -118,11 +116,15 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
 
     // Grid
     for (let i = 1; i <= 4; i++) {
-      it.range(cols.length).map((col) => DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p(col, i / 4).x, p(col, i / 4).y, DG.Color.lightLightGray, 1));
       g.setStrokeStyle('#dcdcdc')
         .polygon(it.range(cols.length).map((col) => p(col, i / 4)))
         .stroke();
     }
+    it.range(cols.length).map(function(i) {
+      if (!cols[i].isNone(row)) {
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p(i, cols[i].scale(row)).x, p(i, cols[i].scale(row)).y, DG.Color.fromHtml('#1E90FF'), 3);
+      }
+    });
   }
 
   renderSettings(gc: DG.GridColumn): Element {
@@ -130,7 +132,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     const settings = gc.settings;
 
     return ui.inputs([
-      ui.columnsInput('Radar columns', gc.grid.dataFrame, (columns) => {
+      ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
         settings.columnNames = names(columns);
         gc.grid.invalidate();
       }, {

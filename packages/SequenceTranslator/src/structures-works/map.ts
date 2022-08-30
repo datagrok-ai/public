@@ -30,6 +30,7 @@ export const COL_NAMES = {
   EQUIVALENTS: 'Equivalents',
   PURITY: 'Purity',
   CPD_MW: 'Cpd MW',
+  SALT_MOL_WEIGHT: 'Salt MW',
   SALT_MASS: 'Salt mass',
   BATCH_MW: 'Batch MW',
   SOURCE: 'Source',

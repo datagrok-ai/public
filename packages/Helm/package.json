@@ -12,8 +12,8 @@
     "cash-dom": "^8.1.1",
     "dayjs": "^1.10.6",
     "@datagrok-libraries/utils": "^1.6.2",
-    "@datagrok-libraries/bio": "^3.1.0",
-    "@datagrok/bio": "^1.8.2"
+    "@datagrok-libraries/bio": "^3.1.1"
+
   },
   "sources": [
     "css/helm.css",
@@ -43,7 +43,7 @@
     "node-fetch": "^2.6.7"
   },
   "scripts": {
-    "link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/bio @datagrok/bio",
+    "link-all": "npm link datagrok-api  @datagrok-libraries/utils @datagrok-libraries/bio",
     "debug-helm": "webpack && grok publish ",
     "release-helm": "webpack && grok publish --release",
     "build-helm": "webpack",

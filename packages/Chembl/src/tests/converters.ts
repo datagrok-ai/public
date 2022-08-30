@@ -145,4 +145,21 @@ category('Converting queries', () => {
     await compare(csvDf1, expectArr, `${_package.name}:chemblToInchiKey`, 'standard_inchi_key');
   });
 
+  test('chemblIdToSmiles', async () => {
+    const query = 'Chembl:ChemblIdToSmiles';
+    expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL1185'}), 'CN(C)CCc1c[nH]c2ccc(C[C@H]3COC(=O)N3)cc12');
+    expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL45'}), 'COc1ccc2[nH]cc(CCNC(C)=O)c2c1');
+    expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL7784'}), 'CC(C)(CCCOc1ccc(OCCCC(C)(C)C(=O)O)c(-c2ccccc2Cl)c1)C(=O)O');
+    expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL6781'}), 'CCOC(=O)c1cc2ccccn2c(=O)n1');
+    expect(await grok.functions.call(`${query}`, {'id': 'CHEMBL9812'}), 'COCCOC1(C2=NCCN2)COc2ccccc2O1');
+  });
+  
+  test('molregnoToSmiles', async () => {
+    const query = 'Chembl:molregnoToSmiles';
+    expect(await grok.functions.call(`${query}`, {'molregno': 123}), 'O=c1oc2c(O)c(O)ccc2c2cc(F)ccc12');
+    expect(await grok.functions.call(`${query}`, {'molregno': 241}), 'O=C(O)c1cn(C2CC2)c2cc(N3CCNCC3)c(F)cc2c1=O');
+    expect(await grok.functions.call(`${query}`, {'molregno': 1189}), 'CC(=O)Nc1nc(O)c2cc(S(=O)(=O)c3ccc4ccccc4c3)ccc2n1');
+    expect(await grok.functions.call(`${query}`, {'molregno': 6190}), 'Cc1nn(CCCN2CCN(c3cccc(Cl)c3)CC2)c(=O)c2noc(C)c12');
+    expect(await grok.functions.call(`${query}`, {'molregno': 5872}), 'N[C@@H](Cc1ccccc1)C(O)[C@@H](N)Cc1ccccc1');
+  })
 });

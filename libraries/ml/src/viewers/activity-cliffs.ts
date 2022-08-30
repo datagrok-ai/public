@@ -31,17 +31,16 @@ export interface ISequenceSpaceResult {
     coordinates: DG.ColumnList;
   }
 
-export interface IDrawTooltipParams {
-  tooltips: any,
+export interface ITooltipAndPanelParams {
+  cashedData: any,
+  hosts: HTMLDivElement[],
   line: ILine,
-  df: DG.DataFrame,
   seqCol: DG.Column,
-  activity: DG.Column,
-  x: number,
-  y: number
 }
 
 let zoom = false;
+
+const molColumnNames = ['1_seq', '2_seq'];
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
 export async function getActivityCliffs(
@@ -58,7 +57,7 @@ export async function getActivityCliffs(
     tags: {[index: string]: string},
     seqSpaceFunc: (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>,
     simFunc: (col: DG.Column, mol: string) => Promise<DG.Column | null>,
-    tooltipDrawFunc: (params: IDrawTooltipParams) => void,
+    renderSeqFunction: (params: ITooltipAndPanelParams) => void,
     options?: any) : Promise<DG.Viewer> {
   const automaticSimilarityLimit = false;
   const MIN_SIMILARITY = 80;
@@ -161,7 +160,8 @@ export async function getActivityCliffs(
 
   const canvas = (sp.getInfo() as any)['canvas'];
   const linesRes = createLines(n1, n2, seqCol, activities, saliVals, semType, tags);
-  const tooltips: any = {};
+  const cashedLinesData: any = {};
+  let acc: DG.Accordion;
 
   linesRes.linesDf.onCurrentCellChanged.subscribe(() => {
     const currentMolIdx = linesRes.linesDf.currentCol && linesRes.linesDf.currentCol.name === '2_seq' ? 1 : 0;
@@ -186,7 +186,8 @@ export async function getActivityCliffs(
     linesDfGrid.invalidate();
   });
 
-  const linesDfGrid = linesRes.linesDf.plot.grid().sort(['act_diff'], [false]);
+  const linesDfGrid = linesRes.linesDf.plot.grid().sort(['sali'], [false]);
+  linesDfGrid.root.style.minWidth = '650px';
 
   linesDfGrid.onCellClick.subscribe(() => {
     zoom = true;
@@ -195,7 +196,11 @@ export async function getActivityCliffs(
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
     const cliffsDialog = ui.dialog({title: 'Activity cliffs'})
       .add(linesDfGrid.root)
-      .show();
+      .show({resizable: true});
+    ui.tools.waitForElementInDom(linesDfGrid.root).then(() => {
+      molColumnNames.forEach(it => { linesDfGrid.col(it)!.width = 200; });
+      linesDfGrid.invalidate();
+    });
     cliffsDialog.root.id = 'cliffs_dialog';
   });
   listCliffsLink.style.position = 'absolute';
@@ -209,21 +214,9 @@ export async function getActivityCliffs(
     timer = global.setTimeout(function () {
       const line = checkCursorOnLine(event, canvas, linesRes.lines);
       if (line && df.mouseOverRowIdx === -1) {
-        if (!tooltips[line.id]) {
-          const drawTooltipParams = {
-            tooltips: tooltips,
-            line: line,
-            df: df,
-            seqCol: seqCol,
-            activity: activities,
-            x: event.clientX,
-            y: event.clientY
-          }
-          tooltipDrawFunc(drawTooltipParams);
-        }
-        ui.tooltip.show(tooltips[line.id], event.clientX, event.clientY);
+          ui.tooltip.show(createTooltipElement(cashedLinesData, line, seqCol, activities, renderSeqFunction), event.clientX, event.clientY);
       }
-    }, 1000);
+    }, 500);
   });
 
   canvas.addEventListener('mousedown', function(event: MouseEvent) {
@@ -248,6 +241,7 @@ export async function getActivityCliffs(
           df.selection.set(0, linesRes.lines[0].selected);
         }
       }
+      updatePropertyPanel(df, acc, cashedLinesData, line, seqCol, activities, linesRes.linesDf.get('sali', line.id), renderSeqFunction);
     }
   });
 
@@ -276,7 +270,36 @@ export async function getActivityCliffs(
     });
 
   sp.addProperty('similarityLimit', 'double', optSimilarityLimit);
+  acc = createPopertyPanel();
   return sp;
+}
+
+function createPopertyPanel(): DG.Accordion {
+  const acc = ui.accordion();
+  const accIcon = ui.element('i');
+  accIcon.className = 'grok-icon svg-icon svg-view-layout';
+  acc.addTitle(ui.span([accIcon, ui.label(`Activity cliffs`)]));
+  acc.addPane('Cliff Details', () => ui.divText('Cliff has not been selected'), true);
+  grok.shell.o = acc.root;
+  return acc;
+}
+
+function updatePropertyPanel(
+  df: DG.DataFrame,
+  acc: DG.Accordion,
+  cashedData: any,
+  line: ILine, 
+  seqCol: DG.Column, 
+  activities: DG.Column,
+  sali: number,
+  renderSeqFunction: (params: ITooltipAndPanelParams) => void){
+  const panel = acc.getPane('Cliff Details');
+  ui.empty(panel.root);
+  const panelElement = createPropPanelElement(df, cashedData, line, seqCol, activities, sali, renderSeqFunction);
+  panel.root.append(panelElement);
+  setTimeout(() => {
+    grok.shell.o = acc.root;
+  }, 500);
 }
 
 function getZoomCoordinates(W0: number, H0: number, x1: number, y1: number, x2: number, y2: number) {
@@ -300,14 +323,18 @@ function checkCursorOnLine(event: any, canvas: any, lines: ILine[]): ILine | nul
   const rect = canvas.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
+  let closestLine = null;
+  let minDist = 0;
   for (const line of lines) {
     const dist =
       Math.abs(Math.hypot(line.a[0] - x, line.a[1] - y) +
       Math.hypot(line.b[0] - x, line.b[1] - y) - Math.hypot(line.a[0] - line.b[0], line.a[1] - line.b[1]));
-    if (dist < 2)
-      return line;
+    if ((!minDist && dist < 2) || dist < minDist) {
+      minDist = dist;
+      closestLine = line;
+    }
   }
-  return null;
+  return closestLine;
 }
 
 function renderLines(sp: DG.ScatterPlotViewer,
@@ -349,16 +376,15 @@ function createLines(
     lines.push({id: i, mols: [num1, num2], selected: false, a: [], b: []});
   }
   const linesDf = DG.DataFrame.create(lines.length);
-  linesDf.columns.addNewString('1_seq').init((i: number) => seq.get(lines[i].mols[0]));
-  linesDf.columns.addNewString('2_seq').init((i: number) => seq.get(lines[i].mols[1]));
+  molColumnNames.forEach((it, idx) => {
+    linesDf.columns.addNewString(it).init((i: number) => seq.get(lines[i].mols[idx]));
+    setTags(linesDf.col(it)!, tags);
+    linesDf.col(it)!.semType = semType;
+  })
   linesDf.columns.addNewFloat('act_diff')
     .init((i: number) => Math.abs(activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1])));
   linesDf.columns.addNewInt('line_index').init((i: number) => i);
   linesDf.columns.addNewFloat('sali').init((i: number) => saliVals[i]);
-  setTags(linesDf.col('1_seq')!, tags);
-  setTags(linesDf.col('2_seq')!, tags);
-  linesDf.col('1_seq')!.semType = semType;
-  linesDf.col('2_seq')!.semType = semType;
   return {lines, linesDf};
 }
 
@@ -393,4 +419,100 @@ export function getSimilaritiesMarixFromDistances(dim: number, distances: Matrix
     simArr[i] = DG.Column.fromFloat32Array('similarity', Float32Array.from(similarityArr));
   }
   return simArr;
+}
+
+
+export function createPropPanelElement(
+  df: DG.DataFrame,
+  cashedData: any,
+  line: ILine,
+  seqCol: DG.Column,
+  activities: DG.Column,
+  sali: number,
+  renderSeqFunction: (params: ITooltipAndPanelParams) => void): HTMLDivElement {
+  const propPanel = ui.divV([]);
+  const columnNames = ui.divH([
+    ui.divText(seqCol.name),
+    ui.divText(activities.name),
+  ]);
+  columnNames.style.fontWeight = 'bold';
+  columnNames.style.justifyContent = 'space-between';
+  propPanel.append(columnNames);
+  const hosts: HTMLDivElement[] = [];
+  line.mols.forEach((molIdx: number, hostIdx: number) => {
+    const activity = ui.divText(activities.get(molIdx).toFixed(2));
+    activity.style.paddingLeft = '15px';
+    activity.style.paddingLeft = '10px';
+    const molHost = ui.div();
+    if (df.currentRowIdx === molIdx) {
+      molHost.style.border = 'solid 1px lightgrey';
+    }
+    ui.tooltip.bind(molHost, () => moleculeInfo(df, molIdx, seqCol.name));
+    molHost.onclick = () => {
+      const obj = grok.shell.o;
+      molHost.style.border = 'solid 1px lightgrey';
+      df.currentRowIdx = molIdx;
+      hosts.forEach((h, i) => {
+        if (i !== hostIdx) {
+          h.style.border = '';
+        }
+      })
+      setTimeout(() => {
+        grok.shell.o = obj
+      }, 1000);
+    };
+    propPanel.append(ui.divH([
+      molHost,
+      activity,
+    ]));
+    hosts.push(molHost);
+  });
+  renderSeqFunction({ cashedData: cashedData, hosts: hosts, line: line, seqCol: seqCol});
+  propPanel.append(ui.divH([
+    ui.divText(`SALI: `, {style: {fontWeight: 'bold', paddingRight: '5px'}}),
+    ui.divText(sali.toFixed(2))
+  ]));
+  return propPanel;
+}
+
+function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
+  let dict: {[key: string]: string} = {};
+  for (let col of df.columns) {
+    if(col.name !== seqColName) {
+      dict[col.name] = df.get(col.name, idx);
+    }
+  }
+  return ui.tableFromMap(dict);
+}
+
+export function createTooltipElement(
+  cashedData: any,
+  line: ILine,
+  seqCol: DG.Column,
+  activities: DG.Column,
+  renderSeqFunction: (params: ITooltipAndPanelParams) => void): HTMLDivElement {
+  const tooltipElement = ui.divH([]);
+  const columnNames = ui.divV([
+    ui.divText(seqCol.name),
+    ui.divText(activities.name),
+  ]);
+  columnNames.style.fontWeight = 'bold';
+  columnNames.style.display = 'flex';
+  columnNames.style.justifyContent = 'space-between';
+  tooltipElement.append(columnNames);
+  const hosts: HTMLDivElement[] = [];
+  line.mols.forEach((molIdx: number, idx: number) => {
+    const activity = ui.divText(activities.get(molIdx).toFixed(2));
+    activity.style.display = 'flex';
+    activity.style.justifyContent = 'left';
+    activity.style.paddingLeft = '30px';
+    const molHost = ui.div();
+    tooltipElement.append(ui.divV([
+      molHost,
+      activity,
+    ]));
+    hosts.push(molHost);
+  });
+  renderSeqFunction({ cashedData: cashedData, hosts: hosts, line: line, seqCol: seqCol });
+  return tooltipElement;
 }

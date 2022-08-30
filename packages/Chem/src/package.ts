@@ -14,7 +14,6 @@ import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
-import {drawTooltip} from './analysis/activity-cliffs';
 import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
@@ -37,6 +36,7 @@ import Sketcher = chem.Sketcher;
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
+import { findMcsAndUpdateDrawings } from './analysis/activity-cliffs';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -178,13 +178,26 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
   }
 }
 
+//name: getDiversities
+//input: column molStringsColumn
+//output: dataframe result
+export async function getDiversities(molStringsColumn: DG.Column, limit: number = Number.MAX_VALUE): Promise<DG.DataFrame> {
+  try {
+    const result = await chemSearches.chemGetDiversities(molStringsColumn, limit);
+    return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
+  } catch (e: any) {
+    console.error('Chem | Catch in getDiversities: ' + e.toString());
+    throw e;
+  }
+}
+
 //name: findSimilar
 //input: column molStringsColumn
 //input: string molString
 //input: int limit
 //input: int cutoff
 //output: dataframe result
-export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number, cutoff: number)
+export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number = Number.MAX_VALUE, cutoff: number = 0.0)
   : Promise<DG.DataFrame> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
@@ -264,7 +277,7 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
   {'units': smiles.tags['units']},
   chemSpace,
   chemSearches.chemGetSimilarities,
-  drawTooltip,
+  findMcsAndUpdateDrawings,
   (options as any)[methodName]);
   return sp;
 }

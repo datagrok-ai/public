@@ -6,6 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import {GisViewer} from '../src/gis-viewer';
 //OpenLayers functionality import
 import {OpenLayers} from '../src/gis-openlayer'; //TODO: remove it further (it needs just for preview)
+import {useGeographic} from 'ol/proj';
+
 //TODO: remove imports above when we'll be sure we don't need it anymore>>
 // import {Map as OLMap, MapBrowserEvent, View as OLView} from 'ol';
 // import TileLayer from 'ol/layer/Tile';
@@ -35,6 +37,8 @@ export function info() {
 //tags: viewer
 //output: viewer result
 export function gisViewer(): GisViewer {
+  setTimeout(() => {grok.shell.windows.showProperties = true;}, 200);
+
   return new GisViewer();
 }
 
@@ -90,6 +94,7 @@ export async function gisKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
   setTimeout(() => {
     const ol = new OpenLayers();
     ol.initMap('map-container');
+    useGeographic();
     ol.setViewOptions({
       projection: 'EPSG:4326',
       // center: OLProj.fromLonLat([34.109565, 45.452962]),
@@ -100,6 +105,76 @@ export async function gisKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
 
   return viewFile;
 }
+
+//name: gisGeoJSONFileViewer
+//tags: fileViewer, fileViewer-geojson, fileViewer-topojson, fileViewer-json
+//input: file file
+//output: view result
+export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View | null> {
+  //read file
+  const strBuf = await file.readAsString();
+
+  let arrTmp: any[] | null;
+  //searching for patterns of GeoJSON data
+  arrTmp = strBuf.match(/['"]type['"]\s?:\s?['"](?:Multi)?Polygon/ig);
+  let cntTypeGeo = arrTmp ? arrTmp.length : 0;
+  arrTmp = strBuf.match(/\'|\"type\'|\"\s?:\s?\'|\"(?:Multi)?Point/ig);
+  cntTypeGeo += arrTmp ? arrTmp.length : 0;
+  arrTmp = strBuf.match(/\'|\"type\'|\"\s?:\s?\'|\"(?:Multi)?LineString/ig);
+  cntTypeGeo += arrTmp ? arrTmp.length : 0;
+  arrTmp = strBuf.match(/['"]type['"]\s?:\s?['"]Feature/ig);
+  cntTypeGeo += arrTmp ? arrTmp.length : 0;
+  arrTmp = strBuf.match(/['"]type['"]\s?:\s?['"]GeometryCollection/ig);
+  cntTypeGeo += arrTmp ? arrTmp.length : 0;
+  // alert('type count = ' + cntTypeStr + ' ' + 'geo = ' + cntTypeGeo);
+  //searching for patterns of TopoJSON data
+  arrTmp = strBuf.match(/['"]type['"]\s?:\s?['"]Topology['"]/ig);
+  let cntTypeTopo = arrTmp ? arrTmp.length : 0;
+  // alert('geo = ' + cntTypeGeo);
+
+  if (cntTypeGeo == 0) return null;
+
+  const viewFile = DG.View.create();
+  viewFile.name = 'Preview of: ' + file.name;
+  viewFile.root.id = 'map-container'; //boxMap - div that contains map
+  viewFile.root.style.padding = '0px';
+
+  setTimeout(() => {
+    const ol = new OpenLayers();
+    ol.initMap('map-container');
+    useGeographic();
+    ol.setViewOptions({
+      projection: 'EPSG:4326',
+    });
+    if (cntTypeTopo == 0) ol.addGeoJSONLayerFromStream(strBuf);
+    else ol.addTopoJSONLayerFromStream(strBuf);
+  }, 200);
+
+  return viewFile;
+}
+
+//name: gisGeoJSONFileHandler
+//tags: file-handler
+//meta.ext: geojson
+//input: file file
+//output: list tables
+export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
+  // ... processing files ...
+  const ol = new OpenLayers();
+  // ol.initMap('map-container');
+  // useGeographic();
+  // ol.setViewOptions({
+  //   projection: 'EPSG:4326',
+  // });
+  // if (cntTypeTopo == 0) ol.addGeoJSONLayerFromStream(filecontent);
+  // else ol.addTopoJSONLayerFromStream(filecontent);
+  const newLayer = ol.addTopoJSONLayerFromStream(filecontent, false);
+  ol.getFeaturesFromLayer(newLayer);
+
+  // return [new DG.DataFrame(null)];
+  return [DG.DataFrame.fromJson(filecontent)];
+}
+
 
 //name: openGISViewer
 export function openGISViewer(): void {

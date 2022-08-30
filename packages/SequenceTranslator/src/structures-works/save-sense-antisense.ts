@@ -3,14 +3,14 @@ import {sequenceToMolV3000} from '../structures-works/from-monomers';
 import {linkV3000} from '../structures-works/mol-transformations';
 import {getFormat} from '../structures-works/sequence-codes-tools';
 
-export function saveSdf(as: string, ss: string, oneEntity: boolean, invertSS: boolean, invertAS: boolean) {
+export function saveSdf(as: string, ss: string, oneEntity: boolean, useChirality: boolean, invertSS: boolean, invertAS: boolean) {
   const formatAs = getFormat(as);
   const formatSs = getFormat(ss);
   const molSS = sequenceToMolV3000(ss, invertSS, false, formatSs!);
   const molAS = sequenceToMolV3000(as, invertAS, false, formatAs!);
   let result: string;
   if (oneEntity)
-    result = linkV3000([molSS, molAS], true) + '\n\n$$$$\n';
+    result = linkV3000([molSS, molAS], true, useChirality) + '\n\n$$$$\n';
   else {
     result =
     molSS + '\n' +
@@ -40,8 +40,9 @@ export function saveSenseAntiSense() {
   changeAntiSense.onChanged(() => {asInverse = changeAntiSense.value == inverse;});
 
   const saveOption = ui.switchInput('Save as one entity', true);
+  const chirality = ui.switchInput('Use chiral', true);
   const saveBtn = ui.button('Save SDF', () =>
-    saveSdf(asInput.value, ssInput.value, saveOption.value, ssInverse, asInverse));
+    saveSdf(asInput.value, ssInput.value, saveOption.value, chirality.value, ssInverse, asInverse));
 
   const saveSection = ui.panel([
     ui.div([
@@ -54,6 +55,7 @@ export function saveSenseAntiSense() {
           changeSense,
           changeAntiSense,
           saveOption,
+          chirality,
           ui.buttonsInput([saveBtn]),
         ], 'ui-form'),
       ], 'ui-form'),

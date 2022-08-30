@@ -12,10 +12,11 @@ import {runKalign} from './utils/multiple-sequence-alignment';
 import {SequenceAlignment} from './seq_align';
 import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {sequenceGetSimilarities, drawTooltip} from './utils/sequence-activity-cliffs';
+import {sequenceGetSimilarities, drawSequences} from './utils/sequence-activity-cliffs';
 import {
   createJsonMonomerLibFromSdf,
   encodeMonomers,
+  getMolfilesFromSeq,
   HELM_CORE_LIB_FILENAME
 } from '@datagrok-libraries/bio/src/utils/monomer-utils';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
@@ -25,11 +26,49 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/utils/to-atomic-level';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-
+import {generateManySequences, generateLongSequence} from './tests/test-sequnces-generators';
 
 //tags: init
 export async function initBio() {
 }
+
+//name: testManySequencesPerformance
+export function testManySequencesPerformance(): void {
+  const startTime: number = Date.now();
+  const csv = generateManySequences();
+  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+  const col: DG.Column = df.columns.byName('MSA');
+  df.columns.byName('MSA').semType = DG.SEMTYPE.MACROMOLECULE;
+  col.setTag('units', 'separator');
+  col.setTag('aligned', 'SEQ.MSA');
+  col.setTag('alphabet', 'UN');
+  col.setTag('separator', '/');
+  grok.shell.addTableView(df);
+
+  const endTime: number = Date.now();
+  const elapsedTime: number = endTime - startTime;
+  console.log(`Elapsed time: ${elapsedTime}ms`);
+
+}
+//name: testLongSequencesPerformance
+export function testLongSequencesPerformance(): void {
+  const startTime: number = Date.now();
+  const csv = generateLongSequence();
+  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+  const col: DG.Column = df.columns.byName('MSA');
+  df.columns.byName('MSA').semType = DG.SEMTYPE.MACROMOLECULE;
+  col.setTag('units', 'separator');
+  col.setTag('aligned', 'SEQ.MSA');
+  col.setTag('alphabet', 'UN');
+  col.setTag('separator', '/');
+  grok.shell.addTableView(df);
+
+  const endTime: number = Date.now();
+  const elapsedTime: number = endTime - startTime;
+  console.log(`Elapsed time: ${elapsedTime}ms`);
+
+}
+
 
 //name: fastaSequenceCellRenderer
 //tags: cellRenderer
@@ -123,7 +162,12 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
   const options = {
     'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
   };
-  const units = macroMolecule!.tags[DG.TAGS.UNITS];
+  const tags = {
+    'units': macroMolecule.tags['units'],
+    'aligned': macroMolecule.tags['aligned'],
+    'separator': macroMolecule.tags['separator'],
+    'alphabet': macroMolecule.tags['alphabet'],
+  };
   const sp = await getActivityCliffs(
     df,
     macroMolecule,
@@ -138,9 +182,8 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     units,
     sequenceSpace,
     sequenceGetSimilarities,
-    drawTooltip,
-    (options as any)[methodName]
-  );
+    drawSequences,
+    (options as any)[methodName]);
   return sp;
 }
 
@@ -152,7 +195,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 //input: string similarityMetric { choices:["Levenshtein", "Tanimoto"] }
 //input: bool plotEmbeddings = true
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<DG.Viewer|undefined> {
+  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
   if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
     return;
   const encodedCol = encodeMonomers(macroMolecule);
@@ -173,7 +216,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   for (const col of embeddings) {
     const listValues = col.toList();
     emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-    table.columns.add(DG.Column.fromFloat32Array(col.name, listValues));
+    table.columns.add(DG.Column.fromList('double', col.name, listValues));
   }
   let sp;
   if (plotEmbeddings) {
