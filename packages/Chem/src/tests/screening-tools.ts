@@ -7,13 +7,13 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {runStructuralAlertsDetection} from '../panels/structural-alerts';
 import {RDMol} from '../rdkit-api';
 
-category('Screening tools benchmarks', () => {
+category('screening tools benchmarks', () => {
   before(async () => {
     chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
     chemCommonRdKit.initRdKitModuleLocal();
   });
 
-  test('Structural Alerts Benchmark', async () => {
+  test('structural alerts', async () => {
     const alertsDf = DG.DataFrame.fromCsv(await _package.files.readAsText('alert-collection.csv'));
     const ruleSetCol = alertsDf.getCol('rule_set_name');
     const smartsCol = alertsDf.getCol('smarts');
