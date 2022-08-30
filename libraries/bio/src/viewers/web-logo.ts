@@ -57,18 +57,36 @@ export class PositionMonomerInfo {
   }
 }
 
+class UnitsHandler {
+  public static getAlphabetSize(type: string): number {
+    switch (type) {
+    case 'PT':
+      return 19;
+    case 'NT':
+      return 5;
+    case 'DNA':
+      return 5;
+    case 'RNA':
+      return 5;
+    }
+    return 1;
+  }
+}
+
 export class PositionInfo {
   public readonly name: string;
   freq: { [m: string]: PositionMonomerInfo };
   rowCount: number;
+  sumForHeightCalc: number;
 
   /** freq = {}, rowCount = 0
    * @param {string} name Name of position ('111A', '111.1', etc)
    */
-  constructor(name: string, freq: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0) {
+  constructor(name: string, freq: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0, sumForHeightCalc: number = 0) {
     this.name = name;
     this.freq = freq;
     this.rowCount = rowCount;
+    this.sumForHeightCalc = sumForHeightCalc;
   }
 }
 
@@ -113,6 +131,7 @@ export class WebLogo extends DG.JsViewer {
   public fitArea: boolean;
   public shrinkEmptyTail: boolean;
   public skipEmptyPositions: boolean;
+  public positionHeight: string;
 
   private positionNames: string[] = [];
 
@@ -160,6 +179,7 @@ export class WebLogo extends DG.JsViewer {
     this.fitArea = this.bool('fitArea', true);
     this.shrinkEmptyTail = this.bool('shrinkEmptyTail', true);
     this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
+    this.positionHeight = this.string('positionHeight', 'Entropy', {choices: ['100%', 'Entropy']});
   }
 
   private async init(): Promise<void> {
@@ -470,18 +490,26 @@ export class WebLogo extends DG.JsViewer {
       this.positions[jPos].rowCount = 0;
       for (const m in this.positions[jPos].freq)
         this.positions[jPos].rowCount += this.positions[jPos].freq[m].count;
+      if (this.positionHeight == 'Entropy') {
+        this.positions[jPos].sumForHeightCalc = 0;
+        for (const m in this.positions[jPos].freq) {
+          this.positions[jPos].sumForHeightCalc += -this.positions[jPos].freq[m].count * Math.log2(this.positions[jPos].freq[m].count);
+        }
+      }
     }
     //#endregion
     this._removeEmptyPositions();
 
 
-    const maxHeight = this.canvas.height - this.axisHeight * r;
+    let maxHeight = this.canvas.height - this.axisHeight * r;
     // console.debug(`WebLogo<${this.viewerId}>._calculate() maxHeight=${maxHeight}.`);
 
     //#region Calculate screen
     for (let jPos = 0; jPos < this.Length; jPos++) {
       const freq: { [c: string]: PositionMonomerInfo } = this.positions[jPos].freq;
       const rowCount = this.positions[jPos].rowCount;
+
+      maxHeight = (this.positionHeight == 'Entropy') ? Math.log2(this.getAlphabetLength()) - (this.positions[jPos].sumForHeightCalc) : maxHeight;
 
       let y: number = this.axisHeight * r;
 
@@ -695,6 +723,12 @@ export class WebLogo extends DG.JsViewer {
       res = UnknownSeqPalettes.Color;
 
     return res;
+  }
+
+  public getAlphabetLength(): number {
+    const alphaBet: string | undefined = this.seqCol?.getTag('alphabet');
+    return UnitsHandler.getAlphabetSize(alphaBet ?? 'UN');
+
   }
 
   /** Stats of sequences with specified splitter func, returns { freq, sameLength }.
