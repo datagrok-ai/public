@@ -29,10 +29,6 @@ category('Dev panel', () => {
       DG.View.create(),
     ].filter((ent) => ent != null));
     grok.shell.windows.showProperties = true;
-    subs.push(grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
-      currentEntity = acc.context;
-      devPane = acc.getPane('Dev');
-    }));
   });
 
   test('Dev panel opens', () => new Promise(async (resolve, reject) => {
