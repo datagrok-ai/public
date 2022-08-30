@@ -15,26 +15,26 @@ const inputOutputObjs: {
     synthesizer: null,
     technology: null,
   },
-  'moeTmoeAmoe5mCfUfA': {
-    indexOfFirstNotValidChar: 14,
-    synthesizer: null,
-    technology: null,
-  },
-  'rArCrGRUrArCrG': {
-    indexOfFirstNotValidChar: 6,
-    synthesizer: null,
-    technology: null,
-  },
-  'mGrArCrU': {
-    indexOfFirstNotValidChar: -1,
-    synthesizer: [SYNTHESIZERS.GCRS],
-    technology: null,
-  },
-  'fUfA5mC': {
-    indexOfFirstNotValidChar: -1,
-    synthesizer: [SYNTHESIZERS.GCRS],
-    technology: null,
-  },
+  // 'moeTmoeAmoe5mCfUfA': {
+  //   indexOfFirstNotValidChar: 14,
+  //   synthesizer: null,
+  //   technology: null,
+  // },
+  // 'rArCrGRUrArCrG': {
+  //   indexOfFirstNotValidChar: 6,
+  //   synthesizer: null,
+  //   technology: null,
+  // },
+  // 'mGrArCrU': {
+  //   indexOfFirstNotValidChar: -1,
+  //   synthesizer: [SYNTHESIZERS.GCRS],
+  //   technology: null,
+  // },
+  // 'fUfA5mC': {
+  //   indexOfFirstNotValidChar: -1,
+  //   synthesizer: [SYNTHESIZERS.GCRS],
+  //   technology: null,
+  // },
   'mUmUmAmUmCmUmUmGmAmUmUmG': {
     indexOfFirstNotValidChar: -1,
     synthesizer: [SYNTHESIZERS.GCRS],
@@ -45,46 +45,46 @@ const inputOutputObjs: {
     synthesizer: [SYNTHESIZERS.GCRS],
     technology: [TECHNOLOGIES.SI_RNA],
   },
-  'ArA': {
-    indexOfFirstNotValidChar: 1,
-    synthesizer: null,
-    technology: null,
-  },
-  'AdA': {
-    indexOfFirstNotValidChar: 1,
-    synthesizer: null,
-    technology: null,
-  },
-  'rAA': {
-    indexOfFirstNotValidChar: 2,
-    synthesizer: null,
-    technology: null,
-  },
-  'dAA': {
-    indexOfFirstNotValidChar: 2,
-    synthesizer: null,
-    technology: null,
-  },
+  // 'ArA': {
+  //   indexOfFirstNotValidChar: 1,
+  //   synthesizer: null,
+  //   technology: null,
+  // },
+  // 'AdA': {
+  //   indexOfFirstNotValidChar: 1,
+  //   synthesizer: null,
+  //   technology: null,
+  // },
+  // 'rAA': {
+  //   indexOfFirstNotValidChar: 2,
+  //   synthesizer: null,
+  //   technology: null,
+  // },
+  // 'dAA': {
+  //   indexOfFirstNotValidChar: 2,
+  //   synthesizer: null,
+  //   technology: null,
+  // },
   'fAGACGT': {
     indexOfFirstNotValidChar: -1,
     synthesizer: [SYNTHESIZERS.GCRS],
     technology: [TECHNOLOGIES.SI_RNA],
   },
-  'AGfA': {
-    indexOfFirstNotValidChar: -1,
-    synthesizer: [SYNTHESIZERS.GCRS],
-    technology: null,
-  },
-  'TrA': {
-    indexOfFirstNotValidChar: -1,
-    synthesizer: [SYNTHESIZERS.GCRS],
-    technology: [TECHNOLOGIES.ASO_GAPMERS],
-  },
-  'rAT': {
-    indexOfFirstNotValidChar: -1,
-    synthesizer: [SYNTHESIZERS.GCRS],
-    technology: [TECHNOLOGIES.ASO_GAPMERS],
-  },
+  // 'AGfA': {
+  //   indexOfFirstNotValidChar: -1,
+  //   synthesizer: [SYNTHESIZERS.GCRS],
+  //   technology: null,
+  // },
+  // 'TrA': {
+  //   indexOfFirstNotValidChar: -1,
+  //   synthesizer: [SYNTHESIZERS.GCRS],
+  //   technology: [TECHNOLOGIES.ASO_GAPMERS],
+  // },
+  // 'rAT': {
+  //   indexOfFirstNotValidChar: -1,
+  //   synthesizer: [SYNTHESIZERS.GCRS],
+  //   technology: [TECHNOLOGIES.ASO_GAPMERS],
+  // },
   'mUrA': {
     indexOfFirstNotValidChar: -1,
     synthesizer: [SYNTHESIZERS.GCRS],
