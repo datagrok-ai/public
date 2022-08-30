@@ -13,6 +13,7 @@
     "cash-dom": "latest",
     "datagrok-api": "^1.6.0",
     "dayjs": "latest",
+    "openchemlib": "^8.0.1",
     "rxjs": "^6.5.5",
     "wu": "latest"
   },
