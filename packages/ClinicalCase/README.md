@@ -8,7 +8,7 @@ For details also refer to introduction [video](https://www.youtube.com/watch?v=l
 
 SDTM data detection
 ===============
-Clinical case automatically detects data represented in SDTM format. For instance, if you have a folder containing a bunch of SDTM domains (csv files), you will bw offered to launch the application. Also study ID is shown on a panel below files explorer.
+Clinical case automatically detects data represented in SDTM format. For instance, if you have a folder containing a bunch of SDTM domains (csv files), you will be offered to launch the application. Also study ID is shown on a panel below files explorer.
 Launch the application by clicking `Run ClinicalCase`.
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/SDTM_data_detection.PNG"/>
