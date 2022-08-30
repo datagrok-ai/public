@@ -1,6 +1,6 @@
 #name: FindRGroups
 #language: python
-#input: string smiles
+#input: string molecules
 #input: dataframe df
 #input: string core
 #input: string prefix
@@ -11,15 +11,15 @@ import numpy as np
 import re
 
 result = {}
-smiles = df[smiles].tolist()
-length = len(smiles)
-core = Chem.MolFromSmiles(core)
+molecules = df[molecules].tolist()
+length = len(molecules)
+core = Chem.MolFromMolBlock(core, sanitize = True) if ("M  END" in core) else Chem.MolFromSmiles(core, sanitize = True)
 if core is not None:
   fragments = dict()
   r_group = 1
   r_group_map = dict()
   for n in range(0, length):
-    mol = Chem.MolFromSmiles(smiles[n])
+    mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
     if mol is None:
       continue
     mol_no_core = Chem.ReplaceCore(mol, core, labelByIndex=True)
