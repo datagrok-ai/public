@@ -20,7 +20,7 @@ afterAll(async () => {
 });
 
 it('TEST', async () => {
-  const targetPackage: string = process.env.targetPackage ?? '#{PACKAGE_NAMESPACE}';
+  const targetPackage: string = process.env.TARGET_PACKAGE ?? '#{PACKAGE_NAMESPACE}';
   console.log(`Testing ${targetPackage} package`);
 
   //console.log(require('root-require')('package.json').version);
