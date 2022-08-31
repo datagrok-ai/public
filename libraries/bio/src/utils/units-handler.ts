@@ -89,6 +89,22 @@ export class UnitsHandler {
     }
   }
 
+  public getAlphabetSize(): number | null {
+    switch (this.alphabet.toLowerCase()) {
+    case 'pt':
+      return 20;
+    case 'nt': {
+      console.warn('NT alphabet is unexpected');
+      return 4;
+    }
+    case 'dna':
+      return 4;
+    case 'rna':
+      return 4;
+    }
+    return null;
+  }
+
   public isFasta(): boolean { return this.notation === NOTATION.FASTA; }
 
   public isSeparator(): boolean { return this.notation === NOTATION.SEPARATOR; }

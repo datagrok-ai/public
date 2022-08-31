@@ -12,6 +12,7 @@ import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
 import {UnknownSeqPalette, UnknownSeqPalettes} from '../unknown';
 import {SeqPalette} from '../seq-palettes';
 import {Subscription} from 'rxjs';
+import {UnitsHandler} from '../utils/units-handler';
 
 declare module 'datagrok-api/src/grid' {
   interface Rect {
@@ -57,22 +58,6 @@ export class PositionMonomerInfo {
   }
 }
 
-class UnitsHandler {
-  public static getAlphabetSize(type: string): number {
-    switch (type) {
-    case 'PT':
-      return 19;
-    case 'NT':
-      return 5;
-    case 'DNA':
-      return 5;
-    case 'RNA':
-      return 5;
-    }
-    return 1;
-  }
-}
-
 export class PositionInfo {
   public readonly name: string;
   freq: { [m: string]: PositionMonomerInfo };
@@ -95,6 +80,7 @@ export class WebLogo extends DG.JsViewer {
   private static viewerCount: number = -1;
 
   private viewerId: number = -1;
+  private unitsHandler: UnitsHandler | null;
   private initialized: boolean = false;
 
   // private readonly colorScheme: ColorScheme = ColorSchemes[NucleotidesWebLogo.residuesSet];
@@ -156,6 +142,7 @@ export class WebLogo extends DG.JsViewer {
     WebLogo.viewerCount += 1;
 
     this.textBaseline = 'top';
+    this.unitsHandler = null;
 
     this._positionWidth = this.positionWidth = this.float('positionWidth', 16/*,
       {editor: 'slider', min: 4, max: 64, postfix: 'px'}*/);
@@ -179,7 +166,7 @@ export class WebLogo extends DG.JsViewer {
     this.fitArea = this.bool('fitArea', true);
     this.shrinkEmptyTail = this.bool('shrinkEmptyTail', true);
     this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
-    this.positionHeight = this.string('positionHeight', 'Entropy', {choices: ['100%', 'Entropy']});
+    this.positionHeight = this.string('positionHeight', '100%', {choices: ['100%', 'Entropy']});
   }
 
   private async init(): Promise<void> {
@@ -448,6 +435,8 @@ export class WebLogo extends DG.JsViewer {
   protected _calculate(r: number) {
     if (!this.canvas || !this.host || !this.seqCol || !this.dataFrame)
       return;
+    this.unitsHandler = new UnitsHandler(this.seqCol);
+
 
     this.calcSize();
 
@@ -493,23 +482,27 @@ export class WebLogo extends DG.JsViewer {
       if (this.positionHeight == 'Entropy') {
         this.positions[jPos].sumForHeightCalc = 0;
         for (const m in this.positions[jPos].freq) {
-          this.positions[jPos].sumForHeightCalc += -this.positions[jPos].freq[m].count * Math.log2(this.positions[jPos].freq[m].count);
+          const pn = this.positions[jPos].freq[m].count / this.positions[jPos].rowCount;
+          this.positions[jPos].sumForHeightCalc += -pn * Math.log2(pn);
         }
       }
     }
     //#endregion
     this._removeEmptyPositions();
 
-
-    let maxHeight = this.canvas.height - this.axisHeight * r;
+    const absoluteMaxHeight = this.canvas.height - this.axisHeight * r;
     // console.debug(`WebLogo<${this.viewerId}>._calculate() maxHeight=${maxHeight}.`);
 
     //#region Calculate screen
     for (let jPos = 0; jPos < this.Length; jPos++) {
       const freq: { [c: string]: PositionMonomerInfo } = this.positions[jPos].freq;
       const rowCount = this.positions[jPos].rowCount;
+      const alphabetSize = this.getAlphabetSize();
+      if ((this.positionHeight == 'Entropy') && (alphabetSize == null)) {
+        grok.shell.error('WebLogo: alphabet is undefined.');
+      }
 
-      maxHeight = (this.positionHeight == 'Entropy') ? Math.log2(this.getAlphabetLength()) - (this.positions[jPos].sumForHeightCalc) : maxHeight;
+      const maxHeight = (this.positionHeight == 'Entropy') ? (absoluteMaxHeight * (Math.log2(alphabetSize) - (this.positions[jPos].sumForHeightCalc)) / Math.log2(alphabetSize)) : absoluteMaxHeight;
 
       let y: number = this.axisHeight * r;
 
@@ -725,10 +718,8 @@ export class WebLogo extends DG.JsViewer {
     return res;
   }
 
-  public getAlphabetLength(): number {
-    const alphaBet: string | undefined = this.seqCol?.getTag('alphabet');
-    return UnitsHandler.getAlphabetSize(alphaBet ?? 'UN');
-
+  public getAlphabetSize(): number {
+    return this.unitsHandler?.getAlphabetSize() ?? 0;
   }
 
   /** Stats of sequences with specified splitter func, returns { freq, sameLength }.
