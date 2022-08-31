@@ -1438,10 +1438,7 @@
         "0.1.1": {
           "datagrok-api": "^0.151.6"
         },
-        "0.1.2": {},
-        "1.0.0": {
-          "datagrok-api": "^1.5.0"
-        }
+        "0.1.2": {}
       },
       "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
       "repository": {
