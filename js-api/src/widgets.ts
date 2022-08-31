@@ -6,9 +6,7 @@ import {Cell, Column, DataFrame} from "./dataframe";
 import {ColorType, FILTER_TYPE, LegendPosition, Type} from "./const";
 import * as rxjs from "rxjs";
 import { filter } from 'rxjs/operators';
-import {Rect} from "./grid";
 import $ from "cash-dom";
-import {Viewer} from "./viewer";
 import {MapProxy} from "./utils";
 import dayjs from "dayjs";
 
