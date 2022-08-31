@@ -1,6 +1,6 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {isMolBlock} from '../utils/chem-utils';
-import {RDModule, RDMol} from '../rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/bio/src/rdkit-api';
 
 interface InitMoleculesStructuresResult {
   molIdxToHash: string[];

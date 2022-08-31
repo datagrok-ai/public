@@ -4,7 +4,7 @@ import {RdKitServiceWorker as ServiceWorkerClass} from './rdkit-service/rdkit-se
 import initRDKitModule from './RDKit_minimal.js';
 //@ts-ignore
 import rdKitLibVersion from './rdkit_lib_version';
-import {RDModule} from './rdkit-api';
+import {RDModule} from '@datagrok-libraries/bio/src/rdkit-api';
 
 const ctx: Worker = self as any;
 let _rdKitModule: RDModule;

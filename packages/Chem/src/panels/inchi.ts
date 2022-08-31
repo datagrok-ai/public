@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {_rdKitModule} from '../utils/chem-common-rdkit';
-import {RDMol} from "../rdkit-api";
+import {RDMol} from '@datagrok-libraries/bio/src/rdkit-api';
 
 /** Adds a derived column, given a source column `col` and extraction function `extract`.
  * Handles progress indication, and molecule disposal. */

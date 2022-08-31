@@ -5,7 +5,7 @@ import {category, test, expect, delay, expectFloat, before} from '@datagrok-libr
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {runStructuralAlertsDetection} from '../panels/structural-alerts';
-import {RDMol} from '../rdkit-api';
+import {RDMol} from '@datagrok-libraries/bio/src/rdkit-api';
 
 category('screening tools benchmarks', () => {
   before(async () => {
