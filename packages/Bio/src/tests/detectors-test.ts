@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {importFasta} from '../package';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 type DfReaderFunc = () => Promise<DG.DataFrame>;
 
@@ -384,7 +385,10 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
   }
 }
 
-export async function _testPos(readDf: DfReaderFunc, colName: string, units: string, aligned: string | null, alphabet: string | null, separator: string | null = null) {
+export async function _testPos(
+  readDf: DfReaderFunc, colName: string, units: string,
+  aligned: string | null, alphabet: string | null, separator: string | null = null
+) {
   const df: DG.DataFrame = await readDf();
   const col: DG.Column = df.col(colName)!;
   const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
@@ -397,5 +401,11 @@ export async function _testPos(readDf: DfReaderFunc, colName: string, units: str
   expect(col.getTag('alphabet'), alphabet);
   if (separator)
     expect(col.getTag('separator'), separator);
+
+  const uh = new UnitsHandler(col);
+  if (!uh.isHelm()) {
+    expect(uh.aligned, aligned);
+    expect(uh.alphabet, alphabet);
+  }
 }
 
