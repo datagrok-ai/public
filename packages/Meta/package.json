@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "2.0.14",
+  "version": "2.0.15",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1438,7 +1438,10 @@
         "0.1.1": {
           "datagrok-api": "^0.151.6"
         },
-        "0.1.2": {}
+        "0.1.2": {},
+        "1.0.1": {
+          "datagrok-api": "^1.5.0"
+        }
       },
       "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
       "repository": {
