@@ -541,6 +541,7 @@ export class MolecularLiabilityBrowser {
           break;
 
         case 'sfvcsp':
+        case 'SFvCSP':
           args.args.element.innerHTML = this.pf.tooltips[4];
           break;
 
