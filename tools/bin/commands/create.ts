@@ -41,6 +41,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
       contents = contents.replace(/#{PACKAGE_DETECTORS_NAME}/g, utils.kebabToCamelCase(name));
       contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE}/g, name.toLowerCase());
       contents = contents.replace(/#{PACKAGE_NAME_LOWERCASE_WORD}/g, name.replace(/-/g, '').toLowerCase());
+      contents = utils.replacers['PACKAGE_NAMESPACE'](contents, name);
       contents = contents.replace(/#{GROK_HOST_ALIAS}/g, config.default);
       contents = contents.replace(/#{GROK_HOST}/g, /localhost|127\.0\.0\.1/.test(config['servers'][config.default]['url']) ?
         'http://localhost:63343/login.html' : (new URL(config['servers'][config.default]['url'])).origin);
