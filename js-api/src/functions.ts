@@ -108,8 +108,8 @@ export class Functions {
     api.grok_RegisterParamFunc(name, type, run, check, description);
   }
 
-  call(name: string, parameters: object = {}, showProgress: boolean = false, progress: ProgressIndicator | null = null): Promise<object> {
-    return toJs(api.grok_CallFunc(name, parameters, showProgress, toDart(progress)));
+  call(name: string, parameters: object = {}, showProgress: boolean = false, progress: ProgressIndicator | null = null): Promise<any> {
+    return api.grok_CallFunc(name, parameters, showProgress, toDart(progress));
   }
 
   eval(name: string, context?: Context): Promise<object> {
