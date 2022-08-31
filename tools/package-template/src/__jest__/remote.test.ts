@@ -20,13 +20,13 @@ afterAll(async () => {
 });
 
 it('TEST', async () => {
-  const target_package:string = process.env.TARGET_PACKAGE;
-  console.log(`Testing ${target_package} package`);
+  const targetPackage: string = process.env.targetPackage ?? '#{PACKAGE_NAMESPACE}';
+  console.log(`Testing ${targetPackage} package`);
 
   //console.log(require('root-require')('package.json').version);
-  let r = await page.evaluate((target_package):Promise<object> => {
+  let r = await page.evaluate((targetPackage): Promise<object> => {
     return new Promise<object>((resolve, reject) => {
-      (<any>window).grok.functions.eval(target_package + ':test()').then((df: any) => {
+      (<any>window).grok.functions.eval(targetPackage + ':test()').then((df: any) => {
         let cStatus = df.columns.byName('success');
         let cMessage = df.columns.byName('result');
         let cCat = df.columns.byName('category');
@@ -41,7 +41,7 @@ it('TEST', async () => {
         resolve({report, failed});
       }).catch((e: any) => reject(e));
     });
-  }, target_package);
+  }, targetPackage);
   // @ts-ignore
   console.log(r.report);
   // @ts-ignore
