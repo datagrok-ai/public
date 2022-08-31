@@ -1,4 +1,4 @@
-import {RDModule} from "../rdkit-api";
+import {RDModule} from '@datagrok-libraries/bio/src/rdkit-api';
 
 export enum MolNotation {
   Smiles = 'smiles',

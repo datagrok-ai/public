@@ -31,7 +31,7 @@ import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
-import {RDMol} from './rdkit-api';
+import {RDMol} from '@datagrok-libraries/bio/src/rdkit-api';
 import Sketcher = chem.Sketcher;
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
