@@ -54,10 +54,6 @@ category('cell panel', async () => {
     const panelStr = ($(panelElements[2].input).val() as string).replaceAll('\r', '').trim();
     expect(panelStr, expectedStr);
 
-    $(panelElements[0]).trigger('click');
-    const clipboardStr = (await navigator.clipboard.readText()).replaceAll('\r', '').trim();
-    expect(clipboardStr, expectedStr);
-
     molfileWidget(molStr);
   });
 
@@ -107,25 +103,6 @@ category('cell panel', async () => {
 
   //TODO: Test smiles, mol2000, mol3000;
   test('substructure-filter-manual', async () => {
-    const df = grok.data.demo.molecules(1000);
-    await grok.data.detectSemanticTypes(df);
-    // previously: let filter = await grok.functions.call("Chem:substructureFilter");
-    //@ts-ignore
-    const filter = chem.substructureFilter();
-    filter.attach(df);
-    grok.shell.addTableView(df);
-    const colChoice = ui.columnInput('Column', filter.dataFrame!, filter.column, (col: DG.Column) => {
-      filter.column = col;
-      filter.dataFrame!.filter.setAll(true, false);
-      filter.dataFrame!.rows.requestFilter();
-    });
-    ui.dialog({title: 'Chem Filter'})
-      .add(colChoice)
-      .add(filter.root)
-      .show();
-  });
-
-  test('substructure-filter-manual2', async () => {
     const df = grok.data.demo.molecules(1000);
     await grok.data.detectSemanticTypes(df);
     let filter = substructureFilter();

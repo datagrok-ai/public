@@ -46,7 +46,7 @@ export function renderMolecule(
         grok.shell.info('Molfile copied to clipboard');
       });
       menu.item('Sketch', () => {
-        const sketcher = new DG.chem.chem.Sketcher();
+        const sketcher = new DG.chem.Sketcher();
         isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
         ui.dialog()
           .add(sketcher)
