@@ -2,10 +2,12 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import {splitAlignedPeptides} from '@datagrok-libraries/bio/src/utils/splitter';
+
 import {Subject, Observable} from 'rxjs';
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateBarsData, getTypedArrayConstructor, scaleActivity, splitAlignedPeptides} from './utils/misc';
+import {calculateBarsData, getTypedArrayConstructor, scaleActivity} from './utils/misc';
 import {_package} from './package';
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
@@ -176,7 +178,7 @@ export class PeptidesModel {
       throw new Error(`Source grid is not initialized`);
 
     //Split the aligned sequence into separate AARs
-    const col: DG.Column = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
+    const col: DG.Column<string> = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
     // const alphabet = col.tags[DG.TAGS.UNITS].split(':')[2];
     const alphabet = col.tags['alphabet'];
     const splitSeqDf = splitAlignedPeptides(col);
@@ -854,7 +856,7 @@ export class PeptidesModel {
       return;
 
     this.monomerLib =
-      JSON.parse(await grok.functions.call('Helm:getMonomerLib', {type: this.df.getTag('monomerType')}));
+      JSON.parse(await grok.functions.call('Helm:getMonomerLib', {type: this.df.getTag('monomerType')}) as string);
 
     this.currentView = this.df.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
       grok.shell.addTableView(this.df);
