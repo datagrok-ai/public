@@ -43,7 +43,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
 
   async getSmarts(): Promise<string> {
     if (this._sketcher) {
-      const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this.molFile);
+      const mol = getRdKitModule().get_mol(this.molFile);
       const smarts = mol.get_smarts();
       mol?.delete();
       return smarts;
@@ -62,7 +62,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   private async convertAndSetSmarts(s: string) {
-    const mol = await getRdKitModule().get_mol(s);
+    const mol = getRdKitModule().get_mol(s);
     this._sketcher?.setMolFile(mol.get_molblock());
     mol?.delete();
   }
