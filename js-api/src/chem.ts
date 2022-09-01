@@ -134,7 +134,6 @@ export namespace chem {
     }
 
     getMolFile(): string {
-      console.log('#######get molfile js')
       let returnConvertedMolfile = () => { // in case getter is called before sketcher initialized
         if(this._smiles) {
           this._molfile = chem.convert(this._smiles, 'smiles', 'mol');
@@ -143,7 +142,6 @@ export namespace chem {
           return this._smarts; //to do - convert from smarts to molfile
         }
       }
-      console.log(this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : !this._molfile ? returnConvertedMolfile() : this._molfile)
       return this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : !this._molfile ? returnConvertedMolfile() : this._molfile;
     }
 
@@ -319,7 +317,6 @@ export namespace chem {
     }
 
     createInplaceModeSketcher(molStr?: string): HTMLElement {
-      console.log(`create inplace sketcher ${molStr}`)
       const molInputDiv = ui.div();
       $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
