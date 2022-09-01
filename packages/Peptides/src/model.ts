@@ -134,9 +134,11 @@ export class PeptidesModel {
   }
 
   isPropertyChanged(viewer: SARViewerBase): boolean {
-    // const viewer = this.getViewer();
-    const viewerProps = viewer.props.getProperties();
     let result = false;
+    if (typeof viewer == 'undefined')
+      return result;
+
+    const viewerProps = viewer?.props.getProperties();
     const tempProps = this.usedProperties;
     for (const property of viewerProps) {
       const propName = property.name;

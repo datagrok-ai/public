@@ -16,7 +16,7 @@ import {scaleActivity} from '../utils/misc';
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
 export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Column): Promise<DG.Widget> {
-  if (!col.tags['aligned']?.includes('MSA') && col.tags[DG.TAGS.UNITS] != 'HELM')
+  if (!col.tags['aligned']?.includes('MSA') && col.tags[DG.TAGS.UNITS].toLowerCase() != 'helm')
     return new DG.Widget(ui.divText('Peptides analysis only works with aligned sequences'));
 
   let funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
@@ -112,7 +112,7 @@ export async function startAnalysis(
     // newDf.tags[C.PEPTIDES_ANALYSIS] = 'true';
 
     let monomerType = 'HELM_AA';
-    if (alignedSeqCol.getTag(DG.TAGS.UNITS) == 'HELM') {
+    if (alignedSeqCol.getTag(DG.TAGS.UNITS).toLowerCase() == 'helm') {
       const sampleSeq = alignedSeqCol.get(0)!;
       monomerType = sampleSeq.startsWith('PEPTIDE') ? 'HELM_AA' : 'HELM_BASE';
     } else {
