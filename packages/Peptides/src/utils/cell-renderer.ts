@@ -136,7 +136,7 @@ export function renderBarchart(ctx: CanvasRenderingContext2D, col: DG.Column, mo
   const yMargin = bounds.y + bounds.height * margin / 4;
   const wMargin = bounds.width - bounds.width * margin * 2;
   const hMargin = bounds.height - bounds.height * margin;
-  const barWidth = wMargin - 10;
+  const barWidth = 10;
   ctx.fillStyle = 'black';
   ctx.textBaseline = 'top';
   ctx.font = `${hMargin * margin / 2}px`;

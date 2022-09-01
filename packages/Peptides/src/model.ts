@@ -601,7 +601,7 @@ export class PeptidesModel {
       const tableColName = tableCol?.name;
       const tableRowIndex = cell.tableRowIndex;
 
-      if (!cell.isRowHeader && !cell.isColHeader && tableCol && tableRowIndex) {
+      if (!cell.isRowHeader && !cell.isColHeader && tableCol && tableRowIndex != null) {
         const table = cell.grid.table;
         const currentAAR = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
 
@@ -867,6 +867,7 @@ export class PeptidesModel {
     this.df.tags[C.PEPTIDES_ANALYSIS] = 'true';
     this._sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
     this._sourceGrid.columns.setOrder([this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
+    this._sourceGrid.props.allowColSelection = false;
 
     this.df.temp[C.EMBEDDING_STATUS] = false;
     const adjustCellSize = (grid: DG.Grid): void => {
