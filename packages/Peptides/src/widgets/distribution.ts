@@ -21,7 +21,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   let otherStr = '';
   const useSelectedStr = model.isPeptideSpaceChangingBitset;
 
-  const updateDistributionHost = () => {
+  const updateDistributionHost = (): void => {
     model.splitByPos = splitByPosition.value!;
     model.splitByAAR = splitByAAR.value!;
     const res: HTMLDivElement[] = [];
@@ -104,31 +104,32 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
     } else {
       const splitCol = table.col(C.COLUMNS_NAMES.SPLIT_COL);
       if (!splitCol)
-        return new DG.Widget(ui.divText('No distribution'));
+        res.push(ui.divText('No distribution'));
+      else {
+        otherStr = '';
+        if (useSelectedStr) {
+          aarStr = 'Selected';
+          otherStr = otherConst;
+        } else if (positionsLen) {
+          aarStr = '';
+          for (const position of positions)
+            aarStr += `${position}: {${selectionObject[position].join(', ')}}; `;
+          aarStr = aarStr.slice(0, aarStr.length - 2);
+          otherStr = otherConst;
+        }
 
-      otherStr = '';
-      if (useSelectedStr) {
-        aarStr = 'Selected';
-        otherStr = otherConst;
-      } else if (positionsLen) {
-        aarStr = '';
-        for (const position of positions)
-          aarStr += `${position}: {${selectionObject[position].join(', ')}}; `;
-        aarStr = aarStr.slice(0, aarStr.length - 2);
-        otherStr = otherConst;
+        const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
+        const stats = getStats(activityScaledCol.getRawData(), table.selection);
+        const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr);
+        $(distributionRoot).addClass('d4-flex-col');
+
+        res.push(distributionRoot);
       }
-
-      const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-      const stats = getStats(activityScaledCol.getRawData(), table.selection);
-      const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr);
-      $(distributionRoot).addClass('d4-flex-col');
-
-      res.push(distributionRoot);
     }
     $(distributionHost).empty().append(res);
   };
 
-  const setDefaultProperties = (input: DG.InputBase) => {
+  const setDefaultProperties = (input: DG.InputBase): void => {
     input.enabled = positionsLen != 0;
     $(input.root).find('.ui-input-editor').css('margin', '0px');
     $(input.root).find('.ui-input-description').css('padding', '0px');

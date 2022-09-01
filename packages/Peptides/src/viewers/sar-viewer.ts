@@ -43,7 +43,7 @@ export class SARViewerBase extends DG.JsViewer {
     this.initProperties();
   }
 
-  initProperties() {
+  initProperties(): void {
     const props = this.model.usedProperties;
     IS_PROPERTY_CHANGING = true;
     for (const [propName, propVal] of Object.entries(props))

@@ -6,7 +6,6 @@ import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
 import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 export function getPalleteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
@@ -42,17 +41,17 @@ export function scaleActivity(
   currentActivityColName = flag ? currentActivityColName : C.COLUMNS_NAMES.ACTIVITY;
   const tempDf = df.clone(cloneBitset ? df.filter : null, [currentActivityColName]);
 
-  let formula = (v: number) => v;
+  let formula = (v: number): number => v;
   let newColName = 'activity';
   switch (activityScaling) {
   case 'none':
     break;
   case 'lg':
-    formula = (v: number) => Math.log10(v);
+    formula = (v: number): number => Math.log10(v);
     newColName = `Log10(${newColName})`;
     break;
   case '-lg':
-    formula = (v: number) => -Math.log10(v);
+    formula = (v: number): number => -Math.log10(v);
     newColName = `-Log10(${newColName})`;
     break;
   default:
