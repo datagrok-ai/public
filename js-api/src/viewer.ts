@@ -95,13 +95,13 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   /**
    * Gets the serialized viewer options. [includeDefaults] flag specifies whether the
-   * properties with the defauЫlts values should be returned. Not including default
+   * properties with the default values should be returned. Not including default
    * properties makes it more clean and efficient for serialization purposes.
    *
    * See also {@link setOptions}
    *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot
    *  @returns {object} */
-  getOptions(includeDefaults: boolean = false): {type: ViewerType} {
+  getOptions(includeDefaults: boolean = false): {id: string, type: ViewerType, look: {[key: string]: any}} {
     return JSON.parse(api.grok_Viewer_Serialize(this.dart, includeDefaults));
   }
 
