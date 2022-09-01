@@ -70,7 +70,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     regenerateCoordsCheckbox,
     moleculeFilteringChoice,
   ])
-  const sketcher = new DG.chem.chem.Sketcher(DG.chem.chem.SKETCHER_MODE.EXTERNAL);
+  const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
   sketcher.syncCurrentObject = false;
   sketcher.setMolFile(col.tags['chem-scaffold']);
   sketcher.onChanged.subscribe((_: any) => {

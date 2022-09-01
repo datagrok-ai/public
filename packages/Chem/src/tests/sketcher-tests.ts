@@ -138,7 +138,7 @@ category('sketcher testing', () => {
         await initSketcher(sw);
         for (let func of funcs) {         
             const fn = func.friendlyName;
-            await sw.setMolFile(molfileV2000);
+            await sw.setSketcher(fn, molfileV2000);
             const t = new Promise((resolve, reject) => {
                 sw.onChanged.subscribe(async (_: any) => {
                     try {
@@ -149,6 +149,7 @@ category('sketcher testing', () => {
                     }
                 });
               });
+            sw.setMolFile(molfileV2000);
             let resMolfile = await t;
             const mol2 = module.get_mol(resMolfile);
             const match1 = mol.get_substruct_match(mol2);
@@ -199,7 +200,7 @@ category('sketcher testing', () => {
         for (let func of funcs) {         
             const fn = func.friendlyName;
             if(sw.sketcher?.supportedExportFormats.includes('molV3000')) {
-                await sw.setMolFile(molfileV3000);
+                await sw.setSketcher(fn, molfileV3000);
                 const t = new Promise((resolve, reject) => {
                     sw.onChanged.subscribe(async (_: any) => {
                         try {
@@ -210,6 +211,7 @@ category('sketcher testing', () => {
                         }
                     });
                 });
+                sw.setMolFile(molfileV3000);
                 let resMolfile = await t;
                 const mol2 = module.get_mol(resMolfile);
                 const match1 = mol.get_substruct_match(mol2);
