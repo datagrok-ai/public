@@ -18,6 +18,15 @@ use the packaging mechanism, which is the focus of this article.
 This article describes what a [package](#packages) is, as well as techniques for [developing](#development),
 [debugging](#debugging), [publishing](#publishing) and using [documentation](#documentation).
 
+## Libraries
+
+A library is a versionable unit of code libraries within Datagrok. Essentially, it is a folder with files in it.
+Usually, the library contains a definition of interfaces of specific scope or commonly used routines shared by many
+packages. Libraries are statically linked within the package while building, so they are not distributed to Datagrok
+platforms.
+
+See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/libraries) for examples.
+
 ## Packages
 
 A package is a versionable unit of content distribution within Datagrok. Essentially, it is a folder with files in it. A
