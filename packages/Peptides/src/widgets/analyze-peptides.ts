@@ -92,7 +92,7 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
 
 export async function startAnalysis(
   activityColumn: DG.Column<number> | null, alignedSeqCol: DG.Column<string>, currentDf: DG.DataFrame,
-  scaledDf: DG.DataFrame, newScaledColName: string, dgPackage?: DG.Package): Promise<PeptidesModel | null> {
+  scaledDf: DG.DataFrame, newScaledColName: string): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
   if (activityColumn?.type === DG.TYPE.FLOAT) {
