@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {splitAlignedPeptides} from '@datagrok-libraries/bio/src/utils/splitter';
+import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
 import {Subject, Observable} from 'rxjs';
 import * as C from './utils/constants';
@@ -181,7 +181,7 @@ export class PeptidesModel {
     const col: DG.Column<string> = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
     // const alphabet = col.tags[DG.TAGS.UNITS].split(':')[2];
     const alphabet = col.tags['alphabet'];
-    const splitSeqDf = splitAlignedPeptides(col);
+    const splitSeqDf = splitAlignedSequences(col);
 
     this.barData = calculateBarsData(splitSeqDf.columns.toList(), this.df.selection);
 
