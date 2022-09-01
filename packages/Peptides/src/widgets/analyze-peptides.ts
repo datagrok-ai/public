@@ -16,12 +16,17 @@ import {scaleActivity} from '../utils/misc';
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
 export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Column): Promise<DG.Widget> {
-  if (!col.tags['aligned'].includes('MSA'))
+  if (!col.tags['aligned']?.includes('MSA') && col.tags[DG.TAGS.UNITS] != 'HELM')
     return new DG.Widget(ui.divText('Peptides analysis only works with aligned sequences'));
 
-  const funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
+  let funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
   if (funcs.length == 0)
     return new DG.Widget(ui.label('Bio package is missing or out of date. Please install the latest version.'));
+  
+  funcs = DG.Func.find({package: 'Helm', name: 'getMonomerLib'});
+  if (funcs.length == 0)
+    return new DG.Widget(ui.label('Helm package is missing or out of date. Please install the latest version.'));
+
   let tempCol = null;
   let scaledDf: DG.DataFrame;
   let newScaledColName: string;
@@ -106,13 +111,14 @@ export async function startAnalysis(
     newDf.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
     // newDf.tags[C.PEPTIDES_ANALYSIS] = 'true';
 
-    const alignedSeqColUnits = alignedSeqCol.getTag(DG.TAGS.UNITS);
     let monomerType = 'HELM_AA';
-    if (alignedSeqColUnits == 'HELM') {
+    if (alignedSeqCol.getTag(DG.TAGS.UNITS) == 'HELM') {
       const sampleSeq = alignedSeqCol.get(0)!;
       monomerType = sampleSeq.startsWith('PEPTIDE') ? 'HELM_AA' : 'HELM_BASE';
-    } else
-      monomerType = alignedSeqColUnits.split(':')[2] == 'PT' ? 'HELM_AA' : 'HELM_BASE';
+    } else {
+      const alphabet = alignedSeqCol.tags[C.TAGS.ALPHABET];
+      monomerType = alphabet == 'DNA' || alphabet == 'RNA' ? 'HELM_BASE' : 'HELM_AA';
+    }
 
     newDf.setTag('monomerType', monomerType);
 
