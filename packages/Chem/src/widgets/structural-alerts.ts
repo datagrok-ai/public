@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 // The file is imported from a WebWorker. Don't use Datagrok imports
 import {getRdKitModule, drawMoleculeToCanvas, getRdKitWebRoot} from '../utils/chem-common-rdkit';
-import {RDMol} from '@datagrok-libraries/bio/src/rdkit-api';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 let alertsDf: DG.DataFrame | null = null;
 const _smartsMap: Map<string, RDMol> = new Map();

@@ -7,7 +7,7 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
-import {RDModule, RDMol} from '@datagrok-libraries/bio/src/rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
