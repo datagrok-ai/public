@@ -1,0 +1,5 @@
+upload.keys.json
+data-samples/
+
+src/**/*.ts
+!src/**/*.d.ts
