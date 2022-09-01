@@ -1,3 +1,6 @@
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+
 export function generateManySequences(): string {
   let csvData = `MSA,Activity
 meI/hHis/Aca/N/T/dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me,5.30751`;
@@ -18,4 +21,25 @@ export function generateLongSequence(): string {
     csvData += `\n ${longSequence}`;
   }
   return csvData;
+}
+export function setTagsMacromolecule(col: DG.Column) {
+  col.semType = DG.SEMTYPE.MACROMOLECULE;
+  col.setTag('units', 'separator');
+  col.setTag('aligned', 'SEQ.MSA');
+  col.setTag('alphabet', 'UN');
+  col.setTag('separator', '/');
+  return col;
+}
+
+export function performanceTest(generateFunc: () => string,testName: string) {
+  const startTime: number = Date.now();
+  const csv = generateFunc();
+  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+  const col: DG.Column = df.columns.byName('MSA');
+  setTagsMacromolecule(col);
+  grok.shell.addTableView(df);
+
+  const endTime: number = Date.now();
+  const elapsedTime: number = endTime - startTime;
+  console.log(`Performance test: ${testName}: ${elapsedTime}ms`);
 }

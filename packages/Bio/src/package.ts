@@ -24,7 +24,11 @@ import {representationsWidget} from './widgets/representations';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {generateManySequences, generateLongSequence} from './tests/test-sequnces-generators';
+import {
+  generateManySequences,
+  generateLongSequence,
+  performanceTest
+} from './tests/test-sequnces-generators';
 
 //tags: init
 export async function initBio() {
@@ -32,39 +36,12 @@ export async function initBio() {
 
 //name: testManySequencesPerformance
 export function testManySequencesPerformance(): void {
-  const startTime: number = Date.now();
-  const csv = generateManySequences();
-  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
-  const col: DG.Column = df.columns.byName('MSA');
-  df.columns.byName('MSA').semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag('units', 'separator');
-  col.setTag('aligned', 'SEQ.MSA');
-  col.setTag('alphabet', 'UN');
-  col.setTag('separator', '/');
-  grok.shell.addTableView(df);
-
-  const endTime: number = Date.now();
-  const elapsedTime: number = endTime - startTime;
-  console.log(`Elapsed time: ${elapsedTime}ms`);
-
+  performanceTest(generateManySequences, 'Many sequences');
 }
+
 //name: testLongSequencesPerformance
 export function testLongSequencesPerformance(): void {
-  const startTime: number = Date.now();
-  const csv = generateLongSequence();
-  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
-  const col: DG.Column = df.columns.byName('MSA');
-  df.columns.byName('MSA').semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag('units', 'separator');
-  col.setTag('aligned', 'SEQ.MSA');
-  col.setTag('alphabet', 'UN');
-  col.setTag('separator', '/');
-  grok.shell.addTableView(df);
-
-  const endTime: number = Date.now();
-  const elapsedTime: number = endTime - startTime;
-  console.log(`Elapsed time: ${elapsedTime}ms`);
-
+  performanceTest(generateLongSequence, 'Long sequences');
 }
 
 
