@@ -126,15 +126,16 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const palette = getPalleteByType(paletteType);
 
     const separator = gridCell.cell.column.getTag('separator') ?? '';
+    const splitLimit = gridCell.bounds.width / 5;
     const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, separator, gridCell.bounds.width / 5);
 
 
     const maxLengthOfMonomer = 8;
 
     let maxLengthWords: any = {};
-    if (gridCell.cell.column.getTag('.calculatedCellRender') !== 'exist') {
+    if (gridCell.cell.column.getTag('.calculatedCellRender') !== splitLimit.toString()) {
       let samples = 0;
-      while (samples < Math.max(Math.min(gridCell.cell.column.length, 100), gridCell.cell.column.length / 1000)) {
+      while (samples < Math.min(gridCell.cell.column.length, 100)) {
         let column = gridCell.cell.column.get(samples);
         let subParts: string[] = splitterFunc(column);
         subParts.forEach((amino, index) => {
@@ -164,7 +165,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         'bio-maxIndex': maxLengthWords['bio-maxIndex'],
         'bio-maxLengthWords': maxLengthWords
       };
-      gridCell.cell.column.setTag('.calculatedCellRender', 'exist');
+      gridCell.cell.column.setTag('.calculatedCellRender', splitLimit.toString());
     } else {
       maxLengthWords = gridCell.cell.column.temp['bio-maxLengthWords'];
     }
