@@ -78,7 +78,10 @@ export class Entity {
   /** Removes a specified tag */
   unTag(tag: string): boolean { return api.grok_Entity_UnTag(this.dart, tag); }
 
-  async share(group: Group, isEdit: boolean = false): Promise<void> { await api.grok_Entity_Share(this.dart, group.dart, isEdit); }
+  /** Shares entity with the group */
+  async share(group: Group, isEdit: boolean = false): Promise<void> {
+    await api.grok_Entity_Share(this.dart, group.dart, isEdit);
+  }
 }
 
 /**
