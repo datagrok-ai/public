@@ -126,7 +126,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const palette = getPalleteByType(paletteType);
 
     const separator = gridCell.cell.column.getTag('separator') ?? '';
-    const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, separator);
+    const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, separator, gridCell.bounds.width / 5);
 
 
     const maxLengthOfMonomer = 8;
@@ -134,7 +134,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     let maxLengthWords: any = {};
     if (gridCell.cell.column.getTag('.calculatedCellRender') !== 'exist') {
       let samples = 0;
-      while (samples < Math.max(Math.min(gridCell.cell.column.length, 100), gridCell.cell.column.length / 100)) {
+      while (samples < Math.max(Math.min(gridCell.cell.column.length, 100), gridCell.cell.column.length / 1000)) {
         let column = gridCell.cell.column.get(samples);
         let subParts: string[] = splitterFunc(column);
         subParts.forEach((amino, index) => {
