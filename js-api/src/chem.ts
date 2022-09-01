@@ -291,7 +291,7 @@ export namespace chem {
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
       ui.tooltip.bind(this.extSketcherDiv, 'Click to edit');
 
-      this.extSketcherDiv.addEventListener('mousedown', () => {
+      this.extSketcherDiv.onclick = () => {
 
         let savedMolFile = this.getMolFile();
         savedMolFile = savedMolFile == '' ?  WHITE_MOLBLOCK : savedMolFile;
@@ -306,7 +306,7 @@ export namespace chem {
             this.setMolFile(savedMolFile!);
           })
           .show();
-      });
+      };
 
       ui.onSizeChanged(this.extSketcherDiv).subscribe((_) => {
         this.updateExtSketcherContent(this.extSketcherDiv);
