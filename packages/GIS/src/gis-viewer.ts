@@ -19,15 +19,26 @@ import VectorLayer from 'ol/layer/Vector';
 //type Pair<T, K> = [T, K]; //used Coordinate instead if it
 
 export class GisViewer extends DG.JsViewer {
+  currentLayer: string;
   latitudeColumnName: string;
   longitudeColumnName: string;
-  valuesColumnName: string;
-  renderType: string;
-  weightedMarkers: boolean;
-  markerSize: number;
+  valuesColumnName: string; //TODO: remove this after successfull implementation scatter-plot style
+  colorColumnName: string;
+  sizeColumnName: string;
+  styleColumnName: string;
   markerOpacity: number;
+  markerDefaultColor: number;
+  markerMinColor: number;
+  markerMaxColor: number;
+  markerDefaultSize: number;
+  markerMinSize: number;
+  markerMaxSize: number;
+  gradientColoring: boolean;
+  gradientSizing: boolean;
+  renderType: string;
   heatmapRadius: number;
   heatmapBlur: number;
+
 
   isRowFocusing: boolean = true;
 
@@ -55,15 +66,30 @@ export class GisViewer extends DG.JsViewer {
     this.ol = new OpenLayers();
 
     // properties
+    this.currentLayer = this.string('currentLayer', 'BaseLayer', {category: 'Layers', choices: ['l1','l2','l3','l4']});
     this.latitudeColumnName = this.string('latitudeColumnName');
     this.longitudeColumnName = this.string('longitudeColumnName');
     this.valuesColumnName = this.string('valuesColumnName');
-    this.weightedMarkers = this.bool('weightedMarkers', false);
-    this.markerSize = this.int('markerSize', 5);
-    this.markerOpacity = this.float('markerOpacity', 0.8, {editor: 'slider', min: 0.1, max: 1});
+    this.colorColumnName = this.string('colorColumnName');
+    this.sizeColumnName = this.string('sizeColumnName');
+    this.styleColumnName = this.string('styleColumnName');
 
-    this.heatmapRadius = this.int('heatmapRadius', 10);
-    this.heatmapBlur = this.int('heatmapBlur', 20);
+    this.markerOpacity = this.float('markerOpacity', 0.8, {category: 'Markers', editor: 'slider', min: 0.1, max: 1});
+    this.gradientSizing = this.bool('gradientSizing', false, {category: 'Markers'});
+    this.markerDefaultSize = this.int('markerDefaultSize', 3, {category: 'Markers', min: 1, max: 30});
+    //DONE: there is no need in valitators: Min can be > Max
+    this.markerMinSize = this.int('markerMinSize', 1, {category: 'Markers', min: 1, max: 30});
+    this.markerMaxSize = this.int('markerMaxSize', 10, {category: 'Markers', min: 1, max: 30});
+
+    this.gradientColoring = this.bool('gradientColoring', false, {category: 'Markers'});
+    this.markerDefaultColor = this.int('markerDefaultColor', 0xffaa00, {category: 'Markers'});
+    this.markerMinColor = this.int('markerMinColor', 0x0000ff, {category: 'Markers'});
+    this.markerMaxColor = this.int('markerMaxColor', 0xff0000, {category: 'Markers'}); //hexToRGB
+
+    this.heatmapRadius = this.int('heatmapRadius', 10,
+      {category: 'Heatmap', description: 'Heatmap radius', min: 1, max: 10, userEditable: true});
+    this.heatmapBlur = this.int('heatmapBlur', 20,
+      {category: 'Heatmap', description: 'Heatmap radius', min: 1, max: 20, userEditable: true});
     // DG.Property
     //JsViewer
 
@@ -72,9 +98,10 @@ export class GisViewer extends DG.JsViewer {
     if (renderTypeProp) renderTypeProp.choices = ['markers', 'heat map'];
   }
 
-  layerUIElement(num: number, layerName: string, layerId: string): HTMLElement {
+  layerUIElement(num: number, layerName: string, layerId: string, isVisible: boolean): HTMLElement {
     const l1 = ui.div(num+': '+layerName);
     l1.style.overflow = 'hidden';
+    l1.style.flexWrap = 'nowrap';
     (l1.lastElementChild as HTMLElement).style.overflow = 'hidden';
     //TODO: add tooltip to base element with layer name
 
@@ -88,7 +115,7 @@ export class GisViewer extends DG.JsViewer {
     }
     //l1.style.border = '1px solid blue';
     // const btnVisible = ui.button(ui.iconFA('eye'), ()=>{
-    const btnVisible = ui.iconFA('eye', (evt)=>{ //cogs
+    const btnVisible = ui.iconFA(isVisible ? 'eye' : 'eye-slash', (evt)=>{ //cogs
       const divLayer = (evt.currentTarget as HTMLElement);
       const layerId = divLayer.getAttribute('layerId');
       if (!layerId) return;
@@ -96,12 +123,13 @@ export class GisViewer extends DG.JsViewer {
       if (!layer) return;
       const isVisible = layer.getVisible();
       layer.setVisible(!isVisible);
+      this.updateLayersList();
       // if (!isVisible) divLayer.style.background = 'lightblue';
       // else divLayer.style.background = 'lightgray';
     }, 'Show/hide layer');
     setupBtn(btnVisible, layerName, layerId);
     //Setup button>>
-    const btnSetup = ui.iconFA('cogs', (evt)=>{ //cogs
+    const btnSetup = ui.iconFA('download', (evt)=>{ //cogs
       const divLayer = (evt.currentTarget as HTMLElement);
       const layerId = divLayer.getAttribute('layerId');
       if (!layerId) return;
@@ -112,13 +140,17 @@ export class GisViewer extends DG.JsViewer {
         const df = DG.DataFrame.fromObjects(arrFeatures);
         if (df) {
           df.name = layer.get('layerName');
+          // this. //TODO: get parent view with dataframe and add new dataframe-view to it
           grok.shell.addTableView(df as DG.DataFrame);
+          // grok.shell.v.a  addTableView(df as DG.DataFrame);
+          // this.viewerContainer
+          // this.view.addTableView(df as DG.DataFrame);
         }
       }
     }, 'Layer properties');
     setupBtn(btnSetup, layerName, layerId);
     //Delete button>>
-    const btnDelete = ui.iconFA('trash', (evt)=>{
+    const btnDelete = ui.iconFA('trash-alt', (evt)=>{ //trash
       const divLayer = (evt.currentTarget as HTMLElement);
       const layerId = divLayer.getAttribute('layerId');
       if (layerId) this.ol.removeLayerById(layerId);
@@ -129,7 +161,10 @@ export class GisViewer extends DG.JsViewer {
     const panelButtons = ui.divH([btnVisible, btnSetup, btnDelete]);
 
     const divLayerUI = ui.divV([l1, panelButtons]);
-    // divLayerUI.style.border = '1px solid darkgray';
+    if (layerName == this.currentLayer)
+      divLayerUI.style.border = '2px solid blue';
+    else
+      divLayerUI.style.border = '1px solid lightgray';
     divLayerUI.style.overflow = 'hidden';
     return divLayerUI;
   }
@@ -142,14 +177,16 @@ export class GisViewer extends DG.JsViewer {
     this.panelBottom = ui.box(divStatusBody);
     this.panelBottom.style.maxHeight = '20px';
     // this.panelBottom.style.background = '#f2f2f5';
-    this.panelBottom.style.border = 'solid 1px lightgray';
+    // this.panelBottom.style.border = 'solid 1px lightgray';
+    this.panelBottom.style.visibility = 'hidden';
+    this.panelBottom.style.maxHeight = '2px';
 
     this.panelTop = ui.box();
-    this.panelTop.style.maxHeight = '36px';
+    this.panelTop.style.maxHeight = '28px';
 
     this.panelLeft = ui.box();
     this.panelLeft.style.maxWidth = '110px';
-    this.panelLeft.style.minWidth = '60px';
+    this.panelLeft.style.minWidth = '70px';
     // this.panelLeft.style.border = 'solid 1px darkgray';
 
     //menu bar icons>>
@@ -181,8 +218,8 @@ export class GisViewer extends DG.JsViewer {
     });
 
     //add buttons to top menu panel
-    this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn, btnRowFocusing]));
-    //this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn]));
+    // this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn, btnRowFocusing]));
+    this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn]));
 
     //left panel icons>>
     this.divLayersList = ui.divV([]);
@@ -195,6 +232,8 @@ export class GisViewer extends DG.JsViewer {
 
     const body = ui.box();
     body.id = 'map-container';
+    body.style.maxWidth = '100%';
+    body.style.maxHeight = '100%';
     // body.style.border = 'solid 1px darkgray';
     //body.style.minWidth = '100px';
 
@@ -217,9 +256,9 @@ export class GisViewer extends DG.JsViewer {
       this.ol.initMap('map-container');
 
       //TODO: refactor here>
-      this.ol.markerSize = this.markerSize;
+      this.ol.markerSize = this.markerDefaultSize;
       this.ol.markerOpacity = this.markerOpacity;
-      this.ol.weightedMarkers = this.weightedMarkers;
+      this.ol.weightedMarkers = this.gradientSizing;
       this.ol.heatmapRadius = this.heatmapRadius;
       this.ol.heatmapBlur = this.heatmapBlur;
 
@@ -229,7 +268,7 @@ export class GisViewer extends DG.JsViewer {
       this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
       this.subs.push(ui.onSizeChanged((this.panelLeft as HTMLElement)).subscribe(this.rootOnSizeChanged.bind(this)));
       //setup callbacks
-      this.ol.setMapPointermoveCallback(this.showCoordsInStatus.bind(this));
+      // this.ol.setMapPointermoveCallback(this.showCoordsInStatus.bind(this));
       // this.ol.setMapClickCallback(this.showCoordsInStatus.bind(this));
       this.ol.setMapClickCallback(this.handlerOnMapClick.bind(this));
 
@@ -247,7 +286,7 @@ export class GisViewer extends DG.JsViewer {
     }
   }
 
-  updateLayersList() {
+  updateLayersList(): void {
     if ((!this.ol) || (!this.panelLeft) || (!this.divLayersList)) return;
     // let htmlStyle: DG.ElementOptions = { };
 
@@ -255,38 +294,36 @@ export class GisViewer extends DG.JsViewer {
       this.divLayersList.removeChild(this.divLayersList.lastChild);
 
     const layersArr = this.ol.getLayersList();
+    const arrLayerNames: [string] = [''];
+    arrLayerNames.pop();
 
     for (let i = 0; i < layersArr.length; i++) {
       let layerName = layersArr[i].get('layerName');
       if ((layerName === undefined) || (layerName === null) ) layerName = '';
       const layerId = layersArr[i].get('layerId');
-
-      // const divLayer = ui.div(i+' '+layerName, {style: {'border': 'solid 1px lightgray'}});
-      const divLayer = this.layerUIElement(i, layerName, layerId);
       const isVisible = layersArr[i].getVisible();
+
+      arrLayerNames.push(layerName);
+      // const divLayer = ui.div(i+' '+layerName, {style: {'border': 'solid 1px lightgray'}});
+      const divLayer = this.layerUIElement(i, layerName, layerId, isVisible);
       divLayer.setAttribute('layerName', layerName);
       divLayer.setAttribute('layerId', layerId);
       // if (isVisible) divLayer.style.background = 'lightblue';
       // else divLayer.style.background = 'lightgray';
 
       divLayer.onclick = (evt)=>{
-        // const divLayer = (evt.currentTarget as HTMLElement);
-        // // const layerName = divLayer.getAttribute('layerName');
-        // // if (!layerName) return;
-        // // const layer = this.ol.getLayerByName(layerName);
-        // const layerId = divLayer.getAttribute('layerId');
-        // if (!layerId) return;
-        // const layer = this.ol.getLayerById(layerId);
-        // if (!layer) return;
-        // const isVisible = layer.getVisible();
-        // layer.setVisible(!isVisible);
-        // if (!isVisible) divLayer.style.background = 'lightblue';
-        // else divLayer.style.background = 'lightgray';
+        const layerName = divLayer.getAttribute('layerName');
+        if (!layerName) return;
+        this.currentLayer = layerName;
+        const currentLayerProp = this.getProperty('currentLayer');
+        if (currentLayerProp) currentLayerProp.defaultValue = layerName;
+        //TODO: update currentLayer property when clicked in list
       };
-
       this.divLayersList.append(divLayer);
       // this.divLayersList.append(this.layerUIElement(layerName, layerId));
     }
+    const layersProperty = this.getProperty('currentLayer');
+    if (layersProperty) layersProperty.choices = arrLayerNames;
   }
 
   showCoordsInStatus(p: OLCallbackParam): void {
@@ -330,22 +367,27 @@ export class GisViewer extends DG.JsViewer {
 
   onPropertyChanged(prop: DG.Property): void {
     if (!this.initialized) return;
-    //property.name
+    if (prop.name === 'currentLayer') this.updateLayersList();
+    if (prop.name === 'gradientColoring') {
+      //TODO: enable/disable min/max color fields corresponding to gradientColoring value
+      // this.look
+      // this.props.getProperties()
+    }
 
     this.render();
   }
 
   detach(): void {
-    //TODO - release map
+    //TODO: - release map
     // this.map.remove();
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
   render(fit: boolean = false): void {
     //TODO: refactor this>
-    this.ol.markerSize = this.markerSize;
+    this.ol.markerSize = this.markerDefaultSize;
     this.ol.markerOpacity = this.markerOpacity;
-    this.ol.weightedMarkers = this.weightedMarkers;
+    this.ol.weightedMarkers = this.gradientSizing;
     this.ol.heatmapRadius = this.heatmapRadius;
     this.ol.heatmapBlur = this.heatmapBlur;
 
