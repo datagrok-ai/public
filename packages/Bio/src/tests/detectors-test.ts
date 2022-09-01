@@ -372,7 +372,8 @@ MWRSWY-CKHP
 export async function _testNeg(readDf: DfReaderFunc, colName: string) {
   const df: DG.DataFrame = await readDf();
   const col: DG.Column = df.col(colName)!;
-  const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+  const semType: string = await grok.functions
+    .call('Bio:detectMacromolecule', {col: col}) as unknown as string;
   if (semType)
     col.semType = semType;
 
@@ -391,7 +392,8 @@ export async function _testPos(
 ) {
   const df: DG.DataFrame = await readDf();
   const col: DG.Column = df.col(colName)!;
-  const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+  const semType: string = await grok.functions
+    .call('Bio:detectMacromolecule', {col: col}) as unknown as string;
   if (semType)
     col.semType = semType;
 
