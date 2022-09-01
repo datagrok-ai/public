@@ -1,6 +1,6 @@
 import {RdKitServiceWorkerBase} from './rdkit-service-worker-base';
 import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint} from '../utils/chem-common';
-import {RDModule} from '@datagrok-libraries/bio/src/rdkit-api';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
   readonly _fpLength: number = defaultMorganFpLength;

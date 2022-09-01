@@ -1,4 +1,4 @@
-import {RDModule, RDMol} from '@datagrok-libraries/bio/src/rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export class RdKitServiceWorkerBase {
   _rdKitModule: RDModule;
