@@ -110,6 +110,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
     const cell = gridCell.cell;
     const [type, subtype, paletteType] = gridCell.cell.column.getTag(DG.TAGS.UNITS).split(':');
+    const minDistanceRenderer = 50;
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
     g.save();
     g.beginPath();
@@ -175,11 +176,15 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     if (gridCell.cell.column.getTag('aligned').includes('MSA')) {
       drawStyle = 'msa';
     }
-    subParts.forEach((amino, index) => {
+    subParts.every((amino, index) => {
       color = palette.get(amino);
       g.fillStyle = undefinedColor;
       let last = index === subParts.length - 1;
       x1 = printLeftOrCentered(x1, y, w, h, g, monomerToShortFunction(amino, maxLengthOfMonomer), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell);
+      if (x1 - minDistanceRenderer > gridCell.bounds.width) {
+        return false;
+      }
+      return true;
     });
 
     g.restore();
