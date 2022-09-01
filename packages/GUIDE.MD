@@ -27,8 +27,9 @@ This person IS NOT:
 
 Each package must be properly named.
 
-* Use kebab-case for package name (`power-pack`) 
+* Use kebab-case for package or library name (`power-pack`).
 * Use PascalCase for package folder name (`PowerPack`).
+* Use kebab-case for library folder name (`chem-meta`).
 * Use kebab-case for file names (`compare-columns.ts`).
 * Name must contain scope `@datagrok` either `@datagrok-libraries`.
 
