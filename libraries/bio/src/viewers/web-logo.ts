@@ -855,24 +855,26 @@ export class WebLogo extends DG.JsViewer {
 
   /** Gets method to split sequence by separator
    * @param {string} separator
+   * @param limit
    * @return {SplitterFunc}
    */
-  public static getSplitterWithSeparator(separator: string): SplitterFunc {
+  public static getSplitterWithSeparator(separator: string, limit: number | undefined = undefined): SplitterFunc {
     return (seq: string) => {
-      return seq.split(separator);
+      return seq.split(separator, limit);
     };
   }
 
   /** Get splitter method to split sequences to monomers
    * @param {string} units
    * @param {string} separator
+   * @param limit
    * @return {SplitterFunc}
    */
-  public static getSplitter(units: string, separator: string): SplitterFunc {
+  public static getSplitter(units: string, separator: string, limit: number | undefined = undefined): SplitterFunc {
     if (units.toLowerCase().startsWith('fasta'))
       return WebLogo.splitterAsFasta;
     else if (units.toLowerCase().startsWith('separator'))
-      return WebLogo.getSplitterWithSeparator(separator);
+      return WebLogo.getSplitterWithSeparator(separator, limit);
     else if (units.toLowerCase().startsWith('helm'))
       return WebLogo.splitterAsHelm;
     else
