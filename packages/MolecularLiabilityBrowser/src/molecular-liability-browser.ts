@@ -417,7 +417,9 @@ export class MolecularLiabilityBrowser {
       (i: number) => positionColumns.map((v) => df.get(v, i)).join('')
     );
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, 'fasta:SEQ.MSA:PT');
+    seqCol.setTag(DG.TAGS.UNITS, 'fasta');
+    seqCol.setTag('alphabet', 'PT');
+    seqCol.setTag('aligned', 'SEQ.MSA');
     seqCol.setTag('separator', '');
     seqCol.setTag('gap.symbol', '-');
 
