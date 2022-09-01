@@ -62,7 +62,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
     const maxIndex = gridCell.cell.column.temp['bio-maxIndex'];
     //@ts-ignore
-    const argsX = e.layerX - gridCell.gridColumn.left - ((gridCell.bounds.x < 0) ? gridCell.bounds.x : 0);
+    const argsX = e.layerX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x);
     let left = 0;
     let right = maxIndex;
     let found = false;
@@ -88,7 +88,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const separator = gridCell.cell.column.getTag('separator') ?? '';
     const splitterFunc: SplitterFunc = WebLogo.getSplitter('separator', separator);
     const subParts: string[] = splitterFunc(gridCell.cell.value);
-    ui.tooltip.show(ui.div(subParts[left]), e.x + 16, e.y + 16);
+    (((subParts[left]?.length ?? 0) > 0)) ? ui.tooltip.show(ui.div(subParts[left]), e.x + 16, e.y + 16) : ui.tooltip.hide();
   }
 
   /**
@@ -181,7 +181,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       g.fillStyle = undefinedColor;
       let last = index === subParts.length - 1;
       x1 = printLeftOrCentered(x1, y, w, h, g, monomerToShortFunction(amino, maxLengthOfMonomer), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell);
-      if (x1 - minDistanceRenderer > gridCell.bounds.width) {
+      if (x1 - minDistanceRenderer - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x) > gridCell.bounds.width) {
         return false;
       }
       return true;
