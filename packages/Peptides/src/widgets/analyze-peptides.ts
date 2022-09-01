@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {splitAlignedPeptides} from '@datagrok-libraries/bio/src/utils/splitter';
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 import '../styles.css';

@@ -2,10 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import {splitAlignedPeptides} from '@datagrok-libraries/bio/src/utils/splitter';
+
 import $ from 'cash-dom';
 import '../styles.css';
 import {PeptidesModel} from '../model';
-import {splitAlignedPeptides} from '../utils/misc';
 
 /** Manual sequence alignment widget.
  *
