@@ -138,7 +138,7 @@ export class PeptidesModel {
     if (typeof viewer == 'undefined')
       return result;
 
-    const viewerProps = viewer?.props.getProperties();
+    const viewerProps = viewer.props.getProperties();
     const tempProps = this.usedProperties;
     for (const property of viewerProps) {
       const propName = property.name;
