@@ -21,8 +21,11 @@ export async function getAdditionalModifications(): Promise<DG.DataFrame> {
   if (entries != null && Object.keys(entries).length == 0)
     grok.shell.info('Storage is empty. Try to post something to the storage');
   else {
+    const invalidKeys = [
+      'baseModification', 'extinctionCoefficient', 'molecularWeight', 'abbreviation', 'longName', 'changeLogs',
+    ];
     for (const key of Object.keys(entries)) {
-      if (!['baseModification', 'extinctionCoefficient', 'molecularWeight', 'abbreviation', 'longName'].includes(key))
+      if (!invalidKeys.includes(key))
         modifications.push(JSON.parse(entries[key]));
     }
   }
@@ -96,7 +99,7 @@ export async function addModificationButton(modificationsDf: DG.DataFrame): Prom
 }
 
 export function deleteAdditionalModification(additionalModificationsDf: DG.DataFrame, rowIndex: number): void {
-  const v = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.getString(rowIndex);
+  const v = additionalModificationsDf.getCol(COL_NAMES.ABBREVIATION).getString(rowIndex);
   ui.dialog('Delete Additional Modification')
     .add(ui.divText('Do you want to delete row ' + v + ' ?'))
     .onOK(() => {
@@ -104,7 +107,7 @@ export function deleteAdditionalModification(additionalModificationsDf: DG.DataF
         if (!ADMIN_USERS.includes(user.firstName + ' ' + user.lastName))
           return grok.shell.info('You don\'t have permission for this action');
         additionalModificationsDf.rows.removeAt(rowIndex, 1, true);
-        const keyToDelete = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.get(rowIndex);
+        const keyToDelete = additionalModificationsDf.getCol(COL_NAMES.ABBREVIATION).get(rowIndex);
         await grok.dapi.userDataStorage.remove(STORAGE_NAME, keyToDelete, CURRENT_USER);
       });
     })
