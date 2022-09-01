@@ -8,7 +8,6 @@ import {Subject, Observable} from 'rxjs';
 import * as C from './utils/constants';
 import * as type from './utils/types';
 import {calculateBarsData, getTypedArrayConstructor, scaleActivity} from './utils/misc';
-import {_package} from './package';
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {renderBarchart, renderSARCell, setAARRenderer} from './utils/cell-renderer';
@@ -94,7 +93,7 @@ export class PeptidesModel {
     this._usedProperties = properties;
   }
 
-  get splitByPos() {
+  get splitByPos(): boolean {
     const splitByPosFlag = (this.df.tags['distributionSplit'] ?? '00')[0];
     return splitByPosFlag == '1' ? true : false;
   }
@@ -103,7 +102,7 @@ export class PeptidesModel {
     this.df.tags['distributionSplit'] = `${flag ? 1 : 0}${splitByAARFlag}`;
   }
 
-  get splitByAAR() {
+  get splitByAAR(): boolean {
     const splitByPosFlag = (this.df.tags['distributionSplit'] ?? '00')[1];
     return splitByPosFlag == '1' ? true : false;
   }
@@ -117,7 +116,7 @@ export class PeptidesModel {
     this.invalidateGrids();
   }
 
-  createAccordion() {
+  createAccordion(): DG.Accordion {
     const acc = ui.accordion();
     acc.root.style.width = '100%';
     acc.addTitle(ui.h1(`${this.df.selection.trueCount} selected rows`));
@@ -488,7 +487,7 @@ export class PeptidesModel {
     return [sarGrid, sarVGrid];
   }
 
-  setBarChartInteraction() {
+  setBarChartInteraction(): void {
     const eventAction = (ev: MouseEvent): void => {
       const cell = this._sourceGrid.hitTest(ev.offsetX, ev.offsetY);
       if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.MONOMER) {
@@ -498,11 +497,13 @@ export class PeptidesModel {
     };
 
     // The following events makes the barchart interactive
-    rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
-    rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'click').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+    rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'mousemove')
+      .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+    rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'click')
+      .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
   }
 
-  findAARandPosition(cell: DG.GridCell, ev: MouseEvent) {
+  findAARandPosition(cell: DG.GridCell, ev: MouseEvent): {monomer: string, position: string} | null {
     const barCoords = this.barsBounds[cell.tableColumn!.name];
     for (const [monomer, coords] of Object.entries(barCoords)) {
       const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
@@ -670,11 +671,10 @@ export class PeptidesModel {
     const sarDf = this._sarGrid.dataFrame;
     const sarVDf = this._sarVGrid.dataFrame;
 
-    const chooseAction = (aar: string, position: string, isShiftPressed: boolean) => {
+    const chooseAction = (aar: string, position: string, isShiftPressed: boolean): void =>
       isShiftPressed ? this.modifyCurrentSelection(aar, position) : this.initCurrentSelection(aar, position);
-    };
 
-    const gridCellValidation = (gc: DG.GridCell | null) => !gc || !gc.cell.value || !gc.tableColumn ||
+    const gridCellValidation = (gc: DG.GridCell | null): boolean => !gc || !gc.cell.value || !gc.tableColumn ||
       gc.tableRowIndex == null || gc.tableRowIndex == -1;
     this._sarGrid.root.addEventListener('click', (ev) => {
       const gridCell = this._sarGrid.hitTest(ev.offsetX, ev.offsetY);
@@ -697,7 +697,7 @@ export class PeptidesModel {
       chooseAction(aar, position, ev.shiftKey);
     });
 
-    const cellChanged = (table: DG.DataFrame) => {
+    const cellChanged = (table: DG.DataFrame): void => {
       if (this.isCellChanging)
         return;
       this.isCellChanging = true;
@@ -752,7 +752,7 @@ export class PeptidesModel {
         return;
       }
 
-      const updateEdfSelection = () => {
+      const updateEdfSelection = (): void => {
         this.isChangingEdfBitset = true;
         edfSelection?.copyFrom(currentBitset);
         this.isChangingEdfBitset = false;
@@ -766,7 +766,7 @@ export class PeptidesModel {
       }
 
       //TODO: move out
-      const getBitAt = (i: number) => {
+      const getBitAt = (i: number): boolean => {
         for (const position of positionList) {
           const positionCol: DG.Column<string> = this.df.getCol(position);
           if (this._currentSelection[position].includes(positionCol.get(i)!))
@@ -810,7 +810,7 @@ export class PeptidesModel {
       }
     }
 
-    const setViewerGridProps = (grid: DG.Grid) => {
+    const setViewerGridProps = (grid: DG.Grid): void => {
       grid.props.allowEdit = false;
       grid.props.allowRowSelection = false;
       grid.props.allowBlockSelection = false;

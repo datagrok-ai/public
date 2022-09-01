@@ -1,4 +1,4 @@
-import {SeqPalette, SeqPaletteBase} from '@datagrok-libraries/bio/src/seq-palettes';
+import {SeqPaletteBase} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';

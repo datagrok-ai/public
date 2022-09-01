@@ -7,7 +7,6 @@ import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import '../styles.css';
 import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
-import {_package} from '../package';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
 
@@ -112,9 +111,9 @@ export async function startAnalysis(
     if (alignedSeqColUnits == 'HELM') {
       const sampleSeq = alignedSeqCol.get(0)!;
       monomerType = sampleSeq.startsWith('PEPTIDE') ? 'HELM_AA' : 'HELM_BASE';
-    } else {
+    } else
       monomerType = alignedSeqColUnits.split(':')[2] == 'PT' ? 'HELM_AA' : 'HELM_BASE';
-    }
+
     newDf.setTag('monomerType', monomerType);
 
     model = await PeptidesModel.getInstance(newDf);
