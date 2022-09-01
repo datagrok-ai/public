@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
-import {Subject, Observable} from 'rxjs';
 import * as C from './utils/constants';
 import * as type from './utils/types';
 import {calculateBarsData, getTypedArrayConstructor, scaleActivity} from './utils/misc';
@@ -16,14 +15,11 @@ import {getDistributionAndStats, getDistributionWidget} from './widgets/distribu
 import {getStats, Stats} from './utils/filtering-statistics';
 import * as rxjs from 'rxjs';
 
-
 export class PeptidesModel {
   static modelName = 'peptidesModel';
 
-  _statsDataFrameSubject = new Subject<DG.DataFrame>();
-  _sarGridSubject = new Subject<DG.Grid>();
-  _sarVGridSubject = new Subject<DG.Grid>();
-  _substitutionTableSubject = new Subject<type.SubstitutionsInfo>();
+  _sarGridSubject = new rxjs.Subject<DG.Grid>();
+  _sarVGridSubject = new rxjs.Subject<DG.Grid>();
 
   _isUpdating: boolean = false;
   _isSubstInitialized = false;
@@ -65,13 +61,9 @@ export class PeptidesModel {
     return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
   }
 
-  get onStatsDataFrameChanged(): Observable<DG.DataFrame> {return this._statsDataFrameSubject.asObservable();}
+  get onSARGridChanged(): rxjs.Observable<DG.Grid> {return this._sarGridSubject.asObservable();}
 
-  get onSARGridChanged(): Observable<DG.Grid> {return this._sarGridSubject.asObservable();}
-
-  get onSARVGridChanged(): Observable<DG.Grid> {return this._sarVGridSubject.asObservable();}
-
-  get onSubstTableChanged(): Observable<type.SubstitutionsInfo> {return this._substitutionTableSubject.asObservable();}
+  get onSARVGridChanged(): rxjs.Observable<DG.Grid> {return this._sarVGridSubject.asObservable();}
 
   get currentSelection(): type.SelectionObject {
     this._currentSelection ??= JSON.parse(this.df.tags[C.TAGS.SELECTION] || '{}');
@@ -158,23 +150,19 @@ export class PeptidesModel {
     if ((this._sourceGrid && !this._isUpdating && proprtyChanged) || !this.isInitialized) {
       this.isInitialized = true;
       this._isUpdating = true;
-      const [viewerGrid, viewerVGrid, statsDf] = this.initializeViewersComponents();
+      const [viewerGrid, viewerVGrid] = this.initializeViewersComponents();
       //FIXME: modify during the initializeViewersComponents stages
-      this._statsDataFrameSubject.next(statsDf);
       this._sarGridSubject.next(viewerGrid);
       this._sarVGridSubject.next(viewerVGrid);
-      if (viewer.showSubstitution) {
-        this._substitutionTableSubject.next(this.substitutionsInfo);
+      if (viewer.showSubstitution)
         this._isSubstInitialized = true;
-      }
 
       this.invalidateSelection();
-
       this._isUpdating = false;
     }
   }
 
-  initializeViewersComponents(): [DG.Grid, DG.Grid, DG.DataFrame] {
+  initializeViewersComponents(): [DG.Grid, DG.Grid] {
     if (this._sourceGrid === null)
       throw new Error(`Source grid is not initialized`);
 
@@ -250,7 +238,7 @@ export class PeptidesModel {
     this.postProcessGrids(sarGrid, sarVGrid);
 
     //TODO: return class instead
-    return [sarGrid, sarVGrid, this.statsDf];
+    return [sarGrid, sarVGrid];
   }
 
   calcSubstitutions(): void {

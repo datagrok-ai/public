@@ -22,7 +22,7 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
   let funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
   if (funcs.length == 0)
     return new DG.Widget(ui.label('Bio package is missing or out of date. Please install the latest version.'));
-  
+
   funcs = DG.Func.find({package: 'Helm', name: 'getMonomerLib'});
   if (funcs.length == 0)
     return new DG.Widget(ui.label('Helm package is missing or out of date. Please install the latest version.'));
