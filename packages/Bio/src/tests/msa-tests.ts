@@ -49,7 +49,8 @@ async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> 
   const tgtDf: DG.DataFrame = DG.DataFrame.fromCsv(tgtCsv);
 
   const srcCol: DG.Column = srcDf.getCol('seq')!;
-  const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: srcCol});
+  const semType: string = await grok.functions
+    .call('Bio:detectMacromolecule', {col: srcCol}) as unknown as string;
   if (semType)
     srcCol.semType = semType;
 

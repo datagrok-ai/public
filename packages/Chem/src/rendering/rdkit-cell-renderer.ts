@@ -5,7 +5,7 @@
 import * as DG from 'datagrok-api/dg';
 import {convertToRDKit} from '../analysis/r-group-analysis';
 import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
-import {RDModule, RDMol} from '../rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {isMolBlock} from '../utils/convert-notation-utils';
 
 interface IMolInfo {

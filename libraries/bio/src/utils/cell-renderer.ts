@@ -29,10 +29,10 @@ const grayColor = '#808080';
     if (drawStyle === 'msa') {
       grayPart = '';
     }
-  
+
     let textSize: any = g.measureText(colorPart + grayPart);
     const indent = 5;
-  
+
     let maxColorTextSize = g.measureText(colorPart).width;
     let colorTextSize = g.measureText(colorPart).width;
     const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
@@ -40,16 +40,12 @@ const grayColor = '#808080';
     if (drawStyle === 'msa') {
       maxColorTextSize = maxWord[maxWordIdx];
       textSize = maxWord[maxWordIdx];
-      if (maxColorTextSize > maxWord) {
-        maxWord[maxWordIdx] = maxColorTextSize;
-        gridCell.cell.column.temp = maxWord;
-      }
       if (maxWordIdx > (maxWord['bio-maxIndex'] ?? 0)) {
         maxWord['bio-maxIndex'] = maxWordIdx;
         gridCell.cell.column.temp = maxWord;
       }
     }
-  
+
     function draw(dx1: number, dx2: number): void {
       g.fillStyle = color;
       g.globalAlpha = transparencyRate;
@@ -63,16 +59,15 @@ const grayColor = '#808080';
         g.fillText(colorPart, x + dx1 + ((maxWord[maxWordIdx] - colorTextSize) / 2), y + dy);
       }
     }
-  
+
     if (left || textSize > w) {
       draw(indent, indent + maxColorTextSize);
       return x + maxColorTextSize + g.measureText(grayPart).width;
-  
+
     } else {
       const dx = (w - textSize) / 2;
       draw(dx, dx + maxColorTextSize);
       return x + dx + maxColorTextSize;
     }
   }
-  
-  
+

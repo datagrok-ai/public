@@ -8,13 +8,13 @@ import {getPanelElements, molfileWidget} from '../widgets/molfile';
 import {getPropertiesMap, propertiesWidget} from '../widgets/properties';
 import {getStructuralAlerts, structuralAlertsWidget} from '../widgets/structural-alerts';
 import {getRisks, toxicityWidget} from '../widgets/toxicity';
+import {SubstructureFilter} from '../widgets/chem-substructure-filter';
 import * as utils from './utils';
 import $ from 'cash-dom';
 import { _package } from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import { getDescriptorsSingle } from '../descriptors/descriptors-calculation';
-import {runStructuralAlertsDetection} from '../panels/structural-alerts';
-import {RDMol} from '../rdkit-api';
+import { substructureFilter } from '../package';
 
 
 category('cell panel', async () => {
@@ -53,10 +53,6 @@ category('cell panel', async () => {
     const panelElements = getPanelElements(molStr);
     const panelStr = ($(panelElements[2].input).val() as string).replaceAll('\r', '').trim();
     expect(panelStr, expectedStr);
-
-    $(panelElements[0]).trigger('click');
-    const clipboardStr = (await navigator.clipboard.readText()).replaceAll('\r', '').trim();
-    expect(clipboardStr, expectedStr);
 
     molfileWidget(molStr);
   });
@@ -109,15 +105,14 @@ category('cell panel', async () => {
   test('substructure-filter-manual', async () => {
     const df = grok.data.demo.molecules(1000);
     await grok.data.detectSemanticTypes(df);
-    // previously: let filter = await grok.functions.call("Chem:substructureFilter");
-    //@ts-ignore
-    const filter = chem.substructureFilter();
+    let filter = substructureFilter();
+
     filter.attach(df);
     grok.shell.addTableView(df);
-    const colChoice = ui.columnInput('Column', filter.dataFrame, filter.column, (col: DG.Column) => {
+    const colChoice = ui.columnInput('Column', filter.dataFrame!, filter.column, (col: DG.Column) => {
       filter.column = col;
-      filter.dataFrame.filter.setAll(true, false);
-      filter.dataFrame.rows.requestFilter();
+      filter.dataFrame!.filter.setAll(true, false);
+      filter.dataFrame!.rows.requestFilter();
     });
     ui.dialog({title: 'Chem Filter'})
       .add(colChoice)
@@ -171,32 +166,5 @@ category('cell panel', async () => {
   //TODO: Test mol2000, mol3000; Compare the calculated values
   test('chem-descriptors', async () => {
     getDescriptorsSingle(molStr);
-  });
-});
-
-category('widget benchmarks', () => {
-  before(async () => {
-    chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
-    chemCommonRdKit.initRdKitModuleLocal();
-  });
-
-  test('Structural Alerts Benchmark', async () => {
-    const alertsDf = DG.DataFrame.fromCsv(await _package.files.readAsText('alert-collection.csv'));
-    const ruleSetCol = alertsDf.getCol('rule_set_name');
-    const smartsCol = alertsDf.getCol('smarts');
-    const ruleIdCol = alertsDf.getCol('rule_id');
-    const rdkitModule = chemCommonRdKit.getRdKitModule();
-  
-    const smartsMap = new Map<string, RDMol>();
-    for (let i = 0; i < alertsDf.rowCount; i++)
-      smartsMap.set(ruleIdCol.get(i), rdkitModule.get_qmol(smartsCol.get(i)));
-
-    const sarSmall = DG.DataFrame.fromCsv(await _package.files.readAsText('sar-small.csv'));
-    const smilesCol = sarSmall.getCol('smiles');
-    const ruleSetList = ['BMS', 'Dundee', 'Glaxo', 'Inpharmatica', 'LINT', 'MLSMR', 'PAINS', 'SureChEMBL'];
-
-    DG.time('Structural Alerts', () => {
-      runStructuralAlertsDetection(sarSmall, ruleSetList, smilesCol, ruleSetCol, ruleIdCol, smartsMap, rdkitModule);
-    });
   });
 });

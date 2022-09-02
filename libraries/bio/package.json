@@ -5,11 +5,10 @@
   },
   "beta": true,
   "friendlyName": "Datagrok bio library",
-  "version": "3.1.1",
+  "version": "4.0.2",
   "description": "",
   "dependencies": {
     "@datagrok-libraries/utils": "^1.6.2",
-    "@types/wu": "latest",
     "cash-dom": "latest",
     "datagrok-api": "^1.6.0",
     "dayjs": "latest",
@@ -17,6 +16,7 @@
     "wu": "latest"
   },
   "devDependencies": {
+    "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
     "eslint": "latest",
@@ -29,14 +29,8 @@
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
     "link-all": "npm link datagrok-api @datagrok-libraries/utils",
-    "debug-bio": "grok publish",
-    "release-bio": "grok publish --release",
     "build-bio": "tsc",
     "build": "tsc",
-    "debug-bio-public": "grok publish public",
-    "release-bio-public": "grok publish public --release",
-    "debug-bio-local": "grok publish local",
-    "release-bio-local": "grok publish local --release",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix"
   }

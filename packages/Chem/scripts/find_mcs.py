@@ -1,6 +1,6 @@
 #name: FindMCS
 #language: python
-#input: string smiles
+#input: string molecules
 #input: dataframe df
 #input: bool returnSmarts
 #output: string result
@@ -12,12 +12,12 @@ import numpy as np
 def np_none(shape):
   return np.full(shape, None, dtype=object)
 
-smiles = df[smiles].tolist()
-length = len(smiles)
+molecules = df[molecules].tolist()
+length = len(molecules)
 mols = np_none(length)
 idx_err = []
 for n in range(0, length):
-  mol = Chem.MolFromSmiles(smiles[n])
+  mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
   if mol is None:
     idx_err.append(n)
     continue

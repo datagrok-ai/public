@@ -9,7 +9,6 @@ Commands:
     config    Create and manage config files
     create    Create a package
     publish   Upload a package
-    migrate   Switch to \`grok\` tools
 
 To get help on a particular command, use:
     grok <command> --help
@@ -107,6 +106,5 @@ export const help = {
   config: HELP_CONFIG,
   create: HELP_CREATE,
   publish: HELP_PUBLISH,
-  migrate: HELP_MIGRATE,
   help: HELP
 };

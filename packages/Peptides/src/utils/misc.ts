@@ -6,7 +6,6 @@ import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
 import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
 import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 export function getPalleteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
@@ -33,28 +32,6 @@ export function getSeparator(col: DG.Column<string>): string {
   return col.getTag(C.TAGS.SEPARATOR) ?? '';
 }
 
-export function splitAlignedPeptides(peptideColumn: DG.Column<string>): DG.DataFrame {
-  const splitter = WebLogo.getSplitterForColumn(peptideColumn);
-  const colLen = peptideColumn.length;
-  const resultDf = DG.DataFrame.create(colLen);
-  let monomerList = splitter(peptideColumn.get(0)!);
-  const columnList: DG.Column<string>[] = [];
-
-  // create columns and fill the first row for faster values filling in the next loop
-  for (let i = 0; i < monomerList.length; i++) {
-    const col = resultDf.columns.addNewString((i + 1).toString());
-    col.set(0, monomerList[i] || '-', false);
-    columnList.push(col);
-  }
-
-  for (let rowIndex = 1; rowIndex < colLen; rowIndex++) {
-    monomerList = splitter(peptideColumn.get(rowIndex)!);
-    monomerList.forEach((monomer, colIndex) => columnList[colIndex].set(rowIndex, monomer || '-', false));
-  }
-
-  return resultDf;
-}
-
 export function scaleActivity(
   activityScaling: string, df: DG.DataFrame, originalActivityName?: string, cloneBitset = false,
 ): [DG.DataFrame, string] {
@@ -64,17 +41,17 @@ export function scaleActivity(
   currentActivityColName = flag ? currentActivityColName : C.COLUMNS_NAMES.ACTIVITY;
   const tempDf = df.clone(cloneBitset ? df.filter : null, [currentActivityColName]);
 
-  let formula = (v: number) => v;
+  let formula = (v: number): number => v;
   let newColName = 'activity';
   switch (activityScaling) {
   case 'none':
     break;
   case 'lg':
-    formula = (v: number) => Math.log10(v);
+    formula = (v: number): number => Math.log10(v);
     newColName = `Log10(${newColName})`;
     break;
   case '-lg':
-    formula = (v: number) => -Math.log10(v);
+    formula = (v: number): number => -Math.log10(v);
     newColName = `-Log10(${newColName})`;
     break;
   default:
@@ -95,13 +72,13 @@ export function calculateBarsData(columns: DG.Column<string>[], selection: DG.Bi
 
   for (let colIndex = 0; colIndex < columnsLen; colIndex++) {
     const col = columns[colIndex];
-    dfStats[col.name] = calculateBarData(col, selection);
+    dfStats[col.name] = calculateSingleBarData(col, selection);
   }
 
   return dfStats;
 }
 
-export function calculateBarData(col: DG.Column<string>, selection: DG.BitSet): type.MonomerColStats {
+export function calculateSingleBarData(col: DG.Column<string>, selection: DG.BitSet): type.MonomerColStats {
   const colLen = col.length;
   const colStats: type.MonomerColStats = {};
   col.categories.forEach((monomer) => colStats[monomer] = {count: 0, selected: 0});

@@ -3,34 +3,39 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {findMCS} from '../scripts-api';
 import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
-import { IDrawTooltipParams } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import { ITooltipAndPanelParams } from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
-export function drawTooltip(params: IDrawTooltipParams) {
-  params.tooltips[params.line.id] = ui.divText('Loading...');
+const canvasWidth = 200;
+const canvasHeight = 100;
+
+export async function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams) {
+  if (!params.cashedData[params.line.id]) {
+    drawMoleculesWithMcsAsync(params); 
+  }
+  drawMolecules(params);
+}
+
+async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams){
   const mcsDf = DG.DataFrame.create(2);
-  mcsDf.columns.addNewString('smiles').init((i) => params.df.get(params.seqCol.name, params.line.mols[i]));
-  findMCS('smiles', mcsDf, true).then((mcs) => {
-    params.tooltips[params.line.id] = ui.divH([]);
-    const columnNames = ui.divV([
-      ui.divText('smiles'),
-      ui.divText(params.activity.name),
-    ]);
-    columnNames.style.fontWeight = 'bold';
-    columnNames.style.display = 'flex';
-    columnNames.style.justifyContent = 'space-between';
-    params.tooltips[params.line.id].append(columnNames);
-    params.line.mols.forEach((mol: any) => {
-      const imageHost = ui.canvas(200, 100);
-      drawMoleculeToCanvas(0, 0, 200, 100, imageHost, params.df.get('smiles', mol), mcs);
-      const activity = ui.divText(params.df.get(params.activity.name, mol).toFixed(2));
-      activity.style.display = 'flex';
-      activity.style.justifyContent = 'left';
-      activity.style.paddingLeft = '30px';
-      params.tooltips[params.line.id].append(ui.divV([
-        imageHost,
-        activity,
-      ]));
-    });
-    ui.tooltip.show(params.tooltips[params.line.id], params.x, params.y);
+  mcsDf.columns.addNewString('smiles').init((i) => params.seqCol.get(params.line.mols[i]));
+  const mcs = await findMCS('smiles', mcsDf, true);
+  params.cashedData[params.line.id] = mcs;
+  drawMolecules(params);
+}
+
+function drawMolecules(params: ITooltipAndPanelParams) {
+  params.line.mols.forEach((mol: number, index: number) => {
+    const imageHost = ui.canvas(canvasWidth, canvasHeight);
+    const r = window.devicePixelRatio;
+    imageHost.width = canvasWidth * r;
+    imageHost.height = canvasHeight * r;
+    imageHost.style.width = (canvasWidth).toString() + 'px';
+    imageHost.style.height = (canvasHeight).toString() + 'px';
+    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, params.seqCol.get(mol), params.cashedData[params.line.id]);
+    ui.empty(params.hosts[index]);
+    if (!params.cashedData[params.line.id]) {
+      params.hosts[index].append(ui.divText('MCS loading...'));
+    }
+    params.hosts[index].append(imageHost);
   });
 }

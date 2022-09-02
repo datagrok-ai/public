@@ -119,6 +119,7 @@ services:
           - database
     volumes:
       - datagrok_db:/var/lib/postgresql/data
+    command: postgres -c 'max_connections=1000'
     restart: on-failure
     profiles: [ "all", "db" ]
 

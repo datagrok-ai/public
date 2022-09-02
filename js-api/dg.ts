@@ -1,7 +1,3 @@
-import * as _chem from './src/chem';
-import * as _ml from './src/ml';
-import * as _utils from './src/utils';
-import * as _x from './src/ui/tree-view';
 import $ from 'cash-dom';
 import * as dayjs from 'dayjs';
 import * as wu from 'wu';
@@ -29,10 +25,10 @@ export {ObjectHandler, EntityMetaDartProxy} from './ui';
 export * from './src/data';
 export * from './src/helpers';
 
-export let chem = _chem;
-export let ml = _ml;
-export let utils = _utils;
-export let x = _x;
+export * from './src/chem';
+export * from './src/ml';
+export * from './src/utils';
+export * from './src/ui/tree-view';
 
 $(function () {
   (<any>window).$ = $;

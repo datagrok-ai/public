@@ -46,7 +46,6 @@ export function rGroupAnalysis(col: DG.Column): void {
     .onOK(async () => {
       const core = sketcher.getSmiles();
       if (core !== null) {
-        // const res = await findRGroups(col, core, columnPrefixInput.value);
         const res = await findRGroups(col.name, col.dataFrame, core, columnPrefixInput.value);
         for (const resCol of res.columns) {
           resCol.semType = DG.SEMTYPE.MOLECULE;

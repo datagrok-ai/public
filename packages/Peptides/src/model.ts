@@ -2,11 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {Subject, Observable} from 'rxjs';
+import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
+
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateBarsData, getTypedArrayConstructor, scaleActivity, splitAlignedPeptides} from './utils/misc';
-import {_package} from './package';
+import {calculateBarsData, getTypedArrayConstructor, scaleActivity} from './utils/misc';
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {renderBarchart, renderSARCell, setAARRenderer} from './utils/cell-renderer';
@@ -15,14 +15,11 @@ import {getDistributionAndStats, getDistributionWidget} from './widgets/distribu
 import {getStats, Stats} from './utils/filtering-statistics';
 import * as rxjs from 'rxjs';
 
-
 export class PeptidesModel {
   static modelName = 'peptidesModel';
 
-  _statsDataFrameSubject = new Subject<DG.DataFrame>();
-  _sarGridSubject = new Subject<DG.Grid>();
-  _sarVGridSubject = new Subject<DG.Grid>();
-  _substitutionTableSubject = new Subject<type.SubstitutionsInfo>();
+  _sarGridSubject = new rxjs.Subject<DG.Grid>();
+  _sarVGridSubject = new rxjs.Subject<DG.Grid>();
 
   _isUpdating: boolean = false;
   _isSubstInitialized = false;
@@ -64,13 +61,9 @@ export class PeptidesModel {
     return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
   }
 
-  get onStatsDataFrameChanged(): Observable<DG.DataFrame> {return this._statsDataFrameSubject.asObservable();}
+  get onSARGridChanged(): rxjs.Observable<DG.Grid> {return this._sarGridSubject.asObservable();}
 
-  get onSARGridChanged(): Observable<DG.Grid> {return this._sarGridSubject.asObservable();}
-
-  get onSARVGridChanged(): Observable<DG.Grid> {return this._sarVGridSubject.asObservable();}
-
-  get onSubstTableChanged(): Observable<type.SubstitutionsInfo> {return this._substitutionTableSubject.asObservable();}
+  get onSARVGridChanged(): rxjs.Observable<DG.Grid> {return this._sarVGridSubject.asObservable();}
 
   get currentSelection(): type.SelectionObject {
     this._currentSelection ??= JSON.parse(this.df.tags[C.TAGS.SELECTION] || '{}');
@@ -92,7 +85,7 @@ export class PeptidesModel {
     this._usedProperties = properties;
   }
 
-  get splitByPos() {
+  get splitByPos(): boolean {
     const splitByPosFlag = (this.df.tags['distributionSplit'] ?? '00')[0];
     return splitByPosFlag == '1' ? true : false;
   }
@@ -101,7 +94,7 @@ export class PeptidesModel {
     this.df.tags['distributionSplit'] = `${flag ? 1 : 0}${splitByAARFlag}`;
   }
 
-  get splitByAAR() {
+  get splitByAAR(): boolean {
     const splitByPosFlag = (this.df.tags['distributionSplit'] ?? '00')[1];
     return splitByPosFlag == '1' ? true : false;
   }
@@ -115,7 +108,7 @@ export class PeptidesModel {
     this.invalidateGrids();
   }
 
-  createAccordion() {
+  createAccordion(): DG.Accordion {
     const acc = ui.accordion();
     acc.root.style.width = '100%';
     acc.addTitle(ui.h1(`${this.df.selection.trueCount} selected rows`));
@@ -133,9 +126,11 @@ export class PeptidesModel {
   }
 
   isPropertyChanged(viewer: SARViewerBase): boolean {
-    // const viewer = this.getViewer();
-    const viewerProps = viewer.props.getProperties();
     let result = false;
+    if (typeof viewer == 'undefined')
+      return result;
+
+    const viewerProps = viewer.props.getProperties();
     const tempProps = this.usedProperties;
     for (const property of viewerProps) {
       const propName = property.name;
@@ -155,31 +150,27 @@ export class PeptidesModel {
     if ((this._sourceGrid && !this._isUpdating && proprtyChanged) || !this.isInitialized) {
       this.isInitialized = true;
       this._isUpdating = true;
-      const [viewerGrid, viewerVGrid, statsDf] = this.initializeViewersComponents();
+      const [viewerGrid, viewerVGrid] = this.initializeViewersComponents();
       //FIXME: modify during the initializeViewersComponents stages
-      this._statsDataFrameSubject.next(statsDf);
       this._sarGridSubject.next(viewerGrid);
       this._sarVGridSubject.next(viewerVGrid);
-      if (viewer.showSubstitution) {
-        this._substitutionTableSubject.next(this.substitutionsInfo);
+      if (viewer.showSubstitution)
         this._isSubstInitialized = true;
-      }
 
       this.invalidateSelection();
-
       this._isUpdating = false;
     }
   }
 
-  initializeViewersComponents(): [DG.Grid, DG.Grid, DG.DataFrame] {
+  initializeViewersComponents(): [DG.Grid, DG.Grid] {
     if (this._sourceGrid === null)
       throw new Error(`Source grid is not initialized`);
 
     //Split the aligned sequence into separate AARs
-    const col: DG.Column = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
+    const col: DG.Column<string> = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
     // const alphabet = col.tags[DG.TAGS.UNITS].split(':')[2];
     const alphabet = col.tags['alphabet'];
-    const splitSeqDf = splitAlignedPeptides(col);
+    const splitSeqDf = splitAlignedSequences(col);
 
     this.barData = calculateBarsData(splitSeqDf.columns.toList(), this.df.selection);
 
@@ -247,7 +238,7 @@ export class PeptidesModel {
     this.postProcessGrids(sarGrid, sarVGrid);
 
     //TODO: return class instead
-    return [sarGrid, sarVGrid, this.statsDf];
+    return [sarGrid, sarVGrid];
   }
 
   calcSubstitutions(): void {
@@ -486,7 +477,7 @@ export class PeptidesModel {
     return [sarGrid, sarVGrid];
   }
 
-  setBarChartInteraction() {
+  setBarChartInteraction(): void {
     const eventAction = (ev: MouseEvent): void => {
       const cell = this._sourceGrid.hitTest(ev.offsetX, ev.offsetY);
       if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.MONOMER) {
@@ -496,11 +487,13 @@ export class PeptidesModel {
     };
 
     // The following events makes the barchart interactive
-    rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
-    rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'click').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+    rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'mousemove')
+      .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+    rxjs.fromEvent<MouseEvent>(this._sourceGrid.overlay, 'click')
+      .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
   }
 
-  findAARandPosition(cell: DG.GridCell, ev: MouseEvent) {
+  findAARandPosition(cell: DG.GridCell, ev: MouseEvent): {monomer: string, position: string} | null {
     const barCoords = this.barsBounds[cell.tableColumn!.name];
     for (const [monomer, coords] of Object.entries(barCoords)) {
       const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
@@ -598,7 +591,7 @@ export class PeptidesModel {
       const tableColName = tableCol?.name;
       const tableRowIndex = cell.tableRowIndex;
 
-      if (!cell.isRowHeader && !cell.isColHeader && tableCol && tableRowIndex) {
+      if (!cell.isRowHeader && !cell.isColHeader && tableCol && tableRowIndex != null) {
         const table = cell.grid.table;
         const currentAAR = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
 
@@ -668,11 +661,10 @@ export class PeptidesModel {
     const sarDf = this._sarGrid.dataFrame;
     const sarVDf = this._sarVGrid.dataFrame;
 
-    const chooseAction = (aar: string, position: string, isShiftPressed: boolean) => {
+    const chooseAction = (aar: string, position: string, isShiftPressed: boolean): void =>
       isShiftPressed ? this.modifyCurrentSelection(aar, position) : this.initCurrentSelection(aar, position);
-    };
 
-    const gridCellValidation = (gc: DG.GridCell | null) => !gc || !gc.cell.value || !gc.tableColumn ||
+    const gridCellValidation = (gc: DG.GridCell | null): boolean => !gc || !gc.cell.value || !gc.tableColumn ||
       gc.tableRowIndex == null || gc.tableRowIndex == -1;
     this._sarGrid.root.addEventListener('click', (ev) => {
       const gridCell = this._sarGrid.hitTest(ev.offsetX, ev.offsetY);
@@ -695,7 +687,7 @@ export class PeptidesModel {
       chooseAction(aar, position, ev.shiftKey);
     });
 
-    const cellChanged = (table: DG.DataFrame) => {
+    const cellChanged = (table: DG.DataFrame): void => {
       if (this.isCellChanging)
         return;
       this.isCellChanging = true;
@@ -750,7 +742,7 @@ export class PeptidesModel {
         return;
       }
 
-      const updateEdfSelection = () => {
+      const updateEdfSelection = (): void => {
         this.isChangingEdfBitset = true;
         edfSelection?.copyFrom(currentBitset);
         this.isChangingEdfBitset = false;
@@ -764,7 +756,7 @@ export class PeptidesModel {
       }
 
       //TODO: move out
-      const getBitAt = (i: number) => {
+      const getBitAt = (i: number): boolean => {
         for (const position of positionList) {
           const positionCol: DG.Column<string> = this.df.getCol(position);
           if (this._currentSelection[position].includes(positionCol.get(i)!))
@@ -808,7 +800,7 @@ export class PeptidesModel {
       }
     }
 
-    const setViewerGridProps = (grid: DG.Grid) => {
+    const setViewerGridProps = (grid: DG.Grid): void => {
       grid.props.allowEdit = false;
       grid.props.allowRowSelection = false;
       grid.props.allowBlockSelection = false;
@@ -854,7 +846,7 @@ export class PeptidesModel {
       return;
 
     this.monomerLib =
-      JSON.parse(await grok.functions.call('Helm:getMonomerLib', {type: this.df.getTag('monomerType')}));
+      JSON.parse(await grok.functions.call('Helm:getMonomerLib', {type: this.df.getTag('monomerType')}) as string);
 
     this.currentView = this.df.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
       grok.shell.addTableView(this.df);
@@ -865,6 +857,7 @@ export class PeptidesModel {
     this.df.tags[C.PEPTIDES_ANALYSIS] = 'true';
     this._sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
     this._sourceGrid.columns.setOrder([this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
+    this._sourceGrid.props.allowColSelection = false;
 
     this.df.temp[C.EMBEDDING_STATUS] = false;
     const adjustCellSize = (grid: DG.Grid): void => {

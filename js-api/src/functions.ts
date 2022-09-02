@@ -109,13 +109,11 @@ export class Functions {
   }
 
   call(name: string, parameters: object = {}, showProgress: boolean = false, progress: ProgressIndicator | null = null): Promise<any> {
-    return new Promise((resolve, reject) => api.grok_CallFunc(name, parameters, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress)));
+    return api.grok_CallFunc(name, parameters, showProgress, toDart(progress));
   }
 
-  eval(name: string, context?: Context): Promise<any> {
-    return new Promise((resolve, reject) => api.grok_EvalFunc(name, context?.dart, function (out: any) {
-      return resolve(toJs(out));
-    }, (err: any) => reject(err)));
+  eval(name: string, context?: Context): Promise<object> {
+    return toJs(api.grok_EvalFunc(name, context?.dart));
   }
 
   async find(name: string): Promise<any> {

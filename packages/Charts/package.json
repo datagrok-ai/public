@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/charts",
   "fullName": "Charts",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "author": {
     "name": "Diana Onufriienko",
@@ -17,7 +17,7 @@
     "datagrok-api": "^1.4.11",
     "echarts": "^5.0.0",
     "echarts-wordcloud": "^2.0.0",
-    "wu": "latest"
+    "@datagrok-libraries/utils": "^1.7.0"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -30,7 +30,8 @@
     "debug-charts-dev": "grok publish dev",
     "release-charts-dev": "grok publish dev --release",
     "debug-charts-public": "grok publish public",
-    "release-charts-public": "grok publish public --release"
+    "release-charts-public": "grok publish public --release",
+    "test": "jest"
   },
   "canEdit": [
     "Developers"
@@ -49,7 +50,16 @@
     "ts-loader": "^9.3.0",
     "typescript": "^4.7.3",
     "webpack": "^5.73.0",
-    "webpack-cli": "^4.9.2"
+    "webpack-cli": "^4.9.2",
+    "jest-html-reporter": "^3.5.0",
+    "jest": "^27.0.0",
+    "@types/jest": "^27.0.0",
+    "js-yaml": "^4.1.0",
+    "@types/js-yaml": "^4.0.5",
+    "@types/node-fetch": "^2.6.2",
+    "node-fetch": "^2.6.7",
+    "ts-jest": "^27.0.0",
+    "puppeteer": "^13.7.0"
   },
   "category": "Visualizations"
 }

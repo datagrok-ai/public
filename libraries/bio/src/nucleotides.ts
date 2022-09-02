@@ -14,7 +14,8 @@ export class NucleotidesPalettes extends SeqPaletteBase {
         'A': 'green',
         'C': 'blue',
         'G': 'black', // orange ?
-        'T': 'red', 'U': 'red',
+        'T': 'red',
+        'U': 'red',
         'others': 'gray',
       });
     }

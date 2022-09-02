@@ -12,11 +12,11 @@ category('WebLogo-positions', () => {
   let currentView: DG.View;
 
   const csvDf1 = `seq
-    ATC-G-TTGC--
-    ATC-G-TTGC--
-    -TC-G-TTGC--
-    -TC-GCTTGC--
-    -TC-GCTTGC--`;
+ATC-G-TTGC--
+ATC-G-TTGC--
+-TC-G-TTGC--
+-TC-GCTTGC--
+-TC-GCTTGC--`;
 
 
   before(async () => {
@@ -34,8 +34,10 @@ category('WebLogo-positions', () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
     const tv: DG.TableView = grok.shell.addTableView(df);
 
-    df.getCol('seq').semType = 'Macromolecule';
-    df.getCol('seq').setTag('units', 'fasta:SEQ.MSA:DNA');
+    const seqCol: DG.Column = df.getCol('seq');
+    seqCol.semType = 'Macromolecule';
+    seqCol.setTag('units', 'fasta');
+    seqCol.setTag('alphabet', 'DNA');
 
     const wlViewer: WebLogo = await df.plot.fromType('WebLogo') as unknown as WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
@@ -81,10 +83,11 @@ category('WebLogo-positions', () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf2);
     const tv: DG.TableView = grok.shell.addTableView(df);
 
-    df.getCol('seq').semType = 'Macromolecule';
-    df.getCol('seq').setTag('units', 'fasta:SEQ.MSA:DNA');
+    const seqCol: DG.Column = df.getCol('seq');
+    seqCol.semType = 'Macromolecule';
+    seqCol.setTag('units', 'fasta');
+    seqCol.setTag('alphabet', 'DNA');
 
-    let seq: Column = df.getCol('seq');
     df.filter.init((i) => {
       return i > 2;
     });
@@ -125,8 +128,10 @@ category('WebLogo-positions', () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
     const tv: DG.TableView = grok.shell.addTableView(df);
 
-    df.getCol('seq').semType = 'Macromolecule';
-    df.getCol('seq').setTag('units', 'fasta:SEQ.MSA:DNA');
+    const seqCol: DG.Column = df.getCol('seq');
+    seqCol.semType = 'Macromolecule';
+    seqCol.setTag('units', 'fasta');
+    seqCol.setTag('alphabet', 'DNA');
 
     const wlViewer: WebLogo = await df.plot.fromType('WebLogo', {'skipEmptyPositions': true}) as unknown as WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
@@ -156,7 +161,6 @@ category('WebLogo-positions', () => {
         expect(positions[i].freq[key].count, resAllDf1[i].freq[key].count);
       }
     }
-
   });
 
 });

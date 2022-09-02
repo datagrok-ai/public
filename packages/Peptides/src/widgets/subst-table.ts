@@ -55,7 +55,7 @@ export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): 
   substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
   substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
   substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
-  substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifferenceCR';
+  substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifference';
   const toColName = '~to';
   const hiddenSubstToAarCol = DG.Column.fromStrings(toColName, substitutedToArray);
   const substTable =

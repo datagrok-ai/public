@@ -31,10 +31,13 @@ category('Core', () => {
     simpleActivityCol = simpleTable.getCol(simpleActivityColName);
     simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
     simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
+    simpleAlignedSeqCol.tags[C.TAGS.ALPHABET] = 'PT';
+    simpleAlignedSeqCol.tags[DG.TAGS.UNITS] = 'fasta';
+    simpleAlignedSeqCol.tags['aligned'] = 'SEQ.MSA';
     [simpleScaledDf, simpleScaledColName] = scaleActivity('-lg', simpleTable, simpleActivityColName, true);
 
     model = await startAnalysis(
-      simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName, _package);
+      simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName);
     expect(model instanceof PeptidesModel, true);
 
     if (model != null) {
@@ -49,10 +52,14 @@ category('Core', () => {
     complexActivityCol = complexTable.getCol(complexActivityColName);
     complexAlignedSeqCol = complexTable.getCol('MSA');
     complexAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
+    complexAlignedSeqCol.tags[C.TAGS.ALPHABET] = 'UN';
+    complexAlignedSeqCol.tags[DG.TAGS.UNITS] = 'separator';
+    complexAlignedSeqCol.tags['aligned'] = 'SEQ.MSA';
+    complexAlignedSeqCol.tags[C.TAGS.SEPARATOR] = '/';
     [complexScaledDf, complexScaledColName] = scaleActivity('-lg', complexTable, complexActivityColName, true);
 
     model = await startAnalysis(
-      complexActivityCol, complexAlignedSeqCol, complexTable, complexScaledDf, complexScaledColName, _package);
+      complexActivityCol, complexAlignedSeqCol, complexTable, complexScaledDf, complexScaledColName);
     expect(model instanceof PeptidesModel, true);
 
     if (model != null) {
@@ -67,10 +74,13 @@ category('Core', () => {
     simpleActivityCol = simpleTable.getCol(simpleActivityColName);
     simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
     simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
+    simpleAlignedSeqCol.tags[C.TAGS.ALPHABET] = 'PT';
+    simpleAlignedSeqCol.tags[DG.TAGS.UNITS] = 'fasta';
+    simpleAlignedSeqCol.tags['aligned'] = 'SEQ.MSA';
     [simpleScaledDf, simpleScaledColName] = scaleActivity('-lg', simpleTable, simpleActivityColName, true);
 
     model = await startAnalysis(
-      simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName, _package);
+      simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName);
     let v = grok.shell.getTableView('Peptides analysis');
     const d = v.dataFrame;
     const layout = v.saveLayout();

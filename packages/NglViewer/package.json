@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/ngl-viewer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
   "author": {
     "name": "Leonid Stolbov",
@@ -16,6 +16,12 @@
     "css/ngl.css",
     "common/ngl_viewer/ngl.js"
   ],
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix",
+    "link-api": "npm link datagrok-api",
+    "build": "webpack"
+  },
   "dependencies": {
     "@datagrok-libraries/utils": "^0.4.1",
     "@types/react-dom": "^17.0.9",
