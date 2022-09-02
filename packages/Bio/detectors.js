@@ -52,9 +52,14 @@ class BioPackageDetectors extends DG.Package {
       !(col.categories.length == 1 && !col.categories[0]) && // TODO: Remove with tests for single empty category value
       DG.Detector.sampleCategories(col, (s) => BioPackageDetectors.isHelm(s), 1)
     ) {
-      const statsAsHelm = BioPackageDetectors.getStats(col, 5, BioPackageDetectors.splitterAsHelm);
+      const statsAsHelm = BioPackageDetectors.getStats(col, 2, BioPackageDetectors.splitterAsHelm);
       col.setTag(DG.TAGS.UNITS, 'helm');
-      col.setTag('alphabetSize', statsAsHelm.freq.length);
+
+      const alphabetSize = Object.keys(statsAsHelm.freq).length;
+      const alphabetIsMultichar = Object.keys(statsAsHelm.freq).some((m) => m.length > 1);
+      col.setTag('.alphabetSize', alphabetSize.toString());
+      col.setTag('.alphabetIsMultichar', alphabetIsMultichar ? 'true' : 'false');
+
       return DG.SEMTYPE.MACROMOLECULE;
     }
 
@@ -125,7 +130,12 @@ class BioPackageDetectors extends DG.Package {
         col.setTag('aligned', seqType);
         col.setTag('alphabet', alphabet);
         if (separator) col.setTag('separator', separator);
-        if (alphabet === 'UN') col.setTag('alphabetSize', stats.freq.length);
+        if (alphabet === 'UN') {
+          const alphabetSize = Object.keys(stats.freq).length;
+          const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
+          col.setTag('.alphabetSize', alphabetSize.toString());
+          col.setTag('.alphabetIsMultichar', alphabetIsMultichar ? 'true' : 'false');
+        }
         return DG.SEMTYPE.MACROMOLECULE;
       }
     }
