@@ -21,13 +21,17 @@ export enum DrawStyle {
  * @param {number} [transparencyRate=0.0] Transparency rate where 1.0 is fully transparent
  * @param {string} [separator=''] Is separator for sequence.
  * @param {boolean} [last=false] Is checker if element last or not.
+ * @param drawStyle Is draw style. MSA - for multicharSeq, classic - for other seq.
+ * @param maxWord Is array of max words for each line.
+ * @param maxWordIdx Is index of word we currently draw.
+ * @param gridCell Is grid cell, new for updating data in maxWord while rendering.
  * @return {number} x coordinate to start printing at.
  */
 export function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false, drawStyle: string = 'classic', maxWord: any = {}, maxWordIdx: number = 0, gridCell: any = {}): number {
+  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, maxWordIdx: number = 0, gridCell: any = {}): number {
   g.textAlign = 'start';
   const colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
