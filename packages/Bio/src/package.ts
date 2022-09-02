@@ -177,11 +177,11 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   if (!encodedCol)
     return;
   const embedColsNames = getEmbeddingColsNames(table);
-  const withoutEmptyValues = DG.DataFrame.fromColumns([macroMolecule]).clone();
+  const withoutEmptyValues = DG.DataFrame.fromColumns([encodedCol]).clone();
   const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, encodedCol);
 
   const chemSpaceParams = {
-    seqCol: withoutEmptyValues.col(macroMolecule.name)!,
+    seqCol: withoutEmptyValues.col(encodedCol.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: embedColsNames
