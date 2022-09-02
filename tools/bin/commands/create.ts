@@ -132,6 +132,7 @@ export function create(args: CreateArgs) {
   if (nArgs > 2 || nOptions > 4) return false;
   if (nOptions && !Object.keys(args).slice(1).every(op => options.includes(op))) return false;
   if (args.js && args.ts) return color.error('Incompatible options: --js and --ts');
+  const ts = !args.js && args.ts !== false;
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
@@ -192,9 +193,9 @@ export function create(args: CreateArgs) {
       process.exit();
     });
 
-    createDirectoryContents(name, config, templateDir, packageDir, args.ide, !!args.ts, !!args.eslint, !!args.jest);
+    createDirectoryContents(name, config, templateDir, packageDir, args.ide, ts, !!args.eslint, !!args.jest);
     color.success('Successfully created package ' + name);
-    console.log(help.package(!!args.ts));
+    console.log(help.package(ts));
     console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
     console.log('Running `npm install` to get the required dependencies...\n');
     exec('npm install', { cwd: packageDir }, (err, stdout, stderr) => {
