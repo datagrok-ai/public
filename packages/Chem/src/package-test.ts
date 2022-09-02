@@ -5,6 +5,7 @@ import './tests/menu-tests-chem-space';
 import './tests/menu-tests-cliffs';
 import './tests/menu-tests-similarity-diversity';
 import './tests/menu-tests-script-based';
+import './tests/menu-tests-rgroups';
 
 import './tests/col-panel-tests';
 import './tests/cell-panel-tests';
