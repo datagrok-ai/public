@@ -90,19 +90,32 @@ export class UnitsHandler {
     }
   }
 
-  public getAlphabetSize(): number | null {
-    switch (this.alphabet) {
-    case 'PT':
-      return 20;
-    case 'NT':
-      console.warn('NT alphabet is unexpected');
-      return 4;
-    case 'DNA':
-    case 'RNA':
-      return 4;
-    default:
-      const alphabetSize = parseInt(this.column.getTag('alphabetSize'));
+  public getAlphabetSize(): number {
+    if (this.notation == 'HELM' || this.alphabet == 'UN') {
+      const alphabetSize = parseInt(this.column.getTag('.alphabetSize'));
       return alphabetSize;
+    } else {
+      switch (this.alphabet) {
+      case 'PT':
+        return 20;
+      case 'NT':
+        console.warn(`Unexpected alphabet 'NT'.`);
+        return 4;
+      case 'DNA':
+      case 'RNA':
+        return 4;
+      default:
+        throw new Error(`Unexpected alphabet '${this.alphabet}'.`);
+      }
+    }
+  }
+
+  public getAlphabetIsMultichar(): boolean {
+    if (this.notation == 'HELM' || this.alphabet == 'UN') {
+      const alphabetIsMultichar: boolean = this.column.getTag('.alphabetIsMultichar') == 'true' ? true : false;
+      return alphabetIsMultichar;
+    } else {
+      return false;
     }
   }
 
@@ -224,11 +237,18 @@ export class UnitsHandler {
       (this.isHelm()) ? this._defaultGapSymbolsDict.HELM :
         this._defaultGapSymbolsDict.SEPARATOR;
 
-    if (!this.column.tags.has('alphabetSize')) {
+    if (!this.column.tags.has('.alphabetSize')) {
       if (this.isHelm())
-        throw new Error(`For column '${this.column.name}' of notation '${this.notation}' tag 'alphabetSize' is mandatory.`);
+        throw new Error(`For column '${this.column.name}' of notation '${this.notation}' tag '.alphabetSize' is mandatory.`);
       else if (['UN'].includes(this.alphabet))
-        throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' tag 'alphabetSize' is mandatory.`);
+        throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' tag '.alphabetSize' is mandatory.`);
+    }
+
+    if (!this.column.tags.has('.alphabetIsMultichar')) {
+      if (this.isHelm())
+        throw new Error(`For column '${this.column.name}' of notation '${this.notation}' tag '.alphabetIsMultichar' is mandatory.`);
+      else if (['UN'].includes(this.alphabet))
+        throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' tag '.alphabetIsMultichar' is mandatory.`);
     }
   }
 }
