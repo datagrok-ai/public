@@ -80,6 +80,7 @@ export class UnitsHandler {
     }
   }
 
+  /** Alphabet name (upper case) */
   public get alphabet(): string {
     const alphabet = this.column.getTag('alphabet');
     if (alphabet !== null) {
@@ -90,19 +91,19 @@ export class UnitsHandler {
   }
 
   public getAlphabetSize(): number | null {
-    switch (this.alphabet.toLowerCase()) {
-    case 'pt':
+    switch (this.alphabet) {
+    case 'PT':
       return 20;
-    case 'nt': {
+    case 'NT':
       console.warn('NT alphabet is unexpected');
       return 4;
-    }
-    case 'dna':
+    case 'DNA':
+    case 'RNA':
       return 4;
-    case 'rna':
-      return 4;
+    default:
+      const alphabetSize = parseInt(this.column.getTag('alphabetSize'));
+      return alphabetSize;
     }
-    return null;
   }
 
   public isFasta(): boolean { return this.notation === NOTATION.FASTA; }
