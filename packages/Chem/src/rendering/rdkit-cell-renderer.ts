@@ -79,7 +79,7 @@ M  END
         mol = null;
       }
     } catch (e) { }
-    if (!mol)
+    if (!mol) {
       try {
         mol = this.rdKitModule.get_mol(molString, '{"kekulize":false, "mergeQueryHs":true}');
         if (!mol.is_valid()) {
@@ -87,7 +87,8 @@ M  END
           mol = null;
         }
       } catch (e2) { }
-    if (!mol)
+    }
+    if (!mol) {
       try {
         mol = this.rdKitModule.get_qmol(molString);
         if (!mol.is_valid()) {
@@ -99,7 +100,8 @@ M  END
           'Chem | In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `' + molString + '`');
         mol = null;
       }
-    if (mol)
+    }
+    if (mol) {
       try {
         if (mol.is_valid()) {
           const scaffoldIsMolBlock = isMolBlock(scaffoldMolString);
@@ -132,6 +134,7 @@ M  END
         console.error(
           'In _fetchMolGetOrCreate: RDKit crashed, possibly a malformed molString molecule: `' + molString + '`');
       }
+    }
 
     return {
       mol: mol,
@@ -142,7 +145,7 @@ M  END
   }
 
   _fetchMol(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean,
-            scaffoldRegenerateCoords: boolean): IMolInfo {
+    scaffoldRegenerateCoords: boolean): IMolInfo {
     const name = molString + ' || ' + scaffoldMolString + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords;
     return this.molCache.getOrCreate(name, (_: any) =>
@@ -200,23 +203,22 @@ M  END
     }
     const offscreenCanvas = this._fetchRender(w, h, molString, scaffoldMolString,
       highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
-    
+
     if (vertical) {
-      let ctx = onscreenCanvas.getContext('2d')!
+      const ctx = onscreenCanvas.getContext('2d')!;
       ctx.save();
-      let scl = ctx.getTransform();
+      const scl = ctx.getTransform();
       ctx.resetTransform();
-      ctx.translate(x , y);
-      ctx.rotate(Math.PI/2);
+      ctx.translate(x, y);
+      ctx.rotate(Math.PI / 2);
       if (scl.m11 < 1 || scl.m22 < 1)
-        ctx.scale(scl.m11, scl.m22)
+        ctx.scale(scl.m11, scl.m22);
       ctx.drawImage(offscreenCanvas, 0, - (h));
       ctx.restore();
     } else {
       const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);
       onscreenCanvas.getContext('2d')!.putImageData(image, x, y);
     }
-      
   }
 
   _initScaffoldString(colTemp: any, tagName: string) {

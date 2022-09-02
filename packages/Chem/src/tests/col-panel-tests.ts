@@ -1,16 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import { category, expect, expectFloat, test } from '@datagrok-libraries/utils/src/test';
-import { _testSearchSubstructure,
+import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
+import {_testSearchSubstructure,
   _testSearchSubstructureAllParameters,
   _testSearchSubstructureSARSmall,
-  loadFileAsText } from './utils';
+  loadFileAsText} from './utils';
 
 import {_importSdf} from '../open-chem/sdf-importer';
 
 category('column panel', () => {
-
   test('mcs', async () => {
     const t = DG.DataFrame.fromCsv(`smiles
       O=C1CN=C(c2ccccc2N1)C3CCCCC3

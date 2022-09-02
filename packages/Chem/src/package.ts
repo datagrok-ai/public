@@ -36,7 +36,7 @@ import Sketcher = chem.Sketcher;
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
-import { findMcsAndUpdateDrawings } from './analysis/activity-cliffs';
+import {findMcsAndUpdateDrawings} from './analysis/activity-cliffs';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -259,18 +259,18 @@ export function saveAsSdf(): void {
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
   similarity: number, methodName: string) : Promise<DG.Viewer> {
- const axesNames = getEmbeddingColsNames(df);
- const options = {
-  'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
-};
- const sp = await getActivityCliffs(
-  df, 
-  smiles,
-  null as any, 
+  const axesNames = getEmbeddingColsNames(df);
+  const options = {
+    'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
+  };
+  const sp = await getActivityCliffs(
+    df,
+    smiles,
+  null as any,
   axesNames,
   'Activity cliffs',
-  activities, 
-  similarity, 
+  activities,
+  similarity,
   'Tanimoto',
   methodName,
   DG.SEMTYPE.MOLECULE,
@@ -359,28 +359,28 @@ export function addInchisKeysPanel(col: DG.Column): void {
 //name: getAtomsColumn
 //input: column molecule { semType: Molecule }
 export function getAtomsColumn(molecule: DG.Column) {
-  let elemental_table = {"R" : [], "H" : [], "He" : [], "Li" : [], "Be" : [], "B" : [], "C" : [],
-  	                     "N" : [], "O" : [], "F" : [], "Ne" : [], "Na" : [], "Mg" : [], "Al" : [],
-                         "Si" : [], "P" : [], "S" : [], "Cl" : [], "Ar" : [], "K" : [], "Ca" : [],
-  	                     "Sc" : [], "Ti" : [], "V" : [], "Cr" : [], "Mn" : [], "Fe" : [], "Co" : [],
-  	                     "Ni" : [], "Cu" : [], "Zn" : [], "Ga" : [], "Ge" : [], "As" : [], "Se" : [],
-  	                     "Br" : [], "Kr" : [], "Rb" : [], "Sr" : [], "Y" : [], "Zr" : [], "Nb" : [],
-  	                     "Mo" : [], "Tc" : [], "Ru" : [], "Rh" : [], "Pd" : [], "Ag" : [], "Cd" : [],
-  	                     "In" : [], "Sn" : [], "Sb" : [], "Te" : [], "I" : [], "Xe" : [], "Cs" : [],
-  	                     "Ba" : [], "La" : [], "Ce" : [], "Pr" : [], "Nd" : [], "Pm" : [], "Sm" : [],
-  	                     "Eu" : [], "Gd" : [], "Tb" : [], "Dy" : [], "Ho" : [], "Er" : [], "Tm" : [],
-  	                     "Yb" : [], "Lu" : [], "Hf" : [], "Ta" : [], "W" : [], "Re" : [], "Os" : [],
-  	                     "Ir" : [], "Pt" : [], "Au" : [], "Hg" : [], "Tl" : [], "Pb" : [], "Bi" : [],
-  	                     "Po" : [], "At" : [], "Rn" : [], "Fr" : [], "Ra" : [], "Ac" : [], "Th" : [],
-  	                     "Pa" : [], "U" : [], "Np" : [], "Pu" : [], "Am" : [], "Cm" : [], "Bk" : [],
-  	                     "Cf" : [], "Es" : [], "Fm" : [], "Md" : [], "No" : [], "Lr" : [], "Rf" : [],
-  	                     "Db" : [], "Sg" : [], "Bh" : [], "Hs" : [], "Mt" : [], "Ds" : [], "Rg" : [],
-  	                     "Cn" : [], "Nh" : [], "Fl" : [], "Mc" : [], "Lv" : [], "Ts" : [], "Og" : []};
+  const elemental_table = {'R': [], 'H': [], 'He': [], 'Li': [], 'Be': [], 'B': [], 'C': [],
+  	                     'N': [], 'O': [], 'F': [], 'Ne': [], 'Na': [], 'Mg': [], 'Al': [],
+    'Si': [], 'P': [], 'S': [], 'Cl': [], 'Ar': [], 'K': [], 'Ca': [],
+  	                     'Sc': [], 'Ti': [], 'V': [], 'Cr': [], 'Mn': [], 'Fe': [], 'Co': [],
+  	                     'Ni': [], 'Cu': [], 'Zn': [], 'Ga': [], 'Ge': [], 'As': [], 'Se': [],
+  	                     'Br': [], 'Kr': [], 'Rb': [], 'Sr': [], 'Y': [], 'Zr': [], 'Nb': [],
+  	                     'Mo': [], 'Tc': [], 'Ru': [], 'Rh': [], 'Pd': [], 'Ag': [], 'Cd': [],
+  	                     'In': [], 'Sn': [], 'Sb': [], 'Te': [], 'I': [], 'Xe': [], 'Cs': [],
+  	                     'Ba': [], 'La': [], 'Ce': [], 'Pr': [], 'Nd': [], 'Pm': [], 'Sm': [],
+  	                     'Eu': [], 'Gd': [], 'Tb': [], 'Dy': [], 'Ho': [], 'Er': [], 'Tm': [],
+  	                     'Yb': [], 'Lu': [], 'Hf': [], 'Ta': [], 'W': [], 'Re': [], 'Os': [],
+  	                     'Ir': [], 'Pt': [], 'Au': [], 'Hg': [], 'Tl': [], 'Pb': [], 'Bi': [],
+  	                     'Po': [], 'At': [], 'Rn': [], 'Fr': [], 'Ra': [], 'Ac': [], 'Th': [],
+  	                     'Pa': [], 'U': [], 'Np': [], 'Pu': [], 'Am': [], 'Cm': [], 'Bk': [],
+  	                     'Cf': [], 'Es': [], 'Fm': [], 'Md': [], 'No': [], 'Lr': [], 'Rf': [],
+  	                     'Db': [], 'Sg': [], 'Bh': [], 'Hs': [], 'Mt': [], 'Ds': [], 'Rg': [],
+  	                     'Cn': [], 'Nh': [], 'Fl': [], 'Mc': [], 'Lv': [], 'Ts': [], 'Og': []};
   for (let i = 0; i < molecule.length; i++) {
     Object.entries(elemental_table).forEach(([key, value]) => {
-      let rows = molecule.get(i).split('\n');
-      let atom_counts = rows[3].split(' ')[1];
-      let new_mol = rows.slice(4, parseInt(atom_counts) + 4).toString();
+      const rows = molecule.get(i).split('\n');
+      const atom_counts = rows[3].split(' ')[1];
+      const new_mol = rows.slice(4, parseInt(atom_counts) + 4).toString();
       if (new_mol.includes(key)) {
         const re = new RegExp(key, 'g');
         const count = new_mol.match(re).length;
@@ -390,7 +390,7 @@ export function getAtomsColumn(molecule: DG.Column) {
         //@ts-ignore
         value.push(0);
       }
-    })
+    });
   }
   return elemental_table;
 }
@@ -402,9 +402,9 @@ export function getAtomsColumn(molecule: DG.Column) {
 export async function elementalAnalysis(table: DG.DataFrame, molecule: DG.Column) {
   Object.entries(getAtomsColumn(molecule)).forEach(([key, value]) => {
     //@ts-ignore
-    value.every(el => el == 0) ? 0: table.columns.add(DG.Column.fromInt32Array(key, value));
-  })
-} 
+    value.every((el) => el == 0) ? 0 : table.columns.add(DG.Column.fromInt32Array(key, value));
+  });
+}
 
 //name: Chem
 //input: column molColumn {semType: Molecule}
@@ -522,12 +522,12 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
   sketcher.setMolecule(cell.cell.value);
   ui.dialog()
-      .add(sketcher)
-      .onOK(() => {
+    .add(sketcher)
+    .onOK(() => {
       cell.cell.value = unit == 'molblock' ? sketcher.getMolFile() : sketcher.getSmiles();
       Sketcher.addRecent(sketcher.getMolFile());
-  })
-  .show();
+    })
+    .show();
 }
 
 //name: SimilaritySearchViewer

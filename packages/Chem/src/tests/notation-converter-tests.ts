@@ -1,4 +1,4 @@
-import { category, expectArray, test, before } from '@datagrok-libraries/utils/src/test';
+import {category, expectArray, test, before} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 
 import * as grok from 'datagrok-api/grok';
@@ -29,7 +29,7 @@ category('convert mol notation test', () => {
       '[#6]-[#7]1-[#6](=[#8])-[#6]-[#7]=[#6](-[#6]2-[#6]-[#6]-[#6]-[#6]-[#6]-2)-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-1',
     ],
     molblock: [
-`
+      `
      RDKit          2D
 
  19 21  0  0  0  0  0  0  0  0999 V2000
@@ -74,9 +74,9 @@ category('convert mol notation test', () => {
  13  8  1  0
  19 14  1  0
 M  END
-`    ],
+`],
     v3Kmolblock: [
-`
+      `
      RDKit          2D
 
   0  0  0  0  0  0  0  0  0  0999 V3000
@@ -128,7 +128,7 @@ M  V30 21 1 19 14
 M  V30 END BOND
 M  V30 END CTAB
 M  END
-`    ],
+`],
     // inchi: [
     //   'InChI=1S/C16H20N2O/c1-18-14-10-6-5-9-13(14)16(17-11-15(18)19)12-7-3-2-4-8-12/h5-6,9-10,12H,2-4,7-8,11H2,1H3'
     // ],
@@ -136,11 +136,11 @@ M  END
 
   function _testConvert(srcNotation: MolNotation, tgtNotation: MolNotation) {
     const result = [];
-    for (let mol of molecules[srcNotation])
+    for (const mol of molecules[srcNotation])
       result.push(_convertMolNotation(mol, srcNotation, tgtNotation, getRdKitModule()));
-    console.log("The result is");
+    console.log('The result is');
     console.log([result.toString()]);
-    console.log("The expected value is");
+    console.log('The expected value is');
     console.log(molecules[tgtNotation]);
     expectArray(result, molecules[tgtNotation]);
   }

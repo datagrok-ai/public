@@ -15,19 +15,19 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
       return [];
 
     const fps: Uint8Array[] = [];
-      try {
-        switch (fingerprintType) {
-          case Fingerprint.Pattern:
-            for (let i = 0; i < this._rdKitMols.length; ++i)
-              fps.push(this._rdKitMols[i].get_pattern_fp_as_uint8array());
-            break;
-          case Fingerprint.Morgan:
-            for (let i = 0; i < this._rdKitMols.length; ++i)
-              fps.push(this._rdKitMols[i].get_morgan_fp_as_uint8array(this._fpRadius, this._fpLength));
-            break;
-        default:
-          throw Error('Unknown fingerprint type: ' + fingerprintType);
-        }
+    try {
+      switch (fingerprintType) {
+      case Fingerprint.Pattern:
+        for (let i = 0; i < this._rdKitMols.length; ++i)
+          fps.push(this._rdKitMols[i].get_pattern_fp_as_uint8array());
+        break;
+      case Fingerprint.Morgan:
+        for (let i = 0; i < this._rdKitMols.length; ++i)
+          fps.push(this._rdKitMols[i].get_morgan_fp_as_uint8array(this._fpRadius, this._fpLength));
+        break;
+      default:
+        throw Error('Unknown fingerprint type: ' + fingerprintType);
+      }
     } catch (e) {
       // nothing to do, bit is already 0
     }

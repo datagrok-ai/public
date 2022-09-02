@@ -1,18 +1,17 @@
-import { before, after, expect, category, test } from '@datagrok-libraries/utils/src/test';
+import {before, after, expect, category, test} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import { _package } from '../package-test';
-import { readDataframe } from './utils';
+import {_package} from '../package-test';
+import {readDataframe} from './utils';
 
-import { chemSpace } from '../analysis/chem-space';
+import {chemSpace} from '../analysis/chem-space';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import { getSimilaritiesMarix, getSimilaritiesMarixFromDistances } from '../utils/similarity-utils';
-import { chemSpaceTopMenu } from '../package';
-var { jStat } = require('jstat')
+import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/similarity-utils';
+import {chemSpaceTopMenu} from '../package';
+const {jStat} = require('jstat');
 
 category('top menu chem space', async () => {
-
   let smallDf: DG.DataFrame;
 
   before(async () => {
@@ -53,9 +52,9 @@ async function _testDimensionalityReducer(col: DG.Column, algorithm: string) {
     seqCol: col,
     methodName: algorithm,
     similarityMetric: 'Tanimoto',
-    embedAxesNames: ['Embed_X', 'Embed_Y']
-  }
-  const { distance, coordinates } = await chemSpace(chemSpaceParams);
+    embedAxesNames: ['Embed_X', 'Embed_Y'],
+  };
+  const {distance, coordinates} = await chemSpace(chemSpaceParams);
 
   const dfSmiles = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'smiles', col.toList())]);
   const dim = col.length;
@@ -82,8 +81,8 @@ async function _testDimensionalityReducer(col: DG.Column, algorithm: string) {
       //   similaririesWithDistances.rows.addNew([index, molPair.idx, molPair.distance, sim]);
       similaritiesArray.push(sim);
       distancesArray.push(molPair.distance);
-    })
-  })
+    });
+  });
   //  grok.shell.addTableView(similaririesWithDistances);
   const corrCoef = jStat.corrcoeff(similaritiesArray, distancesArray);
   expect(Math.abs(corrCoef) > -0.6, true);
@@ -95,7 +94,6 @@ interface IDistanceToPoint {
 }
 
 function findNNearestAndFarestNeighbours(coordinates: DG.ColumnList, nItems: number, xColName: string, yColName: string, n?: number) {
-
   const matrix: IDistanceToPoint[][] = [];
   const df = DG.DataFrame.create(nItems);
   for (const col of coordinates)
@@ -112,14 +110,13 @@ function findNNearestAndFarestNeighbours(coordinates: DG.ColumnList, nItems: num
       /*       if (d === NaN) {
                 console.log(x1, '***',y1, '***',x2, '***',y2)
             } */
-      distances.push({ idx: j, distance: d });
+      distances.push({idx: j, distance: d});
     }
     if (n) {
       distances.sort((a, b) => a.distance - b.distance);
       matrix.push(distances.slice(0, n).concat(distances.slice(-5)));
-    } else {
+    } else
       matrix.push(distances);
-    }
   }
   return matrix;
 }
