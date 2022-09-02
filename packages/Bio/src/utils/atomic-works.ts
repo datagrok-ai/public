@@ -1,7 +1,7 @@
 import * as OCL from 'openchemlib/full.js';
 import * as grok from 'datagrok-api/grok';
 
-import {RDModule} from '@datagrok-libraries/bio/src/rdkit-api';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export async function getMacroMol(monomers: any[][]): Promise<string[]> {
   let result: string[] = [];
