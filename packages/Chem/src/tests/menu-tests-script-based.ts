@@ -1,16 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import { category, expect, expectFloat, test } from '@datagrok-libraries/utils/src/test';
-import { _testSearchSubstructure,
+import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
+import {_testSearchSubstructure,
   _testSearchSubstructureAllParameters,
   _testSearchSubstructureSARSmall,
-  loadFileAsText } from './utils';
+  loadFileAsText} from './utils';
 
 import {_importSdf} from '../open-chem/sdf-importer';
 
 category('top menu script based', () => {
-
   test('curate', async () => {
     const t = DG.DataFrame.fromCsv(`Name,smiles
     metal_non,CCC(=O)O[Na]
@@ -29,9 +28,9 @@ category('top menu script based', () => {
     main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
     const v = grok.shell.addTableView(t);
 
-    await grok.functions.call('Chem:CurateChemStructures', {'data': t, 'molecules': 'smiles', 
-                                                'kekulization': false, 'normalization': true, 'reionization': true, 
-                                                'neutralization': true, 'tautomerization': true, 'mainFragment': true});
+    await grok.functions.call('Chem:CurateChemStructures', {'data': t, 'molecules': 'smiles',
+      'kekulization': false, 'normalization': true, 'reionization': true,
+      'neutralization': true, 'tautomerization': true, 'mainFragment': true});
     v.close();
   });
 });

@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {category, expect, test} from "@datagrok-libraries/utils/src/test";
-import {dfFromColWithOneCategory, loadFileAsBytes, loadFileAsText} from "./utils";
-import {_importSdf} from "../open-chem/sdf-importer";
+import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {dfFromColWithOneCategory, loadFileAsBytes, loadFileAsText} from './utils';
+import {_importSdf} from '../open-chem/sdf-importer';
 
 category('detectors', () => {
   test('detectSmiles', async () => {
@@ -82,4 +82,4 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     expect(df.col('r100')!.semType, DG.SEMTYPE.MOLECULE);
     expect(df.col('r101')!.semType, DG.SEMTYPE.MOLECULE);
   });
-})
+});

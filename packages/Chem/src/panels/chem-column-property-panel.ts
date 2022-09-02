@@ -14,9 +14,8 @@ enum StructureFilterType {
  * - Show rendered structures or smiles
  *  */
 export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
-
   const NONE = 'None';
-  let scaffoldColName = col.temp['scaffold-col'] ?? NONE;
+  const scaffoldColName = col.temp['scaffold-col'] ?? NONE;
 
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
   const columnsList = Array.from(col.dataFrame.columns as any).filter(
@@ -55,7 +54,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     (s: string) => {
       col.tags['.structure-filter-type'] = s;
       col.tags['.ignore-custom-filter'] = (s == StructureFilterType.Categorical).toString();
-    }
+    },
   );
   moleculeFilteringChoice.setTooltip('Sketch a molecule, or use them as categories in a filter');
 
@@ -69,7 +68,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     highlightScaffoldsCheckbox,
     regenerateCoordsCheckbox,
     moleculeFilteringChoice,
-  ])
+  ]);
   const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
   sketcher.syncCurrentObject = false;
   sketcher.setMolFile(col.tags['chem-scaffold']);
@@ -84,7 +83,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   scaffoldLabel.classList.add('ui-input-label');
   const scaffoldInput = ui.divH([
     scaffoldLabel,
-    sketcher.root
+    sketcher.root,
   ]);
   scaffoldInput.className = 'ui-input-root';
   rdKitInputs.append(scaffoldInput);

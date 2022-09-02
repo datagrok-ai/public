@@ -22,7 +22,7 @@ export async function initRdKitModuleLocal(): Promise<void> {
   _rdKitModule = await initRDKitModule(
     {locateFile: () => `${_webRoot}/dist/${rdKitLibVersion}.wasm`});
   if (!_rdKitModule)
-    throw "RdKit Module is not loaded";
+    throw 'RdKit Module is not loaded';
   _rdKitModule.prefer_coordgen(false);
   console.log('RDKit module package instance was initialized');
   moduleInitialized = true;
@@ -42,7 +42,7 @@ export function getRdKitModule(): RDModule {
 export async function getRdKitService(): Promise<RdKitService> {
   await initRdKitService();
   if (!_rdKitService)
-    throw "RdKit Service isn't initialized";
+    throw 'RdKit Service isn\'t initialized';
   return _rdKitService;
 }
 
