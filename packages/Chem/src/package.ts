@@ -652,7 +652,7 @@ export function detectSmiles(col: DG.Column, min: number) {
 }
 
 //name: Chem | Structural Alerts...
-//tags: panel, chem, widgets
+//tags: panel, chem
 //input: column col { semType: Molecule }
 export async function getStructuralAlerts(col: DG.Column<string>): Promise<void> {
   await checkForStructuralAlerts(col);
