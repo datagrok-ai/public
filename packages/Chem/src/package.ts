@@ -373,7 +373,11 @@ function getAtomsColumn(molCol: DG.Column) : Map<string, Array<number>>{
     elemental_table.set(elements[j], new Array<number>);
   }
   for (let i = 0; i < molCol.length; i++) {
-    const rows = molCol.get(i).split('\n');
+    let el = molCol.get(i);
+    if (!isMolBlock(el)) {
+      el = convertMolNotation(el, 'smiles', 'molblock');
+    }
+    const rows = el.split('\n');
     const atom_counts = rows[3].split(' ')[1];
     const new_mol = rows.slice(4, parseInt(atom_counts) + 4).toString();
     for(let [key, value] of elemental_table.entries()) {
