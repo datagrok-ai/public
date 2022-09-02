@@ -6,11 +6,12 @@ import {UnknownSeqPalette, UnknownSeqPalettes} from '@datagrok-libraries/bio/src
 import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as ui from 'datagrok-api/ui';
-import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 
 const undefinedColor = 'rgb(100,100,100)';
 const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
 const gapRenderer = 5;
+
 
 function getPalleteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
@@ -173,9 +174,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const subParts: string[] = splitterFunc(cell.value);
     let x1 = x;
     let color = undefinedColor;
-    let drawStyle = 'classic';
-    if (gridCell.cell.column.getTag('aligned').includes('MSA')) {
-      drawStyle = 'msa';
+    let drawStyle = DrawStyle.classic;
+    if (gridCell.cell.column.getTag('aligned').includes('MSA') && gridCell.cell.column.getTag('units') === 'separator') {
+      drawStyle = DrawStyle.MSA;
     }
     subParts.every((amino, index) => {
       color = palette.get(amino);
