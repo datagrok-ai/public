@@ -30,6 +30,9 @@ import {
   performanceTest
 } from './tests/test-sequnces-generators';
 
+import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
+import * as C from './utils/constants';
+
 //tags: init
 export async function initBio() {
 }
@@ -418,3 +421,19 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
   return resDf;
 }
 
+//name: Bio | Split to monomers
+//tags: panel, bio
+//input: column col {semType: Macromolecule}
+export function splitToMonomers(col: DG.Column<string>): void {
+  if (!col.getTag('aligned').includes('MSA'))
+    return grok.shell.error('Splitting is applicable only for aligned sequences');
+
+  const tempDf = splitAlignedSequences(col);
+  const originalDf = col.dataFrame;
+  for (const tempCol of tempDf.columns) {
+    const newCol = originalDf.columns.add(tempCol);
+    newCol.semType = C.SEM_TYPES.MONOMER;
+    // newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
+    newCol.setTag(C.TAGS.ALPHABET, col.getTag(C.TAGS.ALPHABET));
+  }
+}
