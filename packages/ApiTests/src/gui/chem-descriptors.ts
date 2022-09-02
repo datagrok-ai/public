@@ -22,7 +22,7 @@ category('Chem: Descriptors', () => {
 
     let panels = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-accordion-pane-header');
     let actionsPanel:HTMLElement;
-    for (let i = 0; i < panels.length; i++ ){        
+    for (let i = 0; i < panels.length; i++ ) {        
       actionsPanel = panels[i] as HTMLElement;
       if (actionsPanel.innerText == 'Actions')
         break;
@@ -33,7 +33,7 @@ category('Chem: Descriptors', () => {
 
     let actions = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-link-action');
     let mapIdentifiersAction:HTMLElement;
-    for (let i = 0; i < actions.length; i++ ){        
+    for (let i = 0; i < actions.length; i++ ) {        
         mapIdentifiersAction = actions[i] as HTMLElement;
         if (mapIdentifiersAction.innerText == 'Chem | Descriptors...')
             break;
@@ -45,14 +45,14 @@ category('Chem: Descriptors', () => {
 
     let discriptorsGroups = returnDialog('Descriptors')!.root.getElementsByClassName('d4-tree-view-node');
     let lipinskiGroup:HTMLElement | undefined = undefined;
-    for (let i = 0; i < discriptorsGroups.length; i++ ){  
+    for (let i = 0; i < discriptorsGroups.length; i++ ) {  
         lipinskiGroup = discriptorsGroups[i] as HTMLElement;
         if (lipinskiGroup.innerText == 'Lipinski')
             break;
     }
 
     let lipinskiChekbox:HTMLElement | undefined;
-    for (let i = 0; i < lipinskiGroup!.childNodes.length; i++ ){   
+    for (let i = 0; i < lipinskiGroup!.childNodes.length; i++ ) {   
         lipinskiChekbox = lipinskiGroup!.childNodes[i] as HTMLElement;
         if (lipinskiChekbox.tagName == 'INPUT')
             break;
