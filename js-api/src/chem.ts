@@ -4,13 +4,13 @@
  * */
 
 import {BitSet, Column, DataFrame} from './dataframe';
-import {FUNC_TYPES, SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, TYPE, UNITS} from './const';
-import {Subject, Subscription} from "rxjs";
-import {Menu, Widget} from "./widgets";
-import {Func} from "./entities";
-import * as ui from "../ui";
-import {SemanticValue} from "./grid";
-import $ from "cash-dom";
+import {FUNC_TYPES, SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, UNITS} from './const';
+import {Subject, Subscription} from 'rxjs';
+import {Menu, Widget} from './widgets';
+import {Func} from './entities';
+import * as ui from '../ui';
+import {SemanticValue} from './grid';
+import $ from 'cash-dom';
 
 let api = <any>window;
 declare let grok: any;
@@ -116,15 +116,16 @@ export namespace chem {
     inplaceSketcherDiv: HTMLDivElement|null = null;
 
     getSmiles(): string {
-      let returnConvertedSmiles = () => { // in case getter is called before sketcher initialized
-        if(this._molfile) {
-          this._smiles = chem.convert(this._molfile, 'mol', 'smiles');
-          return this._smiles;
-        } else {
-          return this._smarts; //to do - convert from smarts to smiles
-        }
-      }
-      return this.sketcher && this.sketcher._sketcher ? this.sketcher.smiles : !this._smiles ? returnConvertedSmiles() : this._smiles;
+      // let returnConvertedSmiles = () => { // in case getter is called before sketcher initialized
+      //   if(this._molfile) {
+      //     this._smiles = chem.convert(this._molfile, 'mol', 'smiles');
+      //     return this._smiles;
+      //   } else {
+      //     return this._smarts; //to do - convert from smarts to smiles
+      //   }
+      // }
+      // return this.sketcher && this.sketcher._sketcher ? this.sketcher.smiles : !this._smiles ? returnConvertedSmiles() : this._smiles;
+      return this.sketcher && this.sketcher._sketcher ? this.sketcher.smiles : this._smiles;
     }
 
     setSmiles(x: string): void {
@@ -134,15 +135,16 @@ export namespace chem {
     }
 
     getMolFile(): string {
-      let returnConvertedMolfile = () => { // in case getter is called before sketcher initialized
-        if(this._smiles) {
-          this._molfile = chem.convert(this._smiles, 'smiles', 'mol');
-          return this._molfile;
-        } else {
-          return this._smarts; //to do - convert from smarts to molfile
-        }
-      }
-      return this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : !this._molfile ? returnConvertedMolfile() : this._molfile;
+      // let returnConvertedMolfile = () => { // in case getter is called before sketcher initialized
+      //   if(this._smiles) {
+      //     this._molfile = chem.convert(this._smiles, 'smiles', 'mol');
+      //     return this._molfile;
+      //   } else {
+      //     return this._smarts; //to do - convert from smarts to molfile
+      //   }
+      // }
+      // return this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : !this._molfile ? returnConvertedMolfile() : this._molfile;
+      return this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : this._molfile;
     }
 
     setMolFile(x: string): void {
@@ -633,17 +635,4 @@ export namespace chem {
   export function sketcher(onChangedCallback: Function, smiles: string = ''): HTMLElement {
     return api.grok_Chem_Sketcher(onChangedCallback, smiles);
   }
-
-  export function convert(s: string, sourceFormat: string, targetFormat: string) {
-    if (sourceFormat == 'mol' && targetFormat == 'smiles') {
-      // @ts-ignore
-      let mol = new OCL.Molecule.fromMolfile(s);
-      return mol.toSmiles();
-    } else if (sourceFormat == 'smiles' && targetFormat == 'mol'){
-      // @ts-ignore
-      let mol = new OCL.Molecule.fromSmiles(s);
-      return mol.toMolfile();
-    }
-  }
-
 }

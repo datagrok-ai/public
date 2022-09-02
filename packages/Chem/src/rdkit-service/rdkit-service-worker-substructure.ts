@@ -1,5 +1,5 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
-import {isMolBlock} from '../utils/chem-utils';
+import {isMolBlock} from '../utils/convert-notation-utils';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 interface InitMoleculesStructuresResult {
@@ -98,17 +98,18 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           }
         }
         if (queryMol && queryMol.is_valid()) {
-            if (bitset) {
-              for (let i = 0; i < bitset.length; ++i) {
-                if (bitset[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
-                  matches.push(i);
-              }
-            } else {
-              for (let i = 0; i < this._rdKitMols!.length; ++i)
-                if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
-                  matches.push(i);
+          if (bitset) {
+            for (let i = 0; i < bitset.length; ++i) {
+              if (bitset[i] && this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
+                matches.push(i);
             }
-          } else
+          } else {
+            for (let i = 0; i < this._rdKitMols!.length; ++i) {
+              if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
+                matches.push(i);
+            }
+          }
+        } else
           throw new Error('Chem | Search pattern cannot be set');
       } catch (e) {
         console.error(
@@ -123,7 +124,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
 
   freeMoleculesStructures(): void {
     if (this._rdKitMols !== null) {
-      for (let mol of this._rdKitMols!)
+      for (const mol of this._rdKitMols!)
         mol.delete();
       this._rdKitMols = null;
     }

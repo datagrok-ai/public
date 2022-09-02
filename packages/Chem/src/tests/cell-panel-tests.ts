@@ -11,10 +11,10 @@ import {getRisks, toxicityWidget} from '../widgets/toxicity';
 import {SubstructureFilter} from '../widgets/chem-substructure-filter';
 import * as utils from './utils';
 import $ from 'cash-dom';
-import { _package } from '../package-test';
+import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import { getDescriptorsSingle } from '../descriptors/descriptors-calculation';
-import { substructureFilter } from '../package';
+import {getDescriptorsSingle} from '../descriptors/descriptors-calculation';
+import {substructureFilter} from '../package';
 
 
 category('cell panel', async () => {
@@ -105,7 +105,7 @@ category('cell panel', async () => {
   test('substructure-filter-manual', async () => {
     const df = grok.data.demo.molecules(1000);
     await grok.data.detectSemanticTypes(df);
-    let filter = substructureFilter();
+    const filter = substructureFilter();
 
     filter.attach(df);
     grok.shell.addTableView(df);

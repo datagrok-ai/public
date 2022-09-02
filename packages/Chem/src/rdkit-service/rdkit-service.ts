@@ -1,7 +1,7 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Fingerprint} from '../utils/chem-common';
-import { BitSet } from 'datagrok-api/dg';
+import {BitSet} from 'datagrok-api/dg';
 
 export class RdKitService {
   workerCount: number;

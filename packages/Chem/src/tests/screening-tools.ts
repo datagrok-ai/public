@@ -19,7 +19,7 @@ category('screening tools benchmarks', () => {
     const smartsCol = alertsDf.getCol('smarts');
     const ruleIdCol = alertsDf.getCol('rule_id');
     const rdkitModule = chemCommonRdKit.getRdKitModule();
-  
+
     const smartsMap = new Map<string, RDMol>();
     for (let i = 0; i < alertsDf.rowCount; i++)
       smartsMap.set(ruleIdCol.get(i), rdkitModule.get_qmol(smartsCol.get(i)));
