@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {getSettingsBase, names, SummarySettingsBase} from './shared';
+import {getSettingsBase, names, SparklineType, SummarySettingsBase} from './shared';
 import {createTooltip, Hit} from './helper';
 
 
@@ -12,12 +12,12 @@ interface PieChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
-  return gc.settings ??= {
-    ...getSettingsBase(gc),
-    ...{radius: 40},
-    ...{minRadius: 10},
-    ...{style: 'Radius'},
-  };
+  gc.settings ??= getSettingsBase(gc);
+  gc.settings.radius ??= 40;
+  gc.settings.minRadius ??= 10;
+  gc.settings.style = 'Radius'
+
+  return gc.settings;
 }
 
 function getColumnsSum(cols: any, row: any) {
@@ -74,7 +74,7 @@ function onHit(e: MouseEvent | any, gridCell: DG.GridCell): Hit {
 export class PieChartCellRenderer extends DG.GridCellRenderer {
   get name() { return 'pie ts'; }
 
-  get cellType() { return 'piechart'; }
+  get cellType() { return SparklineType.PieChart; }
 
   // getPreferredCellSize(col: DG.GridColumn) {
   //   return new Size(80,80);

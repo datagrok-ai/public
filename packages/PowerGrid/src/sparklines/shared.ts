@@ -14,6 +14,20 @@ export function getSettingsBase(gc: DG.GridColumn): SummarySettingsBase {
   };
 }
 
+export enum SparklineType {
+  BarChart = 'barchart',
+  PieChart = 'piechart',
+  Radar = 'radar',
+  Sparkline = 'sparkline'
+}
+
+export const sparklineTypes: string[] = [
+  SparklineType.BarChart,
+  SparklineType.PieChart,
+  SparklineType.Radar,
+  SparklineType.Sparkline,
+];
+
 // function getDataColumns<Type extends SummarySettingsBase>(
 //   gc: DG.GridColumn, getSettings: getSettingsFunc<Type>,
 // ): DG.Column[] {
