@@ -14,7 +14,7 @@ export class Hit {
 }
 
 export function createTooltip(cols: any, activeColumn: number, row: any): any {
-  let arr: any = [];
+  let arr = [];
   for (let i = 0; i < cols.length; i++) {
     arr.push(ui.divH([ui.divText(`${cols[i].name}:`, {
           style: {
