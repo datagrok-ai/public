@@ -109,6 +109,7 @@ export function summarizeColumns(columns: DG.Column[]) {
 
   function addSummaryColumn() {
     let grid = grok.shell.tv.grid;
+    let left = grid.horzScroll.min;
     let columnNames = names(columnsSelector.value);
     let options = { gridColumnName: name.value, cellType: sparklineType.value! };
     let gridCol = grid.columns.add(options);
@@ -118,6 +119,8 @@ export function summarizeColumns(columns: DG.Column[]) {
       for (const name of columnNames)
         grid.columns.byName(name)!.visible = false;
     }
+    grid.horzScroll.scrollTo(left);
+    gridCol.scrollIntoView();
   }
 
   DG.Dialog
