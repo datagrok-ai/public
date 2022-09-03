@@ -365,6 +365,11 @@ export class Rect {
   contains(x: number, y: number): boolean {
     return this.left <= x && x <= this.right && this.top <= y && y <= this.bottom;
   }
+
+  /** Distance to the specified point. */
+  distanceTo(p: Point): number {
+    return Math.sqrt((this.x - p.x) * (this.x - p.x) + (this.y - p.y) * (this.y - p.y));
+  }
 }
 
 /** Represents a grid cell */
