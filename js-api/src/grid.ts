@@ -569,6 +569,9 @@ export class GridColumn {
   /** Grid column settings. */
   get settings(): any | null { return api.grok_GridColumn_Get_Settings(this.dart); }
   set settings(s: any | null) { api.grok_GridColumn_Set_Settings(this.dart, s); }
+
+  /** Moves the specified column to the specified position */
+  move(position: number) { api.grok_GridColumnList_Move(this.grid.columns.dart, this.dart, position); }
 }
 
 /** Represents grid columns. */
@@ -620,7 +623,7 @@ export class GridColumnList {
   }
 
   /** Adds a new column to the grid (but not to the underlying dataframe). */
-  add(options: {gridColumnName?: string, cellType: string}): GridColumn {
+  add(options: {gridColumnName?: string, cellType: string, index?: number}): GridColumn {
     return api.grok_GridColumnList_Add(this.dart, options.cellType, options.gridColumnName);
   }
 }
