@@ -1563,6 +1563,12 @@ export class RangeSlider extends DartWidget {
     api.grok_RangeSlider_SetValues(this.dart, minRange, maxRange, min, max);
   }
 
+  /** Sets the specified min value, preserving the range (scrolls). */
+  scrollTo(newMinValue: number): void { return api.grok_RangeSlider_ScrollTo(this.dart, newMinValue); }
+
+  /** Shifts min and max values by the specified delta. */
+  scrollBy(delta: number): void { return api.grok_RangeSlider_ScrollTo(this.dart, delta); }
+
   /** @returns {Observable} */
   get onValuesChanged(): Observable<any> {
     return observeStream(api.grok_RangeSlider_Get_OnValuesChanged(this.dart));

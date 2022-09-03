@@ -549,22 +549,14 @@ export class GridColumn {
   get selected(): boolean { return api.grok_GridColumn_Get_Selected(this.dart); }
   set selected(x: boolean) { api.grok_GridColumn_Set_Selected(this.dart, x); }
 
-  /** Column position from the left side.
-   *  @returns {number}  */
-  get left(): number {
-    return api.grok_GridColumn_Get_Left(this.dart);
-  }
+  /** Left border (in pixels in the virtual viewport) */
+  get left(): number { return api.grok_GridColumn_Get_Left(this.dart); }
 
-  /** Column position from the right side.
-   *  @returns {number}  */
-  get right(): number {
-    return api.grok_GridColumn_Get_Right(this.dart);
-  }
+  /** Right border (in pixels in the virtual viewport) */
+  get right(): number { return api.grok_GridColumn_Get_Right(this.dart); }
 
   /** Returns all visible cells */
-  getVisibleCells(): Iterable<GridCell> {
-    return this.grid.getVisibleCells(this);
-  }
+  getVisibleCells(): Iterable<GridCell> { return this.grid.getVisibleCells(this); }
 
   /** Grid column settings. */
   get settings(): any | null { return api.grok_GridColumn_Get_Settings(this.dart); }
@@ -572,6 +564,9 @@ export class GridColumn {
 
   /** Moves the specified column to the specified position */
   move(position: number) { api.grok_GridColumnList_Move(this.grid.columns.dart, this.dart, position); }
+
+  /** If this column is not entirely visible, scrolls the grid horizontally to show it. */
+  scrollIntoView(): void { api.grok_GridColumn_ScrollIntoView(this.dart); }
 }
 
 /** Represents grid columns. */
