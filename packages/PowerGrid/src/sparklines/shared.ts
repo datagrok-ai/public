@@ -1,4 +1,7 @@
 import * as DG from 'datagrok-api/dg';
+import wu from "wu";
+
+type getSettingsFunc<Type extends SummarySettingsBase> = (gs: DG.GridColumn) => Type;
 
 export function names(columns: Iterable<DG.Column>): string[] {
   return Array.from(columns).map((c: any) => c.name);
@@ -8,9 +11,10 @@ export interface SummarySettingsBase {
   columnNames: string[];
 }
 
-export function getSettingsBase(gc: DG.GridColumn): SummarySettingsBase {
+export function getSettingsBase<Type extends SummarySettingsBase>(gc: DG.GridColumn): Type {
   return gc.settings ??= {
-    columnNames: names(gc.grid.dataFrame.columns.numerical),
+    columnNames: names(wu(gc.grid.dataFrame.columns.numerical)
+      .filter((c: DG.Column) => c.type != DG.TYPE.DATE_TIME)),
   };
 }
 
