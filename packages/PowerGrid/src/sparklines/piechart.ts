@@ -163,8 +163,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         const endAngle = currentAngle + 2 * Math.PI * cols[i].get(row) / sum;
         g.beginPath();
         g.moveTo(box.midX, box.midY);
-        g.arc(box.midX, box.midY, r,
-          currentAngle, endAngle);
+        g.arc(box.midX, box.midY, r, currentAngle, endAngle);
         g.closePath();
 
         g.fillStyle = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
