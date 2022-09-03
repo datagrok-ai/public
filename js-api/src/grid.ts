@@ -355,6 +355,8 @@ export class Rect {
       this.left + (this.width - size) / 2, this.top + (this.height - size) / 2, size, size);
   }
 
+  /** The biggest rectangle that fits within this rect that keeps the width/height aspect ratio
+   * Positioned in the center. Useful for rendering images in cells. */
   fit(width: number, height: number): Rect {
     return width / height > this.width / this.height
       ? this.fromCenterSize(this.midX, this.midY, this.width, height * (this.width / width))
@@ -823,6 +825,7 @@ export class Grid<TSettings = any> extends Viewer<TSettings> {
 }
 
 
+/** Represents grid cell style. */
 export class GridCellStyle {
   dart: any;
 
@@ -830,45 +833,25 @@ export class GridCellStyle {
     this.dart = dart;
   }
 
-  get font(): string {
-    return api.grok_GridCellStyle_Get_Font(this.dart);
-  }
+  /** Font. Example: 12px Verdana */
+  get font(): string { return api.grok_GridCellStyle_Get_Font(this.dart); }
+  set font(x: string) { api.grok_GridCellStyle_Set_Font(this.dart, x); }
 
-  set font(x: string) {
-    api.grok_GridCellStyle_Set_Font(this.dart, x);
-  }
+  /** Text color (RGBA-encoded) */
+  get textColor(): number { return api.grok_GridCellStyle_Get_TextColor(this.dart); }
+  set textColor(x: number) { api.grok_GridCellStyle_Set_TextColor(this.dart, x); }
 
-  get textColor(): number {
-    return api.grok_GridCellStyle_Get_TextColor(this.dart);
-  }
+  /** Background color (RGBA-encoded) */
+  get backColor(): number { return api.grok_GridCellStyle_Get_BackColor(this.dart); }
+  set backColor(x: number) { api.grok_GridCellStyle_Set_BackColor(this.dart, x); }
 
-  set textColor(x: number) {
-    api.grok_GridCellStyle_Set_TextColor(this.dart, x);
-  }
+  /** DOM Element to put in the cell */
+  get element(): HTMLElement { return api.grok_GridCellStyle_Get_Element(this.dart); }
+  set element(x: HTMLElement) { api.grok_GridCellStyle_Set_Element(this.dart, x); }
 
-  get backColor(): number {
-    return api.grok_GridCellStyle_Get_BackColor(this.dart);
-  }
-
-  set backColor(x: number) {
-    api.grok_GridCellStyle_Set_BackColor(this.dart, x);
-  }
-
-  get element(): HTMLElement {
-    return api.grok_GridCellStyle_Get_Element(this.dart);
-  }
-
-  set element(x: HTMLElement) {
-    api.grok_GridCellStyle_Set_Element(this.dart, x);
-  }
-
-  get textVertical(): boolean {
-    return api.grok_GridCellStyle_Get_TextVertical(this.dart);
-  }
-
-  set textVertical(x: boolean) {
-    api.grok_GridCellStyle_Set_TextVertical(this.dart, x);
-  }
+  /** Vertical text orientation */
+  get textVertical(): boolean { return api.grok_GridCellStyle_Get_TextVertical(this.dart); }
+  set textVertical(x: boolean) { api.grok_GridCellStyle_Set_TextVertical(this.dart, x); }
 }
 
 
@@ -884,11 +867,12 @@ export class GridCellRenderArgs extends EventData {
     return api.grok_GridCellRenderArgs_Get_G(this.dart);
   }
 
+  /** Cell that is being rendered. */
   get cell(): GridCell {
     return new GridCell(api.grok_GridCellRenderArgs_Get_Cell(this.dart));
   }
 
-  /** @returns {Rect} */
+  /** Cell bounds to render to. */
   get bounds(): Rect {
     return api.grok_GridCellRenderArgs_Get_Bounds(this.dart);
   }
