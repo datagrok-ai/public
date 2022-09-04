@@ -121,6 +121,7 @@ export function summarizeColumns(columns: DG.Column[]) {
     }
     grid.horzScroll.scrollTo(left);
     gridCol.scrollIntoView();
+    grok.shell.o = gridCol;
   }
 
   DG.Dialog
