@@ -53,6 +53,7 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
           grok.shell.warning(`Monomer ${monomers[j]} is missing in HELM library. Structure cannot be created`);
           return null;
         }
+        // what is the reason of double conversion?
         molFilesForSeq.push(JSON.parse(JSON.stringify(monomersDict[monomers[j]])));
       }
     }
