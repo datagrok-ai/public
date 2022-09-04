@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
 
 export const tests: {
@@ -49,9 +50,7 @@ export class Test {
   }
 }
 
-export function testEvent<T>(event: Observable<T>,
-  handler: (args: T) => void,
-  trigger: () => void, ms: number = 50): Promise<string> {
+export async function testEvent<T>(event: Observable<T>, handler: (args: T) => void, trigger: () => void, ms: number = 0): Promise<string> {
   let sub: Subscription;
   return new Promise((resolve, reject) => {
     sub = event.subscribe((args) => {
@@ -221,4 +220,32 @@ async function execTest(t: Test, predicate: string | undefined) {
 /* Waits [ms] milliseconds */
 export async function delay(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
+}
+
+export async function awaitCheck(checkHandler: () => boolean): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let stop: boolean = false;
+    setTimeout(() => {
+      stop = true;
+      // eslint-disable-next-line prefer-promise-reject-errors
+      reject('Timeout exceeded');
+    }, 500);
+    function check() {
+      if (checkHandler()) {
+        stop = false;
+        resolve();
+      }
+      if (!stop)
+        setTimeout(check, 50);
+    }
+    check();
+  });
+}
+
+export function isDialogPresent(dialogTitle:string): boolean {
+  for (let i=0; i < DG.Dialog.getOpenDialogs().length; i++) {
+    if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle)
+      return true;
+  }
+  return false;
 }
