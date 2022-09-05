@@ -15,7 +15,7 @@ import {getBaseURL} from './package';
 let isSettingDescription = false;
 
 export function createTree(
-  objects: types.baseEntity[], objectType: types.specialType, treeRootNode?: DG.TreeViewNode): DG.TreeViewNode {
+  objects: types.baseEntity[], objectType: types.specialType, treeRootNode?: DG.TreeViewGroup): DG.TreeViewGroup {
   objects = utils.filterDuplicates(objects);
   treeRootNode ??= ui.tree();
   const iconClass = objectType === 'data-source' ? 'svg-data-connection' :
@@ -145,7 +145,7 @@ export function createTree(
 const isFirstTimeMap: {[key: string]: {[key: string]: boolean}} = {};
 
 async function getChildren(
-  objectType: types.specialType, currentId: number, group: DG.TreeViewNode): Promise<DG.TreeViewNode> {
+  objectType: types.specialType, currentId: number, group: DG.TreeViewGroup): Promise<DG.TreeViewGroup> {
   let dataList: types.baseEntity[];
   let nextObjectType: types.specialType;
 
