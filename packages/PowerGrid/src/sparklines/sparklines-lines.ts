@@ -13,8 +13,6 @@ import {
 
 // interface for getPos function data
 interface getPosConstants {
-  gmin: number;
-  gmax: number;
   b: DG.Rect;
   settings: SparklineSettings;
   cols: DG.Column[];
@@ -23,9 +21,9 @@ interface getPosConstants {
 function getPos(col: number, row: number, constants: getPosConstants): DG.Point {
   const b = constants.b;
   const settings = constants.settings;
-  const gmin = constants.gmin;
-  const gmax = constants.gmax;
   const cols = constants.cols;
+  const gmin = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
+  const gmax = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
   const r: number = settings.globalScale ? (cols[col].get(row) - gmin) / (gmax - gmin) : cols[col].scale(row);
   return new DG.Point(
     b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
@@ -61,8 +59,6 @@ function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
 
   const cols = df.columns.byNames(settings.columnNames);
   const getPosConstants: getPosConstants = {
-    gmin: settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0,
-    gmax: settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0,
     b: b,
     settings: settings,
     cols: cols
@@ -113,8 +109,6 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     const cols = df.columns.byNames(settings.columnNames);
 
     const getPosConstants: getPosConstants = {
-      gmin: settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0,
-      gmax: settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0,
       b: b,
       settings: settings,
       cols: cols
