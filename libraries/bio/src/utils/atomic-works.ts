@@ -51,6 +51,8 @@ function extractAtomDataV3K(v3KMolblock: string): AtomData {
   return {atomIndices: atomIndices, atomTypes: atomTypes, x: x, y: y};
 }
 
+// todo: extractRgroupData
+
 function extractAtomAndBondCountsV3K(v3KMolblock: string): {atomCount: number, bondCount: number} {
   v3KMolblock = v3KMolblock.replaceAll('\r', ''); // equalize old and new sdf standards
 
@@ -83,15 +85,13 @@ function getIndices(v2KMolblock: string, v3KMolblock: string): Indices {
 
   // todo: handle the exceptional case when there is not enough rgroups
   // todo: handle the exceptional case when the order is different
-  // rgpData[1] is the node to which rgp #1 gets substituted
-  const remFirst = rgpData[2] == 1 ? rgpData[1] : -1;
-  // rgpData[3] is the node to which rgp #2 gets substituted
-  const remLast = rgpData[4] == 2 ? rgpData[3] : -1;
-  if (remFirst === -1 || remLast === -1)
-    throw new Error('RGP parsing: first and last groups have wrong format');
+  const remFirst = rgpData[1]; // leftmost Rgroup node
+  const remLast = rgpData[rgpData.length - 2]; // rightmost Rgroup node
+  // if (remFirst === -1 || remLast === -1)
+  //   throw new Error('RGP parsing: first and last groups have wrong format');
 
-  // const remFirst = rgpData[2] == '1' ? parseInt(rgpData[1]) : parseInt(rgpData[3]);
-  // const remLast = rgpData[2] == '2' ? parseInt(rgpData[1]) : parseInt(rgpData[3]);
+  // const remFirst = rgpData[2] === '1' ? parseInt(rgpData[1]) : parseInt(rgpData[3]);
+  // const remLast = rgpData[2] === '2' ? parseInt(rgpData[1]) : parseInt(rgpData[3]);
 
   // todo: rename 'numbers'
   const numbers = extractAtomAndBondCountsV3K(v3KMolblock);
@@ -150,9 +150,9 @@ async function rotateBackboneV3K(v3KMolblock: string, indices:any): Promise<stri
   }
 
   let angle = 0;
-  if (coordinates.x[first] == 0) {
+  if (coordinates.x[first] === 0) {
     angle = coordinates.y[first] > coordinates.y[last] ? Math.PI/2 : 3*Math.PI/2;
-  } else if (coordinates.y[first] == 0) {
+  } else if (coordinates.y[first] === 0) {
     angle = coordinates.x[first] > coordinates.x[last] ? Math.PI : 0;
   } else {
     const tangent = coordinates.y[first]/coordinates.x[first];
@@ -218,6 +218,7 @@ function linkV3K(monomers: any[]): string {
     const remLast = monomers[i]['indices']['remLast'];
     const remBondFirst = monomers[i]['indices']['remBondFirst'];
     const remBondLast = monomers[i]['indices']['remBondLast'];
+    // todo: handle r-groups
     v3KMolfile = v3KMolfile.replaceAll('(-\nM  V30 ', '(')
       .replaceAll('-\nM  V30 ', '').replaceAll(' )', ')');
     // todo: improve naming
@@ -231,7 +232,7 @@ function linkV3K(monomers: any[]): string {
     const totalShift = xShift - coordinates.x[first - 1];
 
     for (let j = 0; j < numbers.atomCount; j++) {
-      if (coordinates.atomIndices[j] != remFirst && coordinates.atomIndices[j] != remLast) { //|| i == 0) {
+      if (coordinates.atomIndices[j] != remFirst && coordinates.atomIndices[j] != remLast) { //|| i === 0) {
         //rewrite atom number
         index = v3KMolfile.indexOf('V30', index) + 4;
         indexEnd = v3KMolfile.indexOf(' ', index);
@@ -278,7 +279,7 @@ function linkV3K(monomers: any[]): string {
       indexEnd = v3KMolfile.indexOf(' ', index);
       bondNumber = parseInt(v3KMolfile.substring(index, indexEnd));
 
-      if (bondNumber == remBondFirst || bondNumber == remBondLast) {
+      if (bondNumber === remBondFirst || bondNumber === remBondLast) {
         indexEnd = v3KMolfile.indexOf('\n', index) + 1;
         index -=7;
         v3KMolfile = v3KMolfile.slice(0, index) + v3KMolfile.slice(indexEnd);
@@ -330,13 +331,13 @@ function linkV3K(monomers: any[]): string {
     bondCount += numbers.bondCount - 2;
     xShift += coordinates.x[last] - coordinates.x[first] + 1;
 
-    if (i == monomers.length -1) {
+    if (i === monomers.length -1) {
       atomCount++;
       const shift = xShift + 0.2;
       atomBlock += 'M  V30 ' + atomCount + ' O ' + shift + ' 0 0.000000 0\n';
     }
     bondCount++;
-    if (i == monomers.length -1) {
+    if (i === monomers.length -1) {
       const rightTerminal = (last > remFirst && last > remLast) ? last + atomCount - (numbers.atomCount - 2) - 3:
         (last > remFirst || last > remLast) ? last + atomCount - (numbers.atomCount - 2) - 2 :
           last + atomCount - (numbers.atomCount - 2) - 1;
@@ -364,10 +365,10 @@ function linkV3K(monomers: any[]): string {
   // collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length + ' -\n';
   // for (let i = 0; i < collNumber; i++) {
   //   collectionBlock += 'M  V30 ';
-  //   const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1)*entries : entries;
+  //   const entriesCurrent = i + 1 === collNumber ? collection.length - (collNumber - 1)*entries : entries;
   //   for (let j = 0; j < entriesCurrent; j++) {
-  //     collectionBlock += (j + 1 == entriesCurrent) ?
-  //       (i == collNumber - 1 ? collection[entries*i + j] + ')\n' : collection[entries*i + j] + ' -\n') :
+  //     collectionBlock += (j + 1 === entriesCurrent) ?
+  //       (i === collNumber - 1 ? collection[entries*i + j] + ')\n' : collection[entries*i + j] + ' -\n') :
   //       collection[entries*i + j] + ' ';
   //   }
   // }
@@ -394,9 +395,9 @@ export async function getMacroMol(monomers: any[][]): Promise<string[]> {
   const moduleRdkit = await grok.functions.call('Chem:getRdKitModule');
   for (let i = 0; i < monomers.length; i++) {
     for (let j = 0; j < monomers[i].length; j++) {
-      const molblock = moduleRdkit.get_mol(monomers[i][j]['molfile']); // V2000
-      const v3KMolblock = molblock.get_v3Kmolblock();
-      const indices = getIndices(molblock, v3KMolblock);
+      const molObj = moduleRdkit.get_mol(monomers[i][j]['molfile']);
+      const v3KMolblock = molObj.get_v3Kmolblock();
+      const indices = getIndices(monomers[i][j]['molfile'], v3KMolblock);
       monomers[i][j]['indices'] = indices;
 
       // a new molfile for 'rotated' is obtained in v3k format
