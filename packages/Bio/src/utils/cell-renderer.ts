@@ -57,7 +57,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   get defaultWidth(): number { return 230; }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.cell.column.getTag('aligned') !== 'SEQ.MSA') {
+    if (gridCell.cell.column?.getTag('aligned') !== 'SEQ.MSA') {
       return;
     }
     const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
