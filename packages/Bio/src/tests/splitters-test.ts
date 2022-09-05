@@ -3,8 +3,9 @@ import {after, before, category, test, expect, expectArray} from '@datagrok-libr
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {WebLogo, SplitterFunc} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import { splitToMonomers, _package } from '../package';
+import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {splitToMonomers, _package} from '../package';
+import * as C from '../utils/constants';
 
 category('splitters', () => {
   const helm1 = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$';
@@ -56,6 +57,7 @@ category('splitters', () => {
   test('splitToMonomers', async () => {
     const df = await _package.files.readCsv('samples/sample_MSA.csv');
     const seqCol = df.getCol('MSA');
+    seqCol.setTag(C.TAGS.ALIGNED, C.MSA);
     splitToMonomers(seqCol);
     expect(df.columns.names().includes('17'), true);
   });
