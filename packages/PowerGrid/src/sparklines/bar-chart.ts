@@ -1,23 +1,28 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {getSettingsBase, names, SparklineType, SummarySettingsBase} from './shared';
-import {createTooltip, Hit} from './helper';
+import {
+  getSettingsBase,
+  names,
+  renderSettingsBarChart,
+  SparklineType,
+  SummarySettingsBase,
+  createTooltip,
+  Hit, CustomMouseEvent
+} from './shared';
 
 
 interface BarChartSettings extends SummarySettingsBase {
   // normalize: boolean;
-  minH: number;
   colorCode: boolean;
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
   gc.settings ??= getSettingsBase(gc);
-  gc.settings.minH ??= 0.05;
   gc.settings.colorCode ??= false;
   return gc.settings;
 }
 
-function onHit(gridCell: DG.GridCell, e: MouseEvent | any): Hit {
+function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
   const df = gridCell.grid.dataFrame;
   const cols = df.columns.byNames(settings.columnNames);
@@ -36,7 +41,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent | any): Hit {
   }
   const bb = b
     .getLeftPart(cols.length, activeColumn)
-    .getBottomScaled(cols[activeColumn].scale(row) > settings.minH ? cols[activeColumn].scale(row) : settings.minH)
+    .getBottomScaled(cols[activeColumn].scale(row) > renderSettingsBarChart.minH ? cols[activeColumn].scale(row) : renderSettingsBarChart.minH)
     .inflateRel(0.9, 1);
   answer.isHit = (e.layerY >= bb.top);
   return answer;
@@ -48,7 +53,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
 
   get cellType() { return SparklineType.BarChart; }
 
-  onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
+  onMouseMove(gridCell: DG.GridCell, e: CustomMouseEvent): void {
     const hitData = onHit(gridCell, e);
     if (hitData.isHit)
       ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
@@ -65,18 +70,18 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
 
     if (w < 20 || h < 10 || df === void 0) return;
 
-    const settings: any = getSettings(gridCell.gridColumn);
+    const settings: BarChartSettings = getSettings(gridCell.gridColumn);
     const b = new DG.Rect(x, y, w, h).inflate(-2, -2);
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
 
     for (let i = 0; i < cols.length; i++) {
       if (!cols[i].isNone(row)) {
-        let color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.blue;
+        let color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.fromHtml('#8080ff');
         g.setFillStyle(DG.Color.toRgb(color));
         const bb = b
           .getLeftPart(cols.length, i)
-          .getBottomScaled(cols[i].scale(row) > settings.minH ? cols[i].scale(row) : settings.minH)
+          .getBottomScaled(cols[i].scale(row) > renderSettingsBarChart.minH ? cols[i].scale(row) : renderSettingsBarChart.minH)
           .inflateRel(0.9, 1);
         g.fillRect(bb.left, bb.top, bb.width, bb.height);
       }
