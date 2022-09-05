@@ -95,7 +95,7 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
 
   /**
    * Gets the serialized viewer options. [includeDefaults] flag specifies whether the
-   * properties with the defauЫlts values should be returned. Not including default
+   * properties with the defaults values should be returned. Not including default
    * properties makes it more clean and efficient for serialization purposes.
    *
    * See also {@link setOptions}
@@ -407,6 +407,15 @@ export class FilterGroup extends Viewer {
   }
 }
 
+export class LineChartViewer extends Viewer<interfaces.ILineChartLookSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get activeFrame(): DataFrame {
+    return api.grok_LineChartViewer_activeFrame(this.dart);
+  }
+}
 
 /** 2D scatter plot */
 export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotLookSettings> {
