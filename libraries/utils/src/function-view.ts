@@ -22,7 +22,7 @@ export const passErrorToShell = () => {
         return await original.call(this, ...args);
       } catch (err: any) {
         grok.shell.error((err as Error).message);
-        throw Error;
+        throw err;
       }
     };
   };
@@ -555,6 +555,17 @@ export class FunctionView extends DG.ViewBase {
   @passErrorToShell()
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
+
+    const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
+      .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+    for (const output of dfOutputs)
+      await grok.dapi.tables.uploadDataFrame(callToSave.outputs[output.name]);
+
+    const dfInputs = wu(callToSave.inputParams.values() as DG.FuncCallParam[])
+      .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+    for (const input of dfInputs)
+      await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
+
     const savedCall = await grok.dapi.functions.calls.save(callToSave);
     this.buildHistoryBlock();
     this.path = `?id=${savedCall.id}`;
@@ -605,7 +616,7 @@ export class FunctionView extends DG.ViewBase {
 
   /**
    * Loads the specified historical run. See also {@link saveRun}.
-   * @param funcCallId ID of FuncCall to look for. Get it using {@link funcCall.id} field
+   * @param funcCallId ID of FuncCall to look for. Get it using {@see funcCall.id} field
    * @returns FuncCall augemented with inputs' and outputs' values
    * @stability Stable
  */
@@ -614,6 +625,17 @@ export class FunctionView extends DG.ViewBase {
     await this.onBeforeLoadRun();
     const pulledRun = await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
     pulledRun.options['isHistorical'] = true;
+    const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
+      .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+    for (const output of dfOutputs)
+      pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
+
+    const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
+      .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+    for (const input of dfInputs)
+      pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
+
+
     await this.onAfterLoadRun(pulledRun);
     this.setRunViewReadonly();
     return pulledRun;
@@ -711,6 +733,7 @@ export class FunctionView extends DG.ViewBase {
 
     await this.onBeforeRun(this.funcCall);
     const pi = DG.TaskBarProgressIndicator.create('Calculating...');
+    this.funcCall.newId();
     await this.funcCall.call(); // mutates the funcCall field
     pi.close();
     await this.onAfterRun(this.funcCall);
@@ -1079,7 +1102,6 @@ const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, va
 };
 
 const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame) => {
-  console.log(df);
   sheet.addRow(df.columns.names()).font = {bold: true};
   for (let i = 0; i < df.rowCount; i++)
     sheet.addRow([...df.row(i).cells].map((cell: DG.Cell) => cell.value));
