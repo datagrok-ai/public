@@ -407,6 +407,15 @@ export class FilterGroup extends Viewer {
   }
 }
 
+export class LineChartViewer extends Viewer<interfaces.ILineChartLookSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get activeFrame(): DataFrame {
+    return api.grok_LineChartViewer_activeFrame(this.dart);
+  }
+}
 
 /** 2D scatter plot */
 export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotLookSettings> {
