@@ -46,7 +46,10 @@ class ChemPackageDetectors extends DG.Package {
     let lowerCaseName = col.name.toLowerCase();
     let likelyMolName = ChemPackageDetectors.likelyChemicalName(lowerCaseName);
     let minUnique = likelyMolName ? 1 : 3;
-    let longest = col.aggregate('longest') ?? '';
+    let longest = '';
+    try {
+      longest = col.aggregate('longest') ?? '';
+    catch(x) {}
     if (!likelyMolName && longest.length < 5)
       return null;
 
