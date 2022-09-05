@@ -981,6 +981,10 @@ export class Column<T = any> {
   toString(): string {
     return api.grok_Object_ToString(this.dart);
   }
+
+  aggregate(type: string): any {
+    return api.grok_Column_Aggregate(this.dart, 'longest')
+  }
 }
 export class BigIntColumn extends Column<BigInt> {
   /**
