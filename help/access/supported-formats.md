@@ -1,13 +1,11 @@
 <!-- TITLE: File -->
 <!-- SUBTITLE: -->
 
-# File
+# Supported formats
 
-Represents a file in the file system.
+Datagrok supports the following formats.
 
-## Supported formats
-
-### Tabular formats
+## Tabular formats
 
 | Extension  | Description                                      | Source |
 |------------|--------------------------------------------------|--------|
@@ -21,17 +19,21 @@ Represents a file in the file system.
 | .edf       | European Data Format                             | Core   |
 | .sas7bdat  | SAS database file                                | Core   |
 | .kml, .kmz | Keyhole Markup Language (geographic annotations) | Core   |
+| .kxl       | KeyCreator eXtensible Language                   | Core   |<!--check!!!-->
 | .rds, .rda | R Data Format                                    | Core   |
 | .h5        | Hierarchical Data Format                         | Core   |
 | .nc        | NetCDF                                           | Core   |
 | .mat       | MATLAB MAT                                       | Core   |
 | .d42       | Datagrok [project](../overview/project.md)       | Core   |
-| .zip       | ZIP archive                                      | Core   |
+| .zip       | ZIP archive (for supported types)                | Core   |
 | .gz, .gzip | gzip                                             | Core   |
 | .tar       | Tape archive                                     | Core   |
 | .ipynb     | Jupyter Notebook                                 | Core   |
+| netCDF     | network Common Data Form                         | Core   | <!--check!!!-->
 
-### Molecular structure formats
+![File browsing](files-browser.gif "Files Browser") <!--rename-->
+
+## Molecular structure formats
 
 | Extension | Description                        | Source             |
 |-----------|------------------------------------|--------------------|
