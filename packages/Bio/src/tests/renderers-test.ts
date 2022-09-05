@@ -6,6 +6,7 @@ import {importFasta, multipleSequenceAlignmentAny} from '../package';
 import {readDataframe} from './utils';
 import {convertDo} from '../utils/convert';
 import {ALPHABET, NOTATION, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import { SEM_TYPES, TAGS } from '../utils/constants';
 
 category('renderers', () => {
   let tvList: DG.TableView[];
@@ -28,6 +29,10 @@ category('renderers', () => {
 
   test('afterConvert', async () => {
     await _testAfterConvert();
+  });
+
+  test('setRenderer', async () => {
+    await _setRendererManually();
   });
 
   async function _testAfterMsa() {
@@ -74,5 +79,17 @@ category('renderers', () => {
 
     tvList.push(tv);
     dfList.push(df);
+  };
+
+  async function _setRendererManually() {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('SequencesDiff', ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV'])]);
+    df.col('SequencesDiff')!.tags[DG.TAGS.UNITS] = 'separator';
+    df.col('SequencesDiff')!.tags[TAGS.SEPARATOR] = '/';
+    df.col('SequencesDiff')!.semType = SEM_TYPES.MACROMOLECULE_DIFFERENCE;
+    const tw = grok.shell.addTableView(df);
+    await delay(100);
+    const renderer = tw.dataFrame.col('SequencesDiff')?.getTag(DG.TAGS.CELL_RENDERER);
+    if (renderer !== 'MacromoleculeDifferenceCR') 
+      throw new Error(`Units 'separator', separator '/' and semType 'MacromoleculeDifference' have been manually set on column but after df aws added as table view renderer has been reset to '${renderer}'`)
   };
 });
