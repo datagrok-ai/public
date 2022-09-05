@@ -49,7 +49,7 @@ class ChemPackageDetectors extends DG.Package {
     let longest = '';
     try {
       longest = col.aggregate('longest') ?? '';
-    catch(x) {}
+    } catch(x) {}
     if (!likelyMolName && longest.length < 5)
       return null;
 
