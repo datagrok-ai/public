@@ -7,6 +7,7 @@ import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-log
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as ui from 'datagrok-api/ui';
 import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 const undefinedColor = 'rgb(100,100,100)';
 const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
@@ -57,7 +58,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   get defaultWidth(): number { return 230; }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.cell.column?.getTag('aligned') !== 'SEQ.MSA') {
+    if (gridCell.cell.column.getTag(UnitsHandler.TAGS.aligned) !== 'SEQ.MSA') {
       return;
     }
     const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];

@@ -5,6 +5,7 @@ import {
   CAP_GROUP_NAME, CAP_GROUP_SMILES, jsonSdfMonomerLibDict, MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, MONOMER_SYMBOL,
   RGROUP_ALTER_ID, RGROUP_FIELD, RGROUP_LABEL, SDF_MONOMER_NAME
 } from '../const';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 export const HELM_CORE_LIB_FILENAME = '/samples/HELMCoreLibrary.json';
 export const HELM_CORE_LIB_MONOMER_SYMBOL = 'symbol';
@@ -16,7 +17,7 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
   const monomerSymbolDict: { [key: string]: number } = {};
   const units = col.tags[DG.TAGS.UNITS];
-  const sep = col.getTag('separator');
+  const sep = col.getTag(UnitsHandler.TAGS.separator);
   const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, sep);
   const encodedStringArray = [];
   for (let i = 0; i < col.length; ++i) {
@@ -25,7 +26,7 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
     monomers.forEach((m) => {
       if (!monomerSymbolDict[m]) {
         if (encodeSymbol > MONOMER_ENCODE_MAX) {
-          grok.shell.error(`Not enougth symbols to encode monomers`);
+          grok.shell.error(`Not enough symbols to encode monomers`);
           return null;
         }
         monomerSymbolDict[m] = encodeSymbol;

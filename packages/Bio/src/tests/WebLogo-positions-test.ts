@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PositionInfo, PositionMonomerInfo, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {Column} from 'datagrok-api/dg';
+import {ALPHABET, NOTATION, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 category('WebLogo-positions', () => {
   let tvList: DG.TableView[];
@@ -35,9 +36,9 @@ ATC-G-TTGC--
     const tv: DG.TableView = grok.shell.addTableView(df);
 
     const seqCol: DG.Column = df.getCol('seq');
-    seqCol.semType = 'Macromolecule';
-    seqCol.setTag('units', 'fasta');
-    seqCol.setTag('alphabet', 'DNA');
+    seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.DNA);
 
     const wlViewer: WebLogo = await df.plot.fromType('WebLogo') as unknown as WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
@@ -84,9 +85,9 @@ ATC-G-TTGC--
     const tv: DG.TableView = grok.shell.addTableView(df);
 
     const seqCol: DG.Column = df.getCol('seq');
-    seqCol.semType = 'Macromolecule';
-    seqCol.setTag('units', 'fasta');
-    seqCol.setTag('alphabet', 'DNA');
+    seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.DNA);
 
     df.filter.init((i) => {
       return i > 2;
@@ -129,9 +130,9 @@ ATC-G-TTGC--
     const tv: DG.TableView = grok.shell.addTableView(df);
 
     const seqCol: DG.Column = df.getCol('seq');
-    seqCol.semType = 'Macromolecule';
-    seqCol.setTag('units', 'fasta');
-    seqCol.setTag('alphabet', 'DNA');
+    seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.DNA);
 
     const wlViewer: WebLogo = await df.plot.fromType('WebLogo', {'skipEmptyPositions': true}) as unknown as WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
