@@ -42,7 +42,7 @@ export function convert(col: DG.Column): void {
   // set correct visibility on init
   toggleSeparator();
 
-  targetNotationInput.onChanged( () => {
+  targetNotationInput.onChanged(() => {
     toggleSeparator();
   });
 

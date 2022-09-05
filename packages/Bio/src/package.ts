@@ -66,29 +66,50 @@ export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRender
   return new MacromoleculeSequenceCellRenderer();
 }
 
-function checkInputColumn(col: DG.Column, name: string,
-  allowedNotations: string[] = [], allowedAlphabets: string[] = []): boolean {
-  const notation: string = col.getTag(DG.TAGS.UNITS);
-  const alphabet: string = col.getTag('alphabet');
+function checkInputColumnUi(
+  col: DG.Column, name: string, allowedNotations: string[] = [], allowedAlphabets: string[] = []
+): boolean {
+  const [res, msg]: [boolean, string] = checkInputColumn(col, name, allowedNotations, allowedAlphabets);
+  if (!res)
+    grok.shell.warning(msg);
+  return res;
+}
+
+export function checkInputColumn(
+  col: DG.Column, name: string, allowedNotations: string[] = [], allowedAlphabets: string[] = []
+): [boolean, string] {
+  let res: boolean = true;
+  let msg: string = '';
+
+  const uh = new UnitsHandler(col);
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE) {
     grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
-    return false;
-  } else if (
-    (allowedAlphabets.length > 0 &&
-      !allowedAlphabets.some((a) => alphabet.toUpperCase() == (a.toUpperCase()))) ||
-    (allowedNotations.length > 0 &&
-      !allowedNotations.some((n) => notation.toUpperCase() == (n.toUpperCase())))
-  ) {
-    const notationAdd = allowedNotations.length == 0 ? 'any notation' :
-      (`notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} `);
-    const alphabetAdd = allowedNotations.length == 0 ? 'any alphabet' :
-      (`alphabet${allowedAlphabets.length > 1 ? 's' : ''} ${allowedAlphabets.map((a) => `"${a}"`).join(', ')}.`);
-
-    grok.shell.warning(name + ' analysis is allowed for Macromolecules with ' + notationAdd + ' and ' + alphabetAdd);
-    return false;
+    res = false;
+  } else {
+    const notation: string = uh.notation;
+    if (allowedNotations.length > 0 &&
+      !allowedNotations.some((n) => notation.toUpperCase() == (n.toUpperCase()))
+    ) {
+      const notationAdd = allowedNotations.length == 0 ? 'any notation' :
+        (`notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} `);
+      msg = `${name} + ' analysis is allowed for Macromolecules with notation ${notationAdd}.`;
+      res = false;
+    } else if (!uh.isHelm()) {
+      // alphabet is not specified for 'helm' notation
+      const alphabet: string = uh.alphabet;
+      if (
+        allowedAlphabets.length > 0 &&
+        !allowedAlphabets.some((a) => alphabet.toUpperCase() == (a.toUpperCase()))
+      ) {
+        const alphabetAdd = allowedAlphabets.length == 0 ? 'any alphabet' :
+          (`alphabet${allowedAlphabets.length > 1 ? 's' : ''} ${allowedAlphabets.map((a) => `"${a}"`).join(', ')}.`);
+        msg = `${name} + ' analysis is allowed for Macromolecules with alphabet ${alphabetAdd}.`;
+        res = false;
+      }
+    }
   }
 
-  return true;
+  return [res, msg];
 }
 
 //name: sequenceAlignment
@@ -131,7 +152,7 @@ export function vdRegionViewer() {
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
   similarity: number, methodName: string): Promise<DG.Viewer | undefined> {
-  if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
+  if (!checkInputColumnUi(macroMolecule, 'Activity Cliffs'))
     return;
   const encodedCol = encodeMonomers(macroMolecule);
   if (!encodedCol)
@@ -174,7 +195,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 //input: bool plotEmbeddings = true
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
   similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
-  if (!checkInputColumn(macroMolecule, 'Activity Cliffs'))
+  if (!checkInputColumnUi(macroMolecule, 'Activity Cliffs'))
     return;
   const encodedCol = encodeMonomers(macroMolecule);
   if (!encodedCol)
@@ -216,7 +237,7 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
     grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
     return;
   }
-  if (!checkInputColumn(macroMolecule, 'To Atomic Level'))
+  if (!checkInputColumnUi(macroMolecule, 'To Atomic Level'))
     return;
 
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
@@ -235,10 +256,12 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //top-menu: Bio | MSA...
 //name: MSA
 //input: dataframe table
-//input: column sequence { semType: Macromolecule }
+//input: column sequence { semType: Macromolecule, units: ['fasta'], alphabet: ['DNA', 'RNA', 'PT'] }
 //output: column result
 export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<DG.Column | null> {
-  if (!checkInputColumn(col, 'MSA', ['fasta'], ['DNA', 'RNA', 'PT']))
+  const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentAny'})[0];
+
+  if (!checkInputColumnUi(col, 'MSA', ['fasta'], ['DNA', 'RNA', 'PT']))
     return null;
 
   const unUsedName = table.columns.getUnusedName(`msa(${col.name})`);
@@ -279,7 +302,7 @@ export async function compositionAnalysis(): Promise<void> {
   });
 
   const handler = async (col: DG.Column) => {
-    if (!checkInputColumn(col, 'Composition'))
+    if (!checkInputColumnUi(col, 'Composition'))
       return;
 
     const wlViewer = tv.addViewer('WebLogo', {sequenceColumnName: col.name});
@@ -394,11 +417,11 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
           //console.warn(`file: ${fileInfo.path}, column: ${col.name}, ` +
           //  `semType: ${semType}, units: ${col.getTag(DG.TAGS.UNITS)}`);
           // console.warn('file: "' + fileInfo.path + '", semType: "' + semType + '", ' +
-          //   'units: "' + col.getTag('units') + '"');
+          //   'units: "' + col.getTag(DG.TAGS.UNITS) + '"');
 
           res.push({
             file: fileInfo.path, result: 'detected', column: col.name,
-            message: `units: ${col.getTag('units')}`
+            message: `units: ${col.getTag(DG.TAGS.UNITS)}`
           });
         }
       }
@@ -425,7 +448,7 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
 //tags: panel, bio
 //input: column col {semType: Macromolecule}
 export function splitToMonomers(col: DG.Column<string>): void {
-  if (!col.getTag(C.TAGS.ALIGNED).includes(C.MSA))
+  if (!col.getTag(UnitsHandler.TAGS.aligned).includes(C.MSA))
     return grok.shell.error('Splitting is applicable only for aligned sequences');
 
   const tempDf = splitAlignedSequences(col);

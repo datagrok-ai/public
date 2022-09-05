@@ -3,7 +3,7 @@ import {after, before, category, test, expect, expectArray} from '@datagrok-libr
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {WebLogo, SplitterFunc} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {splitToMonomers, _package} from '../package';
 import * as C from '../utils/constants';
 
@@ -55,9 +55,14 @@ category('splitters', () => {
   test('testHelm3', async () => { await _testHelmSplitter(data.testHelm3[0], data.testHelm3[1]); });
 
   test('splitToMonomers', async () => {
-    const df = await _package.files.readCsv('samples/sample_MSA.csv');
+    const df: DG.DataFrame = await grok.dapi.files.readCsv('System:AppData/Bio/samples/sample_MSA.csv');
+
     const seqCol = df.getCol('MSA');
+    const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
+    if (semType)
+      seqCol.semType = semType;
     seqCol.setTag(C.TAGS.ALIGNED, C.MSA);
+
     splitToMonomers(seqCol);
     expect(df.columns.names().includes('17'), true);
   });

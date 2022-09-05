@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {importFasta, multipleSequenceAlignmentAny} from '../package';
 import {readDataframe} from './utils';
 import {convertDo} from '../utils/convert';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {ALPHABET, NOTATION, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 category('renderers', () => {
   let tvList: DG.TableView[];
@@ -42,21 +42,21 @@ category('renderers', () => {
 
     console.log('Bio: tests/renderers/afterMsa, src before test ' +
       `semType="${srcSeqCol!.semType}", units="${srcSeqCol!.getTag(DG.TAGS.UNITS)}", ` +
-      `cell.renderer="${srcSeqCol!.getTag('cell.renderer')}"`);
+      `cell.renderer="${srcSeqCol!.getTag(DG.TAGS.CELL_RENDERER)}"`);
     expect(srcSeqCol!.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(srcSeqCol!.getTag(DG.TAGS.UNITS), 'fasta');
-    expect(srcSeqCol!.getTag('aligned'), 'SEQ');
-    expect(srcSeqCol!.getTag('alphabet'), 'PT');
-    expect(srcSeqCol!.getTag('cell.renderer'), 'sequence');
+    expect(srcSeqCol!.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
+    expect(srcSeqCol!.getTag(UnitsHandler.TAGS.aligned), 'SEQ');
+    expect(srcSeqCol!.getTag(UnitsHandler.TAGS.alphabet), ALPHABET.PT);
+    expect(srcSeqCol!.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     const msaSeqCol: DG.Column | null = await multipleSequenceAlignmentAny(df, srcSeqCol!);
     tv.grid.invalidate();
-    
+
     expect(msaSeqCol!.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(msaSeqCol!.getTag(DG.TAGS.UNITS), 'fasta');
-    expect(msaSeqCol!.getTag('aligned'), 'SEQ.MSA');
-    expect(msaSeqCol!.getTag('alphabet'), 'PT');
-    expect(msaSeqCol!.getTag('cell.renderer'), 'sequence');
+    expect(msaSeqCol!.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
+    expect(msaSeqCol!.getTag(UnitsHandler.TAGS.aligned), 'SEQ.MSA');
+    expect(msaSeqCol!.getTag(UnitsHandler.TAGS.alphabet), ALPHABET.PT);
+    expect(msaSeqCol!.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     dfList.push(df);
     tvList.push(tv);
@@ -70,7 +70,7 @@ category('renderers', () => {
 
     const srcCol: DG.Column = df.col('sequence')!;
     const tgtCol: DG.Column = await convertDo(srcCol, NOTATION.SEPARATOR, '/');
-    expect(tgtCol.getTag('cell.renderer'), 'sequence');
+    expect(tgtCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     tvList.push(tv);
     dfList.push(df);

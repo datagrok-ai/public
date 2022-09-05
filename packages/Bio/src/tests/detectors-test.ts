@@ -400,10 +400,10 @@ export async function _testPos(
 
   expect(col.semType === DG.SEMTYPE.MACROMOLECULE, true);
   expect(col.getTag(DG.TAGS.UNITS), units);
-  expect(col.getTag('aligned'), aligned);
-  expect(col.getTag('alphabet'), alphabet);
+  expect(col.getTag(UnitsHandler.TAGS.aligned), aligned);
+  expect(col.getTag(UnitsHandler.TAGS.alphabet), alphabet);
   if (separator)
-    expect(col.getTag('separator'), separator);
+    expect(col.getTag(UnitsHandler.TAGS.separator), separator);
 
   const uh = new UnitsHandler(col);
   expect(uh.getAlphabetSize(), alphabetSize);

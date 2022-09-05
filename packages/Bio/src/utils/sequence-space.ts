@@ -16,7 +16,7 @@ export async function sequenceSpace(spaceParams: ISequenceSpaceParams): Promise<
 // code deprecated since seqCol is encoded
 /*    let preparedData: any;
   if (!(spaceParams.seqCol!.tags[DG.TAGS.UNITS] === 'HELM')) {
-    const sep = spaceParams.seqCol.getTag('separator');
+    const sep = spaceParams.seqCol.getTag(UnitsHandler.TAGS.separator);
     const sepFinal = sep ? sep === '.' ? '\\\.' : sep : '-';
     const regex = new RegExp(sepFinal, 'g');
     if (Object.keys(AvailableMetrics['String']).includes(spaceParams.similarityMetric))
