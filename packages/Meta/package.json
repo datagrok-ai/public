@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "2.0.29",
+  "version": "2.0.30",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1398,6 +1398,9 @@
         },
         "1.10.2": {
           "datagrok-api": "^1.5.5"
+        },
+        "1.11.0": {
+          "datagrok-api": "^1.6.6"
         }
       },
       "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
