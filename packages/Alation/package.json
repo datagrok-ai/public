@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/alation",
   "friendlyName": "Alation",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
@@ -19,7 +19,7 @@
     "directory": "packages/Alation"
   },
   "dependencies": {
-    "datagrok-api": "^1.5.0",
+    "datagrok-api": "^1.6.6",
     "cash-dom": "latest",
     "dayjs": "latest",
     "uuid-by-string": "latest",
