@@ -74,6 +74,7 @@ Read more about package development in [Datagrok's documentation](https://datagr
   grok add script [tag] <language> <name>
   grok add view <name>
   grok add viewer <name>
+  grok add tests
   ```
 
   In general, entity names follow naming rules for functions. Views and viewers should have class names, we recommend

@@ -10,7 +10,7 @@ category('Test manager', () => {
     let testManager: TestManager;
 
     before(async () => {
-        testManager = new TestManager(viewName, true);
+        testManager = new TestManager(viewName);
         await testManager.init();
     });
 
@@ -25,11 +25,12 @@ category('Test manager', () => {
     });
 
     test('Tests are running', async () => {
-        const testManagerNode = testManager.tree.items.filter(it => it.text === 'Test manager')[0] as DG.TreeViewGroup;
+        const devToolsNode = testManager.tree.items.filter(it => it.text === 'Dev Tools')[0] as DG.TreeViewGroup;
         const f = testManager.testFunctions.filter(it => it.package.name === 'DevTools')[0];
-        await testManager.collectPackageTests(testManagerNode, f);
+        await testManager.collectPackageTests(devToolsNode, f);
         testManager.selectedNode = testManager.tree.items.filter(it => it.text === '<div class=\"d4-flex-row ui-div\"><div class=\"ui-div\"></div><div>FSE button exists</div></div>')[0];
         await testManager.runTestsForSelectedNode();
+        await delay(100);
         expect(testManager.testsResultsDf.get('package', 0), 'DevTools');
         expect(testManager.testsResultsDf.get('category', 0), 'FSE exists');
         expect(testManager.testsResultsDf.get('name', 0), 'FSE button exists');

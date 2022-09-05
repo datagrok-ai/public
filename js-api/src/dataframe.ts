@@ -1028,48 +1028,30 @@ export class ColumnList {
     this.dart = dart;
   }
 
-  /** Number of elements in the column.
-   * @returns {number} */
-  get length(): number {
-    return api.grok_ColumnList_Length(this.dart);
-  }
+  /** Number of elements in the column. */
+  get length(): number { return api.grok_ColumnList_Length(this.dart); }
 
-  /** Column with the corresponding name (case-insensitive).
-   * @param {string} name - Column name
-   * @returns {Column} */
-  byName(name: string): Column {
-    return toJs(api.grok_ColumnList_ByName(this.dart, name));
-  }
+  /** Column with the corresponding name (case-insensitive). */
+  byName(name: string): Column { return toJs(api.grok_ColumnList_ByName(this.dart, name)); }
 
-  /** Maps names to columns.
-   * @param {string[]} names - Column names
-   * @returns {Column[]} */
-  byNames(names: string[]): Column[] {
-    return names.map(name => this.byName(name));
-  }
+  /** Maps names to columns. */
+  byNames(names: string[]): Column[] { return names.map(name => this.byName(name)); }
 
-  /** Column by index.
-   * @param {number} index - Index of the column.
-   * @returns {Column} */
-  byIndex(index: number): Column {
-    return toJs(api.grok_ColumnList_ByIndex(this.dart, index));
-  }
+  /** Column by index */
+  byIndex(index: number): Column { return toJs(api.grok_ColumnList_ByIndex(this.dart, index)); }
 
-  /** First column of [semType], or null.
-   * @returns {Column} */
+  /** First column of [semType], or null. */
   bySemType(semType: SemType): Column | null {
     let col = api.grok_ColumnList_BySemType(this.dart, semType);
     return col == null ? null : col;
   }
 
-  /** All columns of [semType], or empty list.
-   * @returns {Column[]} */
+  /** All columns of [semType], or empty list. */
   bySemTypeAll(semType: SemType): Column[] {
     return api.grok_ColumnList_BySemTypeAll(this.dart, semType);
   }
 
-  /** Finds columns by the corresponding semTypes, or null, if any of the sem types could not be found.
-   * @returns {Column[]} */
+  /** Finds columns by the corresponding semTypes, or null, if any of the sem types could not be found. */
   bySemTypesExact(semTypes: SemType[]): Column[] | null {
     let columns = <any>[];
     for (let semType of semTypes) {
@@ -1100,14 +1082,10 @@ export class ColumnList {
     return _toIterable(api.grok_ColumnList_Numerical(this.dart));
   }
 
-  /** Array containing column names.
-   * @returns {string[]} */
-  names(): string[] {
-    return api.grok_ColumnList_Names(this.dart);
-  }
+  /** Array containing column names. */
+  names(): string[] { return api.grok_ColumnList_Names(this.dart); }
 
-  /** Creates an array of columns.
-   * @returns {Column[]} */
+  /** Creates an array of columns. */
   toList(): Column[] {
     return this.names().map((name: string) => this.byName(name));
   }

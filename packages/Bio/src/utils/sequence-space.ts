@@ -12,7 +12,9 @@ export interface ISequenceSpaceResult {
 }
 
 export async function sequenceSpace(spaceParams: ISequenceSpaceParams): Promise<ISequenceSpaceResult> {
-  let preparedData: any;
+
+// code deprecated since seqCol is encoded
+/*    let preparedData: any;
   if (!(spaceParams.seqCol!.tags[DG.TAGS.UNITS] === 'HELM')) {
     const sep = spaceParams.seqCol.getTag('separator');
     const sepFinal = sep ? sep === '.' ? '\\\.' : sep : '-';
@@ -23,10 +25,10 @@ export async function sequenceSpace(spaceParams: ISequenceSpaceParams): Promise<
       preparedData = spaceParams.seqCol.toList().map((v: string) => v.replace(regex, '')) as string[];
   } else {
     preparedData = spaceParams.seqCol.toList();
-  }
+  }  */
 
   const sequenceSpaceResult = await reduceDimensinalityWithNormalization(
-    preparedData,
+    spaceParams.seqCol.toList(),
     spaceParams.methodName,
     spaceParams.similarityMetric as StringMetrics | BitArrayMetrics,
     spaceParams.options);

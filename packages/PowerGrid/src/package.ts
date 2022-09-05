@@ -1,6 +1,6 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {ImageCellRenderer} from './cell-types/image-cell-renderer';
@@ -13,6 +13,7 @@ import {SparklineCellRenderer} from './sparklines/sparklines-lines';
 import {BarChartCellRenderer} from './sparklines/bar-chart';
 import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
+import {names, SparklineType, sparklineTypes} from "./sparklines/shared";
 
 export const _package = new DG.Package();
 
@@ -91,6 +92,48 @@ export function piechartCellRenderer() {
 export function radarCellRenderer() {
   return new RadarChartCellRender();
 }
+
+//description: Adds a sparkline column for the selected columns
+//input: list columns { type: numerical }
+//meta.action: Sparklines...
+export function summarizeColumns(columns: DG.Column[]) {
+  let table = columns[0].dataFrame;
+  let name = ui.stringInput('Name', table.columns.getUnusedName('Summary'));
+  let sparklineType = ui.choiceInput('Type', SparklineType.Sparkline, sparklineTypes);
+  let columnsSelector = ui.columnsInput('Columns', table, (_) => {}, {
+    available: names(table.columns.numerical),
+    checked: names(columns),
+  });
+  let hide = ui.boolInput('Hide', false);
+  hide.setTooltip('Hide source columns in the grid');
+
+  function addSummaryColumn() {
+    let grid = grok.shell.tv.grid;
+    let left = grid.horzScroll.min;
+    let columnNames = names(columnsSelector.value);
+    let options = { gridColumnName: name.value, cellType: sparklineType.value! };
+    let gridCol = grid.columns.add(options);
+    gridCol.move(grid.columns.byName(columnNames[0])!.idx)
+    gridCol.settings = { columnNames: columnNames };
+    if (hide.value) {
+      for (const name of columnNames)
+        grid.columns.byName(name)!.visible = false;
+    }
+    grid.horzScroll.scrollTo(left);
+    gridCol.scrollIntoView();
+    grok.shell.o = gridCol;
+  }
+
+  DG.Dialog
+    .create({title: 'Add Summary Column'})
+    .add(name)
+    .add(sparklineType)
+    .add(columnsSelector)
+    .add(hide)
+    .onOK(addSummaryColumn)
+    .show();
+}
+
 
 //name: testUnitsKgCellRenderer
 //tags: cellRenderer

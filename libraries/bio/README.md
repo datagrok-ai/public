@@ -1,3 +1,3 @@
 # bio
 
-bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
+bio is a [library](https://datagrok.ai/help/develop/develop#libraries) for the [Datagrok](https://datagrok.ai) platform.

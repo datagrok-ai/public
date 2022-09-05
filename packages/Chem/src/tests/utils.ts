@@ -1,7 +1,8 @@
-import * as DG from "datagrok-api/dg";
-import * as grok from "datagrok-api/grok";
-import {expect} from "@datagrok-libraries/utils/src/test";
-import {_package} from "../package-test";
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import {expect} from '@datagrok-libraries/utils/src/test';
+import {_package} from '../package-test';
+import {searchSubstructure} from '../package';
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -33,7 +34,7 @@ export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
 export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
   pattern: string, trueIndices: number[]): Promise<void> {
   const col = df.columns.byName(colName);
-  const bitset: DG.BitSet = await grok.chem.searchSubstructure(col, pattern);
+  const bitset: DG.BitSet = (await searchSubstructure(col, pattern, '')).get(0);
   const bitsetString = bitset.toBinaryString();
   const bitsetArray = [...bitsetString];
   for (let k = 0; k < trueIndices.length; ++k) {
@@ -44,14 +45,12 @@ export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
     expect(bitsetArray[i] === '0', true);
 }
 
-export async function _testSearchSubstructureSARSmall(params: any | null = null): Promise<void> {
+export async function _testSearchSubstructureSARSmall(): Promise<void> {
   const file = await loadFileAsText('sar-small.csv');
 
   const df = DG.DataFrame.fromCsv(file);
   const col = df.columns.byIndex(0);
-  const bitset: DG.BitSet = (params !== null) ?
-    (await grok.chem.searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', params)) :
-    (await grok.chem.searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'));
+  const bitset: DG.BitSet = (await searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', '')).get(0);
   const countDataframe = col.length;
   const countResult = bitset.trueCount;
   expect(countDataframe, 200);

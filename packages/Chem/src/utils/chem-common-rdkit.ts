@@ -7,7 +7,7 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
-import {RDModule, RDMol} from "../rdkit-api";
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -22,7 +22,7 @@ export async function initRdKitModuleLocal(): Promise<void> {
   _rdKitModule = await initRDKitModule(
     {locateFile: () => `${_webRoot}/dist/${rdKitLibVersion}.wasm`});
   if (!_rdKitModule)
-    throw "RdKit Module is not loaded";
+    throw 'RdKit Module is not loaded';
   _rdKitModule.prefer_coordgen(false);
   console.log('RDKit module package instance was initialized');
   moduleInitialized = true;
@@ -42,7 +42,7 @@ export function getRdKitModule(): RDModule {
 export async function getRdKitService(): Promise<RdKitService> {
   await initRdKitService();
   if (!_rdKitService)
-    throw "RdKit Service isn't initialized";
+    throw 'RdKit Service isn\'t initialized';
   return _rdKitService;
 }
 
@@ -61,7 +61,6 @@ export function drawRdKitMoleculeToOffscreenCanvas(
     'minFontSize': 9,
     'highlightBondWidthMultiplier': 12,
     'dummyIsotopeLabels': false,
-    'highlightColour': [205/255, 92/255, 92/255],
     'atomColourPalette': {
       16: [0.498, 0.247, 0.0],
       9: [0.0, 0.498, 0.0],

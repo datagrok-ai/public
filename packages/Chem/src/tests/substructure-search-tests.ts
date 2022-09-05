@@ -1,13 +1,13 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import { category, expect, expectFloat, test } from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
 
-import { _testSearchSubstructure, _testSearchSubstructureAllParameters, _testSearchSubstructureSARSmall } from './utils';
+import {_testSearchSubstructure, _testSearchSubstructureAllParameters, _testSearchSubstructureSARSmall} from './utils';
 
-const testSubstructure = 'C1CC1';
+export const testSubstructure = 'C1CC1';
 //csv with C1CC1 as substructure in pos 0 and 2
-const testCsv = `smiles
+export const testCsv = `smiles
 CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1C4CC4
 COc1ccc2cc(ccc2c1)C(C)C(=O)Oc3ccc(C)cc3OC
 Fc1cc2C(=O)C(=CN(C3CC3)c2cc1N4CCNCC4)c5oc(COc6ccccc6)nn5

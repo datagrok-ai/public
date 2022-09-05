@@ -5,7 +5,7 @@
     "email": "kdoncov@datagrok.ai"
   },
   "friendlyName": "Usage Analysis",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Usage Analysis System",
   "repository": {
     "type": "git",

@@ -12,6 +12,7 @@ import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
 import {UnknownSeqPalette, UnknownSeqPalettes} from '../unknown';
 import {SeqPalette} from '../seq-palettes';
 import {Subscription} from 'rxjs';
+import {UnitsHandler} from '../utils/units-handler';
 
 declare module 'datagrok-api/src/grid' {
   interface Rect {
@@ -61,14 +62,16 @@ export class PositionInfo {
   public readonly name: string;
   freq: { [m: string]: PositionMonomerInfo };
   rowCount: number;
+  sumForHeightCalc: number;
 
   /** freq = {}, rowCount = 0
    * @param {string} name Name of position ('111A', '111.1', etc)
    */
-  constructor(name: string, freq: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0) {
+  constructor(name: string, freq: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0, sumForHeightCalc: number = 0) {
     this.name = name;
     this.freq = freq;
     this.rowCount = rowCount;
+    this.sumForHeightCalc = sumForHeightCalc;
   }
 }
 
@@ -77,6 +80,7 @@ export class WebLogo extends DG.JsViewer {
   private static viewerCount: number = -1;
 
   private viewerId: number = -1;
+  private unitsHandler: UnitsHandler | null;
   private initialized: boolean = false;
 
   // private readonly colorScheme: ColorScheme = ColorSchemes[NucleotidesWebLogo.residuesSet];
@@ -105,6 +109,8 @@ export class WebLogo extends DG.JsViewer {
   public maxHeight: number;
   public considerNullSequences: boolean;
   public sequenceColumnName: string | null;
+  public positionMarginState: string;
+  public positionMargin: number = 0;
   public startPositionName: string | null;
   public endPositionName: string | null;
   public fixWidth: boolean;
@@ -113,6 +119,7 @@ export class WebLogo extends DG.JsViewer {
   public fitArea: boolean;
   public shrinkEmptyTail: boolean;
   public skipEmptyPositions: boolean;
+  public positionHeight: string;
 
   private positionNames: string[] = [];
 
@@ -128,6 +135,17 @@ export class WebLogo extends DG.JsViewer {
     return this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
   }
 
+  private get positionWidthWithMargin() {
+    if (this.positionMarginState === 'auto') {
+      return this._positionWidth + this.positionMargin;
+    }
+    if (this.positionMarginState === 'enable') {
+      return this._positionWidth + this.positionMargin;
+    }
+
+    return this._positionWidth;
+  }
+
   private viewSubs: Subscription[] = [];
 
   constructor() {
@@ -137,6 +155,7 @@ export class WebLogo extends DG.JsViewer {
     WebLogo.viewerCount += 1;
 
     this.textBaseline = 'top';
+    this.unitsHandler = null;
 
     this._positionWidth = this.positionWidth = this.float('positionWidth', 16/*,
       {editor: 'slider', min: 4, max: 64, postfix: 'px'}*/);
@@ -160,6 +179,10 @@ export class WebLogo extends DG.JsViewer {
     this.fitArea = this.bool('fitArea', true);
     this.shrinkEmptyTail = this.bool('shrinkEmptyTail', true);
     this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
+    this.positionMarginState = this.string('positionMarginState', 'auto',
+      {choices: ['auto', 'enable', 'off']});
+    this.positionMargin = this.int('positionMargin', 0);
+    this.positionHeight = this.string('positionHeight', '100%', {choices: ['100%', 'Entropy']});
   }
 
   private async init(): Promise<void> {
@@ -184,7 +207,7 @@ export class WebLogo extends DG.JsViewer {
     // this.slider.root.style.height = '12px';
 
     const getMonomer = (p: DG.Point): [number, string | null, PositionMonomerInfo | null] => {
-      const jPos = Math.floor(p.x / this._positionWidth);
+      const jPos = Math.floor(p.x / this.positionWidthWithMargin);
       const position = this.positions[jPos];
 
       if (position === void 0)
@@ -361,6 +384,12 @@ export class WebLogo extends DG.JsViewer {
       this.updatePositions();
       this.render(true);
       break;
+    case 'positionMargin':
+      this.render(true);
+      break;
+    case 'positionMarginState':
+      this.render(true);
+      break;
     }
   }
 
@@ -428,6 +457,8 @@ export class WebLogo extends DG.JsViewer {
   protected _calculate(r: number) {
     if (!this.canvas || !this.host || !this.seqCol || !this.dataFrame)
       return;
+    this.unitsHandler = new UnitsHandler(this.seqCol);
+
 
     this.calcSize();
 
@@ -470,18 +501,30 @@ export class WebLogo extends DG.JsViewer {
       this.positions[jPos].rowCount = 0;
       for (const m in this.positions[jPos].freq)
         this.positions[jPos].rowCount += this.positions[jPos].freq[m].count;
+      if (this.positionHeight == 'Entropy') {
+        this.positions[jPos].sumForHeightCalc = 0;
+        for (const m in this.positions[jPos].freq) {
+          const pn = this.positions[jPos].freq[m].count / this.positions[jPos].rowCount;
+          this.positions[jPos].sumForHeightCalc += -pn * Math.log2(pn);
+        }
+      }
     }
     //#endregion
     this._removeEmptyPositions();
 
-
-    const maxHeight = this.canvas.height - this.axisHeight * r;
+    const absoluteMaxHeight = this.canvas.height - this.axisHeight * r;
     // console.debug(`WebLogo<${this.viewerId}>._calculate() maxHeight=${maxHeight}.`);
 
     //#region Calculate screen
     for (let jPos = 0; jPos < this.Length; jPos++) {
       const freq: { [c: string]: PositionMonomerInfo } = this.positions[jPos].freq;
       const rowCount = this.positions[jPos].rowCount;
+      const alphabetSize = this.getAlphabetSize();
+      if ((this.positionHeight == 'Entropy') && (alphabetSize == null)) {
+        grok.shell.error('WebLogo: alphabet is undefined.');
+      }
+
+      const maxHeight = (this.positionHeight == 'Entropy') ? (absoluteMaxHeight * (Math.log2(alphabetSize) - (this.positions[jPos].sumForHeightCalc)) / Math.log2(alphabetSize)) : absoluteMaxHeight;
 
       let y: number = this.axisHeight * r;
 
@@ -500,7 +543,7 @@ export class WebLogo extends DG.JsViewer {
         // const m: string = entry[0];
         const h: number = maxHeight * pmInfo.count / rowCount;
 
-        pmInfo.bounds = new DG.Rect(jPos * this._positionWidth, y, this._positionWidth, h);
+        pmInfo.bounds = new DG.Rect(jPos * this.positionWidthWithMargin, y, this._positionWidth, h);
         y += h;
       }
     }
@@ -552,7 +595,7 @@ export class WebLogo extends DG.JsViewer {
       g.resetTransform();
       g.setTransform(
         hScale, 0, 0, 1,
-        jPos * this._positionWidth + this._positionWidth / 2, 0);
+        jPos * this.positionWidthWithMargin + this._positionWidth / 2, 0);
       g.fillText(pos.name, 0, 0);
     }
     //#endregion Plot positionNames
@@ -596,7 +639,7 @@ export class WebLogo extends DG.JsViewer {
 
     const r: number = window.devicePixelRatio;
 
-    let width: number = this.Length * this.positionWidth / r;
+    let width: number = this.Length * this.positionWidthWithMargin / r;
     let height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
 
     if (this.fitArea) {
@@ -695,6 +738,10 @@ export class WebLogo extends DG.JsViewer {
       res = UnknownSeqPalettes.Color;
 
     return res;
+  }
+
+  public getAlphabetSize(): number {
+    return this.unitsHandler?.getAlphabetSize() ?? 0;
   }
 
   /** Stats of sequences with specified splitter func, returns { freq, sameLength }.
@@ -830,24 +877,26 @@ export class WebLogo extends DG.JsViewer {
 
   /** Gets method to split sequence by separator
    * @param {string} separator
+   * @param limit
    * @return {SplitterFunc}
    */
-  public static getSplitterWithSeparator(separator: string): SplitterFunc {
+  public static getSplitterWithSeparator(separator: string, limit: number | undefined = undefined): SplitterFunc {
     return (seq: string) => {
-      return seq.split(separator);
+      return seq.split(separator, limit);
     };
   }
 
   /** Get splitter method to split sequences to monomers
    * @param {string} units
    * @param {string} separator
+   * @param limit
    * @return {SplitterFunc}
    */
-  public static getSplitter(units: string, separator: string): SplitterFunc {
+  public static getSplitter(units: string, separator: string, limit: number | undefined = undefined): SplitterFunc {
     if (units.toLowerCase().startsWith('fasta'))
       return WebLogo.splitterAsFasta;
     else if (units.toLowerCase().startsWith('separator'))
-      return WebLogo.getSplitterWithSeparator(separator);
+      return WebLogo.getSplitterWithSeparator(separator, limit);
     else if (units.toLowerCase().startsWith('helm'))
       return WebLogo.splitterAsHelm;
     else

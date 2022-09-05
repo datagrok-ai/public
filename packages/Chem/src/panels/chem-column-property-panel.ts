@@ -14,9 +14,8 @@ enum StructureFilterType {
  * - Show rendered structures or smiles
  *  */
 export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
-
   const NONE = 'None';
-  let scaffoldColName = col.temp['scaffold-col'] ?? NONE;
+  const scaffoldColName = col.temp['scaffold-col'] ?? NONE;
 
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
   const columnsList = Array.from(col.dataFrame.columns as any).filter(
@@ -55,7 +54,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     (s: string) => {
       col.tags['.structure-filter-type'] = s;
       col.tags['.ignore-custom-filter'] = (s == StructureFilterType.Categorical).toString();
-    }
+    },
   );
   moleculeFilteringChoice.setTooltip('Sketch a molecule, or use them as categories in a filter');
 
@@ -63,29 +62,31 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     col.tags['cell.renderer'] == DG.SEMTYPE.MOLECULE,
     (v: boolean) => col.tags['cell.renderer'] = v ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING);
 
-  const rdKitPane = ui.div([
-    ui.inputs([
-      showStructures,
-      scaffoldColumnChoice,
-      highlightScaffoldsCheckbox,
-      regenerateCoordsCheckbox,
-      moleculeFilteringChoice,
-    ]),
+  const rdKitInputs = ui.inputs([
+    showStructures,
+    scaffoldColumnChoice,
+    highlightScaffoldsCheckbox,
+    regenerateCoordsCheckbox,
+    moleculeFilteringChoice,
   ]);
-
-  const panes = ui.accordion('chem-settings');
-  panes.addPane('RDKit', () => rdKitPane);
-  panes.addPane('Scaffold', () => {
-    const sketcher = new DG.chem.chem.Sketcher();
-    sketcher.syncCurrentObject = false;
-    sketcher.setMolFile(col.tags['chem-scaffold']);
-    sketcher.onChanged.subscribe((_: any) => {
-      const molFile = sketcher.getMolFile();
-      col.tags['chem-scaffold'] = molFile;
-      col.temp['chem-scaffold'] = molFile;
-    });
-    return sketcher.root;
+  const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
+  sketcher.syncCurrentObject = false;
+  sketcher.setMolFile(col.tags['chem-scaffold']);
+  sketcher.onChanged.subscribe((_: any) => {
+    const molFile = sketcher.getMolFile();
+    col.tags['chem-scaffold'] = molFile;
+    col.temp['chem-scaffold'] = molFile;
   });
+  sketcher.root.classList.add('ui-input-editor');
+  sketcher.root.style.marginTop = '3px';
+  const scaffoldLabel = ui.label('Scaffold');
+  scaffoldLabel.classList.add('ui-input-label');
+  const scaffoldInput = ui.divH([
+    scaffoldLabel,
+    sketcher.root,
+  ]);
+  scaffoldInput.className = 'ui-input-root';
+  rdKitInputs.append(scaffoldInput);
 
-  return new DG.Widget(panes.root);
+  return new DG.Widget(rdKitInputs);
 }

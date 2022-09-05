@@ -14,7 +14,6 @@ import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
-import {drawTooltip} from './analysis/activity-cliffs';
 import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
@@ -22,7 +21,7 @@ import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {_rdKitModule} from './utils/chem-common-rdkit';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
-import {convertMoleculeImpl, isMolBlock, MolNotation, molToMolblock} from './utils/chem-utils';
+import {_convertMolNotation, isMolBlock, MolNotation} from './utils/convert-notation-utils';
 import '../css/chem.css';
 import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
@@ -32,11 +31,12 @@ import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
-import {RDMol} from './rdkit-api';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import Sketcher = chem.Sketcher;
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
+import {findMcsAndUpdateDrawings} from './analysis/activity-cliffs';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -178,13 +178,26 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
   }
 }
 
+//name: getDiversities
+//input: column molStringsColumn
+//output: dataframe result
+export async function getDiversities(molStringsColumn: DG.Column, limit: number = Number.MAX_VALUE): Promise<DG.DataFrame> {
+  try {
+    const result = await chemSearches.chemGetDiversities(molStringsColumn, limit);
+    return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
+  } catch (e: any) {
+    console.error('Chem | Catch in getDiversities: ' + e.toString());
+    throw e;
+  }
+}
+
 //name: findSimilar
 //input: column molStringsColumn
 //input: string molString
 //input: int limit
 //input: int cutoff
 //output: dataframe result
-export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number, cutoff: number)
+export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number = Number.MAX_VALUE, cutoff: number = 0.0)
   : Promise<DG.DataFrame> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
@@ -246,25 +259,25 @@ export function saveAsSdf(): void {
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
   similarity: number, methodName: string) : Promise<DG.Viewer> {
- const axesNames = getEmbeddingColsNames(df);
- const options = {
-  'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
-};
- const sp = await getActivityCliffs(
-  df, 
-  smiles,
-  null as any, 
+  const axesNames = getEmbeddingColsNames(df);
+  const options = {
+    'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
+  };
+  const sp = await getActivityCliffs(
+    df,
+    smiles,
+  null as any,
   axesNames,
   'Activity cliffs',
-  activities, 
-  similarity, 
+  activities,
+  similarity,
   'Tanimoto',
   methodName,
   DG.SEMTYPE.MOLECULE,
   {'units': smiles.tags['units']},
   chemSpace,
   chemSearches.chemGetSimilarities,
-  drawTooltip,
+  findMcsAndUpdateDrawings,
   (options as any)[methodName]);
   return sp;
 }
@@ -341,6 +354,54 @@ export function addInchisPanel(col: DG.Column): void {
 //input: column col {semType: Molecule}
 export function addInchisKeysPanel(col: DG.Column): void {
   addInchiKeys(col);
+}
+
+function getAtomsColumn(molCol: DG.Column) : Map<string, Array<number>>{
+  const elements: Array<string> = ['R', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 
+                                  'Mg', 'Al','Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V',
+                                  'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se',
+  	                              'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 
+                                  'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 
+                                  'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho',
+                                  'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt',
+                                  'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 
+                                  'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk','Cf', 'Es', 'Fm', 'Md',
+                                  'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn',
+                                  'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og'];
+  let elemental_table: Map<string, Array<number>> = new Map();
+  for (let j = 0; j < elements.length; j++) {
+    elemental_table.set(elements[j], new Array<number>);
+  }
+  for (let i = 0; i < molCol.length; i++) {
+    let el = molCol.get(i);
+    if (!isMolBlock(el)) {
+      el = convertMolNotation(el, 'smiles', 'molblock');
+    }
+    const rows = el.split('\n');
+    const atom_counts = rows[3].split(' ')[1];
+    const new_mol = rows.slice(4, parseInt(atom_counts) + 4).toString();
+    for(let [key, value] of elemental_table.entries()) {
+      if (new_mol.includes(key)) {
+        const count = [...new_mol].filter(x => x === key).length;
+        value.push(count);
+      } else {
+        value.push(0);
+      }
+    };
+  }
+  return elemental_table;
+}
+
+//top-menu: Chem | Elemental analysis...
+//name: Elemental analysis
+//input: dataframe table
+//input: column molCol { semType: Molecule }
+export async function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column) {
+  let elements = getAtomsColumn(molCol);
+  for (let [key, value] of elements.entries()) {
+    //@ts-ignore
+    value.every((el) => el == 0) ? 0 : table.columns.add(DG.Column.fromList('object', key, value));
+  };
 }
 
 //name: Chem
@@ -439,14 +500,15 @@ export async function identifiers(smiles: string): Promise<DG.Widget> {
   return smiles ? await identifiersWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: convertMolecule
+//name: convertMolNotation
+//description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
 //tags: unitConverter
 //input: string molecule {semType: Molecule}
-//input: string from {choices:["smiles", "molblock", "inchi", "v3Kmolblock"]}
-//input: string to {choices:["smiles", "molblock", "inchi", "v3Kmolblock"]}
+//input: string sourceNotation {choices:["smiles", "smarts", "molblock", "inchi", "v3Kmolblock"]}
+//input: string targetNotation {choices:["smiles", "smarts", "molblock", "inchi", "v3Kmolblock"]}
 //output: string result {semType: Molecule}
-export function convertMolecule(molecule: string, from: string, to: string): string {
-  return convertMoleculeImpl(molecule, from as MolNotation, to as MolNotation, getRdKitModule());
+export function convertMolNotation(molecule: string, sourceNotation: string, targetNotation: string): string {
+  return _convertMolNotation(molecule, sourceNotation, targetNotation, getRdKitModule());
 }
 
 
@@ -458,12 +520,12 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
   sketcher.setMolecule(cell.cell.value);
   ui.dialog()
-      .add(sketcher)
-      .onOK(() => {
+    .add(sketcher)
+    .onOK(() => {
       cell.cell.value = unit == 'molblock' ? sketcher.getMolFile() : sketcher.getSmiles();
       Sketcher.addRecent(sketcher.getMolFile());
-  })
-  .show();
+    })
+    .show();
 }
 
 //name: SimilaritySearchViewer
@@ -589,8 +651,9 @@ export function detectSmiles(col: DG.Column, min: number) {
 }
 
 //name: Chem | Structural Alerts...
-//tags: panel, chem, widgets
+//tags: panel, chem
 //input: column col { semType: Molecule }
 export async function getStructuralAlerts(col: DG.Column<string>): Promise<void> {
   await checkForStructuralAlerts(col);
 }
+

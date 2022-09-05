@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {getSettingsBase, names, SummarySettingsBase} from './shared';
+import {getSettingsBase, names, SparklineType, SummarySettingsBase} from './shared';
 import {createTooltip, Hit} from './helper';
 
 
@@ -11,12 +11,10 @@ interface BarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): BarChartSettings {
-  return gc.settings ??= {
-    ...getSettingsBase(gc),
-    ...{minH: 0.05},
-    ...{colorCode: false},
-    // ...{normalize: true},
-  };
+  gc.settings ??= getSettingsBase(gc);
+  gc.settings.minH ??= 0.05;
+  gc.settings.colorCode ??= false;
+  return gc.settings;
 }
 
 function onHit(gridCell: DG.GridCell, e: MouseEvent | any): Hit {
@@ -48,16 +46,14 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent | any): Hit {
 export class BarChartCellRenderer extends DG.GridCellRenderer {
   get name() { return 'bar ts'; }
 
-  get cellType() { return 'barchart'; }
+  get cellType() { return SparklineType.BarChart; }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
     const hitData = onHit(gridCell, e);
-    if (hitData.isHit) {
+    if (hitData.isHit)
       ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
-    } else {
+    else
       ui.tooltip.hide();
-    }
-
   }
 
   render(
@@ -73,7 +69,6 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     const b = new DG.Rect(x, y, w, h).inflate(-2, -2);
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
-
 
     for (let i = 0; i < cols.length; i++) {
       if (!cols[i].isNone(row)) {

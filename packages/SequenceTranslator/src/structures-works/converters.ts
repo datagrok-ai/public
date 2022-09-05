@@ -1,6 +1,6 @@
 import {lcmsToGcrs} from './map';
 import * as DG from 'datagrok-api/dg';
-
+import {delimiter} from './map';
 //name: gcrsToLcms
 //input: string nucleotides {semType: GCRS}
 //output: string result {semType: LCMS}
@@ -10,12 +10,21 @@ export function gcrsToLcms(sequence: string): string {
   const arr2 = df.getCol('LCMS').toList();
   const obj: {[i: string]: string} = {};
   arr1.forEach((element, index) => obj[element] = arr2[index]);
-  for (let i = 0; i < arr1.length; i++) {
-    arr1[i] = arr1[i].replace('(', '\\(');
-    arr1[i] = arr1[i].replace(')', '\\)');
+  obj[delimiter] = delimiter;
+  // for (let i = 0; i < arr1.length; i++) {
+  //   arr1[i] = arr1[i].replace('(', '\\(');
+  //   arr1[i] = arr1[i].replace(')', '\\)');
+  // }
+  // const regExp = new RegExp('(' + arr1.join('|') + ')', 'g');
+  // let r1 = sequence.replace(regExp, function(code) {return obj[code];});
+  const codes = arr1.concat(delimiter).sort(function(a, b) {return b.length - a.length;});
+  let i = 0;
+  let r1 = '';
+  while (i < sequence.length) {
+    const matchedCode = codes.find((c) => c == sequence.slice(i, i + c.length));
+    r1 += obj[sequence.slice(i, i + matchedCode.length)];
+    i += matchedCode.length;
   }
-  const regExp = new RegExp('(' + arr1.join('|') + ')', 'g');
-  let r1 = sequence.replace(regExp, function(code) {return obj[code];});
   while (r1.indexOf('//') != -1)
     r1 = r1.replace('//', '/');
   return r1;

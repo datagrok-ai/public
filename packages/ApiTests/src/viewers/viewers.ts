@@ -25,7 +25,7 @@ category('Viewers', () => {
         const viewer = await addViewerAndWait(tv, viewerType);//tv.addViewer(viewerType);
         if (!(viewer instanceof DG.Viewer))
           throw `TableView.addViewer('${viewerType}') should add a Viewer instance`;
-        await delay(100);
+        await delay(200);
 
         viewer.removeFromView();
         console.log(`Removed ${viewerType}`);
@@ -40,7 +40,7 @@ category('Viewers', () => {
       for (const viewerType of coreViewerTypes) {
         console.log(`Adding ${viewerType}`);
         const viewer = await addViewerAndWait(tv, DG.Viewer.fromType(viewerType, df));
-        await delay(100);
+        await delay(200);
         viewer.removeFromView();
         console.log(`Removed ${viewerType}`);
       }

@@ -52,7 +52,14 @@ class BioPackageDetectors extends DG.Package {
       !(col.categories.length == 1 && !col.categories[0]) && // TODO: Remove with tests for single empty category value
       DG.Detector.sampleCategories(col, (s) => BioPackageDetectors.isHelm(s), 1)
     ) {
+      const statsAsHelm = BioPackageDetectors.getStats(col, 2, BioPackageDetectors.splitterAsHelm);
       col.setTag(DG.TAGS.UNITS, 'helm');
+
+      const alphabetSize = Object.keys(statsAsHelm.freq).length;
+      const alphabetIsMultichar = Object.keys(statsAsHelm.freq).some((m) => m.length > 1);
+      col.setTag('.alphabetSize', alphabetSize.toString());
+      col.setTag('.alphabetIsMultichar', alphabetIsMultichar ? 'true' : 'false');
+
       return DG.SEMTYPE.MACROMOLECULE;
     }
 
@@ -123,6 +130,12 @@ class BioPackageDetectors extends DG.Package {
         col.setTag('aligned', seqType);
         col.setTag('alphabet', alphabet);
         if (separator) col.setTag('separator', separator);
+        if (alphabet === 'UN') {
+          const alphabetSize = Object.keys(stats.freq).length;
+          const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
+          col.setTag('.alphabetSize', alphabetSize.toString());
+          col.setTag('.alphabetIsMultichar', alphabetIsMultichar ? 'true' : 'false');
+        }
         return DG.SEMTYPE.MACROMOLECULE;
       }
     }
@@ -297,4 +310,28 @@ class BioPackageDetectors extends DG.Package {
     '[MeNle]': 'L', // Nle - norleucine
     '[MeA]': 'A', '[MeG]': 'G', '[MeF]': 'F',
   };
+
+  static helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
+  static helmPp1Re = /\[([^\[\]]+)]/g;
+
+  /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA). */
+  static splitterAsHelm(seq) {
+    BioPackageDetectors.helmRe.lastIndex = 0;
+    const ea = BioPackageDetectors.helmRe.exec(seq.toString());
+    const inSeq = ea ? ea[2] : null;
+
+    const mmPostProcess = (mm) => {
+      BioPackageDetectors.helmPp1Re.lastIndex = 0;
+      const pp1M = BioPackageDetectors.helmPp1Re.exec(mm);
+      if (pp1M && pp1M.length >= 2) {
+        return pp1M[1];
+      } else {
+        return mm;
+      }
+    };
+
+    const mmList = inSeq ? inSeq.split('.') : [];
+    const mmListRes = mmList.map(mmPostProcess);
+    return mmListRes;
+  }
 }

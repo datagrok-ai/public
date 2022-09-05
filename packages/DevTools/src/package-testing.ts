@@ -20,8 +20,9 @@ interface ITestManagerUI {
 interface IPackageTests {
   name: string;
   friendlyName: string;
-  categories: {[index: string]: ICategory};
-  totalTests: number;
+  categories: {[index: string]: ICategory} | null;
+  totalTests: number | null;
+  resultDiv: HTMLElement;
 }
 
 interface ICategory {
@@ -65,14 +66,11 @@ export class TestManager extends DG.ViewBase {
   nodeDict: { [id: string]: any } = {};
   debugMode = false;
   benchmarkMode = false;
-  testMode = false;
   tree: DG.TreeViewGroup
 
-  constructor(name, testMode?: boolean) {
+  constructor(name) {
     super({});
     this.name = name;
-    this.testMode = testMode;
-
   }
 
   async init(): Promise<void> {
@@ -89,25 +87,25 @@ export class TestManager extends DG.ViewBase {
       [
         [testUIElements.runButton],
         [testUIElements.runAllButton],
-        [ui.boolInput('Debug', false, () => { this.debugMode = !this.debugMode; }).root],
+        [ui.switchInput('Debug', false, () => { this.debugMode = !this.debugMode; }).root],
         [ui.switchInput('Benchmark', false, () => { this.benchmarkMode = !this.benchmarkMode; }).root]
       ],
     );
     this.testManagerView.append(testUIElements.testsTree.root);
-    if (!this.testMode)
-      this.runTestsForSelectedNode();
+    this.runTestsForSelectedNode();
   }
 
 
   async collectPackages(packageName?: string): Promise<any[]>  {
     let testFunctions = DG.Func.find({ name: 'Test' , meta: {file: 'package-test.js'}});
+    testFunctions = testFunctions.sort((a, b) => a.package.friendlyName.localeCompare(b.package.friendlyName));
     if (packageName) testFunctions = testFunctions.filter((f: DG.Func) => f.package.name === packageName);
     return testFunctions;
   }
   
   async collectPackageTests(packageNode: DG.TreeViewGroup, f: any, testFromUrl?: ITestFromUrl) {
     if (this.testFunctions.filter(it => it.package.name === f.package.name).length !== 0 &&
-    this.packagesTests.filter(pt => pt.name === f.package.name).length === 0) {
+    this.packagesTests.filter(pt => pt.name === f.package.name)[0].categories === null) {
       await f.package.load({ file: f.options.file });
       const testModule = f.package.getModule(f.options.file);
       if (!testModule) {
@@ -153,12 +151,9 @@ export class TestManager extends DG.ViewBase {
         Object.keys(packageTestsFinal).forEach(cat => {
           testsNumInPack += this.addCategoryRecursive(packageNode, packageTestsFinal[cat], testFromUrl);
         })
-        this.packagesTests.push({
-          name: f.package.name,
-          friendlyName: f.package.friendlyName,
-          categories: packageTestsFinal,
-          totalTests: testsNumInPack,
-        })
+        const selectedPackage = this.packagesTests.filter(pt => pt.name === f.package.name)[0];
+        selectedPackage.categories = packageTestsFinal;
+        selectedPackage.totalTests = testsNumInPack;
       };
     }
   }
@@ -210,7 +205,13 @@ export class TestManager extends DG.ViewBase {
     });
     for (let pack of this.testFunctions) {
       const testPassed = ui.div();
-      pack.resultDiv = testPassed;
+      this.packagesTests.push({
+        name: pack.package.name,
+        friendlyName: pack.package.friendlyName,
+        categories: null,
+        totalTests: null,
+        resultDiv: testPassed,
+      })
       const packNode = this.tree.group(pack.package.friendlyName, null, testFromUrl && pack.package.name === testFromUrl.packName);
       this.setRunTestsMenuAndLabelClick(packNode, pack, NODE_TYPE.PACKAGE);
       if (testFromUrl && testFromUrl.packName === pack.package.name) {
@@ -298,8 +299,8 @@ export class TestManager extends DG.ViewBase {
   async runTest(t: IPackageTest): Promise<boolean> {
     if (this.debugMode)
       debugger;
-    const start = Date.now();
     this.testInProgress(t.resultDiv, true);
+    const start = Date.now();
     const res = await grok.functions.call(
       `${t.packageName}:test`, {
       'category': t.test.category,
@@ -324,43 +325,42 @@ export class TestManager extends DG.ViewBase {
     switch (nodeType) {
       case NODE_TYPE.PACKAGE: {
         const progressBar = DG.TaskBarProgressIndicator.create(tests.package.name);
-        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.package.name}`;
         let testsSucceded = true;
-        this.testInProgress(tests.resultDiv, true);
-        await this.collectPackageTests(node as DG.TreeViewGroup, tests);
         const packageTests = this.packagesTests.filter(pt => pt.name === tests.package.name)[0];
+        this.testInProgress(packageTests.resultDiv, true);
+        await this.collectPackageTests(node as DG.TreeViewGroup, tests);
         const cats = packageTests.categories;
         let completedTestsNum = 0;
         for (let cat of Object.values(cats)){
-          this.testInProgress(tests.resultDiv, true);
+          this.testInProgress(packageTests.resultDiv, true);
           const res = await this.runTestsRecursive(cat, progressBar, packageTests.totalTests, completedTestsNum, tests.package.name);
           completedTestsNum = res.completedTests;
           if (!res.catRes)
             testsSucceded = false;
         }
-        this.updateTestResultsIcon(tests.resultDiv, testsSucceded);
+        this.updateTestResultsIcon(packageTests.resultDiv, testsSucceded);
+        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.package.name}`;
         progressBar.close();
         break;
       }
       case NODE_TYPE.CATEGORY: {
         const progressBar = DG.TaskBarProgressIndicator.create(`${tests.packageName}/${tests.fullName}`);
-        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.fullName}`;
         await this.runTestsRecursive(tests, progressBar, tests.totalTests, 0, `${tests.packageName}/${tests.fullName}`);
+        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.fullName}`;
         progressBar.close();
         break;
       }
       case NODE_TYPE.TEST: {
-        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.test.category}/${tests.test.name}`;
         await this.runTest(tests);
+        this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.packageName}/${tests.test.category}/${tests.test.name}`;
         break;
       }
     }
     grok.shell.closeAll();
-    grok.shell.v = this.testManagerView;
     setTimeout(() => {
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType);
-    }, 100);
-  
+      grok.shell.v = this.testManagerView;
+    }, 30);
   }
   
   async runTestsRecursive(

@@ -361,6 +361,11 @@ export function defineAxolabsPattern() {
         })
         .show();
     }
+    if (col.get(0) != ssLength.value) {
+      const d = ui.dialog('Length was updated by value to from imported file');
+      d.add(ui.divText('Latest modifications may not take effect during translation'))
+        .onOK(() => grok.shell.info('Lengths changed')).show();
+    }
     return allLengthsAreTheSame;
   }
 
@@ -513,7 +518,9 @@ export function defineAxolabsPattern() {
   let asPtoLinkages = Array(defaultSequenceLength).fill(ui.boolInput('', defaultPto));
 
   const ssLength = ui.intInput('SS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
+  ssLength.setTooltip('Length of sense strand, including overhangs');
   const asLength = ui.intInput('AS Length', defaultSequenceLength, () => updateUiForNewSequenceLength());
+  asLength.setTooltip('Length of sense strand, including overhangs');
   const asLengthDiv = ui.div([asLength.root]);
 
   function validateSsColumn(colName: string): void {
@@ -605,7 +612,9 @@ export function defineAxolabsPattern() {
   });
 
   const firstSsPto = ui.boolInput('First SS PTO', fullyPto.value!, () => updateSvgScheme());
+  firstSsPto.setTooltip('ps linkage before first nucleotide of sense strand');
   const firstAsPto = ui.boolInput('First AS PTO', fullyPto.value!, () => updateSvgScheme());
+  firstAsPto.setTooltip('ps linkage before first nucleotide of antisense strand');
   firstAsPtoDiv.append(firstAsPto.root);
 
   const createAsStrand = ui.boolInput('Create AS Strand', true, (v: boolean) => {
@@ -617,6 +626,7 @@ export function defineAxolabsPattern() {
     firstAsPtoDiv.hidden = (!v);
     updateSvgScheme();
   });
+  createAsStrand.setTooltip('Create antisense strand sections on SVG and table to the right');
 
   const saveAs = ui.textInput('Save As', 'Pattern Name', () => updateSvgScheme());
   saveAs.setTooltip('Name Of New Pattern');

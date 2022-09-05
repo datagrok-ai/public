@@ -2,8 +2,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {smilesTo3DCoordinates} from '../scripts-api';
 
-export async function structure3dWidget(smiles: string): Promise<DG.Widget> {
-  const sdf = (await smilesTo3DCoordinates(smiles)).replaceAll('\\n', '\n');
+export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
+  const sdf = (await smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n');
   const stringBlob = new Blob([sdf], {type: 'text/plain'});
 
   const nglHost = ui.div([], {classes: 'd4-ngl-viewer', id: 'ngl-3d-host'});

@@ -22,7 +22,7 @@ export async function representationsWidget(macroMolecule: DG.Cell, monomersLibO
       const atomicCodes = getMolfilesFromSingleSeq(macroMolecule, monomersLibObject);
       const result = await getMacroMol(atomicCodes!);
       const molBlock2D = result[0];
-      molBlock3D = (await grok.functions.call('Bio:Embed', {molBlock2D})) as string;
+      molBlock3D = (await grok.functions.call('Bio:Embed', {molBlock2D})) as unknown as string;
     } catch (e) {
       console.warn(e);
     }

@@ -4,6 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {WebLogo, SplitterFunc} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import { splitToMonomers, _package } from '../package';
 
 category('splitters', () => {
   const helm1 = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$';
@@ -51,6 +52,13 @@ category('splitters', () => {
   test('testHelm1', async () => { await _testHelmSplitter(data.testHelm1[0], data.testHelm1[1]); });
   test('testHelm2', async () => { await _testHelmSplitter(data.testHelm2[0], data.testHelm2[1]); });
   test('testHelm3', async () => { await _testHelmSplitter(data.testHelm3[0], data.testHelm3[1]); });
+
+  test('splitToMonomers', async () => {
+    const df = await _package.files.readCsv('samples/sample_MSA.csv');
+    const seqCol = df.getCol('MSA');
+    splitToMonomers(seqCol);
+    expect(df.columns.names().includes('17'), true);
+  });
 });
 
 export async function _testHelmSplitter(src: string, tgt: string[]) {

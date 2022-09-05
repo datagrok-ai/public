@@ -1,0 +1,33 @@
+{
+  "name": "@datagrok-libraries/chem-meta",
+  "publishConfig": {
+    "access": "public"
+  },
+  "beta": true,
+  "friendlyName": "Datagrok chem-meta library",
+  "version": "1.0.0",
+  "description": "",
+  "dependencies": {
+    "@datagrok-libraries/utils": "^1.6.2",
+    "datagrok-api": "^1.6.0",
+    "wu": "latest"
+  },
+  "devDependencies": {
+    "@types/wu": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.2.3"
+  },
+  "scripts": {
+    "link": "npm link",
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
+    "build": "tsc",
+    "lint": "eslint \"./src/**/*.ts\"",
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
+  }
+}

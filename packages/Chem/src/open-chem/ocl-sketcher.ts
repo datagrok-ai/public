@@ -1,13 +1,12 @@
 import * as grok from 'datagrok-api/grok';
-import { chem } from 'datagrok-api/grok';
+import {chem} from 'datagrok-api/grok';
 import * as OCL from 'openchemlib/full';
-import { Subject } from 'rxjs';
-import { getRdKitModule } from '../utils/chem-common-rdkit';
+import {Subject} from 'rxjs';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
 
 let sketcherId = 0;
 
 export class OpenChemLibSketcher extends grok.chem.SketcherBase {
-
   constructor() {
     super();
   }
@@ -27,7 +26,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
-    return this._sketcher ? this._sketcher.getSmiles(): this.host?.getSmiles();
+    return this._sketcher ? this._sketcher.getSmiles() : this.host?.getSmiles();
   }
   set smiles(s) {
     this._sketcher.setSmiles(s);
@@ -43,13 +42,12 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
 
   async getSmarts(): Promise<string> {
     if (this._sketcher) {
-      const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this.molFile);
+      const mol = getRdKitModule().get_mol(this.molFile);
       const smarts = mol.get_smarts();
       mol?.delete();
       return smarts;
-    } else {
+    } else
       return await this.host!.getSmarts() as string;
-    }
   }
 
   set smarts(s: string) {
@@ -62,7 +60,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   private async convertAndSetSmarts(s: string) {
-    const mol = await getRdKitModule().get_mol(s);
+    const mol = getRdKitModule().get_mol(s);
     this._sketcher?.setMolFile(mol.get_molblock());
     mol?.delete();
   }

@@ -1,4 +1,4 @@
-import {RDModule} from "../rdkit-api";
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -31,9 +31,9 @@ export function convertMoleculeImpl(molecule: string, from: MolNotation, to: Mol
 }
 
 export function molToMolblock(molStr: string, module: RDModule): string {
-  return isMolBlock(molStr)
-    ? molStr
-    : convertMoleculeImpl(molStr, MolNotation.Unknown, MolNotation.MolBlock, module);
+  return isMolBlock(molStr) ?
+    molStr :
+    convertMoleculeImpl(molStr, MolNotation.Unknown, MolNotation.MolBlock, module);
 }
 
 export function molToSmiles(molStr: string, module: RDModule): string {

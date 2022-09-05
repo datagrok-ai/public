@@ -355,6 +355,8 @@ export class Rect {
       this.left + (this.width - size) / 2, this.top + (this.height - size) / 2, size, size);
   }
 
+  /** The biggest rectangle that fits within this rect that keeps the width/height aspect ratio
+   * Positioned in the center. Useful for rendering images in cells. */
   fit(width: number, height: number): Rect {
     return width / height > this.width / this.height
       ? this.fromCenterSize(this.midX, this.midY, this.width, height * (this.width / width))
@@ -364,6 +366,11 @@ export class Rect {
   /** Checks if this Rect contains the point (x; y) inside */
   contains(x: number, y: number): boolean {
     return this.left <= x && x <= this.right && this.top <= y && y <= this.bottom;
+  }
+
+  /** Distance to the specified point. */
+  distanceTo(p: Point): number {
+    return Math.sqrt((this.x - p.x) * (this.x - p.x) + (this.y - p.y) * (this.y - p.y));
   }
 }
 
@@ -542,26 +549,24 @@ export class GridColumn {
   get selected(): boolean { return api.grok_GridColumn_Get_Selected(this.dart); }
   set selected(x: boolean) { api.grok_GridColumn_Set_Selected(this.dart, x); }
 
-  /** Column position from the left side.
-   *  @returns {number}  */
-  get left(): number {
-    return api.grok_GridColumn_Get_Left(this.dart);
-  }
+  /** Left border (in pixels in the virtual viewport) */
+  get left(): number { return api.grok_GridColumn_Get_Left(this.dart); }
 
-  /** Column position from the right side.
-   *  @returns {number}  */
-  get right(): number {
-    return api.grok_GridColumn_Get_Right(this.dart);
-  }
+  /** Right border (in pixels in the virtual viewport) */
+  get right(): number { return api.grok_GridColumn_Get_Right(this.dart); }
 
   /** Returns all visible cells */
-  getVisibleCells(): Iterable<GridCell> {
-    return this.grid.getVisibleCells(this);
-  }
+  getVisibleCells(): Iterable<GridCell> { return this.grid.getVisibleCells(this); }
 
   /** Grid column settings. */
   get settings(): any | null { return api.grok_GridColumn_Get_Settings(this.dart); }
   set settings(s: any | null) { api.grok_GridColumn_Set_Settings(this.dart, s); }
+
+  /** Moves the specified column to the specified position */
+  move(position: number) { api.grok_GridColumnList_Move(this.grid.columns.dart, this.dart, position); }
+
+  /** If this column is not entirely visible, scrolls the grid horizontally to show it. */
+  scrollIntoView(): void { api.grok_GridColumn_ScrollIntoView(this.dart); }
 }
 
 /** Represents grid columns. */
@@ -613,7 +618,7 @@ export class GridColumnList {
   }
 
   /** Adds a new column to the grid (but not to the underlying dataframe). */
-  add(options: {gridColumnName?: string, cellType: string}): GridColumn {
+  add(options: {gridColumnName?: string, cellType: string, index?: number}): GridColumn {
     return api.grok_GridColumnList_Add(this.dart, options.cellType, options.gridColumnName);
   }
 }
@@ -676,6 +681,12 @@ export class Grid<TSettings = any> extends Viewer<TSettings> {
   get overlay(): HTMLCanvasElement {
     return api.grok_Grid_Get_Overlay(this.dart);
   }
+
+  /** List of columns the grid is sorted by. */
+  get sortByColumns(): Column[] { return toJs(api.grok_Grid_Get_SortByColumns(this.dart)); }
+
+  /** Sort directions for [sortByColumns]: true = ascending order, false = descending order. */
+  get sortTypes(): boolean[] { return api.grok_Grid_Get_SortTypes(this.dart); }
 
   /**
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-prepare}
@@ -812,6 +823,7 @@ export class Grid<TSettings = any> extends Viewer<TSettings> {
 }
 
 
+/** Represents grid cell style. */
 export class GridCellStyle {
   dart: any;
 
@@ -819,45 +831,25 @@ export class GridCellStyle {
     this.dart = dart;
   }
 
-  get font(): string {
-    return api.grok_GridCellStyle_Get_Font(this.dart);
-  }
+  /** Font. Example: 12px Verdana */
+  get font(): string { return api.grok_GridCellStyle_Get_Font(this.dart); }
+  set font(x: string) { api.grok_GridCellStyle_Set_Font(this.dart, x); }
 
-  set font(x: string) {
-    api.grok_GridCellStyle_Set_Font(this.dart, x);
-  }
+  /** Text color (RGBA-encoded) */
+  get textColor(): number { return api.grok_GridCellStyle_Get_TextColor(this.dart); }
+  set textColor(x: number) { api.grok_GridCellStyle_Set_TextColor(this.dart, x); }
 
-  get textColor(): number {
-    return api.grok_GridCellStyle_Get_TextColor(this.dart);
-  }
+  /** Background color (RGBA-encoded) */
+  get backColor(): number { return api.grok_GridCellStyle_Get_BackColor(this.dart); }
+  set backColor(x: number) { api.grok_GridCellStyle_Set_BackColor(this.dart, x); }
 
-  set textColor(x: number) {
-    api.grok_GridCellStyle_Set_TextColor(this.dart, x);
-  }
+  /** DOM Element to put in the cell */
+  get element(): HTMLElement { return api.grok_GridCellStyle_Get_Element(this.dart); }
+  set element(x: HTMLElement) { api.grok_GridCellStyle_Set_Element(this.dart, x); }
 
-  get backColor(): number {
-    return api.grok_GridCellStyle_Get_BackColor(this.dart);
-  }
-
-  set backColor(x: number) {
-    api.grok_GridCellStyle_Set_BackColor(this.dart, x);
-  }
-
-  get element(): HTMLElement {
-    return api.grok_GridCellStyle_Get_Element(this.dart);
-  }
-
-  set element(x: HTMLElement) {
-    api.grok_GridCellStyle_Set_Element(this.dart, x);
-  }
-
-  get textVertical(): boolean {
-    return api.grok_GridCellStyle_Get_TextVertical(this.dart);
-  }
-
-  set textVertical(x: boolean) {
-    api.grok_GridCellStyle_Set_TextVertical(this.dart, x);
-  }
+  /** Vertical text orientation */
+  get textVertical(): boolean { return api.grok_GridCellStyle_Get_TextVertical(this.dart); }
+  set textVertical(x: boolean) { api.grok_GridCellStyle_Set_TextVertical(this.dart, x); }
 }
 
 
@@ -873,11 +865,12 @@ export class GridCellRenderArgs extends EventData {
     return api.grok_GridCellRenderArgs_Get_G(this.dart);
   }
 
+  /** Cell that is being rendered. */
   get cell(): GridCell {
     return new GridCell(api.grok_GridCellRenderArgs_Get_Cell(this.dart));
   }
 
-  /** @returns {Rect} */
+  /** Cell bounds to render to. */
   get bounds(): Rect {
     return api.grok_GridCellRenderArgs_Get_Bounds(this.dart);
   }

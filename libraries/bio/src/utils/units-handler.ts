@@ -48,7 +48,7 @@ export class UnitsHandler {
       (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));
     const maxCos = Math.max(...alphabetCandidatesSim);
     const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
-    
+
     const units: string = 'fasta';
     col.setTag(DG.TAGS.UNITS, units);
     col.setTag('aligned', seqType);
@@ -80,12 +80,42 @@ export class UnitsHandler {
     }
   }
 
+  /** Alphabet name (upper case) */
   public get alphabet(): string {
     const alphabet = this.column.getTag('alphabet');
     if (alphabet !== null) {
-      return alphabet;
+      return alphabet.toUpperCase();
     } else {
       throw new Error('Tag alphabet not set');
+    }
+  }
+
+  public getAlphabetSize(): number {
+    if (this.notation == 'HELM' || this.alphabet == 'UN') {
+      const alphabetSize = parseInt(this.column.getTag('.alphabetSize'));
+      return alphabetSize;
+    } else {
+      switch (this.alphabet) {
+      case 'PT':
+        return 20;
+      case 'NT':
+        console.warn(`Unexpected alphabet 'NT'.`);
+        return 4;
+      case 'DNA':
+      case 'RNA':
+        return 4;
+      default:
+        throw new Error(`Unexpected alphabet '${this.alphabet}'.`);
+      }
+    }
+  }
+
+  public getAlphabetIsMultichar(): boolean {
+    if (this.notation == 'HELM' || this.alphabet == 'UN') {
+      const alphabetIsMultichar: boolean = this.column.getTag('.alphabetIsMultichar') == 'true' ? true : false;
+      return alphabetIsMultichar;
+    } else {
+      return false;
     }
   }
 
@@ -95,11 +125,11 @@ export class UnitsHandler {
 
   public isHelm(): boolean { return this.notation === NOTATION.HELM; }
 
-  public isRna(): boolean { return this.alphabet.toLowerCase() === 'rna'; }
+  public isRna(): boolean { return this.alphabet === 'RNA'; }
 
-  public isDna(): boolean { return this.alphabet.toLowerCase() === 'dna'; }
+  public isDna(): boolean { return this.alphabet === 'DNA'; }
 
-  public isPeptide(): boolean { return this.alphabet.toLowerCase() === 'pt'; }
+  public isPeptide(): boolean { return this.alphabet === 'PT'; }
 
   /** Associate notation types with the corresponding units */
   /**
@@ -113,7 +143,7 @@ export class UnitsHandler {
     else if (this.units.toLowerCase().startsWith('helm'))
       return NOTATION.HELM;
     else
-      throw new Error('The column has units that do not correspond to any notation');
+      throw new Error(`Column '${this.column.name}' has unexpected notation '${this.units}'.`);
   }
 
   /**
@@ -206,5 +236,19 @@ export class UnitsHandler {
     this._defaultGapSymbol = (this.isFasta()) ? this._defaultGapSymbolsDict.FASTA :
       (this.isHelm()) ? this._defaultGapSymbolsDict.HELM :
         this._defaultGapSymbolsDict.SEPARATOR;
+
+    if (!this.column.tags.has('.alphabetSize')) {
+      if (this.isHelm())
+        throw new Error(`For column '${this.column.name}' of notation '${this.notation}' tag '.alphabetSize' is mandatory.`);
+      else if (['UN'].includes(this.alphabet))
+        throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' tag '.alphabetSize' is mandatory.`);
+    }
+
+    if (!this.column.tags.has('.alphabetIsMultichar')) {
+      if (this.isHelm())
+        throw new Error(`For column '${this.column.name}' of notation '${this.notation}' tag '.alphabetIsMultichar' is mandatory.`);
+      else if (['UN'].includes(this.alphabet))
+        throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' tag '.alphabetIsMultichar' is mandatory.`);
+    }
   }
 }
