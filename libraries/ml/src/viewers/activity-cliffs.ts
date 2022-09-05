@@ -33,9 +33,11 @@ export interface ISequenceSpaceResult {
 
 export interface ITooltipAndPanelParams {
   cashedData: any,
-  hosts: HTMLDivElement[],
   line: ILine,
+  df: DG.DataFrame,
   seqCol: DG.Column,
+  activityCol: DG.Column,
+  sali?: number
 }
 
 let zoom = false;
@@ -57,7 +59,8 @@ export async function getActivityCliffs(
     tags: {[index: string]: string},
     seqSpaceFunc: (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>,
     simFunc: (col: DG.Column, mol: string) => Promise<DG.Column | null>,
-    renderSeqFunction: (params: ITooltipAndPanelParams) => void,
+    tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
+    propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
     options?: any) : Promise<DG.Viewer> {
   const automaticSimilarityLimit = false;
   const MIN_SIMILARITY = 80;
@@ -214,7 +217,7 @@ export async function getActivityCliffs(
     timer = global.setTimeout(function () {
       const line = checkCursorOnLine(event, canvas, linesRes.lines);
       if (line && df.mouseOverRowIdx === -1) {
-          ui.tooltip.show(createTooltipElement(cashedLinesData, line, seqCol, activities, renderSeqFunction), event.clientX, event.clientY);
+          ui.tooltip.show(tooltipFunc({cashedData: cashedLinesData, line: line, df: df, seqCol: seqCol, activityCol: activities}), event.clientX, event.clientY);
       }
     }, 500);
   });
@@ -241,7 +244,7 @@ export async function getActivityCliffs(
           df.selection.set(0, linesRes.lines[0].selected);
         }
       }
-      updatePropertyPanel(df, acc, cashedLinesData, line, seqCol, activities, linesRes.linesDf.get('sali', line.id), renderSeqFunction);
+      updatePropertyPanel(df, acc, cashedLinesData, line, seqCol, activities, linesRes.linesDf.get('sali', line.id), propertyPanelFunc);
     }
   });
 
@@ -292,10 +295,10 @@ function updatePropertyPanel(
   seqCol: DG.Column, 
   activities: DG.Column,
   sali: number,
-  renderSeqFunction: (params: ITooltipAndPanelParams) => void){
+  propPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement){
   const panel = acc.getPane('Cliff Details');
   ui.empty(panel.root);
-  const panelElement = createPropPanelElement(df, cashedData, line, seqCol, activities, sali, renderSeqFunction);
+  const panelElement = propPanelFunc({cashedData: cashedData, line: line, df: df, seqCol: seqCol, activityCol: activities, sali: sali});
   panel.root.append(panelElement);
   setTimeout(() => {
     grok.shell.o = acc.root;
@@ -421,98 +424,3 @@ export function getSimilaritiesMarixFromDistances(dim: number, distances: Matrix
   return simArr;
 }
 
-
-export function createPropPanelElement(
-  df: DG.DataFrame,
-  cashedData: any,
-  line: ILine,
-  seqCol: DG.Column,
-  activities: DG.Column,
-  sali: number,
-  renderSeqFunction: (params: ITooltipAndPanelParams) => void): HTMLDivElement {
-  const propPanel = ui.divV([]);
-  const columnNames = ui.divH([
-    ui.divText(seqCol.name),
-    ui.divText(activities.name),
-  ]);
-  columnNames.style.fontWeight = 'bold';
-  columnNames.style.justifyContent = 'space-between';
-  propPanel.append(columnNames);
-  const hosts: HTMLDivElement[] = [];
-  line.mols.forEach((molIdx: number, hostIdx: number) => {
-    const activity = ui.divText(activities.get(molIdx).toFixed(2));
-    activity.style.paddingLeft = '15px';
-    activity.style.paddingLeft = '10px';
-    const molHost = ui.div();
-    if (df.currentRowIdx === molIdx) {
-      molHost.style.border = 'solid 1px lightgrey';
-    }
-    ui.tooltip.bind(molHost, () => moleculeInfo(df, molIdx, seqCol.name));
-    molHost.onclick = () => {
-      const obj = grok.shell.o;
-      molHost.style.border = 'solid 1px lightgrey';
-      df.currentRowIdx = molIdx;
-      hosts.forEach((h, i) => {
-        if (i !== hostIdx) {
-          h.style.border = '';
-        }
-      })
-      setTimeout(() => {
-        grok.shell.o = obj
-      }, 1000);
-    };
-    propPanel.append(ui.divH([
-      molHost,
-      activity,
-    ]));
-    hosts.push(molHost);
-  });
-  renderSeqFunction({ cashedData: cashedData, hosts: hosts, line: line, seqCol: seqCol});
-  propPanel.append(ui.divH([
-    ui.divText(`SALI: `, {style: {fontWeight: 'bold', paddingRight: '5px'}}),
-    ui.divText(sali.toFixed(2))
-  ]));
-  return propPanel;
-}
-
-function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
-  let dict: {[key: string]: string} = {};
-  for (let col of df.columns) {
-    if(col.name !== seqColName) {
-      dict[col.name] = df.get(col.name, idx);
-    }
-  }
-  return ui.tableFromMap(dict);
-}
-
-export function createTooltipElement(
-  cashedData: any,
-  line: ILine,
-  seqCol: DG.Column,
-  activities: DG.Column,
-  renderSeqFunction: (params: ITooltipAndPanelParams) => void): HTMLDivElement {
-  const tooltipElement = ui.divH([]);
-  const columnNames = ui.divV([
-    ui.divText(seqCol.name),
-    ui.divText(activities.name),
-  ]);
-  columnNames.style.fontWeight = 'bold';
-  columnNames.style.display = 'flex';
-  columnNames.style.justifyContent = 'space-between';
-  tooltipElement.append(columnNames);
-  const hosts: HTMLDivElement[] = [];
-  line.mols.forEach((molIdx: number, idx: number) => {
-    const activity = ui.divText(activities.get(molIdx).toFixed(2));
-    activity.style.display = 'flex';
-    activity.style.justifyContent = 'left';
-    activity.style.paddingLeft = '30px';
-    const molHost = ui.div();
-    tooltipElement.append(ui.divV([
-      molHost,
-      activity,
-    ]));
-    hosts.push(molHost);
-  });
-  renderSeqFunction({ cashedData: cashedData, hosts: hosts, line: line, seqCol: seqCol });
-  return tooltipElement;
-}
