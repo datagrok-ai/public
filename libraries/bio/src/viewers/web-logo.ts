@@ -12,7 +12,7 @@ import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
 import {UnknownSeqPalette, UnknownSeqPalettes} from '../unknown';
 import {SeqPalette} from '../seq-palettes';
 import {Subscription} from 'rxjs';
-import {UnitsHandler} from '../utils/units-handler';
+import {NOTATION, UnitsHandler} from '../utils/units-handler';
 
 declare module 'datagrok-api/src/grid' {
   interface Rect {
@@ -292,7 +292,7 @@ export class WebLogo extends DG.JsViewer {
       }
       if (this.seqCol) {
         const units: string = this.seqCol!.getTag(DG.TAGS.UNITS);
-        const separator: string = this.seqCol!.getTag('separator');
+        const separator: string = this.seqCol!.getTag(UnitsHandler.TAGS.separator);
         this.splitter = WebLogo.getSplitter(units, separator);
 
         this.updatePositions();
@@ -893,11 +893,11 @@ export class WebLogo extends DG.JsViewer {
    * @return {SplitterFunc}
    */
   public static getSplitter(units: string, separator: string, limit: number | undefined = undefined): SplitterFunc {
-    if (units.toLowerCase().startsWith('fasta'))
+    if (units.toLowerCase().startsWith(NOTATION.FASTA))
       return WebLogo.splitterAsFasta;
-    else if (units.toLowerCase().startsWith('separator'))
+    else if (units.toLowerCase().startsWith(NOTATION.SEPARATOR))
       return WebLogo.getSplitterWithSeparator(separator, limit);
-    else if (units.toLowerCase().startsWith('helm'))
+    else if (units.toLowerCase().startsWith(NOTATION.HELM))
       return WebLogo.splitterAsHelm;
     else
       throw new Error(`Unexpected units ${units} .`);
@@ -910,7 +910,7 @@ export class WebLogo extends DG.JsViewer {
       throw new Error(`Get splitter for semType "${DG.SEMTYPE.MACROMOLECULE}" only.`);
 
     const units = col.getTag(DG.TAGS.UNITS);
-    const separator = col.getTag('separator');
+    const separator = col.getTag(UnitsHandler.TAGS.separator);
     return WebLogo.getSplitter(units, separator);
   }
 
