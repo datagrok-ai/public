@@ -1,7 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {getSettingsBase, names, SummarySettingsBase} from './shared';
-import {createTooltip, distance, Hit} from './helper';
+import {getSettingsBase, names, SummarySettingsBase, createTooltip, distance, Hit, CustomMouseEvent} from './shared';
 
 
 class it {
@@ -11,7 +10,6 @@ class it {
 
 interface RadarChartSettings extends SummarySettingsBase {
   // radius: number;
-  minDistance: number;
 }
 
 function getSettings(gc: DG.GridColumn): RadarChartSettings {
@@ -22,7 +20,7 @@ function getSettings(gc: DG.GridColumn): RadarChartSettings {
 }
 
 
-function onHit(gridCell: DG.GridCell, e: MouseEvent | any): Hit {
+function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
   const df = gridCell.grid.dataFrame;
   const maxAngleDistance = 0.1;
   const settings = getSettings(gridCell.gridColumn);
@@ -65,13 +63,12 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
 
   get defaultHeight(): number | null { return 80; }
 
-  onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
-    const hitData: any = onHit(gridCell, e);
-    if (hitData.isHit) {
+  onMouseMove(gridCell: DG.GridCell, e: CustomMouseEvent): void {
+    const hitData: Hit = onHit(gridCell, e);
+    if (hitData.isHit)
       ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
-    } else {
+    else
       ui.tooltip.hide();
-    }
   }
 
   render(
