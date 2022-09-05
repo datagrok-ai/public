@@ -108,7 +108,7 @@ export namespace chem {
     listeners: Function[] = [];
     _mode = SKETCHER_MODE.INPLACE;
     _smiles = '';
-    _molfile = '';
+    _molfile = WHITE_MOLBLOCK;
     _smarts = '';
     unitsBeforeInit = '';
 
@@ -296,7 +296,6 @@ export namespace chem {
       this.extSketcherDiv.onclick = () => {
 
         let savedMolFile = this.getMolFile();
-        savedMolFile = savedMolFile == '' ?  WHITE_MOLBLOCK : savedMolFile;
 
         let dlg = ui.dialog();
         dlg.add(this.createInplaceModeSketcher(savedMolFile!))
@@ -378,7 +377,8 @@ export namespace chem {
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
-            this.selectedSketcher = this.sketcherFunctions.filter(f => f.friendlyName === friendlyName)[0];
+            this.selectedSketcher = this.sketcherFunctions.filter(f => f.friendlyName === friendlyName)[0];            
+            grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, this.selectedSketcher!.name, true);
             this.setSketcher(this.getMolFile());
           },
             { isChecked: (item) => item === this.selectedSketcher?.friendlyName, toString: item => item })
@@ -429,9 +429,6 @@ export namespace chem {
       ui.empty(this.host);
       ui.setUpdateIndicator(this.host, true);
       this.changedSub?.unsubscribe();
-
-      grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, this.selectedSketcher!.name, true);
-
       this.sketcher = await this.selectedSketcher!.apply();
       this.host!.style.minWidth = '500px';
       this.host!.style.minHeight = '400px';
