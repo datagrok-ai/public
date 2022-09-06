@@ -3,8 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import $ from 'cash-dom';
-
 import * as alationApi from './alation-api';
 import * as utils from './utils';
 import * as view from './view';
@@ -48,15 +46,15 @@ export async function Alation() {
 
   const descriptionHost = ui.panel(undefined, 'alation-description');
   const title = ui.box(ui.h1('Data Sources'), {style: {maxHeight: '30px', margin: '5px'}});
-  const rightPanelHost = ui.splitV([title, treeHost], {style:{maxWidth: '300px'}});
-  
+  const rightPanelHost = ui.splitV([title, treeHost], {style: {maxWidth: '300px'}});
+
   const host = ui.splitH([rightPanelHost, descriptionHost]);
-  
-  let v = grok.shell.newView('Alation Browser', [host]);
+
+  const v = grok.shell.newView('Alation Browser', [host]);
   v.box = true;
-  
+
   await utils.retrieveKeys();
-  
+
   const dataSourcesList = await alationApi.getDataSources();
   const tree = view.createTree(dataSourcesList, 'data-source');
   treeHost.append(tree.root);
