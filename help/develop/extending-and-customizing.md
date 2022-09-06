@@ -27,7 +27,7 @@ With using our [JavaScript API](js-api.md), you can create your own:
   [scripting language we support](../compute/scripting.md), and later be reused in various contexts, including other
   functions, or called directly from Datagrok UI or the [console](../datagrok/navigation.md#console)
 * [visualizations](../visualize/viewers.md) — to visualize data in new ways, in addition to our 30+ core viewers
-* [file viewers](how-to/custom-file-viewers.md) — to support new data formats in addition to many we already recognize
+* [file viewers](how-to/create-custom-file-viewers.md) — to support new data formats in addition to many we already recognize
 * [cell renderers](../visualize/viewers/grid.md#custom-cell-renderers) — to visualize certain semantic types, such
   as [molecules](https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit-api.ts)
   or [nucleotide sequences](https://github.com/datagrok-ai/public/tree/master/packages/Sequence/web-logo-viewer)

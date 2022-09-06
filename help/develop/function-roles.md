@@ -121,7 +121,7 @@ File viewers are used in Datagrok's [file share browser](../access/connect-a-fil
 define custom viewers (or editors) in addition to the native ones. These functions work on files with a specific
 extension, which is derived from the `fileViewer-<extension>` tag.
 
-*Details:* [How to develop custom file viewers](how-to/custom-file-viewers.md)
+*Details:* [How to develop custom file viewers](how-to/create-custom-file-viewers.md)
 
 ## File exporters
 
