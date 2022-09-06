@@ -35,6 +35,12 @@ sequences can be inspected for base composition at the position of MSA result.
 
 ![MSA and base composition analysis](../../uploads/macromolecules/macromolecules-msa-and-composition-analysis-800.gif "MSA analysis")
 
+#### Splitting to monomers
+
+Splitting to monomers allows splitting aligned sequences in separate monomers.
+
+![Splitting to monomers](../../uploads/macromolecules/splitting-to-monomers.gif)
+
 #### Visualizing sequence alignments
 
 When a file containing sequences is imported, Datagrok splits the aligned data into an alignment table by MSA
