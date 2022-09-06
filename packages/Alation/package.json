@@ -11,6 +11,10 @@
     {
       "name": "Base URL",
       "propertyType": "string"
+    },
+    {
+      "name": "User group",
+      "propertyType": "string"
     }
   ],
   "repository": {

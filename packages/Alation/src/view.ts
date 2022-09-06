@@ -10,7 +10,7 @@ import * as types from './types';
 import * as constants from './const';
 import * as alationApi from './alation-api';
 import * as utils from './utils';
-import {getBaseURL} from './package';
+import {getBaseURL, getUserGroup} from './package';
 
 let isSettingDescription = false;
 
@@ -171,6 +171,10 @@ async function getChildren(
 export async function runQuery(conn: DG.DataConnection, queryObject: types.query): Promise<void> {
   let query = conn.query(queryObject.title, queryObject.content);
   query = await grok.dapi.queries.save(query);
+
+  const zenoGroup = await grok.dapi.groups.filter(await getUserGroup()).first();
+  await grok.dapi.permissions.grant(query, zenoGroup, true);
+
   const df = await query.executeTable();
   df.name = queryObject.title;
   grok.shell.addTableView(df);
@@ -228,6 +232,9 @@ function connectToDbDialog(
       let dsConnection = DG.DataConnection.create(dataSource.dbname, dcParams);
       dsConnection.id = dsId;
       dsConnection = await grok.dapi.connections.save(dsConnection);
+
+      const userGroup = await grok.dapi.groups.filter(await getUserGroup()).first();
+      await grok.dapi.permissions.grant(dsConnection, userGroup, true);
 
       await func(dsConnection);
     })
