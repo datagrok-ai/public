@@ -16,6 +16,10 @@ export async function initMlbData(): Promise<void> {
   _properties = await _package.getProperties();
 }
 
+export async function initMlbDataHelper(): Promise<void> {
+
+}
+
 //name: getPackageProperty
 //input: string propertyName
 //output: string result
