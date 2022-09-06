@@ -48,7 +48,7 @@ Datagrok supports the following formats.
 
 See also:
 
-* [File shares](file-shares.md)
+* [File shares](connect-a-file-share.md)
 
 [NglViewer]: https://github.com/datagrok-ai/public/tree/master/packages/NglViewer#readme
 

@@ -9,6 +9,6 @@ data job with hourly recurrence that indexes files with
 
 See also:
 
-* [File shares](file-shares.md)
+* [File shares](connect-a-file-share.md)
 * [Data connection](data-connection.md)
 * [Data job](data-job.md)

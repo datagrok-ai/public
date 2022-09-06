@@ -272,7 +272,7 @@ grok.data.loadTable(`${_package.webRoot}data-samples/test.csv`)
 
 ### File shares
 
-Connecting to [file shares](../../access/file-shares.md) offers you more opportunities: files form a hierarchy, which
+Connecting to [file shares](../../access/connect-a-file-share.md) offers you more opportunities: files form a hierarchy, which
 you can browse naturally from the interface. Let's start with an existing file share — the user's home directory. In
 Datagrok's [file browser](https://public.datagrok.ai/files), each user has a special `HOME` folder to store their files,
 which makes it a perfect example. Here is how you can work with your files located there:
@@ -357,6 +357,6 @@ See also:
 * [Data connection](../../access/data-connection.md)
 * [Data query](../../access/data-query.md)
 * [Data job](../../access/data-job.md)
-* [File shares](../../access/file-shares.md)
+* [File shares](../../access/connect-a-file-share.md)
 * [Functions](../../datagrok/functions/function.md)
 * [Parameterized queries](../../access/parameterized-queries.md)

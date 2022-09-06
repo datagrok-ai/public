@@ -3,7 +3,7 @@
 # Create custom file viewers
 
 Datagrok provides a way to define custom file viewers that are used by the
-[file share browser](../../access/file-shares.md). This could be done by defining a function annotated in a special way.
+[file share browser](../../access/connect-a-file-share.md). This could be done by defining a function annotated in a special way.
 It should take a single argument of type `file`, return a `view`, and have at least two tags: `fileViewer`
 and `fileViewer-<extension>` (specify the extension here). This is it!
 
@@ -39,6 +39,6 @@ looks:
 
 See also:
 
-* [File shares](../../access/file-shares.md)
+* [File shares](../../access/connect-a-file-share.md)
 * [JavaScript development](../develop.md)
 * [How to create file exporters](file-exporters.md)
