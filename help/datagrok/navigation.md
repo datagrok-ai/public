@@ -57,7 +57,7 @@ and read more about [saving data to the server](../datagrok/project.md#uploading
 
 ### File browser
 
-[File shares](../access/file-shares.md) are arguably an even more popular choice for working with data. Files form a
+[File shares](../access/connect-a-file-share.md) are arguably an even more popular choice for working with data. Files form a
 hierarchy, which you can browse naturally from the interface. The
 [File Browser](https://public.datagrok.ai/files) operates as a file system: you can organize pieces of data into folders
 and subfolders, rename and move files. The [tree map](../visualize/viewers/tree-map.md)
@@ -76,7 +76,7 @@ users can do that from `Data | Files | Actions | New File Share`. Besides, since
 connections, they can be added in the connection dialog (`Databases | Actions | Add New Connection`)
 . If you enable indexing feature, the platform will extract metadata from the files, which you can later apply in the
 search. The articles on
-[data access](../develop/how-to/access-data.md#file-shares), [file shares](../access/file-shares.md)
+[data access](../develop/how-to/access-data.md#file-shares), [file shares](../access/connect-a-file-share.md)
 and
 [routing](routing.md#files) explain in more detail how to work with file shares.
 
