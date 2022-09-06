@@ -1,3 +1,11 @@
+//base import
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
+import * as GisTypes from '../src/gis-semtypes';
+import {GisViewer} from './gis-viewer';
+
 import {Map as OLMap, MapBrowserEvent, View as OLView} from 'ol';
 import HeatmapLayer from 'ol/layer/Heatmap';
 import BaseLayer from 'ol/layer/Base';
@@ -13,17 +21,25 @@ import {useGeographic} from 'ol/proj';
 import {Coordinate} from 'ol/coordinate';
 //geometry drawing funtions
 import * as OLGeometry from 'ol/geom/Geometry';
+import {Type as OLType} from 'ol/geom/Geometry';
 import * as OLPolygon from 'ol/geom/Polygon';
 //@type {import("../proj/Projection.js").default|undefined}
-import Feature from 'ol/Feature';
+import Feature, {FeatureLike} from 'ol/Feature';
+// import * as OLFeature from 'ol/Feature';
 import Point from 'ol/geom/Point';
+import * as OLGeom from 'ol/geom';
 import * as OLStyle from 'ol/style';
 //Sources import
 import OSM from 'ol/source/OSM';
 import BingMaps from 'ol/source/BingMaps';
 import Style, {StyleLike} from 'ol/style/Style';
+//import interactions and events
+// import {DragAndDrop, defaults as defaultInteractions} from 'ol/interaction';
+import * as OLInteractions from 'ol/interaction';
+import * as OLEvents from 'ol/events';
+import * as OLEventsCondition from 'ol/events/condition';
+
 //import processors
-import {DragAndDrop, defaults as defaultInteractions} from 'ol/interaction';
 import {GPX, GeoJSON, IGC, KML, TopoJSON} from 'ol/format';
 import Source from 'ol/source/Source';
 import {Attribution, defaults as defaultControls} from 'ol/control';
@@ -44,12 +60,58 @@ export interface OLCallbackParam {
 //   trigger: 'manual',
 // });
 
-let OLG: OpenLayers; //TODo: remove this terrible stuff!
+let OLG: OpenLayers; //TODO: remove this terrible stuff!
+
+//TODO: use this function to convert colors
+//color converting
+/*function hexToRGB(h: string) {
+  let aRgbHex: string[] | null = ['0', '0', '0'];
+  if (h.length==3) {
+    aRgbHex = h.match(/.{1,1}/g);
+    aRgbHex[0] = aRgbHex[0].toString().repeat(2);
+    aRgbHex[1] = aRgbHex[1].toString().repeat(2);
+    aRgbHex[2] = aRgbHex[2].toString().repeat(2);
+  } else if (h.length==6)
+    aRgbHex = h.match(/.{1,2}/g);
+
+  const aRgb = {
+    'R': parseInt(aRgbHex[0], 16),
+    'G': parseInt(aRgbHex[1], 16),
+    'B': parseInt(aRgbHex[2], 16),
+  };
+  return aRgb;
+} */
+
+function toStringColor(num : number, opacity?: number) : string {
+  num >>>= 0;
+  const b = num & 0xFF;
+  const g = (num & 0xFF00) >>> 8;
+  const r = (num & 0xFF0000) >>> 16;
+  const a = opacity ? opacity : 1;
+  return 'rgba(' + [r, g, b, a].join(',') + ')';
+}
+
+function rgbToHex(color: string): string {
+  const rgb = color.split(',');
+  const hex = parseInt(rgb[0]).toString(16) + parseInt(rgb[1]).toString(16) + parseInt(rgb[2]).toString(16);
+  return hex;
+}
 
 // Define a KMZ format class by subclassing ol/format/KML
+async function getKMLData(buffer: any): Promise<string> {
+  const zip = new JSZip();
+  let kmlData: string = '';
+  await zip.loadAsync(buffer);
+  const kmlFile = zip.file(/.kml$/i)[0];
+  if (kmlFile)
+    kmlData = await kmlFile.async('string');
+  return kmlData;
+}
 
-/*export class KMZ extends KML {
+export class KMZ extends KML {
+  // eslint-disable-next-line camelcase
   constructor(opt_options: any) {
+    // eslint-disable-next-line camelcase
     const options = opt_options || {};
     // options.iconUrlFunction = getKMLImage;
     super(options);
@@ -66,7 +128,6 @@ let OLG: OpenLayers; //TODo: remove this terrible stuff!
     return super.readFeatures(kmlData, options);
   }
 }
-*/
 
 export class OpenLayers {
   olMap: OLMap;
@@ -75,7 +136,10 @@ export class OpenLayers {
   olBaseLayer: BaseLayer | null;
   olMarkersLayer: VectorLayer<VectorSource> | null;
 
-  dragAndDropInteraction: DragAndDrop;
+  dragAndDropInteraction: OLInteractions.DragAndDrop;
+  //styles>>
+  styleVectorLayer: OLStyle.Style;
+  styleVectorSelLayer: OLStyle.Style;
   //event handlers map
   //eventsMap = new Map<string, ()=>any>(); //TODO: solve this puzzle
   onClickCallback: Function | null = null;
@@ -83,22 +147,46 @@ export class OpenLayers {
   // public labelStatus: HTMLElement | null = null;
 
   //properties from viewer
+  gisViewer: GisViewer|null = null;
   markerSize: number = 1;
   markerOpacity: number = 0.7;
   weightedMarkers: boolean = false;
   heatmapBlur: number = 20;
   heatmapRadius: number = 10;
 
-  constructor() {
+  constructor(gV?: GisViewer) {
+    if ((gV) && (gV instanceof GisViewer)) this.gisViewer = gV;
     this.olMap = new OLMap({});
     this.olCurrentView = new OLView({});
     this.olCurrentLayer = null;
     this.olBaseLayer = null;
     this.olMarkersLayer = null;
 
-    this.dragAndDropInteraction = new DragAndDrop({
+    this.styleVectorLayer = new OLStyle.Style({
+      fill: new OLStyle.Fill({
+        // color: '#eeeeee',
+        color: 'rgba(155, 155, 155, 0.5)',
+      }),
+      stroke: new OLStyle.Stroke({
+        color: 'rgba(250, 250, 250, 0.5)',
+        width: 1,
+      }),
+    });
+    this.styleVectorSelLayer = new OLStyle.Style({
+      fill: new OLStyle.Fill({
+        color: 'rgba(200, 50, 50, 0.5)',
+        // color: '#eeeeee',
+      }),
+      stroke: new OLStyle.Stroke({
+        color: 'rgba(255, 0, 0, 0.7)',
+        width: 3,
+      }),
+    });
+
+    this.dragAndDropInteraction = new OLInteractions.DragAndDrop({
       formatConstructors: [
         KML,
+        // KMZ,
         GPX,
         GeoJSON,
         IGC,
@@ -116,10 +204,10 @@ export class OpenLayers {
       target: targetName,
       controls: defaultControls({attribution: false, rotate: false}),
       view: new OLView({
-        // projection: 'EPSG:3857', //'EPSG:4326',
+        projection: 'EPSG:3857',
         // projection: 'EPSG:4326',
         center: OLProj.fromLonLat([34.109565, 45.452962]),
-        zoom: 7,
+        zoom: 6,
       }),
     });
     //useGeographic();
@@ -133,14 +221,37 @@ export class OpenLayers {
 
     //add base event handlers>>
     this.olMap.on('click', this.onMapClick);
-    this.olMap.on('pointermove', this.onMapPointermove);
+    // this.olMap.on('pointermove', this.onMapPointermove);
+
+    const selectInteraction = new OLInteractions.Select({
+      condition: OLEventsCondition.click,
+      style: this.styleVectorSelLayer,
+    });
+    this.olMap.addInteraction(selectInteraction);
+    //this.olMap.getInteractions().extend([selectInteraction]);
+  }
+
+  getFeatureStyleFn(feature: Feature): OLStyle.Style {
+    //TODO: add here different combinations of style reading
+    const color = feature.get('COLOR') || '#eeeeee';
+    this.styleVectorLayer.getFill().setColor(color);
+    return this.styleVectorLayer;
   }
 
   dragNdropInteractionFn(event: any) {
     const sourceVector = new VectorSource({
       features: event.features,
     });
-    OLG.addNewVectorLayer(event.file.name, null, null, sourceVector);
+
+    // OLG.addNewVectorLayer(event.file.name, null, null, sourceVector);
+    OLG.addNewVectorLayer(event.file.name, null,
+      function(feature) {
+        const color = feature.get('COLOR') || '#eeeeee';
+        OLG.styleVectorLayer.getFill().setColor(color); // rgba()
+        return OLG.styleVectorLayer;
+      },
+      sourceVector);
+
     //TODO: if case above is workable we should add an layerID somewhere here>>
     // OLG.olMap.addLayer(
     //   new VectorLayer({
@@ -150,15 +261,17 @@ export class OpenLayers {
     OLG.olMap.getView().fit(sourceVector.getExtent());
   }
 
-  addKMLLayerFromStream(stream: string) {
+  addKMLLayerFromStream(stream: string, focusOnContent: boolean = true): VectorLayer<VectorSource> {
     const sourceVector = new VectorSource({
       features: new KML().readFeatures(stream),
     });
-    this.addNewVectorLayer('file.name', null, null, sourceVector);
-    this.olMap.getView().fit(sourceVector.getExtent());
+    const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector);
+    if (focusOnContent)
+      this.olMap.getView().fit(sourceVector.getExtent());
+    return newLayer;
   }
 
-  addGeoJSONLayerFromStream(stream: string) {
+  addGeoJSONLayerFromStream(stream: string, focusOnContent: boolean = true): VectorLayer<VectorSource> {
     const sourceVector = new VectorSource({
       //TODO: try it (for universal loader instead of different function for each of loaders)
       //var format = new ol.format.GeoJSON({
@@ -168,13 +281,14 @@ export class OpenLayers {
       // var features = format.readFeatures(result);
       features: new GeoJSON().readFeatures(stream),
     });
-    this.addNewVectorLayer('file.name', null, null, sourceVector);
-    this.olMap.getView().fit(sourceVector.getExtent());
+    const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector);
+    if (focusOnContent)
+      this.olMap.getView().fit(sourceVector.getExtent());
+    return newLayer;
   }
 
   addTopoJSONLayerFromStream(stream: string, focusOnContent: boolean = true): VectorLayer<VectorSource> {
     const sourceVector = new VectorSource({
-      // useSpatialIndex: false,
       features: new TopoJSON().readFeatures(stream),
     });
     const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector);
@@ -271,6 +385,7 @@ export class OpenLayers {
     if (opt) newLayer.setProperties(opt);
     if (style) newLayer.setStyle(style);
     // this.olMap.addLayer(newLayer);
+    newLayer.setOpacity(0.5); //TODO: change this corresponding to layer opacity settings
     this.addLayer(newLayer);
     return newLayer;
   }
@@ -281,7 +396,7 @@ export class OpenLayers {
       visible: true,
       preload: Infinity,
       source: new BingMaps({
-        key: 'AkhgWhv3YTxFliztqZzt6mWy-agrbRV8EafjHeMJlCRhkIh9mwCH6k7U3hXM5e83',
+        key: 'AkhgWhv3YTxFliztqZzt6mWy-agrbRV8EafjHeMJlCRhkIh9mwCH6k7U3hXM5e83', //TODO: hide credentials
         imagerySet: 'Aerial',
       }),
     });
@@ -311,8 +426,8 @@ export class OpenLayers {
   addNewHeatMap(layerName?: string | undefined, options?: Object | undefined): HeatmapLayer {
     const newLayer = new HeatmapLayer({
       source: new VectorSource({}),
-      blur: this.heatmapBlur,
-      radius: this.heatmapRadius,
+      blur: this.gisViewer ? this.gisViewer.heatmapBlur : this.heatmapBlur,
+      radius: this.gisViewer ? this.gisViewer.heatmapBlur : this.heatmapRadius,
       weight: function(feature: Feature): number {
         let val = feature.get('fieldValue');
         if (typeof(val) !== 'number') val = 1;
@@ -321,24 +436,19 @@ export class OpenLayers {
     });
     if (layerName) newLayer.set('layerName', layerName);
     if (options) newLayer.setProperties(options);
-    // this.olMap.addLayer(newLayer);
+    // newLayer.changed();
     this.addLayer(newLayer);
     return newLayer;
   }
 
   getFeaturesFromLayer(layer: VectorLayer<VectorSource>): any[] {
-  // dd
     const featuresColl: any[] = [];
     const src = layer.getSource();
     if (!src) return [];
-    // src.setProperties({'useSpatialIndex': true});
     src.forEachFeature((ft)=>{
       featuresColl.push(ft.getProperties());
     });
-    // const featuresColl = src.getFeaturesCollection();
-    // if (featuresColl) return featuresColl.getArray();
     return featuresColl;
-    // return [];
   }
 
   //map marker style function>>
@@ -361,35 +471,48 @@ export class OpenLayers {
     return style;
   }
 
-  // displayFeatureInfo = function (pixel) {
-  //   info.css({
-  //     left: pixel[0] + 'px',
-  //     top: pixel[1] - 15 + 'px',
-  //   });
-  //   const feature = map.forEachFeatureAtPixel(pixel, function (feature) {
-  //     return feature;
-  //   });
-  //   if (feature) {
-  //     info.attr('data-original-title', feature.get('name')).tooltip('show');
-  //   } else {
-  //     info.tooltip('hide');
-  //   }
-  // };
-
   //map base events handlers>>
   onMapClick(evt: MapBrowserEvent<any>) {
     // evt.coordinate
     //evt.pixel
     const res: OLCallbackParam = {
       coord: evt.coordinate,
-      pixel: [evt.pixel[0], evt.pixel[1]]
+      pixel: [evt.pixel[0], evt.pixel[1]],
     };
 
-    const features = this.olMap.getFeaturesAtPixel(evt.pixel);
-    if (features) {
-      //(features[0].getGeometry).
+    const features: FeatureLike[] = [];
+    OLG.olMap.forEachFeatureAtPixel(evt.pixel, function(feature) {
+      features.push(feature);
+    });
+    if (features.length > 0) {
+      let ft = features[0];
+      const geom = ft.getGeometry();
+      if (geom) {
+        switch (geom.getType()) {
+        case 'Point': {
+          const gobj = geom as OLGeom.Point;
+          const coords = gobj.getCoordinates();
+          const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
+          const gisPoint = new GisTypes.GisPoint(coords[0], coords[1], xyz ? coords[2] : 0, ft.getProperties());
+          grok.shell.o = gisPoint;
+          break;
+        }
+        case 'Polygon': {
+          const gobj = geom as OLGeom.Polygon;
+          const coords = gobj.getCoordinates();
+          const areaCoords: Array<GisTypes.gisCoordinate> = [];
+          const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
+          for (let i = 0; i < coords[0].length; i++) {
+            let vertex = coords[0][i]; //TODO: add inner polygons (holes) - now we use just a contour
+            areaCoords.push([vertex[0] as number, vertex[1], xyz ? vertex[2] : 0]);
+          }
+          const gisArea = new GisTypes.GisArea(areaCoords, ft.getProperties());
+          grok.shell.o = gisArea;
+          break;
+        }
+        }
+      }
     }
-
     if (this.onClickCallback)
       this.onClickCallback(res);
     else {
@@ -403,7 +526,7 @@ export class OpenLayers {
 
     const res: OLCallbackParam = {
       coord: evt.coordinate,
-      pixel: [evt.pixel[0], evt.pixel[1]]
+      pixel: [evt.pixel[0], evt.pixel[1]],
     };
 
     if (this.onPointermoveCallback)
@@ -477,6 +600,36 @@ export class OpenLayers {
       });
       marker.setStyle(style);
       marker.set('fieldValue', val);
+
+      const src = aLayer.getSource();
+      if (src) src.addFeature(marker);
+    }
+  }
+
+  addPointSc(coord: Coordinate, sizeVal: number, colorVal: number,
+    value?: string|number|undefined,
+    layer?: VectorLayer<VectorSource>|HeatmapLayer|undefined) {
+    //
+    let aLayer: VectorLayer<VectorSource>|HeatmapLayer|undefined|null;
+    aLayer = this.olMarkersLayer;
+    if (layer) aLayer = layer;
+
+    if (aLayer) {
+      const marker = new Feature(new Point(OLProj.fromLonLat(coord)));
+      const style = new Style({
+        image: new OLStyle.Circle({
+          radius: sizeVal,
+          fill: new OLStyle.Fill({
+            color: toStringColor(colorVal, this.markerOpacity), //TODO: change to gisView.markerOpacity
+          }),
+          stroke: new OLStyle.Stroke({
+            color: `rgba(255, 204, 0, 0.4)`, //toStringColor(colorVal, this.markerOpacity-0.1),
+            width: 1, //TODO: change to gisView.markerStrokeWidth
+          }),
+        }),
+      });
+      marker.setStyle(style);
+      marker.set('fieldValue', value);
 
       const src = aLayer.getSource();
       if (src) src.addFeature(marker);

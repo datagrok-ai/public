@@ -9,6 +9,10 @@ export const SEMTYPEGIS = {
   ALTITUDE: 'gis-altitude',
   GISPOINT: 'gis-point',
   GISAREA: 'gis-gis_area',
+  GISCOUNTRY: 'gis-country',
+  GISSTATE: 'gis-state',
+  GISADDRESS: 'gis-address',
+  GISZIPCODE: 'gis-zipcode',
 };
 
 export type gisCoordinate = [number, number, number?];

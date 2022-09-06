@@ -8,16 +8,69 @@ import * as GisTypes from '../src/gis-semtypes';
 //OpenLayers functionality import
 import {OpenLayers} from '../src/gis-openlayer';
 import {useGeographic} from 'ol/proj';
-// import {census} from 'citysdk/citysdk';
+// import * as cns from '../node_modules/citysdk';
+
+const census = require('citysdk');
 
 //ZIP utilities
 import JSZip from 'jszip';
+import { DataFrame } from 'datagrok-api/dg';
+
+//USEFUL
+// contents = fs.readFileSync(detectorsPath, 'utf8');
+
 
 export const _package = new DG.Package();
 
+//census SDK async wrapper function
+async function censusPromise(args: any) {
+  return new Promise(function(resolve, reject) {
+    census(args, function(err: any, json: any) {
+      if (!err)
+        resolve(json);
+      else
+        reject(err);
+    });
+  });
+}
+
+//name: getCensusInfo
+export async function getCensusInfo() {
+  let censusRes: any = null;
+  let url = 'https://api.census.gov/data/';
+  censusRes = await (await grok.dapi.fetchProxy(url)).json();
+
+  if (!censusRes) return 'Fetch error';
+  // alert(JSON.stringify(censusRes));
+  const df = DataFrame.fromJson(JSON.stringify(censusRes));
+  grok.shell.addTableView(df);
+}
+
 //name: info
-export function info() {
+export async function info() {
   grok.shell.info('GIS Package info: ' +_package.webRoot);
+
+  //TODO: remove this temporary code (was added for testing census feature)
+  let censusRes: any = null;
+  try {
+    censusRes = await censusPromise(
+      {
+        statsKey: '2647d704d8734665d5c417dae1546887c2c90513', //TODO: hide credentials
+        vintage: '2017',
+        geoHierarchy: {
+          county: {
+            lat: 28.2639,
+            lng: -80.7214,
+          },
+        },
+      },
+    );
+  } catch (err: any) {
+    grok.shell.error('Census error: ' + err);
+  }
+  if (censusRes)
+    alert(censusRes);
+  //<<remove all above
 }
 
 //tags: init, autostart
@@ -27,28 +80,105 @@ export function init() {
   DG.ObjectHandler.register(new GisTypes.GisAreaHandler());
 }
 
-//_name: GISGeocoding
-//_description: GIS geocoding - receive coordinates from address
-//_input: string address
-////_output: string result
-export async function gisGeocoding(address?: string, x?: number, y?: number) {
+//name: GISGeocoding
+//description: GIS geocoding - receive coordinates for address
+//input: string address
+//output: string result
+export async function gisGeocoding(address: string): Promise<string> {
+// export async function gisGeocoding(address?: string, x?: number, y?: number): Promise<string> {
   let url = 'https://geocoding.geo.census.gov/geocoder/';
-  let fetchresult = null;
-  if ((address) && (address != '')) {
-    // eslint-disable-next-line max-len
-    url += `locations/onelineaddress?address=${address}&vintage=Census2020_Current&benchmark=Public_AR_Current&format=json`;
-    fetchresult = await (await grok.dapi.fetchProxy(url)).json();
-  } else if ((x) && (y)) {
-    url += `geographies/coordinates?x=${x}&y=${y}&vintage=Census2020_Current&benchmark=Public_AR_Current&format=json`;
-    fetchresult = await (await grok.dapi.fetchProxy(url)).json();
-  }
+  let fetchResult = null;
+  // eslint-disable-next-line max-len
+  url += `locations/onelineaddress?address=${address}&vintage=Census2020_Current&benchmark=Public_AR_Current&format=json`;
+  fetchResult = await (await grok.dapi.fetchProxy(url)).json();
+  // if ((address) && (address != '')) {
+  //   // eslint-disable-next-line max-len
+  //   url += `locations/onelineaddress?address=${address}&vintage=Census2020_Current&benchmark=Public_AR_Current&format=json`;
+  //   fetchResult = await (await grok.dapi.fetchProxy(url)).json();
+  // } else if ((x) && (y)) {
+  //   url += `geographies/coordinates?x=${x}&y=${y}&vintage=Census2020_Current&benchmark=Public_AR_Current&format=json`;
+  //   fetchResult = await (await grok.dapi.fetchProxy(url)).json();
+  // }
 
-  if (!fetchresult) return;
-  alert(JSON.stringify(fetchresult));
+  if (!fetchResult) return 'Fetch error';
+  alert(JSON.stringify(fetchResult));
+  // const df = DG.DataFrame.fromJson(fetchresult);
+  // const viewFile = DG.TableView.create(df);
+  const resStr = JSON.stringify(fetchResult);
+
+  return resStr;
+}
+
+//name: gisReverseGeocoding
+//description: GIS geocoding - receive address for coordinates
+//input: double x
+//input: double y
+//output: string result
+export async function gisReverseGeocoding(x: number, y: number): Promise<string> {
+  let url = 'https://geocoding.geo.census.gov/geocoder/';
+  let fetchResult = null;
+  url += `geographies/coordinates?x=${x}&y=${y}&vintage=Census2020_Current&benchmark=Public_AR_Current&format=json`;
+  fetchResult = await (await grok.dapi.fetchProxy(url)).json();
+
+  if (!fetchResult) return 'Fetch error';
+  alert(JSON.stringify(fetchResult));
+  // const df = DG.DataFrame.fromJson(fetchresult);
+  // const viewFile = DG.TableView.create(df);
+  const resStr = JSON.stringify(fetchResult);
+
+  return resStr;
+}
+
+//name: gisBatchGeocoding
+//description: GIS geocoding - receive coordinates from address
+//input: string address
+//output: string result
+export async function gisBatchGeocoding(address: string): Promise<string> {
+  let url = 'https://geocoding.geo.census.gov/geocoder/locations/addressbatch';
+  let fetchResult = null;
+  // url += `&vintage=ACS2021_Current&benchmark=Public_AR_Current`;
+  url += `&benchmark=Public_AR_Current`;
+  url += `&addressFile=1,4600 Silver Hill Road,Washington,DC,20233`;
+  fetchResult = await (await grok.dapi.fetchProxy(url)).text();
+
+  if (!fetchResult) return 'Fetch error';
+  alert((fetchResult));
+  // const df = DG.DataFrame.fromJson(fetchresult);
+  // const viewFile = DG.TableView.create(df);
+  // const resStr = JSON.stringify(fetchResult);
+
+  // census(
+  //   {
+  //     statsKey: '2647d704d8734665d5c417dae1546887c2c90513', //TODO: hide credentials
+  //     vintage: '2017',
+  //     geoHierarchy: {
+  //       state: {
+  //         lat: 38.8482,
+  //         lng: -76.9312,
+  //       },
+  //       county: '*',
+  //     },
+  //     sourcePath: [
+  //       'acs',
+  //       'acs5',
+  //     ],
+  //     // values: [
+  //     //   'B00001_001E',
+  //     // ],
+  //     geoResolution: '20m',
+  //   },
+  //   (err: any, res: any) => {
+  //     if (!err)
+  //       alert(err);
+  //     else
+  //       console.log(res);
+  //   }
+  // );
+
   // const df = DG.DataFrame.fromJson(fetchresult);
   // const viewFile = DG.TableView.create(df);
 
-  return;
+  return '';
 }
 
 //name: GISViewer
