@@ -107,4 +107,4 @@ model was trained on.
 
 See also:
 
-* [Life sciences](../stories/life-sciences.md)
+* [Life sciences](../solutions/life-sciences.md)
