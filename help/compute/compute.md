@@ -222,7 +222,7 @@ example: `https://dev.datagrok.ai/func/Skalkin.LotkaVolterra?x0=0.5&y0=2&alpha=0
 The platform allows to seamlessly [access](../home.md#access) any machine-readable data source, such
 as [databases](../access/data-connection.md),
 [web services](../access/open-api.md),
-[files](../access/importing-data.md) (either on network shares on in S3). To make a model retrieve the input data from
+[files](../access/file-browser-and-file-shares.md) (either on network shares on in S3). To make a model retrieve the input data from
 the data source, annotate the input parameter with the
 corresponding [parameterized query](../access/parameterized-queries.md). Since both queries and models are functions,
 the platform can automatically generate the UI that would contain both input- and computation-specific parts.

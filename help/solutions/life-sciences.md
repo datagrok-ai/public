@@ -76,7 +76,7 @@ We also support [FAIR Principles](../discover/fair.md) where applicable.
 
 Scientific data often comes in formats that are not understood by a typical business application. In addition to
 commonly used data formats, such as csv, txt, xsls, xml, and json, Datagrok
-[supports](../access/importing-data.md#supported-file-types) the following ones:
+[supports](../access/supported-data-sources.md#supported-file-types) the following ones:
 
 | Extension     | Description          |
 |---------------|----------------------|

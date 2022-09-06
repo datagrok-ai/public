@@ -7,7 +7,7 @@ Datagrok was built for data scientists, by data scientists. Our goal is to let s
 infrastructure.
 
 Out of the box, Datagrok provides all tools necessary for
-[data ingestion](../access/importing-data.md),
+[data ingestion](../access/file-browser-and-file-shares.md),
 [transformation](../transform/data-wrangling.md),
 [visualization](../visualize/viewers.md),
 [analysis](../explore/exploratory-data-analysis.md),
