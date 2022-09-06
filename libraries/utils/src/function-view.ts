@@ -339,8 +339,8 @@ export class FunctionView extends DG.ViewBase {
               showAddToFavoritesDialog(funcCall);
             }, 'Edit run metadata'),
             solidStar
-          ], 'funccall-card-icons')
-        ], 'funccall-card');
+          ], 'cv-funccall-card-icons')
+        ], 'cv-funccall-card');
 
         card.addEventListener('click', async () => {
           this.linkFunccall(await this.loadRun(funcCall.id));
@@ -387,8 +387,8 @@ export class FunctionView extends DG.ViewBase {
               ev.stopPropagation();
               showDeleteFavoritesDialog(funcCall);
             }, 'Delete the run'),
-          ], 'funccall-card-icons')
-        ], 'funccall-card');
+          ], 'cv-funccall-card-icons')
+        ], 'cv-funccall-card');
 
         card.addEventListener('click', async () => {
           this.linkFunccall(await this.loadRun(funcCall.id));
@@ -456,9 +456,7 @@ export class FunctionView extends DG.ViewBase {
       ])]: []
       ]];
 
-    console.log('export added');
     if (this.func?.id) {
-      console.log('history added');
       const historyButton = ui.iconFA('history', () => {
         grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
         historyButton.classList.toggle('d4-current');

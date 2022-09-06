@@ -1,37 +1,37 @@
-.funccall-card:hover {
+.cv-funccall-card:hover {
     box-shadow: 0px 0px 3px #b8bac0;
     cursor: pointer;
 }
 
-.funccall-card {
+.cv-funccall-card {
     padding: 5px;
     justify-content: space-between;
 }
 
-.funccall-card.clicked {
+.cv-funccall-card.clicked {
     box-shadow: 0px 0px 3px #b8bac0;
 }
 
-.funccall-card-icons {
+.cv-funccall-card-icons {
     align-items: center;
 }
 
-.funccall-card-icons .grok-icon{
+.cv-funccall-card-icons .grok-icon{
     margin: 5px;
 }
 
-.funccall-card .title {
+.cv-funccall-card .title {
     font-size: 13px;
     color: var(--grey-5);
     font-weight: 600;
     margin-bottom: 2px;
 }
 
-.funccall-card .description {
+.cv-funccall-card .description {
     margin-bottom: 2px;
 }
 
-.funccall-card .date {
+.cv-funccall-card .date {
     color: var(--grey-3);
     margin-left: 5px;
 }
