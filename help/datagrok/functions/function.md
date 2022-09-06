@@ -20,7 +20,7 @@ server and others in the browser, some of them perform scientific computation wh
 all share the same mechanism and therefore have the same features:
 
 * Scriptable - each function call is represented as a string, which can be executed
-  from [console](../../overview/navigation.md#console), or as part of a bigger script
+  from [console](../../datagrok/navigation.md#console), or as part of a bigger script
 * Findable - open `Help | Functions` to search
 * Introspectable - programmatically find out function parameter's metadata
 * Secure - A function can have privileges associated with it. For instance, you might want the
@@ -37,7 +37,7 @@ all share the same mechanism and therefore have the same features:
 
 Interactive visual data munging is a powerful feature. Every transformation that is triggered visually
 (such as by clicking "Delete selected rows" icon) is backed by a corresponding function. By printing function call in
-the [console](../../overview/navigation.md#console)), we get macro recording capability - and unlike Excel, there is no
+the [console](../../datagrok/navigation.md#console)), we get macro recording capability - and unlike Excel, there is no
 need to start recording, simply open `View | Console` to see what had been executed.
 
 This feature is especially useful for data cleansing, where you would visually clean one dataset and get a script that
@@ -47,7 +47,7 @@ share it with your team.
 When enabled, a history of all changes made to the table is saved automatically, so that users will later be able to
 figure out how that particular table was produced, or to reproduce the process on a new table with the structure similar
 to the original one. To access it, open table's 'History' pane on
-the [property panel](../../overview/navigation.md#properties).
+the [property panel](../../datagrok/navigation.md#properties).
 
 ## Data flow
 
@@ -93,5 +93,5 @@ You can use these fields to filter functions with [smart search](../smart-search
 
 See also:
 
-* [Console](../../overview/navigation.md#console)
+* [Console](../../datagrok/navigation.md#console)
 * [Scripting](../../compute/scripting.md)

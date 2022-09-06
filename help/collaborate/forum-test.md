@@ -4,7 +4,7 @@
 # Tests: Community forum
 
 A place to socialize and ask either generic questions, or questions related to particular entities, such as
-[queries](../access/data-query.md) or [projects](../overview/project.md). In the latter case, entity owner will get
+[queries](../access/data-query.md) or [projects](../datagrok/project.md). In the latter case, entity owner will get
 notified that someone asked for help.
 
 ## Testing scenarios
@@ -20,22 +20,22 @@ notified that someone asked for help.
 * Topic has not been created yet at this point
 * Warning about empty subject
 
-1. Click on "Link content" button. Add [project](../overview/project.md)
-   and [table](../overview/table.md) from popup menu to tread
+1. Click on "Link content" button. Add [project](../datagrok/project.md)
+   and [table](../datagrok/table.md) from popup menu to tread
 
 1. Create new topic with "Test_sub" subject
 
 * New topic created successfully
 * "Test_sub" topic appeared in the "Chats" tab for current user
 
-1. Replay to the "Test_sub" topic from the "Chats" tab on [Property Panel](../overview/navigation.md#properties) for
+1. Replay to the "Test_sub" topic from the "Chats" tab on [Property Panel](../datagrok/navigation.md#properties) for
    current
    [user](../govern/user.md)
 
 * Reply added to topic.
 * Open topic from "Forums" window to see a new answer.
 
-1. Drag the objects ([table](../overview/table.md), [project](../overview/project.md)
+1. Drag the objects ([table](../datagrok/table.md), [project](../datagrok/project.md)
    , [use](../govern/user.md), etc)
    to answer field.
 

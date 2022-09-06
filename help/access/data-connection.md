@@ -135,7 +135,7 @@ where p.department = @department
 
 ## Filtering
 
-You can use these fields to filter connections with [smart search](../overview/smart-search.md):
+You can use these fields to filter connections with [smart search](../datagrok/smart-search.md):
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|
@@ -169,4 +169,4 @@ See also:
 * [Data pipeline](data-pipeline.md)
 * [Data query](data-query.md)
 * [Data job](data-job.md)
-* [Function call](../overview/functions/function-call.md)
+* [Function call](../datagrok/functions/function-call.md)

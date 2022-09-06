@@ -23,9 +23,9 @@ provides for introducing your own custom properties specific to your plugins.
 
 With using our [JavaScript API](js-api.md), you can create your own:
 
-* [functions](../overview/functions/function.md), which may be written in any
+* [functions](../datagrok/functions/function.md), which may be written in any
   [scripting language we support](../compute/scripting.md), and later be reused in various contexts, including other
-  functions, or called directly from Datagrok UI or the [console](../overview/navigation.md#console)
+  functions, or called directly from Datagrok UI or the [console](../datagrok/navigation.md#console)
 * [visualizations](../visualize/viewers.md) — to visualize data in new ways, in addition to our 30+ core viewers
 * [file viewers](how-to/custom-file-viewers.md) — to support new data formats in addition to many we already recognize
 * [cell renderers](../visualize/viewers/grid.md#custom-cell-renderers) — to visualize certain semantic types, such
@@ -56,7 +56,7 @@ You could spot other aspects in Datagrok that allow for customization while gett
 Beside a regular CSS-based customization, here are some of the things which you can customize both programmatically and
 through the UI:
 
-* Every viewer exposes a diverse set of [properties](../overview/navigation.md#properties), accessible on the right side
+* Every viewer exposes a diverse set of [properties](../datagrok/navigation.md#properties), accessible on the right side
   in the Datagrok's
   `Property Panel`. Often you need to modify these properties programmatically. The mapping is straightforward: take the
   property's name, say, `"Col Header Height"`, modify it to the camel case: `colHeaderHeight`, and apply the property to

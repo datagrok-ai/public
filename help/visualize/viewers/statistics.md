@@ -31,5 +31,5 @@ The results include a set of frequently used statistics, among them the measures
 See also:
 
 * [Viewers](../viewers.md)
-* [Table view](../../overview/table-view.md)
+* [Table view](../../datagrok/table-view.md)
 * [JS API: Statistics](https://public.datagrok.ai/js/samples/ui/viewers/types/statistics)

@@ -27,9 +27,9 @@ export const entExtract = {
 };
 
 export const helpUrls = {
-  Column: {wiki: 'https://datagrok.ai/help/overview/table', class: 'https://datagrok.ai/js-api/classes/dg.Column'},
+  Column: {wiki: 'https://datagrok.ai/help/datagrok/table', class: 'https://datagrok.ai/js-api/classes/dg.Column'},
   DataConnection: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.DataConnection'},
-  DataFrame: {wiki: 'https://datagrok.ai/help/overview/table', class: 'https://datagrok.ai/js-api/classes/dg.DataFrame'},
+  DataFrame: {wiki: 'https://datagrok.ai/help/datagrok/table', class: 'https://datagrok.ai/js-api/classes/dg.DataFrame'},
   DataQuery: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.DataQuery'},
   FileInfo: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.FileInfo'},
   Script: {wiki: 'https://datagrok.ai/help/compute/scripting', class: 'https://datagrok.ai/js-api/classes/dg.Script'},

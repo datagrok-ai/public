@@ -9,7 +9,7 @@ providers.
 
 To import a local file, drag-and-drop it into the browser. The important thing to understand is that the data will stay
 in the browser. It won't get sent to the server, unless you explicitly do that
-by [uploading a project](../overview/project.md#uploading-a-project).
+by [uploading a project](../datagrok/project.md#uploading-a-project).
 
 ## Supported file types
 

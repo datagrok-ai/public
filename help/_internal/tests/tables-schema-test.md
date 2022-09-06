@@ -18,16 +18,16 @@ The table schema is a data model (table-columns)
 
 1. Click on "demog" table on schema
 
-* "demog" table selected on [Property Panle](../../overview/navigation.md#properties)
+* "demog" table selected on [Property Panle](../../datagrok/navigation.md#properties)
 
 1. Select both tables with mouse button pressed
 
-* Both tables are selected on [Property Panle](../../overview/navigation.md#properties)
+* Both tables are selected on [Property Panle](../../datagrok/navigation.md#properties)
 * All actions concern both tables
 
 1. Click on the "Sex" column in "demog" table on schema
 
-* "Sex" column open on [Property Panle](../../overview/navigation.md#properties)
+* "Sex" column open on [Property Panle](../../datagrok/navigation.md#properties)
 
 1. Call context menu for table on schema
 

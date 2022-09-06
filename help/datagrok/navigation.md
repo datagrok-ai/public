@@ -53,7 +53,7 @@ file dialog interaction: double-click on the `Data` icon or press `Ctrl + O`. Yo
 toolbox as well (`Data | Open local file`). It is important to note that the data resides in the browser up until the
 moment you choose to upload it to the server. This is always done explicitly. See the list
 of [supported file formats](../access/importing-data.md#supported-file-types)
-and read more about [saving data to the server](../overview/project.md#uploading-a-project).
+and read more about [saving data to the server](../datagrok/project.md#uploading-a-project).
 
 ### File browser
 
@@ -125,7 +125,7 @@ startup, tweak your user's [general settings](https://public.datagrok.ai/setting
 
 This panel describes the properties of a current object. Typically, whenever the user clicks on most objects within the
 platform, such as a table, data connection, application, command, or any other
-[supported object type](../overview/objects.md), this object becomes a current object. So, to focus on one, simply click
+[supported object type](../datagrok/objects.md), this object becomes a current object. So, to focus on one, simply click
 on it. After that, you will see the corresponding property panel as well as the
 [context help](#context-help).
 
@@ -173,7 +173,7 @@ them. It is also possible to enable the variables view from the toolbox
 There are several ways for an object to appear as a variable:
 
 * Direct assignment like `x = 5` in the [console](#console)
-* [Drag-and-drop](../overview/drag-and-drop.md) an object to the variables view
+* [Drag-and-drop](../datagrok/drag-and-drop.md) an object to the variables view
 
 ![Variables](../uploads/navigation/variables.png "Variables View")
 

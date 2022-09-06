@@ -154,7 +154,7 @@ export class UserSession extends Entity {
 
 /** Represents a function
  * @extends Entity
- * {@link https://datagrok.ai/help/overview/functions/function}
+ * {@link https://datagrok.ai/help/datagrok/functions/function}
  * */
 export class Func extends Entity {
   public aux: any;

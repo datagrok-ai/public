@@ -94,7 +94,7 @@ taken from there.
 ### Properties
 
 First and foremost, let's take a look at how we can define properties of a viewer. They will include all the parameters
-you want users to be able to tweak from the UI in the [property panel](../../overview/navigation.md#properties), be it
+you want users to be able to tweak from the UI in the [property panel](../../datagrok/navigation.md#properties), be it
 data to display, a color scheme, or some numeric values. We need to set a couple of properties for our bar chart:
 
 ```javascript
@@ -462,7 +462,7 @@ chart pinned to the right.
 
 Tagging scripts or functions as `viewers` registers them within the platform. Registering a viewer makes it available in
 the top menu and enables common viewer operations, such as cloning, docking, embedding, and switching to full screen
-mode. This also means that users can persist this viewer as part of a [project](../../overview/project.md).
+mode. This also means that users can persist this viewer as part of a [project](../../datagrok/project.md).
 
 ![top-menu-add-viewer](top-menu-add-viewer.gif "Add a viewer")
 

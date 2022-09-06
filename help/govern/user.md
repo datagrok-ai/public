@@ -7,7 +7,7 @@ Represents the identity of a person, and is used for [group](group.md) and role 
 
 ## Filtering
 
-Within the users view, you can use these fields to filter users with [smart search](../overview/smart-search.md):
+Within the users view, you can use these fields to filter users with [smart search](../datagrok/smart-search.md):
 
 | Field       | Description                                            |
 |-------------|--------------------------------------------------------|
@@ -39,7 +39,7 @@ uses [audit](../govern/audit.md) as a data source.
 
 **Activity** pane lists user actions recorded in the platform, with the most recent actions on top. It
 uses [audit](../govern/audit.md) as a data source. Note that the activity is interactive, i.e. by clicking on
-highlighted entities their properties will appear in the [property panel](../overview/navigation.md#properties).
+highlighted entities their properties will appear in the [property panel](../datagrok/navigation.md#properties).
 
 **Favorites** contains your favorite objects. To add something to favorites, click on it, and then click on the "star"
 icon on the right in the property panel. Not every object can be added to favorites, currently the list is limited to

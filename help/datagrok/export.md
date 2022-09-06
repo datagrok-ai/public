@@ -37,6 +37,6 @@ A PowerPoint presentation will contain screenshots of all tables and all viewers
 
 See also:
 
-* [Projects](../overview/project.md)
+* [Projects](../datagrok/project.md)
 * [Layout](../visualize/view-layout.md)
 * [Viewers](../visualize/viewers.md)

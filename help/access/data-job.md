@@ -42,13 +42,13 @@ Those privileges can be given to individuals or to groups (which can be defined 
 
 ## Filtering
 
-You can use these fields to filter jobs using [smart search](../overview/smart-search.md):
+You can use these fields to filter jobs using [smart search](../datagrok/smart-search.md):
 
 | Field       | Description                                                            |
 |-------------|------------------------------------------------------------------------|
 | ID          |                                                                        |
 | name        |                                                                        |
-| runs        | list of [DataActionRun](../overview/functions/function-call.md) object |
+| runs        | list of [DataActionRun](../datagrok/functions/function-call.md) object |
 | queries     | list of [DataJob](data-job.md) object                                  |
 | createdOn   |                                                                        |
 | updatedOn   |                                                                        |
@@ -62,4 +62,4 @@ See also:
 * [Data pipeline](data-pipeline.md)
 * [Data connection](data-connection.md)
 * [Data query](data-query.md)
-* [Function call](../overview/functions/function-call.md)
+* [Function call](../datagrok/functions/function-call.md)

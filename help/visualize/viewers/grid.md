@@ -132,5 +132,5 @@ element, you will see the row it represents in the grid.
 See also:
 
 * [Viewers](../viewers.md)
-* [Table View](../../overview/table-view.md)
+* [Table View](../../datagrok/table-view.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)

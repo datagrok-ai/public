@@ -31,7 +31,7 @@ that can be applied to the table. Then you can predict the outcome in one click.
 
 ## Suggesting applicable actions
 
-Using the repository of [functions](../overview/functions/function.md) (over 200+ functions), historical activity, and
+Using the repository of [functions](../datagrok/functions/function.md) (over 200+ functions), historical activity, and
 the structure of the current table, the system uses AI techniques to suggest actions that are likely to be relevant at
 the moment. For instance, if it finds a column that looks like street address, it will suggest to convert it to
 geographical positions by doing the geo-coding and adding two columns (longitude, latitude). Or, it may suggest to
@@ -49,7 +49,7 @@ do it on demand whenever the current record changes), and visualize the results 
 ## Info panels
 
 [Info panels](info-panels.md) provide additional information about the current context (which can be a table, a column,
-or any other [object](../overview/objects.md)). Info panels are meant to be easily developed by the users of the
+or any other [object](../datagrok/objects.md)). Info panels are meant to be easily developed by the users of the
 platform, and shared with other users. You can use all features of the Datagrok platform, such as scripting, data
 querying and transformation pipeline, user-defined functions, markup, viewers, predictive models.
 

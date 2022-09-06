@@ -12,7 +12,7 @@ Properties:
 |---------------------|---------|
 | Content             |     |
 | Mode                | Text, Html, Markdown, or Auto |
-| Markup Enabled      | When true, the rendered HTML is processed by the [Markup](../../overview/markup.md) engine |
+| Markup Enabled      | When true, the rendered HTML is processed by the [Markup](../../datagrok/markup.md) engine |
 
 Context menu:
 
@@ -33,6 +33,6 @@ Here is how to embed iframes:
 See also:
 
 * [Viewers](../viewers.md)
-* [Table view](../../overview/table-view.md)
-* [Flex view](../../overview/flex-view.md)
+* [Table view](../../datagrok/table-view.md)
+* [Flex view](../../datagrok/flex-view.md)
 * [JS API: Markup](https://public.datagrok.ai/js/samples/ui/viewers/types/markup)

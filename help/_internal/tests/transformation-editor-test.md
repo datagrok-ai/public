@@ -40,11 +40,11 @@ users.
 * "RenameColumn" action step is highlighted in green
 * *"city"* column name was changed to *"town"* in table preview
 
-1. Switch to list of actions categories on [Toolbox](../../overview/navigation.md#toolbox)
+1. Switch to list of actions categories on [Toolbox](../../datagrok/navigation.md#toolbox)
 
 1. Choose "Enrich" actions category
 
-1. Switch back to list of actions on [Toolbox](../../overview/navigation.md#toolbox)
+1. Switch back to list of actions on [Toolbox](../../datagrok/navigation.md#toolbox)
 
 * Only "Enrich" category actions are shown
 
@@ -85,9 +85,9 @@ users.
 1. Close [Transformations Editor](../../transform/recipe-editor.md).md view, go to "Connect to data" view
 
 1. Select *stores in @state* query. (*PostgreSQL* provider, *starbucks* connection)
-   in [Property Panel](../../overview/navigation.md#properties)
+   in [Property Panel](../../datagrok/navigation.md#properties)
 
-* "transformation" tab of [Property Panel](../../overview/navigation.md#properties) shows the script created earlier (**)
+* "transformation" tab of [Property Panel](../../datagrok/navigation.md#properties) shows the script created earlier (**)
 
 1. Run *stores in @state* query with value ```NY``` for @state parameter
 
@@ -101,5 +101,5 @@ AddressToCoordinates("StoresInState", "Address")```
 See also:
 
 * [Recipe Editor](../../transform/recipe-editor.md)
-* [Console](../../overview/navigation.md#console)
-* [Console Test](../../overview/console-test.md)
+* [Console](../../datagrok/navigation.md#console)
+* [Console Test](../../datagrok/console-test.md)

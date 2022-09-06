@@ -39,6 +39,6 @@ values:
 See also:
 
 * [Column selectors](column-selectors.md)
-* [Table View](../../overview/table-view.md)
+* [Table View](../../datagrok/table-view.md)
 * [Viewers](../viewers.md)
 * [JS API: Bar Chart](https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart)

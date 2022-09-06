@@ -239,6 +239,6 @@ See also:
 
 * [Data query](data-query.md)
 * [Search patterns](../explore/data-search-patterns.md)
-* [Function](../overview/functions/function.md)
+* [Function](../datagrok/functions/function.md)
 * [Scripting](../compute/scripting.md)
 * [JavaScript API Samples](https://public.datagrok.ai/js/samples/data-access/parameterized-query)

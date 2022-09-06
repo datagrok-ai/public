@@ -19,5 +19,5 @@ Here are some of commonly used drag-and drop operations:
 Drag-and-dropping columns is an intuitive way to choose columns on viewers, or perform operations on them. A number of
 controls can be used as a source of drag-and-drop:
 [Grid](../visualize/viewers/grid.md), [Column Manager](../explore/column-manager.md)
-, [Table Manager](../overview/table-manager.md)
+, [Table Manager](../datagrok/table-manager.md)
 Most of the viewers, and a lot of dialogs accept columns that are being dragged.

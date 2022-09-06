@@ -3,12 +3,12 @@
 
 # Viewers
 
-A viewer is a visual component associated with a [table](../overview/table.md). Unlike other products, our viewers
+A viewer is a visual component associated with a [table](../datagrok/table.md). Unlike other products, our viewers
 are [superfast](../develop/advanced/performance.md#viewers), completely interactive, and are capable of handling tens of
 millions of rows (or millions of columns).
 
-Viewers belonging to the same [view](../overview/table-view.md) share the same row selection and filter. Viewers are
-saved as part of the [project](../overview/project.md). Also, it is possible to save viewers and views individually and
+Viewers belonging to the same [view](../datagrok/table-view.md) share the same row selection and filter. Viewers are
+saved as part of the [project](../datagrok/project.md). Also, it is possible to save viewers and views individually and
 reuse them (or share with teammates) later on.
 
 * [Creating](#creating)
@@ -167,7 +167,7 @@ The following commands are the most common:
 
 |            |                                                                                                                                                                                                                                    |
 |------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Properties | Show viewer properties in the [property panel](../overview/navigation.md#properties)                                                                                                                                               |
+| Properties | Show viewer properties in the [property panel](../datagrok/navigation.md#properties)                                                                                                                                               |
 | Reset View | Reset zoom level. Applies for: [Scatter plot](viewers/scatter-plot.md), [Line chart](viewers/line-chart.md), [Bar chart](viewers/bar-chart.md), [3D scatter plot](viewers/3d-scatter-plot.md), and [Box plot](viewers/box-plot.md) |
 
 General commands are available under the **General** submenu:
@@ -265,7 +265,7 @@ To help users analyze their data in depth, our visualizations include a number o
 ## Layouts
 
 View Layout contains relative positions of [viewers](../visualize/viewers.md) in
-a [table view](../overview/table-view.md), along with the viewers' properties. By separating layouts from the actual
+a [table view](../datagrok/table-view.md), along with the viewers' properties. By separating layouts from the actual
 data displayed, it's possible to save current layout (**View | Layout | Save to Gallery**) and later apply it to a
 different dataset
 (**View | Layout | Open Gallery**).
@@ -436,6 +436,6 @@ Visualizes magnitude and color for data on 3D globe using: latitude, longitude. 
 
 See also:
 
-* [Table view](../overview/table-view.md)
+* [Table view](../datagrok/table-view.md)
 * [Column selectors](viewers/column-selectors.md)
 * [Chemically-aware viewers](../domains/chem/chemically-aware-viewers.md)

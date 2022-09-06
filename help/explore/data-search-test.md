@@ -71,4 +71,4 @@ See also:
 
 * [Search](data-search.md)
 * [Search patterns](data-search-patterns.md)
-* [Smart search](../overview/smart-search.md)
+* [Smart search](../datagrok/smart-search.md)

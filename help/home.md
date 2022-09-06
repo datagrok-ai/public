@@ -56,8 +56,8 @@ Manage availability, usability, integrity and security of your data, all in one 
 ## Transform
 
 * [Aggregate, join, filter and edit data](transform/data-wrangling.md) right in the browser
-* Record and apply [macros](overview/navigation.md#recording-macros)
-* Use 500+ available [functions](overview/functions/function.md), or write your own in R, Python, or JavaScript
+* Record and apply [macros](datagrok/navigation.md#recording-macros)
+* Use 500+ available [functions](datagrok/functions/function.md), or write your own in R, Python, or JavaScript
 * Visually edit [pipelines](transform/job-editor.md)
   and [query transformations](transform/recipe-editor.md)
 
@@ -112,7 +112,7 @@ Turn your data into actionable insights by using state-of-the art machine learni
 * Create [pipelines](transform/job-editor.md), schedule [jobs](access/data-job.md), and set up alerts
 * [Customizable by IT](develop/admin/it-customizations.md)
 * Easy to learn the platform with
-  * [Interactive help](overview/navigation.md#help),
+  * [Interactive help](datagrok/navigation.md#help),
   * [Community forum](https://community.datagrok.ai/),
   * Tutorials (go to [Datagrok Public](https://public.datagrok.ai/), find "Help" section and select "Tutorials")
   * [Video lessons](video-lessons.md) and platform overviews (full [list of topics](video-contents.md), including

@@ -4,7 +4,7 @@
 # Security overview
 
 Datagrok uses a flexible mechanism for setting up privileges and access rights for
-all [entities](../overview/objects.md), largely based on [RBAC](https://en.wikipedia.org/wiki/Role-based_access_control)
+all [entities](../datagrok/objects.md), largely based on [RBAC](https://en.wikipedia.org/wiki/Role-based_access_control)
 . It lets you define [user groups](../govern/group.md) and associate them with permissions for different entities.
 Permission sets are different for each entity type, for instance, a
 "package" entity has "publish" and "edit" privileges, while a "query" entity has "execute" and "
@@ -84,7 +84,7 @@ key-value pairs.
 
 See also:
 
-* [Entities](../overview/objects.md)
+* [Entities](../datagrok/objects.md)
 * [Groups](group.md)
 * [Authentication](authentication.md)
 * [Authorization](authorization.md)

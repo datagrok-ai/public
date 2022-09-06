@@ -10,9 +10,9 @@ equations, visualizations and narrative text.
 
 1. Open "smiles_coordinates.csv" table
 
-1. Select "smiles_coordinates.csv" table on [Property Panel](../overview/navigation.md#properties)
+1. Select "smiles_coordinates.csv" table on [Property Panel](../datagrok/navigation.md#properties)
 
-1. Click "Open in Jupyter" in "Actions" tab on [Property Panel](../overview/navigation.md#properties)
+1. Click "Open in Jupyter" in "Actions" tab on [Property Panel](../datagrok/navigation.md#properties)
 
 * "smiles_coordinates.csv" table open in Jupyter
 * Jupyter Notebook open in new tab
@@ -40,7 +40,7 @@ equations, visualizations and narrative text.
 
 * Current notebook saved
 
-1. Open [Workspace](../overview/workspace.md) window
+1. Open [Workspace](../datagrok/workspace.md) window
 
 * Notebook entity is in the "Scratchpad" project
 
@@ -80,12 +80,12 @@ equations, visualizations and narrative text.
 * Actions "Open", "Edit", "Delete", "Save as JSON", "Rename" are available from context menu
 * Notebook can be applied to "smiles_cordinates" table from context menu
 
-1. Choose "Chemical Space Using tSNE" notebook for [Properties Panel](../overview/navigation.md#properties)
+1. Choose "Chemical Space Using tSNE" notebook for [Properties Panel](../datagrok/navigation.md#properties)
 
 * Tabs "Details", "Projects", "Activity", "Actions" and "Chats" are present
-  on [Properties Panel](../overview/navigation.md#properties)
+  on [Properties Panel](../datagrok/navigation.md#properties)
 
-1. Click on "Created by me" filter on [Toolbox](../overview/navigation.md#toolbox)
+1. Click on "Created by me" filter on [Toolbox](../datagrok/navigation.md#toolbox)
 
 * Only notebooks created by current user are displayed in browser
 * Search field filled with predefined query *author = @current*

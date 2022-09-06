@@ -33,7 +33,7 @@ make it available to the whole community! To do that, right-click on script's na
 panel and select `Share...`, then type in `All Users` and confirm. (You may want to uncheck the `Send notifications`
 box).
 
-Use [Console](../overview/navigation.md#console) to execute it. Simply type
+Use [Console](../datagrok/navigation.md#console) to execute it. Simply type
 `<YOUR_USER_NAME>:RSquare(3)`:
 
 ```
@@ -42,7 +42,7 @@ Use [Console](../overview/navigation.md#console) to execute it. Simply type
 ```
 
 The syntax for invoking the scripts is the same, regardless of the language used. In the same way, you can call Grok
-Functions. See [Grok Scripting](../overview/grok-script.md) for more details.
+Functions. See [Grok Scripting](../datagrok/grok-script.md) for more details.
 
 ### Output values validation
 
@@ -54,7 +54,7 @@ happen, the two things will follow:
 1. The unset output values would still be returned, but valued as `null`-s.
 
 2. A warning `Output value ${output.param.name} was not set` will be print to
-   [Datagrok Console](../overview/navigation.md#console) (open it with `Ctrl-~`).
+   [Datagrok Console](../datagrok/navigation.md#console) (open it with `Ctrl-~`).
 
 In this script the value `c3` is missed to be set:
 
@@ -85,9 +85,9 @@ First of all, a script can be executed right from the script editor (see picture
 
 Other ways involve saving the script as a part of a [package](../develop/develop.md#packages). In this case, it gets
 registered in the platform as a
-[function](../overview/functions/function.md), and can be invoked in different ways:
+[function](../datagrok/functions/function.md), and can be invoked in different ways:
 
-* From the [console](../overview/navigation.md#console)
+* From the [console](../datagrok/navigation.md#console)
 * From the [data job](../access/data-job.md)
 * From the [transformations editor](../transform/recipe-editor.md)
 * From the [function browser](https://public.datagrok.ai/functions)
@@ -98,7 +98,7 @@ When a function is invoked with no explicitly specified parameters, a dialog is 
 by creating editors for each parameter. Depending on the metadata associated with the parameters, the editor can be
 enriched by [validators](#parameter-validators), [choices](#parameter-choices),
 and [suggestions](#parameter-suggestions). Validators, choices, and suggestions are
-[functions](../overview/functions/function.md), that means they can be implemented in different ways (db query, script,
+[functions](../datagrok/functions/function.md), that means they can be implemented in different ways (db query, script,
 etc), and reused.
 
 Registered scripts can be called via [JavaScript API](../develop/js-api.md) in the following manner:
@@ -531,13 +531,13 @@ Header line examples:
 
 ## Filtering
 
-You can use these fields to filter scripts with [smart search](../overview/smart-search.md):
+You can use these fields to filter scripts with [smart search](../datagrok/smart-search.md):
 
 | Field       | Description                                                       |
 |-------------|-------------------------------------------------------------------|
 | ID          |                                                                   |
 | name        |                                                                   |
-| runs        | list of [FuncCall](../overview/functions/function-call.md) object |
+| runs        | list of [FuncCall](../datagrok/functions/function-call.md) object |
 | createdOn   |                                                                   |
 | updatedOn   |                                                                   |
 | author      | [User](../govern/user.md) object                                  |
@@ -551,7 +551,7 @@ You can use these fields to filter scripts with [smart search](../overview/smart
 
 See also:
 
-* [Grok scripting](../overview/grok-script.md)
+* [Grok scripting](../datagrok/grok-script.md)
 * [R](https://www.r-project.org/about.html)
 * [Python](https://www.python.org)
 * [Octave](https://octave.org/)
@@ -559,5 +559,5 @@ See also:
 * [JavaScript](https://www.javascript.com)
 * [Packages](../develop/develop.md#packages)
 * [JavaScript API](../develop/js-api.md)
-* [Functions](../overview/functions/function.md)
-* [Function call](../overview/functions/function-call.md)
+* [Functions](../datagrok/functions/function.md)
+* [Function call](../datagrok/functions/function-call.md)

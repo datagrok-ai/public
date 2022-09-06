@@ -3,13 +3,13 @@
 
 # Tests: console
 
-[Console](../overview/navigation.md#console) is used to execute commands and record macros.
+[Console](../datagrok/navigation.md#console) is used to execute commands and record macros.
 
 ## Testing scenarios
 
 1. Open dataset "demog".
 
-1. Open [console](../overview/navigation.md#console) by clicking ```"~"``` (tilda) button on keyboard.
+1. Open [console](../datagrok/navigation.md#console) by clicking ```"~"``` (tilda) button on keyboard.
 
 1. Use menu "Select" for select rows ([Random](../explore/select-random-rows.md)
    , [Duplicates](../explore/select-duplicates.md),
@@ -37,7 +37,7 @@
 * The command matches the script name and has selected parameters.
 
 1. Start writing the name of the [script](../compute/scripting.md) "Linear regression" in the input field of the
-   command [console](../overview/navigation.md#console). After entering the "Line"
+   command [console](../datagrok/navigation.md#console). After entering the "Line"
    press the ```"Tab"``` key from the keyboard.
 
 * After pressing the ```"Tab"``` key, the command was written automatically.
@@ -49,7 +49,7 @@
 
 1. To navigate through the commands executed, use the ```"Up"``` and ```"Down"``` keys on the keyboard.
 
-1. Highlight and drag the command from the console to the [console](../overview/navigation.md#console) input field.
+1. Highlight and drag the command from the console to the [console](../datagrok/navigation.md#console) input field.
 
 * Selected command is dragged into the console field.
 
@@ -66,5 +66,5 @@
 
 See also:
 
-* [Console](../overview/navigation.md#console)
+* [Console](../datagrok/navigation.md#console)
 * [Scripting](../compute/scripting.md)

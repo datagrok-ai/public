@@ -10,9 +10,9 @@ Datagrok integrates with OpenAPI really well. Once a swagger file is imported
 (you can simply drag-and-drop a `yaml` or `json` file into the app), its content gets translated to
 [data connections](data-connection.md),
 [queries](data-query.md), and
-[functions](../overview/functions/function.md). All of them may be combined and used in [data jobs](data-job.md),
+[functions](../datagrok/functions/function.md). All of them may be combined and used in [data jobs](data-job.md),
 [calculations](../compute/compute.md),
-[info panels](../discover/info-panels.md), executed from [console](../overview/navigation.md#console), etc.
+[info panels](../discover/info-panels.md), executed from [console](../datagrok/navigation.md#console), etc.
 
 You can find this connection in [Connections Tree](https://public.datagrok.ai/connect)
 under the source "Web". There is a special view

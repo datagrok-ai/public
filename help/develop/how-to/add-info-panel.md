@@ -7,7 +7,7 @@
 new context-specific data to the sight. You can inform users about an object
 they see through these panels, which is why they have such a name. New details
 typically appear along with the rest of the information in the [property
-panel](../../overview/navigation.md#properties) and [visibility
+panel](../../datagrok/navigation.md#properties) and [visibility
 conditions](#visibility-conditions) will be re-evaluated whenever the object
 changes.
 
@@ -16,7 +16,7 @@ changes.
 Info panels are added as part of a [package](../develop.md). There are two ways
 of developing them for Datagrok: either as panel
 [scripts](../../compute/scripting.md) or as JavaScript panel
-[functions](../../overview/functions/function.md). Panel scripts can be written
+[functions](../../datagrok/functions/function.md). Panel scripts can be written
 in any language supported by the platform (the full list of supported languages
 is available [here](../../compute/scripting.md#supported-languages)). In this
 case, the main difference between the two implementations pertains to where the
@@ -90,7 +90,7 @@ hasCats = len(detector.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=3, m
 ```
 
 Regardless of a script's language, conditions are written in [Grok
-script](../../overview/grok-script.md) syntax.
+script](../../datagrok/grok-script.md) syntax.
 
 ### Functions
 
@@ -135,5 +135,5 @@ See also:
   Samples](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
 * [JavaScript development](../develop.md)
 * [Scripting](../../compute/scripting.md)
-* [Functions](../../overview/functions/function.md)
+* [Functions](../../datagrok/functions/function.md)
 * [Semantic types](../../discover/semantic-types.md)
