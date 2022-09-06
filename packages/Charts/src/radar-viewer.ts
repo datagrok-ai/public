@@ -48,7 +48,7 @@ export class RadarViewer extends DG.JsViewer {
 
     if (typeof this.id !== 'undefined') {
       for (const c of columns) {
-        option.radar.indicator.push({name: c.name, avg: this.avg(c) });
+        option.radar.indicator.push({name: c.name, avg: DG.Stats.fromColumn(c).avg });
       }
       this.pushData(data, columns, this.id);
     } else {
@@ -60,16 +60,6 @@ export class RadarViewer extends DG.JsViewer {
       }
     }
     this.myChart.setOption(option);
-  }
-
-  avg(col: DG.Column) {
-    let sum = 0;
-    let data = col.getRawData();
-    let rowCount = this.dataFrame.rowCount;
-    for (let i = 0; i < rowCount; i++) {
-      sum += data[i];
-    }
-  return sum;
   }
 
   pushData(data: any, columns: DG.Column<any>[], i: number) {
