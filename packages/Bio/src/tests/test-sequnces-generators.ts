@@ -1,27 +1,22 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import {DataFrame} from 'datagrok-api/dg';
 
-export function generateManySequences(): string {
-  let csvData = `MSA,Activity
-meI/hHis/Aca/N/T/dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me,5.30751`;
-  for (let i = 0; i < 10 ** 6; i++) {
-    csvData += `\n meI/hHis/Aca/N/T/dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me,5.30751`;
-  }
-  return csvData;
+export function generateManySequences(): DG.Column[] {
+  let columns: DG.Column[] = [];
+  columns.push(DG.Column.fromList('string', 'MSA', new Array(10 ** 6).fill('meI/hHis/Aca/N/T/dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me')));
+  columns.push(DG.Column.fromList('string', 'Activity', new Array(10 ** 6).fill('5.30751')));
+  return columns;
 }
 
-export function generateLongSequence(): string {
-  let longSequence = `meI/hHis/Aca/N/T/dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr`;
-  for (let i = 0; i < 10 ** 5; i++) {
-    longSequence += `/Aca/N/T/dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/dv`;
-  }
-  longSequence += `//Phe_4Me,5.30751`;
-  let csvData = `MSA,Activity `;
-  for (let i = 0; i <= 10 ** 1 * 4; i++) {
-    csvData += `\n ${longSequence}`;
-  }
-  return csvData;
+export function generateLongSequence(): DG.Column[] {
+  let columns: DG.Column[] = [];
+  const longSequence = `meI/hHis/Aca/N/T/dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr`.repeat(10 ** 5);
+  columns.push(DG.Column.fromList('string', 'MSA', new Array(10 ** 2).fill(longSequence)));
+  columns.push(DG.Column.fromList('string', 'Activity', new Array(10 ** 2).fill('7.30751')));
+  return columns;
 }
+
 export function setTagsMacromolecule(col: DG.Column) {
   col.semType = DG.SEMTYPE.MACROMOLECULE;
   col.setTag('units', 'separator');
@@ -31,10 +26,10 @@ export function setTagsMacromolecule(col: DG.Column) {
   return col;
 }
 
-export function performanceTest(generateFunc: () => string,testName: string) {
+export function performanceTest(generateFunc: () => DG.Column[], testName: string) {
+  const columns = generateFunc();
+  const df: DG.DataFrame = DG.DataFrame.fromColumns(columns);
   const startTime: number = Date.now();
-  const csv = generateFunc();
-  const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
   const col: DG.Column = df.columns.byName('MSA');
   setTagsMacromolecule(col);
   grok.shell.addTableView(df);
