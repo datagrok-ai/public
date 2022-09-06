@@ -903,7 +903,7 @@ export class Column<T = any> {
   }
 
   /** Copies column values to an array.
-   *  @returns {Array} */
+   * Avoid using this method for performance-critical routines; consider using {@link getRawData} */
   toList(): Array<any> {
     return api.grok_Column_ToList(this.dart);
   }
@@ -918,8 +918,7 @@ export class Column<T = any> {
     return api.grok_Column_GetCategory(this.dart, categoryIndex);
   }
 
-  /** Sets order of categories
-   * @param {string[]} order */
+  /** Sets order of categories */
   setCategoryOrder(order: string[]) {
     api.grok_Column_SetCategoryOrder(this.dart, order);
   }
@@ -942,8 +941,8 @@ export class Column<T = any> {
   get max(): number { return api.grok_Column_Max(this.dart); }
 
   /** Checks whether the column passes the specified [filter].
-   * [filter] can be either specific data [type] such as 'int' or 'string', more broadly - 'numerical', or 'categorical', or null for any columns.
-   * @returns {boolean} */
+   * [filter] can be either specific data [type] such as 'int' or 'string',
+   * more broadly - 'numerical', or 'categorical', or null for any columns. */
   matches(filter: ColumnType | 'numerical' | 'categorical' | null): boolean {
     return api.grok_Column_Matches(this.dart, filter);
   }
@@ -969,15 +968,12 @@ export class Column<T = any> {
       this.dart, formula, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 
-  /** Creates and returns a new column by converting [column] to the specified [newType].
-   *  @param {string} newType
-   *  @param {string} format
-   *  @returns {Column} */
+  /** Creates and returns a new column by converting [column] to the specified [newType]. */
   convertTo(newType: string, format: string | null = null): Column {
     return toJs(api.grok_Column_ConvertTo(this.dart, newType, format));
   }
 
-  /** @returns {string} */
+  /** @returns {string} - string representation of this column */
   toString(): string {
     return api.grok_Object_ToString(this.dart);
   }
@@ -1222,11 +1218,9 @@ export class ColumnList {
     return api.grok_ColumnList_GetUnusedName(this.dart, name, choices);
   }
 
-  /** Iterates over all columns.
-   * @returns {Iterable.<Column>}
-   * */
-  [Symbol.iterator]() {
-    return _getIterator(this.dart);
+  /** Iterates over all columns. */
+  [Symbol.iterator]() : IterableIterator<Column> {
+    return _getIterator(this.dart) as IterableIterator<Column>;
   }
 
   /** @returns {string} */
