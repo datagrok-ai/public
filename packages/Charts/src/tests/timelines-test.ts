@@ -66,19 +66,19 @@ category('Timelines', () => {
     expect(options.showZoomSliders, false);
   });
 
-  test('Context menu', () => new Promise((resolve, reject) => {
-    const viewer = DG.Viewer.fromType(TYPE, df);
-    subs.push(viewer.onContextMenu.subscribe((menu) => {
-      const customCommand = menu.find('Reset View');
-      if (customCommand == null)
-        reject('Command not found');
-      else
-        resolve('OK');
-    }));
+  // test('Context menu', () => new Promise((resolve, reject) => {
+  //   const viewer = DG.Viewer.fromType(TYPE, df);
+  //   subs.push(viewer.onContextMenu.subscribe((menu) => {
+  //     const customCommand = menu.find('Reset View');
+  //     if (customCommand == null)
+  //       reject('Command not found');
+  //     else
+  //       resolve('OK');
+  //   }));
 
-    setTimeout(() => reject('Timeout'), 50);
-    $(viewer.root).trigger('contextmenu');
-  }));
+  //   setTimeout(() => reject('Timeout'), 50);
+  //   $(viewer.root).trigger('contextmenu');
+  // }));
 
   after(async () => {
     subs.forEach((sub) => sub.unsubscribe());
