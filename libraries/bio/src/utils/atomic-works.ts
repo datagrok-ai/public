@@ -134,8 +134,7 @@ function getIndices(v2KMolblock: string, v3KMolblock: string): Indices {
 
 /* provide description */
 async function rotateBackboneV3K(v3KMolblock: string, indices:any): Promise<string> {
-  // todo: rename 'coordinates'
-  const coordinates = extractAtomDataV3K(v3KMolblock);
+  const coordinates = extractAtomDataV3K(v3KMolblock); // naming?
   const atomCount = coordinates.atomIndices.length;
   const first = indices['first'];
   const last = indices['last'];
@@ -150,16 +149,16 @@ async function rotateBackboneV3K(v3KMolblock: string, indices:any): Promise<stri
   }
 
   let angle = 0;
-  if (coordinates.x[first] === 0) {
-    angle = coordinates.y[first] > coordinates.y[last] ? Math.PI/2 : 3*Math.PI/2;
-  } else if (coordinates.y[first] === 0) {
-    angle = coordinates.x[first] > coordinates.x[last] ? Math.PI : 0;
+  if (coordinates.x[first] === 0) { // both vertices are on OY
+    angle = coordinates.y[first] > coordinates.y[last] ? Math.PI/2 : -Math.PI/2;
+  } else if (coordinates.y[first] === 0) { // both vertices are on OX
+    angle = coordinates.x[first] > coordinates.x[last] ? Math.PI : 0; // v
   } else {
     const tangent = coordinates.y[first]/coordinates.x[first];
     if (coordinates.x[first] < coordinates.x[last])
-      angle = tangent > 0 ? Math.PI - Math.atan(tangent) : Math.atan(tangent);
+      angle = tangent > 0 ? -Math.atan(tangent) : Math.atan(tangent);
     else
-      angle = tangent > 0 ? Math.atan(tangent) : Math.PI - Math.atan(tangent);
+      angle = tangent > 0 ? Math.PI - Math.atan(tangent) : Math.atan(tangent) - Math.PI;
   }
 
   const cos = Math.cos(angle);
@@ -402,10 +401,12 @@ export async function getMacroMol(monomers: any[][]): Promise<string[]> {
 
       // a new molfile for 'rotated' is obtained in v3k format
       monomers[i][j]['molfile'] = await rotateBackboneV3K(v3KMolblock, indices);
-      molblock?.delete();
+      // monomers[i][j]['molfile'] = v3KMolblock;
+      molObj?.delete();
     }
     // seemingly, at this stage the bond is reconstructed
     result.push(linkV3K(monomers[i]));
+    // result.push(monomers[i][0]['molfile']);
   }
 
   return result;
