@@ -19,17 +19,17 @@ interface IRenderedLines {
 }
 
 export interface ISequenceSpaceParams {
-    seqCol: DG.Column,
-    methodName: string,
-    similarityMetric: string,
-    embedAxesNames: string[],
-    options?: any
+  seqCol: DG.Column,
+  methodName: string,
+  similarityMetric: string,
+  embedAxesNames: string[],
+  options?: any
 }
 
 export interface ISequenceSpaceResult {
-    distance: Matrix;
-    coordinates: DG.ColumnList;
-  }
+  distance: Matrix;
+  coordinates: DG.ColumnList;
+}
 
 export interface ITooltipAndPanelParams {
   cashedData: any,
@@ -44,11 +44,12 @@ let zoom = false;
 
 const molColumnNames = ['1_seq', '2_seq'];
 
+
 // Searches for activity cliffs in a chemical dataset by selected cutoff
 export async function getActivityCliffs(
     df: DG.DataFrame, 
     seqCol: DG.Column,
-    encodedCol: DG.Column, 
+    encodedCol: DG.Column | null,
     axesNames: string[],
     scatterTitle: string,
     activities: DG.Column, 
@@ -175,7 +176,7 @@ export async function getActivityCliffs(
     linesDfGrid.invalidate();
   });
 
-  linesRes.linesDf.onSelectionChanged.subscribe((_) => {
+  linesRes.linesDf.onSelectionChanged.subscribe((_: any) => {
     if (linesRes.linesDf.mouseOverRowIdx !== -1) {
       const line = linesRes.lines[linesRes.linesDf.mouseOverRowIdx];
       line.selected = !line.selected;
@@ -249,7 +250,7 @@ export async function getActivityCliffs(
   });
 
   sp.onEvent('d4-before-draw-scene')
-    .subscribe((_) => {
+    .subscribe((_: any) => {
       const lines = renderLines(sp,
         axesNames[0], axesNames[1], linesRes, saliVals, saliOpacityCoef, saliMin);
       if (zoom) {

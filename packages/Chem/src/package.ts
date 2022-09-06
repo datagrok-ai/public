@@ -137,14 +137,13 @@ export async function chemCellRenderer(): Promise<DG.GridCellRenderer> {
 //name: getMorganFingerprints
 //input: column molColumn {semType: Molecule}
 //output: column result [fingerprints]
-export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Column<any>> {
+export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Column> {
   assure.notNull(molColumn, 'molColumn');
 
   try {
     const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan);
     const fingerprintsBitsets: DG.BitSet[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
-      //@ts-ignore
       const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
       fingerprintsBitsets.push(fingerprint);
     }
@@ -160,7 +159,6 @@ export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Co
 //output: object fingerprintBitset [Fingerprints]
 export function getMorganFingerprint(molString: string): DG.BitSet {
   const bitArray = chemSearches.chemGetFingerprint(molString, Fingerprint.Morgan);
-  //@ts-ignore
   return DG.BitSet.fromBytes(bitArray.getRawData().buffer, bitArray.length);
 }
 
@@ -171,7 +169,7 @@ export function getMorganFingerprint(molString: string): DG.BitSet {
 export async function getSimilarities(molStringsColumn: DG.Column, molString: string): Promise<DG.DataFrame> {
   try {
     const result = await chemSearches.chemGetSimilarities(molStringsColumn, molString);
-    return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
+    return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
   } catch (e: any) {
     console.error('Chem | Catch in getSimilarities: ' + e.toString());
     throw e;
@@ -184,7 +182,7 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
 export async function getDiversities(molStringsColumn: DG.Column, limit: number = Number.MAX_VALUE): Promise<DG.DataFrame> {
   try {
     const result = await chemSearches.chemGetDiversities(molStringsColumn, limit);
-    return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
+    return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
   } catch (e: any) {
     console.error('Chem | Catch in getDiversities: ' + e.toString());
     throw e;
@@ -219,8 +217,9 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: string molBlockFailover
 //output: column result
 export async function searchSubstructure(
-  molStringsColumn: DG.Column, molString: string,
-  molBlockFailover: string) : Promise<DG.Column<any>> {
+    molStringsColumn: DG.Column, molString: string,
+    molBlockFailover: string) : Promise<DG.Column<any>> {
+
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
   assure.notNull(molBlockFailover, 'molBlockFailover');
@@ -258,29 +257,29 @@ export function saveAsSdf(): void {
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string) : Promise<DG.Viewer> {
+    similarity: number, methodName: string) : Promise<DG.Viewer> {
+
   const axesNames = getEmbeddingColsNames(df);
-  const options = {
+  const options: {[key: string]: any} = {
     'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
   };
-  const sp = await getActivityCliffs(
+  return await getActivityCliffs(
     df,
     smiles,
-  null as any,
-  axesNames,
-  'Activity cliffs',
-  activities,
-  similarity,
-  'Tanimoto',
-  methodName,
-  DG.SEMTYPE.MOLECULE,
-  {'units': smiles.tags['units']},
-  chemSpace,
-  chemSearches.chemGetSimilarities,
-  createTooltipElement,
-  createPropPanelElement,
-  (options as any)[methodName]);
-  return sp;
+    null as any,
+    axesNames,
+    'Activity cliffs',
+    activities,
+    similarity,
+    'Tanimoto',
+    methodName,
+    DG.SEMTYPE.MOLECULE,
+    {'units': smiles.tags['units']},
+    chemSpace,
+    chemSearches.chemGetSimilarities,
+    createTooltipElement,
+    createPropPanelElement,
+    options[methodName]);
 }
 
 //top-menu: Chem | Chemical Space...
@@ -291,7 +290,8 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<DG.Viewer|undefined> {
+    similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<DG.Viewer|undefined> {
+
   const embedColsNames = getEmbeddingColsNames(table);
   const withoutEmptyValues = DG.DataFrame.fromColumns([smiles]).clone();
   const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, smiles);
@@ -308,15 +308,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, m
     emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
     table.columns.add(DG.Column.fromList('double', col.name, listValues));
   }
-  let sp;
-  if (plotEmbeddings) {
-    for (const v of grok.shell.views) {
-      if (v.name === table.name)
-        sp = (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
-    }
-  }
-  return sp;
-};
+
+  if (plotEmbeddings)
+    return grok.shell
+      .tableView(table.name)
+      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+}
 
 //name: R-Groups Analysis
 //top-menu: Chem | R-Groups Analysis...
@@ -357,7 +354,7 @@ export function addInchisKeysPanel(col: DG.Column): void {
   addInchiKeys(col);
 }
 
-function getAtomsColumn(molCol: DG.Column) : Map<string, Array<number>>{
+function getAtomsColumn(molCol: DG.Column) : Map<string, Array<number>> {
   const elements: Array<string> = ['R', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 
                                   'Mg', 'Al','Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V',
                                   'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se',
@@ -373,6 +370,7 @@ function getAtomsColumn(molCol: DG.Column) : Map<string, Array<number>>{
   for (let j = 0; j < elements.length; j++) {
     elemental_table.set(elements[j], new Array<number>);
   }
+
   for (let i = 0; i < molCol.length; i++) {
     let el = molCol.get(i);
     if (!isMolBlock(el)) {
@@ -381,14 +379,14 @@ function getAtomsColumn(molCol: DG.Column) : Map<string, Array<number>>{
     const rows = el.split('\n');
     const atom_counts = rows[3].split(' ')[1];
     const new_mol = rows.slice(4, parseInt(atom_counts) + 4).toString();
-    for(let [key, value] of elemental_table.entries()) {
+    for (let [key, value] of elemental_table.entries()) {
       if (new_mol.includes(key)) {
         const count = [...new_mol].filter(x => x === key).length;
         value.push(count);
       } else {
         value.push(0);
       }
-    };
+    }
   }
   return elemental_table;
 }
