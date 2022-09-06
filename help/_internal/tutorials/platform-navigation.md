@@ -51,4 +51,4 @@ parameters
 
 See also:
 
-* [Data import](../../access/importing-data.md)
+* [Data import](../../access/file-browser-and-file-shares.md)

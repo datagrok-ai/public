@@ -414,7 +414,7 @@ choose **Clone**.
 
 |                                               |                                                                                                                                                                                                                                                            |
 |-----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Markup](viewers/markup-viewer.png "Markup") | Use [Markup Viewer](viewers/markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../overview/markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it. |
+| ![Markup](viewers/markup-viewer.png "Markup") | Use [Markup Viewer](viewers/markup.md) to host any text, arbitrary HTML content, or [markdown-formatted text](../datagrok/markdown.md). In most cases, the viewer will auto-detect content type. Use the "Content Type" property to explicitly specify it. |
 
 ## Tile viewer
 

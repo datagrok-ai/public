@@ -10,7 +10,7 @@ sharing
 
 See also:
 
-* [Data import](../../access/importing-data.md)
+* [Data import](../../access/file-browser-and-file-shares.md)
 * [Data connection](../../access/data-connection.md)
 * [Data query](../../access/data-query.md)
 * [Function call](../../datagrok/functions/function-call.md)

@@ -58,7 +58,7 @@ Each script can be run in an isolated environment, with predefined packages conf
 ## Importing notebooks
 
 To import a notebook, just drag-and-drop the corresponding `.ipynb` file to the platform or use
-[import](../access/importing-data.md).
+[import](../access/file-browser-and-file-shares.md).
 
 ## Videos
 

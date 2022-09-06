@@ -128,7 +128,7 @@ indexed and can be browsed.
 ## Common scenarios
 
 1. Test functionality from previous sections with different file types. Supported file types can be found
-   in [importing-data.md](../../access/importing-data.md) file
+   in [supported-formats.md](../../access/supported-formats.md) file
 
 1. Check common functionality for all data sources ([data-query-test](../../access/data-query-test.md))
 

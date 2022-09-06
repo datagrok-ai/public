@@ -14,7 +14,7 @@ Available tutorials:
 * [Functions](functions.md)
 * [Data manipulation](data-manipulation.md)
 * [Data tools](data-tools.md)
-* [Importing data](importing-data.md)
+* [Importing data](file-browser-and-file-shares.md)
 * [Miscellaneous](miscellaneous.md)
 * [Platform navigation](platform-navigation.md)
 * [Scripting](scripting.md)

@@ -5,7 +5,7 @@
 
 For data sources that support file access, the Datagrok platform provides a file indexing feature. File indexer is a
 data job with hourly recurrence that indexes files with
-[supported](importing-data.md#supported-file-types) extensions in the storage specified by data connection.
+[supported](supported-data-sources.md#supported-file-types) extensions in the storage specified by data connection.
 
 See also:
 
