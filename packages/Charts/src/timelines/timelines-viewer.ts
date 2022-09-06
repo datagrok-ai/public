@@ -105,6 +105,13 @@ export class TimelinesViewer extends EChartViewer {
         });
       });
 
+      this.subs.push(this.onEvent('d4-context-menu').subscribe((data) => {
+          data.args.menu.item('Reset View', () => {
+            this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
+            this.render();
+          });
+      }));
+
       this.chart.on('rendered', () => {
         this.count = 0;
       });
