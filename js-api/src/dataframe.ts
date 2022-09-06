@@ -982,8 +982,14 @@ export class Column<T = any> {
     return api.grok_Object_ToString(this.dart);
   }
 
+  /** Aggregates a column using the [type] function, which corresponds to
+   *  - [DG.AGG] for int, bigint, float, qnum columns,
+   *  - [DG.STR_AGG] and [DG.STAT_COUNTS] for string columns,
+   *  - [DG.STAT_COUNTS], [DG.AGG.MIN], [DG.AGG.MAX], [DG.AGG.AVG] for datetime columns,
+   *  - [DG.AGG.TOTAL_COUNT] and [DG.AGG.MISSING_VALUE_COUNT] for virtual columns.
+  */
   aggregate(type: string): any {
-    return api.grok_Column_Aggregate(this.dart, 'longest')
+    return api.grok_Column_Aggregate(this.dart, type);
   }
 }
 export class BigIntColumn extends Column<BigInt> {
