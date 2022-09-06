@@ -155,7 +155,7 @@ let help = [
   },
   {
     'title': 'Stories',
-    'url': 'https://datagrok.ai/help/stories/life-sciences'
+    'url': 'https://datagrok.ai/help/solutions/life-sciences'
   },
   {
     'title': 'Transform',
