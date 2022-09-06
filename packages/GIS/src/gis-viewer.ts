@@ -9,14 +9,16 @@ import * as DG from 'datagrok-api/dg';
 //QJuery import
 import $ from 'cash-dom';
 
+//GIS semantic types import
+import {SEMTYPEGIS} from '../src/gis-semtypes';
+
 //OpenLayers functionality import
 import {OpenLayers} from '../src/gis-openlayer';
 import {Coordinate} from '../src/gis-openlayer';
 import {OLCallbackParam} from '../src/gis-openlayer';
 import VectorLayer from 'ol/layer/Vector';
+import { numberSafeCompareFunction } from 'ol/array';
 
-
-//type Pair<T, K> = [T, K]; //used Coordinate instead if it
 
 export class GisViewer extends DG.JsViewer {
   currentLayer: string;
@@ -58,6 +60,8 @@ export class GisViewer extends DG.JsViewer {
   layers = [];
   coordinates: Coordinate[] = [];
   values: Array<string | number> = [];
+  colorValues: Array<number> = [];
+  sizeValues: Array<number> = [];
 
   constructor() {
     super();
@@ -116,6 +120,7 @@ export class GisViewer extends DG.JsViewer {
     //l1.style.border = '1px solid blue';
     // const btnVisible = ui.button(ui.iconFA('eye'), ()=>{
     const btnVisible = ui.iconFA(isVisible ? 'eye' : 'eye-slash', (evt)=>{ //cogs
+      evt.stopPropagation();
       const divLayer = (evt.currentTarget as HTMLElement);
       const layerId = divLayer.getAttribute('layerId');
       if (!layerId) return;
@@ -124,12 +129,14 @@ export class GisViewer extends DG.JsViewer {
       const isVisible = layer.getVisible();
       layer.setVisible(!isVisible);
       this.updateLayersList();
+      // evt.stopImmediatePropagation();
       // if (!isVisible) divLayer.style.background = 'lightblue';
       // else divLayer.style.background = 'lightgray';
     }, 'Show/hide layer');
     setupBtn(btnVisible, layerName, layerId);
     //Setup button>>
     const btnSetup = ui.iconFA('download', (evt)=>{ //cogs
+      evt.stopPropagation();
       const divLayer = (evt.currentTarget as HTMLElement);
       const layerId = divLayer.getAttribute('layerId');
       if (!layerId) return;
@@ -139,6 +146,7 @@ export class GisViewer extends DG.JsViewer {
       if (arrFeatures) {
         const df = DG.DataFrame.fromObjects(arrFeatures);
         if (df) {
+          // df.toCsv()
           df.name = layer.get('layerName');
           // this. //TODO: get parent view with dataframe and add new dataframe-view to it
           grok.shell.addTableView(df as DG.DataFrame);
@@ -354,10 +362,17 @@ export class GisViewer extends DG.JsViewer {
   onTableAttached(): void {
     this.init();
 
-    const latLngColumns = this.dataFrame.columns.bySemTypesExact([DG.SEMTYPE.LATITUDE, DG.SEMTYPE.LONGITUDE]);
-    if (latLngColumns != null && this.latitudeColumnName == null && this.longitudeColumnName == null) {
-      this.latitudeColumnName = latLngColumns[0].name;
-      this.longitudeColumnName = latLngColumns[1].name;
+    const coordinatesColumns = this.dataFrame.columns.bySemTypesExact(
+      [DG.SEMTYPE.LATITUDE, DG.SEMTYPE.LONGITUDE, SEMTYPEGIS.LATIITUDE, SEMTYPEGIS.LONGITUDE]);
+    // const coordinatesColumns = this.dataFrame.columns.bySemTypesExact([SEMTYPEGIS.LATIITUDE, SEMTYPEGIS.LONGITUDE]);
+
+    if (coordinatesColumns != null && this.latitudeColumnName == null && this.longitudeColumnName == null) {
+      for (let i = 0; i<coordinatesColumns.length; i++) {
+        if ((coordinatesColumns[i].semType === DG.SEMTYPE.LATITUDE)||
+        (coordinatesColumns[i].semType === SEMTYPEGIS.LATIITUDE)) this.latitudeColumnName = coordinatesColumns[i].name;
+        if ((coordinatesColumns[i].semType === DG.SEMTYPE.LATITUDE)||
+        (coordinatesColumns[i].semType === SEMTYPEGIS.LATIITUDE)) this.longitudeColumnName = coordinatesColumns[i].name;
+      }
     }
 
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
@@ -394,23 +409,29 @@ export class GisViewer extends DG.JsViewer {
     if (this.latitudeColumnName == null || this.longitudeColumnName == null)
       return;
 
-    this.getCoordinates(); //not only coordinates but a data at all
+    this.getCoordinates(); //TODO: not only coordinates but a data at all
 
     if (this.renderType === 'heat map')
       this.renderHeat();
     else if (this.renderType === 'markers')
       this.renderMarkers();
 
-    // if (fit)
-    //   this.map.fitBounds(this.coordinates);
     this.updateLayersList();
   }
 
-  getCoordinates(): void {
-    this.coordinates.length = 0;
+  getCoordinatesOld(): void {
+/*    this.coordinates.length = 0;
     this.values.length = 0;
+    this.sizeValues.length = 0;
+    this.colorValues.length = 0;
     const indexes = this.dataFrame.filter.getSelectedIndexes();
     let val: Int32Array | Float32Array | Float64Array | Uint32Array;
+    let colorVal: Int32Array | Float32Array | Float64Array | Uint32Array;
+    let sizeVal: Int32Array | Float32Array | Float64Array | Uint32Array;
+    let colorCoeff: number;
+    let sizeCoeff: number;
+    let colorShift: number;
+    let sizeShift: number;
 
     const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
     const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
@@ -418,20 +439,119 @@ export class GisViewer extends DG.JsViewer {
 
     if ((!lat) || (!lon)) return;
 
-    const col = this.dataFrame.getCol(this.valuesColumnName);
     //TODO: change it to filling array of objects with all table data
-    if (col) val = col.getRawData();
+    const colValue = this.dataFrame.getCol(this.valuesColumnName);
+    if (colValue) val = colValue.getRawData();
     else {
-      val = new Float32Array(lat.length);
+      val = new Float32Array(lat.length); //create array of length equal to latitude array length
       val.fill(1);
+    }
+    const colColor = this.dataFrame.getCol(this.colorColumnName);
+    if ((colColor) && (this.gradientColoring)) {
+      colorVal = colColor.getRawData();
+      if (colColor.max === colColor.min) colorCoeff = 1;
+      else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
+      colorShift = colColor.min;
+      //another scaling scheme for color (though gradient)
+    }
+    else {
+      colorCoeff = 1;
+      colorShift = 0;
+      colorVal = new Float32Array(lat.length); //create array of length equal to latitude array length
+      colorVal.fill(this.markerDefaultColor);
+    }
+    //marker size data loading and scale calculation
+    const colSize = this.dataFrame.getCol(this.sizeColumnName);
+    if ((colSize) && (this.gradientSizing)) {
+      sizeVal = colSize.getRawData();
+      if (colSize.max === colSize.min) sizeCoeff = 1;
+      else sizeCoeff = (this.markerMaxSize-this.markerMinSize)/(colSize.max-colSize.min);
+      sizeShift = colSize.min;
+    }
+    else {
+      sizeCoeff = 1;
+      sizeShift = 0;
+      sizeVal = new Float32Array(lat.length); //create array of length equal to latitude array length
+      sizeVal.fill(this.markerDefaultSize);
     }
 
     for (let i = 0; i < indexes.length; i++) {
       if ((i < lat.length) && (i < lon.length)) {
         this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
         this.values.push(val[indexes[i]]);
+        this.sizeValues.push((sizeVal[indexes[i]]-sizeShift)*sizeCoeff);
+        this.colorValues.push((colorVal[indexes[i]]-colorShift)*colorCoeff);
       }
     }
+    //<<getCoordinates function
+*/
+  }
+
+  getCoordinates(): void {
+    this.coordinates.length = 0;
+    this.values.length = 0;
+    this.sizeValues.length = 0;
+    this.colorValues.length = 0;
+    const indexes = this.dataFrame.filter.getSelectedIndexes();
+    let val: Int32Array | Float32Array | Float64Array | Uint32Array;
+    let colorVal: Int32Array | Float32Array | Float64Array | Uint32Array;
+    let sizeVal: Int32Array | Float32Array | Float64Array | Uint32Array;
+    let colorCoeff: number;
+    let sizeCoeff: number;
+    let colorShift: number;
+    let sizeShift: number;
+
+    const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
+    const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
+    // val = this.dataFrame.getCol(this.valuesColumnName).getRawData();
+
+    if ((!lat) || (!lon)) return;
+
+    //TODO: change it to filling array of objects with all table data
+    const colValue = this.dataFrame.getCol(this.valuesColumnName);
+    if (colValue) val = colValue.getRawData();
+    else {
+      val = new Float32Array(lat.length); //create array of length equal to latitude array length
+      val.fill(1);
+    }
+    const colColor = this.dataFrame.getCol(this.colorColumnName);
+    if ((colColor) && (this.gradientColoring)) {
+      colorVal = colColor.getRawData();
+      if (colColor.max === colColor.min) colorCoeff = 1;
+      else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
+      colorShift = colColor.min;
+      //another scaling scheme for color (though gradient)
+    }
+    else {
+      colorCoeff = 1;
+      colorShift = 0;
+      colorVal = new Float32Array(lat.length); //create array of length equal to latitude array length
+      colorVal.fill(this.markerDefaultColor);
+    }
+    //marker size data loading and scale calculation
+    const colSize = this.dataFrame.getCol(this.sizeColumnName);
+    if ((colSize) && (this.gradientSizing)) {
+      sizeVal = colSize.getRawData();
+      if (colSize.max === colSize.min) sizeCoeff = 1;
+      else sizeCoeff = (this.markerMaxSize-this.markerMinSize)/(colSize.max-colSize.min);
+      sizeShift = colSize.min;
+    }
+    else {
+      sizeCoeff = 1;
+      sizeShift = 0;
+      sizeVal = new Float32Array(lat.length); //create array of length equal to latitude array length
+      sizeVal.fill(this.markerDefaultSize);
+    }
+
+    for (let i = 0; i < indexes.length; i++) {
+      if ((i < lat.length) && (i < lon.length)) {
+        this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
+        this.values.push(val[indexes[i]]);
+        this.sizeValues.push((sizeVal[indexes[i]]-sizeShift)*sizeCoeff);
+        this.colorValues.push((colorVal[indexes[i]]-colorShift)*colorCoeff);
+      }
+    }
+    //<<getCoordinates function
   }
 
   renderHeat(): void {
@@ -445,12 +565,14 @@ export class GisViewer extends DG.JsViewer {
 
     this.ol.clearLayer(layer);
     for (let i = 0; i < this.coordinates.length; i++)
-      this.ol.addPoint(this.coordinates[i], this.values[i], layer);
+      this.ol.addPointSc(this.coordinates[i], this.sizeValues[i], this.colorValues[i], this.values[i], layer);
+    // this.ol.addPoint(this.coordinates[i], this.values[i], layer);
   }
 
   renderMarkers(): void {
     this.ol.clearLayer(); //TODO: clear exact layer
     for (let i = 0; i < this.coordinates.length; i++)
-      this.ol.addPoint(this.coordinates[i], this.values[i]);
+      this.ol.addPointSc(this.coordinates[i], this.sizeValues[i], this.colorValues[i], this.values[i]);
+    // this.ol.addPoint(this.coordinates[i], this.values[i]);
   }
 }
