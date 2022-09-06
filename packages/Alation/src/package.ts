@@ -11,7 +11,6 @@ import * as view from './view';
 import * as types from './types';
 
 export const _package = new DG.Package();
-let baseUrl: string;
 let _p: DG.Package;
 
 export function setPackage(p: DG.Package): void {
@@ -24,11 +23,19 @@ export function getPackage(): DG.Package {
 
 export async function getBaseURL() {
   const properties = await getPackage().getProperties() as {[key: string]: any};
-  baseUrl = properties['Base URL'] as string;
+  let baseUrl = properties['Base URL'] as string;
   if (!baseUrl)
     throw new Error('PackagePropertyError: Base URL is not set!');
   baseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   return baseUrl;
+}
+
+export async function getUserGroup() {
+  const properties = await getPackage().getProperties() as {[key: string]: any};
+  const userGroupName = properties['User group'] as string;
+  if (!userGroupName)
+    throw new Error('PackagePropertyError: User group is not set!');
+  return userGroupName;
 }
 
 //name: Alation
