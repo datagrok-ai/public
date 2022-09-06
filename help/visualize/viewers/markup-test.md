@@ -3,7 +3,7 @@
 
 # Tests: Markup
 
-Use this viewer to host any text, arbitrary HTML content, or [markdown-formatted text](../../overview/markdown.md). In
+Use this viewer to host any text, arbitrary HTML content, or [markdown-formatted text](../../datagrok/markdown.md). In
 most casees, the viewer will auto-detect content type. Use the "mode" property to explicitly specify it.
 
 ## Testing scenario
