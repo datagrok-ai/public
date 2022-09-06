@@ -1,12 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import $ from 'cash-dom';
+import {Subscription} from 'rxjs';
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {getOptions} from './utils';
 
 
 category('Timelines', () => {
   const TYPE = 'TimelinesViewer';
   let df: DG.DataFrame;
   let tv: DG.TableView;
+  const subs: Subscription[] = [];
   
   before(async () => {
     df = DG.DataFrame.fromCsv(
@@ -62,16 +66,23 @@ category('Timelines', () => {
     expect(options.showZoomSliders, false);
   });
 
+  test('Context menu', () => new Promise((resolve, reject) => {
+    const viewer = DG.Viewer.fromType(TYPE, df);
+    subs.push(viewer.onContextMenu.subscribe((menu) => {
+      const customCommand = menu.find('Reset View');
+      if (customCommand == null)
+        reject('Command not found');
+      else
+        resolve('OK');
+    }));
+
+    setTimeout(() => reject('Timeout'), 50);
+    $(viewer.root).trigger('contextmenu');
+  }));
+
   after(async () => {
+    subs.forEach((sub) => sub.unsubscribe());
     tv.close();
     grok.shell.closeTable(df);
   });
 });
-
-async function getOptions(viewer: DG.Viewer): Promise<{ [key: string]: any; }> {
-  await delay(100);
-  const options = (viewer.getOptions(true) as {id: string, type: string, look: {[key: string]: any}}).look;
-  delete options['#type'];
-  delete options.table;
-  return options;
-}

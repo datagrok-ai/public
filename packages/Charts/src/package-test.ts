@@ -1,6 +1,7 @@
 import * as DG from "datagrok-api/dg";
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 import './tests/timelines-test';
+import './tests/tree-viewer-test';
 
 export let _package = new DG.Package();
 export {tests};
