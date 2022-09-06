@@ -6,7 +6,7 @@ import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 /** Adds a derived column, given a source column `col` and extraction function `extract`.
  * Handles progress indication, and molecule disposal. */
-function addDerived(col: DG.Column, description: string, extract: (mol: RDMol) => string): void {
+function addDerived(col: DG.Column, description: string, extract: (mol: RDMol) => string): DG.Column {
   const pi = DG.TaskBarProgressIndicator.create(description);
   const result = new Array(col.length);
   for (let i = 0; i < result.length; i++) {
@@ -16,16 +16,17 @@ function addDerived(col: DG.Column, description: string, extract: (mol: RDMol) =
   }
 
   const name = col.dataFrame.columns.getUnusedName('inchi');
-  col.dataFrame.columns.add(DG.Column.fromList('string', name, result));
+  const resultColumn = col.dataFrame.columns.add(DG.Column.fromList('string', name, result));
   pi.close();
+  return resultColumn;
 }
 
 /** Adds InchI identifiers for the specified molecular column. */
-export function addInchis(col: DG.Column): void {
-  addDerived(col, 'Getting Inchi', (m) => m.get_inchi());
+export function addInchis(col: DG.Column): DG.Column {
+  return addDerived(col, 'Getting Inchi', (m) => m.get_inchi());
 }
 
 /** Adds InchI keys identifiers for the specified molecular column. */
-export function addInchiKeys(col: DG.Column): void {
-  addDerived(col, 'Getting Inchi', (m) => _rdKitModule.get_inchikey_for_inchi(m.get_inchi()));
+export function addInchiKeys(col: DG.Column): DG.Column {
+  return addDerived(col, 'Getting Inchi', (m) => _rdKitModule.get_inchikey_for_inchi(m.get_inchi()));
 }
