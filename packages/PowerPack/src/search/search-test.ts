@@ -4,8 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {initTemplates} from "./templates-search";
 
-category('Widgets', () => {
+category('Search', () => {
 
-  test('InitTemplates', async () => initTemplates());
+  test('InitTemplates', async () => await initTemplates());
 
 });
