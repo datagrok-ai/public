@@ -30,7 +30,7 @@ let layout = grok.shell.v.saveLayout();
 ```
 
 This is quite explicit, there is just one caveat: this method can only be applied to
-[table views](../../overview/table-view.md). The same holds for its counterpart `loadLayout`
+[table views](../../datagrok/table-view.md). The same holds for its counterpart `loadLayout`
 method that applies a previously saved layout to the given view. Here is an example:
 
 ```js
@@ -78,7 +78,7 @@ The `JSON` representation of a layout has the following main fields:
 }
 ```
 
-Some of these attributes are common to all [entities](../../overview/objects.md), so we will mention only the
+Some of these attributes are common to all [entities](../../datagrok/objects.md), so we will mention only the
 layout-specific ones. The `viewStateMap` field contains the essential part describing in which positions viewers are
 docked and which viewer properties are set. The metadata needed for further layout application is stored in `columns`.
 However, a bare view state is enough to reuse the layout:
@@ -94,7 +94,7 @@ view.loadLayout(DG.ViewLayout.fromViewState(layout.viewState));
 The `grok.dapi.layouts` endpoint provides common functionality inherited from
 [HttpDataSource](https://datagrok.ai/js-api/classes/dg.HttpDataSource) that is responsible for handling collections of
 entities stored on the server. Developers can save layouts, find them by id, filter the list of entities according
-to [certain criteria](../../overview/smart-search.md), and so on.
+to [certain criteria](../../datagrok/smart-search.md), and so on.
 
 ```js
 grok.dapi.layouts.list().then(layouts => grok.shell.info(`Total: ${layouts.length}`));
@@ -124,13 +124,13 @@ Layouts remember the columns they were constructed from (the field `columns`) an
 columns so that they can be applied to the original or similar data. In particular, metadata includes column names,
 types, and tags (such as `layout-id` or `quality`). This is what the mapping rules described above rely on. Apart from
 that, layouts as
-[entities](../../overview/objects.md) are capable of storing metadata in a form of properties.
+[entities](../../datagrok/objects.md) are capable of storing metadata in a form of properties.
 
 See also:
 
 - [Upload data with layouts using the server API](upload-data.md#layout)
 - [View layout](../../visualize/view-layout.md)
-- [Table view](../../overview/table-view.md)
+- [Table view](../../datagrok/table-view.md)
 - [User data storage](user-data-storage.md)
 - [JavaScript API Samples: Layout permissions and metadata](https://public.datagrok.ai/js/samples/dapi/layouts-and-permissions)
 - [JavaScript API Samples: Saving layouts to user data storage](https://public.datagrok.ai/js/samples/ui/views/layouts)

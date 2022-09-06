@@ -39,7 +39,7 @@ etc.
 
 Sometimes, you want more than a table to be returned. [Data jobs](data-job.md) let you get results from multiple queries
 at once, massage the data using transformations, and apply any visualizations on top of it. Just as data queries, data
-jobs can be parameterized as well. The output of the data job is a [project](../overview/project.md), which is
+jobs can be parameterized as well. The output of the data job is a [project](../datagrok/project.md), which is
 essentially a dashboard.
 
 ## Security
@@ -59,4 +59,4 @@ See also:
 * [Data connection](data-connection.md)
 * [Data query](data-query.md)
 * [Data job](data-job.md)
-* [Function call](../overview/functions/function-call.md)
+* [Function call](../datagrok/functions/function-call.md)

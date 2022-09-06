@@ -17,7 +17,7 @@ Same as columns, each table can be annotated with attributes in the form of key-
 annotates certain tables with metadata (such as the source of the table, or time of import, etc). To edit metadata
 manually, use `Properties...` context menu option.
 
-It is possible to use metadata as a search criteria in the [Projects](../overview/project.md)
+It is possible to use metadata as a search criteria in the [Projects](../datagrok/project.md)
 
 ## Filtering
 

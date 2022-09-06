@@ -74,7 +74,7 @@ becomes unwieldy, and users get lost in the hundreds of different menus and thou
 
 We had to come up with a solution that is not only highly extensible but also has a built-in mechanism for restricting
 the feature creep and keeping the UI clean. We addressed these seemingly self-contradictory requirements by designing a
-solution that combines first-class support for [functions](../../overview/functions/function.md)
+solution that combines first-class support for [functions](../../datagrok/functions/function.md)
 with the [data augmentation](../../discover/data-augmentation.md) mechanism.
 
 In the end, we came up with a solution that not only satisfied the initial requirements, but provides a solid foundation

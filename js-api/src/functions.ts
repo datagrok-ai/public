@@ -201,7 +201,7 @@ export class Context {
 }
 
 /** Represents a function call
- * {@link https://datagrok.ai/help/overview/functions/function-call*}
+ * {@link https://datagrok.ai/help/datagrok/functions/function-call*}
  * */
 export class FuncCall extends Entity {
   public readonly dart: any;

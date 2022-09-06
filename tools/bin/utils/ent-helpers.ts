@@ -15,7 +15,7 @@ Read more at https://datagrok.ai/help/develop/how-to/define-semantic-type-detect
 
 const func = (funcName: string, isPanel: boolean = false) => {
   return `\nThe function ${funcName} has been added successfully\n` +
-  'Read more at https://datagrok.ai/help/overview/functions/function' +
+  'Read more at https://datagrok.ai/help/datagrok/functions/function' +
   (isPanel ? ',\nhttps://datagrok.ai/help/develop/how-to/add-info-panel\n' : '\n') +
   'See examples at https://public.datagrok.ai/functions' +
   (isPanel ? ',\nhttps://public.datagrok.ai/js/samples/functions/info-panels/info-panels' : '');

@@ -4,7 +4,7 @@
 # Info panels
 
 Info panels provide additional information about the current context (which can be a table, a column, or pretty much any
-other [object](../overview/objects.md)). Info panels are meant to be easily developed by the users of the platform, and
+other [object](../datagrok/objects.md)). Info panels are meant to be easily developed by the users of the platform, and
 shared with other users. You can use all features of the Datagrok platform, such as scripting, data querying and
 transformation pipeline, user-defined functions, markup, viewers, predictive models.
 
@@ -56,7 +56,7 @@ To specify the condition in the script, use the 'table' variable in the followin
 ### Context condition
 
 Info panels always accept strictly one parameter. It can be a column, a table, a table cell, or any
-other [object](../overview/objects.md). A condition might perform checks against that object by using the parameter
+other [object](../datagrok/objects.md). A condition might perform checks against that object by using the parameter
 name ("x" in the example below):
 
 ```

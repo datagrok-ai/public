@@ -68,5 +68,5 @@ See also:
 
 * [Scripting](scripting.md)
 * [Scripting tutorial](../_internal/tutorials/scripting.md)
-* [Script browser test](../overview/script-browser-test.md)
+* [Script browser test](../datagrok/script-browser-test.md)
 * [Scripting auto test](scripting-test.side)

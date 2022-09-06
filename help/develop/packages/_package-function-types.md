@@ -23,7 +23,7 @@ const applications = DG.Func.find({ tags: [DG.FUNC_TYPES.APP] });
 
 ## Applications
 
-Applications are [functions](../../overview/functions/function.md) tagged with `app`:
+Applications are [functions](../../datagrok/functions/function.md) tagged with `app`:
 
 ```js
 //name: Test Application

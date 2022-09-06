@@ -76,7 +76,7 @@ where d.chembl_id = @id
 
 ![](help/molecule-queries.gif)
 
-A molecule query does not have to be a database query, any [function](../../help/overview/functions/function.md)
+A molecule query does not have to be a database query, any [function](../../help/datagrok/functions/function.md)
 will do. For instance, InChi query is implemented as a Python script. 
 
 

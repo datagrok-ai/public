@@ -44,7 +44,7 @@ important to academia:
 * [Reproducible and scalable computations](../compute/compute.md)
 * Making your research globally available by using [data augmentation](../discover/data-augmentation.md) capabilities.
   The platform proactively suggests contextual actions and enriches the current object
-  using [functions](../overview/functions/function.md)
+  using [functions](../datagrok/functions/function.md)
   implemented in [R, Python, Julia, Matlab, or other language](../compute/scripting.md). In other words, Datagrok not
   only can run a function, but also suggests _what_ could be derived from your dataset. This cross-pollination of
   knowledge could be transformative within and across a broad range of scientific disciplines.

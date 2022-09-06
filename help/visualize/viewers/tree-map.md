@@ -22,5 +22,5 @@ General:
 See also:
 
 * [Viewers](../viewers.md)
-* [Table view](../../overview/table-view.md)
+* [Table view](../../datagrok/table-view.md)
 * [JS API: Tree map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)

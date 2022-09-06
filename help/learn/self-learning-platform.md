@@ -10,7 +10,7 @@ behavior.
 
 Think about Netflix's movie recommendation engine, but instead of dealing with just two entities (
 users and movies) and one relation (user's score for the movie) we have a much more complex case. We got dozen of
-different [entity types](../overview/objects.md)
+different [entity types](../datagrok/objects.md)
 (such as [query](../access/data-query.md), [viewer](../visualize/viewers.md), etc), connected with different relations
 (such as '[query](../access/data-query.md) `ran_by` [user](../govern/user.md)') and restricted by different constraints.
 
@@ -25,4 +25,4 @@ See also:
 
 * [Predictive modeling](predictive-modeling.md)
 * [Data queries](../access/data-query.md)
-* [Projects](../overview/project.md)
+* [Projects](../datagrok/project.md)

@@ -7,7 +7,7 @@ Data query defines which data should be extracted from the data source. For data
 query; for Excel file, that would be sheet name, etc.
 
 Queries can be executed either manually, or as part of the [Data Job](data-job.md). The result of executing a query is
-represented by the [Function Call](../overview/functions/function-call.md).
+represented by the [Function Call](../datagrok/functions/function-call.md).
 
 ## Parameterized queries
 
@@ -35,14 +35,14 @@ Those privileges can be given to individuals or to groups (which can be defined 
 
 ## Filtering
 
-You can use these fields to filter queries with [smart search](../overview/smart-search.md):
+You can use these fields to filter queries with [smart search](../datagrok/smart-search.md):
 
 | Field       | Description                                                       |
 |-------------|-------------------------------------------------------------------|
 | ID          |                                                                   |
 | name        |                                                                   |
 | query       |                                                                   |
-| runs        | list of [FuncCall](../overview/functions/function-call.md) object |
+| runs        | list of [FuncCall](../datagrok/functions/function-call.md) object |
 | connection  | [DataConnection](data-connection.md) object                       |
 | jobs        | [DataJob](data-job.md) object                                     |
 | createdOn   |                                                                   |
@@ -58,7 +58,7 @@ See also:
 * [Data pipeline](data-pipeline.md)
 * [Data connection](data-connection.md)
 * [Data job](data-job.md)
-* [Function call](../overview/functions/function-call.md)
+* [Function call](../datagrok/functions/function-call.md)
 * [Parameterized queries](parameterized-queries.md)
 * [Query Builder](query-builder.md)
 * [Visual query](db-visual-query.md)

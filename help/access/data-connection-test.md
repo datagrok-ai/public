@@ -101,11 +101,11 @@
 
 1. Open "Connection browser" from **Admin | Data Connections**
 
-1. Apply "Created by me" filter from "Filters" tab on [Toolbox](../overview/navigation.md#toolbox)
+1. Apply "Created by me" filter from "Filters" tab on [Toolbox](../datagrok/navigation.md#toolbox)
 
 * Only connections created current user are displayed in browser, including those created in previous paragraph
 
-1. Open *"Add new connection"* dialog from "Actions" tab tab on [Toolbox](../overview/navigation.md#toolbox)
+1. Open *"Add new connection"* dialog from "Actions" tab tab on [Toolbox](../datagrok/navigation.md#toolbox)
 
 1. Select alternately different source in "Data source" field
 
@@ -138,27 +138,27 @@
 
 1. Return to connection browser
 
-1. Select "northwind" (PostgreSQL) connection to display on [Property Panel](../overview/navigation.md#properties)
+1. Select "northwind" (PostgreSQL) connection to display on [Property Panel](../datagrok/navigation.md#properties)
 
-1. Open the "Details" tab in [Property Panel](../overview/navigation.md#properties)
+1. Open the "Details" tab in [Property Panel](../datagrok/navigation.md#properties)
 
 * "Details" tab is open
 * The correct information for all fields is displayed (Description, Server, Database, Created by, Created, Updated,
   Tags)
 
-1. Open a list of [Queries](data-query.md) on [Property Panel](../overview/navigation.md#properties)
+1. Open a list of [Queries](data-query.md) on [Property Panel](../datagrok/navigation.md#properties)
 
 * "noethwind" connection queries are displayed
 
-1. Open a list of [Projects](../overview/project.md)
-   on [Property Panel](../overview/navigation.md#properties)
+1. Open a list of [Projects](../datagrok/project.md)
+   on [Property Panel](../datagrok/navigation.md#properties)
 
 * Projects that include "northwind" connection are displayed
 
 1. Delete all test [connections](data-connection.md) created in previous steps from their context menu
 
 * When deleting connection, confirmation occurs in "Are you sure?" dialog
-* Deleted connections are no longer displayed in browser and on [Property Panel](../overview/navigation.md#properties)
+* Deleted connections are no longer displayed in browser and on [Property Panel](../datagrok/navigation.md#properties)
 
 1. Go to "Connect to data" view
 

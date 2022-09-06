@@ -175,7 +175,7 @@ select * from protein_classification
 ```
 
 SQL statements are annotated with comments, just like [scripts](../../compute/scripting.md), since the underlying
-mechanism is essentially the same (read more on the concept of [functions](../../overview/functions/function.md)). Here
+mechanism is essentially the same (read more on the concept of [functions](../../datagrok/functions/function.md)). Here
 we have two header parameters: the query `name` and the `connection` to use. In fact, this particular query could have
 been even simpler: there is no need to specify `connection` if the package only has one. Similarly, the tag `end` is not
 required if there is only one query per file: the parser needs it to understand where the current query ends and the
@@ -216,10 +216,10 @@ Datagrok.
 
 ### Sharing connections
 
-Data connections can be shared as part of a [project](../../overview/project.md)
+Data connections can be shared as part of a [project](../../datagrok/project.md)
 , [package](../develop.md#packages) (
 and [repository](../../access/connectors/git.md) containing this package), or as an
-independent [entity](../../overview/objects.md). Access rights of a database connection inherit access rights of a
+independent [entity](../../datagrok/objects.md). Access rights of a database connection inherit access rights of a
 query. However, access rights of the query don't inherit access rights of the database connection. Thus, if one shares a
 query, the associated database connection shall automatically be shared. At the same time, when you are sharing a
 connection, your queries aren't going to be shared automatically. As for web queries, they are automatically shared
@@ -358,5 +358,5 @@ See also:
 * [Data query](../../access/data-query.md)
 * [Data job](../../access/data-job.md)
 * [File shares](../../access/file-shares.md)
-* [Functions](../../overview/functions/function.md)
+* [Functions](../../datagrok/functions/function.md)
 * [Parameterized queries](../../access/parameterized-queries.md)

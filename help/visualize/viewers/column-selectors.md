@@ -6,7 +6,7 @@
 A combo box for selecting a column
 
 **Mouse-over** to see column summary, as well as a viewer preview.
-**[Drag a column](../../overview/drag-and-drop.md)** into a selector to change it.
+**[Drag a column](../../datagrok/drag-and-drop.md)** into a selector to change it.
 **Start typing** to filter columns.
 **Esc** to reset column filter, or hide popup.
 **Enter** to accept current choice.
@@ -15,4 +15,4 @@ A combo box for selecting a column
 See also:
 
 * [Viewers](../viewers.md)
-* [Table View](../../overview/table-view.md)
+* [Table View](../../datagrok/table-view.md)

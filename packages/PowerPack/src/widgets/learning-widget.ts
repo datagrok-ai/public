@@ -151,7 +151,7 @@ let help = [
   },
   {
     'title': 'Overview',
-    'url': 'https://datagrok.ai/help/overview/create-project'
+    'url': 'https://datagrok.ai/help/datagrok/create-project'
   },
   {
     'title': 'Stories',

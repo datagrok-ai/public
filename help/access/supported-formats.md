@@ -24,7 +24,7 @@ Datagrok supports the following formats.
 | .h5        | Hierarchical Data Format                         | Core   |
 | .nc        | NetCDF                                           | Core   |
 | .mat       | MATLAB MAT                                       | Core   |
-| .d42       | Datagrok [project](../overview/project.md)       | Core   |
+| .d42       | Datagrok [project](../datagrok/project.md)       | Core   |
 | .zip       | ZIP archive (for supported types)                | Core   |
 | .gz, .gzip | gzip                                             | Core   |
 | .tar       | Tape archive                                     | Core   |

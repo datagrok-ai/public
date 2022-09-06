@@ -415,7 +415,7 @@ the console, use `chem:findMCS(tableName, columnName)` command.
 Chemical intelligence tools are natively integrated into the platform, so in most cases the appropriate functionality is
 automatically presented based on the user actions and context. For instance, when user clicks on a molecule, it becomes
 a current object, and its properties are shown in the
-[property panel](../../overview/navigation.md#properties). Click on a molecule to select it as a current object. This
+[property panel](../../datagrok/navigation.md#properties). Click on a molecule to select it as a current object. This
 will bring up this molecule's properties to the property panel. The following panels are part of the 'chem' plugin:
 
 * Identifiers - all known identifiers for the specified structure (UniChem)
@@ -523,7 +523,7 @@ See [DB Substructure and similarity search](db-substructure-similarity-search.md
 
 ## Functions
 
-The following cheminformatics-related [functions](../../overview/functions/function.md) are exposed:
+The following cheminformatics-related [functions](../../datagrok/functions/function.md) are exposed:
 
 * \#{x.ChemSubstructureSearch}
 * \#{x.ChemFindMCS}

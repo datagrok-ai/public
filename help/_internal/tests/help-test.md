@@ -32,7 +32,7 @@
 1. Open **Chem | Help**
 
 * "Help view" is open
-* [Toolbox](../../overview/navigation.md#toolbox) shows help structure in tree
+* [Toolbox](../../datagrok/navigation.md#toolbox) shows help structure in tree
 * Current page ([Cheminformatics](../../domains/chem/cheminformatics.md)) is highlighted in the tree
 
 1. Go to another help page through links on [Cheminformatics](../../domains/chem/cheminformatics.md)
@@ -47,7 +47,7 @@
 1. Open **Help | About**
 
 * "Help view" is open
-* [Toolbox](../../overview/navigation.md#toolbox) shows help structure in tree
+* [Toolbox](../../datagrok/navigation.md#toolbox) shows help structure in tree
 * Current page ("Data Grok" main page) is highlighted in tree
 
 1. Repeat steps 9-11 for help view from **Help | About**
@@ -68,7 +68,7 @@
 1. Click on "Clone and detach" button on context help window
 
 * Current page ([Scripting](../../compute/scripting.md)) is fixed by separate window
-  on [Property Panel](../../overview/navigation.md#properties)
+  on [Property Panel](../../datagrok/navigation.md#properties)
 
 1. Open **Admin | Data Queries**
 
@@ -85,5 +85,5 @@
 1. Click on "Open in new window" button on context help window
 
 * "Help view" is open
-* [Toolbox](../../overview/navigation.md#toolbox) shows help structure in tree
+* [Toolbox](../../datagrok/navigation.md#toolbox) shows help structure in tree
 * Current page of context help is highlighted in tree

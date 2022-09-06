@@ -5,7 +5,7 @@
 
 Audit system is intended to store all meaningful user activity for future analysis.
 
-All of the changes made to the different [entities](../overview/objects.md) are tracked and can be analyzed using
+All of the changes made to the different [entities](../datagrok/objects.md) are tracked and can be analyzed using
 activity sections. All events are joined to user session. Changes made to the entities are connected with corresponding
 entities. Audit records can be posted both from client and server.
 
@@ -23,9 +23,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 4. Enter "Test_Server" to "Server" field and save changed
 
-5. Open *"audit-test-connection"* on [Property Panel](../overview/navigation.md#properties)
+5. Open *"audit-test-connection"* on [Property Panel](../datagrok/navigation.md#properties)
 
-6. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
+6. Expand "Activity" tab on [Property Panel](../datagrok/navigation.md#properties)
 
     * There is history from previous steps
     * "created" and "edited" actions arranged in chronological order with indication of user
@@ -60,9 +60,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
     * Query completed
 
-11. Open *"audit-test-query"* on [Property Panel](../overview/navigation.md#properties)
+11. Open *"audit-test-query"* on [Property Panel](../datagrok/navigation.md#properties)
 
-12. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
+12. Expand "Activity" tab on [Property Panel](../datagrok/navigation.md#properties)
 
     * There is history from previous steps
     * "created", "edited", "transformations edited", "started" actions arranged in chronological order with indication
@@ -94,9 +94,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 8. Save job changes
 
-9. Open *"audit-test-job"* on [Property Panel](../overview/navigation.md#properties)
+9. Open *"audit-test-job"* on [Property Panel](../datagrok/navigation.md#properties)
 
-10. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
+10. Expand "Activity" tab on [Property Panel](../datagrok/navigation.md#properties)
 
     * There is history from previous steps
     * "created", "started", "edited" actions arranged in chronological order with indication of user
@@ -132,9 +132,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
     * Script completed
 
-9. Open *"audit-test-script"* on [Property Panel](../overview/navigation.md#properties)
+9. Open *"audit-test-script"* on [Property Panel](../datagrok/navigation.md#properties)
 
-10. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
+10. Expand "Activity" tab on [Property Panel](../datagrok/navigation.md#properties)
 
     * There is history from previous steps
     * "created", "edited" and "started" actions arranged in chronological order with indication of user
@@ -173,9 +173,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
     * Applying complete
 
-13. Open *"audit-test-model"* on [Property Panel](../overview/navigation.md#properties)
+13. Open *"audit-test-model"* on [Property Panel](../datagrok/navigation.md#properties)
 
-14. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
+14. Expand "Activity" tab on [Property Panel](../datagrok/navigation.md#properties)
 
     * There is history from previous steps
     * "created", "edited" and "ran" actions arranged in chronological order with indication of user
@@ -202,9 +202,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
     * Applying complete
 
-7. Open *"audit-test-notebook"* on [Property Panel](../overview/navigation.md#properties)
+7. Open *"audit-test-notebook"* on [Property Panel](../datagrok/navigation.md#properties)
 
-8. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
+8. Expand "Activity" tab on [Property Panel](../datagrok/navigation.md#properties)
 
     * There is history from previous steps
     * "created", "edited" and "ran" actions arranged in chronological order with indication of user
@@ -235,9 +235,9 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 10. Open *"Datasets..."* on "Welcome" view
 
-11. Open *"audit-test-project"* on [Property Panel](../overview/navigation.md#properties)
+11. Open *"audit-test-project"* on [Property Panel](../datagrok/navigation.md#properties)
 
-12. Expand "Activity" tab on [Property Panel](../overview/navigation.md#properties)
+12. Expand "Activity" tab on [Property Panel](../datagrok/navigation.md#properties)
 
     * There is history from previous steps
     * "created", "shared", "edited" and "open" actions arranged in chronological order with indication of user
@@ -272,7 +272,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
     * *"Console"* is open
 
-9. Call function ```eq("test","test")``` in [Console](../overview/navigation.md#console)
+9. Call function ```eq("test","test")``` in [Console](../datagrok/navigation.md#console)
 
     * Functions returned ```true```
     * result added to Variables

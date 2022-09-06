@@ -13,4 +13,4 @@ See also:
 * [Data import](../../access/importing-data.md)
 * [Data connection](../../access/data-connection.md)
 * [Data query](../../access/data-query.md)
-* [Function call](../../overview/functions/function-call.md)
+* [Function call](../../datagrok/functions/function-call.md)

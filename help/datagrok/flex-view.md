@@ -4,14 +4,14 @@
 # Flex View
 
 Use this view to reference data, viewers, summary statistics, and other things from disparate tables. This view is a
-good way to provide [project](project.md) summary. The content is stored in the [markup](../overview/markup.md) format (
+good way to provide [project](project.md) summary. The content is stored in the [markup](../datagrok/markup.md) format (
 directly editable in the
-[properties panel](../overview/navigation.md#properties) on the right). That allows to reference pretty much anything in
+[properties panel](../datagrok/navigation.md#properties) on the right). That allows to reference pretty much anything in
 the platform, including tables, [viewers](../visualize/viewers.md), columns, statistics, metadata, references to users,
 and invoking [functions](functions/function.md).
 
 It's always possible to edit the markup directly, but we have made it even easier to reference relevant content.
-[Drag-and-drop](../overview/drag-and-drop.md) any entity into the view to reference it. The toolbox on the left provides
+[Drag-and-drop](../datagrok/drag-and-drop.md) any entity into the view to reference it. The toolbox on the left provides
 quick links to add the following:
 
 * Common
@@ -32,5 +32,5 @@ quick links to add the following:
 
 See also:
 
-* [Markup](../overview/markup.md)
-* [Drag-and-drop](../overview/drag-and-drop.md)
+* [Markup](../datagrok/markup.md)
+* [Drag-and-drop](../datagrok/drag-and-drop.md)

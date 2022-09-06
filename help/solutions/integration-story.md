@@ -49,10 +49,10 @@ application could be useful for testing and debug purposes.
 
 Datagrok integrates with [OpenAPI](../access/open-api.md) really well, automatically mapping
 OpenAPI's [paths](https://swagger.io/docs/specification/basic-structure/) to
-Grok's [functions](../overview/functions/function.md). This has many benefits:
+Grok's [functions](../datagrok/functions/function.md). This has many benefits:
 
 * Ability to easily call that web method from:
-  * [Console](../overview/navigation.md#console)
+  * [Console](../datagrok/navigation.md#console)
   * Event handler
   * [Info panel](../discover/info-panels.md)
 * Audit
@@ -76,10 +76,10 @@ A number of command-line utilities for server management. (Work in progress)
 
 ## Client-side settings
 
-[Client-side settings](../overview/navigation.md#settings) are specific to the user, and are controlled by the user (
+[Client-side settings](../datagrok/navigation.md#settings) are specific to the user, and are controlled by the user (
 unless the organization's IT policy overrides it).
 
 ## Server-side settings
 
-[Server settings](../overview/settings-server.md) are controlled by the
+[Server settings](../datagrok/settings-server.md) are controlled by the
 platform's [administrators](../govern/security.md).

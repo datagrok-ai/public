@@ -26,6 +26,6 @@ See also:
 
 * [2D Scatter plot](scatter-plot.md)
 * [Column selectors](column-selectors.md)
-* [Table View](../../overview/table-view.md)
+* [Table View](../../datagrok/table-view.md)
 * [Viewers](../viewers.md)
 * [JS API: 3D Scatter plot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot-3d)

@@ -29,7 +29,7 @@ const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
 
 ## Applications
 
-Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag. Use `datagrok-tools` to get
+Applications are [functions](../datagrok/functions/function.md) tagged with the `#app` tag. Use `datagrok-tools` to get
 a template:
 
 ```shell

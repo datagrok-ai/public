@@ -11,7 +11,7 @@ with a value that the datetime column understands, such as 'Nov 7, 2000' or '
 
 `Match case`, `Match whole word`, and `Use regular expressions` fields affect only string columns.
 
-When a replace command is executed, it is logged into [console](../overview/navigation.md#console).
+When a replace command is executed, it is logged into [console](../datagrok/navigation.md#console).
 
 See also
 

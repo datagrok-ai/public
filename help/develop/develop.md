@@ -32,7 +32,7 @@ See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/li
 A package is a versionable unit of content distribution within Datagrok. Essentially, it is a folder with files in it. A
 package might contain different things:
 
-* JavaScript [functions](../overview/functions/function.md), [viewers](../visualize/viewers.md)
+* JavaScript [functions](../datagrok/functions/function.md), [viewers](../visualize/viewers.md)
   , [widgets](../visualize/widgets.md), [applications](../develop/how-to/build-an-app.md)
 * [Scripts](../compute/scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
 * [Queries](../access/data-query.md) and [connections](../access/data-connection.md)
@@ -130,7 +130,7 @@ file. If you choose to include other files, such as CSS, in your package, import
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly
 formatted
-[headers](../compute/scripting.md#header) are registered as Grok [functions](../overview/functions/function.md)
+[headers](../compute/scripting.md#header) are registered as Grok [functions](../datagrok/functions/function.md)
 . By annotating functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters,
 validators, suggestions, info panels, and semantic type detectors. If function has more than one output, it must return
 JS object `{param1: value, param2: value}`:
