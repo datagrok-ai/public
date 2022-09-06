@@ -28,6 +28,8 @@ export const passErrorToShell = () => {
   };
 };
 
+export const INTERACTIVE_CSS_CLASS = 'cv-interactive';
+
 export class FunctionView extends DG.ViewBase {
   protected readonly context: DG.Context;
   protected _funcCall?: DG.FuncCall;
@@ -664,10 +666,11 @@ export class FunctionView extends DG.ViewBase {
     'right': '0',
     'top': '0',
     'display': 'none',
-    'cursor': 'not-allowed'
+    'cursor': 'not-allowed',
+    'z-index': '1',
   }});
 
-  private readonlyEventListeners = [
+  private rootReadonlyEventListeners = [
     (ev: MouseEvent)=> {
       ev.preventDefault();
       ev.stopPropagation();
@@ -678,21 +681,36 @@ export class FunctionView extends DG.ViewBase {
     },
     () => {
       grok.shell.warning('Clone the run to edit it');
-    }
+    },
+  ];
+
+  private interactiveEventListeners = [
+    () =>this.root.removeEventListener('click', this.rootReadonlyEventListeners[2]),
+    () =>this.root.addEventListener('click', this.rootReadonlyEventListeners[2])
   ];
 
   private setRunViewReadonly(): void {
     this.overlayDiv.style.removeProperty('display');
-    this.root.addEventListener('mousedown', this.readonlyEventListeners[0]);
-    this.root.addEventListener('mouseup', this.readonlyEventListeners[1]);
-    this.root.addEventListener('click', this.readonlyEventListeners[2]);
+    this.root.addEventListener('click', this.rootReadonlyEventListeners[2]);
+    this.root.addEventListener('mousedown', this.rootReadonlyEventListeners[0]);
+    this.root.addEventListener('mouseup', this.rootReadonlyEventListeners[1]);
+    this.root.querySelectorAll(`.${INTERACTIVE_CSS_CLASS}`).forEach((el) => {
+      (el as HTMLElement).style.zIndex = '2';
+      (el as HTMLElement).addEventListener('mousedown', this.interactiveEventListeners[0]);
+      (el as HTMLElement).addEventListener('mouseup', () => setTimeout(this.interactiveEventListeners[1], 100));
+    });
   }
 
   private setRunViewEditable(): void {
     this.overlayDiv.style.display = 'none';
-    this.root.removeEventListener('mousedown', this.readonlyEventListeners[0]);
-    this.root.removeEventListener('mouseup', this.readonlyEventListeners[1]);
-    this.root.removeEventListener('click', this.readonlyEventListeners[2]);
+    this.root.removeEventListener('click', this.rootReadonlyEventListeners[2]);
+    this.root.removeEventListener('mousedown', this.rootReadonlyEventListeners[0]);
+    this.root.removeEventListener('mouseup', this.rootReadonlyEventListeners[1]);
+    this.root.querySelectorAll(`.${INTERACTIVE_CSS_CLASS}`).forEach((el) => {
+      (el as HTMLElement).style.removeProperty('z-index');
+      (el as HTMLElement).removeEventListener('mousedown', this.interactiveEventListeners[0]);
+      (el as HTMLElement).removeEventListener('mouseup', this.interactiveEventListeners[1]);
+    });
   }
 
   /**
