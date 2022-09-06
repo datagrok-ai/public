@@ -32,7 +32,7 @@ export function createTree(
         const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
         try {
           await connectToDb(queryObject.datasource_id,
-            async (conn: DG.DataConnection) => {await runQuery(conn, queryObject)});
+            async (conn: DG.DataConnection) => {await runQuery(conn, queryObject);});
         } catch {
           grok.shell.error('Couldn\'t retrieve table');
         }
