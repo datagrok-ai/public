@@ -37,6 +37,8 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
+import { getAtomsColumn } from './utils/elemental-analysis-utils';
+import { elementsTable } from './constants';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -346,62 +348,6 @@ export function addInchisPanel(col: DG.Column): void {
   addInchis(col);
 }
 
-const V2000_ATOM_NAME_POS = 30;
-const V2000_ATOM_NAME_LEN = 3;
-
-/** A list of chemical elements in periodic table order */
-const elementsTable: Array<string> = [
-  'R', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
-  'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V',
-  'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se',
-  'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh',
-  'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba',
-  'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho',
-  'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt',
-  'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac',
-  'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md',
-  'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn',
-  'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og'];
-
-/** Gets map of chem elements to list with counts of atoms in rows */
-function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, number[]] {
-  let elements: Map<string, Int32Array> = new Map();
-  const invalid: number[] = new Array<number>();
-  let smiles: boolean = false;
-  if (molCol.getTag(DG.TAGS.UNITS) === 'smiles') {
-    smiles = true;
-  }
-  for (let rowI = 0; rowI < molCol.length; rowI++) {
-    let el: string = molCol.get(rowI);
-    if (smiles === true) {
-      try {
-        el = convertMolNotation(el, 'smiles', 'molblock');
-      } 
-      catch {
-        invalid.push(rowI);
-      }
-    }
-    let curPos = 0;
-    curPos = el.indexOf('\n', curPos) + 1;
-    curPos = el.indexOf('\n', curPos) + 1;
-    curPos = el.indexOf('\n', curPos) + 1;
-    const atomCounts = parseInt(el.substring(curPos, curPos + 3));
-
-    for (let atomRowI = 0; atomRowI < atomCounts; atomRowI++) {
-      curPos = el.indexOf('\n', curPos) + 1;
-      const elName: string = el
-        .substring(curPos + V2000_ATOM_NAME_POS, curPos + V2000_ATOM_NAME_POS + V2000_ATOM_NAME_LEN)
-        .trim();
-
-      if (!elements.has(elName))
-        elements.set(elName, new Int32Array(molCol.length));
-        
-      ++elements.get(elName)![rowI];
-    } 
-  }
-  return [elements, invalid];
-}
-
 //top-menu: Chem | Elemental analysis...
 //name: Elemental analysis
 //description: function that implements elemental analysis
@@ -420,7 +366,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column): void 
   }
 }
 
-/*
+
 //name: Chem | To InchI Keys
 //friendly-name: Chem | To InchI Keys
 //tags: panel, chem
@@ -428,55 +374,6 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column): void 
 export function addInchisKeysPanel(col: DG.Column): void {
   addInchiKeys(col);
 }
-
-function getAtomsColumn(molCol: DG.Column) : Map<string, Array<number>> {
-  const elements: Array<string> = ['R', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 
-                                  'Mg', 'Al','Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V',
-                                  'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se',
-  	                              'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 
-                                  'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 
-                                  'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho',
-                                  'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt',
-                                  'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 
-                                  'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk','Cf', 'Es', 'Fm', 'Md',
-                                  'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn',
-                                  'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og'];
-  let elemental_table: Map<string, Array<number>> = new Map();
-  for (let j = 0; j < elements.length; j++) {
-    elemental_table.set(elements[j], new Array<number>);
-  }
-
-  for (let i = 0; i < molCol.length; i++) {
-    let el = molCol.get(i);
-    if (!isMolBlock(el)) {
-      el = convertMolNotation(el, 'smiles', 'molblock');
-    }
-    const rows = el.split('\n');
-    const atom_counts = rows[3].split(' ')[1];
-    const new_mol = rows.slice(4, parseInt(atom_counts) + 4).toString();
-    for (let [key, value] of elemental_table.entries()) {
-      if (new_mol.includes(key)) {
-        const count = [...new_mol].filter(x => x === key).length;
-        value.push(count);
-      } else {
-        value.push(0);
-      }
-    }
-  }
-  return elemental_table;
-}
-
-//top-menu: Chem | Elemental analysis...
-//name: Elemental analysis
-//input: dataframe table
-//input: column molCol { semType: Molecule }
-export async function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column) {
-  let elements = getAtomsColumn(molCol);
-  for (let [key, value] of elements.entries()) {
-    //@ts-ignore
-    value.every((el) => el == 0) ? 0 : table.columns.add(DG.Column.fromList('object', key, value));
-  };
-}*/
 
 
 //name: Chem
