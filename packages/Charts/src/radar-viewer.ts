@@ -48,7 +48,7 @@ export class RadarViewer extends DG.JsViewer {
 
     if (typeof this.id !== 'undefined') {
       for (const c of columns) {
-        option.radar.indicator.push({name: c.name, avg: DG.Stats.fromColumn(c).avg });
+        option.radar.indicator.push({name: c.name, avg: c.stats.avg });
       }
       this.pushData(data, columns, this.id);
     } else {
