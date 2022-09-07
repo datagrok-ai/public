@@ -7,7 +7,7 @@ import {
   SummarySettingsBase,
   Hit,
   distance,
-  createTooltip, CustomMouseEvent,
+  createTooltip
 } from './shared';
 
 const minDistance = 5;
@@ -43,7 +43,7 @@ function getSettings(gc: DG.GridColumn): SparklineSettings {
   return gc.settings;
 }
 
-function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
+function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const df = gridCell.grid.dataFrame;
 
   if (gridCell.bounds.width < 20 || gridCell.bounds.height < 10 || df === void 0) return {
@@ -54,7 +54,7 @@ function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
   };
 
   const row = gridCell.cell.row.idx;
-  const settings = getSettings(gridCell.gridColumn);;
+  const settings = getSettings(gridCell.gridColumn);
   const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-3, -2);
 
   const cols = df.columns.byNames(settings.columnNames);
@@ -65,7 +65,7 @@ function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
   };
 
 
-  const MousePoint = new DG.Point(e.layerX, e.layerY);
+  const MousePoint = new DG.Point(e.screenX, e.screenY);
   const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistance)) / b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
 
   const activePoint = getPos(activeColumn, row, getPosConstants);
@@ -82,7 +82,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
 
   get cellType() { return SparklineType.Sparkline; }
 
-  onMouseMove(gridCell: DG.GridCell, e: CustomMouseEvent): void {
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const hitData = onHit(gridCell, e);
     if (hitData.isHit)
       ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
