@@ -114,7 +114,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   ): void {
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
     const cell = gridCell.cell;
-    const paletteType = gridCell.cell.column.getTag(DG.TAGS.ALPHABET);
+    const paletteType = gridCell.cell.column.getTag(C.TAGS.ALPHABET);
     const minDistanceRenderer = 50;
     w = getUpdatedWidth(grid, g, x, w);
     g.save();
