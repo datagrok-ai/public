@@ -5,10 +5,11 @@ import {
   names,
   SparklineType,
   SummarySettingsBase,
-  renderSettingsPieChart,
   createTooltip,
   Hit, CustomMouseEvent
 } from './shared';
+
+const minRadius = 10;
 
 enum PieChartStyle {
   Radius = 'Radius',
@@ -53,7 +54,7 @@ function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
   if (settings.style == PieChartStyle.Radius) {
     activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
     r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
-    r = r < renderSettingsPieChart.minRadius ? renderSettingsPieChart.minRadius : r;
+    r = r < minRadius ? minRadius : r;
   } else {
     const sum = getColumnsSum(cols, row);
     r = (gridCell.bounds.width - 4) / 2;
@@ -119,7 +120,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
           continue;
 
         let r = cols[i].scale(row) * box.width / 2;
-        r = r < renderSettingsPieChart.minRadius ? renderSettingsPieChart.minRadius : r;
+        r = r < minRadius ? minRadius : r;
         g.beginPath();
         g.moveTo(box.midX, box.midY);
         g.arc(box.midX, box.midY, r,

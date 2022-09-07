@@ -69,29 +69,6 @@ export function createTooltip(cols: DG.Column[], activeColumn: number, row: numb
   return arr;
 }
 
-interface staticSettingsBarChart {
-  minH: number;
-}
-
-export const renderSettingsBarChart: staticSettingsBarChart = {
-  minH: 0.05,
-};
-
-interface staticSettingsPieChart {
-  minRadius: number;
-}
-
-export const renderSettingsPieChart: staticSettingsPieChart = {
-  minRadius: 10,
-};
-
-interface staticSettingsSparkline {
-  minDistance: number;
-}
-
-export const renderSettingsSparkline: staticSettingsSparkline = {
-  minDistance: 5,
-};
 
 // function getDataColumns<Type extends SummarySettingsBase>(
 //   gc: DG.GridColumn, getSettings: getSettingsFunc<Type>,
