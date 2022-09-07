@@ -39,7 +39,7 @@ interface SparklineSettings extends SummarySettingsBase {
 function getSettings(gc: DG.GridColumn): SparklineSettings {
   gc.settings ??= getSettingsBase(gc);
   gc.settings.globalScale ??= false;
-  gc.settings.colorCode ??= false;
+  gc.settings.colorCode ??= true;
   return gc.settings;
 }
 
