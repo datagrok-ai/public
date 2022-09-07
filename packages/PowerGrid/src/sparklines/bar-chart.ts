@@ -3,13 +3,13 @@ import * as ui from 'datagrok-api/ui';
 import {
   getSettingsBase,
   names,
-  renderSettingsBarChart,
   SparklineType,
   SummarySettingsBase,
   createTooltip,
   Hit, CustomMouseEvent
 } from './shared';
 
+const minH = 0.05;
 
 interface BarChartSettings extends SummarySettingsBase {
   // normalize: boolean;
@@ -41,7 +41,7 @@ function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
   }
   const bb = b
     .getLeftPart(cols.length, activeColumn)
-    .getBottomScaled(cols[activeColumn].scale(row) > renderSettingsBarChart.minH ? cols[activeColumn].scale(row) : renderSettingsBarChart.minH)
+    .getBottomScaled(cols[activeColumn].scale(row) > minH ? cols[activeColumn].scale(row) : minH)
     .inflateRel(0.9, 1);
   answer.isHit = (e.layerY >= bb.top);
   return answer;
@@ -81,7 +81,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
         g.setFillStyle(DG.Color.toRgb(color));
         const bb = b
           .getLeftPart(cols.length, i)
-          .getBottomScaled(cols[i].scale(row) > renderSettingsBarChart.minH ? cols[i].scale(row) : renderSettingsBarChart.minH)
+          .getBottomScaled(cols[i].scale(row) > minH ? cols[i].scale(row) : minH)
           .inflateRel(0.9, 1);
         g.fillRect(bb.left, bb.top, bb.width, bb.height);
       }

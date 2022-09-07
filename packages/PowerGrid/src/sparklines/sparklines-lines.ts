@@ -7,9 +7,10 @@ import {
   SummarySettingsBase,
   Hit,
   distance,
-  renderSettingsSparkline,
   createTooltip, CustomMouseEvent,
 } from './shared';
+
+const minDistance = 5;
 
 // interface for getPos function data
 interface getPosConstants {
@@ -53,8 +54,7 @@ function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
   };
 
   const row = gridCell.cell.row.idx;
-  const settings = getSettings(gridCell.gridColumn);
-  const minDistance = renderSettingsSparkline.minDistance;
+  const settings = getSettings(gridCell.gridColumn);;
   const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-3, -2);
 
   const cols = df.columns.byNames(settings.columnNames);
