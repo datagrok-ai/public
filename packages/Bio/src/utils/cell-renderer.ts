@@ -2,7 +2,7 @@ import * as C from './constants';
 import * as DG from 'datagrok-api/dg';
 import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
 import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
-import {UnknownSeqPalette, UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
+import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
 import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as ui from 'datagrok-api/ui';
@@ -14,7 +14,7 @@ const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => str
 const gapRenderer = 5;
 
 
-function getPalleteByType(paletteType: string): SeqPalette {
+function getPaletteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
   case 'PT':
     return AminoacidsPalettes.GrokGroups;
@@ -28,6 +28,10 @@ function getPalleteByType(paletteType: string): SeqPalette {
   default:
     return UnknownSeqPalettes.Color;
   }
+}
+
+function getUpdatedWidth(grid: DG.Grid | null, g: CanvasRenderingContext2D, x: number, w: number): number {
+  return grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
 }
 
 export function processSequence(subParts: string[]): [string[], boolean] {
@@ -63,8 +67,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     }
     const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
     const maxIndex = gridCell.cell.column.temp['bio-maxIndex'];
-    //@ts-ignore
-    const argsX = e.layerX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x);
+    const argsX = e.screenX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x);
     let left = 0;
     let right = maxIndex;
     let found = false;
@@ -109,23 +112,22 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle
   ): void {
-    const grid = gridCell.gridRow !== -1 ? gridCell.grid : undefined;
+    const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
     const cell = gridCell.cell;
-    const [type, subtype, paletteType] = gridCell.cell.column.getTag(DG.TAGS.UNITS).split(':');
+    const paletteType = gridCell.cell.column.getTag(DG.TAGS.ALPHABET);
     const minDistanceRenderer = 50;
-    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+    w = getUpdatedWidth(grid, g, x, w);
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
     g.clip();
     g.font = '12px monospace';
     g.textBaseline = 'top';
-    const s: string = cell.value ?? '';
 
     //TODO: can this be replaced/merged with splitSequence?
     const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
 
-    const palette = getPalleteByType(paletteType);
+    const palette = getPaletteByType(paletteType);
 
     const separator = gridCell.cell.column.getTag('separator') ?? '';
     const splitLimit = gridCell.bounds.width / 5;
@@ -184,10 +186,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       g.fillStyle = undefinedColor;
       let last = index === subParts.length - 1;
       x1 = printLeftOrCentered(x1, y, w, h, g, monomerToShortFunction(amino, maxLengthOfMonomer), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell);
-      if (x1 - minDistanceRenderer - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x) > gridCell.bounds.width) {
-        return false;
-      }
-      return true;
+      return x1 - minDistanceRenderer - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x) <= gridCell.bounds.width;
+
     });
 
     g.restore();
@@ -226,7 +226,7 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
     g.font = `12px monospace`;
     g.textBaseline = 'top';
 
-    const palette = getPalleteByType(gridCell.tableColumn!.tags[C.TAGS.ALPHABET]);
+    const palette = getPaletteByType(gridCell.tableColumn!.tags[C.TAGS.ALPHABET]);
     const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
     const color = palette.get(s);
 
@@ -262,7 +262,7 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     const grid = gridCell.grid;
     const cell = gridCell.cell;
 
-    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+    w = getUpdatedWidth(grid, g, w, x);
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
@@ -286,7 +286,7 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
 
     let palette: SeqPalette = UnknownSeqPalettes.Color;
     if (units != 'HELM')
-      palette = getPalleteByType(units.substring(units.length - 2));
+      palette = getPaletteByType(units.substring(units.length - 2));
 
     const vShift = 7;
     for (let i = 0; i < subParts1.length; i++) {
