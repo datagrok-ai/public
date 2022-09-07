@@ -31,10 +31,10 @@ export class Point {
 
 /** Represents a rectangle. */
 export class Rect {
-  x: any;
-  y: any;
-  width: any;
-  height: any;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 
   constructor(x: number, y: number, width: number, height: number) {
     this.x = x;
