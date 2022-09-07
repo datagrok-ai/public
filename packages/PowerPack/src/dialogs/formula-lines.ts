@@ -306,8 +306,15 @@ class Preview {
     if (src instanceof DG.DataFrame)
       this.dataFrame = src;
     else if (src instanceof DG.Viewer) {
-      this.dataFrame = src.dataFrame!;
-      this._scrAxes = { y: src.props.yColumnName, x: src.props.xColumnName };
+      if (src.getOptions()['type'] == DG.VIEWER.LINE_CHART) {
+        this.dataFrame = new DG.DataFrame(new DG.LineChartViewer(src.dart).activeFrame!);
+        let yCols: string[] = src.props.yColumnNames;
+        let yCol = this.dataFrame.columns.toList().find(col => col.name != src.props.xColumnName && yCols.some(n => col.name.includes(n)));   
+        this._scrAxes = { x: src.props.xColumnName, y: yCol == undefined ? src.props.xColumnName : yCol.name };
+      } else {
+        this.dataFrame = src.dataFrame!;
+        this._scrAxes = { y: src.props.yColumnName, x: src.props.xColumnName };
+      }
     } else
       throw 'Host is not DataFrame or Viewer.';
 
