@@ -169,11 +169,13 @@ export async function getActivityCliffs(
 
   linesRes.linesDf.onCurrentCellChanged.subscribe(() => {
     const currentMolIdx = linesRes.linesDf.currentCol && linesRes.linesDf.currentCol.name === '2_seq' ? 1 : 0;
-    sp.dataFrame.currentRowIdx =
-      linesRes.linesDf.currentRowIdx !== -1 ? linesRes.lines[linesRes.linesDf.currentRowIdx].mols[currentMolIdx] : -1;
+    const line = linesRes.linesDf.currentRowIdx !== -1 ? linesRes.lines[linesRes.linesDf.currentRowIdx] : null;
+    sp.dataFrame.currentRowIdx = line ? line.mols[currentMolIdx] : -1;
     sp.dataFrame.selection.set(0, !linesRes.lines[0].selected);
     sp.dataFrame.selection.set(0, linesRes.lines[0].selected);
     linesDfGrid.invalidate();
+    if (line)
+      setTimeout(() => {updatePropertyPanel(df, acc, cashedLinesData, line, seqCol, activities, linesRes.linesDf.get('sali', line.id), propertyPanelFunc)}, 1000);      
   });
 
   linesRes.linesDf.onSelectionChanged.subscribe((_: any) => {
@@ -245,7 +247,8 @@ export async function getActivityCliffs(
           df.selection.set(0, linesRes.lines[0].selected);
         }
       }
-      updatePropertyPanel(df, acc, cashedLinesData, line, seqCol, activities, linesRes.linesDf.get('sali', line.id), propertyPanelFunc);
+      const order = linesRes.linesDf.getSortedOrder(linesDfGrid.sortByColumns, linesDfGrid.sortTypes);
+      linesDfGrid.scrollToCell('seq_1', order.indexOf(line.id));
     }
   });
 
