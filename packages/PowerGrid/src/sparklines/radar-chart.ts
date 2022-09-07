@@ -31,8 +31,8 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
   const box = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).fitSquare().inflate(-2, -2);
   const cols = df.columns.byNames(settings.columnNames);
-  const vectorX = e.screenX - gridCell.bounds.midX;
-  const vectorY = e.screenY - gridCell.bounds.midY;
+  const vectorX = e.offsetX - gridCell.bounds.midX;
+  const vectorY = e.offsetY - gridCell.bounds.midY;
   const atan2 = Math.atan2(vectorY, vectorX);
   const angle = atan2 < 0 ? atan2 + 2 * Math.PI : atan2;
   const p = getAxesPointCalculator(cols, box);
@@ -42,7 +42,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   activeColumn = activeColumn > cols.length - 1 ? 0 : activeColumn;
   valueForColumn = Math.floor(valueForColumn + maxAngleDistance) > cols.length - 1 ? cols.length - valueForColumn : valueForColumn;
   const point = p(activeColumn, 1);
-  const mousePoint = new DG.Point(e.screenX, e.screenY);
+  const mousePoint = new DG.Point(e.offsetX, e.offsetY);
   const center = new DG.Point(gridCell.bounds.midX, gridCell.bounds.midY);
   return {
     activeColumn: activeColumn,
