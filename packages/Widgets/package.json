@@ -16,7 +16,7 @@
 		"Developers"
 	],
 	"canView": [
-		"All users"
+		"Developers"
 	],
 	"dependencies": {
 		"datagrok-api": "^1.0.0",
