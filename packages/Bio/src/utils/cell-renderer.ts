@@ -67,7 +67,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     }
     const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
     const maxIndex = gridCell.cell.column.temp['bio-maxIndex'];
-    const argsX = e.screenX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x);
+    const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x);
     let left = 0;
     let right = maxIndex;
     let found = false;

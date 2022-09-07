@@ -42,8 +42,8 @@ function getColumnsSum(cols: DG.Column[], row: number) {
 function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
   const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames);
-  const vectorX = e.screenX - gridCell.bounds.midX;
-  const vectorY = e.screenY - gridCell.bounds.midY;
+  const vectorX = e.offsetX - gridCell.bounds.midX;
+  const vectorY = e.offsetY - gridCell.bounds.midY;
   const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
   const atan2 = Math.atan2(vectorY, vectorX);
   const angle = atan2 < 0 ? atan2 + 2 * Math.PI : atan2;

@@ -65,7 +65,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   };
 
 
-  const MousePoint = new DG.Point(e.screenX, e.screenY);
+  const MousePoint = new DG.Point(e.offsetX, e.offsetY);
   const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistance)) / b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
 
   const activePoint = getPos(activeColumn, row, getPosConstants);

@@ -29,7 +29,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const row = gridCell.cell.row.idx;
   const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-2, -2);
   const width = b.width / cols.length;
-  const activeColumn = Math.floor((e.screenX - b.left) / width);
+  const activeColumn = Math.floor((e.offsetX - b.left) / width);
   let answer: Hit = {
     isHit: false,
     activeColumn: activeColumn,
@@ -43,7 +43,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
     .getLeftPart(cols.length, activeColumn)
     .getBottomScaled(cols[activeColumn].scale(row) > minH ? cols[activeColumn].scale(row) : minH)
     .inflateRel(0.9, 1);
-  answer.isHit = (e.screenY >= bb.top);
+  answer.isHit = (e.offsetY >= bb.top);
   return answer;
 }
 
