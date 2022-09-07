@@ -15,7 +15,7 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 export class SubstructureFilter extends DG.Filter {
   // @ts-ignore
-  sketcher: DG.chem.chem.Sketcher = new DG.chem.chem.Sketcher();
+  sketcher: DG.chem.Sketcher = new DG.chem.Sketcher();
   bitset: DG.BitSet | null = null;
   loader: HTMLDivElement = ui.loader();
   onSketcherChangedSubs?: Subscription;
