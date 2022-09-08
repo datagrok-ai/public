@@ -19,6 +19,13 @@ type MonomerData = {
   bondIndices: BondIndices,
 }
 
+type AtomData = {
+  atomIdx: number,
+  atomType: string,
+  x: number,
+  y: number,
+}
+
 export async function _toAtomicLevel(
   df: DG.DataFrame,
   macroMolCol: DG.Column<string>,
@@ -28,6 +35,7 @@ export async function _toAtomicLevel(
     grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
     return;
   }
+
   // jagged array of monomer symbols
   const monomerSequencesArray: string[][] = getMonomerSequencesArray(macroMolCol);
   const monomersDict = await getMonomersDict(monomerSequencesArray, monomersLibList);
@@ -36,7 +44,7 @@ export async function _toAtomicLevel(
     const monomerSeq = monomerSequencesArray[row];
     reconstructed[row] = bind(monomerSeq, monomersDict);
   }
-  const newCol = DG.Column.fromStrings('regenerated', reconstructed);
+  const newCol = DG.Column.fromStrings('reconstructed', reconstructed);
   // todo: name properly
   newCol.semType = DG.SEMTYPE.MOLECULE;
   newCol.tags[DG.TAGS.UNITS] = 'molblock';
@@ -115,8 +123,8 @@ function getMonomerData(
     let molfileV3K = convertToV3K(molfileV2K, moduleRdkit);
     // todo: field name to constant
     const bondIndices = parseBondIndices(molfileV2K, molfileV3K);
-    molfileV3K = getFromattedMolfileV3K(molfileV2K, rgroups, bondIndices);
-    return {molfileV3K: molfileV3K, bondIndices};
+    molfileV3K = getFromattedMolfileV3K(molfileV3K, bondIndices);
+    return {molfileV3K: molfileV3K, bondIndices: bondIndices};
   }
 }
 
@@ -159,13 +167,15 @@ function parseBondIndices(molfileV2K: string, molfileV3K: string): BondIndices {
 
   const removedNodes = getRemovedNodes(molfileV2K);
 
-  const indices = getLRNodesAndBonds(molfileV2K, removedNodes);
+  const indices = getLRNodesAndBonds(molfileV3K, removedNodes);
 
   return {
     leftNode: indices.leftNode,
     rightNode: indices.rightNode,
     leftRemovedNode: removedNodes.left,
     rightRemovedNode: removedNodes.right,
+    leftRemovedBond: indices.leftRemovedBond,
+    rightRemovedBond: indices.rightRemovedBond,
   };
 }
 
@@ -193,49 +203,60 @@ function parseRGroupIndices(molfileV2K: string): number[] {
 
 function getLRNodesAndBonds(
   v3KMolblock: string,
-  removedNodes: {left: number, right: number},
+  removedNodes: {left: number, right: number}
 ): {leftNode: number, rightNode: number, leftRemovedBond: number, rightRemovedBond: number} {
-  // todo: rename 'counts'
-  const counts = getAtomAndBondCountsV3K(v3KMolblock);
-  let idxV3KBondsBlock = v3KMolblock.indexOf('M  V30 BEGIN BOND');
-  idxV3KBondsBlock = v3KMolblock.indexOf('\n', idxV3KBondsBlock);
-  let begin = idxV3KBondsBlock;
-  let end = idxV3KBondsBlock;
-
-  let leftNode = 0; // todo: improve notation
+  let leftNode = 0;
   let rightNode = 0;
-  let remBondleftNode = 0;
-  let remBondrightNode = 0;
+  let leftRemovedBond = 0;
+  let rightRemovedBond = 0;
+  const counts = getAtomAndBondCountsV3K(v3KMolblock);
 
-  for (let j = 0; j < counts.bondCount; j++) {
-    if (leftNode === 0 || rightNode === 0) {
-      begin = v3KMolblock.indexOf('V30', begin) + 4;
-      end = v3KMolblock.indexOf('\n', begin);
-      const bondStringParsed = v3KMolblock.substring(begin, end).replaceAll('  ', ' ').replaceAll('  ', ' ').split(' ');
-      const bondData = bondStringParsed.map((el) => parseInt(el));
+  let idxV3KBondBlock = v3KMolblock.indexOf('M  V30 BEGIN BOND');
+  idxV3KBondBlock = v3KMolblock.indexOf('\n', idxV3KBondBlock);
+  let begin = idxV3KBondBlock;
+  let end = idxV3KBondBlock;
 
-      if (bondData[2] === removedNodes.left) { // bondData[2] is the 1st node/atom of the bond
-        leftNode = bondData[3]; // bondData[3] is the 2nd node/atom of the bond
-        remBondleftNode = bondData[0]; // bondData[0] is the idx of the associated bond/edge
-      } else if (bondData[3] === removedNodes.left) {
-        leftNode = bondData[2];
-        remBondleftNode = bondData[0];
-      } else if (bondData[2] === removedNodes.right) {
-        rightNode = bondData[3];
-        remBondrightNode = bondData[0];
-      } else if (bondData[3] === removedNodes.right) {
-        rightNode = bondData[2];
-        remBondrightNode = bondData[0];
-      }
+  const V3K_BOND_DATA_SHIFT = 4;
+
+  let i = 0;
+
+  while ((i < counts.bondCount) && (leftNode === 0 || rightNode === 0)) {
+    begin = v3KMolblock.indexOf('V30', begin) + V3K_BOND_DATA_SHIFT;
+    end = v3KMolblock.indexOf('\n', begin);
+    const bondStringParsed = v3KMolblock.substring(begin, end).replaceAll('  ', ' ').replaceAll('  ', ' ').split(' ');
+    const bondData = bondStringParsed.map((el) => parseInt(el));
+
+    if (bondData[2] === removedNodes.left) { // bondData[2] is the 1st node/atom of the bond
+      leftNode = bondData[3]; // bondData[3] is the 2nd node/atom of the bond
+      leftRemovedBond = bondData[0]; // bondData[0] is the idx of the associated bond/edge
+    } else if (bondData[3] === removedNodes.left) {
+      leftNode = bondData[2];
+      leftRemovedBond = bondData[0];
+    } else if (bondData[2] === removedNodes.right) {
+      rightNode = bondData[3];
+      rightRemovedBond = bondData[0];
+    } else if (bondData[3] === removedNodes.right) {
+      rightNode = bondData[2];
+      rightRemovedBond = bondData[0];
     }
+    ++i;
   }
+
+  return {
+    leftNode: leftNode,
+    rightNode: rightNode,
+    leftRemovedBond: leftRemovedBond,
+    rightRemovedBond: rightRemovedBond
+  };
 }
 
 function getAtomAndBondCountsV3K(v3KMolblock: string): {atomCount: number, bondCount: number} {
-  v3KMolblock = v3KMolblock.replaceAll('\r', ''); // equalize old and new sdf standards
+  v3KMolblock = v3KMolblock.replaceAll('\r', ''); // to handle old and new sdf standards
+
+  const V3K_COUNTS_SHIFT = 7;
 
   // parse atom count
-  let idxBegin = v3KMolblock.indexOf('COUNTS') + 7;
+  let idxBegin = v3KMolblock.indexOf('COUNTS') + V3K_COUNTS_SHIFT;
   let idxEnd = v3KMolblock.indexOf(' ', idxBegin);
   const numOfAtoms = parseInt(v3KMolblock.substring(idxBegin, idxEnd));
 
@@ -245,4 +266,49 @@ function getAtomAndBondCountsV3K(v3KMolblock: string): {atomCount: number, bondC
   const numOfBonds = parseInt(v3KMolblock.substring(idxBegin, idxEnd));
 
   return {atomCount: numOfAtoms, bondCount: numOfBonds};
+}
+
+function getFromattedMolfileV3K(molfileV3K: string, bondIndices: BondIndices): string {
+  const atom = parseAtomData(molfileV3K);
+
+  // let formattedMolfileV3K = rotateV3KBackbone(molfileV3K, bondIndices);
+}
+
+function parseAtomData(molfileV3K: string): AtomData[] {
+  const atomsArray = [];
+
+  
+  const numbers = extractAtomAndBondCountsV3K(v3KMolblock);
+  let begin = v3KMolblock.indexOf('M  V30 BEGIN ATOM'); // V3000 block for atom coordinates
+  begin = v3KMolblock.indexOf('\n', begin);
+  let end = begin;
+
+  const atomIndices: number[] = Array(numbers.atomCount);
+  const atomTypes: string[] = Array(numbers.atomCount);
+  const x: number[] = Array(numbers.atomCount);
+  const y: number[] = Array(numbers.atomCount);
+
+  for (let i = 0; i < numbers.atomCount; i++) {
+    begin = v3KMolblock.indexOf('V30', begin) + 4;
+    end = v3KMolblock.indexOf(' ', begin);
+    atomIndices[i] = parseInt(v3KMolblock.substring(begin, end));
+
+    begin = end + 1;
+    end = v3KMolblock.indexOf(' ', begin);
+    atomTypes[i] = v3KMolblock.substring(begin, end);
+
+    begin = end + 1;
+    end = v3KMolblock.indexOf(' ', begin);
+    x[i] = parseFloat(v3KMolblock.substring(begin, end));
+
+    begin = end + 1;
+    end = v3KMolblock.indexOf(' ', begin);
+    y[i] = parseFloat(v3KMolblock.substring(begin, end));
+
+    begin = v3KMolblock.indexOf('\n', begin) + 1;
+  }
+
+  return {atomIndices: atomIndices, atomTypes: atomTypes, x: x, y: y};
+
+
 }
