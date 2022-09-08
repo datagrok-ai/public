@@ -12,6 +12,7 @@ import {Property} from './entities';
 let api = <any>window;
 let _bytes = new Float64Array(4);
 
+/** Represents a point. */
 export class Point {
   x: number;
   y: number;
@@ -20,13 +21,20 @@ export class Point {
     this.x = x;
     this.y = y;
   }
+
+  /** Distance to the specified point. */
+  distanceTo(p: Point): number {
+    return Math.sqrt((this.x - p.x) * (this.x - p.x) + (this.y - p.y) * (this.y - p.y));
+  }
 }
 
+
+/** Represents a rectangle. */
 export class Rect {
-  x: any;
-  y: any;
-  width: any;
-  height: any;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 
   constructor(x: number, y: number, width: number, height: number) {
     this.x = x;
@@ -40,10 +48,12 @@ export class Rect {
     return new Rect(_bytes[0], _bytes[1], _bytes[2], _bytes[3]);
   }
 
-  fromCenterSize(cx: number, cy: number, width: number, height: number): Rect{
+  /** Rectangle of the specified size, with the specified center */
+  fromCenterSize(cx: number, cy: number, width: number, height: number): Rect {
     return new Rect(cx - width / 2, cy - height / 2, width, height);
   }
 
+  /** The midpoint of the rectangle along the x-axis. */
   get midX(): number {
     return this.x + this.width / 2;
   }
@@ -368,9 +378,9 @@ export class Rect {
     return this.left <= x && x <= this.right && this.top <= y && y <= this.bottom;
   }
 
-  /** Distance to the specified point. */
-  distanceTo(p: Point): number {
-    return Math.sqrt((this.x - p.x) * (this.x - p.x) + (this.y - p.y) * (this.y - p.y));
+  /** Checks if this Rect contains the specified point */
+  containsPoint(p: Point): boolean {
+    return this.contains(p.x, p.y);
   }
 }
 

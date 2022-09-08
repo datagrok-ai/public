@@ -37,6 +37,9 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
+import { getAtomsColumn } from './utils/elemental-analysis-utils';
+import { elementsTable } from './constants';
+import { getSimilaritiesMarix } from './utils/similarity-utils';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -276,7 +279,7 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
     DG.SEMTYPE.MOLECULE,
     {'units': smiles.tags['units']},
     chemSpace,
-    chemSearches.chemGetSimilarities,
+    getSimilaritiesMarix,
     createTooltipElement,
     createPropPanelElement,
     options[methodName]);
@@ -346,6 +349,25 @@ export function addInchisPanel(col: DG.Column): void {
   addInchis(col);
 }
 
+//top-menu: Chem | Elemental analysis...
+//name: Elemental analysis
+//description: function that implements elemental analysis
+//input: dataframe table
+//input: column molCol { semType: Molecule }
+export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column): void {
+  const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
+
+  if (invalid.length > 0)
+    console.log(`Invalid rows ${invalid.map((i) => i.toString()).join(', ')}`);
+
+  for (let elName of elementsTable) {
+    const value = elements.get(elName);
+    if (value)
+      table.columns.add(DG.Column.fromInt32Array(elName, value));
+  }
+}
+
+
 //name: Chem | To InchI Keys
 //friendly-name: Chem | To InchI Keys
 //tags: panel, chem
@@ -354,54 +376,6 @@ export function addInchisKeysPanel(col: DG.Column): void {
   addInchiKeys(col);
 }
 
-function getAtomsColumn(molCol: DG.Column) : Map<string, Array<number>> {
-  const elements: Array<string> = ['R', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 
-                                  'Mg', 'Al','Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V',
-                                  'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se',
-  	                              'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 
-                                  'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 
-                                  'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho',
-                                  'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt',
-                                  'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 
-                                  'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk','Cf', 'Es', 'Fm', 'Md',
-                                  'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn',
-                                  'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og'];
-  let elemental_table: Map<string, Array<number>> = new Map();
-  for (let j = 0; j < elements.length; j++) {
-    elemental_table.set(elements[j], new Array<number>);
-  }
-
-  for (let i = 0; i < molCol.length; i++) {
-    let el = molCol.get(i);
-    if (!isMolBlock(el)) {
-      el = convertMolNotation(el, 'smiles', 'molblock');
-    }
-    const rows = el.split('\n');
-    const atom_counts = rows[3].split(' ')[1];
-    const new_mol = rows.slice(4, parseInt(atom_counts) + 4).toString();
-    for (let [key, value] of elemental_table.entries()) {
-      if (new_mol.includes(key)) {
-        const count = [...new_mol].filter(x => x === key).length;
-        value.push(count);
-      } else {
-        value.push(0);
-      }
-    }
-  }
-  return elemental_table;
-}
-
-//top-menu: Chem | Elemental analysis...
-//name: Elemental analysis
-//input: dataframe table
-//input: column molCol { semType: Molecule }
-export async function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column) {
-  let elements = getAtomsColumn(molCol);
-  for (let [key, value] of elements.entries()) {
-    //@ts-ignore
-    value.every((el) => el == 0) ? 0 : table.columns.add(DG.Column.fromList('object', key, value));
-  };
-}
 
 //name: Chem
 //input: column molColumn {semType: Molecule}

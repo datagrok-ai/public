@@ -6,7 +6,7 @@ import {
   SparklineType,
   SummarySettingsBase,
   createTooltip,
-  Hit, CustomMouseEvent
+  Hit
 } from './shared';
 
 const minRadius = 10;
@@ -39,18 +39,18 @@ function getColumnsSum(cols: DG.Column[], row: number) {
   return sum;
 }
 
-function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
+function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
   const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames);
-  const vectorX = e.layerX - gridCell.bounds.midX;
-  const vectorY = e.layerY - gridCell.bounds.midY;
+  const vectorX = e.offsetX - gridCell.bounds.midX;
+  const vectorY = e.offsetY - gridCell.bounds.midY;
   const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
   const atan2 = Math.atan2(vectorY, vectorX);
   const angle = atan2 < 0 ? atan2 + 2 * Math.PI : atan2;
   let activeColumn = -1;
-  let r = 0;
   const row: number = gridCell.cell.row.idx;
 
+  let r: number;
   if (settings.style == PieChartStyle.Radius) {
     activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
     r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
@@ -93,7 +93,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
   get defaultHeight(): number | null { return 80; }
 
-  onMouseMove(gridCell: DG.GridCell, e: CustomMouseEvent): void {
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const hitData = onHit(gridCell, e);
     if (hitData.isHit)
       ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);

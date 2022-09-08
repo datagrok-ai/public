@@ -492,6 +492,7 @@ export enum USER_STATUS {
  **/
 
 export type AggregationType = `${AGG}`;
+export type ColumnAggregationType = `${AGG}` | `${STR_AGG}` | string;
 export type SyncType = `${SYNC_TYPE}`;
 export type JoinType = `${JOIN_TYPE}`;
 export type ColumnType = `${COLUMN_TYPE}`;

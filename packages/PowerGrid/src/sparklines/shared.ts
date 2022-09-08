@@ -4,10 +4,6 @@ import * as ui from 'datagrok-api/ui';
 
 type getSettingsFunc<Type extends SummarySettingsBase> = (gs: DG.GridColumn) => Type;
 
-export interface CustomMouseEvent extends MouseEvent {
-  layerX: number;
-  layerY: number;
-}
 
 export function names(columns: Iterable<DG.Column>): string[] {
   return Array.from(columns).map((c: DG.Column) => c.name);

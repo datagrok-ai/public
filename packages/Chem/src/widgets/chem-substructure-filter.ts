@@ -15,7 +15,7 @@ import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 
 export class SubstructureFilter extends DG.Filter {
   // @ts-ignore
-  sketcher: DG.chem.chem.Sketcher = new DG.chem.chem.Sketcher();
+  sketcher: DG.chem.Sketcher = new DG.chem.Sketcher();
   bitset: DG.BitSet | null = null;
   loader: HTMLDivElement = ui.loader();
   onSketcherChangedSubs?: Subscription;
@@ -132,7 +132,7 @@ export class SubstructureFilter extends DG.Filter {
         if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
           return;
 
-        this.bitset = await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts);
+        this.bitset = await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts!);
         this.calculating = false;
         this.dataFrame?.rows.requestFilter();
       } finally {

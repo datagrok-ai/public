@@ -6,7 +6,7 @@ import {
   SparklineType,
   SummarySettingsBase,
   createTooltip,
-  Hit, CustomMouseEvent
+  Hit
 } from './shared';
 
 const minH = 0.05;
@@ -22,14 +22,14 @@ function getSettings(gc: DG.GridColumn): BarChartSettings {
   return gc.settings;
 }
 
-function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
+function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
   const df = gridCell.grid.dataFrame;
   const cols = df.columns.byNames(settings.columnNames);
   const row = gridCell.cell.row.idx;
   const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-2, -2);
   const width = b.width / cols.length;
-  const activeColumn = Math.floor((e.layerX - b.left) / width);
+  const activeColumn = Math.floor((e.offsetX - b.left) / width);
   let answer: Hit = {
     isHit: false,
     activeColumn: activeColumn,
@@ -43,7 +43,7 @@ function onHit(gridCell: DG.GridCell, e: CustomMouseEvent): Hit {
     .getLeftPart(cols.length, activeColumn)
     .getBottomScaled(cols[activeColumn].scale(row) > minH ? cols[activeColumn].scale(row) : minH)
     .inflateRel(0.9, 1);
-  answer.isHit = (e.layerY >= bb.top);
+  answer.isHit = (e.offsetY >= bb.top);
   return answer;
 }
 
@@ -53,7 +53,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
 
   get cellType() { return SparklineType.BarChart; }
 
-  onMouseMove(gridCell: DG.GridCell, e: CustomMouseEvent): void {
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const hitData = onHit(gridCell, e);
     if (hitData.isHit)
       ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);

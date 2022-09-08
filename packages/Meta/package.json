@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "2.0.34",
+  "version": "2.0.39",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -270,6 +270,9 @@
         },
         "1.3.5": {
           "datagrok-api": "^1.6.6"
+        },
+        "1.3.7": {
+          "datagrok-api": "^1.6.6"
         }
       },
       "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis",
@@ -422,6 +425,9 @@
         },
         "1.0.3": {
           "datagrok-api": "^1.0.0"
+        },
+        "1.0.4": {
+          "datagrok-api": "^1.6.7"
         }
       },
       "description": "Commonly used platform enhancements",
@@ -979,6 +985,9 @@
         },
         "1.0.4": {
           "datagrok-api": "^1.4.11"
+        },
+        "1.0.5": {
+          "datagrok-api": "^1.6.7"
         }
       },
       "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
@@ -1317,6 +1326,12 @@
         },
         "1.11.0": {
           "datagrok-api": "^1.6.6"
+        },
+        "1.11.1": {
+          "datagrok-api": "^1.6.6"
+        },
+        "1.11.2": {
+          "datagrok-api": "^1.6.7"
         }
       },
       "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",

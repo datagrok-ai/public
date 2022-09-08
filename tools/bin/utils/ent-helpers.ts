@@ -51,6 +51,10 @@ const _package = (ts: boolean) =>
 ts ? '' : 'Consider TypeScript as a language for package development, to start over, run `grok create` with the `--ts` flag\n' +
 'Likely next steps: `grok add` to add functionality, `grok publish` to upload the package';
 
+const test = (dir: string) => `Tests have been added successfully to ${dir}
+Run 'npm install' to get newly added packages
+Read more about package testing at https://datagrok.ai/help/develop/how-to/test-packages`;
+
 export const help = {
   app,
   connection,
@@ -61,4 +65,5 @@ export const help = {
   view,
   viewer,
   package: _package,
+  test,
 };

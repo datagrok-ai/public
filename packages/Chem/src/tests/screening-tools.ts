@@ -6,6 +6,8 @@ import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {runStructuralAlertsDetection} from '../panels/structural-alerts';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {elementalAnalysis} from '../../src/package';
+
 
 category('screening tools benchmarks', () => {
   before(async () => {
@@ -32,4 +34,12 @@ category('screening tools benchmarks', () => {
       runStructuralAlertsDetection(sarSmall, ruleSetList, smilesCol, ruleSetCol, ruleIdCol, smartsMap, rdkitModule);
     });
   });
+
+  test('elementalAnalysis', async () => {
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
+    const col: DG.Column = df.getCol('molecule');
+    DG.time('Elemental Analysis', async () => {
+      await elementalAnalysis(df, col);
+    });
+  })
 });

@@ -116,5 +116,9 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
     hosts.push(molHost);
   });
   findMcsAndUpdateDrawings(params, hosts);
+  propPanel.append(ui.divH([
+    ui.divText(`Cliff: `, {style: {fontWeight: 'bold', paddingRight: '5px'}}),
+    ui.divText(params.sali!.toFixed(2))
+  ]));
   return propPanel;
 }

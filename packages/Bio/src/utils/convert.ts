@@ -5,7 +5,7 @@ import $ from 'cash-dom';
 
 import {Subscription} from 'rxjs';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {NOTATION, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 
 let convertDialog: DG.Dialog | null = null;
@@ -85,6 +85,9 @@ export async function convertDo(
   const converter = new NotationConverter(srcCol);
   const newColumn = converter.convert(targetNotation, separator);
   srcCol.dataFrame.columns.add(newColumn);
+
+  // call to calculate 'cell.renderer' tag
   await grok.data.detectSemanticTypes(srcCol.dataFrame);
+
   return newColumn;
 }

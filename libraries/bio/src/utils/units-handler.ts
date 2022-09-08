@@ -126,9 +126,7 @@ export class UnitsHandler {
 
   public getAlphabetIsMultichar(): boolean {
     if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN) {
-      const alphabetIsMultichar: boolean =
-        this.column.getTag(UnitsHandler.TAGS.alphabetIsMultichar) == 'true' ? true : false;
-      return alphabetIsMultichar;
+      return this.column.getTag(UnitsHandler.TAGS.alphabetIsMultichar) == 'true';
     } else {
       return false;
     }
@@ -177,6 +175,18 @@ export class UnitsHandler {
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
     newColumn.setTag(DG.TAGS.UNITS, this.notation);
     newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule');
+
+    const srcAlphabet = col.getTag(UnitsHandler.TAGS.alphabet);
+    if (srcAlphabet)
+      newColumn.setTag(UnitsHandler.TAGS.alphabet, srcAlphabet);
+
+    const srcAlphabetSize = col.getTag(UnitsHandler.TAGS.alphabetSize);
+    if (srcAlphabetSize)
+      newColumn.setTag(UnitsHandler.TAGS.alphabetSize, srcAlphabetSize);
+
+    const srcAlphabetIsMultichar = col.getTag(UnitsHandler.TAGS.alphabetIsMultichar);
+    if (srcAlphabetIsMultichar)
+      newColumn.setTag(UnitsHandler.TAGS.alphabetIsMultichar, srcAlphabetIsMultichar);
 
     return newColumn;
   }
