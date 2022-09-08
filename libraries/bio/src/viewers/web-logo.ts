@@ -9,7 +9,7 @@ import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
 import {vectorLength, vectorDotProduct} from '@datagrok-libraries/utils/src/vector-operations';
 import {Aminoacids, AminoacidsPalettes} from '../aminoacids';
 import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
-import {UnknownSeqPalette, UnknownSeqPalettes} from '../unknown';
+import {UnknownSeqPalettes} from '../unknown';
 import {SeqPalette} from '../seq-palettes';
 import {Subscription} from 'rxjs';
 import {NOTATION, UnitsHandler} from '../utils/units-handler';
@@ -71,6 +71,9 @@ export class PositionInfo {
 
   /** freq = {}, rowCount = 0
    * @param {string} name Name of position ('111A', '111.1', etc)
+   * @param {number} sumForHeightCalc Sum of all monomer counts for height calculation
+   * @param {number} rowCount Count of elements in column
+   * @param {string[]} freq frequency of monomers in position
    */
   constructor(name: string, freq: { [m: string]: PositionMonomerInfo } = {}, rowCount: number = 0, sumForHeightCalc: number = 0) {
     this.name = name;
@@ -141,7 +144,7 @@ export class WebLogo extends DG.JsViewer {
   }
 
   private get positionWidthWithMargin() {
-    if (this.positionMarginState === 'auto') {
+    if ((this.positionMarginState === 'auto') && (this.unitsHandler?.getAlphabetIsMultichar() === true)) {
       return this._positionWidth + this.positionMargin;
     }
     if (this.positionMarginState === 'enable') {
@@ -186,7 +189,11 @@ export class WebLogo extends DG.JsViewer {
     this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
     this.positionMarginState = this.string('positionMarginState', 'auto',
       {choices: ['auto', 'enable', 'off']});
-    this.positionMargin = this.int('positionMargin', 0);
+    let defaultValueForPositionMargin = 0;
+    if (this.positionMarginState === 'auto') {
+        defaultValueForPositionMargin = 4;
+    }
+    this.positionMargin = this.int('positionMargin', defaultValueForPositionMargin, {min: 0, max: 16});
     this.positionHeight = this.string('positionHeight', PositionHeight.full, {choices: [PositionHeight.full, PositionHeight.Entropy]});
   }
 
@@ -299,6 +306,7 @@ export class WebLogo extends DG.JsViewer {
         const units: string = this.seqCol!.getTag(DG.TAGS.UNITS);
         const separator: string = this.seqCol!.getTag(UnitsHandler.TAGS.separator);
         this.splitter = WebLogo.getSplitter(units, separator);
+        this.unitsHandler = new UnitsHandler(this.seqCol);
 
         this.updatePositions();
         this.cp = WebLogo.pickUpPalette(this.seqCol);
@@ -795,8 +803,7 @@ export class WebLogo extends DG.JsViewer {
     /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
     const freqV: Vector = new Vector(freqA);
     const alphabetV: Vector = new Vector(alphabetA);
-    const cos: number = vectorDotProduct(freqV, alphabetV) / (vectorLength(freqV) * vectorLength(alphabetV));
-    return cos;
+    return vectorDotProduct(freqV, alphabetV) / (vectorLength(freqV) * vectorLength(alphabetV));
   }
 
   // /** First try to find column with semType 'alignedSequence'.

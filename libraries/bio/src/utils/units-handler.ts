@@ -126,9 +126,7 @@ export class UnitsHandler {
 
   public getAlphabetIsMultichar(): boolean {
     if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN) {
-      const alphabetIsMultichar: boolean =
-        this.column.getTag(UnitsHandler.TAGS.alphabetIsMultichar) == 'true' ? true : false;
-      return alphabetIsMultichar;
+      return this.column.getTag(UnitsHandler.TAGS.alphabetIsMultichar) == 'true';
     } else {
       return false;
     }
