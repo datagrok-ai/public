@@ -44,6 +44,7 @@ let zoom = false;
 
 const molColumnNames = ['1_seq', '2_seq'];
 
+const nonNormalizedDistances = ['Levenshtein'];
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
 export async function getActivityCliffs(
@@ -59,7 +60,7 @@ export async function getActivityCliffs(
     semType: string,
     tags: {[index: string]: string},
     seqSpaceFunc: (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>,
-    simFunc: (col: DG.Column, mol: string) => Promise<DG.Column | null>,
+    simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[]) => Promise<DG.Column[]>,
     tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
     propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
     options?: any) : Promise<DG.Viewer> {
@@ -91,10 +92,10 @@ export async function getActivityCliffs(
   const dim = dimensionalityReduceCol.length;
   const simArr: DG.Column[] = Array(dim - 1);
 
-  if (!distance || emptyValsIdxs.length !== 0)
-    await getSimilaritiesMarix(dim, dimensionalityReduceCol, dfSeq, simArr, simFunc);
+  if (!distance || emptyValsIdxs.length !== 0 || nonNormalizedDistances.includes(similarityMetric))
+    await simMatrixFunc(dim, dimensionalityReduceCol, dfSeq, 'seq', simArr);
   else
-    getSimilaritiesMarixFromDistances(dim, distance, simArr);
+    getSimilaritiesFromDistances(dim, distance, simArr);
 
   const optSimilarityLimit = initialSimilarityLimit;
 
@@ -163,7 +164,7 @@ export async function getActivityCliffs(
   })) as DG.ScatterPlotViewer;
 
   const canvas = (sp.getInfo() as any)['canvas'];
-  const linesRes = createLines(n1, n2, seqCol, activities, saliVals, semType, tags);
+  const linesRes = createLines(n1, n2, seqCol, activities, saliVals, simVals, semType, tags);
   const cashedLinesData: any = {};
   let acc: DG.Accordion;
 
@@ -193,7 +194,7 @@ export async function getActivityCliffs(
   });
 
   const linesDfGrid = linesRes.linesDf.plot.grid().sort(['sali'], [false]);
-  linesDfGrid.root.style.minWidth = '650px';
+  linesDfGrid.root.style.minWidth = '750px';
 
   linesDfGrid.onCellClick.subscribe(() => {
     zoom = true;
@@ -374,6 +375,7 @@ function createLines(
   seq: DG.Column, 
   activities: DG.Column, 
   saliVals: number[],
+  simVals: number[],
   semType: string,
   tags: {[index: string]: string}) : IRenderedLines {
   const lines: ILine[] = [];
@@ -392,6 +394,7 @@ function createLines(
     .init((i: number) => Math.abs(activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1])));
   linesDf.columns.addNewInt('line_index').init((i: number) => i);
   linesDf.columns.addNewFloat('sali').init((i: number) => saliVals[i]);
+  linesDf.columns.addNewFloat('sim').init((i: number) => simVals[i]);
   return {lines, linesDf};
 }
 
@@ -417,12 +420,14 @@ export async function getSimilaritiesMarix(
   return simArr;
 }
 
-export function getSimilaritiesMarixFromDistances(dim: number, distances: Matrix, simArr: DG.Column[])
+
+export function getSimilaritiesFromDistances(dim: number, distances: Matrix, simArr: DG.Column[])
   : DG.Column[] {
   for (let i = 0; i < dim - 1; ++i) {
-    const similarityArr = [];
-    for (let j = i + 1; j < dim; ++j)
-      similarityArr.push(getSimilarityFromDistance(distances[i][j]));
+    const similarityArr = new Array(dim - i - 1).fill(0);
+    for (let j = i + 1; j < dim; ++j) {
+      similarityArr[j - i - 1] = getSimilarityFromDistance(distances[i][j]);
+    }
     simArr[i] = DG.Column.fromFloat32Array('similarity', Float32Array.from(similarityArr));
   }
   return simArr;
