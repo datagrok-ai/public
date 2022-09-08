@@ -4,6 +4,11 @@ import * as DG from 'datagrok-api/dg';
 import {WebLogo, SplitterFunc} from '../../src/viewers/web-logo';
 import {HELM_CORE_FIELDS, HELM_CORE_LIB_MONOMER_SYMBOL} from './monomer-utils';
 
+const V2K_RGP_SHIFT = 8;
+const V3K_ATOMS_DATA_SHIFT = 4;
+const V3K_BOND_DATA_SHIFT = 4;
+const V3K_COUNTS_SHIFT = 7;
+
 type BondIndices = {
   // The node to which the radical is attached from the "left" (the order is specified by Macromolecule sequence):
   leftNode: number,
@@ -190,8 +195,6 @@ function getRemovedNodes(molfileV2K: string): {left: number, right: number} {
 function parseRGroupIndices(molfileV2K: string): number[] {
   // todo: handle the exceptional case when there is not enough rgroups
   // todo: handle the exceptional case when the order is different
-  const V2K_RGP_SHIFT = 8;
-
   const begin = molfileV2K.indexOf('M  RGP', 0) + V2K_RGP_SHIFT;
   const end = molfileV2K.indexOf('\n', begin);
 
@@ -215,8 +218,6 @@ function getLRNodesAndBonds(
   idxV3KBondBlock = v3KMolblock.indexOf('\n', idxV3KBondBlock);
   let begin = idxV3KBondBlock;
   let end = idxV3KBondBlock;
-
-  const V3K_BOND_DATA_SHIFT = 4;
 
   let i = 0;
 
@@ -253,8 +254,6 @@ function getLRNodesAndBonds(
 function getAtomAndBondCountsV3K(v3KMolblock: string): {atomCount: number, bondCount: number} {
   v3KMolblock = v3KMolblock.replaceAll('\r', ''); // to handle old and new sdf standards
 
-  const V3K_COUNTS_SHIFT = 7;
-
   // parse atom count
   let idxBegin = v3KMolblock.indexOf('COUNTS') + V3K_COUNTS_SHIFT;
   let idxEnd = v3KMolblock.indexOf(' ', idxBegin);
@@ -274,68 +273,25 @@ function getFromattedMolfileV3K(molfileV3K: string, bondIndices: BondIndices): s
   const leftNode = bondIndices.leftNode;
   const rightNode = bondIndices.rightNode;
 
+  // center tha backbone at origin
   const xCenter = (atoms.x[leftNode] + atoms.x[rightNode])/2;
   const yCenter = (atoms.y[leftNode] + atoms.y[rightNode])/2;
-
   for (let i = 0; i < atomCount; i++) {
     atoms.x[i] -= xCenter;
     atoms.y[i] -= yCenter;
   }
 
-  // rotate the whole backbone so that "leftNode" is on the left and "rightNode" is on
-  // the right
-  let angle = 0;
-  if (atoms.x[leftNode] === 0) { // both vertices are on OY
-    angle = atoms.y[leftNode] > atoms.y[rightNode] ? Math.PI/2 : -Math.PI/2;
-  } else if (atoms.y[leftNode] === 0) { // both vertices are on OX
-    angle = atoms.x[leftNode] > atoms.x[rightNode] ? Math.PI : 0; // v
-  } else {
-    const tangent = atoms.y[leftNode]/atoms.x[leftNode];
-    if (atoms.x[leftNode] < atoms.x[rightNode])
-      angle = tangent > 0 ? -Math.atan(tangent) : Math.atan(tangent);
-    else
-      angle = tangent > 0 ? Math.PI - Math.atan(tangent) : Math.atan(tangent) - Math.PI;
-  }
+  rotateCenteredBackbone(atoms, leftNode, rightNode);
 
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-
-  for (let i = 0; i < atomCount; i++) {
-    const xAdd = atoms.x[i];
-    atoms.x[i] = xAdd*cos - atoms.y[i]*sin;
-    atoms.y[i] = xAdd*sin + atoms.y[i]*cos;
-  }
-
-  // shift the backbone to the right
-  // todo: ?
+  // shift the backbone so that leftNode is at origin
   const xShift = atoms.x[rightNode];
-  for (let i = 0; i < atomCount; i++)
+  for (let i = 0; i < atomCount; ++i)
     atoms.x[i] += xShift;
 
-  // update the molfileV3K
-  let index = molfileV3K.indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms atoms
-  index = molfileV3K.indexOf('\n', index);
-  let indexEnd = index;
-  for (let i = 0; i < atomCount; i++) {
-    index = molfileV3K.indexOf('V30', index) + 4;
-    index = molfileV3K.indexOf(' ', index) + 1;
-    index = molfileV3K.indexOf(' ', index) + 1;
-    indexEnd = molfileV3K.indexOf(' ', index) + 1;
-    indexEnd = molfileV3K.indexOf(' ', indexEnd);
-
-    molfileV3K = molfileV3K.slice(0, index) +
-      atoms.x[i] + ' ' + atoms.y[i] +
-      molfileV3K.slice(indexEnd);
-
-    index = molfileV3K.indexOf('\n', index) + 1;
-  }
-
-  return molfileV3K;
+  return updateMolfileCoordinates(molfileV3K, atoms);
 }
 
 function parseAtomData(molfileV3K: string): AtomData {
-  const V3K_ATOMS_DATA_SHIFT = 4;
-
   const counts = getAtomAndBondCountsV3K(molfileV3K);
   const atomIdx = new Array(counts.atomCount);
   const atomType = new Array(counts.atomCount);
@@ -367,4 +323,51 @@ function parseAtomData(molfileV3K: string): AtomData {
   }
 
   return {atomIdx: atomIdx, atomType: atomType, x: x, y: y};
+}
+
+// Rotate the centered backbone so that "leftNode" is on the left and "rightNode" is on the right
+function rotateCenteredBackbone(atoms: AtomData, leftNode: number, rightNode: number): void {
+  let angle = 0;
+
+  if (atoms.x[leftNode] === 0) { // both vertices are on OY
+    angle = atoms.y[leftNode] > atoms.y[rightNode] ? Math.PI/2 : -Math.PI/2;
+  } else if (atoms.y[leftNode] === 0) { // both vertices are on OX
+    angle = atoms.x[leftNode] > atoms.x[rightNode] ? Math.PI : 0;
+  } else {
+    const tangent = atoms.y[leftNode]/atoms.x[leftNode];
+    if (atoms.x[leftNode] < atoms.x[rightNode])
+      angle = tangent > 0 ? -Math.atan(tangent) : Math.atan(tangent);
+    else
+      angle = tangent > 0 ? Math.PI - Math.atan(tangent) : Math.atan(tangent) - Math.PI;
+  }
+
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+
+  for (let i = 0; i < atoms.x.length; ++i) {
+    const xAdd = atoms.x[i];
+    atoms.x[i] = xAdd*cos - atoms.y[i]*sin;
+    atoms.y[i] = xAdd*sin + atoms.y[i]*cos;
+  }
+}
+
+function updateMolfileCoordinates(molfileV3K: string, atoms: AtomData) {
+  let molfile = molfileV3K;
+  let index = molfile.indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms atoms
+  index = molfile.indexOf('\n', index);
+  let indexEnd = index;
+  for (let i = 0; i < atoms.x.length; i++) {
+    index = molfile.indexOf('V30', index) + V3K_ATOMS_DATA_SHIFT;
+    index = molfile.indexOf(' ', index) + 1;
+    index = molfile.indexOf(' ', index) + 1;
+    indexEnd = molfile.indexOf(' ', index) + 1;
+    indexEnd = molfile.indexOf(' ', indexEnd);
+
+    molfile = molfile.slice(0, index) +
+      atoms.x[i] + ' ' + atoms.y[i] +
+      molfile.slice(indexEnd);
+
+    index = molfile.indexOf('\n', index) + 1;
+  }
+  return molfile;
 }
