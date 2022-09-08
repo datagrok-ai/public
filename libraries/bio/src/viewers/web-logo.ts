@@ -20,6 +20,11 @@ declare module 'datagrok-api/src/grid' {
   }
 }
 
+enum PositionHeight {
+  Entropy = 'Entropy',
+  full = '100%',
+}
+
 declare global {
   interface HTMLCanvasElement {
     getCursorPosition(event: MouseEvent, r: number): DG.Point;
@@ -182,7 +187,7 @@ export class WebLogo extends DG.JsViewer {
     this.positionMarginState = this.string('positionMarginState', 'auto',
       {choices: ['auto', 'enable', 'off']});
     this.positionMargin = this.int('positionMargin', 0);
-    this.positionHeight = this.string('positionHeight', '100%', {choices: ['100%', 'Entropy']});
+    this.positionHeight = this.string('positionHeight', PositionHeight.full, {choices: [PositionHeight.full, PositionHeight.Entropy]});
   }
 
   private async init(): Promise<void> {
@@ -390,6 +395,9 @@ export class WebLogo extends DG.JsViewer {
     case 'positionMarginState':
       this.render(true);
       break;
+    case 'positionHeight':
+      this.render(true);
+      break;
     }
   }
 
@@ -501,7 +509,7 @@ export class WebLogo extends DG.JsViewer {
       this.positions[jPos].rowCount = 0;
       for (const m in this.positions[jPos].freq)
         this.positions[jPos].rowCount += this.positions[jPos].freq[m].count;
-      if (this.positionHeight == 'Entropy') {
+      if (this.positionHeight == PositionHeight.Entropy) {
         this.positions[jPos].sumForHeightCalc = 0;
         for (const m in this.positions[jPos].freq) {
           const pn = this.positions[jPos].freq[m].count / this.positions[jPos].rowCount;
@@ -520,13 +528,13 @@ export class WebLogo extends DG.JsViewer {
       const freq: { [c: string]: PositionMonomerInfo } = this.positions[jPos].freq;
       const rowCount = this.positions[jPos].rowCount;
       const alphabetSize = this.getAlphabetSize();
-      if ((this.positionHeight == 'Entropy') && (alphabetSize == null)) {
+      if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null)) {
         grok.shell.error('WebLogo: alphabet is undefined.');
       }
 
-      const maxHeight = (this.positionHeight == 'Entropy') ? (absoluteMaxHeight * (Math.log2(alphabetSize) - (this.positions[jPos].sumForHeightCalc)) / Math.log2(alphabetSize)) : absoluteMaxHeight;
+      const maxHeight = (this.positionHeight == PositionHeight.Entropy) ? (absoluteMaxHeight * (Math.log2(alphabetSize) - (this.positions[jPos].sumForHeightCalc)) / Math.log2(alphabetSize)) : absoluteMaxHeight;
 
-      let y: number = this.axisHeight * r;
+      let y: number = this.axisHeight * r + (absoluteMaxHeight - maxHeight - 1);
 
       const entries = Object.entries(freq).sort((a, b) => {
         if (a[0] !== '-' && b[0] !== '-')
