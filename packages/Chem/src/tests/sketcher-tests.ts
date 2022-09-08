@@ -18,8 +18,8 @@ category('sketcher testing', () => {
     const dg = ui.dialog().add(sw).show();
     await initSketcher(sw);
     for (const func of funcs) {
-      const fn = func.friendlyName;
-      await sw.setSketcher(fn, exampleSmiles);
+      sw.selectedSketcher = func;
+      await sw.setSketcher(exampleSmiles);
       const t = new Promise((resolve, reject) => {
         sw.onChanged.subscribe(async (_: any) => {
           try {
@@ -137,8 +137,8 @@ category('sketcher testing', () => {
     const dg = ui.dialog().add(sw).show();
     await initSketcher(sw);
     for (const func of funcs) {
-      const fn = func.friendlyName;
-      await sw.setSketcher(fn, molfileV2000);
+      sw.selectedSketcher = func;
+      await sw.setSketcher(molfileV2000);
       const t = new Promise((resolve, reject) => {
         sw.onChanged.subscribe(async (_: any) => {
           try {
@@ -188,7 +188,7 @@ category('sketcher testing', () => {
         dg.close();
     });*/
 
-  test('molfileV3000', async () => {
+/*   test('molfileV3000', async () => {
     const module = await grok.functions.call('Chem:getRdKitModule');
     const data = DG.DataFrame.fromCsv(await _package.files.readAsText('v3000_sample.csv'));
     const molfileV3000 = data.get('molecule', 0);
@@ -200,7 +200,8 @@ category('sketcher testing', () => {
     for (const func of funcs) {
       const fn = func.friendlyName;
       if (sw.sketcher?.supportedExportFormats.includes('molV3000')) {
-        await sw.setSketcher(fn, molfileV3000);
+        sw.selectedSketcher = func;
+        await sw.setSketcher(molfileV3000);
         const t = new Promise((resolve, reject) => {
           sw.onChanged.subscribe(async (_: any) => {
             try {
@@ -223,7 +224,8 @@ category('sketcher testing', () => {
     }
     mol.delete();
     dg.close();
-  });
+  }); */
+
 });
 
 async function initSketcher(sw: Sketcher) {
