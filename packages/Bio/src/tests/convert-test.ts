@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {ConverterFunc} from './types';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {NOTATION, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 // import {mmSemType} from '../const';
 // import {importFasta} from '../package';
@@ -145,14 +145,17 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
 
   async function _testConvert(srcKey: string, converter: ConverterFunc, tgtKey: string) {
     const srcDf: DG.DataFrame = await readCsv(srcKey);
-    const srcCol: DG.Column = srcDf.col('seq')!;
+    const srcCol: DG.Column = srcDf.getCol('seq');
 
+    // conversion results
     const resCol: DG.Column = converter(srcCol);
 
+    // The correct reference data to compare conversion results with.
     const tgtDf: DG.DataFrame = await readCsv(tgtKey);
-    const tgtCol: DG.Column = tgtDf.col('seq')!;
+    const tgtCol: DG.Column = tgtDf.getCol('seq');
 
     expectArray(resCol.toList(), tgtCol.toList());
+    const uh: UnitsHandler = new UnitsHandler(resCol);
   }
 
   // FASTA tests
