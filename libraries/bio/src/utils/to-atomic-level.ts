@@ -20,10 +20,10 @@ type MonomerData = {
 }
 
 type AtomData = {
-  atomIdx: number,
-  atomType: string,
-  x: number,
-  y: number,
+  atomIdx: number[],
+  atomType: string[],
+  x: number[], // Cartesian coordiantes
+  y: number[],
 }
 
 export async function _toAtomicLevel(
@@ -269,46 +269,102 @@ function getAtomAndBondCountsV3K(v3KMolblock: string): {atomCount: number, bondC
 }
 
 function getFromattedMolfileV3K(molfileV3K: string, bondIndices: BondIndices): string {
-  const atom = parseAtomData(molfileV3K);
+  const atoms = parseAtomData(molfileV3K);
+  const atomCount = atoms.atomIdx.length;
+  const leftNode = bondIndices.leftNode;
+  const rightNode = bondIndices.rightNode;
 
-  // let formattedMolfileV3K = rotateV3KBackbone(molfileV3K, bondIndices);
-}
+  const xCenter = (atoms.x[leftNode] + atoms.x[rightNode])/2;
+  const yCenter = (atoms.y[leftNode] + atoms.y[rightNode])/2;
 
-function parseAtomData(molfileV3K: string): AtomData[] {
-  const atomsArray = [];
-
-  
-  const numbers = extractAtomAndBondCountsV3K(v3KMolblock);
-  let begin = v3KMolblock.indexOf('M  V30 BEGIN ATOM'); // V3000 block for atom coordinates
-  begin = v3KMolblock.indexOf('\n', begin);
-  let end = begin;
-
-  const atomIndices: number[] = Array(numbers.atomCount);
-  const atomTypes: string[] = Array(numbers.atomCount);
-  const x: number[] = Array(numbers.atomCount);
-  const y: number[] = Array(numbers.atomCount);
-
-  for (let i = 0; i < numbers.atomCount; i++) {
-    begin = v3KMolblock.indexOf('V30', begin) + 4;
-    end = v3KMolblock.indexOf(' ', begin);
-    atomIndices[i] = parseInt(v3KMolblock.substring(begin, end));
-
-    begin = end + 1;
-    end = v3KMolblock.indexOf(' ', begin);
-    atomTypes[i] = v3KMolblock.substring(begin, end);
-
-    begin = end + 1;
-    end = v3KMolblock.indexOf(' ', begin);
-    x[i] = parseFloat(v3KMolblock.substring(begin, end));
-
-    begin = end + 1;
-    end = v3KMolblock.indexOf(' ', begin);
-    y[i] = parseFloat(v3KMolblock.substring(begin, end));
-
-    begin = v3KMolblock.indexOf('\n', begin) + 1;
+  for (let i = 0; i < atomCount; i++) {
+    atoms.x[i] -= xCenter;
+    atoms.y[i] -= yCenter;
   }
 
-  return {atomIndices: atomIndices, atomTypes: atomTypes, x: x, y: y};
+  // rotate the whole backbone so that "leftNode" is on the left and "rightNode" is on
+  // the right
+  let angle = 0;
+  if (atoms.x[leftNode] === 0) { // both vertices are on OY
+    angle = atoms.y[leftNode] > atoms.y[rightNode] ? Math.PI/2 : -Math.PI/2;
+  } else if (atoms.y[leftNode] === 0) { // both vertices are on OX
+    angle = atoms.x[leftNode] > atoms.x[rightNode] ? Math.PI : 0; // v
+  } else {
+    const tangent = atoms.y[leftNode]/atoms.x[leftNode];
+    if (atoms.x[leftNode] < atoms.x[rightNode])
+      angle = tangent > 0 ? -Math.atan(tangent) : Math.atan(tangent);
+    else
+      angle = tangent > 0 ? Math.PI - Math.atan(tangent) : Math.atan(tangent) - Math.PI;
+  }
 
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
 
+  for (let i = 0; i < atomCount; i++) {
+    const xAdd = atoms.x[i];
+    atoms.x[i] = xAdd*cos - atoms.y[i]*sin;
+    atoms.y[i] = xAdd*sin + atoms.y[i]*cos;
+  }
+
+  // shift the backbone to the right
+  // todo: ?
+  const xShift = atoms.x[rightNode];
+  for (let i = 0; i < atomCount; i++)
+    atoms.x[i] += xShift;
+
+  // update the molfileV3K
+  let index = molfileV3K.indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms atoms
+  index = molfileV3K.indexOf('\n', index);
+  let indexEnd = index;
+  for (let i = 0; i < atomCount; i++) {
+    index = molfileV3K.indexOf('V30', index) + 4;
+    index = molfileV3K.indexOf(' ', index) + 1;
+    index = molfileV3K.indexOf(' ', index) + 1;
+    indexEnd = molfileV3K.indexOf(' ', index) + 1;
+    indexEnd = molfileV3K.indexOf(' ', indexEnd);
+
+    molfileV3K = molfileV3K.slice(0, index) +
+      atoms.x[i] + ' ' + atoms.y[i] +
+      molfileV3K.slice(indexEnd);
+
+    index = molfileV3K.indexOf('\n', index) + 1;
+  }
+
+  return molfileV3K;
+}
+
+function parseAtomData(molfileV3K: string): AtomData {
+  const V3K_ATOMS_DATA_SHIFT = 4;
+
+  const counts = getAtomAndBondCountsV3K(molfileV3K);
+  const atomIdx = new Array(counts.atomCount);
+  const atomType = new Array(counts.atomCount);
+  const x = new Array(counts.atomCount);
+  const y = new Array(counts.atomCount);
+
+  let begin = molfileV3K.indexOf('M  V30 BEGIN ATOM'); // V3000 atoms block
+  begin = molfileV3K.indexOf('\n', begin);
+  let end = begin;
+
+  for (let i = 0; i < counts.atomCount; i++) {
+    begin = molfileV3K.indexOf('V30', begin) + V3K_ATOMS_DATA_SHIFT;
+    end = molfileV3K.indexOf(' ', begin);
+
+    atomIdx[i] = parseInt(molfileV3K.substring(begin, end));
+    begin = end + 1;
+    end = molfileV3K.indexOf(' ', begin);
+
+    atomType[i] = molfileV3K.substring(begin, end);
+    begin = end + 1;
+    end = molfileV3K.indexOf(' ', begin);
+
+    x[i] = parseFloat(molfileV3K.substring(begin, end));
+    begin = end + 1;
+    end = molfileV3K.indexOf(' ', begin);
+
+    y[i] = parseFloat(molfileV3K.substring(begin, end));
+    begin = molfileV3K.indexOf('\n', begin) + 1;
+  }
+
+  return {atomIdx: atomIdx, atomType: atomType, x: x, y: y};
 }
