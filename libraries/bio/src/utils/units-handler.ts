@@ -176,6 +176,18 @@ export class UnitsHandler {
     newColumn.setTag(DG.TAGS.UNITS, this.notation);
     newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule');
 
+    const srcAlphabet = col.getTag(UnitsHandler.TAGS.alphabet);
+    if (srcAlphabet)
+      newColumn.setTag(UnitsHandler.TAGS.alphabet, srcAlphabet);
+
+    const srcAlphabetSize = col.getTag(UnitsHandler.TAGS.alphabetSize);
+    if (srcAlphabetSize)
+      newColumn.setTag(UnitsHandler.TAGS.alphabetSize, srcAlphabetSize);
+
+    const srcAlphabetIsMultichar = col.getTag(UnitsHandler.TAGS.alphabetIsMultichar);
+    if (srcAlphabetIsMultichar)
+      newColumn.setTag(UnitsHandler.TAGS.alphabetIsMultichar, srcAlphabetIsMultichar);
+
     return newColumn;
   }
 
