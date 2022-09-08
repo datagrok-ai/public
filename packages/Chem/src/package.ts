@@ -39,6 +39,7 @@ import {checkForStructuralAlerts} from './panels/structural-alerts';
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
 import { getAtomsColumn } from './utils/elemental-analysis-utils';
 import { elementsTable } from './constants';
+import { getSimilaritiesMarix } from './utils/similarity-utils';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -278,7 +279,7 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
     DG.SEMTYPE.MOLECULE,
     {'units': smiles.tags['units']},
     chemSpace,
-    chemSearches.chemGetSimilarities,
+    getSimilaritiesMarix,
     createTooltipElement,
     createPropPanelElement,
     options[methodName]);

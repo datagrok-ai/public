@@ -61,7 +61,7 @@ async function _testDimensionalityReducer(col: DG.Column, algorithm: string) {
   const simArr: DG.Column[] = Array(dim - 1);
 
   if (!distance)
-    await getSimilaritiesMarix(dim, col, dfSmiles, simArr);
+    await getSimilaritiesMarix(dim, col, dfSmiles, 'smiles', simArr);
   else
     getSimilaritiesMarixFromDistances(dim, distance, simArr);
 

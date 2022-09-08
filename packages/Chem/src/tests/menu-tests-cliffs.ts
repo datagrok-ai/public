@@ -6,10 +6,7 @@ import {_package} from '../package-test';
 import {createTableView} from './utils';
 
 import {activityCliffs} from '../package';
-import {chemSpace} from '../analysis/chem-space';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/similarity-utils';
-import {chemSpaceTopMenu} from '../package';
 const {jStat} = require('jstat');
 
 category('top menu activity cliffs', async () => {
