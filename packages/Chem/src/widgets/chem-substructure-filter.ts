@@ -132,7 +132,7 @@ export class SubstructureFilter extends DG.Filter {
         if (StringUtils.isEmpty(smarts) && StringUtils.isEmpty(this.sketcher.getMolFile()))
           return;
 
-        this.bitset = await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts);
+        this.bitset = await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), smarts!);
         this.calculating = false;
         this.dataFrame?.rows.requestFilter();
       } finally {
