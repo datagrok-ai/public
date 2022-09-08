@@ -59,7 +59,8 @@ category('top menu script based', () => {
     });
 
     expect(t.rowCount, mutations);
-    expect(t.getCol('mutations').semType, SEMTYPE.MOLECULE);
+    for (let i = 0; i < t.rowCount; i++)
+      expect(t.col('mutations')?.get(i).includes('C'), true);
   });
 
 });
