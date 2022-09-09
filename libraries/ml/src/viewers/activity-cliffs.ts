@@ -194,21 +194,13 @@ export async function getActivityCliffs(
   });
 
   const linesDfGrid = linesRes.linesDf.plot.grid().sort(['sali'], [false]);
-  linesDfGrid.root.style.minWidth = '750px';
 
   linesDfGrid.onCellClick.subscribe(() => {
     zoom = true;
   });
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
-    const cliffsDialog = ui.dialog({title: 'Activity cliffs'})
-      .add(linesDfGrid.root)
-      .show({resizable: true});
-    ui.tools.waitForElementInDom(linesDfGrid.root).then(() => {
-      molColumnNames.forEach(it => { linesDfGrid.col(it)!.width = 200; });
-      linesDfGrid.invalidate();
-    });
-    cliffsDialog.root.id = 'cliffs_dialog';
+    grok.shell.dockManager.dock(linesDfGrid.root, 'down', null, 'Activity cliffs', 0.2);
   });
   listCliffsLink.style.position = 'absolute';
   listCliffsLink.style.top = '10px';
