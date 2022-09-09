@@ -148,7 +148,7 @@ export function vdRegionViewer() {
 //input: dataframe table [Input data table]
 //input: column macroMolecule {semType: Macromolecule}
 //input: column activities
-//input: double similarity = 80 [Similarity cutoff]
+//input: double similarity = 90 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column, activities: DG.Column,
   similarity: number, methodName: string): Promise<DG.Viewer | undefined> {
