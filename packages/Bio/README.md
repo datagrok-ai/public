@@ -64,17 +64,18 @@ See:
 
 # Web Logo
 
-Web Logo is used to visualize a graphical representation of multiple sequence alignment (amino acids or
-nucleotides). Each logo consists of stacks of symbols, one stack for each position in the sequence.
-The overall height of the stack indicates the sequence conservation at that position,
-while the height of symbols within the stack indicates the relative frequency of each amino at that position.
-
-In general, a sequence logo provides a richer and more precise description of, for example, a binding site,
+Web Logo visualizes a graphical representation of multiple sequence alignment (amino acids or nucleotides or
+modified residues with multi-char labels). Each logo consists of stacks of symbols, one for each position
+in the sequence. The overall height of the stack indicates the sequence conservation at that position,
+and the symbol height within the stack indicates the relative frequency of each residue at that position.
+In general, a sequence logo provides a more detailed and precise description of, for example, a binding site
 than would a consensus sequence.
+The most helpful feature for exploration analysis with WebLogo in Datagrok is its ability to control selection
+on a dataset. Mouse click on a particular residue in a specific position will select rows of the dataset
+with sequences containing that residue at that position.
 
-You must specify the tag ```semType``` with value ```AminoacidsMultipleAlignment``` or
-```NucleotidesMultipleAlignment``` for the data column with multiple alignment sequences, it is mandatory to
-select the palette for monomers' colors.
+You must specify the tag ```semType``` with value ```Macromolecule``` and tag `alphabet` of choice ('PT', 'DNA', 'RNA')
+for the data column with multiple alignment sequences, it is mandatory to select the palette for monomers' colors.
 
 You can customize the look of the viewer with properties. Properties ```startPosition``` and ```endPosition```)
 allow to display multiple alignment partially. If property  ```startPosition``` (```endPosition```)
