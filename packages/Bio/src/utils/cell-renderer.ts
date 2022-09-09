@@ -196,7 +196,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 }
 
 export class MonomerCellRenderer extends DG.GridCellRenderer {
-  get name(): string {return 'MonomerCR';}
+  get name(): string {return C.SEM_TYPES.MONOMER;}
 
   get cellType(): string {return C.SEM_TYPES.MONOMER;}
 
@@ -217,21 +217,17 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
    */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle): void {
-    y -= 2;
-    g.save();
-    g.beginPath();
-    g.rect(x, y, w, h);
-    g.clip();
+    _cellStyle: DG.GridCellStyle): void {
     g.font = `12px monospace`;
-    g.textBaseline = 'top';
+    g.textBaseline = 'middle';
+    g.textAlign = 'center';
 
-    const palette = getPaletteByType(gridCell.tableColumn!.tags[C.TAGS.ALPHABET]);
+    const palette = getPaletteByType(gridCell.cell.column.getTag(C.TAGS.ALPHABET));
     const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
     const color = palette.get(s);
 
-    printLeftOrCentered(x, y, w, h, g, s, color, 0, false);
-    g.restore();
+    g.fillStyle = color;
+    g.fillText(s, x + (w / 2), y - (h / 2));
   }
 }
 

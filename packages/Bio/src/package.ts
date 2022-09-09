@@ -446,7 +446,8 @@ export function splitToMonomers(col: DG.Column<string>): void {
   for (const tempCol of tempDf.columns) {
     const newCol = originalDf.columns.add(tempCol);
     newCol.semType = C.SEM_TYPES.MONOMER;
-    // newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
+    newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
     newCol.setTag(C.TAGS.ALPHABET, col.getTag(C.TAGS.ALPHABET));
   }
+  (grok.shell.v as DG.TableView)?.grid.invalidate();
 }
