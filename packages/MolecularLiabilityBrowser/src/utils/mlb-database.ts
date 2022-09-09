@@ -92,14 +92,19 @@ export class MlbDatabase extends Dexie {
       return row ? row.version : undefined;
     })();
 
-    if (cacheVersion != dbVersion.version) {
+    if (dbVersion == null || cacheVersion != dbVersion.version) {
       const serverObj: Type = await getServerObject();
-      await this.object.put({key: key, value: serverObj});
-      await this.list_version.put(dbVersion, dbVersion.list_id);
-    }
 
-    const cacheObj: IObject = await this.object.where({key: key}).first();
-    return cacheObj.value;
+      if (dbVersion != null) {
+        await this.object.put({key: key, value: serverObj});
+        await this.list_version.put(dbVersion, dbVersion.list_id);
+      }
+
+      return serverObj;
+    } else {
+      const cacheObj: IObject = await this.object.where({key: key}).first();
+      return cacheObj.value;
+    }
   }
 
   // /** Get object from cache if exists with appropriate version.
@@ -107,13 +112,16 @@ export class MlbDatabase extends Dexie {
   //  * @param {() => Promise<DG.DataFrame>} loadDf
   //  * @param {(db_row: DG.Row) => TCached} rowToCache
   //  * @param {obj: TCached[]) => TData} fromCache
+  //  * @param {(df: DG.DataFrame) => TData} fromDf
   //  * @return {Promise<TData>}
   //  * */
   async getData<TCached extends ICached, TData>(
     listName: string,
     loadDf: () => Promise<DG.DataFrame>,
     rowToCache: (db_row: DG.Row) => TCached,
-    fromCache: (obj: TCached[]) => TData): Promise<TData> {
+    fromCache: (obj: TCached[]) => TData,
+    fromDf: (df: DG.DataFrame) => TData
+  ): Promise<TData> {
     // const fields: string[] = keys<TCached>();
     const dbVersion: IDbVersion = this.getServerVersion(listName);
 
@@ -123,27 +131,36 @@ export class MlbDatabase extends Dexie {
       return row ? row.version : undefined;
     })();
 
-    if (cacheVersion !== dbVersion.version) {
+    if (dbVersion == null || cacheVersion !== dbVersion.version) {
       this[listName].clear();
       // Fill cache from database
       const dbDf: DG.DataFrame = await loadDf();
 
-      this[listName].bulkAdd([...Array(dbDf.rowCount).keys()]
-        .map((rowI) => dbDf.row(rowI))
-        .map(rowToCache));
+      if (dbVersion != null) {
+        this[listName].bulkAdd([...Array(dbDf.rowCount).keys()]
+          .map((rowI) => dbDf.row(rowI))
+          .map(rowToCache));
 
-      this.list_version.put(dbVersion, dbVersion.list_id);
+        this.list_version.put(dbVersion, dbVersion.list_id);
+      }
+
+      return fromDf(dbDf);
+    } else {
+      const resList: TCached[] = await this[listName].toArray();
+      return fromCache(resList);
     }
-
-    const resList: TCached[] = await this[listName].toArray();
-    return fromCache(resList);
   }
 
   getServerVersion(name: string): IDbVersion {
-    const df: DG.DataFrame = this.serverListVersionDf.rows.match({name: name}).toDataFrame();
-    if (df.rowCount == 0)
-      throw new Error(`Name '${name}' not found in server side versions.`);
-    return Object.assign({},
-      ...(['list_id', 'name', 'version'].map((fn) => ({[fn]: df.get(fn, 0)}))));
+    if (this.serverListVersionDf == null) {
+      return null;
+    } else {
+
+      const df: DG.DataFrame = this.serverListVersionDf.rows.match({name: name}).toDataFrame();
+      if (df.rowCount == 0)
+        throw new Error(`Name '${name}' not found in server side versions.`);
+      return Object.assign({},
+        ...(['list_id', 'name', 'version'].map((fn) => ({[fn]: df.get(fn, 0)}))));
+    }
   }
 }

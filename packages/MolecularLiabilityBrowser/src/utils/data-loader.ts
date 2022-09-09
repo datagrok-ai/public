@@ -64,7 +64,7 @@ export function catchToLog<T>(prefix: string, func: () => T): T {
 
     if (res instanceof Promise) {
       return res.catch((ex) => {
-        console.error(prefix + ex.toString());
+        console.error(prefix + ', ' + ex.toString());
         throw (ex);
       }).then((obj) => {
         const t2: number = Date.now();
@@ -79,7 +79,7 @@ export function catchToLog<T>(prefix: string, func: () => T): T {
       return res;
     }
   } catch (ex: any) {
-    console.error(prefix + ex.toString());
+    console.error(prefix + ', ' + ex.toString());
     throw (ex);
   }
 }
@@ -247,7 +247,8 @@ export class QueriesForDataLoader {
           // return grok.functions.call(`${this._pName}:listSchemes`)
         }),
       (dbRow: DG.Row) => ({scheme_id: dbRow.get('scheme_id'), scheme: dbRow.get('scheme')}),
-      (objList: IScheme[]) => objList.map((obj: IScheme) => obj.scheme)
+      (objList: IScheme[]) => objList.map((obj: IScheme) => obj.scheme),
+      (df: DG.DataFrame) => { return df.getCol('scheme').toList(); }
     );
 
     // .then((value: string[]) => {
@@ -268,7 +269,8 @@ export class QueriesForDataLoader {
           // return grok.functions.call(`${this._pName}:listCdrs`)
         }),
       (dbRow: DG.Row) => ({cdr_id: dbRow.get('cdr_id'), cdr: dbRow.get('cdr')}),
-      (objList: ICdr[]) => objList.map((obj: ICdr) => obj.cdr)
+      (objList: ICdr[]) => objList.map((obj: ICdr) => obj.cdr),
+      (df: DG.DataFrame) => { return df.getCol('cdr').toList(); }
     );
     // .then((value: string[]) => {
     //   console.debug('MLB: DataLoaderDb.init2() set cdrs, ' + `${this.fromStartInit()} s`);
@@ -289,7 +291,8 @@ export class QueriesForDataLoader {
       (dbRow: DG.Row) => Object.assign({},
         ...(['id', 'antigen', 'antigen_ncbi_id', 'antigen_gene_symbol']
           .map((fn: string) => ({[fn]: dbRow.get(fn)})))),
-      (objList: IAntigen[]) => DG.DataFrame.fromObjects(objList)
+      (objList: IAntigen[]) => DG.DataFrame.fromObjects(objList),
+      (df: DG.DataFrame) => { return df; }
     );
     // .then((value: DG.DataFrame) => {
     //   console.debug('MLB: DataLoaderDb.init2() set antigens, ' + `${this.fromStartInit()} s`);
@@ -309,7 +312,8 @@ export class QueriesForDataLoader {
         }),
       (dbRow: DG.Row) => Object.assign({},
         ...(['v_id'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
-      (objList: IVid[]) => objList.map((obj: IVid) => obj.v_id)
+      (objList: IVid[]) => objList.map((obj: IVid) => obj.v_id),
+      (df: DG.DataFrame) => { return df.getCol('v_id').toList(); }
     );
     // .then((value: string[]) => {
     //   console.debug(`MLB: DataLoaderDb.init2() set vids, ${this.fromStartInit()} s`);
@@ -329,7 +333,8 @@ export class QueriesForDataLoader {
         }),
       (dbRow: DG.Row) => Object.assign({},
         ...(['v_id'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
-      (objList: IVidObsPtm[]) => objList.map((obj: IVidObsPtm) => obj.v_id)
+      (objList: IVidObsPtm[]) => objList.map((obj: IVidObsPtm) => obj.v_id),
+      (df: DG.DataFrame) => { return df.getCol('v_id').toList(); }
     );
     // .then((value: string[]) => {
     //   console.debug(`MLB: DataLoaderDb.init2() set obsPtmVids, ${this.fromStartInit()} s`);

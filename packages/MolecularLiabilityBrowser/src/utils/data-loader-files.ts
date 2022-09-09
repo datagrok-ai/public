@@ -116,6 +116,7 @@ export class DataLoaderFiles extends DataLoader {
       //load observed PTM data
       Promise.resolve<string[]>(['VR000000044'])
         .then((value) => this._vidsObsPtm = value),
+
       this._dlFiles.getFilterProperties().then((value) => { this._filterProperties = value; }),
       this._dlFiles.getMutcodes().then((value) => { this._mutcodes = value; }),
       this._dlFiles.getPredictedPtmMap().then((value) => { this._predictedPtmMap = value; }),

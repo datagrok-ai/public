@@ -67,13 +67,7 @@ async function initDataLoader(): Promise<void> {
     async () => {
       try {
         if (!dl) {
-          // const [serverListVersionDf]: [DG.DataFrame] = await Promise.all([
-          //   catchToLog<Promise<DG.DataFrame>>( // this call checks database connection also
-          //     'MLB: database query \'getListVersion\': ',
-          //     () => { return grok.functions.call(`${packageName}:getListVersion`) as Promise<DG.DataFrame>; }),
-          // ]);
-
-          const [serverListVersionDf2]: [DG.DataFrame] = await Promise.all([
+          const [serverListVersionDf]: [DG.DataFrame] = await Promise.all([
             catchToLog( // this call checks database connection also
               'MLB: database query \'getListVersion\': ',
               async () => {
@@ -82,13 +76,15 @@ async function initDataLoader(): Promise<void> {
                 return res;
               }),
           ]);
+          // const serverListVersionDf: DG.DataFrame = null;
+
           switch (dataSourceSettings) {
           case DataLoaderType.Files:
-            dl = new DataLoaderFiles(mlbQueries, serverListVersionDf2);
+            dl = new DataLoaderFiles(mlbQueries, serverListVersionDf);
             break;
 
           case DataLoaderType.Database:
-            dl = new DataLoaderDb(mlbQueries, serverListVersionDf2);
+            dl = new DataLoaderDb(mlbQueries, serverListVersionDf);
             break;
 
           case DataLoaderType.Test:
