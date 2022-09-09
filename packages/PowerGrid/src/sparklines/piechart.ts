@@ -23,8 +23,7 @@ interface PieChartSettings extends SummarySettingsBase {
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
   gc.settings ??= getSettingsBase(gc);
-  gc.settings.radius ??= 40;
-  gc.settings.style = PieChartStyle.Radius;
+  gc.settings.style ??= PieChartStyle.Radius;
 
   return gc.settings;
 }
