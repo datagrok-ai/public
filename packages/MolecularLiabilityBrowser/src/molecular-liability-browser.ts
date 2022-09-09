@@ -684,8 +684,12 @@ export class MolecularLiabilityBrowser {
         //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
 
         const tempDf = DG.DataFrame.fromObjects([{}]);
+        const t1: number = Date.now();
         this.regionsViewer = (await tempDf.plot.fromType(
           'VdRegions', {skipEmptyPositions: true})) as unknown as VdRegionsViewer;
+        const t2: number = Date.now();
+        console.debug('MLB: MolecularLiabilityBrowser.buildView(), create regionsViewer ' +
+          `ET: ${((t2 - t1) / 1000).toString()} s`);
 
         this.setRibbonPanels();
       } else {

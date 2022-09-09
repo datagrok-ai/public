@@ -64,7 +64,7 @@ export class MlbDatabase extends Dexie {
 
   object!: Dexie.Table<IObject, number>;
 
-  constructor() {
+  constructor(serverListVersionDf: DG.DataFrame) {
     super('MlbDatabase');
     this.version(1).stores({
       list_version: 'list_id, name, version',
@@ -76,9 +76,7 @@ export class MlbDatabase extends Dexie {
 
       object: '++id, key, value',
     });
-  }
 
-  init(serverListVersionDf: DG.DataFrame) {
     this.serverListVersionDf = serverListVersionDf;
   }
 

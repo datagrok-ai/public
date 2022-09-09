@@ -6,7 +6,7 @@ import {encode as encodeToBase64, decode as decodeFromBase64} from 'uint8-to-bas
 import {
   catchToLog,
   CdrMapType,
-  DataLoader,
+  DataLoader, FilesForDataLoader, QueriesForDataLoader, DataQueryDict,
   FilterPropertiesType,
   JsonType,
   MutcodesDataType,
@@ -15,22 +15,20 @@ import {
   PtmMapType
 } from './data-loader';
 import {IAntigen, ICdr, IVidObsPtm, IScheme, IVid, MlbDatabase} from './mlb-database';
+import {channel} from 'diagnostics_channel';
+import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
+import {packageName} from '../package';
 
 export class DataLoaderDb extends DataLoader {
-  private _startInit: number;
-  private _serverListVersionDf: DG.DataFrame;
-
-  private _files: { [name: string]: string } = {
-    filterProps: 'properties.json',
-    mutcodes: 'mutcodes.json',
-    predictedPtmMap: 'ptm_map.json',
-    predictedCdrMap: 'cdr_map.json',
-    observedPtmMap: 'obs_ptm_map.json',
-    observedCdrMap: 'obs_cdr_map.json',
-    predictedPtm: 'ptm_in_cdr.d42'
+  static _files = class {
+    static tree = 'tree.csv';
   };
 
-  private cache!: MlbDatabase;
+  private _startInit: number;
+
+  private readonly _cache: MlbDatabase;
+  private readonly _dlFiles: FilesForDataLoader;
+  private readonly _dlQueries: QueriesForDataLoader;
 
   private _schemes: string[];
   private _cdrs: string[];
@@ -75,9 +73,16 @@ export class DataLoaderDb extends DataLoader {
     return ((Date.now() - this._startInit) / 1000).toString();
   }
 
-  async init(startInit: number, serverListVersionDf: DG.DataFrame) {
+  public constructor(mlbQueries: DataQueryDict, serverListVersionDf: DG.DataFrame) {
+    super();
+
+    this._cache = new MlbDatabase(serverListVersionDf);
+    this._dlQueries = new QueriesForDataLoader(this._cache, mlbQueries);
+    this._dlFiles = new FilesForDataLoader(this._cache);
+  }
+
+  async init(startInit: number) {
     this._startInit = startInit;
-    this._serverListVersionDf = serverListVersionDf;
     // Here we should load files from src/externalData
     // But if we will use require(), commit will fail
     console.debug(`MLB: DataLoaderDb.init(), ${this.fromStartInit()} s`);
@@ -86,180 +91,68 @@ export class DataLoaderDb extends DataLoader {
     // await this.check_files(this._files);
     console.debug(`MLB: DataLoaderDb.init() check_files, ${this.fromStartInit()} s`);
 
-    console.debug('MLB: DataLoaderDb.init2() start, ' + `${this.fromStartInit()} s`);
-
-    this.cache = new MlbDatabase();
-    this.cache.init(this._serverListVersionDf);
+    console.debug('MLB: DataLoaderDb.init() start, ' + `${this.fromStartInit()} s`);
 
     await Promise.all([
-      //load numbering schemes
-      this.cache.getData<IScheme, string[]>('scheme',
-        () => catchToLog<Promise<DG.DataFrame>>(
-          'MLB database error \'listSchemes\': ',
-          () => grok.functions.call(`${this._pName}:listSchemes`)),
-        (dbRow: DG.Row) => ({scheme_id: dbRow.get('scheme_id'), scheme: dbRow.get('scheme')}),
-        (objList: IScheme[]) => objList.map((obj: IScheme) => obj.scheme)
-      ).then((value: string[]) => {
-        console.debug('MLB: DataLoaderDb.init2() set schemes, ' + `${this.fromStartInit()} s`);
-        this._schemes = value;
-      }),
-      //load cdr definition list
-      this.cache.getData<ICdr, string[]>('cdr',
-        () => catchToLog<Promise<DG.DataFrame>>(
-          'MLB database error \'listCdrs\': ',
-          () => grok.functions.call(`${this._pName}:listCdrs`)),
-        (dbRow: DG.Row) => ({cdr_id: dbRow.get('cdr_id'), cdr: dbRow.get('cdr')}),
-        (objList: ICdr[]) => objList.map((obj: ICdr) => obj.cdr)
-      ).then((value: string[]) => {
-        console.debug('MLB: DataLoaderDb.init2() set cdrs, ' + `${this.fromStartInit()} s`);
-        this._cdrs = value;
-      }),
-      //load antigen list
-      this.cache.getData<IAntigen, DG.DataFrame>('antigen',
-        () => catchToLog<Promise<DG.DataFrame>>(
-          'MLB database error \'listAntigens\': ',
-          () => grok.functions.call(`${this._pName}:listAntigens`)),
-        (dbRow: DG.Row) => Object.assign({},
-          ...(['id', 'antigen', 'antigen_ncbi_id', 'antigen_gene_symbol']
-            .map((fn: string) => ({[fn]: dbRow.get(fn)})))),
-        (objList: IAntigen[]) => DG.DataFrame.fromObjects(objList)
-      ).then((value: DG.DataFrame) => {
-        console.debug('MLB: DataLoaderDb.init2() set antigens, ' + `${this.fromStartInit()} s`);
-        this._antigens = value;
-      }),
-      //load available Vids
-      this.cache.getData<IVid, string[]>('vid',
-        () => catchToLog<Promise<DG.DataFrame>>(
-          'MLB database error \'getVids\': ',
-          () => grok.functions.call(`${this._pName}:getVids`)),
-        (dbRow: DG.Row) => Object.assign({},
-          ...(['v_id'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
-        (objList: IVid[]) => objList.map((obj: IVid) => obj.v_id)
-      ).then((value: string[]) => {
-        console.debug(`MLB: DataLoaderDb.init2() set vids, ${this.fromStartInit()} s`);
-        this._vids = value;
-      }),
-      //load observed PTM data
-      this.cache.getData<IVidObsPtm, string[]>('vidObsPtm',
-        () => catchToLog<Promise<DG.DataFrame>>(
-          'MLB database error \'getObservedPtmVids\': ',
-          () => grok.functions.call(`${this._pName}:getObservedPtmVids`)),
-        (dbRow: DG.Row) => Object.assign({},
-          ...(['v_id'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
-        (objList: IVidObsPtm[]) => objList.map((obj: IVidObsPtm) => obj.v_id)
-      ).then((value: string[]) => {
-        console.debug(`MLB: DataLoaderDb.init2() set obsPtmVids, ${this.fromStartInit()} s`);
-        this._vidsObsPtm = value;
-      }),
-      //load properties data
-      this.cache.getObject<FilterPropertiesType>(this._files.filterProps,
-        async () => {
-          const txt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${this._pName}/${this._files.filterProps}`);
-          return JSON.parse(txt);
-        })
-        .then((value: FilterPropertiesType) => {
-          console.debug(`MLB: DataLoaderDb.init2() set filterProperties, ${this.fromStartInit()} s`);
-          this._filterProperties = value;
-        }),
-      //load mutcodes data
-      this.cache.getObject<MutcodesDataType>(this._files.mutcodes,
-        async () => {
-          const txt: string = await grok.dapi.files.readAsText(`System:AppData/${this._pName}/${this._files.mutcodes}`);
-          return JSON.parse(txt);
-        })
-        .then((value: MutcodesDataType) => {
-          console.debug(`MLB: DataLoaderDb.init2() set mutcodes, ${this.fromStartInit()} s`);
-          this._mutcodes = value;
-        }),
-      //load predicted ptm map data
-      this.cache.getObject<PtmMapType>(this._files.predictedPtmMap,
-        async () => {
-          const jsonTxt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${this._pName}/${this._files.predictedPtmMap}`);
-          return JSON.parse(jsonTxt);
-        })
-        .then((value: PtmMapType) => {
-          console.debug(`MLB: DataLoaderDb.init2() set predictedPtmMap, ${this.fromStartInit()} s`);
-          this._predictedPtmMap = value;
-        }),
-      //load predicted cdr map data
-      this.cache.getObject<CdrMapType>(this._files.predictedCdrMap,
-        async () => {
-          const jsonTxt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${this._pName}/${this._files.predictedCdrMap}`);
-          return JSON.parse(jsonTxt);
-        })
-        .then((value: CdrMapType) => {
-          console.debug(`MLB: DataLoaderDb.init2() set predictedCdrMap, ${this.fromStartInit()} s`);
-          this._predictedCdrMap = value;
-        }),
-      //load observed ptm map data
-      this.cache.getObject<PtmMapType>(this._files.observedPtmMap,
-        async () => {
-          const jsonTxt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${this._pName}/${this._files.observedPtmMap}`);
-          return JSON.parse(jsonTxt);
-        })
-        .then((value: PtmMapType) => {
-          console.debug(`MLB: DataLoaderDb.init2() set observedPtmMap, ${this.fromStartInit()} s`);
-          this._observedPtmMap = value;
-        }),
-      // load observed cdr map data
-      this.cache.getObject<CdrMapType>(this._files.observedCdrMap,
-        async () => {
-          const jsonTxt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${this._pName}/${this._files.observedCdrMap}`);
-          return JSON.parse(jsonTxt);
-        })
-        .then((value: CdrMapType) => {
-          console.debug(`MLB: DataLoaderDb.init2() set observedCdrMap, ${this.fromStartInit()} s`);
-          this._observedCdrMap = value;
-        })
+      this._dlQueries.listSchemes().then((value) => { this._schemes = value; }),
+      this._dlQueries.listCdrs().then((value) => { this._cdrs = value; }),
+      this._dlQueries.listAntigens().then((value) => { this._antigens = value; }),
+      this._dlQueries.getVids().then((value) => { this._vids = value; }),
+      this._dlQueries.getObservedPtmVids().then((value) => { this._vidsObsPtm = value; }),
+      this._dlFiles.getFilterProperties().then((value) => { this._filterProperties = value; }),
+      this._dlFiles.getMutcodes().then((value) => { this._mutcodes = value; }),
+      this._dlFiles.getPredictedPtmMap().then((value) => { this._predictedPtmMap = value; }),
+      this._dlFiles.getPredictedCdrMap().then((value) => { this._predictedCdrMap = value; }),
+      this._dlFiles.getObservedPtmMap().then((value) => { this._observedPtmMap = value; }),
+      this._dlFiles.getObservedCdrMap().then((value) => { this._observedCdrMap = value; }),
     ]);
 
-    console.debug('MLB: DataLoaderDb.init2() end, ' + `${this.fromStartInit()} s`);
+    console.debug('MLB: DataLoaderDb.init() end, ' + `${this.fromStartInit()} s`);
+  }
+
+  async getLayoutBySchemeCdr(scheme: string, cdr: string): Promise<VdRegion[]> {
+    return this._dlQueries.getLayoutBySchemeCdr(scheme, cdr);
   }
 
   async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {
-    const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getMlbByAntigen`, {antigen: antigen});
-    return df;
+    return this._dlQueries.getMlbByAntigen(antigen);
   }
 
   async getTreeByAntigen(antigen: string): Promise<DG.DataFrame> {
-    const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getTreeByAntigen`, {antigen: antigen});
-    return df;
+    return this._dlQueries.getTreeByAntigen(antigen);
+  }
+
+  async getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame> {
+    return this._dlQueries.getAnarci(scheme, chain, antigen);
   }
 
   async loadMlbDf(): Promise<DG.DataFrame> {
-    const df = await grok.functions.call(`${this._pName}:GetMolecularLiabilityBrowser`);
-    // 'ngl' column have been removed from query 2022-04
-    df.columns.remove('ngl');
-    return df;
+    return this._dlQueries.loadMlbDf();
   }
 
+  /** deprecated */
   async loadTreeDf(): Promise<DG.DataFrame> {
-    const dfTxt: string = await grok.dapi.files.readAsText(`System:Data/${this._pName}/${this._files.tree}`);
+    const dfTxt: string = await grok.dapi.files
+      .readAsText(`System:Data/${packageName}/${DataLoaderDb._files.tree}`);
     return DG.DataFrame.fromCsv(dfTxt);
   }
 
   // -- PTM --
 
   async getPredictedPtmByAntigen(antigen: string): Promise<DG.DataFrame> {
-    const df = await grok.functions.call(`${this._pName}:getPredictedPtmByAntigen`, {antigen: antigen});
-    return df;
+    return this._dlQueries.getPredictedPtmByAntigen(antigen);
   }
 
   async getObservedPtmByAntigen(antigen: string): Promise<DG.DataFrame> {
-    const df = await grok.functions.call(`${this._pName}:getObservedPtmByAntigen`, {antigen: antigen});
-    return df;
+    return this._dlQueries.getObservedPtmByAntigen(antigen);
   }
 
   // -- 3D --
 
   async load3D(vid: string): Promise<[JsonType, string, NumsType, ObsPtmType]> {
     try {
-      const df: DG.DataFrame = await grok.functions.call(`${this._pName}:get3D`, {vid: vid});
+      // const df: DG.DataFrame = await grok.functions.call(`${this._pName}:get3D`, {vid: vid});
+      const df: DG.DataFrame = await this._dlQueries.load3D(vid);
 
       const jsonTxt = df.get('json', 0);
       const pdbTxt = df.get('pdb', 0);
@@ -273,7 +166,7 @@ export class DataLoaderDb extends DataLoader {
 
       return [jsonValue, pdbValue, realNumsValue, obsPtmValue];
     } catch (err: unknown) {
-      console.error(`load3D('${vid}' error: ${err instanceof Error ? err.message : (err as Object).toString()}`);
+      console.error(`MLB: query get3D('${vid}' error: ${err instanceof Error ? err.message : (err as Object).toString()}`);
     }
   }
 }
