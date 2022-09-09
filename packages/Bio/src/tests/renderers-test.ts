@@ -6,6 +6,7 @@ import {importFasta, multipleSequenceAlignmentAny} from '../package';
 import {convertDo} from '../utils/convert';
 import {ALPHABET, NOTATION, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SEM_TYPES, TAGS} from '../utils/constants';
+import {generateLongSequence, generateManySequences, performanceTest} from './test-sequnces-generators';
 
 category('renderers', () => {
   let tvList: DG.TableView[];
@@ -20,6 +21,14 @@ category('renderers', () => {
   after(async () => {
     dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
     tvList.forEach((tv: DG.TableView) => tv.close());
+  });
+
+  test('long sequence performance ', async () => {
+    performanceTest(generateLongSequence, 'Long sequences');
+  });
+
+  test('many sequence performance', async () => {
+    performanceTest(generateManySequences, 'Many sequences');
   });
 
   test('afterMsa', async () => {

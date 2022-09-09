@@ -37,17 +37,6 @@ import * as C from './utils/constants';
 export async function initBio() {
 }
 
-//name: testManySequencesPerformance
-export function testManySequencesPerformance(): void {
-  performanceTest(generateManySequences, 'Many sequences');
-}
-
-//name: testLongSequencesPerformance
-export function testLongSequencesPerformance(): void {
-  performanceTest(generateLongSequence, 'Long sequences');
-}
-
-
 //name: fastaSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: Sequence
