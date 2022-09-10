@@ -5,12 +5,30 @@ import {WebLogo, SplitterFunc} from '../../src/viewers/web-logo';
 import {HELM_CORE_FIELDS, HELM_CORE_LIB_MONOMER_SYMBOL} from './monomer-utils';
 
 const V2K_RGP_SHIFT = 8;
+const V2K_RGP_LINE = 'M  RGP';
+
 const V3K_ATOMS_DATA_SHIFT = 4;
 const V3K_BOND_DATA_SHIFT = 4;
 const V3K_COUNTS_SHIFT = 7;
+const V3K_BEGIN_CTAB_BLOCK = 'M  V30 BEGIN CTAB\n';
+const V3K_END_CTAB_BLOCK = 'M  V30 END CTAB\n';
+const V3K_BEGIN_ATOM_BLOCK = 'M  V30 BEGIN ATOM\n';
+const V3K_END_ATOM_BLOCK = 'M  V30 END ATOM\n';
+const V3K_BEGIN_BOND_BLOCK = 'M  V30 BEGIN BOND\n';
+const V3K_END_BOND_BLOCK = 'M  V30 END BOND\n';
+const V3K_BEGIN_DATA_LINE = 'M  V30 ';
+const V3K_END = 'M  END\n';
 
-type BondIndices = {
+type AtomData = {
+  atomIdx: number[],
+  atomType: string[],
+  x: number[], // Cartesian coordiantes
+  y: number[],
+}
+
+type BondData = {
   // The node to which the radical is attached from the "left" (the order is specified by Macromolecule sequence):
+  bondCount: number,
   leftNode: number,
   rightNode: number,
   leftRemovedNode: number, // "leftmost" r-group node of the monomer
@@ -20,15 +38,9 @@ type BondIndices = {
 }
 
 type MonomerData = {
-  molfileV3K: string, // molfile corresponding to a rotated monomer
-  bondIndices: BondIndices,
-}
-
-type AtomData = {
-  atomIdx: number[],
-  atomType: string[],
-  x: number[], // Cartesian coordiantes
-  y: number[],
+  molfileV3K: string,
+  atomData: AtomData,
+  bondData: BondData,
 }
 
 export async function _toAtomicLevel(
@@ -47,7 +59,8 @@ export async function _toAtomicLevel(
   const reconstructed: string[] = new Array(macroMolCol.length);
   for (let row = 0; row < monomerSequencesArray.length; ++row) {
     const monomerSeq = monomerSequencesArray[row];
-    reconstructed[row] = bind(monomerSeq, monomersDict);
+    reconstructed[row] = convertMacromolToMolfileV3K(monomerSeq, monomersDict);
+    console.log(reconstructed[row]);
   }
   const newCol = DG.Column.fromStrings('reconstructed', reconstructed);
   // todo: name properly
@@ -125,11 +138,13 @@ function getMonomerData(
     // todo: field names to constants
     const rgroups = parseRGroups(libObject['rgroups']);
     const molfileV2K = substituteRGroups(libObject['molfile'], rgroups);
-    let molfileV3K = convertToV3K(molfileV2K, moduleRdkit);
+    const molfileV3K = convertMolfileToV3K(removeRGroupLine(molfileV2K), moduleRdkit);
     // todo: field name to constant
-    const bondIndices = parseBondIndices(molfileV2K, molfileV3K);
-    molfileV3K = getFromattedMolfileV3K(molfileV3K, bondIndices);
-    return {molfileV3K: molfileV3K, bondIndices: bondIndices};
+    const bondData = parseBondData(molfileV2K, molfileV3K);
+    const atomData = parseAtomData(molfileV3K);
+    adjustBackbone(atomData, bondData);
+    // molfileV3K = getFromattedMolfileV3K(molfileV3K, atomData, bondData);
+    return {molfileV3K: molfileV3K, atomData: atomData, bondData: bondData};
   }
 }
 
@@ -141,7 +156,8 @@ function parseRGroups(rgroupObjList: any[]): string[] {
   const rgroupsArray: string[] = [];
   for (const obj of rgroupObjList) {
     let rgroup: string = obj['capGroupSmiles'];
-    // todo: verify that there are no multi-element rgroups
+    // todo: verify that there are no multi-element rgroups, or consider how to
+    // transform them
     rgroup = rgroup.replace(/(\[|\]|\*|:|\d)/g, '');
     rgroupsArray.push(rgroup);
   }
@@ -150,31 +166,46 @@ function parseRGroups(rgroupObjList: any[]): string[] {
 
 function substituteRGroups(molfileV2K: string, rGroups: string[]) {
   let modifiedMolfile = molfileV2K;
-  for (const value of rGroups)
+  for (let value of rGroups) {
+    // todo: handle hydrogens
+    if (value = 'H')
+      value = 'Li';
     modifiedMolfile = modifiedMolfile.replace('R#', value);
+  }
   return modifiedMolfile;
 }
 
+// necessary to build a correct molfilev3k after substitution of r-groups in v2k
+function removeRGroupLine(molfileV2K: string): string {
+  // todo: consider the case of multiple rgp lines in a molfile
+  const begin = molfileV2K.indexOf(V2K_RGP_LINE);
+  const end = molfileV2K.indexOf('\n', begin) + 1;
+  return molfileV2K.substring(0, begin) + molfileV2K.substring(end);
+}
+
 // todo: type of moduleRdkit
-// todo: consider the use of unified converter (relies creation of moduleRdkit
+// todo: consider the use of unified converter (relies on creation of moduleRdkit
 // on each iteration, though)
-function convertToV3K(molfileV2K: string, moduleRdkit: any) {
+function convertMolfileToV3K(molfileV2K: string, moduleRdkit: any) {
   const molObj = moduleRdkit.get_mol(molfileV2K);
   const molfileV3K = molObj.get_v3Kmolblock();
   molObj.delete();
   return molfileV3K;
 }
 
-function parseBondIndices(molfileV2K: string, molfileV3K: string): BondIndices {
+function parseBondData(molfileV2K: string, molfileV3K: string): BondData {
   // todo: consider the case when there is no simple leftmost/rightmost choice
   // todo: consider the case when there are multiple consequent M  RGP lines,
   // like in HELMCoreLibrary nucleotides
 
   const removedNodes = getRemovedNodes(molfileV2K);
 
-  const indices = getLRNodesAndBonds(molfileV3K, removedNodes);
+  const counts = parseAtomAndBondCounts(molfileV3K); // todo: rename get to parse
+
+  const indices = parseLRNodesAndBonds(molfileV3K, counts, removedNodes);
 
   return {
+    bondCount: counts.bondCount,
     leftNode: indices.leftNode,
     rightNode: indices.rightNode,
     leftRemovedNode: removedNodes.left,
@@ -195,7 +226,7 @@ function getRemovedNodes(molfileV2K: string): {left: number, right: number} {
 function parseRGroupIndices(molfileV2K: string): number[] {
   // todo: handle the exceptional case when there is not enough rgroups
   // todo: handle the exceptional case when the order is different
-  const begin = molfileV2K.indexOf('M  RGP', 0) + V2K_RGP_SHIFT;
+  const begin = molfileV2K.indexOf(V2K_RGP_LINE, 0) + V2K_RGP_SHIFT;
   const end = molfileV2K.indexOf('\n', begin);
 
   const rgpStringParsed = molfileV2K.substring(begin, end).replaceAll('  ', ' ').replaceAll('  ', ' ').split(' ');
@@ -204,17 +235,18 @@ function parseRGroupIndices(molfileV2K: string): number[] {
   return rgpIndices;
 }
 
-function getLRNodesAndBonds(
+function parseLRNodesAndBonds(
   v3KMolblock: string,
+  counts: {atomCount: number, bondCount: number},
   removedNodes: {left: number, right: number}
 ): {leftNode: number, rightNode: number, leftRemovedBond: number, rightRemovedBond: number} {
   let leftNode = 0;
   let rightNode = 0;
   let leftRemovedBond = 0;
   let rightRemovedBond = 0;
-  const counts = getAtomAndBondCountsV3K(v3KMolblock);
+  // const counts = parseAtomAndBondCounts(v3KMolblock);
 
-  let idxV3KBondBlock = v3KMolblock.indexOf('M  V30 BEGIN BOND');
+  let idxV3KBondBlock = v3KMolblock.indexOf(V3K_BEGIN_BOND_BLOCK);
   idxV3KBondBlock = v3KMolblock.indexOf('\n', idxV3KBondBlock);
   let begin = idxV3KBondBlock;
   let end = idxV3KBondBlock;
@@ -249,9 +281,9 @@ function getLRNodesAndBonds(
     leftRemovedBond: leftRemovedBond,
     rightRemovedBond: rightRemovedBond
   };
-}
+} // todo unify v3KMolblock and molfileV3K
 
-function getAtomAndBondCountsV3K(v3KMolblock: string): {atomCount: number, bondCount: number} {
+function parseAtomAndBondCounts(v3KMolblock: string): {atomCount: number, bondCount: number} {
   v3KMolblock = v3KMolblock.replaceAll('\r', ''); // to handle old and new sdf standards
 
   // parse atom count
@@ -267,11 +299,15 @@ function getAtomAndBondCountsV3K(v3KMolblock: string): {atomCount: number, bondC
   return {atomCount: numOfAtoms, bondCount: numOfBonds};
 }
 
-function getFromattedMolfileV3K(molfileV3K: string, bondIndices: BondIndices): string {
-  const atoms = parseAtomData(molfileV3K);
+// function getFromattedMolfileV3K(
+function adjustBackbone(
+  // molfileV3K: string,
+  atoms: AtomData,
+  bondData: BondData
+): void {
   const atomCount = atoms.atomIdx.length;
-  const leftNode = bondIndices.leftNode;
-  const rightNode = bondIndices.rightNode;
+  const leftNode = bondData.leftNode;
+  const rightNode = bondData.rightNode;
 
   // center tha backbone at origin
   const xCenter = (atoms.x[leftNode] + atoms.x[rightNode])/2;
@@ -288,37 +324,37 @@ function getFromattedMolfileV3K(molfileV3K: string, bondIndices: BondIndices): s
   for (let i = 0; i < atomCount; ++i)
     atoms.x[i] += xShift;
 
-  return updateMolfileCoordinates(molfileV3K, atoms);
+  // return updateMolfileCoordinates(molfileV3K, atoms);
 }
 
 function parseAtomData(molfileV3K: string): AtomData {
-  const counts = getAtomAndBondCountsV3K(molfileV3K);
+  const counts = parseAtomAndBondCounts(molfileV3K);
   const atomIdx = new Array(counts.atomCount);
   const atomType = new Array(counts.atomCount);
   const x = new Array(counts.atomCount);
   const y = new Array(counts.atomCount);
 
-  let begin = molfileV3K.indexOf('M  V30 BEGIN ATOM'); // V3000 atoms block
+  let begin = molfileV3K.indexOf(V3K_BEGIN_ATOM_BLOCK); // V3000 atoms block
   begin = molfileV3K.indexOf('\n', begin);
   let end = begin;
 
   for (let i = 0; i < counts.atomCount; i++) {
     begin = molfileV3K.indexOf('V30', begin) + V3K_ATOMS_DATA_SHIFT;
     end = molfileV3K.indexOf(' ', begin);
-
     atomIdx[i] = parseInt(molfileV3K.substring(begin, end));
-    begin = end + 1;
-    end = molfileV3K.indexOf(' ', begin);
 
+    begin = end + 1; // todo: remove code copying
+    end = molfileV3K.indexOf(' ', begin);
     atomType[i] = molfileV3K.substring(begin, end);
+
     begin = end + 1;
     end = molfileV3K.indexOf(' ', begin);
-
     x[i] = parseFloat(molfileV3K.substring(begin, end));
+
     begin = end + 1;
     end = molfileV3K.indexOf(' ', begin);
-
     y[i] = parseFloat(molfileV3K.substring(begin, end));
+
     begin = molfileV3K.indexOf('\n', begin) + 1;
   }
 
@@ -351,23 +387,231 @@ function rotateCenteredBackbone(atoms: AtomData, leftNode: number, rightNode: nu
   }
 }
 
-function updateMolfileCoordinates(molfileV3K: string, atoms: AtomData) {
-  let molfile = molfileV3K;
-  let index = molfile.indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms atoms
-  index = molfile.indexOf('\n', index);
-  let indexEnd = index;
-  for (let i = 0; i < atoms.x.length; i++) {
-    index = molfile.indexOf('V30', index) + V3K_ATOMS_DATA_SHIFT;
-    index = molfile.indexOf(' ', index) + 1;
-    index = molfile.indexOf(' ', index) + 1;
-    indexEnd = molfile.indexOf(' ', index) + 1;
-    indexEnd = molfile.indexOf(' ', indexEnd);
-
-    molfile = molfile.slice(0, index) +
-      atoms.x[i] + ' ' + atoms.y[i] +
-      molfile.slice(indexEnd);
-
-    index = molfile.indexOf('\n', index) + 1;
+function convertMacromolToMolfileV3K(
+  monomerSeq: string[],
+  monomersDict: Map<string, MonomerData>
+): string {
+  if (monomerSeq.length === 0) {
+    // todo: exception
+    return '';
+  } else if (monomerSeq.length === 1) {
+    // todo: should it return rotated/aligned graph?
+    return monomersDict.get(monomerSeq[0])!.molfileV3K; // todo: !
+  } else {
+    return concatenateMolfiles(monomerSeq, monomersDict);
   }
-  return molfile;
+}
+
+// there are two or more monomers in a sequence
+function concatenateMolfiles(
+  monomerSeq: string[],
+  monomersDict: Map<string, MonomerData>
+): string {
+  let reconstructedAtomBlock = '';
+  let reconstructedBondBlock = '';
+  // todo: collection block?
+  let totalNodeCount = 0;
+  let totalBondCount = 0;
+  let xShift = 0;
+
+  // todo: handle first/last monomers separately
+
+  for (let i = 0; i < monomerSeq.length; ++i) {
+    const monomer = monomerSeq[i];
+    const monomerData = monomersDict.get(monomer)!; // todo: exceptions
+    const atomIdx = monomerData.atomData.atomIdx;
+    const x = monomerData.atomData.x;
+    const y = monomerData.atomData.y;
+    const leftNode = monomerData.bondData.leftNode;
+    const rightNode = monomerData.bondData.leftNode;
+    const leftRemovedNode = monomerData.bondData.leftRemovedNode;
+    const rightRemovedNode = monomerData.bondData.rightRemovedNode;
+    const leftRemovedBond = monomerData.bondData.leftRemovedBond;
+    const rightRemovedBond = monomerData.bondData.rightRemovedBond;
+    const atomCount = atomIdx.length;
+    const bondCount = monomerData.bondData.bondCount;
+    const molfile = monomerData.molfileV3K;
+    const totalShift = xShift - x[leftNode - 1]; // todo: BUG
+
+    for (let j = 0; j < atomCount; ++j) {
+      const node = atomIdx[j]; // todo: do we need this atomIdx at all? or should add bondIdx to BondData
+      let updatedNode;
+      if (node != leftRemovedNode || node != rightRemovedNode) {
+        updatedNode = getIdxAfterLRItemsRemoval(node, leftRemovedNode, rightRemovedNode);
+        updatedNode += totalNodeCount; // todo: hydrogen
+
+        const updatedX = Math.round(10000*(x[j] + totalShift))/10000;
+        const updatedY = Math.round(10000*(y[j]))/10000;
+
+        const idxAtomBlock = molfile.indexOf(V3K_BEGIN_ATOM_BLOCK);
+        const begin = molfile.indexOf(V3K_BEGIN_DATA_LINE + node.toString(), idxAtomBlock);
+        const end = molfile.indexOf('\n', begin) + 1; // including \n
+        let atomLine = molfile.slice(begin, end);
+        atomLine = updateAtomLine(atomLine, updatedNode, updatedX, updatedY);
+
+        reconstructedAtomBlock += atomLine;
+      }
+    }
+
+    for (let j = 0; j < bondCount; ++j) {
+      const bond = j + 1;
+      let updatedBond;
+      if (bond != leftRemovedBond || bond != rightRemovedBond) {
+        updatedBond = getIdxAfterLRItemsRemoval(bond, leftRemovedBond, rightRemovedBond);
+        updatedBond += totalBondCount;
+
+        const idxBondBlock = molfile.indexOf(V3K_BEGIN_BOND_BLOCK);
+        const begin = molfile.indexOf(V3K_BEGIN_DATA_LINE + bond.toString(), idxBondBlock);
+        const end = molfile.indexOf('\n', begin) + 1; // including \n
+        let bondLine = molfile.slice(begin, end);
+        bondLine = updateBondLine(bondLine, updatedBond, leftRemovedNode, rightRemovedNode, totalNodeCount);
+
+        reconstructedBondBlock += bondLine;
+      }
+    }
+
+    totalNodeCount += atomCount - 2;
+    totalBondCount += bondCount - 2;
+    xShift += x[rightNode] - x[leftNode] + 1; // todo: ?
+
+
+    // todo: refactor the following part
+    if (i === monomerSeq.length - 1) {
+      totalNodeCount++;
+      const shift = xShift + 0.2;
+      // todo: improve this part
+      reconstructedAtomBlock += 'M  V30 ' + totalNodeCount + ' O ' + shift + ' 0 0.000000 0\n';
+    }
+    totalBondCount++;
+    if (i === monomerSeq.length - 1) {
+      const rightTerminal = (rightNode > leftRemovedNode && rightNode > rightRemovedNode) ?
+        rightNode + totalNodeCount - (atomCount - 2) - 3:
+        (rightNode > leftRemovedNode ||
+          rightNode > rightRemovedNode) ?
+          rightNode + totalNodeCount - (atomCount - 2) - 2 :
+          rightNode + totalNodeCount - (atomCount - 2) - 1;
+      reconstructedBondBlock += 'M  V30 ' + totalBondCount + ' 1 ' + rightTerminal + ' ' + totalNodeCount + '\n';
+    } else {
+      const rightTerminal = (rightNode > leftRemovedNode && rightNode > rightRemovedNode) ?
+        rightNode + totalNodeCount - (atomCount - 2) - 2:
+        (rightNode > leftRemovedNode ||
+          rightNode > rightRemovedNode) ?
+          rightNode + totalNodeCount - (atomCount - 2) - 1 :
+          rightNode + totalNodeCount - (atomCount - 2);
+
+      const nextMonomer = monomerSeq[i + 1];
+      const nextMonomerData = monomersDict.get(nextMonomer)!; // todo: exceptions
+      const nextLeftNode = nextMonomerData.bondData.leftNode;
+      // const nextRightNode = nextMonomerData.bondData.leftNode;
+      const nextLeftRemovedNode = monomerData.bondData.leftRemovedNode;
+      const nextRightRemovedNode = monomerData.bondData.rightRemovedNode;
+
+      const leftTerminal = (nextLeftNode > nextLeftRemovedNode &&
+        nextLeftNode > nextRightRemovedNode) ?
+        nextLeftNode + totalNodeCount - 2 :
+        (nextLeftNode > nextLeftRemovedNode ||
+          nextLeftNode > nextRightRemovedNode) ?
+          nextLeftNode + totalNodeCount - 1 :
+          nextLeftNode + totalNodeCount;
+
+      reconstructedBondBlock += 'M  V30 ' + bondCount + ' 1 ' + rightTerminal + ' ' + leftTerminal + '\n';
+    }
+  }
+
+  const reconstructedCountsLine = 'M  V30 COUNTS ' + totalNodeCount + ' ' + totalBondCount + ' 0 0 0\n';
+
+  // produce molfile
+  let reconstructedMolfile = '\nDatagrok macromolecule handler\n\n';
+  reconstructedMolfile += '  0  0  0  0  0  0            999 V3000\n';
+  reconstructedMolfile += V3K_BEGIN_CTAB_BLOCK;
+  reconstructedMolfile += reconstructedCountsLine;
+  reconstructedMolfile += V3K_BEGIN_ATOM_BLOCK;
+  reconstructedMolfile += reconstructedAtomBlock;
+  reconstructedMolfile += V3K_END_ATOM_BLOCK;
+  reconstructedMolfile += V3K_BEGIN_BOND_BLOCK;
+  reconstructedMolfile += reconstructedBondBlock;
+  reconstructedMolfile += V3K_END_BOND_BLOCK;
+  reconstructedMolfile += V3K_END_CTAB_BLOCK;
+  reconstructedMolfile += V3K_END;
+
+  return reconstructedMolfile;
+}
+
+function getIdxAfterLRItemsRemoval(idx: number, leftRemoved: number, rightRemoved: number) {
+  if (idx > leftRemoved || idx > rightRemoved) {
+    if (idx > leftRemoved && idx > rightRemoved)
+      return idx - 2;
+    else
+      return idx - 1;
+  } else {
+    return idx;
+  }
+}
+
+function updateAtomLine(
+  atomLine: string,
+  updatedNode: number,
+  updatedX: number,
+  updatedY: number
+): string {
+  // position of atom index in the line
+  const beginNode = atomLine.indexOf('V30') + V3K_ATOMS_DATA_SHIFT;
+  const endNode = atomLine.indexOf(' ', beginNode);
+
+  // beginning of X coordinate in the line
+  let beginX = endNode + 1;
+  beginX = atomLine.indexOf(' ', beginX) + 1;
+
+  // end of Y coordinate in the line
+  let endY = atomLine.indexOf(' ', beginX) + 1;
+  endY = atomLine.indexOf(' ', endY);
+
+  const result = atomLine.slice(0, beginNode) + updatedNode +
+    atomLine.slice(endNode, beginX) + updatedX + ' ' + updatedY +
+    atomLine.slice(endY);
+
+  return result;
+}
+
+function updateBondLine(
+  bondLine: string,
+  updatedBond: number,
+  leftRemovedNode: number,
+  rightRemovedNode: number,
+  totalNodeCount: number
+) {
+  // position of bond index in the line
+  const beginBond = bondLine.indexOf(V3K_BEGIN_DATA_LINE) + V3K_ATOMS_DATA_SHIFT;
+  const endBond = bondLine.indexOf(' ', beginBond);
+
+  // todo: remove the Indian code
+  // begginning of the first atom of the bond
+  let beginFirst = endBond + 1;
+  beginFirst = bondLine.indexOf(' ', beginFirst) + 1;
+
+  // end of the last atom of the bond
+  let endSecond = bondLine.indexOf(' ', beginFirst) + 1;
+  const tmp = bondLine.indexOf(' ', endSecond);
+  // -1 in case there is no ' ' left
+  endSecond = (tmp === -1) ? bondLine.indexOf('\n', endSecond) : tmp;
+
+  // rewrite the value of the bond index
+  let begin = bondLine.indexOf(V3K_BEGIN_DATA_LINE) + V3K_ATOMS_DATA_SHIFT;
+  let end = bondLine.indexOf(' ', begin);
+  let updatedLine = bondLine.slice(0, begin) + updatedBond + bondLine.slice(end);
+
+  // rewrite the indices for the two atoms of the bond
+  for (let k = 0; k < 2; ++k) {
+    begin = end + 1; // todo: code copying?
+    begin = bondLine.indexOf(' ', begin) + 1;
+    // todo: exclude -1
+    // we need min in case of the last atom idx, after which \n goes
+    end = Math.min(bondLine.indexOf('\n', begin), bondLine.indexOf(' ', begin));
+    let atomIdx = parseInt(bondLine.substring(begin, end));
+    atomIdx = getIdxAfterLRItemsRemoval(atomIdx, leftRemovedNode, rightRemovedNode);
+    atomIdx += totalNodeCount;
+
+    updatedLine = bondLine.slice(0, begin) + atomIdx + bondLine.slice(end);
+  }
+  return updatedLine;
 }

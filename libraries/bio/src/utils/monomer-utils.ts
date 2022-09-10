@@ -41,7 +41,7 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
   const units = col.tags[DG.TAGS.UNITS];
   const sep = col.getTag('separator');
   const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, sep);
-  const monomersDict = createMomomersMolDict(monomersLibList);
+  const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
   for (let i = 0; i < col.length; ++i) {
     const macroMolecule = col.get(i);
