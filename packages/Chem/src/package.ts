@@ -583,12 +583,10 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
 export function useAsSubstructureFilter(mol: string): void {
   const tv = grok.shell.tv;
   if (tv == null)
-    // eslint-disable-next-line no-throw-literal
     throw 'Requires an open table view.';
 
   const molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (molCol == null)
-    // eslint-disable-next-line no-throw-literal
     throw 'Molecule column not found.';
 
   /*
