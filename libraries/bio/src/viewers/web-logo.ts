@@ -212,12 +212,16 @@ export class WebLogo extends DG.JsViewer {
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
 
+    this.slider = ui.rangeSlider(0, 100, 1, 100);
+    this.slider.root.style.position = 'absolute';
+    this.slider.root.style.zIndex = '999';
+    this.slider.root.style.margin = '400px 0 0 0';
+
     this.host = ui.div([this.msgHost, this.canvas]);
 
-    this.slider = ui.rangeSlider(0, 100, 0, 100);
-    this.slider.root.style.width = '100%';
-    this.slider.root.style.height = '12px';
-    this.slider.root.focus();
+    this.host.style.justifyContent = 'center';
+    this.host.style.alignItems = 'center';
+    this.host.style.position = 'relative';
 
     const getMonomer = (p: DG.Point): [number, string | null, PositionMonomerInfo | null] => {
       const jPos = Math.floor(p.x / this.positionWidthWithMargin);
@@ -280,7 +284,6 @@ export class WebLogo extends DG.JsViewer {
     this.viewSubs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
 
     this.root.append(this.host);
-    this.root.appendChild(this.slider.root);
 
     this.render(true);
   }
@@ -585,11 +588,13 @@ export class WebLogo extends DG.JsViewer {
       }
     }
 
-    if (!this.canvas || !this.seqCol || !this.dataFrame || !this.cp || this.startPosition === -1 || this.endPosition === -1 || this.host == null)
+    if (!this.canvas || !this.seqCol || !this.dataFrame || !this.cp || this.startPosition === -1 || this.endPosition === -1 || this.host == null || this.slider == null)
       return;
 
     const g = this.canvas.getContext('2d');
     if (!g) return;
+
+    this.slider.root.style.width = `${this.host.clientWidth}px`;
 
     const r = window.devicePixelRatio;
 
@@ -602,7 +607,7 @@ export class WebLogo extends DG.JsViewer {
     const maxCountOfRowsRendered = this.host.clientWidth / this.positionWidthWithMargin + 2;
     const startRendering = Math.floor(this.host.scrollLeft / this.positionWidthWithMargin);
     const checkEndRendering = (jPos: number) => {
-      return jPos < this.Length && jPos < maxCountOfRowsRendered + startRendering;
+      return jPos < this.Length;
     };
     g.textBaseline = this.textBaseline;
 
