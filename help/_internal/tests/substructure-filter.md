@@ -9,51 +9,51 @@ For filtering by columns that contain molecules Datagrock supports a special typ
 
 1. Open table with molecules (e.g. "smiles.csv")
 
-1. Add Filters Viewer. Click on specical icon on Toolbox near "Search" section
+2. Add Filters Viewer. Click on specical icon on Toolbox near "Search" section
 
 * Filters is open. Filter for column with moluceles ("smiles" column) is displayed first in the list because it is special filter
 
-1. Remove special substructure filter for "smiles" column by clicking "✕" icon for the corresponding column filter
+3. Remove special substructure filter for "smiles" column by clicking "✕" icon for the corresponding column filter
 
 * Special substructure filter for "smiles" column has been removed
 
-1. Click on "hamburger" icon to open Filters menu
+4. Click on "hamburger" icon to open Filters menu
 
 * Menu is open
 
-1. Expand the first level menu "Add External"
+5. Expand the first level menu "Add External"
 
 * Second level submenu contains "Substructure Filter"
 
-1. Click on "Substructure Filter" item from submenu
+6. Click on "Substructure Filter" item from submenu
 
 * Dialog for selecting columns for Substructure filter has opened
 
-1. In column selection dialog, check the "smiles" column and click OK
+7. In column selection dialog, check the "smiles" column and click OK
 
 * Special Subctructure filter has been added for the "smiles" column in Filter Viewer
 
-1. Click on Sketcher field inside filter for "smiles" column
+8. Click on Sketcher field inside filter for "smiles" column
 
 * Chemickal Sketcher is open
 
-1. Draw molecule in the sketcher that corresponds to the structure "smiles: C1CCCCC1"
+9. Draw molecule in the sketcher that corresponds to the structure "smiles: C1CCCCC1"
 
 * Filtering happens as you draw structure (94 rows should be filtered for "smiles" table)
 
-1. Click on OK button in Sketcher dialog
+10. Click on OK button in Sketcher dialog
 
 * Filtering is still applied. Sketcher field for the "smiles" column filter displays the drawn structure
 
-1. Click on "Turn on\off" chekbox for "smiles" column filter (To turn the Substructure filter off)
+11. Click on "Turn on\off" chekbox for "smiles" column filter (To turn the Substructure filter off)
 
 * Substructure Filter appears to be inactive and is no longer applied to the table
 
-1. Turn the filter back on by clicking on "Turn on\off" chekbox
+12. Turn the filter back on by clicking on "Turn on\off" chekbox
 
 * Filtering in table is applied. Filter is shown as active
 
-1. Remove special substructure filter for "smiles" column by clicking "✕" icon for the corresponding column filter
+13. Remove special substructure filter for "smiles" column by clicking "✕" icon for the corresponding column filter
 
 * Special substructure filter for "smiles" column has been removed from Filters and filtering reset for table
 
@@ -66,7 +66,7 @@ Pre-requisites: Reproduce this case after last step of previous test. It is nece
 * Special Subctructure filter has been added for the "smiles" column in Filter Viewer
 * Filter is displayed as active
 
-1. Repeat steps 8-13 from previous test (Adding Substructure Filter to the Filter Viewer). Expected results should be same and repeat exactly same for added Substructure filter using column drag-and-drop
+2. Repeat steps 8-13 from previous test (Adding Substructure Filter to the Filter Viewer). Expected results should be same and repeat exactly same for added Substructure filter using column drag-and-drop
 
 ## Using Subctructure Filtering in column "hamburger" menu
 
@@ -78,21 +78,21 @@ Pre-requisites: Open table with molecules (e.g. "smiles.csv")
 * "Filter" tab will be expanded
 * The "Filter" tab displays Sketcher for drawing a structure for filtering 
 
-1. Draw molecule in the sketcher that corresponds to the structure "smiles: c1ccccc1"
+2. Draw molecule in the sketcher that corresponds to the structure "smiles: c1ccccc1"
 
 * Filtering happens as you draw structure (924 rows should be filtered for "smiles" table)
 
-1. Close "hamburger" menu for column with molecules ("smiles" column)
+3. Close "hamburger" menu for column with molecules ("smiles" column)
 
 * Filtering is still applied for table
 
-1. Open the Property Panel for molecular column ("smiles" column). Click on its title and it will become the current object
+4. Open the Property Panel for molecular column ("smiles" column). Click on its title and it will become the current object
 
-1. Expand "Filter" tab on PP for molecular column
+5. Expand "Filter" tab on PP for molecular column
 
 * Filter set in the "hamburger" column menu is also displayed here
 
-1. Press the "ESC" key on your keyboard
+6. Press the "ESC" key on your keyboard
 
 * Filters have been reset and are no longer applied to table
 
