@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser-data",
   "friendlyName": "MolecularLiabilityBrowserData",
-  "version": "1.1.5",
+  "version": "2.0.0",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
@@ -12,23 +12,10 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/MolecularLiabilityBrowserData"
   },
-  "properties": [
-    {
-      "name": "DataSource",
-      "propertyType": "string",
-      "choices": [
-        "Files",
-        "Database",
-        "Test"
-      ],
-      "defaultValue": "Test",
-      "nullable": false
-    }
-  ],
   "sources": [],
   "dependencies": {
     "@datagrok-libraries/utils": "latest",
-    "datagrok-api": "^1.6.7",
+    "datagrok-api": "^1.6.8",
     "cash-dom": "latest",
     "dayjs": "latest"
   },
