@@ -1,5 +1,4 @@
 import * as grok from 'datagrok-api/grok';
-import { chem } from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { getMolColumnPropertyPanel}  from './panels/chem-column-property-panel';
@@ -32,7 +31,7 @@ import { OpenChemLibSketcher } from './open-chem/ocl-sketcher';
 import { _importSdf } from './open-chem/sdf-importer';
 import { OCLCellRenderer } from './open-chem/ocl-cell-renderer';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import Sketcher = chem.Sketcher;
+import Sketcher = DG.chem.Sketcher;
 import { getActivityCliffs }  from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import { removeEmptyStringRows } from '@datagrok-libraries/utils/src/dataframe-utils';
 import { checkForStructuralAlerts } from './panels/structural-alerts';

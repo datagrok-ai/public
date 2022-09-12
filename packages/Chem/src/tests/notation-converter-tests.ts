@@ -8,7 +8,7 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../package';
 import {_convertMolNotation, MolNotation} from '../utils/convert-notation-utils';
 
-category('convert mol notation test', () => {
+category('converters', () => {
   before(async () => { // wait until RdKit module gets initialized
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
@@ -17,14 +17,7 @@ category('convert mol notation test', () => {
   });
 
   const molecules: { [key: string]: string[]} = {
-    smiles: [
-      'CN1C(=O)CN=C(C2CCCCC2)c2ccccc21',
-      // 'CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3',
-      // 'CC(C)CCN1C(=O)CN=C(c2ccccc12)C3CCCCC3',
-      // 'O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4',
-      // 'O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3',
-      // 'CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3',
-    ],
+    smiles: ['CN1C(=O)CN=C(C2CCCCC2)c2ccccc21'],
     smarts: [
       '[#6]-[#7]1-[#6](=[#8])-[#6]-[#7]=[#6](-[#6]2-[#6]-[#6]-[#6]-[#6]-[#6]-2)-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-1',
     ],
