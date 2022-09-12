@@ -6,17 +6,17 @@ import {PtmFilter} from './custom-filters';
 import {catchToLog, DataLoader, DataLoaderType, initPackageQueries, DataQueryDict} from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
 import {DataLoaderDb} from './utils/data-loader-db';
-import {DataLoaderTest} from './utils/data-loader-test';
+import {DataLoaderTest} from './tests/utils/data-loader-test';
 import {MolecularLiabilityBrowser} from './molecular-liability-browser';
 import {TreeBrowser} from './mlb-tree';
 
 export let _startInit: number;
 export const _package = new DG.Package();
+export let _properties: Map<string, any>;
 export const dataPackageName: string = 'MolecularLiabilityBrowserData';
 export const packageName: string = 'MolecularLiabilityBrowser';
 
-let dataSourceSettings: string;
-let mlbQueries: DataQueryDict;
+let _mlbQueries: DataQueryDict;
 
 /** DataLoader instance */
 let dl: DataLoader;
@@ -54,37 +54,56 @@ async function getDataSourceSettings(): Promise<string> {
 
 async function getMlbQueries(): Promise<DataQueryDict> {
   return await catchToLog(
-    'MLB: getMlbQueries',
+    'MLB: package getMlbQueries()',
     async () => {
       return initPackageQueries(packageName);
     }
   );
 }
 
+//tags: init
+export async function initMlb() {
+  _startInit = Date.now();
+  const pi = DG.TaskBarProgressIndicator.create('init MLB package');
+  try {
+    _mlbQueries = await getMlbQueries();
+  } catch (err: unknown) {
+    const msg: string = 'MolecularLiabilityBrowser package init error: ' +
+      `${err instanceof Error ? err.message : (err as Object).toString()}`;
+    grok.shell.error(msg);
+    console.error(err);
+  } finally {
+    pi.close();
+  }
+}
+
 async function initDataLoader(): Promise<void> {
   return await catchToLog<Promise<void>>(
-    'MLB: getDataLoader',
+    'MLB: initDataLoader',
     async () => {
       try {
+        _properties = await catchToLog<Promise<Map<string, any>>>(
+          'MLB: package getProperties',
+          () => { return _package.getProperties(); });
+
         if (!dl) {
-          const [serverListVersionDf]: [DG.DataFrame] = await Promise.all([
-            catchToLog( // this call checks database connection also
+          const serverListVersionDf: DG.DataFrame = _properties['IndexedDB'] ?
+            await catchToLog( // this call checks database connection also
               'MLB: database query \'getListVersion\': ',
               async () => {
-                const funcCall: DG.FuncCall = await mlbQueries['getListVersion'].prepare().call();
+                const funcCall: DG.FuncCall = await _mlbQueries['getListVersion'].prepare().call();
                 const res: DG.DataFrame = funcCall.getOutputParamValue() as DG.DataFrame;
                 return res;
-              }),
-          ]);
-          // const serverListVersionDf: DG.DataFrame = null;
+              }) : null;
 
+          const dataSourceSettings: string = _properties['DataSource'];
           switch (dataSourceSettings) {
           case DataLoaderType.Files:
-            dl = new DataLoaderFiles(mlbQueries, serverListVersionDf);
+            dl = new DataLoaderFiles(_mlbQueries, serverListVersionDf);
             break;
 
           case DataLoaderType.Database:
-            dl = new DataLoaderDb(mlbQueries, serverListVersionDf);
+            dl = new DataLoaderDb(_mlbQueries, serverListVersionDf);
             break;
 
           case DataLoaderType.Test:
@@ -95,7 +114,7 @@ async function initDataLoader(): Promise<void> {
             throw new Error(`MLB: Unexpected data package property 'DataSource' value '${dataSourceSettings}'.`);
           }
 
-          // ptmFilter() function cannot be async and cannot await for any promise
+          // ptmFilter() function cannot be async and cannot await for any promise from init()
           await dl.init(_startInit);
         }
       } catch (err: unknown) {
@@ -103,38 +122,6 @@ async function initDataLoader(): Promise<void> {
         throw err;
       }
     });
-}
-
-//tags: init
-export async function initMlb() {
-  _startInit = Date.now();
-  const pi = DG.TaskBarProgressIndicator.create('init MLB package');
-  try {
-    console.debug('MLB: initMlb() start, ' + `${fromStartInit()} s`);
-
-    [dataSourceSettings, mlbQueries] = await Promise.all([
-      // Package property is a long call as well as getting serverVersionDf from database
-      getDataSourceSettings(),
-      getMlbQueries()
-    ]);
-
-    let k = 11;
-
-    // console.debug('MLB: initMlb() MLB-Data property + serverListVersion, ' + `${fromStartInit()}`);
-    //
-    //
-    // console.debug(`MLB: initMLB() data loaded before init ${((Date.now() - _startInit) / 1000).toString()} s`);
-    //
-    // await dl.init(_startInit, serverListVersionDf);
-    // console.debug(`MLB: initMLB() after init ${((Date.now() - _startInit) / 1000).toString()} s`);
-  } catch (err: unknown) {
-    const msg: string = 'MolecularLiabilityBrowser package init error: ' +
-      `${err instanceof Error ? err.message : (err as Object).toString()}`;
-    grok.shell.error(msg);
-    console.error(err);
-  } finally {
-    pi.close();
-  }
 }
 
 //name: PTM filter
@@ -157,6 +144,7 @@ export function ptmFilter() {
 export async function MolecularLiabilityBrowserApp() {
   const pi = DG.TaskBarProgressIndicator.create('init MLB application');
   try {
+    // Try to create data loader on every app start, if it is not created earlier
     await initDataLoader();
     if (!dl)
       throw new Error(`MLB: MolecularLiabilityBrowser app: data loader is exist`);

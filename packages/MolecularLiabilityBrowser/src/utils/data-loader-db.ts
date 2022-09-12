@@ -43,10 +43,6 @@ export class DataLoaderDb extends DataLoader {
   private _observedPtmMap: PtmMapType;
   private _observedCdrMap: CdrMapType;
 
-  // private _refDfPromise: Promise<void>;
-  // private _refDf: DG.DataFrame;
-
-
   get schemes(): string[] { return this._schemes; }
 
   get cdrs(): string[] { return this._cdrs; }

@@ -80,17 +80,11 @@ export class MlbDatabase extends Dexie {
     this.serverListVersionDf = serverListVersionDf;
   }
 
-  async getObject<Type>(
-    key: string,
-    getServerObject: () => Promise<Type>
-  ): Promise<Type> {
+  async getObject<Type>(key: string, getServerObject: () => Promise<Type>): Promise<Type> {
     const dbVersion: IDbVersion = this.getServerVersion(key);
 
     // Read version of cached list
-    const cacheVersion = await (async () => {
-      const row = await this.list_version.where({'name': key}).first();
-      return row ? row.version : undefined;
-    })();
+    const cacheVersion = (await this.list_version.where({'name': key}).first())?.version;
 
     if (dbVersion == null || cacheVersion != dbVersion.version) {
       const serverObj: Type = await getServerObject();
