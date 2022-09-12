@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
-export let _properties: any;
+// export let _properties: Map<string, any>;
 
 //name: info
 export function info() {
@@ -13,17 +13,17 @@ export function info() {
 
 //tags: init
 export async function initMlbData(): Promise<void> {
-  _properties = await _package.getProperties();
+  // _properties = await _package.getProperties();
 }
 
 export async function initMlbDataHelper(): Promise<void> {
 
 }
 
-//name: getPackageProperty
-//input: string propertyName
-//output: string result
-export function getPackageProperty(propertyName): string {
-  const value: string = _properties[propertyName];
-  return value;
-}
+// //name: getPackageProperty
+// //input: string propertyName
+// //output: string result
+// export function getPackageProperty(propertyName): string {
+//   const value: string = _properties[propertyName];
+//   return value;
+// }
