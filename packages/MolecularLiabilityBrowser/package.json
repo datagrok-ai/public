@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser",
   "fullName": "MolecularLiabilityBrowser",
-  "version": "1.2.18",
+  "version": "1.2.19",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
@@ -12,6 +12,25 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/MolecularLiabilityBrowser"
   },
+  "properties": [
+    {
+      "name": "IndexedDB",
+      "propertyType": "boolean",
+      "defaultValue": false,
+      "nullable": false
+    },
+    {
+      "name": "DataSource",
+      "propertyType": "string",
+      "choices": [
+        "Files",
+        "Database",
+        "Test"
+      ],
+      "defaultValue": "Test",
+      "nullable": false
+    }
+  ],
   "sources": [
     "css/ngl.css",
     "css/pviz-core.css",
@@ -23,14 +42,14 @@
   "dependencies": {
     "@datagrok-libraries/bio": "^4.2.1",
     "@datagrok/bio": "^1.11.3",
-    "@datagrok/molecular-liability-browser-data": "^1.1.5",
+    "@datagrok/molecular-liability-browser-data": "^2.0.0",
     "@deck.gl/core": "^8.7.5",
     "@deck.gl/layers": "^8.7.5",
     "@luma.gl/constants": "^8.5.10",
     "@luma.gl/core": "^8.5.10",
     "@phylocanvas/phylocanvas.gl": "^1.43.0",
     "cash-dom": "latest",
-    "datagrok-api": "^1.6.7",
+    "datagrok-api": "^1.6.8",
     "dexie": "^3.2.2",
     "logojs-react": "^2.1.1",
     "rxjs": "^6.5.5",

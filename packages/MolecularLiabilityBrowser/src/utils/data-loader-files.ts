@@ -28,22 +28,12 @@ export class DataLoaderFiles extends DataLoader {
   static _files = class {
     static mlb = 'mlb.csv';
     static tree: 'tree.csv';
+
     static example = 'example.json';
     static examplePDB = 'examplePDB.json';
     static exampleOptm = 'exampleOptm.json';
     static realNums = 'exampleNums.json';
   };
-
-  // private _files: { [name: string]: string } = {
-  //   filterProps: 'properties.json',
-  //   mutcodes: 'mutcodes.json',
-  //   predictedPtmMap: 'ptm_map.json',
-  //   predictedCdrMap: 'cdr_map.json',
-  //   observedPtmMap: 'obs_ptm_map.json',
-  //   observedCdrMap: 'obs_cdr_map.json',
-  //   predictedPtm: 'ptm_in_cdr.d42',
-
-  // };
 
   private _schemes: string[];
   private _cdrs: string[];
@@ -57,9 +47,6 @@ export class DataLoaderFiles extends DataLoader {
   private _predictedCdrMap: CdrMapType;
   private _observedPtmMap: PtmMapType;
   private _observedCdrMap: CdrMapType;
-
-  private _realNums: any;
-
 
   get schemes(): string[] { return this._schemes; }
 

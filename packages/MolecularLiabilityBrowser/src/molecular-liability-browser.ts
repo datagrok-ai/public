@@ -194,13 +194,14 @@ export class MolecularLiabilityBrowser {
     agDfGrid.root.style.setProperty('width', '220px');
     this.antigenPopup = ui.div([agDfGrid.root]);
 
-    this.viewSubs.push(agDf.onCurrentRowChanged.subscribe(() => {
+    // Do not push to this.viewSubs to prevent unsubscribe on this.destroyView()
+    agDf.onCurrentRowChanged.subscribe(() => {
       this.antigenPopup.hidden = true;
 
       const antigenName: string = agCol.get(agDf.currentRow.idx);
       // window.setTimeout is used to adapt call async loadData() from handler (not async)
       this.onAntigenChanged(antigenName);
-    }));
+    });
 
     this.antigenInput.root.addEventListener('input', (event: Event) => {
       /* Here we should filter dataframe with antigens */

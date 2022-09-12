@@ -109,30 +109,53 @@ export enum DataLoaderType {
   Test = 'Test',
 }
 
-export class FilesForDataLoader {
-  static _files = class {
-    static filterProps = 'properties.json';
-    static mutcodes = 'mutcodes.json';
-    static predictedPtmMap = 'ptm_map.json';
-    static predictedCdrMap = 'cdr_map.json';
-    static observedPtmMap = 'obs_ptm_map.json';
-    static observedCdrMap = 'obs_cdr_map.json';
-    static predictedPtm = 'ptm_in_cdr.d42';
-  };
-  private _cache: MlbDatabase;
+type FileNameFunc = (name: string) => string;
 
-  constructor(cache: MlbDatabase) {
+export class FilesForDataLoader {
+  static Files = class {
+    static filterProps = 'filterProps';
+    static mutcodes = 'mutcodes';
+    static predictedPtmMap = 'predictedPtmMap';
+    static predictedCdrMap = 'predictedCdrMap';
+    static observedPtmMap = 'observedPtmMap';
+    static observedCdrMap = 'observedCdrMap';
+  };
+
+  static _files = {
+    [FilesForDataLoader.Files.filterProps]: 'properties.json',
+    [FilesForDataLoader.Files.mutcodes]: 'mutcodes.json',
+    [FilesForDataLoader.Files.predictedPtmMap]: 'ptm_map.json',
+    [FilesForDataLoader.Files.predictedCdrMap]: 'cdr_map.json',
+    [FilesForDataLoader.Files.observedPtmMap]: 'obs_ptm_map.json',
+    [FilesForDataLoader.Files.observedCdrMap]: 'obs_cdr_map.json',
+    // [FilesForDataLoader.Files.predictedPtm] : 'ptm_in_cdr.d42',
+  };
+  private readonly _cache: MlbDatabase;
+  private readonly _fnFunc: FileNameFunc;
+
+  /** Default function to get file name of the file */
+  static fnFuncDefault(file: string) {
+    return FilesForDataLoader._files[file];
+  }
+
+  constructor(cache: MlbDatabase, fnFunc: FileNameFunc = FilesForDataLoader.fnFuncDefault) {
     this._cache = cache;
+    this._fnFunc = fnFunc;
+  }
+
+  async readAsText(file: string) {
+    const txt: string = await grok.dapi.files
+      .readAsText(`System:AppData/${packageName}/${this._fnFunc(file)}`);
+    return txt;
   }
 
   async getFilterProperties(): Promise<FilterPropertiesType> {
     return this._cache.getObject<FilterPropertiesType>(
-      FilesForDataLoader._files.filterProps,
+      FilesForDataLoader.Files.filterProps,
       () => catchToLog<Promise<FilterPropertiesType>>(
-        'Filter Properties data',
+        'MLB: FilesForDataLoader.getFilterProperties()',
         async () => {
-          const txt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${packageName}/${FilesForDataLoader._files.filterProps}`);
+          const txt: string = await this.readAsText(FilesForDataLoader.Files.filterProps);
           return JSON.parse(txt);
         }));
     // .then((value: FilterPropertiesType) => {
@@ -143,12 +166,11 @@ export class FilesForDataLoader {
 
   async getMutcodes(): Promise<MutcodesDataType> {
     return this._cache.getObject<MutcodesDataType>(
-      FilesForDataLoader._files.mutcodes,
+      FilesForDataLoader.Files.mutcodes,
       () => catchToLog<Promise<MutcodesDataType>>(
-        'Mutcodes data',
+        'MLB: FilesForDataLoader.getMutcodes()',
         async () => {
-          const txt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${packageName}/${FilesForDataLoader._files.mutcodes}`);
+          const txt: string = await this.readAsText(FilesForDataLoader.Files.mutcodes);
           return JSON.parse(txt);
         }));
     // .then((value: MutcodesDataType) => {
@@ -159,12 +181,11 @@ export class FilesForDataLoader {
 
   async getPredictedPtmMap(): Promise<PtmMapType> {
     return this._cache.getObject<PtmMapType>(
-      FilesForDataLoader._files.predictedPtmMap,
+      FilesForDataLoader.Files.predictedPtmMap,
       () => catchToLog<Promise<PtmMapType>>(
-        'Predicted PTM map',
+        'MLB: FilesForDataLoader.getPredictedPtmMap()',
         async () => {
-          const jsonTxt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${packageName}/${FilesForDataLoader._files.predictedPtmMap}`);
+          const jsonTxt: string = await this.readAsText(FilesForDataLoader.Files.predictedPtmMap);
           return JSON.parse(jsonTxt);
         }));
     // .then((value: PtmMapType) => {
@@ -175,12 +196,11 @@ export class FilesForDataLoader {
 
   async getPredictedCdrMap(): Promise<CdrMapType> {
     return this._cache.getObject<CdrMapType>(
-      FilesForDataLoader._files.predictedCdrMap,
+      FilesForDataLoader.Files.predictedCdrMap,
       () => catchToLog<Promise<CdrMapType>>(
-        'Predicted CDR map',
+        'MLB: FilesForDataLoader.getPredictedCdrMap()',
         async () => {
-          const jsonTxt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${packageName}/${FilesForDataLoader._files.predictedCdrMap}`);
+          const jsonTxt: string = await this.readAsText(FilesForDataLoader.Files.predictedCdrMap);
           return JSON.parse(jsonTxt);
         }));
     // .then((value: CdrMapType) => {
@@ -191,12 +211,11 @@ export class FilesForDataLoader {
 
   async getObservedPtmMap(): Promise<PtmMapType> {
     return this._cache.getObject<PtmMapType>(
-      FilesForDataLoader._files.observedPtmMap,
+      FilesForDataLoader.Files.observedPtmMap,
       () => catchToLog<Promise<PtmMapType>>(
-        'Observed PTM map',
+        'MLB: FilesForDataLoader.getObservedPtmMap()',
         async () => {
-          const jsonTxt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${packageName}/${FilesForDataLoader._files.observedPtmMap}`);
+          const jsonTxt: string = await this.readAsText(FilesForDataLoader.Files.observedPtmMap);
           return JSON.parse(jsonTxt);
         }));
     // .then((value: PtmMapType) => {
@@ -207,12 +226,11 @@ export class FilesForDataLoader {
 
   async getObservedCdrMap(): Promise<CdrMapType> {
     return this._cache.getObject<CdrMapType>(
-      FilesForDataLoader._files.observedCdrMap,
+      FilesForDataLoader.Files.observedCdrMap,
       () => catchToLog<Promise<CdrMapType>>(
-        'Observed CDR map',
+        'MLB: FilesForDataLoader.getObservedCdrMap()',
         async () => {
-          const jsonTxt: string = await grok.dapi.files
-            .readAsText(`System:AppData/${packageName}/${FilesForDataLoader._files.observedCdrMap}`);
+          const jsonTxt: string = await this.readAsText(FilesForDataLoader.Files.observedCdrMap);
           return JSON.parse(jsonTxt);
         }));
     // .then((value: CdrMapType) => {
@@ -239,7 +257,7 @@ export class QueriesForDataLoader {
     //load numbering schemes
     return this._cache.getData<IScheme, string[]>('scheme',
       () => catchToLog<Promise<DG.DataFrame>>(
-        'MLB database error \'listSchemes\': ',
+        'MLB: QueriesForDataLoader.listSchemes()',
         async () => {
           const funcCall: DG.FuncCall = await this._mlbQueries['listSchemes'].prepare().call();
           const df: DG.DataFrame = funcCall.getOutputParamValue();
@@ -261,7 +279,7 @@ export class QueriesForDataLoader {
     //load cdr definition list
     return this._cache.getData<ICdr, string[]>('cdr',
       () => catchToLog<Promise<DG.DataFrame>>(
-        'MLB database error \'listCdrs\': ',
+        'MLB: QueriesForDataLoader.listCdrs()',
         async () => {
           const funcCall: DG.FuncCall = await this._mlbQueries['listCdrs'].prepare().call();
           const df: DG.DataFrame = funcCall.getOutputParamValue();
@@ -281,7 +299,7 @@ export class QueriesForDataLoader {
   async listAntigens(): Promise<DG.DataFrame> {
     return this._cache.getData<IAntigen, DG.DataFrame>('antigen',
       () => catchToLog<Promise<DG.DataFrame>>(
-        'MLB database error \'listAntigens\': ',
+        'MLB: QueriesForDataLoader.listAntigens()',
         async () => {
           const funcCall: DG.FuncCall = await this._mlbQueries['listAntigens'].prepare().call();
           const df: DG.DataFrame = funcCall.getOutputParamValue();
@@ -303,7 +321,7 @@ export class QueriesForDataLoader {
   async getVids(): Promise<string[]> {
     return this._cache.getData<IVid, string[]>('vid',
       () => catchToLog<Promise<DG.DataFrame>>(
-        'MLB database error \'getVids\': ',
+        'MLB: QueriesForDataLoader.getVids()',
         async () => {
           const funcCall: DG.FuncCall = await this._mlbQueries['getVids'].prepare().call();
           const df: DG.DataFrame = funcCall.getOutputParamValue();
@@ -324,7 +342,7 @@ export class QueriesForDataLoader {
   async getObservedPtmVids(): Promise<string[]> {
     return this._cache.getData<IVidObsPtm, string[]>('vidObsPtm',
       () => catchToLog<Promise<DG.DataFrame>>(
-        'MLB database error \'getObservedPtmVids\': ',
+        'MLB: QueriesForDataLoader.getObservedPtmVids()',
         async () => {
           const funcCall: DG.FuncCall = await this._mlbQueries['getObservedPtmVids'].prepare().call();
           const df: DG.DataFrame = funcCall.getOutputParamValue();
@@ -346,27 +364,20 @@ export class QueriesForDataLoader {
 
   async getLayoutBySchemeCdr(scheme: string, cdr: string): Promise<VdRegion[]> {
     return catchToLog<Promise<VdRegion[]>>(
-      'MLB: query getLayoutBySchemeCdr ',
+      'MLB: QueriesForDataLoader.getLayoutBySchemeCdr()',
       async () => {
         // const df: DG.DataFrame = await grok.functions
         //   .call(`${this._pName}:getLayoutBySchemeCdr`, {scheme: scheme, cdr: cdr}) as DG.DataFrame;
         const funcCall: DG.FuncCall = await this._mlbQueries['getLayoutBySchemeCdr']
           .prepare({scheme: scheme, cdr: cdr}).call();
         const df: DG.DataFrame = funcCall.getOutputParamValue();
-        const regionListRes: VdRegion[] = [];
-        for (const dfRow of df.rows) {
-          const region = new VdRegion(
-            dfRow.get('type'), dfRow.get('name'), dfRow.get('chain'), dfRow.get('order'),
-            dfRow.get('position_start_name'), dfRow.get('position_end_name'));
-          regionListRes.push(region);
-        }
-        return regionListRes;
+        return DataLoader.DataFrameToVdRegionList(df);
       });
   }
 
   async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {
     return catchToLog<Promise<DG.DataFrame>>(
-      'MLB: query getMlbByAntigen',
+      'MLB: QueriesForDataLoader.getMlbByAntigen()',
       async () => {
         // const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getMlbByAntigen`, {antigen: antigen});
         const funcCall: DG.FuncCall = await this._mlbQueries['getMlbByAntigen']
@@ -379,7 +390,7 @@ export class QueriesForDataLoader {
   async getTreeByAntigen(antigen: string): Promise<DG.DataFrame> {
     // const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getTreeByAntigen`, {antigen: antigen});
     return catchToLog<Promise<DG.DataFrame>>(
-      'MLB: query getTreeByAntigen',
+      'MLB: QueriesForDataLoader.getTreeByAntigen()',
       async () => {
         const funcCall: DG.FuncCall = await this._mlbQueries['getTreeByAntigen']
           .prepare({antigen: antigen}).call();
@@ -390,7 +401,7 @@ export class QueriesForDataLoader {
 
   async getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame> {
     return catchToLog<Promise<DG.DataFrame>>(
-      'MLB: query getAnarci',
+      'MLB: QueriesForDataLoader.getAnarci()',
       async () => {
         // There is a problem with using underscore symbols in query names.
         const scheme2: string = scheme.charAt(0).toUpperCase() + scheme.slice(1);
@@ -407,7 +418,7 @@ export class QueriesForDataLoader {
   async loadMlbDf(): Promise<DG.DataFrame> {
     // const df = await grok.functions.call(`${this._pName}:GetMolecularLiabilityBrowser`);
     return catchToLog<Promise<DG.DataFrame>>(
-      'MLB: query getMolecularLiabilityBrowser',
+      'MLB: QueriesForDataLoader.loadMlbDf() getMolecularLiabilityBrowser',
       async () => {
         const funcCall: DG.FuncCall = await this._mlbQueries['getMolecularLiabilityBrowser'].prepare();
         const df: DG.DataFrame = funcCall.getOutputParamValue();
@@ -420,7 +431,7 @@ export class QueriesForDataLoader {
   async getPredictedPtmByAntigen(antigen: string): Promise<DG.DataFrame> {
     // const df = await grok.functions.call(`${this._pName}:getPredictedPtmByAntigen`, {antigen: antigen});
     return catchToLog<Promise<DG.DataFrame>>(
-      'MLB: query getPredictedPtmByAntigen',
+      'MLB: QueriesForDataLoader.getPredictedPtmByAntigen()',
       async () => {
         const funcCall: DG.FuncCall = await this._mlbQueries['getPredictedPtmByAntigen']
           .prepare({antigen: antigen}).call();
@@ -432,7 +443,7 @@ export class QueriesForDataLoader {
   async getObservedPtmByAntigen(antigen: string): Promise<DG.DataFrame> {
     // const df = await grok.functions.call(`${this._pName}:getObservedPtmByAntigen`, {antigen: antigen});
     return catchToLog<Promise<DG.DataFrame>>(
-      'MLB: query getObservedPtmByAntigen',
+      'MLB: QueriesForDataLoader.getObservedPtmByAntigen()',
       async () => {
         const funcCall: DG.FuncCall = await this._mlbQueries['getObservedPtmByAntigen']
           .prepare({antigen: antigen}).call();
@@ -443,7 +454,7 @@ export class QueriesForDataLoader {
 
   async load3D(vid: string): Promise<DG.DataFrame> {
     return catchToLog<Promise<DG.DataFrame>>(
-      'MLB: query get3D', async () => {
+      'MLB: QueriesForDataLoader.get3D()', async () => {
         const funcCall: DG.FuncCall = await this._mlbQueries['get3D'].prepare({vid: vid}).call();
         const df: DG.DataFrame = funcCall.getOutputParamValue();
         return df;
@@ -514,9 +525,7 @@ export abstract class DataLoader {
   //  */
   // abstract loadLChainDf(): Promise<DG.DataFrame>;
 
-  /**
-   * TODO: Some description of data structure purpose
-   */
+  /** deprecated */
   abstract loadMlbDf(): Promise<DG.DataFrame>;
 
   /** deprecated */
@@ -539,4 +548,17 @@ export abstract class DataLoader {
   // abstract loadObsPtm(vid: string): Promise<ObsPtmType>;
 
   abstract load3D(vid: string): Promise<[JsonType, string, NumsType, ObsPtmType]>;
+
+  // -- Routines --
+
+  static DataFrameToVdRegionList(df: DG.DataFrame): VdRegion[] {
+    const regionListRes: VdRegion[] = [];
+    for (const dfRow of df.rows) {
+      const region = new VdRegion(
+        dfRow.get('type'), dfRow.get('name'), dfRow.get('chain'), dfRow.get('order'),
+        dfRow.get('position_start_name').toString(), dfRow.get('position_end_name').toString());
+      regionListRes.push(region);
+    }
+    return regionListRes;
+  }
 }
