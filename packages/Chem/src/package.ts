@@ -375,7 +375,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
 
   let view = grok.shell.addTableView(table);
 
-  if (radarView) {
+  /*if (radarView) {
     let elementsDf: DG.DataFrame = DG.DataFrame.fromColumns(columns);
     table.currentRowIdx = 0;
     view.addViewer(radar(0, elementsDf));
@@ -383,7 +383,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
       view.resetLayout();
       view.addViewer(radar(table.currentRowIdx, elementsDf));
     });
-  }
+  }*/
 
   if (radarGrid) {
     let gc = view.grid.columns.add({gridColumnName: 'radar', cellType: 'radar'});

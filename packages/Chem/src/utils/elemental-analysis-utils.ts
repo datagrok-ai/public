@@ -1,5 +1,4 @@
 import * as DG from 'datagrok-api/dg';
-import { RadarViewer } from '@datagrok/charts/src/radar-viewer';
 import { V2000_ATOM_NAME_LEN, V2000_ATOM_NAME_POS } from '../constants';
 import { convertMolNotation } from '../package';
 
@@ -40,8 +39,8 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
     return [elements, invalid];
   }
 
-export function radar(idx: number, dfRadar: DG.DataFrame) : RadarViewer{
-  let viewer = new RadarViewer(idx);
-  viewer.dataFrame = dfRadar;
+export function radar(idx: number, dfRadar: DG.DataFrame) {
+  let viewer = DG.Viewer.fromType('RadarViewer', dfRadar);
+  //viewer.dataFrame = dfRadar;
   return viewer;
 }
