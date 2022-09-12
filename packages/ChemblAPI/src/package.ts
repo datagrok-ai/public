@@ -103,7 +103,7 @@ export async function getById(id: string): Promise<DG.DataFrame | null> {
   }
 }
 
-//name: ChemblAPI Substructure Search Widget
+//name: Chembl API | Substructure Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
@@ -112,7 +112,7 @@ export function chemblSubstructureSearchPanel(mol: string): DG.Widget {
   return chemblSearchWidget(mol, true);
 }
 
-//name: ChemblAPI Similarity Search Widget
+//name: Chembl API | Similarity Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
