@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import { RadarViewer } from '../../../Charts/src/radar-viewer';
+import { RadarViewer } from '@datagrok/charts/src/radar-viewer';
 import { V2000_ATOM_NAME_LEN, V2000_ATOM_NAME_POS } from '../constants';
 import { convertMolNotation } from '../package';
 
