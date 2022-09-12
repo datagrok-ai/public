@@ -37,7 +37,7 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
-import { getAtomsColumn } from './utils/elemental-analysis-utils';
+import { getAtomsColumn, radar } from './utils/elemental-analysis-utils';
 import { elementsTable } from './constants';
 import { getSimilaritiesMarix } from './utils/similarity-utils';
 
@@ -354,16 +354,40 @@ export function addInchisPanel(col: DG.Column): void {
 //description: function that implements elemental analysis
 //input: dataframe table
 //input: column molCol { semType: Molecule }
-export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column): void {
+//input: bool radarView = false
+//input: bool radarGrid = false
+export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarView: boolean, radarGrid: boolean): void {
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
+  let columns: DG.Column<any>[] = [];
 
   if (invalid.length > 0)
     console.log(`Invalid rows ${invalid.map((i) => i.toString()).join(', ')}`);
 
   for (let elName of elementsTable) {
     const value = elements.get(elName);
-    if (value)
-      table.columns.add(DG.Column.fromInt32Array(elName, value));
+    if (value) {
+      let column = DG.Column.fromInt32Array(elName, value);
+      table.columns.add(column);
+      columns.push(column);
+    }
+  }
+
+  let view = grok.shell.addTableView(table);
+
+  if (radarView) {
+    let elementsDf: DG.DataFrame = DG.DataFrame.fromColumns(columns);
+    table.currentRowIdx = 0;
+    view.addViewer(radar(0, elementsDf));
+    table.onCurrentRowChanged.subscribe((_) => {
+      view.resetLayout();
+      view.addViewer(radar(table.currentRowIdx, elementsDf));
+    });
+  }
+
+  if (radarGrid) {
+    let gc = view.grid.columns.add({gridColumnName: 'radar', cellType: 'radar'});
+    gc.settings = {columnNames: Array.from(elements.keys())};
+    gc.width = 300;
   }
 }
 
