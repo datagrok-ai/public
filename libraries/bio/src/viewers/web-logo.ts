@@ -49,12 +49,10 @@ DG.Rect.prototype.contains = function(x: number, y: number): boolean {
 };
 
 export class PositionMonomerInfo {
-  /** Sequences count with monomer in position
-   */
+  /** Sequences count with monomer in position */
   count: number;
 
-  /** Remember screen coords rect
-   */
+  /** Remember screen coords rect */
   bounds: DG.Rect;
 
   constructor(count: number = 0, bounds: DG.Rect = new DG.Rect(0, 0, 0, 0)) {
@@ -83,11 +81,12 @@ export class PositionInfo {
   }
 }
 
+
 export class WebLogo extends DG.JsViewer {
   public static residuesSet = 'nucleotides';
   private static viewerCount: number = -1;
 
-  private viewerId: number = -1;
+  private readonly viewerId: number = -1;
   private unitsHandler: UnitsHandler | null;
   private initialized: boolean = false;
 
@@ -98,7 +97,7 @@ export class WebLogo extends DG.JsViewer {
   private msgHost?: HTMLElement;
   private canvas?: HTMLCanvasElement;
   private slider?: DG.RangeSlider;
-  private textBaseline: CanvasTextBaseline;
+  private readonly textBaseline: CanvasTextBaseline;
 
   private axisHeight: number = 12;
 
@@ -143,6 +142,7 @@ export class WebLogo extends DG.JsViewer {
     return this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
   }
 
+  /** Calculate new position data basic on {@link positionMarginState} and {@link positionMargin} */
   private get positionWidthWithMargin() {
     if ((this.positionMarginState === 'auto') && (this.unitsHandler?.getAlphabetIsMultichar() === true)) {
       return this._positionWidth + this.positionMargin;
@@ -191,7 +191,7 @@ export class WebLogo extends DG.JsViewer {
       {choices: ['auto', 'enable', 'off']});
     let defaultValueForPositionMargin = 0;
     if (this.positionMarginState === 'auto') {
-        defaultValueForPositionMargin = 4;
+      defaultValueForPositionMargin = 4;
     }
     this.positionMargin = this.int('positionMargin', defaultValueForPositionMargin, {min: 0, max: 16});
     this.positionHeight = this.string('positionHeight', PositionHeight.full, {choices: [PositionHeight.full, PositionHeight.Entropy]});
@@ -214,9 +214,10 @@ export class WebLogo extends DG.JsViewer {
 
     this.host = ui.div([this.msgHost, this.canvas]);
 
-    // this.slider = ui.rangeSlider(0, 20, 2, 5);
-    // this.slider.root.style.width = '100%';
-    // this.slider.root.style.height = '12px';
+    this.slider = ui.rangeSlider(0, 100, 0, 100);
+    this.slider.root.style.width = '100%';
+    this.slider.root.style.height = '12px';
+    this.slider.root.focus();
 
     const getMonomer = (p: DG.Point): [number, string | null, PositionMonomerInfo | null] => {
       const jPos = Math.floor(p.x / this.positionWidthWithMargin);
@@ -233,9 +234,13 @@ export class WebLogo extends DG.JsViewer {
       return [jPos, monomer, position.freq[monomer]];
     };
 
-
     // this.subs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'mouseover').subscribe((e: MouseEvent) => {
     // }));
+    const correctMonomerFilter = (iRow: number, monomer: string, jPos: number) => {
+      const seq = this.seqCol!.get(iRow);
+      const seqM = seq ? this.splitter!(seq)[this.startPosition + jPos] : null;
+      return ((seqM === monomer) || (seqM === '' && monomer === '-')) && this.dataFrame.filter.get(iRow);
+    };
 
     this.viewSubs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'mousemove').subscribe((e: MouseEvent) => {
       if (!this.canvas)
@@ -246,12 +251,9 @@ export class WebLogo extends DG.JsViewer {
       const r: number = window.devicePixelRatio;
       const cursorP: DG.Point = this.canvas.getCursorPosition(args, r);
       const [jPos, monomer] = getMonomer(cursorP);
-
       if (this.dataFrame && this.seqCol && this.splitter && monomer) {
-        const rowCount = wu.count().take(this.dataFrame.rowCount).filter((iRow: number) => {
-          const seq = this.seqCol!.get(iRow);
-          const seqM = seq ? this.splitter!(seq)[this.startPosition + jPos] : null;
-          return ((seqM === monomer) || (seqM === '' && monomer === '-')) && this.dataFrame.filter.get(iRow);
+        const rowCount = wu.count().take(this.dataFrame.rowCount).filter(function(iRow) {
+          return correctMonomerFilter(iRow, monomer, jPos);
         }).reduce<number>((count, iRow) => count + 1, 0);
         ui.tooltip.show(ui.div([ui.div(`${monomer}`), ui.div(`${rowCount} rows`)]), args.x + 16, args.y + 16);
       } else {
@@ -269,10 +271,8 @@ export class WebLogo extends DG.JsViewer {
 
       // prevents deselect all rows if we miss monomer bounds
       if (this.dataFrame && this.seqCol && this.splitter && monomer) {
-        this.dataFrame.selection.init((iRow) => {
-          const seq = this.seqCol!.get(iRow);
-          const seqM = seq ? this.splitter!(seq)[this.startPosition + jPos] : null;
-          return ((seqM === monomer) || (seqM === '' && monomer === '-')) && this.dataFrame.filter.get(iRow);
+        this.dataFrame.selection.init(function(iRow) {
+          return correctMonomerFilter(iRow, monomer, jPos);
         });
       }
     }));
@@ -280,17 +280,14 @@ export class WebLogo extends DG.JsViewer {
     this.viewSubs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
 
     this.root.append(this.host);
-    // this.root.appendChild(this.slider.root);
+    this.root.appendChild(this.slider.root);
 
     this.render(true);
   }
 
-  private rootOnSizeChanged(args: any) {
+  /** Handler of changing size WebLogo */
+  private rootOnSizeChanged(): void {
     this.render(true);
-
-    // console.debug(`WebLogo.onRootSizeChanged() ` +
-    //   `root.width=${this.root.clientWidth}, root.height=${this.root.clientHeight}, ` +
-    //   `canvas.width=${this.canvas.width}, canvas.height=${this.canvas.height} .`);
   }
 
   /** Assigns {@link seqCol} and {@link cp} based on {@link sequenceColumnName} and calls {@link render}().
@@ -299,7 +296,7 @@ export class WebLogo extends DG.JsViewer {
     if (this.dataFrame) {
       this.seqCol = this.sequenceColumnName ? this.dataFrame.col(this.sequenceColumnName) : null;
       if (this.seqCol == null) {
-        this.seqCol = WebLogo.pickUpSeqCol2(this.dataFrame);
+        this.seqCol = WebLogo.pickUpSeqCol(this.dataFrame);
         this.sequenceColumnName = this.seqCol ? this.seqCol.name : null;
       }
       if (this.seqCol) {
@@ -321,6 +318,8 @@ export class WebLogo extends DG.JsViewer {
     this.render();
   }
 
+  /** Updates {@link positionNames} and calculates {@link startPosition} and {@link endPosition}.
+   */
   private updatePositions(): void {
     if (!this.seqCol)
       return;
@@ -350,8 +349,9 @@ export class WebLogo extends DG.JsViewer {
       this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
   }
 
+
+  /** Handler of property change events. */
   public override onPropertyChanged(property: DG.Property): void {
-    // console.debug(`WebLogo.onPropertyChanged( ${property.name} = '' })`);
     super.onPropertyChanged(property);
 
     switch (property.name) {
@@ -409,6 +409,7 @@ export class WebLogo extends DG.JsViewer {
     }
   }
 
+  /** Add filter handlers when table is a attached  */
   public override async onTableAttached() {
     const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
     console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
@@ -428,6 +429,7 @@ export class WebLogo extends DG.JsViewer {
     console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached() end`);
   }
 
+  /** Remove all handlers when table is a detach  */
   public override async detach() {
     const dataFrameTxt = `${this.dataFrame ? 'data' : 'null'}`;
     console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
@@ -435,7 +437,9 @@ export class WebLogo extends DG.JsViewer {
 
     this.viewSubs.forEach((sub) => sub.unsubscribe());
     this.host!.remove();
-    this.canvas = undefined;
+    if (this.canvas != null) {
+      this.canvas = undefined;
+    }
     this.msgHost = undefined;
     this.host = undefined;
 
@@ -443,6 +447,7 @@ export class WebLogo extends DG.JsViewer {
     console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached() end`);
   }
 
+  /** Helper function for rendering */
   protected _nullSequence(fillerResidue = 'X'): string {
     if (this.considerNullSequences)
       return new Array(this.Length).fill(fillerResidue).join('');
@@ -450,6 +455,8 @@ export class WebLogo extends DG.JsViewer {
     return '';
   }
 
+  /** Helper function for remove empty positions */
+  // TODO: use this function in from core
   protected removeWhere(array: Array<any>, predicate: (T: any) => boolean): Array<any> {
     let length = array.length;
     let updateIterator = 0;
@@ -463,7 +470,7 @@ export class WebLogo extends DG.JsViewer {
     return array;
   }
 
-
+  /** Function for removing empty positions */
   protected _removeEmptyPositions() {
     if (this.skipEmptyPositions) {
       this.removeWhere(this.positions, item => item?.freq['-']?.count === item.rowCount);
@@ -474,7 +481,6 @@ export class WebLogo extends DG.JsViewer {
     if (!this.canvas || !this.host || !this.seqCol || !this.dataFrame)
       return;
     this.unitsHandler = new UnitsHandler(this.seqCol);
-
 
     this.calcSize();
 
@@ -529,7 +535,6 @@ export class WebLogo extends DG.JsViewer {
     this._removeEmptyPositions();
 
     const absoluteMaxHeight = this.canvas.height - this.axisHeight * r;
-    // console.debug(`WebLogo<${this.viewerId}>._calculate() maxHeight=${maxHeight}.`);
 
     //#region Calculate screen
     for (let jPos = 0; jPos < this.Length; jPos++) {
@@ -564,9 +569,12 @@ export class WebLogo extends DG.JsViewer {
       }
     }
     //#endregion
+
   }
 
-  // reflect changes made to filter/selection
+  /** Render WebLogo sensitive to changes in params of rendering
+   *@param {boolean} recalc - indicates that need to recalculate data for rendering
+   */
   render(recalc = true) {
     if (this.msgHost) {
       if (this.seqCol && !this.cp) {
@@ -577,7 +585,7 @@ export class WebLogo extends DG.JsViewer {
       }
     }
 
-    if (!this.canvas || !this.seqCol || !this.dataFrame || !this.cp)
+    if (!this.canvas || !this.seqCol || !this.dataFrame || !this.cp || this.startPosition === -1 || this.endPosition === -1 || this.host == null)
       return;
 
     const g = this.canvas.getContext('2d');
@@ -591,11 +599,12 @@ export class WebLogo extends DG.JsViewer {
     g.resetTransform();
     g.fillStyle = 'white';
     g.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    const maxCountOfRowsRendered = this.host.clientWidth / this.positionWidthWithMargin + 2;
+    const startRendering = Math.floor(this.host.scrollLeft / this.positionWidthWithMargin);
+    const checkEndRendering = (jPos: number) => {
+      return jPos < this.Length && jPos < maxCountOfRowsRendered + startRendering;
+    };
     g.textBaseline = this.textBaseline;
-
-    // Prevents division by zero on Length = 0
-    if (this.startPosition === -1 || this.endPosition === -1)
-      return;
 
     //#region Plot positionNames
     const positionFontSize = 10 * r;
@@ -606,7 +615,7 @@ export class WebLogo extends DG.JsViewer {
     const posNameMaxWidth = Math.max(...this.positions.map((pos) => g.measureText(pos.name).width));
     const hScale = posNameMaxWidth < (this._positionWidth - 2) ? 1 : (this._positionWidth - 2) / posNameMaxWidth;
 
-    for (let jPos = 0; jPos < this.Length; jPos++) {
+    for (let jPos = startRendering; checkEndRendering(jPos); jPos++) {
       const pos: PositionInfo = this.positions[jPos];
       g.resetTransform();
       g.setTransform(
@@ -615,17 +624,15 @@ export class WebLogo extends DG.JsViewer {
       g.fillText(pos.name, 0, 0);
     }
     //#endregion Plot positionNames
-
-    for (let jPos = 0; jPos < this.Length; jPos++) {
+    const fontStyle = '16px Roboto, Roboto Local, sans-serif';
+    // Hacks to scale uppercase characters to target rectangle
+    const uppercaseLetterAscent = 0.25;
+    const uppercaseLetterHeight = 12.2;
+    for (let jPos = startRendering; checkEndRendering(jPos); jPos++) {
       for (const [monomer, pmInfo] of Object.entries(this.positions[jPos].freq)) {
         if (monomer !== '-') {
-          const monomerTxt = WebLogo.monomerToText(monomer);
+          const monomerTxt = WebLogo.monomerToShort(monomer, 5);
           const b = pmInfo.bounds;
-
-          const fontStyle = '16px Roboto, Roboto Local, sans-serif';
-          // Hacks to scale uppercase characters to target rectangle
-          const uppercaseLetterAscent = 0.25;
-          const uppercaseLetterHeight = 12.2;
 
           g.resetTransform();
           g.strokeStyle = 'lightgray';
@@ -637,9 +644,6 @@ export class WebLogo extends DG.JsViewer {
           //g.fillRect(b.left, b.top, b.width, b.height);
           const mTm: TextMetrics = g.measureText(monomerTxt);
 
-          // if (mM.actualBoundingBoxAscent != 0)
-          //   console.debug(`m: ${m}, mM.actualBoundingBoxAscent: ${mM.actualBoundingBoxAscent}`);
-
           g.setTransform(
             b.width / mTm.width, 0, 0, b.height / uppercaseLetterHeight,
             b.left, b.top);
@@ -649,6 +653,7 @@ export class WebLogo extends DG.JsViewer {
     }
   }
 
+  /** Calculate canvas size an positionWidth and updates properties */
   private calcSize() {
     if (!this.canvas || !this.host)
       return;
@@ -687,7 +692,6 @@ export class WebLogo extends DG.JsViewer {
       this.root.style.width = this.host.style.width = '100%';
       this.host.style.overflowX = 'auto!important';
       this.host.style.setProperty('overflow', null);
-
       this.host.style.setProperty('text-align', this.horizontalAlignment);
 
       // vertical alignment
@@ -712,24 +716,15 @@ export class WebLogo extends DG.JsViewer {
         this.host.style.setProperty('overflow-y', 'hidden', 'important');
       }
     }
-
-    // console.debug(
-    //   `this.root.style.height = ${this.root.style.height}\n` +
-    //   `this.root.clientHeight = ${this.root.clientHeight}\n` +
-    //   `this.host.style.height = ${this.host.style.height}\n` +
-    //   `this.host.clientHeight = ${this.host.clientHeight}\n` +
-    //   '\n' +
-    //   `this.canvas.height       = ${this.canvas.height}\n` +
-    //   `this.canvas.style.height = ${this.canvas.style.height}`);
   }
 
-  /**
+  /** Selects a suitable palette based on column data
    * @param {DG.Column} seqCol Column to look for a palette
    * @param {number}  minLength minimum length of sequence to detect palette (empty strings are allowed)
    * @return {SeqPalette} Palette corresponding to the alphabet of the sequences in the column
    */
   public static pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPalette {
-    let res: SeqPalette | null = null;
+    let res: SeqPalette | null;
     switch (seqCol.semType) {
     case Aminoacids.SemTypeMultipleAlignment:
       res = AminoacidsPalettes.GrokGroups;
@@ -790,6 +785,12 @@ export class WebLogo extends DG.JsViewer {
     return {freq: freq, sameLength: sameLength};
   }
 
+  /** Calculate similarity in current sequence and alphabet.
+   * @param {MonomerFreqs} freq
+   * @param {Set<string>} alphabet
+   * @param {string} gapSymbol
+   * @return {number} Cosine similarity
+   */
   public static getAlphabetSimilarity(freq: MonomerFreqs, alphabet: Set<string>, gapSymbol: string = '-'): number {
     const keys = new Set<string>([...new Set(Object.keys(freq)), ...alphabet]);
     keys.delete(gapSymbol);
@@ -806,6 +807,7 @@ export class WebLogo extends DG.JsViewer {
     return vectorDotProduct(freqV, alphabetV) / (vectorLength(freqV) * vectorLength(alphabetV));
   }
 
+  // Previous version of pickUpSeqCol
   // /** First try to find column with semType 'alignedSequence'.
   //  * Next look for column with data alphabet corresponding to any of the known palettes.
   //  * @param {DG.DataFrame} dataFrame
@@ -825,7 +827,7 @@ export class WebLogo extends DG.JsViewer {
   //   return res;
   // }
 
-  public static pickUpSeqCol2(df: DG.DataFrame): DG.Column | null {
+  public static pickUpSeqCol(df: DG.DataFrame): DG.Column | null {
     const semTypeColList = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
     let resCol: DG.Column | null = semTypeColList.find((col) => {
       const units = col.getTag(DG.TAGS.UNITS);
@@ -836,14 +838,22 @@ export class WebLogo extends DG.JsViewer {
     return resCol;
   }
 
-  private static monomerRe = /\[(\w+)\]|(\w)|(-)/g;
+  private static monomerRe = /\[(\w+)|(\w)|(-)/g;
+
+  /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
+  private static aaSynonyms: { [name: string]: string } = {
+    '[MeNle]': 'L', // Nle - norleucine
+    '[MeA]': 'A',
+    '[MeG]': 'G',
+    '[MeF]': 'F',
+  };
 
   /** Split sequence for single character monomers, square brackets multichar monomer names or gap symbol.
    * @param {any} seq object with sequence
    * @return {string[]} array of monomers
    */
   public static splitterAsFasta(seq: any): string[] {
-    const res: string[] = wu<RegExpMatchArray>(seq.toString().matchAll(WebLogo.monomerRe))
+    return wu<RegExpMatchArray>(seq.toString().matchAll(WebLogo.monomerRe))
       .map((ma: RegExpMatchArray) => {
         let mRes: string;
         const m: string = ma[0];
@@ -859,11 +869,9 @@ export class WebLogo extends DG.JsViewer {
         }
         return mRes;
       }).toArray();
-
-    return res;
   }
 
-  private static helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
+  private static helmRe = /(PEPTIDE1|DNA1|RNA1)([^}]+)}/g;
   private static helmPp1Re = /\[([^\[\]]+)]/g;
 
   /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
@@ -886,8 +894,7 @@ export class WebLogo extends DG.JsViewer {
     };
 
     const mmList: string[] = inSeq ? inSeq.split('.') : [];
-    const mmListRes: string[] = mmList.map(mmPostProcess);
-    return mmListRes;
+    return mmList.map(mmPostProcess);
   }
 
   /** Gets method to split sequence by separator
@@ -920,6 +927,10 @@ export class WebLogo extends DG.JsViewer {
     // TODO: Splitter for HELM
   }
 
+  /** Generate splitter function for sequence column
+   * @param {DG.Column} col
+   * @return {SplitterFunc} Splitter function
+   */
   public static getSplitterForColumn(col: DG.Column): SplitterFunc {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
       throw new Error(`Get splitter for semType "${DG.SEMTYPE.MACROMOLECULE}" only.`);
@@ -929,39 +940,7 @@ export class WebLogo extends DG.JsViewer {
     return WebLogo.getSplitter(units, separator);
   }
 
-  /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
-  private static aaSynonyms: { [name: string]: string } = {
-    '[MeNle]': 'L', // Nle - norleucine
-    '[MeA]': 'A',
-    '[MeG]': 'G',
-    '[MeF]': 'F',
-  };
-
-  private static longMonomerPartRe = /(\w+)/g;
-
-  /* Shortens monomer representation text for monomers with long names.
-  **/
-  public static monomerToText(src: any): string {
-    const srcTxt: string = src.toString();
-    if (srcTxt.length <= 5) {
-      return srcTxt;
-    } else {
-      const parts: string[] = wu<RegExpMatchArray>(src.toString().matchAll(WebLogo.longMonomerPartRe))
-        .map((ma: RegExpMatchArray) => {
-          const mRes: string = ma[0];
-          return mRes;
-        }).toArray();
-
-      if (parts.length == 0) {
-        return ' ';
-      } else {
-        const part0: string = parts[0];
-        const resTxt: string = part0.length < 6 ? `${part0}…` : `${part0.substring(0, 5)}…`;
-        return resTxt;
-      }
-    }
-  }
-
+  /** Convert long monomer names to short ones */
   public static monomerToShort(amino: string, maxLengthOfMonomer: number): string {
     return amino.length <= maxLengthOfMonomer ? amino : amino.substring(0, maxLengthOfMonomer) + '…';
   }
