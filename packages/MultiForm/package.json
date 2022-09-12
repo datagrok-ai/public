@@ -13,8 +13,8 @@
     "directory": "packages/MultiForm"
   },
   "sources": [
-    "lib/multi_form.css",
-    "lib/multi_form.js"
+    "src/multi_form.css",
+    "src/multi_form.js"
   ],
   "canEdit": [ "Developers" ],
   "canView": [ "All users" ],
