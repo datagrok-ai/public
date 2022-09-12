@@ -1,45 +1,46 @@
 import * as grok from 'datagrok-api/grok';
-import {chem} from 'datagrok-api/grok';
+import { chem } from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
+import { getMolColumnPropertyPanel}  from './panels/chem-column-property-panel';
 import * as chemSearches from './chem-searches';
-import {SubstructureFilter} from './widgets/chem-substructure-filter';
-import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
-import {drugLikenessWidget} from './widgets/drug-likeness';
-import {molfileWidget} from './widgets/molfile';
-import {propertiesWidget} from './widgets/properties';
-import {structuralAlertsWidget} from './widgets/structural-alerts';
-import {structure2dWidget} from './widgets/structure2d';
-import {structure3dWidget} from './widgets/structure3d';
-import {toxicityWidget} from './widgets/toxicity';
-import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
-import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
-import {addInchiKeys, addInchis} from './panels/inchi';
-import {addMcs} from './panels/find-mcs';
+import { SubstructureFilter } from './widgets/chem-substructure-filter';
+import { GridCellRendererProxy, RDKitCellRenderer } from './rendering/rdkit-cell-renderer';
+import { drugLikenessWidget } from './widgets/drug-likeness';
+import { molfileWidget } from './widgets/molfile';
+import { propertiesWidget } from './widgets/properties';
+import { structuralAlertsWidget } from './widgets/structural-alerts';
+import { structure2dWidget } from './widgets/structure2d';
+import { structure3dWidget } from './widgets/structure3d';
+import { toxicityWidget } from './widgets/toxicity';
+import { chemSpace, getEmbeddingColsNames } from './analysis/chem-space';
+import { getDescriptorsApp, getDescriptorsSingle } from './descriptors/descriptors-calculation';
+import { addInchiKeys, addInchis } from './panels/inchi';
+import { addMcs } from './panels/find-mcs';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {_rdKitModule} from './utils/chem-common-rdkit';
-import {rGroupAnalysis} from './analysis/r-group-analysis';
-import {identifiersWidget} from './widgets/identifiers';
+import {_rdKitModule } from './utils/chem-common-rdkit';
+import {rGroupAnalysis } from './analysis/r-group-analysis';
+import {identifiersWidget } from './widgets/identifiers';
 import {_convertMolNotation, isMolBlock, MolNotation} from './utils/convert-notation-utils';
 import '../css/chem.css';
-import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
-import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
-import {saveAsSdfDialog} from './utils/sdf-utils';
-import {Fingerprint} from './utils/chem-common';
-import {assure} from '@datagrok-libraries/utils/src/test';
-import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
-import {_importSdf} from './open-chem/sdf-importer';
-import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import { ChemSimilarityViewer } from './analysis/chem-similarity-viewer';
+import { ChemDiversityViewer } from './analysis/chem-diversity-viewer';
+import { saveAsSdfDialog } from './utils/sdf-utils';
+import { Fingerprint } from './utils/chem-common';
+import { assure } from '@datagrok-libraries/utils/src/test';
+import { OpenChemLibSketcher } from './open-chem/ocl-sketcher';
+import { _importSdf } from './open-chem/sdf-importer';
+import { OCLCellRenderer } from './open-chem/ocl-cell-renderer';
+import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import Sketcher = chem.Sketcher;
-import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {checkForStructuralAlerts} from './panels/structural-alerts';
-import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
+import { getActivityCliffs }  from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import { removeEmptyStringRows } from '@datagrok-libraries/utils/src/dataframe-utils';
+import { checkForStructuralAlerts } from './panels/structural-alerts';
+import { createPropPanelElement, createTooltipElement } from './analysis/activity-cliffs';
 import { getAtomsColumn, radar } from './utils/elemental-analysis-utils';
 import { elementsTable } from './constants';
 import { getSimilaritiesMarix } from './utils/similarity-utils';
+import { molToMolblock } from './utils/chem-utils'
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -613,14 +614,12 @@ export function useAsSubstructureFilter(mol: string): void {
   if (molCol == null)
     throw 'Molecule column not found.';
 
-  /*
   tv.getFiltersGroup({createDefaultFilters: false}).add({
-    type: FILTER_TYPE.SUBSTRUCTURE,
+    type: DG.FILTER_TYPE.SUBSTRUCTURE,
     column: molCol.name,
     columnName: molCol.name,
     molBlock: molToMolblock(mol, getRdKitModule())
   });
-   */
 }
 
 //name: detectSmiles
