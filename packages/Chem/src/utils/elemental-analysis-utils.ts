@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import { RadarViewer } from '../../../Charts/src/radar-viewer';
 import { V2000_ATOM_NAME_LEN, V2000_ATOM_NAME_POS } from '../constants';
 import { convertMolNotation } from '../package';
 
@@ -6,13 +7,10 @@ import { convertMolNotation } from '../package';
 export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, number[]] {
     let elements: Map<string, Int32Array> = new Map();
     const invalid: number[] = new Array<number>();
-    let smiles: boolean = false;
-    if (molCol.getTag(DG.TAGS.UNITS) === 'smiles') {
-      smiles = true;
-    }
+    let smiles = molCol.getTag(DG.TAGS.UNITS) === 'smiles';
     for (let rowI = 0; rowI < molCol.length; rowI++) {
       let el: string = molCol.get(rowI);
-      if (smiles === true) {
+      if (smiles) {
         try {
           el = convertMolNotation(el, 'smiles', 'molblock');
         } 
@@ -24,6 +22,7 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
       curPos = el.indexOf('\n', curPos) + 1;
       curPos = el.indexOf('\n', curPos) + 1;
       curPos = el.indexOf('\n', curPos) + 1;
+
       const atomCounts = parseInt(el.substring(curPos, curPos + 3));
   
       for (let atomRowI = 0; atomRowI < atomCounts; atomRowI++) {
@@ -40,3 +39,9 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
     }
     return [elements, invalid];
   }
+
+export function radar(idx: number, dfRadar: DG.DataFrame) : RadarViewer{
+  let viewer = new RadarViewer(idx);
+  viewer.dataFrame = dfRadar;
+  return viewer;
+}
