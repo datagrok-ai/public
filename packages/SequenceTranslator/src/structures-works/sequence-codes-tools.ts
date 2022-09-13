@@ -170,8 +170,8 @@ export function isValidSequence(sequence: string, format: string | null): {
   //     })
   //     .show();
   // } else if (possibleTechnologies.length == 0)
-  if (possibleTechnologies.length == 0)
-    return {indexOfFirstNotValidChar: 0, synthesizer: [possibleSynthesizers[3]], technology: null};
+  // if (possibleTechnologies.length == 0)
+  //   return {indexOfFirstNotValidChar: 0, synthesizer: [possibleSynthesizers[3]], technology: null};
 
   outputIndex = 0;
 
