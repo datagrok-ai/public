@@ -52,7 +52,9 @@ export interface IObject extends ICached {
 }
 
 export class MlbDatabase extends Dexie {
-  private serverListVersionDf!: DG.DataFrame;
+  private readonly serverListVersionDf!: DG.DataFrame;
+
+  get enabled(): boolean { return !!this.serverListVersionDf;}
 
   list_version!: Dexie.Table<IListVersion, number>;
 
@@ -66,30 +68,31 @@ export class MlbDatabase extends Dexie {
 
   constructor(serverListVersionDf: DG.DataFrame) {
     super('MlbDatabase');
-    this.version(1).stores({
-      list_version: 'list_id, name, version',
-      scheme: 'scheme_id, scheme',
-      cdr: 'cdr_id, cdr',
-      antigen: 'id, antigen, antigen_ncbi_id, antigen_gene_symbol',
-      vid: 'v_id',
-      vidObsPtm: 'v_id',
-
-      object: '++id, key, value',
-    });
-
     this.serverListVersionDf = serverListVersionDf;
+    if (this.enabled) {
+      this.version(1).stores({
+        list_version: 'list_id, name, version',
+        scheme: 'scheme_id, scheme',
+        cdr: 'cdr_id, cdr',
+        antigen: 'id, antigen, antigen_ncbi_id, antigen_gene_symbol',
+        vid: 'v_id',
+        vidObsPtm: 'v_id',
+
+        object: '++id, key, value',
+      });
+    }
   }
 
   async getObject<Type>(key: string, getServerObject: () => Promise<Type>): Promise<Type> {
-    const dbVersion: IDbVersion = this.getServerVersion(key);
+    const dbVersion: IDbVersion = this.enabled ? this.getServerVersion(key) : null;
 
-    // Read version of cached list
-    const cacheVersion = (await this.list_version.where({'name': key}).first())?.version;
+    // read version of cached list if cache is enabled
+    const cacheVersion = this.enabled ? (await this.list_version.where({'name': key}).first())?.version : null;
 
-    if (dbVersion == null || cacheVersion != dbVersion.version) {
+    if (!this.enabled || cacheVersion != dbVersion.version) {
       const serverObj: Type = await getServerObject();
 
-      if (dbVersion != null) {
+      if (this.enabled) {
         await this.object.put({key: key, value: serverObj});
         await this.list_version.put(dbVersion, dbVersion.list_id);
       }
@@ -117,20 +120,17 @@ export class MlbDatabase extends Dexie {
     fromDf: (df: DG.DataFrame) => TData
   ): Promise<TData> {
     // const fields: string[] = keys<TCached>();
-    const dbVersion: IDbVersion = this.getServerVersion(listName);
+    const dbVersion: IDbVersion = this.enabled ? this.getServerVersion(listName) : null;
 
-    // Read version of cached list
-    const cacheVersion = await (async () => {
-      const row = await this.list_version.where({'name': listName}).first();
-      return row ? row.version : undefined;
-    })();
+    // read version of cached list
+    const cacheVersion = this.enabled ? (await this.list_version.where({'name': listName}).first())?.version : null;
 
-    if (dbVersion == null || cacheVersion !== dbVersion.version) {
-      this[listName].clear();
+    if (!this.enabled || cacheVersion !== dbVersion.version) {
       // Fill cache from database
       const dbDf: DG.DataFrame = await loadDf();
 
-      if (dbVersion != null) {
+      if (this.enabled) {
+        this[listName].clear();
         this[listName].bulkAdd([...Array(dbDf.rowCount).keys()]
           .map((rowI) => dbDf.row(rowI))
           .map(rowToCache));
@@ -146,15 +146,10 @@ export class MlbDatabase extends Dexie {
   }
 
   getServerVersion(name: string): IDbVersion {
-    if (this.serverListVersionDf == null) {
-      return null;
-    } else {
-
-      const df: DG.DataFrame = this.serverListVersionDf.rows.match({name: name}).toDataFrame();
-      if (df.rowCount == 0)
-        throw new Error(`Name '${name}' not found in server side versions.`);
-      return Object.assign({},
-        ...(['list_id', 'name', 'version'].map((fn) => ({[fn]: df.get(fn, 0)}))));
-    }
+    const df: DG.DataFrame = this.serverListVersionDf.rows.match({name: name}).toDataFrame();
+    if (df.rowCount == 0)
+      throw new Error(`Name '${name}' not found in server side versions.`);
+    return Object.assign({},
+      ...(['list_id', 'name', 'version'].map((fn) => ({[fn]: df.get(fn, 0)}))));
   }
 }
