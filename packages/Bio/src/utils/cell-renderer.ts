@@ -223,11 +223,11 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
     g.textAlign = 'center';
 
     const palette = getPaletteByType(gridCell.cell.column.getTag(C.TAGS.ALPHABET));
-    const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
+    const s: string = gridCell.cell.value || '-';
     const color = palette.get(s);
 
     g.fillStyle = color;
-    g.fillText(s, x + (w / 2), y - (h / 2));
+    g.fillText(s, x + (w / 2), y - (h / 2), w);
   }
 }
 
