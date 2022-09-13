@@ -43,10 +43,6 @@
     "@types/node-fetch": "^2.6.2",
     "node-fetch": "^2.6.7"
   },
-  "sources": [
-    "common/ngl_viewer/ngl.js",
-    "helm/JSDraw/Pistoia.HELM.js"
-  ],
   "scripts": {
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
