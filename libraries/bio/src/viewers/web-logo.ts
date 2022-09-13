@@ -211,17 +211,22 @@ export class WebLogo extends DG.JsViewer {
 
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
+    this.canvas.style.setProperty('overflow', 'hidden', 'important');
 
-    this.slider = ui.rangeSlider(0, 100, 1, 100);
+    this.slider = ui.rangeSlider(0, 100, 0, 10);
     this.slider.root.style.position = 'absolute';
     this.slider.root.style.zIndex = '999';
-    this.slider.root.style.margin = '400px 0 0 0';
+    const parent = this;
+    this.slider.onValuesChanged.subscribe(() => {
+      parent.render(true);
+    });
 
     this.host = ui.div([this.msgHost, this.canvas]);
 
     this.host.style.justifyContent = 'center';
     this.host.style.alignItems = 'center';
     this.host.style.position = 'relative';
+    this.host.style.setProperty('overflow', 'hidden', 'important');
 
     const getMonomer = (p: DG.Point): [number, string | null, PositionMonomerInfo | null] => {
       const jPos = Math.floor(p.x / this.positionWidthWithMargin);
@@ -284,13 +289,16 @@ export class WebLogo extends DG.JsViewer {
     this.viewSubs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
 
     this.root.append(this.host);
+    this.root.append(this.slider.root);
 
     this.render(true);
+    this.setSlider();
   }
 
   /** Handler of changing size WebLogo */
   private rootOnSizeChanged(): void {
     this.render(true);
+    this.setSlider();
   }
 
   /** Assigns {@link seqCol} and {@link cp} based on {@link sequenceColumnName} and calls {@link render}().
@@ -350,6 +358,17 @@ export class WebLogo extends DG.JsViewer {
     this.endPosition = (this.endPositionName && this.positionNames &&
       this.positionNames.includes(this.endPositionName)) ?
       this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
+  }
+
+  /** Sets {@link slider}, needed to set slider options and to update slider position.
+   */
+  private setSlider(): void {
+    if ((this.slider != null) && (this.canvas != null)) {
+      let diffEndScrollAndSliderMin = Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length;
+      diffEndScrollAndSliderMin = diffEndScrollAndSliderMin > 0 ? diffEndScrollAndSliderMin : 0;
+      this.slider.setValues(0, this.Length,
+        Math.floor(this.slider.min - diffEndScrollAndSliderMin), Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin));
+    }
   }
 
 
@@ -604,12 +623,13 @@ export class WebLogo extends DG.JsViewer {
     g.resetTransform();
     g.fillStyle = 'white';
     g.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    const maxCountOfRowsRendered = this.host.clientWidth / this.positionWidthWithMargin + 2;
-    const startRendering = Math.floor(this.host.scrollLeft / this.positionWidthWithMargin);
-    const checkEndRendering = (jPos: number) => {
-      return jPos < this.Length;
-    };
     g.textBaseline = this.textBaseline;
+
+    const maxCountOfRowsRendered = this.host.clientWidth / this.positionWidthWithMargin + 1;
+    const startRendering = Math.floor(this.slider.min);
+    const checkEndRendering = (jPos: number) => {
+      return jPos < this.Length && jPos < maxCountOfRowsRendered + startRendering;
+    };
 
     //#region Plot positionNames
     const positionFontSize = 10 * r;
@@ -625,7 +645,7 @@ export class WebLogo extends DG.JsViewer {
       g.resetTransform();
       g.setTransform(
         hScale, 0, 0, 1,
-        jPos * this.positionWidthWithMargin + this._positionWidth / 2, 0);
+        jPos * this.positionWidthWithMargin + this._positionWidth / 2 - this.positionWidthWithMargin * startRendering, 0);
       g.fillText(pos.name, 0, 0);
     }
     //#endregion Plot positionNames
@@ -638,11 +658,12 @@ export class WebLogo extends DG.JsViewer {
         if (monomer !== '-') {
           const monomerTxt = WebLogo.monomerToShort(monomer, 5);
           const b = pmInfo.bounds;
+          const left = b.left - this.positionWidthWithMargin * startRendering;
 
           g.resetTransform();
           g.strokeStyle = 'lightgray';
           g.lineWidth = 1;
-          g.rect(b.left, b.top, b.width, b.height);
+          g.rect(left, b.top, b.width, b.height);
           g.fillStyle = this.cp.get(monomer) ?? this.cp.get('other');
           g.textAlign = 'left';
           g.font = fontStyle;
@@ -651,7 +672,7 @@ export class WebLogo extends DG.JsViewer {
 
           g.setTransform(
             b.width / mTm.width, 0, 0, b.height / uppercaseLetterHeight,
-            b.left, b.top);
+            left, b.top);
           g.fillText(monomerTxt, 0, -uppercaseLetterAscent);
         }
       }
@@ -677,8 +698,8 @@ export class WebLogo extends DG.JsViewer {
       this._positionWidth = this.positionWidth * scale;
     }
 
-    this.canvas.width = width * r;
-    this.canvas.style.width = `${width}px`;
+    this.canvas.width = this.root.clientWidth * r;
+    this.canvas.style.width = `${this.root.clientWidth}px`;
 
     // const canvasHeight: number = width > this.root.clientWidth ? height - 8 : height;
     this.host.style.setProperty('height', `${height}px`);
@@ -691,12 +712,10 @@ export class WebLogo extends DG.JsViewer {
       // full width for canvas host and root
       this.root.style.width = this.host.style.width = `${width}px`;
       this.root.style.height = `${height}px`;
-      this.host.style.setProperty('overflow', 'hidden', 'important');
     } else {
       // allow scroll canvas in root
       this.root.style.width = this.host.style.width = '100%';
       this.host.style.overflowX = 'auto!important';
-      this.host.style.setProperty('overflow', null);
       this.host.style.setProperty('text-align', this.horizontalAlignment);
 
       // vertical alignment
@@ -713,6 +732,8 @@ export class WebLogo extends DG.JsViewer {
         break;
       }
       this.host.style.setProperty('margin-top', `${hostTopMargin}px`, 'important');
+      if (this.slider != null)
+        this.slider.root.style.setProperty('margin-top', `${hostTopMargin + canvasHeight}px`, 'important');
 
       if (this.root.clientHeight < height) {
         this.host.style.setProperty('height', `${this.root.clientHeight}px`);
