@@ -81,7 +81,7 @@ export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAA
   else if (pVal < 0.1)
     coef = variant && twoColorMode ? '#FBCEB1' : '#98FF98';
   else
-    coef = DG.Color.toHtml(DG.Color.lightLightGray);
+    coef = DG.Color.toHtml(DG.Color.lightGray);
 
 
   const chooseMin = (): number => twoColorMode ? 0 : mdCol.min;
