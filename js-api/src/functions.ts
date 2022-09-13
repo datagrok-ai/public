@@ -112,7 +112,7 @@ export class Functions {
     return api.grok_CallFunc(name, parameters, showProgress, toDart(progress));
   }
 
-  eval(name: string, context?: Context): Promise<object> {
+  eval(name: string, context?: Context): Promise<any> {
     return toJs(api.grok_EvalFunc(name, context?.dart));
   }
 
