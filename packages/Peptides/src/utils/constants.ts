@@ -3,7 +3,7 @@ export enum COLUMNS_NAMES {
   ACTIVITY = '~activity',
   ACTIVITY_SCALED = 'activity_scaled',
   ALIGNED_SEQUENCE = '~aligned_sequence',
-  AMINO_ACID_RESIDUE = 'AAR',
+  MONOMER = 'AAR',
   POSITION = 'Pos',
   P_VALUE = 'pValue',
   MEAN_DIFFERENCE = 'Mean difference',

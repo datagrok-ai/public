@@ -64,7 +64,7 @@ export function measureAAR(s: string): number {
 export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAAR: string, currentPosition: string,
   statsDf: DG.DataFrame, twoColorMode: boolean, mdCol: DG.Column<number>, bound: DG.Rect, cellValue: number,
   currentSelection: types.SelectionObject, substitutionsInfo: types.SubstitutionsInfo | null): void {
-  const queryAAR = `${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ${currentAAR}`;
+  const queryAAR = `${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`;
   const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
   const pVal: number = statsDf
     .groupBy([C.COLUMNS_NAMES.P_VALUE])
