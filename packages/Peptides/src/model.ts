@@ -195,14 +195,14 @@ export class PeptidesModel {
     //unpivot a table and handle duplicates
     let matrixDf = splitSeqDf.groupBy(positionColumns).aggregate();
 
-    matrixDf = matrixDf.unpivot([], positionColumns, C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    matrixDf = matrixDf.unpivot([], positionColumns, C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER);
 
     //statistics for specific AAR at a specific position
     this.statsDf = this.calculateStatistics(matrixDf);
 
     // SAR matrix table
     //pivot a table to make it matrix-like
-    matrixDf = this.statsDf.groupBy([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE])
+    matrixDf = this.statsDf.groupBy([C.COLUMNS_NAMES.MONOMER])
       .pivot(C.COLUMNS_NAMES.POSITION)
       .add('first', C.COLUMNS_NAMES.MEAN_DIFFERENCE, '')
       .aggregate();
@@ -375,7 +375,7 @@ export class PeptidesModel {
   }
 
   calculateStatistics(matrixDf: DG.DataFrame): DG.DataFrame {
-    matrixDf = matrixDf.groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]).aggregate();
+    matrixDf = matrixDf.groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER]).aggregate();
 
     //calculate p-values based on t-test
     const matrixCols = matrixDf.columns;
@@ -383,7 +383,7 @@ export class PeptidesModel {
     const pValCol = matrixCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE);
     const countCol = matrixCols.addNewInt(C.COLUMNS_NAMES.COUNT);
     const ratioCol = matrixCols.addNewFloat(C.COLUMNS_NAMES.RATIO);
-    const aarCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    const aarCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
     const posCol = matrixDf.getCol(C.COLUMNS_NAMES.POSITION);
     const activityCol: number[] = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).toList();
     const sourceDfLen = activityCol.length;
@@ -416,22 +416,22 @@ export class PeptidesModel {
       absMDCol.init((i) => Math.abs(mdCol.get(i)));
     }
 
-    const aarWeightsDf = this.statsDf.groupBy([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]).sum(sortArgument, 'weight')
+    const aarWeightsDf = this.statsDf.groupBy([C.COLUMNS_NAMES.MONOMER]).sum(sortArgument, 'weight')
       .aggregate();
-    const aarList = aarWeightsDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE).toList();
+    const aarList = aarWeightsDf.getCol(C.COLUMNS_NAMES.MONOMER).toList();
     const getWeight = (aar: string): number => aarWeightsDf
       .groupBy(['weight'])
-      .where(`${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ${aar}`)
+      .where(`${C.COLUMNS_NAMES.MONOMER} = ${aar}`)
       .aggregate()
       .get('weight', 0) as number;
     aarList.sort((first, second) => getWeight(second) - getWeight(first));
 
-    matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE).setCategoryOrder(aarList);
+    matrixDf.getCol(C.COLUMNS_NAMES.MONOMER).setCategoryOrder(aarList);
   }
 
   createVerticalTable(): DG.DataFrame {
     // TODO: aquire ALL of the positions
-    const columns = [C.COLUMNS_NAMES.MEAN_DIFFERENCE, C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, C.COLUMNS_NAMES.POSITION,
+    const columns = [C.COLUMNS_NAMES.MEAN_DIFFERENCE, C.COLUMNS_NAMES.MONOMER, C.COLUMNS_NAMES.POSITION,
       'Count', 'Ratio', C.COLUMNS_NAMES.P_VALUE];
     let sequenceDf = this.statsDf.groupBy(columns)
       .where('pValue <= 0.1')
@@ -457,8 +457,8 @@ export class PeptidesModel {
   createGrids(
     matrixDf: DG.DataFrame, positionColumns: string[], sequenceDf: DG.DataFrame, alphabet: string): DG.Grid[] {
     const sarGrid = matrixDf.plot.grid();
-    sarGrid.sort([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]);
-    sarGrid.columns.setOrder([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE].concat(positionColumns as C.COLUMNS_NAMES[]));
+    sarGrid.sort([C.COLUMNS_NAMES.MONOMER]);
+    sarGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER].concat(positionColumns as C.COLUMNS_NAMES[]));
 
     const sarVGrid = sequenceDf.plot.grid();
     sarVGrid.sort([C.COLUMNS_NAMES.POSITION]);
@@ -466,11 +466,11 @@ export class PeptidesModel {
     pValGridCol.format = '#.000';
     pValGridCol.name = 'P-value';
 
-    let tempCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    let tempCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
     if (tempCol)
       setAARRenderer(tempCol, alphabet, sarGrid);
 
-    tempCol = sequenceDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    tempCol = sequenceDf.getCol(C.COLUMNS_NAMES.MONOMER);
     if (tempCol)
       setAARRenderer(tempCol, alphabet, sarGrid);
 
@@ -554,7 +554,7 @@ export class PeptidesModel {
           const gridTable = cell.grid.table;
           const currentPosition: string = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ?
             tableColName : gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
-          const currentAAR: string = gridTable.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
+          const currentAAR: string = gridTable.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
 
           const viewer = this.getViewer();
           renderSARCell(canvasContext, currentAAR, currentPosition, this.statsDf, viewer.bidirectionalAnalysis, mdCol,
@@ -596,7 +596,7 @@ export class PeptidesModel {
 
       if (!cell.isRowHeader && !cell.isColHeader && tableCol && tableRowIndex != null) {
         const table = cell.grid.table;
-        const currentAAR = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
+        const currentAAR = table.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
 
         if (tableCol.semType == C.SEM_TYPES.MONOMER)
           this.showMonomerTooltip(currentAAR, x, y);
@@ -671,11 +671,11 @@ export class PeptidesModel {
       gc.tableRowIndex == null || gc.tableRowIndex == -1;
     this._sarGrid.root.addEventListener('click', (ev) => {
       const gridCell = this._sarGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (gridCellValidation(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)
+      if (gridCellValidation(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.MONOMER)
         return;
 
       const position = gridCell!.tableColumn!.name;
-      const aar = sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, gridCell!.tableRowIndex!);
+      const aar = sarDf.get(C.COLUMNS_NAMES.MONOMER, gridCell!.tableRowIndex!);
       chooseAction(aar, position, ev.shiftKey);
     });
 
@@ -686,7 +686,7 @@ export class PeptidesModel {
 
       const tableRowIdx = gridCell!.tableRowIndex!;
       const position = sarVDf.get(C.COLUMNS_NAMES.POSITION, tableRowIdx);
-      const aar = sarVDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIdx);
+      const aar = sarVDf.get(C.COLUMNS_NAMES.MONOMER, tableRowIdx);
       chooseAction(aar, position, ev.shiftKey);
     });
 
@@ -796,7 +796,7 @@ export class PeptidesModel {
       for (let i = 0; i < colNum; ++i) {
         const col = girdCols.byIndex(i)!;
         const colName = col.name;
-        if (grid == sarVGrid && colName !== 'Diff' && colName !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)
+        if (grid == sarVGrid && colName !== 'Diff' && colName !== C.COLUMNS_NAMES.MONOMER)
           col.width = 50;
         else
           col.width = gridProps.rowHeight + 10;
