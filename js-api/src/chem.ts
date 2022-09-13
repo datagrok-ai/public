@@ -211,7 +211,7 @@ export namespace chem {
     }
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
-    setValue(x: string) {
+    async setValue(x: string) {
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
@@ -220,7 +220,7 @@ export namespace chem {
           .apply([ new RegExp(extractor.options['inputRegexp']).exec(x)![1] ])
           .then((mol) => this.setMolecule(mol));
       else
-        this.setMolecule(x);
+        await this.setMolecule(x);
     }
 
     constructor(mode?: SKETCHER_MODE) {
@@ -332,15 +332,17 @@ export namespace chem {
 
         const load: Promise<any> = api.grok_Func_LoadQueriesScripts();
         load
-          .then((_) => { extractors = Func.find(extractorSearchOptions); })
+          .then((_) => { 
+            extractors = Func.find(extractorSearchOptions); 
+            let x  = 1;})
           .catch((_) => extractors = []);
       }
 
-      const applyInput = (e: any) => {
+      const applyInput = async (e: any) => {
         const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
 
         if (this.getSmiles() !== newSmilesValue)
-          this.setValue(newSmilesValue);
+          await this.setValue(newSmilesValue);
 
         const currentSmiles = this.getSmiles();
 
