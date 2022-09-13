@@ -6,7 +6,7 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateBarsData, getTypedArrayConstructor, gridCellValidation, scaleActivity} from './utils/misc';
+import {calculateBarsData, getTypedArrayConstructor, isGridCellInvalid, scaleActivity} from './utils/misc';
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {renderBarchart, renderSARCell, setAARRenderer} from './utils/cell-renderer';
@@ -669,7 +669,7 @@ export class PeptidesModel {
 
     this._sarGrid.root.addEventListener('click', (ev) => {
       const gridCell = this._sarGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (gridCellValidation(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.MONOMER)
+      if (isGridCellInvalid(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.MONOMER)
         return;
 
       const position = gridCell!.tableColumn!.name;
@@ -679,7 +679,7 @@ export class PeptidesModel {
 
     this._sarVGrid.root.addEventListener('click', (ev) => {
       const gridCell = this._sarVGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (gridCellValidation(gridCell) || gridCell!.tableColumn!.name != C.COLUMNS_NAMES.MEAN_DIFFERENCE)
+      if (isGridCellInvalid(gridCell) || gridCell!.tableColumn!.name != C.COLUMNS_NAMES.MEAN_DIFFERENCE)
         return;
 
       const tableRowIdx = gridCell!.tableRowIndex!;
