@@ -5,7 +5,7 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 import $ from 'cash-dom';
 
 import * as C from '../utils/constants';
-import {getStats, Stats} from '../utils/filtering-statistics';
+import {getStats, Stats} from '../utils/statistics';
 import {PeptidesModel} from '../model';
 
 const allConst = 'All';

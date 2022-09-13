@@ -12,7 +12,7 @@ import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {renderBarchart, renderSARCell, setAARRenderer} from './utils/cell-renderer';
 import {substitutionsWidget} from './widgets/subst-table';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
-import {getStats, Stats} from './utils/filtering-statistics';
+import {getStats, Stats} from './utils/statistics';
 import * as rxjs from 'rxjs';
 
 export class PeptidesModel {
