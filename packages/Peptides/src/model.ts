@@ -6,7 +6,7 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateBarsData, getTypedArrayConstructor, scaleActivity} from './utils/misc';
+import {calculateBarsData, getTypedArrayConstructor, gridCellValidation, scaleActivity} from './utils/misc';
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {renderBarchart, renderSARCell, setAARRenderer} from './utils/cell-renderer';
@@ -667,8 +667,6 @@ export class PeptidesModel {
     const chooseAction = (aar: string, position: string, isShiftPressed: boolean): void =>
       isShiftPressed ? this.modifyCurrentSelection(aar, position) : this.initCurrentSelection(aar, position);
 
-    const gridCellValidation = (gc: DG.GridCell | null): boolean => !gc || !gc.cell.value || !gc.tableColumn ||
-      gc.tableRowIndex == null || gc.tableRowIndex == -1;
     this._sarGrid.root.addEventListener('click', (ev) => {
       const gridCell = this._sarGrid.hitTest(ev.offsetX, ev.offsetY);
       if (gridCellValidation(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.MONOMER)
