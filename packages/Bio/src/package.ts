@@ -451,3 +451,11 @@ export function splitToMonomers(col: DG.Column<string>): void {
   }
   (grok.shell.v as DG.TableView)?.grid.invalidate();
 }
+
+//name: Bio: getHelmMonomers
+//input: column col {semType: Macromolecule}
+//output: string[] result
+export function getHelmMonomers(seqCol: DG.Column<string>): string[] {
+  const stats = WebLogo.getStats(seqCol, 5, WebLogo.splitterAsHelm);
+  return Object.keys(stats.freq);
+}
