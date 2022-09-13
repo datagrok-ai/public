@@ -449,7 +449,7 @@ export function splitToMonomers(col: DG.Column<string>): void {
     newCol.setTag(DG.TAGS.CELL_RENDERER, C.SEM_TYPES.MONOMER);
     newCol.setTag(C.TAGS.ALPHABET, col.getTag(C.TAGS.ALPHABET));
   }
-  (grok.shell.v as DG.TableView).grid?.invalidate();
+  grok.shell.tv.grid.invalidate();
 }
 
 //name: Bio: getHelmMonomers
