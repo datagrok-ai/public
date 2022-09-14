@@ -20,7 +20,10 @@
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
     "link-api": "npm link datagrok-api",
-    "build": "webpack"
+    "build": "webpack",
+    "test": "jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^0.4.1",
