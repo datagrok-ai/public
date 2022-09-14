@@ -76,7 +76,7 @@ class GisPackageDetectors extends DG.Package {
     //TODO: add checking for zip codes of other countries Great Britain, AZ, AG, GR, SW, Livan, Islands, NL, PL, PT
     let catNumber = col.categories.length;
     if (catNumber > 100) catNumber = 100; //shorten amount of checking categories to 100
-    const caseWeight = 80 / (catNumber+1);
+    const caseWeight = 75 / (catNumber+1);
     for (let i = 0; i < catNumber; i++) {
       if ((col.categories[i].length > 0) &&
         (col.categories[i].match(zipUS2) != null)||

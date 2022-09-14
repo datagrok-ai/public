@@ -206,8 +206,8 @@ export class OpenLayers {
       view: new OLView({
         projection: 'EPSG:3857',
         // projection: 'EPSG:4326',
-        center: OLProj.fromLonLat([34.109565, 45.452962]),
-        zoom: 6,
+        center: OLProj.fromLonLat([-77.01072811982019, 38.9133405111845]),
+        zoom: 5,
       }),
     });
     //useGeographic();
@@ -442,13 +442,15 @@ export class OpenLayers {
   }
 
   getFeaturesFromLayer(layer: VectorLayer<VectorSource>): any[] {
-    const featuresColl: any[] = [];
+    const arrFeatures: Feature[] = []; //any[]
     const src = layer.getSource();
     if (!src) return [];
     src.forEachFeature((ft)=>{
-      featuresColl.push(ft.getProperties());
+      arrFeatures.push(ft);
+      // ft.getId
+      // arrFeatures.push(ft.getProperties());
     });
-    return featuresColl;
+    return arrFeatures;
   }
 
   //map marker style function>>
@@ -471,6 +473,37 @@ export class OpenLayers {
     return style;
   }
 
+  static gisObjFromGeometry(ft: FeatureLike): GisTypes.GisPoint | GisTypes.GisArea | null {
+    if (!ft) return null;
+    const geom = ft.getGeometry();
+    if (geom) {
+      switch (geom.getType()) {
+      case 'Point': {
+        const gobj = geom as OLGeom.Point;
+        const coords = gobj.getCoordinates();
+        const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
+        const gisPoint = new GisTypes.GisPoint(coords[0], coords[1], xyz ? coords[2] : 0, ft.getProperties());
+        return gisPoint;
+      }
+      case 'MultiPolygon':
+      case 'Polygon': {
+        const gobj = geom as OLGeom.Polygon;
+        const coords = gobj.getCoordinates();
+        const areaCoords: Array<GisTypes.gisCoordinate> = [];
+        const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
+        for (let i = 0; i < coords[0].length; i++) {
+          const vertex = coords[0][i]; //TODO: add inner polygons (holes) - now we use just a contour
+          areaCoords.push([vertex[0] as number, vertex[1], xyz ? vertex[2] : 0]);
+        }
+        const gisArea = new GisTypes.GisArea(areaCoords, ft.getProperties());
+        return gisArea;
+      }
+      //TODO: add multi polygon
+      }
+    }
+    return null;
+  }
+
   //map base events handlers>>
   onMapClick(evt: MapBrowserEvent<any>) {
     // evt.coordinate
@@ -486,32 +519,33 @@ export class OpenLayers {
     });
     if (features.length > 0) {
       let ft = features[0];
-      const geom = ft.getGeometry();
-      if (geom) {
-        switch (geom.getType()) {
-        case 'Point': {
-          const gobj = geom as OLGeom.Point;
-          const coords = gobj.getCoordinates();
-          const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
-          const gisPoint = new GisTypes.GisPoint(coords[0], coords[1], xyz ? coords[2] : 0, ft.getProperties());
-          grok.shell.o = gisPoint;
-          break;
-        }
-        case 'Polygon': {
-          const gobj = geom as OLGeom.Polygon;
-          const coords = gobj.getCoordinates();
-          const areaCoords: Array<GisTypes.gisCoordinate> = [];
-          const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
-          for (let i = 0; i < coords[0].length; i++) {
-            let vertex = coords[0][i]; //TODO: add inner polygons (holes) - now we use just a contour
-            areaCoords.push([vertex[0] as number, vertex[1], xyz ? vertex[2] : 0]);
-          }
-          const gisArea = new GisTypes.GisArea(areaCoords, ft.getProperties());
-          grok.shell.o = gisArea;
-          break;
-        }
-        }
-      }
+      grok.shell.o = OpenLayers.gisObjFromGeometry(ft);
+      // const geom = ft.getGeometry();
+      // if (geom) {
+      //   switch (geom.getType()) {
+      //   case 'Point': {
+      //     const gobj = geom as OLGeom.Point;
+      //     const coords = gobj.getCoordinates();
+      //     const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
+      //     const gisPoint = new GisTypes.GisPoint(coords[0], coords[1], xyz ? coords[2] : 0, ft.getProperties());
+      //     grok.shell.o = gisPoint;
+      //     break;
+      //   }
+      //   case 'Polygon': {
+      //     const gobj = geom as OLGeom.Polygon;
+      //     const coords = gobj.getCoordinates();
+      //     const areaCoords: Array<GisTypes.gisCoordinate> = [];
+      //     const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
+      //     for (let i = 0; i < coords[0].length; i++) {
+      //       let vertex = coords[0][i]; //TODO: add inner polygons (holes) - now we use just a contour
+      //       areaCoords.push([vertex[0] as number, vertex[1], xyz ? vertex[2] : 0]);
+      //     }
+      //     const gisArea = new GisTypes.GisArea(areaCoords, ft.getProperties());
+      //     grok.shell.o = gisArea;
+      //     break;
+      //   }
+      //   }
+      // }
     }
     if (this.onClickCallback)
       this.onClickCallback(res);

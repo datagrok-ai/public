@@ -133,6 +133,7 @@ export class GisViewer extends DG.JsViewer {
       // if (!isVisible) divLayer.style.background = 'lightblue';
       // else divLayer.style.background = 'lightgray';
     }, 'Show/hide layer');
+    //temporary this is the save layer button
     setupBtn(btnVisible, layerName, layerId);
     //Setup button>>
     const btnSetup = ui.iconFA('download', (evt)=>{ //cogs
@@ -142,13 +143,24 @@ export class GisViewer extends DG.JsViewer {
       if (!layerId) return;
       const layer = this.ol.getLayerById(layerId) as VectorLayer<any>;
       if (!layer) return;
+      const arrPreparedToDF: any[] = [];
       const arrFeatures = this.ol.getFeaturesFromLayer(layer);
       if (arrFeatures) {
-        const df = DG.DataFrame.fromObjects(arrFeatures);
+        for (let i = 0; i < arrFeatures.length; i++) {
+          const gisObj = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
+          const newObj = arrFeatures[i].getProperties();
+          newObj.id_ = arrFeatures[i].getId();
+          newObj.gisObject = gisObj;
+          // arrFeatures[i].gisObject = gisObj;
+          arrPreparedToDF.push(newObj);
+        }
+        // const df = DG.DataFrame.fromObjects(arrFeatures);
+        const df = DG.DataFrame.fromObjects(arrPreparedToDF);
         if (df) {
           // df.toCsv()
           df.name = layer.get('layerName');
           // this. //TODO: get parent view with dataframe and add new dataframe-view to it
+          
           grok.shell.addTableView(df as DG.DataFrame);
           // grok.shell.v.a  addTableView(df as DG.DataFrame);
           // this.viewerContainer
@@ -362,19 +374,28 @@ export class GisViewer extends DG.JsViewer {
   onTableAttached(): void {
     this.init();
 
-    const coordinatesColumns = this.dataFrame.columns.bySemTypesExact(
-      [DG.SEMTYPE.LATITUDE, DG.SEMTYPE.LONGITUDE, SEMTYPEGIS.LATIITUDE, SEMTYPEGIS.LONGITUDE]);
+    // const coordinatesColumns = this.dataFrame.columns.bySemTypesExact(
+    //   [DG.SEMTYPE.LATITUDE, DG.SEMTYPE.LONGITUDE, SEMTYPEGIS.LATIITUDE, SEMTYPEGIS.LONGITUDE]);
     // const coordinatesColumns = this.dataFrame.columns.bySemTypesExact([SEMTYPEGIS.LATIITUDE, SEMTYPEGIS.LONGITUDE]);
 
-    if (coordinatesColumns != null && this.latitudeColumnName == null && this.longitudeColumnName == null) {
-      for (let i = 0; i<coordinatesColumns.length; i++) {
-        if ((coordinatesColumns[i].semType === DG.SEMTYPE.LATITUDE)||
-        (coordinatesColumns[i].semType === SEMTYPEGIS.LATIITUDE)) this.latitudeColumnName = coordinatesColumns[i].name;
-        if ((coordinatesColumns[i].semType === DG.SEMTYPE.LATITUDE)||
-        (coordinatesColumns[i].semType === SEMTYPEGIS.LATIITUDE)) this.longitudeColumnName = coordinatesColumns[i].name;
-      }
+    // if (coordinatesColumns != null && this.latitudeColumnName === null && this.longitudeColumnName === null) {
+    //   for (let i = 0; i<coordinatesColumns.length; i++) {
+    //     if ((coordinatesColumns[i].semType === DG.SEMTYPE.LATITUDE)||
+    //     (coordinatesColumns[i].semType === SEMTYPEGIS.LATIITUDE)) this.latitudeColumnName = coordinatesColumns[i].name;
+    //     if ((coordinatesColumns[i].semType === DG.SEMTYPE.LATITUDE)||
+    //     (coordinatesColumns[i].semType === SEMTYPEGIS.LATIITUDE)) this.longitudeColumnName = coordinatesColumns[i].name;
+    //   }
+    // } else 
+    if (this.latitudeColumnName === null && this.longitudeColumnName === null) {
+      let col = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
+      if (col) this.latitudeColumnName = col.name;
+      col = this.dataFrame.columns.bySemType(SEMTYPEGIS.LATIITUDE);
+      if ((col) && (this.latitudeColumnName === null)) this.latitudeColumnName = col.name;
+      col = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE);
+      if (col) this.longitudeColumnName = col.name;
+      col = this.dataFrame.columns.bySemType(SEMTYPEGIS.LONGITUDE);
+      if ((col) && (this.longitudeColumnName === null)) this.longitudeColumnName = col.name;
     }
-
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.render(true);
