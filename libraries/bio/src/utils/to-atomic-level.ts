@@ -7,8 +7,6 @@ import {HELM_CORE_FIELDS, HELM_CORE_LIB_MONOMER_SYMBOL} from './monomer-utils';
 const V2K_RGP_SHIFT = 8;
 const V2K_RGP_LINE = 'M  RGP';
 
-// const V3K_ATOMS_DATA_SHIFT = 4;
-// const V3K_BOND_DATA_SHIFT = 4;
 const V3K_COUNTS_SHIFT = 7;
 const V3K_IDX_SHIFT = 7;
 const V3K_BEGIN_CTAB_BLOCK = 'M  V30 BEGIN CTAB\n';
@@ -19,6 +17,8 @@ const V3K_BEGIN_BOND_BLOCK = 'M  V30 BEGIN BOND\n';
 const V3K_END_BOND_BLOCK = 'M  V30 END BOND\n';
 const V3K_BEGIN_DATA_LINE = 'M  V30 ';
 const V3K_END = 'M  END\n';
+
+// todo: docstrings
 
 type AtomData = {
   atomType: string[],
@@ -62,7 +62,7 @@ export async function _toAtomicLevel(
     const monomerSeq = monomerSequencesArray[row];
     const molGraph = concatenateMolGraphs(monomerSeq, monomersDict);
     reconstructed[row] = convertMolGraphToMolfileV3K(molGraph);
-    console.log("Reconstructed" + reconstructed[row]);
+    console.log('Reconstructed' + reconstructed[row]);
   }
   const newCol = DG.Column.fromStrings('reconstructed', reconstructed);
   // todo: name properly
@@ -146,7 +146,7 @@ function getMolGraph(
     const removedNodes = getRemovedNodes(molfileV2K);
     const atomData = parseAtomData(removedNodes, bondData, molfileV3K, counts.atomCount);
     removeIntermediateHydrogen(atomData, bondData);
-    // adjustGraph(atomData);
+    adjustGraph(atomData);
     return {atoms: atomData, bonds: bondData};
   }
 }
@@ -464,8 +464,9 @@ function rotateCenteredGraph(atoms: AtomData): void {
   const sin = Math.sin(angle);
 
   for (let i = 0; i < x.length; ++i) {
-    x[i] = Math.round(10000 * (x[i]*cos - y[i]*sin))/10000;
-    y[i] = Math.round(10000 * (x[i]*sin + y[i]*cos))/10000;
+    const xAdd = x[i];
+    x[i] = Math.round(10000 * (xAdd*cos - y[i]*sin))/10000;
+    y[i] = Math.round(10000 * (xAdd*sin + y[i]*cos))/10000;
     // x[i] = x[i]*cos - y[i]*sin;
     // y[i] = x[i]*sin + y[i]*cos;
   }
@@ -566,6 +567,18 @@ function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
   let reconstructedAtomBlock = '';
   for (let i = 0; i < atomCount; ++i) {
     const atomIdx = i + 1;
+    // todo: uncomment after debugging undefined
+    // const coordinate = [x[i].toString(), y[i].toString()];
+    // for (let k = 0; k < 2; ++k) {
+    //   const formatted = coordinate[k].toString().split('.');
+    //   if (formatted.length === 1)
+    //     formatted.push('0');
+    //   formatted[1] = formatted[1].padEnd(6, '0');
+    //   coordinate[k] = formatted.join('.');
+    // }
+    // const atomLine = V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
+    //   coordinate[0] + ' ' + coordinate[1] + ' ' + atomKwargs[i];
+
     const atomLine = V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
       x[i] + ' ' + y[i] + ' ' + atomKwargs[i];
     reconstructedAtomBlock += atomLine;
