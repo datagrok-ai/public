@@ -24,8 +24,8 @@ category('Chem: Info Panels', () => {
     if (document.getElementsByClassName('grok-scripting-image-container-info-panel').length != 1)
         throw 'script output was not rendered in the panel'
 
-    let pecilIcon = document.getElementsByClassName('grok-icon fal fa-pencil')[0] as HTMLElement;
-    pecilIcon!.click(); await delay(200);
+    let pencilIcon = document.getElementsByClassName('grok-icon fal fa-pencil')[0] as HTMLElement;
+    pencilIcon!.click(); await delay(200);
 
     let contours = document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-gasteiger_partial_charges')[0].getElementsByClassName('ui-input-editor')[0] as HTMLInputElement;
     contours.value = '15';
