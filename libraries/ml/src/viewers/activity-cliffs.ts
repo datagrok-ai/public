@@ -63,7 +63,8 @@ export async function getActivityCliffs(
     simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[]) => Promise<DG.Column[]>,
     tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
     propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
-    options?: any) : Promise<DG.Viewer> {
+    seqSpaceOptions?: any) : Promise<DG.Viewer> {
+
   const automaticSimilarityLimit = false;
   const MIN_SIMILARITY = 80;
 
@@ -79,7 +80,7 @@ export async function getActivityCliffs(
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: axesNames,
-    options: options
+    options: seqSpaceOptions
   });
 
   for (const col of coordinates) {
@@ -103,6 +104,7 @@ export async function getActivityCliffs(
   const saliVals: number[] = [];
   const n1: number[] = [];
   const n2: number[] = [];
+  const cliffsMolIds = new Set<number>();
 
   for (let i = 0; i != dim - 1; ++i) {
     for (let j = 0; j != dim - 1 - i; ++j) {
@@ -111,6 +113,8 @@ export async function getActivityCliffs(
       if (sim >= optSimilarityLimit) {
         n1.push(i);
         n2.push(i + j + 1);
+        cliffsMolIds.add(i);
+        cliffsMolIds.add(i + j + 1);
         simVals.push(sim);
         const diff = Math.abs(activities.get(i) - activities.get(i + j + 1));
         if (sim != 1)
@@ -147,8 +151,10 @@ export async function getActivityCliffs(
   const sali: DG.Column = DG.Column.fromList('double', `sali_${axesNames[0].substring(axesNames[0].lastIndexOf('_'))}`, saliCount);
 
   df.columns.add(sali);
+  const cliffsColName = addCliffsBooleanCol(df, cliffsMolIds);
 
   const view = grok.shell.getTableView(df.name);
+  view.grid.columns.byName(cliffsColName)!.visible = false;
   const sp = view.addViewer(DG.Viewer.scatterPlot(df, {
     xColumnName: axesNames[0],
     yColumnName: axesNames[1],
@@ -165,6 +171,7 @@ export async function getActivityCliffs(
 
   const canvas = (sp.getInfo() as any)['canvas'];
   const linesRes = createLines(n1, n2, seqCol, activities, saliVals, simVals, semType, tags);
+
   const cashedLinesData: any = {};
   let acc: DG.Accordion;
 
@@ -202,10 +209,13 @@ export async function getActivityCliffs(
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
     grok.shell.dockManager.dock(linesDfGrid.root, 'down', null, 'Activity cliffs', 0.2);
   });
-  listCliffsLink.style.position = 'absolute';
-  listCliffsLink.style.top = '10px';
-  listCliffsLink.style.right = '10px';
-  sp.root.append(listCliffsLink);
+  editSpLinkStyle(listCliffsLink, sp, 10);
+
+  const filterCliffsButton = ui.switchInput(`Show only cliffs`, false);
+  filterCliffsButton.onChanged(()=> {
+    filterCliffsButton.value ? df.rows.filter((row) => row[cliffsColName] === true) : df.filter.setAll(true);
+  });
+  editSpLinkStyle(filterCliffsButton.root, sp, 30);
 
   let timer: NodeJS.Timeout;
   canvas.addEventListener('mousemove', function (event: MouseEvent) {
@@ -267,11 +277,19 @@ export async function getActivityCliffs(
         }, 300);
         zoom = false;
       }
+      filterCliffsButton.value ? df.rows.filter((row) => row[cliffsColName] === true) : df.filter.setAll(true);
     });
 
   sp.addProperty('similarityLimit', 'double', optSimilarityLimit);
   acc = createPopertyPanel();
   return sp;
+}
+
+function editSpLinkStyle(el: HTMLElement, sp: DG.ScatterPlotViewer, topMargin: number){
+  el.style.position = 'absolute';
+  el.style.top = `${topMargin}px`;
+  el.style.right = '10px';
+  sp.root.append(el);
 }
 
 function createPopertyPanel(): DG.Accordion {
@@ -370,11 +388,11 @@ function createLines(
   simVals: number[],
   semType: string,
   tags: {[index: string]: string}) : IRenderedLines {
-  const lines: ILine[] = [];
+  const lines: ILine[] = new Array(n1.length).fill(null);
   for (let i = 0; i < n1.length; i++) {
     const num1 = n1[i];
     const num2 = n2[i];
-    lines.push({id: i, mols: [num1, num2], selected: false, a: [], b: []});
+    lines[i] = ({id: i, mols: [num1, num2], selected: false, a: [], b: []});
   }
   const linesDf = DG.DataFrame.create(lines.length);
   molColumnNames.forEach((it, idx) => {
@@ -423,5 +441,13 @@ export function getSimilaritiesFromDistances(dim: number, distances: Matrix, sim
     simArr[i] = DG.Column.fromFloat32Array('similarity', Float32Array.from(similarityArr));
   }
   return simArr;
+}
+
+export function addCliffsBooleanCol(df: DG.DataFrame, ids: Set<number>): string {
+  const colname = 'containsCliff';
+  const colNameInd = df.columns.names().filter((it: string) => it.includes(colname)).length + 1;
+  const newColName = `${colname}_${colNameInd}`;
+  df.columns.addNewBool(newColName).init((i) => ids.has(i));
+  return newColName;
 }
 
