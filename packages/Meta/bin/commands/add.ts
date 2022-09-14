@@ -12,8 +12,21 @@ function addPackageVersion(name: string, description: string, packageVersion: st
       dependencies: {
         [packageVersion]: {}
       },
-      description: description,
-      repository: repository
+      description: description
+    }
+  }
+
+  if (repository) {
+    data[name]['repository'] = repository;
+  } else {
+    var err = 'The repository should be specified';
+    if (jsonContent.data.hasOwnProperty(name)) {
+      var presult = jsonContent['data'][name]
+      if (!presult.hasOwnProperty('repository')) {
+        throw err;
+      }
+    } else {
+      throw err;
     }
   }
 
@@ -51,7 +64,12 @@ export function add(args: CreateArgs) {
   if (nOptions && !Object.keys(args).slice(1).every(op =>
     ['package', 'description', 'ver', 'dep', 'depver', 'repository', 'category'].includes(op))) return false;
 
-  let repository = JSON.parse(args.repository);
+  let repository
+  if (args.repository !== undefined) {
+    repository = JSON.parse(args.repository);
+  } else {
+    repository = undefined;
+  }
 
   addPackageVersion(args.package, args.description, args.ver, args.dep, args.depver, repository, args.category);
   return true;
@@ -61,7 +79,7 @@ interface CreateArgs {
   _: string[],
   package: string,
   ver: string,
-  repository: string,
+  repository?: string,
   description?: string,
   dep?: string,
   depver?: string,
