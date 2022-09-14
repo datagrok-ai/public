@@ -93,7 +93,7 @@ export function config(args: ConfigArgs) {
     if (args.default) {
       config.default = args.alias!;
     }
-    return true;
+//     return true;
   }
 
   console.log(`Your config file (${confPath}):`);
