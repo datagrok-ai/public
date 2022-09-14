@@ -8,6 +8,20 @@ import {splitToMonomers, _package} from '../package';
 import * as C from '../utils/constants';
 
 category('splitters', () => {
+  let tvList: DG.TableView[];
+  let dfList: DG.DataFrame[];
+
+  before(async () => {
+    await grok.functions.call('Bio:initBio');
+    tvList = [];
+    dfList = [];
+  });
+
+  after(async () => {
+    dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
+    tvList.forEach((tv: DG.TableView) => tv.close());
+  });
+
   const helm1 = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$';
 
   const helm2 = 'PEPTIDE1{meI.hHis.Hcy.Q.T.W.Q.Phe_4NH2.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.N.meK}$$$';
@@ -62,6 +76,13 @@ category('splitters', () => {
     if (semType)
       seqCol.semType = semType;
     seqCol.setTag(C.TAGS.ALIGNED, C.MSA);
+
+    const tv: DG.TableView = grok.shell.addTableView(df);
+    // call to calculate 'cell.renderer' tag
+    await grok.data.detectSemanticTypes(df);
+
+    dfList.push(df);
+    tvList.push(tv);
 
     splitToMonomers(seqCol);
     expect(df.columns.names().includes('17'), true);
