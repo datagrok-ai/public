@@ -81,7 +81,10 @@
     "release-local": "grok publish local --release",
     "build": "webpack",
     "lint": "eslint \"./src/**/*.ts\"",
-    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix",
+    "test": "jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
   },
   "canEdit": [
     "Developers"

@@ -50,7 +50,10 @@
     "debug-ketcher-dev": "grok publish dev",
     "release-ketcher-dev": "grok publish dev --release",
     "debug-ketcher-public": "grok publish public",
-    "release-ketcher-public": "grok publish public --release"
+    "release-ketcher-public": "grok publish public --release",
+    "test": "jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
   },
   "canEdit": [
     "Developers"

@@ -46,7 +46,10 @@
   "scripts": {
     "publish samples local": "grok publish local",
     "publish samples localhost": "grok publish localhost",
-    "build": "webpack"
+    "build": "webpack",
+    "test": "jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
   },
   "canEdit": [
     "Developers"
