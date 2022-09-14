@@ -93,7 +93,8 @@ export function config(args: ConfigArgs) {
     if (args.default) {
       config.default = args.alias!;
     }
-//     return true;
+    fs.writeFileSync(confPath, yaml.dump(config));
+    return true;
   }
 
   console.log(`Your config file (${confPath}):`);
