@@ -24,7 +24,7 @@ type AtomData = {
   atomType: string[],
   x: number[], // Cartesian coordiantes
   y: number[],
-  leftNode: number, // node bound to leftRemovedNode
+  leftNode: number, // node bound to leftRemovedNode, indexing starts from 1
   rightNode: number,
   leftRemovedNode: number, // "leftmost" r-group node of the monomer
   rightRemovedNode: number,
@@ -62,7 +62,7 @@ export async function _toAtomicLevel(
     const monomerSeq = monomerSequencesArray[row];
     const molGraph = concatenateMolGraphs(monomerSeq, monomersDict);
     reconstructed[row] = convertMolGraphToMolfileV3K(molGraph);
-    console.log(reconstructed[row]);
+    console.log("Reconstructed" + reconstructed[row]);
   }
   const newCol = DG.Column.fromStrings('reconstructed', reconstructed);
   // todo: name properly
@@ -146,7 +146,7 @@ function getMolGraph(
     const removedNodes = getRemovedNodes(molfileV2K);
     const atomData = parseAtomData(removedNodes, bondData, molfileV3K, counts.atomCount);
     removeIntermediateHydrogen(atomData, bondData);
-    adjustGraph(atomData);
+    // adjustGraph(atomData);
     return {atoms: atomData, bonds: bondData};
   }
 }
@@ -169,8 +169,18 @@ function parseRGroupTypes(rgroupObjList: any[]): string[] {
 
 function substituteRGroups(molfileV2K: string, rGroups: string[]) {
   let modifiedMolfile = molfileV2K;
-  for (const value of rGroups) {
-    // todo: handle hydrogens
+  const rGroupIndices = parseRGroupIndices(molfileV2K);
+  const idx = new Array((rGroupIndices.length - 1)/2);
+  for (let i = 0; i < rGroups.length; ++i)
+    // idx[i] is responsible for the correct order of substituted rgroups
+    idx[i] = rGroupIndices[2*(i + 1)] - 1;
+  for (let i = 0; i < rGroups.length - 1; ++i) {
+    // an extra check of correctness of rgroups order
+    if (rGroupIndices[2 * (i + 1) + 1] < rGroupIndices[2 * (i + 1) + 1])
+      throw new Error('Wrong order of rgroups');
+  }
+  for (let i = 0; i < rGroups.length; ++i) {
+    const value = rGroups[idx[i]];
     modifiedMolfile = modifiedMolfile.replace('R#', value);
   }
   return modifiedMolfile;
@@ -303,7 +313,6 @@ function parseAtomData(
   const y = new Array(atomCount);
   const kwargs = new Array(atomCount);
 
-  // const removedNodes = getRemovedNodes(molfileV2K);
   const atomPair = bondData.atomPair;
   const retainedNodes = parseRetainedLRNodes(atomPair, removedNodes);
 
@@ -407,36 +416,45 @@ function removeNodeAndBonds(atomData: AtomData, bondData: BondData, removedIdx: 
 // function getFromattedMolfileV3K(
 function adjustGraph(atoms: AtomData): void {
   const atomCount = atoms.x.length;
-  const leftNode = atoms.leftNode;
-  const rightNode = atoms.rightNode;
+  const leftNodeIdx = atoms.leftNode - 1;
+  const rightNodeIdx = atoms.rightNode - 1;
 
   // center tha backbone at origin
-  const xCenter = (atoms.x[leftNode] + atoms.x[rightNode])/2;
-  const yCenter = (atoms.y[leftNode] + atoms.y[rightNode])/2;
+  const xCenter = (atoms.x[leftNodeIdx] + atoms.x[rightNodeIdx])/2;
+  const yCenter = (atoms.y[leftNodeIdx] + atoms.y[rightNodeIdx])/2;
   for (let i = 0; i < atomCount; i++) {
     atoms.x[i] -= xCenter;
     atoms.y[i] -= yCenter;
   }
 
-  rotateCenteredGraph(atoms, leftNode, rightNode);
+  rotateCenteredGraph(atoms);
 
   // shift the backbone so that leftNode is at origin
-  const xShift = atoms.x[rightNode];
+  const xShift = atoms.x[rightNodeIdx];
   for (let i = 0; i < atomCount; ++i)
     atoms.x[i] += xShift;
 }
 
 // Rotate the centered backbone so that "leftNode" is on the left and "rightNode" is on the right
-function rotateCenteredGraph(atoms: AtomData, leftNode: number, rightNode: number): void {
+function rotateCenteredGraph(atoms: AtomData): void {
   let angle = 0;
+  const leftNodeIdx = atoms.leftNode - 1;
+  const rightNodeIdx = atoms.rightNode - 1;
+  const x = atoms.x;
+  const y = atoms.y;
 
-  if (atoms.x[leftNode] === 0) { // both vertices are on OY
-    angle = atoms.y[leftNode] > atoms.y[rightNode] ? Math.PI/2 : -Math.PI/2;
-  } else if (atoms.y[leftNode] === 0) { // both vertices are on OX
-    angle = atoms.x[leftNode] > atoms.x[rightNode] ? Math.PI : 0;
+  // console.log('Start transform');
+  // console.log('atoms:' + atoms.atomType);
+  // console.log('x:' + x);
+  // console.log('y:' + y);
+
+  if (x[leftNodeIdx] === 0) { // both vertices are on OY
+    angle = y[leftNodeIdx] > y[rightNodeIdx] ? Math.PI/2 : -Math.PI/2;
+  } else if (y[leftNodeIdx] === 0) { // both vertices are on OX
+    angle = x[leftNodeIdx] > x[rightNodeIdx] ? Math.PI : 0;
   } else {
-    const tangent = atoms.y[leftNode]/atoms.x[leftNode];
-    if (atoms.x[leftNode] < atoms.x[rightNode])
+    const tangent = y[leftNodeIdx]/x[leftNodeIdx];
+    if (x[leftNodeIdx] < x[rightNodeIdx])
       angle = tangent > 0 ? -Math.atan(tangent) : Math.atan(tangent);
     else
       angle = tangent > 0 ? Math.PI - Math.atan(tangent) : Math.atan(tangent) - Math.PI;
@@ -445,12 +463,15 @@ function rotateCenteredGraph(atoms: AtomData, leftNode: number, rightNode: numbe
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
 
-  for (let i = 0; i < atoms.x.length; ++i) {
-    atoms.x[i] = Math.round(10000 * (atoms.x[i]*cos - atoms.y[i]*sin))/10000;
-    atoms.y[i] = Math.round(10000 * (atoms.x[i]*sin + atoms.y[i]*cos))/10000;
-    // atoms.x[i] = atoms.x[i]*cos - atoms.y[i]*sin;
-    // atoms.y[i] = atoms.x[i]*sin + atoms.y[i]*cos;
+  for (let i = 0; i < x.length; ++i) {
+    x[i] = Math.round(10000 * (x[i]*cos - y[i]*sin))/10000;
+    y[i] = Math.round(10000 * (x[i]*sin + y[i]*cos))/10000;
+    // x[i] = x[i]*cos - y[i]*sin;
+    // y[i] = x[i]*sin + y[i]*cos;
   }
+  // console.log('End transform');
+  // console.log('x:' + x);
+  // console.log('y:' + y);
 }
 
 function concatenateMolGraphs(
