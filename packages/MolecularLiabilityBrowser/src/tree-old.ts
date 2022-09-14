@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
-import {TreeAnalyzer, PhylocanvasTreeNode} from './utils/tree-stats';
+import {TreeAnalyzer, PhylocanvasTreeNode, mlbTreeNodeRe} from './utils/tree-stats';
 
 export class TreeBrowserOld {// extends DG.JsViewer {
   static treeGridColumnsNameMapping = {
@@ -29,8 +29,8 @@ export class TreeBrowserOld {// extends DG.JsViewer {
   treeAnalyser: TreeAnalyzer;
 
   protected _modifyTreeNodeIds(nwk: string): string {
-    if (TreeAnalyzer.newickRegEx.test(nwk.trim()))
-      return nwk.replaceAll(/([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)/g, '$3');
+    // if (TreeAnalyzer.newickRegEx.test(nwk.trim()))
+    //   return nwk.replaceAll(mlbTreeNodeRe, '$3');
 
     return nwk;
   }

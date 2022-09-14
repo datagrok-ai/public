@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/open-tests';
+import './tests/tree-node-tests';
 
 export const _package = new DG.Package();
 export {tests};
