@@ -8,7 +8,7 @@ export const SEMTYPEGIS = {
   LATIITUDE: 'gis-latitude',
   ALTITUDE: 'gis-altitude',
   GISPOINT: 'gis-point',
-  GISAREA: 'gis-gis_area',
+  GISAREA: 'gis-area',
   GISCOUNTRY: 'gis-country',
   GISSTATE: 'gis-state',
   GISADDRESS: 'gis-address',
@@ -27,32 +27,58 @@ export class GisArea {
     this.coordinates = coord;
     if (attr) this.attributes = attr;
   }
+
+  //toString() {return 'Gis Area Object';}
 }
 
 export class GisAreaCanvasRenderer extends DG.CanvasRenderer {
   get defaultWidth(): number | null {
-    return null;
+    return 200; //null;
   }
   get defaultHeight(): number | null {
-    return null;
+    return 100; //null;
   }
   render(g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
     obj: GisArea, context: any): void {
     if (obj.coordinates.length == 0) return;
     g.fillStyle = '#FF0000';
+    g.beginPath();
     for (let i = 0; i < obj.coordinates.length-1; i++) {
       g.moveTo(obj.coordinates[i][0], obj.coordinates[i][1]);
       g.lineTo(obj.coordinates[i+1][0], obj.coordinates[i+1][1]);
-      g.stroke();
       // panelProperties.appendChild(ui.divText(`[${obj.coordinates[i][0]} ; ${obj.coordinates[i][1]}]`));
       // g.fillText('['+obj.coordinates[i][0]+';'+obj.coordinates[i][1]+']', x + 10, y + 10);
     }
+    g.closePath();
+    g.stroke();
+
     //g.fillText('['+obj.longitude+';'+obj.latitude+']', x + 10, y + 10);
   }
 }
 
-//Point semantic type handler
+export class GisAreaGridCellRenderer extends DG.GridCellRenderer {
+  constructor() {
+    super();
+  }
+
+  get cellType() {return SEMTYPEGIS.GISAREA;}
+  get defaultWidth() {return 200;}
+  get defaultHeight() {return 100;}
+
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
+  ): void {
+    g.fillStyle = 'darkgray';
+    gridCell.customText = 'GisArea!';
+    // gridCell.ob
+    // g.fillText('['+this.longitude+';'+this.latitude+']', x + 5, y + 5);
+    g.fillText('[GISArea]', x + 5, y + 5);
+  }
+}
+
+
+//Area semantic type handler
 export class GisAreaHandler extends DG.ObjectHandler {
   get type() {return SEMTYPEGIS.GISPOINT;}
 
@@ -60,7 +86,7 @@ export class GisAreaHandler extends DG.ObjectHandler {
 
   // getCanvasRenderer() {return null;}
   getCanvasRenderer() {return new GisAreaCanvasRenderer();}
-  // getGridCellRenderer() {return new GisAreaGridCellRenderer();}
+  getGridCellRenderer() {return new GisAreaGridCellRenderer();}
 
   renderIcon() {return ui.iconFA('bullseye');}
   renderTooltip(obj: GisArea) {return ui.divText(`Area of [${obj.coordinates.length}] vertexes`);}
@@ -89,7 +115,7 @@ export class GisAreaHandler extends DG.ObjectHandler {
 //GisPoint class
 */
 export class GisPoint {
-  semtype: string = 'gis_point';
+  semtype: string = SEMTYPEGIS.GISPOINT;
   coordinates: gisCoordinate = [0, 0, 0];
   attributes: gisFeatureProperties = {};
   // attributes: Record<string, any> = {};
@@ -113,17 +139,27 @@ export class GisPoint {
   set lng(val: number) {this.coordinates[0] = val;}
   set lat(val: number) {this.coordinates[1] = val;}
   set alt(val: number) {this.coordinates[2] = val;}
+
+  toString() {return 'Gis Point Object';}
 }
 
 export class GisPointGridCellRenderer extends DG.GridCellRenderer {
-  get cellType() {return SEMTYPEGIS.GISPOINT;}
+  constructor() {
+    super();
+  }
 
-  render(g: CanvasRenderingContext2D,
-    x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+  get cellType() {return SEMTYPEGIS.GISPOINT;}
+  get defaultWidth() {return 200;}
+  get defaultHeight() {return 100;}
+
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
+  ): void {
     g.fillStyle = 'darkgray';
+    gridCell.customText = 'GisPoint!';
     // gridCell.ob
     // g.fillText('['+this.longitude+';'+this.latitude+']', x + 5, y + 5);
+    g.fillText('[GISPoint]', x + 5, y + 5);
   }
 }
 
