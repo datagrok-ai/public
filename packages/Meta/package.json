@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "2.0.49",
+  "version": "3.0.0",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -601,10 +601,18 @@
         },
         "2.0.0": {
           "datagrok-api": "^1.6.0"
+        },
+        "3.0.0": {
+          "datagrok-api": "^1.6.0"
         }
       },
       "description": "marvin is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
-      "category": "Cheminformatics"
+      "category": "Cheminformatics",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/labs.git",
+        "directory": "packages/marvin"
+      }
     },
     "oligo-batch-calculator": {
       "dependencies": {
