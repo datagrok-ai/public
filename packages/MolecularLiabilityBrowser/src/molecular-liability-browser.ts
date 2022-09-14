@@ -7,7 +7,7 @@ import {Subscription} from 'rxjs';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 import {VdRegionsViewer} from '@datagrok/bio/src/viewers/vd-regions-viewer';
 import {TreeBrowser} from './mlb-tree';
-import {TreeAnalyzer} from './utils/tree-stats';
+import {getVId, TreeAnalyzer} from './utils/tree-stats';
 import {MiscMethods} from './viewers/misc';
 import {TwinPviewer} from './viewers/twin-p-viewer';
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
@@ -195,13 +195,13 @@ export class MolecularLiabilityBrowser {
     this.antigenPopup = ui.div([agDfGrid.root]);
 
     // Do not push to this.viewSubs to prevent unsubscribe on this.destroyView()
-    agDf.onCurrentRowChanged.subscribe(() => {
+    this.subs.push(agDf.onCurrentRowChanged.subscribe(() => {
       this.antigenPopup.hidden = true;
 
       const antigenName: string = agCol.get(agDf.currentRow.idx);
       // window.setTimeout is used to adapt call async loadData() from handler (not async)
       this.onAntigenChanged(antigenName);
-    });
+    }));
 
     this.antigenInput.root.addEventListener('input', (event: Event) => {
       /* Here we should filter dataframe with antigens */
@@ -384,8 +384,9 @@ export class MolecularLiabilityBrowser {
 
   static prepareDataTreeDf(df: DG.DataFrame, treeColumnName: string = 'TREE') {
     function _modifyTreeNodeIds(nwk: string): string {
-      if (TreeAnalyzer.newickRegEx.test(nwk.trim()))
-        return nwk.replaceAll(/([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)/g, '$3');
+      // shortening tree leaf id on fly is incorrect, or it should/can be performed on data level
+      // if (TreeAnalyzer.newickRegEx.test(nwk.trim()))
+      //   return getVId(nwk);
 
       return nwk;
     }

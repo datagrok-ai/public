@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser",
   "fullName": "MolecularLiabilityBrowser",
-  "version": "1.2.21",
+  "version": "1.2.22",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
@@ -41,7 +41,7 @@
   ],
   "dependencies": {
     "@datagrok-libraries/bio": "^4.2.1",
-    "@datagrok/bio": "^1.11.3",
+    "@datagrok/bio": "^2.0.3",
     "@datagrok/molecular-liability-browser-data": "^2.0.0",
     "@deck.gl/core": "^8.7.5",
     "@deck.gl/layers": "^8.7.5",
