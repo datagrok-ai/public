@@ -4,6 +4,8 @@ import * as DG from 'datagrok-api/dg';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
+import * as rxjs from 'rxjs';
+
 import * as C from './utils/constants';
 import * as type from './utils/types';
 import {calculateBarsData, getTypedArrayConstructor, isGridCellInvalid, scaleActivity} from './utils/misc';
@@ -13,7 +15,6 @@ import {renderBarchart, renderSARCell, setAARRenderer} from './utils/cell-render
 import {substitutionsWidget} from './widgets/subst-table';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
 import {getStats, Stats} from './utils/statistics';
-import * as rxjs from 'rxjs';
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -896,6 +897,8 @@ export class PeptidesModel {
     }
 
     this.updateDefault();
+
+    this.currentView.filters({filters: [{type: 'Peptides:invariantMapFilter'}]});
 
     dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
