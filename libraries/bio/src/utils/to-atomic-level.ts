@@ -145,8 +145,16 @@ function getMolGraph(
     const bondData = parseBondData(molfileV3K, counts.bondCount);
     const removedNodes = getRemovedNodes(molfileV2K);
     const atomData = parseAtomData(removedNodes, bondData, molfileV3K, counts.atomCount);
+
+    console.log(structuredClone(atomData));
+
     removeIntermediateHydrogen(atomData, bondData);
     adjustGraph(atomData);
+    if (atomData.leftNode === atomData.leftRemovedNode || atomData.rightNode === atomData.rightRemovedNode)
+      throw new Error('non-intermediate hydrogens removed');
+
+    console.log(structuredClone(atomData));
+
     return {atoms: atomData, bonds: bondData};
   }
 }
@@ -358,10 +366,12 @@ function parseAtomData(
 // remove hydrogen nodes that are not L/R removed nodes
 function removeIntermediateHydrogen(atomData: AtomData, bondData: BondData): void {
   let i = 0;
+  const leftRemovedIdx = atomData.leftRemovedNode - 1;
+  const rightRemovedIdx = atomData.rightRemovedNode - 1;
   while (i < atomData.atomType.length) {
-    if ( atomData.atomType[i] == 'H' &&
-      i != atomData.leftRemovedNode && // todo: update lr nodes!
-      i != atomData.rightRemovedNode) {
+    if ( atomData.atomType[i] === 'H' &&
+      i !== leftRemovedIdx &&
+      i !== rightRemovedIdx) {
       removeNodeAndBonds(atomData, bondData, i);
       --i;
     }
@@ -370,6 +380,7 @@ function removeIntermediateHydrogen(atomData: AtomData, bondData: BondData): voi
 }
 
 // this must return a copy of the molGraph
+// todo: use either nodes or node idx as argument everywhere
 function removeTerminalHydrogen(molGraph: MolGraph, removedNode: number): MolGraph {
   const molGraphCopy: MolGraph = structuredClone(molGraph);
   const removedIdx = removedNode - 1;
@@ -443,12 +454,7 @@ function rotateCenteredGraph(atoms: AtomData): void {
   const x = atoms.x;
   const y = atoms.y;
 
-  // console.log('Start transform');
-  // console.log('atoms:' + atoms.atomType);
-  // console.log('x:' + x);
-  // console.log('y:' + y);
-
-  if (x[leftNodeIdx] === 0) { // both vertices are on OY
+  if (x[leftNodeIdx] === 0) { // both vertices are on OY, centered graph
     angle = y[leftNodeIdx] > y[rightNodeIdx] ? Math.PI/2 : -Math.PI/2;
   } else if (y[leftNodeIdx] === 0) { // both vertices are on OX
     angle = x[leftNodeIdx] > x[rightNodeIdx] ? Math.PI : 0;
@@ -464,15 +470,10 @@ function rotateCenteredGraph(atoms: AtomData): void {
   const sin = Math.sin(angle);
 
   for (let i = 0; i < x.length; ++i) {
-    const xAdd = x[i];
-    x[i] = Math.round(10000 * (xAdd*cos - y[i]*sin))/10000;
-    y[i] = Math.round(10000 * (xAdd*sin + y[i]*cos))/10000;
-    // x[i] = x[i]*cos - y[i]*sin;
-    // y[i] = x[i]*sin + y[i]*cos;
+    const tmp = x[i];
+    x[i] = Math.round(10000 * (tmp*cos - y[i]*sin))/10000;
+    y[i] = Math.round(10000 * (tmp*sin + y[i]*cos))/10000;
   }
-  // console.log('End transform');
-  // console.log('x:' + x);
-  // console.log('y:' + y);
 }
 
 function concatenateMolGraphs(
@@ -489,23 +490,26 @@ function concatenateMolGraphs(
     monomersDict.get(monomerSeq[0])!.atoms.leftRemovedNode
   );
 
-  concatenateMonomers(result, monomerSeq, monomersDict);
+  addMonomerGraphs(result, monomerSeq, monomersDict);
 
   result = removeTerminalHydrogen(result, result.atoms.rightRemovedNode);
   return result;
 }
 
-function concatenateMonomers(
+// todo: improve naming
+function addMonomerGraphs(
   result: MolGraph,
   monomerSeq: string[],
   monomersDict: Map<string, MolGraph>
 ): void {
   for (let i = 1; i < monomerSeq.length; i++) {
+    console.log(structuredClone(result));
+
     const xShift = result.atoms.x[result.atoms.rightRemovedNode - 1];
-    removeNodeAndBonds(result.atoms, result.bonds, result.atoms.rightRemovedNode);
+    removeNodeAndBonds(result.atoms, result.bonds, result.atoms.rightRemovedNode - 1);
 
     const nextMonomer: MolGraph = structuredClone(monomersDict.get(monomerSeq[i])!);
-    removeNodeAndBonds(nextMonomer.atoms, nextMonomer.bonds, nextMonomer.atoms.leftRemovedNode);
+    removeNodeAndBonds(nextMonomer.atoms, nextMonomer.bonds, nextMonomer.atoms.leftRemovedNode - 1);
 
     const nodeIdxShift = result.atoms.atomType.length;
     shiftNodes(nextMonomer, nodeIdxShift);
@@ -515,18 +519,22 @@ function concatenateMonomers(
     // todo: eliminate hardcoding of the peptide bond
     result.bonds.bondType.push(1);
     result.bonds.atomPair.push([result.atoms.rightNode, nextMonomer.atoms.leftNode]);
-    result.bonds.kwargs.push(result.bonds.kwargs[result.atoms.rightRemovedNode - 1]);
+    result.bonds.kwargs.push('\n');
 
     // update result with the values of nextMonomer
     // todo: consider introduction of consts for the sake of readibilty
     result.atoms.rightNode = nextMonomer.atoms.rightNode;
     result.atoms.rightRemovedNode = nextMonomer.atoms.rightRemovedNode;
     result.atoms.atomType = result.atoms.atomType.concat(nextMonomer.atoms.atomType);
+    result.atoms.x = result.atoms.x.concat(nextMonomer.atoms.x);
+    result.atoms.y = result.atoms.y.concat(nextMonomer.atoms.y);
     result.atoms.kwargs = result.atoms.kwargs.concat(nextMonomer.atoms.kwargs);
 
     result.bonds.kwargs = result.bonds.kwargs.concat(nextMonomer.bonds.kwargs);
     result.bonds.atomPair = result.bonds.atomPair.concat(nextMonomer.bonds.atomPair);
     result.bonds.bondType = result.bonds.bondType.concat(nextMonomer.bonds.bondType);
+
+    console.log(structuredClone(result));
   }
 }
 
@@ -567,20 +575,21 @@ function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
   let reconstructedAtomBlock = '';
   for (let i = 0; i < atomCount; ++i) {
     const atomIdx = i + 1;
-    // todo: uncomment after debugging undefined
-    // const coordinate = [x[i].toString(), y[i].toString()];
-    // for (let k = 0; k < 2; ++k) {
-    //   const formatted = coordinate[k].toString().split('.');
-    //   if (formatted.length === 1)
-    //     formatted.push('0');
-    //   formatted[1] = formatted[1].padEnd(6, '0');
-    //   coordinate[k] = formatted.join('.');
-    // }
-    // const atomLine = V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
-    //   coordinate[0] + ' ' + coordinate[1] + ' ' + atomKwargs[i];
-
+    const coordinate = [x[i].toString(), y[i].toString()];
+    for (let k = 0; k < 2; ++k) {
+      const formatted = coordinate[k].toString().split('.');
+      if (formatted.length === 1)
+        formatted.push('0');
+      formatted[1] = formatted[1].padEnd(6, '0');
+      coordinate[k] = formatted.join('.');
+    }
     const atomLine = V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
-      x[i] + ' ' + y[i] + ' ' + atomKwargs[i];
+      coordinate[0] + ' ' + coordinate[1] + ' ' + atomKwargs[i];
+
+    // todo: remove commented
+    // const atomLine = V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
+    //   x[i] + ' ' + y[i] + ' ' + atomKwargs[i];
+
     reconstructedAtomBlock += atomLine;
   }
 
