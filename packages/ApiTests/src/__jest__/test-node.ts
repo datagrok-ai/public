@@ -25,9 +25,9 @@ const confPath = path.join(grokDir, 'config.yaml');
 
 function mapURL(conf: Config): Indexable {
   const urls: Indexable = {};
-  for (const server in conf.servers)
+  for (const server in conf.servers) {
     urls[conf['servers'][server]['url']] = conf['servers'][server];
-
+  }
   return urls;
 }
 
