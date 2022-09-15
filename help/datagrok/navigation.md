@@ -57,8 +57,8 @@ and read more about [saving data to the server](../datagrok/project.md#uploading
 
 ### File browser
 
-[File shares](../access/connect-a-file-share.md) are arguably an even more popular choice for working with data. Files form a
-hierarchy, which you can browse naturally from the interface. The
+[File shares](../access/connect-a-file-share.md) are arguably an even more popular choice for working with data. Files
+form a hierarchy, which you can browse naturally from the interface. The
 [File Browser](https://public.datagrok.ai/files) operates as a file system: you can organize pieces of data into folders
 and subfolders, rename and move files. The [tree map](../visualize/viewers/tree-map.md)
 component indicates how much space different files occupy in a shared folder, similar to disk partitions. Once the user
