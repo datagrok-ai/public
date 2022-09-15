@@ -113,7 +113,7 @@ In case category/package contain multiple tests results are shown as a grid whic
 
 ![Test results](test_results.gif)
 
-### Running tests in the console
+## Running tests in the console
 
 It is possible to run tests in the platform's console. Press the tilde key `~`
 to open the console or enable it from the toolbox (`Windows | Console`). To
