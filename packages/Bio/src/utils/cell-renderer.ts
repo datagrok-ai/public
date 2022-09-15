@@ -227,7 +227,7 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
     const color = palette.get(s);
 
     g.fillStyle = color;
-    g.fillText(s, x + (w / 2), y - (h / 2), w);
+    g.fillText(s, x + (w / 2), y + (h / 2), w);
   }
 }
 
