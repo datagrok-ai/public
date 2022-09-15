@@ -14,6 +14,11 @@
 
 .cv-funccall-card-icons {
     align-items: center;
+    display: none;
+}
+
+.cv-funccall-card:hover .cv-funccall-card-icons {
+    display: flex;
 }
 
 .cv-funccall-card-icons .grok-icon{
