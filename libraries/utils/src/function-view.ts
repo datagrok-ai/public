@@ -248,7 +248,7 @@ export class FunctionView extends DG.ViewBase {
   /**
    * Override to create a custom historical runs control.
    * @returns The HTMLElement with history block UI
-   * @stability Experimental
+   * @stability Stable
  */
   public buildHistoryBlock(): HTMLElement {
     const mainAcc = ui.accordion();
@@ -719,7 +719,7 @@ export class FunctionView extends DG.ViewBase {
    * WARNING: FuncCall inputs/outputs fields are not included
    * @param funcId ID of Func which calls we are looking for. Get it using {@link func.id} field
    * @returns Promise on array of FuncCalls corresponding to the passed Func ID
-   * @stability Experimental
+   * @stability Stable
  */
   public async pullRuns(funcId: string): Promise<DG.FuncCall[]> {
     const filter = grok.dapi.functions.calls.filter(`func.id="${funcId}"`).include('session.user, options');
