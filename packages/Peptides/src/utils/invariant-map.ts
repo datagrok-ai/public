@@ -20,7 +20,8 @@ export class InvariantMap extends DG.Filter {
   get filterSummary(): string {
     let summary = '';
     for (const [pos, aarList] of Object.entries(this.chosenCells))
-      summary += `${pos}: ${aarList}\n`;
+      if (aarList.length > 0)
+        summary += `${pos}: ${aarList}\n`;
 
     return summary;
   }
