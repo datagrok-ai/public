@@ -250,7 +250,7 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false, useCh
     macroMolBlock = macroMolBlock.replace(/ CFG=\d/g, ' ');
 
   macroMolBlock += 'M  V30 END CTAB\n';
-  macroMolBlock += 'M  END\n';
+  macroMolBlock += 'M  END';
 
   return macroMolBlock;
 }

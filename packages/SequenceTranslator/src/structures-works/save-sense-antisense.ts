@@ -10,13 +10,13 @@ export function saveSdf(as: string, ss: string, oneEntity: boolean, useChirality
   const molAS = sequenceToMolV3000(as, invertAS, false, formatAs!);
   let result: string;
   if (oneEntity)
-    result = linkV3000([molSS, molAS], true, useChirality) + '\n\n$$$$\n';
+    result = linkV3000([molSS, molAS], true, useChirality) + '\n$$$$\n';
   else {
     result =
     molSS + '\n' +
-    `>  <Sequence>\nSense Strand\n\n$$$$\n` +
+    `> <Sequence>\nSense Strand\n$$$$\n` +
     molAS + '\n' +
-    `>  <Sequence>\nAnti Sense\n\n$$$$\n`;
+    `> <Sequence>\nAnti Sense\n$$$$\n`;
   }
 
   const element = document.createElement('a');
