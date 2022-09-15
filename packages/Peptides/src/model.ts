@@ -882,12 +882,13 @@ export class PeptidesModel {
 
     const sarViewersGroup: viewerTypes[] = [this.sarViewer, this.sarViewerVertical];
 
-    if (this.df.rowCount <= 10000) {
-      const peptideSpaceViewerOptions = {method: 'UMAP', measure: 'Levenshtein', cyclesCount: 100};
-      const peptideSpaceViewer =
-        await this.df.plot.fromType('peptide-space-viewer', peptideSpaceViewerOptions) as PeptideSpaceViewer;
-      dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
-    }
+    // TODO: completely remove this viewer?
+    // if (this.df.rowCount <= 10000) {
+    //   const peptideSpaceViewerOptions = {method: 'UMAP', measure: 'Levenshtein', cyclesCount: 100};
+    //   const peptideSpaceViewer =
+    //     await this.df.plot.fromType('peptide-space-viewer', peptideSpaceViewerOptions) as PeptideSpaceViewer;
+    //   dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
+    // }
 
     this.updateDefault();
 
