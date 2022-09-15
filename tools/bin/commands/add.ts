@@ -23,6 +23,7 @@ export function add(args: { _: string[] }) {
   const queryPath = path.join(queryDir, 'queries.sql');
   const connectDir = path.join(curDir, 'connections');
   const packagePath = path.join(curDir, 'package.json');
+  const templateDir = path.join(path.dirname(path.dirname(__dirname)));
 
   // Package directory check
   if (!fs.existsSync(packagePath)) return color.error('`package.json` not found');
@@ -55,7 +56,7 @@ export function add(args: { _: string[] }) {
   function createPackageEntryFile() {
     if (!fs.existsSync(srcDir)) fs.mkdirSync(srcDir);
     if (!fs.existsSync(packageEntry)) {
-      const contents = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+      const contents = fs.readFileSync(path.join(templateDir,
         'package-template', 'src', 'package.js'), 'utf8');
       fs.writeFileSync(packageEntry, contents, 'utf8');
     }
@@ -96,7 +97,7 @@ export function add(args: { _: string[] }) {
       }
 
       // Copy the script template
-      let templatePath = path.join(path.dirname(path.dirname(__dirname)), 'script-template')
+      let templatePath = path.join(templateDir, 'script-template')
       templatePath = path.join(templatePath, lang + '.' + utils.scriptLangExtMap[lang]);
       contents = fs.readFileSync(templatePath, 'utf8');
       if (tag) {
@@ -120,8 +121,7 @@ export function add(args: { _: string[] }) {
       createPackageEntryFile();
 
       // Add an app template to package.js
-      let app = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-        'entity-template', 'app.js'), 'utf8');
+      let app = fs.readFileSync(path.join(templateDir, 'entity-template', 'app.js'), 'utf8');
       fs.appendFileSync(packageEntry, insertName(name, app));
       console.log(help.app(name));
       break;
@@ -147,8 +147,7 @@ export function add(args: { _: string[] }) {
       // Add a function to package.js
       let filename = tag === 'panel' ? 'panel' + ext :
       tag === 'init' ? 'init.js' : 'function' + ext;
-      let func = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-        'entity-template', filename), 'utf8');
+      let func = fs.readFileSync(path.join(templateDir, 'entity-template', filename), 'utf8');
       fs.appendFileSync(packageEntry, insertName(name, func));
 
       console.log(help.func(name, tag === 'panel'));
@@ -168,7 +167,7 @@ export function add(args: { _: string[] }) {
         return color.error(`The connection file already exists: ${connectPath}`);
       }
 
-      const connectionTemplate = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+      const connectionTemplate = fs.readFileSync(path.join(templateDir,
         'entity-template', 'connection.json'), 'utf8');
       fs.writeFileSync(connectPath, insertName(name, connectionTemplate), 'utf8');
       console.log(help.connection(name));
@@ -185,8 +184,7 @@ export function add(args: { _: string[] }) {
       if (!fs.existsSync(queryDir)) fs.mkdirSync(queryDir);
 
       // Add a query to queries.sql
-      let query = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-        'entity-template', 'queries.sql'), 'utf8');
+      let query = fs.readFileSync(path.join(templateDir, 'entity-template', 'queries.sql'), 'utf8');
       contents = insertName(name, query);
       let connection;
       if (fs.existsSync(connectDir) && fs.readdirSync(connectDir).length !== 0) {
@@ -195,8 +193,7 @@ export function add(args: { _: string[] }) {
       } else {
         // Create the default connection file
         if (!fs.existsSync(connectDir)) fs.mkdirSync(connectDir);
-        connection = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-          'entity-template', 'connection.json'), 'utf8');
+        connection = fs.readFileSync(path.join(templateDir, 'entity-template', 'connection.json'), 'utf8');
         fs.writeFileSync(path.join(connectDir, 'connection.json'), insertName('connection', connection), 'utf8');
         connection = 'connection';
       }
@@ -223,13 +220,11 @@ export function add(args: { _: string[] }) {
       if (fs.existsSync(viewPath)) {
         return color.error(`The view file already exists: ${viewPath}`);
       }
-      let viewClass = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-        'entity-template', 'view-class' + ext), 'utf8');
+      let viewClass = fs.readFileSync(path.join(templateDir, 'entity-template', 'view-class' + ext), 'utf8');
       fs.writeFileSync(viewPath, insertName(name, viewClass), 'utf8');
 
       // Add a view function to package.js
-      let view = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-        'entity-template', 'view.js'), 'utf8');
+      let view = fs.readFileSync(path.join(templateDir, 'entity-template', 'view.js'), 'utf8');
       contents = insertName(name, `import {#{NAME}} from './${utils.camelCaseToKebab(name)}';\n`);
       contents += fs.readFileSync(packageEntry, 'utf8');
       contents += insertName(name, view);
@@ -255,14 +250,13 @@ export function add(args: { _: string[] }) {
       if (fs.existsSync(viewerPath)) {
         return color.error(`The viewer file already exists: ${viewerPath}`);
       }
-      let viewerClass = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+      let viewerClass = fs.readFileSync(path.join(templateDir,
         'entity-template', 'viewer-class' + ext), 'utf8');
       fs.writeFileSync(viewerPath, insertName(name, viewerClass), 'utf8');
 
 
       // Add a viewer function to package.js
-      let viewer = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-        'entity-template', 'viewer.js'), 'utf8');
+      let viewer = fs.readFileSync(path.join(templateDir, 'entity-template', 'viewer.js'), 'utf8');
       contents = insertName(name, `import {#{NAME}} from './${utils.camelCaseToKebab(name)}';\n`);
       contents += fs.readFileSync(packageEntry, 'utf8');
       contents += insertName(name, viewer);
@@ -274,14 +268,12 @@ export function add(args: { _: string[] }) {
       name = args['_'][2];
 
       if (!fs.existsSync(detectorsPath)) {
-        let temp = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-          'package-template', 'detectors.js'), 'utf8');
+        let temp = fs.readFileSync(path.join(templateDir, 'package-template', 'detectors.js'), 'utf8');
         temp = utils.replacers['PACKAGE_DETECTORS_NAME'](temp, curFolder);
         fs.writeFileSync(detectorsPath, temp, 'utf8');
       }
 
-      let detector = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-        'entity-template', 'sem-type-detector.js'), 'utf8');
+      let detector = fs.readFileSync(path.join(templateDir, 'entity-template', 'sem-type-detector.js'), 'utf8');
       contents = fs.readFileSync(detectorsPath, 'utf8');
       let idx = contents.search(/(?<=PackageDetectors extends DG.Package\s*{\s*(\r\n|\r|\n)).*/);
       if (idx === -1) return color.error('Detectors class not found'); 
@@ -295,8 +287,15 @@ export function add(args: { _: string[] }) {
       console.log(help.detector(name));
       break;
     case 'tests':
-      if (!fs.existsSync(webpackConfigPath) || !fs.existsSync(tsPath))
+      if (!fs.existsSync(tsPath)) {
+        color.error('Only TypeScript packages are supported');
         return false;
+      }
+
+      if (!fs.existsSync(webpackConfigPath)) {
+        color.error('Webpack configuration not found');
+        return false;
+      }
 
       const config = fs.readFileSync(webpackConfigPath, 'utf8');
       if (!/(?<=entry:\s*{\s*(\r\n|\r|\n))[^}]*test:/.test(config)) {
@@ -333,27 +332,36 @@ export function add(args: { _: string[] }) {
 
       if (!fs.existsSync(path.join(curDir, 'jest.config.js')))
         fs.writeFileSync(path.join(curDir, 'jest.config.js'), fs.readFileSync(
-          path.join(path.dirname(path.dirname(__dirname)), 'package-template',
-          'jest.config.js')));
+          path.join(templateDir, 'package-template', 'jest.config.js')));
 
       if (!fs.existsSync(path.join(srcDir, '__jest__')))
         fs.mkdirSync(path.join(srcDir, '__jest__'));
 
       if (!fs.existsSync(path.join(srcDir, '__jest__', 'remote.test.ts')))
         fs.writeFileSync(path.join(srcDir, '__jest__', 'remote.test.ts'),
-          fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-            'package-template', 'src', '__jest__', 'remote.test.ts')));
+          fs.readFileSync(path.join(templateDir, 'package-template', 'src',
+          '__jest__', 'remote.test.ts')));
 
       if (!fs.existsSync(path.join(srcDir, '__jest__', 'test-node.ts')))
         fs.writeFileSync(path.join(srcDir, '__jest__', 'test-node.ts'),
-          fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-            'package-template', 'src', '__jest__', 'test-node.ts')));
+          fs.readFileSync(path.join(templateDir, 'package-template', 'src',
+          '__jest__', 'test-node.ts')));
 
-      if (!fs.existsSync(path.join(srcDir, 'package-test.ts')))
-        fs.writeFileSync(path.join(srcDir, 'package-test.ts'),
-          fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
-            'package-template', 'src', 'package-test.ts')));
-      console.log('Run `npm install` to get newly added packages');
+      const packageTestPath = path.join(srcDir, 'package-test.ts');
+      if (!fs.existsSync(packageTestPath))
+        fs.writeFileSync(packageTestPath, fs.readFileSync(path.join(templateDir,
+        'package-template', 'src', 'package-test.ts')));
+
+      const testsDir = path.join(srcDir, 'tests');
+      if (!fs.existsSync(testsDir))
+        fs.mkdirSync(testsDir);
+
+      fs.writeFileSync(path.join(testsDir, 'test-examples.ts'),
+        fs.readFileSync(path.join(templateDir, 'entity-template', 'test.ts')));
+
+      fs.writeFileSync(packageTestPath, `import './tests/test-examples';\n` +
+        fs.readFileSync(packageTestPath));
+      console.log(help.test(testsDir));
       break;
     default:
       return false;

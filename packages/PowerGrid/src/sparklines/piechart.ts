@@ -1,26 +1,34 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {getSettingsBase, names, SummarySettingsBase} from './shared';
-import {createTooltip, Hit} from './helper';
+import {
+  getSettingsBase,
+  names,
+  SparklineType,
+  SummarySettingsBase,
+  createTooltip,
+  Hit
+} from './shared';
 
+const minRadius = 10;
+
+enum PieChartStyle {
+  Radius = 'Radius',
+  Angle = 'Angle'
+}
 
 interface PieChartSettings extends SummarySettingsBase {
   radius: number;
-  minRadius: number;
-  countColumns: number;
-  style: 'Angle' | 'Radius';
+  style: PieChartStyle.Radius | PieChartStyle.Angle;
 }
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
-  return gc.settings ??= {
-    ...getSettingsBase(gc),
-    ...{radius: 40},
-    ...{minRadius: 10},
-    ...{style: 'Radius'},
-  };
+  gc.settings ??= getSettingsBase(gc);
+  gc.settings.style ??= PieChartStyle.Radius;
+
+  return gc.settings;
 }
 
-function getColumnsSum(cols: any, row: any) {
+function getColumnsSum(cols: DG.Column[], row: number) {
   let sum = 0;
   for (let i = 0; i < cols.length; i++) {
     if (cols[i].isNone(row))
@@ -30,22 +38,22 @@ function getColumnsSum(cols: any, row: any) {
   return sum;
 }
 
-function onHit(e: MouseEvent | any, gridCell: DG.GridCell): Hit {
+function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
   const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames);
-  const vectorX = e.layerX - gridCell.bounds.midX;
-  const vectorY = e.layerY - gridCell.bounds.midY;
+  const vectorX = e.offsetX - gridCell.bounds.midX;
+  const vectorY = e.offsetY - gridCell.bounds.midY;
   const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
   const atan2 = Math.atan2(vectorY, vectorX);
   const angle = atan2 < 0 ? atan2 + 2 * Math.PI : atan2;
   let activeColumn = -1;
-  let r = 0;
   const row: number = gridCell.cell.row.idx;
 
-  if (settings.style == 'Radius') {
+  let r: number;
+  if (settings.style == PieChartStyle.Radius) {
     activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
     r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
-    r = r < settings.minRadius ? settings.minRadius : r;
+    r = r < minRadius ? minRadius : r;
   } else {
     const sum = getColumnsSum(cols, row);
     r = (gridCell.bounds.width - 4) / 2;
@@ -74,7 +82,7 @@ function onHit(e: MouseEvent | any, gridCell: DG.GridCell): Hit {
 export class PieChartCellRenderer extends DG.GridCellRenderer {
   get name() { return 'pie ts'; }
 
-  get cellType() { return 'piechart'; }
+  get cellType() { return SparklineType.PieChart; }
 
   // getPreferredCellSize(col: DG.GridColumn) {
   //   return new Size(80,80);
@@ -84,44 +92,12 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
   get defaultHeight(): number | null { return 80; }
 
-  onMouseMove(gridCell: DG.GridCell, e: MouseEvent | any): void {
-    const settings = getSettings(gridCell.gridColumn);
-    const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames);
-    const vectorX = e.layerX - gridCell.bounds.midX;
-    const vectorY = e.layerY - gridCell.bounds.midY;
-    const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
-    const atan2 = Math.atan2(vectorY, vectorX);
-    const angle = atan2 < 0 ? atan2 + 2 * Math.PI : atan2;
-    let activeColumn = -1;
-    let r = 0;
-    const row: number = gridCell.cell.row.idx;
-
-    if (settings.style == 'Angle') {
-      activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
-      r = cols[activeColumn].scale(row) * (gridCell.bounds.width - 4) / 2;
-      r = r < settings.minRadius ? settings.minRadius : r;
-    } else {
-      const sum = getColumnsSum(cols, row);
-      r = (gridCell.bounds.width - 4) / 2;
-
-      let currentAngle = 0;
-      for (let i = 0; i < cols.length; i++) {
-        if (cols[i].isNone(gridCell.cell.row.idx))
-          continue;
-        const endAngle = currentAngle + 2 * Math.PI * cols[i].get(row) / sum;
-        if ((angle > currentAngle) && (angle < endAngle)) {
-          activeColumn = i;
-          break;
-        }
-        currentAngle = endAngle;
-      }
-    }
-
-    if (r >= distance) {
-      ui.tooltip.show(ui.divV(createTooltip(cols, activeColumn, row)), e.x + 16, e.y + 16);
-    } else {
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    const hitData = onHit(gridCell, e);
+    if (hitData.isHit)
+      ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
+    else
       ui.tooltip.hide();
-    }
   }
 
   render(
@@ -137,13 +113,13 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const row: number = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
-    if (settings.style == 'Radius') {
+    if (settings.style == PieChartStyle.Radius) {
       for (let i = 0; i < cols.length; i++) {
         if (cols[i].isNone(row))
           continue;
 
         let r = cols[i].scale(row) * box.width / 2;
-        r = r < settings.minRadius ? settings.minRadius : r;
+        r = r < minRadius ? minRadius : r;
         g.beginPath();
         g.moveTo(box.midX, box.midY);
         g.arc(box.midX, box.midY, r,
@@ -163,8 +139,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         const endAngle = currentAngle + 2 * Math.PI * cols[i].get(row) / sum;
         g.beginPath();
         g.moveTo(box.midX, box.midY);
-        g.arc(box.midX, box.midY, r,
-          currentAngle, endAngle);
+        g.arc(box.midX, box.midY, r, currentAngle, endAngle);
         g.closePath();
 
         g.fillStyle = DG.Color.toRgb(DG.Color.getCategoricalColor(i));
@@ -186,7 +161,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
         available: names(gc.grid.dataFrame.columns.numerical),
         checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
       }),
-      ui.choiceInput('Style', 'Radius', ['Angle', 'Radius'], function(value: string) {
+      ui.choiceInput('Style', PieChartStyle.Radius, [PieChartStyle.Angle, PieChartStyle.Radius], function(value: string) {
         settings.style = value;
         gc.grid.invalidate();
       }),

@@ -5,7 +5,9 @@ import {category, test, expect, delay, expectFloat, before} from '@datagrok-libr
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {runStructuralAlertsDetection} from '../panels/structural-alerts';
-import {RDMol} from '../rdkit-api';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {elementalAnalysis} from '../../src/package';
+
 
 category('screening tools benchmarks', () => {
   before(async () => {
@@ -19,7 +21,7 @@ category('screening tools benchmarks', () => {
     const smartsCol = alertsDf.getCol('smarts');
     const ruleIdCol = alertsDf.getCol('rule_id');
     const rdkitModule = chemCommonRdKit.getRdKitModule();
-  
+
     const smartsMap = new Map<string, RDMol>();
     for (let i = 0; i < alertsDf.rowCount; i++)
       smartsMap.set(ruleIdCol.get(i), rdkitModule.get_qmol(smartsCol.get(i)));
@@ -32,4 +34,12 @@ category('screening tools benchmarks', () => {
       runStructuralAlertsDetection(sarSmall, ruleSetList, smilesCol, ruleSetCol, ruleIdCol, smartsMap, rdkitModule);
     });
   });
+
+  test('elementalAnalysis', async () => {
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
+    const col: DG.Column = df.getCol('molecule');
+    DG.time('Elemental Analysis', async () => {
+      await elementalAnalysis(df, col, false, false);
+    });
+  })
 });

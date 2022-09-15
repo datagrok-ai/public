@@ -4,11 +4,11 @@
 #language: python
 #tags: demo, chem, rdkit
 #top-menu: Chem | Mutate...
-#input: string smiles = "CN1C(CC(O)C1=O)C1=CN=CC=C1" {semType: Molecule} [Molecule, in SMILES format]
+#input: string smiles = "CN1C(CC(O)C1=O)C1=CN=CC=C1" {semType: Molecule}
 #input: int steps = 1 [Number of mutation steps]
 #input: bool randomize = true [Randomize mutations]
 #input: int maxRandomResults = 100 [Maximum random results to calculate]
-#output: dataframe mutations {semType: Molecule} [Molecule mutations, in SMILES format]
+#output: dataframe mutations {semType: Molecule}
 
 import pickle
 import random

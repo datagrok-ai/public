@@ -2,3 +2,4 @@ upload.keys.json
 node_modules/
 dist/
 src/**/*.js
+test-report.html

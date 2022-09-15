@@ -46,15 +46,16 @@ it('TEST', async () => {
         const cMessage = df.columns.byName('result');
         const cCat = df.columns.byName('category');
         const cName = df.columns.byName('name');
+        const cTime = df.columns.byName('ms');
         let failed = false;
         let passReport = '';
         let failReport = '';
         for (let i = 0; i < df.rowCount; i++) {
           if (cStatus.get(i))
-            passReport += `Test result : Success : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+            passReport += `Test result : Success : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           else {
             failed = true;
-            failReport += `Test result : Failed : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+            failReport += `Test result : Failed : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           }
         }
         resolve({failReport, passReport, failed});

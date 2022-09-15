@@ -192,9 +192,9 @@ History of all modifications applied to that table. Applies to tables.
 
 ## .script
 
-[Grok script](../overview/grok-script.md) that was used to create a table. It could represent getting a data via
+[Grok script](../datagrok/grok-script.md) that was used to create a table. It could represent getting a data via
 a [database query](../access/data-query.md), from a web service, from a file share, or using any
-other [function](../overview/functions/function.md) that returns a [table](../overview/table.md).
+other [function](../datagrok/functions/function.md) that returns a [table](../datagrok/table.md).
 
 If this tag is present in a table, a "data sync" option appears next to this table in the
 "Upload table" dialog. If the option is checked, the table will not be uploaded to the server. Instead, the script will

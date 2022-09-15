@@ -1,5 +1,5 @@
 //tags: Func
-//help-url: https://datagrok.ai/help/overview/functions/function
+//help-url: https://datagrok.ai/help/datagrok/functions/function
 // Executing functions
 
 // Calling "RDup" function that belongs to the "RSrcipts" package

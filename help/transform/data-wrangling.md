@@ -34,4 +34,4 @@ Press Alt+A to open data aggregation tool
 
 See also:
 
-* [Macros](../overview/navigation.md#console)
+* [Macros](../datagrok/navigation.md#console)

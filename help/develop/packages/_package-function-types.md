@@ -23,7 +23,7 @@ const applications = DG.Func.find({ tags: [DG.FUNC_TYPES.APP] });
 
 ## Applications
 
-Applications are [functions](../../overview/functions/function.md) tagged with `app`:
+Applications are [functions](../../datagrok/functions/function.md) tagged with `app`:
 
 ```js
 //name: Test Application
@@ -89,11 +89,11 @@ To be continued...
 
 ## File viewers
 
-File viewers are used in Datagrok's [file share browser](../../access/file-shares.md). The platform provides a way to
+File viewers are used in Datagrok's [file share browser](../../access/connect-a-file-share.md). The platform provides a way to
 define custom viewers or editors in addition to the native ones. These functions work with files with a specific
 extension, which is derived from the `fileViewer-<extension>` tag.
 
-*See more:* [How to Develop Custom File Viewers](../how-to/custom-file-viewers.md)
+*See more:* [How to Develop Custom File Viewers](../how-to/create-custom-file-viewers.md)
 
 ## File exporters
 

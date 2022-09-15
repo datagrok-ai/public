@@ -109,7 +109,7 @@ async function getCompoundsIds(inchiKey: string): Promise<{[k:string]: any} | un
   });
 
   return response.status !== 200 ?
-    {} : Object.fromEntries(sources.map(m => [UniChemSource.idNames[(m['src_id'] as number)], m['src_compound_id']]));
+    {} : Object.fromEntries(sources.map((m) => [UniChemSource.idNames[(m['src_id'] as number)], m['src_compound_id']]));
 }
 
 export async function getIdMap(smiles: string): Promise<{[k:string]: any} | null> {

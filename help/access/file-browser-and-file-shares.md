@@ -220,4 +220,4 @@ To share a file as table:
 
 [Data connection]: https://datagrok.ai/help/access/data-connection
 
-[Uploading a project]: https://datagrok.ai/help/overview/project#uploading-a-project
+[Uploading a project]: https://datagrok.ai/help/datagrok/project#uploading-a-project

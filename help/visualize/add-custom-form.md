@@ -3,8 +3,8 @@
 
 # Add custom form
 
-Adds new column with forms based on [Markup](../overview/markup.md).
+Adds new column with forms based on [Markup](../datagrok/markup.md).
 
 See also
 
-* [Markup](../overview/markup.md)
+* [Markup](../datagrok/markup.md)

@@ -15,7 +15,7 @@ tables. There are few options for working with it:
 
 See also:
 
-* [Table](../overview/table.md)
+* [Table](../datagrok/table.md)
 * [Visual query](db-visual-query.md)
 * [Database column](db-column-info.md)
 * [Data query](data-query.md)

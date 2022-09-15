@@ -1,4 +1,4 @@
-import {SeqPalette, SeqPaletteBase} from '@datagrok-libraries/bio/src/seq-palettes';
+import {SeqPaletteBase} from '@datagrok-libraries/bio/src/seq-palettes';
 import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
@@ -63,8 +63,8 @@ export function measureAAR(s: string): number {
 
 export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAAR: string, currentPosition: string,
   statsDf: DG.DataFrame, twoColorMode: boolean, mdCol: DG.Column<number>, bound: DG.Rect, cellValue: number,
-  currentSelection: types.SelectionObject, substitutionsInfo: types.SubstitutionsInfo | null): void {
-  const queryAAR = `${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ${currentAAR}`;
+  currentSelection: types.SelectionObject, substitutionsInfo: types.SubstitutionsInfo): void {
+  const queryAAR = `${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`;
   const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
   const pVal: number = statsDf
     .groupBy([C.COLUMNS_NAMES.P_VALUE])
@@ -101,7 +101,7 @@ export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAA
   canvasContext.closePath();
 
   canvasContext.fill();
-  if (substitutionsInfo) {
+  if (substitutionsInfo.size > 0) {
     canvasContext.textBaseline = 'middle';
     canvasContext.textAlign = 'center';
     canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(coef)));
@@ -136,7 +136,7 @@ export function renderBarchart(ctx: CanvasRenderingContext2D, col: DG.Column, mo
   const yMargin = bounds.y + bounds.height * margin / 4;
   const wMargin = bounds.width - bounds.width * margin * 2;
   const hMargin = bounds.height - bounds.height * margin;
-  const barWidth = wMargin - 10;
+  const barWidth = 10;
   ctx.fillStyle = 'black';
   ctx.textBaseline = 'top';
   ctx.font = `${hMargin * margin / 2}px`;

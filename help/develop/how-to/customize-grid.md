@@ -207,5 +207,5 @@ on any special coloring.
 See also:
 
 * [Grid](../../visualize/viewers/grid.md)
-* [Table view](../../overview/table-view.md)
+* [Table view](../../datagrok/table-view.md)
 * [JavaScript API: Grid](https://datagrok.ai/js-api/classes/dg.Grid)

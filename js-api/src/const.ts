@@ -23,6 +23,22 @@ export enum AGG {
   SELECTED_ROWS_COUNT = "#selected"
 }
 
+export enum STR_AGG {
+  CONCAT_ALL = 'concat all',
+  CONCAT_UNIQUE = 'concat unique',
+  LONGEST = 'longest',
+  SHORTEST = 'shortest',
+  MOST_FREQUENT = 'most frequent',
+  CONCAT_COUNTS = 'concat counts',
+}
+
+export enum STAT_COUNTS {
+  TOTAL_COUNT = 'count',
+  VALUE_COUNT = 'values',
+  UNIQUE_COUNT = 'unique',
+  MISSING_VALUE_COUNT = 'nulls',
+}
+
 /** @enum {SYNC_TYPE} */
 export enum SYNC_TYPE {
   CURRENT_ROW_TO_ROW = 'row to row',
@@ -476,6 +492,7 @@ export enum USER_STATUS {
  **/
 
 export type AggregationType = `${AGG}`;
+export type ColumnAggregationType = `${AGG}` | `${STR_AGG}` | string;
 export type SyncType = `${SYNC_TYPE}`;
 export type JoinType = `${JOIN_TYPE}`;
 export type ColumnType = `${COLUMN_TYPE}`;

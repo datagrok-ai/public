@@ -581,7 +581,7 @@
           "target": "name=div-window-switch-Console",
           "targets": [
             [
-              "css=.d4-toggle-button:nth-child(7) .d4-input-switch > div",
+              "css=.d4-toggle-button:nth-child(7) .ui-input-switch > div",
               "css:finder"
             ],
             [

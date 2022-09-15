@@ -42,6 +42,6 @@ For instance, you would get the upper whisker inverted on the following data: [0
 See also:
 
 * [Viewers](../viewers.md)
-* [Table View](../../overview/table-view.md)
+* [Table View](../../datagrok/table-view.md)
 * [JS API: Box plot](https://public.datagrok.ai/js/samples/ui/viewers/types/box-plot)
 * [Wikipedia: Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test)

@@ -309,8 +309,20 @@ export function helmColumnToSmiles(helmColumn: DG.Column) {
 
 //name: getMolfile
 //input: string helmString {semType: Macromolecule}
-export async function getMolfile(helmString) {
+export async function getMolfile(helmString): Promise<string> {
   return molfiles.get(helmString);
+}
+
+//name: getMolfiles
+//input: column mcol {semType: Macromolecule}
+//output: column res
+export async function getMolFiles(mcol: DG.Column): Promise<DG.Column> {
+  const mols = Array<string>(mcol.length).fill('');
+  for(let i = 0; i < mcol.length; i++) 
+    mols[i] = await getMolfile(mcol.get(i));
+
+  const res = DG.Column.fromStrings('mols', mols);
+  return res;
 }
 
 function split(s: string, sep: string) {

@@ -6,7 +6,7 @@ Here are the directories of particular interest:
 * [data-access](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/data-access)
   : directory with [data access](https://datagrok.ai/help/access/data-connection) examples
 * [data-frame](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/data-access)
-  : directory with [table (data frame)](https://datagrok.ai/help/overview/table) manipulations
+  : directory with [table (data frame)](https://datagrok.ai/help/datagrok/table) manipulations
 * [domains](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains)
   : directory with domain specific examples: [bioinformatics](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/bio),
   [chemical](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/chem),
@@ -14,7 +14,7 @@ Here are the directories of particular interest:
 * [events](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/events)
   : directory with events subsystem examples 
 * [functions](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/functions)
-  : directory with examples how to work with [functions](https://datagrok.ai/help/overview/functions/function)
+  : directory with examples how to work with [functions](https://datagrok.ai/help/datagrok/functions/function)
 * [grid](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/grid)
   : directory with examples how to work with [table grid](https://datagrok.ai/help/visualize/viewers/grid)
 * [scripting](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/scripting)

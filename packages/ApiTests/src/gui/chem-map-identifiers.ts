@@ -22,20 +22,22 @@ category('Chem: Map Identifiers', () => {
 
     let panels = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-accordion-pane-header');
     let actionsPanel:HTMLElement;
-    for (let i = 0; i < panels.length; i++ ){        
+    for (let i = 0; i < panels.length; i++ ) {        
       actionsPanel = panels[i] as HTMLElement;
       if (actionsPanel.innerText == 'Actions')
-          break;}
+          break;
+      }
     actionsPanel!.click(); 
     
     await delay(500);
 
     let actions = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-link-action');
     let mapIdentifiersAction:HTMLElement;
-    for (let i = 0; i < actions.length; i++ ){        
+    for (let i = 0; i < actions.length; i++ ) {        
       mapIdentifiersAction = actions[i] as HTMLElement;
       if (mapIdentifiersAction.innerText == 'Chem | Map Identifiers...')
-          break;}
+          break;
+      }
     mapIdentifiersAction!.click();
 
     await delay(500);    

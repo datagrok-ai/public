@@ -47,7 +47,7 @@ export class ComputationView extends FunctionView {
       }, 0);
     } else {
       if (funcName) {
-        grok.functions.eval(funcName).then(async (func: DG.Func) => {
+        (grok.functions.eval(funcName) as Promise<DG.Func>).then(async (func: DG.Func) => {
           const funccall = func.prepare({});
           this.linkFunccall(funccall);
           await this.init();

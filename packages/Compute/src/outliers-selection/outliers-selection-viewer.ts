@@ -68,14 +68,15 @@ export class OutliersSelectionViewer extends DG.JsViewer {
             groupsListGrid.dataFrame?.cell(groupsListGrid.dataFrame.rowCount-1, OUTLIER_RATIONALE_COL_LABEL).value;
 
           inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
-            inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
-            inputData.set(
-              OUTLIER_RATIONALE_COL_LABEL,
+            inputData.col(IS_OUTLIER_COL_LABEL)!.set(selectedIndex, true, false);
+            inputData.col(OUTLIER_RATIONALE_COL_LABEL)!.set(
               selectedIndex,
               newRationale,
+              false,
             );
           });
           inputData.selection.setAll(false);
+          inputData.fireValuesChanged();
         }, 'Confirm the outliers'), {style: {'text-align': 'center', 'margin': '6px'}},
       );
 
@@ -92,10 +93,11 @@ export class OutliersSelectionViewer extends DG.JsViewer {
         ui.icons.delete(() => {
           for (let i = 0; i < inputData.rowCount; i++) {
             if (inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i) === rationale) {
-              inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).set(i, '');
-              inputData.columns.byName(IS_OUTLIER_COL_LABEL).set(i, false);
+              inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).set(i, '', false);
+              inputData.columns.byName(IS_OUTLIER_COL_LABEL).set(i, false, false);
             }
           }
+          inputData.fireValuesChanged();
         }, 'Remove the outliers group'), {style: {'text-align': 'center', 'margin': '6px'}},
       );
 

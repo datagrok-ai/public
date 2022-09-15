@@ -21,7 +21,7 @@ The server replies to this request with the URL of the uploaded project.
 
 To apply a layout, use the `?layout` parameter in the following way:
 
-1. Save the layout [manually](../../overview/table-view.md) or [programmatically](layouts.md)
+1. Save the layout [manually](../../datagrok/table-view.md) or [programmatically](layouts.md)
 2. Go to **Manage / Layouts**, find your saved layout (see picture below). Navigate to Property Panel, hit `Links...`
 3. In the new window, copy either ID or fully qualified name of the layout. You might want to rename the layout if the
    name is ambiguous.

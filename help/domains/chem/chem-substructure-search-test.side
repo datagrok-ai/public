@@ -869,7 +869,7 @@
           "target": "xpath=//div[@name='div-window-switch-Console']",
           "targets": [
             [
-              "css=.d4-toggle-button:nth-child(7) > .d4-input-bool-switch",
+              "css=.d4-toggle-button:nth-child(7) > .ui-input-bool-switch",
               "css:finder"
             ],
             [

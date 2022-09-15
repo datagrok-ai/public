@@ -1,8 +1,7 @@
 {
 	"name": "@datagrok/gis",
 	"friendlyName": "GIS",
-	"fullName": "Opanlayers Map",
-	"version": "0.0.3",
+	"version": "0.0.5",
 	"category": "Visualizations",
 	"author": {
 		"name": "Maksym Shvyrlo",
@@ -12,11 +11,13 @@
 	"dependencies": {
 		"@datagrok-libraries/utils": "latest",
 		"cash-dom": "latest",
+		"citysdk": "^2.2.3",
 		"datagrok-api": "latest",
 		"dayjs": "latest",
 		"jszip": "^3.10.1",
 		"ol": "^6.15.1",
-		"ol-geocoder": "^4.1.2"
+		"ol-geocoder": "^4.1.2",
+		"xhr2": "^0.2.1"
 	},
 	"devDependencies": {
 		"@typescript-eslint/eslint-plugin": "latest",

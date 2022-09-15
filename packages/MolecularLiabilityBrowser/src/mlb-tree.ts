@@ -4,8 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
-import {TreeAnalyzer, PhylocanvasTreeNode} from './utils/tree-stats';
+import {TreeAnalyzer, PhylocanvasTreeNode, getVId} from './utils/tree-stats';
 import {Subscription, Unsubscribable} from 'rxjs';
+
 
 export class TreeBrowser extends DG.JsViewer {
   static treeGridColumnsNameMapping = {
@@ -42,15 +43,9 @@ export class TreeBrowser extends DG.JsViewer {
   public async setData(treeDf: DG.DataFrame, mlbDf: DG.DataFrame): Promise<void> {
     console.debug('MLB: TreeBrowser.setData()');
     await this.destroyView();
-    // .catch((ex) => {
-    //   console.error(`TreeBrowser.setData() > destroyView() error:\n${ex.toString()}`);
-    // });
     this._mlbDf = mlbDf;
     this._treeDf = treeDf;
-    await this.buildView()
-      .catch((ex) => {
-        console.error(`TreeBrowser.setData() > buildView() error:\n${ex.toString()}`);
-      });
+    await this.buildView();
   }
 
   protected _takeTreeAt(index: number, columnName = 'TREE'): string {
@@ -386,11 +381,11 @@ export class TreeBrowser extends DG.JsViewer {
   selectNode(node: any) {
     if (node) {
       if (node.label) {
-        const nodeId: string = node?.label;
+        const nodeVId: string = getVId(node.id);
         const df = this.mlbDf;
-        const col = df.col(this.idColumnName);
+        const col: DG.Column = df.getCol(this.idColumnName);
 
-        df.selection.init((i) => (col.get(i) as string).includes(nodeId));
+        df.selection.init((i) => (col.get(i) as string).includes(nodeVId));
 
         if (df.selection.trueCount > 0)
           df.currentRowIdx = df.selection.getSelectedIndexes()[0];
@@ -424,9 +419,13 @@ export class TreeBrowser extends DG.JsViewer {
       for (const item of treeItems) {
         const style = {};
 
-        if (this.vIdIndex[item]) {
+        const nodeVId = getVId(item);
+        if (nodeVId in this.vIdIndex) {
           const color = this.treeAnalyser.getItemsAsSet().has(item) ? '#0000ff' : '#ff0000';
-          style[item] = {fillColour: color};
+          style[item] = {
+            fillColour: color,
+            // label: nodeVId,
+          };
         } else {
           style[item] = {shape: Shapes.Dot};
         }

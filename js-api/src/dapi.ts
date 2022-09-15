@@ -239,7 +239,7 @@ export class HttpDataSource<T> {
 
   /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
-   *  Smart filter: {@link https://datagrok.ai/help/overview/smart-search} */
+   *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search} */
   list(options: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {}): Promise<T[]> {
     if (options.pageSize !== undefined)
       this.by(options.pageSize);
@@ -300,7 +300,7 @@ export class HttpDataSource<T> {
   /** Applies filter to current request.
    *  Also can be set with {@link list} method "options" parameter
    *  See example: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
-   *  Smart filter: {@link https://datagrok.ai/help/overview/smart-search}
+   *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search}
    *  @param {string} w
    *  @returns {HttpDataSource} */
   filter(w: string): HttpDataSource<T> {

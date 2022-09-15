@@ -20,4 +20,4 @@ Use this dialog to change the data type of a column.
 
 See also:
 
-* [Column](../overview/table.md#column)
+* [Column](../datagrok/table.md#column)

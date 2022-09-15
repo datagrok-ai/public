@@ -98,5 +98,5 @@ Also use context menu of columns to sorting. Submenu **Sort**. Repeat steps 3-17
 
 See also:
 
-* [Table](../../overview/table.md)
+* [Table](../../datagrok/table.md)
 * [Viewers Test](../../visualize/viewers/viewers-test.md)

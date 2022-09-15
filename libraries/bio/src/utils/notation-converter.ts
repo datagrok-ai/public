@@ -38,11 +38,11 @@ export class NotationConverter extends UnitsHandler {
       const fastaMonomersArray = this.splitter(fastaPolymer);
       for (let i = 0; i < fastaMonomersArray.length; i++) {
         if (fastaMonomersArray[i] === fastaGapSymbol)
-          fastaMonomersArray[i] = this._defaultGapSymbolsDict.SEPARATOR;
+          fastaMonomersArray[i] = UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
       }
       return fastaMonomersArray.join(separator);
     });
-    newColumn.setTag('separator', separator);
+    newColumn.setTag(UnitsHandler.TAGS.separator, separator);
     return newColumn;
   }
 
@@ -80,7 +80,7 @@ export class NotationConverter extends UnitsHandler {
     const monomerArray = this.splitter(sourcePolymer);
     const monomerHelmArray: string[] = monomerArray.map((mm: string) => {
       if (mm === sourceGapSymbol)
-        return this._defaultGapSymbolsDict.HELM;
+        return UnitsHandler._defaultGapSymbolsDict.HELM;
       else
         return `${leftWrapper}${mm}${rightWrapper}`;
     });
@@ -98,7 +98,7 @@ export class NotationConverter extends UnitsHandler {
   public convertStringToHelm(
     sourcePolymer: string,
     sourceGapSymbol: string | null = null
-  ) : string {
+  ): string {
     if (sourceGapSymbol === null)
       sourceGapSymbol = this.defaultGapSymbol;
     const [prefix, leftWrapper, rightWrapper, postfix] = this.getHelmWrappers();
@@ -134,7 +134,7 @@ export class NotationConverter extends UnitsHandler {
    */
   private convertSeparatorToFasta(fastaGapSymbol: string | null = null): DG.Column {
     if (fastaGapSymbol === null)
-      fastaGapSymbol = this._defaultGapSymbolsDict.FASTA;
+      fastaGapSymbol = UnitsHandler._defaultGapSymbolsDict.FASTA;
 
     const newColumn = this.getNewColumn(NOTATION.FASTA);
     // assign the values to the empty column
@@ -178,8 +178,8 @@ export class NotationConverter extends UnitsHandler {
     // source helm columns may contain RNA, DNA and PT across different rows
     if (tgtGapSymbol === null) {
       tgtGapSymbol = (this.toFasta(tgtNotation as NOTATION)) ?
-        this._defaultGapSymbolsDict.FASTA :
-        this._defaultGapSymbolsDict.SEPARATOR;
+        UnitsHandler._defaultGapSymbolsDict.FASTA :
+        UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
     }
 
     if (this.toSeparator(tgtNotation as NOTATION) && tgtSeparator === '')
@@ -203,7 +203,7 @@ export class NotationConverter extends UnitsHandler {
         let item = helmItemsArray[i];
         if (isNucleotide)
           item = item.replace(helmWrappersRe, '');
-        if (item === this._defaultGapSymbolsDict.HELM) {
+        if (item === UnitsHandler._defaultGapSymbolsDict.HELM) {
           tgtMonomersArray.push(tgtGapSymbol!);
         } else if (this.toFasta(tgtNotation as NOTATION) && item.length > 1) {
           // the case of a multi-character monomer converted to FASTA

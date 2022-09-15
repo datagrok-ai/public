@@ -82,8 +82,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
 export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
-      limit: number, fingerprint: Fingerprint): Promise<number[]> {
-
+  limit: number, fingerprint: Fingerprint): Promise<number[]> {
   limit = Math.min(limit, moleculeColumn.length);
   const fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint);
   const indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => f != null);

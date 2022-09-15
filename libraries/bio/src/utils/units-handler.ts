@@ -6,18 +6,33 @@ import {WebLogo, SeqColStats} from '../viewers/web-logo';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 export const enum NOTATION {
-  FASTA = 'FASTA',
-  SEPARATOR = 'SEPARATOR',
-  HELM = 'HELM'
+  FASTA = 'fasta',
+  SEPARATOR = 'separator',
+  HELM = 'helm',
+}
+
+export const enum ALPHABET {
+  DNA = 'DNA',
+  RNA = 'RNA',
+  PT = 'PT',
+  UN = 'UN',
 }
 
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
+  public static readonly TAGS = {
+    aligned: 'aligned',
+    alphabet: 'alphabet',
+    alphabetSize: '.alphabetSize',
+    alphabetIsMultichar: '.alphabetIsMultichar',
+    separator: 'separator',
+  };
+
   protected readonly _column: DG.Column; // the column to be converted
   protected _units: string; // units, of the form fasta, separator
   protected _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
   protected _defaultGapSymbol: string;
-  protected _defaultGapSymbolsDict = {
+  protected static readonly _defaultGapSymbolsDict = {
     HELM: '*',
     SEPARATOR: '',
     FASTA: '-',
@@ -38,9 +53,9 @@ export class UnitsHandler {
     const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
 
     const alphabetCandidates: [string, Set<string>][] = [
-      ['PT', UnitsHandler.PeptideFastaAlphabet],
-      ['DNA', UnitsHandler.DnaFastaAlphabet],
-      ['RNA', UnitsHandler.RnaFastaAlphabet],
+      [ALPHABET.PT, UnitsHandler.PeptideFastaAlphabet],
+      [ALPHABET.DNA, UnitsHandler.DnaFastaAlphabet],
+      [ALPHABET.RNA, UnitsHandler.RnaFastaAlphabet],
     ];
 
     // Calculate likelihoods for alphabet_candidates
@@ -48,11 +63,10 @@ export class UnitsHandler {
       (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));
     const maxCos = Math.max(...alphabetCandidatesSim);
     const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
-    
-    const units: string = 'fasta';
-    col.setTag(DG.TAGS.UNITS, units);
-    col.setTag('aligned', seqType);
-    col.setTag('alphabet', alphabet);
+
+    col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    col.setTag(UnitsHandler.TAGS.aligned, seqType);
+    col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
   }
 
   protected get units(): string { return this._units; }
@@ -64,7 +78,7 @@ export class UnitsHandler {
   public get defaultGapSymbol(): string { return this._defaultGapSymbol; }
 
   public get separator(): string {
-    const separator = this.column.getTag('separator');
+    const separator = this.column.getTag(UnitsHandler.TAGS.separator);
     if (separator !== null)
       return separator;
     else
@@ -72,7 +86,7 @@ export class UnitsHandler {
   }
 
   public get aligned(): string {
-    const aligned = this.column.getTag('aligned');
+    const aligned = this.column.getTag(UnitsHandler.TAGS.aligned);
     if (aligned !== null) {
       return aligned;
     } else {
@@ -80,12 +94,41 @@ export class UnitsHandler {
     }
   }
 
+  /** Alphabet name (upper case) */
   public get alphabet(): string {
-    const alphabet = this.column.getTag('alphabet');
+    const alphabet = this.column.getTag(UnitsHandler.TAGS.alphabet);
     if (alphabet !== null) {
-      return alphabet;
+      return alphabet.toUpperCase();
     } else {
       throw new Error('Tag alphabet not set');
+    }
+  }
+
+  public getAlphabetSize(): number {
+    if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN) {
+      const alphabetSize = parseInt(this.column.getTag(UnitsHandler.TAGS.alphabetSize));
+      return alphabetSize;
+    } else {
+      switch (this.alphabet) {
+      case ALPHABET.PT:
+        return 20;
+      case ALPHABET.DNA:
+      case ALPHABET.RNA:
+        return 4;
+      case 'NT':
+        console.warn(`Unexpected alphabet 'NT'.`);
+        return 4;
+      default:
+        throw new Error(`Unexpected alphabet '${this.alphabet}'.`);
+      }
+    }
+  }
+
+  public getAlphabetIsMultichar(): boolean {
+    if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN) {
+      return this.column.getTag(UnitsHandler.TAGS.alphabetIsMultichar) == 'true';
+    } else {
+      return false;
     }
   }
 
@@ -95,25 +138,25 @@ export class UnitsHandler {
 
   public isHelm(): boolean { return this.notation === NOTATION.HELM; }
 
-  public isRna(): boolean { return this.alphabet.toLowerCase() === 'rna'; }
+  public isRna(): boolean { return this.alphabet === 'RNA'; }
 
-  public isDna(): boolean { return this.alphabet.toLowerCase() === 'dna'; }
+  public isDna(): boolean { return this.alphabet === 'DNA'; }
 
-  public isPeptide(): boolean { return this.alphabet.toLowerCase() === 'pt'; }
+  public isPeptide(): boolean { return this.alphabet === 'PT'; }
 
   /** Associate notation types with the corresponding units */
   /**
    * @return {NOTATION}     Notation associated with the units type
    */
   protected getNotation(): NOTATION {
-    if (this.units.toLowerCase().startsWith('fasta'))
+    if (this.units.toLowerCase().startsWith(NOTATION.FASTA))
       return NOTATION.FASTA;
-    else if (this.units.toLowerCase().startsWith('separator'))
+    else if (this.units.toLowerCase().startsWith(NOTATION.SEPARATOR))
       return NOTATION.SEPARATOR;
-    else if (this.units.toLowerCase().startsWith('helm'))
+    else if (this.units.toLowerCase().startsWith(NOTATION.HELM))
       return NOTATION.HELM;
     else
-      throw new Error('The column has units that do not correspond to any notation');
+      throw new Error(`Column '${this.column.name}' has unexpected notation '${this.units}'.`);
   }
 
   /**
@@ -130,14 +173,20 @@ export class UnitsHandler {
     const newColName = col.dataFrame.columns.getUnusedName(name);
     const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    newColumn.setTag(
-      DG.TAGS.UNITS,
-      this.units.replace(
-        this.notation.toLowerCase().toString(),
-        targetNotation.toLowerCase().toString()
-      )
-    );
+    newColumn.setTag(DG.TAGS.UNITS, this.notation);
     newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule');
+
+    const srcAlphabet = col.getTag(UnitsHandler.TAGS.alphabet);
+    if (srcAlphabet)
+      newColumn.setTag(UnitsHandler.TAGS.alphabet, srcAlphabet);
+
+    const srcAlphabetSize = col.getTag(UnitsHandler.TAGS.alphabetSize);
+    if (srcAlphabetSize)
+      newColumn.setTag(UnitsHandler.TAGS.alphabetSize, srcAlphabetSize);
+
+    const srcAlphabetIsMultichar = col.getTag(UnitsHandler.TAGS.alphabetIsMultichar);
+    if (srcAlphabetIsMultichar)
+      newColumn.setTag(UnitsHandler.TAGS.alphabetIsMultichar, srcAlphabetIsMultichar);
 
     return newColumn;
   }
@@ -203,8 +252,26 @@ export class UnitsHandler {
     else
       throw new Error('Units are not specified in column');
     this._notation = this.getNotation();
-    this._defaultGapSymbol = (this.isFasta()) ? this._defaultGapSymbolsDict.FASTA :
-      (this.isHelm()) ? this._defaultGapSymbolsDict.HELM :
-        this._defaultGapSymbolsDict.SEPARATOR;
+    this._defaultGapSymbol = (this.isFasta()) ? UnitsHandler._defaultGapSymbolsDict.FASTA :
+      (this.isHelm()) ? UnitsHandler._defaultGapSymbolsDict.HELM :
+        UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
+
+    if (!this.column.tags.has(UnitsHandler.TAGS.alphabetSize)) {
+      if (this.isHelm())
+        throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
+          `tag '${UnitsHandler.TAGS.alphabetSize}' is mandatory.`);
+      else if (['UN'].includes(this.alphabet))
+        throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
+          `tag '${UnitsHandler.TAGS.alphabetSize}' is mandatory.`);
+    }
+
+    if (!this.column.tags.has(UnitsHandler.TAGS.alphabetIsMultichar)) {
+      if (this.isHelm())
+        throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
+          `tag '${UnitsHandler.TAGS.alphabetIsMultichar}' is mandatory.`);
+      else if (['UN'].includes(this.alphabet))
+        throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
+          `tag '${UnitsHandler.TAGS.alphabetIsMultichar}' is mandatory.`);
+    }
   }
 }

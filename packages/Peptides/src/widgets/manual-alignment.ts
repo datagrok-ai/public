@@ -2,10 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
+
 import $ from 'cash-dom';
 import '../styles.css';
 import {PeptidesModel} from '../model';
-import {splitAlignedPeptides} from '../utils/misc';
 
 /** Manual sequence alignment widget.
  *
@@ -19,7 +20,7 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, cur
   const applyChangesBtn = ui.button('Apply', async () => {
     const newSequence = sequenceInput.value;
     const affectedRowIndex = currentDf.currentRowIdx;
-    const splitSequence = splitAlignedPeptides(DG.Column.fromStrings('splitSequence', [newSequence]));
+    const splitSequence = splitAlignedSequences(DG.Column.fromStrings('splitSequence', [newSequence]));
 
     alignedSequenceCol.set(affectedRowIndex, newSequence);
     for (const part of splitSequence.columns) {

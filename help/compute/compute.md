@@ -37,7 +37,7 @@ function views, and analytical blocks are part of the
 
 [Data access](#data-access), [computations](#scalable-computations), and
 [visualizations](#exploratory-data-analysis) are the cornerstones of scientific computing. In Datagrok, all of them
-are [functions](https://datagrok.ai/help/overview/functions/function)
+are [functions](https://datagrok.ai/help/datagrok/functions/function)
 with the following features:
 
 * Advanced support for input and output parameters
@@ -49,7 +49,7 @@ with the following features:
 * Annotated with [metadata](#metadata) both on the function and on the parameter level
 * Could be serialized and re-executed at a later point.
 
-A [function](https://datagrok.ai/help/overview/functions/function)
+A [function](https://datagrok.ai/help/datagrok/functions/function)
 could be written in [any language that Datagrok supports](https://datagrok.ai/help/compute/scripting). Typically,
 computations are developed in `Python`, `R`, `Julia`, `Matlab/Octave`, `JavaScript`, or `C++`. Data access usually
 uses `SQL`, `SPARQL`, `OpenAPI`, or `JavaScript`.
@@ -117,7 +117,7 @@ experience.
 A visual tool for annotating function parameters is
 [currently in the development](https://github.com/datagrok-ai/public/issues/184).
 
-Learn more: [function parameters](https://datagrok.ai/help/overview/functions/func-params-enhancement)
+Learn more: [function parameters](https://datagrok.ai/help/datagrok/functions/func-params-enhancement)
 
 See also: [auto-generating UI for dynamic data retrieval](#data-access)
 
@@ -222,13 +222,13 @@ example: `https://dev.datagrok.ai/func/Skalkin.LotkaVolterra?x0=0.5&y0=2&alpha=0
 The platform allows to seamlessly [access](../home.md#access) any machine-readable data source, such
 as [databases](../access/data-connection.md),
 [web services](../access/open-api.md),
-[files](../access/importing-data.md) (either on network shares on in S3). To make a model retrieve the input data from
+[files](../access/file-browser-and-file-shares.md) (either on network shares on in S3). To make a model retrieve the input data from
 the data source, annotate the input parameter with the
 corresponding [parameterized query](../access/parameterized-queries.md). Since both queries and models are functions,
 the platform can automatically generate the UI that would contain both input- and computation-specific parts.
 
 By untangling the computation from the data access, implementing both of them as
-pure [functions](https://datagrok.ai/help/overview/functions/function), and eliminating the hardcoded UI altogether, we
+pure [functions](https://datagrok.ai/help/datagrok/functions/function), and eliminating the hardcoded UI altogether, we
 can now create powerful, interactive scientific application without having to write a single line of the UI code. These
 applications also automatically benefit from all other cross-cutting features.
 

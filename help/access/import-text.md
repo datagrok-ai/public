@@ -28,4 +28,4 @@ Options and commands:
 
 See also:
 
-* [Importing data](importing-data.md)
+* [Importing data](file-browser-and-file-shares.md)

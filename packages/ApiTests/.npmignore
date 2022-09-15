@@ -36,3 +36,5 @@ node_modules/
 .netrwhist
 *~
 [._]*.un~
+
+test-report.html

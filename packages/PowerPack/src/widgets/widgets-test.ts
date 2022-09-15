@@ -14,6 +14,6 @@ category('Widgets', () => {
   test('CommunityWidget', async () => new CommunityWidget());
   test('HtmlWidget', async () => new HtmlWidget());
   test('RecentProjectsWidget', async () => new RecentProjectsWidget());
-  test('SystemStatuWidget', async () => new SystemStatusWidget());
+  test('SystemStatusWidget', async () => new SystemStatusWidget());
 
 });

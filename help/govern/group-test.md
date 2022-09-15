@@ -24,12 +24,12 @@ in [groups](../govern/group.md), start chat with other members, view [group](../
 * New [group](../govern/group.md) was created with name "test"
 
 1. Open "Edit" dialog for "test" [group](../govern/group.md). (From contex menu or from "Actions"
-   tab on [Property Panel](../overview/navigation.md#properties))
+   tab on [Property Panel](../datagrok/navigation.md#properties))
 
 * Editing dialog is open. Here you can change name and description of [group](../govern/group.md)
 
 1. Open "Edit members" dialog for "test" [group](../govern/group.md). (From contex menu or from "
-   Actions" tab on [Property Panel](../overview/navigation.md#properties))
+   Actions" tab on [Property Panel](../datagrok/navigation.md#properties))
 
 * "Edit members" dialog is open
 * In list of [group](../govern/group.md) members only current user (who created [group](../govern/group.md)) with admin
@@ -73,7 +73,7 @@ in [groups](../govern/group.md), start chat with other members, view [group](../
 * You left the group "test"
 
 1. Request membership in "test" [group](group.md). (From contex menu or from "Actions" tab
-   on [Property Panel](../overview/navigation.md#properties))
+   on [Property Panel](../datagrok/navigation.md#properties))
 
 * Balloon with information about successful request
 * All admins and members of nested groups with admin role received a notification about request
@@ -81,7 +81,7 @@ in [groups](../govern/group.md), start chat with other members, view [group](../
   request, ```✓``` - request accepted)
 
 1. Open "Edit memberships" dialog for "test" [group](group.md). (From contex menu or from "Actions"
-   tab on [Property Panel](../overview/navigation.md#properties), it is necessary to do from user with admin role in
+   tab on [Property Panel](../datagrok/navigation.md#properties), it is necessary to do from user with admin role in
    this group)
 
 * "Edit memberships" dialog is open
@@ -89,10 +89,10 @@ in [groups](../govern/group.md), start chat with other members, view [group](../
 * Management in this dialog is similar to others, but carried out from the position of nested group
 
 1. Open "Chat" for "test" [group](group.md). (From contex menu or from "Actions" tab
-   on [Property Panel](../overview/navigation.md#properties))
+   on [Property Panel](../datagrok/navigation.md#properties))
 
 1. Delete "test" [group](group.md) (From contex menu or from "Actions" tab
-   on [Property Panel](../overview/navigation.md#properties))
+   on [Property Panel](../datagrok/navigation.md#properties))
 
 See also:
 

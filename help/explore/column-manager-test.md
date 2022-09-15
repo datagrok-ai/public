@@ -17,8 +17,8 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 
 1. Alternately click on columns in ["Column Manager"](column-manager.md)
 
-* Selected column is highlighted in [table](../overview/table.md)
-* Selected column is shown on [Property Panel](../overview/navigation.md#properties)
+* Selected column is highlighted in [table](../datagrok/table.md)
+* Selected column is shown on [Property Panel](../datagrok/navigation.md#properties)
 
 1. Call context menu for column in ["Column Manager"](column-manager.md)
 
@@ -30,7 +30,7 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 1. With ```Shift``` held down, select all columns from ["Column Manager"](column-manager.md)
 
 * In context menu, submenu appears whose actions apply to all selected columns (tittle like *"n selected columns"*)
-* [Property Panel](../overview/navigation.md#properties) displays actions related to all selected columns
+* [Property Panel](../datagrok/navigation.md#properties) displays actions related to all selected columns
 
 1. Expand "Add stats" submenu from the context menu
 
@@ -73,4 +73,4 @@ The implementation is based on the [grid](../visualize/viewers/grid.md), so many
 See also:
 
 * ["Column Manager"](column-manager.md)
-* [Table Manager test](../overview/table-manager-test.md)
+* [Table Manager test](../datagrok/table-manager-test.md)

@@ -159,7 +159,7 @@
           "target": "name=div-window-switch-Menu",
           "targets": [
             [
-              "css=.d4-toggle-button:nth-child(1) .d4-input-switch",
+              "css=.d4-toggle-button:nth-child(1) .ui-input-switch",
               "css:finder"
             ],
             [

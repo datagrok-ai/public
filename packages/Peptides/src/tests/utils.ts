@@ -6,7 +6,6 @@ import {
   createDimensinalityReducingWorker,
   IReduceDimensionalityResult,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
-import {runKalign} from '../utils/multiple-sequence-alignment';
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
 /**
@@ -39,11 +38,10 @@ export async function _testViewerIsDrawing(table: DG.DataFrame, view: DG.TableVi
 export async function _testDimensionalityReducer(
   columnData: Array<string>, method: StringMetrics, measure: string): Promise<void> {
   const cyclesCount = 100;
-  let embcols;
 
   const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(
     {data: columnData, metric: measure as StringMetrics}, method, {cycles: cyclesCount});
-  embcols = reduceDimRes.embedding;
+  const embcols = reduceDimRes.embedding;
 
   const [X, Y] = embcols as Array<Float32Array>;
 
@@ -65,12 +63,9 @@ export async function _testDimensionalityReducer(
  */
 export async function _testPeptideSimilaritySpaceViewer(table: DG.DataFrame, alignedSequencesColumn: DG.Column,
   method: string, measure: string, cyclesCount: number): Promise<void> {
-  let viewer;
-  let df: DG.DataFrame;
-
-  viewer = await createPeptideSimilaritySpaceViewer(
+  const viewer = await createPeptideSimilaritySpaceViewer(
     table, method, measure, cyclesCount, undefined, alignedSequencesColumn);
-  df = viewer.dataFrame;
+  const df = viewer.dataFrame;
 
   const axesNames = ['~X', '~Y', '~MW'];
   const axes = axesNames.map((v) => df.getCol(v).getRawData() as Float32Array);

@@ -25,9 +25,9 @@ const confPath = path.join(grokDir, 'config.yaml');
 
 function mapURL(conf: Config): Indexable {
   const urls: Indexable = {};
-  for (const server in conf.servers)
+  for (const server in conf.servers) {
     urls[conf['servers'][server]['url']] = conf['servers'][server];
-
+  }
   return urls;
 }
 
@@ -75,7 +75,7 @@ export async function getBrowserPage(puppeteer: any): Promise<{browser: any, pag
   }, token);
   await page.goto(url);
   try {
-    await page.waitForSelector('.grok-preloader', { timeout: 1800000 });
+//    await page.waitForSelector('.grok-preloader', { timeout: 1800000 });
     await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 7200000});
   } catch (error) {
     throw error;

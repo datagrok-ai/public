@@ -76,8 +76,27 @@ where d.chembl_id = @id
 
 ![](help/molecule-queries.gif)
 
-A molecule query does not have to be a database query, any [function](../../help/overview/functions/function.md)
+A molecule query does not have to be a database query, any [function](../../help/datagrok/functions/function.md)
 will do. For instance, InChi query is implemented as a Python script. 
+
+## Elemental analysis
+
+Elemental analysis is now available in Chem. Its main purpose is to show atom counts.
+
+With this newly implemented tool you can:
+* get columns with atom counts (same order as in the periodic table);
+* get a radar chart for every single molecule which makes it possible to compare each molecule with the whole dataset.
+
+In order to use the new feature, select Chem | Elemental analysis from the main menu.
+
+Radar chart can be visualized in 2 ways:
+1. A new column with radar charts is added.
+
+![](help/radar-chart-grid.gif)
+
+2. Radar chart appears in a new window. It changes automatically when you click on the new row.
+
+![](help/radar-chart-view.gif)
 
 
 See also: 

@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
-import {RDModule, RDMol} from '../rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export async function checkForStructuralAlerts(col: DG.Column<string>): Promise<void> {
   const df = col.dataFrame;
@@ -38,11 +38,11 @@ export async function checkForStructuralAlerts(col: DG.Column<string>): Promise<
 export function runStructuralAlertsDetection(df: DG.DataFrame, ruleSetList: string[], col: DG.Column<string>,
   ruleSetCol: DG.Column<string>, ruleIdCol: DG.Column<string>, smartsMap: Map<string, RDMol>,
   rdkitModule: RDModule): DG.DataFrame {
-  ruleSetList.forEach((ruleSetName) => df.columns.addNewBool(ruleSetName))
+  ruleSetList.forEach((ruleSetName) => df.columns.addNewBool(ruleSetName));
   const skipRuleSetList: string[] = [];
   const originalDfLength = df.rowCount;
   const alertsDfLength = ruleSetCol.length;
-  
+
   for (let i = 0; i < originalDfLength; i++) {
     const mol = rdkitModule.get_mol(col.get(i)!);
 

@@ -9,17 +9,13 @@ export enum COLUMNS_NAMES {
   MEAN_DIFFERENCE = 'Mean difference',
 }
 
-export enum CATEGORIES {
-  OTHER = 'Other',
-  ALL = 'All',
-}
-
 export enum TAGS {
   AAR = 'AAR',
   POSITION = 'Pos',
   SEPARATOR = 'separator',
   SELECTION = 'selection',
   ALPHABET = 'alphabet',
+  ALIGNED = 'aligned',
 }
 
 export enum SEM_TYPES {
@@ -29,6 +25,8 @@ export enum SEM_TYPES {
   ACTIVITY_SCALED = 'activityScaled',
   MACROMOLECULE = 'Macromolecule',
 }
+
+export const MSA = 'MSA';
 
 export const STATS = 'stats';
 

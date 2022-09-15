@@ -69,7 +69,7 @@ function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerp
 
   const molIds: number[] = [];
   const diversities = new Array(limit).fill('');
-  
+
   for (let i = 0; i < limit; i++)
     diversities[i] = molStringsColumn.get(indexes[diverseIndexes[i]]);
 
@@ -179,16 +179,17 @@ function substructureSearchPatternsMatch(molString: string, querySmarts: string,
   const fpRdKit = queryMol.get_pattern_fp_as_uint8array();
   checkEl:
   for (let i = 0; i < fgs.length; ++i) {
-    for (let j = 0; j < patternFpUint8Length; ++j)
+    for (let j = 0; j < patternFpUint8Length; ++j) {
       if ((fgs[i][j] & fpRdKit[j]) != fpRdKit[j])
         continue checkEl;
+    }
     result.setBit(i, true, false);
   }
   return result;
 }
 
 export async function chemGetFingerprints(...args: [DG.Column, Fingerprint?, boolean?]): Promise<BitArray[]> {
-  return (await getUint8ArrayFingerprints(...args)).map(el => rdKitFingerprintToBitArray(el));
+  return (await getUint8ArrayFingerprints(...args)).map((el) => rdKitFingerprintToBitArray(el));
 }
 
 export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolString = '')

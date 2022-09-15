@@ -61,4 +61,4 @@ See also:
 * [Predictive modeling Info](../../learn/predictive-modeling-info.md)
 * [Data connection](../../access/data-connection.md)
 * [Data query](../../access/data-query.md)
-* [Function call](../../overview/functions/function-call.md)
+* [Function call](../../datagrok/functions/function-call.md)

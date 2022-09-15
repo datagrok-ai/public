@@ -22,7 +22,7 @@ export function sequenceToMolV3000(sequence: string, inverted: boolean = false, 
     if (dropdowns.includes(codesList[i])) {
       smilesCodes.push((i >= codesList.length / 2) ?
         MODIFICATIONS[codesList[i]].right : MODIFICATIONS[codesList[i]].left);
-      if(!(i < codesList.length - 1 && links.includes(codesList[i + 1])))
+      if (!(i < codesList.length - 1 && links.includes(codesList[i + 1])))
         smilesCodes.push(stadardPhosphateLinkSmiles);
     } else {
       if (links.includes(codesList[i]) ||

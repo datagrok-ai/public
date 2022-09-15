@@ -19,31 +19,51 @@ afterAll(async () => {
   await browser.close();
 });
 
-it('TEST', async () => {
-  const target_package:string = process.env.TARGET_PACKAGE;
-  console.log(`Testing ${target_package} package`);
+expect.extend({
+  checkOutput(received, expected, context) {
+    if (received === expected) {
+      return {
+        message: () => context,
+        pass: true
+      };
+    } else {
+      return {
+        message: () => context,
+        pass: false
+      };
+    }
+  }
+});
 
-  //console.log(require('root-require')('package.json').version);
-  let r = await page.evaluate((target_package):Promise<object> => {
+it('TEST', async () => {
+  const targetPackage: string = process.env.TARGET_PACKAGE ?? '#{PACKAGE_NAMESPACE}';
+  console.log(`Testing ${targetPackage} package`);
+
+  let r = await page.evaluate((targetPackage): Promise<object> => {
     return new Promise<object>((resolve, reject) => {
-      (<any>window).grok.functions.eval(target_package + ':test()').then((df: any) => {
-        let cStatus = df.columns.byName('success');
-        let cMessage = df.columns.byName('result');
-        let cCat = df.columns.byName('category');
-        let cName = df.columns.byName('name');
+      (<any>window).grok.functions.eval(targetPackage + ':test()').then((df: any) => {
+        const cStatus = df.columns.byName('success');
+        const cMessage = df.columns.byName('result');
+        const cCat = df.columns.byName('category');
+        const cName = df.columns.byName('name');
+        const cTime = df.columns.byName('ms');
         let failed = false;
-        let report = '';
-        for (let i = 0; i < df.rowCount; i++)
-          if (!cStatus.get(i)) {
-            report += `${cCat.get(i)}.${cName.get(i)}: ${cMessage.get(i)}\n`;
+        let passReport = '';
+        let failReport = '';
+        for (let i = 0; i < df.rowCount; i++) {
+          if (cStatus.get(i)) {
+            passReport += `Test result : Success : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+          } else {
             failed = true;
+            failReport += `Test result : Failed : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           }
-        resolve({report, failed});
+        }
+        resolve({failReport, passReport, failed});
       }).catch((e: any) => reject(e));
     });
-  }, target_package);
+  }, targetPackage);
   // @ts-ignore
-  console.log(r.report);
+  console.log(r.passReport);
   // @ts-ignore
-  expect(r.failed).toBe(false);
+  expect(r.failed).checkOutput(false, r.failReport);
 }, 3600000);

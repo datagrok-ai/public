@@ -1,18 +1,18 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import { category, expect, expectFloat, test, delay, before } from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectFloat, test, delay, before} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {Fingerprint} from '../utils/chem-common';
-import { createTableView, readDataframe } from './utils';
+import {createTableView, readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 
-import { _testSearchSubstructure,
+import {_testSearchSubstructure,
   _testSearchSubstructureAllParameters,
   _testSearchSubstructureSARSmall,
-  loadFileAsText } from './utils';
-import { findSimilar, getSimilarities } from '../package';
-import { chemDiversitySearch } from '../analysis/chem-diversity-viewer';
-import { tanimotoSimilarity } from '@datagrok-libraries/utils/src/similarity-metrics';
+  loadFileAsText} from './utils';
+import {findSimilar, getSimilarities} from '../package';
+import {chemDiversitySearch} from '../analysis/chem-diversity-viewer';
+import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metrics';
 
 const testSimilarityResults = {
   'Tanimoto/Morgan': [
@@ -33,7 +33,6 @@ const testSimilarityResults = {
 };
 
 category('top menu similarity/diversity', () => {
-
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
@@ -68,7 +67,7 @@ category('top menu similarity/diversity', () => {
 
   test('diversitySearchViewerOpen', async () => {
     await _testDiversitySearchViewerOpen();
-  }); 
+  });
 });
 
 function getSearchViewer(viewer: DG.Viewer, name: string) {
@@ -96,7 +95,7 @@ export async function _testFindSimilar(findSimilarFunction: (...args: any) => Pr
     const molecule: string = dfResult.columns.byIndex(0).get(i);
     const score: number = dfResult.columns.byIndex(1).get(i);
     const index: number = dfResult.columns.byIndex(2).get(i);
-    first5Rows[i] = { molecule, score, index };
+    first5Rows[i] = {molecule, score, index};
   }
   expect(numRows, numRowsOriginal);
   expect(columnNames[0], 'molecule');
@@ -124,9 +123,9 @@ export async function _testGetSimilarities(getSimilaritiesFunction: (...args: an
   const df = grok.data.demo.molecules();
   let scores = (await getSimilaritiesFunction(df.columns.byName('smiles'),
     'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))! as any;
-  if (scores instanceof DG.DataFrame) {
+  if (scores instanceof DG.DataFrame)
     scores = scores.columns.byIndex(0);
-  }
+
   expectFloat(scores.get(0), 0.1034);
   expectFloat(scores.get(1), 0.07407);
   expectFloat(scores.get(2), 0.11111);

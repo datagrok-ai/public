@@ -23,7 +23,7 @@ debugging); once you are satisfied with the results, press SAVE to save it on th
 
 Note that you can introduce [parameters](../parameterized-queries.md) to the query. This is an incredibly powerful
 concept that allows Cypher queries to be used as
-[functions](../../overview/functions/function.md), or become info panels.
+[functions](../../datagrok/functions/function.md), or become info panels.
 
 See [query editor](../data-query-view.md) for details.
 
@@ -31,7 +31,7 @@ See [query editor](../data-query-view.md) for details.
 
 ## Using a query
 
-A query is a [function](../../overview/functions/function.md), and therefore could be used for multiple purposes in many
+A query is a [function](../../datagrok/functions/function.md), and therefore could be used for multiple purposes in many
 different contexts. Here are some of them:
 
 * Executed manually

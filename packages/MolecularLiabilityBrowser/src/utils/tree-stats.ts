@@ -1,6 +1,13 @@
 //@ts-ignore
 import {Utils, Newick} from '@phylocanvas/phylocanvas.gl';
 
+export const mlbTreeNodeRe = /([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)/g;
+
+/** get variable region (v_id) from MLB tree node id */
+export function getVId(treeNodeId: string) {
+  return treeNodeId.replaceAll(mlbTreeNodeRe, '$3');
+}
+
 /**
  * Analyses Newick-formatted strings containing phylogenetic trees.
  */
@@ -158,7 +165,8 @@ class NodeIdsIntersection {
    * @return {PhylocanvasTreeNode} Modified node.
    */
   apply(node: PhylocanvasTreeNode, treeIndex: number) {
-    if (node.isLeaf && this._items.has(node.id))
+    const nodeVId: string = getVId(node.id);
+    if (node.isLeaf && this._items.has(nodeVId))
       this._isect.push(node.id);
 
     return node;

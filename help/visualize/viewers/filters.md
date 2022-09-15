@@ -41,5 +41,5 @@ Drag-and-drop columns right from the grid to add the corresponding filters:
 See also:
 
 * [Viewers](../viewers.md)
-* [Table View](../../overview/table-view.md)
+* [Table View](../../datagrok/table-view.md)
 * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)

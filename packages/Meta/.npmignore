@@ -11,3 +11,5 @@ bin/commands/*.ts
 .netrwhist
 *~
 [._]*.un~
+
+test-report.html

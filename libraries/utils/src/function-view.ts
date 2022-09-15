@@ -22,11 +22,13 @@ export const passErrorToShell = () => {
         return await original.call(this, ...args);
       } catch (err: any) {
         grok.shell.error((err as Error).message);
-        throw Error;
+        throw err;
       }
     };
   };
 };
+
+export const INTERACTIVE_CSS_CLASS = 'cv-interactive';
 
 export class FunctionView extends DG.ViewBase {
   protected readonly context: DG.Context;
@@ -246,7 +248,7 @@ export class FunctionView extends DG.ViewBase {
   /**
    * Override to create a custom historical runs control.
    * @returns The HTMLElement with history block UI
-   * @stability Experimental
+   * @stability Stable
  */
   public buildHistoryBlock(): HTMLElement {
     const mainAcc = ui.accordion();
@@ -339,8 +341,8 @@ export class FunctionView extends DG.ViewBase {
               showAddToFavoritesDialog(funcCall);
             }, 'Edit run metadata'),
             solidStar
-          ], 'funccall-card-icons')
-        ], 'funccall-card');
+          ], 'cv-funccall-card-icons')
+        ], 'cv-funccall-card');
 
         card.addEventListener('click', async () => {
           this.linkFunccall(await this.loadRun(funcCall.id));
@@ -387,8 +389,8 @@ export class FunctionView extends DG.ViewBase {
               ev.stopPropagation();
               showDeleteFavoritesDialog(funcCall);
             }, 'Delete the run'),
-          ], 'funccall-card-icons')
-        ], 'funccall-card');
+          ], 'cv-funccall-card-icons')
+        ], 'cv-funccall-card');
 
         card.addEventListener('click', async () => {
           this.linkFunccall(await this.loadRun(funcCall.id));
@@ -456,9 +458,7 @@ export class FunctionView extends DG.ViewBase {
       ])]: []
       ]];
 
-    console.log('export added');
     if (this.func?.id) {
-      console.log('history added');
       const historyButton = ui.iconFA('history', () => {
         grok.shell.windows.showProperties = !grok.shell.windows.showProperties;
         historyButton.classList.toggle('d4-current');
@@ -555,6 +555,17 @@ export class FunctionView extends DG.ViewBase {
   @passErrorToShell()
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
+
+    const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
+      .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+    for (const output of dfOutputs)
+      await grok.dapi.tables.uploadDataFrame(callToSave.outputs[output.name]);
+
+    const dfInputs = wu(callToSave.inputParams.values() as DG.FuncCallParam[])
+      .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+    for (const input of dfInputs)
+      await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
+
     const savedCall = await grok.dapi.functions.calls.save(callToSave);
     this.buildHistoryBlock();
     this.path = `?id=${savedCall.id}`;
@@ -605,7 +616,7 @@ export class FunctionView extends DG.ViewBase {
 
   /**
    * Loads the specified historical run. See also {@link saveRun}.
-   * @param funcCallId ID of FuncCall to look for. Get it using {@link funcCall.id} field
+   * @param funcCallId ID of FuncCall to look for. Get it using {@see funcCall.id} field
    * @returns FuncCall augemented with inputs' and outputs' values
    * @stability Stable
  */
@@ -614,6 +625,17 @@ export class FunctionView extends DG.ViewBase {
     await this.onBeforeLoadRun();
     const pulledRun = await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
     pulledRun.options['isHistorical'] = true;
+    const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
+      .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+    for (const output of dfOutputs)
+      pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
+
+    const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
+      .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+    for (const input of dfInputs)
+      pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
+
+
     await this.onAfterLoadRun(pulledRun);
     this.setRunViewReadonly();
     return pulledRun;
@@ -644,10 +666,11 @@ export class FunctionView extends DG.ViewBase {
     'right': '0',
     'top': '0',
     'display': 'none',
-    'cursor': 'not-allowed'
+    'cursor': 'not-allowed',
+    'z-index': '1',
   }});
 
-  private readonlyEventListeners = [
+  private rootReadonlyEventListeners = [
     (ev: MouseEvent)=> {
       ev.preventDefault();
       ev.stopPropagation();
@@ -658,21 +681,36 @@ export class FunctionView extends DG.ViewBase {
     },
     () => {
       grok.shell.warning('Clone the run to edit it');
-    }
+    },
+  ];
+
+  private interactiveEventListeners = [
+    () =>this.root.removeEventListener('click', this.rootReadonlyEventListeners[2]),
+    () =>this.root.addEventListener('click', this.rootReadonlyEventListeners[2])
   ];
 
   private setRunViewReadonly(): void {
     this.overlayDiv.style.removeProperty('display');
-    this.root.addEventListener('mousedown', this.readonlyEventListeners[0]);
-    this.root.addEventListener('mouseup', this.readonlyEventListeners[1]);
-    this.root.addEventListener('click', this.readonlyEventListeners[2]);
+    this.root.addEventListener('click', this.rootReadonlyEventListeners[2]);
+    this.root.addEventListener('mousedown', this.rootReadonlyEventListeners[0]);
+    this.root.addEventListener('mouseup', this.rootReadonlyEventListeners[1]);
+    this.root.querySelectorAll(`.${INTERACTIVE_CSS_CLASS}`).forEach((el) => {
+      (el as HTMLElement).style.zIndex = '2';
+      (el as HTMLElement).addEventListener('mousedown', this.interactiveEventListeners[0]);
+      (el as HTMLElement).addEventListener('mouseup', () => setTimeout(this.interactiveEventListeners[1], 100));
+    });
   }
 
   private setRunViewEditable(): void {
     this.overlayDiv.style.display = 'none';
-    this.root.removeEventListener('mousedown', this.readonlyEventListeners[0]);
-    this.root.removeEventListener('mouseup', this.readonlyEventListeners[1]);
-    this.root.removeEventListener('click', this.readonlyEventListeners[2]);
+    this.root.removeEventListener('click', this.rootReadonlyEventListeners[2]);
+    this.root.removeEventListener('mousedown', this.rootReadonlyEventListeners[0]);
+    this.root.removeEventListener('mouseup', this.rootReadonlyEventListeners[1]);
+    this.root.querySelectorAll(`.${INTERACTIVE_CSS_CLASS}`).forEach((el) => {
+      (el as HTMLElement).style.removeProperty('z-index');
+      (el as HTMLElement).removeEventListener('mousedown', this.interactiveEventListeners[0]);
+      (el as HTMLElement).removeEventListener('mouseup', this.interactiveEventListeners[1]);
+    });
   }
 
   /**
@@ -681,7 +719,7 @@ export class FunctionView extends DG.ViewBase {
    * WARNING: FuncCall inputs/outputs fields are not included
    * @param funcId ID of Func which calls we are looking for. Get it using {@link func.id} field
    * @returns Promise on array of FuncCalls corresponding to the passed Func ID
-   * @stability Experimental
+   * @stability Stable
  */
   public async pullRuns(funcId: string): Promise<DG.FuncCall[]> {
     const filter = grok.dapi.functions.calls.filter(`func.id="${funcId}"`).include('session.user, options');
@@ -711,6 +749,7 @@ export class FunctionView extends DG.ViewBase {
 
     await this.onBeforeRun(this.funcCall);
     const pi = DG.TaskBarProgressIndicator.create('Calculating...');
+    this.funcCall.newId();
     await this.funcCall.call(); // mutates the funcCall field
     pi.close();
     await this.onAfterRun(this.funcCall);
@@ -1079,7 +1118,6 @@ const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, va
 };
 
 const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame) => {
-  console.log(df);
   sheet.addRow(df.columns.names()).font = {bold: true};
   for (let i = 0; i < df.rowCount; i++)
     sheet.addRow([...df.row(i).cells].map((cell: DG.Cell) => cell.value));

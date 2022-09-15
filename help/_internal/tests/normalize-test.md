@@ -10,7 +10,7 @@ Performs numerical column normalization (min-max, z-scores)
 1. Open "demog" table
 
 1. Open "Normalize..." dialog for *"Age"* column (from it's context menu or from "Actions" tab
-   on [Property Panel](../../overview/navigation.md#properties))
+   on [Property Panel](../../datagrok/navigation.md#properties))
 
 * "Normalize" dialog is open
 
@@ -25,7 +25,7 @@ Performs numerical column normalization (min-max, z-scores)
 * *"Age"* column values are normalized by min-max method
 
 1. Open "Normalize..." dialog for *"Height"* column (from it's context menu or from "Actions" tab
-   on [Property Panel](../../overview/navigation.md#properties))
+   on [Property Panel](../../datagrok/navigation.md#properties))
 
 * "Normalize" dialog is open
 

@@ -77,8 +77,6 @@ export class Entity {
 
   /** Removes a specified tag */
   unTag(tag: string): boolean { return api.grok_Entity_UnTag(this.dart, tag); }
-
-  async share(group: Group, isEdit: boolean = false): Promise<void> { await api.grok_Entity_Share(this.dart, group.dart, isEdit); }
 }
 
 /**
@@ -156,7 +154,7 @@ export class UserSession extends Entity {
 
 /** Represents a function
  * @extends Entity
- * {@link https://datagrok.ai/help/overview/functions/function}
+ * {@link https://datagrok.ai/help/datagrok/functions/function}
  * */
 export class Func extends Entity {
   public aux: any;

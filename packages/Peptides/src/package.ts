@@ -11,7 +11,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
-import {getSeparator} from './utils/misc';
+import {InvariantMap} from './utils/invariant-map';
 
 export const _package = new DG.Package();
 let currentTable: DG.DataFrame;
@@ -124,28 +124,6 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   return widget.draw();
 }
 
-/*
-//name: Molfile
-//tags: panel, widgets
-//input: string peptide {semType: Macromolecule}
-//output: widget result
-export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
-  [currentTable, alignedSequenceColumn] = getOrDefine();
-  const smiles = getMolecule(peptide, getSeparator(alignedSequenceColumn));
-  return grok.functions.call('Chem:molfile', {'smiles': smiles}) as Promise<DG.Widget>;
-}
-
-//name: Molfile
-//tags: panel, widgets
-//input: string _aar {semType: Monomer}
-//output: widget result
-export async function peptideMolfile2(_aar: string): Promise<DG.Widget> {
-  [currentTable, alignedSequenceColumn] = getOrDefine();
-  const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
-  return peptideMolfile(peptide);
-}
-*/
-
 //name: Get Peptides Structure
 //tags: panel, widgets
 //input: column col {semType: Macromolecule}
@@ -175,4 +153,11 @@ function getOrDefine(dataframe?: DG.DataFrame, column?: DG.Column | null): [DG.D
     throw new Error('Table does not contain aligned sequence columns');
 
   return [dataframe, column];
+}
+
+//name: Invariant Map Filter
+//tags: filter
+//output: filter result
+export function invariantMapFilter() {
+  return new InvariantMap();
 }

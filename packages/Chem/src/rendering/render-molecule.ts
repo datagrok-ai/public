@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isMolBlock} from '../utils/chem-utils';
+import {isMolBlock} from '../utils/convert-notation-utils';
 import $ from 'cash-dom';
 import {_properties, renderer} from '../package';
 
@@ -46,7 +46,7 @@ export function renderMolecule(
         grok.shell.info('Molfile copied to clipboard');
       });
       menu.item('Sketch', () => {
-        const sketcher = new DG.chem.chem.Sketcher();
+        const sketcher = new DG.chem.Sketcher();
         isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
         ui.dialog()
           .add(sketcher)

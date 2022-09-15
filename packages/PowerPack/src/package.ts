@@ -18,6 +18,7 @@ import { KpiWidget } from "./widgets/kpi-widget";
 import { HtmlWidget } from "./widgets/html-widget";
 import { PowerPackSettingsEditor } from "./settings-editor";
 import { viewersGallery } from "./viewers-gallery";
+import { VIEWER } from 'datagrok-api/dg';
 
 export let _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -157,7 +158,7 @@ export function formulaLinesDialog(src: DG.DataFrame | DG.Viewer): FormulaLinesD
 // Adds "Formula Lines" menu group to the Scatter Plot context menu:
 grok.events.onContextMenu.subscribe((args) => {
   let src = args.args.context;
-  if (src instanceof DG.ScatterPlotViewer) {
+  if (src instanceof DG.ScatterPlotViewer || (src instanceof DG.Viewer && src.getOptions()['type'] == VIEWER.LINE_CHART)) {
     let menu = args.args.menu.find('Tools');
     if (menu != null)
       menu.item('Formula Lines...', () => { formulaLinesDialog(src); });

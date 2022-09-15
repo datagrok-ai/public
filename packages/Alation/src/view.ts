@@ -10,12 +10,12 @@ import * as types from './types';
 import * as constants from './const';
 import * as alationApi from './alation-api';
 import * as utils from './utils';
-import {getBaseURL} from './package';
+import {getBaseURL, getUserGroup} from './package';
 
 let isSettingDescription = false;
 
 export function createTree(
-  objects: types.baseEntity[], objectType: types.specialType, treeRootNode?: DG.TreeViewNode): DG.TreeViewNode {
+  objects: types.baseEntity[], objectType: types.specialType, treeRootNode?: DG.TreeViewGroup): DG.TreeViewGroup {
   objects = utils.filterDuplicates(objects);
   treeRootNode ??= ui.tree();
   const iconClass = objectType === 'data-source' ? 'svg-data-connection' :
@@ -32,7 +32,7 @@ export function createTree(
         const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
         try {
           await connectToDb(queryObject.datasource_id,
-            async (conn: DG.DataConnection) => {await runQuery(conn, queryObject)});
+            async (conn: DG.DataConnection) => {await runQuery(conn, queryObject);});
         } catch {
           grok.shell.error('Couldn\'t retrieve table');
         }
@@ -145,7 +145,7 @@ export function createTree(
 const isFirstTimeMap: {[key: string]: {[key: string]: boolean}} = {};
 
 async function getChildren(
-  objectType: types.specialType, currentId: number, group: DG.TreeViewNode): Promise<DG.TreeViewNode> {
+  objectType: types.specialType, currentId: number, group: DG.TreeViewGroup): Promise<DG.TreeViewGroup> {
   let dataList: types.baseEntity[];
   let nextObjectType: types.specialType;
 
@@ -171,6 +171,10 @@ async function getChildren(
 export async function runQuery(conn: DG.DataConnection, queryObject: types.query): Promise<void> {
   let query = conn.query(queryObject.title, queryObject.content);
   query = await grok.dapi.queries.save(query);
+
+  const zenoGroup = await grok.dapi.groups.filter(await getUserGroup()).first();
+  await grok.dapi.permissions.grant(query, zenoGroup, true);
+
   const df = await query.executeTable();
   df.name = queryObject.title;
   grok.shell.addTableView(df);
@@ -228,6 +232,9 @@ function connectToDbDialog(
       let dsConnection = DG.DataConnection.create(dataSource.dbname, dcParams);
       dsConnection.id = dsId;
       dsConnection = await grok.dapi.connections.save(dsConnection);
+
+      const userGroup = await grok.dapi.groups.filter(await getUserGroup()).first();
+      await grok.dapi.permissions.grant(dsConnection, userGroup, true);
 
       await func(dsConnection);
     })

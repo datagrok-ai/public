@@ -7,7 +7,7 @@ The following file formats are supported:
 
 # File viewers
 
-This package implements [custom file viewers](../../help/develop/how-to/custom-file-viewers.md)
+This package implements [custom file viewers](../../help/develop/how-to/create-custom-file-viewers.md)
 for all supported file types. This is how it looks in action:  
 
 ![](../../help/access/file-shares-file-viewers.gif)

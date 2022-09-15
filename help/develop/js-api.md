@@ -106,7 +106,7 @@ DataFrame code snippets:
 
 ## Views
 
-Control [views](../overview/table-view.md) via the following methods:
+Control [views](../datagrok/table-view.md) via the following methods:
 
 ```javascript
 grok.shell.addTableView(table);
@@ -122,14 +122,14 @@ grok.shell.dockElement(e, 'JS', 'left', 0.5);
 
 ## Registering functions
 
-Pretty much anything in Datagrok is a [function](../overview/functions/function.md), it is a concept that connects
+Pretty much anything in Datagrok is a [function](../datagrok/functions/function.md), it is a concept that connects
 together [scripts](../compute/scripting.md) written in different languages, predictive models, statistical functions,
 query transformations, data flows, and many other features.
 
 The following code registers a "jsConcat" function that becomes a first-class citizen in the platform (i.e., it can be
 used from console, gets registered in help, there could be an optional audit trail associated with the invocations, etc)
 
-To test the newly registered function, enter "jsConcat(42, 33)" in the [Console](../overview/navigation.md#console).
+To test the newly registered function, enter "jsConcat(42, 33)" in the [Console](../datagrok/navigation.md#console).
 
 ```javascript
 grok.functions.register({

@@ -10,7 +10,7 @@ Substructure Search Performs substructure pattern search in list of SMILES.
 1. Open *smiles.csv* file
 2. Click on *"smiles"* column
 
-3. Open *"Substructure Search"* dialog in *"Active"* tab on [Property Panel](../../overview/navigation.md#properties)
+3. Open *"Substructure Search"* dialog in *"Active"* tab on [Property Panel](../../datagrok/navigation.md#properties)
    (or use context menu for *"smiles"* column, **Chem | Substructure Search**)
 
     * *"Substructure Search"* dialog is open

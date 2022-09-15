@@ -151,11 +151,11 @@ let help = [
   },
   {
     'title': 'Overview',
-    'url': 'https://datagrok.ai/help/overview/create-project'
+    'url': 'https://datagrok.ai/help/datagrok/create-project'
   },
   {
     'title': 'Stories',
-    'url': 'https://datagrok.ai/help/stories/life-sciences'
+    'url': 'https://datagrok.ai/help/solutions/life-sciences'
   },
   {
     'title': 'Transform',

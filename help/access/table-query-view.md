@@ -22,6 +22,6 @@ See also:
 * [Data query](data-query.md)
 * [DB visual query](db-visual-query.md)
 * [Data job](data-job.md)
-* [Function call](../overview/functions/function-call.md)
+* [Function call](../datagrok/functions/function-call.md)
 * [Aggregate rows](../transform/aggregate-rows.md)
 * [Recipe Editor](../transform/recipe-editor.md)

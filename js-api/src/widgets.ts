@@ -6,9 +6,7 @@ import {Cell, Column, DataFrame} from "./dataframe";
 import {ColorType, FILTER_TYPE, LegendPosition, Type} from "./const";
 import * as rxjs from "rxjs";
 import { filter } from 'rxjs/operators';
-import {Rect} from "./grid";
 import $ from "cash-dom";
-import {Viewer} from "./viewer";
 import {MapProxy} from "./utils";
 import dayjs from "dayjs";
 
@@ -1025,18 +1023,21 @@ export class InputBase<T = any> {
   };
 
   /** Adds the specified caption */
-  addCaption(caption: string): void {
+  addCaption(caption: string): InputBase<T> {
     api.grok_InputBase_AddCaption(this.dart, caption);
+    return this;
   };
 
   /** Adds the specified postfix */
-  addPostfix(postfix: string): void {
+  addPostfix(postfix: string): InputBase<T> {
     api.grok_InputBase_AddPostfix(this.dart, postfix);
+    return this;
   };
 
   /** Adds the specified options */
-  addOptions(options: HTMLElement): void {
+  addOptions(options: HTMLElement): InputBase<T> {
     api.grok_InputBase_AddOptions(this.dart, options);
+    return this;
   };
 
   /** Adds a usage example to the input's hamburger menu */
@@ -1045,8 +1046,9 @@ export class InputBase<T = any> {
   }
 
   /** Sets the tooltip */
-  setTooltip(msg: string, tooltipCheck: (() => boolean) | null = null): void {
+  setTooltip(msg: string, tooltipCheck: (() => boolean) | null = null): InputBase<T> {
     api.grok_InputBase_SetTooltip(this.dart, msg, tooltipCheck);
+    return this;
   };
 
   get classList(): DOMTokenList { return this.root.classList; }
@@ -1102,7 +1104,6 @@ export class ProgressIndicator {
   get onLogUpdated(): Observable<any> {
     return observeStream(api.grok_Progress_Log_Updated(this.dart));
   }
-
 }
 
 
@@ -1561,6 +1562,12 @@ export class RangeSlider extends DartWidget {
   setValues(minRange: number, maxRange: number, min: number, max: number): void {
     api.grok_RangeSlider_SetValues(this.dart, minRange, maxRange, min, max);
   }
+
+  /** Sets the specified min value, preserving the range (scrolls). */
+  scrollTo(newMinValue: number): void { return api.grok_RangeSlider_ScrollTo(this.dart, newMinValue); }
+
+  /** Shifts min and max values by the specified delta. */
+  scrollBy(delta: number): void { return api.grok_RangeSlider_ScrollTo(this.dart, delta); }
 
   /** @returns {Observable} */
   get onValuesChanged(): Observable<any> {

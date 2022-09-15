@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {isMolBlock} from '../utils/chem-utils';
+import {isMolBlock} from '../utils/convert-notation-utils';
 import {oclMol} from '../utils/chem-common-ocl';
 import '../../css/chem.css';
 

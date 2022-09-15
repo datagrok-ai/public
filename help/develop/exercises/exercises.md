@@ -79,7 +79,7 @@ predictive models, integration with the external utilities, data augmentation, a
 * via the [Functions](https://dev.datagrok.ai/functions?q=info) view
 * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `info()`
   from the `Functions` pane in the property panel on the left)
-* via the [console](../../overview/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will
+* via the [console](../../datagrok/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will
   appear to the right; execute `<loginName>Sequence:info()` there. The identifier used as package name (before ':') will
   be obtained by transformation kebab style of folder name to camel style, or can be specified directly with
   attribute `friendlyName` in `package.json` file.

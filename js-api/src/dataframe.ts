@@ -9,7 +9,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType, ColumnAggregationType
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -284,6 +284,11 @@ export class DataFrame {
   /** Exports the content to comma-separated-values format. */
   toCsv(options?: CsvExportOptions): string {
     return api.grok_DataFrame_ToCsv(this.dart, options);
+  }
+
+  /** Exports dataframe to binary */
+  toByteArray(): Uint8Array {
+    return api.grok_DataFrame_ToByteArray(this.dart);
   }
 
   /** Creates a new dataframe from the specified row mask and a list of columns.
@@ -903,7 +908,7 @@ export class Column<T = any> {
   }
 
   /** Copies column values to an array.
-   *  @returns {Array} */
+   * Avoid using this method for performance-critical routines; consider using {@link getRawData} */
   toList(): Array<any> {
     return api.grok_Column_ToList(this.dart);
   }
@@ -918,8 +923,7 @@ export class Column<T = any> {
     return api.grok_Column_GetCategory(this.dart, categoryIndex);
   }
 
-  /** Sets order of categories
-   * @param {string[]} order */
+  /** Sets order of categories */
   setCategoryOrder(order: string[]) {
     api.grok_Column_SetCategoryOrder(this.dart, order);
   }
@@ -942,8 +946,8 @@ export class Column<T = any> {
   get max(): number { return api.grok_Column_Max(this.dart); }
 
   /** Checks whether the column passes the specified [filter].
-   * [filter] can be either specific data [type] such as 'int' or 'string', more broadly - 'numerical', or 'categorical', or null for any columns.
-   * @returns {boolean} */
+   * [filter] can be either specific data [type] such as 'int' or 'string',
+   * more broadly - 'numerical', or 'categorical', or null for any columns. */
   matches(filter: ColumnType | 'numerical' | 'categorical' | null): boolean {
     return api.grok_Column_Matches(this.dart, filter);
   }
@@ -969,17 +973,24 @@ export class Column<T = any> {
       this.dart, formula, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 
-  /** Creates and returns a new column by converting [column] to the specified [newType].
-   *  @param {string} newType
-   *  @param {string} format
-   *  @returns {Column} */
+  /** Creates and returns a new column by converting [column] to the specified [newType]. */
   convertTo(newType: string, format: string | null = null): Column {
     return toJs(api.grok_Column_ConvertTo(this.dart, newType, format));
   }
 
-  /** @returns {string} */
+  /** @returns {string} - string representation of this column */
   toString(): string {
     return api.grok_Object_ToString(this.dart);
+  }
+
+  /** Aggregates a column using the [type] function, which corresponds to
+   *  - [DG.AGG] for int, bigint, float, qnum columns,
+   *  - [DG.STR_AGG] and [DG.STAT_COUNTS] for string columns,
+   *  - [DG.STAT_COUNTS], [DG.AGG.MIN], [DG.AGG.MAX], [DG.AGG.AVG] for datetime columns,
+   *  - [DG.AGG.TOTAL_COUNT] and [DG.AGG.MISSING_VALUE_COUNT] for virtual columns.
+  */
+  aggregate(type: ColumnAggregationType): any {
+    return api.grok_Column_Aggregate(this.dart, type);
   }
 }
 export class BigIntColumn extends Column<BigInt> {
@@ -1028,48 +1039,30 @@ export class ColumnList {
     this.dart = dart;
   }
 
-  /** Number of elements in the column.
-   * @returns {number} */
-  get length(): number {
-    return api.grok_ColumnList_Length(this.dart);
-  }
+  /** Number of elements in the column. */
+  get length(): number { return api.grok_ColumnList_Length(this.dart); }
 
-  /** Column with the corresponding name (case-insensitive).
-   * @param {string} name - Column name
-   * @returns {Column} */
-  byName(name: string): Column {
-    return toJs(api.grok_ColumnList_ByName(this.dart, name));
-  }
+  /** Column with the corresponding name (case-insensitive). */
+  byName(name: string): Column { return toJs(api.grok_ColumnList_ByName(this.dart, name)); }
 
-  /** Maps names to columns.
-   * @param {string[]} names - Column names
-   * @returns {Column[]} */
-  byNames(names: string[]): Column[] {
-    return names.map(name => this.byName(name));
-  }
+  /** Maps names to columns. */
+  byNames(names: string[]): Column[] { return names.map(name => this.byName(name)); }
 
-  /** Column by index.
-   * @param {number} index - Index of the column.
-   * @returns {Column} */
-  byIndex(index: number): Column {
-    return toJs(api.grok_ColumnList_ByIndex(this.dart, index));
-  }
+  /** Column by index */
+  byIndex(index: number): Column { return toJs(api.grok_ColumnList_ByIndex(this.dart, index)); }
 
-  /** First column of [semType], or null.
-   * @returns {Column} */
+  /** First column of [semType], or null. */
   bySemType(semType: SemType): Column | null {
     let col = api.grok_ColumnList_BySemType(this.dart, semType);
     return col == null ? null : col;
   }
 
-  /** All columns of [semType], or empty list.
-   * @returns {Column[]} */
+  /** All columns of [semType], or empty list. */
   bySemTypeAll(semType: SemType): Column[] {
     return api.grok_ColumnList_BySemTypeAll(this.dart, semType);
   }
 
-  /** Finds columns by the corresponding semTypes, or null, if any of the sem types could not be found.
-   * @returns {Column[]} */
+  /** Finds columns by the corresponding semTypes, or null, if any of the sem types could not be found. */
   bySemTypesExact(semTypes: SemType[]): Column[] | null {
     let columns = <any>[];
     for (let semType of semTypes) {
@@ -1100,14 +1093,10 @@ export class ColumnList {
     return _toIterable(api.grok_ColumnList_Numerical(this.dart));
   }
 
-  /** Array containing column names.
-   * @returns {string[]} */
-  names(): string[] {
-    return api.grok_ColumnList_Names(this.dart);
-  }
+  /** Array containing column names. */
+  names(): string[] { return api.grok_ColumnList_Names(this.dart); }
 
-  /** Creates an array of columns.
-   * @returns {Column[]} */
+  /** Creates an array of columns. */
   toList(): Column[] {
     return this.names().map((name: string) => this.byName(name));
   }
@@ -1234,11 +1223,9 @@ export class ColumnList {
     return api.grok_ColumnList_GetUnusedName(this.dart, name, choices);
   }
 
-  /** Iterates over all columns.
-   * @returns {Iterable.<Column>}
-   * */
-  [Symbol.iterator]() {
-    return _getIterator(this.dart);
+  /** Iterates over all columns. */
+  [Symbol.iterator]() : IterableIterator<Column> {
+    return _getIterator(this.dart) as IterableIterator<Column>;
   }
 
   /** @returns {string} */

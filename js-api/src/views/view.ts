@@ -4,16 +4,14 @@ import * as ui from '../../ui';
 import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
-import {Menu, TabControl, ToolboxPage} from '../widgets';
-import {Entity, Func, Property, Script} from '../entities';
+import {Menu, ToolboxPage, Widget} from '../widgets';
+import {Entity, Script} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options, _toIterable, MapProxy} from '../utils';
 import {StreamSubscription} from '../events';
 import $ from "cash-dom";
 import {Subscription} from "rxjs";
-import {FuncCall, FuncCallParam} from "../functions";
-import {div} from "../../ui";
-
+import {FuncCall} from "../functions";
 
 let api = <any>window;
 

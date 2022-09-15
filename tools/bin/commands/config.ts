@@ -88,11 +88,13 @@ export function config(args: ConfigArgs) {
       return false;
     }
     config.servers[args.alias!] = { url: args.server!, key: args.key! };
-    color.success('Successfully added the server.');
+    color.success(`Successfully added the server to ${confPath}.`);
     console.log(`Use this command to deploy packages: grok publish ${args.alias!}`);
     if (args.default) {
       config.default = args.alias!;
     }
+    fs.writeFileSync(confPath, yaml.dump(config));
+    return true;
   }
 
   console.log(`Your config file (${confPath}):`);

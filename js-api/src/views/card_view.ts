@@ -13,7 +13,7 @@ export enum RENDER_MODE {
  *  filters: {@link permanentFilter} (which is set programmatically and is not visible)
  *  and {@link searchValue} entered by the user.
  *
- *  More details on the smart search syntax: {@link https://datagrok.ai/help/overview/smart-search}
+ *  More details on the smart search syntax: {@link https://datagrok.ai/help/datagrok/smart-search}
  *
  */
 export class CardView extends View {
@@ -29,7 +29,7 @@ export class CardView extends View {
   }
 
   /**
-   * User-specified {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
+   * User-specified {@link https://datagrok.ai/help/datagrok/smart-search | filter expression}.
    * @type {string} */
   get searchValue(): string { return api.grok_CardView_Get_SearchValue(this.dart); }
   set searchValue(s: string) { api.grok_CardView_Set_SearchValue(this.dart, s); }
@@ -46,7 +46,7 @@ export class CardView extends View {
   set searchFields(s: string[]) { api.grok_CardView_Set_SearchFields(this.dart, s); }
 
   /** Programmatically defined invisible
-   * {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
+   * {@link https://datagrok.ai/help/datagrok/smart-search | filter expression}.
    *  @type {string} */
   get permanentFilter(): string { return api.grok_CardView_Get_PermanentFilter(this.dart); }
   set permanentFilter(s: string) { api.grok_CardView_Set_PermanentFilter(this.dart, s); }

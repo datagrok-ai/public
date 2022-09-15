@@ -1,22 +1,33 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import { category, expect, test } from '@datagrok-libraries/utils/src/test';
-import { _testSearchSubstructure, _testSearchSubstructureAllParameters } from './utils';
-import { _testFindSimilar, _testGetSimilarities } from './menu-tests-similarity-diversity'
-import { testCsv, testSubstructure } from './substructure-search-tests'
-
+import {category, expect, test, delay, before, after} from '@datagrok-libraries/utils/src/test';
+import {_testSearchSubstructure, _testSearchSubstructureAllParameters} from './utils';
+import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
+import {testCsv, testSubstructure} from './substructure-search-tests';
+import {getHTMLElementbyInnerText, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, checkHTMLElementbyInnerText, isColumnPresent} from './gui-utils';
 import {_importSdf} from '../open-chem/sdf-importer';
 
 category('server features', () => {
-  test('testDescriptors', async () => {
-    const t = grok.data.demo.molecules();
-    await grok.chem.descriptors(t, 'smiles', ['MolWt', 'Lipinski']);
+  test('descriptors', async () => {
+
+    const tree = await grok.chem.descriptorsTree();
+    expect(tree !== undefined, true);
+    const df = DG.DataFrame.fromCsv(testCsv);
+    const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles', 
+      ['MolWt', 'NumAromaticCarbocycles','NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);
+    grok.shell.addTableView(t);
+
+    isColumnPresent(grok.shell.t.columns, 'MolWt');
+    isColumnPresent(grok.shell.t.columns, 'NumAromaticCarbocycles');
+    isColumnPresent(grok.shell.t.columns, 'NumHAcceptors');
+    isColumnPresent(grok.shell.t.columns, 'NumHeteroatoms');
+    isColumnPresent(grok.shell.t.columns, 'NumRotatableBonds');
+    isColumnPresent(grok.shell.t.columns, 'RingCount');
   });
 });
 
 category('chem exported', () => {
-  
   test('findSimilar.api.sar-small', async () => {
     await _testFindSimilar(grok.chem.findSimilar);
   });
@@ -35,18 +46,5 @@ category('chem exported', () => {
       expect(bitsetArray[trueIndices[k]] === '1', true);
       bitsetArray[trueIndices[k]] = '0';
     }
-  });
-
-  test('mcs', async () => {
-    const t = DG.DataFrame.fromCsv(`smiles
-      O=C1CN=C(c2ccccc2N1)C3CCCCC3
-      CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
-      CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
-      CC(C)CCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
-      O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
-      O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
-      CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
-    const mcs = await grok.chem.mcs(t.col('smiles')!);
-    expect(mcs, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
   });
 });

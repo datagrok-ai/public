@@ -34,6 +34,21 @@ category('Dev panel', () => {
   test('Dev panel opens', () => new Promise(async (resolve, reject) => {
     if (!entities.length)
       reject('Failed to find entities for the test');
+    let stop: boolean = false;
+    setTimeout(() => {
+      stop = true;
+      reject('Timeout exceeded');
+    }, delayDuration * entities.length + 100);
+
+    function check() {
+      if (devPane != null) {
+        stop = false;
+        resolve('OK');
+      }
+      if (!stop)
+        setTimeout(check, 50);
+    }
+    check();
     let result = true;
     let object = null;
 
@@ -43,7 +58,6 @@ category('Dev panel', () => {
       result = result && devPane != null && (<DG.Entity>currentEntity).id === object.id;
     }));
 
-    setTimeout(() => reject('Timeout'), delayDuration * (entities.length + 1));
     for (const ent of entities) {
       grok.shell.o = ent;
       object = ent;

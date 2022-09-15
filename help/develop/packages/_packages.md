@@ -290,7 +290,7 @@ Your package might contain the following additional folders, depending on your n
 
 [alternative to Moment.js]: https://www.npmjs.com/package/dayjs
 
-[annotated functions]: ../../overview/functions/function.md
+[annotated functions]: ../../datagrok/functions/function.md
 
 [applications]: ../how-to/build-an-app.md#applications
 
@@ -312,7 +312,7 @@ Your package might contain the following additional folders, depending on your n
 
 [development servers]: https://dev.datagrok.ai/u
 
-[functions]: ../../overview/functions/function.md "A function can be used to query a database, delete a column from a table, applying predictive model to a dataset and other things."
+[functions]: ../../datagrok/functions/function.md "A function can be used to query a database, delete a column from a table, applying predictive model to a dataset and other things."
 
 [function types]: ./_package-function-types.md
 

@@ -33,4 +33,4 @@ See also:
 * [Data connection](data-connection.md)
 * [Data query](data-query.md)
 * [Data job](data-job.md)
-* [Function call](../overview/functions/function-call.md)
+* [Function call](../datagrok/functions/function-call.md)

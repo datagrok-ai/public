@@ -15,9 +15,9 @@ category('activityCliffs', async () => {
   
 
   before(async () => {
-    actCliffsDf = await readDataframe('samples/sample_MSA.csv');
+    actCliffsDf = await readDataframe('tests/sample_MSA_data.csv');
     actCliffsTableView = grok.shell.addTableView(actCliffsDf);
-    actCliffsDfWithEmptyRows = await readDataframe('samples/sample_HELM_empty_vals.csv');
+    actCliffsDfWithEmptyRows = await readDataframe('tests/sample_MSA_data_empty_vals.csv');
     actCliffsTableViewWithEmptyRows = grok.shell.addTableView(actCliffsDfWithEmptyRows);
   });
 
@@ -29,11 +29,11 @@ category('activityCliffs', async () => {
   });
 
   test('activityCliffsOpen', async () => {
-    await _testActivityCliffsOpen(actCliffsDf, 53, 'UMAP', 'MSA');
+    await _testActivityCliffsOpen(actCliffsDf, 102, 'UMAP', 'MSA');
   });
 
   test('activityCliffsOpenWithEmptyRows', async () => {
-    await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, 53, 'UMAP', 'HELM');
+    await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, 103, 'UMAP', 'MSA');
   });
   
 });

@@ -29,8 +29,8 @@ _billions of rows_ at the speed of thought right in your browser.
 
 With Datagrok, you can:
 
-* [Seamlessly load data from any data source](../access/importing-data.md). Datagrok supports all popular databases,
-  multiple [file formats](../access/importing-data.md#supported-file-types) and is both data-agnostic and
+* [Seamlessly load data from any data source](../access/file-browser-and-file-shares.md). Datagrok supports all popular databases,
+  multiple [file formats](../access/supported-data-sources.md#supported-file-types) and is both data-agnostic and
   domain-intelligent. <!--TODO link to a section on domains once ready-->
 
 * Visualize the data using domain-specific value renderers (such as molecules on scatter plot axes).
@@ -57,7 +57,7 @@ With Datagrok, you can:
 * Filter, zoom in and out, aggregate, pivot, and cross-link data. All our viewers work in tandem and are customizable,
   [high-performant, and interactive](../develop/advanced/performance.md#viewers).
 
-* Perform calculations on data using predefined statistical [functions](../overview/functions/function.md).
+* Perform calculations on data using predefined statistical [functions](../datagrok/functions/function.md).
 * Get details on demand using a variety of [widgets](../visualize/widgets.md), including customizable
   [tooltips](../explore/select-tooltip-columns.md#viewer-tooltips) and
   context-driven [info panels](../discover/info-panels.md).
@@ -72,7 +72,7 @@ You can also leverage Datagrok's component-based architecture to extend or creat
 can [add custom viewers](../develop/how-to/develop-custom-viewer.md) or develop new functions
 in [R, Python, or Julia](../compute/scripting.md).
 
-Each of these actions can be [automated](../overview/functions/function.md#macros) and used in
+Each of these actions can be [automated](../datagrok/functions/function.md#macros) and used in
 [pipelines](../access/data-pipeline.md). Sharing the results of your analysis is easy and
 [secure](../govern/security.md).<!--TODO rewrite for clarity-->
 

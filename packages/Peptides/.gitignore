@@ -31,3 +31,4 @@ dist/
 # Emitted *.js files
 src/**/*.js
 !src/wasm/kalign.js
+test-report.html

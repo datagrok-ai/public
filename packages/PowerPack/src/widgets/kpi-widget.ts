@@ -29,7 +29,7 @@ export class KpiWidget extends DG.Widget {
   }
 
   refresh(): void {
-    let s = DG.utils.format(this.value, this.format);
+    let s = DG.format(this.value, this.format);
     this.captionLabel.innerText = this.caption ?? '';
     this.valueLabel.innerText = s;
   }

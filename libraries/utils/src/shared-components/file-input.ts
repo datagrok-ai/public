@@ -62,7 +62,7 @@ export class FileInput {
         this.uploadedFile$.next(files[0]);
       };
 
-      this.visibleInput.root.classList.add('drop-area');
+      this.visibleInput.root.classList.add('cv-drop-area');
       this.visibleInput.root.style.width = '100%';
 
       // hidden input to handle file dialog

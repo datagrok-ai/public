@@ -11,13 +11,13 @@ Collections are sets of entities for which you can perform same actions.
 
 1. Click on "Demog" project
 
-* "Demog" project selected on [Property Panel](../../overview/navigation.md#properties)
+* "Demog" project selected on [Property Panel](../../datagrok/navigation.md#properties)
 
 1. Click with ```CTRL``` on "Demo" project
 
 * Projects "Demog" and "Demo" added to collection
-* [Property Panel](../../overview/navigation.md#properties) switched to "2 projects"
-* Actions and commands on [Property Panel](../../overview/navigation.md#properties) concern both projects from collection
+* [Property Panel](../../datagrok/navigation.md#properties) switched to "2 projects"
+* Actions and commands on [Property Panel](../../datagrok/navigation.md#properties) concern both projects from collection
 
 1. Expand "Items" tab
 
@@ -78,8 +78,8 @@ Collections are sets of entities for which you can perform same actions.
 1. Select "northwind" (PostgreSQL) and "AirNow" (Web) for collection by clicking with ```CTRL```
 
 * Connections "northwind" (PostgreSQL) and "AirNow" (Web) added to collection
-* [Property Panel](../../overview/navigation.md#properties) switched to "2 connections"
-* Actions and commands on [Property Panel](../../overview/navigation.md#properties) concern both connections from
+* [Property Panel](../../datagrok/navigation.md#properties) switched to "2 connections"
+* Actions and commands on [Property Panel](../../datagrok/navigation.md#properties) concern both connections from
   collection
 
 1. Expand "Items" tab

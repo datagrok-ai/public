@@ -1,27 +1,27 @@
-.drop-area {
+.cv-drop-area {
   position: relative;
 }
 
-.ui-form-condensed .drop-area .icon {
+.ui-form-condensed .cv-drop-area .icon {
   position: absolute;
   top: 35px;
   right: 10px;
 }
 
-.drop-area .default {
+.cv-drop-area .default {
   color: var(--grey-2);
 }
 
-.drop-area .drag-n-dropping {
+.cv-drop-area .drag-n-dropping {
   background-color: var(--steel-1);
   border: 1px dashed var(--blue-1);
   color: var(--grey-3);
 }
 
-.drop-area .error {
+.cv-drop-area .error {
   color: var(--red-3);
 }
 
-.drop-area .success {
+.cv-drop-area .success {
   color: var(--grey-6);
 }

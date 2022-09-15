@@ -9,6 +9,7 @@ import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler'
 import Aioli from '@biowasm/aioli';
 
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 /**
  * Converts array of sequences into simple fasta string.
@@ -58,14 +59,14 @@ export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName
   // units
   const srcUnits = srcCol.getTag(DG.TAGS.UNITS);
   //aligned
-  const srcAligned = srcCol.getTag('aligned');
+  const srcAligned = srcCol.getTag(UnitsHandler.TAGS.aligned);
   const tgtAligned = srcAligned + '.MSA';
   //alphabet
-  const srcAlphabet = srcCol.getTag('alphabet');
+  const srcAlphabet = srcCol.getTag(UnitsHandler.TAGS.alphabet);
 
   tgtCol.setTag(DG.TAGS.UNITS, srcUnits);
-  tgtCol.setTag('aligned', tgtAligned);
-  tgtCol.setTag('alphabet', srcAlphabet);
+  tgtCol.setTag(UnitsHandler.TAGS.aligned, tgtAligned);
+  tgtCol.setTag(UnitsHandler.TAGS.alphabet, srcAlphabet);
   tgtCol.semType = DG.SEMTYPE.MACROMOLECULE;
   return tgtCol;
 }

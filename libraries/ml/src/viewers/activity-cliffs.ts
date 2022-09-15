@@ -19,34 +19,38 @@ interface IRenderedLines {
 }
 
 export interface ISequenceSpaceParams {
-    seqCol: DG.Column,
-    methodName: string,
-    similarityMetric: string,
-    embedAxesNames: string[],
-    options?: any
+  seqCol: DG.Column,
+  methodName: string,
+  similarityMetric: string,
+  embedAxesNames: string[],
+  options?: any
 }
 
 export interface ISequenceSpaceResult {
-    distance: Matrix;
-    coordinates: DG.ColumnList;
-  }
+  distance: Matrix;
+  coordinates: DG.ColumnList;
+}
 
 export interface ITooltipAndPanelParams {
   cashedData: any,
-  hosts: HTMLDivElement[],
   line: ILine,
+  df: DG.DataFrame,
   seqCol: DG.Column,
+  activityCol: DG.Column,
+  sali?: number
 }
 
 let zoom = false;
 
 const molColumnNames = ['1_seq', '2_seq'];
 
+const nonNormalizedDistances = ['Levenshtein'];
+
 // Searches for activity cliffs in a chemical dataset by selected cutoff
 export async function getActivityCliffs(
     df: DG.DataFrame, 
     seqCol: DG.Column,
-    encodedCol: DG.Column, 
+    encodedCol: DG.Column | null,
     axesNames: string[],
     scatterTitle: string,
     activities: DG.Column, 
@@ -56,9 +60,11 @@ export async function getActivityCliffs(
     semType: string,
     tags: {[index: string]: string},
     seqSpaceFunc: (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>,
-    simFunc: (col: DG.Column, mol: string) => Promise<DG.Column | null>,
-    renderSeqFunction: (params: ITooltipAndPanelParams) => void,
-    options?: any) : Promise<DG.Viewer> {
+    simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[]) => Promise<DG.Column[]>,
+    tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
+    propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
+    seqSpaceOptions?: any) : Promise<DG.Viewer> {
+
   const automaticSimilarityLimit = false;
   const MIN_SIMILARITY = 80;
 
@@ -74,7 +80,7 @@ export async function getActivityCliffs(
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: axesNames,
-    options: options
+    options: seqSpaceOptions
   });
 
   for (const col of coordinates) {
@@ -87,10 +93,10 @@ export async function getActivityCliffs(
   const dim = dimensionalityReduceCol.length;
   const simArr: DG.Column[] = Array(dim - 1);
 
-  if (!distance || emptyValsIdxs.length !== 0)
-    await getSimilaritiesMarix(dim, dimensionalityReduceCol, dfSeq, simArr, simFunc);
+  if (!distance || emptyValsIdxs.length !== 0 || nonNormalizedDistances.includes(similarityMetric))
+    await simMatrixFunc(dim, dimensionalityReduceCol, dfSeq, 'seq', simArr);
   else
-    getSimilaritiesMarixFromDistances(dim, distance, simArr);
+    getSimilaritiesFromDistances(dim, distance, simArr);
 
   const optSimilarityLimit = initialSimilarityLimit;
 
@@ -98,6 +104,7 @@ export async function getActivityCliffs(
   const saliVals: number[] = [];
   const n1: number[] = [];
   const n2: number[] = [];
+  const cliffsMolIds = new Set<number>();
 
   for (let i = 0; i != dim - 1; ++i) {
     for (let j = 0; j != dim - 1 - i; ++j) {
@@ -106,6 +113,8 @@ export async function getActivityCliffs(
       if (sim >= optSimilarityLimit) {
         n1.push(i);
         n2.push(i + j + 1);
+        cliffsMolIds.add(i);
+        cliffsMolIds.add(i + j + 1);
         simVals.push(sim);
         const diff = Math.abs(activities.get(i) - activities.get(i + j + 1));
         if (sim != 1)
@@ -142,8 +151,10 @@ export async function getActivityCliffs(
   const sali: DG.Column = DG.Column.fromList('double', `sali_${axesNames[0].substring(axesNames[0].lastIndexOf('_'))}`, saliCount);
 
   df.columns.add(sali);
+  const cliffsColName = addCliffsBooleanCol(df, cliffsMolIds);
 
   const view = grok.shell.getTableView(df.name);
+  view.grid.columns.byName(cliffsColName)!.visible = false;
   const sp = view.addViewer(DG.Viewer.scatterPlot(df, {
     xColumnName: axesNames[0],
     yColumnName: axesNames[1],
@@ -159,20 +170,23 @@ export async function getActivityCliffs(
   })) as DG.ScatterPlotViewer;
 
   const canvas = (sp.getInfo() as any)['canvas'];
-  const linesRes = createLines(n1, n2, seqCol, activities, saliVals, semType, tags);
+  const linesRes = createLines(n1, n2, seqCol, activities, saliVals, simVals, semType, tags);
+
   const cashedLinesData: any = {};
   let acc: DG.Accordion;
 
   linesRes.linesDf.onCurrentCellChanged.subscribe(() => {
     const currentMolIdx = linesRes.linesDf.currentCol && linesRes.linesDf.currentCol.name === '2_seq' ? 1 : 0;
-    sp.dataFrame.currentRowIdx =
-      linesRes.linesDf.currentRowIdx !== -1 ? linesRes.lines[linesRes.linesDf.currentRowIdx].mols[currentMolIdx] : -1;
+    const line = linesRes.linesDf.currentRowIdx !== -1 ? linesRes.lines[linesRes.linesDf.currentRowIdx] : null;
+    sp.dataFrame.currentRowIdx = line ? line.mols[currentMolIdx] : -1;
     sp.dataFrame.selection.set(0, !linesRes.lines[0].selected);
     sp.dataFrame.selection.set(0, linesRes.lines[0].selected);
     linesDfGrid.invalidate();
+    if (line)
+      setTimeout(() => {updatePropertyPanel(df, acc, cashedLinesData, line, seqCol, activities, linesRes.linesDf.get('sali', line.id), propertyPanelFunc)}, 1000);      
   });
 
-  linesRes.linesDf.onSelectionChanged.subscribe((_) => {
+  linesRes.linesDf.onSelectionChanged.subscribe((_: any) => {
     if (linesRes.linesDf.mouseOverRowIdx !== -1) {
       const line = linesRes.lines[linesRes.linesDf.mouseOverRowIdx];
       line.selected = !line.selected;
@@ -187,26 +201,21 @@ export async function getActivityCliffs(
   });
 
   const linesDfGrid = linesRes.linesDf.plot.grid().sort(['sali'], [false]);
-  linesDfGrid.root.style.minWidth = '650px';
 
   linesDfGrid.onCellClick.subscribe(() => {
     zoom = true;
   });
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
-    const cliffsDialog = ui.dialog({title: 'Activity cliffs'})
-      .add(linesDfGrid.root)
-      .show({resizable: true});
-    ui.tools.waitForElementInDom(linesDfGrid.root).then(() => {
-      molColumnNames.forEach(it => { linesDfGrid.col(it)!.width = 200; });
-      linesDfGrid.invalidate();
-    });
-    cliffsDialog.root.id = 'cliffs_dialog';
+    grok.shell.dockManager.dock(linesDfGrid.root, 'down', null, 'Activity cliffs', 0.2);
   });
-  listCliffsLink.style.position = 'absolute';
-  listCliffsLink.style.top = '10px';
-  listCliffsLink.style.right = '10px';
-  sp.root.append(listCliffsLink);
+  editSpLinkStyle(listCliffsLink, sp, 10);
+
+  const filterCliffsButton = ui.switchInput(`Show only cliffs`, false);
+  filterCliffsButton.onChanged(()=> {
+    filterCliffsButton.value ? df.rows.filter((row) => row[cliffsColName] === true) : df.filter.setAll(true);
+  });
+  editSpLinkStyle(filterCliffsButton.root, sp, 30);
 
   let timer: NodeJS.Timeout;
   canvas.addEventListener('mousemove', function (event: MouseEvent) {
@@ -214,7 +223,7 @@ export async function getActivityCliffs(
     timer = global.setTimeout(function () {
       const line = checkCursorOnLine(event, canvas, linesRes.lines);
       if (line && df.mouseOverRowIdx === -1) {
-          ui.tooltip.show(createTooltipElement(cashedLinesData, line, seqCol, activities, renderSeqFunction), event.clientX, event.clientY);
+          ui.tooltip.show(tooltipFunc({cashedData: cashedLinesData, line: line, df: df, seqCol: seqCol, activityCol: activities}), event.clientX, event.clientY);
       }
     }, 500);
   });
@@ -241,12 +250,13 @@ export async function getActivityCliffs(
           df.selection.set(0, linesRes.lines[0].selected);
         }
       }
-      updatePropertyPanel(df, acc, cashedLinesData, line, seqCol, activities, linesRes.linesDf.get('sali', line.id), renderSeqFunction);
+      const order = linesRes.linesDf.getSortedOrder(linesDfGrid.sortByColumns, linesDfGrid.sortTypes);
+      linesDfGrid.scrollToCell('seq_1', order.indexOf(line.id));
     }
   });
 
   sp.onEvent('d4-before-draw-scene')
-    .subscribe((_) => {
+    .subscribe((_: any) => {
       const lines = renderLines(sp,
         axesNames[0], axesNames[1], linesRes, saliVals, saliOpacityCoef, saliMin);
       if (zoom) {
@@ -267,11 +277,19 @@ export async function getActivityCliffs(
         }, 300);
         zoom = false;
       }
+      filterCliffsButton.value ? df.rows.filter((row) => row[cliffsColName] === true) : df.filter.setAll(true);
     });
 
   sp.addProperty('similarityLimit', 'double', optSimilarityLimit);
   acc = createPopertyPanel();
   return sp;
+}
+
+function editSpLinkStyle(el: HTMLElement, sp: DG.ScatterPlotViewer, topMargin: number){
+  el.style.position = 'absolute';
+  el.style.top = `${topMargin}px`;
+  el.style.right = '10px';
+  sp.root.append(el);
 }
 
 function createPopertyPanel(): DG.Accordion {
@@ -292,10 +310,10 @@ function updatePropertyPanel(
   seqCol: DG.Column, 
   activities: DG.Column,
   sali: number,
-  renderSeqFunction: (params: ITooltipAndPanelParams) => void){
+  propPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement){
   const panel = acc.getPane('Cliff Details');
   ui.empty(panel.root);
-  const panelElement = createPropPanelElement(df, cashedData, line, seqCol, activities, sali, renderSeqFunction);
+  const panelElement = propPanelFunc({cashedData: cashedData, line: line, df: df, seqCol: seqCol, activityCol: activities, sali: sali});
   panel.root.append(panelElement);
   setTimeout(() => {
     grok.shell.o = acc.root;
@@ -367,13 +385,14 @@ function createLines(
   seq: DG.Column, 
   activities: DG.Column, 
   saliVals: number[],
+  simVals: number[],
   semType: string,
   tags: {[index: string]: string}) : IRenderedLines {
-  const lines: ILine[] = [];
+  const lines: ILine[] = new Array(n1.length).fill(null);
   for (let i = 0; i < n1.length; i++) {
     const num1 = n1[i];
     const num2 = n2[i];
-    lines.push({id: i, mols: [num1, num2], selected: false, a: [], b: []});
+    lines[i] = ({id: i, mols: [num1, num2], selected: false, a: [], b: []});
   }
   const linesDf = DG.DataFrame.create(lines.length);
   molColumnNames.forEach((it, idx) => {
@@ -385,6 +404,7 @@ function createLines(
     .init((i: number) => Math.abs(activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1])));
   linesDf.columns.addNewInt('line_index').init((i: number) => i);
   linesDf.columns.addNewFloat('sali').init((i: number) => saliVals[i]);
+  linesDf.columns.addNewFloat('sim').init((i: number) => simVals[i]);
   return {lines, linesDf};
 }
 
@@ -410,109 +430,24 @@ export async function getSimilaritiesMarix(
   return simArr;
 }
 
-export function getSimilaritiesMarixFromDistances(dim: number, distances: Matrix, simArr: DG.Column[])
+
+export function getSimilaritiesFromDistances(dim: number, distances: Matrix, simArr: DG.Column[])
   : DG.Column[] {
   for (let i = 0; i < dim - 1; ++i) {
-    const similarityArr = [];
-    for (let j = i + 1; j < dim; ++j)
-      similarityArr.push(getSimilarityFromDistance(distances[i][j]));
+    const similarityArr = new Array(dim - i - 1).fill(0);
+    for (let j = i + 1; j < dim; ++j) {
+      similarityArr[j - i - 1] = getSimilarityFromDistance(distances[i][j]);
+    }
     simArr[i] = DG.Column.fromFloat32Array('similarity', Float32Array.from(similarityArr));
   }
   return simArr;
 }
 
-
-export function createPropPanelElement(
-  df: DG.DataFrame,
-  cashedData: any,
-  line: ILine,
-  seqCol: DG.Column,
-  activities: DG.Column,
-  sali: number,
-  renderSeqFunction: (params: ITooltipAndPanelParams) => void): HTMLDivElement {
-  const propPanel = ui.divV([]);
-  const columnNames = ui.divH([
-    ui.divText(seqCol.name),
-    ui.divText(activities.name),
-  ]);
-  columnNames.style.fontWeight = 'bold';
-  columnNames.style.justifyContent = 'space-between';
-  propPanel.append(columnNames);
-  const hosts: HTMLDivElement[] = [];
-  line.mols.forEach((molIdx: number, hostIdx: number) => {
-    const activity = ui.divText(activities.get(molIdx).toFixed(2));
-    activity.style.paddingLeft = '15px';
-    activity.style.paddingLeft = '10px';
-    const molHost = ui.div();
-    if (df.currentRowIdx === molIdx) {
-      molHost.style.border = 'solid 1px lightgrey';
-    }
-    ui.tooltip.bind(molHost, () => moleculeInfo(df, molIdx, seqCol.name));
-    molHost.onclick = () => {
-      const obj = grok.shell.o;
-      molHost.style.border = 'solid 1px lightgrey';
-      df.currentRowIdx = molIdx;
-      hosts.forEach((h, i) => {
-        if (i !== hostIdx) {
-          h.style.border = '';
-        }
-      })
-      setTimeout(() => {
-        grok.shell.o = obj
-      }, 1000);
-    };
-    propPanel.append(ui.divH([
-      molHost,
-      activity,
-    ]));
-    hosts.push(molHost);
-  });
-  renderSeqFunction({ cashedData: cashedData, hosts: hosts, line: line, seqCol: seqCol});
-  propPanel.append(ui.divH([
-    ui.divText(`SALI: `, {style: {fontWeight: 'bold', paddingRight: '5px'}}),
-    ui.divText(sali.toFixed(2))
-  ]));
-  return propPanel;
+export function addCliffsBooleanCol(df: DG.DataFrame, ids: Set<number>): string {
+  const colname = 'containsCliff';
+  const colNameInd = df.columns.names().filter((it: string) => it.includes(colname)).length + 1;
+  const newColName = `${colname}_${colNameInd}`;
+  df.columns.addNewBool(newColName).init((i) => ids.has(i));
+  return newColName;
 }
 
-function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
-  let dict: {[key: string]: string} = {};
-  for (let col of df.columns) {
-    if(col.name !== seqColName) {
-      dict[col.name] = df.get(col.name, idx);
-    }
-  }
-  return ui.tableFromMap(dict);
-}
-
-export function createTooltipElement(
-  cashedData: any,
-  line: ILine,
-  seqCol: DG.Column,
-  activities: DG.Column,
-  renderSeqFunction: (params: ITooltipAndPanelParams) => void): HTMLDivElement {
-  const tooltipElement = ui.divH([]);
-  const columnNames = ui.divV([
-    ui.divText(seqCol.name),
-    ui.divText(activities.name),
-  ]);
-  columnNames.style.fontWeight = 'bold';
-  columnNames.style.display = 'flex';
-  columnNames.style.justifyContent = 'space-between';
-  tooltipElement.append(columnNames);
-  const hosts: HTMLDivElement[] = [];
-  line.mols.forEach((molIdx: number, idx: number) => {
-    const activity = ui.divText(activities.get(molIdx).toFixed(2));
-    activity.style.display = 'flex';
-    activity.style.justifyContent = 'left';
-    activity.style.paddingLeft = '30px';
-    const molHost = ui.div();
-    tooltipElement.append(ui.divV([
-      molHost,
-      activity,
-    ]));
-    hosts.push(molHost);
-  });
-  renderSeqFunction({ cashedData: cashedData, hosts: hosts, line: line, seqCol: seqCol });
-  return tooltipElement;
-}
