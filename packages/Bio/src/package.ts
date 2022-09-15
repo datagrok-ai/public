@@ -32,7 +32,7 @@ import {
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import * as C from './utils/constants';
-import {getFingerprints} from './calculations/fingerprints'
+import {getFingerprints} from './calculations/fingerprints';
 
 //tags: init
 export async function initBio() {
@@ -40,8 +40,8 @@ export async function initBio() {
 
 //name: fastaSequenceCellRenderer
 //tags: cellRenderer
-//meta.cellType: Sequence
-//meta.columnTags: units=fasta
+//meta.cellType: sequence
+//meta.columnTags: quality=Macromolecule, units=fasta
 //output: grid_cell_renderer result
 export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
@@ -49,8 +49,8 @@ export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
 
 //name: separatorSequenceCellRenderer
 //tags: cellRenderer
-//meta.cellType: Sequence
-//meta.columnTags: units=separator
+//meta.cellType: sequence
+//meta.columnTags: quality=Macromolecule, units=fasta
 //output: grid_cell_renderer result
 export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
@@ -379,6 +379,7 @@ export function monomerCellRenderer(): MonomerCellRenderer {
 //name: MacromoleculeDifferenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: MacromoleculeDifference
+//meta.columnTags: quality=MacromoleculeDifference
 //output: grid_cell_renderer result
 export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCellRenderer {
   return new MacromoleculeDifferenceCellRenderer();
@@ -463,7 +464,7 @@ export function getHelmMonomers(seqCol: DG.Column<string>): string[] {
 export async function macromoleculesFingerprints(mcol: DG.Column): Promise<Uint8Array[]> {
   grok.functions.call('Chem:getRdKitModule');
   const monomers = getHelmMonomers(mcol);
-  const mols = await grok.functions.call('HELM:getMolFiles', {mcol : mcol});
+  const mols = await grok.functions.call('HELM:getMolFiles', {mcol: mcol});
 
   return getFingerprints(mols.toList(), monomers);
 }

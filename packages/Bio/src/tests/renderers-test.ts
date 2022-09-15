@@ -114,7 +114,7 @@ category('renderers', () => {
     const tw = grok.shell.addTableView(df);
     await delay(100);
     const renderer = tw.dataFrame.col('SequencesDiff')?.getTag(DG.TAGS.CELL_RENDERER);
-    if (renderer !== 'MacromoleculeDifferenceCR')
+    if (renderer !== 'MacromoleculeDifference') // this is value of MacromoleculeDifferenceCR.cellType
       throw new Error(`Units 'separator', separator '/' and semType 'MacromoleculeDifference' have been ` +
         `manually set on column but after df aws added as table view renderer has been reset to '${renderer}'`);
   }
