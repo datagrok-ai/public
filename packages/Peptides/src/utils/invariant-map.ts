@@ -5,13 +5,17 @@ import * as C from './constants';
 import {PeptidesModel} from '../model';
 import {isGridCellInvalid} from './misc';
 
+const CELL_SIZE = 20; // 20px cell height and width
+
 export class InvariantMap extends DG.Filter {
-  model!: PeptidesModel;
+  model: PeptidesModel | null = null;
   chosenCells: {[position: string]: string[]} = {};
 
   constructor() {
     super();
   }
+
+  get caption(): string {return 'Invariant Map';}
 
   get filterSummary(): string {
     let summary = '';
@@ -21,10 +25,14 @@ export class InvariantMap extends DG.Filter {
     return summary;
   }
 
+  get isFiltering(): boolean {return true && super.isFiltering;}
+
+  get isReadyToApplyFilter(): boolean {return this.model != null;}
+
   async attach(df: DG.DataFrame): Promise<void> {
     super.attach(df);
     this.model = await PeptidesModel.getInstance(df);
-    this.render();
+    this.render(true);
   }
 
   saveState(): any {
@@ -51,7 +59,10 @@ export class InvariantMap extends DG.Filter {
     });
   }
 
-  render(): void {
+  render(initChosenCells: boolean = false): void {
+    if (this.model == null)
+      return;
+
     const invariantDf = this.model.statsDf.groupBy([C.COLUMNS_NAMES.MONOMER])
       .pivot(C.COLUMNS_NAMES.POSITION)
       .add('first', C.COLUMNS_NAMES.COUNT, '')
@@ -67,25 +78,24 @@ export class InvariantMap extends DG.Filter {
       return aInt - bInt;
     });
 
+    // Create grid and set properties
     const invariantGrid = invariantDf.plot.grid();
-    const gridProps = invariantGrid.props;
-    gridProps.allowBlockSelection = false;
-    gridProps.allowColSelection = false;
-    gridProps.allowRowSelection = false;
-
     const gridCols = invariantGrid.columns;
-    gridCols.setOrder(orderedColNames);
     gridCols.rowHeader!.visible = false;
+    gridCols.setOrder(orderedColNames);
+
     for (let gridColIndex = 0; gridColIndex < gridCols.length; ++gridColIndex) {
       const gridCol = gridCols.byIndex(gridColIndex)!
       if (gridCol.name != C.COLUMNS_NAMES.MONOMER) 
-        gridCol.width = 20;
+        gridCol.width = CELL_SIZE;
     }
 
-    this.chosenCells = {};
-    for (const col of invariantDf.columns)
-      if (col.name != C.COLUMNS_NAMES.MONOMER)
-        this.chosenCells[col.name] = [];
+    if (initChosenCells) {
+      this.chosenCells = {};
+      for (const col of invariantDf.columns)
+        if (col.name != C.COLUMNS_NAMES.MONOMER)
+          this.chosenCells[col.name] = [];
+    }
 
     invariantGrid.root.addEventListener('click', (ev) => {
       invariantDf.currentRowIdx = -1;
@@ -108,6 +118,14 @@ export class InvariantMap extends DG.Filter {
     });
 
     invariantGrid.onCellRender.subscribe((args) => {
+      //FIXME: for some reason it doesn't work when I set right away
+      const gridProps = invariantGrid.props;
+      gridProps.allowBlockSelection = false;
+      gridProps.allowColSelection = false;
+      gridProps.allowRowSelection = false;
+      gridProps.allowEdit = false;
+      gridProps.rowHeight = CELL_SIZE;
+
       const gc = args.cell;
       const tableColName = gc.tableColumn?.name;
       const tableRowIndex = gc.tableRowIndex;
