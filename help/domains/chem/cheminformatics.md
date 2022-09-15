@@ -65,9 +65,9 @@ representations, planar and 3D.
 
 ### Importing molecular data in Datagrok<!--corr: should it be here?-->
 
-[Import the dataset](../../access/file-browser-and-file-shares.md), as you normally would, by opening a file, querying a database,
-connecting to a webservice, or by any other method. The platform is smart enough to automatically recognize chemical
-structures.
+[Import the dataset](../../access/file-browser-and-file-shares.md), as you normally would, by opening a file, querying a
+database, connecting to a webservice, or by any other method. The platform is smart enough to automatically recognize
+chemical structures.
 ![representations1](../../uploads/chem/representations1.png "graphs")
 
 One might expect planar representations to be the most convenient form for small molecules and use 3D representations
@@ -323,8 +323,9 @@ See details [here](info-panels/structural-alerts.md)
 
 Pharmaceutical tasks demand the extensive use of cheminformatics methods aimed at exploration analysis of chemical
 datasets. The datasets typically come with experimental values (e.g. measured biological activity of a compound). One of
-the most common tasks is the evaluation of structure-activity relationships. These relationships play a crucial role in the
-process of drug development, because they contribute to hit compound identification and lead compound optimization. (Q)
+the most common tasks is the evaluation of structure-activity relationships. These relationships play a crucial role in
+the process of drug development, because they contribute to hit compound identification and lead compound
+optimization. (Q)
 SAR<!--corr: what is it?--> studies are performed in order to find possible leads in the screening datasets. In contrast
 to physical predictive models, machine learning predictive models do not have any intrinsic knowledge about the physical
 and biological processes. Instead, they rely on techniques like random forest or deep learning to predict chemical,
@@ -441,28 +442,28 @@ supported by the Grok platform. For example,`#{x.demo:demoscripts:GasteigerParti
 #### Accessing cheminformatics tools for a molecule column
 
 To see chemically-related actions applicable to the specified column, right-click on the column, and navigate to
-`Current column | Chem` and `Current column | Extract`. Alternatively, click on the column of interest, and expand
-the 'Actions' section in the property panel<!--todo: provide pictorial examples-->.
+`Current column | Chem` and `Current column | Extract`. Alternatively, click on the column of interest, and expand the '
+Actions' section in the property panel<!--todo: provide pictorial examples-->.
 
 <!--Update the list of functions-->
+
 * Descriptors – calculates specified descriptors for the whole dataset and adds them to the table
 * Fingerprints – calculates specified fingerprints for the whole dataset and adds them to the table
 * To InchI – extracts InchI identifiiers for the whole dataset and adds them to the table
 * To inchI Key – extracts InchI keys for the whole dataset and adds them to the table
 * Find MCS – adds the most common substructure to the dataset
 
-It is a good idea to search for functionality using the smart search (Alt+Q)<!--example?-->, or by opening the registry of
-available functions `Help | Functions`.
+It is a good idea to search for functionality using the smart search (Alt+Q)<!--example?-->, or by opening the registry
+of available functions `Help | Functions`.
 
 #### Accessing cheminformatics tools in the Top-Menu
 
 To see chemically-related actions applicable to a table including molecules, right-click on `Chem` top-menu button.
 
 * Sketcher – opens a sketcher intended for the filtering purposes, double-left-click on the structure to call the
-sketcher for
-  structure modification.
-* Chemical space – computes and visualizes chemical space based on the distances between molecule fingerprints.
-Options are provided for fingerprints and metrics.
+  sketcher for structure modification.
+* Chemical space – computes and visualizes chemical space based on the distances between molecule fingerprints. Options
+  are provided for fingerprints and metrics.
 * Similarity search – performs similarity search and adds a view with the most similar structures from the dataset with
   similarity values. Options are provided for fingerprints and metrics.
 * Diversity search – performs diversity search and adds a view with 10 most unsimilar structures from the dataset.
@@ -475,8 +476,7 @@ Options are provided for fingerprints and metrics.
 ### Cheminformatics engine
 
 In addition to being a general-purpose extensible platform for scientific computing, Datagrok provides multiple options
-for developing cheminformatics solutions on top of that. Depending on your needs, use one or more of the
-following ones
+for developing cheminformatics solutions on top of that. Depending on your needs, use one or more of the following ones
 or come up with your own solution.
 
 #### Openchemlib.js
@@ -493,9 +493,9 @@ Python-based cheminformatics-related scripts in the public repository<!--links--
 
 #### Rdkit in WebAssembly
 
-Recently, Greg Landrum, the author of RDKit, has introduced a way to compile its C++ code into WebAssembly, thus allowing
-to combine the performance and efficiency of the carefully crafted C++ codebase with the ability to run it in the
-browser. This approach fits perfectly with Datagrok's philosophy of performing as much computations on the client as
+Recently, Greg Landrum, the author of RDKit, has introduced a way to compile its C++ code into WebAssembly, thus
+allowing to combine the performance and efficiency of the carefully crafted C++ codebase with the ability to run it in
+the browser. This approach fits perfectly with Datagrok's philosophy of performing as much computations on the client as
 possible, so naturally we've jumped on that opportunity!
 
 #### Database substructure and similarity search

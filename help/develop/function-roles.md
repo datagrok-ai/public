@@ -117,8 +117,8 @@ are annotated with two special tags: `cellRenderer` and `cellRenderer-<type>`.
 
 ## File viewers
 
-File viewers are used in Datagrok's [file share browser](../access/connect-a-file-share.md). The platform provides a way to
-define custom viewers (or editors) in addition to the native ones. These functions work on files with a specific
+File viewers are used in Datagrok's [file share browser](../access/connect-a-file-share.md). The platform provides a way
+to define custom viewers (or editors) in addition to the native ones. These functions work on files with a specific
 extension, which is derived from the `fileViewer-<extension>` tag.
 
 *Details:* [How to develop custom file viewers](how-to/create-custom-file-viewers.md)

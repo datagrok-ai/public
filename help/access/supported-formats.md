@@ -31,7 +31,7 @@ Datagrok supports the following formats.
 | .ipynb     | Jupyter Notebook                                 | Core   |
 | netCDF     | network Common Data Form                         | Core   | <!--check!!!-->
 
-![File browsing](files-browser.gif "Files Browser") <!--rename-->
+![File browsing](connectors/files-browser.gif "Files Browser") <!--rename-->
 
 ## Molecular structure formats
 

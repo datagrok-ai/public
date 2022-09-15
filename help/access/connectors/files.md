@@ -26,6 +26,6 @@ file share is mounted as a network drive on a server and registered within the p
 
 See also:
 
-* [File Manager](link)
+<!--* [File Manager](link) check -->
 * [Data connection](../data-connection.md)
 * [File Indexer](../../access/files-indexer.md)
