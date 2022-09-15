@@ -12,25 +12,26 @@ those tests any time during development.
 
 To test packages locally before publishing you can use the Jest framework.
 
-1) set environment variables:
-  - HOST - for host to publish and test package, for example 'localhost'
-  - TARGET_PACKAGE - `friendlyName` for the package from `package.json`
-2) [Run Datagrok instance locally](../admin/docker-compose.md)
-3) [Configure grok tool](set-up-environment.md#configuration) with localhost credentials.
-4) [Publish the package to the HOST](publish-packages.md#private-packages), which was set on the first step.
+1. Set environment variables:
+
+   - HOST - for host to publish and test package, for example 'localhost'
+   - TARGET_PACKAGE - `friendlyName` for the package from `package.json`
+
+2. [Run Datagrok instance locally](../admin/docker-compose.md)
+3. [Configure grok tool](set-up-environment.md#configuration) with localhost credentials.
+4. [Publish the package to the HOST](publish-packages.md#private-packages), which was set on the first step.
 
    ```shell
    grok publish <HOST>
    ```
 
-5) Run tests for the package
+5. Run tests for the package
 
    ```shell
    npm test
    ```
 
-6) The results are available in the command-line output or the
-   `test-report.html` file.
+6. The results are available in the command-line output or the `test-report.html` file.
 
 ## Tests after a change in a public package
 
@@ -47,11 +48,11 @@ The results are available in the actions artifacts: `test-<PACKAGE NAME>-<DOCKER
 
 If an error occurred for the action triggered by the commit, it is possible to trigger the action manually.
 
-1) Use [Packages workflow](https://github.com/datagrok-ai/public/actions/workflows/packages.yml)
-2) Press `run workflow` and set packages list to test separated with spaces, for example: `Demo Tutorials`. Choose the
+1. Use [Packages workflow](https://github.com/datagrok-ai/public/actions/workflows/packages.yml)
+2. Press `run workflow` and set packages list to test separated with spaces, for example: `Demo Tutorials`. Choose the
    target branch. Then `Run workflow`. Note that publish to the NPM registry is executed for the master branch only.
-3) Check that the GitHub Actions workflow finished successfully
-4) The results are available in the actions artifacts: `test-<PACKAGE NAME>-<DOCKER IMAGE SHA>-<COMMIT SHA>.html`
+3. Check that the GitHub Actions workflow finished successfully
+4. The results are available in the actions artifacts: `test-<PACKAGE NAME>-<DOCKER IMAGE SHA>-<COMMIT SHA>.html`
 
 The same steps can be applied
 for [Libraries workflow](https://github.com/datagrok-ai/public/actions/workflows/libraries.yaml)
