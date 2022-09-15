@@ -543,9 +543,6 @@ export class PeptidesModel {
         return;
       }
 
-      canvasContext.fillStyle = DG.Color.toHtml(DG.Color.lightLightGray);
-      canvasContext.fillRect(bound.x, bound.y, bound.width, bound.height);
-
       const tableColName = cell.tableColumn?.name;
       const tableRowIndex = cell.tableRowIndex!;
       if (cell.isTableCell && tableColName && tableRowIndex !== null && renderColNames.indexOf(tableColName) !== -1) {
