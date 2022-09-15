@@ -65,12 +65,12 @@ category('UI', () => {
   
   test('descriptors', async () => {
     v = grok.shell.addTableView(smiles);
-    await delay(3000);
+    await delay(5000);
 
-    let smilesCol = smiles.columns.byName("smiles");
+    let smilesCol = smiles.columns.byName('smiles');
     grok.shell.o = smilesCol;
 
-    await delay(1000);
+    await delay(2000);
 
     let panels = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-accordion-pane-header');
     let actionsPanel:HTMLElement;
@@ -81,7 +81,7 @@ category('UI', () => {
     }
     actionsPanel!.click(); 
     
-    await delay(500);
+    await delay(1000);
 
     let actions = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-link-action');
     let mapIdentifiersAction:HTMLElement;
@@ -92,7 +92,7 @@ category('UI', () => {
     }
     mapIdentifiersAction!.click();
 
-    await delay(500);    
+    await delay(1000);    
     isDialogPresent('Descriptors')
 
     let discriptorsGroups = returnDialog('Descriptors')!.root.getElementsByClassName('d4-tree-view-node');
@@ -113,7 +113,7 @@ category('UI', () => {
     lipinskiChekbox!.click();
 
     let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
-    okButton!.click(); await delay(500);
+    okButton!.click(); await delay(1000);
 
     isColumnPresent(smiles.columns, 'FractionCSP3');
     isColumnPresent(smiles.columns, 'NumAromaticCarbocycles');
@@ -130,7 +130,7 @@ category('UI', () => {
     v = grok.shell.addTableView(smiles);
     await delay(3000);
 
-    smiles.currentRowIdx = 5; await delay(500);
+    smiles.currentRowIdx = 5; await delay(1000);
     checkHTMLElementbyInnerText('d4-accordion-pane-header', 'Gasteiger Partial Charges');
 
     let gastaigerPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Gasteiger Partial Charges')
@@ -140,7 +140,7 @@ category('UI', () => {
         throw 'script output was not rendered in the panel'
 
     let pecilIcon = document.getElementsByClassName('grok-icon fal fa-pencil')[0] as HTMLElement;
-    pecilIcon!.click(); await delay(200);
+    pecilIcon!.click(); await delay(500);
 
     let contours = document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-gasteiger_partial_charges')[0].getElementsByClassName('ui-input-editor')[0] as HTMLInputElement;
     contours.value = '15';
@@ -298,7 +298,7 @@ category('UI', () => {
     expect(returnDialog('Mutate')!.input('Smiles').stringValue, 'CN1C(CC(O)C1=O)C1=CN=CC=C1');
 
     let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
-    okButton!.click(); await delay(2000);
+    okButton!.click(); await delay(5000);
 
     expect(grok.shell.t.name, 'mutations')
 
@@ -343,7 +343,7 @@ category('UI', () => {
     await callDialog();
     setDialogInputValue('Chem Map Identifiers', 'To Source', 'inchi');
     let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
-    okButton!.click(); await delay(3000);
+    okButton!.click(); await delay(10000);
     isColumnPresent(grok.shell.t.columns, 'inchi');
 
     await callDialog();
