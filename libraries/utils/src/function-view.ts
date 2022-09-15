@@ -351,7 +351,7 @@ export class FunctionView extends DG.ViewBase {
         return card;
       });
 
-      const allCards =[...historyCards, ...favoriteCards];
+      const allCards = [...historyCards, ...favoriteCards];
       allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
 
       return ui.divV(favoriteCards);
@@ -383,7 +383,7 @@ export class FunctionView extends DG.ViewBase {
             }, 'Add to favorites'),
             ui.iconFA('link', async (ev) => {
               ev.stopPropagation();
-              await navigator.clipboard.writeText(`${window.location.href}`);
+              await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?id=${funcCall.id}`);
             }, 'Copy link to the run'),
             ui.iconFA('trash-alt', async (ev) => {
               ev.stopPropagation();
