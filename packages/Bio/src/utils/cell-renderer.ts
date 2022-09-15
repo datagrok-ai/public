@@ -254,11 +254,11 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
    */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle): void {
+    _cellStyle: DG.GridCellStyle): void {
     const grid = gridCell.grid;
     const cell = gridCell.cell;
 
-    w = getUpdatedWidth(grid, g, w, x);
+    w = getUpdatedWidth(grid, g, x, w);
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
