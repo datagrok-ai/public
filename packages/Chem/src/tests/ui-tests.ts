@@ -310,7 +310,7 @@ category('UI', () => {
     v = grok.shell.addTableView(smiles);
     await delay(3000);
 
-    let smilesCol = smiles.columns.byName("smiles");
+    let smilesCol = smiles.columns.byName('smiles');
     grok.shell.o = smilesCol;
 
     await delay(1000);
@@ -326,23 +326,43 @@ category('UI', () => {
     
     await delay(500);
 
-    let actions = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-link-action');
-    let mapIdentifiersAction:HTMLElement;
-    for (let i = 0; i < actions.length; i++ ) {        
-      mapIdentifiersAction = actions[i] as HTMLElement;
-      if (mapIdentifiersAction.innerText == 'Chem | Map Identifiers...')
-          break;
-      }
-    mapIdentifiersAction!.click();
+    async function callDialog() {
+      let actions = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-link-action');
+      let mapIdentifiersAction:HTMLElement;
+      for (let i = 0; i < actions.length; i++ ) {        
+        mapIdentifiersAction = actions[i] as HTMLElement;
+        if (mapIdentifiersAction.innerText == 'Chem | Map Identifiers...')
+            break;
+        }
+      mapIdentifiersAction!.click();
+  
+      await delay(500);    
+      isDialogPresent('Chem Map Identifiers')
+    }
 
-    await delay(500);    
-    isDialogPresent('Chem Map Identifiers')
-
-    setDialogInputValue('Chem Map Identifiers', 'To Source', 'mcule');
+    await callDialog();
+    setDialogInputValue('Chem Map Identifiers', 'To Source', 'inchi');
     let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButton!.click(); await delay(3000);
-    
-    isColumnPresent(smiles.columns, 'mcule');
+    isColumnPresent(grok.shell.t.columns, 'inchi');
+
+    await callDialog();
+    setDialogInputValue('Chem Map Identifiers', 'To Source', 'mcule');
+    okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
+    okButton!.click(); await delay(15000);
+    isColumnPresent(grok.shell.t.columns, 'mcule');
+
+    await callDialog();
+    setDialogInputValue('Chem Map Identifiers', 'To Source', 'chembl');
+    okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
+    okButton!.click(); await delay(10000);
+    isColumnPresent(grok.shell.t.columns, 'chembl');
+
+    await callDialog();
+    setDialogInputValue('Chem Map Identifiers', 'To Source', 'pubchem');
+    okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
+    okButton!.click(); await delay(10000);
+    isColumnPresent(grok.shell.t.columns, 'pubchem');
 
     v.close();
     grok.shell.closeAll();
