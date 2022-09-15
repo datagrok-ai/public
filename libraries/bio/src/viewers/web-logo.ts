@@ -13,6 +13,7 @@ import {UnknownSeqPalettes} from '../unknown';
 import {SeqPalette} from '../seq-palettes';
 import {Subscription} from 'rxjs';
 import {NOTATION, UnitsHandler} from '../utils/units-handler';
+import {SliderOptions} from 'datagrok-api/dg';
 
 declare module 'datagrok-api/src/grid' {
   interface Rect {
@@ -212,8 +213,8 @@ export class WebLogo extends DG.JsViewer {
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
     this.canvas.style.setProperty('overflow', 'hidden', 'important');
-
-    this.slider = ui.rangeSlider(0, 100, 0, 10);
+    const style: SliderOptions = {style: 'barbell', allowResize: false};
+    this.slider = ui.rangeSlider(0, 100, 10, 20, false, style);
     this.slider.root.style.position = 'absolute';
     this.slider.root.style.zIndex = '999';
     const parent = this;
