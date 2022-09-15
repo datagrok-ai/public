@@ -1906,7 +1906,7 @@
   *  `docker pull datagrok/datagrok:1.4.14`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -1928,7 +1928,7 @@
   *  `docker pull datagrok/datagrok:1.4.13`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -1961,7 +1961,7 @@
   *  `docker pull datagrok/datagrok:1.4.12`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -1986,7 +1986,7 @@
   *  `docker pull datagrok/datagrok:1.4.11`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2012,7 +2012,7 @@
   *  `docker pull datagrok/datagrok:1.4.10`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2029,7 +2029,7 @@
   *  `docker pull datagrok/datagrok:1.4.9`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2044,7 +2044,7 @@
   *  `docker pull datagrok/datagrok:1.4.8`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2072,7 +2072,7 @@
   *  `docker pull datagrok/datagrok:1.4.7`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2092,7 +2092,7 @@
   *  `docker pull datagrok/datagrok:1.4.6`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2108,7 +2108,7 @@
   *  `docker pull datagrok/datagrok:1.4.5`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2134,7 +2134,7 @@
   *  `docker pull datagrok/datagrok:1.4.4`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2182,7 +2182,7 @@
     * `docker pull datagrok/datagrok:1.4.3`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2205,7 +2205,7 @@
     * `docker pull datagrok/datagrok:1.4.2`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2237,7 +2237,7 @@
     * `docker pull datagrok/datagrok:1.4.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2251,7 +2251,7 @@
     * `docker pull datagrok/datagrok:1.4.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2275,7 +2275,7 @@
     * `docker pull datagrok/datagrok:1.3.5`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2289,7 +2289,7 @@
     * `docker pull datagrok/datagrok:1.3.4`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2304,7 +2304,7 @@
     * `docker pull datagrok/datagrok:1.3.3`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2318,7 +2318,7 @@
     * `docker pull datagrok/datagrok:1.3.2`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2345,7 +2345,7 @@
     * `docker pull datagrok/datagrok:1.3.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2367,7 +2367,7 @@
     * `docker pull datagrok/datagrok:1.3.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2410,7 +2410,7 @@
     * `docker pull datagrok/datagrok:1.2.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2433,7 +2433,7 @@
     * `docker pull datagrok/datagrok:1.2.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2457,7 +2457,7 @@
     * `docker pull datagrok/datagrok:1.1.9`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2474,7 +2474,7 @@
     * `docker pull datagrok/datagrok:1.1.8`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2490,7 +2490,7 @@
     * `docker pull datagrok/datagrok:1.1.7`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2534,7 +2534,7 @@
     * `docker pull datagrok/datagrok:1.1.5`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2551,7 +2551,7 @@
     * `docker pull datagrok/datagrok:1.1.4`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2565,7 +2565,7 @@
     * `docker pull datagrok/datagrok:1.1.3`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2601,7 +2601,7 @@
     * `docker pull datagrok/datagrok:1.1.2`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2623,7 +2623,7 @@
     * `docker pull datagrok/datagrok:1.1.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -2655,7 +2655,7 @@
     * `docker pull datagrok/cvm:1.0.0`
     * `docker pull datagrok/cvm:stable`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3350,7 +3350,7 @@
     * `docker pull datagrok/datagrok:0.151.7`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3385,7 +3385,7 @@
     * `docker pull datagrok/datagrok:0.151.6`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3413,7 +3413,7 @@
     * `docker pull datagrok/datagrok:0.151.5`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3447,7 +3447,7 @@
     * `docker pull datagrok/datagrok:0.151.4`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3470,7 +3470,7 @@
     * `docker pull datagrok/datagrok:0.151.3`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3488,7 +3488,7 @@
     * `docker pull datagrok/datagrok:0.151.2`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3508,7 +3508,7 @@
     * `docker pull datagrok/datagrok:0.151.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3544,7 +3544,7 @@
     * `docker pull datagrok/datagrok:0.150.5`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3567,7 +3567,7 @@
     * `docker pull datagrok/datagrok:0.150.4`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3593,7 +3593,7 @@
     * `docker pull datagrok/datagrok:0.150.3`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3618,7 +3618,7 @@
     * `docker pull datagrok/datagrok:0.150.2`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3633,7 +3633,7 @@
     * `docker pull datagrok/datagrok:0.150.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3651,7 +3651,7 @@
     * `docker pull datagrok/datagrok:0.150.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3679,7 +3679,7 @@
     * `docker pull datagrok/datagrok:0.148.6`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3706,7 +3706,7 @@
     * `docker pull datagrok/datagrok:0.148.4`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3726,7 +3726,7 @@
     * `docker pull datagrok/datagrok:0.148.3`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3756,7 +3756,7 @@
     * `docker pull datagrok/datagrok:0.148.2`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3778,7 +3778,7 @@
     * `docker pull datagrok/datagrok:0.148.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3795,7 +3795,7 @@
     * `docker pull datagrok/datagrok:0.148.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3809,7 +3809,7 @@
     * `docker pull datagrok/datagrok:0.147.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3857,7 +3857,7 @@
     * `docker pull datagrok/datagrok:0.145.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3882,7 +3882,7 @@
     * `docker pull datagrok/datagrok:0.143.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3899,7 +3899,7 @@
     * `docker pull datagrok/datagrok:0.142.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3913,7 +3913,7 @@
     * `docker pull datagrok/datagrok:0.141.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3928,7 +3928,7 @@
     * `docker pull datagrok/datagrok:0.140.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3965,7 +3965,7 @@
     * `docker pull datagrok/datagrok:0.139.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -3983,7 +3983,7 @@
     * `docker pull datagrok/datagrok:0.138.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4000,7 +4000,7 @@
     * `docker pull datagrok/datagrok:0.136.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4017,7 +4017,7 @@
     * `docker pull datagrok/datagrok:0.135.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4035,7 +4035,7 @@
     * `docker pull datagrok/datagrok:0.134.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4054,7 +4054,7 @@
     * `docker pull datagrok/datagrok:0.133.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4072,7 +4072,7 @@
     * `docker pull datagrok/datagrok:0.132.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4096,7 +4096,7 @@
     * `docker pull datagrok/datagrok:0.131.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4114,7 +4114,7 @@
     * `docker pull datagrok/datagrok:0.130.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4136,7 +4136,7 @@
     * `docker pull datagrok/datagrok:0.129.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4169,7 +4169,7 @@
     * `docker pull datagrok/datagrok:0.128.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4183,7 +4183,7 @@
     * `docker pull datagrok/datagrok:0.127.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4271,7 +4271,7 @@
     * `docker pull datagrok/datagrok:0.122.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4291,7 +4291,7 @@
     * `docker pull datagrok/datagrok:0.119.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4305,7 +4305,7 @@
     * `docker pull datagrok/datagrok:0.118.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4324,7 +4324,7 @@
     * `docker pull datagrok/datagrok:0.117.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4344,7 +4344,7 @@
     * `docker pull datagrok/datagrok:0.116.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4395,7 +4395,7 @@
     * `docker pull datagrok/datagrok:0.115.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4420,7 +4420,7 @@
     * `docker pull datagrok/datagrok:0.114.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4446,7 +4446,7 @@
     * `docker pull datagrok/datagrok:0.113.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4480,7 +4480,7 @@
     * `docker pull datagrok/datagrok:0.112.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4498,7 +4498,7 @@
     * `docker pull datagrok/datagrok:0.111.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4516,7 +4516,7 @@
     * `docker pull datagrok/datagrok:0.110.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4534,7 +4534,7 @@
     * `docker pull datagrok/datagrok:0.109.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4661,7 +4661,7 @@
     * `docker pull datagrok/datagrok:0.107.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4681,7 +4681,7 @@
     * `docker pull datagrok/datagrok:0.106.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4696,7 +4696,7 @@
     * `docker pull datagrok/datagrok:0.105.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4746,7 +4746,7 @@
     * `docker pull datagrok/datagrok:0.104.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4761,7 +4761,7 @@
     * `docker pull datagrok/datagrok:0.103.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4786,7 +4786,7 @@
     * `docker pull datagrok/datagrok:0.102.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4807,7 +4807,7 @@
     * `docker pull datagrok/datagrok:0.101.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4826,7 +4826,7 @@
     * `docker pull datagrok/datagrok:0.100.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4862,7 +4862,7 @@
     * `docker pull datagrok/datagrok:0.99.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4914,7 +4914,7 @@
     * `docker pull datagrok/datagrok:0.98.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4931,7 +4931,7 @@
     * `docker pull datagrok/datagrok:0.97.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -4979,7 +4979,7 @@
     * `docker pull datagrok/datagrok:0.96.0`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -5109,7 +5109,7 @@
     * `docker pull datagrok/datagrok:0.95.9`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -5178,7 +5178,7 @@
     * `docker pull datagrok/datagrok:0.95.8`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -5193,7 +5193,7 @@
     * `docker pull datagrok/datagrok:0.95.7`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -5250,7 +5250,7 @@
     * `docker pull datagrok/datagrok:0.95.6`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -5273,7 +5273,7 @@
     * `docker pull datagrok/datagrok:0.95.5`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -5289,7 +5289,7 @@
     * `docker pull datagrok/datagrok:0.95.4`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -5309,7 +5309,7 @@
     * `docker pull datagrok/datagrok:0.95.3`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -5326,7 +5326,7 @@
     * `docker pull datagrok/datagrok:0.95.2`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -5359,7 +5359,7 @@
     * `docker pull datagrok/datagrok:0.95.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -5414,7 +5414,7 @@
     * `docker pull datagrok/cvm:0.95.0`
     * `docker pull datagrok/cvm:stable`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -6253,7 +6253,7 @@
     * `docker pull datagrok/datagrok:0.94.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -6710,7 +6710,7 @@
     * `docker pull datagrok/cvm:0.94.0`
     * `docker pull datagrok/cvm:stable`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7469,7 +7469,7 @@
     * `docker pull datagrok/datagrok:0.93.35`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7582,7 +7582,7 @@
     * `docker pull datagrok/datagrok:0.93.34`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7632,7 +7632,7 @@
     * `docker pull datagrok/datagrok:0.93.33`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7672,7 +7672,7 @@
     * `docker pull datagrok/datagrok:0.93.32`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7718,7 +7718,7 @@
     * `docker pull datagrok/datagrok:0.93.31`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7730,7 +7730,7 @@
     * `docker pull datagrok/datagrok:0.93.30`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7752,7 +7752,7 @@
     * `docker pull datagrok/datagrok:0.93.29`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7775,7 +7775,7 @@
     * `docker pull datagrok/datagrok:0.93.28`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7811,7 +7811,7 @@
     * `docker pull datagrok/datagrok:0.93.27`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7834,7 +7834,7 @@
     * `docker pull datagrok/datagrok:0.93.26`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7872,7 +7872,7 @@
     * `docker pull datagrok/datagrok:0.93.25`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7908,7 +7908,7 @@
     * `docker pull datagrok/datagrok:0.93.24`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -7960,7 +7960,7 @@
     * `docker pull datagrok/datagrok:0.93.23`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8008,7 +8008,7 @@
     * `docker pull datagrok/datagrok:0.93.22`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8027,7 +8027,7 @@
     * `docker pull datagrok/datagrok:0.93.21`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8043,7 +8043,7 @@
     * `docker pull datagrok/datagrok:0.93.20`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8069,7 +8069,7 @@
     * `docker pull datagrok/datagrok:0.93.19`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8111,7 +8111,7 @@
     * `docker pull datagrok/datagrok:0.93.18`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8164,7 +8164,7 @@
     * `docker pull datagrok/datagrok:0.93.17`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8190,7 +8190,7 @@
     * `docker pull datagrok/datagrok:0.93.16`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8209,7 +8209,7 @@
     * `docker pull datagrok/datagrok:0.93.15`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8227,7 +8227,7 @@
     * `docker pull datagrok/datagrok:0.93.14`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8266,7 +8266,7 @@
     * `docker pull datagrok/datagrok:0.93.13`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8300,7 +8300,7 @@
     * `docker pull datagrok/datagrok:0.93.12`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8350,7 +8350,7 @@
     * `docker pull datagrok/datagrok:0.93.11`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8380,7 +8380,7 @@
     * `docker pull datagrok/datagrok:0.93.10`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8397,7 +8397,7 @@
     * `docker pull datagrok/datagrok:0.93.9`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8441,7 +8441,7 @@
     * `docker pull datagrok/datagrok:0.93.8`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8469,7 +8469,7 @@
     * `docker pull datagrok/datagrok:0.93.7`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8488,7 +8488,7 @@
     * `docker pull datagrok/datagrok:0.93.6`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8520,7 +8520,7 @@
     * `docker pull datagrok/datagrok:0.93.5`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8555,7 +8555,7 @@
     * `docker pull datagrok/datagrok:0.93.4`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8618,7 +8618,7 @@
     * `docker pull datagrok/datagrok:0.93.3`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8632,7 +8632,7 @@
     * `docker pull datagrok/datagrok:0.93.2`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8657,7 +8657,7 @@
     * `docker pull datagrok/datagrok:0.93.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -8838,7 +8838,7 @@
     * `docker pull datagrok/cvm:0.93.0`
     * `docker pull datagrok/cvm:stable`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9433,7 +9433,7 @@
     * `docker pull datagrok/datagrok:0.92.35`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9448,7 +9448,7 @@
     * `docker pull datagrok/datagrok:0.92.34`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9473,7 +9473,7 @@
     * `docker pull datagrok/datagrok:0.92.33`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9496,7 +9496,7 @@
     * `docker pull datagrok/datagrok:0.92.32`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9515,7 +9515,7 @@
     * `docker pull datagrok/datagrok:0.92.31`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9529,7 +9529,7 @@
     * `docker pull datagrok/datagrok:0.92.30`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9545,7 +9545,7 @@
     * `docker pull datagrok/datagrok:0.92.29`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9559,7 +9559,7 @@
     * `docker pull datagrok/datagrok:0.92.28`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9573,7 +9573,7 @@
     * `docker pull datagrok/datagrok:0.92.27`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9589,7 +9589,7 @@
     * `docker pull datagrok/datagrok:0.92.26`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9604,7 +9604,7 @@
     * `docker pull datagrok/datagrok:0.92.25`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9624,7 +9624,7 @@
     * `docker pull datagrok/datagrok:0.92.24`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9643,7 +9643,7 @@
     * `docker pull datagrok/datagrok:0.92.23`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9669,7 +9669,7 @@
     * `docker pull datagrok/datagrok:0.92.22`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9702,7 +9702,7 @@
     * `docker pull datagrok/datagrok:0.92.21`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9748,7 +9748,7 @@
     * `docker pull datagrok/datagrok:0.92.20`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9776,7 +9776,7 @@
     * `docker pull datagrok/datagrok:0.92.19`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9805,7 +9805,7 @@
     * `docker pull datagrok/datagrok:0.92.18`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9823,7 +9823,7 @@
     * `docker pull datagrok/datagrok:0.92.17`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9842,7 +9842,7 @@
     * `docker pull datagrok/datagrok:0.92.16`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -9859,7 +9859,7 @@
     * `docker pull datagrok/datagrok:0.92.15`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10066,7 +10066,7 @@
     * `docker pull datagrok/datagrok:0.92.14`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10080,7 +10080,7 @@
     * `docker pull datagrok/datagrok:0.92.13`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10095,7 +10095,7 @@
     * `docker pull datagrok/datagrok:0.92.12`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10167,7 +10167,7 @@
     * `docker pull datagrok/datagrok:0.92.11`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10223,7 +10223,7 @@
     * `docker pull datagrok/datagrok:0.92.10`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10260,7 +10260,7 @@
     * `docker pull datagrok/datagrok:0.92.9`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10296,7 +10296,7 @@
     * `docker pull datagrok/datagrok:0.92.8`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10347,7 +10347,7 @@
     * `docker pull datagrok/datagrok:0.92.7`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10404,7 +10404,7 @@
     * `docker pull datagrok/datagrok:0.92.6`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10471,7 +10471,7 @@
     * `docker pull datagrok/datagrok:0.92.5`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10501,7 +10501,7 @@
     * `docker pull datagrok/datagrok:0.92.4`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10518,7 +10518,7 @@
     * `docker pull datagrok/datagrok:0.92.3`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10542,7 +10542,7 @@
     * `docker pull datagrok/datagrok:0.92.2`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10561,7 +10561,7 @@
     * `docker pull datagrok/datagrok:0.92.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10646,7 +10646,7 @@
     * `docker pull datagrok/cvm:0.92.0`
     * `docker pull datagrok/cvm:stable`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10768,7 +10768,7 @@
     * `docker pull datagrok/datagrok:0.91.10`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10790,7 +10790,7 @@
     * `docker pull datagrok/datagrok:0.91.9`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10804,7 +10804,7 @@
     * `docker pull datagrok/datagrok:0.91.8`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10824,7 +10824,7 @@
     * `docker pull datagrok/datagrok:0.91.7`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10846,7 +10846,7 @@
     * `docker pull datagrok/datagrok:0.91.6`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10873,7 +10873,7 @@
     * `docker pull datagrok/datagrok:0.91.5`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10895,7 +10895,7 @@
     * `docker pull datagrok/datagrok:0.91.4`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10912,7 +10912,7 @@
     * `docker pull datagrok/datagrok:0.91.3`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10960,7 +10960,7 @@
     * `docker pull datagrok/datagrok:0.91.2`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -10981,7 +10981,7 @@
     * `docker pull datagrok/datagrok:0.91.1`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11000,7 +11000,7 @@
     * `docker pull datagrok/cvm:0.91.0`
     * `docker pull datagrok/cvm:stable`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11015,7 +11015,7 @@
     * `docker pull datagrok/cvm:0.90.0`
     * `docker pull datagrok/cvm:stable`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11464,7 +11464,7 @@
     * `docker pull datagrok/datagrok:0.89.40`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11485,7 +11485,7 @@
     * `docker pull datagrok/datagrok:0.89.39`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11520,7 +11520,7 @@
     * `docker pull datagrok/datagrok:0.89.38`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11553,7 +11553,7 @@
     * `docker pull datagrok/datagrok:0.89.37`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11728,7 +11728,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.36`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 # 2021-04-08 Dev build 0.89.35
 
@@ -11738,7 +11738,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.35`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11761,7 +11761,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.34`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11784,7 +11784,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.33`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11801,7 +11801,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.32`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11834,7 +11834,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.31`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11865,7 +11865,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.30`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11880,7 +11880,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.29`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -11976,7 +11976,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.28`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12047,7 +12047,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.27`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12065,7 +12065,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.26`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12097,7 +12097,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.25`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12113,7 +12113,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.24`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12151,7 +12151,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.23`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12166,7 +12166,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.22`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12265,7 +12265,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.21`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12322,7 +12322,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.20`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12416,7 +12416,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.16`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12442,7 +12442,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
     * `docker pull datagrok/datagrok:0.89.15`
     * `docker pull datagrok/datagrok:latest`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12469,7 +12469,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
     * `docker pull datagrok/cvm:1.0.88-451665c`
     * `docker pull datagrok/cvm:stable`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
@@ -12623,7 +12623,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
     * `766822877060.dkr.ecr.us-east-2.amazonaws.com/cvm:1.0.82-75b821b`
     * `docker pull datagrok/cvm:1.0.82-75b821b`
 
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed issues
 

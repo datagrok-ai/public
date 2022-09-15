@@ -62,7 +62,7 @@ Check out [JS API Class Reference](https://datagrok.ai/js-api/)
 
 Datarok visual shell is used to get access to top-level views, tables, methods, and platform states.
 
-Learn more here: [Datagrok Shell reference](./shell.md)
+Learn more here: [Datagrok Shell reference](https://datagrok.ai/js-api/classes/dg.Shell)
 
 ## Data manipulation
 

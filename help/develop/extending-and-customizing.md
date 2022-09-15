@@ -28,7 +28,7 @@ With using our [JavaScript API](js-api.md), you can create your own:
   functions, or called directly from Datagrok UI or the [console](../datagrok/navigation.md#console)
 * [visualizations](../visualize/viewers.md) — to visualize data in new ways, in addition to our 30+ core viewers
 * [file viewers](how-to/create-custom-file-viewers.md) — to support new data formats in addition to many we already recognize
-* [cell renderers](../visualize/viewers/grid.md#custom-cell-renderers) — to visualize certain semantic types, such
+* [cell renderers](function-roles.md#cell-renderers) — to visualize certain semantic types, such
   as [molecules](https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit-api.ts)
   or [nucleotide sequences](https://github.com/datagrok-ai/public/tree/master/packages/Sequence/web-logo-viewer)
   , in their native-looking renders, inside contexts such as a grid cell, a tooltip, or an axis label in a viewer
@@ -50,32 +50,6 @@ With using our [JavaScript API](js-api.md), you can create your own:
   custom functionality
 
 You could spot other aspects in Datagrok that allow for customization while getting introduced to the platform.
-
-## What can be customized
-
-Beside a regular CSS-based customization, here are some of the things which you can customize both programmatically and
-through the UI:
-
-* Every viewer exposes a diverse set of [properties](../datagrok/navigation.md#properties), accessible on the right side
-  in the Datagrok's
-  `Property Panel`. Often you need to modify these properties programmatically. The mapping is straightforward: take the
-  property's name, say, `"Col Header Height"`, modify it to the camel case: `colHeaderHeight`, and apply the property to
-  your viewer via `.setOptions`. Say, for the grid `grid` call `grid.setOptions({ colHeaderHeight: 50 });`. Read more
-  about this
-  [here](../develop/how-to/develop-custom-viewer.md)
-
-* You can control the platform's shell aspects programmatically.
-  Study [this sample](https://public.datagrok.ai/js/samples/shell/ui-parts)
-  to learn how to hide the Datagrok's sidebar or the toolbox, which is often useful in
-  the [Datagrok applications](how-to/build-an-app.md)
-
-* Use features like [conditional color coding](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional)
-  for making your views appear indicative to the data they exhibit
-
-* Use the [dock system](how-to/manipulate-viewers.md#docking-viewers)
-  and [custom views](how-to/custom-views.md)
-  to provide for completely custom layouts composed inside the Datagrok platform, tailored to your specific use cases.
-  Learn more about Datagrok's composable UI [here](ui.md)
 
 ### What's next
 
