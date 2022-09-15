@@ -17,15 +17,15 @@ interface getPosConstants {
   b: DG.Rect;
   settings: SparklineSettings;
   cols: DG.Column[];
+  minCols: number,
+  maxCols: number
 }
 
 function getPos(col: number, row: number, constants: getPosConstants): DG.Point {
   const b = constants.b;
   const settings = constants.settings;
   const cols = constants.cols;
-  const gmin = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
-  const gmax = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
-  const r: number = settings.globalScale ? (cols[col].get(row) - gmin) / (gmax - gmin) : cols[col].scale(row);
+  const r: number = settings.globalScale ? (cols[col].get(row) - constants.minCols) / (constants.maxCols - constants.minCols) : cols[col].scale(row);
   return new DG.Point(
     b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
     (b.top + b.height) - b.height * r);
@@ -56,14 +56,16 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const row = gridCell.cell.row.idx;
   const settings = getSettings(gridCell.gridColumn);
   const b = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height).inflate(-3, -2);
-
   const cols = df.columns.byNames(settings.columnNames);
+  const minCols = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
+  const maxCols = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
   const getPosConstants: getPosConstants = {
     b: b,
     settings: settings,
-    cols: cols
+    cols: cols,
+    minCols: minCols,
+    maxCols: maxCols
   };
-
 
   const MousePoint = new DG.Point(e.offsetX, e.offsetY);
   const activeColumn = Math.floor((MousePoint.x - b.left + Math.sqrt(minDistance)) / b.width * (cols.length - 1 > 0 ? cols.length - 1 : 1));
@@ -107,11 +109,14 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
 
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
-
+    const minCols = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
+    const maxCols = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
     const getPosConstants: getPosConstants = {
       b: b,
       settings: settings,
-      cols: cols
+      cols: cols,
+      minCols: minCols,
+      maxCols: maxCols
     };
 
     g.beginPath();
