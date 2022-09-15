@@ -521,5 +521,5 @@ The schema has the following tables:
 * [Deployment](deploy.md)
 * [Configuration](configuration.md)
 * [Continuous integration](continuous-integration.png)
-* [Versioning policy](../versioning-policy.md)
+* [Versioning policy](releases/versioning-policy.md)
 * [Try Datagrok locally](docker-compose.md)
