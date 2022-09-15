@@ -10,12 +10,19 @@ import {_importSdf} from '../open-chem/sdf-importer';
 
 category('server features', () => {
   test('descriptors', async () => {
-    grok.chem.descriptors(grok.data.testData('molecules', 100), 'smiles', ['MolWt', 'Lipinski'])
-      .then(function (table) {
-        grok.shell.addTableView(table);
-      });
 
-    await delay(1000);
+    const tree = await grok.chem.descriptorsTree();
+    expect(tree !== undefined, true);
+    console.log('AAAAAAAAAAAAAA');
+    console.log(tree);
+    const df = DG.DataFrame.fromCsv(testCsv);
+    console.log('BBBBBBBBBBBBBB');
+    console.log(df.toCsv());
+    const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles', 
+      ['MolWt', 'NumAromaticCarbocycles','NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);
+    console.log('CCCCCCCCCCCCC'); 
+    console.log(t.toCsv());
+    grok.shell.addTableView(t);
 
     isColumnPresent(grok.shell.t.columns, 'MolWt');
     isColumnPresent(grok.shell.t.columns, 'NumAromaticCarbocycles');
