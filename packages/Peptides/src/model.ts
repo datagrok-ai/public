@@ -12,7 +12,7 @@ import {calculateBarsData, getTypedArrayConstructor, isGridCellInvalid, scaleAct
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {renderBarchart, renderSARCell, setAARRenderer} from './utils/cell-renderer';
-import {substitutionsWidget} from './widgets/subst-table';
+import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
 import {getStats, Stats} from './utils/statistics';
 
@@ -23,7 +23,6 @@ export class PeptidesModel {
   _sarVGridSubject = new rxjs.Subject<DG.Grid>();
 
   _isUpdating: boolean = false;
-  _isSubstInitialized = false;
   isBitsetChangedInitialized = false;
   isCellChanging = false;
 
@@ -113,7 +112,7 @@ export class PeptidesModel {
     const acc = ui.accordion();
     acc.root.style.width = '100%';
     acc.addTitle(ui.h1(`${this.df.selection.trueCount} selected rows`));
-    acc.addPane('Substitutions', () => substitutionsWidget(this.df, this).root, true);
+    acc.addPane('Substitutions', () => mutationCliffsWidget(this.df, this).root, true);
     acc.addPane('Distribtution', () => getDistributionWidget(this.df, this).root, true);
 
     return acc;
@@ -155,8 +154,6 @@ export class PeptidesModel {
       //FIXME: modify during the initializeViewersComponents stages
       this._sarGridSubject.next(viewerGrid);
       this._sarVGridSubject.next(viewerVGrid);
-      if (viewer.showSubstitution)
-        this._isSubstInitialized = true;
 
       this.invalidateSelection();
       this._isUpdating = false;
@@ -215,8 +212,7 @@ export class PeptidesModel {
     // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
     const sequenceDf = this.createVerticalTable();
 
-    if (viewer.showSubstitution || !this._isSubstInitialized)
-      this.calcSubstitutions();
+    this.calcSubstitutions();
 
     const [sarGrid, sarVGrid] = this.createGrids(matrixDf, positionColumns, sequenceDf, alphabet);
 
@@ -556,7 +552,7 @@ export class PeptidesModel {
 
           const viewer = this.getViewer();
           renderSARCell(canvasContext, currentAAR, currentPosition, this.statsDf, viewer.bidirectionalAnalysis, mdCol,
-            bound, cellValue, this.currentSelection, viewer.showSubstitution ? this.substitutionsInfo : null);
+            bound, cellValue, this.currentSelection, this.substitutionsInfo);
         }
         args.preventDefault();
       }

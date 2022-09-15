@@ -5,13 +5,13 @@ import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
 import {getSeparator} from '../utils/misc';
 
-export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
+export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   const substInfo = model.substitutionsInfo;
   const currentCell = model.currentSelection;
   const positions = Object.keys(currentCell);
 
   if (!positions.length)
-    return new DG.Widget(ui.label('No substitution table generated'));
+    return new DG.Widget(ui.label('No mutations table generated'));
 
   const substitutionsArray: string[] = [];
   const deltaArray: number[] = [];
@@ -49,9 +49,9 @@ export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): 
   }
 
   if (!substitutionsArray.length)
-    return new DG.Widget(ui.label('No substitution table generated'));
+    return new DG.Widget(ui.label('No mutations table generated'));
 
-  const substCol = DG.Column.fromStrings('Substiutions', substitutionsArray);
+  const substCol = DG.Column.fromStrings('Mutation', substitutionsArray);
   substCol.semType = C.SEM_TYPES.MACROMOLECULE_DIFFERENCE;
   substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
   substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
@@ -61,7 +61,7 @@ export function substitutionsWidget(table: DG.DataFrame, model: PeptidesModel): 
   const substTable =
     DG.DataFrame.fromColumns([substCol, DG.Column.fromList('double', 'Delta', deltaArray), hiddenSubstToAarCol]);
 
-  const aminoToInput = ui.stringInput('Substituted to:', '', () => {
+  const aminoToInput = ui.stringInput('Mutated to:', '', () => {
     const substitutedToAar = aminoToInput.stringValue;
     if (substitutedToAar != '')
       substTable.filter.init((idx) => hiddenSubstToAarCol.get(idx) === substitutedToAar);
