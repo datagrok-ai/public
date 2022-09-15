@@ -15,7 +15,6 @@ export class SARViewerBase extends DG.JsViewer {
   model!: PeptidesModel;
   scaling: string;
   bidirectionalAnalysis: boolean;
-  showSubstitution: boolean;
   maxSubstitutions: number;
   minActivityDelta: number;
   _titleHost = ui.divText('SAR Viewer', {id: 'pep-viewer-title'});
@@ -27,18 +26,15 @@ export class SARViewerBase extends DG.JsViewer {
 
     this.scaling = this.string('scaling', 'none', {choices: ['none', 'lg', '-lg']});
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
-    this.showSubstitution = this.bool('showSubstitution', true);
-    this.maxSubstitutions = this.int('maxSubstitutions', 2);
-    this.minActivityDelta = this.float('minActivityDelta', 1);
+    this.maxSubstitutions = this.int('maxSubstitutions', 1);
+    this.minActivityDelta = this.float('minActivityDelta', 0);
   }
 
   async onTableAttached(): Promise<void> {
     super.onTableAttached();
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
     this.model = await PeptidesModel.getInstance(this.dataFrame);
-    // this.model.init(this.dataFrame);
     this.helpUrl = '/help/domains/bio/peptides.md';
-    // await this.requestDataUpdate();
 
     this.initProperties();
   }
@@ -65,11 +61,6 @@ export class SARViewerBase extends DG.JsViewer {
     this.viewerGrid?.invalidate();
   }
 
-  // async requestDataUpdate(): Promise<void> {
-  //   await this.model.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis,
-  //     this.minActivityDelta, this.maxSubstitutions, this.showSubstitution);
-  // }
-
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
     this.dataFrame.tags[property.name] = `${property.get(this)}`;
@@ -89,10 +80,6 @@ export class SARViewerBase extends DG.JsViewer {
       }
     }
 
-    if (!this.showSubstitution && ['maxSubstitutions', 'activityLimit'].includes(propName))
-      return;
-
-    // await this.requestDataUpdate();
     this.model.updateDefault();
     this.render(true);
   }
@@ -102,7 +89,7 @@ export class SARViewerBase extends DG.JsViewer {
  * Structure-activity relationship viewer.
  */
 export class SARViewer extends SARViewerBase {
-  _titleHost = ui.divText('Monomer-Positions', {id: 'pep-viewer-title'});
+  _titleHost = ui.divText('Mutation Cliffs', {id: 'pep-viewer-title'});
   _name = 'Structure-Activity Relationship';
 
   constructor() {super();}
@@ -112,7 +99,6 @@ export class SARViewer extends SARViewerBase {
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
     this.model.sarViewer ??= this;
-    // this.dataFrame.temp['sarViewer'] = this;
 
     this.subs.push(this.model.onSARGridChanged.subscribe((data) => {
       this.viewerGrid = data;
