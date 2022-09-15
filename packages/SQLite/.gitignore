@@ -31,3 +31,4 @@ dist/
 # Emitted *.js files
 src/**/*.js
 !src/sql-wasm.js
+test-report.html

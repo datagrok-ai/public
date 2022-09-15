@@ -1,1 +1,2 @@
 bin/commands/*.ts
+test-report.html
