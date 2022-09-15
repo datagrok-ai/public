@@ -38,12 +38,14 @@ type BondData = {
   kwargs: string[], // MDLV30 atom line may contain keyword args
 }
 
+/* Type storing the necessary information about atoms and bonds */
 type MolGraph = {
-  // molfileV3K: string,
   atoms: AtomData,
   bonds: BondData,
 }
 
+/* Convert sequence of monomer symbols to molfile V3000 with the help of
+ * monomer library  */
 export async function _toAtomicLevel(
   df: DG.DataFrame,
   macroMolCol: DG.Column<string>,
@@ -65,13 +67,15 @@ export async function _toAtomicLevel(
     console.log('Reconstructed' + reconstructed[row]);
   }
   const newCol = DG.Column.fromStrings('reconstructed', reconstructed);
-  // todo: name properly
+  // todo: exclude name collisions
   newCol.semType = DG.SEMTYPE.MOLECULE;
   newCol.tags[DG.TAGS.UNITS] = 'molblock';
   df.columns.add(newCol, true);
   await grok.data.detectSemanticTypes(df);
 }
 
+/* Get a mapping of peptide symbols to HELM monomer library objects with
+ * selectted fields  */
 function getFormattedMonomerLib(monomersLibList: any[]) {
   const map = new Map<string, any>();
   monomersLibList.forEach(
@@ -89,6 +93,7 @@ function getFormattedMonomerLib(monomersLibList: any[]) {
   return map;
 }
 
+/* Get jagged array of monomer symbols for the dataframe  */
 function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
   const result: string[][] = new Array(macroMolCol.length);
 
@@ -103,6 +108,7 @@ function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
   return result;
 }
 
+/* Get a mapping of monomer symbols to MolGraph objects */
 async function getMonomersDict(
   monomerSequencesArray: string[][],
   monomersLibList: any[]
@@ -127,6 +133,8 @@ async function getMonomersDict(
   return monomersDict;
 }
 
+/* Construct the MolGraph object for a specified monomerSymbol: the associated
+ * graph is rotated and filled with R-groups */
 function getMolGraph(
   monomerSymbol: string,
   formattedMonomerLib: Map<string, any>,
@@ -159,6 +167,8 @@ function getMolGraph(
   }
 }
 
+/* Parse element symbols for R-groups from the HELM monomer library R-groups
+ * field  */
 function parseRGroupTypes(rgroupObjList: any[]): string[] {
   // specifically for HELMCoreLibrary
   // considered only monoatomic rgroups
@@ -175,6 +185,7 @@ function parseRGroupTypes(rgroupObjList: any[]): string[] {
   return rgroupsArray;
 }
 
+/* Substitute the element symbols instead of R# in molfile  */
 function substituteRGroups(molfileV2K: string, rGroups: string[]) {
   let modifiedMolfile = molfileV2K;
   const rGroupIndices = parseRGroupIndices(molfileV2K);
@@ -194,7 +205,7 @@ function substituteRGroups(molfileV2K: string, rGroups: string[]) {
   return modifiedMolfile;
 }
 
-// necessary to build a correct molfilev3k after substitution of r-groups in v2k
+/* Helper function necessary to build a correct V3000 molfile after substitution of r-groups in V2000 molfile  */
 function removeRGroupLine(molfileV2K: string): string {
   // todo: consider the case of multiple rgp lines in a molfile
   const begin = molfileV2K.indexOf(V2K_RGP_LINE);
@@ -202,10 +213,11 @@ function removeRGroupLine(molfileV2K: string): string {
   return molfileV2K.substring(0, begin) + molfileV2K.substring(end);
 }
 
-// todo: type of moduleRdkit
-// todo: consider the use of unified converter (relies on creation of moduleRdkit
-// on each iteration, though)
+/* V2000 to V3000 converter  */
 function convertMolfileToV3K(molfileV2K: string, moduleRdkit: any) {
+  // todo: type of moduleRdkit
+  // todo: consider the use of unified converter (relies on creation of moduleRdkit
+  // on each iteration, though)
   const molObj = moduleRdkit.get_mol(molfileV2K);
   const molfileV3K = molObj.get_v3Kmolblock();
   molObj.delete();
@@ -246,6 +258,7 @@ function parseBondData(molfileV3K: string, bondCount: number): BondData {
   };
 }
 
+/* Get the positions of nodes removed upon chaining the monomers into a polymer  */
 function getRemovedNodes(molfileV2K: string): {left: number, right: number} {
   // todo: verify that in other monomer libraries the order of removed nodes in
   // RGP line is the same as in HELMCoreLibrary
@@ -363,7 +376,7 @@ function parseAtomData(
   };
 }
 
-// remove hydrogen nodes that are not L/R removed nodes
+/* Remove hydrogen nodes that are not left/right removed nodes */
 function removeIntermediateHydrogen(atomData: AtomData, bondData: BondData): void {
   let i = 0;
   const leftRemovedIdx = atomData.leftRemovedNode - 1;
@@ -379,9 +392,10 @@ function removeIntermediateHydrogen(atomData: AtomData, bondData: BondData): voi
   }
 }
 
-// this must return a copy of the molGraph
-// todo: use either nodes or node idx as argument everywhere
+/* Remove H atoms that are L/R removed nodes  */
 function removeTerminalHydrogen(molGraph: MolGraph, removedNode: number): MolGraph {
+  // this must return a copy of the molGraph
+  // todo: use either nodes or node idx as argument everywhere
   const molGraphCopy: MolGraph = structuredClone(molGraph);
   const removedIdx = removedNode - 1;
   if (molGraphCopy.atoms.atomType[removedIdx] === 'H')
@@ -389,7 +403,7 @@ function removeTerminalHydrogen(molGraph: MolGraph, removedNode: number): MolGra
   return molGraphCopy;
 }
 
-// remove node 'idx' and the associated bonds
+/* Remove node 'idx' and the associated bonds  */
 function removeNodeAndBonds(atomData: AtomData, bondData: BondData, removedIdx: number) {
   // update nodes
   const removedAtom = removedIdx + 1; // atom indices start from 1
@@ -424,7 +438,6 @@ function removeNodeAndBonds(atomData: AtomData, bondData: BondData, removedIdx: 
   }
 }
 
-// function getFromattedMolfileV3K(
 function adjustGraph(atoms: AtomData): void {
   const atomCount = atoms.x.length;
   const leftNodeIdx = atoms.leftNode - 1;
@@ -446,7 +459,7 @@ function adjustGraph(atoms: AtomData): void {
     atoms.x[i] += xShift;
 }
 
-// Rotate the centered backbone so that "leftNode" is on the left and "rightNode" is on the right
+/*  Rotate the centered backbone so that "leftNode" is on the left and "rightNode" is on the right */
 function rotateCenteredGraph(atoms: AtomData): void {
   let angle = 0;
   const leftNodeIdx = atoms.leftNode - 1;
@@ -476,6 +489,8 @@ function rotateCenteredGraph(atoms: AtomData): void {
   }
 }
 
+/* Conctenate MolGraph objects according to the monomer symbol sequence, the
+ * result is convertible to molfile V3000 */
 function concatenateMolGraphs(
   monomerSeq: string[],
   monomersDict: Map<string, MolGraph>
@@ -496,15 +511,17 @@ function concatenateMolGraphs(
   return result;
 }
 
-// todo: improve naming
+/* Join two subsequent MolGraph objects */
 function addMonomerGraphs(
   result: MolGraph,
   monomerSeq: string[],
   monomersDict: Map<string, MolGraph>
 ): void {
+  // todo: improve naming
   for (let i = 1; i < monomerSeq.length; i++) {
     console.log(structuredClone(result));
 
+    // todo: unify the args in all the functions removing nodes to NODES, not their indices
     const xShift = result.atoms.x[result.atoms.rightRemovedNode - 1];
     removeNodeAndBonds(result.atoms, result.bonds, result.atoms.rightRemovedNode - 1);
 
