@@ -109,6 +109,7 @@ export class WebLogo extends DG.JsViewer {
 
   private rowsMasked: number = 0;
   private rowsNull: number = 0;
+  private backgroundColor: number = 0xFFFFFFFF;
 
   // Viewer's properties (likely they should be public so that they can be set outside)
   private _positionWidth: number;
@@ -166,6 +167,7 @@ export class WebLogo extends DG.JsViewer {
     this.textBaseline = 'top';
     this.unitsHandler = null;
 
+    this.backgroundColor = this.int('backgroundColor', 0xFFFFFFFF);
     this._positionWidth = this.positionWidth = this.float('positionWidth', 16/*,
       {editor: 'slider', min: 4, max: 64, postfix: 'px'}*/);
     this.minHeight = this.float('minHeight', 50/*,
@@ -367,8 +369,13 @@ export class WebLogo extends DG.JsViewer {
     if ((this.slider != null) && (this.canvas != null)) {
       let diffEndScrollAndSliderMin = Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length;
       diffEndScrollAndSliderMin = diffEndScrollAndSliderMin > 0 ? diffEndScrollAndSliderMin : 0;
-      this.slider.setValues(0, this.Length,
-        Math.floor(this.slider.min - diffEndScrollAndSliderMin), Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin));
+      if (this.canvas.width / this.positionWidthWithMargin >= this.Length) {
+        this.slider.root.style.display = 'none';
+      } else {
+        this.slider.setValues(0, this.Length,
+          Math.floor(this.slider.min - diffEndScrollAndSliderMin), Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin));
+        this.slider.root.style.display = 'inherit';
+      }
     }
   }
 
@@ -427,6 +434,9 @@ export class WebLogo extends DG.JsViewer {
       this.render(true);
       break;
     case 'positionHeight':
+      this.render(true);
+      break;
+    case 'backgroundColor':
       this.render(true);
       break;
     }
@@ -622,7 +632,7 @@ export class WebLogo extends DG.JsViewer {
       this._calculate(r);
 
     g.resetTransform();
-    g.fillStyle = 'white';
+    g.fillStyle = DG.Color.toHtml(this.backgroundColor);
     g.fillRect(0, 0, this.canvas.width, this.canvas.height);
     g.textBaseline = this.textBaseline;
 
