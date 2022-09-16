@@ -2,29 +2,24 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import { getHelmMonomers } from '../package'
+
 const V2000_ATOM_NAME_POS = 31;
 
-export async function getFingerprints(mols: Array<string>, monomers: Array<string>): Promise<Uint8Array[]> {
-  const mod = await grok.functions.call('Chem:getRdKitModule');
-  const fps: Uint8Array[] = [];
+export async function getMonomericMols(mcol: DG.Column, pattern: boolean = false): Promise<DG.Column> {
+  const monomers = getHelmMonomers(mcol);
+  let mols = await grok.functions.call('HELM:getMolFiles', {mcol: mcol});
 
   let dict = new Map(); 
   for(let i = 0; i < monomers.length; i++)
-    dict.set(monomers[i], `R${Math.pow(10,(i + 1))}`);
+    dict.set(monomers[i], `${i + 1}`);
 
-  mols = changeToV3000(mols, dict);
+  mols = changeToV3000(mols, dict, pattern);
 
-  for(let i = 0; i< mols.length; i++) {
-    const mol = mod.get_mol(mols[i]);
-    const fp = mol.get_pattern_fp_as_uint8array();
-    fps.push(fp);
-    mol?.delete();
-  }
-
-  return fps;
+  return DG.Column.fromStrings('monomericMols', mols);
 }
 
-function changeToV3000(mols: Array<string>, dict: Map<string, string>): Array<string> {
+function changeToV3000(mols: Array<string>, dict: Map<string, string>, pattern: boolean = false): Array<string> {
   for (let i = 0; i < mols.length; i++) {
     let curPos = 0;
     let endPos = 0;
@@ -50,7 +45,9 @@ M  V30 BEGIN CTAB
       curPos = mol.indexOf('\n', curPos) + 1 + V2000_ATOM_NAME_POS;
       endPos = mol.indexOf(' ', curPos);
       const monomerName: string = mol.substring(curPos, endPos);
-      molV3000 += `M  V30 ${atomRowI + 1} ${dict.get(monomerName)} 0.000 0.000 0 0\n`;
+      molV3000 += pattern ? 
+                  `M  V30 ${atomRowI + 1} R${dict.get(monomerName)} 0.000 0.000 0 0\n` :
+                  `M  V30 ${atomRowI + 1} At 0.000 0.000 0 0 MASS=${dict.get(monomerName)}\n`;
     } 
 
     molV3000 += 'M  V30 END ATOM\n';
