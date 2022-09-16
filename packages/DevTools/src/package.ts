@@ -109,31 +109,11 @@ async function testFunc(f: DG.Func): Promise<{[key: string]: any}> {
   return results;
 }
 
-//name: square
-//input: int x
-//output: int y
-//test: square(1) == 1
-//test: square(2) == 4
-//test: square(3) == 9
-export function square(x: number) {
-  return x ** 2;
-}
-
-//name: square1
-//input: int x
-//output: int y
-//test: square1(1) == 1
-//test: square1(2) == 1
-//test: square1(3) == 1
-export function square1(x: number) {
-  return x ** 2; // fails some tests
-}
-
-//name: testFuncs
+//name: testFunctions
+//input: string scope = "" [JSON string with the search filter for functions]
 //output: dataframe result
-export async function testFuncs() {
-  // TODO: define the scope of functions to check
-  const functions = DG.Func.find({package: _package.name});
+export async function testFunctions(scope: string = '') {
+  const functions = DG.Func.find(scope ? JSON.parse(scope) : {package: _package.name});
   const testRuns = {};
   for (const f of functions) {
     testRuns[f.name] = await testFunc(f);
