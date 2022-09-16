@@ -55,6 +55,16 @@ export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRender
   return new MacromoleculeSequenceCellRenderer();
 }
 
+//name: MacromoleculeDifferenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: MacromoleculeDifference
+//meta.columnTags: quality=MacromoleculeDifference
+//output: grid_cell_renderer result
+export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCellRenderer {
+  return new MacromoleculeDifferenceCellRenderer();
+}
+
+
 function checkInputColumnUi(
   col: DG.Column, name: string, allowedNotations: string[] = [], allowedAlphabets: string[] = []
 ): boolean {
@@ -373,15 +383,6 @@ export function convertPanel(col: DG.Column): void {
 //output: grid_cell_renderer result
 export function monomerCellRenderer(): MonomerCellRenderer {
   return new MonomerCellRenderer();
-}
-
-//name: MacromoleculeDifferenceCellRenderer
-//tags: cellRenderer
-//meta.cellType: MacromoleculeDifference
-//meta.columnTags: quality=MacromoleculeDifference
-//output: grid_cell_renderer result
-export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCellRenderer {
-  return new MacromoleculeDifferenceCellRenderer();
 }
 
 //name: testDetectMacromolecule
