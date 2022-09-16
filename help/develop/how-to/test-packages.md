@@ -103,3 +103,16 @@ explore results. In case category/package contain multiple tests results are sho
 workspace for further exploration.
 
 ![Test results](test_results.gif)
+
+## Running tests in the console
+
+It is possible to run tests in the platform's console. Press the tilde key `~`
+to open the console or enable it from the toolbox (`Windows | Console`). To
+launch tests for a category, type `PackageName:test(category="category-name")`,
+e.g., `ApiTests:test(category="Layouts")`, or add a specific test as a
+parameter: `PackageName:test(category="category-name", test="test-name")`, e.g.,
+`ApiTests:test(category="Layouts", test="ViewLayout.toJson()")`.
+
+See also:
+
+* [How to add package tests](add-package-tests.md)
