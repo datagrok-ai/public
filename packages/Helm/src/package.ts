@@ -419,7 +419,9 @@ function unescape(s: string) {
   });
 }
 
-function parseHelm(s: string) {
+//name: parseHelm
+//input: string s
+export function parseHelm(s: string) {
   var sections = split(s, '$');
   s = sections[0];
   var monomers = [];
