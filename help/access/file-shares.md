@@ -43,16 +43,16 @@ with you.
 You can connect to files and folders located on a remote server or a mapped drive. Out-of-the-box, Datagrok provides
 connectors to the following data sources:
 
-* [An Amazon Simple Storage Service (S3) bucket](s3.md)
-* [Windows and Linux network shares](files.md)
+* [An Amazon Simple Storage Service (S3) bucket](connectors/s3.md)
+* [Windows and Linux network shares](connectors/files.md)
 
     > Note: Connecting to an SMB file share (that is, a file share mounted on a server, such as Linux or Windows network
     > shares) is only available for on-premise deployment and is not available on the public Datagrok instance
     > (public.datagrok.ai).
 
-* [Dropbox](dropbox.md)
-* [Git](git.md)
-* [Google Drive](googlecloud.md)
+* [Dropbox](connectors/dropbox.md)
+* [Git](connectors/git.md)
+* [Google Drive](connectors/googlecloud.md)
 
 > Developers: You can [create custom connectors](/develop/how-to/access-data.md/#connections).
 
@@ -217,7 +217,7 @@ folder expands its content.
 
 Datagrok has multiple tools to help you find information you need precisely when you need it.
 
-* A [Treemap](link) helps you visually profile the content of your current folder and identify the files that take up
+* A [Treemap](/visualize/viewers/tree-map.md) helps you visually profile the content of your current folder and identify the files that take up
   the most space.
   > Developers: You can [create custom folder viewers](/develop/how-to/folder-content-preview.md).
   >
