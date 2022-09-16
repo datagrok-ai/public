@@ -91,3 +91,49 @@ export async function TestDetectorsStandard() {
   grok.shell.addTableView(df);
 }
 
+async function testFunc(f: DG.Func): Promise<{[key: string]: any}> {
+  const tests = f.options['test'];
+  if (tests == null || Array.isArray(tests) && !tests.length)
+    return null;
+
+  const results = {};
+
+  function addNamespace(s: string): string {
+    return s.replace(new RegExp(f.name, 'gi'), f.nqName);
+  }
+
+  for (const test of tests) {
+    results[test] = await grok.functions.eval(addNamespace(test));
+  }
+
+  return results;
+}
+
+//name: testFunctions
+//input: string scope = "" [JSON string with the search filter for functions]
+//output: dataframe result
+export async function testFunctions(scope: string = '') {
+  const functions = DG.Func.find(scope ? JSON.parse(scope) : {package: _package.name});
+  const testRuns = {};
+  for (const f of functions) {
+    testRuns[f.name] = await testFunc(f);
+  }
+  const functionColumn = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'function', Object.keys(testRuns));
+  const results = Object.values(testRuns).map((runs) => {
+    if (!runs)
+      return null;
+    const failedTests = {};
+    const cntTotal = Object.keys(runs).length;
+    let cntPassed = 0;
+    for (const [test, result] of Object.entries(runs)) {
+      if (result == true)
+        cntPassed++;
+      else
+        failedTests[test] = result;
+    }
+    return cntPassed === cntTotal ? 'OK' : `${cntPassed} / ${cntTotal}. Failed: ${JSON.stringify(failedTests)}`;
+  });
+  const resultColumn = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'result', results);
+  return DG.DataFrame.fromColumns([functionColumn, resultColumn]);
+}
+
