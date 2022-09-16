@@ -32,7 +32,6 @@ import {
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import * as C from './utils/constants';
-import {getFingerprints} from './calculations/fingerprints';
 
 //tags: init
 export async function initBio() {
@@ -459,12 +458,4 @@ export function splitToMonomers(col: DG.Column<string>): void {
 export function getHelmMonomers(seqCol: DG.Column<string>): string[] {
   const stats = WebLogo.getStats(seqCol, 1, WebLogo.splitterAsHelm);
   return Object.keys(stats.freq);
-}
-
-export async function macromoleculesFingerprints(mcol: DG.Column): Promise<Uint8Array[]> {
-  grok.functions.call('Chem:getRdKitModule');
-  const monomers = getHelmMonomers(mcol);
-  const mols = await grok.functions.call('HELM:getMolFiles', {mcol: mcol});
-
-  return getFingerprints(mols.toList(), monomers);
 }
