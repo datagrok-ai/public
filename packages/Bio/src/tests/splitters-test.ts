@@ -1,10 +1,10 @@
-import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {WebLogo, SplitterFunc} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import {splitToMonomers, _package} from '../package';
+import {splitToMonomers, _package, getHelmMonomers} from '../package';
 import * as C from '../utils/constants';
 
 category('splitters', () => {
@@ -86,6 +86,30 @@ category('splitters', () => {
 
     splitToMonomers(seqCol);
     expect(df.columns.names().includes('17'), true);
+  });
+
+  test('getHelmMonomers', async () => {
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(
+      `HELM,Activity
+PEPTIDE1{hHis.N.T}$$$,5.30751
+PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
+`);
+    const expectedMonomerList = ['hHis', 'Aca', 'Cys_SEt', 'N', 'T'];
+
+    const helmCol: DG.Column = df.getCol('HELM');
+    const res = getHelmMonomers(helmCol);
+
+    const missed = expectedMonomerList.filter((m) => !res.includes(m));
+    const unexpected = res.filter((m) => !expectedMonomerList.includes(m));
+    if (missed.length > 0 || unexpected.length) {
+      const msgs = [];
+      if (missed.length > 0)
+        msgs.push(`Missed monomers ${JSON.stringify(missed)}.`);
+      if (unexpected.length > 0)
+        msgs.push(`Unexpected monomers ${JSON.stringify(unexpected)}.`);
+
+      throw new Error(msgs.join(' '));
+    }
   });
 });
 
