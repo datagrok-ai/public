@@ -50,7 +50,7 @@ export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
 //name: separatorSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: sequence
-//meta.columnTags: quality=Macromolecule, units=fasta
+//meta.columnTags: quality=Macromolecule, units=separator
 //output: grid_cell_renderer result
 export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
