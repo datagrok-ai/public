@@ -486,6 +486,8 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     const undefinedColor = 'rgb(100,100,100)';
     const grayColor = '#808080';
     const monomers = findMonomers(gridCell.cell.value);
+    let s: string = gridCell.cell.value ?? '';
+    let subParts: string[] = parseHelm(s);
     if (monomers.size == 0) {
       const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
       host.setAttribute('dataformat', 'helm');
@@ -514,14 +516,21 @@ class HelmCellRenderer extends DG.GridCellRenderer {
         g.font = '12px monospace';
         g.textBaseline = 'top';
         let x1 = x;
-        const s: string = gridCell.cell.value ?? '';
-        let subParts: string[] = parseHelm(s);
-        subParts.forEach((amino, index) => {
-          let color = monomers.has(amino) ? 'red' : grayColor;
+        let j = 0;
+        let allParts  = [];
+        for (let k = 0; k < subParts.length; ++k) {
+          let indexOfMonomer = s.indexOf(subParts[k]);
+          let helmBeforeMonomer = s.slice(j, indexOfMonomer);
+          allParts.push(helmBeforeMonomer);
+          allParts.push(subParts[k]);
+          s = s.substring(indexOfMonomer + subParts[k].length);
+        }
+        allParts.push(s);
+        for (let part of allParts) {
+          let color = monomers.has(part) ? 'red' : grayColor;
           g.fillStyle = undefinedColor;
-          let last = index === subParts.length - 1;
-          x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, '/', last);
-        });
+          x1 = printLeftOrCentered(x1, y, w, h, g, part, color, 0, true, 1.0);
+        };
         g.restore();
         return;
       }
