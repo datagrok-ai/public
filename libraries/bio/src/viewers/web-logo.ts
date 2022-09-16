@@ -109,12 +109,13 @@ export class WebLogo extends DG.JsViewer {
 
   private rowsMasked: number = 0;
   private rowsNull: number = 0;
-  private backgroundColor: number = 0xFFFFFFFF;
+  private visibleSlider: boolean = false;
 
   // Viewer's properties (likely they should be public so that they can be set outside)
   private _positionWidth: number;
   public positionWidth: number;
   public minHeight: number;
+  public backgroundColor: number = 0xFFFFFFFF;
   public maxHeight: number;
   public considerNullSequences: boolean;
   public sequenceColumnName: string | null;
@@ -214,11 +215,15 @@ export class WebLogo extends DG.JsViewer {
 
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
-    this.canvas.style.setProperty('overflow', 'hidden', 'important');
+    //this.canvas.style.setProperty('overflow', 'hidden', 'important');
+
     const style: SliderOptions = {style: 'barbell', allowResize: false};
     this.slider = ui.rangeSlider(0, 100, 10, 20, false, style);
     this.slider.root.style.position = 'absolute';
     this.slider.root.style.zIndex = '999';
+    this.slider.root.style.display = 'none';
+    this.visibleSlider = false;
+
     const parent = this;
     this.slider.onValuesChanged.subscribe(() => {
       parent.render(true);
@@ -294,14 +299,15 @@ export class WebLogo extends DG.JsViewer {
     this.root.append(this.host);
     this.root.append(this.slider.root);
 
-    this.render(true);
+    this._calculate(window.devicePixelRatio);
     this.setSlider();
+    this.render(false);
   }
 
   /** Handler of changing size WebLogo */
   private rootOnSizeChanged(): void {
-    this.render(true);
     this.setSlider();
+    this.render(true);
   }
 
   /** Assigns {@link seqCol} and {@link cp} based on {@link sequenceColumnName} and calls {@link render}().
@@ -363,19 +369,44 @@ export class WebLogo extends DG.JsViewer {
       this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
   }
 
+  private checkIsHideSlider(): boolean {
+    if (this?.fixWidth == true) {
+      return true;
+    }
+    return Math.floor((this?.canvas?.width ?? 0) / this.positionWidthWithMargin) >= this.Length;
+  }
+
+  private setShowSlider(): void {
+    if ((this.slider != null)) {
+      this.slider.root.style.display = 'inherit';
+      this.visibleSlider = true;
+    }
+  }
+
+  private setHideSlider(): void {
+    if ((this.slider != null)) {
+      this.slider.root.style.display = 'none';
+      this.visibleSlider = false;
+    }
+  }
+
   /** Sets {@link slider}, needed to set slider options and to update slider position.
    */
   private setSlider(): void {
     if ((this.slider != null) && (this.canvas != null)) {
       let diffEndScrollAndSliderMin = Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length;
       diffEndScrollAndSliderMin = diffEndScrollAndSliderMin > 0 ? diffEndScrollAndSliderMin : 0;
-      if (this.canvas.width / this.positionWidthWithMargin >= this.Length) {
-        this.slider.root.style.display = 'none';
+      let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
+      let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin);
+      if (this.checkIsHideSlider()) {
+        newMin = 0;
+        newMax = 1;
+        this.setHideSlider();
       } else {
-        this.slider.setValues(0, this.Length,
-          Math.floor(this.slider.min - diffEndScrollAndSliderMin), Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin));
-        this.slider.root.style.display = 'inherit';
+        this.setShowSlider();
       }
+      this.slider.setValues(0, this.Length,
+        newMin, newMax);
     }
   }
 
@@ -408,6 +439,7 @@ export class WebLogo extends DG.JsViewer {
       this.render(true);
       break;
     case 'fixWidth':
+      this.setSlider();
       this.render(true);
       break;
     case 'verticalAlignment':
@@ -417,6 +449,7 @@ export class WebLogo extends DG.JsViewer {
       this.render(true);
       break;
     case 'fitArea':
+      this.setSlider();
       this.render(true);
       break;
     case 'shrinkEmptyTail':
@@ -637,7 +670,7 @@ export class WebLogo extends DG.JsViewer {
     g.textBaseline = this.textBaseline;
 
     const maxCountOfRowsRendered = this.host.clientWidth / this.positionWidthWithMargin + 1;
-    const startRendering = Math.floor(this.slider.min);
+    const startRendering = (this.visibleSlider) ? Math.floor(this.slider.min) : 0;
     const checkEndRendering = (jPos: number) => {
       return jPos < this.Length && jPos < maxCountOfRowsRendered + startRendering;
     };
