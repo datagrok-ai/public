@@ -65,7 +65,6 @@ M  V30 BEGIN CTAB
     molV3000 += 'M  V30 END BOND\n';
     molV3000 += 'M  V30 END CTAB\n';
     molV3000 += 'M  END';
-    console.log(molV3000);
     mols[i] = molV3000;
   }
 
