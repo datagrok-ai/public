@@ -444,6 +444,7 @@ function removeNodeAndBonds(atomData: AtomData, bondData: BondData, removedNode:
 
 /* Adjust the monomer's graph so that it is easy to concatenate with others  */
 function adjustGraph(atoms: AtomData): void {
+  // todo: consider the case when d(l, r) < max(d)
   const atomCount = atoms.x.length;
   const leftNodeIdx = atoms.leftNode - 1;
   const rightNodeIdx = atoms.rightNode - 1;
@@ -471,26 +472,38 @@ function rotateCenteredGraph(atoms: AtomData): void {
   const rightNodeIdx = atoms.rightNode - 1;
   const x = atoms.x;
   const y = atoms.y;
+  const xLeft = x[leftNodeIdx];
+  const yLeft = y[leftNodeIdx];
 
-  if (x[leftNodeIdx] === 0) { // both vertices are on OY, centered graph
-    angle = y[leftNodeIdx] > y[rightNodeIdx] ? Math.PI/2 : -Math.PI/2;
-  } else if (y[leftNodeIdx] === 0) { // both vertices are on OX
-    angle = x[leftNodeIdx] > x[rightNodeIdx] ? Math.PI : 0;
+  if (xLeft === 0) { // both vertices are on OY, centered graph
+    angle = yLeft > 0 ? Math.PI/2 : -Math.PI/2;
+  } else if (yLeft === 0) { // both vertices are on OX
+    angle = xLeft > 0 ? Math.PI : 0;
   } else {
-    const tangent = y[leftNodeIdx]/x[leftNodeIdx];
-    if (x[leftNodeIdx] < x[rightNodeIdx])
-      angle = tangent > 0 ? -Math.atan(tangent) : Math.atan(tangent);
-    else
-      angle = tangent > 0 ? Math.PI - Math.atan(tangent) : Math.atan(tangent) - Math.PI;
+    const tangent = yLeft / xLeft;
+    if (xLeft < 0) {
+      angle = -Math.atan(tangent);
+    } else {
+      angle = tangent > 0 ?
+        Math.PI - Math.atan(tangent) :
+        -(Math.atan(tangent) + Math.PI);
+    }
   }
+  console.log(atoms.x[leftNodeIdx], atoms.x[rightNodeIdx]);
+  console.log(atoms.y[leftNodeIdx], atoms.y[rightNodeIdx]);
 
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
 
   for (let i = 0; i < x.length; ++i) {
     const tmp = x[i];
-    x[i] = Math.round(10000 * (tmp*cos - y[i]*sin))/10000;
-    y[i] = Math.round(10000 * (tmp*sin + y[i]*cos))/10000;
+    x[i] = Math.round(10_000 * (tmp*cos - y[i]*sin))/10_000;
+    y[i] = Math.round(10_000 * (tmp*sin + y[i]*cos))/10_000;
+  }
+  if (atoms.x[leftNodeIdx] > atoms.x[rightNodeIdx]) {
+    console.log(atoms.x[leftNodeIdx], atoms.x[rightNodeIdx]);
+    console.log(atoms.y[leftNodeIdx], atoms.y[rightNodeIdx]);
+    throw new Error(`Incorrect rotation: ${atoms.atomType[leftNodeIdx]}`);
   }
 }
 
@@ -524,7 +537,7 @@ function concatenateMonomerGraphs(
 ): void {
   // todo: improve naming
   for (let i = 1; i < monomerSeq.length; i++) {
-    const xShift = result.atoms.x[result.atoms.rightNode - 1] + 1; // bond length is 1
+    const xShift = result.atoms.x[result.atoms.rightNode - 1] + 10; // bond length is 1
 
     // todo: choose one of the shift types
     // const xShift = result.atoms.x[result.atoms.rightRemovedNode - 1];
@@ -576,7 +589,7 @@ function shiftNodes(monomer: MolGraph, nodeIdxShift: number): void {
 function shiftXCoordinate(monomer: MolGraph, xShift: number): void {
   const x = monomer.atoms.x;
   for (let i = 0; i < x.length; ++i)
-    x[i] = Math.round(10000*(x[i] + xShift))/10000;
+    x[i] = Math.round(10_000*(x[i] + xShift))/10_000;
 }
 
 // function shiftCoordinates(monomer: MolGraph, xShift: number, yShift: number): void {
