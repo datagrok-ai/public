@@ -43,7 +43,7 @@ export abstract class UaQueryViewer extends UaViewer {
       grid.props.allowColSelection = false;
       let raw = false;
 
-      let tableIcon = ui.iconFA('table', () => {
+      let tableIcon = ui.button(ui.iconFA('table'), () => {
         if (!raw)
           $(viewer).replaceWith(grid.root);
         else
@@ -62,7 +62,7 @@ export abstract class UaQueryViewer extends UaViewer {
 
       nameDiv.append(ui.tooltip.bind(tableIcon, 'Show grid'));
 
-      let tableViewIcon = ui.iconFA('external-link-square', () => {
+      let tableViewIcon = ui.button(ui.iconFA('external-link-square'), () => {
         grok.shell.v = grok.shell.addTableView(dataFrame);
       });
 

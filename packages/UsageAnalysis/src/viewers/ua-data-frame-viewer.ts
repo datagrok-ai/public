@@ -14,7 +14,9 @@ export class UaDataFrameViewer extends UaViewer {
   }
 
   setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement) {
-    host.appendChild(DG.Viewer.grid(this.dataFrame).root);
+    let grid = DG.Viewer.grid(this.dataFrame);
+    host.appendChild(grid.root);
+    grid.autoSize(600,400,200,100);
     host.removeChild(loader);
   }
 
