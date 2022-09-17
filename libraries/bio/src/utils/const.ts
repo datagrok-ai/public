@@ -17,6 +17,7 @@ export const jsonSdfMonomerLibDict = {
 };
 
 export const RGROUP_FIELD = 'rgroups';
+export const MOLFILE_FIELD = 'molfile';
 export const CAP_GROUP_SMILES = 'capGroupSmiles';
 export const RGROUP_ALTER_ID = 'alternateId';
 export const CAP_GROUP_NAME = 'capGroupName';

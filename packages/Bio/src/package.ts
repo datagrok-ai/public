@@ -14,7 +14,6 @@ import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/monomer-utils';
 import {createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './utils/sequence-activity-cliffs';
-import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {representationsWidget} from './widgets/representations';

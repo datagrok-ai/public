@@ -2,7 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {WebLogo, SplitterFunc} from '../../src/viewers/web-logo';
-import {HELM_CORE_FIELDS, HELM_CORE_LIB_MONOMER_SYMBOL} from './monomer-utils';
+import {HELM_CORE_FIELDS} from './monomer-utils';
+import {RGROUP_FIELD, MOLFILE_FIELD, MONOMER_SYMBOL, CAP_GROUP_SMILES} from './const';
 
 const V2K_RGP_SHIFT = 8;
 const V2K_RGP_LINE = 'M  RGP';
@@ -23,20 +24,22 @@ const V3K_END_BOND_BLOCK = 'M  V30 END BOND\n';
 const V3K_BEGIN_DATA_LINE = 'M  V30 ';
 const V3K_END = 'M  END\n';
 
+// todo: test for separator/helm
+
 type AtomData = {
   atomType: string[], // element symbol
   x: number[], // Cartesian coordiantes of the nodes
   y: number[],
-  leftNode: number, // "leftmost" retained node (not deleted upon monomers chaining)
+  leftNode: number, // "leftmost" retained node (not removed upon chaining into polymer)
   rightNode: number,
-  leftRemovedNode: number, // "leftmost" r-group node of the monomer
+  leftRemovedNode: number, // "leftmost" r-group node of the monomer (deleted upon chaining into polymer)
   rightRemovedNode: number,
   kwargs: string[], // MDLV30 atom line may contain keyword args
 }
 
 type BondData = {
   bondType: number[],
-  atomPair: number[][],
+  atomPair: number[][], // indices of atoms, starting with 1
   kwargs: string[], // MDLV30 atom line may contain keyword args
 }
 
@@ -46,8 +49,7 @@ type MolGraph = {
   bonds: BondData,
 }
 
-/* Convert sequence of monomer symbols to molfile V3000 with the help of a
- * monomer library  */
+/* Convert Macromolecule column into Molecule column storing molfile V3000 with the help of a monomer library  */
 export async function _toAtomicLevel(
   df: DG.DataFrame, macroMolCol: DG.Column<string>, monomersLibList: any[]
 ): Promise<void> {
@@ -56,20 +58,30 @@ export async function _toAtomicLevel(
     return;
   }
 
+  const pi = DG.TaskBarProgressIndicator.create('Restoring atomic structure...');
+
   const monomerSequencesArray: string[][] = getMonomerSequencesArray(macroMolCol);
   const monomersDict = await getMonomersDict(monomerSequencesArray, monomersLibList);
   const reconstructed: string[] = new Array(macroMolCol.length);
-  for (let row = 0; row < monomerSequencesArray.length; ++row) {
+  const columnLength = monomerSequencesArray.length;
+  for (let row = 0; row < columnLength; ++row) {
     const monomerSeq = monomerSequencesArray[row];
     const molGraph = monomerSeqToMolGraph(monomerSeq, monomersDict);
     reconstructed[row] = convertMolGraphToMolfileV3K(molGraph);
+    pi.update(100 * (row + 1)/columnLength, '...complete');
   }
-  const newCol = DG.Column.fromStrings('reconstructed', reconstructed);
-  // todo: exclude name collisions
+
+  // exclude name collisions
+  const name = 'molfile(' + macroMolCol.name + ')';
+  const newColName = df.columns.getUnusedName(name);
+  const newCol = DG.Column.fromStrings(newColName, reconstructed);
+
   newCol.semType = DG.SEMTYPE.MOLECULE;
-  newCol.tags[DG.TAGS.UNITS] = 'molblock';
+  newCol.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.MOLBLOCK;
   df.columns.add(newCol, true);
   await grok.data.detectSemanticTypes(df);
+
+  pi.close();
 }
 
 /* Get a mapping of peptide symbols to HELM monomer library objects with
@@ -79,12 +91,13 @@ function getFormattedMonomerLib(monomersLibList: any[]): Map<string, any> {
   monomersLibList.forEach(
     (it) => {
       // todo: generalize for the case of nucleotides
+      // todo: remove string literals
       if (it['polymerType'] === 'PEPTIDE') {
         const monomerObject: { [key: string]: any } = {};
         HELM_CORE_FIELDS.forEach((field) => {
           monomerObject[field] = it[field];
         });
-        map.set(it[HELM_CORE_LIB_MONOMER_SYMBOL], monomerObject);
+        map.set(it[MONOMER_SYMBOL], monomerObject);
       }
     });
   return map;
@@ -96,6 +109,7 @@ function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
 
   // todo: getTag, constants
   const colUnits = macroMolCol.tags[DG.TAGS.UNITS];
+  // todo: separator to constant
   const separator = macroMolCol.getTag('separator');
   const splitterFunc: SplitterFunc = WebLogo.getSplitter(colUnits, separator);
   for (let row = 0; row < macroMolCol.length; ++row) {
@@ -132,7 +146,7 @@ async function getMonomersDict(
 }
 
 /* Construct the MolGraph object for a specified monomerSymbol: the associated
- * graph is rotated and filled with R-groups */
+ * graph is rotated and filled with default R-groups */
 function getMolGraph(
   monomerSymbol: string, formattedMonomerLib: Map<string, any>, moduleRdkit: any // todo: specify type
 ): MolGraph | null {
@@ -141,12 +155,13 @@ function getMolGraph(
   } else {
     const libObject = formattedMonomerLib.get(monomerSymbol);
     // todo: create constants for HELM molfile fields
-    const rgroups = parseRGroupTypes(libObject['rgroups']);
-    const molfileV2K = substituteRGroups(libObject['molfile'], rgroups);
+    const rGroups = parseRGroupTypes(libObject[RGROUP_FIELD]);
+    const rGroupIndices = parseRGroupIndices(libObject[MOLFILE_FIELD]);
+    const molfileV2K = substituteRGroups(libObject[MOLFILE_FIELD], rGroups, rGroupIndices);
     const molfileV3K = convertMolfileToV3K(removeRGroupLine(molfileV2K), moduleRdkit);
     const counts = parseAtomAndBondCounts(molfileV3K);
     const bondData = parseBondData(molfileV3K, counts.bondCount);
-    const removedNodes = getRemovedNodes(molfileV2K);
+    const removedNodes = getRemovedNodes(rGroupIndices);
     const atomData = parseAtomData(removedNodes, bondData, molfileV3K, counts.atomCount);
 
     removeIntermediateHydrogen(atomData, bondData);
@@ -167,19 +182,20 @@ function parseRGroupTypes(rgroupObjList: any[]): string[] {
   // todo: possible generalizations
   const rgroupsArray: string[] = [];
   for (const obj of rgroupObjList) {
-    let rgroup: string = obj['capGroupSmiles'];
+    let rgroup: string = obj[CAP_GROUP_SMILES];
     // todo: verify that there are no multi-element rgroups, or consider how to
     // transform them
     rgroup = rgroup.replace(/(\[|\]|\*|:|\d)/g, '');
+    if (rgroup.length > 1) // todo: check if such cases are possible, remove if not
+      throw new Error('Default r-group has length more than one');
     rgroupsArray.push(rgroup);
   }
   return rgroupsArray;
 }
 
 /* Substitute the element symbols instead of R# in molfile  */
-function substituteRGroups(molfileV2K: string, rGroups: string[]) {
+function substituteRGroups(molfileV2K: string, rGroups: string[], rGroupIndices: number[]) {
   let modifiedMolfile = molfileV2K;
-  const rGroupIndices = parseRGroupIndices(molfileV2K);
   const idx: number[] = new Array((rGroupIndices.length - 1)/2);
   for (let i = 0; i < rGroups.length; ++i)
     // idx[i] is responsible for the correct order of substituted rgroups
@@ -250,11 +266,9 @@ function parseBondData(molfileV3K: string, bondCount: number): BondData {
 }
 
 /* Get the positions of nodes removed upon chaining the monomers into a polymer  */
-function getRemovedNodes(molfileV2K: string): {left: number, right: number} {
+function getRemovedNodes(rGroupIndices: number[]): {left: number, right: number} {
   // todo: verify that in other monomer libraries the order of removed nodes in
   // RGP line is the same as in HELMCoreLibrary
-  const rGroupIndices = parseRGroupIndices(molfileV2K);
-
   const leftRemovedNode = rGroupIndices[1]; // rgpIndices[0] is the number of R-groups
   const rightRemovedNode = rGroupIndices[rGroupIndices.length - 2];
   return {left: leftRemovedNode, right: rightRemovedNode};
@@ -511,6 +525,10 @@ function concatenateMonomerGraphs(
   // todo: improve naming
   for (let i = 1; i < monomerSeq.length; i++) {
     const xShift = result.atoms.x[result.atoms.rightNode - 1] + 1; // bond length is 1
+
+    // todo: choose one of the shift types
+    // const xShift = result.atoms.x[result.atoms.rightRemovedNode - 1];
+    // const yShift = result.atoms.y[result.atoms.rightRemovedNode - 1];
     removeNodeAndBonds(result.atoms, result.bonds, result.atoms.rightRemovedNode);
 
     const nextMonomer: MolGraph = structuredClone(monomersDict.get(monomerSeq[i])!);
@@ -518,6 +536,7 @@ function concatenateMonomerGraphs(
 
     const nodeIdxShift = result.atoms.atomType.length;
     shiftNodes(nextMonomer, nodeIdxShift);
+    // shiftCoordinates(nextMonomer, xShift, yShift);
     shiftXCoordinate(nextMonomer, xShift);
 
     // bind the two monomers with a peptide bond
@@ -559,6 +578,15 @@ function shiftXCoordinate(monomer: MolGraph, xShift: number): void {
   for (let i = 0; i < x.length; ++i)
     x[i] = Math.round(10000*(x[i] + xShift))/10000;
 }
+
+// function shiftCoordinates(monomer: MolGraph, xShift: number, yShift: number): void {
+//   const x = monomer.atoms.x;
+//   const y = monomer.atoms.y;
+//   for (let i = 0; i < x.length; ++i) {
+//     x[i] = Math.round(10000*(x[i] + xShift))/10000;
+//     y[i] = Math.round(10000*(y[i] + yShift))/10000;
+//   }
+// }
 
 function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
   // counts line
