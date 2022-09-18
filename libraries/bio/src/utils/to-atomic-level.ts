@@ -58,6 +58,7 @@ export async function _toAtomicLevel(
     return;
   }
 
+  // todo: remove?
   const pi = DG.TaskBarProgressIndicator.create('Restoring atomic structure...');
 
   const monomerSequencesArray: string[][] = getMonomerSequencesArray(macroMolCol);
@@ -122,8 +123,7 @@ function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
 
 /* Get a mapping of monomer symbols to MolGraph objects */
 async function getMonomersDict(
-  monomerSequencesArray: string[][],
-  monomersLibList: any[]
+  monomerSequencesArray: string[][], monomersLibList: any[]
 ): Promise<Map<string, MolGraph>> {
   const formattedMonomerLib = getFormattedMonomerLib(monomersLibList);
   const monomersDict = new Map<string, MolGraph>();
@@ -165,8 +165,8 @@ function getMolGraph(
     const atomData = parseAtomData(removedNodes, bondData, molfileV3K, counts.atomCount);
 
     removeIntermediateHydrogen(atomData, bondData);
-    adjustGraph(atomData);
-    // todo: delete after nucleotides
+    adjustGraph(atomData, atomData.leftNode, atomData.rightRemovedNode);
+    // todo: delete after nucleotides debugging
     if (atomData.leftNode === atomData.leftRemovedNode || atomData.rightNode === atomData.rightRemovedNode)
       throw new Error('Non-intermediate hydrogens removed');
     return {atoms: atomData, bonds: bondData};
@@ -286,8 +286,7 @@ function parseRGroupIndices(molfileV2K: string): number[] {
 }
 
 function parseRetainedLRNodes(
-  atomPair: number[][],
-  removedNodes: {left: number, right: number}
+  atomPair: number[][], removedNodes: {left: number, right: number}
 ): {left: number, right: number} {
   let leftNode = 0;
   let rightNode = 0;
@@ -325,10 +324,7 @@ function parseAtomAndBondCounts(molfileV3K: string): {atomCount: number, bondCou
 }
 
 function parseAtomData(
-  removedNodes: {left: number, right: number},
-  bondData: BondData,
-  molfileV3K: string,
-  atomCount: number
+  removedNodes: {left: number, right: number}, bondData: BondData, molfileV3K: string, atomCount: number
 ): AtomData {
   const atomType: string[] = new Array(atomCount);
   const x: number[] = new Array(atomCount);
@@ -397,7 +393,7 @@ function removeIntermediateHydrogen(atomData: AtomData, bondData: BondData): voi
   }
 }
 
-/* Remove H atoms that are L/R removed nodes  */
+/* Remove H atoms that are L/R removed nodes */
 function removeTerminalHydrogen(molGraph: MolGraph, removedNode: number): MolGraph {
   const molGraphCopy: MolGraph = structuredClone(molGraph);
   if (molGraphCopy.atoms.atomType[removedNode - 1] === 'H')
@@ -406,7 +402,7 @@ function removeTerminalHydrogen(molGraph: MolGraph, removedNode: number): MolGra
 }
 
 /* Remove node 'removedNode' and the associated bonds. Notice, numeration of
- * nodes in molfiles starts from 1, not 0  */
+ * nodes in molfiles starts from 1, not 0 */
 function removeNodeAndBonds(atomData: AtomData, bondData: BondData, removedNode: number): void {
   const removedNodeIdx = removedNode - 1;
 
@@ -442,46 +438,45 @@ function removeNodeAndBonds(atomData: AtomData, bondData: BondData, removedNode:
   }
 }
 
-/* Adjust the monomer's graph so that it is easy to concatenate with others  */
-function adjustGraph(atoms: AtomData): void {
+/* Adjust the monomer's graph so that nodeOne is at origin, while nodeTwo
+ * is at the positive ray of OX */
+function adjustGraph(atoms: AtomData, nodeOne: number, nodeTwo: number): void {
   // todo: consider the case when d(l, r) < max(d)
-  const atomCount = atoms.x.length;
-  const leftNodeIdx = atoms.leftNode - 1;
-  const rightNodeIdx = atoms.rightNode - 1;
+  const nodeOneIdx = nodeOne - 1; // node indexing in molfiles starts from 1
+  const nodeTwoIdx = nodeTwo - 1;
 
-  // center tha backbone at origin
-  const xCenter = (atoms.x[leftNodeIdx] + atoms.x[rightNodeIdx])/2;
-  const yCenter = (atoms.y[leftNodeIdx] + atoms.y[rightNodeIdx])/2;
-  for (let i = 0; i < atomCount; i++) {
-    atoms.x[i] -= xCenter;
-    atoms.y[i] -= yCenter;
-  }
+  // center the backbone
+  const xCenter = (atoms.x[nodeOneIdx] + atoms.x[nodeTwoIdx])/2;
+  const yCenter = (atoms.y[nodeOneIdx] + atoms.y[nodeTwoIdx])/2;
+  shiftCoordinates(atoms, -xCenter, -yCenter);
 
-  rotateCenteredGraph(atoms);
+  // rotate left node around the center
+  rotateCenteredGraph(atoms, nodeOne);
 
-  // shift the backbone so that leftNode is at origin
-  const xShift = atoms.x[rightNodeIdx]; // equal to -atoms.x[leftNodeIdx]
-  for (let i = 0; i < atomCount; ++i)
-    atoms.x[i] += xShift;
+  // shift the backbone so that nodeOne is at origin
+  const xShift = atoms.x[nodeTwoIdx]; // equal to -atoms.x[nodeOneIdx]
+  shiftCoordinates(atoms, xShift);
+  // todo: remove after debugging
+  if (atoms.y[nodeTwoIdx] !== 0)
+    throw new Error('wrong rotation');
 }
 
-/*  Rotate the centered backbone so that "leftNode" is on the left and "rightNode" is on the right */
-function rotateCenteredGraph(atoms: AtomData): void {
+/*  Rotate 'node' around the origin, so that it ends up on OX's negative ray */
+function rotateCenteredGraph(atoms: AtomData, node: number): void {
   let angle = 0;
-  const leftNodeIdx = atoms.leftNode - 1;
-  const rightNodeIdx = atoms.rightNode - 1;
+  const nodeIdx = node - 1;
   const x = atoms.x;
   const y = atoms.y;
-  const xLeft = x[leftNodeIdx];
-  const yLeft = y[leftNodeIdx];
+  const xRotated = x[nodeIdx];
+  const yRotated = y[nodeIdx];
 
-  if (xLeft === 0) { // both vertices are on OY, centered graph
-    angle = yLeft > 0 ? Math.PI/2 : -Math.PI/2;
-  } else if (yLeft === 0) { // both vertices are on OX
-    angle = xLeft > 0 ? Math.PI : 0;
+  if (xRotated === 0) { // the rotated node is on OY
+    angle = yRotated > 0 ? Math.PI/2 : -Math.PI/2;
+  } else if (yRotated === 0) {
+    angle = xRotated > 0 ? Math.PI : 0;
   } else {
-    const tangent = yLeft / xLeft;
-    if (xLeft < 0) {
+    const tangent = yRotated / xRotated;
+    if (xRotated < 0) {
       angle = -Math.atan(tangent);
     } else {
       angle = tangent > 0 ?
@@ -489,30 +484,24 @@ function rotateCenteredGraph(atoms: AtomData): void {
         -(Math.atan(tangent) + Math.PI);
     }
   }
-  console.log(atoms.x[leftNodeIdx], atoms.x[rightNodeIdx]);
-  console.log(atoms.y[leftNodeIdx], atoms.y[rightNodeIdx]);
 
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
 
+  // rotation
   for (let i = 0; i < x.length; ++i) {
     const tmp = x[i];
     x[i] = Math.round(10_000 * (tmp*cos - y[i]*sin))/10_000;
     y[i] = Math.round(10_000 * (tmp*sin + y[i]*cos))/10_000;
   }
-  if (atoms.x[leftNodeIdx] > atoms.x[rightNodeIdx]) {
-    console.log(atoms.x[leftNodeIdx], atoms.x[rightNodeIdx]);
-    console.log(atoms.y[leftNodeIdx], atoms.y[rightNodeIdx]);
-    throw new Error(`Incorrect rotation: ${atoms.atomType[leftNodeIdx]}`);
-  }
+  // todo: remove after debugging
+  if (atoms.x[nodeIdx] > 0)
+    throw new Error(`Incorrect rotation: ${atoms.atomType[nodeIdx]}`);
 }
 
 /* Conctenate MolGraph objects according to the monomer symbol sequence, the
  * result is convertible to molfile V3000 */
-function monomerSeqToMolGraph(
-  monomerSeq: string[],
-  monomersDict: Map<string, MolGraph>
-): MolGraph {
+function monomerSeqToMolGraph(monomerSeq: string[], monomersDict: Map<string, MolGraph>): MolGraph {
   if (monomerSeq.length === 0)
     throw new Error('The monomerSeq is empty');
     // todo: handle/modify exception
@@ -530,17 +519,11 @@ function monomerSeqToMolGraph(
 }
 
 /* Join two subsequent MolGraph objects */
-function concatenateMonomerGraphs(
-  result: MolGraph,
-  monomerSeq: string[],
-  monomersDict: Map<string, MolGraph>
-): void {
+function concatenateMonomerGraphs(result: MolGraph, monomerSeq: string[], monomersDict: Map<string, MolGraph>): void {
   // todo: improve naming
   for (let i = 1; i < monomerSeq.length; i++) {
-    const xShift = result.atoms.x[result.atoms.rightNode - 1] + 10; // bond length is 1
-
     // todo: choose one of the shift types
-    // const xShift = result.atoms.x[result.atoms.rightRemovedNode - 1];
+    const xShift = result.atoms.x[result.atoms.rightRemovedNode - 1];
     // const yShift = result.atoms.y[result.atoms.rightRemovedNode - 1];
     removeNodeAndBonds(result.atoms, result.bonds, result.atoms.rightRemovedNode);
 
@@ -550,7 +533,13 @@ function concatenateMonomerGraphs(
     const nodeIdxShift = result.atoms.atomType.length;
     shiftNodes(nextMonomer, nodeIdxShift);
     // shiftCoordinates(nextMonomer, xShift, yShift);
-    shiftXCoordinate(nextMonomer, xShift);
+    shiftCoordinates(nextMonomer.atoms, xShift);
+
+    // todo: improve chaining by considering max-area rectangles associated with
+    // the monomers and making those non-overlapping, pairs of such rectangles
+    // should be taken into account. If the rectangles intersect, flip the
+    // current monomer (mirror w.r.t. OX). This is possible if we are interested
+    // in preserving the metric relations
 
     // bind the two monomers with a peptide bond
     // todo: eliminate hardcoding of the peptide bond
@@ -586,20 +575,16 @@ function shiftNodes(monomer: MolGraph, nodeIdxShift: number): void {
   }
 }
 
-function shiftXCoordinate(monomer: MolGraph, xShift: number): void {
-  const x = monomer.atoms.x;
-  for (let i = 0; i < x.length; ++i)
-    x[i] = Math.round(10_000*(x[i] + xShift))/10_000;
+/* Shift the backbone's Cartesian coordinates, yShift is optional  */
+function shiftCoordinates(atoms: AtomData, xShift: number, yShift?: number): void {
+  const x = atoms.x;
+  const y = atoms.y;
+  for (let i = 0; i < x.length; ++i) {
+    x[i] += xShift;
+    if (typeof yShift !== 'undefined')
+      y[i] += yShift;
+  }
 }
-
-// function shiftCoordinates(monomer: MolGraph, xShift: number, yShift: number): void {
-//   const x = monomer.atoms.x;
-//   const y = monomer.atoms.y;
-//   for (let i = 0; i < x.length; ++i) {
-//     x[i] = Math.round(10000*(x[i] + xShift))/10000;
-//     y[i] = Math.round(10000*(y[i] + yShift))/10000;
-//   }
-// }
 
 function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
   // counts line
