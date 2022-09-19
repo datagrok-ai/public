@@ -1,4 +1,4 @@
-import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, test, expect, expectObject, delay} from '@datagrok-libraries/utils/src/test';
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -31,6 +31,7 @@ ATC-G-TTGC--
     tvList.forEach((tv: DG.TableView) => tv.close());
     currentView = grok.shell.tv;
   });
+
   test('allPositions', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf1);
     const tv: DG.TableView = grok.shell.addTableView(df);
@@ -71,8 +72,8 @@ ATC-G-TTGC--
         expect(positions[i].freq[key].count, resAllDf1[i].freq[key].count);
       }
     }
-
   });
+
   test('positions with shrinkEmptyTail option true (filterd)', async () => {
     let csvDf2 = `seq 
     -TC-G-TTGC--
@@ -122,7 +123,6 @@ ATC-G-TTGC--
         expect(positions[i].freq[key].count, resAllDf1[i].freq[key].count);
       }
     }
-
   });
 
   test('positions with skipEmptyPositions option', async () => {
@@ -163,5 +163,4 @@ ATC-G-TTGC--
       }
     }
   });
-
 });
