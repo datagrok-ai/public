@@ -191,7 +191,7 @@ export class WebLogo extends DG.JsViewer {
       {choices: ['auto', 'enable', 'off']});
     let defaultValueForPositionMargin = 0;
     if (this.positionMarginState === 'auto') {
-        defaultValueForPositionMargin = 4;
+      defaultValueForPositionMargin = 4;
     }
     this.positionMargin = this.int('positionMargin', defaultValueForPositionMargin, {min: 0, max: 16});
     this.positionHeight = this.string('positionHeight', PositionHeight.full, {choices: [PositionHeight.full, PositionHeight.Entropy]});
@@ -848,12 +848,7 @@ export class WebLogo extends DG.JsViewer {
         let mRes: string;
         const m: string = ma[0];
         if (m.length > 1) {
-          if (m in WebLogo.aaSynonyms) {
-            mRes = WebLogo.aaSynonyms[m];
-          } else {
-            mRes = '';
-            console.debug(`Long monomer '${m}' has not a short synonym.`);
-          }
+          mRes = ma[1];
         } else {
           mRes = m;
         }
@@ -928,14 +923,6 @@ export class WebLogo extends DG.JsViewer {
     const separator = col.getTag(UnitsHandler.TAGS.separator);
     return WebLogo.getSplitter(units, separator);
   }
-
-  /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
-  private static aaSynonyms: { [name: string]: string } = {
-    '[MeNle]': 'L', // Nle - norleucine
-    '[MeA]': 'A',
-    '[MeG]': 'G',
-    '[MeF]': 'F',
-  };
 
   private static longMonomerPartRe = /(\w+)/g;
 
