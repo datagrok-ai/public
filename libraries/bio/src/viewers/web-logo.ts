@@ -157,6 +157,21 @@ export class WebLogo extends DG.JsViewer {
     return this._positionWidth;
   }
 
+  /** Count of position rendered for calculations countOfRenderPositions */
+  private get countOfRenderPositions() {
+    if (this.host == null) {
+      return 0;
+    }
+    return this.host.clientWidth / this.positionWidthWithMargin;
+  }
+
+  /** Position of start rendering */
+  private get startRendering(): number {
+    if (this.slider == null)
+      return 0;
+    return (this.visibleSlider) ? Math.floor(this.slider.min) : 0;
+  }
+
   private viewSubs: Subscription[] = [];
 
   constructor() {
@@ -240,14 +255,15 @@ export class WebLogo extends DG.JsViewer {
     this.host.style.setProperty('overflow', 'hidden', 'important');
 
     const getMonomer = (p: DG.Point): [number, string | null, PositionMonomerInfo | null] => {
-      const jPos = Math.floor(p.x / this.positionWidthWithMargin);
+      const calculatedX = p.x + this.startRendering * this.positionWidthWithMargin
+      const jPos = Math.floor(p.x / this.positionWidthWithMargin + this.startRendering);
       const position = this.positions[jPos];
 
       if (position === void 0)
         return [jPos, null, null];
 
       const monomer: string | undefined = Object.keys(position.freq)
-        .find((m) => position.freq[m].bounds.contains(p.x, p.y));
+        .find((m) => position.freq[m].bounds.contains(calculatedX, p.y));
       if (monomer === undefined)
         return [jPos, null, null];
 
@@ -300,7 +316,7 @@ export class WebLogo extends DG.JsViewer {
     this.viewSubs.push(rxjs.fromEvent<WheelEvent>(this.canvas, 'wheel').subscribe((e: WheelEvent) => {
       if (!this.canvas || this.slider === void 0)
         return;
-      const countOfScrollPositions = (e.deltaY / 100) * Math.max(Math.floor((this.countOfRenderPositions() - 1) / 2), 1);
+      const countOfScrollPositions = (e.deltaY / 100) * Math.max(Math.floor((this.countOfRenderPositions - 1) / 2), 1);
       if (e.deltaY > 0) {
         this.slider.scrollTo((this.Length > this.slider.min + countOfScrollPositions) ? this.slider.min + countOfScrollPositions : this.Length - countOfScrollPositions);
       } else {
@@ -554,6 +570,7 @@ export class WebLogo extends DG.JsViewer {
     return array;
   }
 
+
   /** Function for removing empty positions */
   protected _removeEmptyPositions() {
     if (this.skipEmptyPositions) {
@@ -656,13 +673,6 @@ export class WebLogo extends DG.JsViewer {
 
   }
 
-  countOfRenderPositions() {
-    if (this.host == null) {
-      return 0;
-    }
-    return this.host.clientWidth / this.positionWidthWithMargin;
-  }
-
   /** Render WebLogo sensitive to changes in params of rendering
    *@param {boolean} recalc - indicates that need to recalculate data for rendering
    */
@@ -700,10 +710,10 @@ export class WebLogo extends DG.JsViewer {
       this.setShowSlider();
     }
 
-    const maxCountOfRowsRendered = this.countOfRenderPositions() + 1;
+    const maxCountOfRowsRendered = this.countOfRenderPositions + 1;
     const startRendering = (this.visibleSlider) ? Math.floor(this.slider.min) : 0;
     const checkEndRendering = (jPos: number) => {
-      return jPos < this.Length && jPos < maxCountOfRowsRendered + startRendering;
+      return jPos < this.Length && jPos < maxCountOfRowsRendered + this.startRendering;
     };
 
     //#region Plot positionNames
@@ -715,7 +725,7 @@ export class WebLogo extends DG.JsViewer {
     const posNameMaxWidth = Math.max(...this.positions.map((pos) => g.measureText(pos.name).width));
     const hScale = posNameMaxWidth < (this._positionWidth - 2) ? 1 : (this._positionWidth - 2) / posNameMaxWidth;
 
-    for (let jPos = startRendering; checkEndRendering(jPos); jPos++) {
+    for (let jPos = this.startRendering; checkEndRendering(jPos); jPos++) {
       const pos: PositionInfo = this.positions[jPos];
       g.resetTransform();
       g.setTransform(
@@ -728,12 +738,12 @@ export class WebLogo extends DG.JsViewer {
     // Hacks to scale uppercase characters to target rectangle
     const uppercaseLetterAscent = 0.25;
     const uppercaseLetterHeight = 12.2;
-    for (let jPos = startRendering; checkEndRendering(jPos); jPos++) {
+    for (let jPos = this.startRendering; checkEndRendering(jPos); jPos++) {
       for (const [monomer, pmInfo] of Object.entries(this.positions[jPos].freq)) {
         if (monomer !== '-') {
           const monomerTxt = WebLogo.monomerToShort(monomer, 5);
           const b = pmInfo.bounds;
-          const left = b.left - this.positionWidthWithMargin * startRendering;
+          const left = b.left - this.positionWidthWithMargin * this.startRendering;
 
           g.resetTransform();
           g.strokeStyle = 'lightgray';
