@@ -25,7 +25,7 @@ very extensible, and almost anything could be implemented as a package:
 * Platform enhancements, such
   as [PowerPack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack/README.md)
   or [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
-* ... and other types of extensions documented [here](../develop/extending-and-customizing.md).
+* ... and other types of extensions documented [here](../develop/packages/extensions.md).
 
 These open-source packages are free to use by anyone, although for the [public environment](https://public.datagrok.ai)
 there are some restrictions related to the server computational capacities. Organizations that deploy Datagrok
