@@ -222,12 +222,15 @@ export class WebLogo extends DG.JsViewer {
     this.slider.root.style.position = 'absolute';
     this.slider.root.style.zIndex = '999';
     this.slider.root.style.display = 'none';
+    this.slider.root.style.height = '0.7em';
+
     this.visibleSlider = false;
 
     const parent = this;
     this.slider.onValuesChanged.subscribe(() => {
       parent.render(true);
     });
+
 
     this.host = ui.div([this.msgHost, this.canvas]);
 
@@ -294,6 +297,17 @@ export class WebLogo extends DG.JsViewer {
       }
     }));
 
+    this.viewSubs.push(rxjs.fromEvent<WheelEvent>(this.canvas, 'wheel').subscribe((e: WheelEvent) => {
+      if (!this.canvas || this.slider === void 0)
+        return;
+      const countOfScrollPositions = (e.deltaY / 100) * Math.max(Math.floor((this.countOfRenderPositions() - 1) / 2), 1);
+      if (e.deltaY > 0) {
+        this.slider.scrollTo((this.Length > this.slider.min + countOfScrollPositions) ? this.slider.min + countOfScrollPositions : this.Length - countOfScrollPositions);
+      } else {
+        this.slider.scrollTo((this.slider.min + countOfScrollPositions > 0) ? this.slider.min + countOfScrollPositions : 0);
+      }
+    }));
+
     this.viewSubs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
 
     this.root.append(this.host);
@@ -306,6 +320,7 @@ export class WebLogo extends DG.JsViewer {
 
   /** Handler of changing size WebLogo */
   private rootOnSizeChanged(): void {
+    this._calculate(window.devicePixelRatio);
     this.setSlider();
     this.render(true);
   }
@@ -373,18 +388,21 @@ export class WebLogo extends DG.JsViewer {
     if (this?.fixWidth == true) {
       return true;
     }
-    return Math.floor((this?.canvas?.width ?? 0) / this.positionWidthWithMargin) >= this.Length;
+    if (this?.canvas?.width == null) {
+      return true;
+    }
+    return Math.floor(this.canvas.width / this.positionWidthWithMargin) >= this.Length;
   }
 
   private setShowSlider(): void {
-    if ((this.slider != null)) {
+    if (this.slider != null) {
       this.slider.root.style.display = 'inherit';
       this.visibleSlider = true;
     }
   }
 
   private setHideSlider(): void {
-    if ((this.slider != null)) {
+    if (this.slider != null) {
       this.slider.root.style.display = 'none';
       this.visibleSlider = false;
     }
@@ -401,9 +419,6 @@ export class WebLogo extends DG.JsViewer {
       if (this.checkIsHideSlider()) {
         newMin = 0;
         newMax = 1;
-        this.setHideSlider();
-      } else {
-        this.setShowSlider();
       }
       this.slider.setValues(0, this.Length,
         newMin, newMax);
@@ -430,6 +445,7 @@ export class WebLogo extends DG.JsViewer {
       break;
     case 'positionWidth':
       this._positionWidth = this.positionWidth;
+      this.setSlider();
       this.render(true);
       break;
     case 'minHeight':
@@ -461,9 +477,11 @@ export class WebLogo extends DG.JsViewer {
       this.render(true);
       break;
     case 'positionMargin':
+      this.setSlider();
       this.render(true);
       break;
     case 'positionMarginState':
+      this.setSlider();
       this.render(true);
       break;
     case 'positionHeight':
@@ -638,6 +656,13 @@ export class WebLogo extends DG.JsViewer {
 
   }
 
+  countOfRenderPositions() {
+    if (this.host == null) {
+      return 0;
+    }
+    return this.host.clientWidth / this.positionWidthWithMargin;
+  }
+
   /** Render WebLogo sensitive to changes in params of rendering
    *@param {boolean} recalc - indicates that need to recalculate data for rendering
    */
@@ -669,7 +694,13 @@ export class WebLogo extends DG.JsViewer {
     g.fillRect(0, 0, this.canvas.width, this.canvas.height);
     g.textBaseline = this.textBaseline;
 
-    const maxCountOfRowsRendered = this.host.clientWidth / this.positionWidthWithMargin + 1;
+    if (this.checkIsHideSlider()) {
+      this.setHideSlider();
+    } else {
+      this.setShowSlider();
+    }
+
+    const maxCountOfRowsRendered = this.countOfRenderPositions() + 1;
     const startRendering = (this.visibleSlider) ? Math.floor(this.slider.min) : 0;
     const checkEndRendering = (jPos: number) => {
       return jPos < this.Length && jPos < maxCountOfRowsRendered + startRendering;
