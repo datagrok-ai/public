@@ -19,7 +19,9 @@ export async function getMonomericMols(mcol: DG.Column, pattern: boolean = false
   return DG.Column.fromStrings('monomericMols', mols);
 }
 
-function changeToV3000(mols: Array<string>, dict: Map<string, string>, pattern: boolean = false): Array<string> {
+function changeToV3000(mols: DG.Column, dict: Map<string, string>, pattern: boolean = false): Array<string> {
+  const molsArray = new Array<string>(mols.length);
+
   for (let i = 0; i < mols.length; i++) {
     let curPos = 0;
     let endPos = 0;
@@ -30,7 +32,7 @@ function changeToV3000(mols: Array<string>, dict: Map<string, string>, pattern: 
 M  V30 BEGIN CTAB
 `;
 
-    const mol = mols[i];
+    const mol = mols.get(i);
     curPos = mol.indexOf('\n', curPos) + 1;
     curPos = mol.indexOf('\n', curPos) + 1;
     curPos = mol.indexOf('\n', curPos) + 1;
@@ -65,8 +67,8 @@ M  V30 BEGIN CTAB
     molV3000 += 'M  V30 END BOND\n';
     molV3000 += 'M  V30 END CTAB\n';
     molV3000 += 'M  END';
-    mols[i] = molV3000;
+    molsArray[i] = molV3000;
   }
 
-  return mols;
+  return molsArray;
 }

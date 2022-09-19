@@ -22,8 +22,8 @@ import {rGroupAnalysis } from './analysis/r-group-analysis';
 import {identifiersWidget } from './widgets/identifiers';
 import {_convertMolNotation, isMolBlock, MolNotation} from './utils/convert-notation-utils';
 import '../css/chem.css';
-import { ChemSimilarityViewer } from './analysis/chem-similarity-viewer';
-import { ChemDiversityViewer } from './analysis/chem-diversity-viewer';
+import { chemSimilaritySearch, ChemSimilarityViewer } from './analysis/chem-similarity-viewer';
+import { chemDiversitySearch, ChemDiversityViewer } from './analysis/chem-diversity-viewer';
 import { saveAsSdfDialog } from './utils/sdf-utils';
 import { Fingerprint } from './utils/chem-common';
 import { assure } from '@datagrok-libraries/utils/src/test';
@@ -40,6 +40,7 @@ import { getAtomsColumn, radar } from './utils/elemental-analysis-utils';
 import { elementsTable } from './constants';
 import { getSimilaritiesMarix } from './utils/similarity-utils';
 import { molToMolblock } from './utils/chem-utils'
+import { similarityMetric } from '@datagrok-libraries/utils/src/similarity-metrics';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -649,4 +650,40 @@ export function detectSmiles(col: DG.Column, min: number) {
 export async function getStructuralAlerts(col: DG.Column<string>): Promise<void> {
   await checkForStructuralAlerts(col);
 }
+
+
+//name: chemSimilaritySearch
+//input: dataframe df
+//input: column col
+//input: string molecule
+//input: string metricName
+//input: int limit
+//input: double minScore
+//input: string fingerprint
+export async function callChemSimilaritySearch(
+  df: DG.DataFrame,
+  col: DG.Column,
+  molecule: string,
+  metricName: string,
+  limit: number,
+  minScore: number,
+  fingerprint: string): Promise<DG.DataFrame> {  
+    return await chemSimilaritySearch(df, col, molecule, metricName, limit, minScore, fingerprint as Fingerprint);
+}
+
+
+//name: chemDiversitySearch
+//input: column col
+//input: string metricName
+//input: int limit
+//input: string fingerprint
+export async function callChemDiversitySearch(
+  col: DG.Column,
+  metricName: string,
+  limit: number,
+  fingerprint: string): Promise<number[]> {  
+    return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint) ;
+}
+
+
 

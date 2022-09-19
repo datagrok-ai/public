@@ -7,7 +7,7 @@ import * as grok from 'datagrok-api/grok';
 import { SplitterFunc, WebLogo } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import { UnitsHandler } from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SEM_TYPES, TAGS} from '../utils/constants';
-import { drawMoleculeDifferenceOnCanvas } from './cell-renderer';
+import { drawMoleculeDifferenceOnCanvas } from '../utils/cell-renderer';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
