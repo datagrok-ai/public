@@ -7,7 +7,7 @@ import { UaFilter } from "../../filter2";
 import { PropertyPanel } from "../../property-panel";
 import { BehaviorSubject } from "rxjs"
 import { UaDataFrameViewer } from "../../viewers/ua-data-frame-viewer";
-import { Grid } from "datagrok-api/dg";
+import { DataFrame, Grid } from "datagrok-api/dg";
 
 export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
 
@@ -36,9 +36,8 @@ export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
             [new UaDataFrameViewer(
               'Errors',
               eventInfo,
-              (t: DG.DataFrame) => {
+              (t:DataFrame) => {
                 let grid = DG.Viewer.grid(t);
-                grid.autoSize(600, 400, 200, 100);
                 return grid.root;
               },
               false)],
@@ -48,6 +47,7 @@ export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
           let isError = ui.boolInput('Is error', eventInfo.get('is_error', 0));
           let comment = ui.stringInput('Comment', eventInfo.get('comment', 0));
           let acc = DG.Accordion.create('ErrorInfo');
+
           acc.addPane('Error details', () => {
             let button = ui.buttonsInput([ui.bigButton('Save', async () => {
               await grok.data.query('UsageAnalysis:UpdateEventsIsErrorComment', {
@@ -58,7 +58,7 @@ export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
               });
               grok.shell.info('Event type saved');
             })]);
-            return ui.divV([ui.h2(eventInfo.get('error_message', 0)), ui.divText(eventInfo.get('error_stack_trace', 0), { style: { maxHeight: '100px', overflowY: 'scroll' } }), isError.root, comment.root, button]);
+            return ui.divV([ui.h2(eventInfo.get('error_message', 0)), ui.divText(eventInfo.get('error_stack_trace', 0), { style: { maxHeight: '250px', overflowY: 'scroll' } }), isError.root, comment.root, button]);
           });
           grok.shell.o = ui.divV([
             pp.getRoot(),

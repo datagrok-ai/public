@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.0.5",
+  "version": "3.0.12",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -381,6 +381,9 @@
         },
         "1.0.6": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.0.7": {
+          "datagrok-api": "^1.6.0"
         }
       },
       "description": "SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform, used to translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
@@ -568,6 +571,9 @@
           "datagrok-api": "latest"
         },
         "1.1.0": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.2.0": {
           "datagrok-api": "^1.6.0"
         }
       },
@@ -1363,6 +1369,21 @@
           "datagrok-api": "^1.6.7"
         },
         "2.0.4": {
+          "datagrok-api": "^1.6.7"
+        },
+        "2.0.5": {
+          "datagrok-api": "^1.6.7"
+        },
+        "2.0.6": {
+          "datagrok-api": "^1.6.7"
+        },
+        "2.0.7": {
+          "datagrok-api": "^1.6.7"
+        },
+        "2.0.8": {
+          "datagrok-api": "^1.6.7"
+        },
+        "2.0.9": {
           "datagrok-api": "^1.6.7"
         }
       },

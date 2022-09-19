@@ -22,9 +22,10 @@ We recommend this method if you want to jump-start with Datagrok on your local m
 1. Download a Docker Compose YAML
    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
 
-2. To start up Datagrok, run this command:
+2. To start up Datagrok, run these commands:
 
    ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --profile all pull
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all up -d
    ```
 
@@ -218,6 +219,10 @@ To run Datagrok with exact CVM features, specify them in the command line using 
     # Replace <service> with one of the services: db, datagrok, grok_connect, grok_compute, jupyter_notebook, jupyter_kernel_gateway, h2o
     docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all exec <service> /bin/sh
     ```
+
+5. Docker logs might take all your free disk space. If such situation have already taken place, add to the Docker daemon
+   configuration log properties. For more about configuring Docker log options you can refer
+   to [the official documentation](https://docs.docker.com/config/containers/logging/local/#usage).
 
 ## Useful links
 

@@ -3,8 +3,8 @@
 # File exporters
 
 Part of Datagrok's functionality is built for easy file management. File exporters, along
-with [file viewers](create-custom-file-viewers.md), provide an example of such features. A file exporter is a function used for
-loading data from the platform. Once registered, it appears at the file's "
+with [file viewers](create-custom-file-viewers.md), provide an example of such features. A file exporter is a function
+used for loading data from the platform. Once registered, it appears at the file's "
 export" menu:
 
 ![Save as SDF](file-exporter.gif "Save as SDF")

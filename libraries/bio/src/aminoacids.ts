@@ -68,6 +68,20 @@ export class AminoacidsPalettes extends SeqPaletteBase {
     }
     return this.rasMol;
   }
+
+  public override get(m: string): string {
+    const resM = m in AminoacidsPalettes.aaSynonyms ? AminoacidsPalettes.aaSynonyms[m] : m;
+    const res = super.get(resM);
+    return res;
+  }
+
+  /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
+  private static aaSynonyms: { [name: string]: string } = {
+    'MeNle': 'L', // Nle - norleucine
+    'MeA': 'A',
+    'MeG': 'G',
+    'MeF': 'F',
+  };
 }
 
 export class Aminoacids {

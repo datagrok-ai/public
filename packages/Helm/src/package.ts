@@ -43,7 +43,7 @@ export function helmCellRenderer(): HelmCellRenderer {
 }
 
 
-export function webEditor(value: string) {
+export function webEditor(cell?: DG.GridCell, value?: string) {
   let view = ui.div();
   org.helm.webeditor.MolViewer.molscale = 0.8;
   let app = new scil.helm.App(view, {
@@ -69,14 +69,19 @@ export function webEditor(value: string) {
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
   setTimeout(function() {
-    app.canvas.helm.setSequence(value, 'HELM');
+    if (typeof cell !== 'undefined') {
+      app.canvas.helm.setSequence(cell.cell.value, 'HELM');
+    } else {
+      app.canvas.helm.setSequence(value, 'HELM');
+    }
   }, 200);
   //@ts-ignore
   ui.dialog({showHeader: false, showFooter: true})
   .add(view)
   .onOK(() => {
-    const val = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-    value = val;
+    if (typeof cell !== 'undefined') {
+      cell.cell.value = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+    }
   }).show({modal: true, fullScreen: true});
 }
 
@@ -86,9 +91,7 @@ export function webEditor(value: string) {
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell): void {
   if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'helm') {
-    let grid = grok.shell.tv.grid;
-    webEditor(cell.cell.value);
-    grid.invalidate();
+    webEditor(cell);
   }
 }
 
@@ -100,7 +103,7 @@ export function openEditor(mol: string): void {
   let df = grok.shell.tv.grid.dataFrame;
   let converter = new NotationConverter(df.columns.bySemType('Macromolecule'));
   const resStr = converter.convertStringToHelm(mol, '/');
-  webEditor(resStr);
+  webEditor(undefined, resStr);
 }
 
 //name: Properties
@@ -128,7 +131,7 @@ export async function propertiesPanel(helmString: string) {
 //input: string helmString {semType: Macromolecule}
 //output: widget result
 export async function molfilePanel(helmString: string) {
-  return ui.textInput('', await getMolfile(helmString));
+  return ui.textInput('', getMolfile(helmString));
 }
 
 
@@ -309,9 +312,10 @@ export function helmColumnToSmiles(helmColumn: DG.Column) {
 
 //name: getMolfile
 //input: string helmString {semType: Macromolecule}
-export async function getMolfile(helmString): Promise<string> {
+export function getMolfile(helmString): string {
   return molfiles.get(helmString);
 }
+
 
 //name: getMolfiles
 //input: column mcol {semType: Macromolecule}
@@ -419,7 +423,9 @@ function unescape(s: string) {
   });
 }
 
-function parseHelm(s: string) {
+//name: parseHelm
+//input: string s
+export function parseHelm(s: string) {
   var sections = split(s, '$');
   s = sections[0];
   var monomers = [];
@@ -439,12 +445,16 @@ function parseHelm(s: string) {
           var ss = split(s, '.');
           for (var monomer of ss) {
             if (monomer.includes('(') && monomer.includes(')')) {
-                var elements = monomer.replace(/[()]/g, "").split("");
-                for (var el of elements) {
-                    monomers.push(el);
-                }
+              var elements = monomer.replace(/[()]/g, "").split("");
+              for (var el of elements) {
+                monomers.push(el);
+              }
+            } 
+            if (monomer.includes('[') && monomer.includes(']')){
+              var element = monomer.match(/(?<=\[).*?(?=\])/g, "");
+              monomers.push(element[0]);
             } else {
-                monomers.push(monomer);
+              monomers.push(monomer);
             }
           }
       }
@@ -470,6 +480,7 @@ export function findMonomers(helmString: string) {
   return new Set(split_string.filter(val => !monomer_names.includes(val)));
 }
 
+
 class HelmCellRenderer extends DG.GridCellRenderer {
   get name() { return 'helm'; }
 
@@ -486,45 +497,51 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     const undefinedColor = 'rgb(100,100,100)';
     const grayColor = '#808080';
     const monomers = findMonomers(gridCell.cell.value);
+    let s: string = gridCell.cell.value ?? '';
+    let subParts: string[] = parseHelm(s);
     if (monomers.size == 0) {
       const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
       host.setAttribute('dataformat', 'helm');
       host.setAttribute('data', gridCell.cell.value);
       gridCell.element = host;
-        //@ts-ignore
-        const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
-        const formula = canvas.getFormula(true);
-        if (!formula) {
-          gridCell.element = ui.divText(gridCell.cell.value, {style: {color: 'red'}});
-        }
-        const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
-        const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
-        const molfile = canvas.getMolfile();
-        const result = formula + ', ' + molWeight + ', ' + coef;
-        lru.set(gridCell.cell.value, result);
-        molfiles.set(gridCell.cell.value, molfile);
-        return;
+      //@ts-ignore
+      const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
+      const formula = canvas.getFormula(true);
+      const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
+      const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
+      const molfile = canvas.getMolfile();
+      const result = formula + ', ' + molWeight + ', ' + coef;
+      lru.set(gridCell.cell.value, result);
+      molfiles.set(gridCell.cell.value, molfile);
+      return;
+    }
+    if (monomers.size > 0) {
+      w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+      g.save();
+      g.beginPath();
+      g.rect(x, y, w, h);
+      g.clip();
+      g.font = '12px monospace';
+      g.textBaseline = 'top';
+      let x1 = x;
+      let j = 0;
+      let allParts  = [];
+      for (let k = 0; k < subParts.length; ++k) {
+        let indexOfMonomer = s.indexOf(subParts[k]);
+        let helmBeforeMonomer = s.slice(j, indexOfMonomer);
+        allParts.push(helmBeforeMonomer);
+        allParts.push(subParts[k]);
+        s = s.substring(indexOfMonomer + subParts[k].length);
       }
-      if (monomers.size > 0) {
-        w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-        g.save();
-        g.beginPath();
-        g.rect(x, y, w, h);
-        g.clip();
-        g.font = '12px monospace';
-        g.textBaseline = 'top';
-        let x1 = x;
-        const s: string = gridCell.cell.value ?? '';
-        let subParts: string[] = parseHelm(s);
-        subParts.forEach((amino, index) => {
-          let color = monomers.has(amino) ? 'red' : grayColor;
-          g.fillStyle = undefinedColor;
-          let last = index === subParts.length - 1;
-          x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, '/', last);
-        });
-        g.restore();
-        return;
-      }
+      allParts.push(s);
+      for (let part of allParts) {
+        let color = monomers.has(part) ? 'red' : grayColor;
+        g.fillStyle = undefinedColor;
+        x1 = printLeftOrCentered(x1, y, w, h, g, part, color, 0, true, 1.0);
+      };
+      g.restore();
+      return;
+    }
   }
 }
 

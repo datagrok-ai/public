@@ -79,6 +79,7 @@ export function convert(col: DG.Column): void {
   }
 }
 
+/** Creates a new column with converted sequences and detects its semantic type */
 export async function convertDo(
   srcCol: DG.Column, targetNotation: NOTATION, separator: string | null
 ): Promise<DG.Column> {

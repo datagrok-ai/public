@@ -48,13 +48,13 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   for (let i = 0; i < table.rowCount; i++) {
     const format = 'Janssen GCRS Codes'; //getFormat(structureColumn.get(i))!;
     result += (typeColumn.get(i) == 'SS') ?
-      sequenceToMolV3000(structureColumn.get(i), false, true, format) + '\n' + `>  <Sequence>\nSense Strand\n\n` :
-      sequenceToMolV3000(structureColumn.get(i), true, true, format) + '\n' + `>  <Sequence>\nAnti Sense\n\n`;
+      sequenceToMolV3000(structureColumn.get(i), false, true, format) + '\n' + `> <Sequence>\nSense Strand\n\n` :
+      sequenceToMolV3000(structureColumn.get(i), true, true, format) + '\n' + `> <Sequence>\nAnti Sense\n\n`;
     for (const col of table.columns) {
       if (col.name != COL_NAMES.SEQUENCE)
-        result += `>  <${col.name}>\n${col.get(i)}\n\n`;
+        result += `> <${col.name}>\n${col.get(i)}\n\n`;
     }
-    result += '$$$$\n\n';
+    result += '$$$$\n';
   }
   const element = document.createElement('a');
   element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));

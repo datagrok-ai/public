@@ -1,7 +1,7 @@
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 //import {findMonomers, helmToFasta, helmToPeptide, helmToRNA, initHelm} from '../package';
 import {_package} from '../package-test';
-import {loadDialog, manageFiles, monomerManager} from '../package';
+import {manageFiles, parseHelm} from '../package';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
@@ -46,7 +46,6 @@ category('Helm', () => {
   //   expect(col.tags[DG.TAGS.UNITS], 'HELM');
   // });
 
-
   test('manageFiles', async () => {
     return await manageFiles();
   });
@@ -73,4 +72,24 @@ category('Helm', () => {
     expect(flag, true);
   });
 
+  test('parseHelm', async() => {
+    const expectedResults = [
+      ['meI', 'hHis', 'Aca', 'N', 'T', 'dK', 'Thr_PO3H2', 'D-Tyr_Et', 'Aze', 'dV', 'E', 'Phe_4Me'],
+      ['A', 'C', 'T', 'G', 'W', 'E', 'Q'],
+      ['R', 'U', 'P', 'T', 'A'],
+      ['A', '*', 'G', 'C']
+    ];
+    const helmStrings = [
+      'PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Aze.dV.E.N.dV.Phe_4Me}$$$',
+      'PEPTIDE1{A.C.T.G.C.T.W.G.T.W.E.C.W.C.Q.W}|PEPTIDE2{A.C.T.G.C.T.W.G.T.W.E.Q}$PEPTIDE1,PEPTIDE1,5:R3-14:R3|PEPTIDE2,PEPTIDE1,2:R3-12:R3$$$',
+      'RNA1{R(U)P.R(T)P}|RNA2{P.R(A)P.R(A)}$RNA1,RNA2,2:pair-6:pair|RNA1,RNA2,5:pair-3:pair$$$',
+      'PEPTIDE1{A.*.G.C}$$$$V2.0'
+    ];
+    for (let idx = 0; idx < helmStrings.length; ++idx) {
+      let monomerSet = new Set(parseHelm(helmStrings[idx]));
+      let monomerArray = Array.from(monomerSet);
+      expect(JSON.stringify(monomerArray), JSON.stringify(expectedResults[idx]));
+    }
+  })
+  
 });
