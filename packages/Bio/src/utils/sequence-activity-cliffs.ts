@@ -88,8 +88,24 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
   canvas.height = 30;
   const units = params.seqCol.getTag(DG.TAGS.UNITS);
   const separator = params.seqCol.getTag(TAGS.SEPARATOR);
-  drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30, sequencesArray.join('#'), units, separator, true);
+  const molDifferences: {[key: number]: HTMLCanvasElement} = {};
+  drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30, sequencesArray.join('#'), units, separator, true, molDifferences);
   propPanel.append(ui.div(canvas, { style: { width: '300px', overflow: 'scroll' } }));
+  
+  if (Object.keys(molDifferences).length > 0) {
+    const diffsPanel = ui.divV([]);
+    diffsPanel.append(ui.divH([
+      ui.divText('Pos', { style: { fontWeight: 'bold', width: '30px' } }),
+      ui.divText('Difference', { style: { fontWeight: 'bold' } }) 
+    ]))
+    for (let key of Object.keys(molDifferences)) {
+      diffsPanel.append(ui.divH([
+        ui.divText(key, { style: { width: '30px' } }),
+        molDifferences[key as any]
+      ]));
+    }
+    propPanel.append(diffsPanel);
+  }
 
   function addFiledToPropPanel(name: string, value: number) {
     propPanel.append(ui.divH([
