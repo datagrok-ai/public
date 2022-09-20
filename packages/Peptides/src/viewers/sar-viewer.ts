@@ -17,9 +17,11 @@ export class SARViewerBase extends DG.JsViewer {
   bidirectionalAnalysis: boolean;
   maxSubstitutions: number;
   minActivityDelta: number;
+  invarianMap: boolean;
   _titleHost = ui.divText('SAR Viewer', {id: 'pep-viewer-title'});
   initialized = false;
   isPropertyChanging: boolean = false;
+  _isVertical = false;
 
   constructor() {
     super();
@@ -28,6 +30,8 @@ export class SARViewerBase extends DG.JsViewer {
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
     this.maxSubstitutions = this.int('maxSubstitutions', 1);
     this.minActivityDelta = this.float('minActivityDelta', 0);
+
+    this.invarianMap = this.bool('invariantMap', false);
   }
 
   async onTableAttached(): Promise<void> {
@@ -88,9 +92,10 @@ export class SARViewerBase extends DG.JsViewer {
 /**
  * Structure-activity relationship viewer.
  */
-export class SARViewer extends SARViewerBase {
+export class MutationCliffsViewer extends SARViewerBase {
   _titleHost = ui.divText('Mutation Cliffs', {id: 'pep-viewer-title'});
   _name = 'Structure-Activity Relationship';
+  _isVertical = false;
 
   constructor() {super();}
 
@@ -98,25 +103,28 @@ export class SARViewer extends SARViewerBase {
 
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
-    this.model.sarViewer ??= this;
+    this.model.mutationCliffsViewer ??= this;
 
-    this.subs.push(this.model.onSARGridChanged.subscribe((data) => {
+    this.subs.push(this.model.onMutationCliffsGridChanged.subscribe((data) => {
       this.viewerGrid = data;
       this.render();
     }));
 
     this.model.updateDefault();
-    this.viewerGrid = this.model._sarGrid;
+    this.viewerGrid = this.model.mutationCliffsGrid;
     this.initialized = true;
     this.render();
   }
 
-  isInitialized(): DG.Grid {return this.model?._sarGrid;}
+  isInitialized(): DG.Grid {return this.model?.mutationCliffsGrid;}
 
   //1. debouncing in rxjs; 2. flags?
   onPropertyChanged(property: DG.Property): void {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)
       return;
+
+    if (property.name == 'invariantMap')
+      this._titleHost = ui.divText(property.get(this) ? 'Invariant Map' : 'Mutation Cliffs', {id: 'pep-viewer-title'});
 
     super.onPropertyChanged(property);
     IS_PROPERTY_CHANGING = true;
@@ -126,9 +134,10 @@ export class SARViewer extends SARViewerBase {
 }
 
 /** Vertical structure activity relationship viewer. */
-export class SARViewerVertical extends SARViewerBase {
+export class MostPotentResiduesViewer extends SARViewerBase {
   _name = 'Sequence-Activity relationship';
   _titleHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
+  _isVertical = true;
 
   constructor() {
     super();
@@ -138,21 +147,21 @@ export class SARViewerVertical extends SARViewerBase {
 
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
-    this.model.sarViewerVertical ??= this;
+    this.model.mostPotentResiduesViewer ??= this;
 
-    this.subs.push(this.model.onSARVGridChanged.subscribe((data) => {
+    this.subs.push(this.model.onMostPotentResiduesGridChanged.subscribe((data) => {
       this.viewerGrid = data;
       this.render();
     }));
 
     this.model.updateDefault();
-    this.viewerGrid = this.model._sarVGrid;
+    this.viewerGrid = this.model.mostPotentResiduesGrid;
 
     this.initialized = true;
     this.render();
   }
 
-  isInitialized(): DG.Grid {return this.model?._sarVGrid;}
+  isInitialized(): DG.Grid {return this.model?.mostPotentResiduesGrid;}
 
   onPropertyChanged(property: DG.Property): void {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)

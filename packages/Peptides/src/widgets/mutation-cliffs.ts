@@ -7,7 +7,7 @@ import {getSeparator} from '../utils/misc';
 
 export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   const substInfo = model.substitutionsInfo;
-  const currentCell = model.currentSelection;
+  const currentCell = model.mutationCliffsSelection;
   const positions = Object.keys(currentCell);
 
   if (!positions.length)
