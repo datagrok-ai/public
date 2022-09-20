@@ -7,7 +7,7 @@ import {
 } from '../const';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
-export const HELM_CORE_LIB_FILENAME = '/samples/HELMCoreLibrary.json';
+export const HELM_CORE_LIB_FILENAME = '/data/HELMCoreLibrary.json';
 export const HELM_CORE_LIB_MONOMER_SYMBOL = 'symbol';
 export const HELM_CORE_LIB_MOLFILE = 'molfile';
 export const HELM_CORE_FIELDS = ['symbol', 'molfile', 'rgroups', 'name'];
