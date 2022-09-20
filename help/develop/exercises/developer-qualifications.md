@@ -4,6 +4,7 @@
 # Datagrok developer qualifications
 
 ## Platform user track
+
 * Import data (db, local files, file shares, webservices)
 * Explore (viewers, selection vs filter, filters, layouts) 
 * Grid (actions, color-coding, summary columns, tooltips, property panel)
