@@ -9,7 +9,6 @@ import {StandaloneStructServiceProvider} from "ketcher-standalone";
 import {Ketcher} from "ketcher-core";
 import "ketcher-react/dist/index.css";
 import "./editor.css";
-import {_jsThen} from "datagrok-api/src/utils";
 import { chem } from "datagrok-api/grok";
 
 let sketcherId = 0;
