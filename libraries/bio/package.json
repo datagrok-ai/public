@@ -3,7 +3,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "beta": true,
   "friendlyName": "Datagrok bio library",
   "version": "4.4.0",
   "description": "",

@@ -104,7 +104,6 @@ dependencies, and other data.
 ```json
 {
   "name": "my-grok-app",
-  "beta": true,
   "friendlyName": "my-grok-app",
   "version": "0.0.1",
   "description": "",
