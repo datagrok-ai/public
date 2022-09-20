@@ -624,6 +624,10 @@ export class FunctionView extends DG.ViewBase {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     await this.onBeforeLoadRun();
     const pulledRun = await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
+    // FIX ME: manually get script since pulledRun contains empty Func
+    const script = await grok.dapi.functions.find(pulledRun.func.id);
+    //@ts-ignore
+    window.grok_FuncCall_Set_Func(pulledRun.dart, script.dart);
     pulledRun.options['isHistorical'] = true;
     const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
