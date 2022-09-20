@@ -21,15 +21,18 @@
     ],
     "max-len": [
       "error",
-      120
+      140
     ],
     "space-infix-ops": [
       "error", 
       {"int32Hint": true}
     ],
+    "skipBlankLines": 0,
     "require-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": 0,
+    "no-trailing-spaces": "off",
+    "no-throw-literal": "off",
     "curly": [
       "error",
       "multi-or-nest"
