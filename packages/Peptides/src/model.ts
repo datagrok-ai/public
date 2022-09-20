@@ -112,8 +112,8 @@ export class PeptidesModel {
     const acc = ui.accordion();
     acc.root.style.width = '100%';
     acc.addTitle(ui.h1(`${this.df.selection.trueCount} selected rows`));
-    acc.addPane('Substitutions', () => mutationCliffsWidget(this.df, this).root, true);
-    acc.addPane('Distribtution', () => getDistributionWidget(this.df, this).root, true);
+    acc.addPane('Mutation Cliff pairs', () => mutationCliffsWidget(this.df, this).root, true);
+    acc.addPane('Distribution', () => getDistributionWidget(this.df, this).root, true);
 
     return acc;
   }
