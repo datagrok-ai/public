@@ -119,7 +119,7 @@ category('renderers', () => {
   }
 
   async function _testAfterMsa() {
-    const fastaTxt: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA.fasta');
+    const fastaTxt: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_FASTA.fasta');
     const df: DG.DataFrame = importFasta(fastaTxt)[0];
 
     const srcSeqCol: DG.Column = df.getCol('sequence');
