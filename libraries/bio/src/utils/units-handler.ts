@@ -144,6 +144,8 @@ export class UnitsHandler {
 
   public isPeptide(): boolean { return this.alphabet === 'PT'; }
 
+  public isMsa(): boolean {return this.aligned.toUpperCase().includes('MSA'); }
+
   /** Associate notation types with the corresponding units */
   /**
    * @return {NOTATION}     Notation associated with the units type

@@ -110,10 +110,10 @@ async function testFunc(f: DG.Func): Promise<{[key: string]: any}> {
 }
 
 //name: testFunctions
-//input: string scope = "" [JSON string with the search filter for functions]
+//input: map scope
 //output: dataframe result
-export async function testFunctions(scope: string = '') {
-  const functions = DG.Func.find(scope ? JSON.parse(scope) : {package: _package.name});
+export async function testFunctions(scope: object) {
+  const functions = DG.Func.find(scope ?? {});
   const testRuns = {};
   for (const f of functions) {
     testRuns[f.name] = await testFunc(f);

@@ -22,7 +22,7 @@ The platform is very extensible, and almost anything could be implemented as a p
   , such as [TensorFlow.js](packages/TensorFlow.js/README.md)
 * Platform enhancements, such as [PowerPack](packages/PowerPack/README.md)
   or [UsageAnalysis](packages/UsageAnalysis)
-* ... and other types of extensions documented [here](help/develop/extending-and-customizing.md).
+* ... and other types of extensions documented [here](help/develop/packages/extensions.md).
 
 These open-source packages are free to use by anyone, although for
 the [public environment](https://public.datagrok.ai)

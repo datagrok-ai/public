@@ -2,7 +2,7 @@
 
 # Function roles
 
-A package can contain a variety of functions, so it will be appropriate to give an overview of the most common ones.
+A package can contain functions that get discovered and integrated with the platform at runtime.
 Typically, each function type has a special tag denoting what the function does, for example:
 
 * `#app` for [applications](#applications)

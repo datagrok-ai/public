@@ -84,11 +84,11 @@ extensions.
 
 [architecture]: admin/architecture.md
 
-[Extending and customizing Datagrok]: extending-and-customizing.md
+[Extending and customizing Datagrok]: packages/extensions.md
 
 [Building an application]: how-to/build-an-app.md
 
-[Building a UI]: ui.md
+[Building a UI]: advanced/ui.md
 
 [Performance]: advanced/performance.md
 

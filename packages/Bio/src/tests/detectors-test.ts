@@ -131,8 +131,8 @@ MWRSWY-CKHP
 
   const samples: { [key: string]: string } = {
     'fastaCsv': 'System:AppData/Bio/samples/sample_FASTA.csv',
-    'fastaFasta': 'System:AppData/Bio/samples/sample_FASTA.fasta',
-    'fastaPtCsv': 'System:AppData/Bio/samples/sample_FASTA_PT.csv',
+    'fastaFasta': 'System:AppData/Bio/data/sample_FASTA.fasta',
+    'fastaPtCsv': 'System:AppData/Bio/data/sample_FASTA_PT.csv',
     'msaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
     'helmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
     'peptidesComplex': 'System:AppData/Bio/tests/peptides_complex_msa.csv',

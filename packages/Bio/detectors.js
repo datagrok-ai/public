@@ -38,6 +38,7 @@ class BioPackageDetectors extends DG.Package {
   static PeptideFastaAlphabet = new Set([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
     'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
+    'MeNle', 'MeA', 'MeG', 'MeF',
   ]);
 
   static DnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
@@ -93,7 +94,7 @@ class BioPackageDetectors extends DG.Package {
     ];
 
     const candidateAlphabets = [
-      [ALPHABET.PT, BioPackageDetectors.PeptideFastaAlphabet, 0.55],
+      [ALPHABET.PT, BioPackageDetectors.PeptideFastaAlphabet, 0.50],
       [ALPHABET.DNA, BioPackageDetectors.DnaFastaAlphabet, 0.55],
       [ALPHABET.RNA, BioPackageDetectors.RnaFastaAlphabet, 0.55],
     ];
@@ -315,12 +316,7 @@ class BioPackageDetectors extends DG.Package {
       let mRes;
       const m = ma[0];
       if (m.length > 1) {
-        if (m in BioPackageDetectors.aaSynonyms) {
-          mRes = BioPackageDetectors.aaSynonyms[m];
-        } else {
-          mRes = '';
-          console.debug(`Long monomer '${m}' has not a short synonym.`);
-        }
+        mRes = ma[1];
       } else {
         mRes = m;
       }

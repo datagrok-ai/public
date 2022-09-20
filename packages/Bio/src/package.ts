@@ -317,9 +317,11 @@ export async function compositionAnalysis(): Promise<void> {
     return;
   } else if (colList.length > 1) {
     const colListNames: string [] = colList.map((col) => col.name);
-    const colInput: DG.InputBase = ui.choiceInput('Column', colListNames[0], colListNames);
+    const selectedCol = colList.find((c) => { return (new UnitsHandler(c)).isMsa(); });
+    const colInput: DG.InputBase = ui.choiceInput(
+      'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
     ui.dialog({
-      title: 'R-Groups Analysis',
+      title: 'Composition Analysis',
       helpUrl: '/help/domains/bio/macromolecules.md#composition-analysis'
     })
       .add(ui.div([
