@@ -83,15 +83,42 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
     sequencesArray[idx] = params.seqCol.get(molIdx);
     activitiesArray[idx] = params.activityCol.get(molIdx);
   });
+
+  const molDifferences: {[key: number]: HTMLCanvasElement} = {};
+  const canvas = createDifferenceCanvas(params.seqCol, sequencesArray, molDifferences);
+  propPanel.append(ui.div(canvas, { style: { width: '300px', overflow: 'scroll' } }));
+  
+  propPanel.append(createDifferencesWithPositions(molDifferences));
+
+  propPanel.append(createPropPanelField('Activity delta', Math.abs(activitiesArray[0] - activitiesArray[1])));
+  propPanel.append(createPropPanelField('Cliff', params.sali!));
+
+  return propPanel;
+}
+
+function createPropPanelField(name: string, value: number): HTMLDivElement {
+  return ui.divH([
+    ui.divText(`${name}: `, { style: { fontWeight: 'bold', paddingRight: '5px' } }),
+    ui.divText(value.toFixed(2))
+  ], { style: { paddingTop: '5px' } });
+}
+
+function createDifferenceCanvas(
+  col: DG.Column,
+  sequencesArray: string[],
+  molDifferences: { [key: number]: HTMLCanvasElement }): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   canvas.height = 30;
-  const units = params.seqCol.getTag(DG.TAGS.UNITS);
-  const separator = params.seqCol.getTag(TAGS.SEPARATOR);
-  const molDifferences: {[key: number]: HTMLCanvasElement} = {};
+  const units = col.getTag(DG.TAGS.UNITS);
+  const separator = col.getTag(TAGS.SEPARATOR);
   drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30, sequencesArray.join('#'), units, separator, true, molDifferences);
-  propPanel.append(ui.div(canvas, { style: { width: '300px', overflow: 'scroll' } }));
-  
+  return canvas;
+}
+
+function createDifferencesWithPositions(
+  molDifferences: { [key: number]: HTMLCanvasElement }): HTMLDivElement {
+  const div = ui.div();
   if (Object.keys(molDifferences).length > 0) {
     const diffsPanel = ui.divV([]);
     diffsPanel.append(ui.divH([
@@ -104,18 +131,7 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
         molDifferences[key as any]
       ]));
     }
-    propPanel.append(diffsPanel);
+    div.append(diffsPanel);
   }
-
-  function addFiledToPropPanel(name: string, value: number) {
-    propPanel.append(ui.divH([
-      ui.divText(`${name}: `, { style: { fontWeight: 'bold', paddingRight: '5px' } }),
-      ui.divText(value.toFixed(2))
-    ], { style: { paddingTop: '5px' } }));
-  }
-
-  addFiledToPropPanel('Activity delta', Math.abs(activitiesArray[0] - activitiesArray[1]));
-  addFiledToPropPanel('Cliff', params.sali!);
-
-  return propPanel;
+  return div;
 }
