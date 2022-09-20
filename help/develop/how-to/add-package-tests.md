@@ -95,7 +95,7 @@ the `test` annotation:
 | double         | &check; | `test: 10 < f(12.5) && f(12.5) < 20`         |
 | bool           | &check; | `test: f(true)`,<br>`test: returnsBool()`    |
 | string         | &check; | `test: f("a") == "b"` (use `""` for strings) |
-| datetime       | &check; | `test: f("1/1/2020") == Date(2020, 1, 1)`,<br>`test: DateDiff(f("2020-01-01"), DateTime(2020, 1, 1, 3, 0, 0, 0))` |
+| datetime       | &check; | `test: f("1/1/2020") == Date(2020, 1, 1)`,<br>`test: DateDiff(DateTime(2020, 1, 1, 3, 0, 0, 0), "2020-01-01") == 10800000` |
 
 See also:
 
