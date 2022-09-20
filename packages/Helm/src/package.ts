@@ -317,18 +317,6 @@ export function getMolfile(helmString): string {
 }
 
 
-//name: getMolfiles
-//input: column mcol {semType: Macromolecule}
-//output: column res
-export async function getMolFiles(mcol: DG.Column): Promise<DG.Column> {
-  const mols = Array<string>(mcol.length).fill('');
-  for(let i = 0; i < mcol.length; i++) 
-    mols[i] = await getMolfile(mcol.get(i));
-
-  const res = DG.Column.fromStrings('mols', mols);
-  return res;
-}
-
 function split(s: string, sep: string) {
   var ret = [];
   var frag = "";
@@ -478,6 +466,28 @@ export function findMonomers(helmString: string) {
   }
   const split_string = parseHelm(helmString);
   return new Set(split_string.filter(val => !monomer_names.includes(val)));
+}
+
+//name: getMolfiles
+//input: column col {semType: Macromolecule}
+//output: column res
+export function getMolfiles(col: DG.Column) : DG.Column{
+  const mols = Array<string>(col.length).fill('');
+  let grid = grok.shell.tv.grid;
+  let parent = grid.root.parentElement;
+  const host = ui.div([]);
+  parent.appendChild(host);
+  let editor = new JSDraw2.Editor(host, {viewonly: true});
+  host.style.width = '0px';
+  host.style.height = '0px';
+  for(let i = 0; i < col.length; i++) {
+    editor.setHelm(col.get(i));
+    let mol = editor.getMolfile();
+    mols[i] = mol;
+  }
+  parent.lastChild.remove();
+  const res = DG.Column.fromStrings('mols', mols);
+  return res;
 }
 
 
