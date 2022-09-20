@@ -117,7 +117,7 @@ export class WebLogo extends DG.JsViewer {
   public minHeight: number;
   public backgroundColor: number = 0xFFFFFFFF;
   public maxHeight: number;
-  public considerNullSequences: boolean;
+  public skipEmptySequences: boolean;
   public sequenceColumnName: string | null;
   public positionMarginState: string;
   public positionMargin: number = 0;
@@ -191,7 +191,7 @@ export class WebLogo extends DG.JsViewer {
     this.maxHeight = this.float('maxHeight', 100/*,
       {editor: 'slider', min: 25, max: 500, postfix: 'px'}*/);
 
-    this.considerNullSequences = this.bool('considerNullSequences', false);
+    this.skipEmptySequences = this.bool('skipEmptySequences', true);
     this.sequenceColumnName = this.string('sequenceColumnName', null);
 
     this.startPositionName = this.string('startPositionName', null);
@@ -447,7 +447,7 @@ export class WebLogo extends DG.JsViewer {
     super.onPropertyChanged(property);
 
     switch (property.name) {
-    case 'considerNullSequences':
+    case 'skipEmptySequences':
       this.render(true);
       break;
     case 'sequenceColumnName':
@@ -549,7 +549,7 @@ export class WebLogo extends DG.JsViewer {
 
   /** Helper function for rendering */
   protected _nullSequence(fillerResidue = 'X'): string {
-    if (this.considerNullSequences)
+    if (!this.skipEmptySequences)
       return new Array(this.Length).fill(fillerResidue).join('');
 
     return '';
