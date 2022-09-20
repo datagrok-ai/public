@@ -1,8 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as C from '../utils/constants';
 
 import { getHelmMonomers } from '../package'
+import { WebLogo } from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 const V2000_ATOM_NAME_POS = 31;
 
@@ -17,6 +19,55 @@ export async function getMonomericMols(mcol: DG.Column, pattern: boolean = false
   mols = changeToV3000(mols, dict, pattern);
 
   return DG.Column.fromStrings('monomericMols', mols);
+}
+
+export async function getNonHelmMonomericMols(mcol: DG.Column, pattern: boolean = false): Promise<DG.Column> {
+  
+  const separator: string = mcol.tags[C.TAGS.SEPARATOR];
+  const units: string = mcol.tags[DG.TAGS.UNITS];
+  const splitter = WebLogo.getSplitter(units, separator);
+ 
+  let monomersDict = new Map();  
+  const allColMonomers = Object.keys(WebLogo.getStats(mcol, 0, splitter).freq);
+  for (let i = 0; i < allColMonomers.length; i++)
+    monomersDict.set(allColMonomers[i], `${i + 1}`);
+
+  const molV3000Array = new Array<string>(mcol.length);
+  for(let i = 0; i < mcol.length; i++) {
+    const sequenceMonomers = splitter(mcol.get(i));
+    const molV3000 = MolV3000FromNonHelmSequence(sequenceMonomers, monomersDict, pattern);
+    molV3000Array[i] = molV3000;
+  }
+  return DG.Column.fromStrings('monomericMols', molV3000Array);
+}
+
+function MolV3000FromNonHelmSequence(monomers: Array<string>, monomersDict: Map<string, string>, pattern: boolean = false) {
+  let molV3000 = `
+  Datagrok macromolecule handler
+
+0  0  0  0  0  0            999 V3000
+M  V30 BEGIN CTAB
+`;
+
+  molV3000 += `M  V30 COUNTS ${monomers.length} ${monomers.length - 1} 0 0 0\n`;
+  molV3000 += 'M  V30 BEGIN ATOM\n';
+
+  for (let atomRowI = 0; atomRowI < monomers.length; atomRowI++) {
+    molV3000 += pattern ?
+      `M  V30 ${atomRowI + 1} R${monomersDict.get(monomers[atomRowI])} 0.000 0.000 0 0\n` :
+      `M  V30 ${atomRowI + 1} At 0.000 0.000 0 0 MASS=${monomersDict.get(monomers[atomRowI])}\n`;
+  }
+
+  molV3000 += 'M  V30 END ATOM\n';
+  molV3000 += 'M  V30 BEGIN BOND\n';
+
+  for (let bondRowI = 0; bondRowI < monomers.length - 1; bondRowI++)
+    molV3000 += `M  V30 ${bondRowI + 1} 1 ${bondRowI + 1} ${bondRowI + 2}\n`;
+
+  molV3000 += 'M  V30 END BOND\n';
+  molV3000 += 'M  V30 END CTAB\n';
+  molV3000 += 'M  END';
+  return molV3000;
 }
 
 function changeToV3000(mols: Array<string>, dict: Map<string, string>, pattern: boolean = false): Array<string> {
