@@ -264,8 +264,10 @@ export class AddNewColumnDialog {
     let layout =
         ui.div([
             ui.block50([
-                ui.block([this.inputName!.root], { style: { width: '65%' } }),
-                ui.block([this.inputType!.root], { style: { width: '35%' } }),
+                ui.block([
+                  ui.block([this.inputName!.root], { style: { width: '65%' } }),
+                  ui.block([this.inputType!.root], { style: { width: '35%' } }),
+                ]),
                 ui.block([this.inputExpression!.root]),
                 ui.block([this.uiPreview], { style: flexStyle })
             ], { style:  Object.assign({}, { paddingRight: '20px', flexDirection: 'column'}, flexStyle) }),
