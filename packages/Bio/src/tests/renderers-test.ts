@@ -80,7 +80,7 @@ category('renderers', () => {
   }
 
   async function _rendererMacromoleculeSeparator() {
-    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_SEPARATOR_PT.csv');
+    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_SEPARATOR_PT.csv');
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
 
     const seqCol = df.getCol('sequence');
@@ -159,7 +159,7 @@ category('renderers', () => {
   }
 
   async function _testAfterConvert() {
-    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA_PT.csv');
+    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_FASTA_PT.csv');
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
 
     const srcCol: DG.Column = df.col('sequence')!;
