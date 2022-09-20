@@ -335,11 +335,12 @@ function createDifferenceCanvas(
   h: number): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d')!;
+    context.font = '12px monospace';
     const width1 = context.measureText(processSequence([amino1]).join('')).width;
     const width2 = context.measureText(processSequence([amino2]).join('')).width;
     const width = Math.max(width1, width2);
     canvas.height = h;
-    canvas.width = width + 20;
+    canvas.width = width + 4;
     context.font = '12px monospace';
     context.textBaseline = 'top';
     printLeftOrCentered(0, y - shift, width, h, context, amino1, color1, 0, true);
