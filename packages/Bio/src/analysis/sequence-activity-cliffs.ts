@@ -85,7 +85,12 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
   });
 
   const molDifferences: {[key: number]: HTMLCanvasElement} = {};
-  const canvas = createDifferenceCanvas(params.seqCol, sequencesArray, molDifferences);
+  const units = params.seqCol.getTag(DG.TAGS.UNITS);
+  const separator = params.seqCol.getTag(TAGS.SEPARATOR);
+  const splitter = WebLogo.getSplitter(units, separator);
+  const subParts1 = splitter(sequencesArray[0]);
+  const subParts2 = splitter(sequencesArray[1]);
+  const canvas = createDifferenceCanvas(subParts1, subParts2, units, molDifferences);
   propPanel.append(ui.div(canvas, { style: { width: '300px', overflow: 'scroll' } }));
   
   propPanel.append(createDifferencesWithPositions(molDifferences));
@@ -103,31 +108,31 @@ function createPropPanelField(name: string, value: number): HTMLDivElement {
   ], { style: { paddingTop: '5px' } });
 }
 
-function createDifferenceCanvas(
-  col: DG.Column,
-  sequencesArray: string[],
+export function createDifferenceCanvas(
+  subParts1: string[],
+  subParts2: string[],
+  units: string,
   molDifferences: { [key: number]: HTMLCanvasElement }): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   canvas.height = 30;
-  const units = col.getTag(DG.TAGS.UNITS);
-  const separator = col.getTag(TAGS.SEPARATOR);
-  drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30, sequencesArray.join('#'), units, separator, true, molDifferences);
+  drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30, subParts1, subParts2, units, true, molDifferences);
   return canvas;
 }
 
-function createDifferencesWithPositions(
+export function createDifferencesWithPositions(
   molDifferences: { [key: number]: HTMLCanvasElement }): HTMLDivElement {
   const div = ui.div();
   if (Object.keys(molDifferences).length > 0) {
     const diffsPanel = ui.divV([]);
     diffsPanel.append(ui.divH([
-      ui.divText('Pos', { style: { fontWeight: 'bold', width: '30px' } }),
-      ui.divText('Difference', { style: { fontWeight: 'bold' } }) 
+      ui.divText('Pos', { style: { fontWeight: 'bold', width: '30px', borderBottom: '1px solid' } }),
+      ui.divText('Difference', { style: { fontWeight: 'bold', borderBottom: '1px solid' } }) 
     ]))
     for (let key of Object.keys(molDifferences)) {
+      molDifferences[key as any].style.borderBottom = '1px solid lightgray';
       diffsPanel.append(ui.divH([
-        ui.divText(key, { style: { width: '30px' } }),
+        ui.divText((parseInt(key) + 1).toString(), { style: { width: '30px', borderBottom: '1px solid lightgray' } }),
         molDifferences[key as any]
       ]));
     }

@@ -660,6 +660,7 @@ export async function getStructuralAlerts(col: DG.Column<string>): Promise<void>
 //input: int limit
 //input: double minScore
 //input: string fingerprint
+//output: dataframe result
 export async function callChemSimilaritySearch(
   df: DG.DataFrame,
   col: DG.Column,
@@ -677,6 +678,7 @@ export async function callChemSimilaritySearch(
 //input: string metricName
 //input: int limit
 //input: string fingerprint
+//output: dataframe result
 export async function callChemDiversitySearch(
   col: DG.Column,
   metricName: string,
