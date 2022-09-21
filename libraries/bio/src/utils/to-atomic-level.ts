@@ -173,7 +173,6 @@ function getMolGraph(
 
     removeIntermediateHydrogen(monomerGraph);
     adjustMonomerGraph(monomerGraph, atomData.leftNode, atomData.leftRemovedNode);
-    flipHydroxilGroup(monomerGraph);
     return monomerGraph;
   }
 }
@@ -487,8 +486,7 @@ function removeNodeAndBonds(atomData: AtomData, bondData: BondData, removedNode:
 }
 
 // todo: rewrite description
-/* Adjust the monomer's graph so that nodeOne is at origin, while nodeTwo
- * is on the positive ray of OY */
+/* Adjust the (peptide) monomer graph so that it has standard form  */
 function adjustMonomerGraph(monomerGraph: MolGraph, nodeOne: number, nodeTwo: number): void {
   // todo: generalize to nucleotides
   const nodeOneIdx = nodeOne - 1; // node indexing in molfiles starts from 1
@@ -500,24 +498,49 @@ function adjustMonomerGraph(monomerGraph: MolGraph, nodeOne: number, nodeTwo: nu
   shiftCoordinates(monomerGraph, -x[nodeOneIdx], -y[nodeOneIdx]);
 
   // angle is measured between OY and the rotated node
-  let angle = 0;
-  const xRotated = x[nodeTwoIdx];
-  const yRotated = y[nodeTwoIdx];
-  if (xRotated === 0) { // the rotated node is on OY
-    angle = yRotated > 0 ? 0 : Math.PI;
-  } else if (yRotated === 0) { // the rotated node is on OX
-    angle = xRotated > 0 ? -Math.PI/2 : Math.PI/2;
-  } else {
-    const tan = yRotated / xRotated;
-    const atan = Math.atan(tan);
-    angle = (xRotated < 0) ? Math.PI/2 + atan : -Math.PI/2 + atan;
-  }
+  const angle = findAngleWithOY(x[nodeTwoIdx], y[nodeTwoIdx]);
 
   // rotate the centered graph, so that 'nodeTwo' ends up on the positive ray of OY
   rotateCenteredGraph(monomerGraph.atoms, -angle);
 
   if (x[monomerGraph.atoms.rightRemovedNode - 1] < 0)
     flipMonomerAroundOY(monomerGraph);
+
+  // flip carboxyl and R if necessary
+  // flipCarboxylAndRadical(monomerGraph);
+
+  // flip hydroxyl group with double-bound O inside carboxyl group if necessary
+  flipHydroxilGroup(monomerGraph);
+}
+
+/* Finds angle between OY and the line joining (x, y) with the origin */
+function findAngleWithOY(x: number, y: number): number {
+  let angle;
+  if (x === 0) { // the rotated node is on OY
+    angle = y > 0 ? 0 : Math.PI;
+  } else if (y === 0) { // the rotated node is on OX
+    angle = x > 0 ? -Math.PI/2 : Math.PI/2;
+  } else {
+    const tan = y / x;
+    const atan = Math.atan(tan);
+    angle = (x < 0) ? Math.PI/2 + atan : -Math.PI/2 + atan;
+  }
+  return angle;
+}
+
+/* Finds angle between OY and the line joining (x, y) with the origin */
+function findAngleWithOX(x: number, y: number): number {
+  let angle;
+  if (x === 0) { // the rotated node is on OY
+    angle = y > 0 ? 0 : Math.PI;
+  } else if (y === 0) { // the rotated node is on OX
+    angle = x > 0 ? -Math.PI/2 : Math.PI/2;
+  } else {
+    const tan = y / x;
+    const atan = Math.atan(tan);
+    angle = (x < 0) ? Math.PI/2 + atan : -Math.PI/2 + atan;
+  }
+  return angle;
 }
 
 /*  Rotate the graph around the origin by 'angle'*/
@@ -575,13 +598,8 @@ function flipHydroxilGroup(monomer: MolGraph): void {
   const doubleBondedOxygen = findDoubleBondedCarbonylOxygen(monomer, hydroxylOxygen);
   const x = monomer.atoms.x;
   // -1 below because indexing of nodes in molfiles starts from 1, unlike arrays
-  if (x[hydroxylOxygen - 1] > x[doubleBondedOxygen - 1]) {
-    console.log('Nodes before swapping:');
-    console.log(x[hydroxylOxygen - 1], monomer.atoms.y[hydroxylOxygen - 1]);
+  if (x[hydroxylOxygen - 1] > x[doubleBondedOxygen - 1])
     swapNodes(monomer, doubleBondedOxygen, hydroxylOxygen);
-    console.log('Nodes after swapping:');
-    console.log(x[hydroxylOxygen - 1], monomer.atoms.y[hydroxylOxygen - 1]);
-  }
 }
 
 /* Determine the number of node (starting from 1) corresponding to the
@@ -594,10 +612,8 @@ function findDoubleBondedCarbonylOxygen(monomer: MolGraph, hydroxylOxygen: numbe
   // iterate over the nodes bonded to the carbon and find the double one
   while (doubleBondedOxygen === 0) {
     const node = bondsMap.get(carbon)![i];
-    if (monomer.atoms.atomType[node - 1] === 'O' && node !== hydroxylOxygen) {
+    if (monomer.atoms.atomType[node - 1] === 'O' && node !== hydroxylOxygen)
       doubleBondedOxygen = node;
-      console.log(monomer.atoms.atomType[node - 1]);
-    }
     i++;
   }
   return doubleBondedOxygen;
@@ -654,26 +670,21 @@ function monomerSeqToMolGraph(monomerSeq: string[], monomersDict: Map<string, Mo
 
 /* Join two subsequent MolGraph objects */
 function concatenateMonomerGraphs(result: MolGraph, monomerSeq: string[], monomersDict: Map<string, MolGraph>): void {
-  // todo: improve naming
   for (let i = 1; i < monomerSeq.length; i++) {
-    // todo: choose one of the shift types
     const xShift = result.atoms.x[result.atoms.rightRemovedNode - 1];
-    // const yShift = result.atoms.y[result.atoms.rightRemovedNode - 1];
+    const yShift = result.atoms.y[result.atoms.rightRemovedNode - 1];
     removeNodeAndBonds(result.atoms, result.bonds, result.atoms.rightRemovedNode);
 
     const nextMonomer: MolGraph = structuredClone(monomersDict.get(monomerSeq[i])!);
     removeNodeAndBonds(nextMonomer.atoms, nextMonomer.bonds, nextMonomer.atoms.leftRemovedNode);
 
-    // quckfix
-    // if (i % 2 === 1) {
-    //   for (let j = 0; j < nextMonomer.atoms.y.length; ++j)
-    //     nextMonomer.atoms.y[j] = -nextMonomer.atoms.y[j];
-    // }
+    if (i % 2 === 1)
+      flipMonomerAroundOX(nextMonomer);
 
     const nodeIdxShift = result.atoms.atomType.length;
     shiftNodes(nextMonomer, nodeIdxShift);
     // shiftCoordinates(nextMonomer, xShift, yShift);
-    shiftCoordinates(nextMonomer, xShift);
+    shiftCoordinates(nextMonomer, xShift, yShift);
 
     // Todo: preserve angles in the bonds
 
@@ -721,15 +732,13 @@ function shiftNodes(monomer: MolGraph, nodeIdxShift: number): void {
   keys.forEach((key) => {
     const value = monomer.bonds.bondConfiguration.get(key)!;
     monomer.bonds.bondConfiguration.delete(key);
-    // +1 below because of an extra (peptide) bond to be added
-    monomer.bonds.bondConfiguration.set(key + nodeIdxShift + 1, value);
+    monomer.bonds.bondConfiguration.set(key + nodeIdxShift, value);
   });
   keys = Array.from(monomer.bonds.kwargs.keys()).reverse();
   keys.forEach((key) => {
     const value = monomer.bonds.kwargs.get(key)!;
     monomer.bonds.kwargs.delete(key);
-    // +1 below because of an extra (peptide) bond to be added
-    monomer.bonds.kwargs.set(key + nodeIdxShift + 1, value);
+    monomer.bonds.kwargs.set(key + nodeIdxShift, value);
   });
 }
 
