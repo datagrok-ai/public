@@ -438,10 +438,11 @@ export function parseHelm(s: string) {
                 monomers.push(el);
               }
             } 
-            if (monomer.includes('[') && monomer.includes(']')){
+            else if (monomer.includes('[') && monomer.includes(']')){
               var element = monomer.match(/(?<=\[).*?(?=\])/g, "");
               monomers.push(element[0]);
-            } else {
+            } 
+            else {
               monomers.push(monomer);
             }
           }
