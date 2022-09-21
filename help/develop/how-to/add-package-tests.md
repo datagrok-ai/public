@@ -96,6 +96,12 @@ the `test` annotation:
 | bool           | &check; | `test: f(true)`,<br>`test: returnsBool()`    |
 | string         | &check; | `test: f("a") == "b"` (use `""` for strings) |
 | datetime       | &check; | `test: f("1/1/2020") == Date(2020, 1, 1)`,<br>`test: DateDiff(DateTime(2020, 1, 1, 3, 0, 0, 0), "2020-01-01") == 10800000` |
+| map            | &check; | `f({"a": 10, "b": "c"})`,<br>`test: f("abc").testparam == "abc"` |
+| dataframe      | * | Works via an additional function call<br>`f(getDataframe())` |
+| column_list    | * | Requires a dataframe parameter<br>`f(getDataframe(), ["colname1", "colname2"])`|
+| column         | * | Works via an additional function call |
+| file           | * | Works via an additional function call |
+| blob           | * | Works via an additional function call |
 
 See also:
 
