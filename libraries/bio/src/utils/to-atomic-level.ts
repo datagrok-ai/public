@@ -173,9 +173,7 @@ function getMolGraph(
 
     removeIntermediateHydrogen(monomerGraph);
     adjustMonomerGraph(monomerGraph, atomData.leftNode, atomData.leftRemovedNode);
-    // todo: delete after nucleotides debugging
-    // if (atomData.leftNode === atomData.leftRemovedNode || atomData.rightNode === atomData.rightRemovedNode)
-    //   throw new Error('Non-intermediate hydrogens removed');
+    flipHydroxilGroup(monomerGraph);
     return monomerGraph;
   }
 }
@@ -567,6 +565,72 @@ function flipMolGraph(molGraph: MolGraph, axis: boolean): void {
     const newValue = value === 1 ? 3 : 1;
     orientation.set(key, newValue);
   }
+}
+
+/* Flips double-bonded O in carbonyl group with OH in order for the monomers
+ * to have standard representation simplifying their concatenation. The
+ * monomer must already be adjusted with adjustMonomerGraph in order for this function to be implemented  */
+function flipHydroxilGroup(monomer: MolGraph): void {
+  const hydroxylOxygen = monomer.atoms.rightRemovedNode;
+  const doubleBondedOxygen = findDoubleBondedCarbonylOxygen(monomer, hydroxylOxygen);
+  const x = monomer.atoms.x;
+  // -1 below because indexing of nodes in molfiles starts from 1, unlike arrays
+  if (x[hydroxylOxygen - 1] > x[doubleBondedOxygen - 1]) {
+    console.log('Nodes before swapping:');
+    console.log(x[hydroxylOxygen - 1], monomer.atoms.y[hydroxylOxygen - 1]);
+    swapNodes(monomer, doubleBondedOxygen, hydroxylOxygen);
+    console.log('Nodes after swapping:');
+    console.log(x[hydroxylOxygen - 1], monomer.atoms.y[hydroxylOxygen - 1]);
+  }
+}
+
+/* Determine the number of node (starting from 1) corresponding to the
+ * double-bonded oxygen of the carbonyl group  */
+function findDoubleBondedCarbonylOxygen(monomer: MolGraph, hydroxylOxygen: number): number {
+  const bondsMap = constructBondsMap(monomer);
+  const carbon = bondsMap.get(hydroxylOxygen)![0];
+  let doubleBondedOxygen = 0;
+  let i = 0;
+  // iterate over the nodes bonded to the carbon and find the double one
+  while (doubleBondedOxygen === 0) {
+    const node = bondsMap.get(carbon)![i];
+    if (monomer.atoms.atomType[node - 1] === 'O' && node !== hydroxylOxygen) {
+      doubleBondedOxygen = node;
+      console.log(monomer.atoms.atomType[node - 1]);
+    }
+    i++;
+  }
+  return doubleBondedOxygen;
+}
+
+/* Swap the Cartesian coordinates of the two specified nodes in MolGraph  */
+function swapNodes(monomer: MolGraph, nodeOne: number, nodeTwo: number): void {
+  const nodeOneIdx = nodeOne - 1;
+  const nodeTwoIdx = nodeTwo - 1;
+  const x = monomer.atoms.x;
+  const y = monomer.atoms.y;
+  const tmpX = x[nodeOneIdx];
+  const tmpY = y[nodeOneIdx];
+  x[nodeOneIdx] = x[nodeTwoIdx];
+  y[nodeOneIdx] = y[nodeTwoIdx];
+  x[nodeTwoIdx] = tmpX;
+  y[nodeTwoIdx] = tmpY;
+}
+
+// todo: describe
+function constructBondsMap(monomer: MolGraph): Map<number, Array<number>> {
+  const map = new Map<number, Array<number>>();
+  for (const atomPair of monomer.bonds.atomPair) {
+    for (let i = 0; i < 2; i++) {
+      const key = atomPair[i];
+      const value = atomPair[(i + 1)%2];
+      if (map.has(key))
+        map.get(key)?.push(value);
+      else
+        map.set(key, new Array<number>(1).fill(value));
+    }
+  }
+  return map;
 }
 
 /* Conctenate MolGraph objects according to the monomer symbol sequence, the
