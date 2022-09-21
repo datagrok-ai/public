@@ -11,6 +11,7 @@ export const _package = new DG.Package();
 
 const lru = new DG.LruCache<any, any>();
 const molfiles = new DG.LruCache<any, any>();
+const fileList = new DG.LruCache<any, any>();
 const STORAGE_NAME = 'Libraries';
 let i = 0;
 const LIB_PATH = 'libraries/';
@@ -144,7 +145,8 @@ export async function loadDialog() {
     .add(FilesList)
     .onOK(async () => {
       await monomerManager(FilesList.value);
-      grok.dapi.userDataStorage.postValue(STORAGE_NAME, i.toString(), FilesList.value, true);
+      await grok.dapi.userDataStorage.postValue(STORAGE_NAME, i.toString(), FilesList.value, true);
+      fileList.set(FilesList.value, i.toString);
       i += 1;
       grid.invalidate();
     }).show();
@@ -158,6 +160,9 @@ export async function libraryPanel(helmColumn: DG.Column) {
   //@ts-ignore
   let loadButton = ui.button('Load Library');
   loadButton.addEventListener('click', loadDialog);
+  //@ts-ignore
+  let deleteButton = ui.button('Delete Library');
+  deleteButton.addEventListener('click', deleteFiles);
   //@ts-ignore
   let filesButton = ui.button('Manage');
   filesButton.addEventListener('click', manageFiles);
@@ -176,6 +181,7 @@ export async function libraryPanel(helmColumn: DG.Column) {
     ]),
     ui.splitH([
       ui.divH([loadButton]),
+      ui.divH([deleteButton]),
       ui.divH([filesButton]),
     ])
   ]));
@@ -188,6 +194,20 @@ export async function manageFiles() {
     .add(ui.fileBrowser({path: 'System:AppData/Helm/libraries'}).root)
     .addButton('OK', () => a.close())
     .show();
+}
+
+//name: deleteFiles
+export async function deleteFiles() {
+  let res = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
+  let FilesList = await ui.choiceInput('Uploaded Libraries', ' ', res);
+  let grid = grok.shell.tv.grid;
+  ui.dialog('Delete monomer library')
+    .add(FilesList)
+    .onOK(async () => {
+      let key = fileList.get(FilesList.value);
+      await grok.dapi.userDataStorage.remove(STORAGE_NAME, key, true);
+      grid.invalidate();
+    }).show();
 }
 
 
