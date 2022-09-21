@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.0.17",
+  "version": "3.0.18",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1505,9 +1505,7 @@
         "0.1.0": {
           "datagrok-api": "^0.151.6"
         },
-        "0.1.1": {
-          "datagrok-api": "^0.151.6"
-        }
+        "0.1.1": {}
       },
       "description": "Apache Tika CLI tools integration",
       "repository": {
