@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {updateDivInnerHTML} from '../utils/ui-utils';
+import * as C from '../utils/constants';
 
 export class SequenceSearchBaseViewer extends DG.JsViewer {
   name: string = '';
@@ -15,6 +16,7 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
   moleculeColumnName: string;
   initialized: boolean = false;
   metricsDiv = ui.div('', {style: {height: '10px', display: 'flex', justifyContent: 'right'}});
+  tags = [DG.TAGS.UNITS, C.TAGS.ALIGNED, C.TAGS.SEPARATOR, C.TAGS.ALPHABET];
 
   constructor(name: string) {
     super();

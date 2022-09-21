@@ -20,7 +20,6 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   cutoff: number;
   gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
-  tags = [DG.TAGS.UNITS, C.TAGS.ALIGNED, C.TAGS.SEPARATOR, C.TAGS.ALPHABET];
 
   constructor() {
     super('similarity');
