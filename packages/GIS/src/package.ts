@@ -318,13 +318,12 @@ export async function gisBatchGeocoding(address: string): Promise<string> {
   return '';
 }
 
-//name: GISViewer
+//name: Map
 //description: GIS map viewer
 //tags: viewer
 //output: viewer result
 export function gisViewer(): GisViewer {
-  setTimeout(() => {grok.shell.windows.showProperties = true;}, 200);
-
+  setTimeout(() => {grok.shell.windows.showProperties = true;}, 500);
   return new GisViewer();
 }
 

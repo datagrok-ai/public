@@ -21,23 +21,45 @@ const SEMTYPEGIS = {
 };
 
 //TODO: add unit test for Detectors
+
 class GisPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
+  //description: detect longitude/latitude coordinates
   detectGisCoord(col) {
+    let estCoeff = 0;
     let colSemType = null;
     const colName = col.name.toLowerCase();
     //TODO: add pattern like (51° 28′ 38″ N)
     if (col.type != DG.COLUMN_TYPE.FLOAT) return null;
-    if (col.stats.min < -180) return null;
-    if (col.stats.max > 180) return null;
+    //the check below leads to miss defining of coordinates type in case of at least one error in data>>
+    // if (col.stats.min < -180) return null;
+    // if (col.stats.max > 180) return null;
+    // if ((col.stats.min > -90) && (col.stats.max < 90)) colSemType = SEMTYPEGIS.LATIITUDE;
 
     //TODO: change to map or array or pattern search
-    if ((colName.includes('lon')) || (colName.includes('lng'))) colSemType = SEMTYPEGIS.LONGITUDE;
-    if ((colName.includes('lat')) || (colName.includes('ltt')))
-      if ((col.stats.min > -90) && (col.stats.max < 90)) colSemType = SEMTYPEGIS.LATIITUDE;
-    return colSemType;
+    if ((colName.includes('lon')) || (colName.includes('lng'))) {
+      colSemType = SEMTYPEGIS.LONGITUDE;
+      estCoeff += 40;
+    } else if ((colName.includes('lat')) || (colName.includes('ltt'))) {
+      colSemType = SEMTYPEGIS.LATIITUDE;
+      estCoeff += 40;
+    }
+
+    let catNumber = col.categories.length;
+    if (catNumber > 100) catNumber = 100; //shorten amount of checking categories to 100
+    const caseWeight = 80 / (catNumber+1);
+    for (let i = 0; i < catNumber; i++) {
+      // eslint-disable-next-line max-len
+      if ((colSemType === SEMTYPEGIS.LATIITUDE) && ((col.categories[i] > -90) && (col.categories[i] < 90))) estCoeff += caseWeight;
+      else if ((col.categories[i] > -180) && (col.categories[i] < 180)) estCoeff += caseWeight;
+      else estCoeff -= caseWeight*2;
+    }
+
+    if (estCoeff > 75) return colSemType;
+
+    return null;
   }
 
   //tags: semTypeDetector
@@ -56,6 +78,7 @@ class GisPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
+  //description: detector of ZIP codes for defferent countries
   detectGisZipcode(col) {
     let estCoeff = 0; //coefficient of estimation [0-100] the more value - the more probability
 
@@ -111,6 +134,7 @@ class GisPackageDetectors extends DG.Package {
       estCoeff += 40;
     // console.log('col names estCoeff=' + estCoeff);
 
+    //TODO: put variants of patterns into array and perform check for array elements
     //Address patterns
     const Addr1 = /ave/i;
     const Addr2 = /blvd/i;
