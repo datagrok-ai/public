@@ -147,14 +147,18 @@ export class WebLogo extends DG.JsViewer {
 
   /** Calculate new position data basic on {@link positionMarginState} and {@link positionMargin} */
   private get positionWidthWithMargin() {
+    return this._positionWidth + this.positionMarginValue;
+  }
+
+  private get positionMarginValue() {
     if ((this.positionMarginState === 'auto') && (this.unitsHandler?.getAlphabetIsMultichar() === true)) {
-      return this._positionWidth + this.positionMargin;
+      return this.positionMargin;
     }
     if (this.positionMarginState === 'enable') {
-      return this._positionWidth + this.positionMargin;
+      return this.positionMargin;
     }
 
-    return this._positionWidth;
+    return 0;
   }
 
   /** Count of position rendered for calculations countOfRenderPositions */
@@ -254,7 +258,7 @@ export class WebLogo extends DG.JsViewer {
     this.host.style.setProperty('overflow', 'hidden', 'important');
 
     const getMonomer = (p: DG.Point): [number, string | null, PositionMonomerInfo | null] => {
-      const calculatedX = p.x + this.startRendering * this.positionWidthWithMargin
+      const calculatedX = p.x + this.startRendering * this.positionWidthWithMargin;
       const jPos = Math.floor(p.x / this.positionWidthWithMargin + this.startRendering);
       const position = this.positions[jPos];
 
@@ -313,6 +317,8 @@ export class WebLogo extends DG.JsViewer {
     }));
 
     this.viewSubs.push(rxjs.fromEvent<WheelEvent>(this.canvas, 'wheel').subscribe((e: WheelEvent) => {
+      if (!this.visibleSlider)
+        return;
       if (!this.canvas || this.slider === void 0)
         return;
       const countOfScrollPositions = (e.deltaY / 100) * Math.max(Math.floor((this.countOfRenderPositions - 1) / 2), 1);
@@ -775,7 +781,7 @@ export class WebLogo extends DG.JsViewer {
 
     if (this.fitArea) {
       const xScale: number = this.root.clientHeight / height;
-      const yScale: number = this.root.clientWidth / width;
+      const yScale: number = (this.root.clientWidth - this.Length * this.positionMargin) / width;
       const scale = Math.max(1, Math.min(xScale, yScale));
       width = width * scale;
       height = height * scale;
