@@ -14,9 +14,9 @@ To test packages locally before publishing you can use the Jest framework.
 
 1. Set environment variables:
 
-    - HOST - for host to publish and test package, for example 'localhost'. It should be the same as the host alias
-      in `~/.grok/config.yaml`
-    - TARGET_PACKAGE - `friendlyName` for the package from `package.json`
+   - HOST - for host to publish and test package, for example 'localhost'. It should be the same as the host alias
+     in `~/.grok/config.yaml`
+   - TARGET_PACKAGE - `friendlyName` for the package from `package.json`
 
 2. [Run Datagrok instance locally](../admin/docker-compose.md). Skip this step if you already have a stand.
 3. [Configure grok tool](set-up-environment.md#configuration) with the credentials of you local stand, for example '
@@ -27,6 +27,7 @@ To test packages locally before publishing you can use the Jest framework.
    ```shell
    grok publish $HOST
    ```
+
    Windows:
    ```shell
    grok publish %HOST%
@@ -127,4 +128,4 @@ parameter: `PackageName:test(category="category-name", test="test-name")`, e.g.,
 
 See also:
 
-* [How to add package tests](add-package-tests.md)
+- [How to add package tests](add-package-tests.md)

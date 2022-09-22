@@ -9,7 +9,8 @@ including [data manipulation](js-api.md#data-manipulation), adding [views](js-ap
 or [viewers](how-to/manipulate-viewers.md),
 [developing custom viewers](how-to/develop-custom-viewer.md),
 [registering functions](js-api.md#registering-functions), training and
-applying [predictive models](../learn/predictive-modeling.md), and even [building custom apps](../develop/how-to/build-an-app.md).
+applying [predictive models](../learn/predictive-modeling.md), and
+even [building custom apps](../develop/how-to/build-an-app.md).
 
 There are two options to run custom JavaScript code. For ad-hoc [scripts](../compute/scripting.md), use the built-in
 JavaScript editor (`Functions | Scripts | New JavaScript Script`). For reusable functions, viewers, and applications,
@@ -369,14 +370,14 @@ follow [this link](https://public.datagrok.ai/packages) from outside the platfor
 
 See [debugging](advanced/debugging.md) for details.
 
-#### Webpack-based packages
+### Webpack-based packages
 
 If you deploy package in debug mode (`--release` isn't passed to `grok publish`) and source maps are properly
 generated (thus, the setting [devtool](https://webpack.js.org/configuration/devtool/) of
 `module.exports =` section in `webpack.config.js` is present), you'd find your package sources in the `top` (root)
 section of the source tree by its decapitalized name.
 
-#### Source-based packages
+### Source-based packages
 
 Deploying such package locates it to the Datagrok host URI (such as `https://dev.datagrok.ai`) under
 `api → packages/published/flies → <PACKAGE_NAME>/<VERSION>/_/<DIGIT>`, where you'd set breakpoints.

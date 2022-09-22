@@ -3,7 +3,7 @@ services:
   datagrok:
     image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
     environment:
-      GROK_PARAMETERS:  |
+      GROK_PARAMETERS: |
         {
           "deployDemo": false,
           "dbServer": "database",

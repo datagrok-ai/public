@@ -7,13 +7,13 @@ To open **File Manager**, from the main menu, select **Data**>**Files**.
 
 In this article:
 
-* [Getting data](file-shares.md/#getting-data)
-* [Sharing files](file-shares.md/#share-files-and-folders)
-* [Manage file shares](file-shares.md/#manage-file-shares)
-* [Manage files](files-shares.md/#manage-files)
-* [Preview file and folders](file-shares.md/#view-and-manage-files-with-file-manager)
-* [Customizations](file-shares.md/#customizations)
-* [Automation](file-shares.md/#automation)
+* [Getting data](#getting-data)
+* [Sharing files](#sharing-files)
+* [Manage file shares](#manage-file-shares)
+* [Manage files](#manage-file-shares)
+* [Preview file and folders](#browse-and-preview)
+* [Customizations](#customizations)
+* [Automation](#automation)
 
 > Key concept: _file share_
 >
@@ -281,7 +281,7 @@ pipeline](data-pipeline.md)
 
 See also:
 
-* [Databases](link)
-* [Web services](link)
+<!--* [Databases](link)-->
+<!--* [Web services](link)-->
 <!--*[Data explorer](link)-->
 <!--*[Indexing](link)-->
