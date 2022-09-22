@@ -491,26 +491,23 @@ export function findMonomers(helmString: string) {
 
 //name: getMolfiles
 //input: column col {semType: Macromolecule}
-//output: column res
-export function getMolfiles(col: DG.Column) : DG.Column{
-  const mols = Array<string>(col.length).fill('');
+//output: column res 
+export function getMolfiles(col: DG.Column) : DG.Column {
   let grid = grok.shell.tv.grid;
   let parent = grid.root.parentElement;
+  let res = DG.Column.string('mols', col.length);
   const host = ui.div([]);
   parent.appendChild(host);
   let editor = new JSDraw2.Editor(host, {viewonly: true});
   host.style.width = '0px';
   host.style.height = '0px';
-  for(let i = 0; i < col.length; i++) {
+  res.init((i) => {
     editor.setHelm(col.get(i));
     let mol = editor.getMolfile();
-    mols[i] = mol;
-  }
-  parent.lastChild.remove();
-  const res = DG.Column.fromStrings('mols', mols);
+    return mol;
+  });
   return res;
 }
-
 
 class HelmCellRenderer extends DG.GridCellRenderer {
   get name() { return 'helm'; }
