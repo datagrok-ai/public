@@ -6,7 +6,7 @@
 ## Platform user track
 
 * Import data (db, local files, file shares, webservices)
-* Explore (viewers, selection vs filter, filters, layouts) 
+* Explore (viewers, selection vs filter, filters, layouts)
 * Grid (actions, color-coding, summary columns, tooltips, property panel)
 * Editing (in-place, batch edit, )
 * Tabular transformations (aggregate, unpivot, join, link)
