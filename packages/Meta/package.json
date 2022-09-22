@@ -1511,9 +1511,7 @@
     },
     "tika": {
       "dependencies": {
-        "0.1.0": {
-          "datagrok-api": "^0.151.6"
-        },
+        "0.1.0": {},
         "0.1.1": {}
       },
       "description": "Apache Tika CLI tools integration",
