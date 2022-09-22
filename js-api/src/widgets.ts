@@ -17,6 +17,11 @@ let api = <any>window;
 
 export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
 
+export type SliderOptions = {
+  style?: RangeSliderStyle,
+  allowResize?: boolean,
+}
+
 export class ObjectPropertyBag {
   source: any;
 
@@ -783,7 +788,7 @@ export class Menu {
   click(): void {
     api.grok_Menu_Click(this.dart);
   }
-    
+
   /** Removes a child menu item with the specified text. */
   remove(text: string): void {
     api.grok_Menu_Remove(this.dart, text);
@@ -974,7 +979,7 @@ export class InputBase<T = any> {
   /** Whether empty values are allowed */
   get nullable(): boolean { return api.grok_InputBase_Get_Nullable(this.dart); }
   set nullable(v: boolean) { api.grok_InputBase_Set_Nullable(this.dart, v); }
-  
+
   /** Whether events are thrown on value set */
   get notify(): boolean { return api.grok_InputBase_Get_Notify(this.dart); }
   set notify(v: boolean) { api.grok_InputBase_Set_Notify(this.dart, v); }
@@ -1538,8 +1543,17 @@ export class TreeViewGroup extends TreeViewNode {
 /** A slider that lets user control both min and max values. */
 export class RangeSlider extends DartWidget {
 
-  static create(vertical: boolean = false, style: RangeSliderStyle = 'barbell'): RangeSlider {
-    return toJs(api.grok_RangeSlider(style, vertical));
+  static create(vertical: boolean = false, optionsStyle: RangeSliderStyle | SliderOptions = 'barbell'): RangeSlider {
+    let options: SliderOptions = {};
+    if (typeof optionsStyle !== 'string') {
+      options.style = optionsStyle.style;
+      options.allowResize = optionsStyle.allowResize;
+    }
+    else {
+        options.style = optionsStyle;
+        options.allowResize = false;
+    }
+    return toJs(api.grok_RangeSlider(options.style, vertical, options.allowResize));
   }
 
   /** Minimum range value. */
