@@ -3,7 +3,7 @@ services:
   datagrok:
     image: datagrok/datagrok:${DATAGROK_VERSION:-latest}
     environment:
-      GROK_PARAMETERS:  |
+      GROK_PARAMETERS: |
         {
           "deployDemo": false,
           "dbServer": "database",
@@ -22,6 +22,8 @@ services:
       datagrok:
         aliases:
           - datagrok
+    depends_on:
+      - db
     volumes:
       - datagrok_data:/home/grok/data
       - datagrok_cfg:/home/grok/cfg

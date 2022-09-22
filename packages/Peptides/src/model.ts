@@ -4,16 +4,17 @@ import * as DG from 'datagrok-api/dg';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
+import * as rxjs from 'rxjs';
+
 import * as C from './utils/constants';
 import * as type from './utils/types';
 import {calculateBarsData, getTypedArrayConstructor, isGridCellInvalid, scaleActivity} from './utils/misc';
 import {SARViewer, SARViewerBase, SARViewerVertical} from './viewers/sar-viewer';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {renderBarchart, renderSARCell, setAARRenderer} from './utils/cell-renderer';
-import {substitutionsWidget} from './widgets/subst-table';
+import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
 import {getStats, Stats} from './utils/statistics';
-import * as rxjs from 'rxjs';
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -22,7 +23,6 @@ export class PeptidesModel {
   _sarVGridSubject = new rxjs.Subject<DG.Grid>();
 
   _isUpdating: boolean = false;
-  _isSubstInitialized = false;
   isBitsetChangedInitialized = false;
   isCellChanging = false;
 
@@ -112,8 +112,8 @@ export class PeptidesModel {
     const acc = ui.accordion();
     acc.root.style.width = '100%';
     acc.addTitle(ui.h1(`${this.df.selection.trueCount} selected rows`));
-    acc.addPane('Substitutions', () => substitutionsWidget(this.df, this).root, true);
-    acc.addPane('Distribtution', () => getDistributionWidget(this.df, this).root, true);
+    acc.addPane('Mutation Cliff pairs', () => mutationCliffsWidget(this.df, this).root, true);
+    acc.addPane('Distribution', () => getDistributionWidget(this.df, this).root, true);
 
     return acc;
   }
@@ -154,8 +154,6 @@ export class PeptidesModel {
       //FIXME: modify during the initializeViewersComponents stages
       this._sarGridSubject.next(viewerGrid);
       this._sarVGridSubject.next(viewerVGrid);
-      if (viewer.showSubstitution)
-        this._isSubstInitialized = true;
 
       this.invalidateSelection();
       this._isUpdating = false;
@@ -214,8 +212,7 @@ export class PeptidesModel {
     // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
     const sequenceDf = this.createVerticalTable();
 
-    if (viewer.showSubstitution || !this._isSubstInitialized)
-      this.calcSubstitutions();
+    this.calcSubstitutions();
 
     const [sarGrid, sarVGrid] = this.createGrids(matrixDf, positionColumns, sequenceDf, alphabet);
 
@@ -542,9 +539,6 @@ export class PeptidesModel {
         return;
       }
 
-      canvasContext.fillStyle = DG.Color.toHtml(DG.Color.lightLightGray);
-      canvasContext.fillRect(bound.x, bound.y, bound.width, bound.height);
-
       const tableColName = cell.tableColumn?.name;
       const tableRowIndex = cell.tableRowIndex!;
       if (cell.isTableCell && tableColName && tableRowIndex !== null && renderColNames.indexOf(tableColName) !== -1) {
@@ -558,7 +552,7 @@ export class PeptidesModel {
 
           const viewer = this.getViewer();
           renderSARCell(canvasContext, currentAAR, currentPosition, this.statsDf, viewer.bidirectionalAnalysis, mdCol,
-            bound, cellValue, this.currentSelection, viewer.showSubstitution ? this.substitutionsInfo : null);
+            bound, cellValue, this.currentSelection, this.substitutionsInfo);
         }
         args.preventDefault();
       }
@@ -888,14 +882,17 @@ export class PeptidesModel {
 
     const sarViewersGroup: viewerTypes[] = [this.sarViewer, this.sarViewerVertical];
 
-    if (this.df.rowCount <= 10000) {
-      const peptideSpaceViewerOptions = {method: 'UMAP', measure: 'Levenshtein', cyclesCount: 100};
-      const peptideSpaceViewer =
-        await this.df.plot.fromType('peptide-space-viewer', peptideSpaceViewerOptions) as PeptideSpaceViewer;
-      dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
-    }
+    // TODO: completely remove this viewer?
+    // if (this.df.rowCount <= 10000) {
+    //   const peptideSpaceViewerOptions = {method: 'UMAP', measure: 'Levenshtein', cyclesCount: 100};
+    //   const peptideSpaceViewer =
+    //     await this.df.plot.fromType('peptide-space-viewer', peptideSpaceViewerOptions) as PeptideSpaceViewer;
+    //   dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
+    // }
 
     this.updateDefault();
+
+    this.currentView.filters({filters: [{type: 'Peptides:invariantMapFilter'}]});
 
     dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 

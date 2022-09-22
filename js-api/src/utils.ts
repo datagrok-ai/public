@@ -368,10 +368,6 @@ export function _isDartium() {
     });
 }
 
-export function _jsThen(promise: Promise<any>, f: (value: any) => any) {
-  promise.then(f);
-}
-
 export function _toJson(x: any) {
   return x === null ? null : JSON.stringify(x);
 }

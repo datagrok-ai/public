@@ -27,3 +27,4 @@ dist/
 .idea/**/dictionaries
 .idea/**/shelf
 .idea/codeStyles/
+test-report.html

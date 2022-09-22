@@ -155,7 +155,7 @@ export function publish(args: PublishArgs) {
   'debug', 'release', 'k', 'key', 'suffix'].includes(option))) return false;
 
   if (args.build && args.rebuild) {
-    color.error('Incompatible options: --build and --rebuild');
+    color.error('Incompatible options: --build and');
     return false;
   }
 

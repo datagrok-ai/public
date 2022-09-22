@@ -334,7 +334,7 @@ export namespace chem {
         load
           .then((_) => { 
             extractors = Func.find(extractorSearchOptions); 
-            let x  = 1;})
+          })
           .catch((_) => extractors = []);
       }
 

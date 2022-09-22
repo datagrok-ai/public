@@ -992,12 +992,7 @@ export class WebLogo extends DG.JsViewer {
         let mRes: string;
         const m: string = ma[0];
         if (m.length > 1) {
-          if (m in WebLogo.aaSynonyms) {
-            mRes = WebLogo.aaSynonyms[m];
-          } else {
-            mRes = '';
-            console.debug(`Long monomer '${m}' has not a short synonym.`);
-          }
+          mRes = ma[1];
         } else {
           mRes = m;
         }
@@ -1073,8 +1068,32 @@ export class WebLogo extends DG.JsViewer {
     const separator = col.getTag(UnitsHandler.TAGS.separator);
     return WebLogo.getSplitter(units, separator);
   }
-
+  
   /** Convert long monomer names to short ones */
+  private static longMonomerPartRe = /(\w+)/g;
+  
+  /* Shortens monomer representation text for monomers with long names.
+  **/
+  public static monomerToText(src: any): string {
+    const srcTxt: string = src.toString();
+    if (srcTxt.length <= 5) {
+      return srcTxt;
+    } else {
+      const parts: string[] = wu<RegExpMatchArray>(src.toString().matchAll(WebLogo.longMonomerPartRe))
+        .map((ma: RegExpMatchArray) => {
+          const mRes: string = ma[0];
+          return mRes;
+        }).toArray();
+
+      if (parts.length == 0) {
+        return ' ';
+      } else {
+        const part0: string = parts[0];
+        const resTxt: string = part0.length < 6 ? `${part0}…` : `${part0.substring(0, 5)}…`;
+        return resTxt;
+      }
+    }
+  }
   public static monomerToShort(amino: string, maxLengthOfMonomer: number): string {
     return amino.length <= maxLengthOfMonomer ? amino : amino.substring(0, maxLengthOfMonomer) + '…';
   }

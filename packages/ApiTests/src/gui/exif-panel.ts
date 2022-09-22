@@ -4,7 +4,7 @@ import {checkHTMLElementbyInnerText, getHTMLElementbyInnerText} from './gui-util
 
 category('File Panels: EXIF', () => {
 
-  test('demoFiles.createConnectionToS3', async () => {
+  test('panel.exif', async () => {
     let pictures = await grok.dapi.files.list('Demo:Files/images', true, "jpg");
 
     let picCar1;

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
 } from '../structures-works/converters';
 import {map, COL_NAMES, MODIFICATIONS} from '../structures-works/map';
-import {getFormat, isValidSequence} from '../structures-works/sequence-codes-tools';
+import {isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 
 import {SALTS_CSV} from '../salts';
@@ -48,13 +48,13 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   for (let i = 0; i < table.rowCount; i++) {
     const format = 'Janssen GCRS Codes'; //getFormat(structureColumn.get(i))!;
     result += (typeColumn.get(i) == 'SS') ?
-      sequenceToMolV3000(structureColumn.get(i), false, true, format) + '\n' + `>  <Sequence>\nSense Strand\n\n` :
-      sequenceToMolV3000(structureColumn.get(i), true, true, format) + '\n' + `>  <Sequence>\nAnti Sense\n\n`;
+      sequenceToMolV3000(structureColumn.get(i), false, true, format) + '\n' + `> <Sequence>\nSense Strand\n\n` :
+      sequenceToMolV3000(structureColumn.get(i), true, true, format) + '\n' + `> <Sequence>\nAnti Sense\n\n`;
     for (const col of table.columns) {
       if (col.name != COL_NAMES.SEQUENCE)
-        result += `>  <${col.name}>\n${col.get(i)}\n\n`;
+        result += `> <${col.name}>\n${col.get(i)}\n\n`;
     }
-    result += '$$$$\n\n';
+    result += '$$$$\n';
   }
   const element = document.createElement('a');
   element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
@@ -124,6 +124,11 @@ export function oligoSdFile(table: DG.DataFrame) {
     const sequenceCol = t.getCol(COL_NAMES.SEQUENCE);
     const saltCol = t.getCol(COL_NAMES.SALT);
     const equivalentsCol = t.getCol(COL_NAMES.EQUIVALENTS);
+
+    for (let i = t.rowCount - 1; i > -1; i--) {
+      if (sequenceCol.get(i) == '')
+        t.rows.removeAt(i, 1, false);
+    }
 
     t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => sequenceCol.get(i));
 

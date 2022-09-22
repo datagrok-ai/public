@@ -11,6 +11,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
+import {InvariantMap} from './utils/invariant-map';
 
 export const _package = new DG.Package();
 let currentTable: DG.DataFrame;
@@ -152,4 +153,11 @@ function getOrDefine(dataframe?: DG.DataFrame, column?: DG.Column | null): [DG.D
     throw new Error('Table does not contain aligned sequence columns');
 
   return [dataframe, column];
+}
+
+//name: Invariant Map Filter
+//tags: filter
+//output: filter result
+export function invariantMapFilter() {
+  return new InvariantMap();
 }

@@ -15,6 +15,7 @@ export abstract class Tutorial extends DG.Widget {
   abstract get steps(): number;
 
   track: Track | null = null;
+  prerequisites: string[] = [];
   demoTable: string = 'demog.csv';
   private _t: DG.DataFrame | null = null;
   get t(): DG.DataFrame | null {
@@ -68,6 +69,21 @@ export abstract class Tutorial extends DG.Widget {
     if (!tutorials) {
       console.error('The launched tutorial is not bound to any track.');
       return;
+    }
+
+    if (this.prerequisites.length > 0) {
+      const missingPackages = [];
+      for (const p of this.prerequisites) {
+        const packages = await grok.dapi.packages.list({ filter: `shortName = "${p}"` });
+        if (!packages.length || !(packages[0] instanceof DG.Package))
+          missingPackages.push(p);
+      }
+      if (missingPackages.length) {
+        grok.shell.error(`Please install package${missingPackages.length === 1 ? '' : 's'} ${
+          missingPackages.join(', ')} to start the tutorial`);
+        this.close();
+        return;
+      }
     }
 
     let id = tutorials.indexOf(this);
@@ -142,6 +158,15 @@ export abstract class Tutorial extends DG.Widget {
     }
   }
 
+  close(): void {
+    this.clearRoot();
+    this.closed = true;
+    this.onClose.next();
+    this._closeAll();
+    $('.tutorial').show();
+    $('#tutorial-child-node').html('');
+  }
+
   _addHeader(): void {
     this.progressDiv.append(this.progress);
     this.progress.max = this.steps;
@@ -149,14 +174,7 @@ export abstract class Tutorial extends DG.Widget {
     this.progressSteps = ui.divText(`Step: ${this.progress.value} of ${this.steps}`);
     this.progressDiv.append(this.progressSteps);
 
-    let closeTutorial = ui.button(ui.iconFA('times-circle'), () => {
-      this.clearRoot();
-      this.closed = true;
-      this.onClose.next();
-      this._closeAll();
-      $('.tutorial').show();
-      $('#tutorial-child-node').html('');
-    });
+    let closeTutorial = ui.button(ui.iconFA('times-circle'), () => this.close());
 
     closeTutorial.style.minWidth = '30px';
     this.headerDiv.append(this.header);

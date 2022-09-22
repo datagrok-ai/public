@@ -10,12 +10,13 @@ import {_importSdf} from '../open-chem/sdf-importer';
 
 category('server features', () => {
   test('descriptors', async () => {
-    grok.chem.descriptors(grok.data.testData('molecules', 100), 'smiles', ['MolWt', 'Lipinski'])
-      .then(function (table) {
-        grok.shell.addTableView(table);
-      });
 
-    await delay(1000);
+    const tree = await grok.chem.descriptorsTree();
+    expect(tree !== undefined, true);
+    const df = DG.DataFrame.fromCsv(testCsv);
+    const t: DG.DataFrame = await grok.chem.descriptors(df, 'smiles', 
+      ['MolWt', 'NumAromaticCarbocycles','NumHAcceptors', 'NumHeteroatoms', 'NumRotatableBonds', 'RingCount']);
+    grok.shell.addTableView(t);
 
     isColumnPresent(grok.shell.t.columns, 'MolWt');
     isColumnPresent(grok.shell.t.columns, 'NumAromaticCarbocycles');
@@ -24,7 +25,14 @@ category('server features', () => {
     isColumnPresent(grok.shell.t.columns, 'NumRotatableBonds');
     isColumnPresent(grok.shell.t.columns, 'RingCount');
   });
+
+  test('sketcher', async () => {
+    const result: HTMLElement = grok.chem.sketcher(()=>{}, 'CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3');
+    expect(result !== null, true);
+  });
 });
+
+
 
 category('chem exported', () => {
   test('findSimilar.api.sar-small', async () => {

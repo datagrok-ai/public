@@ -31,6 +31,18 @@ category('renderers', () => {
     performanceTest(generateManySequences, 'Many sequences');
   });
 
+  test('rendererMacromoleculeFasta', async () => {
+    await _rendererMacromoleculeFasta();
+  });
+
+  test('rendererMacromoleculeSeparator', async () => {
+    await _rendererMacromoleculeSeparator();
+  });
+
+  test('rendererMacromoleculeDifference', async () => {
+    await _rendererMacromoleculeDifference();
+  });
+
   test('afterMsa', async () => {
     await _testAfterMsa();
   });
@@ -39,12 +51,75 @@ category('renderers', () => {
     await _testAfterConvert();
   });
 
-  test('setRenderer', async () => {
+  test('selectRendererBySemType', async () => {
+    await _selectRendererBySemType();
+  });
+
+  test('setRendererManually', async () => {
     await _setRendererManually();
   });
 
+  async function _rendererMacromoleculeFasta() {
+    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA.csv');
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+
+    const seqCol = df.getCol('Sequence');
+    const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
+    if (semType)
+      seqCol.semType = semType;
+
+    const tv: DG.TableView = grok.shell.addTableView(df);
+    // call to calculate 'cell.renderer' tag
+    await grok.data.detectSemanticTypes(df);
+
+    dfList.push(df);
+    tvList.push(tv);
+
+    const resCellRenderer = seqCol.getTag(DG.TAGS.CELL_RENDERER);
+    expect(resCellRenderer, 'sequence');
+  }
+
+  async function _rendererMacromoleculeSeparator() {
+    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_SEPARATOR_PT.csv');
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+
+    const seqCol = df.getCol('sequence');
+    const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
+    if (semType)
+      seqCol.semType = semType;
+
+    const tv: DG.TableView = grok.shell.addTableView(df);
+    // call to calculate 'cell.renderer' tag
+    await grok.data.detectSemanticTypes(df);
+
+    dfList.push(df);
+    tvList.push(tv);
+
+    const resCellRenderer = seqCol.getTag(DG.TAGS.CELL_RENDERER);
+    expect(resCellRenderer, 'sequence');
+  }
+
+  async function _rendererMacromoleculeDifference() {
+    const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
+      ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
+    seqDiffCol.tags[DG.TAGS.UNITS] = 'separator';
+    seqDiffCol.tags[TAGS.SEPARATOR] = '/';
+    seqDiffCol.semType = SEM_TYPES.MACROMOLECULE_DIFFERENCE;
+    const df = DG.DataFrame.fromColumns([seqDiffCol]);
+
+    const tv: DG.TableView = grok.shell.addTableView(df);
+    // call to calculate 'cell.renderer' tag
+    await grok.data.detectSemanticTypes(df);
+
+    dfList.push(df);
+    tvList.push(tv);
+
+    const resCellRenderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
+    expect(resCellRenderer, 'MacromoleculeDifference');
+  }
+
   async function _testAfterMsa() {
-    const fastaTxt: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA.fasta');
+    const fastaTxt: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_FASTA.fasta');
     const df: DG.DataFrame = importFasta(fastaTxt)[0];
 
     const srcSeqCol: DG.Column = df.getCol('sequence');
@@ -84,38 +159,71 @@ category('renderers', () => {
   }
 
   async function _testAfterConvert() {
-    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA_PT.csv');
+    const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/data/sample_FASTA_PT.csv');
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
-    const tv: DG.TableView = grok.shell.addTableView(df);
 
     const srcCol: DG.Column = df.col('sequence')!;
-    // await grok.data.detectSemanticTypes(df);
     const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: srcCol});
     if (semType)
       srcCol.semType = semType;
+
+    const tv: DG.TableView = grok.shell.addTableView(df);
+    // call to calculate 'cell.renderer' tag
     await grok.data.detectSemanticTypes(df);
-
-    const tgtCol: DG.Column = await convertDo(srcCol, NOTATION.SEPARATOR, '/');
-    expect(tgtCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
-
-    // check tgtCol with UnitsHandler constructor
-    const uh: UnitsHandler = new UnitsHandler(tgtCol);
 
     tvList.push(tv);
     dfList.push(df);
+
+    const tgtCol: DG.Column = await convertDo(srcCol, NOTATION.SEPARATOR, '/');
+
+    const resCellRenderer = tgtCol.getTag(DG.TAGS.CELL_RENDERER);
+    expect(resCellRenderer, 'sequence');
+
+    // check tgtCol with UnitsHandler constructor
+    const uh: UnitsHandler = new UnitsHandler(tgtCol);
+  }
+
+  async function _selectRendererBySemType() {
+    /* There are renderers for semType Macromolecule and MacromoleculeDifference.
+       Misbehavior was by selecting Macromolecule renderers for MacromoleculeDifference semType column
+    /**/
+    const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
+      ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
+    seqDiffCol.tags[DG.TAGS.UNITS] = 'separator';
+    seqDiffCol.tags[TAGS.SEPARATOR] = '/';
+    seqDiffCol.semType = SEM_TYPES.MACROMOLECULE_DIFFERENCE;
+    const df = DG.DataFrame.fromColumns([seqDiffCol]);
+    const tv = grok.shell.addTableView(df);
+    dfList.push(df);
+    tvList.push(tv);
+
+    await delay(100);
+    const renderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
+    if (renderer !== 'MacromoleculeDifference') // this is value of MacromoleculeDifferenceCR.cellType
+      throw new Error(`Units 'separator', separator '/' and semType 'MacromoleculeDifference' ` +
+        `have been manually set on column but after df was added as table, ` +
+        `view renderer has set to '${renderer}' instead of correct 'MacromoleculeDifference'.`);
   }
 
   async function _setRendererManually() {
-    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings(
-      'SequencesDiff', ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV'])]);
-    df.col('SequencesDiff')!.tags[DG.TAGS.UNITS] = 'separator';
-    df.col('SequencesDiff')!.tags[TAGS.SEPARATOR] = '/';
-    df.col('SequencesDiff')!.semType = SEM_TYPES.MACROMOLECULE_DIFFERENCE;
-    const tw = grok.shell.addTableView(df);
+    const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
+      ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
+    seqDiffCol.tags[DG.TAGS.UNITS] = 'separator';
+    seqDiffCol.tags[TAGS.SEPARATOR] = '/';
+    seqDiffCol.semType = SEM_TYPES.MACROMOLECULE;
+    const tgtCellRenderer = 'MacromoleculeDifference';
+    seqDiffCol.setTag(DG.TAGS.CELL_RENDERER, tgtCellRenderer);
+    const df = DG.DataFrame.fromColumns([seqDiffCol]);
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    dfList.push(df);
+    tvList.push(tv);
+
     await delay(100);
-    const renderer = tw.dataFrame.col('SequencesDiff')?.getTag(DG.TAGS.CELL_RENDERER);
-    if (renderer !== 'MacromoleculeDifference') // this is value of MacromoleculeDifferenceCR.cellType
-      throw new Error(`Units 'separator', separator '/' and semType 'MacromoleculeDifference' have been ` +
-        `manually set on column but after df aws added as table view renderer has been reset to '${renderer}'`);
+    const resCellRenderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
+    if (resCellRenderer !== tgtCellRenderer) // this is value of MacromoleculeDifferenceCR.cellType
+      throw new Error(`Tag 'cell.renderer' has been manually set to '${tgtCellRenderer}' for column ` +
+        `but after df was added as table, tag 'cell.renderer' has reset to '${resCellRenderer}' ` +
+        `instead of manual '${tgtCellRenderer}'.`);
   }
 });

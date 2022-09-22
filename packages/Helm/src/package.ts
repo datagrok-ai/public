@@ -11,6 +11,7 @@ export const _package = new DG.Package();
 
 const lru = new DG.LruCache<any, any>();
 const molfiles = new DG.LruCache<any, any>();
+const fileList = new DG.LruCache<any, any>();
 const STORAGE_NAME = 'Libraries';
 let i = 0;
 const LIB_PATH = 'libraries/';
@@ -43,7 +44,7 @@ export function helmCellRenderer(): HelmCellRenderer {
 }
 
 
-export function webEditor(value: string) {
+export function webEditor(cell?: DG.GridCell, value?: string) {
   let view = ui.div();
   org.helm.webeditor.MolViewer.molscale = 0.8;
   let app = new scil.helm.App(view, {
@@ -69,14 +70,19 @@ export function webEditor(value: string) {
   app.structureview.resize(sizes.rightwidth, sizes.bottomheight + app.toolbarheight);
   app.mex.resize(sizes.topheight - 80);
   setTimeout(function() {
-    app.canvas.helm.setSequence(value, 'HELM');
+    if (typeof cell !== 'undefined') {
+      app.canvas.helm.setSequence(cell.cell.value, 'HELM');
+    } else {
+      app.canvas.helm.setSequence(value, 'HELM');
+    }
   }, 200);
   //@ts-ignore
   ui.dialog({showHeader: false, showFooter: true})
   .add(view)
   .onOK(() => {
-    const val = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-    value = val;
+    if (typeof cell !== 'undefined') {
+      cell.cell.value = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+    }
   }).show({modal: true, fullScreen: true});
 }
 
@@ -86,9 +92,7 @@ export function webEditor(value: string) {
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell): void {
   if (cell.gridColumn.column.tags[DG.TAGS.UNITS] === 'helm') {
-    let grid = grok.shell.tv.grid;
-    webEditor(cell.cell.value);
-    grid.invalidate();
+    webEditor(cell);
   }
 }
 
@@ -100,7 +104,7 @@ export function openEditor(mol: string): void {
   let df = grok.shell.tv.grid.dataFrame;
   let converter = new NotationConverter(df.columns.bySemType('Macromolecule'));
   const resStr = converter.convertStringToHelm(mol, '/');
-  webEditor(resStr);
+  webEditor(undefined, resStr);
 }
 
 //name: Properties
@@ -128,7 +132,7 @@ export async function propertiesPanel(helmString: string) {
 //input: string helmString {semType: Macromolecule}
 //output: widget result
 export async function molfilePanel(helmString: string) {
-  return ui.textInput('', await getMolfile(helmString));
+  return ui.textInput('', getMolfile(helmString));
 }
 
 
@@ -141,7 +145,8 @@ export async function loadDialog() {
     .add(FilesList)
     .onOK(async () => {
       await monomerManager(FilesList.value);
-      grok.dapi.userDataStorage.postValue(STORAGE_NAME, i.toString(), FilesList.value, true);
+      await grok.dapi.userDataStorage.postValue(STORAGE_NAME, i.toString(), FilesList.value, true);
+      fileList.set(FilesList.value, i.toString);
       i += 1;
       grid.invalidate();
     }).show();
@@ -155,6 +160,9 @@ export async function libraryPanel(helmColumn: DG.Column) {
   //@ts-ignore
   let loadButton = ui.button('Load Library');
   loadButton.addEventListener('click', loadDialog);
+  //@ts-ignore
+  let deleteButton = ui.button('Delete Library');
+  deleteButton.addEventListener('click', deleteFiles);
   //@ts-ignore
   let filesButton = ui.button('Manage');
   filesButton.addEventListener('click', manageFiles);
@@ -173,6 +181,7 @@ export async function libraryPanel(helmColumn: DG.Column) {
     ]),
     ui.splitH([
       ui.divH([loadButton]),
+      ui.divH([deleteButton]),
       ui.divH([filesButton]),
     ])
   ]));
@@ -185,6 +194,20 @@ export async function manageFiles() {
     .add(ui.fileBrowser({path: 'System:AppData/Helm/libraries'}).root)
     .addButton('OK', () => a.close())
     .show();
+}
+
+//name: deleteFiles
+export async function deleteFiles() {
+  let res = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
+  let FilesList = await ui.choiceInput('Uploaded Libraries', ' ', res);
+  let grid = grok.shell.tv.grid;
+  ui.dialog('Delete monomer library')
+    .add(FilesList)
+    .onOK(async () => {
+      let key = fileList.get(FilesList.value);
+      await grok.dapi.userDataStorage.remove(STORAGE_NAME, key, true);
+      grid.invalidate();
+    }).show();
 }
 
 
@@ -309,21 +332,10 @@ export function helmColumnToSmiles(helmColumn: DG.Column) {
 
 //name: getMolfile
 //input: string helmString {semType: Macromolecule}
-export async function getMolfile(helmString): Promise<string> {
+export function getMolfile(helmString): string {
   return molfiles.get(helmString);
 }
 
-//name: getMolfiles
-//input: column mcol {semType: Macromolecule}
-//output: column res
-export async function getMolFiles(mcol: DG.Column): Promise<DG.Column> {
-  const mols = Array<string>(mcol.length).fill('');
-  for(let i = 0; i < mcol.length; i++) 
-    mols[i] = await getMolfile(mcol.get(i));
-
-  const res = DG.Column.fromStrings('mols', mols);
-  return res;
-}
 
 function split(s: string, sep: string) {
   var ret = [];
@@ -419,7 +431,9 @@ function unescape(s: string) {
   });
 }
 
-function parseHelm(s: string) {
+//name: parseHelm
+//input: string s
+export function parseHelm(s: string) {
   var sections = split(s, '$');
   s = sections[0];
   var monomers = [];
@@ -439,12 +453,17 @@ function parseHelm(s: string) {
           var ss = split(s, '.');
           for (var monomer of ss) {
             if (monomer.includes('(') && monomer.includes(')')) {
-                var elements = monomer.replace(/[()]/g, "").split("");
-                for (var el of elements) {
-                    monomers.push(el);
-                }
-            } else {
-                monomers.push(monomer);
+              var elements = monomer.replace(/[()]/g, "").split("");
+              for (var el of elements) {
+                monomers.push(el);
+              }
+            } 
+            else if (monomer.includes('[') && monomer.includes(']')){
+              var element = monomer.match(/(?<=\[).*?(?=\])/g, "");
+              monomers.push(element[0]);
+            } 
+            else {
+              monomers.push(monomer);
             }
           }
       }
@@ -470,6 +489,26 @@ export function findMonomers(helmString: string) {
   return new Set(split_string.filter(val => !monomer_names.includes(val)));
 }
 
+//name: getMolfiles
+//input: column col {semType: Macromolecule}
+//output: column res 
+export function getMolfiles(col: DG.Column) : DG.Column {
+  let grid = grok.shell.tv.grid;
+  let parent = grid.root.parentElement;
+  let res = DG.Column.string('mols', col.length);
+  const host = ui.div([]);
+  parent.appendChild(host);
+  let editor = new JSDraw2.Editor(host, {viewonly: true});
+  host.style.width = '0px';
+  host.style.height = '0px';
+  res.init((i) => {
+    editor.setHelm(col.get(i));
+    let mol = editor.getMolfile();
+    return mol;
+  });
+  return res;
+}
+
 class HelmCellRenderer extends DG.GridCellRenderer {
   get name() { return 'helm'; }
 
@@ -486,45 +525,51 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     const undefinedColor = 'rgb(100,100,100)';
     const grayColor = '#808080';
     const monomers = findMonomers(gridCell.cell.value);
+    let s: string = gridCell.cell.value ?? '';
+    let subParts: string[] = parseHelm(s);
     if (monomers.size == 0) {
       const host = ui.div([], {style: {width: `${w}px`, height: `${h}px`}});
       host.setAttribute('dataformat', 'helm');
       host.setAttribute('data', gridCell.cell.value);
       gridCell.element = host;
-        //@ts-ignore
-        const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
-        const formula = canvas.getFormula(true);
-        if (!formula) {
-          gridCell.element = ui.divText(gridCell.cell.value, {style: {color: 'red'}});
-        }
-        const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
-        const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
-        const molfile = canvas.getMolfile();
-        const result = formula + ', ' + molWeight + ', ' + coef;
-        lru.set(gridCell.cell.value, result);
-        molfiles.set(gridCell.cell.value, molfile);
-        return;
+      //@ts-ignore
+      const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
+      const formula = canvas.getFormula(true);
+      const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
+      const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
+      const molfile = canvas.getMolfile();
+      const result = formula + ', ' + molWeight + ', ' + coef;
+      lru.set(gridCell.cell.value, result);
+      molfiles.set(gridCell.cell.value, molfile);
+      return;
+    }
+    if (monomers.size > 0) {
+      w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+      g.save();
+      g.beginPath();
+      g.rect(x, y, w, h);
+      g.clip();
+      g.font = '12px monospace';
+      g.textBaseline = 'top';
+      let x1 = x;
+      let j = 0;
+      let allParts  = [];
+      for (let k = 0; k < subParts.length; ++k) {
+        let indexOfMonomer = s.indexOf(subParts[k]);
+        let helmBeforeMonomer = s.slice(j, indexOfMonomer);
+        allParts.push(helmBeforeMonomer);
+        allParts.push(subParts[k]);
+        s = s.substring(indexOfMonomer + subParts[k].length);
       }
-      if (monomers.size > 0) {
-        w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-        g.save();
-        g.beginPath();
-        g.rect(x, y, w, h);
-        g.clip();
-        g.font = '12px monospace';
-        g.textBaseline = 'top';
-        let x1 = x;
-        const s: string = gridCell.cell.value ?? '';
-        let subParts: string[] = parseHelm(s);
-        subParts.forEach((amino, index) => {
-          let color = monomers.has(amino) ? 'red' : grayColor;
-          g.fillStyle = undefinedColor;
-          let last = index === subParts.length - 1;
-          x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, '/', last);
-        });
-        g.restore();
-        return;
-      }
+      allParts.push(s);
+      for (let part of allParts) {
+        let color = monomers.has(part) ? 'red' : grayColor;
+        g.fillStyle = undefinedColor;
+        x1 = printLeftOrCentered(x1, y, w, h, g, part, color, 0, true, 1.0);
+      };
+      g.restore();
+      return;
+    }
   }
 }
 

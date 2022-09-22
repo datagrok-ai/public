@@ -45,7 +45,8 @@ internal data, and other features such as integration with the enterprise
 more information check [Enterprise Evaluation FAQ](enterprise-evaluation-faq.md)
 page.
 
-Datagrok consist of Docker containers which can be installed on any platform including but not limited to bare-metal
+Datagrok consist of [Docker containers](https://hub.docker.com/u/datagrok) which can be installed on any platform
+including but not limited to bare-metal
 machine, on-premise virtual machine or virtual machine in cloud provider, for
 example [AWS EC2](https://aws.amazon.com/ec2/), on-premise Kubernetes cluster or Kubernetes service in cloud provider,
 for example [AWS EKS](https://aws.amazon.com/eks/), and container services in cloud provides, for
@@ -122,7 +123,7 @@ data analysis, interactive visualizations, and machine learning.
 * Built-in intelligent CSV parser
   * Automatically handles delimiters and comments
   * Adaptive reading: makes one speedy pass to find out some features about the file (whether it has quotes,
-      multi-lines, etc.) and chooses the strategy accordingly
+    multi-lines, etc.) and chooses the strategy accordingly
   * Adjusts strategy for performance/memory as it reads
   * Smart parsing of dates
   * Multithreaded parsing
@@ -134,7 +135,7 @@ data analysis, interactive visualizations, and machine learning.
   * Default natural sorting for strings (“study2” comes before “study10”)
   * Built-in custom category sorting (ex: Mon, Tue, Wed, Thurs, Fri, Sat, Sun)
   * Ability to pass custom comparison function that will also be used by the rest of the engine (
-      sorting, aggregations, grouping, etc.)
+    sorting, aggregations, grouping, etc.)
 * Built-in high-performance descriptive statistics
   * Counts, min, max, sum, avg, med, avg, stdev, q1, q2, q3
   * All stats calculated in one pass where possible
@@ -151,7 +152,7 @@ data analysis, interactive visualizations, and machine learning.
 * Metadata on column and data frame levels (units, quality, auto-formatting, etc.)
 * Change notifications
   * A custom eventing mechanism used across the whole platform allows for easy listening to, aggregation, filtering,
-      routing, and logging events.
+    routing, and logging events.
 
 #### Viewers
 
@@ -171,24 +172,24 @@ patterns, and cooperate on certain tasks.
   * Fast, extensible, annotated aggregation functions that work across all viewers
 * High-performance rendering
   * Choosing the best option for rendering (HTML / canvas / SVG / WebGL) based on the viewer’s distinctive features,
-      without compromising performance. The stretch goal is for all viewers to be able to visualize a billion rows (
-      certain viewers will resort to auto-sampling in order to still be interactive during the data exploration stage).
-      Many viewers utilize hybrid rendering systems, i.e., SVG for high-level controls and canvas for performance and
-      memory consumption reasons
+    without compromising performance. The stretch goal is for all viewers to be able to visualize a billion rows (
+    certain viewers will resort to auto-sampling in order to still be interactive during the data exploration stage).
+    Many viewers utilize hybrid rendering systems, i.e., SVG for high-level controls and canvas for performance and
+    memory consumption reasons
   * Immediate-mode canvas rendering
   * Renders millions of primitives quickly
     * Adaptive marker rendering - switches between drawing directly on the canvas, rendering from the cache, or
-          rendering into an array of bytes. This is transparent to viewers’ code.
+      rendering into an array of bytes. This is transparent to viewers’ code.
   * Multithreaded rendering
   * WebGL-accelerated rendering with custom shaders (coming soon)
   * Adaptive rendering behavior - the system keeps track of how long it took each viewer to render and optimizes
-      accordingly - for instance, “fast” viewers are rendered first, and “slow” viewers are not re-rendered while a
-      slider is being dragged.
+    accordingly - for instance, “fast” viewers are rendered first, and “slow” viewers are not re-rendered while a
+    slider is being dragged.
 * Interactivity and synchronization
   * Current row, mouse-over row, current column, mouse-over column, mouse-over row group
 * Viewers as first-class citizens
   * Register, query, instantiate, attach to a data source, add to view, use as a tooltip for row groups, render
-      viewers dynamically. Usage example: a full-screen mode that applies to all viewers.
+    viewers dynamically. Usage example: a full-screen mode that applies to all viewers.
   * Viewer descriptors: name, tooltip, best size/position, type of accepted data
 * Properties infrastructure
   * Persistence
@@ -207,8 +208,8 @@ patterns, and cooperate on certain tasks.
 * Clean, functional decomposition
   * Clean separation between settings and viewer fields
   * Each viewer consists of three main classes - core, look, and meta. Each of them can be accessed dynamically, which
-      allows operating on categories of entities. This dramatically increases code reuse and allows for complex
-      customizations to be implemented very easily.
+    allows operating on categories of entities. This dramatically increases code reuse and allows for complex
+    customizations to be implemented very easily.
 * Share common base, utilize the same tricks, same naming conventions
   * Dense, straight-to-business, and easy-to-understand code
   * Data-aware axes across all viewers (adaptive resolution for time series)
@@ -235,8 +236,8 @@ patterns, and cooperate on certain tasks.
   * Drag any objects (users, scripts, tables, statistics, viewers, etc.)
 * Composable rendering
   * Many controls, such as histogram, are capable of rendering themselves on a canvas that another viewer owns. That
-      allows for a lightweight, memory-efficient rendering of complex scenes (ex:
-      histograms on a line chart)
+    allows for a lightweight, memory-efficient rendering of complex scenes (ex:
+    histograms on a line chart)
 * Event bus for common viewer events for decoupling and easier event handling
 * Filters
   * Collaborative - each filter has a say in determining whether the row passes the filter
@@ -254,7 +255,7 @@ patterns, and cooperate on certain tasks.
 * Flex tooltips
   * Row tooltips: Ability to select columns to show on a tooltip (including row viewers)
   * Row group tooltip: Use any viewer as a tooltip (for example, when the mouse is over a particular histogram bin,
-      the tooltip contains a scatterplot with values that fall in that bin)
+    the tooltip contains a scatterplot with values that fall in that bin)
   * Object tooltip (users, etc.)
 
 ### Datlas
@@ -521,5 +522,5 @@ The schema has the following tables:
 * [Deployment](deploy.md)
 * [Configuration](configuration.md)
 * [Continuous integration](continuous-integration.png)
-* [Versioning policy](../versioning-policy.md)
+* [Versioning policy](releases/versioning-policy.md)
 * [Try Datagrok locally](docker-compose.md)

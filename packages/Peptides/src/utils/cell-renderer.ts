@@ -63,7 +63,7 @@ export function measureAAR(s: string): number {
 
 export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAAR: string, currentPosition: string,
   statsDf: DG.DataFrame, twoColorMode: boolean, mdCol: DG.Column<number>, bound: DG.Rect, cellValue: number,
-  currentSelection: types.SelectionObject, substitutionsInfo: types.SubstitutionsInfo | null): void {
+  currentSelection: types.SelectionObject, substitutionsInfo: types.SubstitutionsInfo): void {
   const queryAAR = `${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`;
   const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
   const pVal: number = statsDf
@@ -81,7 +81,7 @@ export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAA
   else if (pVal < 0.1)
     coef = variant && twoColorMode ? '#FBCEB1' : '#98FF98';
   else
-    coef = DG.Color.toHtml(DG.Color.lightGray);
+    coef = DG.Color.toHtml(DG.Color.lightLightGray);
 
 
   const chooseMin = (): number => twoColorMode ? 0 : mdCol.min;
@@ -101,7 +101,7 @@ export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAA
   canvasContext.closePath();
 
   canvasContext.fill();
-  if (substitutionsInfo) {
+  if (substitutionsInfo.size > 0) {
     canvasContext.textBaseline = 'middle';
     canvasContext.textAlign = 'center';
     canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(coef)));

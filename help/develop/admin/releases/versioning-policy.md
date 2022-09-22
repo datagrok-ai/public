@@ -11,7 +11,7 @@ like: `MAJOR.MINOR.PATCH-<BUILD>`.
 ### Major release
 
 A major release is made every time the code is released on [public.datagrok.ai](https://public.datagrok.ai). Before the
-release, the new version goes through all [quality assurance](admin/quality-assurance.md) operations, including manual
+release, the new version goes through all [quality assurance](../quality-assurance.md) operations, including manual
 testing of critical changes by the QA Engineer.
 
 It may contain changes that break backward compatibility with previous versions or represent fundamental changes to
@@ -20,28 +20,31 @@ concepts.
 For a major release, the `MAJOR` component must be incremented by one, and the `MINOR` and `TEST`
 components must be set to zero.
 
-The [CI/CD Flow for patch releases](CI_flow.md#major-release) includes all checks, and deployment to all envieonments.
+The [CI/CD Flow for patch releases](../../advanced/ci-flow.md#major-release) includes all checks, and deployment to all
+environments.
 
 ### Minor release
 
 Minor releases are the stable release which has the most recent features. Every release is tested on the test
-environment and passes all [quality assurance](admin/quality-assurance.md) requirements.
+environment and passes all [quality assurance](../quality-assurance.md) requirements.
 
 For a minor release, the `MINOR` component must be incremented by one, and the `PATCH` component must be set to zero.
 The `MAJOR` component must remain unchanged.
 
-The [CI/CD Flow for patch releases](CI_flow.md#minor-release) includes all checks, and deployment to dev and test
+The [CI/CD Flow for patch releases](../../advanced/ci-flow.md#minor-release) includes all checks, and deployment to dev
+and test
 environments.
 
 ### Patch release
 
 Patch releases are the most common type of release which has the most recent bugfixes and small new features. Every
-release is tested on the dev environment and passes all [quality assurance](admin/quality-assurance.md) requirements.
+release is tested on the dev environment and passes all [quality assurance](../quality-assurance.md) requirements.
 
 For a patch release, the `PATCH` component must be incremented by one, and the `MINOR` and `MAJOR`
 components must remain unchanged.
 
-The [CI/CD Flow for patch releases](CI_flow.md#patch-release) includes all checks, and deployment to dev environment.
+The [CI/CD Flow for patch releases](../../advanced/ci-flow.md#patch-release) includes all checks, and deployment to dev
+environment.
 
 ### Build release
 
@@ -53,7 +56,8 @@ the features that are already in other versions.
 For a test release, the `BUILD` component must be added to version, and the `PATCH`, `MINOR` and `MAJOR`
 components must remain unchanged.
 
-The [CI/CD Flow for build releases](CI_flow.md#build-release) is simple and does not include most of the checks.
+The [CI/CD Flow for build releases](../../advanced/ci-flow.md#build-release) is simple and does not include most of the
+checks.
 
 ### Version information in Docker image
 
@@ -83,4 +87,4 @@ Every Docker container has information about version and branch it was build on:
 
 * [Release History](release-history.md)
 * [Stable Releases](release-stable.md)
-* [CI/CD Flow](CI_flow.md)
+* [CI/CD Flow](../../advanced/ci-flow.md)

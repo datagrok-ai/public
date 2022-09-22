@@ -49,8 +49,8 @@ not specified, the first view from the project will open.
 
 ## Files
 
-A [file share](../access/connect-a-file-share.md) for which the user has access is available by the link. You should specify the
-file share name and the namespace in which it exists in the URL, for
+A [file share](../access/connect-a-file-share.md) for which the user has access is available by the link. You should
+specify the file share name and the namespace in which it exists in the URL, for
 example, [https://public.datagrok.ai/files/demo.testjobs.files.demofiles](https://public.datagrok.ai/files/demo.testjobs.files.demofiles)
 .
 

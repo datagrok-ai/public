@@ -12,10 +12,10 @@ import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignmen
 import {SequenceAlignment, Aligned} from './seq_align';
 import {Nucleotides} from '@datagrok-libraries/bio/src/nucleotides';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
-import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
+import {getEmbeddingColsNames, sequenceSpace} from './analysis/sequence-space';
 import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './utils/sequence-activity-cliffs';
+import {createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './analysis/sequence-activity-cliffs';
 import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
@@ -32,7 +32,8 @@ import {
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import * as C from './utils/constants';
-import {getFingerprints} from './calculations/fingerprints';
+import { SequenceSimilarityViewer } from './analysis/sequence-similarity-viewer';
+import { SequenceDiversityViewer } from './analysis/sequence-diversity-viewer';
 
 //tags: init
 export async function initBio() {
@@ -50,11 +51,21 @@ export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
 //name: separatorSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: sequence
-//meta.columnTags: quality=Macromolecule, units=fasta
+//meta.columnTags: quality=Macromolecule, units=separator
 //output: grid_cell_renderer result
 export function separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
 }
+
+//name: MacromoleculeDifferenceCellRenderer
+//tags: cellRenderer
+//meta.cellType: MacromoleculeDifference
+//meta.columnTags: quality=MacromoleculeDifference
+//output: grid_cell_renderer result
+export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCellRenderer {
+  return new MacromoleculeDifferenceCellRenderer();
+}
+
 
 function checkInputColumnUi(
   col: DG.Column, name: string, allowedNotations: string[] = [], allowedAlphabets: string[] = []
@@ -306,9 +317,11 @@ export async function compositionAnalysis(): Promise<void> {
     return;
   } else if (colList.length > 1) {
     const colListNames: string [] = colList.map((col) => col.name);
-    const colInput: DG.InputBase = ui.choiceInput('Column', colListNames[0], colListNames);
+    const selectedCol = colList.find((c) => { return (new UnitsHandler(c)).isMsa(); });
+    const colInput: DG.InputBase = ui.choiceInput(
+      'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
     ui.dialog({
-      title: 'R-Groups Analysis',
+      title: 'Composition Analysis',
       helpUrl: '/help/domains/bio/macromolecules.md#composition-analysis'
     })
       .add(ui.div([
@@ -374,15 +387,6 @@ export function convertPanel(col: DG.Column): void {
 //output: grid_cell_renderer result
 export function monomerCellRenderer(): MonomerCellRenderer {
   return new MonomerCellRenderer();
-}
-
-//name: MacromoleculeDifferenceCellRenderer
-//tags: cellRenderer
-//meta.cellType: MacromoleculeDifference
-//meta.columnTags: quality=MacromoleculeDifference
-//output: grid_cell_renderer result
-export function macromoleculeDifferenceCellRenderer(): MacromoleculeDifferenceCellRenderer {
-  return new MacromoleculeDifferenceCellRenderer();
 }
 
 //name: testDetectMacromolecule
@@ -461,10 +465,33 @@ export function getHelmMonomers(seqCol: DG.Column<string>): string[] {
   return Object.keys(stats.freq);
 }
 
-export async function macromoleculesFingerprints(mcol: DG.Column): Promise<Uint8Array[]> {
-  grok.functions.call('Chem:getRdKitModule');
-  const monomers = getHelmMonomers(mcol);
-  const mols = await grok.functions.call('HELM:getMolFiles', {mcol: mcol});
 
-  return getFingerprints(mols.toList(), monomers);
+//name: SequenceSimilaritySearchViewer
+//tags: viewer
+//output: viewer result
+export function similaritySearchViewer(): SequenceSimilarityViewer {
+  return new SequenceSimilarityViewer();
+}
+
+//top-menu: Bio | Similarity Search...
+//name: similaritySearch
+//description: finds the most similar sequence
+//output: viewer result
+export function similaritySearchTopMenu(): void {
+  (grok.shell.v as DG.TableView).addViewer('SequenceSimilaritySearchViewer');
+}
+
+//name: SequenceDiversitySearchViewer
+//tags: viewer
+//output: viewer result
+export function diversitySearchViewer(): SequenceDiversityViewer {
+  return new SequenceDiversityViewer();
+}
+
+//top-menu: Bio | Diversity Search...
+//name: diversitySearch
+//description: finds the most diverse molecules
+//output: viewer result
+export function diversitySearchTopMenu() {
+  (grok.shell.v as DG.TableView).addViewer('SequenceDiversitySearchViewer');
 }

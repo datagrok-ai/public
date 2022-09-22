@@ -1,6 +1,5 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter, map } from 'rxjs/operators';
 import { Tutorial } from "../../../tutorial";
@@ -27,6 +26,7 @@ export class VirtualScreeningTutorial extends Tutorial {
     return 46;
   }
 
+  prerequisites = ['Chem', 'PowerPack'];
   demoTable: string = 'chem/tutorials/training-data.csv';
   helpUrl: string = 'https://datagrok.ai/help/domains/chem/chem-curate';
 
