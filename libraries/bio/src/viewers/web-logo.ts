@@ -781,12 +781,13 @@ export class WebLogo extends DG.JsViewer {
 
     if (this.fitArea) {
       const xScale: number = this.root.clientHeight / height;
-      const yScale: number = (this.root.clientWidth - this.Length * this.positionMargin) / width;
+      const yScale: number = (this.root.clientWidth - this.Length * this.positionMarginValue) / width;
       const scale = Math.max(1, Math.min(xScale, yScale));
       width = width * scale;
       height = height * scale;
       this._positionWidth = this.positionWidth * scale;
     }
+    width = this.Length * this.positionWidthWithMargin / r;
 
     this.canvas.width = this.root.clientWidth * r;
     this.canvas.style.width = `${this.root.clientWidth}px`;
@@ -821,9 +822,26 @@ export class WebLogo extends DG.JsViewer {
         hostTopMargin = Math.max(0, this.root.clientHeight - height);
         break;
       }
+      // horizontal alignment
+      let hostLeftMargin = 0;
+      switch (this.horizontalAlignment) {
+      case 'left':
+        hostLeftMargin = 0;
+        break;
+      case 'center':
+        hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2) * r;
+        break;
+      case 'right':
+        hostLeftMargin = Math.max(0, this.root.clientWidth - width) * r;
+        break;
+      }
       this.host.style.setProperty('margin-top', `${hostTopMargin}px`, 'important');
-      if (this.slider != null)
+      if (!this.visibleSlider) {
+        this.host.style.setProperty('margin-left', `${hostLeftMargin}px`, 'important');
+      }
+      if (this.slider != null) {
         this.slider.root.style.setProperty('margin-top', `${hostTopMargin + canvasHeight}px`, 'important');
+      }
 
       if (this.root.clientHeight < height) {
         this.host.style.setProperty('height', `${this.root.clientHeight}px`);
