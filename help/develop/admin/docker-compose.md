@@ -188,18 +188,18 @@ To run Datagrok with exact CVM features, specify them in the command line using 
 
 1. In case of any issues, check the settings in the Datagrok (Tools | Settings...).
 
-* Connectors
-  * External Host: `grok_connect`
-* Scripting:
-  * CVM Url: `http://cvm:8090`
-  * CVM URL Client: `http://localhost:8090`
-  * H2o Url: `http://h2o:54321`
-  * API Url: `http://datagrok:8080/api`
-  * Cvm Split: `true`
-* Dev:
-  * CVM Url: `http://localhost:8090`
-  * Cvm Split: `true`
-  * API Url: `http://datagrok:8080/api`
+    * Connectors
+      * External Host: `grok_connect`
+    * Scripting:
+      * CVM Url: `http://cvm:8090`
+      * CVM URL Client: `http://localhost:8090`
+      * H2o Url: `http://h2o:54321`
+      * API Url: `http://datagrok:8080/api`
+      * Cvm Split: `true`
+    * Dev:
+      * CVM Url: `http://localhost:8090`
+      * Cvm Split: `true`
+      * API Url: `http://datagrok:8080/api`
 
 2. Check containers logs for any possible errors and report the problem if there are any
 

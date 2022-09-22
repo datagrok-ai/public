@@ -24,11 +24,13 @@ To test packages locally before publishing you can use the Jest framework.
 4. [Publish the package to the HOST](publish-packages.md#private-packages), which was set on the first step.
 
    Linux/Unix:
+
    ```shell
    grok publish $HOST
    ```
 
    Windows:
+
    ```shell
    grok publish %HOST%
    ```
