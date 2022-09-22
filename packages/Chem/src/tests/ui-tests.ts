@@ -159,15 +159,15 @@ category('UI', () => {
   test('info panel: identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
-    await delay(3000);
+    await delay(5000);
 
     smiles.currentRowIdx = 5; await delay(500);
     checkHTMLElementbyInnerText('d4-accordion-pane-header', 'Identifiers');
 
-    await delay(3000);
+    await delay(5000);
     if (document.getElementsByClassName('ui-link d4-link-external').length < 1) {
       let identifiersPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Identifiers')
-      identifiersPanel!.click(); await delay(3000);
+      identifiersPanel!.click(); await delay(5000);
       if (document.getElementsByClassName('ui-link d4-link-external').length < 1)
         throw 'no identifiers found'; 
     }

@@ -19,9 +19,9 @@ export async function getStructuralAlerts(smiles: string): Promise<number[]> {
   // lib.add_smiles(smiles);
   const smartsCol = alertsDf!.getCol('smarts');
   for (let i = 0; i < smartsCol.length; i++) {
-    const subMol = _smartsMap.get(smartsCol.get(i))!;
+    const subMol = _smartsMap.get(smartsCol.get(i));
     // lib.count_matches(subMol);
-    const matches = mol.get_substruct_matches(subMol);
+    const matches = mol.get_substruct_matches(subMol!);
     if (matches !== '{}')
       alerts.push(i);
   }
