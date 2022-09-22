@@ -73,8 +73,6 @@ category('cell panel', async () => {
     expect(structuralAlerts.length, expectedStructuralAlerts.length);
     for (const expectedSA of expectedStructuralAlerts)
       expect(structuralAlerts.includes(expectedSA), true);
-
-    await structuralAlertsWidget(molStr);
   });
 
   //TODO: Test mol2000, mol3000; Check if image is returned; Visual test required
