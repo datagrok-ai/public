@@ -1,12 +1,15 @@
 <!-- TITLE: Debugging -->
 
+# Debugging
+
 Essentially, Datagrok packages are either regular webpack packages, or sets JS source files.
 
 We recommend you the practices below with debugging your package code.
 
-### One-click debugging with Visual Studio Code
+## One-click debugging with Visual Studio Code
 
-Use an `--ide=vscode` key of [grok tools](../getting-started.md) to set up a `.vscode` debugging integration with Datagrok.
+Use an `--ide=vscode` key of [grok tools](../getting-started.md) to set up a `.vscode` debugging integration with
+Datagrok.
 
 This parameter coupled with `grok create` adds an additional `.vscode` folder with two files to your package folder.
 These files bring you development experience close to building native apps, where you modify the code, hit the "Run",
@@ -19,7 +22,7 @@ added with grok tools `--vscode` key will prepare a webpack package locally (sho
 deploy it to the selected Datagrok instance, and run the browser in a IDE-debugging mode.
 
 Below we explain how this debugging works under the hood. As of today, you'd also need to repeat these steps for VS Code
-on Linux and MacOS, as we don't support automatically created configurations for them yet.
+on Linux and macOS, as we don't support automatically created configurations for them yet.
 
 The first file, `launch.json`, has contents similar to the below:
 

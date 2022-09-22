@@ -20,7 +20,8 @@ concepts.
 For a major release, the `MAJOR` component must be incremented by one, and the `MINOR` and `TEST`
 components must be set to zero.
 
-The [CI/CD Flow for patch releases](../../advanced/ci-flow.md#major-release) includes all checks, and deployment to all envieonments.
+The [CI/CD Flow for patch releases](../../advanced/ci-flow.md#major-release) includes all checks, and deployment to all
+environments.
 
 ### Minor release
 
@@ -30,7 +31,8 @@ environment and passes all [quality assurance](../quality-assurance.md) requirem
 For a minor release, the `MINOR` component must be incremented by one, and the `PATCH` component must be set to zero.
 The `MAJOR` component must remain unchanged.
 
-The [CI/CD Flow for patch releases](../../advanced/ci-flow.md#minor-release) includes all checks, and deployment to dev and test
+The [CI/CD Flow for patch releases](../../advanced/ci-flow.md#minor-release) includes all checks, and deployment to dev
+and test
 environments.
 
 ### Patch release
@@ -41,7 +43,8 @@ release is tested on the dev environment and passes all [quality assurance](../q
 For a patch release, the `PATCH` component must be incremented by one, and the `MINOR` and `MAJOR`
 components must remain unchanged.
 
-The [CI/CD Flow for patch releases](../../advanced/ci-flow.md#patch-release) includes all checks, and deployment to dev environment.
+The [CI/CD Flow for patch releases](../../advanced/ci-flow.md#patch-release) includes all checks, and deployment to dev
+environment.
 
 ### Build release
 
@@ -53,7 +56,8 @@ the features that are already in other versions.
 For a test release, the `BUILD` component must be added to version, and the `PATCH`, `MINOR` and `MAJOR`
 components must remain unchanged.
 
-The [CI/CD Flow for build releases](../../advanced/ci-flow.md#build-release) is simple and does not include most of the checks.
+The [CI/CD Flow for build releases](../../advanced/ci-flow.md#build-release) is simple and does not include most of the
+checks.
 
 ### Version information in Docker image
 
