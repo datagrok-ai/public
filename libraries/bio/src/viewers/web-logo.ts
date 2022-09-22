@@ -230,7 +230,6 @@ export class WebLogo extends DG.JsViewer {
 
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
-    //this.canvas.style.setProperty('overflow', 'hidden', 'important');
 
     const style: SliderOptions = {style: 'barbell', allowResize: false};
     this.slider = ui.rangeSlider(0, 100, 10, 20, false, style);
@@ -771,7 +770,7 @@ export class WebLogo extends DG.JsViewer {
 
     const r: number = window.devicePixelRatio;
 
-    let width: number = this.Length * this.positionWidthWithMargin / r;
+    let width: number = this.Length * this.positionWidth / r;
     let height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
 
     if (this.fitArea) {
