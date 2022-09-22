@@ -14,24 +14,36 @@ To test packages locally before publishing you can use the Jest framework.
 
 1. Set environment variables:
 
-   - HOST - for host to publish and test package, for example 'localhost'
-   - TARGET_PACKAGE - `friendlyName` for the package from `package.json`
+    - HOST - for host to publish and test package, for example 'localhost'. It should be the same as the host alias
+      in `~/.grok/config.yaml`
+    - TARGET_PACKAGE - `friendlyName` for the package from `package.json`
 
-2. [Run Datagrok instance locally](../admin/docker-compose.md)
-3. [Configure grok tool](set-up-environment.md#configuration) with localhost credentials.
+2. [Run Datagrok instance locally](../admin/docker-compose.md). Skip this step if you already have a stand.
+3. [Configure grok tool](set-up-environment.md#configuration) with the credentials of you local stand, for example '
+   localhost'.
 4. [Publish the package to the HOST](publish-packages.md#private-packages), which was set on the first step.
 
+   Linux/Unix:
    ```shell
-   grok publish <HOST>
+   grok publish $HOST
+   ```
+   Windows:
+   ```shell
+   grok publish %HOST%
    ```
 
-5. Run tests for the package
+5. Set proper Web Root and Api Root for the stand: Logg in as admin user go to Settings -> Admin:
+   set `Web Root` and `Api Root` -> Apply. In most cases `Web Root` is the same as the main URL you use to access the
+   platform, for example `http://localhost:8080`, and `Api Root` is the same with suffix `/api`, for
+   example `http://localhost:8080/api`.
+
+6. Run tests for the package
 
    ```shell
-   npm test
+   npm run test
    ```
 
-6. The results are available in the command-line output or the `test-report.html` file.
+7. The results are available in the command-line output or the `test-report.html` file.
 
 ## Tests after a change in a public package
 
