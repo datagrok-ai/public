@@ -54,14 +54,17 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
       body.push({ID: colIndex.toString(), HELM: helmSeq});
   }
 
-  const PORT = 49153;
-  const URL = `http://localhost:${PORT}/align?method=${method}&gap_open=${gapOpen}&gap_extend=${gapExtend}`;
+  // const PORT = 49153;
+  const dockerfileId = (await grok.dapi.dockerfiles.filter('pepsea').first()).id;
+
+  // const URL = `http://localhost:8082/dockerfiles/proxy/${dockerfilesList[0]}/align?method=${method}&gap_open=${gapOpen}&gap_extend=${gapExtend}`;
   const params = {
     method: 'POST',
     headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
     body: JSON.stringify(body),
   };
-  const response = await grok.dapi.fetchProxy(URL, params);
+  // const response = await grok.dapi.fetchProxy(URL, params);
+  const response = await grok.dapi.dockerfiles.request(dockerfileId, `/align?method=${method}&gap_open=${gapOpen}&gap_extend=${gapExtend}`, params);
   const alignedObjects: pepseaResonse = await response.json();
   const alignments = alignedObjects.Alignment;
 
