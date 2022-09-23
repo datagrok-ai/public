@@ -71,7 +71,7 @@ to prepare our simple package and deploy it.
     * Make a new folder for the package
     * In this folder, call `grok create <PACKAGE_NAME> --ide=vscode`
     * The `--ide` key will create a setup
-      for [debugging the package with VS Code](../develop.md#one-click-debugging-with-visual-studio-code) (
+      for [debugging the package with VS Code](../develop.md#debugging) (
       currently only works on Windows)
     * If you run this for the first time, you'd be prompted to enter your developer keys for our Datagrok instances.
       Find this key in your user profile section in the Datagrok UI,

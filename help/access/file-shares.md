@@ -56,7 +56,7 @@ connectors to the following data sources:
 * [Git](connectors/git.md)
 * [Google Drive](connectors/googlecloud.md)
 
-> Developers: You can [create custom connectors](/develop/how-to/access-data.md/#connections).
+> Developers: You can [create custom connectors](../develop/how-to/access-data.md/#connections).
 
 ### Add new connection
 
@@ -76,7 +76,7 @@ To add a connection, follow these steps:
    > file share.
    >
    >You can enter _credentials_ (typically, login/password) manually. When entered manually, Datagrok stores secrets in
-   > a secure [privilege management system](/govern/security.md/#credentials). You can also connect using Datagrok's
+   > a secure [privilege management system](../govern/security.md#credentials). You can also connect using Datagrok's
    > integration with the AWS Secrets Manager (see [Secrets Managers](data-connection-credentials.md/#secrets-managers))
    .
    >
@@ -123,7 +123,7 @@ You have two sharing methods:
 
    Unlike sharing _files_, when you share a _file link_, the shared file doesn't appear in the recipient's **File
    Manager**. Instead, clicking the link _opens_ the file in Datagrok. From there, users can either download the file
-   and then upload it to Datagrok or save the file as a [project](/datagrok/create-project.md).
+   and then upload it to Datagrok or save the file as a [project](../datagrok/create-project.md).
 
    To access the file or folder from the link provided, users must have access privileges for this file or folder.
 
@@ -212,7 +212,7 @@ contact the _credentials owner_. If you are a _credentials owner_, contact the _
    Clicking a file or a folder opens its preview, double-clicking a file opens it in the platform, and double-clicking a
    folder expands its content.
 
-   > Tip: Use built-in [smart search](/datagrok/smart-search.md) to find files and folders of interest quickly. You can
+   > Tip: Use built-in [smart search](../datagrok/smart-search.md) to find files and folders of interest quickly. You can
    > type a word or part of a word to search for the following:
    >
    >* File and folder names
@@ -224,7 +224,7 @@ Datagrok has multiple tools to help you find information you need precisely when
 * A [Treemap](../visualize/viewers/tree-map.md) helps you visually profile the content of your current folder and identify
   the files that take up
   the most space.
-  > Developers: You can [create custom folder viewers](/develop/how-to/folder-content-preview.md).
+  > Developers: You can [create custom folder viewers](../develop/how-to/folder-content-preview.md).
   >
   ><!--gif clinical data-->
   >
@@ -242,7 +242,7 @@ Datagrok has multiple tools to help you find information you need precisely when
 
    <!--gif-->
 
-  > Developers: You can add custom formats via [package extensions](/develop/how-to/create-package.md).
+  > Developers: You can add custom formats via [package extensions](../develop/how-to/create-package.md).
   > Note: File preview is limited to files less than 10MB in size. The platform won't display bigger files.
   >
   >You can't preview unsupported file formats, but you can download these files.
