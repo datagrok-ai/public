@@ -366,7 +366,7 @@ export class FunctionView extends DG.ViewBase {
         icon.style.marginRight = '3px';
         icon.style.alignSelf = 'center';
         const userLabel = ui.label(funcCall.author.friendlyName, 'd4-link-label');
-        ui.bind(funcCall.author, userLabel);
+        ui.bind(funcCall.author, icon);
 
         const card = ui.divH([
           ui.divH([
