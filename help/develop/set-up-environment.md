@@ -2,7 +2,7 @@
 
 # Setting up development environment
 
-This article explains how to set up development environment for developing Datagrok [packages](../develop.md#packages).
+This article explains how to set up development environment for developing Datagrok [packages](develop.md#packages).
 
 ## Tools
 
@@ -29,13 +29,13 @@ enter the root password if prompted.
    ```
 
    Enter developer keys and set the default server. Your credentials will be stored locally in `config.yaml`. Once
-   created, this file will be used for [publishing](../develop.md#publishing)
+   created, this file will be used for [publishing](develop.md#publishing)
    all your packages. Administrators can manage existing keys and grant or revoke privileges.
 
 ## Next steps
 
-Now you are ready to [create your first package](create-package.md).
+Now you are ready to [create your first package](how-to/create-package.md).
 
 See also:
 
-* [Datagrok JavaScript development](../develop.md)
+* [Datagrok JavaScript development](develop.md)
