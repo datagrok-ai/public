@@ -110,6 +110,8 @@ export class WebLogo extends DG.JsViewer {
   private rowsMasked: number = 0;
   private rowsNull: number = 0;
   private visibleSlider: boolean = false;
+  private allowResize: boolean = true;
+  private currentRange: number = 0;
 
   // Viewer's properties (likely they should be public so that they can be set outside)
   private _positionWidth: number;
@@ -235,8 +237,8 @@ export class WebLogo extends DG.JsViewer {
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
 
-    const style: SliderOptions = {style: 'barbell', allowResize: false};
-    this.slider = ui.rangeSlider(0, 100, 10, 20, false, style);
+    const style: SliderOptions = {style: 'barbell', allowResize: this.allowResize};
+    this.slider = ui.rangeSlider(0, 100, 0, 10, false, style);
     this.slider.root.style.position = 'absolute';
     this.slider.root.style.zIndex = '999';
     this.slider.root.style.display = 'none';
@@ -246,6 +248,15 @@ export class WebLogo extends DG.JsViewer {
 
     const parent = this;
     this.slider.onValuesChanged.subscribe(() => {
+      if (parent.slider == null) {
+        return;
+      }
+      if ((parent.allowResize) && (parent.slider.max - parent.slider.min != parent.currentRange) && (parent.slider.max - parent.slider.min <  parent.Length) ) {
+        const widthSlider =  parent.slider.max - parent.slider.min + 1;
+        const xScale: number = (parent.root.clientWidth - widthSlider * parent.positionMarginValue) / (widthSlider * parent._positionWidth);
+        parent._positionWidth = parent._positionWidth * xScale;
+        parent.currentRange = parent.slider.max - parent.slider.min + 1;
+      }
       parent.render(true);
     });
 
@@ -439,7 +450,7 @@ export class WebLogo extends DG.JsViewer {
       let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin);
       if (this.checkIsHideSlider()) {
         newMin = 0;
-        newMax = 1;
+        newMax = this.Length - 1;
       }
       this.slider.setValues(0, this.Length,
         newMin, newMax);
@@ -779,7 +790,7 @@ export class WebLogo extends DG.JsViewer {
     let width: number = this.Length * this.positionWidth / r;
     let height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
 
-    if (this.fitArea) {
+    if ((this.fitArea) && (!this.visibleSlider)) {
       const yScale: number = this.root.clientHeight / height;
       const xScale: number = (this.root.clientWidth - this.Length * this.positionMarginValue) / width;
       const scale = Math.max(1, Math.min(xScale, yScale));
@@ -787,6 +798,7 @@ export class WebLogo extends DG.JsViewer {
       height = height * scale;
       this._positionWidth = this.positionWidth * scale;
     }
+
     width = this.Length * this.positionWidthWithMargin / r;
 
     this.canvas.width = this.root.clientWidth * r;
