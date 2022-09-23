@@ -4,6 +4,7 @@ import {
   DataConnection,
   DataJob,
   DataQuery,
+  Dockerfile,
   Entity,
   Group,
   Model,
@@ -149,6 +150,12 @@ export class Dapi {
    *  @type {HttpDataSource<ScriptEnvironment>} */
   get environments(): HttpDataSource<ScriptEnvironment> {
     return new HttpDataSource(api.grok_Dapi_Environments());
+  }
+
+  /**Dockerfiles API endpoint
+   * @type {HttpDataSource<Dockerfile>} */
+  get dockerfiles(): DockerfilesDataSource {
+    return new DockerfilesDataSource(api.grok_Dapi_Dockerfiles(), 'Dockerfile');
   }
 
   /** Users Data Storage API endpoint
@@ -748,7 +755,27 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
   getTable(id: string): Promise<DataFrame> {
     return api.grok_Dapi_TablesDataSource_GetTable(id);
   }
+}
 
+/** Functionality to work with Dockerfiles
+ * @extends HttpDataSource */
+export class DockerfilesDataSource extends HttpDataSource<Dockerfile> {
+  /** @constructs DockerfilesDataSource */
+  constructor(s: any, clsName: string) {
+    super(s, clsName);
+  }
+
+  run(dockerfileId: string): Promise<boolean> {
+    return api.grok_Dapi_DockerfilesDataSource_Run(this.dart, dockerfileId);
+  }
+
+  stop(dockerfileId: string): Promise<boolean> {
+    return api.grok_Dapi_DockerfilesDataSource_Stop(this.dart, dockerfileId);
+  }
+
+  request(dockerfileId: string, path: string, params: ResponseInit): Promise<Response> {
+    return api.grok_Dapi_DockerfilesDataSource_ProxyRequest(this.dart, dockerfileId, path, params);
+  }
 }
 
 export class FileSource {
