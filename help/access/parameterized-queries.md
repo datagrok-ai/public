@@ -202,11 +202,12 @@ parameters.
 
 When you share this URL, you share a link to the query output, not the actual data. You can _open_ the resulting
 dataframe in Datagrok by following the link. From there, you can download the dataframe, add visualizations and create
-layouts, or save the dataframe by [uploading a project](/datagrok/create-project.md).
+layouts, or save the dataframe by [uploading a project](../datagrok/create-project.md).
 
 > Tip: When you upload a project, you can store the data as a static snapshot. Alternatively, you can store it as a
-> generation script, in which case the query is executed every time you open the project. To learn more about dynamic data
-> updates in projects, see [Dynamic data](/datagrok/project.md/#dynamic-data).
+> generation script, in which case the query is executed every time you open the project. To learn more about dynamic
+> data
+> updates in projects, see [Dynamic data](../datagrok/project.md/#dynamic-data).
 
 To access the query results from the link provided, users must have a permission to execute this query.
 
