@@ -35,7 +35,12 @@ export class FileInput {
       (this.visibleInput.input as HTMLInputElement).readOnly = true;
       this.visibleInput.input.classList.add('default');
 
-      const handleFiles = (files: FileList) => {
+      const handleFiles = (files: FileList | null) => {
+        if (!files || !files.length) {
+          this.uploadedFile$.next(null);
+          return;
+        }
+
         if (files.length > 1) {
           this.visibleInput.input.classList.remove('success');
           this.visibleInput.input.classList.add('error');
@@ -68,11 +73,7 @@ export class FileInput {
       // hidden input to handle file dialog
 
       this.hiddenInput.type = 'file';
-      this.hiddenInput.onchange = (e) => {
-        //@ts-ignore
-        const files: FileList = e.target.files;
-        handleFiles(files);
-      };
+      this.hiddenInput.addEventListener('change', () => handleFiles(this.hiddenInput.files), false);
 
       // Prevent default drag behaviors
       ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
@@ -124,6 +125,7 @@ export class FileInput {
     this.icon.replaceWith(newIcon);
     this.icon = newIcon;
     this.visibleInput.value = 'Drag-n-drop here';
+    this.hiddenInput.value = '';
     this.uploadedFile$.next(null);
   }
 
