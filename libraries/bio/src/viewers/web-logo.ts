@@ -109,13 +109,15 @@ export class WebLogo extends DG.JsViewer {
 
   private rowsMasked: number = 0;
   private rowsNull: number = 0;
+  private visibleSlider: boolean = false;
 
   // Viewer's properties (likely they should be public so that they can be set outside)
   private _positionWidth: number;
   public positionWidth: number;
   public minHeight: number;
+  public backgroundColor: number = 0xFFFFFFFF;
   public maxHeight: number;
-  public considerNullSequences: boolean;
+  public skipEmptySequences: boolean;
   public sequenceColumnName: string | null;
   public positionMarginState: string;
   public positionMargin: number = 0;
@@ -145,14 +147,33 @@ export class WebLogo extends DG.JsViewer {
 
   /** Calculate new position data basic on {@link positionMarginState} and {@link positionMargin} */
   private get positionWidthWithMargin() {
+    return this._positionWidth + this.positionMarginValue;
+  }
+
+  private get positionMarginValue() {
     if ((this.positionMarginState === 'auto') && (this.unitsHandler?.getAlphabetIsMultichar() === true)) {
-      return this._positionWidth + this.positionMargin;
+      return this.positionMargin;
     }
     if (this.positionMarginState === 'enable') {
-      return this._positionWidth + this.positionMargin;
+      return this.positionMargin;
     }
 
-    return this._positionWidth;
+    return 0;
+  }
+
+  /** Count of position rendered for calculations countOfRenderPositions */
+  private get countOfRenderPositions() {
+    if (this.host == null) {
+      return 0;
+    }
+    return this.host.clientWidth / this.positionWidthWithMargin;
+  }
+
+  /** Position of start rendering */
+  private get startRendering(): number {
+    if (this.slider == null)
+      return 0;
+    return (this.visibleSlider) ? Math.floor(this.slider.min) : 0;
   }
 
   private viewSubs: Subscription[] = [];
@@ -166,6 +187,7 @@ export class WebLogo extends DG.JsViewer {
     this.textBaseline = 'top';
     this.unitsHandler = null;
 
+    this.backgroundColor = this.int('backgroundColor', 0xFFFFFFFF);
     this._positionWidth = this.positionWidth = this.float('positionWidth', 16/*,
       {editor: 'slider', min: 4, max: 64, postfix: 'px'}*/);
     this.minHeight = this.float('minHeight', 50/*,
@@ -173,7 +195,7 @@ export class WebLogo extends DG.JsViewer {
     this.maxHeight = this.float('maxHeight', 100/*,
       {editor: 'slider', min: 25, max: 500, postfix: 'px'}*/);
 
-    this.considerNullSequences = this.bool('considerNullSequences', false);
+    this.skipEmptySequences = this.bool('skipEmptySequences', true);
     this.sequenceColumnName = this.string('sequenceColumnName', null);
 
     this.startPositionName = this.string('startPositionName', null);
@@ -212,15 +234,21 @@ export class WebLogo extends DG.JsViewer {
 
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
-    this.canvas.style.setProperty('overflow', 'hidden', 'important');
+
     const style: SliderOptions = {style: 'barbell', allowResize: false};
     this.slider = ui.rangeSlider(0, 100, 10, 20, false, style);
     this.slider.root.style.position = 'absolute';
     this.slider.root.style.zIndex = '999';
+    this.slider.root.style.display = 'none';
+    this.slider.root.style.height = '0.7em';
+
+    this.visibleSlider = false;
+
     const parent = this;
     this.slider.onValuesChanged.subscribe(() => {
       parent.render(true);
     });
+
 
     this.host = ui.div([this.msgHost, this.canvas]);
 
@@ -230,14 +258,15 @@ export class WebLogo extends DG.JsViewer {
     this.host.style.setProperty('overflow', 'hidden', 'important');
 
     const getMonomer = (p: DG.Point): [number, string | null, PositionMonomerInfo | null] => {
-      const jPos = Math.floor(p.x / this.positionWidthWithMargin);
+      const calculatedX = p.x + this.startRendering * this.positionWidthWithMargin;
+      const jPos = Math.floor(p.x / this.positionWidthWithMargin + this.startRendering);
       const position = this.positions[jPos];
 
       if (position === void 0)
         return [jPos, null, null];
 
       const monomer: string | undefined = Object.keys(position.freq)
-        .find((m) => position.freq[m].bounds.contains(p.x, p.y));
+        .find((m) => position.freq[m].bounds.contains(calculatedX, p.y));
       if (monomer === undefined)
         return [jPos, null, null];
 
@@ -287,19 +316,34 @@ export class WebLogo extends DG.JsViewer {
       }
     }));
 
+    this.viewSubs.push(rxjs.fromEvent<WheelEvent>(this.canvas, 'wheel').subscribe((e: WheelEvent) => {
+      if (!this.visibleSlider)
+        return;
+      if (!this.canvas || this.slider === void 0)
+        return;
+      const countOfScrollPositions = (e.deltaY / 100) * Math.max(Math.floor((this.countOfRenderPositions - 1) / 2), 1);
+      if (e.deltaY > 0) {
+        this.slider.scrollTo((this.Length > this.slider.min + countOfScrollPositions) ? this.slider.min + countOfScrollPositions : this.Length - countOfScrollPositions);
+      } else {
+        this.slider.scrollTo((this.slider.min + countOfScrollPositions > 0) ? this.slider.min + countOfScrollPositions : 0);
+      }
+    }));
+
     this.viewSubs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
 
     this.root.append(this.host);
     this.root.append(this.slider.root);
 
-    this.render(true);
+    this._calculate(window.devicePixelRatio);
     this.setSlider();
+    this.render(false);
   }
 
   /** Handler of changing size WebLogo */
   private rootOnSizeChanged(): void {
-    this.render(true);
+    this._calculate(window.devicePixelRatio);
     this.setSlider();
+    this.render(true);
   }
 
   /** Assigns {@link seqCol} and {@link cp} based on {@link sequenceColumnName} and calls {@link render}().
@@ -361,14 +405,44 @@ export class WebLogo extends DG.JsViewer {
       this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
   }
 
+  private checkIsHideSlider(): boolean {
+    if (this?.fixWidth == true) {
+      return true;
+    }
+    if (this?.canvas?.width == null) {
+      return true;
+    }
+    return Math.floor(this.canvas.width / this.positionWidthWithMargin) >= this.Length;
+  }
+
+  private setShowSlider(): void {
+    if (this.slider != null) {
+      this.slider.root.style.display = 'inherit';
+      this.visibleSlider = true;
+    }
+  }
+
+  private setHideSlider(): void {
+    if (this.slider != null) {
+      this.slider.root.style.display = 'none';
+      this.visibleSlider = false;
+    }
+  }
+
   /** Sets {@link slider}, needed to set slider options and to update slider position.
    */
   private setSlider(): void {
     if ((this.slider != null) && (this.canvas != null)) {
       let diffEndScrollAndSliderMin = Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length;
       diffEndScrollAndSliderMin = diffEndScrollAndSliderMin > 0 ? diffEndScrollAndSliderMin : 0;
+      let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
+      let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin);
+      if (this.checkIsHideSlider()) {
+        newMin = 0;
+        newMax = 1;
+      }
       this.slider.setValues(0, this.Length,
-        Math.floor(this.slider.min - diffEndScrollAndSliderMin), Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin));
+        newMin, newMax);
     }
   }
 
@@ -378,7 +452,7 @@ export class WebLogo extends DG.JsViewer {
     super.onPropertyChanged(property);
 
     switch (property.name) {
-    case 'considerNullSequences':
+    case 'skipEmptySequences':
       this.render(true);
       break;
     case 'sequenceColumnName':
@@ -392,6 +466,7 @@ export class WebLogo extends DG.JsViewer {
       break;
     case 'positionWidth':
       this._positionWidth = this.positionWidth;
+      this.setSlider();
       this.render(true);
       break;
     case 'minHeight':
@@ -401,6 +476,7 @@ export class WebLogo extends DG.JsViewer {
       this.render(true);
       break;
     case 'fixWidth':
+      this.setSlider();
       this.render(true);
       break;
     case 'verticalAlignment':
@@ -410,6 +486,7 @@ export class WebLogo extends DG.JsViewer {
       this.render(true);
       break;
     case 'fitArea':
+      this.setSlider();
       this.render(true);
       break;
     case 'shrinkEmptyTail':
@@ -421,12 +498,17 @@ export class WebLogo extends DG.JsViewer {
       this.render(true);
       break;
     case 'positionMargin':
+      this.setSlider();
       this.render(true);
       break;
     case 'positionMarginState':
+      this.setSlider();
       this.render(true);
       break;
     case 'positionHeight':
+      this.render(true);
+      break;
+    case 'backgroundColor':
       this.render(true);
       break;
     }
@@ -472,7 +554,7 @@ export class WebLogo extends DG.JsViewer {
 
   /** Helper function for rendering */
   protected _nullSequence(fillerResidue = 'X'): string {
-    if (this.considerNullSequences)
+    if (!this.skipEmptySequences)
       return new Array(this.Length).fill(fillerResidue).join('');
 
     return '';
@@ -492,6 +574,7 @@ export class WebLogo extends DG.JsViewer {
     array.length = updateIterator;
     return array;
   }
+
 
   /** Function for removing empty positions */
   protected _removeEmptyPositions() {
@@ -622,14 +705,20 @@ export class WebLogo extends DG.JsViewer {
       this._calculate(r);
 
     g.resetTransform();
-    g.fillStyle = 'white';
+    g.fillStyle = DG.Color.toHtml(this.backgroundColor);
     g.fillRect(0, 0, this.canvas.width, this.canvas.height);
     g.textBaseline = this.textBaseline;
 
-    const maxCountOfRowsRendered = this.host.clientWidth / this.positionWidthWithMargin + 1;
-    const startRendering = Math.floor(this.slider.min);
+    if (this.checkIsHideSlider()) {
+      this.setHideSlider();
+    } else {
+      this.setShowSlider();
+    }
+
+    const maxCountOfRowsRendered = this.countOfRenderPositions + 1;
+    const startRendering = (this.visibleSlider) ? Math.floor(this.slider.min) : 0;
     const checkEndRendering = (jPos: number) => {
-      return jPos < this.Length && jPos < maxCountOfRowsRendered + startRendering;
+      return jPos < this.Length && jPos < maxCountOfRowsRendered + this.startRendering;
     };
 
     //#region Plot positionNames
@@ -641,7 +730,7 @@ export class WebLogo extends DG.JsViewer {
     const posNameMaxWidth = Math.max(...this.positions.map((pos) => g.measureText(pos.name).width));
     const hScale = posNameMaxWidth < (this._positionWidth - 2) ? 1 : (this._positionWidth - 2) / posNameMaxWidth;
 
-    for (let jPos = startRendering; checkEndRendering(jPos); jPos++) {
+    for (let jPos = this.startRendering; checkEndRendering(jPos); jPos++) {
       const pos: PositionInfo = this.positions[jPos];
       g.resetTransform();
       g.setTransform(
@@ -654,12 +743,12 @@ export class WebLogo extends DG.JsViewer {
     // Hacks to scale uppercase characters to target rectangle
     const uppercaseLetterAscent = 0.25;
     const uppercaseLetterHeight = 12.2;
-    for (let jPos = startRendering; checkEndRendering(jPos); jPos++) {
+    for (let jPos = this.startRendering; checkEndRendering(jPos); jPos++) {
       for (const [monomer, pmInfo] of Object.entries(this.positions[jPos].freq)) {
         if (monomer !== '-') {
           const monomerTxt = WebLogo.monomerToShort(monomer, 5);
           const b = pmInfo.bounds;
-          const left = b.left - this.positionWidthWithMargin * startRendering;
+          const left = b.left - this.positionWidthWithMargin * this.startRendering;
 
           g.resetTransform();
           g.strokeStyle = 'lightgray';
@@ -687,17 +776,18 @@ export class WebLogo extends DG.JsViewer {
 
     const r: number = window.devicePixelRatio;
 
-    let width: number = this.Length * this.positionWidthWithMargin / r;
+    let width: number = this.Length * this.positionWidth / r;
     let height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
 
     if (this.fitArea) {
-      const xScale: number = this.root.clientHeight / height;
-      const yScale: number = this.root.clientWidth / width;
+      const yScale: number = this.root.clientHeight / height;
+      const xScale: number = (this.root.clientWidth - this.Length * this.positionMarginValue) / width;
       const scale = Math.max(1, Math.min(xScale, yScale));
       width = width * scale;
       height = height * scale;
       this._positionWidth = this.positionWidth * scale;
     }
+    width = this.Length * this.positionWidthWithMargin / r;
 
     this.canvas.width = this.root.clientWidth * r;
     this.canvas.style.width = `${this.root.clientWidth}px`;
@@ -732,9 +822,24 @@ export class WebLogo extends DG.JsViewer {
         hostTopMargin = Math.max(0, this.root.clientHeight - height);
         break;
       }
+      // horizontal alignment
+      let hostLeftMargin = 0;
+      switch (this.horizontalAlignment) {
+      case 'left':
+        hostLeftMargin = 0;
+        break;
+      case 'center':
+        hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2) * r;
+        break;
+      case 'right':
+        hostLeftMargin = Math.max(0, this.root.clientWidth - width) * r;
+        break;
+      }
       this.host.style.setProperty('margin-top', `${hostTopMargin}px`, 'important');
-      if (this.slider != null)
+      this.host.style.setProperty('margin-left', `${hostLeftMargin}px`, 'important');
+      if (this.slider != null) {
         this.slider.root.style.setProperty('margin-top', `${hostTopMargin + canvasHeight}px`, 'important');
+      }
 
       if (this.root.clientHeight < height) {
         this.host.style.setProperty('height', `${this.root.clientHeight}px`);
