@@ -9,11 +9,7 @@ import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-render
 
 export const _package = new DG.Package();
 
-const lru = new DG.LruCache<any, any>();
-const molfiles = new DG.LruCache<any, any>();
-const fileList = new DG.LruCache<any, any>();
 const STORAGE_NAME = 'Libraries';
-let i = 0;
 const LIB_PATH = 'libraries/';
 
 
@@ -28,10 +24,10 @@ export async function initHelm(): Promise<void> {
 
 async function loadLibraries() {
   const grid = grok.shell.tv.grid;
-  for (let j = 0; j <= i; j++) {
-    await monomerManager(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, j.toString(), true));
+  let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
+  for (let i = 0; i < uploadedLibraries.length; ++i) {
+    await monomerManager(await grok.dapi.userDataStorage.getValue(STORAGE_NAME,uploadedLibraries[i], true));
   }
-  grid.invalidate();
 }
 
 //name: helmCellRenderer
@@ -44,7 +40,7 @@ export function helmCellRenderer(): HelmCellRenderer {
 }
 
 
-export function webEditor(cell?: DG.GridCell, value?: string) {
+function webEditor(cell?: DG.GridCell, value?: string) {
   let view = ui.div();
   org.helm.webeditor.MolViewer.molscale = 0.8;
   let app = new scil.helm.App(view, {
@@ -112,78 +108,55 @@ export function openEditor(mol: string): void {
 //input: string helmString {semType: Macromolecule}
 //output: widget result
 export async function propertiesPanel(helmString: string) {
-  //const lru = await getLru();
-  const result = lru.get(helmString).split(',');
+  let grid = grok.shell.tv.grid;
+  let parent = grid.root.parentElement;
+  const host = ui.div([]);
+  parent.appendChild(host);
+  let editor = new JSDraw2.Editor(host, {viewonly: true});
+  host.style.width = '0px';
+  host.style.height = '0px';
+  editor.setHelm(helmString);
+  let formula = editor.getFormula(true);
+  let molWeight = Math.round(editor.getMolWeight() * 100) / 100;
+  let coef = Math.round(editor.getExtinctionCoefficient(true) * 100) / 100;
+  parent.lastChild.remove();
   return new DG.Widget(
     ui.tableFromMap({
-      'formula': result[0].replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
-      'molecular weight': result[1],
-      'extinction coefficient': result[2],
-      /*'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
-      'rna analogue sequence': ui.wait(async () => ui.divText(await helmToRNA(helmString))),
-      'smiles': ui.wait(async () => ui.divText(await helmToSmiles(helmString))),
-      //'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),*/
+      'formula': formula.replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
+      'molecular weight': molWeight,
+      'extinction coefficient': coef,
     })
   );
 }
 
-//name: Molfile
-//tags: panel, widgets
-//input: string helmString {semType: Macromolecule}
-//output: widget result
-export async function molfilePanel(helmString: string) {
-  return ui.textInput('', getMolfile(helmString));
-}
-
-
-//name: loadDialog
-export async function loadDialog() {
-  let res = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
-  let FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
-  let grid = grok.shell.tv.grid;
-  ui.dialog('Load library from file')
-    .add(FilesList)
-    .onOK(async () => {
-      await monomerManager(FilesList.value);
-      await grok.dapi.userDataStorage.postValue(STORAGE_NAME, i.toString(), FilesList.value, true);
-      fileList.set(FilesList.value, i.toString);
-      i += 1;
-      grid.invalidate();
-    }).show();
-};
 
 //name: Manage Libraries
 //tags: panel, widgets
 //input: column helmColumn {semType: Macromolecule}
 //output: widget result
-export async function libraryPanel(helmColumn: DG.Column) {
+export async function libraryPanel(helmColumn: DG.Column): Promise<DG.Widget> {
   //@ts-ignore
-  let loadButton = ui.button('Load Library');
-  loadButton.addEventListener('click', loadDialog);
-  //@ts-ignore
-  let deleteButton = ui.button('Delete Library');
-  deleteButton.addEventListener('click', deleteFiles);
-  //@ts-ignore
-  let filesButton = ui.button('Manage');
-  filesButton.addEventListener('click', manageFiles);
-  let list = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
-  let usedLibraries = [];
-  for (let j = 0; j <= i; j++) {
-    usedLibraries.push(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, j.toString(), true));
+  let filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
+  let divInputs: HTMLDivElement = ui.div();
+  let librariesList: string[] = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
+  let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
+  for (let i = 0; i < uploadedLibraries.length; ++i) {
+    let libraryName: string = uploadedLibraries[i]; 
+    divInputs.append(ui.boolInput(libraryName, true, v => {
+      grok.dapi.userDataStorage.remove(STORAGE_NAME, libraryName, true);
+    }).root);
   }
-  let unusedLibraries = list.filter(x => !usedLibraries.includes(x));
+  let unusedLibraries: string[] = librariesList.filter(x => !uploadedLibraries.includes(x));
+  for (let i = 0; i < unusedLibraries.length; ++i) {
+    let libraryName: string = unusedLibraries[i];
+    divInputs.append(ui.boolInput(libraryName, false, v => {
+      monomerManager(libraryName);
+      grok.dapi.userDataStorage.postValue(STORAGE_NAME, libraryName, libraryName, true);
+    }).root);
+  }
   return new DG.Widget(ui.splitV([
-    ui.splitH([
-      ui.tableFromMap({
-        'Uploaded libraries': ui.divText(usedLibraries.toString()),
-        'Not used libraries': ui.divText(unusedLibraries.toString()),
-      })
-    ]),
-    ui.splitH([
-      ui.divH([loadButton]),
-      ui.divH([deleteButton]),
-      ui.divH([filesButton]),
-    ])
+    divInputs,
+    ui.divV([filesButton])
   ]));
 }
 
@@ -195,21 +168,6 @@ export async function manageFiles() {
     .addButton('OK', () => a.close())
     .show();
 }
-
-//name: deleteFiles
-export async function deleteFiles() {
-  let res = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
-  let FilesList = await ui.choiceInput('Uploaded Libraries', ' ', res);
-  let grid = grok.shell.tv.grid;
-  ui.dialog('Delete monomer library')
-    .add(FilesList)
-    .onOK(async () => {
-      let key = fileList.get(FilesList.value);
-      await grok.dapi.userDataStorage.remove(STORAGE_NAME, key, true);
-      grid.invalidate();
-    }).show();
-}
-
 
 
 async function accessServer(url: string, key: string) {
@@ -322,18 +280,14 @@ export async function monomerManager(value: string) {
     }
     org.helm.webeditor.Monomers.addOneMonomer(m);
   });
+  let grid = grok.shell.tv.grid;
+  grid.invalidate();
 }
 
 //name: helmColumnToSmiles
 //input: column helmColumn {semType: Macromolecule}
 export function helmColumnToSmiles(helmColumn: DG.Column) {
   //todo: add column with smiles to col.dataFrame.
-}
-
-//name: getMolfile
-//input: string helmString {semType: Macromolecule}
-export function getMolfile(helmString): string {
-  return molfiles.get(helmString);
 }
 
 
@@ -506,6 +460,7 @@ export function getMolfiles(col: DG.Column) : DG.Column {
     let mol = editor.getMolfile();
     return mol;
   });
+  parent.lastChild.remove();
   return res;
 }
 
@@ -534,13 +489,6 @@ class HelmCellRenderer extends DG.GridCellRenderer {
       gridCell.element = host;
       //@ts-ignore
       const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
-      const formula = canvas.getFormula(true);
-      const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
-      const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
-      const molfile = canvas.getMolfile();
-      const result = formula + ', ' + molWeight + ', ' + coef;
-      lru.set(gridCell.cell.value, result);
-      molfiles.set(gridCell.cell.value, molfile);
       return;
     }
     if (monomers.size > 0) {
