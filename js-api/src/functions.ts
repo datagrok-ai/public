@@ -224,7 +224,7 @@ export class FuncCall extends Entity {
 
   /** Function this call is associated with. */
   get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.dart)); }
-  set func(func: Func) { api.grok_FuncCall_Get_Func(this.dart, func.dart) }
+  set func(func: Func) { api.grok_FuncCall_Set_Func(this.dart, func.dart) }
 
   get parentCall(): FuncCall { return toJs(api.grok_FuncCall_Get_ParentCall(this.dart)); }
   set parentCall(c: FuncCall) {api.grok_FuncCall_Set_ParentCall(this.dart, c.dart)}
