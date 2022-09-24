@@ -1,9 +1,10 @@
-import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {_package, packageName} from '../package';
-import {IAntigen, ICdr, IScheme, IVid, IVidObsPtm, MlbDatabase} from './mlb-database';
+import {MlbDatabase} from './mlb-database';
 
 export type DataQueryDict = { [name: string]: DG.DataQuery };
 
@@ -254,110 +255,65 @@ export class QueriesForDataLoader {
   // -- Lists --
 
   async listSchemes(): Promise<string[]> {
-    //load numbering schemes
-    return this._cache.getData<IScheme, string[]>('scheme',
+    // load numbering schemes
+    const df: DG.DataFrame = await this._cache.getDataFrame('scheme',
       () => catchToLog<Promise<DG.DataFrame>>(
         'MLB: QueriesForDataLoader.listSchemes()',
         async () => {
           const funcCall: DG.FuncCall = await this._mlbQueries['listSchemes'].prepare().call();
           const df: DG.DataFrame = funcCall.getOutputParamValue();
           return df;
-          // return grok.functions.call(`${this._pName}:listSchemes`)
-        }),
-      (dbRow: DG.Row) => ({scheme_id: dbRow.get('scheme_id'), scheme: dbRow.get('scheme')}),
-      (objList: IScheme[]) => objList.map((obj: IScheme) => obj.scheme),
-      (df: DG.DataFrame) => { return df.getCol('scheme').toList(); }
-    );
-
-    // .then((value: string[]) => {
-    //   console.debug('MLB: DataLoaderDb.init2() set schemes, ' + `${this.fromStartInit()} s`);
-    //   return
-    // })
+        }));
+    return df.getCol('scheme').toList();
   }
 
   async listCdrs(): Promise<string[]> {
     //load cdr definition list
-    return this._cache.getData<ICdr, string[]>('cdr',
+    const df: DG.DataFrame = await this._cache.getDataFrame('cdr',
       () => catchToLog<Promise<DG.DataFrame>>(
         'MLB: QueriesForDataLoader.listCdrs()',
         async () => {
           const funcCall: DG.FuncCall = await this._mlbQueries['listCdrs'].prepare().call();
           const df: DG.DataFrame = funcCall.getOutputParamValue();
           return df;
-          // return grok.functions.call(`${this._pName}:listCdrs`)
-        }),
-      (dbRow: DG.Row) => ({cdr_id: dbRow.get('cdr_id'), cdr: dbRow.get('cdr')}),
-      (objList: ICdr[]) => objList.map((obj: ICdr) => obj.cdr),
-      (df: DG.DataFrame) => { return df.getCol('cdr').toList(); }
-    );
-    // .then((value: string[]) => {
-    //   console.debug('MLB: DataLoaderDb.init2() set cdrs, ' + `${this.fromStartInit()} s`);
-    //   this._cdrs = value;
-    // })
+        }));
+    return df.getCol('cdr').toList();
   };
 
   async listAntigens(): Promise<DG.DataFrame> {
-    return this._cache.getData<IAntigen, DG.DataFrame>('antigen',
+    const df: DG.DataFrame = await this._cache.getDataFrame('antigen',
       () => catchToLog<Promise<DG.DataFrame>>(
         'MLB: QueriesForDataLoader.listAntigens()',
         async () => {
           const funcCall: DG.FuncCall = await this._mlbQueries['listAntigens'].prepare().call();
           const df: DG.DataFrame = funcCall.getOutputParamValue();
           return df;
-          // return grok.functions.call(`${this._pName}:listAntigens`)
-        }),
-      (dbRow: DG.Row) => Object.assign({},
-        ...(['id', 'antigen', 'antigen_ncbi_id', 'antigen_gene_symbol']
-          .map((fn: string) => ({[fn]: dbRow.get(fn)})))),
-      (objList: IAntigen[]) => DG.DataFrame.fromObjects(objList),
-      (df: DG.DataFrame) => { return df; }
-    );
-    // .then((value: DG.DataFrame) => {
-    //   console.debug('MLB: DataLoaderDb.init2() set antigens, ' + `${this.fromStartInit()} s`);
-    //   this._antigens = value;
-    // })
+        }));
+    return df;
   }
 
   async getVids(): Promise<string[]> {
-    return this._cache.getData<IVid, string[]>('vid',
+    const df: DG.DataFrame = await this._cache.getDataFrame('vid',
       () => catchToLog<Promise<DG.DataFrame>>(
         'MLB: QueriesForDataLoader.getVids()',
         async () => {
           const funcCall: DG.FuncCall = await this._mlbQueries['getVids'].prepare().call();
           const df: DG.DataFrame = funcCall.getOutputParamValue();
           return df;
-          // return grok.functions.call(`${this._pName}:getVids`);
-        }),
-      (dbRow: DG.Row) => Object.assign({},
-        ...(['v_id'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
-      (objList: IVid[]) => objList.map((obj: IVid) => obj.v_id),
-      (df: DG.DataFrame) => { return df.getCol('v_id').toList(); }
-    );
-    // .then((value: string[]) => {
-    //   console.debug(`MLB: DataLoaderDb.init2() set vids, ${this.fromStartInit()} s`);
-    //   this._vids = value;
-    // })
+        }));
+    return df.getCol('v_id').toList();
   }
 
   async getObservedPtmVids(): Promise<string[]> {
-    return this._cache.getData<IVidObsPtm, string[]>('vidObsPtm',
+    const df: DG.DataFrame = await this._cache.getDataFrame('vidObsPtm',
       () => catchToLog<Promise<DG.DataFrame>>(
         'MLB: QueriesForDataLoader.getObservedPtmVids()',
         async () => {
           const funcCall: DG.FuncCall = await this._mlbQueries['getObservedPtmVids'].prepare().call();
           const df: DG.DataFrame = funcCall.getOutputParamValue();
           return df;
-          // return grok.functions.call(`${this._pName}:getObservedPtmVids`);
-        }),
-      (dbRow: DG.Row) => Object.assign({},
-        ...(['v_id'].map((fn: string) => ({[fn]: dbRow.get(fn)})))),
-      (objList: IVidObsPtm[]) => objList.map((obj: IVidObsPtm) => obj.v_id),
-      (df: DG.DataFrame) => { return df.getCol('v_id').toList(); }
-    );
-    // .then((value: string[]) => {
-    //   console.debug(`MLB: DataLoaderDb.init2() set obsPtmVids, ${this.fromStartInit()} s`);
-    //   this._vidsObsPtm = value;
-    // })
+        }));
+    return df.getCol('v_id').toList();
   }
 
   // -- --
@@ -503,9 +459,6 @@ export abstract class DataLoader {
       throw new Error(`Files errors:\n ${fileErrors.join('\n')}`);
   }
 
-  // async getLayoutBySchemeCdr(mlbQueries: DataQueryDict, scheme: string, cdr: string): Promise<VdRegion[]> {
-  //
-  // }
   abstract getLayoutBySchemeCdr(scheme: string, cdr: string): Promise<VdRegion[]>;
 
   abstract getMlbByAntigen(antigen: string): Promise<DG.DataFrame>;
