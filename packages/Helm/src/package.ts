@@ -23,7 +23,6 @@ export async function initHelm(): Promise<void> {
 }
 
 async function loadLibraries() {
-  const grid = grok.shell.tv.grid;
   let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
   for (let i = 0; i < uploadedLibraries.length; ++i) {
     await monomerManager(await grok.dapi.userDataStorage.getValue(STORAGE_NAME,uploadedLibraries[i], true));
@@ -280,7 +279,7 @@ export async function monomerManager(value: string) {
     }
     org.helm.webeditor.Monomers.addOneMonomer(m);
   });
-  let grid = grok.shell.tv.grid;
+  let grid: DG.Grid = grok.shell.tv.grid;
   grid.invalidate();
 }
 
