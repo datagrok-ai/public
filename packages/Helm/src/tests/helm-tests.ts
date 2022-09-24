@@ -50,11 +50,10 @@ category('Helm', () => {
     return await manageFiles();
   });
 
-  test('loadDialog', async() => {
-    return await grok.functions.call('Helm:loadDialog');
-  });
-
+  
   test('monomerManager', async() => {
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/test.csv'));
+    grok.shell.addTableView(df);
     await grok.functions.call('Helm:monomerManager', {value: 'HELMCoreLibrary.json'});
     const checkName = '2-Chloroadenine';
     let flag = false;
@@ -90,6 +89,6 @@ category('Helm', () => {
       let monomerArray = Array.from(monomerSet);
       expect(JSON.stringify(monomerArray), JSON.stringify(expectedResults[idx]));
     }
-  })
-  
+  });
+
 });
