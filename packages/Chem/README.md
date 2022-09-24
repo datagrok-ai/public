@@ -81,13 +81,13 @@ will do. For instance, InChi query is implemented as a Python script.
 
 ## Elemental analysis
 
-Chem supports elemental analysis the main purpose of which is to show atom counts.
+Elemental Analysis lets you extract, visualize, and compare atom counts for the molecules in your dataset.
 
 With this tool you can:
 * get columns with atom counts (same order as in the periodic table);
 * get a radar chart for every single molecule which makes it possible to compare each molecule with the whole dataset.
 
-In order to use the new feature, select Chem | Elemental analysis from the main menu.
+To run Elemental Analysis, select Chem | Elemental Analysis from the main menu.
 
 Radar chart can be visualized in 2 ways:
 1. A new column with radar charts is added.
