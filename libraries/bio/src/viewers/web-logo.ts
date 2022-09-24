@@ -942,7 +942,7 @@ export class WebLogo extends DG.JsViewer {
       }).toArray();
   }
 
-  private static helmRe = /(PEPTIDE1|DNA1|RNA1)([^}]+)}/g;
+  private static helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
   private static helmPp1Re = /\[([^\[\]]+)]/g;
 
   /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
