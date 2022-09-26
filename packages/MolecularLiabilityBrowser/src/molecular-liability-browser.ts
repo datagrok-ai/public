@@ -169,8 +169,8 @@ export class MolecularLiabilityBrowser {
   }
 
   setAntigenInput(agDf: DG.DataFrame): DG.InputBase {
-    this.antigenInput = ui.stringInput('AG', this.antigenName, null,
-      {clearIcon: true, escClears: true, placeholder: 'filter'});
+    this.antigenInput = ui.stringInput('AG', '', null,
+      {clearIcon: true, escClears: true, placeholder: this.antigenName ?? 'antigen filter'});
     this.antigenClonesFilterInput = ui.boolInput('clones', false);
     ui.tooltip.bind(this.antigenClonesFilterInput.root, 'Filter antigens with clones');
 
@@ -809,7 +809,8 @@ export class MolecularLiabilityBrowser {
     this.antigenName = antigenName;
 
     // Preventing firing the event
-    this.antigenInput.input.setAttribute('placeholder', this.antigenName);
+    this.antigenInput.input.setAttribute('placeholder', this.antigenName ?? 'antigen filter');
+    this.antigenInput.value = '';
 
     this.urlParams.set('antigen', this.antigenName);
     // window.setTimeout is used to adapt call async loadData() from handler (not async)
