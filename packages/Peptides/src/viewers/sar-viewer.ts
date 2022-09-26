@@ -17,7 +17,6 @@ export class SARViewerBase extends DG.JsViewer {
   bidirectionalAnalysis: boolean;
   maxSubstitutions: number;
   minActivityDelta: number;
-  invarianMap: boolean;
   _titleHost = ui.divText('SAR Viewer', {id: 'pep-viewer-title'});
   initialized = false;
   isPropertyChanging: boolean = false;
@@ -30,9 +29,9 @@ export class SARViewerBase extends DG.JsViewer {
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
     this.maxSubstitutions = this.int('maxSubstitutions', 1);
     this.minActivityDelta = this.float('minActivityDelta', 0);
-
-    this.invarianMap = this.bool('invariantMap', false);
   }
+
+  get name(): string {return '';}
 
   async onTableAttached(): Promise<void> {
     super.onTableAttached();
@@ -58,9 +57,19 @@ export class SARViewerBase extends DG.JsViewer {
       return;
     if (!refreshOnly) {
       $(this.root).empty();
+      const switchHost = ui.div();
+      if (this.name == 'MC') {
+        const modeSwitch = ui.switchInput('Invariant Map', this.model.isInvariantMap, () => {
+          this.model.isInvariantMap = modeSwitch.value;
+          this._titleHost.innerText = modeSwitch.value ? 'Invariant Map' : 'Mutation Cliffs';
+          this.viewerGrid.invalidate();
+        });
+        modeSwitch.root.style.position = 'absolute';
+        switchHost.appendChild(modeSwitch.root);
+      }
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
-      this.root.appendChild(ui.divV([this._titleHost, viewerRoot]));
+      this.root.appendChild(ui.divV([ui.divH([switchHost, this._titleHost]), viewerRoot]));
     }
     this.viewerGrid?.invalidate();
   }
@@ -94,7 +103,7 @@ export class SARViewerBase extends DG.JsViewer {
  */
 export class MutationCliffsViewer extends SARViewerBase {
   _titleHost = ui.divText('Mutation Cliffs', {id: 'pep-viewer-title'});
-  _name = 'Structure-Activity Relationship';
+  _name = 'MC';
   _isVertical = false;
 
   constructor() {super();}
@@ -135,7 +144,7 @@ export class MutationCliffsViewer extends SARViewerBase {
 
 /** Vertical structure activity relationship viewer. */
 export class MostPotentResiduesViewer extends SARViewerBase {
-  _name = 'Sequence-Activity relationship';
+  _name = 'MPR';
   _titleHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
   _isVertical = true;
 
