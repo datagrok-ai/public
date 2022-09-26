@@ -70,7 +70,7 @@ export function measureAAR(s: string): number {
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
   currentPosition: string, statsDf: DG.DataFrame, twoColorMode: boolean, mdCol: DG.Column<number>, bound: DG.Rect,
   cellValue: number, mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.SubstitutionsInfo,
-  ): void {
+): void {
   const queryAAR = `${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`;
   const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
   const pVal: number = statsDf

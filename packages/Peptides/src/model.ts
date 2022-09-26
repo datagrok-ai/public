@@ -27,7 +27,6 @@ export class PeptidesModel {
 
   mutationCliffsGrid!: DG.Grid;
   mostPotentResiduesGrid!: DG.Grid;
-  // invariantMapGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
   df: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
@@ -185,7 +184,6 @@ export class PeptidesModel {
 
     //Split the aligned sequence into separate AARs
     const col: DG.Column<string> = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
-    // const alphabet = col.tags[DG.TAGS.UNITS].split(':')[2];
     const alphabet = col.tags['alphabet'];
     const splitSeqDf = splitAlignedSequences(col);
 
@@ -233,14 +231,9 @@ export class PeptidesModel {
 
     this.calcSubstitutions();
 
-    // const invariantDf = this.statsDf.groupBy([C.COLUMNS_NAMES.MONOMER])
-    //   .pivot(C.COLUMNS_NAMES.POSITION)
-    //   .add('first', C.COLUMNS_NAMES.COUNT, '')
-    //   .aggregate();
-
     [this.mutationCliffsGrid, this.mostPotentResiduesGrid] =
       this.createGrids(matrixDf, sequenceDf, positionColumns, alphabet);
-    
+
     // init invariant map & mutation cliffs selections
     this.initSelections(positionColumns);
 
@@ -491,11 +484,6 @@ export class PeptidesModel {
     mutationCliffsGrid.sort([C.COLUMNS_NAMES.MONOMER]);
     mutationCliffsGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER].concat(positionColumns as C.COLUMNS_NAMES[]));
 
-    // Creating Invariant Map grid and sorting columns
-    // const invariantMapGrid = invariantMapDf.plot.grid();
-    // invariantMapGrid.sort([C.COLUMNS_NAMES.MONOMER]);
-    // invariantMapGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER].concat(positionColumns as C.COLUMNS_NAMES[]));
-
     // Creating Monomer-Position grid, sorting and setting column format
     const mostPotentResiduesGrid = mostPotentResiduesDf.plot.grid();
     mostPotentResiduesGrid.sort([C.COLUMNS_NAMES.POSITION]);
@@ -506,7 +494,6 @@ export class PeptidesModel {
     // Setting Monomer column renderer
     setAARRenderer(mutationCliffsDf.getCol(C.COLUMNS_NAMES.MONOMER), alphabet, mutationCliffsGrid);
     setAARRenderer(mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER), alphabet, mostPotentResiduesGrid);
-    // setAARRenderer(invariantMapDf.getCol(C.COLUMNS_NAMES.MONOMER), alphabet, invariantMapGrid);
 
     return [mutationCliffsGrid, mostPotentResiduesGrid];
   }
@@ -594,9 +581,10 @@ export class PeptidesModel {
               .where(`${C.COLUMNS_NAMES.POSITION} = ${currentPosition} and ${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`)
               .aggregate().get(C.COLUMNS_NAMES.COUNT, 0);
             renderInvaraintMapCell(canvasContext, currentAAR, currentPosition, this.invariantMapSelection, value, bound);
-          } else
+          } else {
             renderMutationCliffCell(canvasContext, currentAAR, currentPosition, this.statsDf,
               viewer.bidirectionalAnalysis, mdCol, bound, cellValue, this.mutationCliffsSelection, this.substitutionsInfo);
+          }
         }
         args.preventDefault();
       }
@@ -604,7 +592,6 @@ export class PeptidesModel {
     };
     this.mutationCliffsGrid.onCellRender.subscribe(renderCell);
     this.mostPotentResiduesGrid.onCellRender.subscribe(renderCell);
-    // this.invariantMapGrid.onCellRender.subscribe((args) => renderCell(args, true));
 
     this.sourceGrid.setOptions({'colHeaderHeight': 130});
     this.sourceGrid.onCellRender.subscribe((gcArgs) => {
@@ -728,16 +715,6 @@ export class PeptidesModel {
       chooseAction(aar, position, ev.shiftKey);
     });
 
-    // this.invariantMapGrid.root.addEventListener('click', (ev) => {
-    //   const gridCell = this.mutationCliffsGrid.hitTest(ev.offsetX, ev.offsetY);
-    //   if (isGridCellInvalid(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.MONOMER)
-    //     return;
-
-    //   const position = gridCell!.tableColumn!.name;
-    //   const aar = mutationCliffsDf.get(C.COLUMNS_NAMES.MONOMER, gridCell!.tableRowIndex!);
-    //   chooseAction(aar, position, ev.shiftKey, false);
-    // });
-
     const cellChanged = (table: DG.DataFrame): void => {
       if (this.isCellChanging)
         return;
@@ -747,7 +724,6 @@ export class PeptidesModel {
     };
     this.mutationCliffsGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(mutationCliffsDf));
     this.mostPotentResiduesGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(mostPotentResiduesDf));
-    // this.invariantMapGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(invariantMapDf));
   }
 
   modifyCurrentSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
@@ -779,7 +755,6 @@ export class PeptidesModel {
   }
 
   invalidateGrids(): void {
-    // this.stackedBarchart?.computeData();
     this.mutationCliffsGrid.invalidate();
     this.mostPotentResiduesGrid.invalidate();
     this.sourceGrid?.invalidate();
@@ -833,7 +808,7 @@ export class PeptidesModel {
     filter.onChanged.subscribe(() => {
       const positionList = Object.keys(this.invariantMapSelection);
       filter.init((i) => {
-        let result = true
+        let result = true;
         for (const position of positionList) {
           const aarList = this._invariantMapSelection[position];
           result &&= aarList.length == 0 || aarList.includes(this.df.get(position, i));
