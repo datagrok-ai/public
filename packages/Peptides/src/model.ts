@@ -27,7 +27,7 @@ export class PeptidesModel {
 
   mutationCliffsGrid!: DG.Grid;
   mostPotentResiduesGrid!: DG.Grid;
-  invariantMapGrid!: DG.Grid;
+  // invariantMapGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
   df: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
@@ -77,7 +77,8 @@ export class PeptidesModel {
   set mutationCliffsSelection(selection: type.PositionToAARList) {
     this._mutationCliffsSelection = selection;
     this.df.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
-    this.invalidateBitset();
+    this.fireBitsetChanged();
+    this.invalidateGrids();
     this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
   }
 
@@ -88,7 +89,8 @@ export class PeptidesModel {
   set invariantMapSelection(selection: type.PositionToAARList) {
     this._invariantMapSelection = selection;
     this.df.tags[C.TAGS.FILTER] = JSON.stringify(selection);
-    this.invalidateBitset();
+    this.df.filter.fireChanged();
+    this.invalidateGrids();
   }
 
   get usedProperties(): {[propName: string]: string | number | boolean} {
@@ -118,9 +120,11 @@ export class PeptidesModel {
     this.df.tags['distributionSplit'] = `${splitByAARFlag}${flag ? 1 : 0}`;
   }
 
-  invalidateBitset(): void {
-    this.fireBitsetChanged();
-    this.invalidateGrids();
+  get isInvariantMap(): boolean {
+    return this.df.getTag('isInvariantMap') === '1';
+  }
+  set isInvariantMap(x: boolean) {
+    this.df.setTag('isInvariantMap', x ? '1' : '0');
   }
 
   createAccordion(): DG.Accordion {
@@ -169,7 +173,8 @@ export class PeptidesModel {
       this.mutationCliffsGridSubject.next(this.mutationCliffsGrid);
       this.mostPotentResiduesGridSubject.next(this.mostPotentResiduesGrid);
 
-      this.invalidateBitset();
+      this.fireBitsetChanged();
+      this.invalidateGrids();
       this._isUpdating = false;
     }
   }
@@ -187,9 +192,6 @@ export class PeptidesModel {
     this.barData = calculateBarsData(splitSeqDf.columns.toList(), this.df.selection);
 
     const positionColumns = splitSeqDf.columns.names();
-
-    // init invariant map & mutation cliffs selections
-    this.initSelections(positionColumns);
 
     const activityCol = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY)!;
     splitSeqDf.columns.add(activityCol);
@@ -231,13 +233,16 @@ export class PeptidesModel {
 
     this.calcSubstitutions();
 
-    const invariantDf = this.statsDf.groupBy([C.COLUMNS_NAMES.MONOMER])
-      .pivot(C.COLUMNS_NAMES.POSITION)
-      .add('first', C.COLUMNS_NAMES.COUNT, '')
-      .aggregate();
+    // const invariantDf = this.statsDf.groupBy([C.COLUMNS_NAMES.MONOMER])
+    //   .pivot(C.COLUMNS_NAMES.POSITION)
+    //   .add('first', C.COLUMNS_NAMES.COUNT, '')
+    //   .aggregate();
 
-    [this.mutationCliffsGrid, this.mostPotentResiduesGrid, this.invariantMapGrid] =
-      this.createGrids(matrixDf, sequenceDf, invariantDf, positionColumns, alphabet);
+    [this.mutationCliffsGrid, this.mostPotentResiduesGrid] =
+      this.createGrids(matrixDf, sequenceDf, positionColumns, alphabet);
+    
+    // init invariant map & mutation cliffs selections
+    this.initSelections(positionColumns);
 
     positionColumns.push(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
 
@@ -479,17 +484,17 @@ export class PeptidesModel {
     return sequenceDf;
   }
 
-  createGrids(mutationCliffsDf: DG.DataFrame, mostPotentResiduesDf: DG.DataFrame, invariantMapDf: DG.DataFrame,
-    positionColumns: string[], alphabet: string): [DG.Grid, DG.Grid, DG.Grid] {
+  createGrids(mutationCliffsDf: DG.DataFrame, mostPotentResiduesDf: DG.DataFrame, positionColumns: string[],
+    alphabet: string): [DG.Grid, DG.Grid] {
     // Creating Mutation Cliffs grid and sorting columns
     const mutationCliffsGrid = mutationCliffsDf.plot.grid();
     mutationCliffsGrid.sort([C.COLUMNS_NAMES.MONOMER]);
     mutationCliffsGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER].concat(positionColumns as C.COLUMNS_NAMES[]));
 
     // Creating Invariant Map grid and sorting columns
-    const invariantMapGrid = invariantMapDf.plot.grid();
-    invariantMapGrid.sort([C.COLUMNS_NAMES.MONOMER]);
-    invariantMapGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER].concat(positionColumns as C.COLUMNS_NAMES[]));
+    // const invariantMapGrid = invariantMapDf.plot.grid();
+    // invariantMapGrid.sort([C.COLUMNS_NAMES.MONOMER]);
+    // invariantMapGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER].concat(positionColumns as C.COLUMNS_NAMES[]));
 
     // Creating Monomer-Position grid, sorting and setting column format
     const mostPotentResiduesGrid = mostPotentResiduesDf.plot.grid();
@@ -501,9 +506,9 @@ export class PeptidesModel {
     // Setting Monomer column renderer
     setAARRenderer(mutationCliffsDf.getCol(C.COLUMNS_NAMES.MONOMER), alphabet, mutationCliffsGrid);
     setAARRenderer(mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER), alphabet, mostPotentResiduesGrid);
-    setAARRenderer(invariantMapDf.getCol(C.COLUMNS_NAMES.MONOMER), alphabet, invariantMapGrid);
+    // setAARRenderer(invariantMapDf.getCol(C.COLUMNS_NAMES.MONOMER), alphabet, invariantMapGrid);
 
-    return [mutationCliffsGrid, mostPotentResiduesGrid, invariantMapGrid];
+    return [mutationCliffsGrid, mostPotentResiduesGrid];
   }
 
   setBarChartInteraction(): void {
@@ -554,7 +559,7 @@ export class PeptidesModel {
   setCellRenderers(renderColNames: string[]): void {
     const mdCol = this.statsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     //decompose into two different renering funcs
-    const renderCell = (args: DG.GridCellRenderArgs, isInvariantMap: boolean = false): void => {
+    const renderCell = (args: DG.GridCellRenderArgs): void => {
       const canvasContext = args.g;
       const bound = args.bounds;
 
@@ -583,9 +588,13 @@ export class PeptidesModel {
           const currentAAR: string = gridTable.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
 
           const viewer = this.getViewer();
-          if (isInvariantMap)
-            renderInvaraintMapCell(canvasContext, currentAAR, currentPosition, this.invariantMapSelection, cellValue, bound);
-          else
+          if (this.isInvariantMap) {
+            const value: number = this.statsDf
+              .groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER, C.COLUMNS_NAMES.COUNT])
+              .where(`${C.COLUMNS_NAMES.POSITION} = ${currentPosition} and ${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`)
+              .aggregate().get(C.COLUMNS_NAMES.COUNT, 0);
+            renderInvaraintMapCell(canvasContext, currentAAR, currentPosition, this.invariantMapSelection, value, bound);
+          } else
             renderMutationCliffCell(canvasContext, currentAAR, currentPosition, this.statsDf,
               viewer.bidirectionalAnalysis, mdCol, bound, cellValue, this.mutationCliffsSelection, this.substitutionsInfo);
         }
@@ -595,7 +604,7 @@ export class PeptidesModel {
     };
     this.mutationCliffsGrid.onCellRender.subscribe(renderCell);
     this.mostPotentResiduesGrid.onCellRender.subscribe(renderCell);
-    this.invariantMapGrid.onCellRender.subscribe((args) => renderCell(args, true));
+    // this.invariantMapGrid.onCellRender.subscribe((args) => renderCell(args, true));
 
     this.sourceGrid.setOptions({'colHeaderHeight': 130});
     this.sourceGrid.onCellRender.subscribe((gcArgs) => {
@@ -691,12 +700,12 @@ export class PeptidesModel {
   setInteractionCallback(): void {
     const mutationCliffsDf = this.mutationCliffsGrid.dataFrame;
     const mostPotentResiduesDf = this.mostPotentResiduesGrid.dataFrame;
-    const invariantMapDf = this.invariantMapGrid.dataFrame;
+    // const invariantMapDf = this.invariantMapGrid.dataFrame;
 
     const chooseAction =
-      (aar: string, position: string, isShiftPressed: boolean, isMutationCliffsSelection: boolean = true): void =>
-        isShiftPressed ? this.modifyCurrentSelection(aar, position, isMutationCliffsSelection) :
-          this.initCurrentSelection(aar, position, isMutationCliffsSelection);
+      (aar: string, position: string, isShiftPressed: boolean, isInvariantMapSelection: boolean = true): void =>
+        isShiftPressed ? this.modifyCurrentSelection(aar, position, isInvariantMapSelection) :
+          this.initCurrentSelection(aar, position, isInvariantMapSelection);
 
     this.mutationCliffsGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.mutationCliffsGrid.hitTest(ev.offsetX, ev.offsetY);
@@ -705,7 +714,7 @@ export class PeptidesModel {
 
       const position = gridCell!.tableColumn!.name;
       const aar = mutationCliffsDf.get(C.COLUMNS_NAMES.MONOMER, gridCell!.tableRowIndex!);
-      chooseAction(aar, position, ev.shiftKey);
+      chooseAction(aar, position, ev.shiftKey, this.isInvariantMap);
     });
 
     this.mostPotentResiduesGrid.root.addEventListener('click', (ev) => {
@@ -719,15 +728,15 @@ export class PeptidesModel {
       chooseAction(aar, position, ev.shiftKey);
     });
 
-    this.invariantMapGrid.root.addEventListener('click', (ev) => {
-      const gridCell = this.mutationCliffsGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (isGridCellInvalid(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.MONOMER)
-        return;
+    // this.invariantMapGrid.root.addEventListener('click', (ev) => {
+    //   const gridCell = this.mutationCliffsGrid.hitTest(ev.offsetX, ev.offsetY);
+    //   if (isGridCellInvalid(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.MONOMER)
+    //     return;
 
-      const position = gridCell!.tableColumn!.name;
-      const aar = mutationCliffsDf.get(C.COLUMNS_NAMES.MONOMER, gridCell!.tableRowIndex!);
-      chooseAction(aar, position, ev.shiftKey, false);
-    });
+    //   const position = gridCell!.tableColumn!.name;
+    //   const aar = mutationCliffsDf.get(C.COLUMNS_NAMES.MONOMER, gridCell!.tableRowIndex!);
+    //   chooseAction(aar, position, ev.shiftKey, false);
+    // });
 
     const cellChanged = (table: DG.DataFrame): void => {
       if (this.isCellChanging)
@@ -738,11 +747,11 @@ export class PeptidesModel {
     };
     this.mutationCliffsGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(mutationCliffsDf));
     this.mostPotentResiduesGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(mostPotentResiduesDf));
-    this.invariantMapGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(invariantMapDf));
+    // this.invariantMapGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(invariantMapDf));
   }
 
-  modifyCurrentSelection(aar: string, position: string, isMutationCliffsSelection: boolean): void {
-    const tempSelection = isMutationCliffsSelection ? this.mutationCliffsSelection : this.invariantMapSelection;
+  modifyCurrentSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
+    const tempSelection = isInvariantMapSelection ? this.invariantMapSelection : this.mutationCliffsSelection;
     if (!tempSelection.hasOwnProperty(position))
       tempSelection[position] = [aar];
     else {
@@ -753,20 +762,20 @@ export class PeptidesModel {
           tempSelectionAt.splice(aarIndex, 1);
     }
 
-    if (isMutationCliffsSelection)
-      this.mutationCliffsSelection = tempSelection;
-    else
+    if (isInvariantMapSelection)
       this.invariantMapSelection = tempSelection;
+    else
+      this.mutationCliffsSelection = tempSelection;
   }
 
-  initCurrentSelection(aar: string, position: string, isMutationCliffsSelection: boolean): void {
+  initCurrentSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
     const tempSelection: type.PositionToAARList = {};
     tempSelection[position] = [aar];
 
-    if (isMutationCliffsSelection)
-      this.mutationCliffsSelection = tempSelection;
-    else
+    if (isInvariantMapSelection)
       this.invariantMapSelection = tempSelection;
+    else
+      this.mutationCliffsSelection = tempSelection;
   }
 
   invalidateGrids(): void {
@@ -781,8 +790,9 @@ export class PeptidesModel {
     if (this.isBitsetChangedInitialized)
       return;
     const selection = this.df.selection;
+    const filter = this.df.filter;
 
-    const changeBitset = (currentBitset: DG.BitSet): void => {
+    const changeSelectionBitset = (currentBitset: DG.BitSet): void => {
       const edfSelection = this.edf?.selection;
       if (this.isPeptideSpaceChangingBitset) {
         if (edfSelection == null)
@@ -819,19 +829,24 @@ export class PeptidesModel {
       updateEdfSelection();
     };
 
-    selection.onChanged.subscribe(() => changeBitset(selection));
+    selection.onChanged.subscribe(() => changeSelectionBitset(selection));
+    filter.onChanged.subscribe(() => {
+      const positionList = Object.keys(this.invariantMapSelection);
+      filter.init((i) => {
+        let result = true
+        for (const position of positionList) {
+          const aarList = this._invariantMapSelection[position];
+          result &&= aarList.length == 0 || aarList.includes(this.df.get(position, i));
+        }
+        return result;
+      }, false);
+    });
     this.isBitsetChangedInitialized = true;
-  }
-
-  getBitset(): DG.BitSet {
-    const viewer = this.getViewer();
-    const isInvariantMap = viewer.getProperty('invariantMap')?.get(viewer);
-    return isInvariantMap ? this.df.filter : this.df.selection;
   }
 
   fireBitsetChanged(isPeptideSpaceSource: boolean = false): void {
     this.isPeptideSpaceChangingBitset = isPeptideSpaceSource;
-    this.getBitset().fireChanged();
+    this.df.selection.fireChanged();
     this.modifyOrCreateSplitCol();
     grok.shell.o = this.createAccordion().root;
     this.isPeptideSpaceChangingBitset = false;
