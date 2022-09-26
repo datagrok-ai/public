@@ -931,8 +931,6 @@ export class PeptidesModel {
     this.mostPotentResiduesViewer =
       await this.df.plot.fromType('peptide-sar-viewer-vertical', options) as MostPotentResiduesViewer;
 
-    const sarViewersGroup: viewerTypes[] = [this.mutationCliffsViewer, this.mostPotentResiduesViewer];
-
     // TODO: completely remove this viewer?
     // if (this.df.rowCount <= 10000) {
     //   const peptideSpaceViewerOptions = {method: 'UMAP', measure: 'Levenshtein', cyclesCount: 100};
@@ -943,7 +941,11 @@ export class PeptidesModel {
 
     this.updateDefault();
 
-    dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
+    const mcNode =
+      dockManager.dock(this.mutationCliffsViewer, DG.DOCK_TYPE.DOWN, null, this.mutationCliffsViewer.name);
+
+    dockManager.dock(
+      this.mostPotentResiduesViewer, DG.DOCK_TYPE.RIGHT, mcNode, this.mostPotentResiduesViewer.name, 0.3);
 
     this.sourceGrid.props.allowEdit = false;
     adjustCellSize(this.sourceGrid);
@@ -952,24 +954,4 @@ export class PeptidesModel {
   }
 
   invalidateSourceGrid(): void {this.sourceGrid.invalidate();}
-}
-
-type viewerTypes = MutationCliffsViewer | MostPotentResiduesViewer;
-
-function dockViewers(
-  viewerList: viewerTypes[], attachDirection: DG.DockType, dockManager: DG.DockManager,
-  initialAttachDirection?: DG.DockType): DG.DockNode[] | null {
-  const viewerListLength = viewerList.length;
-  if (viewerListLength === 0)
-    return null;
-
-  let currentViewer = viewerList[0];
-  const nodeList = [dockManager.dock(currentViewer, initialAttachDirection, null, currentViewer.name ?? '')];
-  const ratio = 1 / viewerListLength;
-
-  for (let i = 1; i < viewerListLength; i++) {
-    currentViewer = viewerList[i];
-    nodeList.push(dockManager.dock(currentViewer, attachDirection, nodeList[i - 1], currentViewer.name ?? '', ratio));
-  }
-  return nodeList;
 }
