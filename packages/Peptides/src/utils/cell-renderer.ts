@@ -5,6 +5,12 @@ import * as C from './constants';
 import {getPalleteByType} from './misc';
 import * as types from './types';
 
+function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
+  canvasContext.strokeStyle = '#000';
+  canvasContext.lineWidth = 1;
+  canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);
+}
+
 /**
  * A function to expand column size based on its contents.
  *
@@ -61,9 +67,10 @@ export function measureAAR(s: string): number {
   return end == beg ? s.length : s.length - (end - beg) + 1;
 }
 
-export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAAR: string, currentPosition: string,
-  statsDf: DG.DataFrame, twoColorMode: boolean, mdCol: DG.Column<number>, bound: DG.Rect, cellValue: number,
-  currentSelection: types.SelectionObject, substitutionsInfo: types.SubstitutionsInfo): void {
+export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
+  currentPosition: string, statsDf: DG.DataFrame, twoColorMode: boolean, mdCol: DG.Column<number>, bound: DG.Rect,
+  cellValue: number, mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.SubstitutionsInfo,
+): void {
   const queryAAR = `${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`;
   const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
   const pVal: number = statsDf
@@ -112,13 +119,22 @@ export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAA
       canvasContext.fillText(substValue.toString(), midX, midY);
   }
 
-  //TODO: frame based on currentSelection
-  const aarSelection = currentSelection[currentPosition];
-  if (aarSelection && aarSelection.includes(currentAAR)) {
-    canvasContext.strokeStyle = '#000';
-    canvasContext.lineWidth = 1;
-    canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);
-  }
+  const aarSelection = mutationCliffsSelection[currentPosition];
+  if (aarSelection && aarSelection.includes(currentAAR))
+    renderCellSelection(canvasContext, bound);
+}
+
+export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
+  currentPosition: string, invariantMapSelection: types.PositionToAARList, cellValue: number, bound: DG.Rect): void {
+  canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+  canvasContext.textAlign = 'center';
+  canvasContext.textBaseline = 'middle';
+  canvasContext.fillStyle = '#000';
+  canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
+
+  const aarSelection = invariantMapSelection[currentPosition];
+  if (aarSelection && aarSelection.includes(currentAAR))
+    renderCellSelection(canvasContext, bound);
 }
 
 export function renderBarchart(ctx: CanvasRenderingContext2D, col: DG.Column, monomerColStats: types.MonomerColStats,

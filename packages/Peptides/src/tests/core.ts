@@ -41,7 +41,7 @@ category('Core', () => {
     expect(model instanceof PeptidesModel, true);
 
     if (model != null) {
-      model.currentSelection = {'11': ['D']};
+      model.mutationCliffsSelection = {'11': ['D']};
       grok.shell.closeTable(model.df);
     }
   });
@@ -63,7 +63,7 @@ category('Core', () => {
     expect(model instanceof PeptidesModel, true);
 
     if (model != null) {
-      model.currentSelection = {'13': ['-']};
+      model.mutationCliffsSelection = {'13': ['-']};
       grok.shell.closeTable(model.df);
     }
   });

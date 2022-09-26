@@ -366,7 +366,7 @@ export class FunctionView extends DG.ViewBase {
         icon.style.marginRight = '3px';
         icon.style.alignSelf = 'center';
         const userLabel = ui.label(funcCall.author.friendlyName, 'd4-link-label');
-        ui.bind(funcCall.author, userLabel);
+        ui.bind(funcCall.author, icon);
 
         const card = ui.divH([
           ui.divH([
@@ -690,7 +690,7 @@ export class FunctionView extends DG.ViewBase {
 
   private interactiveEventListeners = [
     () =>this.root.removeEventListener('click', this.rootReadonlyEventListeners[2]),
-    () =>this.root.addEventListener('click', this.rootReadonlyEventListeners[2])
+    () =>setTimeout(() => this.root.addEventListener('click', this.rootReadonlyEventListeners[2]), 100)
   ];
 
   private setRunViewReadonly(): void {
@@ -701,7 +701,7 @@ export class FunctionView extends DG.ViewBase {
     this.root.querySelectorAll(`.${INTERACTIVE_CSS_CLASS}`).forEach((el) => {
       (el as HTMLElement).style.zIndex = '2';
       (el as HTMLElement).addEventListener('mousedown', this.interactiveEventListeners[0]);
-      (el as HTMLElement).addEventListener('mouseup', () => setTimeout(this.interactiveEventListeners[1], 100));
+      (el as HTMLElement).addEventListener('mouseup', this.interactiveEventListeners[1]);
     });
   }
 

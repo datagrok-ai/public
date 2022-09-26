@@ -22,6 +22,7 @@ export enum TAGS {
   SEPARATOR = 'separator',
   SELECTION = 'selection',
   ALPHABET = 'alphabet',
+  FILTER = 'filter',
 }
 
 export enum SEM_TYPES {

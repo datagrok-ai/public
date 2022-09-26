@@ -8,10 +8,9 @@ import * as C from './utils/constants';
 import {analyzePeptidesWidget} from './widgets/analyze-peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
-import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
+import {MutationCliffsViewer, MostPotentResiduesViewer} from './viewers/sar-viewer';
 
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
-import {InvariantMap} from './utils/invariant-map';
 
 export const _package = new DG.Package();
 let currentTable: DG.DataFrame;
@@ -84,16 +83,16 @@ export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
 //description: Peptides SAR Viewer
 //tags: viewer
 //output: viewer result
-export function sar(): SARViewer {
-  return new SARViewer();
+export function sar(): MutationCliffsViewer {
+  return new MutationCliffsViewer();
 }
 
 //name: peptide-sar-viewer-vertical
 //description: Peptides Vertical SAR Viewer
 //tags: viewer
 //output: viewer result
-export function sarVertical(): SARViewerVertical {
-  return new SARViewerVertical();
+export function sarVertical(): MostPotentResiduesViewer {
+  return new MostPotentResiduesViewer();
 }
 
 //name: peptide-space-viewer
@@ -153,11 +152,4 @@ function getOrDefine(dataframe?: DG.DataFrame, column?: DG.Column | null): [DG.D
     throw new Error('Table does not contain aligned sequence columns');
 
   return [dataframe, column];
-}
-
-//name: Invariant Map Filter
-//tags: filter
-//output: filter result
-export function invariantMapFilter() {
-  return new InvariantMap();
 }

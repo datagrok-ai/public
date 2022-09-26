@@ -24,28 +24,31 @@ export class GisViewer extends DG.JsViewer {
   currentLayer: string;
   latitudeColumnName: string;
   longitudeColumnName: string;
-  valuesColumnName: string; //TODO: remove this after successfull implementation scatter-plot style
-  colorColumnName: string;
   sizeColumnName: string;
-  styleColumnName: string;
+  colorColumnName: string;
+  labelsColumnName: string; //TODO: remove this after successfull implementation scatter-plot style
+  markersColumnName: string;
   markerOpacity: number;
-  markerDefaultColor: number;
+  defaultColor: number;
+  selectedColor: number;
   markerMinColor: number;
   markerMaxColor: number;
   markerDefaultSize: number;
   markerMinSize: number;
   markerMaxSize: number;
-  gradientColoring: boolean;
-  gradientSizing: boolean;
+  // gradientColoring: boolean;
+  // gradientSizing: boolean;
   renderType: string;
   heatmapRadius: number;
   heatmapBlur: number;
 
 
   isRowFocusing: boolean = true;
+  isShortUI: boolean = true;
 
   //ui elements
   panelLeft: HTMLElement | null = null;
+  leftPanelBtn: HTMLElement | null = null;
   panelRight: HTMLElement | null = null;
   panelTop: HTMLElement | null = null;
   panelBottom: HTMLElement | null = null;
@@ -73,22 +76,23 @@ export class GisViewer extends DG.JsViewer {
     this.currentLayer = this.string('currentLayer', 'BaseLayer', {category: 'Layers', choices: ['l1','l2','l3','l4']});
     this.latitudeColumnName = this.string('latitudeColumnName');
     this.longitudeColumnName = this.string('longitudeColumnName');
-    this.valuesColumnName = this.string('valuesColumnName');
     this.colorColumnName = this.string('colorColumnName');
     this.sizeColumnName = this.string('sizeColumnName');
-    this.styleColumnName = this.string('styleColumnName');
+    this.labelsColumnName = this.string('labelsColumnName');
+    this.markersColumnName = this.string('markersColumnName');
 
     this.markerOpacity = this.float('markerOpacity', 0.8, {category: 'Markers', editor: 'slider', min: 0.1, max: 1});
-    this.gradientSizing = this.bool('gradientSizing', false, {category: 'Markers'});
+    // this.gradientSizing = this.bool('gradientSizing', false, {category: 'Markers'});
     this.markerDefaultSize = this.int('markerDefaultSize', 3, {category: 'Markers', min: 1, max: 30});
     //DONE: there is no need in valitators: Min can be > Max
     this.markerMinSize = this.int('markerMinSize', 1, {category: 'Markers', min: 1, max: 30});
     this.markerMaxSize = this.int('markerMaxSize', 10, {category: 'Markers', min: 1, max: 30});
 
-    this.gradientColoring = this.bool('gradientColoring', false, {category: 'Markers'});
-    this.markerDefaultColor = this.int('markerDefaultColor', 0xffaa00, {category: 'Markers'});
-    this.markerMinColor = this.int('markerMinColor', 0x0000ff, {category: 'Markers'});
-    this.markerMaxColor = this.int('markerMaxColor', 0xff0000, {category: 'Markers'}); //hexToRGB
+    // this.gradientColoring = this.bool('gradientColoring', false, {category: 'Markers'});
+    this.defaultColor = this.int('defaultColor', 0x1f77b4, {category: 'Markers'});
+    this.selectedColor = this.int('selectedColor', 0xff8c00, {category: 'Markers'});
+    this.markerMinColor = this.int('markerMinColor', 0x0000ff, {category: 'Markers', userEditable: false});
+    this.markerMaxColor = this.int('markerMaxColor', 0xff0000, {category: 'Markers', userEditable: false}); //hexToRGB
 
     this.heatmapRadius = this.int('heatmapRadius', 10,
       {category: 'Heatmap', description: 'Heatmap radius', min: 1, max: 10, userEditable: true});
@@ -120,7 +124,8 @@ export class GisViewer extends DG.JsViewer {
     //l1.style.border = '1px solid blue';
     // const btnVisible = ui.button(ui.iconFA('eye'), ()=>{
     const btnVisible = ui.iconFA(isVisible ? 'eye' : 'eye-slash', (evt)=>{ //cogs
-      evt.stopPropagation();
+      evt.stopImmediatePropagation();
+      // evt.stopPropagation();
       const divLayer = (evt.currentTarget as HTMLElement);
       const layerId = divLayer.getAttribute('layerId');
       if (!layerId) return;
@@ -129,29 +134,45 @@ export class GisViewer extends DG.JsViewer {
       const isVisible = layer.getVisible();
       layer.setVisible(!isVisible);
       this.updateLayersList();
-      // evt.stopImmediatePropagation();
       // if (!isVisible) divLayer.style.background = 'lightblue';
       // else divLayer.style.background = 'lightgray';
     }, 'Show/hide layer');
+    //temporary this is the save layer button
     setupBtn(btnVisible, layerName, layerId);
     //Setup button>>
     const btnSetup = ui.iconFA('download', (evt)=>{ //cogs
-      evt.stopPropagation();
+      evt.stopImmediatePropagation();
       const divLayer = (evt.currentTarget as HTMLElement);
       const layerId = divLayer.getAttribute('layerId');
       if (!layerId) return;
       const layer = this.ol.getLayerById(layerId) as VectorLayer<any>;
       if (!layer) return;
+      const arrPreparedToDF: any[] = [];
       const arrFeatures = this.ol.getFeaturesFromLayer(layer);
       if (arrFeatures) {
-        const df = DG.DataFrame.fromObjects(arrFeatures);
+        for (let i = 0; i < arrFeatures.length; i++) {
+          // const gisObj = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
+          const newObj = arrFeatures[i].getProperties();
+          if (newObj.hasOwnProperty('geometry')) delete newObj.geometry;
+          if (arrFeatures[i].getId()) newObj.id_ = arrFeatures[i].getId();
+          newObj.gisObject = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
+          // if (gisObj) newObj.gisObject = DG.SemanticValue.fromValueType(gisObj, gisObj!.semtype);
+          // if (gisObj) newObj.gisObject = gisObj;
+          // else newObj.gisObjectCol = null;
+          // newObj.gisObject = gisObj;
+          arrPreparedToDF.push(newObj);
+        }
+        // const df = DG.DataFrame.fromObjects(arrFeatures);
+        const df = DG.DataFrame.fromObjects(arrPreparedToDF);
         if (df) {
-          // df.toCsv()
+          const gisCol = df.col('gisObject');
+          if (gisCol) gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
           df.name = layer.get('layerName');
-          // this. //TODO: get parent view with dataframe and add new dataframe-view to it
+
+          // df.toCsv()
+          // this.view.addTableView(df as DG.DataFrame);
           grok.shell.addTableView(df as DG.DataFrame);
-          // grok.shell.v.a  addTableView(df as DG.DataFrame);
-          // this.viewerContainer
+
           // this.view.addTableView(df as DG.DataFrame);
         }
       }
@@ -177,30 +198,43 @@ export class GisViewer extends DG.JsViewer {
     return divLayerUI;
   }
 
-  initUi(shortUI: boolean = false): HTMLElement {
+  switchUI(shortUI: boolean) {
+    if (this.panelTop) {
+      this.panelTop.style.visibility = shortUI ? 'hidden' : 'visible';
+      this.panelTop.style.maxHeight = shortUI ? '1px' : '30px';
+    }
+    if (this.panelBottom) {
+      this.panelBottom.style.maxHeight = shortUI ? '2px' : '2px'; //temporary completely hide bottom panel
+      this.panelBottom.style.visibility = shortUI ? 'hidden' : 'hidden'; //temporary completely hide bottom panel
+      // this.panelBottom.style.visibility = shortUI ? 'hidden' : 'visible';
+      // this.panelBottom.style.maxHeight = shortUI ? '2px' : '20px';
+    }
+    if ((this.panelLeft) && (this.leftPanelBtn)) {
+      this.panelLeft.style.visibility = shortUI ? 'visible' : 'hidden';
+      this.leftPanelBtn.click();
+    }
+  }
+
+  initUi(shortUI: boolean = true): HTMLElement {
+    this.isShortUI = shortUI;
     //create UI>>
     this.lblStatusCoords = ui.div('long, lat');
     this.lblStatusCoords.id = 'lbl-coord';
     const divStatusBody = ui.divH([ui.div('coord :'), this.lblStatusCoords]);
     this.panelBottom = ui.box(divStatusBody);
-    this.panelBottom.style.maxHeight = '20px';
-    // this.panelBottom.style.background = '#f2f2f5';
-    // this.panelBottom.style.border = 'solid 1px lightgray';
-    this.panelBottom.style.visibility = 'hidden';
-    this.panelBottom.style.maxHeight = '2px';
+    this.panelBottom.style.maxHeight = shortUI ? '2px' : '2px'; //temporary hide bottom panel
+    this.panelBottom.style.visibility = shortUI ? 'hidden' : 'hidden'; //temporary hide bottom panel
 
     this.panelTop = ui.box();
-    this.panelTop.style.maxHeight = '28px';
+    this.panelTop.style.maxHeight = shortUI ? '1px' : '30px';
+    this.panelTop.style.visibility = shortUI ? 'hidden' : 'visible';
 
     this.panelLeft = ui.box();
     this.panelLeft.style.maxWidth = '110px';
     this.panelLeft.style.minWidth = '70px';
-    // this.panelLeft.style.border = 'solid 1px darkgray';
 
     //menu bar icons>>
-    // const iconLayers = ui.iconImage('Layers', '/icons/layers-svgrepo.svg');
-    //const leftPanelBtn = ui.button(iconLayers, ()=>{ //cogs
-    const leftPanelBtn = ui.button(ui.iconFA('layer-group'), ()=>{ //cogs
+    this.leftPanelBtn = ui.button(ui.iconFA('layer-group'), ()=>{ //cogs
       if (this.panelLeft) {
         if (this.panelLeft.style.visibility == 'visible') {
           this.panelLeft.style.visibility = 'hidden';
@@ -216,42 +250,55 @@ export class GisViewer extends DG.JsViewer {
       }
       this.rootOnSizeChanged(this.root);
     });
+    this.leftPanelBtn.style.margin = '1px';
 
     const btnRowFocusing = ui.button(ui.iconFA('bullseye'), ()=>{
       this.isRowFocusing = !this.isRowFocusing;
     });
+    btnRowFocusing.style.margin = '1px';
     const heatmapBtn = ui.button('HM', ()=>{
       this.renderHeat();
       this.updateLayersList();
-    });
+    }, 'Build heat-map for data');
+    heatmapBtn.style.margin = '1px';
 
     //add buttons to top menu panel
     // this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn, btnRowFocusing]));
-    this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn]));
+    this.panelTop.append(ui.divH([this.leftPanelBtn, heatmapBtn]));
 
     //left panel icons>>
     this.divLayersList = ui.divV([]);
     this.panelLeft.append(this.divLayersList);
 
-    leftPanelBtn.click();
-    // this.panelLeft.style.visibility = 'hidden';
-    // this.panelLeft.style.maxWidth = '2px';
-    // this.panelLeft.style.minWidth = '2px';
+    this.panelLeft.style.visibility = 'visible';
+    this.leftPanelBtn.click();
 
     const body = ui.box();
     body.id = 'map-container';
     body.style.maxWidth = '100%';
     body.style.maxHeight = '100%';
-    // body.style.border = 'solid 1px darkgray';
-    //body.style.minWidth = '100px';
 
     this.viewerContainer = ui.splitV(
       [this.panelTop,
         ui.splitH([this.panelLeft, body], null, true),
         this.panelBottom]);
 
-    // this.viewerContainer.style.border = 'solid 2px lightgray';
     this.root.appendChild(this.viewerContainer);
+
+    //setup context menu
+    this.onContextMenu.subscribe((menu) => {
+      if (this.isShortUI == true) {
+        menu.item('Extended UI', () => {
+          this.isShortUI = false;
+          this.switchUI(this.isShortUI);
+        });
+      } else {
+        menu.item('Shortened UI', () => {
+          this.isShortUI = true;
+          this.switchUI(this.isShortUI);
+        });
+      }
+    });
 
     return this.viewerContainer;
   }
@@ -266,7 +313,8 @@ export class GisViewer extends DG.JsViewer {
       //TODO: refactor here>
       this.ol.markerSize = this.markerDefaultSize;
       this.ol.markerOpacity = this.markerOpacity;
-      this.ol.weightedMarkers = this.gradientSizing;
+      this.ol.weightedMarkers = ((this.sizeColumnName !== '')); //TODO: add checking for numbet column type
+      // && (this.dataFrame.getCol(this.splitColumnName))); //this.gradientSizing;
       this.ol.heatmapRadius = this.heatmapRadius;
       this.ol.heatmapBlur = this.heatmapBlur;
 
@@ -279,17 +327,19 @@ export class GisViewer extends DG.JsViewer {
       // this.ol.setMapPointermoveCallback(this.showCoordsInStatus.bind(this));
       // this.ol.setMapClickCallback(this.showCoordsInStatus.bind(this));
       this.ol.setMapClickCallback(this.handlerOnMapClick.bind(this));
+      this.ol.setMapRefreshCallback(this.updateLayersList);
 
+      // this.view.prop
       this.initialized = true;
-    }
-    catch (e: any) {
+    } catch (e: any) {
       this.initialized = false;
       grok.shell.error(e.toString());
       this.root.appendChild(
         ui.divV([ui.div('Error loading GIS map!'), ui.div(e.toString())]));
-    }
-    finally {
+    } finally {
       ui.setUpdateIndicator(this.root, false);
+      grok.shell.o = this;
+      grok.shell.windows.showProperties = true;
       // ui.setUpdateIndicator(this.panelTop!, true);
     }
   }
@@ -323,8 +373,9 @@ export class GisViewer extends DG.JsViewer {
         const layerName = divLayer.getAttribute('layerName');
         if (!layerName) return;
         this.currentLayer = layerName;
-        const currentLayerProp = this.getProperty('currentLayer');
-        if (currentLayerProp) currentLayerProp.defaultValue = layerName;
+        this.setOptions({currentLayer: layerName});
+        // const currentLayerProp = this.getProperty('currentLayer');
+        // if (currentLayerProp) currentLayerProp.defaultValue = layerName;
         //TODO: update currentLayer property when clicked in list
       };
       this.divLayersList.append(divLayer);
@@ -362,19 +413,16 @@ export class GisViewer extends DG.JsViewer {
   onTableAttached(): void {
     this.init();
 
-    const coordinatesColumns = this.dataFrame.columns.bySemTypesExact(
-      [DG.SEMTYPE.LATITUDE, DG.SEMTYPE.LONGITUDE, SEMTYPEGIS.LATIITUDE, SEMTYPEGIS.LONGITUDE]);
-    // const coordinatesColumns = this.dataFrame.columns.bySemTypesExact([SEMTYPEGIS.LATIITUDE, SEMTYPEGIS.LONGITUDE]);
-
-    if (coordinatesColumns != null && this.latitudeColumnName == null && this.longitudeColumnName == null) {
-      for (let i = 0; i<coordinatesColumns.length; i++) {
-        if ((coordinatesColumns[i].semType === DG.SEMTYPE.LATITUDE)||
-        (coordinatesColumns[i].semType === SEMTYPEGIS.LATIITUDE)) this.latitudeColumnName = coordinatesColumns[i].name;
-        if ((coordinatesColumns[i].semType === DG.SEMTYPE.LATITUDE)||
-        (coordinatesColumns[i].semType === SEMTYPEGIS.LATIITUDE)) this.longitudeColumnName = coordinatesColumns[i].name;
-      }
+    if (this.latitudeColumnName === null && this.longitudeColumnName === null) {
+      let col = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
+      if (col) this.latitudeColumnName = col.name;
+      col = this.dataFrame.columns.bySemType(SEMTYPEGIS.LATIITUDE);
+      if ((col) && (this.latitudeColumnName === null)) this.latitudeColumnName = col.name;
+      col = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE);
+      if (col) this.longitudeColumnName = col.name;
+      col = this.dataFrame.columns.bySemType(SEMTYPEGIS.LONGITUDE);
+      if ((col) && (this.longitudeColumnName === null)) this.longitudeColumnName = col.name;
     }
-
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.render(true);
@@ -402,7 +450,8 @@ export class GisViewer extends DG.JsViewer {
     //TODO: refactor this>
     this.ol.markerSize = this.markerDefaultSize;
     this.ol.markerOpacity = this.markerOpacity;
-    this.ol.weightedMarkers = this.gradientSizing;
+    this.ol.weightedMarkers = ((this.sizeColumnName !== '')); //TODO: add checking for numbet column type
+    //this.ol.weightedMarkers = this.gradientSizing;
     this.ol.heatmapRadius = this.heatmapRadius;
     this.ol.heatmapBlur = this.heatmapBlur;
 
@@ -420,7 +469,7 @@ export class GisViewer extends DG.JsViewer {
   }
 
   getCoordinatesOld(): void {
-/*    this.coordinates.length = 0;
+  /*  this.coordinates.length = 0;
     this.values.length = 0;
     this.sizeValues.length = 0;
     this.colorValues.length = 0;
@@ -458,7 +507,7 @@ export class GisViewer extends DG.JsViewer {
       colorCoeff = 1;
       colorShift = 0;
       colorVal = new Float32Array(lat.length); //create array of length equal to latitude array length
-      colorVal.fill(this.markerDefaultColor);
+      colorVal.fill(this.defaultColor);
     }
     //marker size data loading and scale calculation
     const colSize = this.dataFrame.getCol(this.sizeColumnName);
@@ -503,40 +552,41 @@ export class GisViewer extends DG.JsViewer {
 
     const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
     const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
-    // val = this.dataFrame.getCol(this.valuesColumnName).getRawData();
+    // val = this.dataFrame.getCol(this.labelsColumnName).getRawData();
 
     if ((!lat) || (!lon)) return;
 
     //TODO: change it to filling array of objects with all table data
-    const colValue = this.dataFrame.getCol(this.valuesColumnName);
+    const colValue = this.dataFrame.getCol(this.labelsColumnName);
     if (colValue) val = colValue.getRawData();
     else {
       val = new Float32Array(lat.length); //create array of length equal to latitude array length
       val.fill(1);
     }
     const colColor = this.dataFrame.getCol(this.colorColumnName);
-    if ((colColor) && (this.gradientColoring)) {
+    // if ((colColor) && (this.gradientColoring)) {
+    if ((colColor)) {
       colorVal = colColor.getRawData();
       if (colColor.max === colColor.min) colorCoeff = 1;
-      else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
+      // else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
+      else colorCoeff = (0xff0000-0x0000ff)/(colColor.max-colColor.min);
       colorShift = colColor.min;
       //another scaling scheme for color (though gradient)
-    }
-    else {
+    } else {
       colorCoeff = 1;
       colorShift = 0;
       colorVal = new Float32Array(lat.length); //create array of length equal to latitude array length
-      colorVal.fill(this.markerDefaultColor);
+      colorVal.fill(this.defaultColor);
     }
     //marker size data loading and scale calculation
     const colSize = this.dataFrame.getCol(this.sizeColumnName);
-    if ((colSize) && (this.gradientSizing)) {
-      sizeVal = colSize.getRawData();
+    // if ((colSize) && (this.gradientSizing)) {
+    //TODO: add checking for numbet column type
+    if ((colSize)) {
       if (colSize.max === colSize.min) sizeCoeff = 1;
       else sizeCoeff = (this.markerMaxSize-this.markerMinSize)/(colSize.max-colSize.min);
       sizeShift = colSize.min;
-    }
-    else {
+    } else {
       sizeCoeff = 1;
       sizeShift = 0;
       sizeVal = new Float32Array(lat.length); //create array of length equal to latitude array length
@@ -547,8 +597,11 @@ export class GisViewer extends DG.JsViewer {
       if ((i < lat.length) && (i < lon.length)) {
         this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
         this.values.push(val[indexes[i]]);
-        this.sizeValues.push((sizeVal[indexes[i]]-sizeShift)*sizeCoeff);
-        this.colorValues.push((colorVal[indexes[i]]-colorShift)*colorCoeff);
+        this.sizeValues.push((sizeVal![indexes[i]]-sizeShift)*sizeCoeff);
+        if (colColor) this.colorValues.push(this.defaultColor);
+        // colColor.meta.markers
+        // if (colColor) this.colorValues.push(colColor.);
+        // this.colorValues.push((colorVal[indexes[i]]-colorShift)*colorCoeff);
       }
     }
     //<<getCoordinates function
@@ -556,7 +609,7 @@ export class GisViewer extends DG.JsViewer {
 
   renderHeat(): void {
     this.getCoordinates();
-    let colName = this.valuesColumnName;
+    let colName = this.colorColumnName;
     if (colName === 'null') colName = this.dataFrame.name;
     if (colName === null) colName = this.dataFrame.name;
 

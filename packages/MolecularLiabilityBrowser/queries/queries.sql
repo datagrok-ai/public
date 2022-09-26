@@ -69,8 +69,12 @@ FROM db_v2.pdb_files pf
 SELECT ag.id,
        ag.antigen,
        ag.antigen_ncbi_id,
-       ag.antigen_gene_symbol
+       ag.antigen_gene_symbol,
+       count(ab2tr."CLONE") as clones
 FROM mlb.antigen as ag
+         JOIN mlb.antibody2antigen as ab2ag ON ab2ag.antigen = ag.antigen
+         LEFT JOIN mlb.antibody2tree as ab2tr ON ab2tr.v_id = ab2ag.v_id
+GROUP BY ag.id, ag.antigen;
 --end
 
 --name: listSchemes

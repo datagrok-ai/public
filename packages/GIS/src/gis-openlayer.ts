@@ -45,6 +45,7 @@ import Source from 'ol/source/Source';
 import {Attribution, defaults as defaultControls} from 'ol/control';
 //ZIP utilities
 import JSZip from 'jszip';
+import { stopPropagation } from 'ol/events/Event';
 
 export {Coordinate} from 'ol/coordinate';
 
@@ -144,6 +145,7 @@ export class OpenLayers {
   //eventsMap = new Map<string, ()=>any>(); //TODO: solve this puzzle
   onClickCallback: Function | null = null;
   onPointermoveCallback: Function | null = null;
+  onRefreshCallback: Function | null = null;
   // public labelStatus: HTMLElement | null = null;
 
   //properties from viewer
@@ -164,11 +166,12 @@ export class OpenLayers {
 
     this.styleVectorLayer = new OLStyle.Style({
       fill: new OLStyle.Fill({
-        // color: '#eeeeee',
-        color: 'rgba(155, 155, 155, 0.5)',
+        color: '#eeeeee',
+        // color: 'rgba(155, 155, 55, 0.5)',
       }),
       stroke: new OLStyle.Stroke({
-        color: 'rgba(250, 250, 250, 0.5)',
+        // color: 'rgba(250, 250, 0, 0.5)',
+        color: 'rgba(250, 0, 0, 0.5)',
         width: 1,
       }),
     });
@@ -206,13 +209,11 @@ export class OpenLayers {
       view: new OLView({
         projection: 'EPSG:3857',
         // projection: 'EPSG:4326',
-        center: OLProj.fromLonLat([34.109565, 45.452962]),
-        zoom: 6,
+        center: OLProj.fromLonLat([-77.01072811982019, 38.9133405111845]),
+        zoom: 5,
       }),
     });
     //useGeographic();
-    //add dragNdrop ability
-    this.olMap.addInteraction(this.dragAndDropInteraction);
 
     //add layers>>
     this.addNewBingLayer('Bing sat');
@@ -228,12 +229,14 @@ export class OpenLayers {
       style: this.styleVectorSelLayer,
     });
     this.olMap.addInteraction(selectInteraction);
+    //add dragNdrop ability
+    this.olMap.addInteraction(this.dragAndDropInteraction);
     //this.olMap.getInteractions().extend([selectInteraction]);
   }
 
   getFeatureStyleFn(feature: Feature): OLStyle.Style {
     //TODO: add here different combinations of style reading
-    const color = feature.get('COLOR') || '#eeeeee';
+    const color = feature.get('COLOR') || '#ffeeee';
     this.styleVectorLayer.getFill().setColor(color);
     return this.styleVectorLayer;
   }
@@ -246,7 +249,7 @@ export class OpenLayers {
     // OLG.addNewVectorLayer(event.file.name, null, null, sourceVector);
     OLG.addNewVectorLayer(event.file.name, null,
       function(feature) {
-        const color = feature.get('COLOR') || '#eeeeee';
+        const color = feature.get('COLOR') || '#ffeeee';
         OLG.styleVectorLayer.getFill().setColor(color); // rgba()
         return OLG.styleVectorLayer;
       },
@@ -369,6 +372,7 @@ export class OpenLayers {
     layerToAdd.set('layerId', Date.now()+'|'+(Math.random()*100));
     this.olMap.addLayer(layerToAdd);
     this.olCurrentLayer = layerToAdd;
+    if (this.onRefreshCallback) this.onRefreshCallback();
   }
 
   // addNewTileLayer(layerToAdd: BaseLayer) //TODO: add
@@ -442,13 +446,13 @@ export class OpenLayers {
   }
 
   getFeaturesFromLayer(layer: VectorLayer<VectorSource>): any[] {
-    const featuresColl: any[] = [];
+    const arrFeatures: Feature[] = []; //any[]
     const src = layer.getSource();
     if (!src) return [];
     src.forEachFeature((ft)=>{
-      featuresColl.push(ft.getProperties());
+      arrFeatures.push(ft);
     });
-    return featuresColl;
+    return arrFeatures;
   }
 
   //map marker style function>>
@@ -460,15 +464,48 @@ export class OpenLayers {
       image: new OLStyle.Circle({
         radius: this.weightedMarkers ? val*1 : this.markerSize,
         fill: new OLStyle.Fill({
-          color: 'rgba(255, 153, 0, 0.4)',
+          // color: toStringColor(#1f77b4, 0.4),
+          color: 'rgba(255, 0, 255, 0.4)',
         }),
         stroke: new OLStyle.Stroke({
-          color: 'rgba(255, 204, 0, 0.2)',
+          // color: 'rgba(255, 204, 0, 0.2)',
+          color: 'rgba(255, 0, 0, 0.2)',
           width: 1,
         }),
       }),
     });
     return style;
+  }
+
+  static gisObjFromGeometry(ft: FeatureLike): GisTypes.GisPoint | GisTypes.GisArea | null {
+    if (!ft) return null;
+    const geom = ft.getGeometry();
+    if (geom) {
+      switch (geom.getType()) {
+      case 'Point': {
+        const gobj = geom as OLGeom.Point;
+        const coords = gobj.getCoordinates();
+        const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
+        const gisPoint = new GisTypes.GisPoint(coords[0], coords[1], xyz ? coords[2] : 0, ft.getProperties());
+        return gisPoint;
+      }
+      case 'MultiPolygon':
+      case 'Polygon': {
+        const gobj = geom as OLGeom.Polygon;
+        const coords = gobj.getCoordinates();
+        const areaCoords: Array<GisTypes.gisCoordinate> = [];
+        const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
+        for (let i = 0; i < coords[0].length; i++) {
+          const vertex = coords[0][i]; //TODO: add inner polygons (holes) - now we use just a contour
+          areaCoords.push([vertex[0] as number, vertex[1], xyz ? vertex[2] : 0]);
+        }
+        const gisArea = new GisTypes.GisArea(areaCoords, ft.getProperties());
+        return gisArea;
+      }
+      //TODO: add multi polygon
+      }
+    }
+    return null;
   }
 
   //map base events handlers>>
@@ -485,34 +522,18 @@ export class OpenLayers {
       features.push(feature);
     });
     if (features.length > 0) {
-      let ft = features[0];
-      const geom = ft.getGeometry();
-      if (geom) {
-        switch (geom.getType()) {
-        case 'Point': {
-          const gobj = geom as OLGeom.Point;
-          const coords = gobj.getCoordinates();
-          const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
-          const gisPoint = new GisTypes.GisPoint(coords[0], coords[1], xyz ? coords[2] : 0, ft.getProperties());
-          grok.shell.o = gisPoint;
-          break;
-        }
-        case 'Polygon': {
-          const gobj = geom as OLGeom.Polygon;
-          const coords = gobj.getCoordinates();
-          const areaCoords: Array<GisTypes.gisCoordinate> = [];
-          const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
-          for (let i = 0; i < coords[0].length; i++) {
-            let vertex = coords[0][i]; //TODO: add inner polygons (holes) - now we use just a contour
-            areaCoords.push([vertex[0] as number, vertex[1], xyz ? vertex[2] : 0]);
-          }
-          const gisArea = new GisTypes.GisArea(areaCoords, ft.getProperties());
-          grok.shell.o = gisArea;
-          break;
-        }
-        }
+      const ft = features[0];
+      const gisObj = OpenLayers.gisObjFromGeometry(ft);
+      if (gisObj) {
+        setTimeout(() => {
+          // grok.shell.o = DG.SemanticValue.fromValueType(gisObj, gisObj.semtype);
+          grok.shell.o = gisObj;
+          grok.shell.windows.showProperties = true;
+        }, 500);
       }
     }
+    // evt.stopPropagation(); //stopImmediatePropagation();
+    // stopPropagation(evt);
     if (this.onClickCallback)
       this.onClickCallback(res);
     else {
@@ -548,6 +569,9 @@ export class OpenLayers {
   }
   setMapPointermoveCallback(f: Function) {
     this.onPointermoveCallback = f;
+  }
+  setMapRefreshCallback(f: Function) {
+    this.onRefreshCallback = f;
   }
 
   //map elements management functions>>
@@ -589,10 +613,12 @@ export class OpenLayers {
         image: new OLStyle.Circle({
           radius: rad,
           fill: new OLStyle.Fill({
-            color: `rgba(255, 153, 0, ${this.markerOpacity})`,
+            //#1f77b4
+            // color: toStringColor(0x1f77b4, this.markerOpacity),
+            color: `rgba(0, 153, 255, ${this.markerOpacity})`,
           }),
           stroke: new OLStyle.Stroke({
-            color: `rgba(255, 204, 0, ${this.markerOpacity-0.2})`,
+            color: `rgba(255, 0, 255, ${this.markerOpacity-0.2})`,
             width: stroke,
             // width: (val>maxradius) ? ((val/10>maxradius/2) ? (maxradius/2+2) : (val/10) ) : 1,
           }),
@@ -623,7 +649,7 @@ export class OpenLayers {
             color: toStringColor(colorVal, this.markerOpacity), //TODO: change to gisView.markerOpacity
           }),
           stroke: new OLStyle.Stroke({
-            color: `rgba(255, 204, 0, 0.4)`, //toStringColor(colorVal, this.markerOpacity-0.1),
+            color: `rgba(255, 0, 0, 0.4)`, //toStringColor(colorVal, this.markerOpacity-0.1),
             width: 1, //TODO: change to gisView.markerStrokeWidth
           }),
         }),
