@@ -3,7 +3,6 @@
  * */
 
 import * as DG from 'datagrok-api/dg';
-import {convertToRDKit} from '../analysis/r-group-analysis';
 import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {isMolBlock} from '../utils/convert-notation-utils';
@@ -233,7 +232,7 @@ M  END
 
   render(g: any, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
-    const molString = convertToRDKit(gridCell.cell.value);
+    const molString = gridCell.cell.value;
     if (molString == null || molString === '')
       return;
 
