@@ -124,6 +124,7 @@ export function oligoSdFile(table: DG.DataFrame) {
     const sequenceCol = t.getCol(COL_NAMES.SEQUENCE);
     const saltCol = t.getCol(COL_NAMES.SALT);
     const equivalentsCol = t.getCol(COL_NAMES.EQUIVALENTS);
+    const typeColumn = table.getCol(COL_NAMES.TYPE);
 
     for (let i = t.rowCount - 1; i > -1; i--) {
       if (sequenceCol.get(i) == '')
@@ -132,7 +133,7 @@ export function oligoSdFile(table: DG.DataFrame) {
 
     t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => sequenceCol.get(i));
 
-    t.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => (i > 0 && i % 2 == 0) ?
+    t.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => (i > 2 && typeColumn.get(i) == 'Duplex') ?
       sequenceCol.get(i) + '; duplex of SS: ' + sequenceCol.get(i - 2) + ' and AS: ' + sequenceCol.get(i - 1) :
       sequenceCol.get(i),
     );
