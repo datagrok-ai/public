@@ -49,6 +49,7 @@ export function rGroupAnalysis(col: DG.Column): void {
         const res = await findRGroups(col.name, col.dataFrame, core, columnPrefixInput.value);
         for (const resCol of res.columns) {
           resCol.semType = DG.SEMTYPE.MOLECULE;
+          resCol.setTag(DG.TAGS.UNITS, 'smiles')
           col.dataFrame.columns.add(resCol);
         }
         if (res.columns.length == 0)

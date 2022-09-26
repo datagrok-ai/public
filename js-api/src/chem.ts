@@ -192,7 +192,7 @@ export namespace chem {
       else if (isMolBlock(molString))
         this.setMolFile(molString)
       else {
-        const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molString);
+        const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molString, '{"mergeQueryHs":true}');
         if (!mol.has_coords())
           mol.set_new_coords();
         mol.normalize_depiction();
