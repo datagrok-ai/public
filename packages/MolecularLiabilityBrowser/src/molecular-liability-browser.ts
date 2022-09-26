@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {DataLoader, FilterPropertiesType, JsonType, NumsType, ObsPtmType, PdbType} from './utils/data-loader';
-import {Subscription} from 'rxjs';
+import {Subscription, Unsubscribable} from 'rxjs';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 import {VdRegionsViewer} from '@datagrok/bio/src/viewers/vd-regions-viewer';
 import {TreeBrowser} from './mlb-tree';
@@ -50,7 +50,7 @@ export class MolecularLiabilityBrowser {
   allIds: DG.Column = null;
   idMapping: { [key: string]: string []; };
 
-  subs: Subscription[] = [];
+  subs: Unsubscribable[] = [];
 
   mlbView: DG.TableView = null;
   mlbGrid: DG.Grid = null;
@@ -65,11 +65,12 @@ export class MolecularLiabilityBrowser {
   twinPviewer: TwinPviewer;
 
   reloadIcon: HTMLElement = null;
-  antigenInput: DG.InputBase = null;
+  antigenInput: DG.InputBase<string> = null;
+  antigenClonesFilterInput: DG.InputBase<boolean> = null;
   antigenPopup: HTMLElement = null;
-  schemeInput: DG.InputBase = null;
-  cdrInput: DG.InputBase = null;
-  treeInput: DG.InputBase = null;
+  schemeInput: DG.InputBase<string> = null;
+  cdrInput: DG.InputBase<string> = null;
+  treeInput: DG.InputBase<string> = null;
   treePopup: HTMLElement = null;
   treeGrid: DG.Grid = null;
   hideShowIcon: HTMLElement = null;
@@ -168,10 +169,14 @@ export class MolecularLiabilityBrowser {
   }
 
   setAntigenInput(agDf: DG.DataFrame): DG.InputBase {
-    this.antigenInput = ui.stringInput('AG', this.antigenName);
+    this.antigenInput = ui.stringInput('AG', this.antigenName, null,
+      {clearIcon: true, escClears: true, placeholder: 'filter'});
+    this.antigenClonesFilterInput = ui.boolInput('clones', false);
+    ui.tooltip.bind(this.antigenClonesFilterInput.root, 'Filter antigens with clones');
 
     const agCol: DG.Column = agDf.col('antigen');
     const gsCol: DG.Column = agDf.col('antigen_gene_symbol');
+    const clonesCol: DG.Column = agDf.col('clones');
     const agDfGrid: DG.Grid = agDf.plot.grid({
       allowEdit: false,
       allowRowSelection: false,
@@ -185,13 +190,16 @@ export class MolecularLiabilityBrowser {
     const agGCol: DG.GridColumn = agDfGrid.col('antigen');
     const ncbiGCol: DG.GridColumn = agDfGrid.col('antigen_ncbi_id');
     const gsGCol: DG.GridColumn = agDfGrid.col('antigen_gene_symbol');
+    const clonesGCol: DG.GridColumn = agDfGrid.col('clones');
     agGCol.name = 'Antigen';
     agGCol.width = 90;
     gsGCol.name = 'Gene symbol';
     gsGCol.width = 120;
     idGCol.visible = false;
     ncbiGCol.visible = false;
-    agDfGrid.root.style.setProperty('width', '220px');
+    clonesGCol.name = 'Cl';
+    clonesGCol.width = 20;
+    agDfGrid.root.style.setProperty('width', '240px');
     this.antigenPopup = ui.div([agDfGrid.root]);
 
     // Do not push to this.viewSubs to prevent unsubscribe on this.destroyView()
@@ -203,12 +211,22 @@ export class MolecularLiabilityBrowser {
       this.onAntigenChanged(antigenName);
     }));
 
-    this.antigenInput.root.addEventListener('input', (event: Event) => {
-      /* Here we should filter dataframe with antigens */
+    const antigenFilterCallback = function() {
+      console.debug('MLB: MolecularLiabilityBrowser.setAntigenInput.antigenFilterCallback() ' +
+        `this.antigenInput.value = '${this.antigenInput.value}', ` +
+        `this.antigenClonesFilterInput.value = ${this.antigenClonesFilterInput.value}`);
+
+      /* Here we filter dataframe with antigens */
       agDf.filter.init((iRow: number) => {
-        return agCol.get(iRow).includes(this.antigenInput.value) || gsCol.get(iRow).includes(this.antigenInput.value);
+        return (
+          agCol.get(iRow).includes(this.antigenInput.value) ||
+          gsCol.get(iRow).includes(this.antigenInput.value)
+        ) && (!this.antigenClonesFilterInput.value || clonesCol.get(iRow) > 0);
       });
-    });
+    }.bind(this);
+    this.subs.push(this.antigenInput.onInput(antigenFilterCallback));
+    this.subs.push(this.antigenClonesFilterInput.onInput(antigenFilterCallback));
+
     // this.agInput.root.addEventListener('focusout', (event: FocusEvent) => {
     //   let k = 11;
     //   agDfGrid.root.focus();
@@ -292,7 +310,7 @@ export class MolecularLiabilityBrowser {
     this.mlbView.setRibbonPanels([
       [this.reloadIcon],
       [],
-      [this.antigenInput.root],
+      [this.antigenInput.root, this.antigenClonesFilterInput.root],
       [this.schemeInput.root],
       [this.cdrInput.root],
       [],
@@ -439,7 +457,7 @@ export class MolecularLiabilityBrowser {
   private _predictedPtmDf: DG.DataFrame;
   private _observedPtmDf: DG.DataFrame;
 
-  private viewSubs: Subscription[] = [];
+  private viewSubs: Unsubscribable[] = [];
 
   get mlbDf(): DG.DataFrame { return this._mlbDf; }
 
@@ -787,11 +805,11 @@ export class MolecularLiabilityBrowser {
   }
 
   onAntigenChanged(antigenName: string): void {
+    console.debug(`MLB: MolecularLiabilityBrowser.onAntigenChanged( antigenName = '${antigenName}' )`);
     this.antigenName = antigenName;
 
     // Preventing firing the event
-    if (this.antigenInput.value != this.antigenName)
-      this.antigenInput.value = this.antigenName;
+    this.antigenInput.input.setAttribute('placeholder', this.antigenName);
 
     this.urlParams.set('antigen', this.antigenName);
     // window.setTimeout is used to adapt call async loadData() from handler (not async)

@@ -112,9 +112,9 @@ export class DataLoaderTest extends DataLoader {
 
     //load antigen list
     this._antigens = DG.DataFrame.fromCsv(
-      `id,antigen,antigen_ncbi_id,antigen_gene_symbol
-1,B17W38,113223191,LOC113223191
-252,IAPW8,3556,IL1RAP
+      `id,antigen,antigen_ncbi_id,antigen_gene_symbol,clones
+1,B17W38,113223191,LOC113223191,0
+252,IAPW8,3556,IL1RAP,5
 `);
 
     // load available vids
