@@ -463,6 +463,20 @@ export function getMolfiles(col: DG.Column) : DG.Column {
   return res;
 }
 
+function getParts(subParts: string[], s: string) {
+  let j = 0;
+  let allParts  = [];
+  for (let k = 0; k < subParts.length; ++k) {
+    let indexOfMonomer = s.indexOf(subParts[k]);
+    let helmBeforeMonomer = s.slice(j, indexOfMonomer);
+    allParts.push(helmBeforeMonomer);
+    allParts.push(subParts[k]);
+    s = s.substring(indexOfMonomer + subParts[k].length);
+  }
+  allParts.push(s);
+  return allParts;
+}
+
 class HelmCellRenderer extends DG.GridCellRenderer {
   get name() { return 'helm'; }
 
@@ -471,6 +485,48 @@ class HelmCellRenderer extends DG.GridCellRenderer {
   get defaultWidth(): number | null { return 400; }
 
   get defaultHeight(): number | null { return 100; }
+
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    const maxLengthWordsSum = gridCell.cell.column.temp['helm-sum-maxLengthWords'];
+    const maxIndex = Object.values(gridCell.cell.column.temp['helm-maxLengthWords']).length - 1;
+    const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x);
+    let left = 0;
+    let right = maxIndex;
+    let found = false;
+    maxLengthWordsSum[maxIndex + 1] = argsX + 1;
+    let mid = 0;
+    if (argsX > maxLengthWordsSum[0]) {
+      while (!found) {
+        mid = Math.floor((right + left) / 2);
+        if (argsX >= maxLengthWordsSum[mid] && argsX <= maxLengthWordsSum[mid + 1]) {
+          left = mid;
+          found = true;
+        } else if (argsX < maxLengthWordsSum[mid]) {
+          right = mid - 1;
+        } else if (argsX > maxLengthWordsSum[mid + 1]) {
+          left = mid + 1;
+        }
+        if (left == right) {
+          found = true;
+        }
+      }
+    }
+    left = (argsX >= maxLengthWordsSum[left]) ? left + 1 : left;
+    const monomers = findMonomers(gridCell.cell.value);
+    let s: string = gridCell.cell.value ?? '';
+    let subParts: string[] = parseHelm(s);
+    let allParts: string[] = getParts(subParts, s);
+    let tooltipMessage: string[] = [];
+    for (let i = 0; i < allParts.length; ++i) {
+      monomers.has(allParts[i]) 
+      ? tooltipMessage[i] = 'There is no such monomer. Open the Property Panel to upload the monomer library' 
+      : tooltipMessage[i] = 'There is such monomer';
+    };
+    (((allParts[left]?.length ?? 0) > 0)) 
+    ? ui.tooltip.show(ui.div(tooltipMessage[left]), e.x + 16, e.y + 16) 
+    : ui.tooltip.hide();
+  }
+
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
@@ -499,20 +555,23 @@ class HelmCellRenderer extends DG.GridCellRenderer {
       g.font = '12px monospace';
       g.textBaseline = 'top';
       let x1 = x;
-      let j = 0;
-      let allParts  = [];
-      for (let k = 0; k < subParts.length; ++k) {
-        let indexOfMonomer = s.indexOf(subParts[k]);
-        let helmBeforeMonomer = s.slice(j, indexOfMonomer);
-        allParts.push(helmBeforeMonomer);
-        allParts.push(subParts[k]);
-        s = s.substring(indexOfMonomer + subParts[k].length);
-      }
-      allParts.push(s);
-      for (let part of allParts) {
-        let color = monomers.has(part) ? 'red' : grayColor;
+      let maxLengthWords: any = {};
+      let maxLengthWordSum: any = {};
+      let allParts: string[] = getParts(subParts, s);
+      for (let i = 0; i < allParts.length; ++i) {
+        maxLengthWords[i] = allParts[i].length * 7;
+        let color = monomers.has(allParts[i]) ? 'red' : grayColor;
         g.fillStyle = undefinedColor;
-        x1 = printLeftOrCentered(x1, y, w, h, g, part, color, 0, true, 1.0);
+        x1 = printLeftOrCentered(x1, y, w, h, g, allParts[i], color, 0, true, 1.0);
+      };
+      
+      maxLengthWordSum[0] = maxLengthWords[0];
+      for (let i = 1; i < allParts.length; i++) {
+        maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
+      }
+      gridCell.cell.column.temp = {
+        'helm-sum-maxLengthWords': maxLengthWordSum,
+        'helm-maxLengthWords': maxLengthWords
       };
       g.restore();
       return;
