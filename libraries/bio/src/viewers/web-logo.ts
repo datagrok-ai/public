@@ -821,6 +821,8 @@ export class WebLogo extends DG.JsViewer {
       this.host.style.overflowX = 'auto!important';
       this.host.style.setProperty('text-align', this.horizontalAlignment);
 
+      const sliderHeight = this.visibleSlider ? 10 : 0;
+
       // vertical alignment
       let hostTopMargin = 0;
       switch (this.verticalAlignment) {
@@ -831,7 +833,7 @@ export class WebLogo extends DG.JsViewer {
         hostTopMargin = Math.max(0, (this.root.clientHeight - height) / 2);
         break;
       case 'bottom':
-        hostTopMargin = Math.max(0, this.root.clientHeight - height);
+        hostTopMargin = Math.max(0, this.root.clientHeight - height - sliderHeight);
         break;
       }
       // horizontal alignment
@@ -1015,7 +1017,7 @@ export class WebLogo extends DG.JsViewer {
       }).toArray();
   }
 
-  private static helmRe = /(PEPTIDE1|DNA1|RNA1)([^}]+)}/g;
+  private static helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
   private static helmPp1Re = /\[([^\[\]]+)]/g;
 
   /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
