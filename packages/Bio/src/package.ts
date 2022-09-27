@@ -48,6 +48,14 @@ export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
 }
 
+//name: macroMolColumnPropertyPanel
+//input: column molColumn {semType: Macromolecule}
+//tags: panel
+//output: widget result
+export function macroMolColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
+  return getMacroMolColumnPropertyPanel(molColumn);
+}
+
 //name: separatorSequenceCellRenderer
 //tags: cellRenderer
 //meta.cellType: sequence
