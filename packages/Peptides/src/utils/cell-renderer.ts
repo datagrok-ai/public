@@ -5,65 +5,24 @@ import * as C from './constants';
 import {getPalleteByType} from './misc';
 import * as types from './types';
 
-/**
- * A function to expand column size based on its contents.
- *
- * @export
- * @param {DG.Column} col Column to expand.
- * @param {DG.Grid} grid Grid containing colum for expansion.
- * @param {(cellVal: string) => number} cellRenderSize An anonymous function that calculates cell value length.
- * @param {number} [textSizeMult=10] Text size muliplier.
- * @param {number} [minSize=30] Minimal column width.
- * @param {number} [maxSize=650] Maximum column width.
- * @param {number} [timeout=500] Timeout value.
- */
-export function expandColumn(col: DG.Column, grid: DG.Grid, cellRenderSize: (cellVal: string) => number,
-  textSizeMult = 10, minSize = 30, maxSize = 650, timeout = 500): void {
-  let maxLen = 0;
-  col.categories.forEach((ent: string) => {
-    const len = cellRenderSize(ent);
-    if (len > maxLen)
-      maxLen = len;
-  });
-  setTimeout(() => {
-      grid.columns.byName(col.name)!.width = Math.min(Math.max(maxLen * textSizeMult, minSize), maxSize);
-  },
-  timeout);
+function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
+  canvasContext.strokeStyle = '#000';
+  canvasContext.lineWidth = 1;
+  canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);
 }
 
-/**
- * A function that sets amino acid residue to the specified column.
- *
- * @export
- * @param {DG.Column} col Column to set renderer for.
- * @param {(DG.Grid | null)} [grid=null] Grid that contains the col column.
- * @param {boolean} [grouping=false] Is grouping enabled.
- */
-export function setAARRenderer(col: DG.Column, alphabet: string, grid?: DG.Grid): void {
+/** A function that sets amino acid residue cell renderer to the specified column */
+export function setAARRenderer(col: DG.Column, alphabet: string, grid: DG.Grid, timeout: number = 500): void {
   col.semType = C.SEM_TYPES.MONOMER;
   col.setTag('cell.renderer', C.SEM_TYPES.MONOMER);
   col.tags[C.TAGS.ALPHABET] = alphabet;
-
-  if (grid)
-    expandColumn(col, grid, (ent) => measureAAR(ent));
+  setTimeout(() => grid.columns.byName(col.name)!.width = 60, timeout);
 }
 
-/**
- * A function to measure amino acid residue
- *
- * @export
- * @param {string} s Amino acid residue string.
- * @return {number} Amino acid residue size.
- */
-export function measureAAR(s: string): number {
-  const end = s.lastIndexOf(')');
-  const beg = s.indexOf('(');
-  return end == beg ? s.length : s.length - (end - beg) + 1;
-}
-
-export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAAR: string, currentPosition: string,
-  statsDf: DG.DataFrame, twoColorMode: boolean, mdCol: DG.Column<number>, bound: DG.Rect, cellValue: number,
-  currentSelection: types.SelectionObject, substitutionsInfo: types.SubstitutionsInfo): void {
+export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
+  currentPosition: string, statsDf: DG.DataFrame, twoColorMode: boolean, mdCol: DG.Column<number>, bound: DG.Rect,
+  cellValue: number, mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.SubstitutionsInfo,
+): void {
   const queryAAR = `${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`;
   const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
   const pVal: number = statsDf
@@ -112,13 +71,22 @@ export function renderSARCell(canvasContext: CanvasRenderingContext2D, currentAA
       canvasContext.fillText(substValue.toString(), midX, midY);
   }
 
-  //TODO: frame based on currentSelection
-  const aarSelection = currentSelection[currentPosition];
-  if (aarSelection && aarSelection.includes(currentAAR)) {
-    canvasContext.strokeStyle = '#000';
-    canvasContext.lineWidth = 1;
-    canvasContext.strokeRect(bound.x + 1, bound.y + 1, bound.width - 1, bound.height - 1);
-  }
+  const aarSelection = mutationCliffsSelection[currentPosition];
+  if (aarSelection && aarSelection.includes(currentAAR))
+    renderCellSelection(canvasContext, bound);
+}
+
+export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
+  currentPosition: string, invariantMapSelection: types.PositionToAARList, cellValue: number, bound: DG.Rect): void {
+  canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+  canvasContext.textAlign = 'center';
+  canvasContext.textBaseline = 'middle';
+  canvasContext.fillStyle = '#000';
+  canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
+
+  const aarSelection = invariantMapSelection[currentPosition];
+  if (aarSelection && aarSelection.includes(currentAAR))
+    renderCellSelection(canvasContext, bound);
 }
 
 export function renderBarchart(ctx: CanvasRenderingContext2D, col: DG.Column, monomerColStats: types.MonomerColStats,

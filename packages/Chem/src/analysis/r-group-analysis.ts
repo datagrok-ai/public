@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {findMCS, findRGroups} from '../scripts-api';
+import { getRdKitModule } from '../package';
 
 export function convertToRDKit(smiles: string | null): string | null {
   if (smiles !== null) {
@@ -47,8 +48,17 @@ export function rGroupAnalysis(col: DG.Column): void {
       const core = sketcher.getSmiles();
       if (core !== null) {
         const res = await findRGroups(col.name, col.dataFrame, core, columnPrefixInput.value);
+        const module = getRdKitModule();
+
         for (const resCol of res.columns) {
+          for(let i = 0; i < resCol.length; i++) {
+            const mol = module.get_mol(resCol.get(i));
+            resCol.set(i,  mol.get_molblock().replace('ISO', 'RGP'));
+            mol.delete();
+          }
+
           resCol.semType = DG.SEMTYPE.MOLECULE;
+          resCol.setTag(DG.TAGS.UNITS, 'molblock')
           col.dataFrame.columns.add(resCol);
         }
         if (res.columns.length == 0)

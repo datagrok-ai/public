@@ -7,7 +7,7 @@ import * as grok from 'datagrok-api/grok';
 import { SplitterFunc, WebLogo } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import { UnitsHandler } from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SEM_TYPES, TAGS} from '../utils/constants';
-import { drawMoleculeDifferenceOnCanvas } from './cell-renderer';
+import { drawMoleculeDifferenceOnCanvas } from '../utils/cell-renderer';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
@@ -83,23 +83,60 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
     sequencesArray[idx] = params.seqCol.get(molIdx);
     activitiesArray[idx] = params.activityCol.get(molIdx);
   });
+
+  const molDifferences: {[key: number]: HTMLCanvasElement} = {};
+  const units = params.seqCol.getTag(DG.TAGS.UNITS);
+  const separator = params.seqCol.getTag(TAGS.SEPARATOR);
+  const splitter = WebLogo.getSplitter(units, separator);
+  const subParts1 = splitter(sequencesArray[0]);
+  const subParts2 = splitter(sequencesArray[1]);
+  const canvas = createDifferenceCanvas(subParts1, subParts2, units, molDifferences);
+  propPanel.append(ui.div(canvas, { style: { width: '300px', overflow: 'scroll' } }));
+  
+  propPanel.append(createDifferencesWithPositions(molDifferences));
+
+  propPanel.append(createPropPanelField('Activity delta', Math.abs(activitiesArray[0] - activitiesArray[1])));
+  propPanel.append(createPropPanelField('Cliff', params.sali!));
+
+  return propPanel;
+}
+
+function createPropPanelField(name: string, value: number): HTMLDivElement {
+  return ui.divH([
+    ui.divText(`${name}: `, { style: { fontWeight: 'bold', paddingRight: '5px' } }),
+    ui.divText(value.toFixed(2))
+  ], { style: { paddingTop: '5px' } });
+}
+
+export function createDifferenceCanvas(
+  subParts1: string[],
+  subParts2: string[],
+  units: string,
+  molDifferences: { [key: number]: HTMLCanvasElement }): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   canvas.height = 30;
-  const units = params.seqCol.getTag(DG.TAGS.UNITS);
-  const separator = params.seqCol.getTag(TAGS.SEPARATOR);
-  drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30, sequencesArray.join('#'), units, separator, true);
-  propPanel.append(ui.div(canvas, { style: { width: '300px', overflow: 'scroll' } }));
+  drawMoleculeDifferenceOnCanvas(context!, 0, 0, 0, 30, subParts1, subParts2, units, true, molDifferences);
+  return canvas;
+}
 
-  function addFiledToPropPanel(name: string, value: number) {
-    propPanel.append(ui.divH([
-      ui.divText(`${name}: `, { style: { fontWeight: 'bold', paddingRight: '5px' } }),
-      ui.divText(value.toFixed(2))
-    ], { style: { paddingTop: '5px' } }));
+export function createDifferencesWithPositions(
+  molDifferences: { [key: number]: HTMLCanvasElement }): HTMLDivElement {
+  const div = ui.div();
+  if (Object.keys(molDifferences).length > 0) {
+    const diffsPanel = ui.divV([]);
+    diffsPanel.append(ui.divH([
+      ui.divText('Pos', { style: { fontWeight: 'bold', width: '30px', borderBottom: '1px solid' } }),
+      ui.divText('Difference', { style: { fontWeight: 'bold', borderBottom: '1px solid' } }) 
+    ]))
+    for (let key of Object.keys(molDifferences)) {
+      molDifferences[key as any].style.borderBottom = '1px solid lightgray';
+      diffsPanel.append(ui.divH([
+        ui.divText((parseInt(key) + 1).toString(), { style: { width: '30px', borderBottom: '1px solid lightgray' } }),
+        molDifferences[key as any]
+      ]));
+    }
+    div.append(diffsPanel);
   }
-
-  addFiledToPropPanel('Activity delta', Math.abs(activitiesArray[0] - activitiesArray[1]));
-  addFiledToPropPanel('Cliff', params.sali!);
-
-  return propPanel;
+  return div;
 }

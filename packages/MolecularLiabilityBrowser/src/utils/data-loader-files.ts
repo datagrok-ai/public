@@ -14,7 +14,7 @@ import {
   ObsPtmType,
   PtmMapType, QueriesForDataLoader,
 } from './data-loader';
-import {IAntigen, ICdr, IScheme, IVid, IVidObsPtm, MlbDatabase} from './mlb-database';
+import {MlbDatabase} from './mlb-database';
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {packageName} from '../package';
 

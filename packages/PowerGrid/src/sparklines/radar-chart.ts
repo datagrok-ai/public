@@ -13,21 +13,15 @@ function getAxesPointCalculator(cols: DG.Column[], box: DG.Rect) {
     box.midY + ratio * box.width * Math.sin(2 * Math.PI * col / (cols.length)) / 2);
 }
 
-function getScale(cols: DG.Column[], globalScale: boolean, minCols: number, maxCols: number, i: number, row: number): number {
-  return globalScale ? (cols[i].get(row) - minCols) / (maxCols - minCols) : cols[i].scale(row);
-}
-
 interface RadarChartSettings extends SummarySettingsBase {
   // radius: number;
-  globalScale: boolean;
-  colorCode: boolean;
 }
 
 function getSettings(gc: DG.GridColumn): RadarChartSettings {
-  gc.settings ??= getSettingsBase(gc);
-  gc.settings.globalScale ??= false;
-  gc.settings.colorCode ??= false;
-  return gc.settings;
+  return gc.settings ??= {
+    ...getSettingsBase(gc),
+    // ...{radius: 10,},
+  };
 }
 
 
@@ -93,8 +87,6 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
-    const minCols = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
-    const maxCols = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
 
     g.strokeStyle = 'lightgray';
 
@@ -109,8 +101,9 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
       }
     }
 
+
     const path = it.range(cols.length)
-      .map((i) => p(i, !cols[i].isNone(row) ? getScale(cols, settings.globalScale, minCols, maxCols, i, row) : 0));
+      .map((i) => p(i, !cols[i].isNone(row) ? cols[i].scale(row) : 0));
     g.setFillStyle('#00cdff')
       .polygon(path)
       .fill();
@@ -125,48 +118,25 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
         .polygon(it.range(cols.length).map((col) => p(col, i / 4)))
         .stroke();
     }
-
     it.range(cols.length).map(function(i) {
       if (!cols[i].isNone(row)) {
-        const color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.fromHtml('#1E90FF');
-        const scale: number = getScale(cols, settings.globalScale, minCols, maxCols, i, row);
-        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p(i, scale).x, p(i, scale).y, color, 3);
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p(i, cols[i].scale(row)).x, p(i, cols[i].scale(row)).y, DG.Color.fromHtml('#1E90FF'), 3);
       }
     });
   }
 
-  renderSettings(gridColumn: DG.GridColumn): Element {
-    gridColumn.settings ??= getSettings(gridColumn);
-    const settings = gridColumn.settings;
-
-    const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
-      description: 'Determines the way a value is mapped to the vertical scale.\n' +
-        '- Global Scale OFF: bottom is column minimum, top is column maximum. Use when columns ' +
-        'contain values in different units.\n' +
-        '- Global Scale ON: uses the same scale. This lets you compare values ' +
-        'across columns, if units are the same (for instance, use it for tracking change over time).'
-    });
-
-    const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
-    normalizeInput.onChanged(() => gridColumn.grid.invalidate());
-
-    const colorCodeScaleProp = DG.Property.js('colorCode', DG.TYPE.BOOL, {
-      description: 'Activates color rendering'
-    });
-
-    const colorCodeNormalizeInput = DG.InputBase.forProperty(colorCodeScaleProp, settings);
-    colorCodeNormalizeInput.onChanged(() => { gridColumn.grid.invalidate(); });
+  renderSettings(gc: DG.GridColumn): Element {
+    gc.settings ??= getSettings(gc);
+    const settings = gc.settings;
 
     return ui.inputs([
-      normalizeInput,
-      ui.columnsInput('Сolumns', gridColumn.grid.dataFrame, (columns) => {
+      ui.columnsInput('Сolumns', gc.grid.dataFrame, (columns) => {
         settings.columnNames = names(columns);
-        gridColumn.grid.invalidate();
+        gc.grid.invalidate();
       }, {
-        available: names(gridColumn.grid.dataFrame.columns.numerical),
-        checked: settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical),
+        available: names(gc.grid.dataFrame.columns.numerical),
+        checked: settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical),
       }),
-      colorCodeNormalizeInput
     ]);
   }
 }

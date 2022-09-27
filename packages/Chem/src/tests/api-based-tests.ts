@@ -25,7 +25,14 @@ category('server features', () => {
     isColumnPresent(grok.shell.t.columns, 'NumRotatableBonds');
     isColumnPresent(grok.shell.t.columns, 'RingCount');
   });
+
+  test('sketcher', async () => {
+    const result: HTMLElement = grok.chem.sketcher(()=>{}, 'CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3');
+    expect(result !== null, true);
+  });
 });
+
+
 
 category('chem exported', () => {
   test('findSimilar.api.sar-small', async () => {

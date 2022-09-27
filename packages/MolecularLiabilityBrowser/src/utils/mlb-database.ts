@@ -20,31 +20,6 @@ export interface IDbVersion extends IListVersion {
 
 }
 
-export interface IScheme extends ICached {
-  scheme_id: number;
-  scheme: string;
-}
-
-export interface ICdr extends ICached {
-  cdr_id: string;
-  cdr: string;
-}
-
-export interface IAntigen extends ICached {
-  id: number;
-  antigen: string;
-  antigen_ncbi_id: string;
-  antigen_gene_symbol: string;
-}
-
-export interface IVid extends ICached {
-  v_id: string;
-}
-
-export interface IVidObsPtm extends ICached {
-  v_id: string;
-}
-
 export interface IObject extends ICached {
   id?: number;
   key: string;
@@ -57,13 +32,6 @@ export class MlbDatabase extends Dexie {
   get enabled(): boolean { return !!this.serverListVersionDf;}
 
   list_version!: Dexie.Table<IListVersion, number>;
-
-  scheme!: Dexie.Table<IScheme, number>;
-  cdr!: Dexie.Table<ICdr, number>;
-  antigen!: Dexie.Table<IAntigen, number>;
-  vid!: Dexie.Table<IVid, string>;
-  vidObsPtm!: Dexie.Table<IVidObsPtm, string>;
-
   object!: Dexie.Table<IObject, number>;
 
   constructor(serverListVersionDf: DG.DataFrame) {
@@ -72,6 +40,7 @@ export class MlbDatabase extends Dexie {
     if (this.enabled) {
       this.version(1).stores({
         list_version: 'list_id, name, version',
+
         scheme: 'scheme_id, scheme',
         cdr: 'cdr_id, cdr',
         antigen: 'id, antigen, antigen_ncbi_id, antigen_gene_symbol',
@@ -80,21 +49,36 @@ export class MlbDatabase extends Dexie {
 
         object: '++id, key, value',
       });
+
+      this.version(2).stores({
+        list_version: 'list_id, name, version',
+        object: '++id, key, value',
+
+        scheme: null, cdr: null, antigen: null, vid: null, vidObsPtm: null,
+      }).upgrade(async () => {
+        for (const key in ['scheme', 'cdr', 'antigen', 'vid', 'v_id']) {
+          const cacheVersion = (await this.list_version.where({'name': key}).first());
+          await this.list_version.delete(cacheVersion.list_id);
+        }
+      });
+
     }
   }
 
-  async getObject<Type>(key: string, getServerObject: () => Promise<Type>): Promise<Type> {
+  async getObject<TData>(key: string, getServerObject: () => Promise<TData>): Promise<TData> {
     const dbVersion: IDbVersion = this.enabled ? this.getServerVersion(key) : null;
 
     // read version of cached list if cache is enabled
     const cacheVersion = this.enabled ? (await this.list_version.where({'name': key}).first())?.version : null;
 
     if (!this.enabled || cacheVersion != dbVersion.version) {
-      const serverObj: Type = await getServerObject();
+      const serverObj: TData = await getServerObject();
 
       if (this.enabled) {
-        await this.object.put({key: key, value: serverObj});
-        await this.list_version.put(dbVersion, dbVersion.list_id);
+        await Promise.all([
+          this.object.put({key: key, value: serverObj}),
+          this.list_version.put(dbVersion, dbVersion.list_id)
+        ]);
       }
 
       return serverObj;
@@ -104,44 +88,29 @@ export class MlbDatabase extends Dexie {
     }
   }
 
-  // /** Get object from cache if exists with appropriate version.
-  //  * @param {string} listName
-  //  * @param {() => Promise<DG.DataFrame>} loadDf
-  //  * @param {(db_row: DG.Row) => TCached} rowToCache
-  //  * @param {obj: TCached[]) => TData} fromCache
-  //  * @param {(df: DG.DataFrame) => TData} fromDf
-  //  * @return {Promise<TData>}
-  //  * */
-  async getData<TCached extends ICached, TData>(
-    listName: string,
-    loadDf: () => Promise<DG.DataFrame>,
-    rowToCache: (db_row: DG.Row) => TCached,
-    fromCache: (obj: TCached[]) => TData,
-    fromDf: (df: DG.DataFrame) => TData
-  ): Promise<TData> {
-    // const fields: string[] = keys<TCached>();
-    const dbVersion: IDbVersion = this.enabled ? this.getServerVersion(listName) : null;
+  async getDataFrame(key: string, getServerObject: () => Promise<DG.DataFrame>): Promise<DG.DataFrame> {
+    const dbVersion: IDbVersion = this.enabled ? this.getServerVersion(key) : null;
 
-    // read version of cached list
-    const cacheVersion = this.enabled ? (await this.list_version.where({'name': listName}).first())?.version : null;
+    // read version of cached list if cache is enabled
+    const cacheVersion = this.enabled ? (await this.list_version.where({'name': key}).first())?.version : null;
 
-    if (!this.enabled || cacheVersion !== dbVersion.version) {
-      // Fill cache from database
-      const dbDf: DG.DataFrame = await loadDf();
+    if (!this.enabled || cacheVersion != dbVersion.version) {
+      const serverDf: DG.DataFrame = await getServerObject();
 
       if (this.enabled) {
-        this[listName].clear();
-        this[listName].bulkAdd([...Array(dbDf.rowCount).keys()]
-          .map((rowI) => dbDf.row(rowI))
-          .map(rowToCache));
-
-        this.list_version.put(dbVersion, dbVersion.list_id);
+        const serverDfBa: Uint8Array = serverDf.toByteArray();
+        await Promise.all([
+          this.object.put({key: key, value: serverDfBa}),
+          this.list_version.put(dbVersion, dbVersion.list_id)
+        ]);
       }
 
-      return fromDf(dbDf);
+      return serverDf;
     } else {
-      const resList: TCached[] = await this[listName].toArray();
-      return fromCache(resList);
+      const cacheObj: IObject = await this.object.where({key: key}).first();
+      const cacheDfBa: Uint8Array = cacheObj.value;
+      const cacheDf: DG.DataFrame = DG.DataFrame.fromByteArray(cacheDfBa);
+      return cacheDf;
     }
   }
 

@@ -351,7 +351,7 @@ export class FunctionView extends DG.ViewBase {
         return card;
       });
 
-      const allCards =[...historyCards, ...favoriteCards];
+      const allCards = [...historyCards, ...favoriteCards];
       allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
 
       return ui.divV(favoriteCards);
@@ -366,7 +366,7 @@ export class FunctionView extends DG.ViewBase {
         icon.style.marginRight = '3px';
         icon.style.alignSelf = 'center';
         const userLabel = ui.label(funcCall.author.friendlyName, 'd4-link-label');
-        ui.bind(funcCall.author, userLabel);
+        ui.bind(funcCall.author, icon);
 
         const card = ui.divH([
           ui.divH([
@@ -383,7 +383,7 @@ export class FunctionView extends DG.ViewBase {
             }, 'Add to favorites'),
             ui.iconFA('link', async (ev) => {
               ev.stopPropagation();
-              await navigator.clipboard.writeText(`${window.location.href}`);
+              await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?id=${funcCall.id}`);
             }, 'Copy link to the run'),
             ui.iconFA('trash-alt', async (ev) => {
               ev.stopPropagation();
@@ -624,6 +624,10 @@ export class FunctionView extends DG.ViewBase {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     await this.onBeforeLoadRun();
     const pulledRun = await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
+    // FIX ME: manually get script since pulledRun contains empty Func
+    const script = await grok.dapi.functions.find(pulledRun.func.id);
+    //@ts-ignore
+    window.grok_FuncCall_Set_Func(pulledRun.dart, script.dart);
     pulledRun.options['isHistorical'] = true;
     const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
@@ -686,7 +690,7 @@ export class FunctionView extends DG.ViewBase {
 
   private interactiveEventListeners = [
     () =>this.root.removeEventListener('click', this.rootReadonlyEventListeners[2]),
-    () =>this.root.addEventListener('click', this.rootReadonlyEventListeners[2])
+    () =>setTimeout(() => this.root.addEventListener('click', this.rootReadonlyEventListeners[2]), 100)
   ];
 
   private setRunViewReadonly(): void {
@@ -697,7 +701,7 @@ export class FunctionView extends DG.ViewBase {
     this.root.querySelectorAll(`.${INTERACTIVE_CSS_CLASS}`).forEach((el) => {
       (el as HTMLElement).style.zIndex = '2';
       (el as HTMLElement).addEventListener('mousedown', this.interactiveEventListeners[0]);
-      (el as HTMLElement).addEventListener('mouseup', () => setTimeout(this.interactiveEventListeners[1], 100));
+      (el as HTMLElement).addEventListener('mouseup', this.interactiveEventListeners[1]);
     });
   }
 

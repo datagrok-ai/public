@@ -8,12 +8,16 @@ export const _package = new DG.Package();
 import {MacromoleculeDifferenceCellRenderer, MonomerCellRenderer} from './utils/cell-renderer';
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
-import {runKalign} from './utils/multiple-sequence-alignment';
-import {SequenceAlignment} from './seq_align';
-import {getEmbeddingColsNames, sequenceSpace} from './utils/sequence-space';
+import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
+import {SequenceAlignment, Aligned} from './seq_align';
+import {Nucleotides} from '@datagrok-libraries/bio/src/nucleotides';
+import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
+import {getEmbeddingColsNames, sequenceSpace} from './analysis/sequence-space';
+import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './analysis/sequence-activity-cliffs';
 import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/monomer-utils';
-import {createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './utils/sequence-activity-cliffs';
+import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {representationsWidget} from './widgets/representations';
@@ -29,6 +33,9 @@ import {
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import * as C from './utils/constants';
+import {PhyloTreeViewApp} from './phylo-tree-view-app';
+import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
+import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 
 //tags: init
 export async function initBio() {
@@ -449,4 +456,53 @@ export function splitToMonomers(col: DG.Column<string>): void {
 export function getHelmMonomers(seqCol: DG.Column<string>): string[] {
   const stats = WebLogo.getStats(seqCol, 1, WebLogo.splitterAsHelm);
   return Object.keys(stats.freq);
+}
+
+
+//name: SequenceSimilaritySearchViewer
+//tags: viewer
+//output: viewer result
+export function similaritySearchViewer(): SequenceSimilarityViewer {
+  return new SequenceSimilarityViewer();
+}
+
+//top-menu: Bio | Similarity Search...
+//name: similaritySearch
+//description: finds the most similar sequence
+//output: viewer result
+export function similaritySearchTopMenu(): void {
+  (grok.shell.v as DG.TableView).addViewer('SequenceSimilaritySearchViewer');
+}
+
+//name: SequenceDiversitySearchViewer
+//tags: viewer
+//output: viewer result
+export function diversitySearchViewer(): SequenceDiversityViewer {
+  return new SequenceDiversityViewer();
+}
+
+//top-menu: Bio | Diversity Search...
+//name: diversitySearch
+//description: finds the most diverse molecules
+//output: viewer result
+export function diversitySearchTopMenu() {
+  (grok.shell.v as DG.TableView).addViewer('SequenceDiversitySearchViewer');
+}
+
+
+//name: PhyloTreeView
+//tags: app
+export async function bioPhyloTreeViewApp() {
+  const pi = DG.TaskBarProgressIndicator.create('open PhyloTreeView app');
+  try {
+    const app = new PhyloTreeViewApp();
+    await app.init();
+  } catch (err: unknown) {
+    const msg: string = 'PhyloTreeView app error: ' +
+      `${err instanceof Error ? err.message : (err as Object).toString()}`;
+    grok.shell.error(msg);
+    console.error(msg);
+  } finally {
+    pi.close();
+  }
 }

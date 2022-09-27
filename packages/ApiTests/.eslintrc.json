@@ -13,6 +13,7 @@
   },
   "plugins": ["@typescript-eslint"],
   "rules": {
+    "no-trailing-spaces": "off",
     "indent": [
       "error",
       2

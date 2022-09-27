@@ -48,7 +48,7 @@ export async function pubChemIdentitySearch(molString: string): Promise<DG.Widge
 //input: string id
 //output: string smiles {semType: Molecule}
 //meta.role: converter
-//meta.inputRegexp: ([0-9]+)
+//meta.inputRegexp: (^[0-9]+$)
 //connection: PubChemApi
 export async function pubChem(id: string) {
   const url = `${pubChemRest}/pug/compound/cid/${id}/property/CanonicalSMILES/JSON`;

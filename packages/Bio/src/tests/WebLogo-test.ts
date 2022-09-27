@@ -61,21 +61,21 @@ XZJ{}2
   test('testPickupPaletteX', async () => { await _testPickupPaletteX(csvDfX); });
 });
 
-category('WebLogo.monomerToText', () => {
+category('WebLogo.monomerToShort', () => {
   test('longMonomerSingle', async () => {
-    await expect(WebLogo.monomerToText('S'), 'S');
+    await expect(WebLogo.monomerToShort('S', 5), 'S');
   });
   test('longMonomerShort', async () => {
-    await expect(WebLogo.monomerToText('Short'), 'Short');
+    await expect(WebLogo.monomerToShort('Short', 5), 'Short');
   });
   test('longMonomerLong56', async () => {
-    await expect(WebLogo.monomerToText('Long56'), 'Long5…');
+    await expect(WebLogo.monomerToShort('Long56', 5), 'Long5…');
   });
   test('longMonomerComplexFirstPartShort', async () => {
-    await expect(WebLogo.monomerToText('Long-long'), 'Long…');
+    await expect(WebLogo.monomerToShort('Long-long', 5), 'Long…');
   });
   test('longMonomerComplexFirstPartLong56', async () => {
-    await expect(WebLogo.monomerToText('Long56-long'), 'Long5…');
+    await expect(WebLogo.monomerToShort('Long56-long', 5), 'Long5…');
   });
 });
 

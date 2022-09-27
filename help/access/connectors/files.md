@@ -25,6 +25,6 @@ Once a file share is mounted as a network drive on a server and registered withi
 
 See also:
 
-* [File shares](/file-shares.md)
+* [File shares](../file-shares.md)
 * [Data connection](../data-connection.md)
 * [File Indexer](../../access/files-indexer.md)

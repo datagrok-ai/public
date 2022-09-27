@@ -258,11 +258,9 @@ export class TreeBrowser extends DG.JsViewer {
     const ch: number = this.root.clientHeight;
     console.debug(`MLB: TreeBrowser.calcSize( ${cw.toString()} x ${ch.toString()} )`);
 
-    const width = this.root.clientWidth;
-    const height = this.root.clientHeight;
     if (this.treeDiv) {
-      this.treeDiv.style.width = `${width}px`;
-      this.treeDiv.style.height = `${height}px`;
+      this.treeDiv.style.width = `${cw}px`;
+      this.treeDiv.style.height = `${ch}px`;
 
       this.phyloTreeViewer.setProps({size: this.treeDiv.getBoundingClientRect()});
     }
@@ -324,9 +322,14 @@ export class TreeBrowser extends DG.JsViewer {
       source: treeTxt,
       type: TreeTypes.Rectangular,
     });
+    // to fix blured image
+    this.phyloTreeViewer.deck.setProps({
+      useDevicePixels: true,
+    });
     this.calcSize();
 
-    this.phyloTreeViewer.selectNode = this.selectNode.bind(this);
+    this.phyloTreeViewer.selectNode = this.tvSelectNode.bind(this);
+    // this.phyloTreeViewer.handleHover = this.tvHandleHover.bind(this);
 
     this.viewSubs.push(
       this.treeDf.onCurrentRowChanged.subscribe(this._onTreeGridCurrentRowChanged.bind(this)));
@@ -378,7 +381,7 @@ export class TreeBrowser extends DG.JsViewer {
    * Finds and selects tree node chosen.
    * @param {*} node Node to consider.
    */
-  selectNode(node: any) {
+  tvSelectNode(node: any) {
     if (node) {
       if (node.label) {
         const nodeVId: string = getVId(node.id);

@@ -1,0 +1,260 @@
+
+     RDKit          2D
+
+ 14 16  0  0  0  0  0  0  0  0999 V2000
+    1.5000    0.0000    0.0000 R   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.5000    2.5981    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7500    3.8971    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7500    3.8971    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.5000    5.1962    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.0000    5.1962    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.7500    3.8971    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.0000    2.5981    0.0000 R   0  0  0  0  0  0  0  0  0  0  0  0
+    1.5000    2.5981    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  2  0
+  2  3  1  0
+  3  4  2  0
+  4  5  1  0
+  5  6  2  0
+  6  7  1  0
+  7  8  2  0
+  8  9  1  0
+  9 10  2  0
+ 10 11  1  0
+ 11 12  2  0
+ 12 13  1  0
+ 13 14  2  0
+ 14  1  1  0
+ 14  5  1  0
+ 13  8  1  0
+M  END
+
+>  <col 1>
+0
+
+>  <ChEMBL ID>
+CHEMBL483900
+
+>  <Smiles>
+CC(C)(O)C#Cc1ccc2c(c1)c1cc(Cl)ccc1c1nc(-c3c(C#N)cccc3C#N)[nH]c21
+
+>  <Name>
+
+
+>  <Synonyms>
+
+
+>  <Type>
+Small molecule
+
+>  <Max Phase>
+0
+
+>  <Molecular Weight>
+460.9200134277344
+
+>  <Targets>
+10
+
+>  <Bioactivities>
+15
+
+>  <AlogP>
+6.059999942779541
+
+>  <PSA>
+96.48999786376953
+
+>  <HBA>
+4
+
+>  <HBD>
+2
+
+>  <#RO5 Violations>
+1
+
+>  <#Rotatable Bonds>
+1
+
+>  <Passes Ro3>
+false
+
+>  <QED Weighted>
+0.23000000417232513
+
+>  <CX ApKa>
+10.319999694824219
+
+>  <CX BpKa>
+4.269999980926514
+
+>  <CX LogP>
+5.980000019073486
+
+>  <CX LogD>
+5.980000019073486
+
+>  <Aromatic Rings>
+5
+
+>  <Structure Type>
+MOL
+
+>  <Inorganic Flag>
+-1
+
+>  <Heavy Atoms>
+34
+
+>  <HBA Lipinski>
+5
+
+>  <HBD Lipinski>
+2
+
+>  <#RO5 Violations (Lipinski)>
+1
+
+>  <Molecular Weight (Monoisotopic)>
+460.1091003417969
+
+>  <Molecular Species>
+NEUTRAL
+
+>  <Molecular Formula>
+C28H17ClN4O
+
+$$$$
+
+     RDKit          2D
+
+ 11 12  0  0  0  0  0  0  0  0999 V2000
+    3.0000    0.0000    0.0000 R   0  0  0  0  0  1  0  0  0  0  0  0
+    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.7537    2.4138    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -3.1240    1.8037    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+   -2.9672    0.3119    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+   -4.0819   -0.6918    0.0000 R   0  0  0  0  0  1  0  0  0  0  0  0
+    0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  2  0
+  3  4  1  0
+  4  5  2  0
+  5  6  1  0
+  6  7  1  0
+  7  8  2  0
+  8  9  1  0
+  9 10  1  0
+  6 11  2  0
+ 11  2  1  0
+  9  5  1  0
+M  RGP  2   1   1  10   2
+M  END
+
+>  <col 1>
+1
+
+>  <ChEMBL ID>
+CHEMBL497863
+
+>  <Smiles>
+Nc1ncnc(Nc2ccc3c(cnn3Cc3cccc(F)c3)c2)c1/C=N/NCC(F)(F)F
+
+>  <Name>
+
+
+>  <Synonyms>
+
+
+>  <Type>
+Small molecule
+
+>  <Max Phase>
+0
+
+>  <Molecular Weight>
+458.4200134277344
+
+>  <Targets>
+2
+
+>  <Bioactivities>
+3
+
+>  <AlogP>
+3.8299999237060547
+
+>  <PSA>
+106.04000091552734
+
+>  <HBA>
+8
+
+>  <HBD>
+3
+
+>  <#RO5 Violations>
+0
+
+>  <#Rotatable Bonds>
+7
+
+>  <Passes Ro3>
+false
+
+>  <QED Weighted>
+0.2199999988079071
+
+>  <CX ApKa>
+13.850000381469727
+
+>  <CX BpKa>
+4.329999923706055
+
+>  <CX LogP>
+3.7699999809265137
+
+>  <CX LogD>
+3.7699999809265137
+
+>  <Aromatic Rings>
+4
+
+>  <Structure Type>
+MOL
+
+>  <Inorganic Flag>
+-1
+
+>  <Heavy Atoms>
+33
+
+>  <HBA Lipinski>
+8
+
+>  <HBD Lipinski>
+4
+
+>  <#RO5 Violations (Lipinski)>
+0
+
+>  <Molecular Weight (Monoisotopic)>
+458.1590881347656
+
+>  <Molecular Species>
+NEUTRAL
+
+>  <Molecular Formula>
+C21H18F4N8
+
+$$$$

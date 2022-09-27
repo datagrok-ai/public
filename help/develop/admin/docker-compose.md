@@ -62,13 +62,13 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
 2. Set the Datagrok image version with the `DATAGROK_VERSION` environment variable. It can be any tag from
    [Docker Hub](https://hub.docker.com/r/datagrok/datagrok/tags). The default value is `latest`.
 
-    For Windows users:
+   For Windows users:
 
     ```shell
     set DATAGROK_VERSION=latest
     ```
 
-    For Unix/Linux users:
+   For Unix/Linux users:
 
     ```shell
     export DATAGROK_VERSION='latest'
@@ -80,7 +80,7 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
    , `DATAGROK_GROK_SPAWNER_PORT` (the default value is `8000`). To start the second stand properly the values should
    differ from the ports of the existing stands. For example, you can increment every port value by 1.
 
-    For Windows users:
+   For Windows users:
 
     ```shell
     set DATAGROK_PORT=8081
@@ -91,7 +91,7 @@ It is possible to run multiple stands of Datagrok on one host machine. To do so:
     set DATAGROK_GROK_SPAWNER_PORT=8001
     ```
 
-    For Unix/Linux users:
+   For Unix/Linux users:
 
     ```shell
     export DATAGROK_PORT='8081'
@@ -187,18 +187,19 @@ To run Datagrok with exact CVM features, specify them in the command line using 
 ## Troubleshooting
 
 1. In case of any issues, check the settings in the Datagrok (Tools | Settings...).
-   * Connectors
-     * External Host: `grok_connect`
-   * Scripting:
-     * CVM Url: `http://cvm:8090`
-     * CVM URL Client: `http://localhost:8090`
-     * H2o Url: `http://h2o:54321`
-     * API Url: `http://datagrok:8080/api`
-     * Cvm Split: `true`
-   * Dev:
-     * CVM Url: `http://localhost:8090`
-     * Cvm Split: `true`
-     * API Url: `http://datagrok:8080/api`
+
+    * Connectors
+      * External Host: `grok_connect`
+    * Scripting:
+      * CVM Url: `http://cvm:8090`
+      * CVM URL Client: `http://localhost:8090`
+      * H2o Url: `http://h2o:54321`
+      * API Url: `http://datagrok:8080/api`
+      * Cvm Split: `true`
+    * Dev:
+      * CVM Url: `http://localhost:8090`
+      * Cvm Split: `true`
+      * API Url: `http://datagrok:8080/api`
 
 2. Check containers logs for any possible errors and report the problem if there are any
 

@@ -45,6 +45,7 @@ if core is not None:
         id = match.group(0)
         
       group = f'{prefix}{r_group}'
+
       if id not in r_group_map:
         r_group_map[id] = [group]
         fragments[r_group_map[id][-1]] = np.full(length, None, dtype=object)
@@ -63,8 +64,8 @@ if core is not None:
         none_group = group
         r_group += 1
 
-      fragment_smiles = re.sub(r"\[\d+\*\]", f'[{r_group_map[id][0]}]', fragment_smiles)
-      fragment_smiles = re.sub(r"\*", f'[{r_group_map[id][0]}]', fragment_smiles)
+      r_n = none_group.replace('R', '')
+      fragment_smiles = re.sub(r"\[\d+\*\]", f'[{r_n}*]', fragment_smiles)
 
       fragments[none_group][n] = fragment_smiles
 else:
