@@ -765,15 +765,18 @@ export class DockerfilesDataSource extends HttpDataSource<Dockerfile> {
     super(s, clsName);
   }
 
+  /* Runs container */
   run(dockerfileId: string): Promise<boolean> {
     return api.grok_Dapi_DockerfilesDataSource_Run(this.dart, dockerfileId);
   }
 
+  /* Stops container */
   stop(dockerfileId: string): Promise<boolean> {
     return api.grok_Dapi_DockerfilesDataSource_Stop(this.dart, dockerfileId);
   }
 
-  request(dockerfileId: string, path: string, params: ResponseInit): Promise<Response> {
+  /* Makes a request to container with dockerfileId */
+  request(dockerfileId: string, path: string, params: ResponseInit): Promise<string | null> {
     return api.grok_Dapi_DockerfilesDataSource_ProxyRequest(this.dart, dockerfileId, path, params);
   }
 }
