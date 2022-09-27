@@ -79,7 +79,6 @@ export async function testManager(): Promise<void> {
 
 //name: TestDetectors
 //top-menu: Tools | Dev | Test Detectors
-//test: square(1) == 1
 export function testDetectors() {
   _testDetectorsDialog();
 }

@@ -207,7 +207,7 @@ export class TestManager extends DG.ViewBase {
       ui.tooltip.bind(item.root,
         () => this.getTestsInfoGrid(
           `Package = ${t.packageName} and category = ${t.test.category} and name =  ${t.test.name}`,
-          NODE_TYPE.TEST));
+          NODE_TYPE.TEST, true));
       if (testFromUrl && testFromUrl.catName === category.fullName && testFromUrl.testName === t.test.name)
         this.selectedNode = item;
     });
@@ -324,12 +324,21 @@ export class TestManager extends DG.ViewBase {
       debugger;
     this.testInProgress(t.resultDiv, true);
     const start = Date.now();
-    const res = t.test.category === this.autoTestsCatName ? await testFunc(t.func) :
-      await grok.functions.call(
+    let res;
+    let testSucceded;
+    if (t.test.category === this.autoTestsCatName) {
+      res = await testFunc(t.func);
+      testSucceded = Object.values(res).filter(it => !it).length === 0;
+      res = this.createResultsDfForAutotests(res, t.func.name);
+    } else {
+      res = await grok.functions.call(
         `${t.packageName}:test`, {
           'category': t.test.category,
           'test': t.test.name,
-        });
+        }); 
+      res.columns.addNewString('funcTest').init((i) => '');
+      testSucceded = res.get('success', 0);
+    }
     const time = Date.now() - start;
     if (!this.testsResultsDf) {
       this.testsResultsDf = res;
@@ -339,9 +348,19 @@ export class TestManager extends DG.ViewBase {
       this.removeTestRow(t.packageName, t.test.category, t.test.name);
       this.testsResultsDf = this.testsResultsDf.append(res);
     }
-    const testRes = res.get('success', 0);
-    this.updateTestResultsIcon(t.resultDiv, testRes);
-    return testRes;
+    this.updateTestResultsIcon(t.resultDiv, testSucceded);
+    return testSucceded;
+  }
+
+  createResultsDfForAutotests(res: {[key: string]: boolean}, funcName: string) {
+    const resDf = DG.DataFrame.create(Object.keys(res).length);
+    resDf.columns.addNewBool('success').init((i) => Object.values(res)[i]);
+    resDf.columns.addNewString('result').init((i) => Object.values(res)[i] ? 'OK' : 'Failed');
+    resDf.columns.addNewInt('ms').init((i) => 0);
+    resDf.columns.addNewString('category').init((i) => this.autoTestsCatName);
+    resDf.columns.addNewString('name').init((i) => funcName);
+    resDf.columns.addNewString('funcTest').init((i) => Object.keys(res)[i]);
+    return resDf;
   }
 
   async runAllTests(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
@@ -451,7 +470,7 @@ export class TestManager extends DG.ViewBase {
     return nodeType === NODE_TYPE.PACKAGE ? `Package = ${tests.package.name}` :
       nodeType === NODE_TYPE.CATEGORY ?
         `Package = ${tests.packageName} and category IN (${tests.subCatsNames.join(',')})` :
-        `Package = ${tests.packageName} and category = ${tests.test.category} and name =  ${tests.test.name}`;
+        `Package = ${tests.packageName} and category = ${tests.test.category} and name = ${tests.test.name}`;
   }
 
   testDetails(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
@@ -469,16 +488,17 @@ export class TestManager extends DG.ViewBase {
   }
 
 
-  getTestsInfoGrid(condition: string, nodeType: NODE_TYPE) {
+  getTestsInfoGrid(condition: string, nodeType: NODE_TYPE, isTooltip?: boolean) {
     let info = ui.divText('No tests have been run');
     if (this.testsResultsDf) {
       const testInfo = this.testsResultsDf
         .groupBy(this.testsResultsDf.columns.names())
         .where(condition)
         .aggregate();
-      if (testInfo.rowCount === 1 && testInfo.col('result').isNone(0))
+      if (testInfo.rowCount === 1 && testInfo.col('name').isNone(0))
         return info;
-      if (nodeType === NODE_TYPE.TEST || testInfo.rowCount === 1 && !testInfo.col('result').isNone(0)) {
+      const cat = testInfo.get('category', 0);
+      if (testInfo.rowCount === 1 && !testInfo.col('name').isNone(0)) {
         const time = testInfo.get('time, ms', 0);
         const result = testInfo.get('result', 0);
         const resColor = testInfo.get('success', 0) ? 'lightgreen' : 'red';
@@ -486,17 +506,24 @@ export class TestManager extends DG.ViewBase {
           ui.divText(result, {style: {color: resColor}}),
           ui.divText(`Time, ms: ${time}`),
         ]);
+        if (cat === this.autoTestsCatName)
+          info.append(`Function: ${testInfo.get('funcTest', 0)}`);
         if (nodeType !== NODE_TYPE.TEST)
           info.append(ui.divText(`Test: ${testInfo.get('name', 0)}`));
         if (nodeType === NODE_TYPE.PACKAGE)
-          info.append(ui.divText(`Category: ${testInfo.get('category', 0)}`));
+          info.append(ui.divText(`Category: ${cat}`));
       } else {
-        info = ui.divV([
-          ui.button('Add to workspace', () => {
-            grok.shell.addTableView(testInfo);
-          }),
-          testInfo.plot.grid().root,
-        ]);
+        if (!isTooltip) {
+          info = ui.divV([
+            ui.button('Add to workspace', () => {
+              grok.shell.addTableView(testInfo);
+            }),
+            testInfo.plot.grid().root,
+          ]);
+        }
+        else {
+          return null;
+        }
       }
     }
     return info;
