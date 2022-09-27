@@ -20,7 +20,7 @@ import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CO
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
-import {representationsWidget} from './widgets/representations';
+import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
@@ -32,8 +32,8 @@ import {
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import * as C from './utils/constants';
-import { SequenceSimilarityViewer } from './analysis/sequence-similarity-viewer';
-import { SequenceDiversityViewer } from './analysis/sequence-diversity-viewer';
+import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
+import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 
 //tags: init
 export async function initBio() {
