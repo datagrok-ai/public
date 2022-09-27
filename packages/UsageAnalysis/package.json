@@ -5,7 +5,7 @@
     "email": "kdoncov@datagrok.ai"
   },
   "friendlyName": "Usage Analysis",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Usage Analysis System",
   "repository": {
     "type": "git",
@@ -16,15 +16,16 @@
     "@datagrok-libraries/utils": "0.1.0",
     "acorn": "^8.5.0",
     "cash-dom": "^8.1.0",
+    "choices.js": "^10.1.0",
     "css-loader": "^6.4.0",
     "datagrok-api": "^1.6.0",
     "moment": "^2.29.1",
     "package-lock.json": "^1.0.0",
+    "rxjs": "^6.5.5",
     "style-loader": "^3.3.0",
     "ts-loader": "^8.1.0",
     "typescript": "^4.2.3",
-    "webpack": "^5.33.2",
-    "choices.js": "^10.1.0"
+    "webpack": "^5.33.2"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
@@ -42,21 +43,21 @@
     "test-local": "set HOST=localhost && jest"
   },
   "devDependencies": {
+    "@types/jest": "^27.0.0",
+    "@types/js-yaml": "^4.0.5",
+    "@types/node-fetch": "^2.6.2",
+    "@types/select2": "^4.0.55",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
-    "@types/jest": "^27.0.0",
-    "@types/select2": "^4.0.55",
     "jest": "^27.0.0",
     "jest-html-reporter": "^3.5.0",
+    "js-yaml": "^4.1.0",
+    "node-fetch": "^2.6.7",
     "puppeteer": "^13.7.0",
     "ts-jest": "^27.0.0",
-    "webpack-cli": "^4.7.2",
-    "@types/js-yaml": "^4.0.5",
-    "js-yaml": "^4.1.0",
-    "@types/node-fetch": "^2.6.2",
-    "node-fetch": "^2.6.7"
+    "webpack-cli": "^4.7.2"
   },
   "canEdit": [
     "Developers"
