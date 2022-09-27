@@ -463,12 +463,12 @@ export function getMolfiles(col: DG.Column) : DG.Column {
   return res;
 }
 
-function getParts(subParts: string[], s: string) {
+function getParts(subParts: string[], s: string) : string[] {
   let j = 0;
-  let allParts  = [];
+  let allParts: string[] = [];
   for (let k = 0; k < subParts.length; ++k) {
-    let indexOfMonomer = s.indexOf(subParts[k]);
-    let helmBeforeMonomer = s.slice(j, indexOfMonomer);
+    let indexOfMonomer: number = s.indexOf(subParts[k]);
+    let helmBeforeMonomer: string = s.slice(j, indexOfMonomer);
     allParts.push(helmBeforeMonomer);
     allParts.push(subParts[k]);
     s = s.substring(indexOfMonomer + subParts[k].length);
