@@ -34,6 +34,107 @@ async function censusPromise(args: any) {
   });
 }
 
+function uiCensusDialog() {
+  const data = grok.data.demo.demog(5);
+  const data2 = grok.data.demo.demog(10);
+
+  const ruslutGridStyle = {
+    'allowEdit': false,
+    'showAddNewRowIcon': true,
+    'allowColReordering': false,
+    'allowColResizing': false,
+    'allowColHeaderResizing': false,
+    'allowColSelection': false,
+    'allowRowResizing': false,
+    'allowRowSelection': false,
+    'allowBlockSelection': false,
+    'autoScrollColumnIntoView': false,
+    'showCurrentRowIndicator': false,
+    'showCurrentCellOutline': false,
+    'showRowHeader': false,
+    'showColumnTooltip': false,
+    'showColumnGridlines': false,
+    'topLevelDefaultMenu': true,
+  };
+
+  const inputGridStyle = {
+    'allowEdit': false,
+    'showAddNewRowIcon': true,
+    'allowColReordering': false,
+    'allowColResizing': false,
+    'allowColHeaderResizing': false,
+    'allowColSelection': false,
+    'allowRowResizing': false,
+    'allowRowSelection': false,
+    'allowBlockSelection': false,
+    'autoScrollColumnIntoView': false,
+    'showCurrentRowIndicator': true,
+    'showCurrentCellOutline': false,
+    'showRowHeader': false,
+    'showColumnTooltip': false,
+    'showColumnGridlines': false,
+    'topLevelDefaultMenu': true,
+  };
+
+  const inputGrid = DG.Viewer.grid(data2, inputGridStyle);
+
+  const inputs = null;
+  // const inputs = ui.inputs([
+  //   ui.stringInput('Search', ''),
+  //   ui.stringInput('Location', ''),
+  //   ui.choiceInput('Period', '', ['1990','1991']),
+  //   ui.divText('Dataset', {style: {color: 'var(--grey-4)', marginTop: '5px'}}),
+  //   inputGrid.root,
+  // ], 'ui-form-condensed');
+
+  const title = ui.h2('1990 Population Esimates - 1990-2000 Intercensal Esimates: United States, Nevada');
+
+  const description = ui.p('Monthly Intercensal Esimaates...');
+  description.style.cssText = `
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  margin: 10px 0;
+  `;
+
+  const gridControl = ui.divH([
+    ui.link('All', ()=>{grok.shell.info('Select all');}, 'Select all', {style: {marginRight: '10px'}}),
+    ui.link('None', ()=>{grok.shell.info('Deselect all');}, 'Deselect all', ''),
+    ui.divText('N Cheked'),
+  ]);
+  // gridControl.children[1].style.margin = '0 10px';
+  gridControl.style.bottom = '5px';
+  gridControl.style.position = 'Absolute';
+
+  const resultGrid = DG.Viewer.grid(data, ruslutGridStyle);
+  resultGrid.columns.setVisible(['site', 'race']);
+
+  const result = ui.splitV([
+    ui.divV([
+      title,
+      description,
+      ui.link('Read more', '#', 'Click to read more about this method'),
+      gridControl,
+    ]),
+    ui.box(resultGrid.root),
+  ], {style: {marginLeft: '24px'}});
+
+  const root = ui.splitH([
+    ui.box(inputs, {style: {maxWidth: '230px'}}),
+    result]);
+
+  const dlg = ui.dialog({title: 'Windows', helpUrl: '/help/transform/add-new-column.md'}) //TODO: place my help here
+    .add(root)
+    .show({width: 700, height: 500, center: true});
+
+
+  // dlg.root.querySelector('.d4-dialog-contents').classList.remove('ui-panel');
+  // dlg.root.querySelector('.d4-dialog-contents').classList.add('ui-box');
+
+  return dlg;
+}
+
 //name: getCensusInfo
 export async function getCensusInfo() {
   let htmlStyle: DG.ElementOptions = { };
@@ -323,7 +424,7 @@ export async function gisBatchGeocoding(address: string): Promise<string> {
 //tags: viewer
 //output: viewer result
 export function gisViewer(): GisViewer {
-  setTimeout(() => {grok.shell.windows.showProperties = true;}, 500);
+  // setTimeout(() => {grok.shell.windows.showProperties = true;}, 500);
   return new GisViewer();
 }
 
@@ -403,18 +504,18 @@ export async function gisKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
 function gisGeoJSONFileDetector(strBuf: string): [boolean, boolean] {
   let arrTmp: any[] | null;
   //searching for patterns of GeoJSON data
-  arrTmp = strBuf.match(/['"]type['"]\s?:\s?['"](?:Multi)?Polygon/ig);
+  arrTmp = strBuf.match(/['']type['']\s?:\s?[''](?:Multi)?Polygon/ig);
   let cntTypeGeo = arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['"]type['"]\s?:\s?\'|\"(?:Multi)?Point/ig);
+  arrTmp = strBuf.match(/['']type['']\s?:\s?\'|\'(?:Multi)?Point/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['"]type['"]\s?:\s?\'|\"(?:Multi)?LineString/ig);
+  arrTmp = strBuf.match(/['']type['']\s?:\s?\'|\'(?:Multi)?LineString/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['"]type['"]\s?:\s?['"]Feature/ig);
+  arrTmp = strBuf.match(/['']type['']\s?:\s?['']Feature/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['"]type['"]\s?:\s?['"]GeometryCollection/ig);
+  arrTmp = strBuf.match(/['']type['']\s?:\s?['']GeometryCollection/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
   //searching for patterns of TopoJSON data
-  arrTmp = strBuf.match(/['"]type['"]\s?:\s?['"]Topology['"]/ig);
+  arrTmp = strBuf.match(/['']type['']\s?:\s?['']Topology['']/ig);
   const cntTypeTopo = arrTmp ? arrTmp.length : 0;
 
   if (cntTypeGeo == 0) return [false, false];
