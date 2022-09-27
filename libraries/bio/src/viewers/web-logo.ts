@@ -236,7 +236,7 @@ export class WebLogo extends DG.JsViewer {
 
     this.msgHost = ui.div('No message');
     this.msgHost.style.display = 'none';
-    
+
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
 
@@ -436,8 +436,6 @@ export class WebLogo extends DG.JsViewer {
       this.slider.setValues(0, this.Length,
         newMin, newMax);
     }
-    this.slider.setValues(0, this.Length,
-      newMin, newMax);
   }
 
 
