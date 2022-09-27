@@ -14,12 +14,14 @@ import {renderBarchart, renderMutationCliffCell, setAARRenderer, renderInvaraint
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
 import {getStats, Stats} from './utils/statistics';
+import { LogoSummary } from './viewers/logo-summary';
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
 
   mutationCliffsGridSubject = new rxjs.Subject<DG.Grid>();
   mostPotentResiduesGridSubject = new rxjs.Subject<DG.Grid>();
+  logoSummaryGridSubject = new rxjs.Subject<DG.Grid>();
 
   _isUpdating: boolean = false;
   isBitsetChangedInitialized = false;
@@ -27,6 +29,7 @@ export class PeptidesModel {
 
   mutationCliffsGrid!: DG.Grid;
   mostPotentResiduesGrid!: DG.Grid;
+  logoSummaryGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
   df: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
@@ -67,6 +70,10 @@ export class PeptidesModel {
 
   get onMostPotentResiduesGridChanged(): rxjs.Observable<DG.Grid> {
     return this.mostPotentResiduesGridSubject.asObservable();
+  }
+
+  get onLogoSummaryGridChanged(): rxjs.Observable<DG.Grid> {
+    return this.logoSummaryGridSubject.asObservable();
   }
 
   get mutationCliffsSelection(): type.PositionToAARList {
@@ -171,6 +178,7 @@ export class PeptidesModel {
       //FIXME: modify during the initializeViewersComponents stages
       this.mutationCliffsGridSubject.next(this.mutationCliffsGrid);
       this.mostPotentResiduesGridSubject.next(this.mostPotentResiduesGrid);
+      this.logoSummaryGridSubject.next(this.logoSummaryGrid);
 
       this.fireBitsetChanged();
       this.invalidateGrids();
@@ -233,6 +241,8 @@ export class PeptidesModel {
 
     [this.mutationCliffsGrid, this.mostPotentResiduesGrid] =
       this.createGrids(matrixDf, sequenceDf, positionColumns, alphabet);
+
+    this.logoSummaryGrid = this.createLogoSummaryGrid();
 
     // init invariant map & mutation cliffs selections
     this.initSelections(positionColumns);
@@ -496,6 +506,22 @@ export class PeptidesModel {
     setAARRenderer(mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER), alphabet, mostPotentResiduesGrid);
 
     return [mutationCliffsGrid, mostPotentResiduesGrid];
+  }
+
+  createLogoSummaryGrid(): DG.Grid {
+    const summaryTable = this.df.groupBy(['Clusters']).aggregate();
+    const webLogoCol: DG.Column<string> = summaryTable.columns.addNew('WebLogo', DG.COLUMN_TYPE.STRING);
+    // const seqColName = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!.name;
+    const clustersCol = summaryTable.getCol('Clusters');
+    for (let index = 0; index < clustersCol.length; ++index) {
+      const tempDf: DG.DataFrame = this.df.rows.match(`${'Clusters'} = ${clustersCol.get(index)}`).toDataFrame();
+      tempDf.plot.fromType('WebLogo').then((viewer) => {
+        webLogoCol.set(index, viewer.root.outerHTML);
+      });
+    }
+    webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
+
+    return summaryTable.plot.grid();
   }
 
   setBarChartInteraction(): void {
@@ -931,6 +957,8 @@ export class PeptidesModel {
     this.mostPotentResiduesViewer =
       await this.df.plot.fromType('peptide-sar-viewer-vertical', options) as MostPotentResiduesViewer;
 
+    const logoSummary = await this.df.plot.fromType('logo-summary-viewer') as LogoSummary;
+
     // TODO: completely remove this viewer?
     // if (this.df.rowCount <= 10000) {
     //   const peptideSpaceViewerOptions = {method: 'UMAP', measure: 'Levenshtein', cyclesCount: 100};
@@ -944,8 +972,10 @@ export class PeptidesModel {
     const mcNode =
       dockManager.dock(this.mutationCliffsViewer, DG.DOCK_TYPE.DOWN, null, this.mutationCliffsViewer.name);
 
-    dockManager.dock(
-      this.mostPotentResiduesViewer, DG.DOCK_TYPE.RIGHT, mcNode, this.mostPotentResiduesViewer.name, 0.3);
+    const mprNode = dockManager.dock(this.mostPotentResiduesViewer, DG.DOCK_TYPE.RIGHT, mcNode,
+      this.mostPotentResiduesViewer.name, 0.3);
+
+    dockManager.dock(logoSummary, DG.DOCK_TYPE.TOP, mprNode);
 
     this.sourceGrid.props.allowEdit = false;
     adjustCellSize(this.sourceGrid);

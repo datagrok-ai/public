@@ -11,6 +11,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {MutationCliffsViewer, MostPotentResiduesViewer} from './viewers/sar-viewer';
 
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
+import { LogoSummary } from './viewers/logo-summary';
 
 export const _package = new DG.Package();
 let currentTable: DG.DataFrame;
@@ -93,6 +94,13 @@ export function sar(): MutationCliffsViewer {
 //output: viewer result
 export function sarVertical(): MostPotentResiduesViewer {
   return new MostPotentResiduesViewer();
+}
+
+//name: logo-summary-viewer
+//tags: viewer
+//output: viewer result
+export function logoSummary(): LogoSummary {
+  return new LogoSummary();
 }
 
 //name: peptide-space-viewer

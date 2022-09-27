@@ -99,7 +99,7 @@ export async function startAnalysis(
     const activityColumnName: string = activityColumn.name;
 
     //prepare new DF
-    const newDf = currentDf.clone(currentDf.filter, [alignedSeqCol.name, activityColumnName]);
+    const newDf = currentDf.clone(currentDf.filter, [alignedSeqCol.name, activityColumnName, 'Clusters']);
     const activityCol = newDf.getCol(activityColumnName);
     activityCol.name = C.COLUMNS_NAMES.ACTIVITY;
     activityCol.semType = C.SEM_TYPES.ACTIVITY;
