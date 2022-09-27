@@ -79,6 +79,7 @@ export async function testManager(): Promise<void> {
 
 //name: TestDetectors
 //top-menu: Tools | Dev | Test Detectors
+//test: square(1) == 1
 export function testDetectors() {
   _testDetectorsDialog();
 }
@@ -91,7 +92,7 @@ export async function TestDetectorsStandard() {
   grok.shell.addTableView(df);
 }
 
-async function testFunc(f: DG.Func): Promise<{[key: string]: any}> {
+export async function testFunc(f: DG.Func): Promise<{[key: string]: any}> {
   const tests = f.options['test'];
   if (tests == null || Array.isArray(tests) && !tests.length)
     return null;
@@ -102,9 +103,9 @@ async function testFunc(f: DG.Func): Promise<{[key: string]: any}> {
     return s.replace(new RegExp(f.name, 'gi'), f.nqName);
   }
 
-  for (const test of tests) {
+  for (const test of tests)
     results[test] = await grok.functions.eval(addNamespace(test));
-  }
+
 
   return results;
 }
@@ -115,9 +116,9 @@ async function testFunc(f: DG.Func): Promise<{[key: string]: any}> {
 export async function testFunctions(scope: object) {
   const functions = DG.Func.find(scope ?? {});
   const testRuns = {};
-  for (const f of functions) {
+  for (const f of functions)
     testRuns[f.name] = await testFunc(f);
-  }
+
   const functionColumn = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'function', Object.keys(testRuns));
   const results = Object.values(testRuns).map((runs) => {
     if (!runs)
