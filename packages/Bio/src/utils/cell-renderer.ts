@@ -61,6 +61,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
   get defaultWidth(): number { return 230; }
 
+  onClick(gridCell: DG.GridCell, e: MouseEvent): void {
+    gridCell.cell.column.temp['current-word'] = gridCell.cell.value;
+    gridCell.grid.invalidate();
+  }
+
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     if (gridCell.cell.column.getTag(UnitsHandler.TAGS.aligned) !== 'SEQ.MSA') {
       return;
@@ -112,6 +117,18 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle
   ): void {
+    const colorCode = (gridCell.cell.column?.temp['color-code'] != null) ? gridCell.cell.column.temp['color-code'] : 'false';
+    const compareWithCurrent = (gridCell.cell.column?.temp['compare-with-current'] != null) ? gridCell.cell.column.temp['compare-with-current'] : 'false';
+    const monomerWidth = (gridCell.cell.column?.temp['monomer-width'] != null) ? gridCell.cell.column.temp['monomer-width'] : 'short';
+    const referenceSequence = ((gridCell.cell.column?.temp['reference-sequence'] != null) && (gridCell.cell.column?.temp['current-word'] != ''))
+      ? gridCell.cell.column.temp['reference-sequence'] : gridCell.cell.column.temp['current-word'];
+    const additionalData: { [index: string]: string | number } = {
+      'colorCode': colorCode,
+      'compareWithCurrent': compareWithCurrent,
+      'monomerWidth': monomerWidth,
+      'referenceSequence': referenceSequence,
+      'bio-maxIndex': 0,
+    };
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
     const cell = gridCell.cell;
     const paletteType = gridCell.cell.column.getTag(C.TAGS.ALPHABET);
@@ -147,28 +164,26 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
           if (textSize > (maxLengthWords[index] ?? 0)) {
             maxLengthWords[index] = textSize;
           }
-          if (index > (maxLengthWords['bio-maxIndex'] ?? 0)) {
-            maxLengthWords['bio-maxIndex'] = index;
+          if (index > additionalData['bio-maxIndex']) {
+            additionalData['bio-maxIndex'] = index;
           }
         });
         samples += 1;
       }
       let minLength = 3 * 7;
-      for (let i = 0; i <= maxLengthWords['bio-maxIndex']; i++) {
+      for (let i = 0; i <= additionalData['bio-maxIndex']; i++) {
         if (maxLengthWords[i] < minLength) {
           maxLengthWords[i] = minLength;
         }
       }
       let maxLengthWordSum: any = {};
       maxLengthWordSum[0] = maxLengthWords[0];
-      for (let i = 1; i <= maxLengthWords['bio-maxIndex']; i++) {
+      for (let i = 1; i <= additionalData['bio-maxIndex']; i++) {
         maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
       }
-      gridCell.cell.column.temp = {
-        'bio-sum-maxLengthWords': maxLengthWordSum,
-        'bio-maxIndex': maxLengthWords['bio-maxIndex'],
-        'bio-maxLengthWords': maxLengthWords
-      };
+      gridCell.cell.column.temp['bio-sum-maxLengthWords'] = maxLengthWordSum;
+      gridCell.cell.column.temp['bio-maxIndex'] = additionalData['bio-maxIndex'];
+      gridCell.cell.column.temp['bio-maxLengthWords'] = maxLengthWords;
       gridCell.cell.column.setTag('.calculatedCellRender', splitLimit.toString());
     } else {
       maxLengthWords = gridCell.cell.column.temp['bio-maxLengthWords'];
@@ -185,9 +200,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       color = palette.get(amino);
       g.fillStyle = undefinedColor;
       let last = index === subParts.length - 1;
-      x1 = printLeftOrCentered(x1, y, w, h, g, monomerToShortFunction(amino, maxLengthOfMonomer), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell);
+      x1 = printLeftOrCentered(x1, y, w, h, g, monomerToShortFunction(amino, maxLengthOfMonomer), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell, additionalData);
       return x1 - minDistanceRenderer - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x) <= gridCell.bounds.width;
-
     });
 
     g.restore();
@@ -261,7 +275,7 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     const separator = gridCell.tableColumn!.tags[C.TAGS.SEPARATOR];
     const units: string = gridCell.tableColumn!.tags[DG.TAGS.UNITS];
     w = getUpdatedWidth(grid, g, x, w);
-      //TODO: can this be replaced/merged with splitSequence?
+    //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
     const splitter = WebLogo.getSplitter(units, separator);
     let subParts1 = splitter(s1);
@@ -280,7 +294,7 @@ export function drawMoleculeDifferenceOnCanvas(
   subParts2: string [],
   units: string,
   fullStringLength?: boolean,
-  molDifferences?:{[key: number]: HTMLCanvasElement}) {
+  molDifferences?: { [key: number]: HTMLCanvasElement }) {
 
   if (subParts1.length !== subParts2.length) {
     const emptyMonomersArray = new Array<string>(Math.abs(subParts1.length - subParts2.length)).fill('');
@@ -319,7 +333,7 @@ export function drawMoleculeDifferenceOnCanvas(
       const subX0 = printLeftOrCentered(updatedX, updatedY - vShift, w, h, g, amino1, color1, 0, true);
       const subX1 = printLeftOrCentered(updatedX, updatedY + vShift, w, h, g, amino2, color2, 0, true);
       updatedX = Math.max(subX1, subX0);
-      if (molDifferences) {        
+      if (molDifferences) {
         molDifferences[i] = createDifferenceCanvas(amino1, amino2, color1, color2, updatedY, vShift, h);
       }
     } else
@@ -330,24 +344,24 @@ export function drawMoleculeDifferenceOnCanvas(
 }
 
 function createDifferenceCanvas(
-  amino1: string, 
-  amino2: string, 
-  color1: string, 
-  color2: string, 
+  amino1: string,
+  amino2: string,
+  color1: string,
+  color2: string,
   y: number,
-  shift: number, 
+  shift: number,
   h: number): HTMLCanvasElement {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d')!;
-    context.font = '12px monospace';
-    const width1 = context.measureText(processSequence([amino1]).join('')).width;
-    const width2 = context.measureText(processSequence([amino2]).join('')).width;
-    const width = Math.max(width1, width2);
-    canvas.height = h;
-    canvas.width = width + 4;
-    context.font = '12px monospace';
-    context.textBaseline = 'top';
-    printLeftOrCentered(0, y - shift, width, h, context, amino1, color1, 0, true);
-    printLeftOrCentered(0, y + shift, width, h, context, amino2, color2, 0, true);
-    return canvas;
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d')!;
+  context.font = '12px monospace';
+  const width1 = context.measureText(processSequence([amino1]).join('')).width;
+  const width2 = context.measureText(processSequence([amino2]).join('')).width;
+  const width = Math.max(width1, width2);
+  canvas.height = h;
+  canvas.width = width + 4;
+  context.font = '12px monospace';
+  context.textBaseline = 'top';
+  printLeftOrCentered(0, y - shift, width, h, context, amino1, color1, 0, true);
+  printLeftOrCentered(0, y + shift, width, h, context, amino2, color2, 0, true);
+  return canvas;
 }

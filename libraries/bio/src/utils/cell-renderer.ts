@@ -1,3 +1,5 @@
+import * as DG from 'datagrok-api/dg';
+
 const undefinedColor = 'rgb(100,100,100)';
 const grayColor = '#808080';
 
@@ -23,15 +25,16 @@ export enum DrawStyle {
  * @param {boolean} [last=false] Is checker if element last or not.
  * @param drawStyle Is draw style. MSA - for multicharSeq, classic - for other seq.
  * @param maxWord Is array of max words for each line.
- * @param maxWordIdx Is index of word we currently draw.
+ * @param wordIdx Is index of word we currently draw.
  * @param gridCell Is grid cell, new for updating data in maxWord while rendering.
+ * @param { [index: string]: number }  additionalData Is additional data for rendering.
  * @return {number} x coordinate to start printing at.
  */
 export function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, maxWordIdx: number = 0, gridCell: any = {}): number {
+  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, additionalData: { [index: string]: string | number } = {}): number {
   g.textAlign = 'start';
   const colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
@@ -47,16 +50,19 @@ export function printLeftOrCentered(
   const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
   textSize = textSize.width;
   if (drawStyle === DrawStyle.MSA) {
-    maxColorTextSize = maxWord[maxWordIdx];
-    textSize = maxWord[maxWordIdx];
-    if (maxWordIdx > (maxWord['bio-maxIndex'] ?? 0)) {
-      maxWord['bio-maxIndex'] = maxWordIdx;
-      gridCell.cell.column.temp = maxWord;
+    maxColorTextSize = maxWord[wordIdx];
+    textSize = maxWord[wordIdx];
+  }
+  if (additionalData['currentWord'] != '') {
+    const currentMonomer = String(additionalData['referenceSequence'])[wordIdx];
+    if (additionalData['compareWithCurrent'] == 'true') {
+      transparencyRate = (colorPart == currentMonomer) ? transparencyRate : 0.3;
     }
   }
 
   function draw(dx1: number, dx2: number): void {
-    g.fillStyle = color;
+    const drawColor = (additionalData['colorCode'] == 'true') ? color : grayColor;
+    g.fillStyle = drawColor;
     g.globalAlpha = transparencyRate;
     if (drawStyle === DrawStyle.classic) {
       g.fillText(colorPart, x + dx1, y + dy);
@@ -64,8 +70,8 @@ export function printLeftOrCentered(
       g.fillText(grayPart, x + dx2, y + dy);
     }
     if (drawStyle === DrawStyle.MSA) {
-      g.fillStyle = color;
-      g.fillText(colorPart, x + dx1 + ((maxWord[maxWordIdx] - colorTextSize) / 2), y + dy);
+      g.fillStyle = drawColor;
+      g.fillText(colorPart, x + dx1 + ((maxWord[wordIdx] - colorTextSize) / 2), y + dy);
     }
   }
 
