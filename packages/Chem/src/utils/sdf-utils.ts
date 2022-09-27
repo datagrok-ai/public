@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as chemCommonRdKit from './chem-common-rdkit';
 import {MolNotation, _convertMolNotation} from './convert-notation-utils';
+import {isMolBlock} from './convert-notation-utils';
 import $ from 'cash-dom';
 
 /**  Dialog for SDF file exporter */
@@ -36,6 +37,35 @@ export function saveAsSdfDialog() {
   }
 }
 
+export function getSdfString(
+  table: DG.DataFrame,
+  structureColumn: DG.Column, // non-null
+): string {
+  let result = '';
+  for (let i = 0; i < table.rowCount; i++) {
+    const molecule: string = structureColumn.get(i);
+    const mol = isMolBlock(molecule) ? molecule :
+      _convertMolNotation(molecule, MolNotation.Unknown, MolNotation.MolBlock, chemCommonRdKit.getRdKitModule());
+    result += i == 0 ? '' : '\n';
+    result += `${mol}\n`;
+
+    // properties
+    for (const col of table.columns) {
+      if (col !== structureColumn) {
+        let cellValue = col.get(i);
+        // convert to SMILES if necessary
+        if (col.semType === DG.SEMTYPE.MOLECULE) {
+          cellValue = _convertMolNotation(cellValue, MolNotation.Unknown, 
+            MolNotation.Smiles, chemCommonRdKit.getRdKitModule());
+        }
+        result += `>  <${col.name}>\n${cellValue}\n\n`;
+      }
+    }
+    result += '$$$$';
+  }
+  return result;
+}
+
 export function _saveAsSdf(
   table: DG.DataFrame,
   structureColumn: DG.Column,
@@ -49,34 +79,10 @@ export function _saveAsSdf(
     return;
 
   let result = '';
-
-  for (let i = 0; i < table.rowCount; i++) {
-    try {
-      const molecule: string = structureColumn.get(i);
-      const mol = molecule.includes('M  END') ? molecule :
-        _convertMolNotation(molecule, MolNotation.Unknown, MolNotation.MolBlock, chemCommonRdKit.getRdKitModule());
-      result += i == 0 ? '' : '\n';
-      result += `${mol}\n`;
-
-      // properties
-      for (const col of table.columns) {
-        if (col !== structureColumn) {
-          let cellValue = col.get(i);
-          // convert to SMILES if necessary
-          if (col.semType === DG.SEMTYPE.MOLECULE) {
-            cellValue = _convertMolNotation(cellValue, MolNotation.Unknown, 
-              MolNotation.Smiles, chemCommonRdKit.getRdKitModule());
-          }
-          result += `>  <${col.name}>\n${cellValue}\n\n`;
-        }
-      }
-
-      result += '$$$$';
-    } catch (error) {
-      console.error(error);
-    }
+  try {
+    result = getSdfString(table, structureColumn);
+    DG.Utils.download(table.name + '.sdf', result);
+  } finally {
+    pi.close();
   }
-
-  DG.Utils.download(table.name + '.sdf', result);
-  pi.close();
 }

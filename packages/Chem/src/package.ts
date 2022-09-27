@@ -39,7 +39,7 @@ import { createPropPanelElement, createTooltipElement } from './analysis/activit
 import { getAtomsColumn, radar } from './utils/elemental-analysis-utils';
 import { elementsTable } from './constants';
 import { getSimilaritiesMarix } from './utils/similarity-utils';
-import { molToMolblock } from './utils/chem-utils'
+import { molToMolblock } from './utils/convert-notation-utils'
 import { similarityMetric } from '@datagrok-libraries/utils/src/similarity-metrics';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
