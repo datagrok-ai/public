@@ -255,24 +255,24 @@ export class FunctionView extends DG.ViewBase {
     mainAcc.root.style.width = '100%';
     mainAcc.addTitle(ui.span(['History']));
 
-    const buildFilterPane = () => {
-      const dateInput = ui.stringInput('Date', 'Any time');
-      dateInput.addPatternMenu('datetime');
-      const form =ui.divV([
-        ui.stringInput('Search', '', () => {}),
-        ui.choiceInput('User', 'Current user', ['Current user']),
-        dateInput,
-      ], 'ui-form-condensed ui-form');
-      form.style.marginLeft = '0px';
+    // const buildFilterPane = () => {
+    //   const dateInput = ui.stringInput('Date', 'Any time');
+    //   dateInput.addPatternMenu('datetime');
+    //   const form =ui.divV([
+    //     ui.stringInput('Search', '', () => {}),
+    //     ui.choiceInput('User', 'Current user', ['Current user']),
+    //     dateInput,
+    //   ], 'ui-form-condensed ui-form');
+    //   form.style.marginLeft = '0px';
 
-      return form;
-    };
-    let filterPane = mainAcc.addPane('Filter', buildFilterPane);
-    const updateFilterPane = () => {
-      const isExpanded = filterPane.expanded;
-      mainAcc.removePane(filterPane);
-      filterPane = mainAcc.addPane('Filter', buildFilterPane, isExpanded, favoritesListPane);
-    };
+    //   return form;
+    // };
+    // let filterPane = mainAcc.addPane('Filter', buildFilterPane);
+    // const updateFilterPane = () => {
+    //   const isExpanded = filterPane.expanded;
+    //   mainAcc.removePane(filterPane);
+    //   filterPane = mainAcc.addPane('Filter', buildFilterPane, isExpanded, favoritesListPane);
+    // };
 
     const showAddToFavoritesDialog = (funcCall: DG.FuncCall) => {
       let title = funcCall.options['title'] ?? '';
@@ -552,7 +552,6 @@ export class FunctionView extends DG.ViewBase {
    * @returns Saved FuncCall
    * @stability Stable
  */
-  @passErrorToShell()
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
 
