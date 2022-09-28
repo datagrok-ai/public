@@ -117,18 +117,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle
   ): void {
-    const colorCode = (gridCell.cell.column?.temp['color-code'] != null) ? gridCell.cell.column.temp['color-code'] : true;
-    const compareWithCurrent = (gridCell.cell.column?.temp['compare-with-current'] != null) ? gridCell.cell.column.temp['compare-with-current'] : true;
-    const monomerWidth = (gridCell.cell.column?.temp['monomer-width'] != null) ? gridCell.cell.column.temp['monomer-width'] : 'short';
-    const referenceSequence = ((gridCell.cell.column?.temp['reference-sequence'] != null) && (gridCell.cell.column?.temp['reference-sequence'] != ''))
-      ? gridCell.cell.column.temp['reference-sequence'] : gridCell.cell.column.temp['current-word'] ?? '';
-    const additionalData: { [index: string]: string | number } = {
-      'colorCode': colorCode,
-      'compareWithCurrent': compareWithCurrent,
-      'monomerWidth': monomerWidth,
-      'referenceSequence': referenceSequence,
-      'bio-maxIndex': 0,
-    };
     const grid = gridCell.gridRow !== -1 ? gridCell.grid : null;
     const cell = gridCell.cell;
     const paletteType = gridCell.cell.column.getTag(C.TAGS.ALPHABET);
@@ -149,6 +137,18 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const separator = gridCell.cell.column.getTag('separator') ?? '';
     const splitLimit = gridCell.bounds.width / 5;
     const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, separator, gridCell.bounds.width / 5);
+    const colorCode = (gridCell.cell.column?.temp['color-code'] != null) ? gridCell.cell.column.temp['color-code'] : true;
+    const compareWithCurrent = (gridCell.cell.column?.temp['compare-with-current'] != null) ? gridCell.cell.column.temp['compare-with-current'] : true;
+    const monomerWidth = (gridCell.cell.column?.temp['monomer-width'] != null) ? gridCell.cell.column.temp['monomer-width'] : 'short';
+    const referenceSequence = ((gridCell.cell.column?.temp['reference-sequence'] != null) && (gridCell.cell.column?.temp['reference-sequence'] != ''))
+      ? gridCell.cell.column.temp['reference-sequence'] : gridCell.cell.column.temp['current-word'] ?? '';
+    const additionalData: { [index: string]: string | number | string[] } = {
+      'colorCode': colorCode,
+      'compareWithCurrent': compareWithCurrent,
+      'monomerWidth': monomerWidth,
+      'referenceSequence': splitterFunc(referenceSequence),
+      'bio-maxIndex': 0,
+    };
 
 
     const maxLengthOfMonomer = 8;

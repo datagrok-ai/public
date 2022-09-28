@@ -27,7 +27,6 @@ export enum DrawStyle {
  * @param drawStyle Is draw style. MSA - for multicharSeq, classic - for other seq.
  * @param maxWord Is array of max words for each line.
  * @param wordIdx Is index of word we currently draw.
- * @param gridCell Is grid cell, new for updating data in maxWord while rendering.
  * @param { [index: string]: number }  additionalData Is additional data for rendering.
  * @return {number} x coordinate to start printing at.
  */
@@ -35,7 +34,7 @@ export function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, additionalData: { [index: string]: boolean | number | string } = {}): number {
+  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, additionalData: { [index: string]: string[] |  boolean | number | string } = {}): number {
   g.textAlign = 'start';
   const colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
@@ -54,9 +53,9 @@ export function printLeftOrCentered(
     maxColorTextSize = maxWord[wordIdx];
     textSize = maxWord[wordIdx];
   }
-  const currentMonomer = String(additionalData['referenceSequence'])[wordIdx];
+  const currentMonomer: string = (additionalData['referenceSequence']  as string[])[wordIdx];
   if ((additionalData['compareWithCurrent'] == true) && (String(additionalData['referenceSequence']).length > 0)) {
-      transparencyRate = (colorPart == currentMonomer) ? transparencyRate : 0.4;
+    transparencyRate = (colorPart == currentMonomer) ? transparencyRate : 0.4;
   }
 
 
