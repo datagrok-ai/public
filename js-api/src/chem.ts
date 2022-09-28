@@ -101,6 +101,7 @@ export namespace chem {
     sketcherCreated = new Subject<boolean>();
     sketcherFunctions: Func[] = [];
     selectedSketcher: Func | undefined = undefined;
+    extractorsCreated = new Subject<boolean>();
 
     /** Whether the currently drawn molecule becomes the current object as you sketch it */
     syncCurrentObject: boolean = true;
@@ -212,6 +213,18 @@ export namespace chem {
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     async setValue(x: string) {
+      if (!extractors) {
+        const waitForExtractors = new Promise(async (resolve, reject) => {
+          this.extractorsCreated.subscribe(async (_: any) => {
+            try {
+              resolve(true);
+            } catch (error) {
+              reject(error);
+            }
+          });
+        });
+        await waitForExtractors;
+      }
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
@@ -333,9 +346,13 @@ export namespace chem {
         const load: Promise<any> = api.grok_Func_LoadQueriesScripts();
         load
           .then((_) => { 
-            extractors = Func.find(extractorSearchOptions); 
+            extractors = Func.find(extractorSearchOptions);
+            this.extractorsCreated.next(true); 
           })
-          .catch((_) => extractors = []);
+          .catch((_) => {
+            extractors = [];
+            this.extractorsCreated.next(true);
+          });
       }
 
       const applyInput = async (e: any) => {
