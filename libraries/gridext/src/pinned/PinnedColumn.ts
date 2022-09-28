@@ -1,3 +1,4 @@
+/// <reference types="resize-observer-browser" />
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -7,6 +8,8 @@ import {ColorUtils} from '../utils/ColorUtils';
 import * as rxjs from 'rxjs';
 import { GridCellRendererEx} from "../renderer/GridCellRendererEx";
 import * as PinnedUtils from "./PinnedUtils";
+import {getGridDartPopupMenu, isHitTestOnElement} from "../utils/GridUtils";
+import {MouseDispatcher} from "../ui/MouseDispatcher";
 //import {TableView} from "datagrok-api/dg";
 
 
@@ -107,6 +110,7 @@ function notifyAllPinnedColsRowsResized(colPinnedSource : PinnedColumn, nHRows :
 }
 
 
+const DEBUG : boolean = false;
 
 
 export class PinnedColumn {
@@ -130,14 +134,27 @@ export class PinnedColumn {
   //private m_handlerFilter : any;
   private m_handlerRowsResized : any;
   private m_handlerRowsSorted : any;
-  private m_handlerMouseDown : any;
-  private m_handlerMouseUp : any;
-  private m_handlerMouseDblClk: any;
-  private m_handlerMouseLeave : any;
-  private m_handlerMouseMove : any;
-  private m_handlerMouseWheel : any;
+
+  private m_nHResizeRowsBeforeDrag = -1;
+  private m_nResizeRowGridDragging = -1;
+  private m_nYResizeDraggingAnchor = -1;
+  private m_nResizeRowGridMoving = -1;
+
+  private m_nYDraggingAnchor = -1;
+  private m_nRowGridDragging = -1;
+
+  private m_nWheelCount : number = 0;
+
+
+  private m_arXYMouseOnCellDown = [-2, -2];
+  private m_arXYMouseOnCellUp = [-1, -1];
+  private m_bSortedAscending : boolean | null = null;
+
+  private m_cellCurrent : DG.GridCell | null = null;
 
   constructor(colGrid : DG.GridColumn) {
+
+    MouseDispatcher.create();
 
     const grid = getGrid(colGrid);
     if(grid === null) {
@@ -244,20 +261,20 @@ export class PinnedColumn {
 
 
     //OnResize Grid
-    this.m_observerResizeGrid = new ResizeObserver(entries => {
+    this.m_observerResizeGrid = new ResizeObserver(function (entries : any) {
 
       const bCurrent =  DG.toDart(grok.shell.v) === DG.toDart(viewTable);
       if(!bCurrent)
         return;
 
-      if(this.m_fDevicePixelRatio !== window.devicePixelRatio || grid.canvas.height !== eCanvasThis.height) {
+      if(headerThis.m_fDevicePixelRatio !== window.devicePixelRatio || grid.canvas.height !== eCanvasThis.height) {
         eCanvasThis.width = nW*window.devicePixelRatio;
         eCanvasThis.height = grid.canvas.height;
         eCanvasThis.style.top = grid.canvas.offsetTop + "px";
         eCanvasThis.style.width = nW + "px";
         eCanvasThis.style.height = Math.round(grid.canvas.height/window.devicePixelRatio) + "px";
 
-        this.m_fDevicePixelRatio = window.devicePixelRatio;
+        headerThis.m_fDevicePixelRatio = window.devicePixelRatio;
       }
 
       //console.log("Grid Resize: " + grid.canvas.height + " " + window.devicePixelRatio);
@@ -275,7 +292,7 @@ export class PinnedColumn {
       }
     });
 
-    this.m_observerResizeGrid.observe(grid.canvas);
+    this.m_observerResizeGrid?.observe(grid.canvas);
 
     const scrollVert = grid.vertScroll;
     this.m_handlerVScroll = scrollVert.onValuesChanged.subscribe(() => {
@@ -322,341 +339,6 @@ export class PinnedColumn {
         headerThis.paint(g, grid);
       }
     );
-
-    let nHResizeRowsBeforeDrag  = -1;
-    let nResizeRowGridDragging = -1;
-    let nYResizeDraggingAnchor = -1;
-    let nResizeRowGridMoving = -1;
-
-    let nYDraggingAnchor = -1;
-    let nRowGridDragging = -1;
-
-    let arXYMouseOnCellDown = [-2, -2];
-    let arXYMouseOnCellUp = [-1, -1];
-
-    this.m_handlerMouseDown = rxjs.fromEvent(document, 'mousedown').subscribe((e : Event) => {
-
-      if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable))
-        return;
-
-      const eMouse = e as MouseEvent;
-
-      if(eMouse.buttons !== 1)
-        return;
-
-      nResizeRowGridMoving = -1;
-
-      const bAddToSel : boolean = eMouse.ctrlKey || eMouse.shiftKey;
-
-      let nRowGrid = bAddToSel ? -1 : PinnedColumn.hitTestRows(eCanvasThis, grid, eMouse, true, undefined);
-      if (nRowGrid >= 0) {
-        const nHRows = GridUtils.getGridRowHeight(grid);
-        nResizeRowGridDragging = nRowGrid;
-        nYResizeDraggingAnchor = eMouse.clientY;
-        nHResizeRowsBeforeDrag = nHRows;
-      }
-      else
-      {
-        nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, eMouse, false, arXYMouseOnCellDown);
-
-        nRowGridDragging = nRowGrid;
-        nYDraggingAnchor = eMouse.clientY;
-
-        const cell = grid.cell(colGrid.name, nRowGrid);
-        const renderer = getRenderer(cell);
-        if(renderer instanceof GridCellRendererEx) {
-          renderer.onMouseDownEx(cell, eMouse, arXYMouseOnCellDown[0], arXYMouseOnCellDown[1]);
-        }
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-    });
-
-
-    this.m_handlerMouseUp = rxjs.fromEvent(document, 'mouseup').subscribe((e) => {
-
-      if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
-        return;
-      }
-
-      const eMouse = e as MouseEvent;
-      //eMouse.
-
-      if(nResizeRowGridDragging >= 0) {
-        const nHRow = GridUtils.getGridRowHeight(grid);
-        notifyAllPinnedColsRowsResized(headerThis, nHRow, false);
-        notifyAllColsRowsResized(grid, nHRow, false);
-      }
-
-
-      nHResizeRowsBeforeDrag = -1;
-      nResizeRowGridDragging = -1;
-      nYResizeDraggingAnchor = -1;
-      nResizeRowGridMoving = -1;
-
-      document.body.style.cursor = "auto";
-
-      if(nRowGridDragging >= 0) {
-        const bAddToSel = eMouse.ctrlKey || eMouse.shiftKey;
-
-        const nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, eMouse, false, arXYMouseOnCellUp);
-        if(!bAddToSel && nRowGrid === nRowGridDragging) {
-
-          let cellRH = null;
-          try {
-            cellRH = grid.cell("", nRowGrid);
-          }
-          catch(e) {
-            let colG = null;
-            const lstCols = grid.columns;
-            for(let nC=1; nC<lstCols.length; ++nC) {
-              colG = lstCols.byIndex(nC);
-              cellRH = colG === null ? null : grid.cell(colG.name, nRowGrid);
-              if(cellRH !== null)
-                break;
-            }
-          }
-          if(cellRH !== null) {
-            const nRowTable : any = cellRH.tableRowIndex;
-            if(nRowTable !== null)
-            dframe.currentRow = nRowTable;
-          }
-        }
-        else
-        {
-          const bitsetSel = dframe.selection;
-
-          if(!bAddToSel)
-            bitsetSel.setAll(false, true);
-
-          const nRowMin = nRowGridDragging < nRowGrid ? nRowGridDragging : nRowGrid;
-          const nRowMax = nRowGridDragging > nRowGrid ? nRowGridDragging : nRowGrid;
-          let cellRH = null;
-          let nRowTable = -1;
-          for(let nRow=nRowMin; nRow<=nRowMax; ++nRow) {
-
-            try {
-              cellRH = grid.cell("", nRow);
-            }
-            catch(e) {
-              let colG = null;
-              const lstCols = grid.columns;
-              for(let nC=1; nC<lstCols.length; ++nC) {
-                colG = lstCols.byIndex(nC);
-                cellRH = colG === null ? null : grid.cell(colG.name, nRowGrid);
-                if(cellRH !== null)
-                  break;
-              }
-            }
-
-            if(cellRH !== null && cellRH.tableRowIndex !== null) {
-              nRowTable = cellRH.tableRowIndex;
-              bitsetSel.set(nRowTable, true, true);
-            }
-          }
-        }
-
-        const cell = grid.cell(colGrid.name, nRowGrid);
-        const renderer = getRenderer(cell);
-        if(renderer instanceof GridCellRendererEx) {
-          renderer.onMouseUpEx(cell, eMouse, arXYMouseOnCellUp[0], arXYMouseOnCellUp[1]);
-        }
-
-        if(arXYMouseOnCellUp[0] === arXYMouseOnCellDown[0] && arXYMouseOnCellDown[1] === arXYMouseOnCellUp[1]) {
-          if(renderer instanceof GridCellRendererEx) {
-            renderer.onClickEx(cell, eMouse, arXYMouseOnCellUp[0], arXYMouseOnCellUp[1]);
-          }
-        }
-
-        nRowGridDragging = -1;
-        nYDraggingAnchor = -1;
-        arXYMouseOnCellDown[0] = -2;
-        arXYMouseOnCellDown[1] = -2;
-        arXYMouseOnCellUp[0] = -1;
-        arXYMouseOnCellUp[1] = -1;
-      }
-      //e.preventDefault();
-      //e.stopPropagation();
-
-    });
-
-    let cellCurrent : DG.GridCell | null = null;
-    this.m_handlerMouseLeave = rxjs.fromEvent(document, 'mouseleave').subscribe((e) => {
-
-      if(cellCurrent !== null) {
-        const renderer = getRenderer(cellCurrent);
-        if (renderer instanceof GridCellRendererEx) {
-          const eMouse = e as MouseEvent;
-          renderer.onMouseLeaveEx(cellCurrent, eMouse, -1, -1);
-        }
-        cellCurrent = null;
-      }
-    });
-
-
-    let bSortedAscending : boolean | null = null;
-    this.m_handlerMouseDblClk = rxjs.fromEvent(eCanvasThis, 'dblclick').subscribe((e) => {
-
-      if (DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
-        return;
-      }
-
-      if(colGrid.name === '')
-        return;
-
-      if(bSortedAscending == null)
-        bSortedAscending = true;
-      else if(bSortedAscending)
-        bSortedAscending = false;
-      else bSortedAscending = true;
-
-      const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
-      const eMouse = e as MouseEvent;
-
-      if(0 <= eMouse.offsetX && eMouse.offsetX <= eCanvasThis.offsetWidth &&
-          0 <= eMouse.offsetY && eMouse.offsetY <= nHHeaderCols)   //on the rows header
-      {
-        grid.sort([colGrid.name], [bSortedAscending]);
-      }
-    });
-
-    this.m_handlerMouseMove = rxjs.fromEvent(document, 'mousemove').subscribe((e) => {
-
-      if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
-        return;
-      }
-
-      const bResizing = nResizeRowGridDragging >= 0;
-      if (bResizing) {
-
-        //console.log("Dragging : " + headerThis.m_strColName);
-        const eMouse = e as MouseEvent;
-        const nYDiff = eMouse.clientY - nYResizeDraggingAnchor;
-        let nHRowGrid = nHResizeRowsBeforeDrag + nYDiff;
-
-        if (nHRowGrid < PinnedColumn.MIN_ROW_HEIGHT)
-          nHRowGrid = PinnedColumn.MIN_ROW_HEIGHT;
-        else if (nHRowGrid > PinnedColumn.MAX_ROW_HEIGHT)
-          nHRowGrid = PinnedColumn.MAX_ROW_HEIGHT;
-
-        let g = eCanvasThis.getContext('2d');
-        if(g === null)
-          return;
-
-        g.fillStyle = "white";
-        const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
-        g.fillRect(0,nHHeaderCols, eCanvasThis.offsetWidth, eCanvasThis.offsetHeight);
-
-        grid.setOptions({
-          rowHeight: nHRowGrid //this won't trigger onRowsRezized event, which is a DG bug
-        });
-
-        notifyAllPinnedColsRowsResized(headerThis, nHRowGrid, true);
-        notifyAllColsRowsResized(grid, nHRowGrid, true);
-
-        let header = null;
-        const ar = grid.dart.m_arPinnedCols;
-        for(let n=0; n<ar.length; ++n) {
-          header = ar[n];
-          g = header.m_root.getContext('2d');
-          header.paint(g, grid);
-        }
-
-        try {
-          const colGrid0 = grid.columns.byIndex(0);
-          if (colGrid0 !== null)
-            colGrid0.visible = false;//temporary addressed the DG bug
-        }
-        catch(e) {
-          //DG bug
-        }
-        return;
-      }
-
-      const arXYOnCell = [-1,-1];
-      let nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e as MouseEvent, false, arXYOnCell);
-      if(nRowGrid >= 0) {
-        const cell = grid.cell(colGrid.name, nRowGrid);
-        const renderer = getRenderer(cell);
-
-        if (renderer instanceof GridCellRendererEx) {
-
-          if (cellCurrent === null) {
-            renderer.onMouseEnterEx(cell, e as MouseEvent, arXYOnCell[0], arXYOnCell[1]);
-          }
-
-          if (cellCurrent !== null && nRowGrid !== cellCurrent.gridRow) {
-             renderer.onMouseLeaveEx(cellCurrent, e as MouseEvent, -1, -1);
-
-           renderer.onMouseEnterEx(cell, e as MouseEvent, arXYOnCell[0], arXYOnCell[1]);
-          }
-
-          renderer.onMouseMoveEx(cell, e as MouseEvent, arXYOnCell[0], arXYOnCell[1]);
-         }
-
-        cellCurrent = cell;
-      }
-      else if (cellCurrent !== null) {
-        const renderer = getRenderer(cellCurrent);
-        if (renderer instanceof GridCellRendererEx) {
-          renderer.onMouseLeaveEx(cellCurrent, e as MouseEvent, -1, -1);
-        }
-
-        cellCurrent = null;
-      }
-
-      nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e as MouseEvent, true, undefined);
-      if (nRowGrid >= 0) {
-        nResizeRowGridMoving = nRowGrid;
-        document.body.style.cursor = "row-resize";
-        return;
-      }
-
-      if(nResizeRowGridMoving >= 0) {
-        nResizeRowGridMoving = -1;
-        document.body.style.cursor = "auto";
-      }
-    });
-
-    let nCount = 0;
-    this.m_handlerMouseWheel = rxjs.fromEvent(this.m_root, 'wheel').subscribe((e) => {
-
-      if (DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
-        return;
-      }
-
-      const eWheel = e as WheelEvent;
-      if(eWheel.deltaX !== 0 || eWheel.deltaZ !== 0) {
-        return;
-      }
-
-      if(nCount === 1) {
-        //scroll +
-        const nRowCount = GridUtils.getGridVisibleRowCount(grid);
-        const scrollY = grid.vertScroll;
-        if(nRowCount -1 > scrollY.max) {
-          scrollY.setValues(scrollY.minRange, scrollY.maxRange, scrollY.min + 1, scrollY.max + 1);
-        }
-        nCount = 0;
-      }
-      else if(nCount === -1)
-      {
-        //scroll -
-        const scrollY = grid.vertScroll;
-        if(scrollY.min >=1) {
-          scrollY.setValues(scrollY.minRange, scrollY.maxRange, scrollY.min - 1, scrollY.max - 1);
-        }
-        nCount = 0;
-      }
-       else {
-        nCount = eWheel.deltaY > 0 ? 1 : -1;
-      }
-
-
-
-      //console.log(eWheel.deltaX + " " + eWheel.deltaY);
-    });
   }
 
   isPinned() : boolean {
@@ -709,24 +391,6 @@ export class PinnedColumn {
     this.m_handlerSel.unsubscribe();
     this.m_handlerSel = null;
 
-    this.m_handlerMouseDblClk.unsubscribe();
-    this.m_handlerMouseDblClk = null;
-
-    this.m_handlerMouseDown.unsubscribe();
-    this.m_handlerMouseDown = null;
-
-    this.m_handlerMouseUp.unsubscribe();
-    this.m_handlerMouseUp = null;
-
-    this.m_handlerMouseLeave.unsubscribe();
-    this.m_handlerMouseLeave = null;
-
-    this.m_handlerMouseMove.unsubscribe();
-    this.m_handlerMouseMove = null;
-
-    this.m_handlerMouseWheel.unsubscribe();
-    this.m_handlerMouseWheel = null;
-
     const grid = getGrid(this.m_colGrid);
     if(grid === null){
       throw new Error("Column '" + this.m_colGrid.name + "' is disconnected from grid.");
@@ -774,8 +438,6 @@ export class PinnedColumn {
       console.error("ERROR: Couldn't show column '" + this.m_colGrid.name + "' due to a DG bug. This could be ignored if the column visually looks ok.");
     }
 
-
-
     grid.canvas.style.left = (grid.canvas.offsetLeft - this.m_root.offsetWidth).toString() + "px";
     grid.overlay.style.left= (grid.overlay.offsetLeft - this.m_root.offsetWidth).toString() + "px";
     grid.canvas.style.width = (grid.canvas.offsetWidth + this.m_root.offsetWidth).toString() + "px";
@@ -796,6 +458,474 @@ export class PinnedColumn {
         }
     }
     this.m_colGrid = null;
+  }
+
+
+  public onMouseEnter(e : MouseEvent) : void {
+    if(DEBUG)
+      console.log('Mouse Enter Pinned Column: ' + this.getGridColumn()?.name);
+  }
+
+  public onMouseMove(e : MouseEvent) : void {
+    if(DEBUG)
+      console.log('Mouse Move Pinned Column: ' + this.getGridColumn()?.name);
+
+    if(this.m_colGrid === null || this.m_root === null)
+      return;
+
+    const grid = this.m_colGrid.grid;
+    const viewTable = grid.view;
+
+    if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
+      return;
+    }
+
+
+    const arXYOnCell = [-1,-1];
+
+    let nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false, arXYOnCell);
+    if(nRowGrid >= 0) {
+      const cell = grid.cell(this.m_colGrid.name, nRowGrid);
+      const renderer = getRenderer(cell);
+
+      if (renderer instanceof GridCellRendererEx) {
+
+        if (this.m_cellCurrent === null) {
+          renderer.onMouseEnterEx(cell, e, arXYOnCell[0], arXYOnCell[1]);
+        }
+
+        if (this.m_cellCurrent !== null && nRowGrid !== this.m_cellCurrent.gridRow) {
+          renderer.onMouseLeaveEx(this.m_cellCurrent, e, -1, -1);
+
+          renderer.onMouseEnterEx(cell, e, arXYOnCell[0], arXYOnCell[1]);
+        }
+
+        renderer.onMouseMoveEx(cell, e, arXYOnCell[0], arXYOnCell[1]);
+      }
+
+      this.m_cellCurrent = cell;
+    }
+    else if (this.m_cellCurrent !== null) {
+      const renderer = getRenderer(this.m_cellCurrent);
+      if (renderer instanceof GridCellRendererEx) {
+        renderer.onMouseLeaveEx(this.m_cellCurrent, e, -1, -1);
+      }
+
+      this.m_cellCurrent = null;
+    }
+
+    nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, true, undefined);
+    if (nRowGrid >= 0) {
+      this.m_nResizeRowGridMoving = nRowGrid;
+      document.body.style.cursor = "row-resize";
+      return;
+    }
+
+    if(this.m_nResizeRowGridMoving >= 0) {
+      this.m_nResizeRowGridMoving = -1;
+      document.body.style.cursor = "auto";
+    }
+
+
+    //Hamburger Menu
+    const colGrid = this.getGridColumn();
+    if(colGrid === null || colGrid.name === '')
+      return;
+
+    const eDivHamb = GridUtils.getToolIconDiv(colGrid.grid);
+    const nHColHeader = GridUtils.getGridColumnHeaderHeight(colGrid.grid);
+    if(0 <= e.offsetY && e.offsetY < nHColHeader) {
+
+      eDivHamb?.style.removeProperty('visibility');
+      eDivHamb?.setAttribute('column_name', colGrid.name);
+      //console.log('ToolsIcon for column ' + colGrid.name);
+      // @ts-ignore
+      eDivHamb?.style.left = (PinnedUtils.getPinnedColumnLeft(this) + this.getWidth() - 18) + 'px';
+      // @ts-ignore
+      eDivHamb?.style.top = (GridUtils.getGridColumnHeaderHeight(colGrid.grid) - 16) + "px";
+    } else {
+      const colGrid = this.getGridColumn();
+      if(colGrid != null) {
+          eDivHamb?.setAttribute('column_name', '');
+          // @ts-ignore
+          eDivHamb?.style.visibility = 'hidden';
+        }
+    }
+  }
+
+  public onMouseDrag(e : MouseEvent) : void {
+    if(DEBUG)
+     console.log('Mouse Drag Pinned Column: ' + this.getGridColumn()?.name);
+
+    if(this.m_colGrid === null || this.m_root === null)
+    return;
+
+    const grid = this.m_colGrid.grid;
+    const viewTable = grid.view;
+
+    if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
+      return;
+    }
+
+    const bResizing = this.m_nResizeRowGridDragging >= 0;
+    if (bResizing) {
+
+      //console.log("Dragging : " + headerThis.m_strColName);
+      const nYDiff = e.clientY - this.m_nYResizeDraggingAnchor;
+      let nHRowGrid = this.m_nHResizeRowsBeforeDrag + nYDiff;
+
+      if (nHRowGrid < PinnedColumn.MIN_ROW_HEIGHT)
+        nHRowGrid = PinnedColumn.MIN_ROW_HEIGHT;
+      else if (nHRowGrid > PinnedColumn.MAX_ROW_HEIGHT)
+        nHRowGrid = PinnedColumn.MAX_ROW_HEIGHT;
+
+      const eCanvasThis = this.m_root;
+
+      let g = eCanvasThis.getContext('2d');
+      if(g === null)
+        return;
+
+      g.fillStyle = "white";
+      const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
+      g.fillRect(0,nHHeaderCols, eCanvasThis.offsetWidth, eCanvasThis.offsetHeight);
+
+      grid.setOptions({
+        rowHeight: nHRowGrid //this won't trigger onRowsRezized event, which is a DG bug
+      });
+
+      notifyAllPinnedColsRowsResized(this, nHRowGrid, true);
+      notifyAllColsRowsResized(grid, nHRowGrid, true);
+
+      let header = null;
+      const ar = grid.dart.m_arPinnedCols;
+      for(let n=0; n<ar.length; ++n) {
+        header = ar[n];
+        g = header.m_root.getContext('2d');
+        header.paint(g, grid);
+      }
+
+      try {
+        const colGrid0 = grid.columns.byIndex(0);
+        if (colGrid0 !== null)
+          colGrid0.visible = false;//temporary addressed the DG bug
+      }
+      catch(e) {
+        //DG bug
+      }
+      return;
+    }
+
+
+  }
+
+  public onMouseLeave(e : MouseEvent, bOverlap : boolean) : void {
+    if(DEBUG)
+     console.log('Mouse Left Pinned Column: ' + this.getGridColumn()?.name + '  overlap: ' + bOverlap);
+
+    if(this.m_nResizeRowGridMoving >= 0) {
+      this.m_nResizeRowGridMoving = -1;
+      document.body.style.cursor = "auto";
+    }
+
+    if(this.m_cellCurrent !== null) {
+      const renderer = getRenderer(this.m_cellCurrent);
+      if (renderer instanceof GridCellRendererEx) {
+        const eMouse = e as MouseEvent;
+        renderer.onMouseLeaveEx(this.m_cellCurrent, eMouse, -1, -1);
+      }
+      this.m_cellCurrent = null;
+    }
+
+    const colGrid = this.getGridColumn();
+    if(colGrid != null && !bOverlap) {
+      const eDivHamb = GridUtils.getToolIconDiv(colGrid.grid);
+      eDivHamb?.setAttribute('column_name', '');
+      // @ts-ignore
+      eDivHamb?.style.visibility = 'hidden';
+    }
+
+
+  }
+
+  public onMouseDblClick(e : MouseEvent) : void {
+    if(DEBUG)
+     console.log('Mouse Dbl Clicked Pinned Column: ' + this.getGridColumn()?.name);
+
+    if(this.m_colGrid === null || this.m_root === null)
+      return;
+
+    const grid = this.m_colGrid.grid;
+    const viewTable = grid?.view;
+
+    if (DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
+      return;
+    }
+
+    if(this.m_colGrid?.name === '')
+      return;
+
+    if(this.m_bSortedAscending == null)
+      this.m_bSortedAscending = true;
+    else if(this.m_bSortedAscending)
+      this.m_bSortedAscending = false;
+    else this.m_bSortedAscending = true;
+
+    const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
+
+    if(0 <= e.offsetX && e.offsetX <= this.m_root.offsetWidth &&
+        0 <= e.offsetY && e.offsetY <= nHHeaderCols)   //on the rows header
+    {
+      grid?.sort([this.m_colGrid?.name], [this.m_bSortedAscending]);
+    }
+  }
+
+  public onMouseDown(e : MouseEvent) : void {
+    if(DEBUG)
+     console.log('Mouse Down Pinned Column: ' + this.getGridColumn()?.name);
+/*
+    if(e.view != null) {
+      const ee = document.createEvent( "MouseEvent" );
+      ee.initMouseEvent(e.type, e.bubbles, e.cancelable, e.view, e.detail, e.screenX + 100, e.screenY, e.clientX + 100, e.clientY, e.ctrlKey, e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
+      this.m_colGrid?.grid.root.dispatchEvent(ee);
+      return;
+    }
+*/
+
+    if(this.m_colGrid === null)
+      return;
+
+    const grid = this.m_colGrid?.grid;
+    const viewTable = grid?.view;
+    if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable))
+      return;
+
+    if(e.buttons !== 1)
+      return;
+
+    let eCanvasThis = this.m_root;
+    if(eCanvasThis === null)
+      return;
+
+    this.m_nResizeRowGridMoving = -1;
+    const bAddToSel : boolean = e.ctrlKey || e.shiftKey;
+
+    let nRowGrid = bAddToSel ? -1 : PinnedColumn.hitTestRows(eCanvasThis, grid, e, true, undefined);
+    if (nRowGrid >= 0) {
+      const nHRows = GridUtils.getGridRowHeight(grid);
+      this.m_nResizeRowGridDragging = nRowGrid;
+      this.m_nYResizeDraggingAnchor = e.clientY;
+      this.m_nHResizeRowsBeforeDrag = nHRows;
+    }
+    else
+    {
+
+      nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e, false, this.m_arXYMouseOnCellDown);
+
+      this.m_nRowGridDragging = nRowGrid;
+      this.m_nYDraggingAnchor = e.clientY;
+
+      const cell = grid.cell(this.m_colGrid.name, nRowGrid);
+      const renderer = getRenderer(cell);
+      if(renderer instanceof GridCellRendererEx) {
+        renderer.onMouseDownEx(cell, e, this.m_arXYMouseOnCellDown[0], this.m_arXYMouseOnCellDown[1]);
+      }
+    }
+  }
+
+  public onMouseUp(e : MouseEvent) : void {
+    if(DEBUG)
+     console.log('Mouse Up Pinned Column: ' + this.getGridColumn()?.name);
+/*
+    if(e.view != null) {
+      const ee = document.createEvent( "MouseEvent" );
+      ee.initMouseEvent(e.type, e.bubbles, e.cancelable, e.view, e.detail, e.screenX + 100, e.screenY, e.clientX + 100, e.clientY, e.ctrlKey, e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
+      this.m_colGrid?.grid.root.dispatchEvent(ee);
+      return;
+    }
+*/
+
+    if(this.m_colGrid === null || this.m_root == null)
+      return;
+
+    const grid = this.m_colGrid?.grid;
+    const viewTable = grid?.view;
+
+    if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
+      return;
+    }
+/*
+   if(e.button === 2) {
+
+     const eDivPOpup : HTMLElement | null = GridUtils.getGridDartPopupMenu();
+     eDivPOpup?.setAttribute('column_name', this.m_colGrid.name);
+     let d = 0;
+     return;
+   }*/
+
+
+    if(this.m_nResizeRowGridDragging >= 0) {
+      const nHRow = GridUtils.getGridRowHeight(grid);
+      notifyAllPinnedColsRowsResized(this, nHRow, false);
+      notifyAllColsRowsResized(grid, nHRow, false);
+    }
+
+    this.m_nHResizeRowsBeforeDrag = -1;
+    this.m_nResizeRowGridDragging = -1;
+    this.m_nYResizeDraggingAnchor = -1;
+    this.m_nResizeRowGridMoving = -1;
+
+    document.body.style.cursor = "auto";
+
+    if(this.m_nRowGridDragging >= 0) {
+      const dframe = grid.dataFrame;
+      const bAddToSel = e.ctrlKey;
+      const bRangeSel = e.shiftKey;
+
+      const nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false, this.m_arXYMouseOnCellUp);
+      if(!bAddToSel && !bRangeSel && nRowGrid === this.m_nRowGridDragging) { //click on the same row which will become active
+
+        let cellRH = null;
+        try {
+          cellRH = grid.cell("", nRowGrid);
+        }
+        catch(e) {
+          let colG = null;
+          const lstCols = grid.columns;
+          for(let nC=1; nC<lstCols.length; ++nC) {
+            colG = lstCols.byIndex(nC);
+            cellRH = colG === null ? null : grid.cell(colG.name, nRowGrid);
+            if(cellRH !== null)
+              break;
+          }
+        }
+        if(cellRH !== null) {
+          const nRowTable : any = cellRH.tableRowIndex;
+          if(nRowTable !== null)
+            dframe.currentRow = nRowTable;
+        }
+      }
+      else
+      {
+        const bitsetSel = dframe.selection;
+
+        if(!bAddToSel || bRangeSel)
+          bitsetSel.setAll(false, true);
+
+        let nRowMin = this.m_nRowGridDragging < nRowGrid ? this.m_nRowGridDragging : nRowGrid;
+        let nRowMax = this.m_nRowGridDragging > nRowGrid ? this.m_nRowGridDragging : nRowGrid;
+
+        if(bRangeSel) {
+          let nRowGridActive = GridUtils.getActiveGridRow(grid);
+          if(nRowGridActive === null)
+            nRowGridActive = 0;
+
+          nRowMin = nRowGridActive < nRowGrid ? nRowGridActive : nRowGrid;
+          nRowMax = nRowGridActive > nRowGrid ? nRowGridActive : nRowGrid;
+        }
+
+
+        let cellRH = null;
+        let nRowTable = -1;
+        for(let nRow=nRowMin; nRow<=nRowMax; ++nRow) {
+
+          try {
+            cellRH = grid.cell("", nRow);
+          }
+          catch(e) {
+            let colG = null;
+            const lstCols = grid.columns;
+            for(let nC=1; nC<lstCols.length; ++nC) {
+              colG = lstCols.byIndex(nC);
+              cellRH = colG === null ? null : grid.cell(colG.name, nRowGrid);
+              if(cellRH !== null)
+                break;
+            }
+          }
+
+          if(cellRH !== null && cellRH.tableRowIndex !== null) {
+            nRowTable = cellRH.tableRowIndex;
+            bitsetSel.set(nRowTable, true, true);
+          }
+        }
+      }
+
+      const cell = grid.cell(this.m_colGrid.name, nRowGrid);
+      const renderer = getRenderer(cell);
+      if(renderer instanceof GridCellRendererEx) {
+        renderer.onMouseUpEx(cell, e, this.m_arXYMouseOnCellUp[0], this.m_arXYMouseOnCellUp[1]);
+      }
+
+      if(this.m_arXYMouseOnCellUp[0] === this.m_arXYMouseOnCellDown[0] && this.m_arXYMouseOnCellDown[1] === this.m_arXYMouseOnCellUp[1]) {
+        if(renderer instanceof GridCellRendererEx) {
+          renderer.onClickEx(cell, e, this.m_arXYMouseOnCellUp[0], this.m_arXYMouseOnCellUp[1]);
+        }
+      }
+
+      this.m_nRowGridDragging = -1;
+      this.m_nYDraggingAnchor = -1;
+      this.m_arXYMouseOnCellDown[0] = -2;
+      this.m_arXYMouseOnCellDown[1] = -2;
+      this.m_arXYMouseOnCellUp[0] = -1;
+      this.m_arXYMouseOnCellUp[1] = -1;
+    }
+  }
+
+  public onContextMenu(e : MouseEvent) : void {
+   if(DEBUG)
+    console.log('Context menu Pinned Column: ' + this.getGridColumn()?.name);
+  }
+
+  public onMouseWheel(e : WheelEvent) : void {
+
+    if(this.m_colGrid === null || this.m_root == null)
+      return;
+
+    const grid = this.m_colGrid?.grid;
+    const viewTable = grid?.view;
+
+    if (DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
+      return;
+    }
+
+    if(e.deltaX !== 0 || e.deltaZ !== 0) {
+      return;
+    }
+
+    setTimeout(() =>{
+      const ee = new WheelEvent(e.type, e);
+      try{grid.overlay.dispatchEvent(ee);}
+      catch(ex) {
+        //console.error(ex.message);
+      }
+    }, 1);
+
+
+    if(true)
+      return;
+    //e.clientX = 5;
+
+
+    if(this.m_nWheelCount === 1) {
+      //scroll +
+      const nRowCount = GridUtils.getGridVisibleRowCount(grid);
+      const scrollY = grid.vertScroll;
+      if(nRowCount -1 > scrollY.max) {
+        scrollY.setValues(scrollY.minRange, scrollY.maxRange, scrollY.min + 1, scrollY.max + 1);
+      }
+      this.m_nWheelCount = 0;
+    }
+    else if(this.m_nWheelCount === -1)
+    {
+      //scroll -
+      const scrollY = grid.vertScroll;
+      if(scrollY.min >=1) {
+        scrollY.setValues(scrollY.minRange, scrollY.maxRange, scrollY.min - 1, scrollY.max - 1);
+      }
+      this.m_nWheelCount = 0;
+    }
+    else {
+      this.m_nWheelCount = e.deltaY > 0 ? 1 : -1;
+    }
   }
 
 
@@ -972,7 +1102,11 @@ export class PinnedColumn {
         g.stroke();
       //}
       nRowTable = arTableRows[nRG - nRowMin];
-      bSel = nRowTable < 0 ? false : bitsetSel.get(nRowTable);
+      try{bSel = nRowTable === undefined || nRowTable < 0 ? false : bitsetSel.get(nRowTable);}
+      catch (e){
+        console.error('PaintError: row_min: ' + nRowMin + ' row_max: ' + nRowMax + ' nR ' + nRG + ' ' + nRowTable);
+        throw e;
+      }
       if(bSel)
       {
         g.globalAlpha = 0.2;
