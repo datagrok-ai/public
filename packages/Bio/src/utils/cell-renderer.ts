@@ -117,11 +117,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle
   ): void {
-    const colorCode = (gridCell.cell.column?.temp['color-code'] != null) ? gridCell.cell.column.temp['color-code'] : 'false';
-    const compareWithCurrent = (gridCell.cell.column?.temp['compare-with-current'] != null) ? gridCell.cell.column.temp['compare-with-current'] : 'false';
+    const colorCode = (gridCell.cell.column?.temp['color-code'] != null) ? gridCell.cell.column.temp['color-code'] : true;
+    const compareWithCurrent = (gridCell.cell.column?.temp['compare-with-current'] != null) ? gridCell.cell.column.temp['compare-with-current'] : true;
     const monomerWidth = (gridCell.cell.column?.temp['monomer-width'] != null) ? gridCell.cell.column.temp['monomer-width'] : 'short';
-    const referenceSequence = ((gridCell.cell.column?.temp['reference-sequence'] != null) && (gridCell.cell.column?.temp['current-word'] != ''))
-      ? gridCell.cell.column.temp['reference-sequence'] : gridCell.cell.column.temp['current-word'];
+    const referenceSequence = ((gridCell.cell.column?.temp['reference-sequence'] != null) && (gridCell.cell.column?.temp['reference-sequence'] != ''))
+      ? gridCell.cell.column.temp['reference-sequence'] : gridCell.cell.column.temp['current-word'] ?? '';
     const additionalData: { [index: string]: string | number } = {
       'colorCode': colorCode,
       'compareWithCurrent': compareWithCurrent,

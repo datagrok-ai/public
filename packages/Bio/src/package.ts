@@ -48,7 +48,7 @@ export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
 }
 
-//name: macroMolColumnPropertyPanel
+//name: Sequence Renderer
 //input: column molColumn {semType: Macromolecule}
 //tags: panel
 //output: widget result

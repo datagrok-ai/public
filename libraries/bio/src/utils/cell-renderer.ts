@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 const undefinedColor = 'rgb(100,100,100)';
 const grayColor = '#808080';
+const blackColor = 'rgb(0,0,0)';
 
 export enum DrawStyle {
   MSA = 'MSA',
@@ -34,7 +35,7 @@ export function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, additionalData: { [index: string]: string | number } = {}): number {
+  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, additionalData: { [index: string]: boolean | number | string } = {}): number {
   g.textAlign = 'start';
   const colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
@@ -53,15 +54,14 @@ export function printLeftOrCentered(
     maxColorTextSize = maxWord[wordIdx];
     textSize = maxWord[wordIdx];
   }
-  if (additionalData['currentWord'] != '') {
-    const currentMonomer = String(additionalData['referenceSequence'])[wordIdx];
-    if (additionalData['compareWithCurrent'] == 'true') {
-      transparencyRate = (colorPart == currentMonomer) ? transparencyRate : 0.3;
-    }
+  const currentMonomer = String(additionalData['referenceSequence'])[wordIdx];
+  if ((additionalData['compareWithCurrent'] == true) && (String(additionalData['referenceSequence']).length > 0)) {
+      transparencyRate = (colorPart == currentMonomer) ? transparencyRate : 0.4;
   }
 
+
   function draw(dx1: number, dx2: number): void {
-    const drawColor = (additionalData['colorCode'] == 'true') ? color : grayColor;
+    const drawColor = (additionalData['colorCode'] == true) ? color : blackColor;
     g.fillStyle = drawColor;
     g.globalAlpha = transparencyRate;
     if (drawStyle === DrawStyle.classic) {
