@@ -38,6 +38,7 @@ type AtomData = {
   leftRemovedNode: number, // "leftmost" r-group node of the monomer (deleted upon chaining into polymer)
   rightRemovedNode: number,
   kwargs: string[], // MDLV30 atom line may contain keyword args
+  shift: number[], // shift between leftNode and rightRemovedNode
 }
 
 type BondData = {
@@ -71,8 +72,8 @@ export async function _toAtomicLevel(
   const columnLength = monomerSequencesArray.length;
   for (let row = 0; row < columnLength; ++row) {
     const monomerSeq = monomerSequencesArray[row];
-    const molGraph = monomerSeqToMolGraph(monomerSeq, monomersDict);
-    reconstructed[row] = convertMolGraphToMolfileV3K(molGraph);
+    // const molGraph = monomerSeqToMolGraph(monomerSeq, monomersDict);
+    reconstructed[row] = monomerSeqToMolfile(monomerSeq, monomersDict);
     console.log(reconstructed[row]);
     pi.update(100 * (row + 1)/columnLength, '...complete');
   }
@@ -170,9 +171,16 @@ function getMolGraph(
     const atomData = parseAtomData(removedNodes, bondData, molfileV3K, counts.atomCount);
 
     const monomerGraph = {atoms: atomData, bonds: bondData};
-
-    removeIntermediateHydrogen(monomerGraph);
     adjustMonomerGraph(monomerGraph, atomData.leftNode, atomData.leftRemovedNode);
+    monomerGraph.atoms.shift = [
+      keepPrecision(monomerGraph.atoms.x[monomerGraph.atoms.rightRemovedNode - 1] -
+      monomerGraph.atoms.x[monomerGraph.atoms.leftNode - 1]),
+      keepPrecision(monomerGraph.atoms.y[monomerGraph.atoms.rightRemovedNode - 1] -
+      monomerGraph.atoms.y[monomerGraph.atoms.leftNode - 1]),
+    ];
+    removeHydrogen(monomerGraph);
+    removeNodeAndBonds(monomerGraph, monomerGraph.atoms.rightRemovedNode);
+
     return monomerGraph;
   }
 }
@@ -396,41 +404,38 @@ function parseAtomData(
     leftRemovedNode: removedNodes.left,
     rightRemovedNode: removedNodes.right,
     kwargs: kwargs,
+    shift: [],
   };
 }
 
-/* Remove hydrogen nodes that are not left/right removed nodes */
-function removeIntermediateHydrogen(monomerGraph: MolGraph): void {
-  const atoms = monomerGraph.atoms;
-  const bonds = monomerGraph.bonds;
+/* Remove hydrogen nodes */
+function removeHydrogen(monomerGraph: MolGraph): void {
   let i = 0;
-  const leftRemovedIdx = atoms.leftRemovedNode - 1;
-  const rightRemovedIdx = atoms.rightRemovedNode - 1;
-  while (i < atoms.atomType.length) {
-    if ( atoms.atomType[i] === 'H' &&
-      i !== leftRemovedIdx &&
-      i !== rightRemovedIdx) {
-      removeNodeAndBonds(atoms, bonds, i + 1); // i + 1 because molfile node indexing starts from 1
+  while (i < monomerGraph.atoms.atomType.length) {
+    if ( monomerGraph.atoms.atomType[i] === 'H') {
+      removeNodeAndBonds(monomerGraph, i + 1); // i + 1 because molfile node indexing starts from 1
       --i;
     }
     ++i;
   }
 }
 
-/* Remove H atoms that are L/R removed nodes */
-function removeTerminalHydrogen(molGraph: MolGraph, removedNode: number): MolGraph {
-  const molGraphCopy: MolGraph = structuredClone(molGraph);
-  if (molGraphCopy.atoms.atomType[removedNode - 1] === 'H')
-    // removeNodeAndBonds(molGraphCopy.atoms, molGraphCopy.bonds, removedNode);
-    // todo: remove comment
-    molGraphCopy.atoms.atomType[removedNode - 1] ='Li';
-  return molGraphCopy;
-}
+// /* Remove H atoms that are L/R removed nodes */
+// function removeTerminalHydrogen(molGraph: MolGraph, removedNode: number): MolGraph {
+//   const molGraphCopy: MolGraph = structuredClone(molGraph);
+//   if (molGraphCopy.atoms.atomType[removedNode - 1] === 'H')
+//     removeNodeAndBonds(molGraphCopy.atoms, molGraphCopy.bonds, removedNode);
+//     // todo: remove comment
+//     // molGraphCopy.atoms.atomType[removedNode - 1] ='Li';
+//   return molGraphCopy;
+// }
 
 /* Remove node 'removedNode' and the associated bonds. Notice, numeration of
  * nodes in molfiles starts from 1, not 0 */
-function removeNodeAndBonds(atomData: AtomData, bondData: BondData, removedNode: number): void {
+function removeNodeAndBonds(monomerGraph: MolGraph, removedNode: number): void {
   const removedNodeIdx = removedNode - 1;
+  const atomData = monomerGraph.atoms;
+  const bondData = monomerGraph.bonds;
 
   // remove the node from atomData
   atomData.atomType.splice(removedNodeIdx, 1);
@@ -510,7 +515,7 @@ function adjustMonomerGraph(monomerGraph: MolGraph, nodeOne: number, nodeTwo: nu
   // flipCarboxylAndRadical(monomerGraph);
 
   // flip hydroxyl group with double-bound O inside carboxyl group if necessary
-  flipHydroxilGroup(monomerGraph);
+  // flipHydroxilGroup(monomerGraph);
 }
 
 /* Finds angle between OY and the line joining (x, y) with the origin */
@@ -593,122 +598,207 @@ function flipMolGraph(molGraph: MolGraph, axis: boolean): void {
 /* Flips double-bonded O in carbonyl group with OH in order for the monomers
  * to have standard representation simplifying their concatenation. The
  * monomer must already be adjusted with adjustMonomerGraph in order for this function to be implemented  */
-function flipHydroxilGroup(monomer: MolGraph): void {
-  const hydroxylOxygen = monomer.atoms.rightRemovedNode;
-  const doubleBondedOxygen = findDoubleBondedCarbonylOxygen(monomer, hydroxylOxygen);
-  const x = monomer.atoms.x;
-  // -1 below because indexing of nodes in molfiles starts from 1, unlike arrays
-  if (x[hydroxylOxygen - 1] > x[doubleBondedOxygen - 1])
-    swapNodes(monomer, doubleBondedOxygen, hydroxylOxygen);
-}
+// function flipHydroxilGroup(monomer: MolGraph): void {
+//   const hydroxylOxygen = monomer.atoms.rightRemovedNode;
+//   const doubleBondedOxygen = findDoubleBondedCarbonylOxygen(monomer, hydroxylOxygen);
+//   const x = monomer.atoms.x;
+//   // -1 below because indexing of nodes in molfiles starts from 1, unlike arrays
+//   if (x[hydroxylOxygen - 1] > x[doubleBondedOxygen - 1])
+//     swapNodes(monomer, doubleBondedOxygen, hydroxylOxygen);
+// }
 
 /* Determine the number of node (starting from 1) corresponding to the
  * double-bonded oxygen of the carbonyl group  */
-function findDoubleBondedCarbonylOxygen(monomer: MolGraph, hydroxylOxygen: number): number {
-  const bondsMap = constructBondsMap(monomer);
-  const carbon = bondsMap.get(hydroxylOxygen)![0];
-  let doubleBondedOxygen = 0;
-  let i = 0;
-  // iterate over the nodes bonded to the carbon and find the double one
-  while (doubleBondedOxygen === 0) {
-    const node = bondsMap.get(carbon)![i];
-    if (monomer.atoms.atomType[node - 1] === 'O' && node !== hydroxylOxygen)
-      doubleBondedOxygen = node;
-    i++;
-  }
-  return doubleBondedOxygen;
-}
+// function findDoubleBondedCarbonylOxygen(monomer: MolGraph, hydroxylOxygen: number): number {
+//   const bondsMap = constructBondsMap(monomer);
+//   const carbon = bondsMap.get(hydroxylOxygen)![0];
+//   let doubleBondedOxygen = 0;
+//   let i = 0;
+//   // iterate over the nodes bonded to the carbon and find the double one
+//   while (doubleBondedOxygen === 0) {
+//     const node = bondsMap.get(carbon)![i];
+//     if (monomer.atoms.atomType[node - 1] === 'O' && node !== hydroxylOxygen)
+//       doubleBondedOxygen = node;
+//     i++;
+//   }
+//   return doubleBondedOxygen;
+// }
 
 /* Swap the Cartesian coordinates of the two specified nodes in MolGraph  */
-function swapNodes(monomer: MolGraph, nodeOne: number, nodeTwo: number): void {
-  const nodeOneIdx = nodeOne - 1;
-  const nodeTwoIdx = nodeTwo - 1;
-  const x = monomer.atoms.x;
-  const y = monomer.atoms.y;
-  const tmpX = x[nodeOneIdx];
-  const tmpY = y[nodeOneIdx];
-  x[nodeOneIdx] = x[nodeTwoIdx];
-  y[nodeOneIdx] = y[nodeTwoIdx];
-  x[nodeTwoIdx] = tmpX;
-  y[nodeTwoIdx] = tmpY;
-}
+// function swapNodes(monomer: MolGraph, nodeOne: number, nodeTwo: number): void {
+//   const nodeOneIdx = nodeOne - 1;
+//   const nodeTwoIdx = nodeTwo - 1;
+//   const x = monomer.atoms.x;
+//   const y = monomer.atoms.y;
+//   const tmpX = x[nodeOneIdx];
+//   const tmpY = y[nodeOneIdx];
+//   x[nodeOneIdx] = x[nodeTwoIdx];
+//   y[nodeOneIdx] = y[nodeTwoIdx];
+//   x[nodeTwoIdx] = tmpX;
+//   y[nodeTwoIdx] = tmpY;
+// }
 
-// todo: describe
-function constructBondsMap(monomer: MolGraph): Map<number, Array<number>> {
-  const map = new Map<number, Array<number>>();
-  for (const atomPair of monomer.bonds.atomPair) {
-    for (let i = 0; i < 2; i++) {
-      const key = atomPair[i];
-      const value = atomPair[(i + 1)%2];
-      if (map.has(key))
-        map.get(key)?.push(value);
-      else
-        map.set(key, new Array<number>(1).fill(value));
-    }
-  }
-  return map;
-}
+// todo: don't use map, a list is enough
+// function constructBondsMap(monomer: MolGraph): Map<number, Array<number>> {
+//   const map = new Map<number, Array<number>>();
+//   for (const atomPair of monomer.bonds.atomPair) {
+//     for (let i = 0; i < 2; i++) {
+//       const key = atomPair[i];
+//       const value = atomPair[(i + 1)%2];
+//       if (map.has(key))
+//         map.get(key)?.push(value);
+//       else
+//         map.set(key, new Array<number>(1).fill(value));
+//     }
+//   }
+//   return map;
+// }
 
 /* Conctenate MolGraph objects according to the monomer symbol sequence, the
  * result is convertible to molfile V3000 */
-function monomerSeqToMolGraph(monomerSeq: string[], monomersDict: Map<string, MolGraph>): MolGraph {
-  if (monomerSeq.length === 0)
-    throw new Error('The monomerSeq is empty');
-    // todo: handle/modify exception
+// function monomerSeqToMolGraph(monomerSeq: string[], monomersDict: Map<string, MolGraph>): string[] {
+//   if (monomerSeq.length === 0)
+//     throw new Error('The monomerSeq is empty');
+//     // todo: handle/modify exception
 
-  // remove "left" hydrogens if any
-  let result = removeTerminalHydrogen(
-    monomersDict.get(monomerSeq[0])!,
-    monomersDict.get(monomerSeq[0])!.atoms.leftRemovedNode
-  );
+//   concatenateMonomerGraphs(result, monomerSeq, monomersDict);
 
-  concatenateMonomerGraphs(result, monomerSeq, monomersDict);
-
-  result = removeTerminalHydrogen(result, result.atoms.rightRemovedNode);
-  return result;
-}
+//   return result;
+// }
 
 /* Join two subsequent MolGraph objects */
-function concatenateMonomerGraphs(result: MolGraph, monomerSeq: string[], monomersDict: Map<string, MolGraph>): void {
-  for (let i = 1; i < monomerSeq.length; i++) {
-    const xShift = result.atoms.x[result.atoms.rightRemovedNode - 1];
-    const yShift = result.atoms.y[result.atoms.rightRemovedNode - 1];
-    removeNodeAndBonds(result.atoms, result.bonds, result.atoms.rightRemovedNode);
-
-    const nextMonomer: MolGraph = structuredClone(monomersDict.get(monomerSeq[i])!);
-    removeNodeAndBonds(nextMonomer.atoms, nextMonomer.bonds, nextMonomer.atoms.leftRemovedNode);
-
-    if (i % 2 === 1)
-      flipMonomerAroundOX(nextMonomer);
-
-    const nodeIdxShift = result.atoms.atomType.length;
-    shiftNodes(nextMonomer, nodeIdxShift);
-    // shiftCoordinates(nextMonomer, xShift, yShift);
-    shiftCoordinates(nextMonomer, xShift, yShift);
-
-    // Todo: preserve angles in the bonds
-
-    // bind the two monomers with a peptide bond
-    // todo: eliminate hardcoding of the peptide bond
-    result.bonds.bondType.push(1);
-    result.bonds.atomPair.push([result.atoms.rightNode, nextMonomer.atoms.leftNode]);
-
-    // update result.atoms with the values of nextMonomer
-    result.atoms.rightNode = nextMonomer.atoms.rightNode;
-    result.atoms.rightRemovedNode = nextMonomer.atoms.rightRemovedNode;
-    result.atoms.atomType = result.atoms.atomType.concat(nextMonomer.atoms.atomType);
-    result.atoms.x = result.atoms.x.concat(nextMonomer.atoms.x);
-    result.atoms.y = result.atoms.y.concat(nextMonomer.atoms.y);
-    result.atoms.kwargs = result.atoms.kwargs.concat(nextMonomer.atoms.kwargs);
-
-    // update result.bonds with the values of nextMonomer
-    result.bonds.atomPair = result.bonds.atomPair.concat(nextMonomer.bonds.atomPair);
-    result.bonds.bondType = result.bonds.bondType.concat(nextMonomer.bonds.bondType);
-    for (const [key, value] of nextMonomer.bonds.bondConfiguration)
-      result.bonds.bondConfiguration.set(key, value);
-    for (const [key, value] of nextMonomer.bonds.kwargs)
-      result.bonds.kwargs.set(key, value);
+function monomerSeqToMolfile(monomerSeq: string[], monomersDict: Map<string, MolGraph>): string {
+  // define atom and bond counts
+  if (monomerSeq.length === 0)
+    throw new Error('The monomerSeq is empty');
+  let atomCount = 0;
+  let bondCount = 0;
+  for (const monomerSymbol of monomerSeq) {
+    const monomer = monomersDict.get(monomerSymbol)!;
+    atomCount += monomer?.atoms.x.length;
+    bondCount += (monomer.bonds.bondType.length + 1); // +1 because of C-NH
   }
+  atomCount += 1; // because of the terminal OH
+
+  // todo rewrite using constants
+  const molfileCountsLine = V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + V3K_COUNTS_LINE_ENDING;
+
+  const molfileAtomBlock = new Array<string>(atomCount);
+  const molfileBondBlock = new Array<string>(bondCount);
+
+  const spaceShift = new Array<number>(2).fill(0);
+  let nodeShift = 0;
+  let bondShift = 0;
+  let attachNode = 0;
+  // todo: don't forget about the last atom
+  for (let i = 0; i < monomerSeq.length; ++i) {
+    const monomer = monomersDict.get(monomerSeq[i])!;
+    const flipFactor = (-1)**(i % 2); // flip every even monomer
+    for (let j = 0; j < monomer.atoms.atomType.length; ++j) {
+      const atomIdx = nodeShift + j + 1;
+      molfileAtomBlock[nodeShift + j] = V3K_BEGIN_DATA_LINE + atomIdx + ' ' +
+        monomer.atoms.atomType[j] + ' ' +
+        keepPrecision(spaceShift[0] + monomer.atoms.x[j]) + ' ' +
+        // flip the monomer w.r.t. OX if necessary
+        flipFactor * keepPrecision(spaceShift[1] + monomer.atoms.y[j]) +
+        ' ' + ' ' + monomer.atoms.kwargs[i + j];
+    }
+
+    nodeShift = monomer.atoms.atomType.length;
+    spaceShift[0] += monomer.atoms.shift[0];
+    spaceShift[1] += flipFactor * monomer.atoms.shift[1];
+
+    for (let j = 1; j <= monomer.bonds.atomPair.length; ++j) {
+      const bondIdx = bondShift + j + 1;
+      const firstAtom = monomer.bonds.atomPair[j][0] + nodeShift;
+      const secondAtom = monomer.bonds.atomPair[j][1] + nodeShift;
+      let bondCfg = '';
+      if (monomer.bonds.bondConfiguration.has(j)) {
+        // flip orientation
+        let orientation = monomer.bonds.bondConfiguration.get(j);
+        if (flipFactor < 0)
+          orientation = (orientation === 1) ? 3 : 1;
+        bondCfg = ' CFG=' + orientation;
+      }
+      const kwargs = monomer.bonds.kwargs.has(j) ?
+        ' ' + monomer.bonds.kwargs.get(j) : '';
+      molfileBondBlock[bondShift + j] = V3K_BEGIN_DATA_LINE + bondIdx + ' ' +
+        monomer.bonds.bondType[j] + ' ' +
+      firstAtom + ' ' + secondAtom + bondCfg + kwargs + '\n';
+    }
+
+    // hardcoded peptide bond
+    if (attachNode !== 0) {
+      const bondIdx = bondShift + 1;
+      const firstAtom = attachNode;
+      const secondAtom = monomer.atoms.leftNode + nodeShift;
+      molfileBondBlock[bondShift] = V3K_BEGIN_DATA_LINE + bondIdx + ' ' +
+        1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
+    }
+    attachNode = monomer.atoms.rightNode;
+    bondShift += monomer.bonds.atomPair.length + 1;
+  }
+
+  // add terminal atom and bond
+  molfileAtomBlock[atomCount] =  
+  molfileBondBlock[bondCount] = 
+
+  const molfileParts = [
+    V3K_HEADER_FIRST_LINE,
+    V3K_HEADER_SECOND_LINE,
+    V3K_BEGIN_CTAB_BLOCK,
+    molfileCountsLine,
+    V3K_BEGIN_ATOM_BLOCK,
+    molfileAtomBlock.join(''),
+    V3K_END_ATOM_BLOCK,
+    V3K_BEGIN_BOND_BLOCK,
+    molfileBondBlock.join(''),
+    V3K_END_BOND_BLOCK,
+    V3K_END_CTAB_BLOCK,
+    V3K_END,
+  ];
+
+  return molfileParts.join('');
+
+  // for (let i = 1; i < monomerSeq.length; i++) {
+  //   const xShift = result.atoms.x[result.atoms.rightRemovedNode - 1];
+  //   const yShift = result.atoms.y[result.atoms.rightRemovedNode - 1];
+  //   removeNodeAndBonds(result.atoms, result.bonds, result.atoms.rightRemovedNode);
+
+  //   const nextMonomer: MolGraph = structuredClone(monomersDict.get(monomerSeq[i])!);
+  //   removeNodeAndBonds(nextMonomer.atoms, nextMonomer.bonds, nextMonomer.atoms.leftRemovedNode);
+
+  //   if (i % 2 === 1)
+  //     flipMonomerAroundOX(nextMonomer);
+
+  //   const nodeIdxShift = result.atoms.atomType.length;
+  //   shiftNodes(nextMonomer, nodeIdxShift);
+  //   // shiftCoordinates(nextMonomer, xShift, yShift);
+  //   shiftCoordinates(nextMonomer, xShift, yShift);
+
+  //   // Todo: preserve angles in the bonds
+
+  //   // bind the two monomers with a peptide bond
+  //   // todo: eliminate hardcoding of the peptide bond
+  //   result.bonds.bondType.push(1);
+  //   result.bonds.atomPair.push([result.atoms.rightNode, nextMonomer.atoms.leftNode]);
+
+  //   // update result.atoms with the values of nextMonomer
+  //   result.atoms.rightNode = nextMonomer.atoms.rightNode;
+  //   result.atoms.rightRemovedNode = nextMonomer.atoms.rightRemovedNode;
+  //   result.atoms.atomType = result.atoms.atomType.concat(nextMonomer.atoms.atomType);
+  //   result.atoms.x = result.atoms.x.concat(nextMonomer.atoms.x);
+  //   result.atoms.y = result.atoms.y.concat(nextMonomer.atoms.y);
+  //   result.atoms.kwargs = result.atoms.kwargs.concat(nextMonomer.atoms.kwargs);
+
+  //   // update result.bonds with the values of nextMonomer
+  //   result.bonds.atomPair = result.bonds.atomPair.concat(nextMonomer.bonds.atomPair);
+  //   result.bonds.bondType = result.bonds.bondType.concat(nextMonomer.bonds.bondType);
+  //   for (const [key, value] of nextMonomer.bonds.bondConfiguration)
+  //     result.bonds.bondConfiguration.set(key, value);
+  //   for (const [key, value] of nextMonomer.bonds.kwargs)
+  //     result.bonds.kwargs.set(key, value);
+  // }
 }
 
 /* Shift the molfile indices of the nodes  */
@@ -753,72 +843,72 @@ function shiftCoordinates(molGraph: MolGraph, xShift: number, yShift?: number): 
   }
 }
 
-function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
-  // counts line
-  const atomType = molGraph.atoms.atomType;
-  const x = molGraph.atoms.x;
-  const y = molGraph.atoms.y;
-  const atomKwargs = molGraph.atoms.kwargs;
-  const bondType = molGraph.bonds.bondType;
-  const atomPair = molGraph.bonds.atomPair;
-  const bondKwargs = molGraph.bonds.kwargs;
-  const bondConfig = molGraph.bonds.bondConfiguration;
-  const atomCount = atomType.length;
-  const bondCount = molGraph.bonds.bondType.length;
+// function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
+//   // counts line
+//   const atomType = molGraph.atoms.atomType;
+//   const x = molGraph.atoms.x;
+//   const y = molGraph.atoms.y;
+//   const atomKwargs = molGraph.atoms.kwargs;
+//   const bondType = molGraph.bonds.bondType;
+//   const atomPair = molGraph.bonds.atomPair;
+//   const bondKwargs = molGraph.bonds.kwargs;
+//   const bondConfig = molGraph.bonds.bondConfiguration;
+//   const atomCount = atomType.length;
+//   const bondCount = molGraph.bonds.bondType.length;
 
-  // todo rewrite using constants
-  const molfileCountsLine = V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + V3K_COUNTS_LINE_ENDING;
+//   // todo rewrite using constants
+//   const molfileCountsLine = V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + V3K_COUNTS_LINE_ENDING;
 
-  // atom block
-  let molfileAtomBlock = '';
-  for (let i = 0; i < atomCount; ++i) {
-    const atomIdx = i + 1;
-    const coordinate = [x[i].toString(), y[i].toString()];
+//   // atom block
+//   let molfileAtomBlock = '';
+//   for (let i = 0; i < atomCount; ++i) {
+//     const atomIdx = i + 1;
+//     const coordinate = [x[i].toString(), y[i].toString()];
 
-    // format coordinates so that they have 6 digits after decimal point
-    for (let k = 0; k < 2; ++k) {
-      const formatted = coordinate[k].toString().split('.');
-      if (formatted.length === 1)
-        formatted.push('0');
-      formatted[1] = formatted[1].padEnd(V3K_ATOM_COORDINATE_PRECISION, '0');
-      coordinate[k] = formatted.join('.');
-    }
+//     // format coordinates so that they have 6 digits after decimal point
+//     for (let k = 0; k < 2; ++k) {
+//       const formatted = coordinate[k].toString().split('.');
+//       if (formatted.length === 1)
+//         formatted.push('0');
+//       formatted[1] = formatted[1].padEnd(V3K_ATOM_COORDINATE_PRECISION, '0');
+//       coordinate[k] = formatted.join('.');
+//     }
 
-    const atomLine = V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
-      coordinate[0] + ' ' + coordinate[1] + ' ' + atomKwargs[i];
-    molfileAtomBlock += atomLine;
-  }
+//     const atomLine = V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
+//       coordinate[0] + ' ' + coordinate[1] + ' ' + atomKwargs[i];
+//     molfileAtomBlock += atomLine;
+//   }
 
-  // bond block
-  let molfileBondBlock = '';
-  for (let i = 0; i < bondCount; ++i) {
-    const bondIdx = i + 1;
-    const firstAtom = atomPair[i][0];
-    const secondAtom = atomPair[i][1];
-    const kwargs = bondKwargs.has(i) ? ' ' + bondKwargs.get(i) : '';
-    const bondCfg = bondConfig.has(i) ? ' CFG=' + bondConfig.get(i) : '';
-    const bondLine = V3K_BEGIN_DATA_LINE + bondIdx + ' ' + bondType[i] + ' ' +
-      firstAtom + ' ' + secondAtom + bondCfg + kwargs + '\n';
-    molfileBondBlock += bondLine;
-  }
+//   // bond block
+//   let molfileBondBlock = '';
+//   for (let i = 0; i < bondCount; ++i) {
+//     const bondIdx = i + 1;
+//     const firstAtom = atomPair[i][0];
+//     const secondAtom = atomPair[i][1];
+//     const kwargs = bondKwargs.has(i) ? ' ' + bondKwargs.get(i) : '';
+//     const bondCfg = bondConfig.has(i) ? ' CFG=' + bondConfig.get(i) : '';
+//     const bondLine = V3K_BEGIN_DATA_LINE + bondIdx + ' ' + bondType[i] + ' ' +
+//       firstAtom + ' ' + secondAtom + bondCfg + kwargs + '\n';
+//     molfileBondBlock += bondLine;
+//   }
 
-  const molfileParts = [
-    V3K_HEADER_FIRST_LINE,
-    V3K_HEADER_SECOND_LINE,
-    V3K_BEGIN_CTAB_BLOCK,
-    molfileCountsLine,
-    V3K_BEGIN_ATOM_BLOCK,
-    molfileAtomBlock,
-    V3K_END_ATOM_BLOCK,
-    V3K_BEGIN_BOND_BLOCK,
-    molfileBondBlock,
-    V3K_END_BOND_BLOCK,
-    V3K_END_CTAB_BLOCK,
-    V3K_END,
-  ];
+//   const molfileParts = [
+//     V3K_HEADER_FIRST_LINE,
+//     V3K_HEADER_SECOND_LINE,
+//     V3K_BEGIN_CTAB_BLOCK,
+//     molfileCountsLine,
+//     V3K_BEGIN_ATOM_BLOCK,
+//     molfileAtomBlock,
+//     V3K_END_ATOM_BLOCK,
+//     V3K_BEGIN_BOND_BLOCK,
+//     molfileBondBlock,
+//     V3K_END_BOND_BLOCK,
+//     V3K_END_CTAB_BLOCK,
+//     V3K_END,
+//   ];
 
-  return molfileParts.join('');
-}
+//   return molfileParts.join('');
+// }
 
 /* Keep precision upon floating point operations over atom coordinates */
 function keepPrecision(x: number) {
