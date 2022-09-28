@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
 import * as rxjs from 'rxjs';
+import $ from 'cash-dom';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
@@ -14,7 +15,7 @@ import {renderBarchart, renderMutationCliffCell, setAARRenderer, renderInvaraint
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
 import {getStats, Stats} from './utils/statistics';
-import { LogoSummary } from './viewers/logo-summary';
+import {LogoSummary} from './viewers/logo-summary';
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -510,18 +511,29 @@ export class PeptidesModel {
 
   createLogoSummaryGrid(): DG.Grid {
     const summaryTable = this.df.groupBy(['Clusters']).aggregate();
+    const summaryTableLength = summaryTable.rowCount;
     const webLogoCol: DG.Column<string> = summaryTable.columns.addNew('WebLogo', DG.COLUMN_TYPE.STRING);
-    // const seqColName = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!.name;
-    const clustersCol = summaryTable.getCol('Clusters');
-    for (let index = 0; index < clustersCol.length; ++index) {
+    const clustersCol: DG.Column<number> = summaryTable.getCol('Clusters');
+    const tempDfList: DG.DataFrame[] = new Array(summaryTableLength);
+
+    for (let index = 0; index < summaryTableLength; ++index) {
       const tempDf: DG.DataFrame = this.df.rows.match(`${'Clusters'} = ${clustersCol.get(index)}`).toDataFrame();
-      tempDf.plot.fromType('WebLogo').then((viewer) => {
-        webLogoCol.set(index, viewer.root.outerHTML);
-      });
+      tempDfList[index] = tempDf;
+      webLogoCol.set(index, index.toString());
     }
     webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
 
-    return summaryTable.plot.grid();
+    const grid = summaryTable.plot.grid();
+    grid.props.rowHeight = 55;
+    grid.onCellPrepare((cell) => {
+      if (cell.isTableCell && cell.tableColumn?.name === 'WebLogo') 
+        tempDfList[parseInt(cell.cell.value)].plot.fromType('WebLogo').then((viewer) => cell.element = viewer.root);
+    });
+    const webLogoGridCol = grid.columns.byName('WebLogo')!;
+    webLogoGridCol.cellType = 'html';
+    webLogoGridCol.width = 350;
+
+    return grid;
   }
 
   setBarChartInteraction(): void {
@@ -873,13 +885,16 @@ export class PeptidesModel {
     }
 
     const setViewerGridProps = (grid: DG.Grid): void => {
-      grid.props.allowEdit = false;
-      grid.props.allowRowSelection = false;
-      grid.props.allowBlockSelection = false;
+      const gridProps = grid.props;
+      gridProps.allowEdit = false;
+      gridProps.allowRowSelection = false;
+      gridProps.allowBlockSelection = false;
+      gridProps.allowColSelection = false;
     };
 
     setViewerGridProps(this.mutationCliffsGrid);
     setViewerGridProps(this.mostPotentResiduesGrid);
+    setViewerGridProps(this.logoSummaryGrid);
   }
 
   getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
@@ -958,6 +973,7 @@ export class PeptidesModel {
       await this.df.plot.fromType('peptide-sar-viewer-vertical', options) as MostPotentResiduesViewer;
 
     const logoSummary = await this.df.plot.fromType('logo-summary-viewer') as LogoSummary;
+    dockManager.dock(logoSummary, DG.DOCK_TYPE.RIGHT, null, 'Logo Summary Table');
 
     // TODO: completely remove this viewer?
     // if (this.df.rowCount <= 10000) {
@@ -972,10 +988,9 @@ export class PeptidesModel {
     const mcNode =
       dockManager.dock(this.mutationCliffsViewer, DG.DOCK_TYPE.DOWN, null, this.mutationCliffsViewer.name);
 
-    const mprNode = dockManager.dock(this.mostPotentResiduesViewer, DG.DOCK_TYPE.RIGHT, mcNode,
-      this.mostPotentResiduesViewer.name, 0.3);
+    dockManager.dock(
+      this.mostPotentResiduesViewer, DG.DOCK_TYPE.RIGHT, mcNode, this.mostPotentResiduesViewer.name, 0.3);
 
-    dockManager.dock(logoSummary, DG.DOCK_TYPE.TOP, mprNode);
 
     this.sourceGrid.props.allowEdit = false;
     adjustCellSize(this.sourceGrid);
