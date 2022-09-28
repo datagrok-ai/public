@@ -1,0 +1,3 @@
+Emscripten Command:
+
+em++ [name].cpp -o [name].js -sMODULARIZE -sEXPORTED_RUNTIME_METHODS=ccall

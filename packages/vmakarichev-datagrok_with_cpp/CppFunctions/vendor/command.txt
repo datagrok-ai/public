@@ -1,0 +1,1 @@
+emcc -O0 lib1.c lib2.c -o newLib.js -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME="exportNewModuleName" -s EXPORTED_FUNCTIONS=["_mySqr","_myAdd","_tripleProduct","_myProd","_myCube","_myDif"] -s EXPORTED_RUNTIME_METHODS=["cwrap"]
