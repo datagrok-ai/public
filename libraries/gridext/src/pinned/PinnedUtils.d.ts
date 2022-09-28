@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import { PinnedColumn } from "./PinnedColumn";
 export declare function getTotalPinnedRowsHeight(grid: DG.Grid): number;
+export declare function getPinnedColumnLeft(colPinned: PinnedColumn): number;
 export declare function getTotalPinnedColsWidth(grid: DG.Grid): number;
 export declare function findPinnedColumnByRoot(eCanvas: HTMLCanvasElement, grid: DG.Grid): PinnedColumn | null;
 export declare function getPinnedColumnCount(grid: DG.Grid): number;

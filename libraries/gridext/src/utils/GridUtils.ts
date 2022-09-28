@@ -13,6 +13,50 @@ x = r * x; y = r * y;
 w = r * w; h = r * h;
 */
 
+export function getGridDartPopupMenu() : HTMLElement | null {
+
+  let eDiv = null;
+  const cDiv = document.getElementsByClassName('d4-menu-item-container d4-vert-menu d4-menu-popup');
+  for(let n=0; n<cDiv.length; ++n) {
+    eDiv = (cDiv.item(n) as HTMLElement);
+    return eDiv;
+  }
+  return null;
+}
+
+
+export function getToolIconDiv(grid : DG.Grid) : HTMLElement | null {
+
+  const cImg = document.getElementsByClassName('grok-icon grok-font-icon-menu');
+
+  let eDivHamb : HTMLElement | null = null;
+  let eParent = null;
+  for(let n=0; n<cImg.length; ++n) {
+    eDivHamb = (cImg.item(n) as HTMLElement).parentElement;
+    if(eDivHamb == null)
+      return null;
+
+    if(eDivHamb?.getAttribute('column_name') !== null){//'data') === 'ColHamb') {
+      eParent = eDivHamb.parentElement;
+      while(eParent !== null) {
+        if(eParent === grid.root)
+          return eDivHamb;
+
+        eParent = eParent.parentElement;
+      }
+     }
+  }
+  return null;
+}
+
+
+
+export function isHitTestOnElement(eElem: HTMLElement, eMouse : MouseEvent) : boolean {
+  const eElemHit = document.elementFromPoint(eMouse.clientX, eMouse.clientY);
+  const b = eElemHit == eElem;
+  return b;
+}
+
 export function isRowHeader(colGrid : DG.GridColumn) : boolean {
   return colGrid.idx === 0 || colGrid.name === 'row header';
 }
@@ -138,6 +182,32 @@ export function fillVisibleViewportGridCells(arColRowIdxs : Array<number>, grid 
   arColRowIdxs[3] = nRowMax;
 }
 
+export function getActiveGridRow(grid: DG.Grid) {
+  const dframe = grid.dataFrame;
+  const nRowTableActive = dframe.currentRow.idx;
+  const nGridColCount = grid.columns.length;
+  let colGrid = null;
+  let cellGrid = null;
+  for(let nCol=0; nCol<nGridColCount; ++nCol) {
+    colGrid = grid.columns.byIndex(nCol);
+    if(colGrid?.visible) {
+
+      const nGridRowCount = dframe.filter.trueCount;
+      for(let nR=0; nR<nGridRowCount; ++nR) {
+        cellGrid = grid.cell(colGrid.name, nR);
+        if(cellGrid.tableRowIndex === null || nRowTableActive === null)
+          continue;
+
+        if(cellGrid.tableRowIndex === nRowTableActive)
+          return nR;
+      }
+      return -1;
+    }
+  }
+  return -1;
+}
+
+
 const m_mapScaledFonts = new Map();
 
 export function scaleFont(font : string, fFactor : number) : string {
@@ -189,3 +259,5 @@ export function paintColHeaderCell(g : CanvasRenderingContext2D | null, nX : num
   const nYY = (nY*window.devicePixelRatio + nHH - Math.ceil(3*window.devicePixelRatio));//-2*window.devicePixelRatio);
   g.fillText(str, nXX, nYY);
 }
+
+

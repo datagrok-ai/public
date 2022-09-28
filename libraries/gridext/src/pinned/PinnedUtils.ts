@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as GridUtils from '../utils/GridUtils';
+import * as PinnedUtils from "./PinnedUtils";
 import {PinnedColumn} from "./PinnedColumn";
 import {GridCellRendererEx} from "../renderer/GridCellRendererEx";
-
 
 function getGrid(colGrid : DG.GridColumn) : DG.Grid | null {
   let grid : DG.Grid | null = colGrid.grid;
@@ -32,10 +32,27 @@ export function getTotalPinnedRowsHeight(grid : DG.Grid) : number {
 }
 
 
-export function getTotalPinnedColsWidth(grid : DG.Grid) : number {
-
+export function getPinnedColumnLeft(colPinned : PinnedColumn) : number {
+  const grid = colPinned.getGridColumn()?.grid;
   const dart = DG.toDart(grid);
+  let colPinnedTmp = null;
 
+  let nW = 0;
+  const nPinnedColCount =dart.m_arPinnedCols === undefined ? 0 : dart.m_arPinnedCols.length;
+  for(let n=0; n<nPinnedColCount; ++n) {
+    colPinnedTmp = dart.m_arPinnedCols[n];
+    if(colPinned === colPinnedTmp) {
+      break;
+    }
+    nW += colPinnedTmp.getWidth();
+  }
+
+  return nW;
+}
+
+
+export function getTotalPinnedColsWidth(grid : DG.Grid) : number {
+  const dart = DG.toDart(grid);
   const nPinnedColsCounnt = dart.m_arPinnedCols === undefined ? 0 : dart.m_arPinnedCols.length;
   let colPinned = null;
   let nWidth = 0;
