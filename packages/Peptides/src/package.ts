@@ -11,7 +11,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {MutationCliffsViewer, MostPotentResiduesViewer} from './viewers/sar-viewer';
 
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
-import { LogoSummary } from './viewers/logo-summary';
+import {LogoSummary} from './viewers/logo-summary';
 
 export const _package = new DG.Package();
 let currentTable: DG.DataFrame;
