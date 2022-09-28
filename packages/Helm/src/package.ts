@@ -467,8 +467,8 @@ function getParts(subParts: string[], s: string) : string[] {
   let j = 0;
   let allParts: string[] = [];
   for (let k = 0; k < subParts.length; ++k) {
-    let indexOfMonomer: number = s.indexOf(subParts[k]);
-    let helmBeforeMonomer: string = s.slice(j, indexOfMonomer);
+    let indexOfMonomer = s.indexOf(subParts[k]);
+    let helmBeforeMonomer = s.slice(j, indexOfMonomer);
     allParts.push(helmBeforeMonomer);
     allParts.push(subParts[k]);
     s = s.substring(indexOfMonomer + subParts[k].length);
@@ -518,15 +518,13 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     let allParts: string[] = getParts(subParts, s);
     let tooltipMessage: string[] = [];
     for (let i = 0; i < allParts.length; ++i) {
-      monomers.has(allParts[i]) 
-      ? tooltipMessage[i] = 'There is no such monomer. Open the Property Panel to upload the monomer library' 
-      : tooltipMessage[i] = 'There is such monomer';
+      if (monomers.has(allParts[i])) 
+        tooltipMessage[i] = `Monomer ${allParts[i]} not found. Open the Property Panel, then expand Manage Libraries`;
     };
-    (((allParts[left]?.length ?? 0) > 0)) 
+    (((tooltipMessage[left]?.length ?? 0) > 0)) 
     ? ui.tooltip.show(ui.div(tooltipMessage[left]), e.x + 16, e.y + 16) 
     : ui.tooltip.hide();
   }
-
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
