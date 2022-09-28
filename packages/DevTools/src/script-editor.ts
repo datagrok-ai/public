@@ -13,7 +13,7 @@ export function scriptEditor(view: DG.View) {
     if (doc.getLine(2) == '//language: javascript') {
       setScriptRibbon(view, doc);
       editor.setCursor({line: 6, ch: 0});
-      editor.setFocus();
+      //editor.setFocus();
     }
   }, 300);
 }
