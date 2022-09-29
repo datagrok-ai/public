@@ -20,7 +20,7 @@ import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CO
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
-import {representationsWidget} from './widgets/representations';
+import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
@@ -47,6 +47,14 @@ export async function initBio() {
 //output: grid_cell_renderer result
 export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
+}
+
+//name: Sequence Renderer
+//input: column molColumn {semType: Macromolecule}
+//tags: panel
+//output: widget result
+export function macroMolColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
+  return getMacroMolColumnPropertyPanel(molColumn);
 }
 
 //name: separatorSequenceCellRenderer
