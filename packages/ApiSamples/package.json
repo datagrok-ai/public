@@ -3,7 +3,7 @@
   "version": "1.0.3",
   "author": {
     "name": "Alexander Paramonov",
-    "email": "aparamomov@datagrok.ai"
+    "email": "aparamonov@datagrok.ai"
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^1.8.1",

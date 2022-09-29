@@ -4,7 +4,7 @@
   "version": "1.3.0",
   "author": {
     "name": "Alexander Paramonov",
-    "email": "aparamomov@datagrok.ai"
+    "email": "aparamonov@datagrok.ai"
   },
   "description": "js-api-tests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
   "repository": {

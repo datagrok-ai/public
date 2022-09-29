@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "author": {
     "name": "Alexander Paramonov",
-    "email": "aparamomov@datagrok.ai"
+    "email": "aparamonov@datagrok.ai"
   },
   "fullName": "Apache Tika",
   "description": "Apache Tika CLI tools integration",
