@@ -206,6 +206,7 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
 
   /**
    * Cell renderer function.
+   *
    * @param {CanvasRenderingContext2D} g Canvas rendering context.
    * @param {number} x x coordinate on the canvas.
    * @param {number} y y coordinate on the canvas.
@@ -260,11 +261,11 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     const separator = gridCell.tableColumn!.tags[C.TAGS.SEPARATOR];
     const units: string = gridCell.tableColumn!.tags[DG.TAGS.UNITS];
     w = getUpdatedWidth(grid, g, x, w);
-      //TODO: can this be replaced/merged with splitSequence?
+    //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
     const splitter = WebLogo.getSplitter(units, separator);
-    let subParts1 = splitter(s1);
-    let subParts2 = splitter(s2);
+    const subParts1 = splitter(s1);
+    const subParts2 = splitter(s2);
     drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, units, separator);
   }
 }
@@ -280,11 +281,11 @@ export function drawMoleculeDifferenceOnCanvas(
   units: string,
   fullStringLength?: boolean,
   molDifferences?:{[key: number]: HTMLCanvasElement}) {
-  //TODO: can this be replaced/merged with splitSequence?
-  const [s1, s2] = s.split('#');
-  const splitter = WebLogo.getSplitter(units, separator);
-  const subParts1 = splitter(s1);
-  const subParts2 = splitter(s2);
+  if (subParts1.length !== subParts2.length) {
+    const emptyMonomersArray = new Array<string>(Math.abs(subParts1.length - subParts2.length)).fill('');
+    subParts1.length > subParts2.length ?
+      subParts2 = subParts2.concat(emptyMonomersArray) : subParts1 = subParts1.concat(emptyMonomersArray);
+  }
   const textSize1 = g.measureText(processSequence(subParts1).join(''));
   const textSize2 = g.measureText(processSequence(subParts2).join(''));
   const textWidth = Math.max(textSize1.width, textSize2.width);
