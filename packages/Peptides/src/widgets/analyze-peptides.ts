@@ -64,13 +64,15 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
     activityScalingMethod.fireChanged();
   };
   const activityColumnChoice = ui.columnInput('Activity', currentDf, defaultColumn, activityScalingMethodState);
+  const clustersColumnChoice = ui.columnInput('Clusters', currentDf, null);
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
-  const inputsList = [activityColumnChoice, activityScalingMethod];
+  const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice];
 
   const startBtn = ui.button('Launch SAR', async () => {
-    await startAnalysis(activityColumnChoice.value, col, currentDf, scaledDf, newScaledColName);
+    await startAnalysis(
+      activityColumnChoice.value, col, clustersColumnChoice.value, currentDf, scaledDf, newScaledColName);
   });
   startBtn.style.alignSelf = 'center';
 
@@ -85,21 +87,24 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
       ui.splitH([
         ui.splitV([ui.inputs(inputsList), startBtn]),
         histogramHost,
-      ], {style: {height: 'unset'}}),
+      ], {style: {height: '215px'}}),
     ]),
   );
 }
 
 export async function startAnalysis(
-  activityColumn: DG.Column<number> | null, alignedSeqCol: DG.Column<string>, currentDf: DG.DataFrame,
-  scaledDf: DG.DataFrame, newScaledColName: string): Promise<PeptidesModel | null> {
+  activityColumn: DG.Column<number> | null, alignedSeqCol: DG.Column<string>, clustersColumn: DG.Column | null,
+  currentDf: DG.DataFrame, scaledDf: DG.DataFrame, newScaledColName: string): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
   if (activityColumn?.type === DG.TYPE.FLOAT) {
     const activityColumnName: string = activityColumn.name;
+    const cloneColList = [alignedSeqCol.name, activityColumnName];
+    if (clustersColumn)
+      cloneColList.push(clustersColumn.name);
 
     //prepare new DF
-    const newDf = currentDf.clone(currentDf.filter, [alignedSeqCol.name, activityColumnName]);
+    const newDf = currentDf.clone(currentDf.filter, cloneColList);
     const activityCol = newDf.getCol(activityColumnName);
     activityCol.name = C.COLUMNS_NAMES.ACTIVITY;
     activityCol.semType = C.SEM_TYPES.ACTIVITY;
@@ -109,6 +114,10 @@ export async function startAnalysis(
     newDf.columns.add(activityScaledCol);
     newDf.name = 'Peptides analysis';
     newDf.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
+    if (clustersColumn) {
+      newDf.getCol(clustersColumn.name).name = C.COLUMNS_NAMES.CLUSTERS;
+      newDf.tags[C.TAGS.CLUSTERS] = C.COLUMNS_NAMES.CLUSTERS;
+    }
     // newDf.tags[C.PEPTIDES_ANALYSIS] = 'true';
 
     let monomerType = 'HELM_AA';

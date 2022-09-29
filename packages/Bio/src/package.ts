@@ -32,6 +32,7 @@ import {
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import * as C from './utils/constants';
+import {PhyloTreeViewApp} from './phylo-tree-view-app';
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 
@@ -486,7 +487,10 @@ export function similaritySearchViewer(): SequenceSimilarityViewer {
 //description: finds the most similar sequence
 //output: viewer result
 export function similaritySearchTopMenu(): void {
-  (grok.shell.v as DG.TableView).addViewer('SequenceSimilaritySearchViewer');
+  const view = (grok.shell.v as DG.TableView);
+  const viewer = new SequenceSimilarityViewer();
+  view.addViewer(viewer);
+  view.dockManager.dock(viewer, 'down');
 }
 
 //name: SequenceDiversitySearchViewer
@@ -501,5 +505,26 @@ export function diversitySearchViewer(): SequenceDiversityViewer {
 //description: finds the most diverse molecules
 //output: viewer result
 export function diversitySearchTopMenu() {
-  (grok.shell.v as DG.TableView).addViewer('SequenceDiversitySearchViewer');
+  const view = (grok.shell.v as DG.TableView);
+  const viewer = new SequenceDiversityViewer();
+  view.addViewer(viewer);
+  view.dockManager.dock(viewer, 'down');
+}
+
+
+//name: PhyloTreeView
+//tags: app
+export async function bioPhyloTreeViewApp() {
+  const pi = DG.TaskBarProgressIndicator.create('open PhyloTreeView app');
+  try {
+    const app = new PhyloTreeViewApp();
+    await app.init();
+  } catch (err: unknown) {
+    const msg: string = 'PhyloTreeView app error: ' +
+      `${err instanceof Error ? err.message : (err as Object).toString()}`;
+    grok.shell.error(msg);
+    console.error(msg);
+  } finally {
+    pi.close();
+  }
 }

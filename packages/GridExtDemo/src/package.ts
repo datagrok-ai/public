@@ -22,7 +22,7 @@ export async function demoDateRenderer() {
 
   const view: DG.TableView = grok.shell.addTableView(dframe);
   const grid = view.grid;
-  const colGrid = grid.columns.byName('New Date');
+  const colGrid : DG.GridColumn | null = grid.columns.byName('New Date');
   if (colGrid !== null)
     GridUtils.setGridColumnRenderer(colGrid, new DateCellRenderer());
 
@@ -67,7 +67,7 @@ export async function demoPinnedColumns() {
     rowHeight: 25,
   });
 
-  grok.events.onContextMenu.subscribe((args) => {
+  grok.events.onContextMenu.subscribe((args : any) => {
     PinnedUtils.handleContextMenu(args, (menu : DG.Menu, colGridOrPinned : DG.GridColumn | PinnedColumn,
       grid : DG.Grid) => {
       if (colGridOrPinned instanceof PinnedColumn) {

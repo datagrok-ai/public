@@ -66,9 +66,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.cell.column.getTag(UnitsHandler.TAGS.aligned) !== 'SEQ.MSA') {
+    if (gridCell.cell.column.getTag(UnitsHandler.TAGS.aligned) !== 'SEQ.MSA')
       return;
-    }
+
     const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
     const maxIndex = gridCell.cell.column.temp['bio-maxIndex'];
     const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x);
@@ -88,16 +88,16 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
         } else if (argsX > maxLengthWordsSum[mid + 1]) {
           left = mid + 1;
         }
-        if (left == right) {
+        if (left == right)
           found = true;
-        }
       }
     }
     left = (argsX >= maxLengthWordsSum[left]) ? left + 1 : left;
     const separator = gridCell.cell.column.getTag('separator') ?? '';
     const splitterFunc: SplitterFunc = WebLogo.getSplitter('separator', separator);
     const subParts: string[] = splitterFunc(gridCell.cell.value);
-    (((subParts[left]?.length ?? 0) > 0)) ? ui.tooltip.show(ui.div(subParts[left]), e.x + 16, e.y + 16) : ui.tooltip.hide();
+    (((subParts[left]?.length ?? 0) > 0)) ?
+      ui.tooltip.show(ui.div(subParts[left]), e.x + 16, e.y + 16) : ui.tooltip.hide();
   }
 
   /**
@@ -154,11 +154,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     if (gridCell.cell.column.getTag('.calculatedCellRender') !== splitLimit.toString()) {
       let samples = 0;
       while (samples < Math.min(gridCell.cell.column.length, 100)) {
-        let column = gridCell.cell.column.get(samples);
-        let subParts: string[] = splitterFunc(column);
+        const column = gridCell.cell.column.get(samples);
+        const subParts: string[] = splitterFunc(column);
         subParts.forEach((amino, index) => {
-          let textSize = monomerToShortFunction(amino, maxLengthOfMonomer).length * 7 + gapRenderer;
-          if (textSize > (maxLengthWords[index] ?? 0)) {
+          const textSize = monomerToShortFunction(amino, maxLengthOfMonomer).length * 7 + gapRenderer;
+          if (textSize > (maxLengthWords[index] ?? 0))
             maxLengthWords[index] = textSize;
           }
           if (index > maxIndex) {
@@ -171,9 +171,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       for (let i = 0; i <= maxIndex; i++) {
         if (maxLengthWords[i] < minLength) {
           maxLengthWords[i] = minLength;
-        }
       }
-      let maxLengthWordSum: any = {};
+      const maxLengthWordSum: any = {};
       maxLengthWordSum[0] = maxLengthWords[0];
       for (let i = 1; i <= maxIndex; i++) {
         maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
@@ -190,9 +189,10 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     let x1 = x;
     let color = undefinedColor;
     let drawStyle = DrawStyle.classic;
-    if (gridCell.cell.column.getTag('aligned').includes('MSA') && gridCell.cell.column.getTag('units') === 'separator') {
+    if (gridCell.cell.column.getTag('aligned').includes('MSA') && gridCell.cell.column.getTag('units') === 'separator')
       drawStyle = DrawStyle.MSA;
     }
+
 
     subParts.every((amino, index) => {
       color = palette.get(amino);
@@ -208,13 +208,13 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 }
 
 export class MonomerCellRenderer extends DG.GridCellRenderer {
-  get name(): string {return C.SEM_TYPES.MONOMER;}
+  get name(): string { return C.SEM_TYPES.MONOMER; }
 
-  get cellType(): string {return C.SEM_TYPES.MONOMER;}
+  get cellType(): string { return C.SEM_TYPES.MONOMER; }
 
-  get defaultHeight(): number {return 15;}
+  get defaultHeight(): number { return 15; }
 
-  get defaultWidth(): number {return 30;}
+  get defaultWidth(): number { return 30; }
 
   /**
    * Cell renderer function.
@@ -225,7 +225,7 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
    * @param {number} w width of the cell.
    * @param {number} h height of the cell.
    * @param {DG.GridCell} gridCell Grid cell.
-   * @param {DG.GridCellStyle} cellStyle Cell style.
+   * @param {DG.GridCellStyle} _cellStyle Cell style.
    */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
@@ -261,7 +261,7 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
    * @param {number} w width of the cell.
    * @param {number} h height of the cell.
    * @param {DG.GridCell} gridCell Grid cell.
-   * @param {DG.GridCellStyle} cellStyle Cell style.
+   * @param {DG.GridCellStyle} _cellStyle Cell style.
    * @memberof AlignedSequenceDifferenceCellRenderer
    */
   render(
@@ -276,8 +276,8 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
     const splitter = WebLogo.getSplitter(units, separator);
-    let subParts1 = splitter(s1);
-    let subParts2 = splitter(s2);
+    const subParts1 = splitter(s1);
+    const subParts2 = splitter(s2);
     drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, units, separator);
   }
 }
@@ -296,7 +296,8 @@ export function drawMoleculeDifferenceOnCanvas(
 
   if (subParts1.length !== subParts2.length) {
     const emptyMonomersArray = new Array<string>(Math.abs(subParts1.length - subParts2.length)).fill('');
-    subParts1.length > subParts2.length ? subParts2 = subParts2.concat(emptyMonomersArray) : subParts1 = subParts1.concat(emptyMonomersArray);
+    subParts1.length > subParts2.length ?
+      subParts2 = subParts2.concat(emptyMonomersArray) : subParts1 = subParts1.concat(emptyMonomersArray);
   }
   const textSize1 = g.measureText(processSequence(subParts1).join(''));
   const textSize2 = g.measureText(processSequence(subParts2).join(''));
@@ -331,11 +332,9 @@ export function drawMoleculeDifferenceOnCanvas(
       const subX0 = printLeftOrCentered(updatedX, updatedY - vShift, w, h, g, amino1, color1, 0, true);
       const subX1 = printLeftOrCentered(updatedX, updatedY + vShift, w, h, g, amino2, color2, 0, true);
       updatedX = Math.max(subX1, subX0);
-      if (molDifferences) {
+      if (molDifferences)
         molDifferences[i] = createDifferenceCanvas(amino1, amino2, color1, color2, updatedY, vShift, h);
-      }
-    } else
-      updatedX = printLeftOrCentered(updatedX, updatedY, w, h, g, amino1, color1, 0, true, 0.5);
+    } else { updatedX = printLeftOrCentered(updatedX, updatedY, w, h, g, amino1, color1, 0, true, 0.5); }
     updatedX += 4;
   }
   g.restore();

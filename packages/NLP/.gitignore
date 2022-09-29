@@ -2,3 +2,6 @@ upload.keys.json
 node_modules/
 dist/
 test-report.html
+
+# Emitted *.js files
+src/**/*.js

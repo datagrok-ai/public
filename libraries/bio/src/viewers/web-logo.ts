@@ -110,6 +110,8 @@ export class WebLogo extends DG.JsViewer {
   private rowsMasked: number = 0;
   private rowsNull: number = 0;
   private visibleSlider: boolean = false;
+  private allowResize: boolean = true;
+  private currentRange: number = 0;
 
   // Viewer's properties (likely they should be public so that they can be set outside)
   private _positionWidth: number;
@@ -235,6 +237,12 @@ export class WebLogo extends DG.JsViewer {
     this.msgHost = ui.div('No message');
     this.msgHost.style.display = 'none';
 
+    this.canvas = ui.canvas();
+    this.canvas.style.width = '100%';
+
+    const style: SliderOptions = {style: 'barbell', allowResize: this.allowResize};
+    this.slider = ui.rangeSlider(0, 100, 0, 10, false, style);
+
     this.slider.root.style.position = 'absolute';
     this.slider.root.style.zIndex = '999';
     this.slider.root.style.display = 'none';
@@ -244,6 +252,15 @@ export class WebLogo extends DG.JsViewer {
 
     const parent = this;
     this.slider.onValuesChanged.subscribe(() => {
+      if (parent.slider == null) {
+        return;
+      }
+      if ((parent.allowResize) && (parent.slider.max - parent.slider.min != parent.currentRange) && (parent.slider.max - parent.slider.min <  parent.Length) ) {
+        const widthSlider =  parent.slider.max - parent.slider.min + 1;
+        const xScale: number = (parent.root.clientWidth - widthSlider * parent.positionMarginValue) / (widthSlider * parent._positionWidth);
+        parent._positionWidth = parent._positionWidth * xScale;
+        parent.currentRange = parent.slider.max - parent.slider.min + 1;
+      }
       parent.render(true);
     });
 
@@ -407,16 +424,18 @@ export class WebLogo extends DG.JsViewer {
   /** Sets {@link slider}, needed to set slider options and to update slider position.
    */
   private setSlider(): void {
-    let diffEndScrollAndSliderMin = Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length;
-    diffEndScrollAndSliderMin = diffEndScrollAndSliderMin > 0 ? diffEndScrollAndSliderMin : 0;
-    let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
-    let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin);
-    if (this.checkIsHideSlider()) {
-      newMin = 0;
-      newMax = 1;
+    if ((this.slider != null) && (this.canvas != null)) {
+      let diffEndScrollAndSliderMin = Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length;
+      diffEndScrollAndSliderMin = diffEndScrollAndSliderMin > 0 ? diffEndScrollAndSliderMin : 0;
+      let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
+      let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin);
+      if (this.checkIsHideSlider()) {
+        newMin = 0;
+        newMax = this.Length - 1;
+      }
+      this.slider.setValues(0, this.Length,
+        newMin, newMax);
     }
-    this.slider.setValues(0, this.Length,
-      newMin, newMax);
   }
 
 
@@ -718,7 +737,7 @@ export class WebLogo extends DG.JsViewer {
     let width: number = this.Length * this.positionWidth / r;
     let height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
 
-    if (this.fitArea) {
+    if ((this.fitArea) && (!this.visibleSlider)) {
       const yScale: number = this.root.clientHeight / height;
       const xScale: number = (this.root.clientWidth - this.Length * this.positionMarginValue) / width;
       const scale = Math.max(1, Math.min(xScale, yScale));
@@ -726,6 +745,7 @@ export class WebLogo extends DG.JsViewer {
       height = height * scale;
       this._positionWidth = this.positionWidth * scale;
     }
+
     width = this.Length * this.positionWidthWithMargin / r;
 
     this.canvas.width = this.root.clientWidth * r;
@@ -748,6 +768,8 @@ export class WebLogo extends DG.JsViewer {
       this.host.style.overflowX = 'auto!important';
       this.host.style.setProperty('text-align', this.horizontalAlignment);
 
+      const sliderHeight = this.visibleSlider ? 10 : 0;
+
       // vertical alignment
       let hostTopMargin = 0;
       switch (this.verticalAlignment) {
@@ -758,7 +780,7 @@ export class WebLogo extends DG.JsViewer {
         hostTopMargin = Math.max(0, (this.root.clientHeight - height) / 2);
         break;
       case 'bottom':
-        hostTopMargin = Math.max(0, this.root.clientHeight - height);
+        hostTopMargin = Math.max(0, this.root.clientHeight - height - sliderHeight);
         break;
       }
       // horizontal alignment
@@ -942,7 +964,7 @@ export class WebLogo extends DG.JsViewer {
       }).toArray();
   }
 
-  private static helmRe = /(PEPTIDE1|DNA1|RNA1)([^}]+)}/g;
+  private static helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
   private static helmPp1Re = /\[([^\[\]]+)]/g;
 
   /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).

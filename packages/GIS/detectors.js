@@ -9,11 +9,11 @@
 // import {SEMTYPEGIS, countriesList} from '../src/gis-constants';
 
 const SEMTYPEGIS = {
-  LONGITUDE: 'gis-longitude',
-  LATIITUDE: 'gis-latitude',
+  LONGITUDE: 'Longitude', //'gis-longitude',
+  LATIITUDE: 'Latitude', //'gis-latitude',
   ALTITUDE: 'gis-altitude',
   GISPOINT: 'gis-point',
-  GISAREA: 'gis-gis_area',
+  GISAREA: 'gis-area',
   GISCOUNTRY: 'gis-country',
   GISSTATE: 'gis-state',
   GISADDRESS: 'gis-address',
@@ -49,12 +49,12 @@ class GisPackageDetectors extends DG.Package {
 
     let catNumber = col.categories.length;
     if (catNumber > 100) catNumber = 100; //shorten amount of checking categories to 100
-    const caseWeight = 80 / (catNumber+1);
+    const caseWeight = 80 / (catNumber + 1);
     for (let i = 0; i < catNumber; i++) {
       // eslint-disable-next-line max-len
       if ((colSemType === SEMTYPEGIS.LATIITUDE) && ((col.categories[i] > -90) && (col.categories[i] < 90))) estCoeff += caseWeight;
       else if ((col.categories[i] > -180) && (col.categories[i] < 180)) estCoeff += caseWeight;
-      else estCoeff -= caseWeight*2;
+      else estCoeff -= caseWeight * 2;
     }
 
     if (estCoeff > 75) return colSemType;
@@ -83,7 +83,7 @@ class GisPackageDetectors extends DG.Package {
     let estCoeff = 0; //coefficient of estimation [0-100] the more value - the more probability
 
     const colName = col.name.toLowerCase();
-    //TODO: check incorrect length of column values (<3? of >9?)
+    //Checking incorrect length of column values (<3? of >9?)
     for (let i = 0; i < col.categories.length; i++) {
       if (((col.categories[i].length > 0) && (col.categories[i].length < 3)) ||
         (col.categories[i].length > 10)) return null;
@@ -99,7 +99,7 @@ class GisPackageDetectors extends DG.Package {
     //TODO: add checking for zip codes of other countries Great Britain, AZ, AG, GR, SW, Livan, Islands, NL, PL, PT
     let catNumber = col.categories.length;
     if (catNumber > 100) catNumber = 100; //shorten amount of checking categories to 100
-    const caseWeight = 75 / (catNumber+1);
+    const caseWeight = 75 / (catNumber + 1);
     for (let i = 0; i < catNumber; i++) {
       if ((col.categories[i].length > 0) &&
         (col.categories[i].match(zipUS2) != null)||
@@ -107,10 +107,10 @@ class GisPackageDetectors extends DG.Package {
         (col.categories[i].match(zipBRAZ) != null)||
         (col.categories[i].match(zipJPN) != null)||
         (col.categories[i].match(zipCAN) != null)) estCoeff += caseWeight;
-      else estCoeff -= caseWeight*2;
+      else estCoeff -= caseWeight * 2;
     }
 
-    //TODO: should we add checking for "Почтовый индекс"
+    //TODO: should we add checking for "Почтовый индекс"?
     if (colName.includes('zip') || colName.includes('code') || colName.includes('post'))
       estCoeff += 40;
 
@@ -147,7 +147,7 @@ class GisPackageDetectors extends DG.Package {
 
     let catNumber = col.categories.length;
     if (catNumber > 100) catNumber = 100;
-    const caseWeight = 80 / (catNumber+1);
+    const caseWeight = 80 / (catNumber + 1);
     for (let i = 0; i < catNumber; i++) {
       if (col.categories[i].length > 6) {
         if (col.categories[i].match(Addr1) != null) estCoeff += caseWeight;
@@ -158,7 +158,7 @@ class GisPackageDetectors extends DG.Package {
         else if (col.categories[i].match(Addr6) != null) estCoeff += caseWeight;
         else if (col.categories[i].match(Addr7) != null) estCoeff += caseWeight;
         else if (col.categories[i].match(Addr8) != null) estCoeff += caseWeight;
-      } else estCoeff -= caseWeight*2;
+      } else estCoeff -= caseWeight * 2;
     }
     // console.log('worlds match estCoeff=' + estCoeff);
 

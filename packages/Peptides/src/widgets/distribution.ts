@@ -14,7 +14,7 @@ const otherConst = 'Other';
 export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
   const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
   const rowCount = activityScaledCol.length;
-  const selectionObject = model.currentSelection;
+  const selectionObject = model.mutationCliffsSelection;
   const positions = Object.keys(selectionObject);
   const positionsLen = positions.length;
   let aarStr = allConst;

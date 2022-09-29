@@ -22,6 +22,26 @@ function stringify(items: string[]): string {
   return '["' + items.join('", "') + '"]';
 }
 
+function saltMass(saltNames: string[], molWeightCol: DG.Column, equivalentsCol: DG.Column, i: number,
+  saltCol: DG.Column) {
+  const saltRowIndex = saltNames.indexOf(saltCol.get(i));
+  return (
+    saltRowIndex == -1 || molWeightCol.get(saltRowIndex) == DG.FLOAT_NULL || equivalentsCol.get(i) == DG.INT_NULL) ?
+    DG.FLOAT_NULL :
+    molWeightCol.get(saltRowIndex) * equivalentsCol.get(i);
+}
+
+function saltMolWeigth(saltNamesList: string[], saltCol: DG.Column, molWeightCol: DG.Column, i: number) {
+  const saltRowIndex = saltNamesList.indexOf(saltCol.get(i));
+  return (saltRowIndex == -1) ? DG.FLOAT_NULL : molWeightCol.get(saltRowIndex);
+}
+
+function batchMolWeight(compoundMolWeightCol: DG.Column, saltMassCol: DG.Column, i: number) {
+  return (compoundMolWeightCol.getString(i) == '' || saltMassCol.getString(i) == '') ?
+    DG.FLOAT_NULL :
+    compoundMolWeightCol.get(i) + saltMassCol.get(i);
+}
+
 function molecularWeight(sequence: string, weightsObj: {[index: string]: number}): number {
   const codes = sortByStringLengthInDescendingOrder(Object.keys(weightsObj)).concat(Object.keys(MODIFICATIONS));
   let weight = 0;
@@ -117,13 +137,17 @@ export function oligoSdFile(table: DG.DataFrame) {
   const icdsDf = DG.DataFrame.fromCsv(ICDS);
   const idpsDf = DG.DataFrame.fromCsv(IDPS);
 
-  async function addColumns(t: DG.DataFrame, saltsDf: DG.DataFrame) {
+  const sequenceCol = table.getCol(COL_NAMES.SEQUENCE);
+  const saltCol = table.getCol(COL_NAMES.SALT);
+  const equivalentsCol = table.getCol(COL_NAMES.EQUIVALENTS);
+  const typeColumn = table.getCol(COL_NAMES.TYPE);
+
+  const molWeightCol = saltsDf.getCol('MOLWEIGHT');
+  const saltNamesList = saltsDf.getCol('DISPLAY').toList();
+
+  function addColumns(t: DG.DataFrame) {
     if (t.columns.contains(COL_NAMES.COMPOUND_NAME))
       return grok.shell.error('Columns already exist');
-
-    const sequenceCol = t.getCol(COL_NAMES.SEQUENCE);
-    const saltCol = t.getCol(COL_NAMES.SALT);
-    const equivalentsCol = t.getCol(COL_NAMES.EQUIVALENTS);
 
     for (let i = t.rowCount - 1; i > -1; i--) {
       if (sequenceCol.get(i) == '')
@@ -132,12 +156,11 @@ export function oligoSdFile(table: DG.DataFrame) {
 
     t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => sequenceCol.get(i));
 
-    t.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => (i > 0 && i % 2 == 0) ?
+    t.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => (i > 2 && typeColumn.get(i) == 'Duplex') ?
       sequenceCol.get(i) + '; duplex of SS: ' + sequenceCol.get(i - 2) + ' and AS: ' + sequenceCol.get(i - 1) :
       sequenceCol.get(i),
     );
-    const molWeightCol = saltsDf.getCol('MOLWEIGHT');
-    const saltNamesList = saltsDf.getCol('DISPLAY').toList();
+
     const weightsObj: {[code: string]: number} = {};
     for (const synthesizer of Object.keys(map)) {
       for (const technology of Object.keys(map[synthesizer])) {
@@ -154,19 +177,14 @@ export function oligoSdFile(table: DG.DataFrame) {
         DG.FLOAT_NULL;
     });
 
-    t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
-      const saltRowIndex = saltNamesList.indexOf(saltCol.get(i));
-      return (saltRowIndex == -1) ? DG.FLOAT_NULL : molWeightCol.get(saltRowIndex) * equivalentsCol.get(i);
-    });
+    t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) =>
+      saltMass(saltNamesList, molWeightCol, equivalentsCol, i, saltCol));
 
-    t.columns.addNewFloat(COL_NAMES.SALT_MOL_WEIGHT).init((i: number) => {
-      const saltRowIndex = saltNamesList.indexOf(saltCol.get(i));
-      return (saltRowIndex == -1) ? DG.FLOAT_NULL : molWeightCol.get(saltRowIndex);
-    });
+    t.columns.addNewFloat(COL_NAMES.SALT_MOL_WEIGHT).init((i: number) =>
+      saltMolWeigth(saltNamesList, saltCol, molWeightCol, i));
 
-    await t.columns.addNewCalculated(COL_NAMES.BATCH_MW,
-      '${' + COL_NAMES.CPD_MW + '} + ${' + COL_NAMES.SALT_MASS + '}', DG.COLUMN_TYPE.FLOAT, false,
-    );
+    t.columns.addNewFloat(COL_NAMES.BATCH_MW).init((i: number) =>
+      batchMolWeight(t.getCol(COL_NAMES.CPD_MW), t.getCol(COL_NAMES.SALT_MASS), i));
 
     addColumnsPressed = true;
     return newDf = t;
@@ -181,8 +199,8 @@ export function oligoSdFile(table: DG.DataFrame) {
       if (table.getCol(COL_NAMES.IDP).type != DG.COLUMN_TYPE.STRING)
         table.changeColumnType(COL_NAMES.IDP, DG.COLUMN_TYPE.STRING);
       d.append(
-        ui.link('Add Columns', async () => {
-          await addColumns(table, saltsDf);
+        ui.link('Add Columns', () => {
+          addColumns(table);
           view.grid.columns.setOrder(Object.values(COL_NAMES));
         }, 'Add columns: \'' + [COL_NAMES.COMPOUND_NAME, COL_NAMES.COMPOUND_COMMENTS, COL_NAMES.CPD_MW,
           COL_NAMES.SALT_MASS, COL_NAMES.BATCH_MW].join('\', \''), '',
@@ -205,9 +223,26 @@ export function oligoSdFile(table: DG.DataFrame) {
           args.args.menu.item('Fill Column With Value', () => {
             const v = args.args.context.table.currentCell.value;
             args.args.context.table.currentCell.column.init(v);
+            for (let i = 0; i < view.dataFrame.rowCount; i++)
+              updateCalculatedColumns(view.dataFrame, i);
           });
         }
       });
+
+      view.dataFrame.onDataChanged.subscribe(() => {
+        const colName = view.dataFrame.currentCol.name;
+        if ([COL_NAMES.SALT, COL_NAMES.EQUIVALENTS, COL_NAMES.SALT_MOL_WEIGHT].includes(colName))
+          updateCalculatedColumns(view.dataFrame, view.dataFrame.currentRowIdx);
+      });
+
+      function updateCalculatedColumns(t: DG.DataFrame, i: number): void {
+        const smValue = saltMass(saltNamesList, molWeightCol, equivalentsCol, i, saltCol);
+        t.getCol(COL_NAMES.SALT_MASS).set(i, smValue, false);
+        const smwValue = saltMolWeigth(saltNamesList, saltCol, molWeightCol, i);
+        t.getCol(COL_NAMES.SALT_MOL_WEIGHT).set(i, smwValue, false);
+        const bmw = batchMolWeight(t.getCol(COL_NAMES.CPD_MW), t.getCol(COL_NAMES.SALT_MASS), i);
+        t.getCol(COL_NAMES.BATCH_MW).set(i, bmw, false);
+      }
     }),
   ]);
   grok.shell.v.setRibbonPanels([[d]]);

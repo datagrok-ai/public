@@ -37,11 +37,11 @@ category('Core', () => {
     [simpleScaledDf, simpleScaledColName] = scaleActivity('-lg', simpleTable, simpleActivityColName, true);
 
     model = await startAnalysis(
-      simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName);
+      simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledDf, simpleScaledColName);
     expect(model instanceof PeptidesModel, true);
 
     if (model != null) {
-      model.currentSelection = {'11': ['D']};
+      model.mutationCliffsSelection = {'11': ['D']};
       grok.shell.closeTable(model.df);
     }
   });
@@ -59,11 +59,11 @@ category('Core', () => {
     [complexScaledDf, complexScaledColName] = scaleActivity('-lg', complexTable, complexActivityColName, true);
 
     model = await startAnalysis(
-      complexActivityCol, complexAlignedSeqCol, complexTable, complexScaledDf, complexScaledColName);
+      complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledDf, complexScaledColName);
     expect(model instanceof PeptidesModel, true);
 
     if (model != null) {
-      model.currentSelection = {'13': ['-']};
+      model.mutationCliffsSelection = {'13': ['-']};
       grok.shell.closeTable(model.df);
     }
   });
@@ -80,7 +80,7 @@ category('Core', () => {
     [simpleScaledDf, simpleScaledColName] = scaleActivity('-lg', simpleTable, simpleActivityColName, true);
 
     model = await startAnalysis(
-      simpleActivityCol, simpleAlignedSeqCol, simpleTable, simpleScaledDf, simpleScaledColName);
+      simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledDf, simpleScaledColName);
     let v = grok.shell.getTableView('Peptides analysis');
     const d = v.dataFrame;
     const layout = v.saveLayout();

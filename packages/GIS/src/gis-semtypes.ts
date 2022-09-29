@@ -1,3 +1,4 @@
+/* eslint-disable block-spacing */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -36,47 +37,52 @@ export class GisArea {
   }
 }
 
+function drawContourByCoords(g: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  coordinates: Array<gisCoordinate>) {
+  if (coordinates.length == 0) return;
+  //detect scale>>
+  let xMin = coordinates[0][0];
+  let xMax = coordinates[0][0];
+  let yMin = coordinates[0][1];
+  let yMax = coordinates[0][1];
+  for (let i = 0; i < coordinates.length; i++) {
+    if (coordinates[i][0] < xMin) xMin = coordinates[i][0];
+    if (coordinates[i][0] > xMax) xMax = coordinates[i][0];
+    if (coordinates[i][1] < yMin) yMin = coordinates[i][1];
+    if (coordinates[i][1] > yMax) yMax = coordinates[i][1];
+  }
+  let xScale = (w - 10) / Math.abs(xMax - xMin);
+  let yScale = (h - 10) / Math.abs(yMax - yMin);
+  if (yScale < xScale) xScale = yScale;
+  else yScale = xScale;
+  //TODO: add centering of contour for canvas
+  //draw contour>>
+  g.fillStyle = '#FEEEEE';
+  g.strokeStyle = '#FF0000';
+  g.beginPath();
+  for (let i = 0; i < coordinates.length - 1; i++) {
+    const x1 = (x + 5) + (coordinates[i][0] - xMin) * xScale;
+    const y1 = (y + h - 5) - (coordinates[i][1] - yMin) * yScale;
+    const x2 = (x + 5) + (coordinates[i+1][0] - xMin) * xScale;
+    const y2 = (y + h - 5) - (coordinates[i+1][1] - yMin) * yScale;
+    g.moveTo(x1, y1);
+    g.lineTo(x2, y2);
+  }
+  g.closePath();
+  g.stroke();
+}
+
 export class GisAreaCanvasRenderer extends DG.CanvasRenderer {
-  get defaultWidth(): number | null {
-    return 200; //null;
-  }
-  get defaultHeight(): number | null {
-    return 100; //null;
-  }
+  get defaultWidth(): number | null { return 200; }
+  get defaultHeight(): number | null { return 100; }
+
   render(g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
     obj: GisArea, context: any): void {
-    if (obj.coordinates.length == 0) return;
-    //detect scale>>
-    let xMin = obj.coordinates[0][0];
-    let xMax = obj.coordinates[0][0];
-    let yMin = obj.coordinates[0][1];
-    let yMax = obj.coordinates[0][1];
-    for (let i = 0; i < obj.coordinates.length; i++) {
-      if (obj.coordinates[i][0] < xMin) xMin = obj.coordinates[i][0];
-      if (obj.coordinates[i][0] > xMax) xMax = obj.coordinates[i][0];
-      if (obj.coordinates[i][1] < yMin) yMin = obj.coordinates[i][1];
-      if (obj.coordinates[i][1] > yMax) yMax = obj.coordinates[i][1];
-    }
-    let xScale = (w-10)/Math.abs(xMax-xMin);
-    let yScale = (h-10)/Math.abs(yMax-yMin);
-    if (yScale < xScale) xScale = yScale;
-    else yScale = xScale;
-    //draw contour>>
-    g.fillStyle = '#FEEEEE';
-    g.strokeStyle = '#FF0000';
-    g.beginPath();
-    for (let i = 0; i < obj.coordinates.length-1; i++) {
-      const x1 = (x+5)+(obj.coordinates[i][0]-xMin)*xScale;
-      const y1 = (h-5)-(obj.coordinates[i][1]-yMin)*yScale;
-      const x2 = (x+5)+(obj.coordinates[i+1][0]-xMin)*xScale;
-      const y2 = (h-5)-(obj.coordinates[i+1][1]-yMin)*yScale;
-      g.moveTo(x1, y1);
-      g.lineTo(x2, y2);
-    }
-    g.closePath();
-    g.stroke();
+    drawContourByCoords(g, x, y, w, h, obj.coordinates);
   }
+  //<<end of GisAreaCanvasRenderer class
 }
 
 //name: gisAreaWidget
@@ -107,26 +113,29 @@ export class GisAreaGridCellRenderer extends DG.GridCellRenderer {
   constructor() {
     super();
   }
-
-  get cellType() {return SEMTYPEGIS.GISAREA;}
-  get defaultWidth() {return 100;}
-  get defaultHeight() {return 50;}
+  get cellType() { return SEMTYPEGIS.GISAREA; }
+  get defaultWidth() { return 100; }
+  get defaultHeight() { return 50; }
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
   ): void {
-    g.fillStyle = 'darkgray';
-    gridCell.customText = 'GisArea!';
-    // gridCell.ob
-    // g.fillText('['+this.longitude+';'+this.latitude+']', x + 5, y + 5);
-    g.fillText('[GISArea]', x + 5, y - 5);
+    const cellVal = gridCell.cell.value;
+    let cellObj: any;
+    if ((cellVal instanceof GisArea)) cellObj = cellVal;
+    if (typeof cellVal === 'string') cellObj = JSON.parse(cellVal);
+
+    // const objArea = new GisArea(cellObj.coordinates, cellObj.attributes);
+    if (cellObj.coordinates)
+      drawContourByCoords(g, x, y, w, h, cellObj.coordinates);
   }
+  //<< end of GisAreaGridCellRenderer class
 }
 
 //Area semantic type handler
 export class GisAreaHandler extends DG.ObjectHandler {
-  get type() {return SEMTYPEGIS.GISAREA;}
-  get name() {return SEMTYPEGIS.GISAREA+ ' handler';}
+  get type() { return SEMTYPEGIS.GISAREA; }
+  get name() { return SEMTYPEGIS.GISAREA + ' handler'; }
 
   isApplicable(obj: any) {
     // console.log('isApplicable ' + obj + ' = ' + (obj instanceof GisArea));
@@ -142,12 +151,11 @@ export class GisAreaHandler extends DG.ObjectHandler {
     return (obj instanceof GisArea);
   }
 
-  // getCanvasRenderer() {return null;}
-  getCanvasRenderer() {return new GisAreaCanvasRenderer();}
-  getGridCellRenderer() {return new GisAreaGridCellRenderer();}
+  getCanvasRenderer() { return new GisAreaCanvasRenderer(); }
+  getGridCellRenderer() { return new GisAreaGridCellRenderer(); }
 
-  renderIcon() {return ui.iconFA('bullseye');}
-  renderTooltip(obj: GisArea) {return ui.divText(`Area of [${obj.coordinates.length}] vertexes`);}
+  renderIcon() { return ui.iconFA('bullseye'); }
+  renderTooltip(obj: GisArea) { return ui.divText(`Area of [${obj.coordinates.length}] vertexes`); }
 
   renderProperties(obj: GisArea) {
     //prepare subelements
@@ -168,10 +176,7 @@ export class GisAreaHandler extends DG.ObjectHandler {
       return ui.div([canvas]);
     });
 
-    const panelProperties = ui.divV([ui.divText(`Properties for Area`), acc.root]);
-    // panelProperties.appendChild(ui.divText(`Properties for Area`));
-    // for (let i = 0; i < obj.coordinates.length; i++)
-    //   panelProperties.appendChild(ui.divText(`[${obj.coordinates[i][0]} ; ${obj.coordinates[i][1]}]`));
+    const panelProperties = ui.divV([ui.divText(`Properties for GisObject`), acc.root]);
     return panelProperties;
   }
 
@@ -204,18 +209,18 @@ export class GisPoint {
     if (alt) this.coordinates[2] = alt;
     if (attr) this.attributes = attr;
   }
-  get x(): number {return this.coordinates[0];}
-  get y(): number {return this.coordinates[1];}
-  get z(): number {return this.coordinates[2] ? this.coordinates[2] : 0;}
-  set x(val: number) {this.coordinates[0] = val;}
-  set y(val: number) {this.coordinates[1] = val;}
-  set z(val: number) {this.coordinates[2] = val;}
-  get lng(): number {return this.coordinates[0];}
-  get lat(): number {return this.coordinates[1];}
-  get alt(): number {return this.coordinates[2] ? this.coordinates[2] : 0;}
-  set lng(val: number) {this.coordinates[0] = val;}
-  set lat(val: number) {this.coordinates[1] = val;}
-  set alt(val: number) {this.coordinates[2] = val;}
+  get x(): number { return this.coordinates[0]; }
+  get y(): number { return this.coordinates[1]; }
+  get z(): number { return this.coordinates[2] ? this.coordinates[2] : 0; }
+  set x(val: number) { this.coordinates[0] = val; }
+  set y(val: number) { this.coordinates[1] = val; }
+  set z(val: number) { this.coordinates[2] = val; }
+  get lng(): number { return this.coordinates[0]; }
+  get lat(): number { return this.coordinates[1]; }
+  get alt(): number { return this.coordinates[2] ? this.coordinates[2] : 0; }
+  set lng(val: number) { this.coordinates[0] = val; }
+  set lat(val: number) { this.coordinates[1] = val; }
+  set alt(val: number) { this.coordinates[2] = val; }
 
   toString() {
     let strRes = '';
@@ -230,9 +235,9 @@ export class GisPointGridCellRenderer extends DG.GridCellRenderer {
     super();
   }
 
-  get cellType() {return SEMTYPEGIS.GISPOINT;}
-  get defaultWidth() {return 200;}
-  get defaultHeight() {return 100;}
+  get cellType() { return SEMTYPEGIS.GISPOINT; }
+  get defaultWidth() { return 100; }
+  get defaultHeight() { return 50; }
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
@@ -255,22 +260,22 @@ export class GisPointCanvasRenderer extends DG.CanvasRenderer {
   render(g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
     obj: GisPoint, context: any) {
-    g.fillText('['+obj.x+';'+obj.y+']', x + 10, y + 10);
+    g.fillText('[' + obj.x + ';' + obj.y + ']', x + 10, y + 10);
   }
 }
 
 //Point semantic type handler
 export class GisPointHandler extends DG.ObjectHandler {
-  get type() {return SEMTYPEGIS.GISPOINT;}
+  get type() { return SEMTYPEGIS.GISPOINT; }
 
-  isApplicable(obj: any) {return (obj instanceof GisPoint);}
+  isApplicable(obj: any) { return (obj instanceof GisPoint); }
 
   // getCanvasRenderer() {return null;}
-  getCanvasRenderer() {return new GisPointCanvasRenderer();}
-  getGridCellRenderer() {return new GisPointGridCellRenderer();}
+  getCanvasRenderer() { return new GisPointCanvasRenderer(); }
+  getGridCellRenderer() { return new GisPointGridCellRenderer(); }
 
-  renderIcon() {return ui.iconFA('bullseye');}
-  renderTooltip(obj: GisPoint) {return ui.divText(`[${obj.x} ; ${obj.y}]`);}
+  renderIcon() { return ui.iconFA('bullseye'); }
+  renderTooltip(obj: GisPoint) { return ui.divText(`[${obj.x} ; ${obj.y}]`); }
   renderProperties(obj: GisPoint) {
     const panelProperties = ui.divV([]);
     panelProperties.appendChild(ui.divText(`Properties for Point`));

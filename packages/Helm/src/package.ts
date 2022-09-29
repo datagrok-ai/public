@@ -6,14 +6,11 @@ import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-conv
 import {createJsonMonomerLibFromSdf} from './utils';
 import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
 
-const lru = new DG.LruCache<any, any>();
-const molfiles = new DG.LruCache<any, any>();
-const fileList = new DG.LruCache<any, any>();
 const STORAGE_NAME = 'Libraries';
-let i = 0;
 const LIB_PATH = 'libraries/';
 
 
@@ -27,11 +24,10 @@ export async function initHelm(): Promise<void> {
 }
 
 async function loadLibraries() {
-  const grid = grok.shell.tv.grid;
-  for (let j = 0; j <= i; j++) {
-    await monomerManager(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, j.toString(), true));
+  let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
+  for (let i = 0; i < uploadedLibraries.length; ++i) {
+    await monomerManager(await grok.dapi.userDataStorage.getValue(STORAGE_NAME,uploadedLibraries[i], true));
   }
-  grid.invalidate();
 }
 
 //name: helmCellRenderer
@@ -44,7 +40,7 @@ export function helmCellRenderer(): HelmCellRenderer {
 }
 
 
-export function webEditor(cell?: DG.GridCell, value?: string) {
+function webEditor(cell?: DG.GridCell, value?: string) {
   let view = ui.div();
   org.helm.webeditor.MolViewer.molscale = 0.8;
   let app = new scil.helm.App(view, {
@@ -112,78 +108,58 @@ export function openEditor(mol: string): void {
 //input: string helmString {semType: Macromolecule}
 //output: widget result
 export async function propertiesPanel(helmString: string) {
-  //const lru = await getLru();
-  const result = lru.get(helmString).split(',');
+  let grid = grok.shell.tv.grid;
+  let parent = grid.root.parentElement;
+  const host = ui.div([]);
+  parent.appendChild(host);
+  let editor = new JSDraw2.Editor(host, {viewonly: true});
+  host.style.width = '0px';
+  host.style.height = '0px';
+  editor.setHelm(helmString);
+  let formula = editor.getFormula(true);
+  let molWeight = Math.round(editor.getMolWeight() * 100) / 100;
+  let coef = Math.round(editor.getExtinctionCoefficient(true) * 100) / 100;
+  parent.lastChild.remove();
   return new DG.Widget(
     ui.tableFromMap({
-      'formula': result[0].replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
-      'molecular weight': result[1],
-      'extinction coefficient': result[2],
-      /*'fasta': ui.wait(async () => ui.divText(await helmToFasta(helmString))),
-      'rna analogue sequence': ui.wait(async () => ui.divText(await helmToRNA(helmString))),
-      'smiles': ui.wait(async () => ui.divText(await helmToSmiles(helmString))),
-      //'peptide analogue sequence': ui.wait(async () => ui.divText(await helmToPeptide(helmString))),*/
+      'formula': formula.replace(/<sub>/g, '').replace(/<\/sub>/g, ''),
+      'molecular weight': molWeight,
+      'extinction coefficient': coef,
     })
   );
 }
 
-//name: Molfile
-//tags: panel, widgets
-//input: string helmString {semType: Macromolecule}
-//output: widget result
-export async function molfilePanel(helmString: string) {
-  return ui.textInput('', getMolfile(helmString));
-}
-
-
-//name: loadDialog
-export async function loadDialog() {
-  let res = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
-  let FilesList = await ui.choiceInput('Monomer Libraries', ' ', res);
-  let grid = grok.shell.tv.grid;
-  ui.dialog('Load library from file')
-    .add(FilesList)
-    .onOK(async () => {
-      await monomerManager(FilesList.value);
-      await grok.dapi.userDataStorage.postValue(STORAGE_NAME, i.toString(), FilesList.value, true);
-      fileList.set(FilesList.value, i.toString);
-      i += 1;
-      grid.invalidate();
-    }).show();
-};
 
 //name: Manage Libraries
 //tags: panel, widgets
 //input: column helmColumn {semType: Macromolecule}
 //output: widget result
-export async function libraryPanel(helmColumn: DG.Column) {
+export async function libraryPanel(helmColumn: DG.Column): Promise<DG.Widget> {
   //@ts-ignore
-  let loadButton = ui.button('Load Library');
-  loadButton.addEventListener('click', loadDialog);
-  //@ts-ignore
-  let deleteButton = ui.button('Delete Library');
-  deleteButton.addEventListener('click', deleteFiles);
-  //@ts-ignore
-  let filesButton = ui.button('Manage');
-  filesButton.addEventListener('click', manageFiles);
-  let list = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
-  let usedLibraries = [];
-  for (let j = 0; j <= i; j++) {
-    usedLibraries.push(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, j.toString(), true));
+  let filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
+  let divInputs: HTMLDivElement = ui.div();
+  let librariesList: string[] = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
+  let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
+  for (let i = 0; i < uploadedLibraries.length; ++i) {
+    let libraryName: string = uploadedLibraries[i]; 
+    divInputs.append(ui.boolInput(libraryName, true, async v => {
+      org.helm.webeditor.Monomers.clear();
+      grok.dapi.userDataStorage.remove(STORAGE_NAME, libraryName, true);
+      await loadLibraries();
+      grok.shell.tv.grid.invalidate();
+    }).root);
   }
-  let unusedLibraries = list.filter(x => !usedLibraries.includes(x));
+  let unusedLibraries: string[] = librariesList.filter(x => !uploadedLibraries.includes(x));
+  for (let i = 0; i < unusedLibraries.length; ++i) {
+    let libraryName: string = unusedLibraries[i];
+    divInputs.append(ui.boolInput(libraryName, false, v => {
+      monomerManager(libraryName);
+      grok.dapi.userDataStorage.postValue(STORAGE_NAME, libraryName, libraryName, true);
+    }).root);
+  }
   return new DG.Widget(ui.splitV([
-    ui.splitH([
-      ui.tableFromMap({
-        'Uploaded libraries': ui.divText(usedLibraries.toString()),
-        'Not used libraries': ui.divText(unusedLibraries.toString()),
-      })
-    ]),
-    ui.splitH([
-      ui.divH([loadButton]),
-      ui.divH([deleteButton]),
-      ui.divH([filesButton]),
-    ])
+    divInputs,
+    ui.divV([filesButton])
   ]));
 }
 
@@ -195,21 +171,6 @@ export async function manageFiles() {
     .addButton('OK', () => a.close())
     .show();
 }
-
-//name: deleteFiles
-export async function deleteFiles() {
-  let res = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
-  let FilesList = await ui.choiceInput('Uploaded Libraries', ' ', res);
-  let grid = grok.shell.tv.grid;
-  ui.dialog('Delete monomer library')
-    .add(FilesList)
-    .onOK(async () => {
-      let key = fileList.get(FilesList.value);
-      await grok.dapi.userDataStorage.remove(STORAGE_NAME, key, true);
-      grid.invalidate();
-    }).show();
-}
-
 
 
 async function accessServer(url: string, key: string) {
@@ -322,18 +283,14 @@ export async function monomerManager(value: string) {
     }
     org.helm.webeditor.Monomers.addOneMonomer(m);
   });
+  let grid: DG.Grid = grok.shell.tv.grid;
+  grid.invalidate();
 }
 
 //name: helmColumnToSmiles
 //input: column helmColumn {semType: Macromolecule}
 export function helmColumnToSmiles(helmColumn: DG.Column) {
   //todo: add column with smiles to col.dataFrame.
-}
-
-//name: getMolfile
-//input: string helmString {semType: Macromolecule}
-export function getMolfile(helmString): string {
-  return molfiles.get(helmString);
 }
 
 
@@ -506,7 +463,22 @@ export function getMolfiles(col: DG.Column) : DG.Column {
     let mol = editor.getMolfile();
     return mol;
   });
+  parent.lastChild.remove();
   return res;
+}
+
+function getParts(subParts: string[], s: string) : string[] {
+  let j = 0;
+  let allParts: string[] = [];
+  for (let k = 0; k < subParts.length; ++k) {
+    let indexOfMonomer = s.indexOf(subParts[k]);
+    let helmBeforeMonomer = s.slice(j, indexOfMonomer);
+    allParts.push(helmBeforeMonomer);
+    allParts.push(subParts[k]);
+    s = s.substring(indexOfMonomer + subParts[k].length);
+  }
+  allParts.push(s);
+  return allParts;
 }
 
 class HelmCellRenderer extends DG.GridCellRenderer {
@@ -517,6 +489,49 @@ class HelmCellRenderer extends DG.GridCellRenderer {
   get defaultWidth(): number | null { return 400; }
 
   get defaultHeight(): number | null { return 100; }
+
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
+    const maxLengthWordsSum = gridCell.cell.column.temp['helm-sum-maxLengthWords'];
+    const maxIndex = Object.values(gridCell.cell.column.temp['helm-maxLengthWords']).length - 1;
+    const argsX = e.offsetX - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x);
+    let left = 0;
+    let right = maxIndex;
+    let found = false;
+    maxLengthWordsSum[maxIndex + 1] = argsX + 1;
+    let mid = 0;
+    if (argsX > maxLengthWordsSum[0]) {
+      while (!found) {
+        mid = Math.floor((right + left) / 2);
+        if (argsX >= maxLengthWordsSum[mid] && argsX <= maxLengthWordsSum[mid + 1]) {
+          left = mid;
+          found = true;
+        } else if (argsX < maxLengthWordsSum[mid]) {
+          right = mid - 1;
+        } else if (argsX > maxLengthWordsSum[mid + 1]) {
+          left = mid + 1;
+        }
+        if (left == right) {
+          found = true;
+        }
+      }
+    }
+    left = (argsX >= maxLengthWordsSum[left]) ? left + 1 : left;
+    const monomers = findMonomers(gridCell.cell.value);
+    let s: string = gridCell.cell.value ?? '';
+    let subParts: string[] = parseHelm(s);
+    let allParts: string[] = getParts(subParts, s);
+    let tooltipMessage: HTMLElement[] = [];
+    for (let i = 0; i < allParts.length; ++i) {
+      if (monomers.has(allParts[i])) 
+        tooltipMessage[i] = ui.divV([
+          ui.divText(`Monomer ${allParts[i]} not found.`),
+          ui.divText('Open the Property Panel, then expand Manage Libraries')
+        ])
+    };
+    (((tooltipMessage[left]?.childNodes.length ?? 0) > 0)) 
+    ? ui.tooltip.show(ui.div(tooltipMessage[left]), e.x + 16, e.y + 16) 
+    : ui.tooltip.hide();
+  }
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
@@ -534,13 +549,6 @@ class HelmCellRenderer extends DG.GridCellRenderer {
       gridCell.element = host;
       //@ts-ignore
       const canvas = new JSDraw2.Editor(host, {width: w, height: h, skin: 'w8', viewonly: true});
-      const formula = canvas.getFormula(true);
-      const molWeight = Math.round(canvas.getMolWeight() * 100) / 100;
-      const coef = Math.round(canvas.getExtinctionCoefficient(true) * 100) / 100;
-      const molfile = canvas.getMolfile();
-      const result = formula + ', ' + molWeight + ', ' + coef;
-      lru.set(gridCell.cell.value, result);
-      molfiles.set(gridCell.cell.value, molfile);
       return;
     }
     if (monomers.size > 0) {
@@ -552,20 +560,23 @@ class HelmCellRenderer extends DG.GridCellRenderer {
       g.font = '12px monospace';
       g.textBaseline = 'top';
       let x1 = x;
-      let j = 0;
-      let allParts  = [];
-      for (let k = 0; k < subParts.length; ++k) {
-        let indexOfMonomer = s.indexOf(subParts[k]);
-        let helmBeforeMonomer = s.slice(j, indexOfMonomer);
-        allParts.push(helmBeforeMonomer);
-        allParts.push(subParts[k]);
-        s = s.substring(indexOfMonomer + subParts[k].length);
-      }
-      allParts.push(s);
-      for (let part of allParts) {
-        let color = monomers.has(part) ? 'red' : grayColor;
+      let maxLengthWords: any = {};
+      let maxLengthWordSum: any = {};
+      let allParts: string[] = getParts(subParts, s);
+      for (let i = 0; i < allParts.length; ++i) {
+        maxLengthWords[i] = allParts[i].length * 7;
+        let color = monomers.has(allParts[i]) ? 'red' : grayColor;
         g.fillStyle = undefinedColor;
-        x1 = printLeftOrCentered(x1, y, w, h, g, part, color, 0, true, 1.0);
+        x1 = printLeftOrCentered(x1, y, w, h, g, allParts[i], color, 0, true, 1.0);
+      };
+      
+      maxLengthWordSum[0] = maxLengthWords[0];
+      for (let i = 1; i < allParts.length; i++) {
+        maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
+      }
+      gridCell.cell.column.temp = {
+        'helm-sum-maxLengthWords': maxLengthWordSum,
+        'helm-maxLengthWords': maxLengthWords
       };
       g.restore();
       return;
