@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "author": {
     "name": "Alexander Paramonov",
-    "email": "aparamomov@datagrok.ai"
+    "email": "aparamonov@datagrok.ai"
   },
   "description": "JupyterLab Notebooks integration package",
   "repository": {
