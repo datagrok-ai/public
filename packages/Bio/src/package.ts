@@ -479,7 +479,10 @@ export function similaritySearchViewer(): SequenceSimilarityViewer {
 //description: finds the most similar sequence
 //output: viewer result
 export function similaritySearchTopMenu(): void {
-  (grok.shell.v as DG.TableView).addViewer('SequenceSimilaritySearchViewer');
+  const view = (grok.shell.v as DG.TableView);
+  const viewer = new SequenceSimilarityViewer();
+  view.addViewer(viewer);
+  view.dockManager.dock(viewer, 'down');
 }
 
 //name: SequenceDiversitySearchViewer
@@ -494,7 +497,10 @@ export function diversitySearchViewer(): SequenceDiversityViewer {
 //description: finds the most diverse molecules
 //output: viewer result
 export function diversitySearchTopMenu() {
-  (grok.shell.v as DG.TableView).addViewer('SequenceDiversitySearchViewer');
+  const view = (grok.shell.v as DG.TableView);
+  const viewer = new SequenceDiversityViewer();
+  view.addViewer(viewer);
+  view.dockManager.dock(viewer, 'down');
 }
 
 
