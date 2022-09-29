@@ -1,38 +1,33 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
-
 import {getHelmMonomers} from '../package';
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 const V2000_ATOM_NAME_POS = 31;
 
 export async function getMonomericMols(mcol: DG.Column, pattern: boolean = false): Promise<DG.Column> {
-
-  const dict = new Map();
-  for (let i = 0; i < monomers.length; i++)
-    dict.set(monomers[i], `${i + 1}`);
-
-  mols = changeToV3000(mols, dict, pattern);
-
-  return DG.Column.fromStrings('monomericMols', mols);
-}
-
-export async function getNonHelmMonomericMols(mcol: DG.Column, pattern: boolean = false): Promise<DG.Column> {
   const separator: string = mcol.tags[C.TAGS.SEPARATOR];
   const units: string = mcol.tags[DG.TAGS.UNITS];
   const splitter = WebLogo.getSplitter(units, separator);
-
+  let molV3000Array;
   const monomersDict = new Map();
-  const allColMonomers = Object.keys(WebLogo.getStats(mcol, 0, splitter).freq);
-  for (let i = 0; i < allColMonomers.length; i++)
-    monomersDict.set(allColMonomers[i], `${i + 1}`);
+  const monomers = units === 'helm' ?
+    getHelmMonomers(mcol) : Object.keys(WebLogo.getStats(mcol, 0, splitter).freq).filter((it) => it !== '');
 
-  const molV3000Array = new Array<string>(mcol.length);
-  for (let i = 0; i < mcol.length; i++) {
-    const sequenceMonomers = splitter(mcol.get(i));
-    const molV3000 = molV3000FromNonHelmSequence(sequenceMonomers, monomersDict, pattern);
-    molV3000Array[i] = molV3000;
+  for (let i = 0; i < monomers.length; i++)
+    monomersDict.set(monomers[i], `${i + 1}`);
+
+  if (units === 'helm') {
+    molV3000Array = await grok.functions.call('HELM:getMolFiles', {col: mcol});
+    molV3000Array = changeV2000ToV3000(molV3000Array, monomersDict, pattern);
+  } else {
+    molV3000Array = new Array<string>(mcol.length);
+    for (let i = 0; i < mcol.length; i++) {
+      const sequenceMonomers = splitter(mcol.get(i)).filter((it) => it !== '');
+      const molV3000 = molV3000FromNonHelmSequence(sequenceMonomers, monomersDict, pattern);
+      molV3000Array[i] = molV3000;
+    }
   }
   return DG.Column.fromStrings('monomericMols', molV3000Array);
 }
@@ -117,5 +112,5 @@ M  V30 BEGIN CTAB
     molsArray[i] = molV3000;
   }
 
-  return mols;
+  return molsArray;
 }

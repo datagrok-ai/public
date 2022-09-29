@@ -4,10 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import * as grok from 'datagrok-api/grok';
-import { SplitterFunc, WebLogo } from '@datagrok-libraries/bio/src/viewers/web-logo';
-import { UnitsHandler } from '@datagrok-libraries/bio/src/utils/units-handler';
+import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SEM_TYPES, TAGS} from '../utils/constants';
-import { drawMoleculeDifferenceOnCanvas } from '../utils/cell-renderer';
+import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
@@ -21,18 +21,17 @@ export async function getDistances(col: DG.Column, seq: string): Promise<Array<n
 
 export async function getSimilaritiesMarix(dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[])
   : Promise<DG.Column[]> {
-
   const distances = new Array(simArr.length).fill(null);
   for (let i = 0; i != dim - 1; ++i) {
-    const seq: string = seqCol.get(i);  
+    const seq: string = seqCol.get(i);
     df.rows.removeAt(0, 1, false);
     distances[i] = (await getDistances(df.col(colName)!, seq))!;
   }
 
   for (let i = 0; i < distances.length; i++) {
-    for (let j = 0; j < distances[i].length; j++) {
+    for (let j = 0; j < distances[i].length; j++)
       distances[i][j] = getSimilarityFromDistance(distances[i][j]);
-    }
+
     simArr[i] = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances', distances[i]);
   }
   return simArr;
@@ -62,11 +61,10 @@ export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivEle
 }
 
 function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
-  let dict: {[key: string]: string} = {};
-  for (let col of df.columns) {
-    if(col.name !== seqColName) {
+  const dict: {[key: string]: string} = {};
+  for (const col of df.columns) {
+    if (col.name !== seqColName)
       dict[col.name] = df.get(col.name, idx);
-    }
   }
   return ui.tableFromMap(dict);
 }
@@ -75,7 +73,7 @@ function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLEl
 export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivElement {
   const propPanel = ui.div();
 
-  propPanel.append(ui.divText(params.seqCol.name, { style: { fontWeight: 'bold' } }));
+  propPanel.append(ui.divText(params.seqCol.name, {style: {fontWeight: 'bold'}}));
 
   const sequencesArray = new Array<string>(2);
   const activitiesArray = new Array<number>(2);
@@ -91,8 +89,8 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
   const subParts1 = splitter(sequencesArray[0]);
   const subParts2 = splitter(sequencesArray[1]);
   const canvas = createDifferenceCanvas(subParts1, subParts2, units, molDifferences);
-  propPanel.append(ui.div(canvas, { style: { width: '300px', overflow: 'scroll' } }));
-  
+  propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
+
   propPanel.append(createDifferencesWithPositions(molDifferences));
 
   propPanel.append(createPropPanelField('Activity delta', Math.abs(activitiesArray[0] - activitiesArray[1])));
@@ -103,9 +101,9 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
 
 function createPropPanelField(name: string, value: number): HTMLDivElement {
   return ui.divH([
-    ui.divText(`${name}: `, { style: { fontWeight: 'bold', paddingRight: '5px' } }),
+    ui.divText(`${name}: `, {style: {fontWeight: 'bold', paddingRight: '5px'}}),
     ui.divText(value.toFixed(2))
-  ], { style: { paddingTop: '5px' } });
+  ], {style: {paddingTop: '5px'}});
 }
 
 export function createDifferenceCanvas(
@@ -126,13 +124,13 @@ export function createDifferencesWithPositions(
   if (Object.keys(molDifferences).length > 0) {
     const diffsPanel = ui.divV([]);
     diffsPanel.append(ui.divH([
-      ui.divText('Pos', { style: { fontWeight: 'bold', width: '30px', borderBottom: '1px solid' } }),
-      ui.divText('Difference', { style: { fontWeight: 'bold', borderBottom: '1px solid' } }) 
-    ]))
-    for (let key of Object.keys(molDifferences)) {
+      ui.divText('Pos', {style: {fontWeight: 'bold', width: '30px', borderBottom: '1px solid'}}),
+      ui.divText('Difference', {style: {fontWeight: 'bold', borderBottom: '1px solid'}})
+    ]));
+    for (const key of Object.keys(molDifferences)) {
       molDifferences[key as any].style.borderBottom = '1px solid lightgray';
       diffsPanel.append(ui.divH([
-        ui.divText((parseInt(key) + 1).toString(), { style: { width: '30px', borderBottom: '1px solid lightgray' } }),
+        ui.divText((parseInt(key) + 1).toString(), {style: {width: '30px', borderBottom: '1px solid lightgray'}}),
         molDifferences[key as any]
       ]));
     }
