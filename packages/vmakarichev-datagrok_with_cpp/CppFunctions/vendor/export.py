@@ -217,6 +217,20 @@ def addDependenciesToPackageJsonFile(settings):
 def addModuleInitFunctionToJavaScriptLibFile(settings):
     """
     Add init-function to JS-file of the library.
+
+    The following code is added:
+
+    var [module name] = undefined;
+
+    async function init[module name]() {
+      if ([module name] === undefined) {
+        console.log("Wasm not Loaded, Loading");
+        [module name]  = await [export name]();
+      } else {
+          console.log("Wasm Loaded, Passing");
+        }
+    }
+
     """
 
     with open(settings["nameOfLibFile"], 'a') as file:
@@ -244,7 +258,12 @@ def main(nameOfSettingsFile="module.json"):
         1) load export settings from json-file;
         2) parse C-files and get C-functions to be exported;
         3) save C-functions descriptors (name, type of return value, arguments descriptors: type, name);
-        4) append Datagrok package file with exported functions;
+        4) create Emscripten command;
+        5) save Emscripten command to text file;
+        6) execute Emscripten command;
+        7) append Datagrok package file with exported functions;
+        8) add dependecnies to the file package.json;
+        9) add module init-function to JS-file with exported C-functions. 
     """
     try:
         # load settings
@@ -274,8 +293,8 @@ def main(nameOfSettingsFile="module.json"):
         # add module init-function to JS-file of the library
         addModuleInitFunctionToJavaScriptLibFile(settings) 
 
-    except FileNotFoundError:
-            print("File not found!")
+    except OSError:
+            print("OS error!")
 
 if __name__ == '__main__':
     main()
