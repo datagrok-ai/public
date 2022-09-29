@@ -20,7 +20,7 @@ export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   columnsSet.delete(col.name);
 
   const monomerWidth = ui.choiceInput('Monomer width',
-    'short',
+    (col?.temp['monomer-width'] != null) ? col.temp['monomer-width'] : 'short',
     ['short', 'long'],
     (s: string) => {
       col.temp['monomer-width'] = s;
@@ -58,8 +58,6 @@ export function getMacroMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     referenceSequence,
     compareWithCurrent
   ]);
-
-  const dgWidget = new DG.Widget(rdKitInputs);
 
   return new DG.Widget(rdKitInputs);
 }
