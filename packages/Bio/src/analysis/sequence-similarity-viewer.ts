@@ -1,14 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { similarityMetric } from '@datagrok-libraries/utils/src/similarity-metrics';
-import $ from 'cash-dom';
-import { SequenceSearchBaseViewer } from './sequence-search-base-viewer';
-import { getMonomericMols } from '../calculations/monomerLevelMols';
+import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
+import {getMonomericMols} from '../calculations/monomerLevelMols';
 import * as C from '../utils/constants';
-import { createDifferenceCanvas, createDifferencesWithPositions } from './sequence-activity-cliffs';
-import { updateDivInnerHTML } from '../utils/ui-utils';
-import { WebLogo } from '@datagrok-libraries/bio/src/viewers/web-logo';
+import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
+import {updateDivInnerHTML} from '../utils/ui-utils';
+import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import { TableView } from 'datagrok-api/dg';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   hotSearch: boolean;
@@ -23,9 +22,9 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
 
   constructor() {
     super('similarity');
-    this.cutoff = this.float('cutoff', 0.01, { min: 0, max: 1 });
+    this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.hotSearch = this.bool('hotSearch', true);
-    this.updateMetricsLink(this.metricsDiv, this, { fontSize: '10px', fontWeight: 'normal', height: '10px' });
+    this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
   }
 
   init(): void {
@@ -38,7 +37,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
       return;
     if (this.moleculeColumn) {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-      if (computeData) {
+      if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
         const monomericMols = await getMonomericMols(this.moleculeColumn);
         //need to create df to calculate fingerprints
@@ -54,34 +53,29 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         });
         this.idxs = df.getCol('indexes');
         this.scores = df.getCol('score');
-        const seqCol = DG.Column.string('sequence', this.idxs!.length).init((i) => this.moleculeColumn?.get(this.idxs?.get(i)));
+        const seqCol = DG.Column.string('sequence',
+          this.idxs!.length).init((i) => this.moleculeColumn?.get(this.idxs?.get(i)));
         seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-        this.tags.forEach(tag => seqCol.setTag(tag, this.moleculeColumn!.getTag(tag)));
-        let resDf = DG.DataFrame.fromColumns([this.idxs!, seqCol, this.scores!]);
-        resDf = resDf.groupBy(resDf.columns.names()).where(`indexes != ${this.targetMoleculeIdx}`).aggregate();
-        resDf.columns.remove('indexes');
+        this.tags.forEach((tag) => seqCol.setTag(tag, this.moleculeColumn!.getTag(tag)));
+        const resDf = DG.DataFrame.fromColumns([this.idxs!, seqCol, this.scores!]);
         resDf.onCurrentRowChanged.subscribe((_) => {
           this.createPropertyPanel(resDf);
+          this.gridSelect = true;
+          this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
         });
-        this.updateSimilarityGrid(resDf);
+        const grid = resDf.plot.grid();
+        grid.col('indexes')!.visible = false;
+        const targetMolRow = this.idxs?.getRawData().findIndex((it) => it == this.targetMoleculeIdx);
+        const targetScoreCell = grid.cell('score', targetMolRow!);
+        targetScoreCell.cell.value = null;
+        (grok.shell.v as TableView).grid.root.addEventListener('click', (event: MouseEvent) => {
+          this.gridSelect = false;
+        });
+        updateDivInnerHTML(this.root, grid.root);
       }
     }
   }
 
-  updateSimilarityGrid(resDf: DG.DataFrame){
-    const targetMolCol = DG.Column.string('sequence', 1).init((i) => this.moleculeColumn?.get(this.idxs?.get(i)));
-    targetMolCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    this.tags.forEach(tag => targetMolCol.setTag(tag, this.moleculeColumn!.getTag(tag)));
-    const targetGrid = DG.DataFrame.fromColumns([targetMolCol]).plot.grid().root;
-    targetGrid.style.height = '30px';
-    const div = ui.divV([
-      ui.divText('Target:', {style: {fontWeight: 'bold'}}),
-      targetGrid,
-      ui.divText('Similar:', {style: {fontWeight: 'bold'}}),
-      resDf.plot.grid().root
-    ]);
-    updateDivInnerHTML(this.root, div);
-  }
 
   createPropertyPanel(resDf: DG.DataFrame) {
     const propPanel = ui.div();
@@ -92,13 +86,13 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const subParts1 = splitter(this.moleculeColumn!.get(this.targetMoleculeIdx));
     const subParts2 = splitter(resDf.get('sequence', resDf.currentRowIdx));
     const canvas = createDifferenceCanvas(subParts1, subParts2, units, molDifferences);
-    propPanel.append(ui.div(canvas, { style: { width: '300px', overflow: 'scroll' } }));
+    propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
     if (subParts1.length !== subParts2.length) {
       propPanel.append(ui.divV([
-        ui.divText(`Different sequence length:`, { style: { fontWeight: 'bold' } }),
+        ui.divText(`Different sequence length:`, {style: {fontWeight: 'bold'}}),
         ui.divText(`target: ${subParts1.length} monomers`),
         ui.divText(`selected: ${subParts2.length} monomers`)
-      ], { style: { paddingBottom: '10px' } }));
+      ], {style: {paddingBottom: '10px'}}));
     }
     propPanel.append(createDifferencesWithPositions(molDifferences));
     const acc = ui.accordion();
