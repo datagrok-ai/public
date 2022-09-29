@@ -160,7 +160,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
           const textSize = monomerToShortFunction(amino, maxLengthOfMonomer).length * 7 + gapRenderer;
           if (textSize > (maxLengthWords[index] ?? 0))
             maxLengthWords[index] = textSize;
-          }
           if (index > maxIndex) {
             maxIndex = index;
           }
@@ -171,16 +170,17 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       for (let i = 0; i <= maxIndex; i++) {
         if (maxLengthWords[i] < minLength) {
           maxLengthWords[i] = minLength;
+        }
+        const maxLengthWordSum: any = {};
+        maxLengthWordSum[0] = maxLengthWords[0];
+        for (let i = 1; i <= maxIndex; i++) {
+          maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
+        }
+        gridCell.cell.column.temp['bio-sum-maxLengthWords'] = maxLengthWordSum;
+        gridCell.cell.column.temp['bio-maxIndex'] = maxIndex;
+        gridCell.cell.column.temp['bio-maxLengthWords'] = maxLengthWords;
+        gridCell.cell.column.setTag('.calculatedCellRender', splitLimit.toString());
       }
-      const maxLengthWordSum: any = {};
-      maxLengthWordSum[0] = maxLengthWords[0];
-      for (let i = 1; i <= maxIndex; i++) {
-        maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
-      }
-      gridCell.cell.column.temp['bio-sum-maxLengthWords'] = maxLengthWordSum;
-      gridCell.cell.column.temp['bio-maxIndex'] = maxIndex;
-      gridCell.cell.column.temp['bio-maxLengthWords'] = maxLengthWords;
-      gridCell.cell.column.setTag('.calculatedCellRender', splitLimit.toString());
     } else {
       maxLengthWords = gridCell.cell.column.temp['bio-maxLengthWords'];
     }
@@ -191,8 +191,6 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     let drawStyle = DrawStyle.classic;
     if (gridCell.cell.column.getTag('aligned').includes('MSA') && gridCell.cell.column.getTag('units') === 'separator')
       drawStyle = DrawStyle.MSA;
-    }
-
 
     subParts.every((amino, index) => {
       color = palette.get(amino);
