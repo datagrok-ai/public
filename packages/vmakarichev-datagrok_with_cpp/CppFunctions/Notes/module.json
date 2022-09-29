@@ -1,0 +1,15 @@
+{
+    "name": "",
+    "version": "0.0.1",
+    "description": "",
+    "folder": "vendor",
+    "source": [],
+    "nameOfLibFile": "",
+    "exportName": "",
+    "moduleName": "",
+    "optimizationMode": "-O0",
+    "nameOfFileForFunctionsData": "functionsData.json",
+    "packageFile": "..\\src\\package.js",
+    "packageJsonFile": "..\\package.json",
+    "fileWithEmscriptenCommand": "command.txt"
+}
