@@ -6,6 +6,7 @@ import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-conv
 import {createJsonMonomerLibFromSdf} from './utils';
 import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
 
@@ -141,8 +142,11 @@ export async function libraryPanel(helmColumn: DG.Column): Promise<DG.Widget> {
   let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
   for (let i = 0; i < uploadedLibraries.length; ++i) {
     let libraryName: string = uploadedLibraries[i]; 
-    divInputs.append(ui.boolInput(libraryName, true, v => {
+    divInputs.append(ui.boolInput(libraryName, true, async v => {
+      org.helm.webeditor.Monomers.clear();
       grok.dapi.userDataStorage.remove(STORAGE_NAME, libraryName, true);
+      await loadLibraries();
+      grok.shell.tv.grid.invalidate();
     }).root);
   }
   let unusedLibraries: string[] = librariesList.filter(x => !uploadedLibraries.includes(x));
