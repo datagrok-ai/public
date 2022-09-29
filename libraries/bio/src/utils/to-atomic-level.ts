@@ -74,7 +74,7 @@ export async function _toAtomicLevel(
     const monomerSeq = monomerSequencesArray[row];
     // const molGraph = monomerSeqToMolGraph(monomerSeq, monomersDict);
     reconstructed[row] = monomerSeqToMolfile(monomerSeq, monomersDict);
-    console.log(reconstructed[row]);
+    //console.log(reconstructed[row]);
     pi.update(100 * (row + 1)/columnLength, '...complete');
   }
 
@@ -686,29 +686,26 @@ function monomerSeqToMolfile(monomerSeq: string[], monomersDict: Map<string, Mol
   const molfileAtomBlock = new Array<string>(atomCount);
   const molfileBondBlock = new Array<string>(bondCount);
 
-  const spaceShift = new Array<number>(2).fill(0);
+  const positionShift = new Array<number>(2).fill(0);
   let nodeShift = 0;
   let bondShift = 0;
   let attachNode = 0;
-  // todo: don't forget about the last atom
+  let flipFactor = 0;
   for (let i = 0; i < monomerSeq.length; ++i) {
     const monomer = monomersDict.get(monomerSeq[i])!;
-    const flipFactor = (-1)**(i % 2); // flip every even monomer
+    flipFactor = (-1)**(i % 2); // flip every even monomer
     for (let j = 0; j < monomer.atoms.atomType.length; ++j) {
       const atomIdx = nodeShift + j + 1;
       molfileAtomBlock[nodeShift + j] = V3K_BEGIN_DATA_LINE + atomIdx + ' ' +
         monomer.atoms.atomType[j] + ' ' +
-        keepPrecision(spaceShift[0] + monomer.atoms.x[j]) + ' ' +
+        keepPrecision(positionShift[0] + monomer.atoms.x[j]) + ' ' +
         // flip the monomer w.r.t. OX if necessary
-        flipFactor * keepPrecision(spaceShift[1] + monomer.atoms.y[j]) +
-        ' ' + ' ' + monomer.atoms.kwargs[i + j];
+        flipFactor * keepPrecision(positionShift[1] + monomer.atoms.y[j]) +
+        ' ' + monomer.atoms.kwargs[j];
+      //console.log(`Reconstructed atom line at ${nodeShift + j}:` + molfileAtomBlock[nodeShift + j]);
     }
 
-    nodeShift = monomer.atoms.atomType.length;
-    spaceShift[0] += monomer.atoms.shift[0];
-    spaceShift[1] += flipFactor * monomer.atoms.shift[1];
-
-    for (let j = 1; j <= monomer.bonds.atomPair.length; ++j) {
+    for (let j = 0; j < monomer.bonds.atomPair.length; ++j) {
       const bondIdx = bondShift + j + 1;
       const firstAtom = monomer.bonds.atomPair[j][0] + nodeShift;
       const secondAtom = monomer.bonds.atomPair[j][1] + nodeShift;
@@ -725,23 +722,48 @@ function monomerSeqToMolfile(monomerSeq: string[], monomersDict: Map<string, Mol
       molfileBondBlock[bondShift + j] = V3K_BEGIN_DATA_LINE + bondIdx + ' ' +
         monomer.bonds.bondType[j] + ' ' +
       firstAtom + ' ' + secondAtom + bondCfg + kwargs + '\n';
+      //console.log(`Reconstructed bond block at ${bondShift + j}:` + molfileBondBlock[bondShift + j]);
     }
 
     // hardcoded peptide bond
     if (attachNode !== 0) {
-      const bondIdx = bondShift + 1;
+      const bondIdx = bondShift;
       const firstAtom = attachNode;
       const secondAtom = monomer.atoms.leftNode + nodeShift;
-      molfileBondBlock[bondShift] = V3K_BEGIN_DATA_LINE + bondIdx + ' ' +
+      molfileBondBlock[bondShift - 1] = V3K_BEGIN_DATA_LINE + bondIdx + ' ' +
         1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
+      //console.log(`Reconstructed peptide bond at ${bondShift}:` + molfileBondBlock[bondShift]);
     }
+
+    nodeShift += monomer.atoms.atomType.length;
+    positionShift[0] += monomer.atoms.shift[0];
+    positionShift[1] += flipFactor * monomer.atoms.shift[1];
+    //console.log(`Updated nodeShift and position shift at ${i}:` + nodeShift + ' ' + positionShift);
+
     attachNode = monomer.atoms.rightNode;
     bondShift += monomer.bonds.atomPair.length + 1;
+    //console.log(`Attach node at ${i}:` + attachNode);
+    //console.log(`Bond shift at ${i}:` + bondShift);
   }
 
-  // add terminal atom and bond
-  molfileAtomBlock[atomCount] =  
-  molfileBondBlock[bondCount] = 
+  // add terminal oxygen
+  const atomIdx = nodeShift + 1;
+  molfileAtomBlock[atomCount] = V3K_BEGIN_DATA_LINE + atomIdx + ' ' +
+    'O' + ' ' +
+    keepPrecision(positionShift[0]) + ' ' +
+    // flip the monomer w.r.t. OX if necessary
+    flipFactor * keepPrecision(positionShift[1]) +
+    ' ' + '0.000000 0' + '\n';
+
+  //console.log(`Terminal atom at ${atomCount}:` + molfileAtomBlock[atomCount]);
+
+  // add terminal bond
+  const firstAtom = attachNode;
+  const secondAtom = atomIdx;
+  molfileBondBlock[bondCount] = V3K_BEGIN_DATA_LINE + bondShift + ' ' +
+        1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
+
+  //console.log(`Terminal bond at ${bondCount}:` + molfileBondBlock[bondCount]);
 
   const molfileParts = [
     V3K_HEADER_FIRST_LINE,
