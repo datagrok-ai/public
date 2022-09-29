@@ -11,7 +11,6 @@ import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 const undefinedColor = 'rgb(100,100,100)';
 const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
-const gapRenderer = 5;
 
 
 function getPaletteByType(paletteType: string): SeqPalette {
@@ -136,22 +135,20 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     const separator = gridCell.cell.column.getTag('separator') ?? '';
     const splitLimit = gridCell.bounds.width / 5;
-    const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, separator, gridCell.bounds.width / 5);
-    const colorCode = (gridCell.cell.column?.temp['color-code'] != null) ? gridCell.cell.column.temp['color-code'] : true;
-    const compareWithCurrent = (gridCell.cell.column?.temp['compare-with-current'] != null) ? gridCell.cell.column.temp['compare-with-current'] : true;
+    const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, separator, splitLimit);
+    const referenceSequence: string[] = splitterFunc(((gridCell.cell.column?.temp['reference-sequence'] != null) && (gridCell.cell.column?.temp['reference-sequence'] != ''))
+      ? gridCell.cell.column.temp['reference-sequence'] : gridCell.cell.column.temp['current-word'] ?? '');
     const monomerWidth = (gridCell.cell.column?.temp['monomer-width'] != null) ? gridCell.cell.column.temp['monomer-width'] : 'short';
-    const referenceSequence = ((gridCell.cell.column?.temp['reference-sequence'] != null) && (gridCell.cell.column?.temp['reference-sequence'] != ''))
-      ? gridCell.cell.column.temp['reference-sequence'] : gridCell.cell.column.temp['current-word'] ?? '';
-    const additionalData: { [index: string]: string | number | string[] } = {
-      'colorCode': colorCode,
-      'compareWithCurrent': compareWithCurrent,
-      'monomerWidth': monomerWidth,
-      'referenceSequence': splitterFunc(referenceSequence),
-      'bio-maxIndex': 0,
-    };
+    let gapRenderer = 5;
 
+    let maxIndex = 0;
 
-    const maxLengthOfMonomer = 8;
+    let maxLengthOfMonomer = 8;
+
+    if (monomerWidth === 'short') {
+      gapRenderer = 12;
+      maxLengthOfMonomer = 1;
+    }
 
     let maxLengthWords: any = {};
     if (gridCell.cell.column.getTag('.calculatedCellRender') !== splitLimit.toString()) {
@@ -164,25 +161,25 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
           if (textSize > (maxLengthWords[index] ?? 0)) {
             maxLengthWords[index] = textSize;
           }
-          if (index > additionalData['bio-maxIndex']) {
-            additionalData['bio-maxIndex'] = index;
+          if (index > maxIndex) {
+            maxIndex = index;
           }
         });
         samples += 1;
       }
       let minLength = 3 * 7;
-      for (let i = 0; i <= additionalData['bio-maxIndex']; i++) {
+      for (let i = 0; i <= maxIndex; i++) {
         if (maxLengthWords[i] < minLength) {
           maxLengthWords[i] = minLength;
         }
       }
       let maxLengthWordSum: any = {};
       maxLengthWordSum[0] = maxLengthWords[0];
-      for (let i = 1; i <= additionalData['bio-maxIndex']; i++) {
+      for (let i = 1; i <= maxIndex; i++) {
         maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
       }
       gridCell.cell.column.temp['bio-sum-maxLengthWords'] = maxLengthWordSum;
-      gridCell.cell.column.temp['bio-maxIndex'] = additionalData['bio-maxIndex'];
+      gridCell.cell.column.temp['bio-maxIndex'] = maxIndex;
       gridCell.cell.column.temp['bio-maxLengthWords'] = maxLengthWords;
       gridCell.cell.column.setTag('.calculatedCellRender', splitLimit.toString());
     } else {
@@ -196,11 +193,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     if (gridCell.cell.column.getTag('aligned').includes('MSA') && gridCell.cell.column.getTag('units') === 'separator') {
       drawStyle = DrawStyle.MSA;
     }
+
     subParts.every((amino, index) => {
       color = palette.get(amino);
       g.fillStyle = undefinedColor;
       let last = index === subParts.length - 1;
-      x1 = printLeftOrCentered(x1, y, w, h, g, monomerToShortFunction(amino, maxLengthOfMonomer), color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell, additionalData);
+      x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell, referenceSequence, maxLengthOfMonomer);
       return x1 - minDistanceRenderer - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x) <= gridCell.bounds.width;
     });
 

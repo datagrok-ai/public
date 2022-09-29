@@ -1,8 +1,10 @@
 import * as DG from 'datagrok-api/dg';
+import {SplitterFunc, WebLogo} from '../viewers/web-logo';
 
 const undefinedColor = 'rgb(100,100,100)';
 const grayColor = '#808080';
 const blackColor = 'rgb(0,0,0)';
+const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
 
 export enum DrawStyle {
   MSA = 'MSA',
@@ -27,20 +29,32 @@ export enum DrawStyle {
  * @param drawStyle Is draw style. MSA - for multicharSeq, classic - for other seq.
  * @param maxWord Is array of max words for each line.
  * @param wordIdx Is index of word we currently draw.
- * @param { [index: string]: number }  additionalData Is additional data for rendering.
+ * @param gridCell Is grid cell.
+ * @param referenceSequence Is reference sequence for diff mode.
+ * @param maxLengthOfMonomer Is max length of monomer.
  * @return {number} x coordinate to start printing at.
  */
 export function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, additionalData: { [index: string]: string[] |  boolean | number | string } = {}): number {
+  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, referenceSequence: string[] = [], maxLengthOfMonomer: number | null = null): number {
   g.textAlign = 'start';
-  const colorPart = s.substring(0);
+  let colorPart = s.substring(0);
+  if (maxLengthOfMonomer != null) {
+    colorPart = monomerToShortFunction(colorPart, maxLengthOfMonomer);
+  }
   let grayPart = last ? '' : separator;
   if (drawStyle === DrawStyle.MSA) {
     grayPart = '';
   }
+  let colorCode = true;
+  let compareWithCurrent = true;
+  if (gridCell != null) {
+    colorCode = (gridCell.cell.column?.temp['color-code'] != null) ? gridCell.cell.column.temp['color-code'] : true;
+    compareWithCurrent = (gridCell.cell.column?.temp['compare-with-current'] != null) ? gridCell.cell.column.temp['compare-with-current'] : true;
+  }
+
 
   let textSize: any = g.measureText(colorPart + grayPart);
   const indent = 5;
@@ -53,14 +67,13 @@ export function printLeftOrCentered(
     maxColorTextSize = maxWord[wordIdx];
     textSize = maxWord[wordIdx];
   }
-  const currentMonomer: string = (additionalData['referenceSequence']  as string[])[wordIdx];
-  if ((additionalData['compareWithCurrent'] == true) && (String(additionalData['referenceSequence']).length > 0)) {
-    transparencyRate = (colorPart == currentMonomer) ? transparencyRate : 0.4;
+  const currentMonomer: string = referenceSequence[wordIdx];
+  if (compareWithCurrent && (referenceSequence.length > 0)) {
+    transparencyRate = (colorPart == currentMonomer) ? 0.4 : transparencyRate;
   }
 
-
   function draw(dx1: number, dx2: number): void {
-    const drawColor = (additionalData['colorCode'] == true) ? color : blackColor;
+    const drawColor = colorCode ? color : blackColor;
     g.fillStyle = drawColor;
     g.globalAlpha = transparencyRate;
     if (drawStyle === DrawStyle.classic) {
