@@ -516,12 +516,15 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     let s: string = gridCell.cell.value ?? '';
     let subParts: string[] = parseHelm(s);
     let allParts: string[] = getParts(subParts, s);
-    let tooltipMessage: string[] = [];
+    let tooltipMessage: HTMLElement[] = [];
     for (let i = 0; i < allParts.length; ++i) {
       if (monomers.has(allParts[i])) 
-        tooltipMessage[i] = `Monomer ${allParts[i]} not found. Open the Property Panel, then expand Manage Libraries`;
+        tooltipMessage[i] = ui.divV([
+          ui.divText(`Monomer ${allParts[i]} not found.`),
+          ui.divText('Open the Property Panel, then expand Manage Libraries')
+        ])
     };
-    (((tooltipMessage[left]?.length ?? 0) > 0)) 
+    (((tooltipMessage[left]?.childNodes.length ?? 0) > 0)) 
     ? ui.tooltip.show(ui.div(tooltipMessage[left]), e.x + 16, e.y + 16) 
     : ui.tooltip.hide();
   }
