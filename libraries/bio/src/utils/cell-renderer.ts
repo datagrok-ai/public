@@ -41,9 +41,6 @@ export function printLeftOrCentered(
   separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, referenceSequence: string[] = [], maxLengthOfMonomer: number | null = null): number {
   g.textAlign = 'start';
   let colorPart = s.substring(0);
-  if (maxLengthOfMonomer != null) {
-    colorPart = monomerToShortFunction(colorPart, maxLengthOfMonomer);
-  }
   let grayPart = last ? '' : separator;
   if (drawStyle === DrawStyle.MSA) {
     grayPart = '';
@@ -53,6 +50,13 @@ export function printLeftOrCentered(
   if (gridCell != null) {
     colorCode = (gridCell.cell.column?.temp['color-code'] != null) ? gridCell.cell.column.temp['color-code'] : true;
     compareWithCurrent = (gridCell.cell.column?.temp['compare-with-current'] != null) ? gridCell.cell.column.temp['compare-with-current'] : true;
+  }
+  const currentMonomer: string = referenceSequence[wordIdx];
+  if (compareWithCurrent && (referenceSequence.length > 0)) {
+    transparencyRate = (colorPart == currentMonomer) ? 0.4 : transparencyRate;
+  }
+  if (maxLengthOfMonomer != null) {
+    colorPart = monomerToShortFunction(colorPart, maxLengthOfMonomer);
   }
 
 
@@ -66,10 +70,6 @@ export function printLeftOrCentered(
   if (drawStyle === DrawStyle.MSA) {
     maxColorTextSize = maxWord[wordIdx];
     textSize = maxWord[wordIdx];
-  }
-  const currentMonomer: string = referenceSequence[wordIdx];
-  if (compareWithCurrent && (referenceSequence.length > 0)) {
-    transparencyRate = (colorPart == currentMonomer) ? 0.4 : transparencyRate;
   }
 
   function draw(dx1: number, dx2: number): void {
