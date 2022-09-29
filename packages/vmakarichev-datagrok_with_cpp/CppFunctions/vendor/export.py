@@ -188,7 +188,7 @@ def saveCommand(command, nameOfFile):
         file.write(command)
 
 def addDependenciesToPackageJsonFile(settings):
-    """ Add JS- and WASM-files to "sources" of package.json
+    """ Add JS-file with exported C-functions to "sources" of package.json
     """
 
     # data from package.json
@@ -203,7 +203,10 @@ def addDependenciesToPackageJsonFile(settings):
 
     # add dependence to package data
     if "sources" in packageData.keys():
-        packageData["sources"].append(fullNameOfLibFile)
+
+        if fullNameOfLibFile not in packageData["sources"]: # add JS-file if "source" does not contain it yet
+            packageData["sources"].append(fullNameOfLibFile)
+
     else:
         packageData["sources"] = [ fullNameOfLibFile ]
 
