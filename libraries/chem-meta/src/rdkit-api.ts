@@ -19,20 +19,19 @@ export interface RDMol {
   get_inchi(): string;
   get_json(): string;
   get_svg(width?: number, height?: number): string;
-  get_svg_with_highlightes(details: string): string;
+  get_svg_with_highlights(details: string): string;
   get_substruct_match(qmol: RDMol) : string;
   get_substruct_matches(qmol: RDMol): string;
   get_descriptors(): string;
 
-  get_morgan_fp(radius?: number, len?: number): string;
-  get_morgan_fp_as_uint8array(radius?: number, len?: number): Uint8Array;
-  get_pattern_fp(len?: number): string;
-  get_pattern_fp_as_uint8array(len?: number): Uint8Array;
+  get_morgan_fp(details?: string): string;
+  get_morgan_fp_as_uint8array(details?: string): Uint8Array;
+  get_pattern_fp(details?: string): string;
+  get_pattern_fp_as_uint8array(details?: string): Uint8Array;
 
   condense_abbreviations(maxCoverage?: number, useLinkers?: boolean): string;
   condense_abbreviations_from_defs(definitions: string, maxCoverage: number, areLinkers: boolean): string;
-  generate_aligned_coords(
-      template: RDMol, useCoordGen?: boolean, allowOptionalAttachments?: boolean, acceptFailure?: boolean): string;
+  generate_aligned_coords(template: RDMol, details?: string): string;
 
   draw_to_canvas_with_offset(
       canvas: HTMLCanvasElement, offsetX: number, offsetY: number, width: number, height: number): string;
@@ -51,9 +50,8 @@ export interface RDMol {
   remove_hs(): string;
   add_hs(): string;
 
-  normalize_depiction(): void;
-  straighten_depiction(): void;
-  compute_hash(): string;
+  normalize_depiction(canonicalize: number, scaleFactor?: number): void;
+  straighten_depiction(minimizeRotation?: boolean): void;
 
   /** Reclaims the memory used for that molecule. */
   delete(): void;
