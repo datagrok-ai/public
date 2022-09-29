@@ -15,7 +15,7 @@ jobs:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
       - name: Lint Code Base
-        uses: github/super-linter@v4
+        uses: github/super-linter@v4.9.6
         env:
           DISABLE_ERRORS: true
           DEFAULT_BRANCH: master
