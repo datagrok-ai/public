@@ -16,7 +16,7 @@ A database connection lets you work with databases directly in Datagrok. You can
 
 Before you connect a database, the following prerequisites must be met:
 
-* Datagrok has a connector to the data source. Out-of-the-box, Datagrok connects to all major databases. For the complete list of supported connectors, see [Connectors](connectors.md).<!--Lena needs to commit-->
+* Datagrok has a connector to the data source. Out-of-the-box, Datagrok connects to all major databases. For the complete list of supported connectors, see [Connectors](../access/connectors/supported-connectors.md).
   >Developers: You can create [custom connectors](https://github.com/datagrok-ai/public/tree/master/connectors).<!--need to create a How-to under Develop-->
 * You must have the appropriate privileges to the database. If you don't have database privileges, contact the database administrator.
 * You must be able to authenticate the connection (typically, with a username and password).
@@ -148,7 +148,7 @@ The **Query View** opens when you create or edit a query:
 
 * To create a new query: (1) pight-click a database _connection_ and select **Add query** or (2) right click a _table_ and select **New SQL Query...** (provider-dependent).
 * To edit or clone an existing query, locate the query in the **Database Explorer** and right-click it to select **Edit...** or **Clone...**.
-     >Tip: You can also search for queries using a built-in [smart search](smart-search.md) (go to **Data** > **Queries**).
+     >Tip: You can also search for queries using a built-in [smart search](../datagrok/smart-search.md) (go to **Data** > **Queries**).
 
 #### Create and preview queries
 
