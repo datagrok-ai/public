@@ -179,7 +179,8 @@ export class PeptidesModel {
       //FIXME: modify during the initializeViewersComponents stages
       this.mutationCliffsGridSubject.next(this.mutationCliffsGrid);
       this.mostPotentResiduesGridSubject.next(this.mostPotentResiduesGrid);
-      this.logoSummaryGridSubject.next(this.logoSummaryGrid);
+      if (this.df.getTag(C.TAGS.CLUSTERS))
+        this.logoSummaryGridSubject.next(this.logoSummaryGrid);
 
       this.fireBitsetChanged();
       this.invalidateGrids();
@@ -243,7 +244,8 @@ export class PeptidesModel {
     [this.mutationCliffsGrid, this.mostPotentResiduesGrid] =
       this.createGrids(matrixDf, sequenceDf, positionColumns, alphabet);
 
-    this.logoSummaryGrid = this.createLogoSummaryGrid();
+    if (this.df.getTag(C.TAGS.CLUSTERS))
+      this.logoSummaryGrid = this.createLogoSummaryGrid();
 
     // init invariant map & mutation cliffs selections
     this.initSelections(positionColumns);
@@ -510,20 +512,26 @@ export class PeptidesModel {
   }
 
   createLogoSummaryGrid(): DG.Grid {
-    const summaryTable = this.df.groupBy(['Clusters']).aggregate();
+    const summaryTable = this.df.groupBy([C.COLUMNS_NAMES.CLUSTERS]).aggregate();
     const summaryTableLength = summaryTable.rowCount;
     const webLogoCol: DG.Column<string> = summaryTable.columns.addNew('WebLogo', DG.COLUMN_TYPE.STRING);
-    const clustersCol: DG.Column<number> = summaryTable.getCol('Clusters');
+    const clustersCol: DG.Column<number> = summaryTable.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    clustersCol.name = 'Clusters';
     const tempDfList: DG.DataFrame[] = new Array(summaryTableLength);
+    const originalClustersCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
 
     for (let index = 0; index < summaryTableLength; ++index) {
-      const tempDf: DG.DataFrame = this.df.rows.match(`${'Clusters'} = ${clustersCol.get(index)}`).toDataFrame();
+      // const tempDf: DG.DataFrame = this.df.rows.match(`${C.COLUMNS_NAMES.CLUSTERS} = ${clustersCol.get(index)}`).toDataFrame();
+      const bs = DG.BitSet.create(this.df.rowCount);
+      bs.init((i) => clustersCol.get(index) === originalClustersCol.get(i));
+      const tempDf = this.df.clone(bs, [C.COLUMNS_NAMES.ALIGNED_SEQUENCE]);
       tempDfList[index] = tempDf;
       webLogoCol.set(index, index.toString());
     }
     webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
 
     const grid = summaryTable.plot.grid();
+    grid.columns.rowHeader!.visible = false;
     grid.props.rowHeight = 55;
     grid.onCellPrepare((cell) => {
       if (cell.isTableCell && cell.tableColumn?.name === 'WebLogo') 
@@ -894,7 +902,8 @@ export class PeptidesModel {
 
     setViewerGridProps(this.mutationCliffsGrid);
     setViewerGridProps(this.mostPotentResiduesGrid);
-    setViewerGridProps(this.logoSummaryGrid);
+    if (this.df.getTag(C.TAGS.CLUSTERS))
+      setViewerGridProps(this.logoSummaryGrid);
   }
 
   getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
@@ -972,8 +981,10 @@ export class PeptidesModel {
     this.mostPotentResiduesViewer =
       await this.df.plot.fromType('peptide-sar-viewer-vertical', options) as MostPotentResiduesViewer;
 
-    const logoSummary = await this.df.plot.fromType('logo-summary-viewer') as LogoSummary;
-    dockManager.dock(logoSummary, DG.DOCK_TYPE.RIGHT, null, 'Logo Summary Table');
+    if (this.df.getTag(C.TAGS.CLUSTERS)) {
+      const logoSummary = await this.df.plot.fromType('logo-summary-viewer') as LogoSummary;
+      dockManager.dock(logoSummary, DG.DOCK_TYPE.RIGHT, null, 'Logo Summary Table');
+    }
 
     // TODO: completely remove this viewer?
     // if (this.df.rowCount <= 10000) {

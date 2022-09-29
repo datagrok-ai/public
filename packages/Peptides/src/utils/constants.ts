@@ -9,6 +9,7 @@ export enum COLUMNS_NAMES {
   MEAN_DIFFERENCE = 'Mean difference',
   COUNT = 'Count',
   RATIO = 'Ratio',
+  CLUSTERS = '~clusters',
 }
 
 export enum CATEGORIES {
@@ -23,6 +24,7 @@ export enum TAGS {
   SELECTION = 'selection',
   ALPHABET = 'alphabet',
   FILTER = 'filter',
+  CLUSTERS = 'clusters',
 }
 
 export enum SEM_TYPES {
