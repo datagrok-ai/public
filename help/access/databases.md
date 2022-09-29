@@ -16,7 +16,7 @@ A database connection lets you work with databases directly in Datagrok. You can
 
 Before you connect a database, the following prerequisites must be met:
 
-* Datagrok has a connector to the data source. Out-of-the-box, Datagrok connects to all major databases. For the complete list of supported connectors, see [Connectors](../access/connectors/supported-connectors.md).
+* Datagrok has a connector to the data source. Out-of-the-box, Datagrok connects to all major databases. For the complete list of supported connectors, see [Connectors](supported-connectors.md).
   >Developers: You can create [custom connectors](https://github.com/datagrok-ai/public/tree/master/connectors).<!--need to create a How-to under Develop-->
 * You must have the appropriate privileges to the database. If you don't have database privileges, contact the database administrator.
 * You must be able to authenticate the connection (typically, with a username and password).
