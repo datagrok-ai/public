@@ -113,7 +113,7 @@ export async function startAnalysis(activityColumn: DG.Column<number> | null, pe
     const init = indexes.length !== 0 ? (i: number) => indexes[i] : (i: number) => i;
     idxCol.init(init);
     let activityCol: DG.Column | null = null;
-    for (const col of currentDf.columns) {
+    for (const col of currentDf.columns.toList()) {
       if (col === activityColumn)
         activityCol = newDf.columns.addNewVirtual(
           C.COLUMNS_NAMES.ACTIVITY, (i) => activityColumn.get(idxCol.get(i)!), DG.TYPE.FLOAT);
@@ -121,7 +121,7 @@ export async function startAnalysis(activityColumn: DG.Column<number> | null, pe
         newDf.columns.addNewVirtual(
           C.COLUMNS_NAMES.ALIGNED_SEQUENCE, (i) => peptidesCol.get(idxCol.get(i)!), DG.TYPE.STRING);
       else
-        newDf.columns.addNewVirtual(`~${col.name}`, (i) => col.get(idxCol.get(i)!), DG.TYPE.STRING);
+        newDf.columns.addNewVirtual(`~${col.name}`, (i) => col.get(idxCol.get(i)!), col.type as DG.TYPE);
     }
     activityCol!.semType = C.SEM_TYPES.ACTIVITY;
     const activityScaledCol = newDf.columns.addNewVirtual(C.COLUMNS_NAMES.ACTIVITY_SCALED, (i) => {
@@ -132,7 +132,7 @@ export async function startAnalysis(activityColumn: DG.Column<number> | null, pe
     newDf.name = 'Peptides analysis';
     newDf.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
     if (clustersColumn) {
-      newDf.getCol(clustersColumn.name).name = C.COLUMNS_NAMES.CLUSTERS;
+      newDf.getCol(`~${clustersColumn.name}`).name = C.COLUMNS_NAMES.CLUSTERS;
       newDf.tags[C.TAGS.CLUSTERS] = C.COLUMNS_NAMES.CLUSTERS;
     }
     // newDf.tags[C.PEPTIDES_ANALYSIS] = 'true';
