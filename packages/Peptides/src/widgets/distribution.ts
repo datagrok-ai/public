@@ -132,7 +132,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const setDefaultProperties = (input: DG.InputBase): void => {
     input.enabled = positionsLen != 0;
     $(input.root).find('.ui-input-editor').css('margin', '0px');
-    $(input.root).find('.ui-input-description').css('padding', '0px');
+    $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
   };
 
   const splitByPosition = ui.boolInput('', model.splitByPos, updateDistributionHost);

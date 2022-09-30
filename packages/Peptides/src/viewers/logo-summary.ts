@@ -7,6 +7,7 @@ import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
 
 export class LogoSummary extends DG.JsViewer {
+  _titleHost = ui.divText('Logo Summary Table', {id: 'pep-viewer-title'});
   model!: PeptidesModel;
   viewerGrid!: DG.Grid;
   initialized: boolean = false;
@@ -35,7 +36,8 @@ export class LogoSummary extends DG.JsViewer {
   render(): void {
     if (this.initialized) {
       $(this.root).empty();
-      this.root.appendChild(this.viewerGrid.root);
+      this.viewerGrid.root.style.width = 'auto';
+      this.root.appendChild(ui.divV([this._titleHost, this.viewerGrid.root]));
       this.viewerGrid.invalidate();
     }
   }
