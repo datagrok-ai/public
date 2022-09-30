@@ -518,13 +518,19 @@ export class PeptidesModel {
     clustersCol.name = 'Clusters';
     const tempDfList: DG.DataFrame[] = new Array(summaryTableLength);
     const originalClustersCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    const peptideCol = this.df.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE);
 
     for (let index = 0; index < summaryTableLength; ++index) {
-      // const tempDf: DG.DataFrame = this.df.rows.match(`${C.COLUMNS_NAMES.CLUSTERS} = ${clustersCol.get(index)}`).toDataFrame();
-      const bs = DG.BitSet.create(this.df.rowCount);
-      bs.init((i) => clustersCol.get(index) === originalClustersCol.get(i));
-      const tempDf = this.df.clone(bs, [C.COLUMNS_NAMES.ALIGNED_SEQUENCE]);
-      tempDfList[index] = tempDf;
+      const indexes: number[] = [];
+      for (let j = 0; j < originalClustersCol.length; ++j) {
+        if (originalClustersCol.get(j) === clustersCol.get(index))
+          indexes.push(j);
+      }
+      const tCol = DG.Column.string('peptides', indexes.length);
+      tCol.init((i) => peptideCol.get(indexes[i]));
+      for (const tag of peptideCol.tags)
+        tCol.setTag(tag[0], tag[1]);
+      tempDfList[index] = DG.DataFrame.fromColumns([tCol]);
       webLogoCol.set(index, index.toString());
     }
     webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');

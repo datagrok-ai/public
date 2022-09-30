@@ -25,6 +25,7 @@ export enum TAGS {
   ALPHABET = 'alphabet',
   FILTER = 'filter',
   CLUSTERS = 'clusters',
+  SAR_MODE = 'sarMode'
 }
 
 export enum SEM_TYPES {
