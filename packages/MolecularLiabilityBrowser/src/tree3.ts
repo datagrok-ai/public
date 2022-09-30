@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export class Tree3Browser {
-  async init(df, mlbView: DG.TableView) {
+  async init(df: DG.DataFrame, mlbView: DG.TableView) {
     const treeCol = df.getCol('TREE');
     const cloneId = df.getCol('CLONE');
     let processed = null;
@@ -14,8 +14,8 @@ export class Tree3Browser {
       const c = t.col('node');
       const id = cloneId.get(i);
       t.rows.removeAt(0);
-      t.columns.addNewString('clone').init((_) => id);
-      t.columns.addNewInt('edgeColor').init((_) => i);
+      t.columns.addNewString('clone').init((_: number) => id);
+      t.columns.addNewInt('edgeColor').init((_: number) => i);
       for (let k = 0; k < t.rowCount; k++) {
         const n1 = p.get(k);
         if (n1 == 'root') p.set(k, `root-${id}`);
@@ -28,7 +28,7 @@ export class Tree3Browser {
     }
     grok.data.linkTables(df, processed, ['clone'], ['clone'], [DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION]);
     treeCol.semType = 'newick';
-    df.currentRow = 1;
+    df.currentRowIdx = 1;
     //let view = grok.shell.addTableView(df);
     const grid = DG.Viewer.grid(processed);
     const tree = DG.Viewer.fromType('PhyloTree', df);

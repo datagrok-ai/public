@@ -8,7 +8,7 @@ import {getVId, mlbTreeNodeRe} from '../utils/tree-stats';
 category('treeNode', () => {
 
   test('mlbTreeNodeRe1', async () => {
-    const ma = mlbTreeNodeRe.exec('TPP000022964|PSMB325|VR000012782|PRJ000000165');
+    const ma: RegExpExecArray = mlbTreeNodeRe.exec('TPP000022964|PSMB325|VR000012782|PRJ000000165')!;
     expectArray(ma.slice(1, 5), ['TPP000022964', 'PSMB325', 'VR000012782', 'PRJ000000165']);
   });
 

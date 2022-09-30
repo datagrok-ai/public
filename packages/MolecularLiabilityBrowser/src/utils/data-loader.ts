@@ -8,6 +8,8 @@ import {MlbDatabase} from './mlb-database';
 
 export type DataQueryDict = { [name: string]: DG.DataQuery };
 
+export type PointType = [/** position */ number, /** probability */ number];
+
 export interface FilterPropertiesType {
   source: string;
   names: string[];
@@ -20,8 +22,7 @@ export interface FilterPropertiesType {
   tooltips: string[];
 }
 
-export interface MutcodesDataType {
-}
+export type MutcodesDataType = { [name: string]: string };
 
 export type PtmMapType = { [key: string]: string };
 export type CdrMapType = { [key: string]: string };
@@ -32,13 +33,19 @@ export type CdrMapType = { [key: string]: string };
 export interface JsonType {
   heavy_seq: string;
   light_seq: string;
-  /** Heavy chain name/key of data section in 'ptm_predictions', 'parapred_predictions'
-   */
+
+  /** Heavy chain name/key of data section in 'ptm_predictions', 'parapred_predictions' */
   heavy_chain: string;
-  /** Light chain name/key of data section in 'ptm_predictions', 'parapred_predictions'
-   */
+  /** Light chain name/key of data section in 'ptm_predictions', 'parapred_predictions' */
   light_chain: string;
-  ptm_predictions: any;
+
+  ptm_predictions: { [chain: string]: { [ptm: string]: PointType[] } };
+  parapred_predictions: { [chain: string]: { [pos: string]: number } };
+
+  cdr_ranges: { [cdr: string]: PointType[] };
+
+  map_H: number[],
+  map_L: number[],
 }
 
 export interface PdbType {
@@ -55,6 +62,131 @@ export interface NumsType {
 export interface ObsPtmType {
   H: any;
   L: any;
+}
+
+export interface IFeature {
+  category: string;
+  type: string;
+  start: number;
+  end: number;
+  text: string;
+}
+
+export interface ColorSchemeType {
+  colBackground: string;
+  colHeavyChain: string;
+  colLightChain: string;
+  colCdr: string;
+  colPara: string;
+  colHighlight: string;
+  colHighlightCdr: string;
+  colParatopesLow: string;
+  colParatopesHigh: string;
+}
+
+export interface PvizType {
+  SeqEntry: { new(args: { sequence: string }): SeqEntry };
+  DASReader: Function;
+  FastaReader: Function;
+  FeatureManager: {};
+  IconFactory: {};
+  SeqEntryAnnotInteractiveView: any;
+  SeqEntryFastaView: {};
+  FeatureDisplayer: FeatureDisplayer;
+  OneLiner: Function;
+}
+
+export interface PvizParamType {
+  seq: { [chain: string]: string };
+  cdrMap: { [chain: string]: PvizCdrType };
+  parMap: { [chain: string]: PvizParType };
+  denMap: { [chain: string]: PvizDenType };
+  ptmMap: { [chain: string]: PvizPtmType };
+  motMap: { [chain: string]: PvizMotType };
+  obsMap: { [chain: string]: PvizObsType };
+}
+
+export interface PvizCdrType {
+  cdrFeatureMap: CdrFeatureType[];
+}
+
+export interface CdrFeatureType extends IFeature {
+  improbable: true;
+}
+
+export interface PvizParType {
+  parFeatureMap: ParFeatureType[];
+  parColorObj: { P: string[] };
+  parElObj: string[];
+  parProbObj: number[];
+}
+
+export interface ParFeatureType extends IFeature {
+  improbable: boolean;
+}
+
+export interface PvizDenType {
+  denFeatureMap: DenFeatureType [];
+  denColorObj: { D: string[] };
+  denElObj: number[];
+  denProbObj: number[];
+  denPtmArr: [string, number][][];
+}
+
+export interface DenFeatureType extends IFeature {
+  groupSet: string;
+  improbable: boolean;
+}
+
+export class PvizPtmType {
+  ptmFeatureMap: PtmFeatureType [];
+  ptmColorObj: { [ptm: string]: string[] };
+  ptmElObj: { [ptm: string]: number[] };
+  ptmProbObj: Object;
+}
+
+export interface PtmFeatureType extends IFeature {
+  groupSet: string;
+  improbable: boolean;
+}
+
+export interface PvizMotType {
+  motFeatureMap: MotFeatureType[];
+  motColorObj: { [code: string]: string[] };
+  motElObj: { [code: string]: number[] };
+  motProbObj: Object;
+}
+
+export interface MotFeatureType extends IFeature {
+
+}
+
+export interface PvizObsType {
+  obsFeatureMap: ObsFeatureType[];
+  obsColorObj: { [ptm: string]: string[] };
+  obsElObj: { [ptm: string]: number[] };
+  obsProbObj: [string[], number[]][];
+}
+
+export interface ObsFeatureType extends IFeature {
+  groupSet: string;
+  improbable: boolean;
+}
+
+export interface SeqEntry {
+  addFeatures: Function;
+}
+
+export interface FeatureDisplayer {
+  addMouseoverCallback: Function;
+  addClickCallback: Function;
+}
+
+export interface MotMapType {
+  motFeatureMap: string[];
+  motColorObj: {};
+  motElObj: Object;
+  motProbObj: Object;
 }
 
 /** Handles error and console.debug ET (elapsed time) */

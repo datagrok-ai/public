@@ -2,7 +2,27 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {MiscMethods} from './misc';
-import {DataLoader, MutcodesDataType} from '../utils/data-loader';
+import {
+  ColorSchemeType,
+  DataLoader,
+  ObsFeatureType,
+  IFeature,
+  JsonType,
+  MutcodesDataType,
+  PtmFeatureType,
+  PvizMotType,
+  PvizType,
+  SeqEntry,
+  PvizParamType,
+  CdrFeatureType,
+  PvizCdrType,
+  PvizParType,
+  ParFeatureType,
+  DenFeatureType,
+  PointType,
+  PvizPtmType, PvizDenType
+} from '../utils/data-loader';
+import {InputBase} from 'datagrok-api/dg';
 
 export class PvizAspect {
   private dataLoader: DataLoader;
@@ -10,20 +30,20 @@ export class PvizAspect {
   get mutcodes(): MutcodesDataType { return this.dataLoader.mutcodes; };
 
   ngl: any;
-  pviz: any;
-  pVizParams: any;
+  pviz: PvizType;
+  pVizParams: PvizParamType;
 
-  json: any;
+  json: JsonType;
   jsonObs: any;
-  colorScheme: any;
+  colorScheme: ColorSchemeType;
   hostH: any;
   hostL: any;
-  ptmChoices: any;
-  motChoices: any;
-  obsChoices: any;
-  cdrScheme: any;
-  paratopes: any;
-  ptmProb: any;
+  ptmChoices: string[];
+  motChoices: string[];
+  obsChoices: string[];
+  cdrScheme: InputBase;
+  paratopes: InputBase;
+  ptmProb: number;
   selection: any;
 
   constructor(dataLoader: DataLoader) {
@@ -31,13 +51,17 @@ export class PvizAspect {
   }
 
   async init(
-    json, jsonObs, colorScheme, pVizHostH, pVizHostL,
-    ptmChoices, ptmMotifChoices, ptmObsChoices, cdrScheme, paratopes, ptmProb, twinSelections
+    json: JsonType, jsonObs: Object, colorScheme: ColorSchemeType,
+    pVizHostH: HTMLDivElement, pVizHostL: HTMLDivElement,
+    ptmChoices: string[], ptmMotifChoices: string[], ptmObsChoices: string[],
+    cdrScheme: InputBase, paratopes: InputBase, ptmProb: number, twinSelections: { [chain: string]: Object }
   ) {
     //@ts-ignore
     this.pviz = window.pviz;
-    this.pVizParams = {};
-    this.pVizParams.seq = {'H': json.heavy_seq, 'L': json.light_seq};
+    this.pVizParams = {
+      seq: {'H': json.heavy_seq, 'L': json.light_seq},
+      cdrMap: {}, parMap: {}, denMap: {}, ptmMap: {}, motMap: {}, obsMap: {}
+    };
 
     this.json = json;
     this.jsonObs = jsonObs;
@@ -67,7 +91,7 @@ export class PvizAspect {
     if ($(host).width() !== 0) {
       const seq = this.pVizParams.seq[chain];
 
-      const seqEntry = new this.pviz.SeqEntry({sequence: seq});
+      const seqEntry: SeqEntry = new this.pviz.SeqEntry({sequence: seq});
       new this.pviz.SeqEntryAnnotInteractiveView({
         model: seqEntry,
         collapsible: true,
@@ -106,99 +130,90 @@ export class PvizAspect {
       await this.color(chain);
 
       //mouse over handlers
-      this.pviz.FeatureDisplayer.addMouseoverCallback(['P'], async function(ft) {
+      this.pviz.FeatureDisplayer.addMouseoverCallback(['P'], async function(ft: IFeature) {
         const selectorStr = 'g.feature.data.P.Paratope_predictions rect.feature';
-        let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.parMap[chain].parElObj;
+        let elList = document.querySelectorAll<SVGRectElement>(selectorStr);
+        const elPosList = pVizParams.parMap[chain].parElObj;
         const probLst = pVizParams.parMap[chain].parProbObj;
-        //@ts-ignore
-        el = el[elLst.indexOf((ft.start).toString())];
-        const prob = probLst[elLst.indexOf((ft.start).toString())];
-
+        const el: SVGRectElement = elList[elPosList.indexOf((ft.start).toString())];
+        const prob = probLst[elPosList.indexOf((ft.start).toString())];
+        const elClientRect = el.getBoundingClientRect();
         ui.tooltip.show(
           ui.span([`Probability: ${prob.toFixed(2)}`]),
-          //@ts-ignore
-          el.getBoundingClientRect().left + 10,
-          //@ts-ignore
-          el.getBoundingClientRect().top + 10);
-      }).addMouseoutCallback(['P'], function(ft) {
+          elClientRect.left + 10,
+          elClientRect.top + 10);
+      }).addMouseoutCallback(['P'], function(ft: IFeature) {
         ui.tooltip.hide();
       });
 
-      this.pviz.FeatureDisplayer.addMouseoverCallback(['D'], async function(ft) {
+      this.pviz.FeatureDisplayer.addMouseoverCallback(['D'], async function(ft: IFeature) {
         const selectorStr = 'g.feature.data.D rect.feature';
-        let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.denMap[chain].denElObj;
-        const probLst = pVizParams.denMap[chain].denProbObj;
+        const elList = document.querySelectorAll<SVGRectElement>(selectorStr);
+        const elPosList: number[] = pVizParams.denMap[chain].denElObj;
+        const probList: number[] = pVizParams.denMap[chain].denProbObj;
         const ptmList = pVizParams.denMap[chain].denPtmArr;
-        //@ts-ignore
-        el = el[elLst.indexOf(ft.start)];
-        const prob = probLst[elLst.indexOf(ft.start)];
-        const ptmsArPoint = ptmList[elLst.indexOf(ft.start)];
-        let ptmsStr = '';
+        const el: SVGRectElement = elList[elPosList.indexOf(ft.start)];
+        const prob: number = probList[elPosList.indexOf(ft.start)];
+        const ptmArPointList = ptmList[elPosList.indexOf(ft.start)];
+        const ptmsStrList: string[] = Array<string>(2);
 
-        for (let i = 0; i < ptmsArPoint.length; i++) {
-          ptmsStr += '\n' + ptmsArPoint[i][0].replace('_', ' ') +
-            ' probability  ~' + (ptmsArPoint[i][1] > 1 ? ptmsArPoint[i][1] / 100 : ptmsArPoint[i][1]).toFixed(2);
+        for (let i = 0; i < ptmArPointList.length; i++) {
+          const ptmArPoint = ptmArPointList[i];
+          const ptmArProb: string = (ptmArPoint[1] > 1 ? ptmArPoint[1] / 100 : ptmArPoint[1]).toFixed(2);
+          ptmsStrList[i] = ptmArPoint[0].replace('_', ' ') + ' probability  ~' + ptmArProb;
         }
+        const ptmsStr = ptmsStrList.join('\n');
+        const elClientRect = el.getBoundingClientRect();
 
         ui.tooltip.show(
-          ui.divText(`Probability: ${prob.toFixed(2)}${ptmsStr}`),
-          //@ts-ignore
-          el.getBoundingClientRect().left + 10,
-          //@ts-ignore
-          el.getBoundingClientRect().top + 10);
-      }).addMouseoutCallback(['D'], function(ft) {
+          ui.divText(`Probability: ${prob.toFixed(2)}\n${ptmsStr}`),
+          elClientRect.left + 10,
+          elClientRect.top + 10);
+      }).addMouseoutCallback(['D'], function(ft: IFeature) {
         ui.tooltip.hide();
       });
 
-      this.pviz.FeatureDisplayer.addMouseoverCallback(ptmCodes, async function(ft) {
+      this.pviz.FeatureDisplayer.addMouseoverCallback(ptmCodes, async (ft: IFeature) => {
         const selectorStr = 'g.feature.' + this.mutcodes[ft.category.replaceAll(' ', '_')] + '.' +
           ft.category.replaceAll(' ', '_').replaceAll(')', '\\)').replaceAll('(', '\\(') + ' rect.feature';
-        let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.ptmMap[chain].ptmElObj[this.mutcodes[ft.category.replaceAll(' ', '_')]];
-        //@ts-ignore
-        el = el[elLst.indexOf(ft.start)];
+        const elList = document.querySelectorAll<SVGRectElement>(selectorStr);
+        const elPosList: number[] = pVizParams.ptmMap[chain].ptmElObj[this.mutcodes[ft.category.replaceAll(' ', '_')]];
+        const el: SVGRectElement = elList[elPosList.indexOf(ft.start)];
+        const elClientRect = el.getBoundingClientRect();
 
         ui.tooltip.show(
           ui.span([`${ft.category}`]),
-          //@ts-ignore
-          el.getBoundingClientRect().left + 10,
-          //@ts-ignore
-          el.getBoundingClientRect().top + 10);
-      }.bind(this)).addMouseoutCallback(ptmCodes, function(ft) {
+          elClientRect.left + 10,
+          elClientRect.top + 10);
+      }).addMouseoutCallback(ptmCodes, function(ft: IFeature) {
         ui.tooltip.hide();
       });
 
-      this.pviz.FeatureDisplayer.addMouseoverCallback(motCodes, async function(ft) {
+      this.pviz.FeatureDisplayer.addMouseoverCallback(motCodes, async (ft: IFeature) => {
         const selectorStr = 'g.feature.' + this.mutcodes[ft.category.replaceAll(' ', '_')] + '.' +
           ft.category.replaceAll(' ', '_').replaceAll(')', '\\)').replaceAll('(', '\\(') + ' rect.feature';
-        let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.motMap[chain].motElObj[this.mutcodes[ft.category.replaceAll(' ', '_')]];
-        //@ts-ignore
-        el = el[elLst.indexOf(ft.start)];
+        const elList = document.querySelectorAll<SVGRectElement>(selectorStr);
+        const elPosList = pVizParams.motMap[chain].motElObj[this.mutcodes[ft.category.replaceAll(' ', '_')]];
+        const el: SVGRectElement = elList[elPosList.indexOf(ft.start)];
+        const elClientRect = el.getBoundingClientRect();
 
         ui.tooltip.show(
           ui.span([`${ft.category}`]),
-          //@ts-ignore
-          el.getBoundingClientRect().left + 10,
-          //@ts-ignore
-          el.getBoundingClientRect().top + 10);
-      }.bind(this)).addMouseoutCallback(motCodes, function(ft) {
+          elClientRect.left + 10,
+          elClientRect.top + 10);
+      }).addMouseoutCallback(motCodes, function(ft: IFeature) {
         ui.tooltip.hide();
       });
 
-      this.pviz.FeatureDisplayer.addMouseoverCallback(obsCodes, async function(ft) {
+      this.pviz.FeatureDisplayer.addMouseoverCallback(obsCodes, async function(ft: IFeature) {
         const selectorStr = 'g.feature.' + ft.category.replaceAll(' ', '_') + '.' +
           ft.category.replaceAll(' ', '_') + ' rect.feature';
 
-        let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.obsMap[chain].obsElObj[ft.category];
-        const types = pVizParams.obsMap[chain].obsProbObj[ft.start][0];
-        const probabilities = pVizParams.obsMap[chain].obsProbObj[ft.start][1];
-
-        //@ts-ignore
-        el = el[elLst.indexOf(ft.start)];
+        const elList = document.querySelectorAll<SVGRectElement>(selectorStr);
+        const elPosList: number[] = pVizParams.obsMap[chain].obsElObj[ft.category];
+        const types: string[] = pVizParams.obsMap[chain].obsProbObj[ft.start][0];
+        const probabilities: number[] = pVizParams.obsMap[chain].obsProbObj[ft.start][1];
+        const el: SVGRectElement = elList[elPosList.indexOf(ft.start)];
 
         let ptmsStr = '';
 
@@ -206,80 +221,43 @@ export class PvizAspect {
           const prob = probabilities[i] == 0 ? 'NA' : (probabilities[i] == 0.01 ? 0 : probabilities[i].toFixed(2));
           ptmsStr += '\n' + types[i] + ' ~' + prob;
         }
+        const elClientRect = el.getBoundingClientRect();
 
         ui.tooltip.show(
           ui.divText(`Probability: ${ptmsStr}`),
-          //@ts-ignore
-          el.getBoundingClientRect().left + 10,
-          //@ts-ignore
-          el.getBoundingClientRect().top + 10);
-      }).addMouseoutCallback(obsCodes, function(ft) {
+          elClientRect.left + 10,
+          elClientRect.top + 10);
+      }).addMouseoutCallback(obsCodes, function(ft: IFeature) {
         ui.tooltip.hide();
       });
 
+      const featureClickCallback = async (ft: IFeature) => {
+        if (switchObj[chain][ft.start] === undefined) {
+          switchObj[chain][ft.start] = {};
+          switchObj[chain][ft.start]['state'] = true;
+        } else {
+          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state'];
+        }
+
+        grok.events.fireCustomEvent('selectionChanged', null);
+        await pv.color(chain);
+      };
       //mouse click handlers
-      this.pviz.FeatureDisplayer.addClickCallback(['D'], async function(ft) {
-        if (switchObj[chain][ft.start] === undefined) {
-          switchObj[chain][ft.start] = {};
-          switchObj[chain][ft.start]['state'] = true;
-        } else {
-          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state'];
-        }
-
-
-        grok.events.fireCustomEvent('selectionChanged', null);
-        await pv.color(chain);
-      });
-
-      this.pviz.FeatureDisplayer.addClickCallback(ptmCodes, async function(ft) {
-        if (switchObj[chain][ft.start] === undefined) {
-          switchObj[chain][ft.start] = {};
-          switchObj[chain][ft.start]['state'] = true;
-        } else {
-          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state'];
-        }
-
-
-        grok.events.fireCustomEvent('selectionChanged', null);
-        await pv.color(chain);
-      });
-
-      this.pviz.FeatureDisplayer.addClickCallback(motCodes, async function(ft) {
-        if (switchObj[chain][ft.start] === undefined) {
-          switchObj[chain][ft.start] = {};
-          switchObj[chain][ft.start]['state'] = true;
-        } else {
-          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state'];
-        }
-
-
-        grok.events.fireCustomEvent('selectionChanged', null);
-        await pv.color(chain);
-      });
-
-      this.pviz.FeatureDisplayer.addClickCallback(obsCodes, async function(ft) {
-        if (switchObj[chain][ft.start] === undefined) {
-          switchObj[chain][ft.start] = {};
-          switchObj[chain][ft.start]['state'] = true;
-        } else {
-          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state'];
-        }
-
-
-        grok.events.fireCustomEvent('selectionChanged', null);
-        await pv.color(chain);
-      });
+      this.pviz.FeatureDisplayer.addClickCallback(['D'], featureClickCallback);
+      this.pviz.FeatureDisplayer.addClickCallback(ptmCodes, featureClickCallback);
+      this.pviz.FeatureDisplayer.addClickCallback(motCodes, featureClickCallback);
+      this.pviz.FeatureDisplayer.addClickCallback(obsCodes, featureClickCallback);
     }
   }
 
-  async color(chosenTracksChain) {
+  async color(chosenTracksChain: string) {
     const switchObj = this.selection;
     const pVizParams = this.pVizParams;
 
-    Object.keys(switchObj).forEach((keyChain) => {
+    Object.keys(switchObj).forEach((keyChain: string) => {
       const selectorStr = 'g.feature.data.D rect.feature';
-      const denElements = document.querySelectorAll(selectorStr);
-      const denNumbers = pVizParams.denMap[keyChain].denElObj;
+      const denElements = document.querySelectorAll(selectorStr) as NodeListOf<HTMLElement>;
+      const denNumbers: number[] = pVizParams.denMap[keyChain].denElObj;
       Object.keys(switchObj[keyChain]).forEach((keyPosition) => {
         const position = parseInt(keyPosition);
 
@@ -287,19 +265,17 @@ export class PvizAspect {
           //densities
           if (denNumbers.indexOf(position) !== -1) {
             if (switchObj[keyChain][keyPosition]['state'] === false) {
-              //@ts-ignore
               denElements[denNumbers.indexOf(position)].style.fill =
                 pVizParams.denMap[keyChain].denColorObj['D'][denNumbers.indexOf(position)];
             } else {
-              //@ts-ignore
               denElements[denNumbers.indexOf(position)].style.fill = 'black';
             }
           }
 
           //predicted PTMS
-          const listsPredictedPtms = [];
+          const listsPredictedPtms: { [ptm: string]: any } = {};
 
-          this.ptmChoices.forEach((ptm) => {
+          this.ptmChoices.forEach((ptm: string) => {
             const selectorStrPTM = 'g.feature.' + ptm.replace(' ', '_') + ' rect.feature';
             const elPTM = document.querySelectorAll(selectorStrPTM);
             const elLstPTM = pVizParams.ptmMap[chosenTracksChain].ptmElObj[this.mutcodes[ptm.replace(' ', '_')]];
@@ -321,9 +297,9 @@ export class PvizAspect {
           });
 
           //motif PTMS
-          const listsMotifsPtms = [];
+          const listsMotifsPtms: { [ptm: string]: any } = {};
 
-          this.motChoices.forEach((ptm) => {
+          this.motChoices.forEach((ptm: string) => {
             const selectorStrPTM = 'g.feature.' + this.mutcodes[ptm.replaceAll(' ', '_')] + '.' +
               ptm.replaceAll(' ', '_').replaceAll(')', '\\)').replaceAll('(', '\\(') + ' rect.feature';
             const elPTM = document.querySelectorAll(selectorStrPTM);
@@ -346,7 +322,7 @@ export class PvizAspect {
           });
 
           //observed PTMS
-          const listsObservedPtms = [];
+          const listsObservedPtms: { [ptm: string]: any } = [];
 
           if (this.jsonObs !== null) {
             this.obsChoices.forEach((ptm) => {
@@ -376,13 +352,13 @@ export class PvizAspect {
   }
 
   // mapping objects for sequence rendering
-  cdrMapping(cdrScheme) {
+  cdrMapping(cdrScheme: InputBase) {
     this.cdrScheme = cdrScheme;
-    const cdrMap = {};
+    const cdrMap: { [chain: string]: PvizCdrType } = {};
     const chains = Object.keys(this.pVizParams.seq);
     chains.forEach((chain) => {
-      const cdrFeatureMap = [];
-      const cdrRanges = this.json.cdr_ranges[this.cdrScheme.value + '_CDR' + chain + '_ranges'];
+      const cdrFeatureMap: CdrFeatureType[] = [];
+      const cdrRanges: PointType[] = this.json.cdr_ranges[this.cdrScheme.value + '_CDR' + chain + '_ranges'];
       if (this.cdrScheme.value !== 'default') {
         Object.values(cdrRanges).forEach((range) => {
           cdrFeatureMap.push({
@@ -401,23 +377,23 @@ export class PvizAspect {
     this.pVizParams.cdrMap = (cdrMap);
   }
 
-  parMapping(paratopes) {
+  parMapping(paratopes: InputBase) {
     this.paratopes = paratopes;
-    const parMap = {};
+    const parMap: { [chain: string]: PvizParType } = {};
     const chains = Object.keys(this.pVizParams.seq);
-    chains.forEach((chain) => {
-      const parFeatureMap = [];
-      const parColorArr = [];
-      const parElObj = [];
-      const parProbObj = [];
-      const palette = MiscMethods.interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
+    chains.forEach((chain: string) => {
+      const parFeatureMap: ParFeatureType[] = [];
+      const parColorArr: string[] = [];
+      const parElObj: string[] = [];
+      const parProbObj: number[] = [];
+      const palette: string[] = MiscMethods.interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
 
       Object.keys(this.json.parapred_predictions[chain]).forEach((index) => {
         parFeatureMap.push({
           category: 'Paratope predictions',
           type: 'P',
-          start: index,
-          end: index,
+          start: parseInt(index),
+          end: parseInt(index),
           text: '',
           improbable: true,
         });
@@ -438,19 +414,20 @@ export class PvizAspect {
   };
 
   denMapping() {
-    const denMap = {};
+    const denMap: { [chain: string]: PvizDenType } = {};
     const chains = Object.keys(this.pVizParams.seq);
-    chains.forEach((chain) => {
-      let denFeatureMap = [];
+    chains.forEach((chain: string) => {
+      let denFeatureList: number[] = [];
+      let denFeatureMap: DenFeatureType[] = [];
       let denColorArr = new Array(this.pVizParams.seq[chain].length).fill(-1);
       let denPtmArr = new Array(this.pVizParams.seq[chain].length).fill([]);
       const palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
-      Object.keys(this.json.ptm_predictions[chain]).forEach((ptm) => {
+      Object.keys(this.json.ptm_predictions[chain]).forEach((ptm: string) => {
         if (this.json.ptm_predictions[chain][ptm][0][1] <= 1) {
-          this.json.ptm_predictions[chain][ptm].forEach((point) => {
-            if (!(denFeatureMap.includes(point[0])))
-              denFeatureMap.push(point[0]);
+          this.json.ptm_predictions[chain][ptm].forEach((point: PointType) => {
+            if (!(denFeatureList.includes(point[0])))
+              denFeatureList.push(point[0]);
 
             denColorArr[point[0]] = denColorArr[point[0]] == -1 ?
               (point[1] > 1 ? point[1] / 100 : point[1]) :
@@ -460,9 +437,9 @@ export class PvizAspect {
         }
       });
 
-      denFeatureMap.sort((a, b) => a - b);
-      const denElObj = denFeatureMap.slice();
-      denFeatureMap = denFeatureMap.map(function(ft) {
+      denFeatureList.sort((a, b) => a - b);
+      const denElObj = denFeatureList.slice();
+      denFeatureMap = denFeatureList.map(function(ft) {
         return {
           groupSet: 'Predicted PTM density',
           category: '',
@@ -499,26 +476,26 @@ export class PvizAspect {
     this.pVizParams.denMap = (denMap);
   }
 
-  ptmMapping(ptmChoices, prob) {
+  ptmMapping(ptmChoices: string[], prob: number) {
     this.ptmChoices = ptmChoices;
     this.ptmProb = prob;
 
-    const ptmMap = {};
-    const chains = Object.keys(this.pVizParams.seq);
-    chains.forEach((chain) => {
-      const ptmFeatureMap = [];
-      const ptmColorObj = {};
-      const ptmElObj = {};
-      const ptmProbObj = {};
-      const palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
+    const ptmMap: { [chain: string]: PvizPtmType } = {};
+    const chains: string[] = Object.keys(this.pVizParams.seq);
+    chains.forEach((chain: string) => {
+      const ptmFeatureMap: PtmFeatureType[] = [];
+      const ptmColorObj: { [ptm: string]: string[] } = {};
+      const ptmElObj: { [ptm: string]: number[] } = {};
+      const ptmProbObj: { [ptm: string]: number[] } = {};
+      const palette: string[] = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
-      this.ptmChoices.forEach((ptm) => {
-        const ptmArray = this.json.ptm_predictions[chain][ptm.replace(' ', '_')];
+      this.ptmChoices.forEach((ptm: string) => {
+        const ptmArray: PointType[] = this.json.ptm_predictions[chain][ptm.replace(' ', '_')];
         if (ptmArray !== undefined) {
-          const ptmColorArr = [];
-          const ptmElArr = [];
-          const ptmProbArr = [];
-          ptmArray.forEach((point) => {
+          const ptmColorArr: string[] = [];
+          const ptmElArr: number[] = [];
+          const ptmProbArr: number[] = [];
+          ptmArray.forEach((point: PointType) => {
             if (point[1] > prob) {
               ptmFeatureMap.push({
                 groupSet: 'Predicted PTMs',
@@ -550,24 +527,24 @@ export class PvizAspect {
     this.pVizParams.ptmMap = (ptmMap);
   }
 
-  motMapping(ptmChoices, prob) {
+  motMapping(ptmChoices: string[], prob: number) {
     this.motChoices = ptmChoices;
-    const motMap = {};
-    const chains = Object.keys(this.pVizParams.seq);
-    chains.forEach((chain) => {
-      const ptmFeatureMap = [];
-      const ptmColorObj = {};
-      const ptmElObj = {};
-      const ptmProbObj = {};
-      const palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
+    const motMap: { [chain: string]: PvizMotType } = {};
+    const chains: string[] = Object.keys(this.pVizParams.seq);
+    chains.forEach((chain: string) => {
+      const ptmFeatureMap: PtmFeatureType[] = [];
+      const ptmColorObj: { [ptm: string]: string[] } = {};
+      const ptmElObj: { [ptm: string]: number[] } = {};
+      const ptmProbObj: { [ptm: string]: number[] } = {};
+      const palette: string[] = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
-      ptmChoices.forEach((ptm) => {
+      ptmChoices.forEach((ptm: string) => {
         const ptmArray = this.json.ptm_predictions[chain][ptm.replaceAll(' ', '_')];
         if (ptmArray !== undefined) {
-          const ptmColorArr = [];
-          const ptmElArr = [];
-          const ptmProbArr = [];
-          ptmArray.forEach((point) => {
+          const ptmColorArr: string[] = [];
+          const ptmElArr: number[] = [];
+          const ptmProbArr: number[] = [];
+          ptmArray.forEach((point: number[]) => {
             if (point[1] > prob) {
               ptmFeatureMap.push({
                 groupSet: 'Predicted PTMs',
@@ -599,23 +576,23 @@ export class PvizAspect {
     this.pVizParams.motMap = (motMap);
   }
 
-  obsMapping(ptmChoices) {
+  obsMapping(ptmChoices: string[]) {
     this.obsChoices = ptmChoices;
-    const obsMap = {};
+    const obsMap: { [chain: string]: any } = {};
     const chains = Object.keys(this.pVizParams.seq);
     const palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
     chains.forEach((chain) => {
-      const obsFeatureMap = [];
-      const obsColorObj = {};
-      const obsElObj = {};
-      const obsProbObj = {};
+      const obsFeatureMap: ObsFeatureType[] = [];
+      const obsColorObj: { [ptm: string]: any[] } = {};
+      const obsElObj: { [ptm: string]: any[] } = {};
+      const obsProbObj: { [pos: string]: [string[], number[]] } = {};
 
-      ptmChoices.forEach((ptm) => {
+      ptmChoices.forEach((ptm: string) => {
         const ptmTree = this.jsonObs[chain][ptm.replace(' ', '_')];
         if (ptmTree !== undefined) {
-          const obsColorArr = [];
-          const obsElArr = [];
+          const obsColorArr: any[] = [];
+          const obsElArr: any[] = [];
           const obsTypesArr = [];
           const obsTypesProbsArr = [];
 
@@ -626,11 +603,11 @@ export class PvizAspect {
           });
 
           obsElArr.forEach((position) => {
-            const types = [];
-            const typesProbs = [];
+            const types: string[] = [];
+            const typesProbs: number[] = [];
             let prob = -1;
             Object.keys(ptmTree).forEach((type) => {
-              const point = this.jsonObs[chain][ptm][type];
+              const point: number[] = this.jsonObs[chain][ptm][type];
               if (point[0] === position) {
                 types.push(type);
                 typesProbs.push(point[1]);
@@ -669,13 +646,12 @@ export class PvizAspect {
     this.pVizParams.obsMap = (obsMap);
   }
 
-  applyGradient(gradientObj) {
+  applyGradient(gradientObj: { [ptmTrack: string]: string[] }) {
     Object.keys(gradientObj).forEach((ptmTrack) => {
       const selectorStr = 'g.feature.' + ptmTrack + ' rect.feature';
-      const el = document.querySelectorAll(selectorStr);
-      for (let i = 0; i < el.length; i++) {
-        //@ts-ignore
-        el[i].style.fill = gradientObj[ptmTrack][i];
+      const elList = document.querySelectorAll<SVGRectElement>(selectorStr);
+      for (let i = 0; i < elList.length; i++) {
+        elList[i].style.fill = gradientObj[ptmTrack][i];
       }
     });
   }

@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {encode as encodeToBase64, decode as decodeFromBase64} from 'uint8-to-base64';
+// import {encode as encodeToBase64, decode as decodeFromBase64} from 'uint8-to-base64';
 
 import {
   catchToLog,
@@ -74,7 +74,7 @@ export class DataLoaderFiles extends DataLoader {
     return ((Date.now() - this._startInit) / 1000).toString();
   }
 
-  public constructor(mlbQueries: DataQueryDict, serverListVersionDf: DG.DataFrame) {
+  public constructor(mlbQueries: DataQueryDict, serverListVersionDf?: DG.DataFrame) {
     super();
 
     this._cache = new MlbDatabase(serverListVersionDf);
@@ -181,13 +181,13 @@ export class DataLoaderFiles extends DataLoader {
       this.loadFileJson(DataLoaderFiles._files.example).then((value) => {
         return value as JsonType;
       }),
-      this.loadFileJson(DataLoaderFiles._files.examplePDB).then((value) => {
-        return value['pdb'];
+      this.loadFileJson(DataLoaderFiles._files.examplePDB).then((value: { [key: string]: any }) => {
+        return value['pdb'] as string;
       }),
       this.loadFileJson(DataLoaderFiles._files.realNums).then((value) => {
         return value as NumsType;
       }),
-      this.loadFileJson(DataLoaderFiles._files.exampleOptm).then((value) => {
+      this.loadFileJson(DataLoaderFiles._files.exampleOptm).then((value: { [key: string]: any }) => {
         return value['ptm_observed'] as ObsPtmType;
       }),
     ]);

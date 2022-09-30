@@ -2,12 +2,13 @@
 // import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
 import {TreeAnalyzer, PhylocanvasTreeNode, mlbTreeNodeRe} from './utils/tree-stats';
 
 /** Code of tree browser before using Phylocanvas from lstolbov 2022-06-22 */
 export class TreeBrowserOld2 {// extends DG.JsViewer {
-  static treeGridColumnsNameMapping = {
+  static treeGridColumnsNameMapping: { [key: string]: { name: string, dType: string } } = {
     totalLeaves: {name: 'Leaves', dType: 'int'},
     leavesIntersected: {name: 'Intersected', dType: 'int'},
     totalSubtreeLength: {name: 'Height', dType: 'double'},
@@ -68,7 +69,7 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
    * @param {DG.GridCellRenderArgs} args Cell arguments.
    */
   private _onTreeGridCellRender(args: DG.GridCellRenderArgs) {
-    if (args.cell.isTableCell && args.cell.tableColumn.semType == this.treeSemanticType) {
+    if (args.cell.isTableCell && args.cell.tableColumn!.semType == this.treeSemanticType) {
       const nwk: string = args.cell.cell.value;
       if (TreeAnalyzer.newickRegEx.test(nwk.trim())) {
         //const ctx = args.g.canvas.getContext('webgl').canvas;
@@ -129,7 +130,7 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
           'Tree leaves found also in the main taible',
         [TreeBrowserOld2.treeGridColumnsNameMapping.totalSubtreeLength.name]: 'Tree height',
       };
-      ui.tooltip.show(msg[cell.tableColumn.name] ?? cell.tableColumn.name, x, y);
+      ui.tooltip.show(msg[cell.tableColumn!.name] ?? cell.tableColumn!.name, x, y);
       return true;
     }
   }
@@ -144,21 +145,23 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
     const itemsToFind = this._calcFilteredItems();
     this.treeAnalyser = new TreeAnalyzer(itemsToFind);
     this.treeAnalyser.addNodeInspector(this._collectLeavesMapping.bind(this));
-    const treesColumn = this.dataFrame.col(treesColumnName);
+    const treesColumn: DG.Column = this.dataFrame.getCol(treesColumnName);
     const stats = this.treeAnalyser.analyze(treesColumn.toList());
-    const df = DG.DataFrame.fromColumns(baseColumnNames.map((v) => this.dataFrame.col(v)));
+    const df: DG.DataFrame = DG.DataFrame.fromColumns(
+      baseColumnNames.map((colName: string) => this.dataFrame.getCol(colName)));
     for (const k of Object.keys(stats)) {
-      const col = TreeBrowserOld2.treeGridColumnsNameMapping[k];
-      (df.columns as DG.ColumnList).add(DG.Column.fromList(col.dType, col.name, stats[k]));
+      const col: { name: string, dType: string } = TreeBrowserOld2.treeGridColumnsNameMapping[k];
+      (df.columns as DG.ColumnList).add(DG.Column.fromList(col.dType as DG.ColumnType, col.name, stats[k]));
     }
     // TODO: fix this ad hoc.
     // df.rows.removeAt(0);
     (df.columns as DG.ColumnList).add(treesColumn);
-    df.col(treesColumnName).semType = this.treeSemanticType;
+    df.getCol(treesColumnName).semType = this.treeSemanticType;
     const grid = DG.Viewer.grid(df, {
       //rowHeight: 160,
     });
-    grid.col('TREE').visible = false;
+    grid.col('TREE')!.visible = false; // this.treeColumnName
+
     grid.onCellRender.subscribe(this._onTreeGridCellRender.bind(this));
     grid.onCellTooltip(this.onTreeGridCellTooltip.bind(this));
     return grid;
@@ -171,7 +174,7 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
    * @return {DG.DataFrame} Modified data frame.
    */
   private _modifyTreeColumn(df: DG.DataFrame, treeColumnName: string = 'TREE'): DG.DataFrame {
-    const treeCol = df.col(treeColumnName);
+    const treeCol = df.getCol(treeColumnName);
     const trees = treeCol.toList().map((v) => this._modifyTreeNodeIds(v));
     (df.columns as DG.ColumnList).replace(treeColumnName, DG.Column.fromStrings(treeColumnName, trees));
     return df;
@@ -247,7 +250,7 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
    * @return {TreeLeavesMap} Mapping.
    */
   private _collectMappings(): TreeLeavesMap {
-    const col = this.mlbView.dataFrame.col(this.idColumnName);
+    const col: DG.Column = this.mlbView.dataFrame.getCol(this.idColumnName);
     const mapper: TreeLeavesMap = {};
     for (let i = 0; i < col.length; ++i) {
       const id: string = col.get(i);
@@ -269,8 +272,8 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
     for (const [vId, indices] of Object.entries(this.vIdIndex)) {
       if (this.leavesIndex[vId]) {
         for (const i of indices) {
-          const values: string = col.get(i);
-          const unique = new Set(values ? values.split('|').filter((v) => v.length > 0) : []);
+          const values: string | null = col.get(i);
+          const unique = new Set(!!values ? values.split('|').filter((v) => v.length > 0) : []);
           for (const v of this.leavesIndex[vId]) {
             const cloneId = this._getCloneIdAt(v);
             unique.add(cloneId);
@@ -290,7 +293,7 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
       if (node.label) {
         const nodeId: string = node?.label;
         const df = this.mlbView.dataFrame;
-        const col = df.col(this.idColumnName);
+        const col = df.getCol(this.idColumnName);
         df.selection.init((i) => (col.get(i) as string).includes(nodeId));
         if (df.selection.trueCount > 0)
           df.currentRowIdx = df.selection.getSelectedIndexes()[0];
@@ -305,18 +308,18 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
    * @param {string} [node] Node id to select.
    */
   selectTree(index: number, node?: string) {
-    const cloneId = this._getCloneIdAt(index);
-    const treeItems = this.cloneIndex[cloneId].items;
+    const cloneId: string = this._getCloneIdAt(index);
+    const treeItems: string[] = this.cloneIndex[cloneId].items;
     this.treeGrid.dataFrame.currentRowIdx = index;
     this.phyloTreeViewer.setProps({source: this._takeTreeAt(index)});
     /**
      * Modifies node styles to mark intersected node ids.
      * @return {any}
      */
-    const _modifyNodeStyles = function() {
+    const _modifyNodeStyles = () => {
       let styles = {};
       for (const item of treeItems) {
-        const style = {};
+        const style: { [item: string]: { [property: string]: any } } = {};
         if (this.vIdIndex[item]) {
           const color = this.treeAnalyser.getItemsAsSet().has(item) ? '#0000FF' : '#FF0000';
           style[item] = {fillColour: color};
@@ -326,7 +329,7 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
         styles = {...styles, ...style};
       }
       return styles;
-    }.bind(this);
+    };
     this.phyloTreeViewer.setProps({styles: _modifyNodeStyles(), selectedIds: node ? [node] : []});
   }
 

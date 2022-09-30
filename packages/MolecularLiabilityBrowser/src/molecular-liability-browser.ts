@@ -2,7 +2,15 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {DataLoader, FilterPropertiesType, JsonType, NumsType, ObsPtmType, PdbType} from './utils/data-loader';
+import {
+  DataLoader,
+  DataLoaderType,
+  FilterPropertiesType,
+  JsonType,
+  NumsType,
+  ObsPtmType,
+  PdbType
+} from './utils/data-loader';
 import {Subscription, Unsubscribable} from 'rxjs';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 import {VdRegionsViewer} from '@datagrok/bio/src/viewers/vd-regions-viewer';
@@ -11,7 +19,7 @@ import {getVId, TreeAnalyzer} from './utils/tree-stats';
 import {MiscMethods} from './viewers/misc';
 import {TwinPviewer} from './viewers/twin-p-viewer';
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
-import {_startInit} from './package';
+import {_properties, _startInit} from './package';
 import {MlbEvents} from './const';
 import {Tree3Browser} from './tree3';
 
@@ -24,56 +32,56 @@ export class MolecularLiabilityBrowser {
 
   // uriParser: HTMLAnchorElement;
   baseUri: string = '/apps/MolecularLiabilityBrowser/MolecularLiabilityBrowser/';
-  urlParams: URLSearchParams = null;
+  urlParams: URLSearchParams = new URLSearchParams();
 
-  antigenDf: DG.DataFrame = null;
-  pf: FilterPropertiesType = null;
-  antigenName: string = null;
-  schemeName: string = null;
-  cdrName: string = null;
-  treeName: string = null;
+  antigenDf: DG.DataFrame;
+  pf: FilterPropertiesType;
+  antigenName: string;
+  schemeName: string;
+  cdrName: string;
+  treeName?: string;
 
-  schemeChoices: string[] = null;
-  cdrChoices: string[] = null;
+  schemeChoices: string[] = [];
+  cdrChoices: string[] = [];
 
   /** Current antibody selected molecule */
-  vid: string = null;
+  vid: string | null = null;
 
-  refDf: DG.DataFrame = null; // from file ptm_in_cdr.d42
-  hChainDf: DG.DataFrame = null;
-  lChainDf: DG.DataFrame = null;
+  refDf?: DG.DataFrame; // from file ptm_in_cdr.d42
+  hChainDf?: DG.DataFrame;
+  lChainDf?: DG.DataFrame;
 
-  vids: string[] = null;
-  vidsObsPTMs: string[] = null;
+  vids: string[] = [];
+  vidsObsPTMs: string[] = [];
 
-  allVids: DG.Column = null;
-  allIds: DG.Column = null;
+  allVids?: DG.Column;
+  allIds: DG.Column | null;
   idMapping: { [key: string]: string []; };
 
   subs: Unsubscribable[] = [];
 
-  mlbView: DG.TableView = null;
-  mlbGrid: DG.Grid = null;
-  mlbGridDn: DG.DockNode = null;
-  filterHost: HTMLElement = null;
-  filterHostDn: DG.DockNode = null;
-  filterView: DG.FilterGroup = null;
-  filterViewDn: DG.DockNode = null;
-  regionsViewer: VdRegionsViewer = null;
-  treeBrowser: TreeBrowser = null;
-  tree3Browser: Tree3Browser = null;
+  mlbView: DG.TableView | null = null;
+  mlbGrid: DG.Grid;
+  mlbGridDn: DG.DockNode;
+  filterHost: HTMLElement;
+  filterHostDn: DG.DockNode;
+  filterView: DG.FilterGroup | null = null;
+  filterViewDn: DG.DockNode | null = null;
+  regionsViewer: VdRegionsViewer;
+  treeBrowser: TreeBrowser;
+  tree3Browser: Tree3Browser;
   twinPviewer: TwinPviewer;
 
-  reloadIcon: HTMLElement = null;
-  antigenInput: DG.InputBase<string> = null;
-  antigenClonesFilterInput: DG.InputBase<boolean> = null;
-  antigenPopup: HTMLElement = null;
-  schemeInput: DG.InputBase<string> = null;
-  cdrInput: DG.InputBase<string> = null;
-  treeInput: DG.InputBase<string> = null;
-  treePopup: HTMLElement = null;
-  treeGrid: DG.Grid = null;
-  hideShowIcon: HTMLElement = null;
+  reloadIcon: HTMLElement;
+  antigenInput: DG.InputBase<string>;
+  antigenClonesInput: DG.InputBase<boolean | null>;
+  antigenPopup: HTMLElement;
+  schemeInput: DG.InputBase<string | null | undefined>;
+  cdrInput: DG.InputBase<string | null | undefined>;
+  treeInput: DG.InputBase<string>;
+  treePopup: HTMLElement;
+  treeGrid: DG.Grid;
+  hideShowIcon: HTMLElement;
 
   constructor(dataLoader: DataLoader) {
     this.dataLoader = dataLoader;
@@ -100,20 +108,20 @@ export class MolecularLiabilityBrowser {
         const antigenUrlParam = this.urlParams.get('antigen');
         // By default, if antigen is not specified in the url
         // we display the beautiful one 'IAPW8' (with a spreading tree)
-        return antigenUrlParam || 'IAPW8';
+        return antigenUrlParam || (_properties['DataSource']) == DataLoaderType.Test ? 'A1' : 'IAPW8';
       })();
 
       this.schemeName = ((): string => {
-        const schemeUrlParam = this.urlParams.get('scheme');
+        const schemeUrlParam: string = this.urlParams.get('scheme') ?? 'no value';
         return this.schemeChoices.includes(schemeUrlParam) ? schemeUrlParam : this.schemeChoices[0];
       })();
       this.cdrName = ((): string => {
-        const cdrUrlParam = this.urlParams.get('cdr');
+        const cdrUrlParam: string = this.urlParams.get('cdr') ?? 'no value';
         return this.cdrChoices.includes(cdrUrlParam) ? cdrUrlParam : this.cdrChoices[0];
       })();
 
-      this.treeName = ((): string => {
-        const treeUrlParam = this.urlParams.get('tree');
+      this.treeName = ((): string | undefined => {
+        const treeUrlParam: string | undefined = this.urlParams.get('tree') ?? undefined;
         return treeUrlParam;
       })();
 
@@ -171,12 +179,12 @@ export class MolecularLiabilityBrowser {
   setAntigenInput(agDf: DG.DataFrame): DG.InputBase {
     this.antigenInput = ui.stringInput('AG', '', null,
       {clearIcon: true, escClears: true, placeholder: this.antigenName ?? 'antigen filter'});
-    this.antigenClonesFilterInput = ui.boolInput('clones', false);
-    ui.tooltip.bind(this.antigenClonesFilterInput.root, 'Filter antigens with clones');
+    this.antigenClonesInput = ui.boolInput('clones', false);
+    ui.tooltip.bind(this.antigenClonesInput.root, 'Filter antigens with clones');
 
-    const agCol: DG.Column = agDf.col('antigen');
-    const gsCol: DG.Column = agDf.col('antigen_gene_symbol');
-    const clonesCol: DG.Column = agDf.col('clones');
+    const agCol: DG.Column = agDf.getCol('antigen');
+    const gsCol: DG.Column = agDf.getCol('antigen_gene_symbol');
+    const clonesCol: DG.Column = agDf.getCol('clones');
     const agDfGrid: DG.Grid = agDf.plot.grid({
       allowEdit: false,
       allowRowSelection: false,
@@ -186,11 +194,11 @@ export class MolecularLiabilityBrowser {
       allowBlockSelection: false,
       showRowHeader: false,
     });
-    const idGCol: DG.GridColumn = agDfGrid.col('id');
-    const agGCol: DG.GridColumn = agDfGrid.col('antigen');
-    const ncbiGCol: DG.GridColumn = agDfGrid.col('antigen_ncbi_id');
-    const gsGCol: DG.GridColumn = agDfGrid.col('antigen_gene_symbol');
-    const clonesGCol: DG.GridColumn = agDfGrid.col('clones');
+    const idGCol: DG.GridColumn = agDfGrid.col('id')!;
+    const agGCol: DG.GridColumn = agDfGrid.col('antigen')!;
+    const ncbiGCol: DG.GridColumn = agDfGrid.col('antigen_ncbi_id')!;
+    const gsGCol: DG.GridColumn = agDfGrid.col('antigen_gene_symbol')!;
+    const clonesGCol: DG.GridColumn = agDfGrid.col('clones')!;
     agGCol.name = 'Antigen';
     agGCol.width = 90;
     gsGCol.name = 'Gene symbol';
@@ -204,28 +212,34 @@ export class MolecularLiabilityBrowser {
 
     // Do not push to this.viewSubs to prevent unsubscribe on this.destroyView()
     this.subs.push(agDf.onCurrentRowChanged.subscribe(() => {
-      this.antigenPopup.hidden = true;
+      this.antigenPopup!.hidden = true;
 
       const antigenName: string = agCol.get(agDf.currentRow.idx);
       // window.setTimeout is used to adapt call async loadData() from handler (not async)
       this.onAntigenChanged(antigenName);
     }));
 
-    const antigenFilterCallback = function() {
+    const antigenFilterCallback = () => {
+      if (!this.antigenInput || !this.antigenClonesInput)
+        return;
+
       console.debug('MLB: MolecularLiabilityBrowser.setAntigenInput.antigenFilterCallback() ' +
         `this.antigenInput.value = '${this.antigenInput.value}', ` +
-        `this.antigenClonesFilterInput.value = ${this.antigenClonesFilterInput.value}`);
+        `this.antigenClonesFilterInput.value = ${this.antigenClonesInput.value}`);
+
+      const antigenInputValue: string = this.antigenInput.value;
+      const antigenClonesInputValue: boolean = this.antigenClonesInput.value ?? false;
 
       /* Here we filter dataframe with antigens */
       agDf.filter.init((iRow: number) => {
         return (
-          agCol.get(iRow).includes(this.antigenInput.value) ||
-          gsCol.get(iRow).includes(this.antigenInput.value)
-        ) && (!this.antigenClonesFilterInput.value || clonesCol.get(iRow) > 0);
+          agCol.get(iRow).includes(antigenInputValue) ||
+          gsCol.get(iRow).includes(antigenInputValue)
+        ) && (!antigenClonesInputValue || clonesCol.get(iRow) > 0);
       });
-    }.bind(this);
+    };
     this.subs.push(this.antigenInput.onInput(antigenFilterCallback));
-    this.subs.push(this.antigenClonesFilterInput.onInput(antigenFilterCallback));
+    this.subs.push(this.antigenClonesInput.onInput(antigenFilterCallback));
 
     // this.agInput.root.addEventListener('focusout', (event: FocusEvent) => {
     //   let k = 11;
@@ -238,17 +252,17 @@ export class MolecularLiabilityBrowser {
     // });
 
     this.antigenInput.root.addEventListener('mousedown', (event: MouseEvent) => {
-      this.antigenPopup.hidden = false;
-      ui.showPopup(this.antigenPopup, this.antigenInput.root);
+      this.antigenPopup!.hidden = false;
+      ui.showPopup(this.antigenPopup!, this.antigenInput!.root);
     });
 
     return this.antigenInput;
   }
 
   setSchemeInput(): DG.InputBase {
-    this.schemeInput = ui.choiceInput('Scheme', this.schemeName, this.schemeChoices, () => {
+    this.schemeInput = ui.choiceInput('Scheme', this.schemeName, this.schemeChoices!, () => {
       // this.regionsViewer.setScheme(this.schemeInput.value);
-      this.onSchemeChanged(this.schemeInput.value);
+      this.onSchemeChanged(this.schemeInput.value!);
     });
 
     return this.schemeInput;
@@ -256,14 +270,14 @@ export class MolecularLiabilityBrowser {
 
   setCdrInput(): DG.InputBase {
     this.cdrInput = ui.choiceInput('CDR', this.cdrName, this.cdrChoices, () => {
-      this.onCdrChanged(this.cdrInput.value);
+      this.onCdrChanged(this.cdrInput.value!);
     });
 
     return this.cdrInput;
   }
 
   setTreeInput(): DG.InputBase {
-    this.treeInput = ui.stringInput('Tree', this.treeName, null, {});
+    this.treeInput = ui.stringInput('Tree', this.treeName ?? '', null, {});
 
     const tempDf = DG.DataFrame.fromCsv('');
 
@@ -287,18 +301,18 @@ export class MolecularLiabilityBrowser {
     this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
 
     grok.events.onCustomEvent('closeAllDock').subscribe(async () => {
-      await this.twinPviewer.close(this.mlbView);
+      await this.twinPviewer.close(this.mlbView!);
       this.hideShowIcon.classList.value = 'grok-icon fal fa-eye-slash';
     });
 
     grok.events.onCustomEvent('showAllDock').subscribe(async (v) => {
-      await this.twinPviewer.open(this.mlbView);
+      await this.twinPviewer.open(this.mlbView!);
       this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
     });
   }
 
   setRibbonPanels(): void {
-    this.mlbView.ribbonMenu.clear();
+    this.mlbView!.ribbonMenu.clear();
 
     this.setReloadInput();
     this.setAntigenInput(this.antigenDf);
@@ -307,10 +321,10 @@ export class MolecularLiabilityBrowser {
     this.setTreeInput();
     this.setHideShowIcon();
 
-    this.mlbView.setRibbonPanels([
+    this.mlbView!.setRibbonPanels([
       [this.reloadIcon],
       [],
-      [this.antigenInput.root, this.antigenClonesFilterInput.root],
+      [this.antigenInput.root, this.antigenClonesInput.root],
       [this.schemeInput.root],
       [this.cdrInput.root],
       [],
@@ -357,8 +371,8 @@ export class MolecularLiabilityBrowser {
         DG.JOIN_TYPE.LEFT, true);
 
       // crutch, because grok.data.joinTables() loses right table columns tags
-      df.col(seqCol.name).setTag('positionNames', chain.df.col(seqCol.name).getTag('positionNames'));
-      df.col(seqCol.name).setTag('numberingScheme', numberingScheme);
+      df.getCol(seqCol.name).setTag('positionNames', chain.df.getCol(seqCol.name).getTag('positionNames'));
+      df.getCol(seqCol.name).setTag('numberingScheme', numberingScheme);
     });
 
     // Adding columns after tableView breaks display (no columns show)
@@ -409,7 +423,7 @@ export class MolecularLiabilityBrowser {
       return nwk;
     }
 
-    const treeCol = df.col(treeColumnName);
+    const treeCol = df.getCol(treeColumnName);
     const trees = treeCol.toList().map((v) => _modifyTreeNodeIds(v));
     (df.columns as DG.ColumnList).replace(treeColumnName, DG.Column.fromStrings(treeColumnName, trees));
 
@@ -451,9 +465,9 @@ export class MolecularLiabilityBrowser {
 
   // -- View --
 
-  private _mlbDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
+  private _mlbDf: DG.DataFrame = DG.DataFrame.fromObjects([])!;
   private _regions: VdRegion[] = [];
-  private _treeDf: DG.DataFrame = DG.DataFrame.fromObjects([]);
+  private _treeDf: DG.DataFrame = DG.DataFrame.fromObjects([])!;
   private _predictedPtmDf: DG.DataFrame;
   private _observedPtmDf: DG.DataFrame;
 
@@ -470,7 +484,8 @@ export class MolecularLiabilityBrowser {
   get observedPtmDf(): DG.DataFrame { return this._observedPtmDf; }
 
   async setData(
-    mlbDf: DG.DataFrame, treeDf: DG.DataFrame, regions: VdRegion[], predictedPtmDf, observedPtmDf
+    mlbDf: DG.DataFrame, treeDf: DG.DataFrame, regions: VdRegion[],
+    predictedPtmDf: DG.DataFrame, observedPtmDf: DG.DataFrame
   ): Promise<void> {
     console.debug(`MLB: MolecularLiabilityBrowser.setData() start, ${((Date.now() - _startInit) / 1000).toString()} s`);
     await this.destroyView();
@@ -491,18 +506,18 @@ export class MolecularLiabilityBrowser {
     grok.shell.windows.showProperties = false;
     grok.shell.windows.showHelp = false;
 
-    this.mlbView.name = 'Molecular Liability Browser';
+    this.mlbView!.name = 'Molecular Liability Browser';
     for (const column of this.mlbDf.columns) {
-      const gridColumn: DG.GridColumn = this.mlbView.grid.columns.byName(column.name);
+      const gridColumn: DG.GridColumn = this.mlbView!.grid.columns.byName(column.name)!;
       gridColumn.name = column.name.replaceAll('_', ' ');
     }
 
-    this.mlbView.grid.columns.byName('v id')!.width = 120;
-    this.mlbView.grid.columns.byName('v id')!.cellType = 'html';
+    this.mlbView!.grid.columns.byName('v id')!.width = 120;
+    this.mlbView!.grid.columns.byName('v id')!.cellType = 'html';
 
     //table visual polishing
     this.subs.push(
-      this.mlbView.grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => {
+      this.mlbView!.grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => {
         if (args.cell.isColHeader) {
           if (args.cell.gridColumn.visible) {
             const textSize = args.g.measureText(args.cell.gridColumn.name);
@@ -515,7 +530,7 @@ export class MolecularLiabilityBrowser {
         }
       }));
 
-    this.mlbView.grid.onCellPrepare((gc) => {
+    this.mlbView!.grid.onCellPrepare((gc) => {
       if (gc.isTableCell && gc.gridColumn.name === 'v id') {
         if (this.vids.includes(gc.cell.value.toString())) {
           gc.style.element = ui.divV(
@@ -532,8 +547,10 @@ export class MolecularLiabilityBrowser {
     });
 
     // set width for columns of properties filter
-    for (const pfName of this.pf.names)
-      this.mlbGrid.col(pfName).width = 150;
+    for (const pfName of this.pf.names) {
+      const gc: DG.GridColumn | null = this.mlbGrid.col(pfName);
+      if (gc) gc.width = 150;
+    }
   }
 
   setViewFilters(): void {
@@ -607,7 +624,7 @@ export class MolecularLiabilityBrowser {
     //     })()
     //   ]));
     const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]:
-      [JsonType, string, NumsType, ObsPtmType] = await this.dataLoader.load3D(this.vid);
+      [JsonType, string, NumsType, ObsPtmType] = await this.dataLoader.load3D(this.vid!);
 
     const hNumberingStr = jsonNums.heavy_numbering;
     const lNumberingStr = jsonNums.light_numbering;
@@ -627,8 +644,8 @@ export class MolecularLiabilityBrowser {
     this.twinPviewer = new TwinPviewer(this.dataLoader);
     this.twinPviewer.init(jsonStr, pdbStr, jsonStrObsPtm);
 
-    await this.twinPviewer.open(this.mlbView);
-    await this.twinPviewer.show(this.mlbView);
+    await this.twinPviewer.open(this.mlbView!);
+    await this.twinPviewer.show(this.mlbView!);
 
     grok.events.fireCustomEvent(MlbEvents.CdrChanged, this.cdrName);
   }
@@ -646,7 +663,7 @@ export class MolecularLiabilityBrowser {
 
     // this.mlbView.dockManager.rootNode.removeChild(this.filterViewDn);
 
-    if (this.filterView !== null) {
+    if (this.filterView !== null && this.filterViewDn != null) {
       try {
         this.filterView.close();
       } catch { /* skip the erroneous exception /**/ }
@@ -658,7 +675,7 @@ export class MolecularLiabilityBrowser {
 
     this.idMapping = {};
     this.allIds = null;
-    this.allVids = null;
+    this.allVids = undefined;
 
     console.debug('MLB: MolecularLiabilityBrowser.destroyView() end, ' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
@@ -669,12 +686,16 @@ export class MolecularLiabilityBrowser {
       console.debug('MLB: MolecularLiabilityBrowser.buildView() start, ' +
         `${((Date.now() - _startInit) / 1000).toString()} s`);
 
-      this.allVids = this.mlbDf.col('v id')!;
+      this.allVids = this.mlbDf.getCol('v id');
       this.allIds = this.mlbDf.col('gdb id mappings');
 
       this.idMapping = {};
-      for (let i = 0; i < this.allVids.length; i++)
-        this.idMapping[this.allVids.get(i)] = this.allIds.get(i).replaceAll(' ', '').split(',');
+      if (this.allIds) {
+        for (let i = 0; i < this.allVids.length; i++) {
+          const ids: string[] = this.allIds.get(i).replaceAll(' ', '').split(',');
+          this.idMapping[this.allVids.get(i)] = ids;
+        }
+      }
 
       if (this.mlbView === null) {
         // this.mlbView = grok.shell.addView();
@@ -703,7 +724,7 @@ export class MolecularLiabilityBrowser {
         await this.treeBrowser.setData(this.treeDf, this.mlbDf);// fires treeDfOnCurrentRowChanged
         //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
 
-        const tempDf = DG.DataFrame.fromObjects([{}]);
+        const tempDf: DG.DataFrame = DG.DataFrame.fromObjects([{}])!;
         const t1: number = Date.now();
         this.regionsViewer = (await tempDf.plot.fromType(
           'VdRegions', {skipEmptyPositions: true})) as unknown as VdRegionsViewer;
@@ -768,16 +789,16 @@ export class MolecularLiabilityBrowser {
     console.debug('MLB: MolecularLiabilityBrowser.updateView() start,' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
 
-    this.mlbView.path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
+    this.mlbView!.path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
 
     // Leonid instructed to hide the columns
-    const mlbColumnsToHide = [].concat(...[
-      ['cdr length', 'surface cdr hydrophobicity', 'positive cdr charge', 'negative cdr charge', 'SFvCSP'],
-      ['antigen list', 'antigen ncbi id', 'antigen gene symbol'],
-      ['Heavy chain sequence', 'Light chain sequence']
-    ]);
-    for (let colI = 0; colI < this.mlbView.grid.columns.length; colI++) {
-      const gridColumn: DG.GridColumn = this.mlbView.grid.columns.byIndex(colI);
+    const mlbColumnsToHide: string[] = [
+      ...['cdr length', 'surface cdr hydrophobicity', 'positive cdr charge', 'negative cdr charge', 'SFvCSP'],
+      ...['antigen list', 'antigen ncbi id', 'antigen gene symbol'],
+      ...['Heavy chain sequence', 'Light chain sequence'],
+    ];
+    for (let colI = 0; colI < this.mlbView!.grid.columns.length; colI++) {
+      const gridColumn: DG.GridColumn = this.mlbView!.grid.columns.byIndex(colI)!;
       if (gridColumn.column !== null && mlbColumnsToHide.includes(gridColumn.column.name))
         gridColumn.visible = false;
     }
@@ -789,7 +810,7 @@ export class MolecularLiabilityBrowser {
   }
 
   updateViewTreeBrowser() {
-    const treeIndex = this.treeDf.col('CLONE').toList().findIndex((v) => v == this.treeName);
+    const treeIndex = this.treeDf.getCol('CLONE').toList().findIndex((v) => v == this.treeName);
     if (this.treeDf.rowCount > 0) {
       const treeDfIndex = treeIndex !== -1 ? treeIndex : 0;
       this.treeDf.currentRowIdx = treeDfIndex;
@@ -824,20 +845,20 @@ export class MolecularLiabilityBrowser {
     this.schemeName = schemeName;
 
     // Preventing firing the event
-    if (this.schemeInput.value != this.schemeName)
-      this.schemeInput.value = this.schemeName;
+    if (this.schemeInput!.value != this.schemeName)
+      this.schemeInput!.value = this.schemeName;
 
-    this.urlParams.set('scheme', this.schemeName);
+    this.urlParams!.set('scheme', this.schemeName);
     // window.setTimeout is used to adapt call async loadData() from handler (not async)
     window.setTimeout(async () => { await this.loadData(); }, 10);
   }
 
   onCdrChanged(cdrName: string): void {
     this.cdrName = cdrName;
-    if (this.cdrInput.value != this.cdrName)
-      this.cdrInput.value = this.cdrName;
+    if (this.cdrInput!.value != this.cdrName)
+      this.cdrInput!.value = this.cdrName;
 
-    this.urlParams.set('cdr', this.cdrName);
+    this.urlParams!.set('cdr', this.cdrName);
     // window.setTimeout is used to adapt call async loadData() from handler (not async)
     window.setTimeout(async () => {
       await this.loadData()
@@ -852,11 +873,11 @@ export class MolecularLiabilityBrowser {
 
   onTreeChanged(treeName: string): void {
     this.treeName = treeName;
-    if (this.treeInput.value != this.treeName)
-      this.treeInput.value = this.treeName;
+    if (this.treeInput!.value != this.treeName)
+      this.treeInput!.value = this.treeName;
 
-    this.urlParams.set('tree', this.treeName);
-    this.mlbView.path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
+    this.urlParams!.set('tree', this.treeName);
+    this.mlbView!.path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
 
     this.updateViewTreeBrowser();
   }
@@ -917,16 +938,19 @@ export class MolecularLiabilityBrowser {
   // --
 
   async changeVid(silent: boolean = false): Promise<void> {
-    if (!this.vids.includes(this.vid)) {
-      Object.keys(this.idMapping).every((vid) => {
-        if (this.idMapping[vid].includes(this.vid)) {
-          this.vid = vid;
-          return false;
-        }
-        return true;
-      });
+    if (!this.vid || !this.vids.includes(this.vid)) {
 
-      if (!this.vids.includes(this.vid)) {
+      if (this.vid) {
+        Object.keys(this.idMapping).every((vid) => {
+          if (this.idMapping[vid].includes(this.vid!)) {
+            this.vid = vid; // side effect
+            return false;
+          }
+          return true;
+        });
+      }
+
+      if (!this.vid || !this.vids.includes(this.vid)) {
         grok.shell.warning('No PDB data data for associated v id');
         return;
       }
@@ -936,18 +960,6 @@ export class MolecularLiabilityBrowser {
     //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
     const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
-    // const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]: [JsonType, string, NumsType, ObsPtmType] = (
-    //   await Promise.all([
-    //     this.dataLoader.loadJson(this.vid),
-    //     this.dataLoader.loadPdb(this.vid),
-    //     this.dataLoader.loadRealNums(this.vid),
-    //     ((): Promise<ObsPtmType> => {
-    //       let res: Promise<ObsPtmType> = null;
-    //       if (this.vidsObsPTMs.includes(this.vid))
-    //         res = this.dataLoader.loadObsPtm(this.vid);
-    //       return res;
-    //     })()
-    //   ]));
     const [jsonStr, pdbStr, jsonNums, jsonStrObsPtm]:
       [JsonType, string, NumsType, ObsPtmType] = await this.dataLoader.load3D(this.vid);
 
@@ -967,8 +979,8 @@ export class MolecularLiabilityBrowser {
     jsonStr['map_L'] = lNumbering;
 
     await this.twinPviewer.reset(jsonStr, pdbStr, jsonStrObsPtm);
-    await this.twinPviewer.show(this.mlbView);
-    await this.twinPviewer.open(this.mlbView);
+    await this.twinPviewer.show(this.mlbView!);
+    await this.twinPviewer.open(this.mlbView!);
 
     pi.close();
   };
