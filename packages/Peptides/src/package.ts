@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './utils/constants';
 
-import {analyzePeptidesWidget} from './widgets/analyze-peptides';
+import {analyzePeptidesWidget} from './widgets/peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {MutationCliffsViewer, MostPotentResiduesViewer} from './viewers/sar-viewer';

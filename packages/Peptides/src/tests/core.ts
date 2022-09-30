@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, expect, delay} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package-test';
-import {startAnalysis} from '../widgets/analyze-peptides';
+import {startAnalysis} from '../widgets/peptides';
 import {PeptidesModel} from '../model';
 import * as C from '../utils/constants';
 import {scaleActivity} from '../utils/misc';
@@ -14,6 +14,7 @@ category('Core', () => {
   let simpleActivityCol: DG.Column<number>;
   let simpleAlignedSeqCol: DG.Column<string>;
   let simpleScaledDf: DG.DataFrame;
+  let scalingFormula: (x: number) => number;
   let simpleScaledColName: string;
 
   let complexTable: DG.DataFrame;
@@ -34,10 +35,10 @@ category('Core', () => {
     simpleAlignedSeqCol.tags[C.TAGS.ALPHABET] = 'PT';
     simpleAlignedSeqCol.tags[DG.TAGS.UNITS] = 'fasta';
     simpleAlignedSeqCol.tags['aligned'] = 'SEQ.MSA';
-    [simpleScaledDf, simpleScaledColName] = scaleActivity('-lg', simpleTable, simpleActivityColName, true);
+    [simpleScaledDf, scalingFormula, simpleScaledColName] = scaleActivity('-lg', simpleActivityCol);
 
     model = await startAnalysis(
-      simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledDf, simpleScaledColName);
+      simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, scalingFormula, simpleScaledColName, '-lg', []);
     expect(model instanceof PeptidesModel, true);
 
     if (model != null) {
@@ -56,10 +57,10 @@ category('Core', () => {
     complexAlignedSeqCol.tags[DG.TAGS.UNITS] = 'separator';
     complexAlignedSeqCol.tags['aligned'] = 'SEQ.MSA';
     complexAlignedSeqCol.tags[C.TAGS.SEPARATOR] = '/';
-    [complexScaledDf, complexScaledColName] = scaleActivity('-lg', complexTable, complexActivityColName, true);
+    [complexScaledDf, scalingFormula, complexScaledColName] = scaleActivity('-lg', complexActivityCol);
 
     model = await startAnalysis(
-      complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledDf, complexScaledColName);
+      complexActivityCol, complexAlignedSeqCol, null, complexTable, scalingFormula, complexScaledColName, '-lg', []);
     expect(model instanceof PeptidesModel, true);
 
     if (model != null) {
@@ -77,10 +78,10 @@ category('Core', () => {
     simpleAlignedSeqCol.tags[C.TAGS.ALPHABET] = 'PT';
     simpleAlignedSeqCol.tags[DG.TAGS.UNITS] = 'fasta';
     simpleAlignedSeqCol.tags['aligned'] = 'SEQ.MSA';
-    [simpleScaledDf, simpleScaledColName] = scaleActivity('-lg', simpleTable, simpleActivityColName, true);
+    [simpleScaledDf, scalingFormula, simpleScaledColName] = scaleActivity('-lg', simpleActivityCol);
 
     model = await startAnalysis(
-      simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledDf, simpleScaledColName);
+      simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, scalingFormula, simpleScaledColName, '-lg', []);
     let v = grok.shell.getTableView('Peptides analysis');
     const d = v.dataFrame;
     const layout = v.saveLayout();

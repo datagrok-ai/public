@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
 import * as rxjs from 'rxjs';
-import $ from 'cash-dom';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
@@ -393,8 +392,8 @@ export class PeptidesModel {
   }
 
   createScaledCol(activityScaling: string, splitSeqDf: DG.DataFrame): void {
-    const [scaledDf, newColName] =
-      scaleActivity(activityScaling, this.df, this.df.tags[C.COLUMNS_NAMES.ACTIVITY]);
+    const [scaledDf, _scalingFunc, newColName] =
+      scaleActivity(activityScaling, this.df.getCol(C.COLUMNS_NAMES.ACTIVITY));
     //TODO: make another func
     const scaledCol = scaledDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     scaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
@@ -758,7 +757,7 @@ export class PeptidesModel {
       const tableRowIdx = gridCell!.tableRowIndex!;
       const position = mostPotentResiduesDf.get(C.COLUMNS_NAMES.POSITION, tableRowIdx);
       const aar = mostPotentResiduesDf.get(C.COLUMNS_NAMES.MONOMER, tableRowIdx);
-      chooseAction(aar, position, ev.shiftKey);
+      chooseAction(aar, position, ev.shiftKey, false);
     });
 
     const cellChanged = (table: DG.DataFrame): void => {
@@ -951,7 +950,9 @@ export class PeptidesModel {
       return;
 
     this.df.tags[C.PEPTIDES_ANALYSIS] = 'true';
-    this.sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
+    const scaledGridCol = this.sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!;
+    scaledGridCol.name = this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
+    scaledGridCol.format = '#.000';
     this.sourceGrid.columns.setOrder([this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
     this.sourceGrid.props.allowColSelection = false;
 
