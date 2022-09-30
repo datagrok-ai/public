@@ -939,7 +939,6 @@ export class MolecularLiabilityBrowser {
 
   async changeVid(silent: boolean = false): Promise<void> {
     if (!this.vid || !this.vids.includes(this.vid)) {
-
       if (this.vid) {
         Object.keys(this.idMapping).every((vid) => {
           if (this.idMapping[vid].includes(this.vid!)) {

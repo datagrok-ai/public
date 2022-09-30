@@ -18,10 +18,6 @@ category('open', () => {
   }
 
   async function testLoadData1(): Promise<void> {
-
-
-    let k = 11;
-
     // const queryNameToQuery = {};
     // queries.forEach(e => queryNameToQuery[e.name.charAt(0).toLowerCase() + e.name.slice(1)] = e);
     //

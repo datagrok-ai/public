@@ -267,7 +267,7 @@ export class FilesForDataLoader {
   private readonly _fnFunc: FileNameFunc;
 
   /** Default function to get file name of the file */
-  static fnFuncDefault(file: string) {
+  static fnFuncDefault(file: string): string {
     return FilesForDataLoader._files[file];
   }
 
@@ -371,7 +371,6 @@ export class FilesForDataLoader {
     //   this._observedCdrMap = value;
     // })
   }
-
 }
 
 export class QueriesForDataLoader {
@@ -459,7 +458,7 @@ export class QueriesForDataLoader {
         const funcCall: DG.FuncCall = await this._mlbQueries['getLayoutBySchemeCdr']
           .prepare({scheme: scheme, cdr: cdr}).call();
         const df: DG.DataFrame = funcCall.getOutputParamValue();
-        return DataLoader.DataFrameToVdRegionList(df);
+        return DataLoader.dfToVdRegionList(df);
       });
   }
 
@@ -636,7 +635,7 @@ export abstract class DataLoader {
 
   // -- Routines --
 
-  static DataFrameToVdRegionList(df: DG.DataFrame): VdRegion[] {
+  static dfToVdRegionList(df: DG.DataFrame): VdRegion[] {
     const regionListRes: VdRegion[] = [];
     for (const dfRow of df.rows) {
       const region = new VdRegion(

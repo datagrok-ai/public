@@ -139,7 +139,6 @@ export class DataLoaderTest extends DataLoader {
       this._dlFiles.getObservedPtmMap().then((value) => { this._observedPtmMap = value; }),
       this._dlFiles.getObservedCdrMap().then((value) => { this._observedCdrMap = value; }),
     ]);
-    let k = 11;
   }
 
   async getLayoutBySchemeCdr(scheme: string, cdr: string): Promise<VdRegion[]> {
@@ -155,7 +154,7 @@ export class DataLoaderTest extends DataLoader {
         }));
         // dfRes.changeColumnType('position_start_name', 'string');
         // dfRes.changeColumnType('position_end_name', 'string');
-        return DataLoader.DataFrameToVdRegionList(dfRes);
+        return DataLoader.dfToVdRegionList(dfRes);
       });
   }
 
