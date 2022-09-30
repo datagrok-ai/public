@@ -10,26 +10,19 @@ category('sequenceSpace', async () => {
   let testHelmWithEmptyRows: DG.DataFrame;
   let testHelmWithEmptyRowsTableView: DG.TableView;
 
-  before(async () => {
+  test('sequenceSpaceOpens', async () => {
     testFastaDf = await readDataframe('samples/sample_FASTA.csv');
     testFastaTableView = grok.shell.addTableView(testFastaDf);
-    testHelmWithEmptyRows = await readDataframe('data/sample_HELM_empty_vals.csv');
-    testHelmWithEmptyRowsTableView = grok.shell.addTableView(testHelmWithEmptyRows);
-  });
-
-  after(async () => {
+    await _testSequenceSpaceReturnsResult(testFastaDf, 'UMAP', 'Sequence');
     grok.shell.closeTable(testFastaDf);
     testFastaTableView.close();
+  });
+
+  test('sequenceSpaceWithEmptyRows', async () => {
+    testHelmWithEmptyRows = await readDataframe('data/sample_HELM_empty_vals.csv');
+    testHelmWithEmptyRowsTableView = grok.shell.addTableView(testHelmWithEmptyRows);
+    await _testSequenceSpaceReturnsResult(testHelmWithEmptyRows, 'UMAP', 'HELM');
     grok.shell.closeTable(testHelmWithEmptyRows);
     testHelmWithEmptyRowsTableView.close();
   });
-
-  test('sequenceSpaceOpens', async () => {
-    await _testSequenceSpaceReturnsResult(testFastaDf, 'UMAP', 'Sequence');
-  });
-
-  test('sequenceSpaceOpensWithEmptyRows', async () => {
-    await _testSequenceSpaceReturnsResult(testHelmWithEmptyRows, 'UMAP', 'HELM');
-  });
-
 });

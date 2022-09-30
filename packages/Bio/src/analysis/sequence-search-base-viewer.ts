@@ -2,7 +2,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/utils/src/similarity-metrics';
-import {updateDivInnerHTML} from '../utils/ui-utils';
 import * as C from '../utils/constants';
 
 export class SequenceSearchBaseViewer extends DG.JsViewer {
@@ -15,7 +14,6 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
   moleculeColumn?: DG.Column|null;
   moleculeColumnName: string;
   initialized: boolean = false;
-  metricsDiv = ui.div('', {style: {height: '10px', display: 'flex', justifyContent: 'right'}});
   tags = [DG.TAGS.UNITS, C.TAGS.ALIGNED, C.TAGS.SEPARATOR, C.TAGS.ALPHABET];
 
   constructor(name: string) {
@@ -45,7 +43,8 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
         .subscribe(async (_: any) => await this.render(compute)));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
         .subscribe(async (_: any) => await this.render(false)));
-      this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_: any) => await this.render(false)));
+      this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
+        .subscribe(async (_: any) => await this.render(false)));
       this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
       this.moleculeColumnName = this.moleculeColumn?.name!;
       this.getProperty('limit')!.fromOptions({min: 1, max: this.dataFrame.rowCount});
@@ -57,25 +56,12 @@ export class SequenceSearchBaseViewer extends DG.JsViewer {
     super.onPropertyChanged(property);
     if (!this.initialized)
       return;
-    if (this.metricsProperties.includes(property.name))
-      this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
     if (property.name === 'moleculeColumnName') {
       const col = this.dataFrame.col(property.get(this))!;
       if (col.semType === DG.SEMTYPE.MACROMOLECULE)
         this.moleculeColumn = col;
     }
     this.render();
-  }
-
-  updateMetricsLink(metricsDiv: HTMLDivElement, object: any, options: any): void {
-    const metricsButton = ui.button(`${this.distanceMetric}/${this.fingerprint}`, () => {
-      if (!grok.shell.windows.showProperties)
-        grok.shell.windows.showProperties = true;
-      grok.shell.o = object;
-    });
-    //@ts-ignore
-    Object.keys(options).forEach((it) => metricsButton.style[it] = options[it]);
-    updateDivInnerHTML(metricsDiv, metricsButton);
   }
 
   async render(computeData = true) {
