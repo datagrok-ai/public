@@ -4,9 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as GisTypes from '../src/gis-semtypes';
-import {GisViewer} from './gis-viewer';
+import { GisViewer } from './gis-viewer';
 
-import {Map as OLMap, MapBrowserEvent, View as OLView} from 'ol';
+import { Map as OLMap, MapBrowserEvent, View as OLView } from 'ol';
 import HeatmapLayer from 'ol/layer/Heatmap';
 import BaseLayer from 'ol/layer/Base';
 import Layer from 'ol/layer/Layer';
@@ -17,11 +17,11 @@ import VectorSource from 'ol/source/Vector';
 import Collection from 'ol/Collection';
 //Projections working itilities
 import * as OLProj from 'ol/proj';
-import {useGeographic} from 'ol/proj';
-import {Coordinate} from 'ol/coordinate';
+import { useGeographic } from 'ol/proj';
+import { Coordinate } from 'ol/coordinate';
 //geometry drawing funtions
 import * as OLGeometry from 'ol/geom/Geometry';
-import {Type as OLType} from 'ol/geom/Geometry';
+import { Type as OLType } from 'ol/geom/Geometry';
 import * as OLPolygon from 'ol/geom/Polygon';
 //@type {import("../proj/Projection.js").default|undefined}
 import Feature, {FeatureLike} from 'ol/Feature';
@@ -32,7 +32,7 @@ import * as OLStyle from 'ol/style';
 //Sources import
 import OSM from 'ol/source/OSM';
 import BingMaps from 'ol/source/BingMaps';
-import Style, {StyleLike} from 'ol/style/Style';
+import Style, { StyleLike } from 'ol/style/Style';
 //import interactions and events
 // import {DragAndDrop, defaults as defaultInteractions} from 'ol/interaction';
 import * as OLInteractions from 'ol/interaction';
@@ -40,14 +40,14 @@ import * as OLEvents from 'ol/events';
 import * as OLEventsCondition from 'ol/events/condition';
 
 //import processors
-import {GPX, GeoJSON, IGC, KML, TopoJSON} from 'ol/format';
+import { GPX, GeoJSON, IGC, KML, TopoJSON } from 'ol/format';
 import Source from 'ol/source/Source';
-import {Attribution, defaults as defaultControls} from 'ol/control';
+import { Attribution, defaults as defaultControls } from 'ol/control';
 //ZIP utilities
 import JSZip from 'jszip';
 import { stopPropagation } from 'ol/events/Event';
 
-export {Coordinate} from 'ol/coordinate';
+export { Coordinate } from 'ol/coordinate';
 
 //interface for callback functions parameter
 export interface OLCallbackParam {
@@ -55,13 +55,8 @@ export interface OLCallbackParam {
   pixel: [number, number];
 }
 
-// const info = $('#info');
-// info.tooltip({
-//   animation: false,
-//   trigger: 'manual',
-// });
-
 let OLG: OpenLayers; //TODO: remove this terrible stuff!
+let renderTime: number = 0;
 
 //TODO: use this function to convert colors
 //color converting
@@ -130,6 +125,18 @@ export class KMZ extends KML {
   }
 }
 
+//functions to benchmark layer rendering and change render style to improve performance
+//TODO: apply singletone pattern here?
+function onPostrenderMarkers() {
+  renderTime = Date.now() - renderTime;
+  console.log('Markers render time = ' + renderTime);
+}
+
+function onPrerenderMarkers() {
+  renderTime = Date.now();
+}
+
+
 export class OpenLayers {
   olMap: OLMap;
   olCurrentView: OLView;
@@ -153,8 +160,8 @@ export class OpenLayers {
   markerSize: number = 1;
   markerOpacity: number = 0.7;
   weightedMarkers: boolean = false;
-  heatmapBlur: number = 20;
-  heatmapRadius: number = 10;
+  heatmapBlurParam: number = 20;
+  heatmapRadiusParam: number = 10;
 
   constructor(gV?: GisViewer) {
     if ((gV) && (gV instanceof GisViewer)) this.gisViewer = gV;
@@ -171,7 +178,7 @@ export class OpenLayers {
       }),
       stroke: new OLStyle.Stroke({
         // color: 'rgba(250, 250, 0, 0.5)',
-        color: 'rgba(250, 0, 0, 0.5)',
+        color: 'rgba(200, 0, 0, 0.5)',
         width: 1,
       }),
     });
@@ -198,7 +205,24 @@ export class OpenLayers {
     });
     this.dragAndDropInteraction.on('addfeatures', this.dragNdropInteractionFn);
     OLG = this;
+    //end of constructor
   }
+
+  set heatmapBlur(val: number) {
+    this.heatmapBlurParam = val;
+    if (this.olCurrentLayer instanceof HeatmapLayer) this.olCurrentLayer.setBlur(this.heatmapBlurParam);
+    else {
+      //TODO: search and apply parameter to the first heatmap layer (if this is needed)
+      // this.olMap.getAllLayers()
+    }
+  }
+  get heatmapBlur(): number { return this.heatmapBlurParam; }
+
+  set heatmapRadius(val: number) {
+    this.heatmapRadiusParam = val;
+    if (this.olCurrentLayer instanceof HeatmapLayer) this.olCurrentLayer.setRadius(this.heatmapRadiusParam);
+  }
+  get heatmapRadius(): number { return this.heatmapRadiusParam; }
 
   initMap(targetName: string) {
     if (targetName === '') return;
@@ -218,7 +242,11 @@ export class OpenLayers {
     //add layers>>
     this.addNewBingLayer('Bing sat');
     this.olBaseLayer = this.addNewOSMLayer('BaseLayer');
-    this.olMarkersLayer = this.addNewVectorLayer('Markers');//, this.genStyleMarker);
+    // this.olMarkersLayer = this.addNewVectorLayer('Markers');
+    this.olMarkersLayer = this.addNewVectorLayer('Markers', null, this.genStyleMarker);
+    // this.olMarkersLayer.setStyle(this.genStyleMarker);
+    this.olMarkersLayer.on('postrender', onPostrenderMarkers);
+    this.olMarkersLayer.on('postrender', onPrerenderMarkers);
 
     //add base event handlers>>
     this.olMap.on('click', this.onMapClick);
@@ -246,7 +274,6 @@ export class OpenLayers {
       features: event.features,
     });
 
-    // OLG.addNewVectorLayer(event.file.name, null, null, sourceVector);
     OLG.addNewVectorLayer(event.file.name, null,
       function(feature) {
         const color = feature.get('COLOR') || '#ffeeee';
@@ -255,12 +282,6 @@ export class OpenLayers {
       },
       sourceVector);
 
-    //TODO: if case above is workable we should add an layerID somewhere here>>
-    // OLG.olMap.addLayer(
-    //   new VectorLayer({
-    //     source: sourceVector,
-    //   }));
-    // this.olMap.getView().fit(sourceVector.getExtent());
     OLG.olMap.getView().fit(sourceVector.getExtent()); //TODO: check is it doubling and remove it if need
   }
 
@@ -268,9 +289,7 @@ export class OpenLayers {
     const sourceVector = new VectorSource({
       features: new KML().readFeatures(stream),
     });
-    const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector);
-    if (focusOnContent) //TODO: check is it doubling and remove it if need
-      this.olMap.getView().fit(sourceVector.getExtent());
+    const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector, focusOnContent);
     return newLayer;
   }
 
@@ -284,9 +303,7 @@ export class OpenLayers {
       // var features = format.readFeatures(result);
       features: new GeoJSON().readFeatures(stream),
     });
-    const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector);
-    if (focusOnContent) //TODO: check is it doubling and remove it if need
-      this.olMap.getView().fit(sourceVector.getExtent());
+    const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector, focusOnContent);
     return newLayer;
   }
 
@@ -294,9 +311,7 @@ export class OpenLayers {
     const sourceVector = new VectorSource({
       features: new TopoJSON().readFeatures(stream),
     });
-    const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector);
-    if (focusOnContent) //TODO: check is it doubling and remove it if need
-      this.olMap.getView().fit(sourceVector.getExtent());
+    const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector, focusOnContent);
     return newLayer;
   }
 
@@ -388,8 +403,7 @@ export class OpenLayers {
     if (lrName) newLayer.set('layerName', lrName);
     if (opt) newLayer.setProperties(opt);
     if (style) newLayer.setStyle(style);
-    // this.olMap.addLayer(newLayer);
-    newLayer.setOpacity(0.5); //TODO: change this corresponding to layer opacity settings
+    newLayer.setOpacity(0.2); //TODO: change this corresponding to layer opacity settings
 
     this.addLayer(newLayer);
     if (focusOnContent)
@@ -412,7 +426,6 @@ export class OpenLayers {
     if (layerName) newLayer.set('layerName', layerName);
     else newLayer.set('layerName', 'Sattelite');
     if (options) newLayer.setProperties(options);
-    // this.olMap.addLayer(newLayer);
     this.addLayer(newLayer);
     return newLayer;
   }
@@ -426,7 +439,6 @@ export class OpenLayers {
     if (layerName) newLayer.set('layerName', layerName);
     else newLayer.set('layerName', 'OpenStreet');
     if (options) newLayer.setProperties(options);
-    // this.olMap.addLayer(newLayer);
     this.addLayer(newLayer);
     return newLayer;
   }
@@ -434,10 +446,11 @@ export class OpenLayers {
   addNewHeatMap(layerName?: string | undefined, options?: Object | undefined): HeatmapLayer {
     const newLayer = new HeatmapLayer({
       source: new VectorSource({}),
-      blur: this.gisViewer ? this.gisViewer.heatmapBlur : this.heatmapBlur,
-      radius: this.gisViewer ? this.gisViewer.heatmapBlur : this.heatmapRadius,
+      blur: this.heatmapBlur,
+      radius: this.heatmapRadius,
       weight: function(feature: Feature): number {
-        let val = feature.get('fieldValue');
+        let val = feature.get('_fieldValue');
+        // if (val === undefined) val = feature.get('_fieldValue');
         if (typeof(val) !== 'number') val = 1;
         return val;
       },
@@ -460,16 +473,20 @@ export class OpenLayers {
   }
 
   //map marker style function>>
-  genStyleMarker(feature: Feature): Style {
-    let val = feature.get('fieldValue');
-    if (typeof(val) !== 'number') val = 1;
+  genStyleMarker(feature: FeatureLike, resolution: number): Style {
+    let val = feature.get('_fieldValue');
+    let size = feature.get('_fieldSize');
+    let clr = feature.get('_fieldColor');
+    if (typeof val !== 'number') val = 1;
 
     const style = new Style({
       image: new OLStyle.Circle({
-        radius: this.weightedMarkers ? val*1 : this.markerSize,
+        // radius: this.weightedMarkers ? val*1 : this.markerSize,
+        radius: size ? size : OLG.markerSize,
         fill: new OLStyle.Fill({
           // color: toStringColor(#1f77b4, 0.4),
-          color: 'rgba(255, 0, 255, 0.4)',
+          // color: 'rgba(255, 0, 255, 0.4)',
+          color: clr ? clr : 'rgba(255, 0, 255, 0.4)',
         }),
         stroke: new OLStyle.Stroke({
           // color: 'rgba(255, 204, 0, 0.2)',
@@ -596,7 +613,7 @@ export class OpenLayers {
     const maxradius = 30;
     if (aLayer) {
       let val = value;
-      if (typeof(val) !== 'number') val = 1;
+      if (typeof val !== 'number') val = 1;
       let rad = this.markerSize;
       if (this.weightedMarkers) {
         rad = val;
@@ -626,7 +643,7 @@ export class OpenLayers {
         }),
       });
       marker.setStyle(style);
-      marker.set('fieldValue', val);
+      marker.set('_fieldValue', val);
 
       const src = aLayer.getSource();
       if (src) src.addFeature(marker);
@@ -658,7 +675,7 @@ export class OpenLayers {
         }),
       });
       marker.setStyle(style);
-      marker.set('fieldValue', value);
+      marker.set('_fieldValue', value);
 
       const src = aLayer.getSource();
       if (src) src.addFeature(marker);

@@ -22,6 +22,14 @@ import Feature from 'ol/Feature';
 import { Point } from 'ol/geom';
 // import { numberSafeCompareFunction } from 'ol/array';
 
+function toStringColor(num : number, opacity?: number) : string {
+  num >>>= 0;
+  const b = num & 0xFF;
+  const g = (num & 0xFF00) >>> 8;
+  const r = (num & 0xFF0000) >>> 16;
+  const a = opacity ? opacity : 1;
+  return 'rgba(' + [r, g, b, a].join(',') + ')';
+}
 
 export class GisViewer extends DG.JsViewer {
   currentLayer: string;
@@ -98,10 +106,10 @@ export class GisViewer extends DG.JsViewer {
     this.markerMinColor = this.int('markerMinColor', 0x0000ff, {category: 'Markers', userEditable: false});
     this.markerMaxColor = this.int('markerMaxColor', 0xff0000, {category: 'Markers', userEditable: false}); //hexToRGB
 
-    this.heatmapRadius = this.int('heatmapRadius', 10,
+    this.heatmapRadius = this.int('heatmapRadius', 5,
       {category: 'Heatmap', description: 'Heatmap radius', min: 1, max: 10, userEditable: true});
     this.heatmapBlur = this.int('heatmapBlur', 20,
-      {category: 'Heatmap', description: 'Heatmap radius', min: 1, max: 20, userEditable: true});
+      {category: 'Heatmap', description: 'Heatmap radius', min: 1, max: 50, userEditable: true});
     // DG.Property
     //JsViewer
 
@@ -370,9 +378,12 @@ export class GisViewer extends DG.JsViewer {
 
       divLayer.onclick = (evt)=>{
         const layerName = divLayer.getAttribute('layerName');
-        if (!layerName) return;
+        const layerID = divLayer.getAttribute('layerId');
+        if (!layerName || !layerID) return;
         this.currentLayer = layerName;
         this.setOptions({currentLayer: layerName});
+        const curlayer = this.ol.getLayerById(layerID);
+        if (curlayer) this.ol.olCurrentLayer = curlayer;
 
         //TODO: update currentLayer property when clicked in list
       };
@@ -430,7 +441,15 @@ export class GisViewer extends DG.JsViewer {
 
   onPropertyChanged(prop: DG.Property): void {
     if (!this.initialized) return;
-    if (prop.name === 'currentLayer') this.updateLayersList();
+    if (prop.name === 'currentLayer') {
+      this.updateLayersList();
+      return;
+    }
+    if (prop.name === 'heatmapRadius' || prop.name === 'heatmapBlur') {
+      this.ol.heatmapRadius = this.heatmapRadius;
+      this.ol.heatmapBlur = this.heatmapBlur;
+      return;
+    }
     if (prop.name === 'gradientColoring') {
       //TODO: enable/disable min/max color fields corresponding to gradientColoring value
       // this.look
@@ -562,29 +581,30 @@ export class GisViewer extends DG.JsViewer {
     // val = this.dataFrame.getCol(this.labelsColumnName).getRawData();
 
     if ((!lat) || (!lon)) return;
+    // TODO: if (lat.length > lon.length) lat.length = lon.length;
 
     //TODO: change it to filling array of objects with all table data
     let colValue: DG.Column | null = null;
     let colColor: DG.Column | null = null;
     let colSize: DG.Column | null = null;
     try {
-      if (this.labelsColumnName !== '') colValue = this.dataFrame.getCol(this.labelsColumnName);
+      //TODO: check does it exist corresponding column to prevent exception raising
       if (this.colorColumnName !== '') colColor = this.dataFrame.getCol(this.colorColumnName);
       if (this.sizeColumnName !== '') colSize = this.dataFrame.getCol(this.sizeColumnName);
+      if (this.labelsColumnName !== '') colValue = this.dataFrame.getCol(this.labelsColumnName);
     } finally {
       if (colValue) val = colValue.getRawData();
       else {
         val = new Float32Array(lat.length); //create array of length equal to latitude array length
         val.fill(1);
       }
-      // if ((colColor) && (this.gradientColoring)) {
       if ((colColor)) {
         colorVal = colColor.getRawData();
         if (colColor.max === colColor.min) colorCoeff = 1;
         // else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
         else colorCoeff = (0xff0000-0x0000ff) / (colColor.max - colColor.min);
         colorShift = colColor.min;
-        //another scaling scheme for color (though gradient)
+        //TODO: use another scaling scheme for color (though gradient)
       } else {
         colorCoeff = 1;
         colorShift = 0;
@@ -592,8 +612,7 @@ export class GisViewer extends DG.JsViewer {
         colorVal.fill(this.defaultColor);
       }
       //marker size data loading and scale calculation
-      // if ((colSize) && (this.gradientSizing)) {
-      //TODO: add checking for numbet column type
+      //TODO: add checking for number column type
       if ((colSize)) {
         sizeVal = colSize.getRawData();
         if (colSize.max === colSize.min) sizeCoeff = 1;
@@ -606,7 +625,7 @@ export class GisViewer extends DG.JsViewer {
         sizeVal.fill(this.markerDefaultSize);
       }
 
-      this.features.length = 0;
+      this.features.length = 0; //clear array of features
       for (let i = 0; i < indexes.length; i++) {
         if ((i < lat.length) && (i < lon.length)) {
           this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
@@ -618,6 +637,9 @@ export class GisViewer extends DG.JsViewer {
           const coords = OLProj.fromLonLat([lon[indexes[i]], lat[indexes[i]]]);
           this.features.push(new Feature({
             geometry: new Point(coords),
+            _fieldValue: val[indexes[i]],
+            _fieldSize: ((sizeVal[indexes[i]] - sizeShift) * sizeCoeff),
+            _fieldColor: toStringColor(((colorVal[indexes[i]] - colorShift) * colorCoeff), this.markerOpacity),
           }));
         }
       }
