@@ -6,7 +6,7 @@ export class SequenceGenerator {
   length: number;
   alphas: string[];
 
-  constructor(length) {
+  constructor(length: number) {
     this.length = length;
   }
 

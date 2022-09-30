@@ -7,7 +7,7 @@ import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
 import {TreeAnalyzer, PhylocanvasTreeNode, mlbTreeNodeRe} from './utils/tree-stats';
 
 export class TreeBrowserOld {// extends DG.JsViewer {
-  static treeGridColumnsNameMapping = {
+  static treeGridColumnsNameMapping: { [key: string]: { name: string, dType: string } } = {
     totalLeaves: {name: 'Leaves', dType: 'int'},
     leavesIntersected: {name: 'Intersected', dType: 'int'},
     totalSubtreeLength: {name: 'Height', dType: 'double'},
@@ -77,7 +77,7 @@ export class TreeBrowserOld {// extends DG.JsViewer {
    * @param {DG.GridCellRenderArgs} args Cell arguments.
    */
   private _onTreeGridCellRender(args: DG.GridCellRenderArgs) {
-    if (args.cell.isTableCell && args.cell.tableColumn.semType == this.treeSemanticType) {
+    if (args.cell.isTableCell && args.cell.tableColumn!.semType == this.treeSemanticType) {
       const nwk: string = args.cell.cell.value;
 
       if (TreeAnalyzer.newickRegEx.test(nwk.trim())) {
@@ -143,7 +143,7 @@ export class TreeBrowserOld {// extends DG.JsViewer {
         [TreeBrowserOld.treeGridColumnsNameMapping.leavesIntersected.name]: 'Tree leaves found also in the main taible',
         [TreeBrowserOld.treeGridColumnsNameMapping.totalSubtreeLength.name]: 'Tree height',
       };
-      ui.tooltip.show(msg[cell.tableColumn.name] ?? cell.tableColumn.name, x, y);
+      ui.tooltip.show(msg[cell.tableColumn!.name] ?? cell.tableColumn!.name, x, y);
       return true;
     }
   }
@@ -160,26 +160,27 @@ export class TreeBrowserOld {// extends DG.JsViewer {
     this.treeAnalyser = new TreeAnalyzer(itemsToFind);
     this.treeAnalyser.addNodeInspector(this._collectLeavesMapping.bind(this));
 
-    const treesColumn = this.dataFrame.col(treesColumnName);
+    const treesColumn = this.dataFrame.getCol(treesColumnName);
     const stats = this.treeAnalyser.analyze(treesColumn.toList());
-    const df = DG.DataFrame.fromColumns(baseColumnNames.map((v) => this.dataFrame.col(v)));
+    const df: DG.DataFrame = DG.DataFrame.fromColumns(
+      baseColumnNames.map((colName: string) => this.dataFrame.getCol(colName)));
 
     for (const k of Object.keys(stats)) {
       const col = TreeBrowserOld.treeGridColumnsNameMapping[k];
-      (df.columns as DG.ColumnList).add(DG.Column.fromList(col.dType, col.name, stats[k]));
+      (df.columns as DG.ColumnList).add(DG.Column.fromList(col.dType as DG.ColumnType, col.name, stats[k]));
     }
 
     // TODO: fix this ad hoc.
     // df.rows.removeAt(0);
 
     (df.columns as DG.ColumnList).add(treesColumn);
-    df.col(treesColumnName).semType = this.treeSemanticType;
+    df.getCol(treesColumnName).semType = this.treeSemanticType;
 
     const grid = DG.Viewer.grid(df, {
       //rowHeight: 160,
     });
 
-    grid.col('TREE').visible = false;
+    grid.col('TREE')!.visible = false; // this.treeColumnName
 
     grid.onCellRender.subscribe(this._onTreeGridCellRender.bind(this));
     grid.onCellTooltip(this.onTreeGridCellTooltip.bind(this));
@@ -193,7 +194,7 @@ export class TreeBrowserOld {// extends DG.JsViewer {
    * @return {DG.DataFrame} Modified data frame.
    */
   private _modifyTreeColumn(df: DG.DataFrame, treeColumnName: string = 'TREE'): DG.DataFrame {
-    const treeCol = df.col(treeColumnName);
+    const treeCol = df.getCol(treeColumnName);
     const trees = treeCol.toList().map((v) => this._modifyTreeNodeIds(v));
     (df.columns as DG.ColumnList).replace(treeColumnName, DG.Column.fromStrings(treeColumnName, trees));
     return df;
@@ -279,7 +280,7 @@ export class TreeBrowserOld {// extends DG.JsViewer {
    * @return {TreeLeavesMap} Mapping.
    */
   private _collectMappings(): TreeLeavesMap {
-    const col = this.mlbView.dataFrame.col(this.idColumnName);
+    const col = this.mlbView.dataFrame.getCol(this.idColumnName);
     const mapper: TreeLeavesMap = {};
 
     for (let i = 0; i < col.length; ++i) {
@@ -305,7 +306,7 @@ export class TreeBrowserOld {// extends DG.JsViewer {
     for (const [vId, indices] of Object.entries(this.vIdIndex)) {
       if (this.leavesIndex[vId]) {
         for (const i of indices) {
-          const values: string = col.get(i);
+          const values: string | null = col.get(i);
           const unique = new Set(values ? values.split('|').filter((v) => v.length > 0) : []);
 
           for (const v of this.leavesIndex[vId]) {
@@ -328,7 +329,7 @@ export class TreeBrowserOld {// extends DG.JsViewer {
       if (node.label) {
         const nodeId: string = node?.label;
         const df = this.mlbView.dataFrame;
-        const col = df.col(this.idColumnName);
+        const col = df.getCol(this.idColumnName);
 
         df.selection.init((i) => (col.get(i) as string).includes(nodeId));
 
@@ -345,8 +346,8 @@ export class TreeBrowserOld {// extends DG.JsViewer {
    * @param {string} [node] Node id to select.
    */
   selectTree(index: number, node?: string) {
-    const cloneId = this._getCloneIdAt(index);
-    const treeItems = this.cloneIndex[cloneId].items;
+    const cloneId: string = this._getCloneIdAt(index);
+    const treeItems: string[] = this.cloneIndex[cloneId].items;
 
     this.treeGrid.dataFrame.currentRowIdx = index;
     this.phyloTreeViewer.setProps({source: this._takeTreeAt(index)});
@@ -355,11 +356,11 @@ export class TreeBrowserOld {// extends DG.JsViewer {
      * Modifies node styles to mark intersected node ids.
      * @return {any}
      */
-    const _modifyNodeStyles = function() {
-      let styles = {};
+    const _modifyNodeStyles = () => {
+      let styles: { [item: string]: { [property: string]: any } } = {};
 
       for (const item of treeItems) {
-        const style = {};
+        const style: { [property: string]: any } = {};
 
         if (this.vIdIndex[item]) {
           const color = this.treeAnalyser.getItemsAsSet().has(item) ? '#0000ff' : '#ff0000';
@@ -370,7 +371,7 @@ export class TreeBrowserOld {// extends DG.JsViewer {
         styles = {...styles, ...style};
       }
       return styles;
-    }.bind(this);
+    };
 
     this.phyloTreeViewer.setProps({styles: _modifyNodeStyles(), selectedIds: node ? [node] : []});
   }

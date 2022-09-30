@@ -9,7 +9,7 @@ import {Subscription, Unsubscribable} from 'rxjs';
 
 
 export class TreeBrowser extends DG.JsViewer {
-  static treeGridColumnsNameMapping = {
+  static treeGridColumnsNameMapping: { [key: string]: { name: string, dType: string } } = {
     totalLeaves: {name: 'Leaves', dType: 'int'},
     leavesIntersected: {name: 'Intersected', dType: 'int'},
     totalSubtreeLength: {name: 'Height', dType: 'double'},
@@ -22,17 +22,17 @@ export class TreeBrowser extends DG.JsViewer {
   treeDiv: HTMLDivElement;
   phyloTreeViewer: PhylocanvasGL;
 
-  _treeGrid: DG.Grid = null;
-  _treeGridSubs: Unsubscribable[] = null;
+  _treeGrid?: DG.Grid;
+  _treeGridSubs: Unsubscribable[] = [];
 
   cloneIndex: TreeLeaves = {};
   leavesIndex: TreeLeavesMap = {};
   vIdIndex: TreeLeavesMap = {};
 
-  treeAnalyser: TreeAnalyzer;
+  treeAnalyser?: TreeAnalyzer;
 
   private _treeDf: DG.DataFrame = DG.DataFrame.fromCsv(['TREE', 'CLONE'].join(','));
-  private _mlbDf: DG.DataFrame = null;
+  private _mlbDf: DG.DataFrame;
 
   get treeDf(): DG.DataFrame { return this._treeDf; }
 
@@ -90,7 +90,7 @@ export class TreeBrowser extends DG.JsViewer {
    * @param {DG.GridCellRenderArgs} args Cell arguments.
    */
   private _onTreeGridCellRender(args: DG.GridCellRenderArgs) {
-    if (args.cell.isTableCell && args.cell.tableColumn.semType == this.treeSemanticType) {
+    if (args.cell.isTableCell && args.cell.tableColumn!.semType == this.treeSemanticType) {
       const nwk: string = args.cell.cell.value;
 
       if (TreeAnalyzer.newickRegEx.test(nwk.trim())) {
@@ -133,7 +133,7 @@ export class TreeBrowser extends DG.JsViewer {
   private _collectMappings(): TreeLeavesMap {
     const mapper: TreeLeavesMap = {};
     if (this.mlbDf) {
-      const col = this.mlbDf.col(this.idColumnName);
+      const col: DG.Column = this.mlbDf.getCol(this.idColumnName);
       for (let i = 0; i < col.length; ++i) {
         const id: string = col.get(i);
 
@@ -171,7 +171,7 @@ export class TreeBrowser extends DG.JsViewer {
     const sourceDf = this.mlbDf;
     const selectedVIdIndices = new Set(sourceDf.filter.getSelectedIndexes());
 
-    this.treeAnalyser.items = TreeBrowser._calcFilteredItems(sourceDf, this.vIdIndex);
+    this.treeAnalyser!.items = TreeBrowser._calcFilteredItems(sourceDf, this.vIdIndex);
 
     // Filtering of the data loaded for an antigen is not required.
     // treeDf.rows.filter((row: DG.Row) => {
@@ -203,15 +203,15 @@ export class TreeBrowser extends DG.JsViewer {
         [TreeBrowser.treeGridColumnsNameMapping.leavesIntersected.name]: 'Tree leaves found also in the main taible',
         [TreeBrowser.treeGridColumnsNameMapping.totalSubtreeLength.name]: 'Tree height',
       };
-      ui.tooltip.show(msg[cell.tableColumn.name] ?? cell.tableColumn.name, x, y);
+      ui.tooltip.show(msg[cell.tableColumn!.name] ?? cell.tableColumn!.name, x, y);
       return true;
     }
   }
 
   private destroyTreeGrid() {
     this._treeGridSubs.forEach((s) => { s.unsubscribe(); });
-    this._treeGridSubs = null;
-    this._treeGrid = null;
+    this._treeGridSubs = [];
+    this._treeGrid = undefined;
   }
 
   /**
@@ -220,13 +220,13 @@ export class TreeBrowser extends DG.JsViewer {
    * @param {string[]} [baseColumnNames=[]] Columns to include into creating grid.
    */
   private buildTreeGrid(treesColumnName: string, baseColumnNames: string[] = []): void {
-    const treesColumn = this.treeDf.col(treesColumnName);
-    const stats = this.treeAnalyser.analyze(treesColumn.toList());
-    const df = DG.DataFrame.fromColumns(baseColumnNames.map((v) => this.treeDf.col(v)));
+    const treesColumn: DG.Column = this.treeDf.getCol(treesColumnName);
+    const stats = this.treeAnalyser!.analyze(treesColumn.toList());
+    const df = DG.DataFrame.fromColumns(baseColumnNames.map((colName: string) => this.treeDf.getCol(colName)));
 
     for (const k of Object.keys(stats)) {
       const col = TreeBrowser.treeGridColumnsNameMapping[k];
-      (df.columns as DG.ColumnList).add(DG.Column.fromList(col.dType, col.name, stats[k]));
+      (df.columns as DG.ColumnList).add(DG.Column.fromList(col.dType as DG.ColumnType, col.name, stats[k]));
     }
 
     // TODO: fix this ad hoc.
@@ -239,7 +239,7 @@ export class TreeBrowser extends DG.JsViewer {
       rowHeight: 160,
     });
 
-    grid.col('TREE').visible = false;
+    grid.col('TREE')!.visible = false;
 
     this._treeGrid = grid;
     this._treeGridSubs = [];
@@ -276,7 +276,7 @@ export class TreeBrowser extends DG.JsViewer {
     this.leavesIndex = {};
     this.vIdIndex = {};
 
-    this.treeAnalyser = null;
+    this.treeAnalyser = undefined;
 
     this.viewSubs.forEach((s: Subscription) => { s.unsubscribe(); });
   }
@@ -358,12 +358,12 @@ export class TreeBrowser extends DG.JsViewer {
     // const mlbDf = this.mlbDf;
     // let col: DG.Column<string> = mlbDf.columns.byName(columnName) as DG.Column<string> ||
     //   mlbDf.columns.addNewString(columnName);
-    const col: DG.Column<string> = this.mlbDf.col('clones');
+    const clonesCol: DG.Column<string> = this.mlbDf.getCol('clones');
 
     for (const [vId, indices] of Object.entries(this.vIdIndex)) {
       if (this.leavesIndex[vId]) {
         for (const i of indices) {
-          const values: string = col.get(i);
+          const values: string = clonesCol.get(i)!;
           const unique = new Set(values ? values.split('|').filter((v) => v.length > 0) : []);
 
           for (const v of this.leavesIndex[vId]) {
@@ -371,7 +371,7 @@ export class TreeBrowser extends DG.JsViewer {
             unique.add(cloneId);
           }
 
-          col.set(i, Array.from(unique.values()).join('|'));
+          clonesCol.set(i, Array.from(unique.values()).join('|'));
         }
       }
     }
@@ -416,15 +416,15 @@ export class TreeBrowser extends DG.JsViewer {
      * Modifies node styles to mark intersected node ids.
      * @return {any}
      */
-    const _modifyNodeStyles = function() {
-      let styles = {};
+    const _modifyNodeStyles = () => {
+      let styles: { [prop: string]: any } = {};
 
       for (const item of treeItems) {
-        const style = {};
+        const style: { [prop: string]: any } = {};
 
         const nodeVId = getVId(item);
         if (nodeVId in this.vIdIndex) {
-          const color = this.treeAnalyser.getItemsAsSet().has(item) ? '#0000ff' : '#ff0000';
+          const color = this.treeAnalyser!.getItemsAsSet().has(item) ? '#0000ff' : '#ff0000';
           style[item] = {
             fillColour: color,
             // label: nodeVId,
@@ -435,7 +435,7 @@ export class TreeBrowser extends DG.JsViewer {
         styles = {...styles, ...style};
       }
       return styles;
-    }.bind(this);
+    };
 
     this.phyloTreeViewer.setProps({styles: _modifyNodeStyles(), selectedIds: node ? [node] : []});
   }

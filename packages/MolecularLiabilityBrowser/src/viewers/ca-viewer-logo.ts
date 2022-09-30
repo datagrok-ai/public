@@ -1,7 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-
 import * as logojs from 'logojs-react';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 
@@ -9,7 +8,7 @@ export class Logo extends DG.JsViewer {
   initialized: boolean;
   option: any;
   colSemType: string;
-  splitted: DG.DataFrame;
+  splitted: DG.DataFrame | null;
   ppm: Array<Array<number>>;
   df: DG.DataFrame;
 
@@ -39,7 +38,7 @@ export class Logo extends DG.JsViewer {
     {color: 'rgb(205, 111, 71)', regex: 'Z'},
   ];
 
-  PROT_NUMS = {
+  PROT_NUMS: { [name: string]: number } = {
     'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8, 'K': 9, 'L': 10, 'M': 11,
     'N': 12, 'P': 13, 'Q': 14, 'R': 15, 'S': 16, 'T': 17, 'U': 18, 'V': 19, 'W': 20, 'Y': 21, 'Z': 22,
   };

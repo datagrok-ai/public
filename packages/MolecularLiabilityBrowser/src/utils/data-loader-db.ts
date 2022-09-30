@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {encode as encodeToBase64, decode as decodeFromBase64} from 'uint8-to-base64';
+// import {encode as encodeToBase64, decode as decodeFromBase64} from 'uint8-to-base64';
 
 import {
   catchToLog,
@@ -69,7 +69,7 @@ export class DataLoaderDb extends DataLoader {
     return ((Date.now() - this._startInit) / 1000).toString();
   }
 
-  public constructor(mlbQueries: DataQueryDict, serverListVersionDf: DG.DataFrame) {
+  public constructor(mlbQueries: DataQueryDict, serverListVersionDf?: DG.DataFrame) {
     super();
 
     this._cache = new MlbDatabase(serverListVersionDf);
@@ -163,6 +163,7 @@ export class DataLoaderDb extends DataLoader {
       return [jsonValue, pdbValue, realNumsValue, obsPtmValue];
     } catch (err: unknown) {
       console.error(`MLB: query get3D('${vid}' error: ${err instanceof Error ? err.message : (err as Object).toString()}`);
+      throw err;
     }
   }
 }

@@ -100,7 +100,7 @@ export class DataLoaderTest extends DataLoader {
   constructor() {
     super();
 
-    this._cache = new MlbDatabase(null);
+    this._cache = new MlbDatabase();
     this._dlFiles = new FilesForDataLoader(this._cache, DataLoaderTest.fnFunc);
   }
 
@@ -113,8 +113,16 @@ export class DataLoaderTest extends DataLoader {
     //load antigen list
     this._antigens = DG.DataFrame.fromCsv(
       `id,antigen,antigen_ncbi_id,antigen_gene_symbol,clones
-1,B17W38,113223191,LOC113223191,0
-252,IAPW8,3556,IL1RAP,5
+1,A1,1130001,gene1,0
+2,A2,1130002,gene2,0
+3,A3,1130002,gene2,0
+4,A4,1130003,gene3,0
+5,A5,1130003,gene3,0
+6,A6,1130003,gene3,0
+7,A7,1130004,gene4,0
+8,A8,1130004,gene4,0
+9,A9,1130004,gene4,0
+10,A10,1130004,gene4,0
 `);
 
     // load available vids

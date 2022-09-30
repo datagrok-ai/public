@@ -207,6 +207,8 @@ interface TreeStats {
   totalLeaves: number;
   leavesIntersected: number;
   totalSubtreeLength: number;
+
+  [index: string]: number;
 }
 
 const _nullStats: TreeStats = {

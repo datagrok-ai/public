@@ -10,16 +10,18 @@ import {DataLoaderTest} from './tests/utils/data-loader-test';
 import {MolecularLiabilityBrowser} from './molecular-liability-browser';
 import {TreeBrowser} from './mlb-tree';
 
+export type PackagePropertiesType = { [name: string]: any };
+
 export let _startInit: number;
 export const _package = new DG.Package();
-export let _properties: Map<string, any>;
+export let _properties: PackagePropertiesType;
 export const dataPackageName: string = 'MolecularLiabilityBrowserData';
 export const packageName: string = 'MolecularLiabilityBrowser';
 
 let _mlbQueries: DataQueryDict;
 
 /** DataLoader instance */
-let dl: DataLoader;
+let dl: DataLoader | null;
 
 // function getPathSegments(path: string) {
 //   const parser = document.createElement('a');
@@ -82,19 +84,19 @@ async function initDataLoader(): Promise<void> {
     'MLB: initDataLoader',
     async () => {
       try {
-        _properties = await catchToLog<Promise<Map<string, any>>>(
+        _properties = await catchToLog<Promise<PackagePropertiesType>>(
           'MLB: package getProperties',
-          () => { return _package.getProperties(); });
+          async () => { return _package.getProperties(); });
 
         if (!dl) {
-          const serverListVersionDf: DG.DataFrame = _properties['IndexedDB'] ?
+          const serverListVersionDf: DG.DataFrame | undefined = _properties['IndexedDB'] ?
             await catchToLog( // this call checks database connection also
               'MLB: database query \'getListVersion\': ',
               async () => {
                 const funcCall: DG.FuncCall = await _mlbQueries['getListVersion'].prepare().call();
                 const res: DG.DataFrame = funcCall.getOutputParamValue() as DG.DataFrame;
                 return res;
-              }) : null;
+              }) : undefined;
 
           const dataSourceSettings: string = _properties['DataSource'];
           switch (dataSourceSettings) {
