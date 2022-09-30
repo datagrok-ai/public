@@ -13,7 +13,8 @@ import './tests/renderers-test';
 import './tests/convert-test';
 import './tests/fasta-handler-test';
 import './tests/WebLogo-positions-test';
-import './tests/checkInputColumn-tests'
+import './tests/checkInputColumn-tests';
+import './tests/similarity-diversity-tests';
 
 export const _package = new DG.Package();
 export {tests};

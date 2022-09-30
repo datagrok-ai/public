@@ -7,7 +7,8 @@ import * as C from '../utils/constants';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import { TableView } from 'datagrok-api/dg';
+import {TableView} from 'datagrok-api/dg';
+import { Subject } from 'rxjs';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   hotSearch: boolean;
@@ -19,12 +20,12 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   cutoff: number;
   gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
+  computeCompleted = new Subject<boolean>();
 
   constructor() {
     super('similarity');
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.hotSearch = this.bool('hotSearch', true);
-    this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
   }
 
   init(): void {
@@ -53,15 +54,15 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         });
         this.idxs = df.getCol('indexes');
         this.scores = df.getCol('score');
-        const seqCol = DG.Column.string('sequence',
+        this.molCol = DG.Column.string('sequence',
           this.idxs!.length).init((i) => this.moleculeColumn?.get(this.idxs?.get(i)));
-        seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-        this.tags.forEach((tag) => seqCol.setTag(tag, this.moleculeColumn!.getTag(tag)));
-        const resDf = DG.DataFrame.fromColumns([this.idxs!, seqCol, this.scores!]);
+        this.molCol.semType = DG.SEMTYPE.MACROMOLECULE;
+        this.tags.forEach((tag) => this.molCol!.setTag(tag, this.moleculeColumn!.getTag(tag)));
+        const resDf = DG.DataFrame.fromColumns([this.idxs!, this.molCol!, this.scores!]);
         resDf.onCurrentRowChanged.subscribe((_) => {
+          this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
           this.createPropertyPanel(resDf);
           this.gridSelect = true;
-          this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
         });
         const grid = resDf.plot.grid();
         grid.col('indexes')!.visible = false;
@@ -72,6 +73,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
           this.gridSelect = false;
         });
         updateDivInnerHTML(this.root, grid.root);
+        this.computeCompleted.next(true);
       }
     }
   }
