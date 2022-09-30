@@ -29,7 +29,7 @@ export interface IObject extends ICached {
 export class MlbDatabase extends Dexie {
   private readonly serverListVersionDf?: DG.DataFrame;
 
-  get enabled(): boolean { return !!this.serverListVersionDf;}
+  get enabled(): boolean { return !!this.serverListVersionDf; }
 
   list_version!: Dexie.Table<IListVersion, number>;
   object!: Dexie.Table<IObject, number>;

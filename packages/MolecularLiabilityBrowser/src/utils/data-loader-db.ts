@@ -162,7 +162,8 @@ export class DataLoaderDb extends DataLoader {
 
       return [jsonValue, pdbValue, realNumsValue, obsPtmValue];
     } catch (err: unknown) {
-      console.error(`MLB: query get3D('${vid}' error: ${err instanceof Error ? err.message : (err as Object).toString()}`);
+      const errMsg: string = err instanceof Error ? err.message : (err as Object).toString();
+      console.error(`MLB: query get3D('${vid}' error: ${errMsg}`);
       throw err;
     }
   }

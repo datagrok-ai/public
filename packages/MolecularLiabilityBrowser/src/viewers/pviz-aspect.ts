@@ -132,7 +132,7 @@ export class PvizAspect {
       //mouse over handlers
       this.pviz.FeatureDisplayer.addMouseoverCallback(['P'], async function(ft: IFeature) {
         const selectorStr = 'g.feature.data.P.Paratope_predictions rect.feature';
-        let elList = document.querySelectorAll<SVGRectElement>(selectorStr);
+        const elList = document.querySelectorAll<SVGRectElement>(selectorStr);
         const elPosList = pVizParams.parMap[chain].parElObj;
         const probLst = pVizParams.parMap[chain].parProbObj;
         const el: SVGRectElement = elList[elPosList.indexOf((ft.start).toString())];
@@ -417,8 +417,7 @@ export class PvizAspect {
     const denMap: { [chain: string]: PvizDenType } = {};
     const chains = Object.keys(this.pVizParams.seq);
     chains.forEach((chain: string) => {
-      let denFeatureList: number[] = [];
-      let denFeatureMap: DenFeatureType[] = [];
+      const denFeatureList: number[] = [];
       let denColorArr = new Array(this.pVizParams.seq[chain].length).fill(-1);
       let denPtmArr = new Array(this.pVizParams.seq[chain].length).fill([]);
       const palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
@@ -439,7 +438,7 @@ export class PvizAspect {
 
       denFeatureList.sort((a, b) => a - b);
       const denElObj = denFeatureList.slice();
-      denFeatureMap = denFeatureList.map(function(ft) {
+      const denFeatureMap: DenFeatureType[] = denFeatureList.map(function(ft) {
         return {
           groupSet: 'Predicted PTM density',
           category: '',
@@ -650,9 +649,8 @@ export class PvizAspect {
     Object.keys(gradientObj).forEach((ptmTrack) => {
       const selectorStr = 'g.feature.' + ptmTrack + ' rect.feature';
       const elList = document.querySelectorAll<SVGRectElement>(selectorStr);
-      for (let i = 0; i < elList.length; i++) {
+      for (let i = 0; i < elList.length; i++)
         elList[i].style.fill = gradientObj[ptmTrack][i];
-      }
     });
   }
 

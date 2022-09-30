@@ -92,13 +92,13 @@ export class DataLoaderFiles extends DataLoader {
       `${this.fromStartInit()} s`);
 
     await Promise.all([
-      this._dlQueries.listSchemes().then((value) => { this._schemes = value;}),
-      this._dlQueries.listCdrs().then((value) => {this._cdrs = value; }),
+      this._dlQueries.listSchemes().then((value) => { this._schemes = value; }),
+      this._dlQueries.listCdrs().then((value) => { this._cdrs = value; }),
       this._dlQueries.listAntigens().then((value) => { this._antigens = value; }),
 
       //load available Vids
       Promise.resolve<string[]>(['VR000000008', 'VR000000043', 'VR000000044'])
-        .then((value) => { this._vids = value;}),
+        .then((value) => { this._vids = value; }),
 
       //load observed PTM data
       Promise.resolve<string[]>(['VR000000044'])
