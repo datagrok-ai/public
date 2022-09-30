@@ -49,7 +49,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
       }
     } else if (splitByPosition.value) {
       otherStr = otherConst;
-      const activityScaledData = activityScaledCol.getRawData();
+      const activityScaledData = activityScaledCol.toList();
       for (const position of positions) {
         const posCol = table.getCol(position);
         const aarList = selectionObject[position];
@@ -80,7 +80,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
       }
 
       otherStr = otherConst;
-      const activityScaledData = activityScaledCol.getRawData();
+      const activityScaledData = activityScaledCol.toList();
       for (const aar of aars) {
         const posList = reversedSelectionObject[aar];
         aarStr = `${aar}: {${posList.join(', ')}}`;
@@ -119,7 +119,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         }
 
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-        const stats = getStats(activityScaledCol.getRawData(), table.selection);
+        const stats = getStats(activityScaledCol.toList(), table.selection);
         const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr);
         $(distributionRoot).addClass('d4-flex-col');
 

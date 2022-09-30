@@ -20,7 +20,7 @@ import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CO
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
-import {representationsWidget} from './widgets/representations';
+import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
 import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/utils/to-atomic-level';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
@@ -48,6 +48,14 @@ export async function initBio() {
 //output: grid_cell_renderer result
 export function fastaSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
   return new MacromoleculeSequenceCellRenderer();
+}
+
+//name: Sequence Renderer
+//input: column molColumn {semType: Macromolecule}
+//tags: panel
+//output: widget result
+export function macroMolColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
+  return getMacroMolColumnPropertyPanel(molColumn);
 }
 
 //name: separatorSequenceCellRenderer
@@ -471,7 +479,10 @@ export function similaritySearchViewer(): SequenceSimilarityViewer {
 //description: finds the most similar sequence
 //output: viewer result
 export function similaritySearchTopMenu(): void {
-  (grok.shell.v as DG.TableView).addViewer('SequenceSimilaritySearchViewer');
+  const view = (grok.shell.v as DG.TableView);
+  const viewer = new SequenceSimilarityViewer();
+  view.addViewer(viewer);
+  view.dockManager.dock(viewer, 'down');
 }
 
 //name: SequenceDiversitySearchViewer
@@ -486,7 +497,10 @@ export function diversitySearchViewer(): SequenceDiversityViewer {
 //description: finds the most diverse molecules
 //output: viewer result
 export function diversitySearchTopMenu() {
-  (grok.shell.v as DG.TableView).addViewer('SequenceDiversitySearchViewer');
+  const view = (grok.shell.v as DG.TableView);
+  const viewer = new SequenceDiversityViewer();
+  view.addViewer(viewer);
+  view.dockManager.dock(viewer, 'down');
 }
 
 

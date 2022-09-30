@@ -20,7 +20,7 @@ import {VdRegionsViewer} from '@datagrok/bio/src/viewers/vd-regions-viewer';
 
 
 export class MolecularLiabilityBrowserOld {
-  dataLoader: DataLoader = null;
+  dataLoader: DataLoader;
 
   constructor(dataLoader: DataLoader) {
     this.dataLoader = dataLoader;
@@ -175,7 +175,7 @@ export class MolecularLiabilityBrowserOld {
 
     for (const pfName of pf.names) {
       // this.mlbTable.columns.byName(pfName).width = 150;
-      this.mlbView.grid.col(pfName).width = 150;
+      this.mlbView.grid.col(pfName)!.width = 150;
       filterList.push({type: 'histogram', column: pfName});
     }
     filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter'});
@@ -225,7 +225,7 @@ export class MolecularLiabilityBrowserOld {
     // for (const column of this.mlbTable.columns)
     //   column.name = column.name.replaceAll('_', ' ');
     for (const column of this.mlbTable.columns) {
-      const gridColumn: DG.GridColumn = this.mlbView.grid.columns.byName(column.name);
+      const gridColumn: DG.GridColumn = this.mlbView.grid.columns.byName(column.name)!;
       gridColumn.name = column.name.replaceAll('_', ' ');
     }
 
@@ -233,13 +233,13 @@ export class MolecularLiabilityBrowserOld {
     this.mlbView.grid.columns.byName('v id')!.cellType = 'html';
 
     // Leonid instructed to hide the columns
-    const mlbColumnsToHide = [].concat(...[
-      ['cdr length', 'surface cdr hydrophobicity', 'positive cdr charge', 'negative cdr charge', 'sfvcsp'],
-      ['antigen list', 'antigen ncbi id', 'antigen gene symbol'],
-      ['Heavy chain sequence', 'Light chain sequence']
-    ]);
+    const mlbColumnsToHide: string[] = [
+      ...['cdr length', 'surface cdr hydrophobicity', 'positive cdr charge', 'negative cdr charge', 'sfvcsp'],
+      ...['antigen list', 'antigen ncbi id', 'antigen gene symbol'],
+      ...['Heavy chain sequence', 'Light chain sequence']
+    ];
     for (let colI = 0; colI < this.mlbView.grid.columns.length; colI++) {
-      const gridColumn: DG.GridColumn = this.mlbView.grid.columns.byIndex(colI);
+      const gridColumn: DG.GridColumn = this.mlbView.grid.columns.byIndex(colI)!;
       if (gridColumn.column !== null && mlbColumnsToHide.includes(gridColumn.column.name))
         gridColumn.visible = false;
     }
@@ -348,14 +348,14 @@ export class MolecularLiabilityBrowserOld {
   }
 
   setQueryAntigenIcon(): void {
-    function QueryAntigenIconHandler() {
-      const agIds = this.mlbTable.col('antigen list').toList()
+    const QueryAntigenIconHandler = () => {
+      const agIds = this.mlbTable.getCol('antigen list').toList()
         .map((x) => x.replaceAll(' ', '').split(',')).flat();
-      const agNcbiIds = this.mlbTable.col('antigen ncbi id').toList()
+      const agNcbiIds = this.mlbTable.getCol('antigen ncbi id').toList()
         .map((x) => x.replaceAll(' ', '').split(',')).flat();
-      const geneSymbols = this.mlbTable.col('antigen gene symbol').toList()
+      const geneSymbols = this.mlbTable.getCol('antigen gene symbol').toList()
         .map((x) => x.replaceAll(' ', '').split(',')).flat();
-      const allIds = [].concat(agIds, agNcbiIds, geneSymbols);
+      const allIds = [...agIds, ...agNcbiIds, ...geneSymbols];
 
       const txtInput = ui.textInput('', '');
       //@ts-ignore
@@ -388,7 +388,7 @@ export class MolecularLiabilityBrowserOld {
           this.mlbTable.filter.fireChanged();
         })
         .show();
-    }
+    };
 
     this.queryAntigenIcon = ui.tooltip.bind(
       ui.iconFA('key', QueryAntigenIconHandler.bind(this)), 'Filter by antigen id / antigen gene symbol query');
@@ -428,8 +428,8 @@ export class MolecularLiabilityBrowserOld {
     while (heavyI < heavyPositions.length && lightI < lightPositions.length) {
       const heavyPositionName: string = heavyPositions[heavyI];
       const lightPositionName: string = lightPositions[lightI];
-      const heavyPosM: RegExpMatchArray = heavyPositionName.match(positionRe);
-      const lightPosM: RegExpMatchArray = lightPositionName.match(positionRe);
+      const heavyPosM: RegExpMatchArray = heavyPositionName.match(positionRe)!;
+      const lightPosM: RegExpMatchArray = lightPositionName.match(positionRe)!;
 
       const heavyPosNumber: number = parseInt(heavyPosM[0]);
       const lightPosNumber: number = parseInt(lightPosM[0]);
@@ -477,7 +477,7 @@ export class MolecularLiabilityBrowserOld {
 
   addLogoViewer(table: DG.DataFrame, seqCol: DG.Column, dockType: DG.DOCK_TYPE, node?: DG.DockNode) {
     // Hide heavy & light chains amino acid sequences visually
-    this.mlbView.grid.columns.byName(seqCol.name).visible = false;
+    this.mlbView.grid.columns.byName(seqCol.name)!.visible = false;
 
     // const webLogo: WebLogo = new WebLogo();
     const logo = this.mlbView.addViewer('WebLogo', {sequenceColumnName: seqCol.name});
@@ -489,7 +489,7 @@ export class MolecularLiabilityBrowserOld {
     this.changeVid(true);
   }
 
-  async init(urlVid) {
+  async init(urlVid: string) {
     const pi = DG.TaskBarProgressIndicator.create('Loading data...');
 
     // #region Commented due to using code from RepertoireBrowser

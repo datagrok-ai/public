@@ -17,7 +17,10 @@ import {OpenLayers} from '../src/gis-openlayer';
 import {Coordinate} from '../src/gis-openlayer';
 import {OLCallbackParam} from '../src/gis-openlayer';
 import VectorLayer from 'ol/layer/Vector';
-import { numberSafeCompareFunction } from 'ol/array';
+import * as OLProj from 'ol/proj';
+import Feature from 'ol/Feature';
+import { Point } from 'ol/geom';
+// import { numberSafeCompareFunction } from 'ol/array';
 
 
 export class GisViewer extends DG.JsViewer {
@@ -61,6 +64,7 @@ export class GisViewer extends DG.JsViewer {
   initialized: boolean;
   ol: OpenLayers;
   layers = [];
+  features: Array<Feature> = [];
   coordinates: Coordinate[] = [];
   values: Array<string | number> = [];
   colorValues: Array<number> = [];
@@ -78,8 +82,8 @@ export class GisViewer extends DG.JsViewer {
     this.longitudeColumnName = this.string('longitudeColumnName');
     this.colorColumnName = this.string('colorColumnName');
     this.sizeColumnName = this.string('sizeColumnName');
-    this.labelsColumnName = this.string('labelsColumnName');
-    this.markersColumnName = this.string('markersColumnName');
+    this.labelsColumnName = this.string('labelsColumnName', '', {userEditable: false});
+    this.markersColumnName = this.string('markersColumnName', '', {userEditable: false});
 
     this.markerOpacity = this.float('markerOpacity', 0.8, {category: 'Markers', editor: 'slider', min: 0.1, max: 1});
     // this.gradientSizing = this.bool('gradientSizing', false, {category: 'Markers'});
@@ -313,8 +317,7 @@ export class GisViewer extends DG.JsViewer {
       //TODO: refactor here>
       this.ol.markerSize = this.markerDefaultSize;
       this.ol.markerOpacity = this.markerOpacity;
-      this.ol.weightedMarkers = ((this.sizeColumnName !== '')); //TODO: add checking for numbet column type
-      // && (this.dataFrame.getCol(this.splitColumnName))); //this.gradientSizing;
+      this.ol.weightedMarkers = ((this.sizeColumnName !== '')); //TODO: add checking for number column type
       this.ol.heatmapRadius = this.heatmapRadius;
       this.ol.heatmapBlur = this.heatmapBlur;
 
@@ -329,7 +332,6 @@ export class GisViewer extends DG.JsViewer {
       this.ol.setMapClickCallback(this.handlerOnMapClick.bind(this));
       this.ol.setMapRefreshCallback(this.updateLayersList);
 
-      // this.view.prop
       this.initialized = true;
     } catch (e: any) {
       this.initialized = false;
@@ -338,15 +340,15 @@ export class GisViewer extends DG.JsViewer {
         ui.divV([ui.div('Error loading GIS map!'), ui.div(e.toString())]));
     } finally {
       ui.setUpdateIndicator(this.root, false);
-      grok.shell.o = this;
-      grok.shell.windows.showProperties = true;
-      // ui.setUpdateIndicator(this.panelTop!, true);
+      setTimeout(() => {
+        grok.shell.o = this;
+        grok.shell.windows.showProperties = true;
+      }, 500);
     }
   }
 
   updateLayersList(): void {
     if ((!this.ol) || (!this.panelLeft) || (!this.divLayersList)) return;
-    // let htmlStyle: DG.ElementOptions = { };
 
     while (this.divLayersList.lastChild)
       this.divLayersList.removeChild(this.divLayersList.lastChild);
@@ -357,29 +359,24 @@ export class GisViewer extends DG.JsViewer {
 
     for (let i = 0; i < layersArr.length; i++) {
       let layerName = layersArr[i].get('layerName');
-      if ((layerName === undefined) || (layerName === null) ) layerName = '';
+      if ((layerName === undefined) || (layerName === null)) layerName = '';
       const layerId = layersArr[i].get('layerId');
       const isVisible = layersArr[i].getVisible();
 
       arrLayerNames.push(layerName);
-      // const divLayer = ui.div(i+' '+layerName, {style: {'border': 'solid 1px lightgray'}});
       const divLayer = this.layerUIElement(i, layerName, layerId, isVisible);
       divLayer.setAttribute('layerName', layerName);
       divLayer.setAttribute('layerId', layerId);
-      // if (isVisible) divLayer.style.background = 'lightblue';
-      // else divLayer.style.background = 'lightgray';
 
       divLayer.onclick = (evt)=>{
         const layerName = divLayer.getAttribute('layerName');
         if (!layerName) return;
         this.currentLayer = layerName;
         this.setOptions({currentLayer: layerName});
-        // const currentLayerProp = this.getProperty('currentLayer');
-        // if (currentLayerProp) currentLayerProp.defaultValue = layerName;
+
         //TODO: update currentLayer property when clicked in list
       };
       this.divLayersList.append(divLayer);
-      // this.divLayersList.append(this.layerUIElement(layerName, layerId));
     }
     const layersProperty = this.getProperty('currentLayer');
     if (layersProperty) layersProperty.choices = arrLayerNames;
@@ -424,8 +421,11 @@ export class GisViewer extends DG.JsViewer {
       if ((col) && (this.longitudeColumnName === null)) this.longitudeColumnName = col.name;
     }
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-    this.render(true);
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => {
+      this.render();
+    }));
+    // this.render(true);
+    this.render(false);
   }
 
   onPropertyChanged(prop: DG.Property): void {
@@ -450,7 +450,7 @@ export class GisViewer extends DG.JsViewer {
     //TODO: refactor this>
     this.ol.markerSize = this.markerDefaultSize;
     this.ol.markerOpacity = this.markerOpacity;
-    this.ol.weightedMarkers = ((this.sizeColumnName !== '')); //TODO: add checking for numbet column type
+    this.ol.weightedMarkers = ((this.sizeColumnName !== '')); //TODO: add checking for number column type
     //this.ol.weightedMarkers = this.gradientSizing;
     this.ol.heatmapRadius = this.heatmapRadius;
     this.ol.heatmapBlur = this.heatmapBlur;
@@ -463,7 +463,14 @@ export class GisViewer extends DG.JsViewer {
     if (this.renderType === 'heat map')
       this.renderHeat();
     else if (this.renderType === 'markers')
-      this.renderMarkers();
+      this.renderMarkersBatch(this.features);
+      // this.renderMarkers();
+
+    if (fit) {
+      if (this.ol.olMarkersLayer)
+        this.ol.olMap.getView().fit((this.ol.olMarkersLayer.getSource()!).getExtent());
+        // if (this.ol.olMarkersLayer.getSource())
+    }
 
     this.updateLayersList();
   }
@@ -532,7 +539,7 @@ export class GisViewer extends DG.JsViewer {
         this.colorValues.push((colorVal[indexes[i]]-colorShift)*colorCoeff);
       }
     }
-    //<<getCoordinates function
+    //<<getCoordinatesOld function
 */
   }
 
@@ -557,51 +564,62 @@ export class GisViewer extends DG.JsViewer {
     if ((!lat) || (!lon)) return;
 
     //TODO: change it to filling array of objects with all table data
-    const colValue = this.dataFrame.getCol(this.labelsColumnName);
-    if (colValue) val = colValue.getRawData();
-    else {
-      val = new Float32Array(lat.length); //create array of length equal to latitude array length
-      val.fill(1);
-    }
-    const colColor = this.dataFrame.getCol(this.colorColumnName);
-    // if ((colColor) && (this.gradientColoring)) {
-    if ((colColor)) {
-      colorVal = colColor.getRawData();
-      if (colColor.max === colColor.min) colorCoeff = 1;
-      // else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
-      else colorCoeff = (0xff0000-0x0000ff)/(colColor.max-colColor.min);
-      colorShift = colColor.min;
-      //another scaling scheme for color (though gradient)
-    } else {
-      colorCoeff = 1;
-      colorShift = 0;
-      colorVal = new Float32Array(lat.length); //create array of length equal to latitude array length
-      colorVal.fill(this.defaultColor);
-    }
-    //marker size data loading and scale calculation
-    const colSize = this.dataFrame.getCol(this.sizeColumnName);
-    // if ((colSize) && (this.gradientSizing)) {
-    //TODO: add checking for numbet column type
-    if ((colSize)) {
-      if (colSize.max === colSize.min) sizeCoeff = 1;
-      else sizeCoeff = (this.markerMaxSize-this.markerMinSize)/(colSize.max-colSize.min);
-      sizeShift = colSize.min;
-    } else {
-      sizeCoeff = 1;
-      sizeShift = 0;
-      sizeVal = new Float32Array(lat.length); //create array of length equal to latitude array length
-      sizeVal.fill(this.markerDefaultSize);
-    }
+    let colValue: DG.Column | null = null;
+    let colColor: DG.Column | null = null;
+    let colSize: DG.Column | null = null;
+    try {
+      if (this.labelsColumnName !== '') colValue = this.dataFrame.getCol(this.labelsColumnName);
+      if (this.colorColumnName !== '') colColor = this.dataFrame.getCol(this.colorColumnName);
+      if (this.sizeColumnName !== '') colSize = this.dataFrame.getCol(this.sizeColumnName);
+    } finally {
+      if (colValue) val = colValue.getRawData();
+      else {
+        val = new Float32Array(lat.length); //create array of length equal to latitude array length
+        val.fill(1);
+      }
+      // if ((colColor) && (this.gradientColoring)) {
+      if ((colColor)) {
+        colorVal = colColor.getRawData();
+        if (colColor.max === colColor.min) colorCoeff = 1;
+        // else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
+        else colorCoeff = (0xff0000-0x0000ff) / (colColor.max - colColor.min);
+        colorShift = colColor.min;
+        //another scaling scheme for color (though gradient)
+      } else {
+        colorCoeff = 1;
+        colorShift = 0;
+        colorVal = new Float32Array(lat.length); //create array of length equal to latitude array length
+        colorVal.fill(this.defaultColor);
+      }
+      //marker size data loading and scale calculation
+      // if ((colSize) && (this.gradientSizing)) {
+      //TODO: add checking for numbet column type
+      if ((colSize)) {
+        sizeVal = colSize.getRawData();
+        if (colSize.max === colSize.min) sizeCoeff = 1;
+        else sizeCoeff = (this.markerMaxSize - this.markerMinSize) / (colSize.max - colSize.min);
+        sizeShift = colSize.min;
+      } else {
+        sizeCoeff = 1;
+        sizeShift = 0;
+        sizeVal = new Float32Array(lat.length); //create array of length equal to latitude array length
+        sizeVal.fill(this.markerDefaultSize);
+      }
 
-    for (let i = 0; i < indexes.length; i++) {
-      if ((i < lat.length) && (i < lon.length)) {
-        this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
-        this.values.push(val[indexes[i]]);
-        this.sizeValues.push((sizeVal![indexes[i]]-sizeShift)*sizeCoeff);
-        if (colColor) this.colorValues.push(this.defaultColor);
-        // colColor.meta.markers
-        // if (colColor) this.colorValues.push(colColor.);
-        // this.colorValues.push((colorVal[indexes[i]]-colorShift)*colorCoeff);
+      this.features.length = 0;
+      for (let i = 0; i < indexes.length; i++) {
+        if ((i < lat.length) && (i < lon.length)) {
+          this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
+          this.values.push(val[indexes[i]]);
+          this.sizeValues.push((sizeVal[indexes[i]] - sizeShift) * sizeCoeff);
+          this.colorValues.push((colorVal[indexes[i]] - colorShift) * colorCoeff);
+          // if (!colColor) this.colorValues.push(this.defaultColor);
+          // colColor.meta.markers
+          const coords = OLProj.fromLonLat([lon[indexes[i]], lat[indexes[i]]]);
+          this.features.push(new Feature({
+            geometry: new Point(coords),
+          }));
+        }
       }
     }
     //<<getCoordinates function
@@ -627,5 +645,10 @@ export class GisViewer extends DG.JsViewer {
     for (let i = 0; i < this.coordinates.length; i++)
       this.ol.addPointSc(this.coordinates[i], this.sizeValues[i], this.colorValues[i], this.values[i]);
     // this.ol.addPoint(this.coordinates[i], this.values[i]);
+  }
+
+  renderMarkersBatch(arrFeatures: Array<Feature>): void {
+    this.ol.clearLayer(); //TODO: clear exact layer
+    this.ol.addFeaturesBulk(arrFeatures);
   }
 }

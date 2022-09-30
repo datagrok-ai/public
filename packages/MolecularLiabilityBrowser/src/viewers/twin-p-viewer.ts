@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {NglAspect} from './ngl-aspect';
 import {PvizAspect} from './pviz-aspect';
 import {MiscMethods} from './misc';
-import {DataLoader, JsonType, ObsPtmType, PdbType} from '../utils/data-loader';
+import {ColorSchemeType, DataLoader, JsonType, ObsPtmType, PdbType} from '../utils/data-loader';
 import {MlbEvents} from '../const';
 import {Subscription} from 'rxjs';
 
@@ -14,8 +14,8 @@ export class TwinPviewer {
 
   root: HTMLElement;
   nglHost: HTMLElement;
-  pVizHostL: HTMLElement;
-  pVizHostH: HTMLElement;
+  pVizHostL: HTMLDivElement;
+  pVizHostH: HTMLDivElement;
 
   //representations: string[];
   repChoiceInput: DG.InputBase;
@@ -37,7 +37,7 @@ export class TwinPviewer {
   // ptmPredictions: string[];
   // ptmMotifPredictions: string[];
   twinSelections = {'H': {}, 'L': {}};
-  colorScheme = {
+  colorScheme: ColorSchemeType = {
     'colBackground': 'white',
     'colHeavyChain': '#0069a7',
     'colLightChain': '#f1532b',
@@ -57,7 +57,7 @@ export class TwinPviewer {
   pdbStr: PdbType;
   jsonObsPtm: ObsPtmType;
 
-  subs: Subscription[] | null;
+  subs: Subscription[] = [];
 
   constructor(dataLoader: DataLoader) {
     this.dataLoader = dataLoader;
@@ -132,7 +132,6 @@ export class TwinPviewer {
         mlbView.dockManager.dock(this.sequenceTabs.root, DG.DOCK_TYPE.DOWN, this.nglNode, 'Sequence', 0.225);
       MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs.root);
 
-      this.subs = [];
       this.subs.push(grok.events.onCustomEvent(MlbEvents.CdrChanged).subscribe((value: string) => {
         const key = this.schemesList.find((v) => v.toUpperCase() == value.toUpperCase());
         console.debug(`MLB: CompositionPviewer.onCustomEvent(${MlbEvents.CdrChanged}) ` +
@@ -156,7 +155,7 @@ export class TwinPviewer {
       mlbView.dockManager.close(this.sequenceNode);
 
     this.subs.forEach((sub) => sub.unsubscribe());
-    this.subs = null;
+    this.subs = [];
 
     this.isOpened = false;
   }

@@ -14,12 +14,14 @@ import {renderBarchart, renderMutationCliffCell, setAARRenderer, renderInvaraint
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
 import {getStats, Stats} from './utils/statistics';
+import {LogoSummary} from './viewers/logo-summary';
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
 
   mutationCliffsGridSubject = new rxjs.Subject<DG.Grid>();
   mostPotentResiduesGridSubject = new rxjs.Subject<DG.Grid>();
+  logoSummaryGridSubject = new rxjs.Subject<DG.Grid>();
 
   _isUpdating: boolean = false;
   isBitsetChangedInitialized = false;
@@ -27,6 +29,7 @@ export class PeptidesModel {
 
   mutationCliffsGrid!: DG.Grid;
   mostPotentResiduesGrid!: DG.Grid;
+  logoSummaryGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
   df: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
@@ -67,6 +70,10 @@ export class PeptidesModel {
 
   get onMostPotentResiduesGridChanged(): rxjs.Observable<DG.Grid> {
     return this.mostPotentResiduesGridSubject.asObservable();
+  }
+
+  get onLogoSummaryGridChanged(): rxjs.Observable<DG.Grid> {
+    return this.logoSummaryGridSubject.asObservable();
   }
 
   get mutationCliffsSelection(): type.PositionToAARList {
@@ -171,6 +178,8 @@ export class PeptidesModel {
       //FIXME: modify during the initializeViewersComponents stages
       this.mutationCliffsGridSubject.next(this.mutationCliffsGrid);
       this.mostPotentResiduesGridSubject.next(this.mostPotentResiduesGrid);
+      if (this.df.getTag(C.TAGS.CLUSTERS))
+        this.logoSummaryGridSubject.next(this.logoSummaryGrid);
 
       this.fireBitsetChanged();
       this.invalidateGrids();
@@ -233,6 +242,9 @@ export class PeptidesModel {
 
     [this.mutationCliffsGrid, this.mostPotentResiduesGrid] =
       this.createGrids(matrixDf, sequenceDf, positionColumns, alphabet);
+
+    if (this.df.getTag(C.TAGS.CLUSTERS))
+      this.logoSummaryGrid = this.createLogoSummaryGrid();
 
     // init invariant map & mutation cliffs selections
     this.initSelections(positionColumns);
@@ -380,8 +392,8 @@ export class PeptidesModel {
   }
 
   createScaledCol(activityScaling: string, splitSeqDf: DG.DataFrame): void {
-    const [scaledDf, newColName] =
-      scaleActivity(activityScaling, this.df, this.df.tags[C.COLUMNS_NAMES.ACTIVITY]);
+    const [scaledDf, _scalingFunc, newColName] =
+      scaleActivity(activityScaling, this.df.getCol(C.COLUMNS_NAMES.ACTIVITY));
     //TODO: make another func
     const scaledCol = scaledDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     scaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
@@ -496,6 +508,39 @@ export class PeptidesModel {
     setAARRenderer(mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER), alphabet, mostPotentResiduesGrid);
 
     return [mutationCliffsGrid, mostPotentResiduesGrid];
+  }
+
+  createLogoSummaryGrid(): DG.Grid {
+    const summaryTable = this.df.groupBy([C.COLUMNS_NAMES.CLUSTERS]).aggregate();
+    const summaryTableLength = summaryTable.rowCount;
+    const webLogoCol: DG.Column<string> = summaryTable.columns.addNew('WebLogo', DG.COLUMN_TYPE.STRING);
+    const clustersCol: DG.Column<number> = summaryTable.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    clustersCol.name = 'Clusters';
+    const tempDfList: DG.DataFrame[] = new Array(summaryTableLength);
+    const originalClustersCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
+
+    for (let index = 0; index < summaryTableLength; ++index) {
+      // const tempDf: DG.DataFrame = this.df.rows.match(`${C.COLUMNS_NAMES.CLUSTERS} = ${clustersCol.get(index)}`).toDataFrame();
+      const bs = DG.BitSet.create(this.df.rowCount);
+      bs.init((i) => clustersCol.get(index) === originalClustersCol.get(i));
+      const tempDf = this.df.clone(bs, [C.COLUMNS_NAMES.ALIGNED_SEQUENCE]);
+      tempDfList[index] = tempDf;
+      webLogoCol.set(index, index.toString());
+    }
+    webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
+
+    const grid = summaryTable.plot.grid();
+    grid.columns.rowHeader!.visible = false;
+    grid.props.rowHeight = 55;
+    grid.onCellPrepare((cell) => {
+      if (cell.isTableCell && cell.tableColumn?.name === 'WebLogo') 
+        tempDfList[parseInt(cell.cell.value)].plot.fromType('WebLogo').then((viewer) => cell.element = viewer.root);
+    });
+    const webLogoGridCol = grid.columns.byName('WebLogo')!;
+    webLogoGridCol.cellType = 'html';
+    webLogoGridCol.width = 350;
+
+    return grid;
   }
 
   setBarChartInteraction(): void {
@@ -712,7 +757,7 @@ export class PeptidesModel {
       const tableRowIdx = gridCell!.tableRowIndex!;
       const position = mostPotentResiduesDf.get(C.COLUMNS_NAMES.POSITION, tableRowIdx);
       const aar = mostPotentResiduesDf.get(C.COLUMNS_NAMES.MONOMER, tableRowIdx);
-      chooseAction(aar, position, ev.shiftKey);
+      chooseAction(aar, position, ev.shiftKey, false);
     });
 
     const cellChanged = (table: DG.DataFrame): void => {
@@ -847,13 +892,17 @@ export class PeptidesModel {
     }
 
     const setViewerGridProps = (grid: DG.Grid): void => {
-      grid.props.allowEdit = false;
-      grid.props.allowRowSelection = false;
-      grid.props.allowBlockSelection = false;
+      const gridProps = grid.props;
+      gridProps.allowEdit = false;
+      gridProps.allowRowSelection = false;
+      gridProps.allowBlockSelection = false;
+      gridProps.allowColSelection = false;
     };
 
     setViewerGridProps(this.mutationCliffsGrid);
     setViewerGridProps(this.mostPotentResiduesGrid);
+    if (this.df.getTag(C.TAGS.CLUSTERS))
+      setViewerGridProps(this.logoSummaryGrid);
   }
 
   getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
@@ -901,7 +950,9 @@ export class PeptidesModel {
       return;
 
     this.df.tags[C.PEPTIDES_ANALYSIS] = 'true';
-    this.sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
+    const scaledGridCol = this.sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!;
+    scaledGridCol.name = this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
+    scaledGridCol.format = '#.000';
     this.sourceGrid.columns.setOrder([this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
     this.sourceGrid.props.allowColSelection = false;
 
@@ -931,6 +982,11 @@ export class PeptidesModel {
     this.mostPotentResiduesViewer =
       await this.df.plot.fromType('peptide-sar-viewer-vertical', options) as MostPotentResiduesViewer;
 
+    if (this.df.getTag(C.TAGS.CLUSTERS)) {
+      const logoSummary = await this.df.plot.fromType('logo-summary-viewer') as LogoSummary;
+      dockManager.dock(logoSummary, DG.DOCK_TYPE.RIGHT, null, 'Logo Summary Table');
+    }
+
     // TODO: completely remove this viewer?
     // if (this.df.rowCount <= 10000) {
     //   const peptideSpaceViewerOptions = {method: 'UMAP', measure: 'Levenshtein', cyclesCount: 100};
@@ -946,6 +1002,7 @@ export class PeptidesModel {
 
     dockManager.dock(
       this.mostPotentResiduesViewer, DG.DOCK_TYPE.RIGHT, mcNode, this.mostPotentResiduesViewer.name, 0.3);
+
 
     this.sourceGrid.props.allowEdit = false;
     adjustCellSize(this.sourceGrid);

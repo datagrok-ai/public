@@ -8,4 +8,4 @@ Provides access to [Virtuoso](https://virtuoso.openlinksw.com/) data virtualizat
 See also:
 
 * [Data connection](../data-connection.md)
-* [Vertica](https://www.vertica.com/overview/)
+* [Virtuoso](https://virtuoso.openlinksw.com/)

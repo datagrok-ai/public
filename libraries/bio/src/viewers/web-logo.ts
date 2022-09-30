@@ -219,7 +219,7 @@ export class WebLogo extends DG.JsViewer {
     this.positionMargin = this.int('positionMargin', defaultValueForPositionMargin, {min: 0, max: 16});
     this.positionHeight = this.string('positionHeight', PositionHeight.full, {choices: [PositionHeight.full, PositionHeight.Entropy]});
 
-    const style: SliderOptions = {style: 'barbell', allowResize: false};
+    const style: SliderOptions = {style: 'barbell'};
     this.slider = ui.rangeSlider(0, 100, 0, 20, false, style);
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
@@ -240,9 +240,7 @@ export class WebLogo extends DG.JsViewer {
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
 
-    const style: SliderOptions = {style: 'barbell', allowResize: this.allowResize};
-    this.slider = ui.rangeSlider(0, 100, 0, 10, false, style);
-
+    //this.slider.setShowHandles(false);
     this.slider.root.style.position = 'absolute';
     this.slider.root.style.zIndex = '999';
     this.slider.root.style.display = 'none';
@@ -255,8 +253,8 @@ export class WebLogo extends DG.JsViewer {
       if (parent.slider == null) {
         return;
       }
-      if ((parent.allowResize) && (parent.slider.max - parent.slider.min != parent.currentRange) && (parent.slider.max - parent.slider.min <  parent.Length) ) {
-        const widthSlider =  parent.slider.max - parent.slider.min + 1;
+      if ((parent.allowResize) && (parent.slider.max - parent.slider.min != parent.currentRange) && (parent.slider.max - parent.slider.min < parent.Length)) {
+        const widthSlider = parent.slider.max - parent.slider.min + 1;
         const xScale: number = (parent.root.clientWidth - widthSlider * parent.positionMarginValue) / (widthSlider * parent._positionWidth);
         parent._positionWidth = parent._positionWidth * xScale;
         parent.currentRange = parent.slider.max - parent.slider.min + 1;

@@ -51,15 +51,17 @@ export function rGroupAnalysis(col: DG.Column): void {
         const module = getRdKitModule();
 
         for (const resCol of res.columns) {
-          for(let i = 0; i < resCol.length; i++) {
+          const molsArray = new Array<string>(resCol.length)
+           for(let i = 0; i < resCol.length; i++) {
             const mol = module.get_mol(resCol.get(i));
-            resCol.set(i,  mol.get_molblock().replace('ISO', 'RGP'));
+            molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
             mol.delete();
           }
+          const rCol = DG.Column.fromStrings(resCol.name, molsArray);
 
-          resCol.semType = DG.SEMTYPE.MOLECULE;
-          resCol.setTag(DG.TAGS.UNITS, 'molblock')
-          col.dataFrame.columns.add(resCol);
+          rCol.semType = DG.SEMTYPE.MOLECULE;
+          rCol.setTag(DG.TAGS.UNITS, 'molblock')
+          col.dataFrame.columns.add(rCol);
         }
         if (res.columns.length == 0)
           grok.shell.error('None R-Groups were found');

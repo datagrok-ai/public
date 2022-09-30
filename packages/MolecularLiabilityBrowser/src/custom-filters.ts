@@ -60,7 +60,7 @@ export class PtmFilter extends DG.Filter {
     observedPtmMap: PtmMapType, observedCdrMap: CdrMapType
   ) {
     super();
-    this.root = ui.divV(null, 'd4-mlb-filter');
+    this.root = ui.divV([], 'd4-mlb-filter');
     this.subs = [];
     this.predictedPtmMap = predictedPtmMap;
     this.predictedCdrMap = predictedCdrMap;
@@ -159,7 +159,7 @@ export class PtmFilter extends DG.Filter {
     // but applyState() is called with that value
     if ('currentCdr' in state) {
       const value: string = state['currentCdr'];
-      const key: string = this.predictedCdrKeys.find((v) => v.toUpperCase() == value.toUpperCase());
+      const key: string | undefined = this.predictedCdrKeys.find((v) => v.toUpperCase() == value.toUpperCase());
       console.debug(`MLB: PtmFilter.applyState(${MlbEvents.CdrChanged}) value ="${value}" -> key="${key}".`);
       this.currentCdr = key ?? 'None';
     }
@@ -172,13 +172,13 @@ export class PtmFilter extends DG.Filter {
     // Calculating indexes is possible only after required data applied
     const predictedTempDf = this.predictedPtmDf.clone(null, ['v_id']);
     predictedTempDf.columns.addNewInt('index').init((i) => i);
-    this.predictedIndexes = this.dataFrame.clone(null, ['v id'])
+    this.predictedIndexes = this.dataFrame!.clone(null, ['v id'])
       .join(predictedTempDf, ['v id'], ['v_id'], [], ['index'], 'left', false)
       .getCol('index').getRawData() as Int32Array;
 
     const observedTempDf = this.observedPtmDf.clone(null, ['v_id']);
     observedTempDf.columns.addNewInt('index').init((i) => i);
-    this.observedIndexes = this.dataFrame.clone(null, ['v id'])
+    this.observedIndexes = this.dataFrame!.clone(null, ['v id'])
       .join(observedTempDf, ['v id'], ['v_id'], [], ['index'], 'left', false)
       .getCol('index').getRawData() as Int32Array;
 
@@ -190,7 +190,7 @@ export class PtmFilter extends DG.Filter {
     console.log('MLB: PtmFilter.detach() filter detached');
 
     this.viewSubs.forEach((u) => { u.unsubscribe(); });
-    this.viewSubs = null;
+    this.viewSubs = [];
   }
 
   applyFilter() {
@@ -226,8 +226,8 @@ export class PtmFilter extends DG.Filter {
         }
 
         for (const checkedObservedPtm of this.observedPtmInputValue) {
-          const ptmSymbol = this.observedPtmMap[`${this.chainType} ${checkedObservedPtm}`];
-          const refStr = this.observedPtmDf.get(ptmSymbol, this.observedIndexes[index]);
+          const ptmSymbol: string = this.observedPtmMap[`${this.chainType} ${checkedObservedPtm}`];
+          const refStr: string = this.observedPtmDf.get(ptmSymbol, this.observedIndexes[index]);
           if (!refStr) return false;
 
 
@@ -259,8 +259,8 @@ export class PtmFilter extends DG.Filter {
         return true;
       };
 
-      const filter = this.dataFrame.filter;
-      const rowCount = this.dataFrame.rowCount;
+      const filter = this.dataFrame!.filter;
+      const rowCount = this.dataFrame!.rowCount;
       for (let i = 0; i < rowCount; i++)
         filter.set(i, filter.get(i) && getStateFor(i), false);
       filter.fireChanged();
@@ -282,19 +282,17 @@ export class PtmFilter extends DG.Filter {
 
       const chainTypeInput = ui.choiceInput('Chain type', 'L', ['L', 'H'], () => {
         this.chainType = chainTypeInput.stringValue as ChainTypeType;
-        this.dataFrame.rows.requestFilter();
+        this.dataFrame!.rows.requestFilter();
       });
 
       const predictedCdrInput = ui.choiceInput('CDR', this.currentCdr, this.predictedCdrKeys, () => {
         this.currentCdr = predictedCdrInput.stringValue === 'None' ?
           'max' : this.predictedCdrMap[this.normalizedCDRMap[`${this.chainType} ${predictedCdrInput.stringValue}`]];
-        this.dataFrame.rows.requestFilter();
+        this.dataFrame!.rows.requestFilter();
       });
 
       const [predictedPtmInputLabel, predictedProbabilityHost, predictedPtmInput] = this.buildPredictedPtmInput();
       const [observedPtmInputLabel, observedProbabilityHost, observedPtmInput] = this.buildObservedPtmInput();
-
-      // const ptmInputGrid = this.buildPredictedPtmInputGrid();
 
       this.root = ui.divV([
         chainTypeInput.root,
@@ -325,12 +323,12 @@ export class PtmFilter extends DG.Filter {
       });
     cash.find('div > div.ui-input-multi-choice-checks > div')
       .each((_i, element) => {
-        ui.tooltip.bind(element, `${element.lastChild.textContent}`);
+        ui.tooltip.bind(element, `${element.lastChild!.textContent}`);
       });
     cash.find('div > div.ui-input-multi-choice-checks > label')
       .each((_i, element) => {
         element.style.marginLeft = '10px';
-        ui.tooltip.bind(element, `${element.lastChild.textContent}`);
+        ui.tooltip.bind(element, `${element.lastChild!.textContent}`);
       });
     // adjust PTM choice inputs width
     cash.find('div > div.ui-input-multi-choice-checks')
@@ -356,9 +354,9 @@ export class PtmFilter extends DG.Filter {
   static adjustPtmProbabilityInput(ptmProbabilityInput: DG.RangeSlider) {
     const probabilityInputCash = $(ptmProbabilityInput.root);
     probabilityInputCash.find('div > svg')
-      .each((_, el) => {
+      .each((_, el: HTMLElement) => {
         el.style.width = '100%';
-        el.parentElement.style.width = '100%';
+        el.parentElement!.style.width = '100%';
         el.style.height = '17px';
         el.style.marginTop = '3px';
       });
@@ -391,13 +389,13 @@ export class PtmFilter extends DG.Filter {
     return [host, subs];
   }
 
-  private buildPredictedPtmInput(): [HTMLLabelElement, HTMLElement, DG.InputBase<string[]>] {
+  private buildPredictedPtmInput(): [HTMLLabelElement, HTMLElement, DG.InputBase<string[] | null>] {
     const predictedPtmInputLabel = ui.label('PTM Predicted');
     predictedPtmInputLabel.style.marginTop = '5px';
 
     const predictedPtmInput = ui.multiChoiceInput('PTM', this.predictedPtmInputValue, this.predictedPtmKeys, () => {
-      this.predictedPtmInputValue = predictedPtmInput.value;
-      this.dataFrame.rows.requestFilter();
+      this.predictedPtmInputValue = predictedPtmInput.value!;
+      this.dataFrame!.rows.requestFilter();
     });
 
     PtmFilter.adjustPtmMultiChoiceInput(predictedPtmInput.root);
@@ -408,20 +406,20 @@ export class PtmFilter extends DG.Filter {
         this.predictedProbabilityMin = min;
         this.predictedProbabilityMax = max;
         header.textContent = this.getPredictedPtmProbabilityText();
-        this.dataFrame.rows.requestFilter();
+        this.dataFrame!.rows.requestFilter();
       });
     this.viewSubs.push(predictedProbabilitySub);
 
     return [predictedPtmInputLabel, predictedProbabilityHost, predictedPtmInput];
   }
 
-  private buildObservedPtmInput(): [HTMLLabelElement, HTMLElement, DG.InputBase<string[]>] {
+  private buildObservedPtmInput(): [HTMLLabelElement, HTMLElement, DG.InputBase<string[] | null>] {
     const observedPtmInputLabel = ui.label('PTM Observed');
     observedPtmInputLabel.style.marginTop = '5xpx';
 
     const observedPtmInput = ui.multiChoiceInput('PTM', this.observedPtmInputValue, this.observedPtmKeys, () => {
-      this.observedPtmInputValue = observedPtmInput.value;
-      this.dataFrame.rows.requestFilter();
+      this.observedPtmInputValue = observedPtmInput.value!;
+      this.dataFrame!.rows.requestFilter();
     });
 
     PtmFilter.adjustPtmMultiChoiceInput(observedPtmInput.root);
@@ -432,109 +430,11 @@ export class PtmFilter extends DG.Filter {
         this.observedProbabilityMin = min;
         this.observedProbabilityMax = max;
         header.textContent = this.getObservedPtmProbabilityText();
-        this.dataFrame.rows.requestFilter();
+        this.dataFrame!.rows.requestFilter();
       });
     this.viewSubs.push(observedProbabilitySub);
 
     return [observedPtmInputLabel, observedProbabilityHost, observedPtmInput];
-  }
-
-  private buildPredictedPtmInputGrid() {
-    const ptmInputRowHeight = 20;
-    const ptmInputDf: DG.DataFrame = DG.DataFrame.fromObjects(this.predictedPtmKeys.map((ptmKey) => {
-      return {
-        predicted: false, observed: false, name: ptmKey,
-        lightSymbol: this.predictedPtmMap[`L ${ptmKey}`], heavySymbol: this.predictedPtmMap[`H ${ptmKey}`]
-      };
-    }));
-
-    const ptmInputGrid: DG.Grid = ptmInputDf.plot.grid({
-      allowEdit: true,
-      allowRowSelection: false,
-      allowRowResizing: false,
-      allowRowReordering: false,
-      allowColSelection: false,
-      allowColResizing: false,
-      allowColReordering: false,
-      allowColHeaderResizing: false,
-      allowBlockSelection: false,
-      showRowHeader: false,
-      showColumnGridlines: false,
-      showRowGridlines: false,
-      // menus
-      allowColumnMenu: false,
-      showDefaultPopupMenu: false,
-      showContextMenu: false,
-      topLevelDefaultMenu: false,
-      // current
-      showCurrentRowIndicator: false,
-      showCurrentCellOutline: false,
-      // mouse over
-      showMouseOverRowIndicator: false,
-      showMouseOverRowStripe: false,
-
-      marginLeft: 5,
-      rowHeight: ptmInputRowHeight,
-    });
-    // @formatter:off
-    ((col) => { col.name = 'P'; col.width = 20; })(ptmInputGrid.columns.byIndex(1));
-    ((col) => { col.name = 'O'; col.width = 20; })(ptmInputGrid.columns.byIndex(2));
-    ((col) => { col.name = 'Modification'; col.editable = false; })(ptmInputGrid.columns.byIndex(3));
-    ((col) => { col.visible = false; })(ptmInputGrid.columns.byIndex((4))); // lightSymbol
-    ((col) => { col.visible = false; })(ptmInputGrid.columns.byIndex((5))); // heavySymbol
-    // @formatter:on
-    ptmInputGrid.autoSize(450, 11 + ptmInputRowHeight * (this.predictedPtmKeys.length + 1), 25, 25, true);
-
-    this.viewSubs.push(ptmInputGrid.onCellTooltip((cell, x, y) => {
-      if (cell.isColHeader && ['P', 'O'].includes(cell.gridColumn.name)) {
-        let txt = '';
-        switch (cell.gridColumn.name) {
-        case 'P':
-          txt = 'Predicted';
-          break;
-        case 'O':
-          txt = 'Observed';
-          break;
-        }
-        ui.tooltip.show(txt, x + 8, y + 8);
-      }
-      return true;
-    }));
-    this.viewSubs.push(ptmInputGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => {
-      if (args.cell.isColHeader) {
-        if (args.cell.gridColumn.visible) {
-          args.g.font = args.g.font.replace('bold', '');
-          args.g.textAlign = ['P', 'O'].includes(args.cell.gridColumn.name) ? 'center' : 'left';
-          args.g.fillStyle = '#4b4b4a';
-          const textSize = args.g.measureText(args.cell.gridColumn.name);
-
-          let txtX: number;
-          switch (args.g.textAlign) {
-          case 'center':
-            txtX = 4 + args.bounds.x + (args.bounds.width - textSize.width) / 2;
-            break;
-          case 'left':
-            txtX = 8 + args.bounds.x;
-            break;
-          }
-          const txtY: number = args.bounds.y +
-            (textSize.fontBoundingBoxAscent /* + textSize.fontBoundingBoxDescent /**/);
-          args.g.fillText(args.cell.gridColumn.name, txtX, txtY, args.bounds.width);
-        }
-        args.preventDefault(); // this is required to prevent drawing headers of hidden columns
-      }
-    }));
-    ptmInputDf.onDataChanged.subscribe((value) => {
-      this.predictedPtmInputValue = wu.count().take(ptmInputDf.rowCount)
-        .map((rowI) => [ptmInputDf.get('predicted', rowI), ptmInputDf.get('name', rowI)])
-        .filter((v) => v[0]).map((v) => v[1]).toArray();
-      this.observedPtmInputValue = wu.count().take(ptmInputDf.rowCount)
-        .map((rowI) => [ptmInputDf.get('observed', rowI), ptmInputDf.get('name', rowI)])
-        .filter((v) => v[0]).map((v) => v[1]).toArray();
-      this.dataFrame.rows.requestFilter();
-    });
-
-    return ptmInputGrid;
   }
 
   private getPredictedPtmProbabilityText(): string {

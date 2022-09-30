@@ -1,5 +1,5 @@
 const rnaColor = 'rgb(255,230,153)';
-const invAbasicColor = 'rgb(255,230,153)';
+const invAbasicColor = 'rgb(203,119,211)';
 export const axolabsMap:
   {[index: string]: {fullName: string, symbols: [string, string, string, string], color: string}} =
 {
@@ -13,17 +13,17 @@ export const axolabsMap:
     symbols: ['dA', 'dC', 'dG', 'dT'],
     color: 'rgb(197,224,180)',
   },
-  '2\'-Fluoro': {
+  "2\"-Fluoro": {
     fullName: '2\'-Fluoro nucleotides',
     symbols: ['Af', 'Cf', 'Gf', 'Uf'],
     color: 'rgb(68,114,196)',
   },
-  '2\'-O-Methyl': {
+  "2\"-O-Methyl": {
     fullName: '2\'-O-Methyl nucleotides',
     symbols: ['a', 'c', 'g', 'u'],
     color: 'rgb(166,166,166)',
   },
-  '2\'-O-MOE': {
+  "2\"-O-MOE": {
     fullName: '2\'-O-MOE nucleotides (including 5-Methyl C)',
     symbols: ['Am', 'Cm', 'Gm', 'Tm'],
     color: 'rgb(112,48,160)',
@@ -83,7 +83,7 @@ export const axolabsMap:
     symbols: ['(invabasic)', '(invabasic)', '(invabasic)', '(invabasic)'],
     color: invAbasicColor,
   },
-  '5\'-vinylps': {
+  "5\"-vinylps": {
     fullName: '5\'-vinylphosphonate-2\'-OMe-uridine',
     symbols: ['(vinu)', '(vinu)', '(vinu)', '(vinu)'],
     color: 'rgb(0,0,139)',
@@ -93,7 +93,7 @@ export const axolabsMap:
     symbols: ['(invabasic)', '(invabasic)', '(invabasic)', '(invabasic)'],
     color: invAbasicColor,
   },
-  '2\'-OMe-U(o)': {
+  "2\"-OMe-U(o)": {
     fullName: 'Nucleotide Uridine with 2\'O-Methyl protection (overhang)',
     symbols: ['mU', 'mU', 'mU', 'mU'],
     color: 'rgb(65,233,80)',

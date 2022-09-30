@@ -4,7 +4,7 @@ import {Utils, Newick} from '@phylocanvas/phylocanvas.gl';
 export const mlbTreeNodeRe = /([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)/g;
 
 /** get variable region (v_id) from MLB tree node id */
-export function getVId(treeNodeId: string) {
+export function getVId(treeNodeId: string): string {
   return treeNodeId.replaceAll(mlbTreeNodeRe, '$3');
 }
 
@@ -207,6 +207,8 @@ interface TreeStats {
   totalLeaves: number;
   leavesIntersected: number;
   totalSubtreeLength: number;
+
+  [index: string]: number;
 }
 
 const _nullStats: TreeStats = {

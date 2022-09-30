@@ -36,10 +36,10 @@ expect.extend({
 });
 
 it('TEST', async () => {
-  const targetPackage:string = process.env.TARGET_PACKAGE ?? 'MolecularLiabilityBrowser';
+  const targetPackage: string = process.env.TARGET_PACKAGE ?? 'MolecularLiabilityBrowser';
   console.log(`Testing ${targetPackage} package`);
 
-  const r = await page.evaluate((targetPackage):Promise<object> => {
+  const r = await page.evaluate((targetPackage): Promise<object> => {
     return new Promise<object>((resolve, reject) => {
       (<any>window).grok.functions.eval(targetPackage + ':test()').then((df: any) => {
         const cStatus = df.columns.byName('success');
@@ -52,10 +52,12 @@ it('TEST', async () => {
         let failReport = '';
         for (let i = 0; i < df.rowCount; i++) {
           if (cStatus.get(i)) {
-            passReport += `Test result : Success : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+            passReport += `Test result : Success : ${cTime.get(i)} : ` +
+              `${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           } else {
             failed = true;
-            failReport += `Test result : Failed : ${cTime.get(i)} : ${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
+            failReport += `Test result : Failed : ${cTime.get(i)} : ` +
+              `${targetPackage}.${cCat.get(i)}.${cName.get(i)} : ${cMessage.get(i)}\n`;
           }
         }
         resolve({failReport, passReport, failed});

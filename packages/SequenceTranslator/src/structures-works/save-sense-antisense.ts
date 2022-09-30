@@ -29,8 +29,8 @@ export function saveSenseAntiSense() {
   const moleculeSvgDiv = ui.block([]);
   const ssInput = ui.textInput('Sense Strand', '');
   const asInput = ui.textInput('Anti Sense', '');
-  const straight = '5\' ->3\'';
-  const inverse = '3\' ->5\'';
+  const straight = "5 prime -> 3 prime";
+  const inverse = "3 prime -> 5 prime";
   let ssInverse = false;
   let asInverse = false;
 

@@ -27,8 +27,8 @@ function genChoices<T>(count: number, choices: T[]): T[] {
 }
 
 function genChainDataFrame(ids: string[], chainType: 'H' | 'L'): DG.DataFrame {
-  const count = ids.length;
-  const header = chainColumns[chainType];
+  const count: number = ids.length;
+  const header: string[] = chainColumns[chainType];
   const columns: DG.Column[] = [];
   let index = 0;
 

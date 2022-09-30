@@ -32,38 +32,37 @@ export function getSeparator(col: DG.Column<string>): string {
   return col.getTag(C.TAGS.SEPARATOR) ?? '';
 }
 
-export function scaleActivity(
-  activityScaling: string, df: DG.DataFrame, originalActivityName?: string, cloneBitset = false,
-): [DG.DataFrame, string] {
-  let currentActivityColName = originalActivityName ?? C.COLUMNS_NAMES.ACTIVITY;
-  const flag = df.columns.names().includes(currentActivityColName) &&
-    currentActivityColName === originalActivityName;
-  currentActivityColName = flag ? currentActivityColName : C.COLUMNS_NAMES.ACTIVITY;
-  const tempDf = df.clone(cloneBitset ? df.filter : null, [currentActivityColName]);
+export function getOrFindNext(i: number, val: boolean, filter: DG.BitSet) {
+  return filter.get(i) === val ? i : filter.findNext(i, val);
+}
 
-  let formula = (v: number): number => v;
+export function scaleActivity(activityScaling: string, activityCol: DG.Column<number>, indexes?: number[],
+  ): [DG.DataFrame, (x: number) => number, string] {
+  const tempDf = DG.DataFrame.create(activityCol.length);
+
+  let formula = (x: number): number => x;
   let newColName = 'activity';
   switch (activityScaling) {
   case 'none':
     break;
   case 'lg':
-    formula = (v: number): number => Math.log10(v);
+    formula = (x: number): number => Math.log10(x);
     newColName = `Log10(${newColName})`;
     break;
   case '-lg':
-    formula = (v: number): number => -Math.log10(v);
+    formula = (x: number): number => -Math.log10(x);
     newColName = `-Log10(${newColName})`;
     break;
   default:
     throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
   }
+  tempDf.columns.addNewVirtual(
+    C.COLUMNS_NAMES.ACTIVITY_SCALED, (i) => {
+      const val = activityCol.get(indexes ? indexes[i] : i);
+      return val ? formula(val) : val;
+    }, DG.TYPE.FLOAT);
 
-  const asCol = tempDf.columns.addNewFloat(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-  const activityCol = df.getCol(currentActivityColName);
-  asCol.init((i) => formula(activityCol.get(i)));
-  df.tags['scaling'] = activityScaling;
-
-  return [tempDf, newColName];
+  return [tempDf, formula, newColName];
 }
 
 export function calculateBarsData(columns: DG.Column<string>[], selection: DG.BitSet): type.MonomerDfStats {

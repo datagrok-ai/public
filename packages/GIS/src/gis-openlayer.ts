@@ -261,7 +261,7 @@ export class OpenLayers {
     //     source: sourceVector,
     //   }));
     // this.olMap.getView().fit(sourceVector.getExtent());
-    OLG.olMap.getView().fit(sourceVector.getExtent());
+    OLG.olMap.getView().fit(sourceVector.getExtent()); //TODO: check is it doubling and remove it if need
   }
 
   addKMLLayerFromStream(stream: string, focusOnContent: boolean = true): VectorLayer<VectorSource> {
@@ -269,7 +269,7 @@ export class OpenLayers {
       features: new KML().readFeatures(stream),
     });
     const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector);
-    if (focusOnContent)
+    if (focusOnContent) //TODO: check is it doubling and remove it if need
       this.olMap.getView().fit(sourceVector.getExtent());
     return newLayer;
   }
@@ -285,7 +285,7 @@ export class OpenLayers {
       features: new GeoJSON().readFeatures(stream),
     });
     const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector);
-    if (focusOnContent)
+    if (focusOnContent) //TODO: check is it doubling and remove it if need
       this.olMap.getView().fit(sourceVector.getExtent());
     return newLayer;
   }
@@ -295,7 +295,7 @@ export class OpenLayers {
       features: new TopoJSON().readFeatures(stream),
     });
     const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector);
-    if (focusOnContent)
+    if (focusOnContent) //TODO: check is it doubling and remove it if need
       this.olMap.getView().fit(sourceVector.getExtent());
     return newLayer;
   }
@@ -321,7 +321,7 @@ export class OpenLayers {
       for (let i = 0; i < layersArr.length; i++) {
         let lrName = layersArr[i].get('layerName');
         if (lrName === 'undefined') lrName = '';
-        const layerName = lrName; //i + ' ' + lrName; //layersArr[i].get('layerName');
+        const layerName = lrName;
         arrayNames.push(layerName);
       }
     }
@@ -349,7 +349,7 @@ export class OpenLayers {
     if (this.olMap) {
       const layersArr = this.olMap.getAllLayers();
       for (let i = 0; i < layersArr.length; i++) {
-        let lId = layersArr[i].get('layerId');
+        const lId = layersArr[i].get('layerId');
         if (layerId === lId)
           layerResult = layersArr[i];
       }
@@ -379,7 +379,7 @@ export class OpenLayers {
 
   //adds arbitrary Vector layer
   addNewVectorLayer(lrName?: string, opt?: Object|null,
-    style?: StyleLike|null, src?: VectorSource|null): VectorLayer<VectorSource> {
+    style?: StyleLike|null, src?: VectorSource|null, focusOnContent?: boolean): VectorLayer<VectorSource> {
     let sourceVector: VectorSource;
     if (src) sourceVector = src;
     else sourceVector = new VectorSource();
@@ -390,7 +390,11 @@ export class OpenLayers {
     if (style) newLayer.setStyle(style);
     // this.olMap.addLayer(newLayer);
     newLayer.setOpacity(0.5); //TODO: change this corresponding to layer opacity settings
+
     this.addLayer(newLayer);
+    if (focusOnContent)
+      this.olMap.getView().fit(sourceVector.getExtent());
+
     return newLayer;
   }
 
@@ -510,8 +514,6 @@ export class OpenLayers {
 
   //map base events handlers>>
   onMapClick(evt: MapBrowserEvent<any>) {
-    // evt.coordinate
-    //evt.pixel
     const res: OLCallbackParam = {
       coord: evt.coordinate,
       pixel: [evt.pixel[0], evt.pixel[1]],
@@ -533,7 +535,6 @@ export class OpenLayers {
       }
     }
     // evt.stopPropagation(); //stopImmediatePropagation();
-    // stopPropagation(evt);
     if (this.onClickCallback)
       this.onClickCallback(res);
     else {
@@ -640,13 +641,15 @@ export class OpenLayers {
     aLayer = this.olMarkersLayer;
     if (layer) aLayer = layer;
 
+    const strCol = toStringColor(colorVal, this.markerOpacity);
     if (aLayer) {
       const marker = new Feature(new Point(OLProj.fromLonLat(coord)));
       const style = new Style({
         image: new OLStyle.Circle({
           radius: sizeVal,
           fill: new OLStyle.Fill({
-            color: toStringColor(colorVal, this.markerOpacity), //TODO: change to gisView.markerOpacity
+            // color: toStringColor(colorVal, this.markerOpacity), //TODO: change to gisView.markerOpacity
+            color: strCol,
           }),
           stroke: new OLStyle.Stroke({
             color: `rgba(255, 0, 0, 0.4)`, //toStringColor(colorVal, this.markerOpacity-0.1),
@@ -659,6 +662,18 @@ export class OpenLayers {
 
       const src = aLayer.getSource();
       if (src) src.addFeature(marker);
+    }
+  }
+
+  addFeaturesBulk(arrFeatures: Array<Feature>,
+    layer?: VectorLayer<VectorSource>|HeatmapLayer|undefined) {
+    //add array of features to the layer
+    let aLayer: VectorLayer<VectorSource>|HeatmapLayer|undefined|null;
+    aLayer = this.olMarkersLayer;
+    if (layer) aLayer = layer;
+    if (aLayer) {
+      const src = aLayer.getSource();
+      if (src) src.addFeatures(arrFeatures);
     }
   }
 }
