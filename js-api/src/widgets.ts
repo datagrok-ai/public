@@ -18,8 +18,7 @@ let api = <any>window;
 export type RangeSliderStyle = 'barbell' | 'lines' | 'thin_barbell';
 
 export type SliderOptions = {
-  style?: RangeSliderStyle,
-  allowResize?: boolean,
+  style?: RangeSliderStyle
 }
 
 export class ObjectPropertyBag {
@@ -646,7 +645,7 @@ export class Dialog extends DartWidget {
   /** @returns {Dialog}
    * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
    * */
-  show(options?: {modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string;}): Dialog {
+  show(options?: { modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string; }): Dialog {
     api.grok_Dialog_Show(this.dart, options?.modal, options?.resizable, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor);
     return this;
   }
@@ -1509,6 +1508,7 @@ export class TreeViewGroup extends TreeViewNode {
   }
 
   get expanded(): boolean { return api.grok_TreeViewNode_Get_Expanded(this.dart); }
+
   set expanded(isExpanded: boolean) { api.grok_TreeViewNode_Set_Expanded(this.dart, isExpanded); }
 
   /** Adds new group */
@@ -1527,15 +1527,24 @@ export class TreeViewGroup extends TreeViewNode {
   }
 
   get onNodeExpanding(): Observable<TreeViewGroup> { return __obs('d4-tree-view-node-expanding', this.dart); }
+
   get onNodeAdded(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-added', this.dart); }
+
   get onNodeCheckBoxToggled(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-checkbox-toggled', this.dart); }
+
   get onChildNodeExpandedChanged(): Observable<TreeViewGroup> { return __obs('d4-tree-view-child-node-expanded-changed', this.dart); }
+
   get onChildNodeExpanding(): Observable<TreeViewGroup> { return __obs('d4-tree-view-child-node-expanding', this.dart); }
+
   // get onChildNodeContextMenu(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-context-menu', this.dart); }
   get onNodeContextMenu(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-context-menu', this.dart); }
+
   get onSelectedNodeChanged(): Observable<TreeViewNode> { return __obs('d4-tree-view-selected-node-changed', this.dart); }
+
   get onNodeMouseEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-enter', this.dart); }
+
   get onNodeMouseLeave(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-leave', this.dart); }
+
   get onNodeEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-enter', this.dart); }
 }
 
@@ -1547,17 +1556,14 @@ export class RangeSlider extends DartWidget {
     let options: SliderOptions = {};
     if (typeof optionsStyle !== 'string') {
       options.style = optionsStyle.style;
-      options.allowResize = optionsStyle.allowResize;
+    } else {
+      options.style = optionsStyle;
     }
-    else {
-        options.style = optionsStyle;
-        options.allowResize = false;
-    }
-    return toJs(api.grok_RangeSlider(options.style, vertical, options.allowResize));
+    return toJs(api.grok_RangeSlider(options.style, vertical));
   }
 
   /** Minimum range value. */
-  get minRange(): number { return api.grok_RangeSlider_Get_MinRange(this.dart) };
+  get minRange(): number { return api.grok_RangeSlider_Get_MinRange(this.dart); };
 
   /** Gets maximum range value. */
   get maxRange(): number { return api.grok_RangeSlider_Get_MaxRange(this.dart); };
@@ -1575,6 +1581,13 @@ export class RangeSlider extends DartWidget {
    * @param {number} max */
   setValues(minRange: number, maxRange: number, min: number, max: number): void {
     api.grok_RangeSlider_SetValues(this.dart, minRange, maxRange, min, max);
+  }
+
+  /** Sets showHandles in range slider.
+   * @param {boolean} value */
+  setShowHandles(value: boolean): void {
+    console.log('setShowHandles', value);
+    api.grok_RangeSlider_SetShowHandles(this.dart, value);
   }
 
   /** Sets the specified min value, preserving the range (scrolls). */
