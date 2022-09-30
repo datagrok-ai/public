@@ -21,6 +21,7 @@ export class SARViewerBase extends DG.JsViewer {
   initialized = false;
   isPropertyChanging: boolean = false;
   _isVertical = false;
+  isModeChanging = false;
 
   constructor() {
     super();
@@ -52,20 +53,58 @@ export class SARViewerBase extends DG.JsViewer {
 
   detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
 
+  get state(): string {
+    return this.dataFrame.getTag(C.TAGS.SAR_MODE) ?? '10';
+  }
+  set state(s: string) {
+    this.dataFrame.setTag(C.TAGS.SAR_MODE, s);
+  }
+
   render(refreshOnly = false): void {
     if (!this.initialized)
       return;
     if (!refreshOnly) {
       $(this.root).empty();
-      const switchHost = ui.div();
+      let switchHost = ui.div();
       if (this.name == 'MC') {
-        const modeSwitch = ui.switchInput('Invariant Map', this.model.isInvariantMap, () => {
-          this.model.isInvariantMap = modeSwitch.value;
-          this._titleHost.innerText = modeSwitch.value ? 'Invariant Map' : 'Mutation Cliffs';
+        const mutationCliffsMode = ui.boolInput('', this.state[0] === '1', () => {
+          if (this.isModeChanging)
+            return;
+          this.isModeChanging = true;
+          invariantMapMode.value = !invariantMapMode.value;
+          this.isModeChanging = false;
+          this._titleHost.innerText = 'Mutation Cliffs';
+          this.model.isInvariantMap = false;
           this.viewerGrid.invalidate();
         });
-        modeSwitch.root.style.position = 'absolute';
-        switchHost.appendChild(modeSwitch.root);
+        mutationCliffsMode.addPostfix('Mutation Cliffs');
+        const invariantMapMode = ui.boolInput('', this.state[1] === '1', () => {
+          if (this.isModeChanging)
+            return;
+          this.isModeChanging = true;
+          mutationCliffsMode.value = !mutationCliffsMode.value;
+          this.isModeChanging = false;
+          this._titleHost.innerText = 'Invariant Map';
+          this.model.isInvariantMap = true;
+          this.viewerGrid.invalidate();
+        });
+        invariantMapMode.addPostfix('Invariant Map');
+        // const modeSwitch = ui.switchInput('Invariant Map', this.model.isInvariantMap, () => {
+        //   this.model.isInvariantMap = modeSwitch.value;
+        //   this._titleHost.innerText = modeSwitch.value ? 'Invariant Map' : 'Mutation Cliffs';
+        //   this.viewerGrid.invalidate();
+        // });
+        // modeSwitch.root.style.position = 'absolute';
+        const setDefaultProperties = (input: DG.InputBase): void => {
+          $(input.root).find('.ui-input-editor').css('margin', '0px').attr('type', 'radio');
+          $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
+        };
+        setDefaultProperties(mutationCliffsMode);
+        setDefaultProperties(invariantMapMode)
+        $(mutationCliffsMode.root).css('padding-right', '10px').css('padding-left', '5px');
+
+        switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root]);
+        switchHost.style.position = 'absolute';
       }
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
