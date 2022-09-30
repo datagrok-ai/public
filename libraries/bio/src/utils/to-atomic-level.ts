@@ -118,7 +118,7 @@ function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
   const splitterFunc: SplitterFunc = WebLogo.getSplitter(colUnits, separator);
   for (let row = 0; row < macroMolCol.length; ++row) {
     const macroMolecule = macroMolCol.get(row);
-    // todo: handle the exception case when macroMolecule can be null
+    // todo: handle the exception case when macroMolecule is null
     result[row] = macroMolecule ? splitterFunc(macroMolecule) : [];
   }
   return result;
@@ -157,7 +157,6 @@ function getMolGraph(
     return null;
   } else {
     const libObject = formattedMonomerLib.get(monomerSymbol);
-    // todo: create constants for HELM molfile fields
     const rGroups = parseRGroupTypes(libObject[RGROUP_FIELD]);
     const rGroupIndices = parseRGroupIndices(libObject[MOLFILE_FIELD]);
     const molfileV2K = substituteRGroups(libObject[MOLFILE_FIELD], rGroups, rGroupIndices);
@@ -168,7 +167,7 @@ function getMolGraph(
     const atomData = parseAtomData(removedNodes, bondData, molfileV3K, counts.atomCount);
 
     const monomerGraph = {atoms: atomData, bonds: bondData};
-    adjustMonomerGraph(monomerGraph, atomData.leftNode, atomData.leftRemovedNode);
+    adjustPeptideMonomerGraph(monomerGraph);
     monomerGraph.atoms.shift = [
       keepPrecision(
         monomerGraph.atoms.x[monomerGraph.atoms.rightRemovedNode - 1] -
@@ -237,8 +236,7 @@ function removeRGroupLine(molfileV2K: string): string {
 /* V2000 to V3000 converter  */
 function convertMolfileToV3K(molfileV2K: string, moduleRdkit: any): string {
   // todo: type of moduleRdkit
-  // todo: consider the use of unified converter (relies on creation of moduleRdkit
-  // on each iteration, though)
+  // todo: consider the use of standard Chem converter (relies on creation of moduleRdkit on each iteration, though)
   const molObj = moduleRdkit.get_mol(molfileV2K);
   const molfileV3K = molObj.get_v3Kmolblock();
   molObj.delete();
@@ -484,30 +482,45 @@ function removeNodeAndBonds(monomerGraph: MolGraph, removedNode: number): void {
 
 // todo: rewrite description
 /* Adjust the (peptide) monomer graph so that it has standard form  */
-function adjustMonomerGraph(monomerGraph: MolGraph, nodeOne: number, nodeTwo: number): void {
-  // todo: generalize to nucleotides
-  const nodeOneIdx = nodeOne - 1; // node indexing in molfiles starts from 1
-  const nodeTwoIdx = nodeTwo - 1;
-  const x = monomerGraph.atoms.x;
-  const y = monomerGraph.atoms.y;
+function adjustPeptideMonomerGraph(monomer: MolGraph): void {
+  const nodeOneIdx = monomer.atoms.leftNode - 1; // node indexing in molfiles starts from 1
+  const nodeTwoIdx = monomer.atoms.leftRemovedNode - 1;
+  const x = monomer.atoms.x;
+  const y = monomer.atoms.y;
 
   // place nodeOne at origin
-  shiftCoordinates(monomerGraph, -x[nodeOneIdx], -y[nodeOneIdx]);
+  shiftCoordinates(monomer, -x[nodeOneIdx], -y[nodeOneIdx]);
 
   // angle is measured between OY and the rotated node
   const angle = findAngleWithOY(x[nodeTwoIdx], y[nodeTwoIdx]);
 
   // rotate the centered graph, so that 'nodeTwo' ends up on the positive ray of OY
-  rotateCenteredGraph(monomerGraph.atoms, -angle);
+  rotateCenteredGraph(monomer.atoms, -angle);
 
-  if (x[monomerGraph.atoms.rightRemovedNode - 1] < 0)
-    flipMonomerAroundOY(monomerGraph);
+  if (x[monomer.atoms.rightRemovedNode - 1] < 0)
+    flipMonomerAroundOY(monomer);
+
+  const doubleBondedOxygen = findDoubleBondedCarbonylOxygen(monomer);
 
   // flip carboxyl and R if necessary
-  // flipCarboxylAndRadical(monomerGraph);
+  flipCarboxylAndRadical(monomer, doubleBondedOxygen);
 
   // flip hydroxyl group with double-bound O inside carboxyl group if necessary
-  flipHydroxilGroup(monomerGraph);
+  flipHydroxilGroup(monomer, doubleBondedOxygen);
+}
+
+function flipCarboxylAndRadical(monomer: MolGraph, doubleBondedOxygen: number): void {
+  // verify that the carboxyl group is in the lower half-plane
+  if (monomer.atoms.y[monomer.atoms.rightRemovedNode - 1] < 0 &&
+    monomer.atoms.y[doubleBondedOxygen - 1] < 0) {
+    flipMonomerAroundOX(monomer);
+    rotateCenteredGraph(monomer.atoms,
+      -findAngleWithOX(
+        monomer.atoms.x[monomer.atoms.rightNode - 1],
+        monomer.atoms.y[monomer.atoms.rightNode - 1]
+      )
+    );
+  }
 }
 
 /* Finds angle between OY and the line joining (x, y) with the origin */
@@ -527,17 +540,7 @@ function findAngleWithOY(x: number, y: number): number {
 
 /* Finds angle between OY and the line joining (x, y) with the origin */
 function findAngleWithOX(x: number, y: number): number {
-  let angle;
-  if (x === 0) { // the rotated node is on OY
-    angle = y > 0 ? 0 : Math.PI;
-  } else if (y === 0) { // the rotated node is on OX
-    angle = x > 0 ? -Math.PI/2 : Math.PI/2;
-  } else {
-    const tan = y / x;
-    const atan = Math.atan(tan);
-    angle = (x < 0) ? Math.PI/2 + atan : -Math.PI/2 + atan;
-  }
-  return angle;
+  return findAngleWithOY(x, y) + Math.PI/2;
 }
 
 /*  Rotate the graph around the origin by 'angle'*/
@@ -589,9 +592,8 @@ function flipMolGraph(molGraph: MolGraph, axis: boolean): void {
 
 /* Flips double-bonded O in carbonyl group with OH in order for the monomers
  * to have standard representation simplifying their concatenation. The
- * monomer must already be adjusted with adjustMonomerGraph in order for this function to be implemented  */
-function flipHydroxilGroup(monomer: MolGraph): void {
-  const doubleBondedOxygen = findDoubleBondedCarbonylOxygen(monomer);
+ * monomer must already be adjusted with adjustPeptideMonomerGraph in order for this function to be implemented  */
+function flipHydroxilGroup(monomer: MolGraph, doubleBondedOxygen: number): void {
   const x = monomer.atoms.x;
   // -1 below because indexing of nodes in molfiles starts from 1, unlike arrays
   if (x[monomer.atoms.rightRemovedNode - 1] > x[doubleBondedOxygen - 1])
@@ -628,7 +630,6 @@ function swapNodes(monomer: MolGraph, nodeOne: number, nodeTwo: number): void {
   y[nodeTwoIdx] = tmpY;
 }
 
-// todo: don't use map, a list is enough
 function constructBondsMap(monomer: MolGraph): Map<number, Array<number>> {
   const map = new Map<number, Array<number>>();
   for (const atomPair of monomer.bonds.atomPair) {
@@ -654,7 +655,8 @@ function shiftCoordinates(molGraph: MolGraph, xShift: number, yShift?: number): 
       y[i] = keepPrecision(y[i] + yShift);
   }
 }
-/* Join two subsequent MolGraph objects */
+
+/* Translate a sequence of monomer symbols into Molfile V3000 */
 function monomerSeqToMolfile(monomerSeq: string[], monomersDict: Map<string, MolGraph>): string {
   if (monomerSeq.length === 0)
     throw new Error('The monomerSeq is empty');
