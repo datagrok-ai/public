@@ -5,6 +5,7 @@ const help = require('./commands/help').help;
 const commands = {
   add: require('./commands/add').add,
   api: require('./commands/api').api,
+  check: require('./commands/check').check,
   config: require('./commands/config').config,
   create: require('./commands/create').create,
   publish: require('./commands/publish').publish,
