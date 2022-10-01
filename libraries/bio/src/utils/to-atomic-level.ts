@@ -2,12 +2,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {WebLogo, SplitterFunc} from '../../src/viewers/web-logo';
-import {HELM_CORE_FIELDS} from './monomer-utils';
-import {RGROUP_FIELD, MOLFILE_FIELD, MONOMER_SYMBOL, CAP_GROUP_SMILES} from './const';
+import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, RGROUP_FIELDS} from './const';
 
+// constants for parsing of molfile V2000
 const V2K_RGP_SHIFT = 8;
 const V2K_RGP_LINE = 'M  RGP';
 
+// constants for parsing/reconstruction of molfile V3000
 const V3K_COUNTS_SHIFT = 14;
 const V3K_IDX_SHIFT = 7;
 const V3K_HEADER_FIRST_LINE = '\nDatagrok macromolecule handler\n\n';
@@ -65,6 +66,7 @@ export async function _toAtomicLevel(
   // todo: remove?
   const pi = DG.TaskBarProgressIndicator.create('Restoring atomic structure...');
 
+  // const polymerType = macroMolCol.getTag(DG.);
   const monomerSequencesArray: string[][] = getMonomerSequencesArray(macroMolCol);
   const monomersDict = await getMonomersDict(monomerSequencesArray, monomersLibList);
   const reconstructed: string[] = new Array(macroMolCol.length);
@@ -72,7 +74,8 @@ export async function _toAtomicLevel(
   for (let row = 0; row < columnLength; ++row) {
     const monomerSeq = monomerSequencesArray[row];
     reconstructed[row] = monomerSeqToMolfile(monomerSeq, monomersDict);
-    pi.update(100 * (row + 1)/columnLength, '...complete');
+    if (row % 100 === 0)
+      pi.update(100 * (row + 1)/columnLength, '...complete');
   }
 
   // exclude name collisions
@@ -96,12 +99,12 @@ function getFormattedMonomerLib(monomersLibList: any[]): Map<string, any> {
     (it) => {
       // todo: generalize for the case of nucleotides
       // todo: remove string literals
-      if (it['polymerType'] === 'PEPTIDE') {
+      if (it[HELM_FIELDS.POLYMER_TYPE] === HELM_POLYMER_TYPE.PEPTIDE) {
         const monomerObject: { [key: string]: any } = {};
         HELM_CORE_FIELDS.forEach((field) => {
           monomerObject[field] = it[field];
         });
-        map.set(it[MONOMER_SYMBOL], monomerObject);
+        map.set(it[HELM_FIELDS.SYMBOL], monomerObject);
       }
     });
   return map;
@@ -157,9 +160,9 @@ function getMolGraph(
     return null;
   } else {
     const libObject = formattedMonomerLib.get(monomerSymbol);
-    const rGroups = parseRGroupTypes(libObject[RGROUP_FIELD]);
-    const rGroupIndices = parseRGroupIndices(libObject[MOLFILE_FIELD]);
-    const molfileV2K = substituteRGroups(libObject[MOLFILE_FIELD], rGroups, rGroupIndices);
+    const rGroups = parseRGroupTypes(libObject[HELM_FIELDS.RGROUPS]);
+    const rGroupIndices = parseRGroupIndices(libObject[HELM_FIELDS.MOLFILE]);
+    const molfileV2K = substituteRGroups(libObject[HELM_FIELDS.MOLFILE], rGroups, rGroupIndices);
     const molfileV3K = convertMolfileToV3K(removeRGroupLine(molfileV2K), moduleRdkit);
     const counts = parseAtomAndBondCounts(molfileV3K);
     const bondData = parseBondData(molfileV3K, counts.bondCount);
@@ -194,7 +197,7 @@ function parseRGroupTypes(rgroupObjList: any[]): string[] {
   // todo: possible generalizations
   const rgroupsArray: string[] = [];
   for (const obj of rgroupObjList) {
-    let rgroup: string = obj[CAP_GROUP_SMILES];
+    let rgroup: string = obj[RGROUP_FIELDS.CAP_GROUP_SMILES];
     // todo: verify that there are no multi-element rgroups, or consider how to
     // transform them
     rgroup = rgroup.replace(/(\[|\]|\*|:|\d)/g, '');
@@ -514,6 +517,7 @@ function flipCarboxylAndRadical(monomer: MolGraph, doubleBondedOxygen: number): 
   if (monomer.atoms.y[monomer.atoms.rightRemovedNode - 1] < 0 &&
     monomer.atoms.y[doubleBondedOxygen - 1] < 0) {
     flipMonomerAroundOX(monomer);
+
     rotateCenteredGraph(monomer.atoms,
       -findAngleWithOX(
         monomer.atoms.x[monomer.atoms.rightNode - 1],
@@ -523,12 +527,12 @@ function flipCarboxylAndRadical(monomer: MolGraph, doubleBondedOxygen: number): 
   }
 }
 
-/* Finds angle between OY and the line joining (x, y) with the origin */
+/* Finds angle between OY and the ray joining origin with (x, y) */
 function findAngleWithOY(x: number, y: number): number {
   let angle;
-  if (x === 0) { // the rotated node is on OY
+  if (x === 0) {
     angle = y > 0 ? 0 : Math.PI;
-  } else if (y === 0) { // the rotated node is on OX
+  } else if (y === 0) {
     angle = x > 0 ? -Math.PI/2 : Math.PI/2;
   } else {
     const tan = y / x;
@@ -538,12 +542,12 @@ function findAngleWithOY(x: number, y: number): number {
   return angle;
 }
 
-/* Finds angle between OY and the line joining (x, y) with the origin */
+/* Finds angle between OX and the ray joining origin with (x, y) */
 function findAngleWithOX(x: number, y: number): number {
   return findAngleWithOY(x, y) + Math.PI/2;
 }
 
-/*  Rotate the graph around the origin by 'angle'*/
+/*  Rotate the graph around the origin by 'angle' */
 function rotateCenteredGraph(atoms: AtomData, angle: number): void {
   if (angle !== 0) {
     const x = atoms.x;
@@ -658,6 +662,7 @@ function shiftCoordinates(molGraph: MolGraph, xShift: number, yShift?: number): 
 
 /* Translate a sequence of monomer symbols into Molfile V3000 */
 function monomerSeqToMolfile(monomerSeq: string[], monomersDict: Map<string, MolGraph>): string {
+  // todo: handle the case when the polymer is empty
   if (monomerSeq.length === 0)
     throw new Error('The monomerSeq is empty');
 
