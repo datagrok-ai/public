@@ -17,8 +17,11 @@ export function check(args: { [x: string]: string | string[]; }) {
     return false;
   }
 
-  const files = walk.sync({ ignoreFiles: ['.npmignore', '.gitignore'] })
-    .filter((f) => f.endsWith('.js') || f.endsWith('.ts'));
+  const files = walk.sync({ ignoreFiles: ['.npmignore', '.gitignore'] });
+  const jsTsFiles = files.filter((f) => f.endsWith('.js') || f.endsWith('.ts'));
+  const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
+    'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
+  const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
 
   const webpackConfigPath = path.join(curDir, 'webpack.config.js');
   const isWebpack = fs.existsSync(webpackConfigPath);
@@ -26,10 +29,10 @@ export function check(args: { [x: string]: string | string[]; }) {
     const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
     const externals = extractExternals(content);
     if (externals)
-      checkImportStatements(files, externals).forEach((warning) => color.warn(warning));
+      checkImportStatements(jsTsFiles, externals).forEach((warning) => color.warn(warning));
   }
 
-  checkFuncSignatures(files).forEach((warning) => color.warn(warning));
+  checkFuncSignatures(funcFiles).forEach((warning) => color.warn(warning));
 
   return true;
 }
@@ -175,7 +178,7 @@ function checkFuncSignatures(files: string[]): string[] {
       } else if (roles.length === 1) {
         const vr = checkFunctions[roles[0]](f);
         if (!vr.value)
-          warnings.push(`File ${file}, function ${f.name}: ${vr.message}`);
+          warnings.push(`File ${file}, function ${f.name}:\n${vr.message}`);
       }
     }
   }
@@ -184,8 +187,46 @@ function checkFuncSignatures(files: string[]): string[] {
 }
 
 function getFuncMetadata(script: string): FuncMetadata[] {
-  //TODO: retrieve function metadata from file
-  return [];
+  const funcData: FuncMetadata[] = [];
+  const headerTags = ['name', 'description', 'help-url', 'input', 'output', 'tags', 'sample', 'language', 'returns', 'test',
+    'sidebar', 'condition', 'top-menu', 'environment', 'require', 'editor-for', 'schedule', 'reference', 'editor'];
+  const paramRegex = new RegExp(`\/\/\\s*(${headerTags.join('|')}|meta\\.[^:]*): *(\\S+) ?(\\S+)?`);
+  const nameRegex = /(?:|static|export\s+function|export\s+async\s+function)\s+([a-zA-Z_][a-zA-Z0-9_$]*)\s*\((.*?)\).*/;
+  let isHeader = false;
+  let data: FuncMetadata = { name: '', inputs: [], outputs: [] };
+
+  for (const line of script.split('\n')) {
+    if (!line)
+      continue;
+
+    const match = line.match(paramRegex);
+    if (match) {
+      if (!isHeader)
+        isHeader = true;
+      const param = match[1];
+      if (param === 'name')
+        data.name = match[2];
+      else if (param === 'description')
+        data.description = match[2];
+      else if (param === 'input')
+        data.inputs.push({ type: match[2] });
+      else if (param === 'output')
+        data.outputs.push({ type: match[2] });
+      else if (param === 'tags')
+        data.tags = match.input && match[3] ? match.input.split(':')[1].split(',').map((t) => t.trim()) : [match[2]];
+    }
+    if (isHeader) {
+      const nm = line.match(nameRegex);
+      if (nm && !line.match(paramRegex)) {
+        data.name = data.name || nm[1];
+        funcData.push(data);
+        data = { name: '', inputs: [], outputs: [] };
+        isHeader = false;
+      }
+    }
+  }
+
+  return funcData;
 }
 
 type FuncParam = {type: string};
