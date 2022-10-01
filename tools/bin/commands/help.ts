@@ -6,6 +6,7 @@ Datagrok's package management tool
 Commands:
     add       Add an object template
     api       Create wrapper functions
+    check     Check package content (function signatures, etc.)
     config    Create and manage config files
     create    Create a package
     publish   Upload a package
@@ -93,6 +94,12 @@ Options:
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
 `;
 
+const HELP_CHECK = `
+Usage: grok check
+
+Check package content (function signatures, import statements of external modules, etc.)
+`;
+
 const HELP_MIGRATE = `
 Usage: grok migrate
 
@@ -103,6 +110,7 @@ file and converting your scripts in the \`package.json\` file
 export const help = {
   add: HELP_ADD,
   api: HELP_API,
+  check: HELP_CHECK,
   config: HELP_CONFIG,
   create: HELP_CREATE,
   publish: HELP_PUBLISH,
