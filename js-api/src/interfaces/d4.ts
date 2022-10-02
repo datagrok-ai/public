@@ -1350,9 +1350,7 @@ export interface IPcPlotLookSettings {
   /// See also *Filtered Out Line Color*
   showFilteredOutLines: boolean;
 
-  showMin: boolean;
-
-  showMax: boolean;
+  showMinMax: boolean;
 
   minMaxHeight: number;
 
