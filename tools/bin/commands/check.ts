@@ -96,12 +96,12 @@ function checkFuncSignatures(files: string[]): string[] {
 
       if (inputs.length !== 1 || inputs[0].type !== 'column') {
         value = false;
-        message += 'Semantic type detectors must have one input of type "column"';
+        message += 'Semantic type detectors must have one input of type "column"\n';
       }
 
       if (outputs.length !== 1 || outputs[0].type !== 'string') {
         value = false;
-        message += 'Semantic type detectors must have one output of type "string"';
+        message += 'Semantic type detectors must have one output of type "string"\n';
       }
 
       return { value, message };
@@ -112,12 +112,12 @@ function checkFuncSignatures(files: string[]): string[] {
 
       if (inputs.length !== 0) {
         value = false;
-        message += 'Cell renderer functions should take no arguments';
+        message += 'Cell renderer functions should take no arguments\n';
       }
 
       if (outputs.length !== 1 || outputs[0].type !== 'grid_cell_renderer') {
         value = false;
-        message += 'Cell renderer functions must have one output of type "grid_cell_renderer"';
+        message += 'Cell renderer functions must have one output of type "grid_cell_renderer"\n';
       }
 
       return { value, message };
@@ -128,17 +128,17 @@ function checkFuncSignatures(files: string[]): string[] {
 
       if (tags == null || tags.filter((t) => t.startsWith('fileViewer')).length < 2) {
         value = false;
-        message += 'File viewers must have at least two special tags: "fileViewer" and "fileViewer-<extension>"';
+        message += 'File viewers must have at least two special tags: "fileViewer" and "fileViewer-<extension>"\n';
       }
 
       if (inputs.length !== 1 || inputs[0].type !== 'file') {
         value = false;
-        message += 'File viewers must have one input of type "file"';
+        message += 'File viewers must have one input of type "file"\n';
       }
 
       if (outputs.length !== 1 || outputs[0].type !== 'view') {
         value = false;
-        message += 'File viewers must have one output of type "view"';
+        message += 'File viewers must have one output of type "view"\n';
       }
 
       return { value, message };
@@ -149,7 +149,7 @@ function checkFuncSignatures(files: string[]): string[] {
 
       if (description == null || description === '') {
         value = false;
-        message += 'File exporters should have a description parameter';
+        message += 'File exporters should have a description parameter\n';
       }
 
       return { value, message };
@@ -160,7 +160,7 @@ function checkFuncSignatures(files: string[]): string[] {
 
       if (outputs.length === 1 && outputs[0].type === 'widget') {
         value = false;
-        message += 'Package settings editors must have one output of type "widget"';
+        message += 'Package settings editors must have one output of type "widget"\n';
       }
 
       return { value, message };
