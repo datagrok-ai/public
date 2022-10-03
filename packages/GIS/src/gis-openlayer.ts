@@ -164,7 +164,8 @@ export class OpenLayers {
   heatmapRadiusParam: number = 10;
 
   constructor(gV?: GisViewer) {
-    if ((gV) && (gV instanceof GisViewer)) this.gisViewer = gV;
+    if ((gV) && (gV instanceof GisViewer))
+      this.gisViewer = gV;
     this.olMap = new OLMap({});
     this.olCurrentView = new OLView({});
     this.olCurrentLayer = null;
@@ -210,7 +211,8 @@ export class OpenLayers {
 
   set heatmapBlur(val: number) {
     this.heatmapBlurParam = val;
-    if (this.olCurrentLayer instanceof HeatmapLayer) this.olCurrentLayer.setBlur(this.heatmapBlurParam);
+    if (this.olCurrentLayer instanceof HeatmapLayer)
+      this.olCurrentLayer.setBlur(this.heatmapBlurParam);
     else {
       //TODO: search and apply parameter to the first heatmap layer (if this is needed)
       // this.olMap.getAllLayers()
@@ -220,7 +222,8 @@ export class OpenLayers {
 
   set heatmapRadius(val: number) {
     this.heatmapRadiusParam = val;
-    if (this.olCurrentLayer instanceof HeatmapLayer) this.olCurrentLayer.setRadius(this.heatmapRadiusParam);
+    if (this.olCurrentLayer instanceof HeatmapLayer)
+      this.olCurrentLayer.setRadius(this.heatmapRadiusParam);
   }
   get heatmapRadius(): number { return this.heatmapRadiusParam; }
 
@@ -233,7 +236,7 @@ export class OpenLayers {
       view: new OLView({
         projection: 'EPSG:3857',
         // projection: 'EPSG:4326',
-        center: OLProj.fromLonLat([-77.01072811982019, 38.9133405111845]),
+        center: OLProj.fromLonLat([-77.01072, 38.91333]),
         zoom: 5,
       }),
     });
@@ -244,9 +247,8 @@ export class OpenLayers {
     this.olBaseLayer = this.addNewOSMLayer('BaseLayer');
     // this.olMarkersLayer = this.addNewVectorLayer('Markers');
     this.olMarkersLayer = this.addNewVectorLayer('Markers', null, this.genStyleMarker);
-    // this.olMarkersLayer.setStyle(this.genStyleMarker);
     this.olMarkersLayer.on('postrender', onPostrenderMarkers);
-    this.olMarkersLayer.on('postrender', onPrerenderMarkers);
+    this.olMarkersLayer.on('prerender', onPrerenderMarkers);
 
     //add base event handlers>>
     this.olMap.on('click', this.onMapClick);
@@ -317,7 +319,8 @@ export class OpenLayers {
 
   addNewView(options?: Object | undefined) {
     const newView = new OLView({});
-    if (options) newView.setProperties(options);
+    if (options)
+      newView.setProperties(options);
 
     this.olCurrentView = newView;
     this.olMap.setView(newView);
@@ -335,7 +338,8 @@ export class OpenLayers {
       const layersArr = this.olMap.getAllLayers();
       for (let i = 0; i < layersArr.length; i++) {
         let lrName = layersArr[i].get('layerName');
-        if (lrName === 'undefined') lrName = '';
+        if (lrName === 'undefined')
+          lrName = '';
         const layerName = lrName;
         arrayNames.push(layerName);
       }
@@ -387,7 +391,8 @@ export class OpenLayers {
     layerToAdd.set('layerId', Date.now()+'|'+(Math.random()*100));
     this.olMap.addLayer(layerToAdd);
     this.olCurrentLayer = layerToAdd;
-    if (this.onRefreshCallback) this.onRefreshCallback();
+    if (this.onRefreshCallback)
+      this.onRefreshCallback();
   }
 
   // addNewTileLayer(layerToAdd: BaseLayer) //TODO: add
@@ -396,13 +401,17 @@ export class OpenLayers {
   addNewVectorLayer(lrName?: string, opt?: Object|null,
     style?: StyleLike|null, src?: VectorSource|null, focusOnContent?: boolean): VectorLayer<VectorSource> {
     let sourceVector: VectorSource;
-    if (src) sourceVector = src;
+    if (src)
+      sourceVector = src;
     else sourceVector = new VectorSource();
     const newLayer = new VectorLayer({source: sourceVector});
 
-    if (lrName) newLayer.set('layerName', lrName);
-    if (opt) newLayer.setProperties(opt);
-    if (style) newLayer.setStyle(style);
+    if (lrName)
+      newLayer.set('layerName', lrName);
+    if (opt)
+      newLayer.setProperties(opt);
+    if (style)
+      newLayer.setStyle(style);
     newLayer.setOpacity(0.2); //TODO: change this corresponding to layer opacity settings
 
     this.addLayer(newLayer);
@@ -423,9 +432,11 @@ export class OpenLayers {
       }),
     });
 
-    if (layerName) newLayer.set('layerName', layerName);
+    if (layerName)
+      newLayer.set('layerName', layerName);
     else newLayer.set('layerName', 'Sattelite');
-    if (options) newLayer.setProperties(options);
+    if (options)
+      newLayer.setProperties(options);
     this.addLayer(newLayer);
     return newLayer;
   }
@@ -436,9 +447,11 @@ export class OpenLayers {
       preload: Infinity,
       source: new OSM()});
 
-    if (layerName) newLayer.set('layerName', layerName);
+    if (layerName)
+      newLayer.set('layerName', layerName);
     else newLayer.set('layerName', 'OpenStreet');
-    if (options) newLayer.setProperties(options);
+    if (options)
+      newLayer.setProperties(options);
     this.addLayer(newLayer);
     return newLayer;
   }
@@ -451,12 +464,15 @@ export class OpenLayers {
       weight: function(feature: Feature): number {
         let val = feature.get('_fieldValue');
         // if (val === undefined) val = feature.get('_fieldValue');
-        if (typeof(val) !== 'number') val = 1;
+        if (typeof(val) !== 'number')
+          val = 1;
         return val;
       },
     });
-    if (layerName) newLayer.set('layerName', layerName);
-    if (options) newLayer.setProperties(options);
+    if (layerName)
+      newLayer.set('layerName', layerName);
+    if (options)
+      newLayer.setProperties(options);
     // newLayer.changed();
     this.addLayer(newLayer);
     return newLayer;
@@ -465,41 +481,75 @@ export class OpenLayers {
   getFeaturesFromLayer(layer: VectorLayer<VectorSource>): any[] {
     const arrFeatures: Feature[] = []; //any[]
     const src = layer.getSource();
-    if (!src) return [];
+    if (!src)
+      return [];
     src.forEachFeature((ft)=>{
       arrFeatures.push(ft);
     });
     return arrFeatures;
   }
 
+  // createTextStyle(feature: FeatureLike, resolution: number): Style {
+  static createTextStyle(txt: any, resolution?: number): OLStyle.Text {
+    console.log('createTextStyle: ' + txt);
+    return new OLStyle.Text({
+      // textAlign: align == 'center',
+      // font: '12px Calibri,sans-serif',
+      text: txt ? (txt as string) : '',
+      fill: new OLStyle.Fill({ color: '#aa3300' }),
+      stroke: new OLStyle.Stroke({ color: '#aa3300', width: 1 }),
+      offsetX: 0,
+      offsetY: 0,
+      placement: 0,
+      maxAngle: 0,
+      overflow: false,
+      rotation: 0,
+    });
+  }
+
   //map marker style function>>
   genStyleMarker(feature: FeatureLike, resolution: number): Style {
     let val = feature.get('_fieldValue');
-    let size = feature.get('_fieldSize');
-    let clr = feature.get('_fieldColor');
-    if (typeof val !== 'number') val = 1;
-
-    const style = new Style({
-      image: new OLStyle.Circle({
-        // radius: this.weightedMarkers ? val*1 : this.markerSize,
-        radius: size ? size : OLG.markerSize,
-        fill: new OLStyle.Fill({
-          // color: toStringColor(#1f77b4, 0.4),
-          // color: 'rgba(255, 0, 255, 0.4)',
-          color: clr ? clr : 'rgba(255, 0, 255, 0.4)',
+    const size = feature.get('_fieldSize');
+    const clr = feature.get('_fieldColor');
+    // if (typeof val !== 'number')
+    //   val = 1;
+    let stylePt: OLStyle.Style;
+    //TODO: try to catch renrering time and change strategy on the flight
+    if (resolution < 30000 || renderTime < 1000) {
+      stylePt = new OLStyle.Style({
+        image: new OLStyle.Circle({
+          // radius: this.weightedMarkers ? val*1 : this.markerSize,
+          radius: size ? size : OLG.markerSize,
+          fill: new OLStyle.Fill({
+            color: clr ? clr : 'rgba(255, 0, 255, 0.4)',
+          }),
+          stroke: new OLStyle.Stroke({
+            // color: 'rgba(255, 204, 0, 0.2)',
+            color: 'rgba(255, 0, 0, 0.2)',
+            width: 1,
+          }),
         }),
-        stroke: new OLStyle.Stroke({
-          // color: 'rgba(255, 204, 0, 0.2)',
-          color: 'rgba(255, 0, 0, 0.2)',
-          width: 1,
+        // text: 'testtext',
+        // text: OpenLayers.createTextStyle(val, resolution),
+      });
+    } else {
+      stylePt = new OLStyle.Style({
+        image: new OLStyle.Circle({
+          radius: 1,
+          stroke: new OLStyle.Stroke({
+            color: 'rgba(0, 0, 0, 0.5)',
+            width: 1,
+          }),
         }),
-      }),
-    });
-    return style;
+      });
+    }
+    return stylePt;
   }
 
   static gisObjFromGeometry(ft: FeatureLike): GisTypes.GisPoint | GisTypes.GisArea | null {
-    if (!ft) return null;
+    if (!ft)
+      return null;
     const geom = ft.getGeometry();
     if (geom) {
       switch (geom.getType()) {
@@ -599,7 +649,8 @@ export class OpenLayers {
     if (layer) aLayer = layer;
     if (aLayer) {
       const src = aLayer.getSource();
-      if (src) src.clear();
+      if (src)
+        src.clear();
     }
   }
 
@@ -608,22 +659,26 @@ export class OpenLayers {
     //
     let aLayer: VectorLayer<VectorSource>|HeatmapLayer|undefined|null;
     aLayer = this.olMarkersLayer;
-    if (layer) aLayer = layer;
+    if (layer)
+      aLayer = layer;
 
     const maxradius = 30;
     if (aLayer) {
       let val = value;
-      if (typeof val !== 'number') val = 1;
+      if (typeof val !== 'number')
+        val = 1;
       let rad = this.markerSize;
       if (this.weightedMarkers) {
         rad = val;
-        if (val > maxradius) rad = maxradius;
+        if (val > maxradius)
+          rad = maxradius;
       }
       let stroke = 1;
       if (this.weightedMarkers) {
         // (val>maxradius) ? ((val/10>maxradius/2) ? (maxradius/2+2) : (val/10) ) : 1
         stroke = val;
-        if ((val > maxradius) && (val/10 > maxradius/2)) stroke = maxradius/2+2;
+        if ((val > maxradius) && (val/10 > maxradius/2))
+          stroke = maxradius/2+2;
         else stroke = val/10;
       }
       const marker = new Feature(new Point(OLProj.fromLonLat(coord)));
@@ -646,7 +701,8 @@ export class OpenLayers {
       marker.set('_fieldValue', val);
 
       const src = aLayer.getSource();
-      if (src) src.addFeature(marker);
+      if (src)
+        src.addFeature(marker);
     }
   }
 
@@ -656,7 +712,8 @@ export class OpenLayers {
     //
     let aLayer: VectorLayer<VectorSource>|HeatmapLayer|undefined|null;
     aLayer = this.olMarkersLayer;
-    if (layer) aLayer = layer;
+    if (layer)
+      aLayer = layer;
 
     const strCol = toStringColor(colorVal, this.markerOpacity);
     if (aLayer) {
@@ -678,7 +735,8 @@ export class OpenLayers {
       marker.set('_fieldValue', value);
 
       const src = aLayer.getSource();
-      if (src) src.addFeature(marker);
+      if (src)
+        src.addFeature(marker);
     }
   }
 
@@ -687,10 +745,12 @@ export class OpenLayers {
     //add array of features to the layer
     let aLayer: VectorLayer<VectorSource>|HeatmapLayer|undefined|null;
     aLayer = this.olMarkersLayer;
-    if (layer) aLayer = layer;
+    if (layer)
+      aLayer = layer;
     if (aLayer) {
       const src = aLayer.getSource();
-      if (src) src.addFeatures(arrFeatures);
+      if (src)
+        src.addFeatures(arrFeatures);
     }
   }
 }
