@@ -37,7 +37,7 @@ export class GisViewer extends DG.JsViewer {
   longitudeColumnName: string;
   sizeColumnName: string;
   colorColumnName: string;
-  labelsColumnName: string; //TODO: remove this after successfull implementation scatter-plot style
+  labelsColumnName: string;
   markersColumnName: string;
   markerOpacity: number;
   defaultColor: number;
@@ -90,7 +90,7 @@ export class GisViewer extends DG.JsViewer {
     this.longitudeColumnName = this.string('longitudeColumnName');
     this.colorColumnName = this.string('colorColumnName');
     this.sizeColumnName = this.string('sizeColumnName');
-    this.labelsColumnName = this.string('labelsColumnName', '', {userEditable: false});
+    this.labelsColumnName = this.string('labelsColumnName', '', {userEditable: true});
     this.markersColumnName = this.string('markersColumnName', '', {userEditable: false});
 
     this.markerOpacity = this.float('markerOpacity', 0.8, {category: 'Markers', editor: 'slider', min: 0.1, max: 1});
@@ -115,7 +115,8 @@ export class GisViewer extends DG.JsViewer {
 
     this.renderType = this.string('renderType', 'markers');
     const renderTypeProp = this.getProperty('renderType');
-    if (renderTypeProp) renderTypeProp.choices = ['markers', 'heat map'];
+    if (renderTypeProp)
+      renderTypeProp.choices = ['markers', 'heat map'];
   }
 
   layerUIElement(num: number, layerName: string, layerId: string, isVisible: boolean): HTMLElement {
@@ -140,9 +141,11 @@ export class GisViewer extends DG.JsViewer {
       // evt.stopPropagation();
       const divLayer = (evt.currentTarget as HTMLElement);
       const layerId = divLayer.getAttribute('layerId');
-      if (!layerId) return;
+      if (!layerId)
+        return;
       const layer = this.ol.getLayerById(layerId);
-      if (!layer) return;
+      if (!layer)
+        return;
       const isVisible = layer.getVisible();
       layer.setVisible(!isVisible);
       this.updateLayersList();
@@ -165,8 +168,10 @@ export class GisViewer extends DG.JsViewer {
         for (let i = 0; i < arrFeatures.length; i++) {
           // const gisObj = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
           const newObj = arrFeatures[i].getProperties();
-          if (newObj.hasOwnProperty('geometry')) delete newObj.geometry;
-          if (arrFeatures[i].getId()) newObj.id_ = arrFeatures[i].getId();
+          if (newObj.hasOwnProperty('geometry'))
+            delete newObj.geometry;
+          if (arrFeatures[i].getId())
+            newObj.id_ = arrFeatures[i].getId();
           newObj.gisObject = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
           // if (gisObj) newObj.gisObject = DG.SemanticValue.fromValueType(gisObj, gisObj!.semtype);
           // if (gisObj) newObj.gisObject = gisObj;
@@ -178,7 +183,8 @@ export class GisViewer extends DG.JsViewer {
         const df = DG.DataFrame.fromObjects(arrPreparedToDF);
         if (df) {
           const gisCol = df.col('gisObject');
-          if (gisCol) gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
+          if (gisCol)
+            gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
           df.name = layer.get('layerName');
 
           // df.toCsv()
@@ -194,7 +200,8 @@ export class GisViewer extends DG.JsViewer {
     const btnDelete = ui.iconFA('trash-alt', (evt)=>{ //trash
       const divLayer = (evt.currentTarget as HTMLElement);
       const layerId = divLayer.getAttribute('layerId');
-      if (layerId) this.ol.removeLayerById(layerId);
+      if (layerId)
+        this.ol.removeLayerById(layerId);
       this.updateLayersList();
     }, 'Delete layer');
     setupBtn(btnDelete, layerName, layerId);
@@ -367,7 +374,8 @@ export class GisViewer extends DG.JsViewer {
 
     for (let i = 0; i < layersArr.length; i++) {
       let layerName = layersArr[i].get('layerName');
-      if ((layerName === undefined) || (layerName === null)) layerName = '';
+      if ((layerName === undefined) || (layerName === null))
+        layerName = '';
       const layerId = layersArr[i].get('layerId');
       const isVisible = layersArr[i].getVisible();
 
@@ -383,14 +391,16 @@ export class GisViewer extends DG.JsViewer {
         this.currentLayer = layerName;
         this.setOptions({currentLayer: layerName});
         const curlayer = this.ol.getLayerById(layerID);
-        if (curlayer) this.ol.olCurrentLayer = curlayer;
+        if (curlayer)
+          this.ol.olCurrentLayer = curlayer;
 
         //TODO: update currentLayer property when clicked in list
       };
       this.divLayersList.append(divLayer);
     }
     const layersProperty = this.getProperty('currentLayer');
-    if (layersProperty) layersProperty.choices = arrLayerNames;
+    if (layersProperty)
+      layersProperty.choices = arrLayerNames;
   }
 
   showCoordsInStatus(p: OLCallbackParam): void {
@@ -423,20 +433,24 @@ export class GisViewer extends DG.JsViewer {
 
     if (this.latitudeColumnName === null && this.longitudeColumnName === null) {
       let col = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
-      if (col) this.latitudeColumnName = col.name;
+      if (col)
+        this.latitudeColumnName = col.name;
       col = this.dataFrame.columns.bySemType(SEMTYPEGIS.LATIITUDE);
-      if ((col) && (this.latitudeColumnName === null)) this.latitudeColumnName = col.name;
+      if ((col) && (this.latitudeColumnName === null))
+        this.latitudeColumnName = col.name;
       col = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE);
-      if (col) this.longitudeColumnName = col.name;
+      if (col)
+        this.longitudeColumnName = col.name;
       col = this.dataFrame.columns.bySemType(SEMTYPEGIS.LONGITUDE);
-      if ((col) && (this.longitudeColumnName === null)) this.longitudeColumnName = col.name;
+      if ((col) && (this.longitudeColumnName === null))
+        this.longitudeColumnName = col.name;
     }
     // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => {
       this.render();
     }));
     // this.render(true);
-    this.render(false);
+    this.render(true);
   }
 
   onPropertyChanged(prop: DG.Property): void {
@@ -589,20 +603,26 @@ export class GisViewer extends DG.JsViewer {
     let colSize: DG.Column | null = null;
     try {
       //TODO: check does it exist corresponding column to prevent exception raising
-      if (this.colorColumnName !== '') colColor = this.dataFrame.getCol(this.colorColumnName);
-      if (this.sizeColumnName !== '') colSize = this.dataFrame.getCol(this.sizeColumnName);
-      if (this.labelsColumnName !== '') colValue = this.dataFrame.getCol(this.labelsColumnName);
+      if (this.colorColumnName !== '')
+        colColor = this.dataFrame.getCol(this.colorColumnName);
+      if (this.sizeColumnName !== '')
+        colSize = this.dataFrame.getCol(this.sizeColumnName);
+      if (this.labelsColumnName !== '')
+        colValue = this.dataFrame.getCol(this.labelsColumnName);
     } finally {
-      if (colValue) val = colValue.getRawData();
+      if (colValue)
+        val = colValue.getRawData();
       else {
         val = new Float32Array(lat.length); //create array of length equal to latitude array length
         val.fill(1);
       }
       if ((colColor)) {
         colorVal = colColor.getRawData();
-        if (colColor.max === colColor.min) colorCoeff = 1;
+        if (colColor.max === colColor.min)
+          colorCoeff = 1;
         // else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
-        else colorCoeff = (0xff0000-0x0000ff) / (colColor.max - colColor.min);
+        else
+          colorCoeff = (0xff0000-0x0000ff) / (colColor.max - colColor.min);
         colorShift = colColor.min;
         //TODO: use another scaling scheme for color (though gradient)
       } else {
@@ -615,8 +635,10 @@ export class GisViewer extends DG.JsViewer {
       //TODO: add checking for number column type
       if ((colSize)) {
         sizeVal = colSize.getRawData();
-        if (colSize.max === colSize.min) sizeCoeff = 1;
-        else sizeCoeff = (this.markerMaxSize - this.markerMinSize) / (colSize.max - colSize.min);
+        if (colSize.max === colSize.min)
+          sizeCoeff = 1;
+        else
+          sizeCoeff = (this.markerMaxSize - this.markerMinSize) / (colSize.max - colSize.min);
         sizeShift = colSize.min;
       } else {
         sizeCoeff = 1;
@@ -650,11 +672,14 @@ export class GisViewer extends DG.JsViewer {
   renderHeat(): void {
     this.getCoordinates();
     let colName = this.colorColumnName;
-    if (colName === 'null') colName = this.dataFrame.name;
-    if (colName === null) colName = this.dataFrame.name;
+    if (colName === 'null')
+      colName = this.dataFrame.name;
+    if (colName === null)
+      colName = this.dataFrame.name;
 
     let layer = this.ol.getLayerByName('HL: ' + colName);
-    if (!layer) layer = this.ol.addNewHeatMap('HL: ' + colName);
+    if (!layer)
+      layer = this.ol.addNewHeatMap('HL: ' + colName);
 
     this.ol.clearLayer(layer);
     for (let i = 0; i < this.coordinates.length; i++)

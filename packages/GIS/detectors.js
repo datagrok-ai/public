@@ -47,6 +47,7 @@ class GisPackageDetectors extends DG.Package {
       estCoeff += 40;
     }
 
+    //TODO: add sampling here instaed of cathegories
     let catNumber = col.categories.length;
     if (catNumber > 100) catNumber = 100; //shorten amount of checking categories to 100
     const caseWeight = 80 / (catNumber + 1);
