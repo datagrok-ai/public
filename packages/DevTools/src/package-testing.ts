@@ -325,10 +325,10 @@ export class TestManager extends DG.ViewBase {
     this.testInProgress(t.resultDiv, true);
     const start = Date.now();
     let res;
-    let testSucceded;
+    let testSucceeded;
     if (t.test.category === this.autoTestsCatName) {
       res = await testFunc(t.func);
-      testSucceded = Object.values(res).filter(it => !it).length === 0;
+      testSucceeded = Object.values(res as {[key: string]: {output: any, time: number}}).every((t) => t.output);
       res = this.createResultsDfForAutotests(res, t.func.name);
     } else {
       res = await grok.functions.call(
@@ -337,26 +337,31 @@ export class TestManager extends DG.ViewBase {
           'test': t.test.name,
         }); 
       res.columns.addNewString('funcTest').init((i) => '');
-      testSucceded = res.get('success', 0);
+      testSucceeded = res.get('success', 0);
     }
     const time = Date.now() - start;
     if (!this.testsResultsDf) {
       this.testsResultsDf = res;
-      this.addPackageAndTimeInfo(this.testsResultsDf, time, t.packageName);
+      if (t.test.category !== this.autoTestsCatName)
+        this.addTimeInfo(this.testsResultsDf, time);
+      this.addPackageInfo(this.testsResultsDf, t.packageName);
     } else {
-      this.addPackageAndTimeInfo(res, time, t.packageName);
+      if (t.test.category !== this.autoTestsCatName)
+        this.addTimeInfo(res, time);
+      if (res.col('package') == null)
+        this.addPackageInfo(res, t.packageName);
       this.removeTestRow(t.packageName, t.test.category, t.test.name);
       this.testsResultsDf = this.testsResultsDf.append(res);
     }
-    this.updateTestResultsIcon(t.resultDiv, testSucceded);
-    return testSucceded;
+    this.updateTestResultsIcon(t.resultDiv, testSucceeded);
+    return testSucceeded;
   }
 
-  createResultsDfForAutotests(res: {[key: string]: boolean}, funcName: string) {
+  createResultsDfForAutotests(res: {[key: string]: {output: any, time: number}}, funcName: string) {
     const resDf = DG.DataFrame.create(Object.keys(res).length);
-    resDf.columns.addNewBool('success').init((i) => Object.values(res)[i]);
-    resDf.columns.addNewString('result').init((i) => Object.values(res)[i] ? 'OK' : 'Failed');
-    resDf.columns.addNewInt('ms').init((i) => 0);
+    resDf.columns.addNewBool('success').init((i) => Object.values(res)[i].output === true);
+    resDf.columns.addNewString('result').init((i) => Object.values(res)[i].output === true ? 'OK' : 'Failed');
+    resDf.columns.addNewInt('ms').init((i) => Object.values(res)[i].time);
     resDf.columns.addNewString('category').init((i) => this.autoTestsCatName);
     resDf.columns.addNewString('name').init((i) => funcName);
     resDf.columns.addNewString('funcTest').init((i) => Object.keys(res)[i]);
@@ -440,9 +445,12 @@ export class TestManager extends DG.ViewBase {
     return {completedTests: completedTestsNum, catRes: testsSucceded};
   }
 
-  addPackageAndTimeInfo(df: DG.DataFrame, time: number, pack: string) {
-    df.columns.addNewInt('time, ms').init(() => time);
+  addPackageInfo(df: DG.DataFrame, pack: string) {
     df.columns.addNewString('package').init(() => pack);
+  }
+
+  addTimeInfo(df: DG.DataFrame, time: number) {
+    df.columns.addNewInt('time, ms').init(() => time);
   }
 
   removeTestRow(pack: string, cat: string, test: string) {

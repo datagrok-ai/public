@@ -91,7 +91,7 @@ export async function TestDetectorsStandard() {
   grok.shell.addTableView(df);
 }
 
-export async function testFunc(f: DG.Func): Promise<{[key: string]: any}> {
+export async function testFunc(f: DG.Func): Promise<{[key: string]: {output: any, time: number}}> {
   const tests = f.options['test'];
   if (tests == null || Array.isArray(tests) && !tests.length)
     return null;
@@ -102,8 +102,12 @@ export async function testFunc(f: DG.Func): Promise<{[key: string]: any}> {
     return s.replace(new RegExp(f.name, 'gi'), f.nqName);
   }
 
-  for (const test of tests)
-    results[test] = await grok.functions.eval(addNamespace(test));
+  for (const test of tests) {
+    const start = Date.now();
+    const output = await grok.functions.eval(addNamespace(test));
+    const time = Date.now() - start;
+    results[test] = { output, time };
+  }
 
 
   return results;
@@ -115,6 +119,7 @@ export async function testFunc(f: DG.Func): Promise<{[key: string]: any}> {
 export async function testFunctions(scope: object) {
   const functions = DG.Func.find(scope ?? {});
   const testRuns = {};
+  const testTime = [];
   for (const f of functions)
     testRuns[f.name] = await testFunc(f);
 
@@ -125,15 +130,19 @@ export async function testFunctions(scope: object) {
     const failedTests = {};
     const cntTotal = Object.keys(runs).length;
     let cntPassed = 0;
+    let totalTime = 0;
     for (const [test, result] of Object.entries(runs)) {
-      if (result == true)
+      totalTime += result.time;
+      if (result.output == true)
         cntPassed++;
       else
-        failedTests[test] = result;
+        failedTests[test] = result.output;
     }
+    testTime.push(totalTime);
     return cntPassed === cntTotal ? 'OK' : `${cntPassed} / ${cntTotal}. Failed: ${JSON.stringify(failedTests)}`;
   });
   const resultColumn = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'result', results);
-  return DG.DataFrame.fromColumns([functionColumn, resultColumn]);
+  const timeColumn = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'ms', testTime);
+  return DG.DataFrame.fromColumns([functionColumn, resultColumn, timeColumn]);
 }
 
