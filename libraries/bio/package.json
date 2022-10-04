@@ -4,12 +4,12 @@
     "access": "public"
   },
   "friendlyName": "Datagrok bio library",
-  "version": "4.4.1",
+  "version": "4.4.2",
   "description": "",
   "dependencies": {
     "@datagrok-libraries/utils": "^1.6.2",
     "cash-dom": "latest",
-    "datagrok-api": "^1.6.11",
+    "datagrok-api": "^1.6.12",
     "dayjs": "latest",
     "rxjs": "^6.5.5",
     "wu": "latest"
