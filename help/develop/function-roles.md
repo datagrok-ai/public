@@ -115,6 +115,8 @@ grok add detector <semantic-type-name>
 Cell renderers allow customizing the appearance of cells in the [grid](../visualize/viewers/grid.md). These functions
 are annotated with two special tags: `cellRenderer` and `cellRenderer-<type>`.
 
+*Details:* [How to develop custom cell renderers](how-to/custom-cell-renderers.md)
+
 ## File viewers
 
 File viewers are used in Datagrok's [file share browser](../access/connect-a-file-share.md). The platform provides a way
