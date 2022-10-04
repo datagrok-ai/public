@@ -34,7 +34,8 @@ export class PeptidesModel {
   df: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
   edf: DG.DataFrame | null = null;
-  statsDf!: DG.DataFrame;
+  monomerPositionStatsDf!: DG.DataFrame;
+  clusterStatsDf!: DG.DataFrame;
   _mutationCliffsSelection: type.PositionToAARList = {};
   _invariantMapSelection: type.PositionToAARList = {};
   _logoSummarySelection: number[] = [];
@@ -233,11 +234,11 @@ export class PeptidesModel {
     matrixDf = matrixDf.unpivot([], positionColumns, C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER);
 
     //statistics for specific AAR at a specific position
-    this.statsDf = this.calculateStatistics(matrixDf);
+    this.monomerPositionStatsDf = this.calculateMonomerPositionStatistics(matrixDf);
 
     // SAR matrix table
     //pivot a table to make it matrix-like
-    matrixDf = this.statsDf.groupBy([C.COLUMNS_NAMES.MONOMER])
+    matrixDf = this.monomerPositionStatsDf.groupBy([C.COLUMNS_NAMES.MONOMER])
       .pivot(C.COLUMNS_NAMES.POSITION)
       .add('first', C.COLUMNS_NAMES.MEAN_DIFFERENCE, '')
       .aggregate();
@@ -254,8 +255,10 @@ export class PeptidesModel {
     [this.mutationCliffsGrid, this.mostPotentResiduesGrid] =
       this.createGrids(matrixDf, sequenceDf, positionColumns, alphabet);
 
-    if (this.df.getTag(C.TAGS.CLUSTERS))
-      this.logoSummaryGrid = this.createLogoSummaryGrid(positionColumns);
+    if (this.df.getTag(C.TAGS.CLUSTERS)) {
+      this.clusterStatsDf = this.calculateClusterStatistics();
+      this.logoSummaryGrid = this.createLogoSummaryGrid();
+    }
 
     // init invariant map & mutation cliffs selections
     this.initSelections(positionColumns);
@@ -421,7 +424,7 @@ export class PeptidesModel {
     this.sourceGrid.columns.setOrder([newColName]);
   }
 
-  calculateStatistics(matrixDf: DG.DataFrame): DG.DataFrame {
+  calculateMonomerPositionStatistics(matrixDf: DG.DataFrame): DG.DataFrame {
     matrixDf = matrixDf.groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER]).aggregate();
 
     //calculate p-values based on t-test
@@ -454,16 +457,40 @@ export class PeptidesModel {
     return matrixDf as DG.DataFrame;
   }
 
+  calculateClusterStatistics(): DG.DataFrame {
+    const originalClustersCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    const statsDf = this.df.groupBy([C.COLUMNS_NAMES.CLUSTERS]).aggregate();
+    const clustersCol = statsDf.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    const statsDfCols = statsDf.columns;
+    const mdCol= statsDfCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
+    const pValCol = statsDfCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE);
+    const countCol = statsDfCols.addNewInt(C.COLUMNS_NAMES.COUNT);
+    const ratioCol = statsDfCols.addNewFloat(C.COLUMNS_NAMES.RATIO);
+    const activityList: number[] = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).toList();
+
+    for (let rowIdx = 0; rowIdx < clustersCol.length; ++rowIdx) {
+      const cluster = clustersCol.get(rowIdx);
+      const mask = DG.BitSet.create(activityList.length, (bitIdx) => originalClustersCol.get(bitIdx) === cluster);
+      const stats = getStats(activityList, mask);
+
+      mdCol.set(rowIdx, stats.meanDifference);
+      pValCol.set(rowIdx, stats.pValue);
+      countCol.set(rowIdx, stats.count);
+      ratioCol.set(rowIdx, stats.ratio);
+    } 
+    return statsDf;
+  }
+
   setCategoryOrder(matrixDf: DG.DataFrame): void {
     let sortArgument: string = C.COLUMNS_NAMES.MEAN_DIFFERENCE;
     if (this.getViewer().bidirectionalAnalysis) {
-      const mdCol = this.statsDf.getCol(sortArgument);
+      const mdCol = this.monomerPositionStatsDf.getCol(sortArgument);
       sortArgument = 'Absolute Mean difference';
-      const absMDCol = this.statsDf.columns.addNewFloat(sortArgument);
+      const absMDCol = this.monomerPositionStatsDf.columns.addNewFloat(sortArgument);
       absMDCol.init((i) => Math.abs(mdCol.get(i)));
     }
 
-    const aarWeightsDf = this.statsDf.groupBy([C.COLUMNS_NAMES.MONOMER]).sum(sortArgument, 'weight')
+    const aarWeightsDf = this.monomerPositionStatsDf.groupBy([C.COLUMNS_NAMES.MONOMER]).sum(sortArgument, 'weight')
       .aggregate();
     const aarList = aarWeightsDf.getCol(C.COLUMNS_NAMES.MONOMER).toList();
     const getWeight = (aar: string): number => aarWeightsDf
@@ -480,7 +507,7 @@ export class PeptidesModel {
     // TODO: aquire ALL of the positions
     const columns = [C.COLUMNS_NAMES.MEAN_DIFFERENCE, C.COLUMNS_NAMES.MONOMER, C.COLUMNS_NAMES.POSITION,
       'Count', 'Ratio', C.COLUMNS_NAMES.P_VALUE];
-    let sequenceDf = this.statsDf.groupBy(columns)
+    let sequenceDf = this.monomerPositionStatsDf.groupBy(columns)
       .where('pValue <= 0.1')
       .aggregate();
 
@@ -522,7 +549,7 @@ export class PeptidesModel {
     return [mutationCliffsGrid, mostPotentResiduesGrid];
   }
 
-  createLogoSummaryGrid(positionColumns: string[]): DG.Grid {
+  createLogoSummaryGrid(): DG.Grid {
     const summaryTable = this.df.groupBy([C.COLUMNS_NAMES.CLUSTERS]).aggregate();
     const summaryTableLength = summaryTable.rowCount;
     const clustersCol: DG.Column<number> = summaryTable.getCol(C.COLUMNS_NAMES.CLUSTERS);
@@ -587,6 +614,11 @@ export class PeptidesModel {
       renderLogoSummaryCell(canvasContext, gc.cell.value, this.logoSummarySelection, bound);
       gridCellArgs.preventDefault();
       canvasContext.restore();
+    });
+    grid.onCellTooltip((cell, x, y) => {
+      if (!cell.isColHeader && cell.tableColumn?.name === C.COLUMNS_NAMES.CLUSTERS)
+        this.showTooltipCluster(cell.cell.value, x, y);
+      return true;
     });
     const webLogoGridCol = grid.columns.byName('WebLogo')!;
     webLogoGridCol.cellType = 'html';
@@ -657,7 +689,7 @@ export class PeptidesModel {
   }
 
   setCellRenderers(renderColNames: string[]): void {
-    const mdCol = this.statsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
+    const mdCol = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     //decompose into two different renering funcs
     const renderCell = (args: DG.GridCellRenderArgs): void => {
       const canvasContext = args.g;
@@ -689,13 +721,13 @@ export class PeptidesModel {
 
           const viewer = this.getViewer();
           if (this.isInvariantMap) {
-            const value: number = this.statsDf
+            const value: number = this.monomerPositionStatsDf
               .groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER, C.COLUMNS_NAMES.COUNT])
               .where(`${C.COLUMNS_NAMES.POSITION} = ${currentPosition} and ${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`)
               .aggregate().get(C.COLUMNS_NAMES.COUNT, 0);
             renderInvaraintMapCell(canvasContext, currentAAR, currentPosition, this.invariantMapSelection, value, bound);
           } else {
-            renderMutationCliffCell(canvasContext, currentAAR, currentPosition, this.statsDf,
+            renderMutationCliffCell(canvasContext, currentAAR, currentPosition, this.monomerPositionStatsDf,
               viewer.bidirectionalAnalysis, mdCol, bound, cellValue, this.mutationCliffsSelection, this.substitutionsInfo);
           }
         }
@@ -775,8 +807,9 @@ export class PeptidesModel {
   }
 
   showTooltipAt(aar: string, position: string, x: number, y: number): HTMLDivElement | null {
-    const currentStatsDf = this.statsDf.rows.match({Pos: position, AAR: aar}).toDataFrame();
+    const currentStatsDf = this.monomerPositionStatsDf.rows.match({Pos: position, AAR: aar}).toDataFrame();
     const activityCol = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+    //TODO: use bitset instead of splitCol
     const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
     const currentPosCol = this.df.getCol(position);
     splitCol.init((i) => currentPosCol.get(i) == aar);
@@ -791,6 +824,30 @@ export class PeptidesModel {
       return null;
 
     const tooltip = getDistributionAndStats(distributionTable, stats, `${position} : ${aar}`, 'Other', true);
+
+    ui.tooltip.show(tooltip, x, y);
+
+    return tooltip;
+  }
+
+  showTooltipCluster(cluster: number, x: number, y: number): HTMLDivElement | null {
+    const currentStatsDf = this.clusterStatsDf.rows.match({clusters: cluster}).toDataFrame();
+    const activityCol = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+    //TODO: use bitset instead of splitCol
+    const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
+    const currentClusterCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    splitCol.init((i) => currentClusterCol.get(i) == cluster);
+    const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
+    const stats: Stats = {
+      count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
+      ratio: currentStatsDf.get(C.COLUMNS_NAMES.RATIO, 0),
+      pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
+      meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
+    };
+    if (!stats.count)
+      return null;
+
+    const tooltip = getDistributionAndStats(distributionTable, stats, `Cluster: ${cluster}`, 'Other', true);
 
     ui.tooltip.show(tooltip, x, y);
 
