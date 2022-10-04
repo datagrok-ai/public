@@ -89,6 +89,18 @@ export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, 
     renderCellSelection(canvasContext, bound);
 }
 
+export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: number,
+  clusterSelection: number[], bound: DG.Rect): void {
+  canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+  canvasContext.textAlign = 'center';
+  canvasContext.textBaseline = 'middle';
+  canvasContext.fillStyle = '#000';
+  canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
+
+  if (clusterSelection.includes(cellValue))
+    renderCellSelection(canvasContext, bound);
+}
+
 export function renderBarchart(ctx: CanvasRenderingContext2D, col: DG.Column, monomerColStats: types.MonomerColStats,
   bounds: DG.Rect, max: number): types.BarCoordinates {
   let sum = col.length - (monomerColStats['-']?.count ?? 0);

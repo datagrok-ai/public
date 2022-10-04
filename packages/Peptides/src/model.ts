@@ -10,7 +10,7 @@ import * as C from './utils/constants';
 import * as type from './utils/types';
 import {calculateBarsData, getTypedArrayConstructor, isGridCellInvalid, scaleActivity} from './utils/misc';
 import {MutationCliffsViewer, SARViewerBase, MostPotentResiduesViewer} from './viewers/sar-viewer';
-import {renderBarchart, renderMutationCliffCell, setAARRenderer, renderInvaraintMapCell} from './utils/cell-renderer';
+import {renderBarchart, renderMutationCliffCell, setAARRenderer, renderInvaraintMapCell, renderLogoSummaryCell} from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
 import {getStats, Stats} from './utils/statistics';
@@ -37,6 +37,7 @@ export class PeptidesModel {
   statsDf!: DG.DataFrame;
   _mutationCliffsSelection: type.PositionToAARList = {};
   _invariantMapSelection: type.PositionToAARList = {};
+  _logoSummarySelection: number[] = [];
   substitutionsInfo: type.SubstitutionsInfo = new Map();
   isInitialized = false;
   currentView!: DG.TableView;
@@ -85,7 +86,6 @@ export class PeptidesModel {
     this.df.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
     this.fireBitsetChanged();
     this.invalidateGrids();
-    this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
   }
 
   get invariantMapSelection(): type.PositionToAARList {
@@ -96,6 +96,17 @@ export class PeptidesModel {
     this._invariantMapSelection = selection;
     this.df.tags[C.TAGS.FILTER] = JSON.stringify(selection);
     this.df.filter.fireChanged();
+    this.invalidateGrids();
+  }
+
+  get logoSummarySelection(): number[] {
+    this._logoSummarySelection ??= JSON.parse(this.df.tags[C.TAGS.CLUSTER_SELECTION] || '[]');
+    return this._logoSummarySelection;
+  }
+  set logoSummarySelection(selection: number[]) {
+    this._logoSummarySelection = selection;
+    this.df.tags[C.TAGS.CLUSTER_SELECTION] = JSON.stringify(selection);
+    this.fireBitsetChanged();
     this.invalidateGrids();
   }
 
@@ -244,7 +255,7 @@ export class PeptidesModel {
       this.createGrids(matrixDf, sequenceDf, positionColumns, alphabet);
 
     if (this.df.getTag(C.TAGS.CLUSTERS))
-      this.logoSummaryGrid = this.createLogoSummaryGrid();
+      this.logoSummaryGrid = this.createLogoSummaryGrid(positionColumns);
 
     // init invariant map & mutation cliffs selections
     this.initSelections(positionColumns);
@@ -359,6 +370,7 @@ export class PeptidesModel {
     }
     this.invariantMapSelection = tempInvariantMapSelection;
     this.mutationCliffsSelection = mutationCliffsSelection;
+    this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
   }
 
   joinDataFrames(positionColumns: string[], splitSeqDf: DG.DataFrame): void {
@@ -510,12 +522,12 @@ export class PeptidesModel {
     return [mutationCliffsGrid, mostPotentResiduesGrid];
   }
 
-  createLogoSummaryGrid(): DG.Grid {
+  createLogoSummaryGrid(positionColumns: string[]): DG.Grid {
     const summaryTable = this.df.groupBy([C.COLUMNS_NAMES.CLUSTERS]).aggregate();
     const summaryTableLength = summaryTable.rowCount;
-    const webLogoCol: DG.Column<string> = summaryTable.columns.addNew('WebLogo', DG.COLUMN_TYPE.STRING);
     const clustersCol: DG.Column<number> = summaryTable.getCol(C.COLUMNS_NAMES.CLUSTERS);
-    clustersCol.name = 'Clusters';
+    const membersCol: DG.Column<number> = summaryTable.columns.addNewInt('Members');
+    const webLogoCol: DG.Column<string> = summaryTable.columns.addNew('WebLogo', DG.COLUMN_TYPE.STRING);
     const tempDfList: DG.DataFrame[] = new Array(summaryTableLength);
     const originalClustersCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
     const peptideCol = this.df.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE);
@@ -528,25 +540,74 @@ export class PeptidesModel {
       }
       const tCol = DG.Column.string('peptides', indexes.length);
       tCol.init((i) => peptideCol.get(indexes[i]));
+
       for (const tag of peptideCol.tags)
         tCol.setTag(tag[0], tag[1]);
-      tempDfList[index] = DG.DataFrame.fromColumns([tCol]);
+
+      const dfSlice = DG.DataFrame.fromColumns([tCol]);
+      tempDfList[index] = dfSlice;
       webLogoCol.set(index, index.toString());
+      membersCol.set(index, dfSlice.rowCount);
     }
     webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
 
     const grid = summaryTable.plot.grid();
+    const gridClustersCol = grid.col(C.COLUMNS_NAMES.CLUSTERS)!;
+    gridClustersCol.name = 'Clusters';
+    gridClustersCol.visible = true;
     grid.columns.rowHeader!.visible = false;
     grid.props.rowHeight = 55;
     grid.onCellPrepare((cell) => {
       if (cell.isTableCell && cell.tableColumn?.name === 'WebLogo') 
         tempDfList[parseInt(cell.cell.value)].plot.fromType('WebLogo').then((viewer) => cell.element = viewer.root);
     });
+    grid.root.addEventListener('click', (ev) => {
+      const cell = grid.hitTest(ev.offsetX, ev.offsetY);
+      if (!cell || !cell.isTableCell)
+        return;
+
+      const cluster = clustersCol.get(cell.tableRowIndex!)!;
+      summaryTable.currentRowIdx = -1;
+      if (ev.shiftKey)
+        this.modifyClusterSelection(cluster);
+      else
+        this.initClusterSelection(cluster);
+      this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
+    });
+    grid.onCellRender.subscribe((gridCellArgs) => {
+      const gc = gridCellArgs.cell;
+      if (gc.tableColumn?.name !== C.COLUMNS_NAMES.CLUSTERS || gc.isColHeader)
+        return;
+      const canvasContext = gridCellArgs.g;
+      const bound = gridCellArgs.bounds;
+      canvasContext.save();
+      canvasContext.beginPath();
+      canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
+      canvasContext.clip();
+      renderLogoSummaryCell(canvasContext, gc.cell.value, this.logoSummarySelection, bound);
+      gridCellArgs.preventDefault();
+      canvasContext.restore();
+    });
     const webLogoGridCol = grid.columns.byName('WebLogo')!;
     webLogoGridCol.cellType = 'html';
     webLogoGridCol.width = 350;
 
     return grid;
+  }
+
+  modifyClusterSelection(cluster: number): void {
+    const tempSelection = this.logoSummarySelection;
+    const idx = tempSelection.indexOf(cluster);
+    if (idx !== -1)
+      tempSelection.splice(idx, 1);
+    else
+      tempSelection.push(cluster);
+
+    this.logoSummarySelection = tempSelection;
+  }
+
+  initClusterSelection(cluster: number): void {
+    this.logoSummarySelection = [cluster];
   }
 
   setBarChartInteraction(): void {
@@ -583,8 +644,9 @@ export class PeptidesModel {
     const monomer = barPart.monomer;
     const position = barPart.position;
     if (ev.type === 'click') {
-      ev.shiftKey ? this.modifyCurrentSelection(monomer, position, true) :
-        this.initCurrentSelection(monomer, position, true);
+      ev.shiftKey ? this.modifyMonomerPositionSelection(monomer, position, true) :
+        this.initMonomerPositionSelection(monomer, position, true);
+      this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
     } else {
       const bar = `${monomer}:${position}`;
       if (this.cachedBarchartTooltip.bar == bar)
@@ -741,9 +803,11 @@ export class PeptidesModel {
     // const invariantMapDf = this.invariantMapGrid.dataFrame;
 
     const chooseAction =
-      (aar: string, position: string, isShiftPressed: boolean, isInvariantMapSelection: boolean = true): void =>
-        isShiftPressed ? this.modifyCurrentSelection(aar, position, isInvariantMapSelection) :
-          this.initCurrentSelection(aar, position, isInvariantMapSelection);
+      (aar: string, position: string, isShiftPressed: boolean, isInvariantMapSelection: boolean = true): void => {
+        isShiftPressed ? this.modifyMonomerPositionSelection(aar, position, isInvariantMapSelection) :
+          this.initMonomerPositionSelection(aar, position, isInvariantMapSelection);
+        this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
+      }
 
     this.mutationCliffsGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.mutationCliffsGrid.hitTest(ev.offsetX, ev.offsetY);
@@ -777,17 +841,14 @@ export class PeptidesModel {
     this.mostPotentResiduesGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(mostPotentResiduesDf));
   }
 
-  modifyCurrentSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
+  modifyMonomerPositionSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
     const tempSelection = isInvariantMapSelection ? this.invariantMapSelection : this.mutationCliffsSelection;
-    if (!tempSelection.hasOwnProperty(position))
-      tempSelection[position] = [aar];
-    else {
-      const tempSelectionAt = tempSelection[position];
-      const aarIndex = tempSelectionAt.indexOf(aar);
-      aarIndex == -1 ? tempSelectionAt.push(aar) :
-        tempSelectionAt.length == 1 ? delete tempSelection[position] :
-          tempSelectionAt.splice(aarIndex, 1);
-    }
+    const tempSelectionAt = tempSelection[position];
+    const aarIndex = tempSelectionAt.indexOf(aar);
+    if (aarIndex === -1)
+      tempSelectionAt.push(aar);
+    else
+      tempSelectionAt.splice(aarIndex, 1);
 
     if (isInvariantMapSelection)
       this.invariantMapSelection = tempSelection;
@@ -795,8 +856,8 @@ export class PeptidesModel {
       this.mutationCliffsSelection = tempSelection;
   }
 
-  initCurrentSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
-    const tempSelection: type.PositionToAARList = {};
+  initMonomerPositionSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
+    const tempSelection = isInvariantMapSelection ? this.invariantMapSelection : this.mutationCliffsSelection;
     tempSelection[position] = [aar];
 
     if (isInvariantMapSelection)
@@ -808,8 +869,8 @@ export class PeptidesModel {
   invalidateGrids(): void {
     this.mutationCliffsGrid.invalidate();
     this.mostPotentResiduesGrid.invalidate();
+    this.logoSummaryGrid?.invalidate();
     this.sourceGrid?.invalidate();
-    //TODO: this.peptideSpaceGrid.invalidate();
   }
 
   setBitsetCallback(): void {
@@ -817,6 +878,7 @@ export class PeptidesModel {
       return;
     const selection = this.df.selection;
     const filter = this.df.filter;
+    const clusterCol = this.df.col(C.COLUMNS_NAMES.CLUSTERS);
 
     const changeSelectionBitset = (currentBitset: DG.BitSet): void => {
       const edfSelection = this.edf?.selection;
@@ -835,11 +897,6 @@ export class PeptidesModel {
       };
 
       const positionList = Object.keys(this.mutationCliffsSelection);
-      if (positionList.length == 0) {
-        currentBitset.init(() => false, false);
-        updateEdfSelection();
-        return;
-      }
 
       //TODO: move out
       const getBitAt = (i: number): boolean => {
@@ -848,6 +905,8 @@ export class PeptidesModel {
           if (this._mutationCliffsSelection[position].includes(positionCol.get(i)!))
             return true;
         }
+        if (this._logoSummarySelection.includes(clusterCol?.get(i)!))
+          return true;
         return false;
       };
       currentBitset.init(getBitAt, false);
@@ -973,10 +1032,9 @@ export class PeptidesModel {
     };
 
     for (let i = 0; i < this.sourceGrid.columns.length; i++) {
-      const aarCol = this.sourceGrid.columns.byIndex(i);
-      if (aarCol && aarCol.name && aarCol.column?.semType !== C.SEM_TYPES.MONOMER &&
-        aarCol.name !== this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED])
-        aarCol.visible = false;
+      const currentCol = this.sourceGrid.columns.byIndex(i);
+      if (currentCol?.column?.getTag(C.TAGS.VISIBLE) === '0')
+        currentCol.visible = false;
     }
 
     const options = {scaling: this.df.tags['scaling']};

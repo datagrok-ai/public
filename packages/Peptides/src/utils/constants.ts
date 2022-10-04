@@ -9,7 +9,7 @@ export enum COLUMNS_NAMES {
   MEAN_DIFFERENCE = 'Mean difference',
   COUNT = 'Count',
   RATIO = 'Ratio',
-  CLUSTERS = '~clusters',
+  CLUSTERS = 'clusters',
 }
 
 export enum CATEGORIES {
@@ -18,14 +18,16 @@ export enum CATEGORIES {
 }
 
 export enum TAGS {
-  AAR = 'AAR',
-  POSITION = 'Pos',
+  MONOMER = 'monomer',
+  POSITION = 'pos',
   SEPARATOR = 'separator',
   SELECTION = 'selection',
   ALPHABET = 'alphabet',
   FILTER = 'filter',
   CLUSTERS = 'clusters',
-  SAR_MODE = 'sarMode'
+  SAR_MODE = 'sarMode',
+  CLUSTER_SELECTION = 'clusterSelection',
+  VISIBLE = 'visible',
 }
 
 export enum SEM_TYPES {
