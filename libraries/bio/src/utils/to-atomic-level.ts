@@ -75,9 +75,9 @@ export async function _toAtomicLevel(
   }
 
   const units = macroMolCol.getTag(DG.TAGS.UNITS);
-  console.log(units);
+  // if (units === NOTATION.HELM || units === )
   const alphabet = macroMolCol.getTag(UnitsHandler.TAGS.alphabet);
-  console.log(alphabet);
+  // console.log(alphabet);
 
   // determine the polymer type according to HELM
   let polymerType;

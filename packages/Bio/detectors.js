@@ -10,9 +10,9 @@
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 const NOTATION = {
-  FASTA: 'FASTA',
-  SEPARATOR: 'SEPARATOR',
-  HELM: 'HELM',
+  FASTA: 'fasta',
+  SEPARATOR: 'separator',
+  HELM: 'helm',
 };
 
 const ALPHABET = {
@@ -25,7 +25,7 @@ const ALPHABET = {
 const ALIGNMENT = {
   SEQ_MSA: 'SEQ.MSA',
   SEQ: 'SEQ',
-}
+};
 
 /** Class for handling notation units in Macromolecule columns */
 class UnitsHandler {

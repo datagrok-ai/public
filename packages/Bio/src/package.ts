@@ -22,7 +22,7 @@ import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {UnitsHandler, ALPHABET, NOTATION, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/utils/to-atomic-level';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
@@ -174,10 +174,10 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
   };
   const tags = {
-    'units': macroMolecule.tags['units'],
-    'aligned': macroMolecule.tags['aligned'],
-    'separator': macroMolecule.tags['separator'],
-    'alphabet': macroMolecule.tags['alphabet'],
+    'units': macroMolecule.getTag(DG.TAGS.UNITS),
+    'aligned': macroMolecule.getTag(UnitsHandler.TAGS.aligned),
+    'separator': macroMolecule.getTag(UnitsHandler.TAGS.separator),
+    'alphabet': macroMolecule.getTag(UnitsHandler.TAGS.alphabet),
   };
   const sp = await getActivityCliffs(
     df,

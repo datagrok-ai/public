@@ -6,9 +6,10 @@ import {WebLogo, SeqColStats} from '../viewers/web-logo';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 export const enum NOTATION {
-  FASTA = 'FASTA',
-  SEPARATOR = 'SEPARATOR',
-  HELM = 'HELM',
+  // todo: lowercase?
+  FASTA = 'fasta',
+  SEPARATOR = 'separator',
+  HELM = 'helm',
 }
 
 export const enum ALPHABET {
@@ -67,7 +68,7 @@ export class UnitsHandler {
     const alphabetCandidatesSim: number[] = alphabetCandidates.map(
       (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));
     const maxCos = Math.max(...alphabetCandidatesSim);
-    const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
+    const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : ALPHABET.UN;
 
     col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     col.setTag(UnitsHandler.TAGS.aligned, seqType);
@@ -92,21 +93,19 @@ export class UnitsHandler {
 
   public get aligned(): string {
     const aligned = this.column.getTag(UnitsHandler.TAGS.aligned);
-    if (aligned !== null) {
+    if (aligned !== null)
       return aligned;
-    } else {
+    else
       throw new Error('Tag aligned not set');
-    }
   }
 
   /** Alphabet name (upper case) */
   public get alphabet(): string {
     const alphabet = this.column.getTag(UnitsHandler.TAGS.alphabet);
-    if (alphabet !== null) {
+    if (alphabet !== null)
       return alphabet.toUpperCase();
-    } else {
+    else
       throw new Error('Tag alphabet not set');
-    }
   }
 
   public getAlphabetSize(): number {
@@ -130,11 +129,10 @@ export class UnitsHandler {
   }
 
   public getAlphabetIsMultichar(): boolean {
-    if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN) {
+    if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN)
       return this.column.getTag(UnitsHandler.TAGS.alphabetIsMultichar) == 'true';
-    } else {
+    else
       return false;
-    }
   }
 
   public isFasta(): boolean { return this.notation === NOTATION.FASTA; }
@@ -143,13 +141,13 @@ export class UnitsHandler {
 
   public isHelm(): boolean { return this.notation === NOTATION.HELM; }
 
-  public isRna(): boolean { return this.alphabet === 'RNA'; }
+  public isRna(): boolean { return this.alphabet === ALPHABET.RNA; }
 
-  public isDna(): boolean { return this.alphabet === 'DNA'; }
+  public isDna(): boolean { return this.alphabet === ALPHABET.DNA; }
 
-  public isPeptide(): boolean { return this.alphabet === 'PT'; }
+  public isPeptide(): boolean { return this.alphabet === ALPHABET.PT; }
 
-  public isMsa(): boolean {return this.aligned.toUpperCase().includes('MSA'); }
+  public isMsa(): boolean { return this.aligned.toUpperCase().includes('MSA'); }
 
   /** Associate notation types with the corresponding units */
   /**
@@ -264,21 +262,23 @@ export class UnitsHandler {
         UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
 
     if (!this.column.tags.has(UnitsHandler.TAGS.alphabetSize)) {
-      if (this.isHelm())
+      if (this.isHelm()) {
         throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
           `tag '${UnitsHandler.TAGS.alphabetSize}' is mandatory.`);
-      else if (['UN'].includes(this.alphabet))
+      } else if (['UN'].includes(this.alphabet)) {
         throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
           `tag '${UnitsHandler.TAGS.alphabetSize}' is mandatory.`);
+      }
     }
 
     if (!this.column.tags.has(UnitsHandler.TAGS.alphabetIsMultichar)) {
-      if (this.isHelm())
+      if (this.isHelm()) {
         throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
           `tag '${UnitsHandler.TAGS.alphabetIsMultichar}' is mandatory.`);
-      else if (['UN'].includes(this.alphabet))
+      } else if (['UN'].includes(this.alphabet)) {
         throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
           `tag '${UnitsHandler.TAGS.alphabetIsMultichar}' is mandatory.`);
+      }
     }
   }
 }
