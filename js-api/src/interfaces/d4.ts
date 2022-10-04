@@ -12,6 +12,10 @@ export interface IScatterPlot3dLookSettings {
 
   colorColumnName: string;
 
+  labelColumnName: string;
+
+  showAxes: boolean;
+
   backColor: number;
 
   filteredRowsColor: number;
@@ -37,12 +41,6 @@ export interface IScatterPlot3dLookSettings {
   showVerticalGridLines: boolean;
 
   showHorizontalGridLines: boolean;
-
-  showXAxis: boolean;
-
-  showYAxis: boolean;
-
-  showZAxis: boolean;
 
   showFilteredOutPoints: boolean;
 
@@ -224,6 +222,8 @@ export interface IHistogramLookSettings {
 }
 
 export interface IFiltersLookSettings {
+  active: boolean;
+
   showFilterCountsIndication: boolean;
 
   showFilterIndication: boolean;
@@ -381,7 +381,11 @@ export interface IScatterPlotLookSettings {
 
   viewport: string;
 
-  /// Newline-separated list of column names to be used in a tooltip
+  /// Controls scatter plot tooltip visibility
+  showTooltip: string;
+
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
   rowTooltip: string;
 
   rowGroupTooltip: string;
@@ -480,6 +484,8 @@ export interface ILineChartLookSettings {
   multiAxis: boolean;
 
   lineWidth: number;
+
+  lineTransparency: number;
 
   splineTension: number;
 
@@ -599,6 +605,18 @@ export interface ILineChartLookSettings {
   histogramWidth: number;
 
   showMarkers: string;
+
+  formulaLines: string;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showDataframeFormulaLines: boolean;
+
+  /// Control the visibility of dataframe-originated formula lines.
+  /// Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+  /// Requires the PowerPack plugin.
+  showViewerFormulaLines: boolean;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
@@ -855,6 +873,11 @@ export interface IBoxPlotLookSettings {
 
   showValueSelector: boolean;
 
+  /// Controls box plot tooltip visibility
+  showTooltip: string;
+
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
   rowTooltip: string;
 
   axisFont: string;
@@ -973,6 +996,10 @@ export interface IMatrixPlotLookSettings {
   font: string;
 
   cellPlotType: string;
+
+  showXAxes: boolean;
+
+  showYAxes: boolean;
 
   backColor: number;
 
@@ -1139,6 +1166,13 @@ export interface IGridLookSettings {
 
   showColumnTooltip: boolean;
 
+  /// Controls grid tooltip visibility
+  showTooltip: string;
+
+  /// Newline-separated list of column names to be used in a tooltip.
+  /// Requires *showTooltip* to be enabled.
+  rowTooltip: string;
+
   /// Include currently visible columns in a tooltip
   showVisibleColumnsInTooltip: boolean;
 
@@ -1275,6 +1309,12 @@ export interface IPcPlotLookSettings {
 
   colorColumnName: string;
 
+  /// Determines the way a value is mapped to the vertical scale.
+  /// TRUE: bottom is column minimum, top is column maximum. Use when columns contain values in different units
+  /// FALSE: uses the same scale. This lets you compare values across columns
+  /// if units are the same (for instance, use it for tracking change over time).'
+  normalizeEachColumn: boolean;
+
   backColor: number;
 
   selectedRowsColor: number;
@@ -1304,13 +1344,13 @@ export interface IPcPlotLookSettings {
   /// Whether the in-chart filters are visible
   showFilters: boolean;
 
+  showDensity: boolean;
+
   /// Whether the filtered out values are shown.
   /// See also *Filtered Out Line Color*
   showFilteredOutLines: boolean;
 
-  showMin: boolean;
-
-  showMax: boolean;
+  showMinMax: boolean;
 
   minMaxHeight: number;
 

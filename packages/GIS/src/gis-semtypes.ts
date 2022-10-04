@@ -26,7 +26,8 @@ export class GisArea {
   attributes: gisFeatureProperties = {};
   constructor(coord: Array<gisCoordinate>, attr?: gisFeatureProperties) {
     this.coordinates = coord;
-    if (attr) this.attributes = attr;
+    if (attr)
+      this.attributes = attr;
   }
 
   toString() {
@@ -42,19 +43,25 @@ function drawContourByCoords(g: CanvasRenderingContext2D,
   coordinates: Array<gisCoordinate>) {
   if (coordinates.length == 0) return;
   //detect scale>>
+  // TODO: Math.min()
   let xMin = coordinates[0][0];
   let xMax = coordinates[0][0];
   let yMin = coordinates[0][1];
   let yMax = coordinates[0][1];
   for (let i = 0; i < coordinates.length; i++) {
-    if (coordinates[i][0] < xMin) xMin = coordinates[i][0];
-    if (coordinates[i][0] > xMax) xMax = coordinates[i][0];
-    if (coordinates[i][1] < yMin) yMin = coordinates[i][1];
-    if (coordinates[i][1] > yMax) yMax = coordinates[i][1];
+    if (coordinates[i][0] < xMin)
+      xMin = coordinates[i][0];
+    if (coordinates[i][0] > xMax)
+      xMax = coordinates[i][0];
+    if (coordinates[i][1] < yMin)
+      yMin = coordinates[i][1];
+    if (coordinates[i][1] > yMax)
+      yMax = coordinates[i][1];
   }
   let xScale = (w - 10) / Math.abs(xMax - xMin);
   let yScale = (h - 10) / Math.abs(yMax - yMin);
-  if (yScale < xScale) xScale = yScale;
+  if (yScale < xScale)
+    xScale = yScale;
   else yScale = xScale;
   //TODO: add centering of contour for canvas
   //draw contour>>
@@ -122,8 +129,10 @@ export class GisAreaGridCellRenderer extends DG.GridCellRenderer {
   ): void {
     const cellVal = gridCell.cell.value;
     let cellObj: any;
-    if ((cellVal instanceof GisArea)) cellObj = cellVal;
-    if (typeof cellVal === 'string') cellObj = JSON.parse(cellVal);
+    if ((cellVal instanceof GisArea))
+      cellObj = cellVal;
+    if (typeof cellVal === 'string')
+      cellObj = JSON.parse(cellVal);
 
     // const objArea = new GisArea(cellObj.coordinates, cellObj.attributes);
     if (cellObj.coordinates)
@@ -161,12 +170,14 @@ export class GisAreaHandler extends DG.ObjectHandler {
     //prepare subelements
     const coordsDF = DG.DataFrame.fromObjects(obj.coordinates);
     let grid: DG.Viewer;
-    if (coordsDF) grid = DG.Viewer.fromType('Grid', coordsDF);
+    if (coordsDF)
+      grid = DG.Viewer.fromType('Grid', coordsDF);
 
     const acc = ui.accordion();
     acc.addPane('Details', () => ui.tableFromMap(obj.attributes));
     acc.addPane('Coordinates', () => {
-      if (!grid) return ui.div('No coordinates');
+      if (!grid)
+        return ui.div('No coordinates');
       grid.root.style.maxWidth = '300px';
       return ui.div(grid.root);
     });
@@ -206,8 +217,10 @@ export class GisPoint {
   constructor(lng: number, lat: number, alt?: number, attr?: gisFeatureProperties) {
     this.coordinates[0] = lng;
     this.coordinates[1] = lat;
-    if (alt) this.coordinates[2] = alt;
-    if (attr) this.attributes = attr;
+    if (alt)
+      this.coordinates[2] = alt;
+    if (attr)
+      this.attributes = attr;
   }
   get x(): number { return this.coordinates[0]; }
   get y(): number { return this.coordinates[1]; }

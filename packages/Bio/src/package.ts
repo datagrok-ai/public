@@ -481,8 +481,7 @@ export function similaritySearchViewer(): SequenceSimilarityViewer {
 //output: viewer result
 export function similaritySearchTopMenu(): void {
   const view = (grok.shell.v as DG.TableView);
-  const viewer = new SequenceSimilarityViewer();
-  view.addViewer(viewer);
+  const viewer = view.addViewer('SequenceSimilaritySearchViewer');
   view.dockManager.dock(viewer, 'down');
 }
 
@@ -499,8 +498,7 @@ export function diversitySearchViewer(): SequenceDiversityViewer {
 //output: viewer result
 export function diversitySearchTopMenu() {
   const view = (grok.shell.v as DG.TableView);
-  const viewer = new SequenceDiversityViewer();
-  view.addViewer(viewer);
+  const viewer = view.addViewer('SequenceDiversitySearchViewer');
   view.dockManager.dock(viewer, 'down');
 }
 

@@ -753,13 +753,14 @@ export class WebLogo extends DG.JsViewer {
     this.host.style.setProperty('height', `${height}px`);
     const canvasHeight: number = this.host.clientHeight;
     this.canvas.height = canvasHeight * r;
-    this.canvas.style.setProperty('height', `${canvasHeight}px`);
 
     // Adjust host and root width
     if (this.fixWidth) {
       // full width for canvas host and root
       this.root.style.width = this.host.style.width = `${width}px`;
       this.root.style.height = `${height}px`;
+      this.root.style.overflow = 'hidden';
+      this.host.style.setProperty('overflow-y', 'hidden', 'important');
     } else {
       // allow scroll canvas in root
       this.root.style.width = this.host.style.width = '100%';
@@ -800,7 +801,7 @@ export class WebLogo extends DG.JsViewer {
         this.slider.root.style.setProperty('margin-top', `${hostTopMargin + canvasHeight}px`, 'important');
       }
 
-      if (this.root.clientHeight < height) {
+      if (this.root.clientHeight <= height) {
         this.host.style.setProperty('height', `${this.root.clientHeight}px`);
         this.host.style.setProperty('overflow-y', null);
       } else {
@@ -1031,8 +1032,13 @@ export class WebLogo extends DG.JsViewer {
     return WebLogo.getSplitter(units, separator);
   }
 
+  private static longMonomerPartRe = /(\w+)/g;
+
   /** Convert long monomer names to short ones */
   public static monomerToShort(amino: string, maxLengthOfMonomer: number): string {
-    return amino.length <= maxLengthOfMonomer ? amino : amino.substring(0, maxLengthOfMonomer) + '…';
+    const shortAminoMatch: RegExpMatchArray | null = amino.match(WebLogo.longMonomerPartRe);
+    const needAddDots: boolean = amino.length > maxLengthOfMonomer || (shortAminoMatch?.length ?? 0) > 1;
+    const shortAmino = shortAminoMatch?.[0] ?? ' ';
+    return !needAddDots ? shortAmino : shortAmino.substring(0, maxLengthOfMonomer) + '…';
   }
 }
