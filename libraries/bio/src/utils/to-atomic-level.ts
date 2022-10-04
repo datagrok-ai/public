@@ -29,6 +29,10 @@ const V3K_END = 'M  END\n';
 
 const PRECISION_FACTOR = 10_000; // HELMCoreLibrary has 4 significant digits after decimal point in atom coordinates
 
+const HELM_DEOXYRIBOSE = 'd';
+const HELM_RIBOSE = 'r';
+const HELM_PHOSPHATE = 'p';
+
 type AtomData = {
   atomType: string[], // element symbol
   x: number[], // Cartesian coordiantes of the nodes
@@ -66,6 +70,7 @@ export async function _toAtomicLevel(
   // todo: remove progress indicator?
   // const pi = DG.TaskBarProgressIndicator.create('Restoring atomic structure...');
 
+  // verify the correctness of the semtype
   if (macroMolCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
     grok.shell.warning(
       `Only the ${DG.SEMTYPE.MACROMOLECULE} columns can be converted to atomic
@@ -74,12 +79,17 @@ export async function _toAtomicLevel(
     return;
   }
 
-  const units = macroMolCol.getTag(DG.TAGS.UNITS);
-  // if (units === NOTATION.HELM || units === )
+  // convert 'helm' to 'separator' units
+  if (macroMolCol.getTag(DG.TAGS.UNITS) === NOTATION.HELM) {
+    const converter = new NotationConverter(macroMolCol);
+    const separator = '/';
+    macroMolCol = converter.convert(NOTATION.SEPARATOR, separator);
+  }
+
   const alphabet = macroMolCol.getTag(UnitsHandler.TAGS.alphabet);
   // console.log(alphabet);
 
-  // determine the polymer type according to HELM
+  // determine the polymer type according to HELM specifications
   let polymerType;
   // todo: an exception from dart comes before this check if the alphabet is UN
   if (alphabet === ALPHABET.PT) {
@@ -96,9 +106,9 @@ export async function _toAtomicLevel(
 
   const monomerSequencesArray: string[][] = getMonomerSequencesArray(macroMolCol);
   // todo: consider separately backbone, terminal, branch monomer types
-  const monomersDict = await getMonomersDict(monomerSequencesArray, monomersLibList, polymerType);
-  const reconstructed: string[] = new Array(macroMolCol.length);
-  const columnLength = monomerSequencesArray.length;
+  const monomersDict = await getMonomersDict(monomerSequencesArray, monomersLibList, polymerType, alphabet);
+  const columnLength = macroMolCol.length;
+  const reconstructed: string[] = new Array(columnLength);
   for (let row = 0; row < columnLength; ++row) {
     const monomerSeq = monomerSequencesArray[row];
     reconstructed[row] = monomerSeqToMolfile(monomerSeq, monomersDict, polymerType);
@@ -140,24 +150,25 @@ function getFormattedMonomerLib(monomersLibList: any[], polymerType: HELM_POLYME
 
 /* Get jagged array of monomer symbols for the dataframe  */
 function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
-  const result: string[][] = new Array(macroMolCol.length);
+  const columnLength = macroMolCol.length;
+  const result: string[][] = new Array(columnLength);
 
-  // todo: getTag instead of tags, constants
+  // split the string into monomers
   const colUnits = macroMolCol.getTag(DG.TAGS.UNITS);
   const separator = macroMolCol.getTag(UnitsHandler.TAGS.separator);
   const splitterFunc: SplitterFunc = WebLogo.getSplitter(colUnits, separator);
-  for (let row = 0; row < macroMolCol.length; ++row) {
+
+  for (let row = 0; row < columnLength; ++row) {
     const macroMolecule = macroMolCol.get(row);
     // todo: handle the exception case when macroMolecule is null
     result[row] = macroMolecule ? splitterFunc(macroMolecule) : [];
   }
-  console.log(result);
   return result;
 }
 
 /* Get a mapping of monomer symbols to MolGraph objects */
 async function getMonomersDict(
-  monomerSequencesArray: string[][], monomersLibList: any[], polymerType: HELM_POLYMER_TYPE
+  monomerSequencesArray: string[][], monomersLibList: any[], polymerType: HELM_POLYMER_TYPE, alphabet: ALPHABET
 ): Promise<Map<string, MolGraph>> {
   const formattedMonomerLib = getFormattedMonomerLib(monomersLibList, polymerType);
   const monomersDict = new Map<string, MolGraph>();
@@ -166,17 +177,32 @@ async function getMonomersDict(
 
   for (let row = 0; row < monomerSequencesArray.length; ++row) {
     const monomerSeq: string[] = monomerSequencesArray[row];
-    for (const sym of monomerSeq) {
-      if (!monomersDict.has(sym)) {
-        const monomerData: MolGraph | null = getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType);
-        if (monomerData)
-          monomersDict.set(sym, monomerData);
-        // todo: handle exception when there is no monomer with symbol sym in
-        // monomersLibList
-      }
-    }
+    for (const sym of monomerSeq)
+      updateMonomersDict(monomersDict, sym, formattedMonomerLib, moduleRdkit, polymerType);
   }
+
+  // add deoxyribose/ribose and phosphate for nucleotide sequences
+  if (polymerType === HELM_POLYMER_TYPE.RNA) {
+    const symbols = (alphabet === ALPHABET.RNA) ?
+      [HELM_RIBOSE, HELM_PHOSPHATE] : [HELM_DEOXYRIBOSE, HELM_PHOSPHATE];
+    for (const sym of symbols)
+      updateMonomersDict(monomersDict, sym, formattedMonomerLib, moduleRdkit, polymerType);
+  }
+
   return monomersDict;
+}
+
+function updateMonomersDict(
+  monomersDict: Map<string, MolGraph>, sym: string, formattedMonomerLib: Map<string, any>,
+  moduleRdkit: any, polymerType: HELM_POLYMER_TYPE
+) {
+  if (!monomersDict.has(sym)) {
+    const monomerData: MolGraph | null = getMolGraph(sym, formattedMonomerLib, moduleRdkit, polymerType);
+    if (monomerData)
+      monomersDict.set(sym, monomerData);
+    // todo: handle exception when there is no monomer with symbol sym in
+    // monomersLibList
+  }
 }
 
 /* Construct the MolGraph object for a specified monomerSymbol: the associated
