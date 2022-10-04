@@ -15,6 +15,10 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
   const rowCount = activityScaledCol.length;
   const selectionObject = model.mutationCliffsSelection;
+  let isMutationCliffsSelectionEmpty = true;
+  for (const aarList of Object.values(selectionObject))
+    isMutationCliffsSelectionEmpty &&= aarList.length === 0;
+  const clustersObject = model.logoSummarySelection;
   const positions = Object.keys(selectionObject);
   const positionsLen = positions.length;
   let aarStr = allConst;
@@ -29,7 +33,11 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
       otherStr = otherConst;
       for (const position of positions) {
         const posCol = table.getCol(position);
-        for (const aar of selectionObject[position]) {
+        const aarList = selectionObject[position];
+        if (aarList.length === 0)
+          continue;
+
+        for (const aar of aarList) {
           aarStr = `${position} : ${aar}`;
           const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, rowCount).init((i) => posCol.get(i) == aar);
 
@@ -53,6 +61,9 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
       for (const position of positions) {
         const posCol = table.getCol(position);
         const aarList = selectionObject[position];
+        if (aarList.length === 0)
+          continue;
+
         aarStr = `${position}: {${aarList.join(', ')}}`;
 
         const mask = DG.BitSet.create(rowCount, (i) => aarList.includes(posCol.get(i)));
@@ -112,9 +123,13 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           otherStr = otherConst;
         } else if (positionsLen) {
           aarStr = '';
-          for (const position of positions)
-            aarStr += `${position}: {${selectionObject[position].join(', ')}}; `;
-          aarStr = aarStr.slice(0, aarStr.length - 2);
+          for (const position of positions) {
+            const aarList = selectionObject[position];
+            if (aarList.length !== 0)
+              aarStr += `${position}: {${aarList.join(', ')}}; `;
+          }
+          if (clustersObject.length !== 0)
+            aarStr += `Clusters: ${clustersObject.join(', ')}`;
           otherStr = otherConst;
         }
 
@@ -130,7 +145,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   };
 
   const setDefaultProperties = (input: DG.InputBase): void => {
-    input.enabled = positionsLen != 0;
+    input.enabled = !isMutationCliffsSelectionEmpty;
     $(input.root).find('.ui-input-editor').css('margin', '0px');
     $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
   };
