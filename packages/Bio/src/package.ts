@@ -32,7 +32,6 @@ import {
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 import * as C from './utils/constants';
-import {PhyloTreeViewApp} from './phylo-tree-view-app';
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 
@@ -509,20 +508,3 @@ export function diversitySearchTopMenu() {
   view.dockManager.dock(viewer, 'down');
 }
 
-
-//name: PhyloTreeView
-//tags: app
-export async function bioPhyloTreeViewApp() {
-  const pi = DG.TaskBarProgressIndicator.create('open PhyloTreeView app');
-  try {
-    const app = new PhyloTreeViewApp();
-    await app.init();
-  } catch (err: unknown) {
-    const msg: string = 'PhyloTreeView app error: ' +
-      `${err instanceof Error ? err.message : (err as Object).toString()}`;
-    grok.shell.error(msg);
-    console.error(msg);
-  } finally {
-    pi.close();
-  }
-}
