@@ -42,6 +42,7 @@ export class NotationConverter extends UnitsHandler {
       }
       return fastaMonomersArray.join(separator);
     });
+    newColumn.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
     newColumn.setTag(UnitsHandler.TAGS.separator, separator);
     return newColumn;
   }

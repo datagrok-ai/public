@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {importFasta} from '../package';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {UnitsHandler, NOTATION, ALPHABET, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 type DfReaderFunc = () => Promise<DG.DataFrame>;
 
@@ -199,44 +199,49 @@ MWRSWY-CKHP
   test('NegativeSmiles', async () => { await _testNeg(readCsv('csvDfSmiles', csvDfSmiles), 'col1'); });
 
   test('Dna1', async () => {
-    await _testPos(readCsv('csvDfDna1', csvDfDna1), 'seq', 'fasta', 'SEQ', 'DNA', 4, false);
+    await _testPos(readCsv('csvDfDna1', csvDfDna1), 'seq', NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.DNA, 4, false);
   });
   test('Rna1', async () => {
-    await _testPos(readCsv('csvDfRna1', csvDfRna1), 'seq', 'fasta', 'SEQ', 'RNA', 4, false);
+    await _testPos(readCsv('csvDfRna1', csvDfRna1), 'seq', NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.RNA, 4, false);
   });
   test('AA1', async () => {
-    await _testPos(readCsv('csvDfPt1', csvDfPt1), 'seq', 'fasta', 'SEQ', 'PT', 20, false);
+    await _testPos(readCsv('csvDfPt1', csvDfPt1), 'seq', NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false);
   });
   test('MsaDna1', async () => {
-    await _testPos(readCsv('csvDfMsaDna1', csvDfMsaDna1), 'seq', 'fasta', 'SEQ.MSA', 'DNA', 4, false);
+    await _testPos(readCsv('csvDfMsaDna1', csvDfMsaDna1), 'seq', NOTATION.FASTA, ALIGNMENT.SEQ_MSA, ALPHABET.DNA, 4, false);
   });
 
   test('MsaAA1', async () => {
-    await _testPos(readCsv('csvDfMsaPt1', csvDfMsaPt1), 'seq', 'fasta', 'SEQ.MSA', 'PT', 20, false);
+    await _testPos(readCsv('csvDfMsaPt1', csvDfMsaPt1), 'seq', NOTATION.FASTA,
+      ALIGNMENT.SEQ_MSA, ALPHABET.PT, 20, false);
   });
 
   test('SepDna', async () => {
-    await _testPos(readCsv('csvDfSepDna', csvDfSepDna), 'seq', 'separator', 'SEQ', 'DNA', 4, false, '*');
+    await _testPos(readCsv('csvDfSepDna', csvDfSepDna), 'seq', NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.DNA, 4, false, '*');
   });
   test('SepRna', async () => {
-    await _testPos(readCsv('csvDfSepRna', csvDfSepRna), 'seq', 'separator', 'SEQ', 'RNA', 4, false, '*');
+    await _testPos(readCsv('csvDfSepRna', csvDfSepRna), 'seq', NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.RNA, 4, false, '*');
   });
   test('SepPt', async () => {
-    await _testPos(readCsv('csvDfSepPt', csvDfSepPt), 'seq', 'separator', 'SEQ', 'PT', 20, false, '-');
+    await _testPos(readCsv('csvDfSepPt', csvDfSepPt), 'seq',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.PT, 20, false, '-');
   });
   test('SepUn1', async () => {
-    await _testPos(readCsv('csvDfSepUn1', csvDfSepUn1), 'seq', 'separator', 'SEQ', 'UN', 8, true, '-');
+    await _testPos(readCsv('csvDfSepUn1', csvDfSepUn1), 'seq',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 8, true, '-');
   });
   test('SepUn2', async () => {
-    await _testPos(readCsv('csvDfSepUn2', csvDfSepUn2), 'seq', 'separator', 'SEQ', 'UN', 9, true, '/');
+    await _testPos(readCsv('csvDfSepUn2', csvDfSepUn2), 'seq',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ, ALPHABET.UN, 9, true, '/');
   });
 
   test('SepMsaN1', async () => {
-    await _testPos(readCsv('csvDfSepMsaDna1', csvDfSepMsaDna1), 'seq', 'separator', 'SEQ.MSA', 'DNA', 4, false, '-');
+    await _testPos(readCsv('csvDfSepMsaDna1', csvDfSepMsaDna1), 'seq',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.DNA, 4, false, '-');
   });
 
   test('SamplesFastaCsvPt', async () => {
-    await _testPos(readSamples(Samples.fastaCsv), 'sequence', 'fasta', 'SEQ', 'PT', 20, false);
+    await _testPos(readSamples(Samples.fastaCsv), 'sequence', NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false);
   });
   test('SamplesFastaCsvNegativeEntry', async () => {
     await _testNeg(readSamples(Samples.fastaCsv), 'Entry');
@@ -249,7 +254,8 @@ MWRSWY-CKHP
   });
 
   test('SamplesFastaFastaPt', async () => {
-    await _testPos(readSamples(Samples.fastaFasta, readFileFasta), 'sequence', 'fasta', 'SEQ', 'PT', 20, false);
+    await _testPos(readSamples(Samples.fastaFasta, readFileFasta),
+      'sequence', NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false);
   });
 
   // peptidesComplex contains monomers with spaces in AlignedSequence columns, which are forbidden
@@ -267,7 +273,8 @@ MWRSWY-CKHP
   });
 
   test('samplesMsaComplexUn', async () => {
-    await _testPos(readSamples(Samples.msaComplex), 'MSA', 'separator', 'SEQ.MSA', 'UN', 161, true, '/');
+    await _testPos(readSamples(Samples.msaComplex), 'MSA',
+      NOTATION.SEPARATOR, ALIGNMENT.SEQ_MSA, ALPHABET.UN, 161, true, '/');
   });
   test('samplesMsaComplexNegativeActivity', async () => {
     await _testNeg(readSamples(Samples.msaComplex), 'Activity');
@@ -282,7 +289,7 @@ MWRSWY-CKHP
   });
 
   test('samplesHelmCsvHELM', async () => {
-    await _testPos(readSamples(Samples.helmCsv), 'HELM', 'helm', null, null, 160, true, null);
+    await _testPos(readSamples(Samples.helmCsv), 'HELM', NOTATION.HELM, null, null, 160, true, null);
   });
 
   test('samplesHelmCsvNegativeActivity', async () => {
@@ -298,7 +305,7 @@ MWRSWY-CKHP
     await _testNeg(readSamples(Samples.testHelmCsv), 'Test type');
   });
   test('samplesTestHelmPositiveHelmString', async () => {
-    await _testPos(readSamples(Samples.testHelmCsv), 'HELM string', 'helm', null, null, 9, true, null);
+    await _testPos(readSamples(Samples.testHelmCsv), 'HELM string', NOTATION.HELM, null, null, 9, true, null);
   });
   test('samplesTestHelmNegativeValid', async () => {
     await _testNeg(readSamples(Samples.testHelmCsv), 'Valid?');
@@ -330,7 +337,7 @@ MWRSWY-CKHP
   });
 
   test('samplesFastaPtPosSequence', async () => {
-    await _testPos(readSamples(Samples.fastaPtCsv), 'sequence', 'fasta', 'SEQ', 'PT', 20, false);
+    await _testPos(readSamples(Samples.fastaPtCsv), 'sequence', NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false);
   });
 
   test('samplesTestCerealNegativeCerealName', async () => {
@@ -382,7 +389,7 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
     throw new Error(msg);
     // col.semType = '';
     // col.setTag(DG.TAGS.UNITS, '');
-    // col.setTag('separator', '');
+    // col.setTag(NOTATION.SEPARATOR, '');
   }
 }
 

@@ -10,9 +10,9 @@
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 const NOTATION = {
-  FASTA: 'fasta',
-  SEPARATOR: 'separator',
-  HELM: 'helm',
+  FASTA: 'FASTA',
+  SEPARATOR: 'SEPARATOR',
+  HELM: 'HELM',
 };
 
 const ALPHABET = {
@@ -21,6 +21,11 @@ const ALPHABET = {
   PT: 'PT',
   UN: 'UN',
 };
+
+const ALIGNMENT = {
+  SEQ_MSA: 'SEQ.MSA',
+  SEQ: 'SEQ',
+}
 
 /** Class for handling notation units in Macromolecule columns */
 class UnitsHandler {
@@ -128,7 +133,7 @@ class BioPackageDetectors extends DG.Package {
 
         const units = NOTATION.FASTA;
         col.setTag(DG.TAGS.UNITS, units);
-        col.setTag(UnitsHandler.TAGS.aligned, 'SEQ.MSA');
+        col.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
         col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
         return DG.SEMTYPE.MACROMOLECULE;
       }
@@ -145,7 +150,7 @@ class BioPackageDetectors extends DG.Package {
       if (separator && BioPackageDetectors.checkForbiddenWithSeparators(stats.freq)) return null;
 
       const format = separator ? NOTATION.SEPARATOR : NOTATION.FASTA;
-      const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
+      const seqType = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
 
       // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
       const alphabet = BioPackageDetectors.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol);

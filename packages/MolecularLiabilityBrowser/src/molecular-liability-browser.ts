@@ -14,6 +14,7 @@ import {
 import {Subscription, Unsubscribable} from 'rxjs';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 import {VdRegionsViewer} from '@datagrok/bio/src/viewers/vd-regions-viewer';
+import {UnitsHandler, NOTATION, ALPHABET, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {TreeBrowser} from './mlb-tree';
 import {getVId, TreeAnalyzer} from './utils/tree-stats';
 import {MiscMethods} from './viewers/misc';
@@ -451,10 +452,10 @@ export class MolecularLiabilityBrowser {
       (i: number) => positionColumns.map((v) => df.get(v, i)).join('')
     );
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, 'fasta');
-    seqCol.setTag('alphabet', 'PT');
-    seqCol.setTag('aligned', 'SEQ.MSA');
-    seqCol.setTag('separator', '');
+    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.PT);
+    seqCol.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
+    seqCol.setTag(UnitsHandler.TAGS.separator, '');
     seqCol.setTag('gap.symbol', '-');
 
     const positionNamesTxt = positionNames.join(', '); /* Spaces are for word wrap */

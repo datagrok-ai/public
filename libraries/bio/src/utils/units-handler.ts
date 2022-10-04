@@ -6,9 +6,9 @@ import {WebLogo, SeqColStats} from '../viewers/web-logo';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 export const enum NOTATION {
-  FASTA = 'fasta',
-  SEPARATOR = 'separator',
-  HELM = 'helm',
+  FASTA = 'FASTA',
+  SEPARATOR = 'SEPARATOR',
+  HELM = 'HELM',
 }
 
 export const enum ALPHABET {
@@ -16,6 +16,11 @@ export const enum ALPHABET {
   RNA = 'RNA',
   PT = 'PT',
   UN = 'UN',
+}
+
+export const enum ALIGNMENT {
+  SEQ_MSA = 'SEQ.MSA',
+  SEQ = 'SEQ',
 }
 
 /** Class for handling notation units in Macromolecule columns */
@@ -50,7 +55,7 @@ export class UnitsHandler {
       throw new Error('Fasta column must be MACROMOLECULE');
 
     const stats: SeqColStats = WebLogo.getStats(col, 5, WebLogo.splitterAsFasta);
-    const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
+    const seqType = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
 
     const alphabetCandidates: [string, Set<string>][] = [
       [ALPHABET.PT, UnitsHandler.PeptideFastaAlphabet],
