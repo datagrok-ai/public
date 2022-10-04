@@ -12,6 +12,7 @@ import BaseLayer from 'ol/layer/Base';
 import Layer from 'ol/layer/Layer';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
+import WebGLPointsLayer from 'ol/layer/WebGLPoints';
 import TileImage from 'ol/source/TileImage'; //this is the base class for XYZ, BingMaps etc..
 import VectorSource from 'ol/source/Vector';
 import Collection from 'ol/Collection';
@@ -26,9 +27,10 @@ import * as OLPolygon from 'ol/geom/Polygon';
 //@type {import("../proj/Projection.js").default|undefined}
 import Feature, {FeatureLike} from 'ol/Feature';
 // import * as OLFeature from 'ol/Feature';
-import Point from 'ol/geom/Point';
+// import Point from 'ol/geom/Point';
 import * as OLGeom from 'ol/geom';
 import * as OLStyle from 'ol/style';
+import {LiteralStyle} from 'ol/style/literal';
 //Sources import
 import OSM from 'ol/source/OSM';
 import BingMaps from 'ol/source/BingMaps';
@@ -48,6 +50,8 @@ import JSZip from 'jszip';
 import { stopPropagation } from 'ol/events/Event';
 
 export { Coordinate } from 'ol/coordinate';
+
+type WebGLPts = WebGLPointsLayer<VectorSource<OLGeom.Point>>;
 
 //interface for callback functions parameter
 export interface OLCallbackParam {
@@ -140,9 +144,10 @@ function onPrerenderMarkers() {
 export class OpenLayers {
   olMap: OLMap;
   olCurrentView: OLView;
-  olCurrentLayer: BaseLayer | VectorLayer<VectorSource> | HeatmapLayer | null;
+  olCurrentLayer: BaseLayer | VectorLayer<VectorSource> | HeatmapLayer | WebGLPts | null;
   olBaseLayer: BaseLayer | null;
   olMarkersLayer: VectorLayer<VectorSource> | null;
+  olMarkersLayerGL: WebGLPts | null;
 
   dragAndDropInteraction: OLInteractions.DragAndDrop;
   //styles>>
@@ -155,10 +160,13 @@ export class OpenLayers {
   onRefreshCallback: Function | null = null;
   // public labelStatus: HTMLElement | null = null;
 
+  markerGLStyle: LiteralStyle;
+
   //properties from viewer
   gisViewer: GisViewer|null = null;
-  markerSize: number = 1;
-  markerOpacity: number = 0.7;
+  markerSize: number = 3;
+  markerOpacity: number = 0.5;
+  defaultColor: number = 0x1f77b4;
   weightedMarkers: boolean = false;
   heatmapBlurParam: number = 20;
   heatmapRadiusParam: number = 10;
@@ -171,6 +179,8 @@ export class OpenLayers {
     this.olCurrentLayer = null;
     this.olBaseLayer = null;
     this.olMarkersLayer = null;
+    this.olMarkersLayerGL = null;
+    this.markerGLStyle = {};
 
     this.styleVectorLayer = new OLStyle.Style({
       fill: new OLStyle.Fill({
@@ -178,8 +188,8 @@ export class OpenLayers {
         // color: 'rgba(155, 155, 55, 0.5)',
       }),
       stroke: new OLStyle.Stroke({
-        // color: 'rgba(250, 250, 0, 0.5)',
-        color: 'rgba(200, 0, 0, 0.5)',
+        // color: 'rgba(250, 250, 0, 1)',
+        color: 'rgba(200, 0, 0, 1)',
         width: 1,
       }),
     });
@@ -189,7 +199,7 @@ export class OpenLayers {
         // color: '#eeeeee',
       }),
       stroke: new OLStyle.Stroke({
-        color: 'rgba(255, 0, 0, 0.7)',
+        color: 'rgba(255, 0, 0, 1)',
         width: 3,
       }),
     });
@@ -204,7 +214,7 @@ export class OpenLayers {
         TopoJSON,
       ],
     });
-    this.dragAndDropInteraction.on('addfeatures', this.dragNdropInteractionFn);
+    this.dragAndDropInteraction.on('addfeatures', this.dragNdropInteractionFn.bind(this));
     OLG = this;
     //end of constructor
   }
@@ -227,8 +237,34 @@ export class OpenLayers {
   }
   get heatmapRadius(): number { return this.heatmapRadiusParam; }
 
+  prepareGLStyle(sizeval?: number, colorval?: string, opaval?: number, symbolval?: string): LiteralStyle {
+    const markerGLStyle = {
+      // variables: {
+      //   minVal: 0,
+      // },
+      symbol: {
+        symbolType: symbolval? symbolval : 'circle',
+        size: sizeval? sizeval : this.markerSize,
+        // size: 6,
+        // size: [['get', '_fieldSize']],
+/*
+          size: [
+            ['interpolate', ['linear'], ['get', '_fieldSize'], ['var', 'minVal'], 5, ['var', 'maxVal'], 26],
+          ],
+*/
+        // color: ['interpolate', ['linear'], animRatio, 0, newColor, 1, oldColor],
+        color: colorval? colorval : toStringColor(this.defaultColor, this.markerOpacity),
+        // color: this.defaultColor, //'blue',
+        // color: [['get', '_fieldColor']],
+        opacity: opaval? opaval : this.markerOpacity,
+      },
+    };
+    return markerGLStyle as LiteralStyle;
+  }
+
   initMap(targetName: string) {
-    if (targetName === '') return;
+    if (targetName === '')
+      return;
 
     this.olMap = new OLMap({
       target: targetName,
@@ -246,12 +282,23 @@ export class OpenLayers {
     this.addNewBingLayer('Bing sat');
     this.olBaseLayer = this.addNewOSMLayer('BaseLayer');
     // this.olMarkersLayer = this.addNewVectorLayer('Markers');
-    this.olMarkersLayer = this.addNewVectorLayer('Markers', null, this.genStyleMarker);
+    this.olMarkersLayer = this.addNewVectorLayer('Markers', null, this.genStyleMarker.bind(this));
     this.olMarkersLayer.on('postrender', onPostrenderMarkers);
     this.olMarkersLayer.on('prerender', onPrerenderMarkers);
 
+    this.markerGLStyle = this.prepareGLStyle();
+    //TODO: this is experimental code - manage it
+    this.olMarkersLayerGL = new WebGLPointsLayer({
+      source: new VectorSource<OLGeom.Point>(),
+      style: this.markerGLStyle,
+      // opacity: this.markerOpacity,
+    });
+    this.olMarkersLayerGL.set('layerName', 'Markers GL');
+    // this.olMarkersLayerGL.updateStyleVariables({});
+    this.addLayer(this.olMarkersLayerGL);
+
     //add base event handlers>>
-    this.olMap.on('click', this.onMapClick);
+    this.olMap.on('click', this.onMapClick.bind(this));
     // this.olMap.on('pointermove', this.onMapPointermove);
 
     const selectInteraction = new OLInteractions.Select({
@@ -351,7 +398,7 @@ export class OpenLayers {
     return this.olMap.getAllLayers();
   }
 
-  getLayerByName(lrName: string): VectorLayer<VectorSource>|HeatmapLayer|null {
+  getLayerByName(lrName: string): VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|null {
     let layerResult = null;
     if (this.olMap) {
       const layersArr = this.olMap.getAllLayers();
@@ -360,10 +407,13 @@ export class OpenLayers {
           layerResult = layersArr[i];
       }
     }
+    if (layerResult instanceof WebGLPointsLayer)
+      return (layerResult as WebGLPts);
+
     return (layerResult as VectorLayer<VectorSource>);
   }
 
-  getLayerById(layerId: string): VectorLayer<VectorSource>|HeatmapLayer|null {
+  getLayerById(layerId: string): VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|null {
     let layerResult = null;
     if (this.olMap) {
       const layersArr = this.olMap.getAllLayers();
@@ -373,6 +423,9 @@ export class OpenLayers {
           layerResult = layersArr[i];
       }
     }
+    if (layerResult instanceof WebGLPointsLayer)
+      return (layerResult as WebGLPts);
+
     return (layerResult as VectorLayer<VectorSource>);
   }
 
@@ -381,8 +434,21 @@ export class OpenLayers {
       const layersArr = this.olMap.getAllLayers();
       for (let i = 0; i < layersArr.length; i++) {
         const lId = layersArr[i].get('layerId');
-        if (layerId === lId)
+        if (layerId === lId) {
           this.olMap.removeLayer(layersArr[i]);
+          layersArr[i].dispose(); //TODO: check is it works
+        }
+      }
+    }
+  }
+
+  removeAllLayers(): void {
+    if (this.olMap) {
+      const layersArr = this.olMap.getAllLayers();
+      for (let i = 0; i < layersArr.length; i++) {
+        this.olMap.removeLayer(layersArr[i]);
+        // layersArr[i].unsubscribe?
+        layersArr[i].dispose();
       }
     }
   }
@@ -490,7 +556,7 @@ export class OpenLayers {
   }
 
   // createTextStyle(feature: FeatureLike, resolution: number): Style {
-  static createTextStyle(txt: any, resolution?: number): OLStyle.Text {
+  createTextStyle(txt: any, resolution?: number): OLStyle.Text {
     console.log('createTextStyle: ' + txt);
     return new OLStyle.Text({
       // textAlign: align == 'center',
@@ -522,23 +588,23 @@ export class OpenLayers {
           // radius: this.weightedMarkers ? val*1 : this.markerSize,
           radius: size ? size : OLG.markerSize,
           fill: new OLStyle.Fill({
-            color: clr ? clr : 'rgba(255, 0, 255, 0.4)',
+            color: clr ? clr : `rgba(255, 0, 255, 0.9)`, // ${this.markerOpacity})`,
           }),
           stroke: new OLStyle.Stroke({
-            // color: 'rgba(255, 204, 0, 0.2)',
-            color: 'rgba(255, 0, 0, 0.2)',
+            // color: 'rgba(255, 204, 0, 1)',
+            color: 'rgba(255, 0, 0, 1)',
             width: 1,
           }),
         }),
         // text: 'testtext',
-        // text: OpenLayers.createTextStyle(val, resolution),
+        // text: this.createTextStyle(val, resolution),
       });
     } else {
       stylePt = new OLStyle.Style({
         image: new OLStyle.Circle({
           radius: 1,
           stroke: new OLStyle.Stroke({
-            color: 'rgba(0, 0, 0, 0.5)',
+            color: 'rgba(0, 0, 0, 1)',
             width: 1,
           }),
         }),
@@ -611,7 +677,8 @@ export class OpenLayers {
   }
 
   onMapPointermove(evt: MapBrowserEvent<any>) {
-    if (evt.dragging) return;
+    if (evt.dragging)
+      return;
 
     const res: OLCallbackParam = {
       coord: evt.coordinate,
@@ -643,10 +710,11 @@ export class OpenLayers {
   }
 
   //map elements management functions>>
-  clearLayer(layer?: VectorLayer<VectorSource> | HeatmapLayer | undefined | null) {
-    let aLayer: VectorLayer<VectorSource> | HeatmapLayer | undefined | null;
-    aLayer = this.olMarkersLayer;
-    if (layer) aLayer = layer;
+  clearLayer(layer?: VectorLayer<VectorSource> | WebGLPts | HeatmapLayer | undefined | null) {
+    let aLayer: VectorLayer<VectorSource> | WebGLPts | HeatmapLayer | undefined | null;
+    aLayer = this.olMarkersLayerGL;
+    if (layer)
+      aLayer = layer;
     if (aLayer) {
       const src = aLayer.getSource();
       if (src)
@@ -655,9 +723,9 @@ export class OpenLayers {
   }
 
   addPoint(coord: Coordinate, value?: string|number|undefined,
-    layer?: VectorLayer<VectorSource>|HeatmapLayer|undefined) {
+    layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
     //
-    let aLayer: VectorLayer<VectorSource>|HeatmapLayer|undefined|null;
+    let aLayer: VectorLayer<VectorSource>|HeatmapLayer|WebGLPts|undefined|null;
     aLayer = this.olMarkersLayer;
     if (layer)
       aLayer = layer;
@@ -681,7 +749,7 @@ export class OpenLayers {
           stroke = maxradius/2+2;
         else stroke = val/10;
       }
-      const marker = new Feature(new Point(OLProj.fromLonLat(coord)));
+      const marker = new Feature(new OLGeom.Point(OLProj.fromLonLat(coord)));
       const style = new Style({
         image: new OLStyle.Circle({
           radius: rad,
@@ -691,7 +759,7 @@ export class OpenLayers {
             color: `rgba(0, 153, 255, ${this.markerOpacity})`,
           }),
           stroke: new OLStyle.Stroke({
-            color: `rgba(255, 0, 255, ${this.markerOpacity-0.2})`,
+            color: `rgba(255, 0, 255, ${this.markerOpacity+0.2})`,
             width: stroke,
             // width: (val>maxradius) ? ((val/10>maxradius/2) ? (maxradius/2+2) : (val/10) ) : 1,
           }),
@@ -708,16 +776,16 @@ export class OpenLayers {
 
   addPointSc(coord: Coordinate, sizeVal: number, colorVal: number,
     value?: string|number|undefined,
-    layer?: VectorLayer<VectorSource>|HeatmapLayer|undefined) {
+    layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
     //
-    let aLayer: VectorLayer<VectorSource>|HeatmapLayer|undefined|null;
+    let aLayer: VectorLayer<VectorSource>|HeatmapLayer|WebGLPts|undefined|null;
     aLayer = this.olMarkersLayer;
     if (layer)
       aLayer = layer;
 
     const strCol = toStringColor(colorVal, this.markerOpacity);
     if (aLayer) {
-      const marker = new Feature(new Point(OLProj.fromLonLat(coord)));
+      const marker = new Feature(new OLGeom.Point(OLProj.fromLonLat(coord)));
       const style = new Style({
         image: new OLStyle.Circle({
           radius: sizeVal,
@@ -726,7 +794,7 @@ export class OpenLayers {
             color: strCol,
           }),
           stroke: new OLStyle.Stroke({
-            color: `rgba(255, 0, 0, 0.4)`, //toStringColor(colorVal, this.markerOpacity-0.1),
+            color: `rgba(255, 0, 0, 1)`, //toStringColor(colorVal, this.markerOpacity-0.1),
             width: 1, //TODO: change to gisView.markerStrokeWidth
           }),
         }),
@@ -741,12 +809,14 @@ export class OpenLayers {
   }
 
   addFeaturesBulk(arrFeatures: Array<Feature>,
-    layer?: VectorLayer<VectorSource>|HeatmapLayer|undefined) {
+    layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
     //add array of features to the layer
-    let aLayer: VectorLayer<VectorSource>|HeatmapLayer|undefined|null;
-    aLayer = this.olMarkersLayer;
+    let aLayer: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined|null;
+    aLayer = this.olMarkersLayerGL;
     if (layer)
       aLayer = layer;
+    if (!aLayer)
+      aLayer = this.olMarkersLayer;
     if (aLayer) {
       const src = aLayer.getSource();
       if (src)

@@ -93,7 +93,7 @@ export class GisViewer extends DG.JsViewer {
     this.labelsColumnName = this.string('labelsColumnName', '', {userEditable: true});
     this.markersColumnName = this.string('markersColumnName', '', {userEditable: false});
 
-    this.markerOpacity = this.float('markerOpacity', 0.8, {category: 'Markers', editor: 'slider', min: 0.1, max: 1});
+    this.markerOpacity = this.float('markerOpacity', 80, {category: 'Markers', editor: 'slider', min: 0, max: 100});
     // this.gradientSizing = this.bool('gradientSizing', false, {category: 'Markers'});
     this.markerDefaultSize = this.int('markerDefaultSize', 3, {category: 'Markers', min: 1, max: 30});
     //DONE: there is no need in valitators: Min can be > Max
@@ -331,7 +331,8 @@ export class GisViewer extends DG.JsViewer {
 
       //TODO: refactor here>
       this.ol.markerSize = this.markerDefaultSize;
-      this.ol.markerOpacity = this.markerOpacity;
+      this.ol.markerOpacity = this.markerOpacity / 100;
+      this.ol.defaultColor = this.defaultColor;
       this.ol.weightedMarkers = ((this.sizeColumnName !== '')); //TODO: add checking for number column type
       this.ol.heatmapRadius = this.heatmapRadius;
       this.ol.heatmapBlur = this.heatmapBlur;
@@ -464,25 +465,52 @@ export class GisViewer extends DG.JsViewer {
       this.ol.heatmapBlur = this.heatmapBlur;
       return;
     }
-    if (prop.name === 'gradientColoring') {
-      //TODO: enable/disable min/max color fields corresponding to gradientColoring value
-      // this.look
-      // this.props.getProperties()
+    if (prop.name === 'defaultColor') {
+      this.ol.defaultColor = this.defaultColor;
+      this.ol.markerGLStyle.symbol!.color = toStringColor(this.defaultColor, this.markerOpacity);
+      this.ol.olMap.render();
+      window.requestAnimationFrame(() => {
+        this.ol.olMarkersLayerGL!.updateStyleVariables({'size': this.markerDefaultSize});
+        this.ol.olMap.render();
+      });
+      //TODO - redraw layer
+      return;
     }
+    if (prop.name === 'markerDefaultSize') {
+      this.ol.markerSize = this.markerDefaultSize;
+      // this.ol.markerGLStyle.symbol!.size = this.markerDefaultSize;
+      this.ol.olMap.render();
+      this.ol.olMarkersLayerGL!.updateStyleVariables({'size': this.markerDefaultSize});
+      window.requestAnimationFrame(() => { this.ol.olMap.render(); });
+      // window.requ
+      //TODO - redraw layer
+      return;
+    }
+    if (prop.name === 'markerOpacity') {
+      this.ol.markerOpacity = this.markerOpacity / 100;
+      //TODO - redraw layer
+      return;
+    }
+    // if (prop.name === 'defaultColor') {
+
+    // }
 
     this.render();
   }
 
   detach(): void {
-    //TODO: - release map
-    // this.map.remove();
+    if (this.ol) {
+      this.ol.removeAllLayers();
+      this.ol.olMap.dispose();
+    }
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
   render(fit: boolean = false): void {
     //TODO: refactor this>
     this.ol.markerSize = this.markerDefaultSize;
-    this.ol.markerOpacity = this.markerOpacity;
+    this.ol.markerOpacity = this.markerOpacity / 100;
+    this.ol.defaultColor = this.defaultColor;
     this.ol.weightedMarkers = ((this.sizeColumnName !== '')); //TODO: add checking for number column type
     //this.ol.weightedMarkers = this.gradientSizing;
     this.ol.heatmapRadius = this.heatmapRadius;
@@ -500,9 +528,9 @@ export class GisViewer extends DG.JsViewer {
       // this.renderMarkers();
 
     if (fit) {
-      if (this.ol.olMarkersLayer)
-        this.ol.olMap.getView().fit((this.ol.olMarkersLayer.getSource()!).getExtent());
-        // if (this.ol.olMarkersLayer.getSource())
+      if (this.ol.olMarkersLayerGL)
+        this.ol.olMap.getView().fit((this.ol.olMarkersLayerGL.getSource()!).getExtent());
+      // this.ol.olMap.getView().fit((this.ol.olMarkersLayer.getSource()!).getExtent());
     }
 
     this.updateLayersList();
@@ -661,7 +689,7 @@ export class GisViewer extends DG.JsViewer {
             geometry: new Point(coords),
             _fieldValue: val[indexes[i]],
             _fieldSize: ((sizeVal[indexes[i]] - sizeShift) * sizeCoeff),
-            _fieldColor: toStringColor(((colorVal[indexes[i]] - colorShift) * colorCoeff), this.markerOpacity),
+            _fieldColor: toStringColor(((colorVal[indexes[i]] - colorShift) * colorCoeff), this.markerOpacity / 100),
           }));
         }
       }
