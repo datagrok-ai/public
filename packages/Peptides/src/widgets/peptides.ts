@@ -109,30 +109,31 @@ export async function startAnalysis(activityColumn: DG.Column<number> | null, pe
     const f = currentDf.filter;
     //prepare new DF
     const newDf = DG.DataFrame.create(f.trueCount);
-    const idxCol = newDf.columns.addNewInt('~indexes');
-    const init = indexes.length !== 0 ? (i: number) => indexes[i] : (i: number) => i;
-    idxCol.init(init);
+    const getIndex = indexes.length !== 0 ? (i: number) => indexes[i] : (i: number) => i;
     let activityCol: DG.Column | null = null;
     for (const col of currentDf.columns.toList()) {
-      if (col === activityColumn)
-        activityCol = newDf.columns.addNewVirtual(
-          C.COLUMNS_NAMES.ACTIVITY, (i) => activityColumn.get(idxCol.get(i)!), DG.TYPE.FLOAT);
-      else if (col === peptidesCol)
-        newDf.columns.addNewVirtual(
-          C.COLUMNS_NAMES.ALIGNED_SEQUENCE, (i) => peptidesCol.get(idxCol.get(i)!), DG.TYPE.STRING);
+      let virtualCol: DG.Column<any>;
+      if (col === activityColumn) {
+        virtualCol = newDf.columns.addNewVirtual(
+          C.COLUMNS_NAMES.ACTIVITY, (i) => activityColumn.get(getIndex(i)!), DG.TYPE.FLOAT);
+        activityCol = virtualCol;
+      } else if (col === peptidesCol)
+        virtualCol = newDf.columns.addNewVirtual(
+          C.COLUMNS_NAMES.ALIGNED_SEQUENCE, (i) => peptidesCol.get(getIndex(i)!), DG.TYPE.STRING);
       else
-        newDf.columns.addNewVirtual(`~${col.name}`, (i) => col.get(idxCol.get(i)!), col.type as DG.TYPE);
+        virtualCol = newDf.columns.addNewVirtual(col.name, (i) => col.get(getIndex(i)!), col.type as DG.TYPE);
+      virtualCol.setTag(C.TAGS.VISIBLE, '0');
     }
     activityCol!.semType = C.SEM_TYPES.ACTIVITY;
     const activityScaledCol = newDf.columns.addNewVirtual(C.COLUMNS_NAMES.ACTIVITY_SCALED, (i) => {
-      const val = activityCol!.get(idxCol.get(i)!);
+      const val = activityCol!.get(getIndex(i)!);
       return val ? scaleNum(val) : val
     }, DG.TYPE.FLOAT);
     activityScaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
     newDf.name = 'Peptides analysis';
     newDf.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
     if (clustersColumn) {
-      newDf.getCol(`~${clustersColumn.name}`).name = C.COLUMNS_NAMES.CLUSTERS;
+      newDf.getCol(clustersColumn.name).name = C.COLUMNS_NAMES.CLUSTERS;
       newDf.tags[C.TAGS.CLUSTERS] = C.COLUMNS_NAMES.CLUSTERS;
     }
     // newDf.tags[C.PEPTIDES_ANALYSIS] = 'true';

@@ -40,15 +40,14 @@
     "css/vd-regions-viewer.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^4.4.0",
-    "@datagrok/bio": "^2.0.13",
+    "@datagrok-libraries/bio": "^4.4.2",
     "@deck.gl/core": "^8.7.5",
     "@deck.gl/layers": "^8.7.5",
     "@luma.gl/constants": "^8.5.10",
     "@luma.gl/core": "^8.5.10",
     "@phylocanvas/phylocanvas.gl": "^1.43.0",
     "cash-dom": "latest",
-    "datagrok-api": "^1.6.11",
+    "datagrok-api": "^1.6.12",
     "dexie": "^3.2.2",
     "logojs-react": "^2.1.1",
     "rxjs": "^6.5.5",
@@ -94,6 +93,7 @@
     "test-local": "set HOST=localhost && jest"
   },
   "grokDependencies": {
+    "@datagrok/bio": "^2.0.15",
     "@datagrok/molecular-liability-browser-data": "^2.0.0"
   },
   "canEdit": [

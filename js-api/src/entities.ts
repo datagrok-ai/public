@@ -813,6 +813,12 @@ export class Package extends Entity {
   }
 }
 
+export class Dockerfile extends Entity {
+  constructor(dart: any) {
+    super(dart);
+  }
+}
+
 
 export interface PropertyOptions {
 
