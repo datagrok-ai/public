@@ -14,6 +14,7 @@ import {SeqPalette} from '../seq-palettes';
 import {Subscription} from 'rxjs';
 import {NOTATION, UnitsHandler} from '../utils/units-handler';
 import {SliderOptions} from 'datagrok-api/dg';
+import {canvas} from 'datagrok-api/ui';
 
 declare module 'datagrok-api/src/grid' {
   interface Rect {
@@ -111,6 +112,7 @@ export class WebLogo extends DG.JsViewer {
   private rowsNull: number = 0;
   private visibleSlider: boolean = false;
   private allowResize: boolean = true;
+  private turnOfResizeForOneSetValue: boolean = false;
   private currentRange: number = 0;
 
   // Viewer's properties (likely they should be public so that they can be set outside)
@@ -250,15 +252,16 @@ export class WebLogo extends DG.JsViewer {
 
     const parent = this;
     this.slider.onValuesChanged.subscribe(() => {
-      if (parent.slider == null) {
+      if (parent.host == null) {
         return;
       }
-      if ((parent.allowResize) && (parent.slider.max - parent.slider.min != parent.currentRange) && (parent.slider.max - parent.slider.min < parent.Length)) {
-        const widthSlider = parent.slider.max - parent.slider.min + 1;
-        const xScale: number = (parent.root.clientWidth - widthSlider * parent.positionMarginValue) / (widthSlider * parent._positionWidth);
-        parent._positionWidth = parent._positionWidth * xScale;
-        parent.currentRange = parent.slider.max - parent.slider.min + 1;
+      if ((parent.allowResize) && (parent.slider.max - parent.slider.min != parent.currentRange) && (parent.slider.max - parent.slider.min < parent.Length - 1) && (!parent.turnOfResizeForOneSetValue)) {
+        const widthSlider = (parent.slider.max - parent.slider.min) * parent.positionWidthWithMargin;
+        // calculated formula from equation: canvasWidth/widthSlider === fullRenderWidth/canvasWidth
+        parent._positionWidth = (parent.host.clientWidth ** 2) / (widthSlider * parent.Length) - parent.positionMarginValue;
+        parent.currentRange = parent.slider.max - parent.slider.min;
       }
+      parent.turnOfResizeForOneSetValue = false;
       parent.render(true);
     });
 
@@ -336,7 +339,7 @@ export class WebLogo extends DG.JsViewer {
 
     this._calculate(window.devicePixelRatio);
     this.setSlider();
-    this.render(false);
+    this.render(true);
   }
 
   /** Handler of changing size WebLogo */
@@ -419,21 +422,14 @@ export class WebLogo extends DG.JsViewer {
     }
   }
 
-  /** Sets {@link slider}, needed to set slider options and to update slider position.
-   */
+  /** Sets {@link slider}, needed to set slider options and to update slider position. */
   private setSlider(): void {
-    if ((this.slider != null) && (this.canvas != null)) {
-      let diffEndScrollAndSliderMin = Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length;
-      diffEndScrollAndSliderMin = diffEndScrollAndSliderMin > 0 ? diffEndScrollAndSliderMin : 0;
-      let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
-      let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin);
-      if (this.checkIsHideSlider()) {
-        newMin = 0;
-        newMax = this.Length - 1;
-      }
-      this.slider.setValues(0, this.Length,
-        newMin, newMax);
-    }
+    const r = window.devicePixelRatio;
+    const fullWidth = this.Length * this.positionWidthWithMargin / r;
+    const newSliderWidth = (this.canvas.width ** 2 / fullWidth) / this.positionWidthWithMargin / r;
+    this.turnOfResizeForOneSetValue = true;
+    this.slider.setValues(0, this.Length,
+      this.slider.min, this.slider.min + newSliderWidth);
   }
 
 
