@@ -9,6 +9,7 @@ import {NotationConverter} from './notation-converter';
 // constants for parsing of molfile V2000
 const V2K_RGP_SHIFT = 8;
 const V2K_RGP_LINE = 'M  RGP';
+const V2K_A_LINE = 'A  ';
 
 // constants for parsing/reconstruction of molfile V3000
 const V3K_COUNTS_SHIFT = 14;
@@ -29,18 +30,20 @@ const V3K_END = 'M  END\n';
 
 const PRECISION_FACTOR = 10_000; // HELMCoreLibrary has 4 significant digits after decimal point in atom coordinates
 
-const HELM_DEOXYRIBOSE = 'd';
-const HELM_RIBOSE = 'r';
-const HELM_PHOSPHATE = 'p';
+// symbols for the corresponding monomers in HELM library
+const DEOXYRIBOSE = 'd';
+const RIBOSE = 'r';
+const PHOSPHATE = 'p';
 
 type AtomData = {
   atomType: string[], // element symbol
   x: number[], // Cartesian coordiantes of the nodes
   y: number[],
   leftAttachmentNode: number, // "leftmost" attachment node, e.g. N-terminus in peptides
-  rightAttachmentNode: number,
+  rightAttachmentNode: number, // zero if absent
   leftRNode: number, // "leftmost" R-group node of the monomer (removed upon chaining into polymer)
-  rightRNode: number,
+  rightRNode: number, // zero if absent
+  // branchRNode: number, // non-zero for nucleotide backbones only (pentose)
   kwargs: string[], // MDLV30 atom line may contain keyword args
   shift: number[], // shift between leftAttachmentNode and rightRNode
 }
@@ -175,20 +178,19 @@ async function getMonomersDict(
 
   const moduleRdkit = await grok.functions.call('Chem:getRdKitModule');
 
+  // add deoxyribose/ribose and phosphate for nucleotide sequences
+  if (polymerType === HELM_POLYMER_TYPE.RNA) {
+    const symbols = (alphabet === ALPHABET.RNA) ?
+      [RIBOSE, PHOSPHATE] : [DEOXYRIBOSE, PHOSPHATE];
+    for (const sym of symbols)
+      updateMonomersDict(monomersDict, sym, formattedMonomerLib, moduleRdkit, polymerType);
+  }
+
   for (let row = 0; row < monomerSequencesArray.length; ++row) {
     const monomerSeq: string[] = monomerSequencesArray[row];
     for (const sym of monomerSeq)
       updateMonomersDict(monomersDict, sym, formattedMonomerLib, moduleRdkit, polymerType);
   }
-
-  // add deoxyribose/ribose and phosphate for nucleotide sequences
-  if (polymerType === HELM_POLYMER_TYPE.RNA) {
-    const symbols = (alphabet === ALPHABET.RNA) ?
-      [HELM_RIBOSE, HELM_PHOSPHATE] : [HELM_DEOXYRIBOSE, HELM_PHOSPHATE];
-    for (const sym of symbols)
-      updateMonomersDict(monomersDict, sym, formattedMonomerLib, moduleRdkit, polymerType);
-  }
-
   return monomersDict;
 }
 
@@ -216,12 +218,14 @@ function getMolGraph(
   } else {
     const libObject = formattedMonomerLib.get(monomerSymbol);
     const rGroups = parseRGroupTypes(libObject[HELM_FIELDS.RGROUPS]);
-    const rGroupIndices = parseRGroupIndices(libObject[HELM_FIELDS.MOLFILE]);
-    const molfileV2K = substituteRGroups(libObject[HELM_FIELDS.MOLFILE], rGroups, rGroupIndices);
+    const rGroupIndices = parseRGroupIndices(libObject[HELM_FIELDS.MOLFILE], polymerType);
+    // console.log(rGroups);
+    // console.log(rGroupIndices);
+    const molfileV2K = substituteRGroups(libObject[HELM_FIELDS.MOLFILE], rGroups, rGroupIndices, polymerType);
     const molfileV3K = convertMolfileToV3K(removeRGroupLine(molfileV2K), moduleRdkit);
     const counts = parseAtomAndBondCounts(molfileV3K);
     const bondData = parseBondData(molfileV3K, counts.bondCount);
-    const removedNodes = getRemovedNodes(rGroupIndices);
+    const removedNodes = getRGroupNodes(rGroupIndices);
     const atomData = parseAtomData(removedNodes, bondData, molfileV3K, counts.atomCount);
 
     const monomerGraph = {atoms: atomData, bonds: bondData};
@@ -253,6 +257,9 @@ function parseRGroupTypes(rgroupObjList: any[]): string[] {
   const rgroupsArray: string[] = [];
   for (const obj of rgroupObjList) {
     let rgroup: string = obj[RGROUP_FIELDS.CAP_GROUP_SMILES];
+    // todo: remove quickfix
+    if (!rgroup)
+      rgroup = obj['capGroupSMILES'];
     // todo: verify that there are no multi-element rgroups, or consider how to
     // transform them
     rgroup = rgroup.replace(/(\[|\]|\*|:|\d)/g, '');
@@ -264,8 +271,11 @@ function parseRGroupTypes(rgroupObjList: any[]): string[] {
 }
 
 /* Substitute the element symbols instead of R# in molfile  */
-function substituteRGroups(molfileV2K: string, rGroups: string[], rGroupIndices: number[]) {
+function substituteRGroups(
+  molfileV2K: string, rGroups: string[], rGroupIndices: number[], polymerType: HELM_POLYMER_TYPE
+) {
   let modifiedMolfile = molfileV2K;
+
   const idx: number[] = new Array((rGroupIndices.length - 1)/2);
   for (let i = 0; i < rGroups.length; ++i)
     // idx[i] is responsible for the correct order of substituted rgroups
@@ -273,11 +283,12 @@ function substituteRGroups(molfileV2K: string, rGroups: string[], rGroupIndices:
   for (let i = 0; i < rGroups.length - 1; ++i) {
     // an extra check of correctness of rgroups order
     // todo: remove after debugging
-    if (rGroupIndices[2 * (i + 1) + 1] < rGroupIndices[2 * (i + 1) + 1])
+    if (rGroupIndices[2 * (i + 1) + 1] < rGroupIndices[2 * (i + 1)])
       throw new Error('Wrong order of rgroups');
   }
   for (let i = 0; i < rGroups.length; ++i) {
     const value = rGroups[idx[i]];
+    // todo: replacing the R# is not general enough for nucleotides
     modifiedMolfile = modifiedMolfile.replace('R#', value);
   }
   return modifiedMolfile;
@@ -354,7 +365,7 @@ function parseBondData(molfileV3K: string, bondCount: number): BondData {
 }
 
 /* Get the positions of nodes removed upon chaining the monomers into a polymer  */
-function getRemovedNodes(rGroupIndices: number[]): {left: number, right: number} {
+function getRGroupNodes(rGroupIndices: number[]): {left: number, right: number} {
   // todo: verify that in other monomer libraries the order of removed nodes in
   // RGP line is the same as in HELMCoreLibrary
   const leftRNode = rGroupIndices[1]; // rgpIndices[0] is the number of R-groups
@@ -362,15 +373,53 @@ function getRemovedNodes(rGroupIndices: number[]): {left: number, right: number}
   return {left: leftRNode, right: rightRNode};
 }
 
-function parseRGroupIndices(molfileV2K: string): number[] {
+function parseRGroupIndices(molfileV2K: string, polymerType: HELM_POLYMER_TYPE): number[] {
   // todo: handle the exceptional case when there is not enough rgroups
   // todo: handle the exceptional case when the order is different
-  const begin = molfileV2K.indexOf(V2K_RGP_LINE, 0) + V2K_RGP_SHIFT;
-  const end = molfileV2K.indexOf('\n', begin);
+  // todo: REFACTOR !!!
+  if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
+    const begin = molfileV2K.indexOf(V2K_RGP_LINE, 0) + V2K_RGP_SHIFT;
+    const end = molfileV2K.indexOf('\n', begin);
 
-  const rgpStringParsed = molfileV2K.substring(begin, end).replaceAll('  ', ' ').replaceAll('  ', ' ').split(' ');
-  const rgpIndices = rgpStringParsed.map((el) => parseInt(el));
-  return rgpIndices;
+    const rgpStringParsed = molfileV2K.substring(begin, end).replaceAll('  ', ' ').replaceAll('  ', ' ').split(' ');
+    const rgpIndices = rgpStringParsed.map((el) => parseInt(el));
+    return rgpIndices; // rgpIdx/nodeIdx pairs
+  } else {
+    let rgpIndices = [0]; // todo: 0 is a dummy value, necessary for consistency with peptides, remove as a quickfix
+
+    // parse A-lines
+    let begin = molfileV2K.indexOf(V2K_A_LINE, 0);
+    let end = begin;
+    while (begin !== -1) {
+      // parse the node to which the R-group is attached
+      end = molfileV2K.indexOf('\n', begin);
+      const nodeIdx = parseInt(molfileV2K.substring(begin, end).replace(/^A\s*/, ''));
+
+      // parse the capGroup index
+      begin = molfileV2K.indexOf('R', end);
+      end = molfileV2K.indexOf('\n', begin);
+      const rGroupIdx = parseInt(molfileV2K.substring(begin, end).replace(/^R/, ''));
+
+      rgpIndices.push(nodeIdx);
+      rgpIndices.push(rGroupIdx);
+
+      begin = molfileV2K.indexOf(V2K_A_LINE, end);
+    }
+
+    // parse RGP lines
+    begin = molfileV2K.indexOf(V2K_RGP_LINE, 0);
+    end = molfileV2K.indexOf('\n', begin);
+
+    while (begin !== -1) {
+      begin += V2K_RGP_SHIFT;
+      end = molfileV2K.indexOf('\n', begin);
+      const rgpStringParsed = molfileV2K.substring(begin, end).replaceAll('  ', ' ').replaceAll('  ', ' ').split(' ');
+      rgpIndices = rgpIndices.concat(rgpStringParsed.map((el) => parseInt(el)).slice(1));
+
+      begin = molfileV2K.indexOf(V2K_RGP_LINE, end);
+    }
+    return rgpIndices;
+  }
 }
 
 function parseRetainedLRNodes(
