@@ -153,7 +153,7 @@ can run it, share it with others, manage access, and more.
 
 > Note: Context menus display actions available to you based on your permissions. If you don't see an action, contact
 > your Datagrok administrator.
-
+> 
 > Tip: While queries are mostly used to query databases, you can also query other data sources:
 >
 > | Data source          | Query                |
@@ -380,6 +380,7 @@ Depending on your goals, use these methods to run a query:
 > ```sql
 > --output: string smiles {semType: Molecule}
 > ```
+> 
 > Developers: You can run a query programmatically (
 > see [this code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query?)).
 
