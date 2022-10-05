@@ -93,7 +93,7 @@ They have a right to push to the main branch skipping the creation of developmen
 and all other steps required for the general development. This way, codeowners can contribute directly to the project
 and get the profits of the accelerated development.
 
-![Codeowner Git Flow](/Users/nillovna/Downloads/gitflow.png)
+![Codeowner Git Flow](gitflow-codeowners.png)
 
 However, with great power comes great responsibility. The codeowners are responsible for the code review on pull
 requests to the main branch. They are the owners of the code quality of the project.
@@ -146,7 +146,7 @@ have to follow the full git-flow, which is quite similar to the
 [trunk-based development flow](https://www.atlassian.com/continuous-delivery/continuous-integration/trunk-based-development)
 .
 
-![General Git Flow](/Users/nillovna/Downloads/gitflow-general.png)
+![General Git Flow](gitflow-general.png)
 
 Productivity tips for the general flow:
 
@@ -195,7 +195,7 @@ required to create a stable and reliable release of public JS API. After the tes
 the version of JS API and generates the release notes for JS API. These changes are merged from the release
 branch to the main branch. All the operations are performed automatically by CI/CD tool.
 
-![Release Git Flow](/Users/nillovna/Downloads/gitflow-release.png)
+![Release Git Flow](gitflow-release.png)
 
 > Note. For now, there is no need in the release branch for any software other than JS API.
 > Release notes for other software are generated during the publishing of software from the main branch to the NPM
