@@ -29,6 +29,10 @@ export async function simpleTest(num) {
 } // simpleTest
 
 
+// C-FUNCTIONS
+
+// Functions from lib1.c
+
 //name: tripleProduct
 //input: int a
 //input: int b
@@ -36,4 +40,14 @@ export async function simpleTest(num) {
 export async function tripleProduct(a, b, c) {
   await initNewModule();
   alert( NewModule._tripleProduct(a, b, c) );
+}
+
+// Functions from lib2.c
+
+//name: myProd
+//input: int n
+//input: int m
+export async function myProd(n, m) {
+  await initNewModule();
+  alert(  NewModule._myProd(n, m) );
 }

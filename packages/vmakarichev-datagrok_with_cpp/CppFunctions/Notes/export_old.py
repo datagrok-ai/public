@@ -1,24 +1,9 @@
-""" export.py
-    
-    This script exports C-functions to Datagrok package
+# export.py
 
-    The following steps are performed: 
-        1) load export settings from json-file;
-        2) parse C-files and get C-functions to be exported;
-        3) save C-functions descriptors (name, type of return value, arguments descriptors: type, name);
-        4) create Emscripten command;
-        5) save Emscripten command to text file;
-        6) execute Emscripten command;
-        7) append Datagrok package file with exported functions;
-        8) add dependecnies to the file package.json;
-        9) add module init-function to JS-file with exported C-functions. 
-    """
+# This script exports C-functions to Datagrok package
 
 import os
 import json
-
-# map between C- and JavaScript-types
-typesMap = {"int *": "Int32Array", "float *": "Float32Array"}
 
 def getFunctionsFromFile(nameOfFile):
     """Process the C-file and returns dictionary of functions, type of return, types of arguments.
@@ -65,7 +50,7 @@ def getFunctionsFromFile(nameOfFile):
 
                 #print()
 
-                dictionaryOfFunctions[nameOfFunction] = {"type": typeOfReturnValue, "arguments": listOfArgumentsData}
+                dictionaryOfFunctions[nameOfFunction] = {"type": typeDescriptor, "arguments": listOfArgumentsData}
 
             i += 1
         
@@ -101,23 +86,13 @@ def appendPackageFileWithCfunctions(nameOfFile, moduleName, functions):
 
         file.write('\n' * 3 + '// C-FUNCTIONS')
 
-        # consider each exported file
         for cFileName in functions.keys():
-
-            # write comment-line with a name of C-file
             file.write('\n' * 2 + "// Functions from " + cFileName + '\n')
 
             functionsFromCurrentFile = functions[cFileName]
 
-            # add each exported function
             for nameOfFunction in functionsFromCurrentFile.keys():
-
-                # 1. WRITE ANNOTATION OF THE CURRENT FUNCTION
-
-                file.write("\n/* Exported C-function\n")
-
-                # write name of function
-                file.write(f"name: {nameOfFunction}\n")
+                file.write(f"\n//name: {nameOfFunction}\n")
 
                 functionData = functionsFromCurrentFile[nameOfFunction]
 
@@ -127,118 +102,20 @@ def appendPackageFileWithCfunctions(nameOfFile, moduleName, functions):
 
                 stringOfArguments = ""
 
-                # write each input value data
                 for argument in listOfArguments:
-                    file.write(f"input: {argument[0]} {argument[1]}\n")
-                    stringOfArguments += argument[1] + ", " # complete a string with arguments
+                    file.write(f"//input: {argument[0]} {argument[1]}\n")
+                    stringOfArguments += argument[1] + ", "
 
-                # remove redundant ',' at the end
                 stringOfArguments = stringOfArguments.rstrip(", ")
                 
-                # write output type specification
-                file.write(f"output: {typeOfOutput} result  */\n")       
+                file.write(f"//output: {typeOfOutput} result\n")                
 
+                firstLineOfFunctions = "export async function " + nameOfFunction + "(" + stringOfArguments + ") {\n"
+                file.write(firstLineOfFunctions)
 
-                # 2. WRITE NAME OF THE CURRENT FUNCTION         
-
-                # prepare the first line of the function
-                firstLineOfFunction = "async function " + nameOfFunction + "(" + stringOfArguments + ") { // <--- CHECK THIS!\n"
-
-
-                # 3. BODY OF THE FUNCTION
-
-                # write the first line
-                file.write(firstLineOfFunction)
-
-                # write module initialization line
                 file.write("  await init" + moduleName + "();\n")
 
-
-                # 4. Extract arrays from all arguments & create execution string & create execution string
-
-                stringOfArguments = '' # this is a string of arguments that will be put into exported functions
-
-                arraysAttributes = [] # attributes of arrays: type, ...
-
-                # analyze each argument
-                for argument in listOfArguments:
-                    if "*" in argument[0]:
-                        type = argument[0]
-                        name = argument[1]
-                        numOfBytes = "numOfBytes_" + name
-                        length = name + ".length"
-                        bytesPerEl = name + ".BYTES_PER_ELEMENT"
-                        dataPtr = "dataPtr_" + name
-                        dataHeap = "dataHeap_" + name
-
-                        stringOfArguments += dataPtr + ", "
-
-                        file.write("\n  // Buffer routine: " + name + ". Check it!\n")
-
-                        currentString = f"  let {numOfBytes} = {length} * {bytesPerEl}; // <--- CHECK THIS!\n"
-                        file.write(currentString)
-
-                        currentString = f"  let {dataPtr} = {moduleName}._malloc({numOfBytes});\n"
-                        file.write(currentString)
-
-                        currentString = f"  let {dataHeap} = new Uint8Array({moduleName}.HEAPU8.buffer, {dataPtr}, {numOfBytes});\n"
-                        file.write(currentString)
-
-                        currentString = f"  {dataHeap}.set(new Uint8Array({name}.buffer)); // <--- CHECK THIS!\n"
-                        file.write(currentString)
-
-                        arraysAttributes.append((type, name, numOfBytes, length, bytesPerEl, dataPtr, dataHeap))
-                    else:
-                        stringOfArguments += argument[1] + ', '
-
-                # remove redundant ',' at the end
-                stringOfArguments = stringOfArguments.rstrip(", ")
-
-
-                # 5. Write line with execution of exported function
-                if typeOfOutput != "void":
-                    file.write("\n  let result = " + moduleName + "._" + nameOfFunction + "(" + stringOfArguments + ");\n")
-                else:
-                    file.write("\n  " + moduleName + "._" + nameOfFunction + "(" + stringOfArguments + ");\n")
-
-
-                # 6. Write lines: copying data from heap to JS-arrays - optional
-
-                if len(arraysAttributes) > 0:
-                    file.write("\n  /* OPTIONAL: each array could be modified when executing exported C-function.")
-                    file.write("\n     Remove '//' in order to get the modified array.")
-                    file.write("\n     The modified array further can be returned.")
-                    file.write("\n     MODIFY if it is required! */\n\n")
-
-                for arrayData in arraysAttributes:
-                    type, name, numOfBytes, length, bytesPerEl, dataPtr, dataHeap = arrayData
-
-                    jsTypeName = "?????????"
-                    if type in typesMap.keys():
-                        jsTypeName = typesMap[type]
-
-
-                    file.write(f"  //let {name}Modified = new {jsTypeName}({dataHeap}.buffer, ")
-                    file.write(f"{dataHeap}.byteOffset, {length});\n")
-
-
-                # 7. Write lines with memory cleaning
-
-                if len(arraysAttributes) > 0:
-                    file.write("\n  // Cleaning allocated memory.\n")
-
-                for arrayData in arraysAttributes:
-                    type, name, numOfBytes, length, bytesPerEl, dataPtr, dataHeap = arrayData
-
-                    currentString = f"  {moduleName}._free({dataPtr});\n"
-                    file.write(currentString)
-
-
-                # 8. Finally, the last row of the function: "return ... "
-                if typeOfOutput == "void":
-                    file.write("\n//  return ...;   //  <--- here, smth can be returned\n}\n")
-                else:
-                    file.write("\n  return result;\n}\n")
+                file.write("  return " + moduleName + "._" + nameOfFunction + "(" + stringOfArguments + ");\n}\n")
 
 def getSettings(nameOfFile):
     """
@@ -291,14 +168,20 @@ def getCommand(settings, functionsData):
         for nameOfFunction in functionsData[nameOfFile].keys():
             command += '"_' + nameOfFunction + '",'
     
-    # add malloc and free - they are used for memory operating
-    command += '"_malloc","_free"]' 
+     # !!!! May be some other functions should also be added
+    
+    # delete ',' at the end of the command
+    command = command.rstrip(',') 
+
+    # add closing bracket
+    command += "]" 
 
     # add exported runtime methods
     command += ' -s EXPORTED_RUNTIME_METHODS=["cwrap"]'  # also, "ccall" can be added 
 
+
     return command
-   
+
 def saveCommand(command, nameOfFile):
     """
     Save Emscripten command to txt-file.
@@ -401,7 +284,7 @@ def main(nameOfSettingsFile="module.json"):
         saveCommand(command, settings["fileWithEmscriptenCommand"])  
 
         # execute command by Emscripten (IT MUST BE INSTALLED!)   
-        #os.system(command)
+        os.system(command)
       
         # append Datagrok package file with exported functions
         appendPackageFileWithCfunctions(settings["packageFile"], settings["moduleName"], functionsData)
