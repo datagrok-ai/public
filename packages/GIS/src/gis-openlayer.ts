@@ -140,7 +140,6 @@ function onPrerenderMarkers() {
   renderTime = Date.now();
 }
 
-
 export class OpenLayers {
   olMap: OLMap;
   olCurrentView: OLView;
@@ -163,11 +162,13 @@ export class OpenLayers {
   markerGLStyle: LiteralStyle;
 
   //properties from viewer
-  gisViewer: GisViewer|null = null;
-  markerSize: number = 3;
-  markerOpacity: number = 0.5;
+  gisViewer: GisViewer | null = null; //TODO: check do we need it for the properties access or clone prop like below
+  markerDefaultSize: number = 3;
+  markerMinSize: number = 1;
+  markerMaxSize: number = 20;
+  markerOpacity: number = 0.8;
   defaultColor: number = 0x1f77b4;
-  weightedMarkers: boolean = false;
+  selectedColor: number = 0xff8c00;
   heatmapBlurParam: number = 20;
   heatmapRadiusParam: number = 10;
 
@@ -237,31 +238,6 @@ export class OpenLayers {
   }
   get heatmapRadius(): number { return this.heatmapRadiusParam; }
 
-  prepareGLStyle(sizeval?: number, colorval?: string, opaval?: number, symbolval?: string): LiteralStyle {
-    const markerGLStyle = {
-      // variables: {
-      //   minVal: 0,
-      // },
-      symbol: {
-        symbolType: symbolval? symbolval : 'circle',
-        size: sizeval? sizeval : this.markerSize,
-        // size: 6,
-        // size: [['get', '_fieldSize']],
-/*
-          size: [
-            ['interpolate', ['linear'], ['get', '_fieldSize'], ['var', 'minVal'], 5, ['var', 'maxVal'], 26],
-          ],
-*/
-        // color: ['interpolate', ['linear'], animRatio, 0, newColor, 1, oldColor],
-        color: colorval? colorval : toStringColor(this.defaultColor, this.markerOpacity),
-        // color: this.defaultColor, //'blue',
-        // color: [['get', '_fieldColor']],
-        opacity: opaval? opaval : this.markerOpacity,
-      },
-    };
-    return markerGLStyle as LiteralStyle;
-  }
-
   initMap(targetName: string) {
     if (targetName === '')
       return;
@@ -294,7 +270,6 @@ export class OpenLayers {
       // opacity: this.markerOpacity,
     });
     this.olMarkersLayerGL.set('layerName', 'Markers GL');
-    // this.olMarkersLayerGL.updateStyleVariables({});
     this.addLayer(this.olMarkersLayerGL);
 
     //add base event handlers>>
@@ -309,6 +284,52 @@ export class OpenLayers {
     //add dragNdrop ability
     this.olMap.addInteraction(this.dragAndDropInteraction);
     //this.olMap.getInteractions().extend([selectInteraction]);
+  }
+
+  prepareGLStyle(sizeval?: number, colorval?: string, opaval?: number, symbolval?: string): LiteralStyle {
+    const markerGLStyle = {
+      // variables: {
+      //   minVal: 0,
+      // },
+      symbol: {
+        symbolType: symbolval? symbolval : 'circle',
+        size: sizeval? sizeval : this.markerDefaultSize,
+        // size: [['get', '_fieldSize']],
+/*
+          size: [
+            ['interpolate', ['linear'], ['get', '_fieldSize'], ['var', 'minVal'], 5, ['var', 'maxVal'], 26],
+          ],
+*/
+        // color: ['interpolate', ['linear'], animRatio, 0, newColor, 1, oldColor],
+        color: colorval? colorval : toStringColor(this.defaultColor, this.markerOpacity),
+        // color: [['get', '_fieldColor']],
+        opacity: opaval? opaval : this.markerOpacity,
+      },
+    };
+    return markerGLStyle as LiteralStyle;
+  }
+
+  updateMarkersGLLayer() {
+    this.markerGLStyle = this.prepareGLStyle();
+    const previousLayer = this.olMarkersLayerGL;
+    const src = this.olMarkersLayerGL?.getSource();
+    this.olMarkersLayerGL = new WebGLPointsLayer({
+      source: src ? src : new VectorSource<OLGeom.Point>(),
+      style: this.markerGLStyle,
+    });
+    this.olMarkersLayerGL.set('layerName', 'Markers GL');
+    this.olMap.addLayer(this.olMarkersLayerGL);
+
+    if (previousLayer) {
+      this.olMap.removeLayer(previousLayer);
+      previousLayer.dispose();
+    }
+    // this.olMarkersLayerGL.setSt
+    // this.olMarkersLayerGL = new WebGLPointsLayer({
+    //   source: new VectorSource<OLGeom.Point>(),
+    //   style: this.markerGLStyle,
+    // });
+    // this.olMarkersLayerGL.set('layerName', 'Markers GL');
   }
 
   getFeatureStyleFn(feature: Feature): OLStyle.Style {
@@ -585,8 +606,7 @@ export class OpenLayers {
     if (resolution < 30000 || renderTime < 1000) {
       stylePt = new OLStyle.Style({
         image: new OLStyle.Circle({
-          // radius: this.weightedMarkers ? val*1 : this.markerSize,
-          radius: size ? size : OLG.markerSize,
+          radius: size ? size : OLG.markerDefaultSize,
           fill: new OLStyle.Fill({
             color: clr ? clr : `rgba(255, 0, 255, 0.9)`, // ${this.markerOpacity})`,
           }),
@@ -719,58 +739,6 @@ export class OpenLayers {
       const src = aLayer.getSource();
       if (src)
         src.clear();
-    }
-  }
-
-  addPoint(coord: Coordinate, value?: string|number|undefined,
-    layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
-    //
-    let aLayer: VectorLayer<VectorSource>|HeatmapLayer|WebGLPts|undefined|null;
-    aLayer = this.olMarkersLayer;
-    if (layer)
-      aLayer = layer;
-
-    const maxradius = 30;
-    if (aLayer) {
-      let val = value;
-      if (typeof val !== 'number')
-        val = 1;
-      let rad = this.markerSize;
-      if (this.weightedMarkers) {
-        rad = val;
-        if (val > maxradius)
-          rad = maxradius;
-      }
-      let stroke = 1;
-      if (this.weightedMarkers) {
-        // (val>maxradius) ? ((val/10>maxradius/2) ? (maxradius/2+2) : (val/10) ) : 1
-        stroke = val;
-        if ((val > maxradius) && (val/10 > maxradius/2))
-          stroke = maxradius/2+2;
-        else stroke = val/10;
-      }
-      const marker = new Feature(new OLGeom.Point(OLProj.fromLonLat(coord)));
-      const style = new Style({
-        image: new OLStyle.Circle({
-          radius: rad,
-          fill: new OLStyle.Fill({
-            //#1f77b4
-            // color: toStringColor(0x1f77b4, this.markerOpacity),
-            color: `rgba(0, 153, 255, ${this.markerOpacity})`,
-          }),
-          stroke: new OLStyle.Stroke({
-            color: `rgba(255, 0, 255, ${this.markerOpacity+0.2})`,
-            width: stroke,
-            // width: (val>maxradius) ? ((val/10>maxradius/2) ? (maxradius/2+2) : (val/10) ) : 1,
-          }),
-        }),
-      });
-      marker.setStyle(style);
-      marker.set('_fieldValue', val);
-
-      const src = aLayer.getSource();
-      if (src)
-        src.addFeature(marker);
     }
   }
 
