@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {VdRegionType, VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
+import {IVdRegionsViewer} from '@datagrok-libraries/bio/src/viewers/vd-regions-viewer';
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 const vrt = VdRegionType;
@@ -36,7 +37,7 @@ const vrt = VdRegionType;
 /** Viewer with tabs based on description of chain regions.
  *  Used to define regions of an immunoglobulin LC.
  */
-export class VdRegionsViewer extends DG.JsViewer {
+export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   // private regionsDf: DG.DataFrame;
   private regionsFg: DG.FilterGroup | null = null;
   // private regionsTV: DG.TableView;
