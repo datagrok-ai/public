@@ -250,19 +250,20 @@ export class WebLogo extends DG.JsViewer {
 
     this.visibleSlider = false;
 
-    const parent = this;
     this.slider.onValuesChanged.subscribe(() => {
-      if (parent.host == null) {
+      if (this.host == null) {
         return;
       }
-      if ((parent.allowResize) && (parent.slider.max - parent.slider.min != parent.currentRange) && (parent.slider.max - parent.slider.min < parent.Length - 1) && (!parent.turnOfResizeForOneSetValue)) {
-        const widthSlider = (parent.slider.max - parent.slider.min) * parent.positionWidthWithMargin;
-        // calculated formula from equation: canvasWidth/widthSlider === fullRenderWidth/canvasWidth
-        parent._positionWidth = (parent.host.clientWidth ** 2) / (widthSlider * parent.Length) - parent.positionMarginValue;
-        parent.currentRange = parent.slider.max - parent.slider.min;
+      /* Resize slider if we can resize do that */
+      if ((this.allowResize) && (!this.turnOfResizeForOneSetValue) &&
+        (this.slider.max - this.slider.min != this.currentRange) &&
+        (this.slider.max - this.slider.min < this.Length - 1)) {
+        const countOfPositions = Math.ceil(this.slider.max - this.slider.min);
+        this._positionWidth = (this.host.clientWidth / countOfPositions) - this.positionMarginValue;
+        this.currentRange = this.slider.max - this.slider.min;
       }
-      parent.turnOfResizeForOneSetValue = false;
-      parent.render(true);
+      this.turnOfResizeForOneSetValue = false;
+      this.render(true);
     });
 
 
@@ -338,14 +339,14 @@ export class WebLogo extends DG.JsViewer {
     this.root.append(this.slider.root);
 
     this._calculate(window.devicePixelRatio);
-    this.setSlider();
+    this.updateSlider();
     this.render(true);
   }
 
   /** Handler of changing size WebLogo */
   private rootOnSizeChanged(): void {
     this._calculate(window.devicePixelRatio);
-    this.setSlider();
+    this.updateSlider();
     this.render(true);
   }
 
@@ -422,14 +423,21 @@ export class WebLogo extends DG.JsViewer {
     }
   }
 
-  /** Sets {@link slider}, needed to set slider options and to update slider position. */
-  private setSlider(): void {
-    const r = window.devicePixelRatio;
-    const fullWidth = this.Length * this.positionWidthWithMargin / r;
-    const newSliderWidth = (this.canvas.width ** 2 / fullWidth) / this.positionWidthWithMargin / r;
-    this.turnOfResizeForOneSetValue = true;
-    this.slider.setValues(0, this.Length,
-      this.slider.min, this.slider.min + newSliderWidth);
+  /** Updates {@link slider}, needed to set slider options and to update slider position. */
+  private updateSlider(): void {
+    if ((this.slider != null) && (this.canvas != null)) {
+      let diffEndScrollAndSliderMin = Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length;
+      diffEndScrollAndSliderMin = diffEndScrollAndSliderMin > 0 ? diffEndScrollAndSliderMin : 0;
+      let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
+      let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin);
+      if (this.checkIsHideSlider()) {
+        newMin = 0;
+        newMax = this.Length - 1;
+      }
+      this.turnOfResizeForOneSetValue = true;
+      this.slider.setValues(0, this.Length,
+        newMin, newMax);
+    }
   }
 
 
@@ -449,13 +457,13 @@ export class WebLogo extends DG.JsViewer {
       break;
     case 'positionWidth':
       this._positionWidth = this.positionWidth;
-      this.setSlider();
+      this.updateSlider();
       break;
     case 'fixWidth':
-      this.setSlider();
+      this.updateSlider();
       break;
     case 'fitArea':
-      this.setSlider();
+      this.updateSlider();
       break;
     case 'shrinkEmptyTail':
       this.updatePositions();
@@ -464,7 +472,7 @@ export class WebLogo extends DG.JsViewer {
       this.updatePositions();
       break;
     case 'positionMargin':
-      this.setSlider();
+      this.updateSlider();
       break;
     }
 
