@@ -1,4 +1,6 @@
-# Versioning policy
+# Proposal
+
+## Versioning policy
 
 For our products, we follow one of the most common versioning strategies : [Semantic Versioning](https://semver.org/).
 This convention helps to
@@ -21,7 +23,7 @@ The keywords "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SH
 
 The software in the below instruction can be either package, library, or JS API.
 
-## Versioning rules
+### Versioning rules
 
 1. You SHOULD use the **major** version zero (0.y.z) for initial development. In this case, the software won't be
    released to public repositories, such as NPM. The versions won't be publicly available on the
@@ -56,7 +58,7 @@ The software in the below instruction can be either package, library, or JS API.
    4. Announce that the old method is deprecated and ask other users to use the new one
    5. Release the **minor** version
    6. After every user make compatibility changes in the projects, we can safely remove the old method and release a
-      **major** version.
+     **major** version.
 10. You MAY break compatibility in the software if _nobody uses_ the software functionality, including but not limited
     to
     a complete change in the software behavior or a breaking change in the software public
@@ -79,13 +81,13 @@ The software in the below instruction can be either package, library, or JS API.
     the [official SemVer documentation](https://semver.org/), use your common sense. And do not forget to update the
     dependencies if needed.
 
-# Git Flow
+## Git Flow
 
 In Datagrok, we think the project's development should be efficient and straightforward. Based on this approach, we
 created a Git flow that enables a time-effective development without losing end product quality.
 We separated the Git Flow into two types: flow for experienced contributors and flow for general contributors.
 
-## Codeowners flow
+### Codeowners flow
 
 The codeowners are a small group of people with good knowledge of the code base, excellent development skills, and
 attention to detail.
@@ -138,7 +140,7 @@ Productivity tips for the codeowners flow:
 8. Push the commit right after the creation. Pushing one commit at a time helps to avoid unexpected GitHub Actions
    behavior
 
-## General flow
+### General flow
 
 The general contributors first push code to the branches and get a code review from the code owner. Then the code owner
 merges the changes to the main branch. Pushing straight to the main branch is forbidden for general contributors. They
@@ -187,7 +189,7 @@ Productivity tips for the general flow:
    message if needed. The commit message must meet
    our [commit message rules](#commit-message-rules). Changelogs include all commit messages.
 
-## Release flow
+### Release flow
 
 The new branch `release/X.Y.Z` is created during the release of the latest version of the platform. The release branch
 is
@@ -201,7 +203,7 @@ branch to the main branch. All the operations are performed automatically by CI/
 > Release notes for other software are generated during the publishing of software from the main branch to the NPM
 > registry.
 
-# Commit message policy
+## Commit message policy
 
 In the repositories, we follow the convention which is very close
 to [Conventional Commits specification](https://www.conventionalcommits.org/) and based
@@ -219,7 +221,7 @@ The keywords "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SH
 
 The software in the below instruction can be either package, library, or JS API.
 
-## Commit message rules
+### Commit message rules
 
 Each commit message MAY consist of a header, a body, and a footer. The commit message MUST be structured as follows:
 
@@ -259,7 +261,7 @@ Bio: Docs: Create documentation for package usage
 WIP
 ```
 
-### Commit header
+#### Commit header
 
 The header is REQUIRED in the commit message.
 
@@ -280,7 +282,7 @@ Grok Connect: Fix[GROK-321]: Fix vulnerability in Postgres provider
    if the ticket ID is not defined. The header MAY contain both type and ticket ID. The type in the commit message takes
    precedence over the ticket type in the task tracker.
 
-#### Scope
+##### Scope
 
 The scope is REQUIRED in the commit message.
 The scope MUST be the name of the software changed in the commit.
@@ -294,7 +296,7 @@ For example:
 * Grok Connect
 * etc.
 
-#### Type
+##### Type
 
 The type is OPTIONAL in the commit message. It can be omitted in case the ticket ID is defined.
 The type MUST be one of the following:
@@ -310,7 +312,7 @@ The type MUST be one of the following:
 * CI: Changes to our CI configuration files and scripts (example scopes: Jenkins, GitHub Actions)
 * Revert: Reverts a previous commit
 
-#### Ticket ID
+##### Ticket ID
 
 The type SHOULD be in the commit message. It MAY be omitted in case the ticket does not exist. In this case, the type
 is REQUIRED. The ticket ID MUST be a complete id from the task tracker, for example, Jira or GitHub. Jira's issues are
@@ -322,7 +324,7 @@ For example:
 * NEO-1234: Jira issue in NEO project
 * #1093: GitHub issue
 
-#### Subject
+##### Subject
 
 The subject is REQUIRED in the commit message.
 The subject MUST contain a succinct description of the change:
@@ -331,7 +333,7 @@ The subject MUST contain a succinct description of the change:
 * Capitalize the first letter
 * no dot (.) at the end
 
-### Commit body
+#### Commit body
 
 The body is OPTIONAL in the commit message.
 
@@ -357,7 +359,7 @@ dependency for Grok Connect (CVE-2021-44228)
 5. The body SHOULD include the motivation for the change: explain what changes you have made and why you made them.
 6. The body SHOULD contain the original problem for the fix.
 
-### Commit footer
+#### Commit footer
 
 The footer is OPTIONAL in the commit message.
 
@@ -387,19 +389,19 @@ Community forum: https://community.datagrok.ai/t/culnerability-fixes/999
    API. If you need to break the behavior of the existing _unused_ functionality in the software, you MUST
    add `UNSAFE CHANGE: <description why the change is unsafe, what change breaks>` to the footer.
 
-## Commit linting
+### Commit linting
 
 Every commit MUST be checked by [commitlint](https://commitlint.js.org/#/)
 on [pre-commit hook](https://typicode.github.io/husky/#/).
 
-### Installation
+#### Installation
 
 ```shell
 npm install --location=global @commitlint/config-conventional @commitlint/cli husky
 husky install
 ```
 
-## More information
+### More information
 
 * [A Note About Git Commit Messages](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)
 * [Imperative mood of commit messages](https://365git.tumblr.com/post/3308646748/writing-git-commit-messages)
@@ -411,6 +413,6 @@ husky install
 * [Git Hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks)
 * [Git pre-commit hooks](https://typicode.github.io/husky/#/)
 
-## TBD
+### TBD
 
-* [Create commit message from command line based on inputs](http://commitizen.github.io/cz-cli/)
+* [Create commit message from command line based on inputs](https://commitizen.github.io/cz-cli/)
