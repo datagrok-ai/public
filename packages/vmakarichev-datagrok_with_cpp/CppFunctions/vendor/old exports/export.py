@@ -141,11 +141,8 @@ def appendPackageFileWithCfunctions(nameOfFile, moduleName, functions):
 
                 # 2. WRITE NAME OF THE CURRENT FUNCTION         
 
-                # prepare the first line of the function: async case - old approach
-                #firstLineOfFunction = "async function " + nameOfFunction + "(" + stringOfArguments + ") { // <--- CHECK THIS!\n"
-
                 # prepare the first line of the function
-                firstLineOfFunction = "function " + nameOfFunction + "(" + stringOfArguments + ") { // <--- CHECK THIS!\n"
+                firstLineOfFunction = "async function " + nameOfFunction + "(" + stringOfArguments + ") { // <--- CHECK THIS!\n"
 
 
                 # 3. BODY OF THE FUNCTION
@@ -153,8 +150,8 @@ def appendPackageFileWithCfunctions(nameOfFile, moduleName, functions):
                 # write the first line
                 file.write(firstLineOfFunction)
 
-                # write module initialization line: async case - old approach
-                #file.write("  await init" + moduleName + "();\n")
+                # write module initialization line
+                file.write("  await init" + moduleName + "();\n")
 
 
                 # 4. Extract arrays from all arguments & create execution string & create execution string
@@ -404,7 +401,7 @@ def main(nameOfSettingsFile="module.json"):
         saveCommand(command, settings["fileWithEmscriptenCommand"])  
 
         # execute command by Emscripten (IT MUST BE INSTALLED!)   
-        os.system(command)
+        #os.system(command)
       
         # append Datagrok package file with exported functions
         appendPackageFileWithCfunctions(settings["packageFile"], settings["moduleName"], functionsData)
