@@ -1,8 +1,11 @@
 {
 	"name": "pepsea",
-	"beta": true,
 	"friendlyName": "PepSeA",
-	"version": "0.0.1",
+	"version": "1.0.0",
+	"author": {
+		"name": "Volodymyr Dyma",
+		"email": "vdyma@datagrok.ai"
+	},
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "latest",
