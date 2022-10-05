@@ -1,0 +1,7 @@
+id,label,value,seq
+leaf1,Seq leaf 1,0.23,ACGGTGT
+leaf2,Seq leaf 2,0.34,ACGGACT
+leaf3,Seq leaf 3,0.18,TCGATAT
+leaf4,Seq leaf 4,0.45,TCGGTAT
+leaf5,Seq leaf 5,0.31,TCGGTAA
+leaf-size,Seq leaf size,0.71,TCAATAA
