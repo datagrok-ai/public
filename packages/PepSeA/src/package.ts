@@ -71,8 +71,8 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
 
   // Grouping data by clusters
   for (let rowIndex = 0; rowIndex < peptideCount; ++rowIndex) {
-    const cluster = clustersCol.get(rowIndex) as string | null;
-    if (cluster === null) 
+    const cluster = clustersCol.get(rowIndex) as string;
+    if (cluster === '') 
       continue;
 
     const clusterId = clusters.indexOf(cluster);
