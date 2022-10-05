@@ -297,10 +297,12 @@ queries. All parameters are optional.
 2. In the **Query** tab, annotate parameters in the box provided using SQL/Sparql comments. Use `--` for SQL and `#` for
    Sparql.
    > Example:
+   >
    >```sql
    >--input: string productName                                               
    >select * from products where productname = @productName
    >```
+
 3. Click **Save**.
 
 #### Input parameters
@@ -314,7 +316,7 @@ You have multiple options to define input parameters:
 
     ```sql
     --input: string shipCountry = "France" {choices: ['France', 'Italy', 'Germany']}
-    ```    
+    ```
 
   * **Editors**. _Editors_ are functions that generate parameters from another _function's_ output. To learn more
     about _editors_, see [Parameter editors](../compute/scripting.md/). Example:
@@ -373,12 +375,11 @@ Depending on your goals, use these methods to run a query:
 
 > Note: When you need to return a value of a different data type, you can specify it in the output parameter.
 >
->Example: Return a string with the semantic type `Molecule`:
+> Example: Return a string with the semantic type `Molecule`:
 >
->```sql
->--output: string smiles {semType: Molecule}
->```
-
+> ```sql
+> --output: string smiles {semType: Molecule}
+> ```
 > Developers: You can run a query programmatically (
 > see [this code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query?)).
 
@@ -410,7 +411,6 @@ and executes a parameterized, secure, provider-specific SQL query on the backend
 >
 > ![Run a parameterized query](parameterized-query.gif)
 >
-
 > Developers: You can expose the parameter dialog to end-users as an [application](../develop/how-to/create-package.md)
 > .<!--Mention?: when the cartdridge is not deployed on that particular database, the query returns an error-->
 
@@ -487,10 +487,10 @@ more information on workflow automation, see [Data preparation pipeline](data-pi
 
 * Videos
   * Database exploration
-    > [![DB exploration](../uploads/youtube/db_exploration.png "Watch on Youtube")](https://www.youtube.com/watch?v=YJmSvh3_uCM)
+    * [![DB exploration](../uploads/youtube/db_exploration.png "Watch on Youtube")](https://www.youtube.com/watch?v=YJmSvh3_uCM)
   * Parameterized queries
-    > * [![Parameterized queries](../uploads/youtube/data_access.png "Watch on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1980s)
-    > * [![Using lists in parameterized queries tutorial](lists-in-param-queries-youtube-watch.png)](https://www.youtube.com/watch?v=meRAEF7ogtw)
-    > * [![Parameterized queries tutorial](param-queries-tutorial-youtube.png)](https://www.youtube.com/watch?v=sSJp5CXcYKQ)
+    * [![Parameterized queries](../uploads/youtube/data_access.png "Watch on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1980s)
+    * [![Using lists in parameterized queries tutorial](lists-in-param-queries-youtube-watch.png)](https://www.youtube.com/watch?v=meRAEF7ogtw)
+    * [![Parameterized queries tutorial](param-queries-tutorial-youtube.png)](https://www.youtube.com/watch?v=sSJp5CXcYKQ)
 * Tutorials
   * [Adding parameters to functions](../datagrok/functions/func-params-enhancement.md)
