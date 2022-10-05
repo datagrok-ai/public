@@ -13,7 +13,7 @@ import {
 } from './utils/data-loader';
 import {Subscription, Unsubscribable} from 'rxjs';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
-import {VdRegionsViewer} from '@datagrok/bio/src/viewers/vd-regions-viewer';
+import {IVdRegionsViewer} from '@datagrok-libraries/bio/src/viewers/vd-regions-viewer';
 import {TreeBrowser} from './mlb-tree';
 import {getVId, TreeAnalyzer} from './utils/tree-stats';
 import {MiscMethods} from './viewers/misc';
@@ -67,7 +67,7 @@ export class MolecularLiabilityBrowser {
   filterHostDn: DG.DockNode;
   filterView: DG.FilterGroup | null = null;
   filterViewDn: DG.DockNode | null = null;
-  regionsViewer: VdRegionsViewer;
+  regionsViewer: IVdRegionsViewer;
   treeBrowser: TreeBrowser;
   tree3Browser: Tree3Browser;
   twinPviewer: TwinPviewer;
@@ -727,7 +727,9 @@ export class MolecularLiabilityBrowser {
         const tempDf: DG.DataFrame = DG.DataFrame.fromObjects([{}])!;
         const t1: number = Date.now();
         this.regionsViewer = (await tempDf.plot.fromType(
-          'VdRegions', {skipEmptyPositions: true})) as unknown as VdRegionsViewer;
+          'VdRegions', {
+            skipEmptyPositions: true
+          })) as unknown as IVdRegionsViewer;
         const t2: number = Date.now();
         console.debug('MLB: MolecularLiabilityBrowser.buildView(), create regionsViewer ' +
           `ET: ${((t2 - t1) / 1000).toString()} s`);
