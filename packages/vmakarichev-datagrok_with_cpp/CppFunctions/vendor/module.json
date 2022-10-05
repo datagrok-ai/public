@@ -3,7 +3,7 @@
     "version": "0.0.1",
     "description": "test module with C-functions",
     "folder": "vendor",
-    "source": ["lib1.c", "lib2.c"],
+    "source": ["lib3.c"],
     "nameOfLibFile": "newLib.js",
     "exportName": "exportNewModuleName",
     "moduleName": "NewModule",
