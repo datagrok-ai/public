@@ -90,8 +90,8 @@ jobs:
             else
               dir=$(dirname "${m}")
             fi
-            mkdir -p "/github/workspace/help/output/help/${dir}";
-            cp /github/workspace/help/${m} /github/workspace/help/output/help/${m}
+            mkdir -p "output/help/${dir}";
+            echo "cp /github/workspace/help/${m} /github/workspace/help/output/help/${m}" >> entrypoint.sh
           done;
       - name: Convert Mardown to HTML
         uses: docker://pandoc/core:latest
