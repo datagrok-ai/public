@@ -11,7 +11,6 @@ export function info() {
 }
 
 const methods = ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'];
-const excludeKeys = ['PolymerID', 'AlignedSubpeptide', 'HELM', 'ID', 'AlignedSeq'];
 type PepseaRepsonse = {
   Alignment: {
     PolymerID: string, AlignedSubpeptide: string, HELM: string, ID: string, AlignedSeq: string, [key: string]: string,
@@ -66,8 +65,7 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
     clustersCol) as DG.Column<string>;
 
   const clusters = clustersCol.categories;
-  const clustersCount = clusters.length;
-  const bodies: PepseaBodyUnit[][] = new Array(clustersCount);
+  const bodies: PepseaBodyUnit[][] = new Array(clusters.length);
 
   // Grouping data by clusters
   for (let rowIndex = 0; rowIndex < peptideCount; ++rowIndex) {
@@ -78,35 +76,24 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
     const clusterId = clusters.indexOf(cluster);
     const helmSeq = col.get(rowIndex);
     if (helmSeq)
-      (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq})
+      (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
   }
 
-  // Requesting alignment by clusters
   const dockerfileId = (await grok.dapi.dockerfiles.filter('pepsea').first()).id;
-  const alignedObjects: PepseaRepsonse[] = new Array(clustersCount);
-  for (const [index, body] of bodies.entries())
-    alignedObjects[index] = await requestAlignedObjects(dockerfileId, body, method, gapOpen, gapExtend);
-  
-  // Setting data to new column
-  const separator = '/';
   const alignedSequencesCol = DG.Column.string('Aligned', peptideCount);
-  for (const alignedObject of alignedObjects) {  // for each cluster
-    const alignments = alignedObject.Alignment;
-    for (const alignment of alignments) {  // each row in cluster
-      const monomerList: string[] = [];
-      for (const [key, value] of Object.entries(alignment)) {  // building sequence from monomers
-        if (excludeKeys.includes(key))
-          continue;
 
-        monomerList.push(value);
-      }
-      alignedSequencesCol.set(parseInt(alignment.ID), monomerList.join(separator));
-    }
+  for (const body of bodies) {  // getting aligned sequences for each cluster
+    const alignedObject = await requestAlignedObjects(dockerfileId, body, method, gapOpen, gapExtend);
+    const alignments = alignedObject.Alignment;
+
+    for (const alignment of alignments)  // filling alignedSequencesCol
+      alignedSequencesCol.set(parseInt(alignment.ID), alignment.AlignedSubpeptide);
   }
 
   const semType = await grok.functions.call('Bio:detectMacromolecule', {col: alignedSequencesCol}) as string;
   if (semType)
     alignedSequencesCol.semType = semType;
+
   col.dataFrame.columns.add(alignedSequencesCol);
 }
 
