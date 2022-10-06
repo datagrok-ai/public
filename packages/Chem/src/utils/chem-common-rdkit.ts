@@ -53,19 +53,34 @@ export function getRdKitWebRoot() {
 export function drawRdKitMoleculeToOffscreenCanvas(
   rdKitMol: RDMol, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null) {
   const opts = {
-    'clearBackground': false,
-    'offsetx': 0, 'offsety': 0,
-    'width': Math.floor(w), 'height': Math.floor(h),
-    'bondLineWidth': 1,
-    'fixedScale': 0.07,
-    'minFontSize': 9,
-    'highlightBondWidthMultiplier': 12,
-    'dummyIsotopeLabels': false,
-    'atomColourPalette': {
-      16: [0.498, 0.247, 0.0],
+    clearBackground: false,
+    offsetx: 0,
+    offsety: 0,
+    width: Math.floor(w),
+    height: Math.floor(h),
+    bondLineWidth: 0.7,
+    multipleBondOffset: 0.25,
+    fixedScale: 0.07,
+    baseFontSize: 1.0,
+    minFontSize: -1,
+    maxFontSize: -1,
+    annotationFontScale: 0.7,
+    highlightBondWidthMultiplier: 12,
+    dummyIsotopeLabels: false,
+    atomColourPalette: {
+      0: [0.1, 0.1, 0.1],
+      1: [0.0, 0.0, 0.0],
+      6: [0.0, 0.0, 0.0],
+      7: [0.0, 0.0, 1.0],
+      8: [1.0, 0.0, 0.0],
       9: [0.0, 0.498, 0.0],
+      15: [0.498, 0.0, 0.498],
+      16: [0.498, 0.247, 0.0],
       17: [0.0, 0.498, 0.0],
+      35: [0.0, 0.498, 0.0],
+      53: [0.247, 0.0, 0.498],
     },
+    backgroundColour: [1, 1, 1, 1],
   };
   if (substruct)
     Object.assign(opts, substruct);
@@ -80,10 +95,8 @@ export function drawMoleculeToCanvas(
   let mol = null;
   try {
     mol = getRdKitModule().get_mol(convertToRDKit(molString)!);
-    const molBlock = mol.get_new_coords(true);
-    mol.delete();
-    mol = getRdKitModule().get_mol(molBlock);
-    mol.normalize_depiction();
+    mol.set_new_coords(true);
+    mol.normalize_depiction(1);
     mol.straighten_depiction();
     const scaffoldMol = scaffoldMolString == null ? null :
       getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!);
