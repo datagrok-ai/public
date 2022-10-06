@@ -170,7 +170,12 @@ export class WebLogo extends DG.JsViewer {
     if (this.host == null) {
       return 0;
     }
-    return this.canvasWidthWithRatio / this.positionWidthWithMargin;
+    const r = window.devicePixelRatio;
+    if (r > 1) {
+      return this.canvasWidthWithRatio / this.positionWidthWithMargin;
+    } else {
+      return this.canvas.width / (this.positionWidthWithMargin * r);
+    }
   }
 
   private get canvasWidthWithRatio() {
