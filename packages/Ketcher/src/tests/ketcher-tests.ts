@@ -1,5 +1,4 @@
-import { after, before, category, delay, expect, expectFloat, test } from '@datagrok-libraries/utils/src/test';
-import { Func } from 'datagrok-api/src/entities';
+import { after, before, category, test } from '@datagrok-libraries/utils/src/test';
 import { _testSetMolfile, _testSetSmarts, _testSetSmiles } from './ketcher-utils';
 
 
