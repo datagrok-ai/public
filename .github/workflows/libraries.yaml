@@ -89,7 +89,6 @@ jobs:
     needs: metadata
     if: needs.metadata.outputs.continue == 'yes'
     runs-on: ubuntu-20.04
-    environment: Prod
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.metadata.outputs.publish_matrix) }}

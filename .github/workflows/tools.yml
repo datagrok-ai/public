@@ -33,7 +33,6 @@ jobs:
     name: Build and publish to npm
     runs-on: ubuntu-20.04
     needs: check
-    environment: Prod
     steps:
       - uses: actions/checkout@v3
         with:
