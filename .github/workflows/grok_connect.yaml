@@ -39,7 +39,6 @@ jobs:
     name: Build Docker
     needs: build
     if: needs.build.outputs.version != ''
-    environment: Prod
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout

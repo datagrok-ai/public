@@ -99,7 +99,6 @@ jobs:
       - matrix
     if: needs.matrix.outputs.publish == 'yes'
     runs-on: ubuntu-20.04
-    environment: Prod
     env:
       HOST: GitHubAction
     strategy:
@@ -288,7 +287,6 @@ jobs:
       - publish
     if: always() && needs.publish.outputs.push == 'yes'
     runs-on: ubuntu-20.04
-    environment: Prod
     steps:
       - name: Set branch parameter
         id: branch
