@@ -22,10 +22,11 @@ type PepseaBodyUnit = {ID: string, HELM: string};
 //top-menu: Bio | PepSeA MSA...
 export function pepseaMSA(): void {
   const table = grok.shell.t;
-  const colInput = ui.columnInput('Sequences', table, null, (col: DG.Column<string>) => {
-    if (col.getTag(DG.TAGS.UNITS) != 'helm' || col.semType != DG.SEMTYPE.MACROMOLECULE)
-      grok.shell.info('Sequence column must have be of HELM notation!')
-  });
+  const colInput = ui.columnInput('Sequences', table, table.columns.bySemType('Macromolecule'),
+    (col: DG.Column<string>) => {
+      if (col.getTag(DG.TAGS.UNITS) != 'helm' || col.semType != DG.SEMTYPE.MACROMOLECULE)
+        grok.shell.info('Sequence column must contain sequences in HELM notation!');
+    });
   const methodInput = ui.choiceInput('Method', 'ginsi', methods);
   const gapOpenInput = ui.floatInput('Gap open', 1.53);
   const gapExtendInput = ui.floatInput('Gap extend', 0.0);
@@ -70,7 +71,7 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
   // Grouping data by clusters
   for (let rowIndex = 0; rowIndex < peptideCount; ++rowIndex) {
     const cluster = clustersCol.get(rowIndex) as string;
-    if (cluster === '') 
+    if (cluster === '')
       continue;
 
     const clusterId = clusters.indexOf(cluster);
@@ -82,11 +83,11 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
   const dockerfileId = (await grok.dapi.dockerfiles.filter('pepsea').first()).id;
   const alignedSequencesCol = DG.Column.string('Aligned', peptideCount);
 
-  for (const body of bodies) {  // getting aligned sequences for each cluster
+  for (const body of bodies) { // getting aligned sequences for each cluster
     const alignedObject = await requestAlignedObjects(dockerfileId, body, method, gapOpen, gapExtend);
     const alignments = alignedObject.Alignment;
 
-    for (const alignment of alignments)  // filling alignedSequencesCol
+    for (const alignment of alignments) // filling alignedSequencesCol
       alignedSequencesCol.set(parseInt(alignment.ID), alignment.AlignedSubpeptide);
   }
 
