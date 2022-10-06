@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import {delay, expect} from '@datagrok-libraries/utils/src/test';
-import {Func} from "datagrok-api/src/entities";
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
 
@@ -50,7 +50,7 @@ export async function _testSetSmarts() {
 }
 
 async function createKetcherAndSetMolecule(molecule: string) {
-    const sketcher = await Func.find({tags: ['moleculeSketcher'], name: 'ketcherSketcher'})[0].apply();
+    const sketcher = await DG.Func.find({tags: ['moleculeSketcher'], name: 'ketcherSketcher'})[0].apply();
     const sketcherHost = new Sketcher();
     await sketcher.init(sketcherHost);
     await delay(1000);

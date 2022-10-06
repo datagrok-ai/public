@@ -18,6 +18,7 @@ module.exports = {
     'dayjs': 'dayjs',
     'wu': 'wu',
     'exceljs': 'ExcelJS',
+    'html2canvas': 'html2canvas',
   },
   output: {
     filename: '[name].js',

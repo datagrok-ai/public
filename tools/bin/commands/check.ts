@@ -8,31 +8,49 @@ import { ValidationResult } from '../validators/interfaces';
 
 export function check(args: { [x: string]: string | string[]; }) {
   const nOptions = Object.keys(args).length - 1;
-  if (args['_'].length !== 1 || nOptions > 0)
+  if (args['_'].length !== 1 || (nOptions > 1 && (!args.dir || typeof args.dir !== 'string')) || nOptions > 2)
     return false;
 
   const curDir = process.cwd();
-  if (!utils.isPackageDir(curDir)) {
-    color.error('File `package.json` not found. Run the command from the package directory');
-    return false;
+
+  if (args.dir && typeof args.dir === 'string') {
+    const packagesDir = path.isAbsolute(args.dir) ? args.dir : path.join(curDir, args.dir);
+    fs.readdirSync(packagesDir).forEach((file) => {
+      const filepath = path.join(packagesDir, file);
+      const stats = fs.statSync(filepath);
+      if (stats.isDirectory() && utils.isPackageDir(filepath)) {
+        console.log(`Checking package ${file}...`);
+        runChecks(filepath);
+      }
+    });
+  } else {
+    if (!utils.isPackageDir(curDir)) {
+      color.error('File `package.json` not found. Run the command from the package directory');
+      return false;
+    }
+
+    console.log(`Checking package ${path.basename(curDir)}...`);
+    runChecks(curDir);
   }
 
-  const files = walk.sync({ ignoreFiles: ['.npmignore', '.gitignore'] });
-  const jsTsFiles = files.filter((f) => f.endsWith('.js') || f.endsWith('.ts'));
-  const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
-    'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
-  const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
+  function runChecks(packagePath: string) {
+    const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
+    const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
+    const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
+      'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
+    const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
 
-  const webpackConfigPath = path.join(curDir, 'webpack.config.js');
-  const isWebpack = fs.existsSync(webpackConfigPath);
-  if (isWebpack) {
-    const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
-    const externals = extractExternals(content);
-    if (externals)
-      checkImportStatements(jsTsFiles, externals).forEach((warning) => color.warn(warning));
+    const webpackConfigPath = path.join(packagePath, 'webpack.config.js');
+    const isWebpack = fs.existsSync(webpackConfigPath);
+    if (isWebpack) {
+      const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
+      const externals = extractExternals(content);
+      if (externals)
+        checkImportStatements(packagePath, jsTsFiles, externals).forEach((warning) => color.warn(warning));
+    }
+
+    checkFuncSignatures(packagePath, funcFiles).forEach((warning) => color.warn(warning));
   }
-
-  checkFuncSignatures(funcFiles).forEach((warning) => color.warn(warning));
 
   return true;
 }
@@ -53,7 +71,7 @@ function extractExternals(config: string): {}|null {
   return null;
 }
 
-function checkImportStatements(files: string[], externals: {}): string[] {
+function checkImportStatements(packagePath: string, files: string[], externals: {}): string[] {
   const modules = [];
   for (const key in externals) {
     modules.push(key);
@@ -73,7 +91,7 @@ function checkImportStatements(files: string[], externals: {}): string[] {
   }
 
   for (const file of files) {
-    const content = fs.readFileSync(path.join(process.cwd(), file), { encoding: 'utf-8' });
+    const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
     const matchedImports = content.match(importRegex);
     if (matchedImports) {
       for (const match of matchedImports) {
@@ -87,7 +105,7 @@ function checkImportStatements(files: string[], externals: {}): string[] {
   return warnings;
 }
 
-function checkFuncSignatures(files: string[]): string[] {
+function checkFuncSignatures(packagePath: string, files: string[]): string[] {
   const warnings: string[] = [];
   const checkFunctions: { [role: string]: FuncValidator } = {
     semTypeDetector: ({inputs, outputs}: {inputs: FuncParam[], outputs: FuncParam[]}) => {
@@ -169,7 +187,7 @@ function checkFuncSignatures(files: string[]): string[] {
   const functionRoles = Object.keys(checkFunctions);
 
   for (const file of files) {
-    const content = fs.readFileSync(path.join(process.cwd(), file), { encoding: 'utf-8' });
+    const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
     const functions = getFuncMetadata(content);
     for (const f of functions) {
       const roles = functionRoles.filter((role) => f.tags?.includes(role));

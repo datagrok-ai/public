@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "target": "es2017",
+    "module": "es2020",
+    "allowJs": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    //"noImplicitAny": true,
+    "lib": [
+      "ES2021",
+      "ES2021.String",
+      "DOM"
+    ],
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}

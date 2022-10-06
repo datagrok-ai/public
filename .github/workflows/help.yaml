@@ -81,7 +81,17 @@ jobs:
             fi
             mkdir -p "output/help/${dir}";
             echo "cd /github/workspace/help/output/help/${dir}" >> entrypoint.sh;
-            echo "pandoc -f gfm -t html --extract-media=. --resource-path=.:/github/workspace/help/${dir} --lua-filter=/github/workspace/links-to-html.lua --lua-filter=/github/workspace/table-id.lua --output=/github/workspace/help/output/help/${f/.md/.html} \"/github/workspace/help/${f}\"" >> entrypoint.sh;
+            echo "pandoc -f gfm -t html --resource-path=.:/github/workspace/help/${dir} --lua-filter=/github/workspace/links-to-html.lua --lua-filter=/github/workspace/table-id.lua --output=/github/workspace/help/output/help/${f/.md/.html} \"/github/workspace/help/${f}\"" >> entrypoint.sh;
+          done;
+          media="$(find . -type f \( -name '*.gif' -o -name '*.jpeg' -o -name '*.jpg' -o -name '*.png' -o -name '*.bmp' \) -printf '%P ')"
+          for m in $media; do
+            if [[ "$(dirname ${m})" == "." ]]; then
+              dir=''
+            else
+              dir=$(dirname "${m}")
+            fi
+            mkdir -p "output/help/${dir}";
+            echo "cp /github/workspace/help/${m} /github/workspace/help/output/help/${m}" >> entrypoint.sh;
           done;
       - name: Convert Mardown to HTML
         uses: docker://pandoc/core:latest

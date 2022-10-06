@@ -1,5 +1,4 @@
-import {category, expect, expectFloat, test, delay, before, after} from '@datagrok-libraries/utils/src/test';
-import {Func} from 'datagrok-api/src/entities';
+import {category, expect, test, before, after} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -14,12 +13,12 @@ const exampleInchiSmiles = 'c1ccccc1';
 category('sketcher testing', () => {
 
   let rdkitModule: any;
-  let funcs: Func[];
+  let funcs: DG.Func[];
   let dg: DG.Dialog;
 
   before(async () => {
     rdkitModule = await grok.functions.call('Chem:getRdKitModule');
-    funcs = Func.find({tags: ['moleculeSketcher']});
+    funcs = DG.Func.find({tags: ['moleculeSketcher']});
   });
   
   test('smiles', async () => {

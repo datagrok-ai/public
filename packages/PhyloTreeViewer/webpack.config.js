@@ -1,9 +1,28 @@
 const path = require('path');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
+
 
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.js'
+    package: ['./src/package.ts'],
+    test: {
+      filename: 'package-test.js',
+      library: {type: 'var', name: `${packageName}_test`},
+      import: './src/package-test.ts',
+    },
+  },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js', '.json'],
+  },
+  module: {
+    rules: [
+      {
+        test: /\.ts(x?)$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ],
   },
   devtool: 'inline-source-map',
   externals: {
@@ -12,7 +31,7 @@ module.exports = {
     'datagrok-api/ui': 'ui',
     'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
-    'rxjs/operators': 'rxjs.operators'
+    'rxjs/operators': 'rxjs.operators',
   },
   output: {
     filename: '[name].js',

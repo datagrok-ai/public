@@ -3,9 +3,10 @@ name: Lint Code Base
 on:
   workflow_dispatch: { }
   push:
+  pull_request:
 
 jobs:
-  build:
+  lint:
     name: Lint Code Base
     runs-on: ubuntu-20.04
     steps:
@@ -60,3 +61,25 @@ jobs:
           VALIDATE_TYPESCRIPT_ES: true
           VALIDATE_XML: true
           VALIDATE_YAML: true
+
+  commit:
+    name: Lint Commit message
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          # Full git history is needed to get a proper list of changed files within `commitlint`
+          fetch-depth: 0
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+#          cache: 'npm'
+      - run: npm install --location=global @commitlint/config-conventional @commitlint/cli
+      - uses: wagoid/commitlint-github-action@v5
+        continue-on-error: true
+        with:
+          configFile: commitlint.config.js
+          firstParent: true
+          failOnWarnings: false
+          helpURL: https://datagrok.ai/help/develop/admin/releases/versioning-policy

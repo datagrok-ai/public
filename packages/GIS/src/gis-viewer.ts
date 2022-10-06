@@ -20,6 +20,7 @@ import VectorLayer from 'ol/layer/Vector';
 import * as OLProj from 'ol/proj';
 import Feature from 'ol/Feature';
 import { Point } from 'ol/geom';
+import { COLOR_CODING_TYPE } from 'datagrok-api/dg';
 // import { numberSafeCompareFunction } from 'ol/array';
 
 function toStringColor(num : number, opacity?: number) : string {
@@ -82,7 +83,7 @@ export class GisViewer extends DG.JsViewer {
     super();
 
     this.initialized = false;
-    this.ol = new OpenLayers();
+    this.ol = new OpenLayers(this);
 
     // properties
     this.currentLayer = this.string('currentLayer', 'BaseLayer', {category: 'Layers', choices: ['l1','l2','l3','l4']});
@@ -273,10 +274,12 @@ export class GisViewer extends DG.JsViewer {
 
     const btnRowFocusing = ui.button(ui.iconFA('bullseye'), ()=>{
       this.isRowFocusing = !this.isRowFocusing;
+      // this.dataFrame.
     });
     btnRowFocusing.style.margin = '1px';
     const heatmapBtn = ui.button('HM', ()=>{
-      this.renderHeat();
+      this.getCoordinates();
+      this.renderHeat(this.features);
       this.updateLayersList();
     }, 'Build heat-map for data');
     heatmapBtn.style.margin = '1px';
@@ -330,12 +333,7 @@ export class GisViewer extends DG.JsViewer {
       this.ol.initMap('map-container');
 
       //TODO: refactor here>
-      this.ol.markerSize = this.markerDefaultSize;
-      this.ol.markerOpacity = this.markerOpacity / 100;
-      this.ol.defaultColor = this.defaultColor;
-      this.ol.weightedMarkers = ((this.sizeColumnName !== '')); //TODO: add checking for number column type
-      this.ol.heatmapRadius = this.heatmapRadius;
-      this.ol.heatmapBlur = this.heatmapBlur;
+      this.updateOpenLayerProperties();
 
       this.updateLayersList();
 
@@ -429,8 +427,27 @@ export class GisViewer extends DG.JsViewer {
     setTimeout( function(m) {m.updateSize();}, 200, this.ol.olMap);
   }
 
+  //temporary code that multiplyes amount of data to test performance
+  testPerformanceLoader() {
+    const colLat = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
+    const colLon = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE);
+    const rowcnt = this.dataFrame.rowCount;
+    const colcnt = this.dataFrame.columns.length;
+    for (let rw = rowcnt; rw < rowcnt + 5000; rw++) {
+      for (let cw = 0; cw < colcnt; cw++) {
+        const curcol = this.dataFrame.columns.byIndex(cw);
+        if ((curcol == colLat) || (curcol == colLon))
+          curcol.set(rw, curcol.get(0) + (Math.random() * 10));
+        else
+          curcol.set(rw, curcol.get(0));
+      }
+    }
+  }
+
   onTableAttached(): void {
     this.init();
+    //TODO: add performance tester here
+    // this.testPerformanceLoader();
 
     if (this.latitudeColumnName === null && this.longitudeColumnName === null) {
       let col = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
@@ -454,43 +471,67 @@ export class GisViewer extends DG.JsViewer {
     this.render(true);
   }
 
+  updateOpenLayerProperties(updateLayer: boolean = false) {
+    this.ol.defaultColor = this.defaultColor;
+    this.ol.selectedColor = this.selectedColor;
+    this.ol.markerOpacity = this.markerOpacity / 100;
+    this.ol.markerMinSize = this.markerMinSize;
+    this.ol.markerMaxSize = this.markerMaxSize;
+    this.ol.markerDefaultSize = this.markerDefaultSize;
+    // markerMinColor;
+    // markerMaxColor;
+
+    this.ol.heatmapRadius = this.heatmapRadius;
+    this.ol.heatmapBlur = this.heatmapBlur;
+
+    if (!this.initialized)
+      return;
+
+    if (updateLayer)
+      this.ol.updateMarkersGLLayer();
+
+    //TODO: experiment: i've try to refresh layer here without recreating of it but it's nor work still>>
+    // this.ol.olMap.render();
+    // window.requestAnimationFrame(() => {
+    //   this.ol.olMarkersLayerGL!.updateStyleVariables({'size': this.markerDefaultSize});
+    //   this.ol.olMap.render();
+    // });
+  }
+
   onPropertyChanged(prop: DG.Property): void {
-    if (!this.initialized) return;
+    if (!this.initialized)
+      return;
     if (prop.name === 'currentLayer') {
       this.updateLayersList();
       return;
     }
-    if (prop.name === 'heatmapRadius' || prop.name === 'heatmapBlur') {
+    if (prop.name === 'heatmapRadius') {
       this.ol.heatmapRadius = this.heatmapRadius;
+      return;
+    }
+    if (prop.name === 'heatmapBlur') {
       this.ol.heatmapBlur = this.heatmapBlur;
       return;
     }
-    if (prop.name === 'defaultColor') {
-      this.ol.defaultColor = this.defaultColor;
-      this.ol.markerGLStyle.symbol!.color = toStringColor(this.defaultColor, this.markerOpacity);
-      this.ol.olMap.render();
-      window.requestAnimationFrame(() => {
-        this.ol.olMarkersLayerGL!.updateStyleVariables({'size': this.markerDefaultSize});
-        this.ol.olMap.render();
-      });
-      //TODO - redraw layer
+    if ((prop.name === 'defaultColor') ||
+    (prop.name === 'selectedColor') ||
+    (prop.name === 'markerOpacity') ||
+    (prop.name === 'markerMinSize') ||
+    (prop.name === 'markerMaxSize') ||
+    (prop.name === 'markerDefaultSize')) {
+      this.updateOpenLayerProperties(true);
       return;
     }
-    if (prop.name === 'markerDefaultSize') {
-      this.ol.markerSize = this.markerDefaultSize;
-      // this.ol.markerGLStyle.symbol!.size = this.markerDefaultSize;
-      this.ol.olMap.render();
-      this.ol.olMarkersLayerGL!.updateStyleVariables({'size': this.markerDefaultSize});
-      window.requestAnimationFrame(() => { this.ol.olMap.render(); });
-      // window.requ
-      //TODO - redraw layer
-      return;
-    }
-    if (prop.name === 'markerOpacity') {
-      this.ol.markerOpacity = this.markerOpacity / 100;
-      //TODO - redraw layer
-      return;
-    }
+    // if (prop.name === 'markerDefaultSize') {
+    //   this.ol.markerDefaultSize = this.markerDefaultSize;
+    //   this.updateOpenLayerProperties(true);
+    //   return;
+    // }
+    // if (prop.name === 'markerOpacity') {
+    //   this.ol.markerOpacity = this.markerOpacity / 100;
+    //   this.updateOpenLayerProperties(true);
+    //   return;
+    // }
     // if (prop.name === 'defaultColor') {
 
     // }
@@ -507,22 +548,15 @@ export class GisViewer extends DG.JsViewer {
   }
 
   render(fit: boolean = false): void {
-    //TODO: refactor this>
-    this.ol.markerSize = this.markerDefaultSize;
-    this.ol.markerOpacity = this.markerOpacity / 100;
-    this.ol.defaultColor = this.defaultColor;
-    this.ol.weightedMarkers = ((this.sizeColumnName !== '')); //TODO: add checking for number column type
-    //this.ol.weightedMarkers = this.gradientSizing;
-    this.ol.heatmapRadius = this.heatmapRadius;
-    this.ol.heatmapBlur = this.heatmapBlur;
+    this.updateOpenLayerProperties(false);
 
     if (this.latitudeColumnName == null || this.longitudeColumnName == null)
       return;
 
-    this.getCoordinates(); //TODO: not only coordinates but a data at all
+    this.getCoordinates(); //TODO: not only coordinates but a data at all?
 
     if (this.renderType === 'heat map')
-      this.renderHeat();
+      this.renderHeat(this.features);
     else if (this.renderType === 'markers')
       this.renderMarkersBatch(this.features);
       // this.renderMarkers();
@@ -697,7 +731,7 @@ export class GisViewer extends DG.JsViewer {
     //<<getCoordinates function
   }
 
-  renderHeat(): void {
+  renderHeat(arrFeatures: Array<Feature>): void {
     this.getCoordinates();
     let colName = this.colorColumnName;
     if (colName === 'null')
@@ -710,16 +744,15 @@ export class GisViewer extends DG.JsViewer {
       layer = this.ol.addNewHeatMap('HL: ' + colName);
 
     this.ol.clearLayer(layer);
-    for (let i = 0; i < this.coordinates.length; i++)
-      this.ol.addPointSc(this.coordinates[i], this.sizeValues[i], this.colorValues[i], this.values[i], layer);
-    // this.ol.addPoint(this.coordinates[i], this.values[i], layer);
+    this.ol.addFeaturesBulk(arrFeatures, layer);
+    // for (let i = 0; i < this.coordinates.length; i++)
+    //   this.ol.addPointSc(this.coordinates[i], this.sizeValues[i], this.colorValues[i], this.values[i], layer);
   }
 
   renderMarkers(): void {
     this.ol.clearLayer(); //TODO: clear exact layer
     for (let i = 0; i < this.coordinates.length; i++)
       this.ol.addPointSc(this.coordinates[i], this.sizeValues[i], this.colorValues[i], this.values[i]);
-    // this.ol.addPoint(this.coordinates[i], this.values[i]);
   }
 
   renderMarkersBatch(arrFeatures: Array<Feature>): void {

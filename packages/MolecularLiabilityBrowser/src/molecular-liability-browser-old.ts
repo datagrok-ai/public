@@ -14,7 +14,7 @@ import {
 } from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
 import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
-import {VdRegionsViewer} from '@datagrok/bio/src/viewers/vd-regions-viewer';
+import {IVdRegionsViewer} from '@datagrok-libraries/bio/src/viewers/vd-regions-viewer';
 
 // import {WebLogo} from '@datagrok-libraries/bio';
 
@@ -44,7 +44,7 @@ export class MolecularLiabilityBrowserOld {
   hideShowIcon2: HTMLElement;
   treesIcon: HTMLElement;
 
-  regionsViewer: VdRegionsViewer;
+  regionsViewer: IVdRegionsViewer;
   twinPviewer: TwinPviewer;
   //compostionPviewer: CompostionPviewer;
 
@@ -566,7 +566,10 @@ export class MolecularLiabilityBrowserOld {
       this.idMapping[this.allVids.get(i)] = this.allIds.get(i).replaceAll(' ', '').split(',');
 
     if (this.mlbView) {
-      this.regionsViewer = new VdRegionsViewer();
+      const tempDf: DG.DataFrame = DG.DataFrame.fromObjects([{}])!;
+      this.regionsViewer = (await tempDf.plot.fromType(
+        'VdRegions', {skipEmptyPositions: true
+        })) as unknown as IVdRegionsViewer;
       await this.regionsViewer.init();
     }
 

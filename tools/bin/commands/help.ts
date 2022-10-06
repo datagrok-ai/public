@@ -97,6 +97,11 @@ Running \`grok publish\` is the same as running \`grok publish defaultHost --bui
 const HELP_CHECK = `
 Usage: grok check
 
+Options:
+[--dir]
+
+--dir       Check all packages in a specified directory
+
 Check package content (function signatures, import statements of external modules, etc.)
 `;
 
