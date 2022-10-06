@@ -4,8 +4,8 @@
   "friendlyName": "PhyloTreeViewer",
   "version": "0.0.8",
   "author": {
-    "name": "Diana Onufriienko",
-    "email": "donufriienko@datagrok.ai"
+    "name": "Aleksandr Tanas",
+    "email": "atanas@datagrok.ai"
   },
   "description": "*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees visualization.",
   "repository": {
