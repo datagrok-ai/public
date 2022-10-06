@@ -35,7 +35,7 @@ export function check(args: { [x: string]: string | string[]; }) {
 
   function runChecks(packagePath: string) {
     const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
-    const jsTsFiles = files.filter((f) => f.endsWith('.js') || f.endsWith('.ts'));
+    const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
     const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
       'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
     const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
