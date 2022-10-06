@@ -170,8 +170,13 @@ export class WebLogo extends DG.JsViewer {
     if (this.host == null) {
       return 0;
     }
-    return this.host.clientWidth / this.positionWidthWithMargin;
+    return this.canvasWidthWithRatio / this.positionWidthWithMargin;
   }
+
+  private get canvasWidthWithRatio() {
+    return this.canvas.width * window.devicePixelRatio;
+  }
+
 
   /** Position of start rendering */
   private get firstVisibleIndex(): number {
@@ -259,7 +264,7 @@ export class WebLogo extends DG.JsViewer {
         (this.slider.max - this.slider.min != this.currentRange) &&
         (this.slider.max - this.slider.min < this.Length - 1)) {
         const countOfPositions = Math.ceil(this.slider.max - this.slider.min);
-        this._positionWidth = (this.host.clientWidth / countOfPositions) - this.positionMarginValue;
+        this._positionWidth = (this.canvas.width / countOfPositions) - this.positionMarginValue;
         this.currentRange = this.slider.max - this.slider.min;
       }
       this.turnOfResizeForOneSetValue = false;
@@ -439,7 +444,6 @@ export class WebLogo extends DG.JsViewer {
         newMin, newMax);
     }
   }
-
 
   /** Handler of property change events. */
   public override onPropertyChanged(property: DG.Property): void {
