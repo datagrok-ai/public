@@ -124,7 +124,7 @@ See also:
 >A _parameter pattern_ is a filtering criterion you add to a query to specify which items are returned when you run the
 > query. Parameter patterns are similar to a formula — a string that may consist of field references, operators, and
 > constants. To see the list of available patterns and learn how they work,
-> see [Search patterns](/explore/data-search-patterns.md).
+> see [Search patterns](../explore/data-search-patterns.md).
 
 Once you have created a database connection, you can start querying it.
 
