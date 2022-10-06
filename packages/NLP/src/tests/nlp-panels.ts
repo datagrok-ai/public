@@ -1,11 +1,11 @@
 import {before, category, delay, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import {FileInfo} from 'datagrok-api/src/entities';
+import * as DG from 'datagrok-api/dg';
 import {checkHTMLElementByInnerText} from './test-utils';
 
 
 category('File Panels: NLP', () => {
-  const testFiles: FileInfo[] = [];
+  const testFiles: DG.FileInfo[] = [];
 
   before(async () => {
     const txtFiles = await grok.dapi.files.list('Demo:Files/texts', true, 'txt');

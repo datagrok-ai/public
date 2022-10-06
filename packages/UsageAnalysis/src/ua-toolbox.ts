@@ -1,7 +1,6 @@
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
-import {InputBase} from "datagrok-api/src/widgets";
 import { BehaviorSubject  } from "rxjs";
 import {UaFilter} from "./filter2";
 import {ViewHandler} from "./view-handler";
@@ -9,7 +8,7 @@ import {ChoiceInput} from "./elements/choice-input";
 
 export class UaToolbox {
   rootAccordion: DG.Accordion;
-  dateInput: InputBase;
+  dateInput: DG.InputBase;
   usersInput: ChoiceInput;
   filterStream: BehaviorSubject<UaFilter>;
 
@@ -30,7 +29,7 @@ export class UaToolbox {
     return new UaToolbox(dateInput, usersInput, filterStream)
   }
 
-  private constructor(dateInput: InputBase, usersInput: ChoiceInput, filterStream: BehaviorSubject<UaFilter>) {
+  private constructor(dateInput: DG.InputBase, usersInput: ChoiceInput, filterStream: BehaviorSubject<UaFilter>) {
     this.rootAccordion = ui.accordion();
     this.rootAccordion.addPane('Filters', () => ui.narrowForm([
       dateInput,
