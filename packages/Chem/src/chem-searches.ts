@@ -83,25 +83,7 @@ function colInvalidated(col: DG.Column): Boolean {
 
 async function _invalidate(molCol: DG.Column) {
   if (!colInvalidated(molCol)) {
-    const {molIdxToHash, hashToMolblock} =
-        await (await getRdKitService()).initMoleculesStructures(molCol.toList(), false);
-    let i = 0;
-    if (molIdxToHash.length > 0) {
-      let needsUpdate = false;
-      for (const item of molIdxToHash) {
-        const notify = (i === molIdxToHash.length - 1);
-        const molStr = hashToMolblock[item];
-        if (molStr) {
-          molCol.setString(i, molStr, notify);
-          needsUpdate = true;
-        }
-        ++i;
-      }
-      if (needsUpdate) {
-        // This seems to be the only way to trigger re-calculation of categories
-        molCol.compact();
-      }
-    }
+    await (await getRdKitService()).initMoleculesStructures(molCol.toList());
     LastColumnInvalidated = molCol.name;
     molCol.setTag(FING_COL_TAGS.invalidatedForVersion, String(molCol.version + 1));
   }
@@ -254,11 +236,12 @@ export function chemGetFingerprint(molString: string, fingerprint: Fingerprint):
   try {
     mol = getRdKitModule().get_mol(molString);
     let fp;
-    if (fingerprint == Fingerprint.Morgan)
-      fp = mol.get_morgan_fp_as_uint8array(defaultMorganFpRadius, defaultMorganFpLength);
-    /*else if (fingerprint == Fingerprint.RDKit)
-      fp = mol.get_rdkit_fp(defaultMorganFpRadius, defaultMorganFpLength);*/
-    else if (fingerprint == Fingerprint.Pattern)
+    if (fingerprint == Fingerprint.Morgan) {
+      fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
+        radius: defaultMorganFpRadius,
+        nBits: defaultMorganFpLength,
+      }));
+    } else if (fingerprint == Fingerprint.Pattern)
       fp = mol.get_pattern_fp_as_uint8array();
     else
       throw new Error(`${fingerprint} does not match any fingerprint`);

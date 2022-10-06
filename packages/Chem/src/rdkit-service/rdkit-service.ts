@@ -57,16 +57,11 @@ export class RdKitService {
     );
   }
 
-  async initMoleculesStructures(dict: string[], normalizeCoordinates = false)
+  async initMoleculesStructures(dict: string[])
     : Promise<any> {
     return this._initParallelWorkers(dict, (i: number, segment: any) =>
-      this.parallelWorkers[i].initMoleculesStructures(segment, normalizeCoordinates),
-    (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
-      return {
-        molIdxToHash: [...acc.molIdxToHash, ...item.molIdxToHash],
-        hashToMolblock: {...acc.hashToMolblock, ...item.hashToMolblock},
-      };
-    }, {molIdxToHash: [], hashToMolblock: {}}));
+      this.parallelWorkers[i].initMoleculesStructures(segment),
+    () => {});
   }
 
   async searchSubstructure(query: string, queryMolBlockFailover: string, bitset?: BitArray): Promise<number[]> {
