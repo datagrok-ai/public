@@ -1,6 +1,21 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-10-06 Dev build 1.6.12
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.6.12`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* closes #953 Filters turned off status is not saved in layout 
+
+
 # 2022-09-15 Dev build 1.6.11
 
 ## Latest Docker Images
