@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import * as rxjs from 'rxjs';
 import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
 import {TREE_TAGS} from '../consts';
 import {Unsubscribable} from 'rxjs';
@@ -250,6 +251,11 @@ export class PhylocanvasGlViewer extends DG.JsViewer {
       this.phylocanvasViewer = new PhylocanvasGL(this.treeDiv, props);
       this.phylocanvasViewer.deck.setProps({useDevicePixels: true});
       this.calcSize();
+
+      // this.subs.push(
+      //   rxjs.fromEvent<MouseEvent>(this.phylocanvasViewer.deck.canvas!, 'mousedown').subscribe((args: MouseEvent) => {
+      //
+      //   }));
     }
     // this.phyloTreeViewer.selectNode = this.tvSelectNode.bind(this);
     // this.phyloTreeViewer.handleHover = this.tvHandleHover.bind(this);

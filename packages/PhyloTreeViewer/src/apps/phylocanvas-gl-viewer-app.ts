@@ -2,9 +2,9 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {newickToDf} from './utils';
+import {newickToDf} from '../utils';
 import {Shapes} from '@phylocanvas/phylocanvas.gl';
-import {PhylocanvasGlViewer, TreeTypesNames} from './phylocanvas-gl-viewer';
+import {PhylocanvasGlViewer, TreeTypesNames} from '../viewers/phylocanvas-gl-viewer';
 import {DOCK_TYPE} from 'datagrok-api/dg';
 import {Unsubscribable} from 'rxjs';
 
@@ -35,11 +35,6 @@ export class PhylocanvasGlViewerApp {
   async loadData(): Promise<void> {
     const treeData: string = await grok.dapi.files.readAsText('System:AppData/PhyloTreeViewer/data/tree95.nwk');
 
-    // const df: DG.DataFrame = (await grok.functions.call(
-    //   'PhyloTreeViewer:_newickToDf', {newick: treeData, filename: 'filename'})) as DG.DataFrame;
-    // // const col: DG.Column = DG.Column.fromList('string', 'id', []);
-    // // const df: DG.DataFrame = DG.DataFrame.fromColumns([col]);
-    // // df.setTag('.newick', treeData);
     const df: DG.DataFrame = newickToDf(treeData, 'tree95');
 
     await this.setData(df);
@@ -111,32 +106,12 @@ export class PhylocanvasGlViewerApp {
       // TableView.addViewer() returns JsViewer (no access to viewer's attributes)
       // DataFrame.plot.fromType() return viewers type object (with attributes)
       this.treeViewer = (await this.df.plot.fromType('PhylocanvasGl', {
-        // interactive: true,
         alignLabels: true,
         showLabels: true,
         showLeafLabels: true,
-        // shape: Shapes.Circle,
-        // fillColor: '#FF0000',
-        // nodeSize: 6,
-        // fontFamily: 'Roboto',
-        // fontSize: 13,
-        // treeType: TreeTypesNames.Rectangular,
-        // lineWidth: 4,
+        padding: 0,
+        treeToCanvasRatio: 1,
       })) as PhylocanvasGlViewer;
-      // this.treeViewer = new PhylocanvasGlViewer();
-      // this.treeViewer.setOptions({
-      //   interactive: true,
-      //   showLabels: true,
-      //   showLeafLabels: true,
-      //   shape: Shapes.Circle,
-      //   fillColor: '#FF0000',
-      //   nodeSize: 6,
-      //   fontFamily: 'Roboto',
-      //   fontSize: 13,
-      //   treeType: TreeTypesNames.Rectangular,
-      //   lineWidth: 4,
-      // });
-      // this.treeHost.append(this.treeViewer.root);
       this.treeDn = this.tv.dockManager.dock(this.treeViewer, DOCK_TYPE.LEFT);
       let k = 11;
       //this.treeViewerDn = this.tv.dockManager.dock(this.treeViewer, DOCK_TYPE.LEFT);
