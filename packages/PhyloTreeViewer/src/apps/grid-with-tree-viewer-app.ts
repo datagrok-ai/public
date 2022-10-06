@@ -1,9 +1,9 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {newickToDf} from './utils';
+import {newickToDf} from '../utils';
 import {Unsubscribable} from 'rxjs';
-import {GridWithTreeViewer} from './grid-with-tree-viewer';
+import {GridWithTreeViewer} from '../viewers/grid-with-tree-viewer';
 
 class AppView extends DG.ViewBase {
 
@@ -69,11 +69,13 @@ export class GridWithTreeViewerApp {
     }
 
     if (!this.viewer) {
-      this.viewer = (await this.dataDf.plot.fromType('GridWithTree', {})) as GridWithTreeViewer;
+      this.viewer = (await this.dataDf.plot.fromType('GridWithTree', {
+        nodeNameColumnName: 'id',
+      })) as GridWithTreeViewer;
     }
 
     if (!this.viewerDn) {
-      this.viewerDn = this.view?.dockManager.dock(this.viewer, DG.DOCK_TYPE.LEFT)!;
+      this.viewerDn = this.view?.dockManager.dock(this.viewer, DG.DOCK_TYPE.FILL)!;
     }
   }
 

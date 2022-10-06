@@ -5,10 +5,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {newickToDf} from './utils';
 import {PhyloTreeViewer} from './tree-viewer';
-import {PhylocanvasGlViewer} from './phylocanvas-gl-viewer';
-import {PhylocanvasGlViewerApp} from './phylocanvas-gl-viewer-app';
-import {GridWithTreeViewer} from './grid-with-tree-viewer';
-import {GridWithTreeViewerApp} from './grid-with-tree-viewer-app';
+import {PhylocanvasGlViewer} from './viewers/phylocanvas-gl-viewer';
+import {PhylocanvasGlViewerApp} from './apps/phylocanvas-gl-viewer-app';
+import {GridWithTreeViewer} from './viewers/grid-with-tree-viewer';
+import {GridWithTreeViewerApp} from './apps/grid-with-tree-viewer-app';
 
 
 export const _package = new DG.Package();
