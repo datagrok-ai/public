@@ -111,7 +111,7 @@ Productivity tips for the codeowners flow:
 
 2. Write descriptive and meaningful commit messages according to the [commit message rules](#commit-message-rules).
    Changelogs include all commit messages.
-3. [Lint](../../../../CONTRIB.md#using-a-linter)
+3. [Lint](https://github.com/datagrok-ai/public/blob/master/CONTRIB.md#using-a-linter)
    and [test](https://datagrok.ai/help/develop/how-to/test-packages#local-testing)
    your changes
    before pushing. You have great power to make immediate
@@ -165,7 +165,7 @@ Productivity tips for the general flow:
    use `<first letter of your name><you surname>/<meaningful short description>`
    format. Task ID should be a full ID from any task tracking system. For example `jdoe/GROK-123/description` for Jira
    issues or `jdoe/#123/description` for GitHub issues.
-3. [Lint](../../../../CONTRIB.md#using-a-linter)
+3. [Lint](https://github.com/datagrok-ai/public/blob/master/CONTRIB.md#using-a-linter)
    and [test](https://datagrok.ai/help/develop/how-to/test-packages#local-testing) your changes
    before pushing.
 4. We recommend not mixing refactoring with a new feature on one branch.

@@ -182,7 +182,7 @@ Ctrl+click on the line to select the corresponding sequences.
 Marker color corresponds to activity, marker size and line opacity correspond to the SALI parameter (similarity/activity
 difference relation).
 
-![Properties](../../uploads/macromolecules/activity_cliffs_size_opacity.PNG)
+![Properties](../../uploads/macromolecules/activity_cliffs_size_opacity.png)
 
 ### Quantitative sequence-based activity relationship analyses to enable design and optimization of polymer modalities
 

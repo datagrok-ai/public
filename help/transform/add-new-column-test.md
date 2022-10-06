@@ -65,7 +65,7 @@ expression (mathematical function, constants, platform objects properties and fu
    [Properties panel](../datagrok/navigation.md#properties))
 
 * Type of new column was automatically defined as *double* (*"Height"* column type)
-* Values ​​of new column are equal to values ​​of *"Height"* column in preview
+* Values of new column are equal to values of *"Height"* column in preview
 * *"Name"* field is automatically filled by entered in *"Formula"* field
 
 1. Enter `$HEIGHT+${WEIGHT}` to *"Formula"* field
@@ -75,15 +75,15 @@ expression (mathematical function, constants, platform objects properties and fu
 
 1. Add constant value to *"Formula"* field (PI, E, LN2, LN10, etc.)
 
-* Values ​​of new column are calculated depending on values ​​of entered constants
+* Values of new column are calculated depending on values of entered constants
 
 1. Use math functions in  *"Formula"* field (Abs(), Acos(), Min(), Max(), Log(), etc.)
 
-* Values ​​of new column are calculated depending on entered funtions
+* Values of new column are calculated depending on entered funtions
 
-1. Add columns of different types. Use different combinations of column types and entered values ​​in formula.
+1. Add columns of different types. Use different combinations of column types and entered values in formula.
 
-1. Remove some values ​​from each type of column. Use columns containing empty cells in *"Formula"*
+1. Remove some values from each type of column. Use columns containing empty cells in *"Formula"*
    field
 
 * For math operations with empty cells, they must remain empty in new column
