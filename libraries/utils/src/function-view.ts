@@ -470,7 +470,7 @@ export class FunctionView extends DG.ViewBase {
               ev.stopPropagation();
               await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?id=${funcCall.id}`);
             }, 'Copy link to the run'),
-            ...(funcCall.author === grok.shell.user) ? [
+            ...(funcCall.author.id === grok.shell.user.id) ? [
               ui.iconFA('pen', async (ev) => {
                 ev.stopPropagation();
                 showAddToSharedDialog(funcCall);
