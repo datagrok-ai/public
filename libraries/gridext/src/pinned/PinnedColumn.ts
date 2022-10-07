@@ -9,6 +9,7 @@ import { GridCellRendererEx} from "../renderer/GridCellRendererEx";
 import * as PinnedUtils from "./PinnedUtils";
 import {getGridDartPopupMenu, isHitTestOnElement} from "../utils/GridUtils";
 import {MouseDispatcher} from "../ui/MouseDispatcher";
+import {ColumnsArgs, toDart} from "datagrok-api/dg";
 //import {TableView} from "datagrok-api/dg";
 
 
@@ -126,6 +127,8 @@ export class PinnedColumn {
   private m_nWidthBug : number;
   //private m_observerResize : ResizeObserver | null;
   private m_observerResizeGrid : ResizeObserver | null;
+  private m_handlerColsRemoved : any;
+  private m_handlerColNameChanged : any;
   private m_handlerVScroll : any;
   private m_handlerRowsFiltering : any;
   private m_handlerCurrRow : any;
@@ -163,6 +166,12 @@ export class PinnedColumn {
     if(!PinnedUtils.isPinnableColumn(colGrid)) {
       throw new Error("Column '" + colGrid.name + "' cannot be pinned. It either pinned or HTML.");
     }
+
+    //let nRowMin = grid.minVisibleRow;
+    //let nRowMax = grid.maxVisibleRow;
+    //let nColMin = grid.minVisibleColumn;
+    //let nColMax = grid.maxVisibleColumn;
+
 
     this.m_fDevicePixelRatio = window.devicePixelRatio;
 
@@ -319,6 +328,29 @@ export class PinnedColumn {
       }
     );
 
+    this.m_handlerColsRemoved = dframe.onColumnsRemoved.subscribe((e : ColumnsArgs) => {
+
+          if(headerThis.m_colGrid === null)
+            return;
+          for(let nC=0; nC<e.columns.length; ++nC) {
+            if(e.columns[nC].name === headerThis.m_colGrid.name)
+              headerThis.close();
+          }
+        }
+    );
+
+    this.m_handlerColNameChanged = dframe.onColumnNameChanged.subscribe((e : any) => {
+
+          const dart = toDart(e);
+          const strColNameOld = dart.newName;
+          if(strColNameOld === headerThis.m_colGrid?.name) {
+            const g = eCanvasThis.getContext('2d');
+            headerThis.paint(g, grid);
+          }
+        }
+    );
+
+
 /*
     this.m_handlerFilter = dframe.onRowsFiltered.subscribe((e : any) => {
         const g = eCanvasThis.getContext('2d');
@@ -372,6 +404,13 @@ export class PinnedColumn {
       this.m_observerResize = null;
     }
     */
+
+    this.m_handlerColsRemoved.unsubscribe();
+    this.m_handlerColsRemoved = null;
+
+    this.m_handlerColNameChanged.unsubscribe();
+    this.m_handlerColNameChanged = null;
+
     this.m_handlerVScroll.unsubscribe();
     this.m_handlerVScroll = null;
 
