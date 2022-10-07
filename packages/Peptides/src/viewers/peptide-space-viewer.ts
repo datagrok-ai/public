@@ -61,8 +61,9 @@ export class PeptideSpaceViewer extends DG.JsViewer {
       this.isEmbeddingCreating = true;
       $(this.root).empty();
       const viewerHost = ui.waitBox(async () => {
-        const aligendSeqCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
-        const edf = await computeWeights(this.dataFrame, this.method, this.measure, this.cyclesCount, aligendSeqCol);
+        // const aligendSeqCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
+        const alignedSeqCol = this.dataFrame.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
+        const edf = await computeWeights(this.dataFrame, this.method, this.measure, this.cyclesCount, alignedSeqCol);
         this.dataFrame.temp[C.EMBEDDING_STATUS] = true;
         this.model.edf = edf;
 
@@ -92,7 +93,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
           if (idx != -1) {
             const table = ui.tableFromMap({
               'Activity': colorCol.get(idx),
-              'Sequence': aligendSeqCol.get(idx),
+              'Sequence': alignedSeqCol.get(idx),
               'Row ID': idx,
             });
             ui.tooltip.show(table, ev.clientX, ev.clientY);
@@ -117,7 +118,8 @@ export async function computeWeights(
   let edf: DG.DataFrame | null = null;
   try {
     const axesNames = ['~X', '~Y', '~MW'];
-    col ??= table.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
+    // col ??= table.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
+    col ??= table.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
     const columnData = col.toList().map((v) => AlignedSequenceEncoder.clean(v));
 
     const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(

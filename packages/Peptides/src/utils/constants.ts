@@ -10,6 +10,7 @@ export enum COLUMNS_NAMES {
   COUNT = 'Count',
   RATIO = 'Ratio',
   CLUSTERS = 'clusters',
+  MACROMOLECULE = 'macromolecule',
 }
 
 export enum CATEGORIES {

@@ -43,6 +43,10 @@
     "@types/node-fetch": "^2.6.2",
     "node-fetch": "^2.6.7"
   },
+  "grokDependencies": {
+    "@datagrok/bio": "latest",
+    "@datagrok/helm": "latest"
+  },
   "scripts": {
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",

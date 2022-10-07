@@ -204,10 +204,11 @@ export class PeptidesModel {
       throw new Error(`Source grid is not initialized`);
 
     //Split the aligned sequence into separate AARs
-    const col: DG.Column<string> = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
+    // const col: DG.Column<string> = this.df.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
+    const col = this.df.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
     const alphabet = col.tags['alphabet'];
     const splitSeqDf = splitAlignedSequences(col);
-
+ 
     this.barData = calculateBarsData(splitSeqDf.columns.toList(), this.df.selection);
 
     const positionColumns = splitSeqDf.columns.names();
@@ -379,11 +380,18 @@ export class PeptidesModel {
   joinDataFrames(positionColumns: string[], splitSeqDf: DG.DataFrame): void {
     // append splitSeqDf columns to source table and make sure columns are not added more than once
     const name = this.df.name;
-    const dfColsSet = new Set(this.df.columns.names());
-    if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
-      this.df.join(splitSeqDf, [C.COLUMNS_NAMES.ACTIVITY], [C.COLUMNS_NAMES.ACTIVITY],
-        this.df.columns.names(), positionColumns, 'inner', true);
+    // const dfColsSet = new Set(this.df.columns.names());
+    for (const colName of positionColumns) {
+      const col = this.df.col(colName);
+      if (col === null)
+        this.df.columns.add(splitSeqDf.getCol(colName));
+      else
+        this.df.columns.replace(colName, splitSeqDf.getCol(colName));
     }
+    // if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
+    //   this.df.join(splitSeqDf, [C.COLUMNS_NAMES.ACTIVITY], [C.COLUMNS_NAMES.ACTIVITY],
+    //     this.df.columns.names(), positionColumns, 'inner', true);
+    // }
     this.df.name = name;
     this.currentView.name = name;
   }
@@ -450,9 +458,9 @@ export class PeptidesModel {
       ratioCol.set(i, stats.ratio);
     }
 
-    const countThreshold = 4;
-    matrixDf = matrixDf.rows.match(`${C.COLUMNS_NAMES.COUNT} >= ${countThreshold}`).toDataFrame();
-    matrixDf = matrixDf.rows.match(`${C.COLUMNS_NAMES.COUNT} <= ${sourceDfLen - countThreshold}`).toDataFrame();
+    // const countThreshold = 4;
+    // matrixDf = matrixDf.rows.match(`${C.COLUMNS_NAMES.COUNT} >= ${countThreshold}`).toDataFrame();
+    // matrixDf = matrixDf.rows.match(`${C.COLUMNS_NAMES.COUNT} <= ${sourceDfLen - countThreshold}`).toDataFrame();
 
     return matrixDf as DG.DataFrame;
   }
@@ -557,7 +565,7 @@ export class PeptidesModel {
     const webLogoCol: DG.Column<string> = summaryTable.columns.addNew('WebLogo', DG.COLUMN_TYPE.STRING);
     const tempDfList: DG.DataFrame[] = new Array(summaryTableLength);
     const originalClustersCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
-    const peptideCol = this.df.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE);
+    const peptideCol = this.df.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
 
     for (let index = 0; index < summaryTableLength; ++index) {
       const indexes: number[] = [];
