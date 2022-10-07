@@ -36,7 +36,7 @@ export enum DrawStyle {
  */
 export function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
-  g: CanvasRenderingContext2D, s: string, color = undefinedColor,
+  g: CanvasRenderingContext2D, s: string, color: string = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
   separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, referenceSequence: string[] = [], maxLengthOfMonomer: number | null = null): number {
   g.textAlign = 'start';
@@ -53,7 +53,7 @@ export function printLeftOrCentered(
   }
   const currentMonomer: string = referenceSequence[wordIdx];
   if (compareWithCurrent && (referenceSequence.length > 0)) {
-    transparencyRate = (colorPart == currentMonomer) ? 0.4 : transparencyRate;
+    transparencyRate = (colorPart == currentMonomer) ? 0.3 : transparencyRate;
   }
   if (maxLengthOfMonomer != null) {
     colorPart = monomerToShortFunction(colorPart, maxLengthOfMonomer);
