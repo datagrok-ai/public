@@ -119,7 +119,7 @@ export async function startAnalysis(activityColumn: DG.Column<number> | null, pe
         activityCol = virtualCol;
       } else if (col === peptidesCol)
         virtualCol = newDf.columns.addNewVirtual(
-          C.COLUMNS_NAMES.ALIGNED_SEQUENCE, (i) => peptidesCol.get(getIndex(i)!), DG.TYPE.STRING);
+          C.COLUMNS_NAMES.MACROMOLECULE, (i) => peptidesCol.get(getIndex(i)!), DG.TYPE.STRING);
       else
         virtualCol = newDf.columns.addNewVirtual(col.name, (i) => col.get(getIndex(i)!), col.type as DG.TYPE);
       virtualCol.setTag(C.TAGS.VISIBLE, '0');
