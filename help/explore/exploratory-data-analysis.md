@@ -44,8 +44,7 @@ With Datagrok, you can:
   visualizations (
   like [scatterplots with built-in regression lines](../visualize/viewers/scatter-plot.md#regression-line)
   or [box-plots with built-in statistical tests](../visualize/viewers/box-plot.md#t-test)) and certain domain-specific
-  viewers, such as [chemically-aware   viewers](../domains/chem/chemically-aware-viewers.md). The tabular viewer, [_
-  grid_](../visualize/viewers/grid.md), is extremely powerful. Some of its features include:
+  viewers, such as [chemically-aware   viewers](../domains/chem/chemically-aware-viewers.md). The tabular viewer, [_grid_](../visualize/viewers/grid.md), is extremely powerful. Some of its features include:
 
   * Viewing datasets with _millions of columns_ and _billions of rows_
   * Dataset overview, including summary statistics for numerical data columns and distribution for categorical data
