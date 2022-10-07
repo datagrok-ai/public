@@ -2,6 +2,29 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+/** makes the color less white, makes the transparency effect always perceptible
+ * @param {string} color x coordinate.
+ * */
+function correctColor(color: string | null): string {
+  if (color == null)
+    return 'rgb(100,100,100)';
+
+  const dgColor: number = DG.Color.fromHtml(color);
+  const g = DG.Color.g(dgColor);
+  const r = DG.Color.r(dgColor);
+  const b = DG.Color.b(dgColor);
+  // calculate euclidean distance to white
+  const distToBlack = Math.sqrt(Math.pow(0 - r, 2) + Math.pow(0 - g, 2) + Math.pow(0 - b, 2));
+  // normalize vector r g b
+  const normR = r / distToBlack;
+  const normG = g / distToBlack;
+  const normB = b / distToBlack;
+  if (distToBlack > 210) {
+    return `rgb(${normR * 210},${normG * 210},${normB * 210})`;
+  }
+  return DG.Color.toRgb(dgColor);
+}
+
 export class StringUtils {
   public static hashCode(s: string): number {
     let hash: number = 0;
@@ -40,7 +63,7 @@ export class UnknownColorPalette extends UnknownSeqPalette {
   public get(m: string): string {
     const hash: number = StringUtils.hashCode(m);
     const pI = hash % UnknownColorPalette.palette.length;
-    return UnknownColorPalette.palette[pI];
+    return correctColor(UnknownColorPalette.palette[pI]);
   }
 }
 
