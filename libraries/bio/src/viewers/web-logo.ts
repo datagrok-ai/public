@@ -113,7 +113,6 @@ export class WebLogo extends DG.JsViewer {
   private visibleSlider: boolean = false;
   private allowResize: boolean = true;
   private turnOfResizeForOneSetValue: boolean = false;
-  private currentRange: number = 0;
 
   // Viewer's properties (likely they should be public so that they can be set outside)
   private _positionWidth: number;
@@ -261,16 +260,14 @@ export class WebLogo extends DG.JsViewer {
     this.visibleSlider = false;
 
     this.slider.onValuesChanged.subscribe(() => {
-      if (this.host == null) {
+      if ((this.host == null)) {
         return;
       }
       /* Resize slider if we can resize do that */
       if ((this.allowResize) && (!this.turnOfResizeForOneSetValue) &&
-        (this.slider.max - this.slider.min != this.currentRange) &&
         (this.slider.max - this.slider.min < this.Length - 1)) {
         const countOfPositions = Math.ceil(this.slider.max - this.slider.min);
         this._positionWidth = (this.canvas.width / countOfPositions) - this.positionMarginValue;
-        this.currentRange = this.slider.max - this.slider.min;
       }
       this.turnOfResizeForOneSetValue = false;
       this.render(true);
@@ -419,8 +416,30 @@ export class WebLogo extends DG.JsViewer {
       this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
   }
 
+  private get widthArea() {
+    return this.Length * this.positionWidth / window.devicePixelRatio;
+  }
+
+  private get heightArea() {
+    return Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
+  }
+
+  private get xScale() {
+    return (this.root.clientWidth - this.Length * this.positionMarginValue) / this.widthArea;
+  }
+
+  private get yScale() {
+    return this.root.clientHeight / this.heightArea;
+  }
+
   private checkIsHideSlider(): boolean {
-    return this.fixWidth || Math.floor(this.canvas.width / this.positionWidthWithMargin) >= this.Length;
+    let showSliderWithfitArea = true;
+    const minScale = Math.min(this.xScale, this.yScale);
+
+    if ((minScale == this.xScale) || (minScale <= 1)) {
+      showSliderWithfitArea = false;
+    }
+    return ((this.fixWidth || Math.floor(this.canvas.width / this.positionWidthWithMargin) >= this.Length) && (showSliderWithfitArea));
   }
 
   setSliderVisibility(visible: boolean): void {
@@ -435,6 +454,11 @@ export class WebLogo extends DG.JsViewer {
 
   /** Updates {@link slider}, needed to set slider options and to update slider position. */
   private updateSlider(): void {
+    if (this.checkIsHideSlider()) {
+      this.setSliderVisibility(false);
+    } else {
+      this.setSliderVisibility(true);
+    }
     if ((this.slider != null) && (this.canvas != null)) {
       let diffEndScrollAndSliderMin = Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length;
       diffEndScrollAndSliderMin = diffEndScrollAndSliderMin > 0 ? diffEndScrollAndSliderMin : 0;
@@ -679,12 +703,6 @@ export class WebLogo extends DG.JsViewer {
     g.fillStyle = DG.Color.toHtml(this.backgroundColor);
     g.fillRect(0, 0, this.canvas.width, this.canvas.height);
     g.textBaseline = this.textBaseline;
-
-    if (this.checkIsHideSlider()) {
-      this.setSliderVisibility(false);
-    } else {
-      this.setSliderVisibility(true);
-    }
 
     const maxCountOfRowsRendered = this.countOfRenderPositions + 1;
     const firstVisibleIndex = (this.visibleSlider) ? Math.floor(this.slider.min) : 0;
