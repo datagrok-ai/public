@@ -1,8 +1,10 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as GridUtils from '../utils/GridUtils';
 import * as PinnedUtils from "./PinnedUtils";
 import {PinnedColumn} from "./PinnedColumn";
 import {GridCellRendererEx} from "../renderer/GridCellRendererEx";
+import {TableView} from "datagrok-api/dg";
 
 function getGrid(colGrid : DG.GridColumn) : DG.Grid | null {
   let grid : DG.Grid | null = colGrid.grid;
@@ -201,11 +203,62 @@ export function isPinnableColumn(colGrid : DG.GridColumn) : boolean {
 }
 
 
+let PINNED_COLUMNS_REGISTERED = false;
+
+export function registerPinnedColumns() {
+  if(PINNED_COLUMNS_REGISTERED)
+    return;
+
+   grok.events.onContextMenu.subscribe((args : any) => {
+    PinnedUtils.handleContextMenu(args, (menu : DG.Menu, colGridOrPinned : DG.GridColumn | PinnedColumn,
+                                         grid : DG.Grid) => {
+      if (colGridOrPinned instanceof PinnedColumn) {
+        const colGrid = colGridOrPinned.getGridColumn();
+        if (colGrid !== null && !GridUtils.isRowHeader(colGrid)) {
+          menu.item('Unpin Column', () => {
+            colGridOrPinned.close();
+          });
+        }
+        menu.item('Unpin All Columns', () => {
+          PinnedUtils.closeAllPinnedColumns(grid);
+        });
+      } else {
+        menu.item('Pin Column', async () => {
+          PinnedUtils.addPinnedColumn(colGridOrPinned);
+        });
+      }
+    });
+  });
+
+  grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewLayout) => {
+    const view : DG.TableView = layout.view as TableView;
+    if(view === null) {
+      console.error("View cannot be null; layout.view = null; grok.events.onViewLayoutApplied");
+      return;
+    }
 
 
+    const itViewers = view.viewers;
+    const arViewers = Array.from(itViewers);
+
+    let viewer = null;
+    const nViewerCount = arViewers.length;
+    for (let n = 0; n < nViewerCount; ++n) {
+      viewer = arViewers[n];
+      if (viewer.type !== "Grid")
+        continue;
+
+      PinnedUtils.installPinnedColumns(viewer as DG.Grid);
+    }
+  });
+
+
+  PINNED_COLUMNS_REGISTERED = true;
+}
 
 
 export function handleContextMenu(args : any, fnMenuCallback : Function) : void {
+
   const grid = args.args.context;
   if (!(grid instanceof DG.Grid)) {
     return;

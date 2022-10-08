@@ -11,5 +11,6 @@ export declare function closeAllPinnedColumns(grid: DG.Grid): void;
 export declare function installPinnedColumns(grid: DG.Grid): void;
 export declare function isPinnedColumn(colGrid: DG.GridColumn): boolean;
 export declare function isPinnableColumn(colGrid: DG.GridColumn): boolean;
+export declare function registerPinnedColumns(): void;
 export declare function handleContextMenu(args: any, fnMenuCallback: Function): void;
 //# sourceMappingURL=PinnedUtils.d.ts.map
