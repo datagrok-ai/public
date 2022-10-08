@@ -855,86 +855,6 @@ export class Balloon {
 }
 
 
-// abstract class Input<T = any> {
-//
-//   //_input: HTMLElement;
-//   _format: string = '';
-//   _root: HTMLElement = ui.div();
-//   _captionLabel: HTMLLabelElement = ui.element('label');
-//   _nullable: boolean = true;
-//
-//   onValueChanged: rxjs.Subject<any> = new rxjs.Subject();
-//
-//    /** Visual root (typically a div element that contains {@link caption} and {@link input}) */
-//   abstract get root(): HTMLElement;
-//
-//   get caption(): string { return this._captionLabel.innerText; }
-//
-//   /** Value format. */
-//   get format(): string { return this._format; }
-//   set format(s: string) { this._format = s; }
-//
-//   get captionLabel(): HTMLElement { return this._captionLabel; }
-//
-//   /** Returns the actual input */
-//   abstract get input(): HTMLElement;
-//
-//   /** Whether empty values are allowed */
-//   get nullable(): boolean { return this._nullable; }
-//   set nullable(v: boolean) { this._nullable = v; }
-//
-//   /** Input value */
-//   get value(): T { return toJs(api.grok_InputBase_Get_Value(this.dart)); }
-//   set value(x: T) { toDart(api.grok_InputBase_Set_Value(this.dart, x)); }
-//
-//   /** String representation of the {@link value} */
-//   get stringValue(): string { return api.grok_InputBase_Get_StringValue(this.dart); }
-//   set stringValue(s: string) { api.grok_InputBase_Set_StringValue(this.dart, s); }
-//
-//   /** Whether the input is readonly */
-//   get readOnly(): boolean { return api.grok_InputBase_Get_ReadOnly(this.dart); }
-//   set readOnly(v: boolean) { api.grok_InputBase_Set_ReadOnly(this.dart, v); }
-//
-//   /** Whether the input is enabled */
-//   get enabled(): boolean { return api.grok_InputBase_Get_Enabled(this.dart); }
-//   set enabled(v: boolean) { api.grok_InputBase_Set_Enabled(this.dart, v); }
-//
-//   /// Occurs when [value] is changed, either by user or programmatically.
-//   abstract onChanged(callback: Function): StreamSubscription;
-//
-//   /// Occurs when [value] is changed by user.
-//   abstract onInput(callback: Function): StreamSubscription;
-//
-//   /** Saves the value. Used in dialog history. See also {@link load} */
-//   save(): any {
-//     return api.grok_InputBase_Save(this.dart);
-//   };
-//
-//   /** Loads the value. Used in dialog history. See also {@link load} */
-//   load(s: any): any { return api.grok_InputBase_Load(this.dart, s); };
-//
-//   init(): any {
-//     return api.grok_InputBase_Init(this.dart);
-//   };
-//
-//   /** Fires the 'changed' event */
-//   fireChanged(): any {
-//     return api.grok_InputBase_FireChanged(this.dart);
-//   };
-//
-//   /** Adds the specified caption */
-//   addCaption(caption: string): void { };
-//
-//   /** Adds the specified postfix */
-//   addPostfix(postfix: string): void { };
-//
-//   /** Adds a usage example to the input's hamburger menu */
-//   addPatternMenu(pattern: any): void { }
-//
-//   /** Sets the tooltip */
-//   setTooltip(msg: string): void { ui.tooltip.bind(this.root, msg); };
-// }
-
 
 /** Input control base. Could be used for editing {@link Property} values as well.
  * The root is a div that consists of {@link captionLabel} and {@link input}.
@@ -948,10 +868,12 @@ export class InputBase<T = any> {
       this.onChanged((_: any) => onChanged(this.value));
   }
 
+  /** Creates input for the specified property, and optionally binds it to the specified object */
   static forProperty(property: Property, source: any = null): InputBase {
     return toJs(api.grok_InputBase_ForProperty(property.dart, source));
   }
 
+  /** Creates input for the specified column */
   static forColumn<T = any>(column: Column<T>): InputBase<T | null> {
     return toJs(api.grok_InputBase_ForColumn(column.dart));
   }
@@ -1059,6 +981,26 @@ export class InputBase<T = any> {
 }
 
 
+/** Base class for JS value editors */
+export abstract class JsInputBase<T = any> extends InputBase<T> {
+  //onInput: rxjs.Subject<any> = new rxjs.Subject<any>();
+
+  abstract getInput(): HTMLElement;
+  abstract getValue(): T;
+  abstract setValue(value: T): void;
+
+  get input() { return this.getInput(); }
+
+  get value() { return this.getValue(); }
+  set value(value: T) { this.setValue(value); }
+
+  constructor() {
+    super(null, null);
+    //this.dart = api.grok_InputBase_FromJS(this);
+  }
+}
+
+
 export class DateInput extends InputBase<dayjs.Dayjs> {
   dart: any;
 
@@ -1068,11 +1010,11 @@ export class DateInput extends InputBase<dayjs.Dayjs> {
 
   get value(): dayjs.Dayjs { return dayjs(api.grok_DateInput_Get_Value(this.dart)); }
   set value(x: dayjs.Dayjs) { toDart(api.grok_DateInput_Set_Value(this.dart, x.valueOf())); }
-
 }
 
 export class ProgressIndicator {
   dart: any;
+
   constructor(dart: any) {
     this.dart = dart;
   }
@@ -1124,6 +1066,7 @@ export class TaskBarProgressIndicator extends ProgressIndicator {
 
 export class TagEditor {
   dart: any;
+
   constructor(dart: any) {
     this.dart = dart;
   }
@@ -1168,6 +1111,7 @@ export class TagEditor {
 
 export class TagElement {
   dart: any;
+
   constructor(dart: any) {
     this.dart = dart;
   }
