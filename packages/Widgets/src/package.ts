@@ -2,6 +2,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {TYPE} from 'datagrok-api/dg';
+import $ from 'cash-dom';
 
 import {RadioButtonFilter} from './filters/radio-button-filter';
 import {MultiValueFilter} from './filters/multi-value-filter';
@@ -73,6 +74,8 @@ export class FooInput extends DG.JsInputBase<string> {
 
   constructor() {
     super();
+    $(this.valueEditor).on('input', (e) => { this.fireInput(); this.fireChanged(); });
+    $(this.unitsEditor).on('input', (e) => { this.fireInput(); this.fireChanged(); });
   }
 
   getInput(): HTMLElement {
@@ -80,12 +83,13 @@ export class FooInput extends DG.JsInputBase<string> {
   }
 
   getValue(): string {
-    return this.unitsEditor.value;
+    return this.valueEditor.value + ' ' + this.unitsEditor.value;
   }
 
   setValue(value: string): void {
     let values = value.split(' ');
     this.valueEditor.value = values[0];
     this.unitsEditor.value = values.length > 1 ? values[1] : '';
+    this.fireChanged();
   }
 }
