@@ -86,7 +86,13 @@ export class FooInput extends DG.JsInputBase<string> {
     return this.valueEditor.value + ' ' + this.unitsEditor.value;
   }
 
+  getStringValue(): string { return this.value; }
+  setStringValue(value: string) { this.value = value; }
+
   setValue(value: string): void {
+    if (value == this.getValue())
+      return;
+
     let values = value.split(' ');
     this.valueEditor.value = values[0];
     this.unitsEditor.value = values.length > 1 ? values[1] : '';

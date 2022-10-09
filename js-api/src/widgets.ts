@@ -991,13 +991,20 @@ export abstract class JsInputBase<T = any> extends InputBase<T> {
   //onInput: rxjs.Subject<any> = new rxjs.Subject<any>();
 
   abstract getInput(): HTMLElement;
+
   abstract getValue(): T;
   abstract setValue(value: T): void;
 
+  abstract getStringValue(): string;
+  abstract setStringValue(value: string): void;
+
   get input() { return this.getInput(); }
 
-  get value() { return this.getValue(); }
+  get value(): T { return this.getValue(); }
   set value(value: T) { this.setValue(value); }
+
+  get stringValue(): string { return this.getStringValue(); }
+  set stringValue(value: string) { this.setStringValue(value); }
 
   constructor() {
     super(null, null);
