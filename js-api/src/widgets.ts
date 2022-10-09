@@ -943,9 +943,14 @@ export class InputBase<T = any> {
     return api.grok_InputBase_Init(this.dart);
   };
 
-  /** Fires the 'changed' event */
+  /** Fires the 'changed' event (value has changed). See also {@link fireInput} */
   fireChanged(): any {
     return api.grok_InputBase_FireChanged(this.dart);
+  };
+
+  /** Fires the 'input' event (user input). See also {@link fireChanged} */
+  fireInput(): any {
+    return api.grok_InputBase_FireInput(this.dart);
   };
 
   /** Adds the specified caption */
