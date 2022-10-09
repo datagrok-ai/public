@@ -14,6 +14,7 @@ var quantityEditor = DG.InputBase.forProperty(fooProp, medication);
 quantityEditor.onChanged((_) => grok.shell.info('quantity changed: ' + quantityEditor.value));
 quantityEditor.onInput((_) => grok.shell.info('quantity input: ' + quantityEditor.value));
 
+quantityEditor.onInput((_) => grok.shell.o = medication);
 
 ui.dialog()
   .add(ui.form([nameEditor, quantityEditor]))
