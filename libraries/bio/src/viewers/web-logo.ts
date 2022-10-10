@@ -932,7 +932,7 @@ export class WebLogo extends DG.JsViewer {
     return resCol;
   }
 
-  private static monomerRe = /\[(\w+)|(\w)|(-)/g;
+  private static monomerRe = /\[(\w+)\]|(\w)|(-)/g;
 
   /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
   private static aaSynonyms: { [name: string]: string } = {
@@ -952,12 +952,7 @@ export class WebLogo extends DG.JsViewer {
         let mRes: string;
         const m: string = ma[0];
         if (m.length > 1) {
-          if (m in WebLogo.aaSynonyms) {
-            mRes = WebLogo.aaSynonyms[m];
-          } else {
-            mRes = '';
-            console.debug(`Long monomer '${m}' has not a short synonym.`);
-          }
+          mRes = ma[1];
         } else {
           mRes = m;
         }
