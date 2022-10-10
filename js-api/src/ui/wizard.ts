@@ -32,7 +32,7 @@ export class Wizard extends Dialog {
   nextButton = this.addButton('>>', () => this.next());
 
   constructor(options?: {title?: string, helpUrl?: string}) {
-    super(api.grok_Dialog(options?.title, options?.helpUrl));
+    super(api.grok_Dialog(options?.title, options?.helpUrl, true, true));
     this.add(this.wizardRoot);
   }
 
