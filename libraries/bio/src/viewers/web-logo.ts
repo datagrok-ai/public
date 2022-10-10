@@ -476,23 +476,25 @@ export class WebLogo extends DG.JsViewer {
   }
 
   /** Add filter handlers when table is a attached  */
-  public override async onTableAttached() {
+  public override onTableAttached() {
     super.onTableAttached();
-    const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
-    console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
+    window.setTimeout(async () => {
+      const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
+      console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
 
-    this.updateSeqCol();
+      this.updateSeqCol();
 
-    if (this.dataFrame !== void 0) {
-      this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
-      this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
-        this.updatePositions();
-        this.render();
-      }));
-    }
+      if (this.dataFrame !== void 0) {
+        this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
+        this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
+          this.updatePositions();
+          this.render();
+        }));
+      }
 
-    await this.init();
-    console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached() end`);
+      await this.init();
+      console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached() end`);
+    }, 0 /* next event cycle */);
   }
 
   /** Remove all handlers when table is a detach  */
