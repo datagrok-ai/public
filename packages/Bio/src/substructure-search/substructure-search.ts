@@ -42,21 +42,24 @@ export function substructureSearchDialog(col: DG.Column): void {
       let substructure = substructureInput.value;
       if (notationInput.value !== NOTATION.FASTA && separatorInput.value !== separator)
         substructure = substructure.replaceAll(separatorInput.value, separator);
-      const resColumn = substructureSearch(substructure, col);
-      if (!col.dataFrame.columns.names().includes(resColumn.name))
-        col.dataFrame.columns.add(resColumn);
-      else
-        grok.shell.warning(`Search ${substructure} is already performed`);
+      const matchesColName = `Matches: ${substructure}`;
+      const colExists = col.dataFrame.columns.names()
+        .filter((it) => it.toLocaleLowerCase() === matchesColName.toLocaleLowerCase()).length > 0;
+      if (!colExists) {
+        const matches = substructureSearch(substructure, col);
+        col.dataFrame.columns.add(DG.Column.fromBitSet(matchesColName, matches));
+      } else { grok.shell.warning(`Search ${substructure} is already performed`); }
     })
     .show();
 }
 
-export function substructureSearch(substructure: string, col: DG.Column): DG.Column<boolean> {
+export function substructureSearch(substructure: string, col: DG.Column): DG.BitSet {
   const lowerCaseSubstr = substructure.toLowerCase();
-  const resultArray = new Array<boolean>(col.length);
+  const resultArray = DG.BitSet.create(col.length);
   for (let i = 0; i < col.length; i++) {
     const macromolecule = col.get(i).toLowerCase();
-    resultArray[i] = macromolecule.indexOf(lowerCaseSubstr) !== -1 ? true : false;
+    if (macromolecule.indexOf(lowerCaseSubstr) !== -1)
+      resultArray.set(i, true, false);
   }
-  return DG.Column.fromList('bool', `Matches: ${substructure}`, resultArray);
+  return resultArray;
 }
