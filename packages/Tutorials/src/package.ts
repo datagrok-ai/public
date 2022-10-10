@@ -8,6 +8,7 @@ import { da } from './tracks/data-access';
 import { ml } from './tracks/ml';
 import { TutorialWidget } from './widget';
 import '../css/tutorial.css';
+import { Tutorial } from './tutorial';
 
 
 export const _package = new DG.Package();
@@ -28,4 +29,14 @@ export function trackOverview() {
 //output: widget tutorial
 export function tutorialWidget(): DG.Widget {
   return new TutorialWidget(...tracks.map((track) => new TutorialRunner(track)));
+}
+
+export async function findTutorials(): Promise<Tutorial[]> {
+  // which return type to specify? json serialization? or widget (tutorial.root)
+  // + tracks (meta.track: string track = "abc") or tag track-<some-kebab-name>
+  const tutorialFuncs = DG.Func.find({ tags: ['tutorial'] });
+  const tutorials: Tutorial[] = [];
+  for (const func of tutorialFuncs)
+    tutorials.push(await grok.functions.call(func.name));
+  return tutorials;
 }
