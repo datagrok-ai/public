@@ -4,13 +4,13 @@
     "access": "public"
   },
   "friendlyName": "Datagrok bio library",
-  "version": "4.4.4",
+  "version": "4.4.5",
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.6.2",
+    "@datagrok-libraries/utils": "^1.10.1",
     "@phylocanvas/phylocanvas.gl": "^1.44.0",
     "cash-dom": "latest",
-    "datagrok-api": "^1.6.12",
+    "datagrok-api": "^1.7.0",
     "dayjs": "latest",
     "rxjs": "^6.5.5",
     "wu": "latest"
