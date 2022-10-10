@@ -21,6 +21,7 @@ export const enum HELM_FIELDS {
 // fields of "rgroups" sub-object in HELM library
 export const enum RGROUP_FIELDS {
   CAP_GROUP_SMILES = 'capGroupSmiles',
+  CAP_GROUP_SMILES_UPPERCASE = 'capGroupSMILES', // alas, both variants coexist
   ALTER_ID = 'alternateId',
   CAP_GROUP_NAME = 'capGroupName',
   LABEL = 'label',
@@ -32,12 +33,20 @@ export const enum HELM_POLYMER_TYPE {
   RNA = 'RNA',
 }
 
+export const enum HELM_MONOMER_TYPE {
+  BACKBONE = 'Backbone',
+  TERMINAL = 'Terminal',
+  BRANCH = 'Branch',
+}
+
 // core fields of HELM library object used in toAtomicLevel function
 export const HELM_CORE_FIELDS = [
   HELM_FIELDS.SYMBOL,
   HELM_FIELDS.MOLFILE,
   HELM_FIELDS.RGROUPS,
   HELM_FIELDS.NAME,
+  // HELM_FIELDS.MONOMER_TYPE, // add if terminal monomers for PEPTIDEs to be
+  // supported
 ];
 
 export const SDF_MONOMER_NAME = 'MonomerName';
