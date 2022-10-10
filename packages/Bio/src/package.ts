@@ -34,6 +34,7 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 import * as C from './utils/constants';
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
+import { substructureSearchDialog } from './substructure-search/substructure-search';
 
 //tags: init
 export async function initBio() {
@@ -506,5 +507,12 @@ export function diversitySearchTopMenu() {
   const view = (grok.shell.v as DG.TableView);
   const viewer = view.addViewer('SequenceDiversitySearchViewer');
   view.dockManager.dock(viewer, 'down');
+}
+
+//name: Bio | Substructure search ...
+//tags: panel, bio
+//input: column col {semType: Macromolecule}
+export function bioSubstructureSearch(col: DG.Column): void {
+  substructureSearchDialog(col);
 }
 
