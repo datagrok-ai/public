@@ -1,9 +1,9 @@
-import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
-
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
+import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
 import {Nucleotides, NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
 import {Aminoacids, AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
@@ -63,19 +63,19 @@ XZJ{}2
 
 category('WebLogo.monomerToShort', () => {
   test('longMonomerSingle', async () => {
-    await expect(WebLogo.monomerToShort('S', 5), 'S');
+    await expect(bio.monomerToShort('S', 5), 'S');
   });
   test('longMonomerShort', async () => {
-    await expect(WebLogo.monomerToShort('Short', 5), 'Short');
+    await expect(bio.monomerToShort('Short', 5), 'Short');
   });
   test('longMonomerLong56', async () => {
-    await expect(WebLogo.monomerToShort('Long56', 5), 'Long5…');
+    await expect(bio.monomerToShort('Long56', 5), 'Long5…');
   });
   test('longMonomerComplexFirstPartShort', async () => {
-    await expect(WebLogo.monomerToShort('Long-long', 5), 'Long…');
+    await expect(bio.monomerToShort('Long-long', 5), 'Long…');
   });
   test('longMonomerComplexFirstPartLong56', async () => {
-    await expect(WebLogo.monomerToShort('Long56-long', 5), 'Long5…');
+    await expect(bio.monomerToShort('Long56-long', 5), 'Long5…');
   });
 });
 
@@ -83,7 +83,7 @@ category('WebLogo.monomerToShort', () => {
 export async function _testGetStats(csvDfN1: string) {
   const dfN1: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
   const seqCol: DG.Column = dfN1.col('seq')!;
-  const stats = WebLogo.getStats(seqCol, 5, WebLogo.splitterAsFasta);
+  const stats = bio.getStats(seqCol, 5, bio.splitterAsFasta);
 
   expectObject(stats.freq, {
     'A': 4,
@@ -103,7 +103,7 @@ export async function _testGetAlphabetSimilarity() {
     '-': 1000
   };
   const alphabet: Set<string> = new Set(Object.keys(Nucleotides.Names));
-  const res = WebLogo.getAlphabetSimilarity(freq, alphabet);
+  const res = bio.getAlphabetSimilarity(freq, alphabet);
 
   expect(res > 0.6, true);
 }
@@ -111,7 +111,7 @@ export async function _testGetAlphabetSimilarity() {
 export async function _testPickupPaletteN1(csvDfN1: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1);
   const col: DG.Column = df.col('seq')!;
-  const cp = WebLogo.pickUpPalette(col);
+  const cp = bio.pickUpPalette(col);
 
   expect(cp instanceof NucleotidesPalettes, true);
 }
@@ -119,7 +119,7 @@ export async function _testPickupPaletteN1(csvDfN1: string) {
 export async function _testPickupPaletteN1e(csvDfN1e: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfN1e);
   const col: DG.Column = df.col('seq')!;
-  const cp = WebLogo.pickUpPalette(col);
+  const cp = bio.pickUpPalette(col);
 
   expect(cp instanceof NucleotidesPalettes, true);
 }
@@ -127,7 +127,7 @@ export async function _testPickupPaletteN1e(csvDfN1e: string) {
 export async function _testPickupPaletteAA1(csvDfAA1: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfAA1);
   const col: DG.Column = df.col('seq')!;
-  const cp = WebLogo.pickUpPalette(col);
+  const cp = bio.pickUpPalette(col);
 
   expect(cp instanceof AminoacidsPalettes, true);
 }
@@ -135,14 +135,14 @@ export async function _testPickupPaletteAA1(csvDfAA1: string) {
 export async function _testPickupPaletteX(csvDfX: string) {
   const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDfX);
   const col: DG.Column = df.col('seq')!;
-  const cp = WebLogo.pickUpPalette(col);
+  const cp = bio.pickUpPalette(col);
 
   expect(cp instanceof UnknownSeqPalette, true);
 }
 
 export async function _testPickupPaletteAA2(dfAA2: DG.DataFrame) {
   const seqCol: DG.Column = dfAA2.col('seq')!;
-  const cp = WebLogo.pickUpPalette(seqCol);
+  const cp = bio.pickUpPalette(seqCol);
 
   expect(cp instanceof AminoacidsPalettes, true);
 }

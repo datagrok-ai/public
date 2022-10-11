@@ -1,6 +1,8 @@
-import * as DG from 'datagrok-api/dg';
-import {WebLogo, SplitterFunc} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
+
 import {
   CAP_GROUP_NAME, CAP_GROUP_SMILES, jsonSdfMonomerLibDict, MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, MONOMER_SYMBOL,
   RGROUP_ALTER_ID, RGROUP_FIELD, RGROUP_LABEL, SDF_MONOMER_NAME
@@ -18,7 +20,7 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   const monomerSymbolDict: { [key: string]: number } = {};
   const units = col.tags[DG.TAGS.UNITS];
   const sep = col.getTag(UnitsHandler.TAGS.separator);
-  const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, sep);
+  const splitterFunc: bio.SplitterFunc = bio.getSplitter(units, sep);
   const encodedStringArray = [];
   for (let i = 0; i < col.length; ++i) {
     let encodedMonomerStr = '';
@@ -42,7 +44,7 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
 export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): any[][] | null {
   const units = col.tags[DG.TAGS.UNITS];
   const sep = col.getTag('separator');
-  const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, sep);
+  const splitterFunc: bio.SplitterFunc = bio.getSplitter(units, sep);
   const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
   for (let i = 0; i < col.length; ++i) {
@@ -66,7 +68,7 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
 export function getMolfilesFromSingleSeq(cell: DG.Cell, monomersLibObject: any[]): any[][] | null {
   const units = cell.column.tags[DG.TAGS.UNITS];
   const sep = cell.column!.getTag('separator');
-  const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, sep);
+  const splitterFunc: bio.SplitterFunc = bio.getSplitter(units, sep);
   const monomersDict = createMomomersMolDict(monomersLibObject);
   const molFiles = [];
   const macroMolecule = cell.value;

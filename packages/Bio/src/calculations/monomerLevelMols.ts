@@ -1,19 +1,21 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
+
 import * as C from '../utils/constants';
 import {getHelmMonomers} from '../package';
-import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 const V2000_ATOM_NAME_POS = 31;
 
 export async function getMonomericMols(mcol: DG.Column, pattern: boolean = false): Promise<DG.Column> {
   const separator: string = mcol.tags[C.TAGS.SEPARATOR];
   const units: string = mcol.tags[DG.TAGS.UNITS];
-  const splitter = WebLogo.getSplitter(units, separator);
+  const splitter = bio.getSplitter(units, separator);
   let molV3000Array;
   const monomersDict = new Map();
   const monomers = units === 'helm' ?
-    getHelmMonomers(mcol) : Object.keys(WebLogo.getStats(mcol, 0, splitter).freq).filter((it) => it !== '');
+    getHelmMonomers(mcol) : Object.keys(bio.getStats(mcol, 0, splitter).freq).filter((it) => it !== '');
 
   for (let i = 0; i < monomers.length; i++)
     monomersDict.set(monomers[i], `${i + 1}`);

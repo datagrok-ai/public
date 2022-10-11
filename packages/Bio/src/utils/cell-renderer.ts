@@ -1,31 +1,26 @@
-import * as C from './constants';
-import * as DG from 'datagrok-api/dg';
-import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
-import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
-import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
-import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/cell-renderer';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
+import * as C from './constants';
 
 const undefinedColor = 'rgb(100,100,100)';
-const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
+const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = bio.monomerToShort;
 
 
-function getPaletteByType(paletteType: string): SeqPalette {
+function getPaletteByType(paletteType: string): bio.SeqPalette {
   switch (paletteType) {
   case 'PT':
-    return AminoacidsPalettes.GrokGroups;
+    return bio.AminoacidsPalettes.GrokGroups;
   case 'NT':
-    return NucleotidesPalettes.Chromatogram;
+    return bio.NucleotidesPalettes.Chromatogram;
   case 'DNA':
-    return NucleotidesPalettes.Chromatogram;
+    return bio.NucleotidesPalettes.Chromatogram;
   case 'RNA':
-    return NucleotidesPalettes.Chromatogram;
+    return bio.NucleotidesPalettes.Chromatogram;
     // other
   default:
-    return UnknownSeqPalettes.Color;
+    return bio.UnknownSeqPalettes.Color;
   }
 }
 
@@ -66,7 +61,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.cell.column.getTag(UnitsHandler.TAGS.aligned) !== 'SEQ.MSA')
+    if (gridCell.cell.column.getTag(bio.UnitsHandler.TAGS.aligned) !== 'SEQ.MSA')
       return;
 
     const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
@@ -94,7 +89,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     }
     left = (argsX >= maxLengthWordsSum[left]) ? left + 1 : left;
     const separator = gridCell.cell.column.getTag('separator') ?? '';
-    const splitterFunc: SplitterFunc = WebLogo.getSplitter('separator', separator);
+    const splitterFunc: bio.SplitterFunc = bio.getSplitter('separator', separator);
     const subParts: string[] = splitterFunc(gridCell.cell.value);
     (((subParts[left]?.length ?? 0) > 0)) ?
       ui.tooltip.show(ui.div(subParts[left]), e.x + 16, e.y + 16) : ui.tooltip.hide();
@@ -135,7 +130,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
     const separator = gridCell.cell.column.getTag('separator') ?? '';
     const splitLimit = gridCell.bounds.width / 5;
-    const splitterFunc: SplitterFunc = WebLogo.getSplitter(units, separator, splitLimit);
+    const splitterFunc: bio.SplitterFunc = bio.getSplitter(units, separator, splitLimit);
     const referenceSequence: string[] = splitterFunc(((gridCell.cell.column?.temp['reference-sequence'] != null) && (gridCell.cell.column?.temp['reference-sequence'] != ''))
       ? gridCell.cell.column.temp['reference-sequence'] : gridCell.cell.column.temp['current-word'] ?? '');
     const monomerWidth = (gridCell.cell.column?.temp['monomer-width'] != null) ? gridCell.cell.column.temp['monomer-width'] : 'short';
@@ -188,15 +183,15 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const subParts: string[] = splitterFunc(cell.value);
     let x1 = x;
     let color = undefinedColor;
-    let drawStyle = DrawStyle.classic;
+    let drawStyle = bio.DrawStyle.classic;
     if (gridCell.cell.column.getTag('aligned').includes('MSA') && gridCell.cell.column.getTag('units') === 'separator')
-      drawStyle = DrawStyle.MSA;
+      drawStyle = bio.DrawStyle.MSA;
 
     subParts.every((amino, index) => {
       color = palette.get(amino);
       g.fillStyle = undefinedColor;
       let last = index === subParts.length - 1;
-      x1 = printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell, referenceSequence, maxLengthOfMonomer);
+      x1 = bio.printLeftOrCentered(x1, y, w, h, g, amino, color, 0, true, 1.0, separator, last, drawStyle, maxLengthWords, index, gridCell, referenceSequence, maxLengthOfMonomer);
       return x1 - minDistanceRenderer - gridCell.gridColumn.left + (gridCell.gridColumn.left - gridCell.bounds.x) <= gridCell.bounds.width;
     });
 
@@ -273,7 +268,7 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     w = getUpdatedWidth(grid, g, x, w);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
-    const splitter = WebLogo.getSplitter(units, separator);
+    const splitter = bio.getSplitter(units, separator);
     const subParts1 = splitter(s1);
     const subParts2 = splitter(s2);
     drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, units, separator);
@@ -315,7 +310,7 @@ export function drawMoleculeDifferenceOnCanvas(
   g.font = '12px monospace';
   g.textBaseline = 'top';
 
-  let palette: SeqPalette = UnknownSeqPalettes.Color;
+  let palette: bio.SeqPalette = bio.UnknownSeqPalettes.Color;
   if (units != 'HELM')
     palette = getPaletteByType(units.substring(units.length - 2));
 
@@ -327,12 +322,12 @@ export function drawMoleculeDifferenceOnCanvas(
 
     if (amino1 != amino2) {
       const color2 = palette.get(amino2);
-      const subX0 = printLeftOrCentered(updatedX, updatedY - vShift, w, h, g, amino1, color1, 0, true);
-      const subX1 = printLeftOrCentered(updatedX, updatedY + vShift, w, h, g, amino2, color2, 0, true);
+      const subX0 = bio.printLeftOrCentered(updatedX, updatedY - vShift, w, h, g, amino1, color1, 0, true);
+      const subX1 = bio.printLeftOrCentered(updatedX, updatedY + vShift, w, h, g, amino2, color2, 0, true);
       updatedX = Math.max(subX1, subX0);
       if (molDifferences)
         molDifferences[i] = createDifferenceCanvas(amino1, amino2, color1, color2, updatedY, vShift, h);
-    } else { updatedX = printLeftOrCentered(updatedX, updatedY, w, h, g, amino1, color1, 0, true, 0.5); }
+    } else { updatedX = bio.printLeftOrCentered(updatedX, updatedY, w, h, g, amino1, color1, 0, true, 0.5); }
     updatedX += 4;
   }
   g.restore();
@@ -356,7 +351,7 @@ function createDifferenceCanvas(
   canvas.width = width + 4;
   context.font = '12px monospace';
   context.textBaseline = 'top';
-  printLeftOrCentered(0, y - shift, width, h, context, amino1, color1, 0, true);
-  printLeftOrCentered(0, y + shift, width, h, context, amino2, color2, 0, true);
+  bio.printLeftOrCentered(0, y - shift, width, h, context, amino1, color1, 0, true);
+  bio.printLeftOrCentered(0, y + shift, width, h, context, amino2, color2, 0, true);
   return canvas;
 }

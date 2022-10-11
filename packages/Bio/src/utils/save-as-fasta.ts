@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import {SplitterFunc, WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import * as bio from '@datagrok-libraries/bio';
+
 import wu from 'wu';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 const FASTA_LINE_WIDTH = 60;
 
@@ -27,7 +27,7 @@ export function saveAsFastaUI() {
     .filter((gc: DG.GridColumn) => {
       const col: DG.Column | null = gc.column;
       if (col && col.semType === DG.SEMTYPE.MACROMOLECULE) {
-        const uh = new UnitsHandler(col);
+        const uh = new bio.UnitsHandler(col);
         return uh.isFasta();
       }
       return false;
@@ -69,7 +69,7 @@ export function saveAsFastaUI() {
 export function saveAsFastaDo(
   idColList: DG.Column[], seqCol: DG.Column, lineWidth: number = FASTA_LINE_WIDTH, lineSeparator: string = '\n'
 ): string {
-  const splitter: SplitterFunc = WebLogo.splitterAsFasta;
+  const splitter: bio.SplitterFunc = bio.splitterAsFasta;
 
   const fastaLines: string[] = [];
 
@@ -91,7 +91,7 @@ export function saveAsFastaDo(
 }
 
 /* split sequence for monomers to prevent wrapping monomer partially */
-export function wrapSequence(seq: string, splitter: SplitterFunc, lineWidth: number = FASTA_LINE_WIDTH): string[] {
+export function wrapSequence(seq: string, splitter: bio.SplitterFunc, lineWidth: number = FASTA_LINE_WIDTH): string[] {
   const seqMonomerList = splitter(seq);
   let seqPos: number = 0;
   const seqLength: number = seqMonomerList.length;
