@@ -175,20 +175,25 @@ export class UnitsHandler {
     const newColName = col.dataFrame.columns.getUnusedName(name);
     const newColumn = DG.Column.fromList('string', newColName, new Array(len).fill(''));
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
-    newColumn.setTag(DG.TAGS.UNITS, this.notation);
+    newColumn.setTag(DG.TAGS.UNITS, targetNotation);
     newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule');
 
     const srcAlphabet = col.getTag(UnitsHandler.TAGS.alphabet);
     if (srcAlphabet)
       newColumn.setTag(UnitsHandler.TAGS.alphabet, srcAlphabet);
 
-    const srcAlphabetSize = col.getTag(UnitsHandler.TAGS.alphabetSize);
+    let srcAlphabetSize: string = col.getTag(UnitsHandler.TAGS.alphabetSize);
     if (srcAlphabetSize)
       newColumn.setTag(UnitsHandler.TAGS.alphabetSize, srcAlphabetSize);
 
-    const srcAlphabetIsMultichar = col.getTag(UnitsHandler.TAGS.alphabetIsMultichar);
-    if (srcAlphabetIsMultichar)
+    const srcAlphabetIsMultichar: string = col.getTag(UnitsHandler.TAGS.alphabetIsMultichar);
+    if (srcAlphabetIsMultichar !== undefined)
       newColumn.setTag(UnitsHandler.TAGS.alphabetIsMultichar, srcAlphabetIsMultichar);
+
+    if (targetNotation == NOTATION.HELM) {
+      srcAlphabetSize = this.getAlphabetSize().toString();
+      newColumn.setTag(UnitsHandler.TAGS.alphabetSize, srcAlphabetSize);
+    }
 
     return newColumn;
   }
