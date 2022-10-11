@@ -598,7 +598,8 @@ export class PeptidesModel {
     grid.props.rowHeight = 55;
     grid.onCellPrepare((cell) => {
       if (cell.isTableCell && cell.tableColumn?.name === 'WebLogo') 
-        tempDfList[parseInt(cell.cell.value)].plot.fromType('WebLogo').then((viewer) => cell.element = viewer.root);
+        tempDfList[parseInt(cell.cell.value)].plot.fromType('WebLogo', {maxHeight: 50})
+          .then((viewer) => cell.element = viewer.root);
     });
     grid.root.addEventListener('click', (ev) => {
       const cell = grid.hitTest(ev.offsetX, ev.offsetY);
