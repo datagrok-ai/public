@@ -1,9 +1,7 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
 
 export class LogoSummary extends DG.JsViewer {
@@ -20,7 +18,7 @@ export class LogoSummary extends DG.JsViewer {
     super.onTableAttached();
 
     this.model = await PeptidesModel.getInstance(this.dataFrame);
-    
+
     this.subs.push(this.model.onLogoSummaryGridChanged.subscribe((grid) => {
       this.viewerGrid = grid;
       this.render();
@@ -31,7 +29,7 @@ export class LogoSummary extends DG.JsViewer {
     this.render();
   }
 
-  detach(): void {this.subs.forEach(sub => sub.unsubscribe());}
+  detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
 
   render(): void {
     if (this.initialized) {

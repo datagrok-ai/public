@@ -8,7 +8,7 @@ import '../styles.css';
 import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
-import {getOrFindNext, scaleActivity} from '../utils/misc';
+import {scaleActivity} from '../utils/misc';
 
 /** Peptide analysis widget.
  *
@@ -38,7 +38,7 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
   const defaultActivityColumn: DG.Column<number> | null = df.col('activity') || df.col('IC50') || tempCol;
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
-  let indexes: number[] = [];
+  const indexes: number[] = [];
   const f = df.filter;
   df.onFilterChanged.subscribe(() => {
     for (let i = 0; i < f.length; ++i) {
@@ -109,25 +109,25 @@ export async function startAnalysis(activityColumn: DG.Column<number> | null, pe
     const f = currentDf.filter;
     //prepare new DF
     const newDf = DG.DataFrame.create(f.trueCount);
-    const getIndex = indexes.length !== 0 ? (i: number) => indexes[i] : (i: number) => i;
-    let activityCol: DG.Column | null = null;
+    const getIndex = indexes.length !== 0 ? (i: number) : number => indexes[i] : (i: number): number => i;
+    let activityCol: DG.Column<number> | null = null;
     for (const col of currentDf.columns.toList()) {
       let virtualCol: DG.Column<any>;
       if (col === activityColumn) {
         virtualCol = newDf.columns.addNewVirtual(
           C.COLUMNS_NAMES.ACTIVITY, (i) => activityColumn.get(getIndex(i)!), DG.TYPE.FLOAT);
         activityCol = virtualCol;
-      } else if (col === peptidesCol)
+      } else if (col === peptidesCol) {
         virtualCol = newDf.columns.addNewVirtual(
           C.COLUMNS_NAMES.MACROMOLECULE, (i) => peptidesCol.get(getIndex(i)!), DG.TYPE.STRING);
-      else
+      } else
         virtualCol = newDf.columns.addNewVirtual(col.name, (i) => col.get(getIndex(i)!), col.type as DG.TYPE);
       virtualCol.setTag(C.TAGS.VISIBLE, '0');
     }
     activityCol!.semType = C.SEM_TYPES.ACTIVITY;
     const activityScaledCol = newDf.columns.addNewVirtual(C.COLUMNS_NAMES.ACTIVITY_SCALED, (i) => {
       const val = activityCol!.get(getIndex(i)!);
-      return val ? scaleNum(val) : val
+      return val ? scaleNum(val) : val;
     }, DG.TYPE.FLOAT);
     activityScaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
     newDf.name = 'Peptides analysis';
