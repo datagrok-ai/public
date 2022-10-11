@@ -55,7 +55,7 @@ export function check(args: { [x: string]: string | string[]; }) {
   return true;
 }
 
-function extractExternals(config: string): {}|null {
+export function extractExternals(config: string): {}|null {
   const externalsRegex = /(?<=externals\s*:\s*)(\{[\S\s]*?\})/;
   const match = config.match(externalsRegex);
   if (match) {
@@ -71,7 +71,7 @@ function extractExternals(config: string): {}|null {
   return null;
 }
 
-function checkImportStatements(packagePath: string, files: string[], externals: {}): string[] {
+export function checkImportStatements(packagePath: string, files: string[], externals: {}): string[] {
   const modules = [];
   for (const key in externals) {
     modules.push(key);
@@ -105,7 +105,7 @@ function checkImportStatements(packagePath: string, files: string[], externals: 
   return warnings;
 }
 
-function checkFuncSignatures(packagePath: string, files: string[]): string[] {
+export function checkFuncSignatures(packagePath: string, files: string[]): string[] {
   const warnings: string[] = [];
   const checkFunctions: { [role: string]: FuncValidator } = {
     semTypeDetector: ({inputs, outputs}: {inputs: FuncParam[], outputs: FuncParam[]}) => {
