@@ -93,13 +93,6 @@ The system could be integrated with a custom monomer library service if needed.
 
 ![Monomer Library](../../uploads/macromolecules/MonomerLibrary.gif "Monomer Library")
 
-### Visualizing Assay Data and Dose-Response Curves
-
-The built-in spreadsheet is designed for interactive analysis of vast amounts of scientific data. The system could be
-extended with plugins that provide support for cheminformatics/bioinformatics, or for custom cell renderers for
-molecules, sequences, or dose-response curves.
-
-![Visualizing assay data and dose-response curves](../../uploads/macromolecules/macromolecules-5.png "Visualizing Assay Data and Dose-Response Curves")
 
 ### Atomic-Level structures from sequences
 
