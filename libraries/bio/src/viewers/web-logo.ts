@@ -225,7 +225,7 @@ export class WebLogo extends DG.JsViewer {
     this.canvas.style.width = '100%';
   }
 
-  private async init(): Promise<void> {
+  private init(): void {
     if (this.initialized) {
       console.error('WebLogo second initialization!');
       return;
@@ -478,23 +478,22 @@ export class WebLogo extends DG.JsViewer {
   /** Add filter handlers when table is a attached  */
   public override onTableAttached() {
     super.onTableAttached();
-    window.setTimeout(async () => {
-      const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
-      console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
 
-      this.updateSeqCol();
+    const dataFrameTxt: string = this.dataFrame ? 'data' : 'null';
+    console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached( dataFrame = ${dataFrameTxt} ) start`);
 
-      if (this.dataFrame !== void 0) {
-        this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
-        this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
-          this.updatePositions();
-          this.render();
-        }));
-      }
+    this.updateSeqCol();
 
-      await this.init();
-      console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached() end`);
-    }, 0 /* next event cycle */);
+    if (this.dataFrame !== void 0) {
+      this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
+      this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => {
+        this.updatePositions();
+        this.render();
+      }));
+    }
+
+    this.init();
+    console.debug(`bio: WebLogo<${this.viewerId}>.onTableAttached() end`);
   }
 
   /** Remove all handlers when table is a detach  */
