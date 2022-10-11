@@ -27,6 +27,11 @@ category('splitters', () => {
   const helm2 = 'PEPTIDE1{meI.hHis.Hcy.Q.T.W.Q.Phe_4NH2.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.N.meK}$$$';
 
   const data: { [key: string]: [string, string[]] } = {
+    fastaMulti: [
+      'M[MeI]YKETLL[MeF]PKTDFPMRGGL[MeA]',
+      ['M', 'MeI', 'Y', 'K', 'E', 'T', 'L', 'L', 'MeF', 'P',
+        'K', 'T', 'D', 'F', 'P', 'M', 'R', 'G', 'G', 'L', 'MeA']
+    ],
     helm1: [
       'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$',
       ['meI', 'hHis', 'Aca', 'N', 'T', 'dE', 'Thr_PO3H2', 'Aca', 'D-Tyr_Et',
@@ -58,6 +63,8 @@ category('splitters', () => {
       ['P', 'R(U)', 'P', 'R(T)']
     ],
   };
+
+  test('fastaMulti', async () => { await _testFastaSplitter(data.fastaMulti[0], data.fastaMulti[1]); });
 
   test('helm1', async () => { await _testHelmSplitter(data.helm1[0], data.helm1[1]); });
   test('helm2', async () => { await _testHelmSplitter(data.helm2[0], data.helm2[1]); });
@@ -112,6 +119,12 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
     }
   });
 });
+
+export async function _testFastaSplitter(src: string, tgt: string[]) {
+  const res: string[] = WebLogo.splitterAsFasta(src);
+  console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
+  expectArray(res, tgt);
+}
 
 export async function _testHelmSplitter(src: string, tgt: string[]) {
   const res: string[] = WebLogo.splitterAsHelm(src);

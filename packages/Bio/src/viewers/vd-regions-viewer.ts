@@ -113,8 +113,10 @@ export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
     await this.buildView();
   }
 
-  public override async onTableAttached() {
-    await this.init();
+  public override onTableAttached() {
+    window.setTimeout(async () => {
+      await this.init();
+    }, 0 /* next event cycle */);
   }
 
   public override async onPropertyChanged(property: DG.Property | null) {

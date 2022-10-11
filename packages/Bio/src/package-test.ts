@@ -12,6 +12,7 @@ import './tests/splitters-test';
 import './tests/renderers-test';
 import './tests/convert-test';
 import './tests/fasta-handler-test';
+import './tests/fasta-export-tests';
 import './tests/WebLogo-positions-test';
 import './tests/checkInputColumn-tests';
 import './tests/similarity-diversity-tests';

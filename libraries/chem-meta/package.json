@@ -5,7 +5,7 @@
   },
   "beta": true,
   "friendlyName": "Datagrok chem-meta library",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "dependencies": {
     "@datagrok-libraries/utils": "^1.6.2",

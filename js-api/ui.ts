@@ -659,9 +659,19 @@ export function tree(): TreeViewGroup {
 //
 export namespace input {
 
-  export function form(source: any, props: Property[]): HTMLElement {
-    return inputs(props.map((p) => InputBase.forProperty(p, source)));
+  /** Creates input for the specified property, and optionally binds it to the specified object */
+  export function forProperty(property: Property, source: any = null): InputBase {
+    return InputBase.forProperty(property, source);
   }
+
+  /** Returns a form for the specified properties, bound to the specified object */
+  export function form(source: any, props: Property[]): HTMLElement {
+    return inputs(props.map((p) => forProperty(p, source)));
+  }
+
+  // export function bySemType(semType: string) {
+  //
+  // }
 
   // function _options(inputBase: InputBase, options?: InputOptions) {
   //   if (options == null)

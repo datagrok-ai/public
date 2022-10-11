@@ -1,11 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+
 import {after, before, category, expect, test, delay} from '@datagrok-libraries/utils/src/test';
+
+import {TestViewerForProperties} from './test-viewer-for-properties';
 
 category('Viewers', () => {
   let df: DG.DataFrame;
   let tv: DG.TableView;
   let coreViewerTypes: string[];
+
+  let viewerList: DG.JsViewer[];
 
   before(async () => {
     coreViewerTypes = Object.values(DG.VIEWER).filter((v) =>
@@ -16,6 +21,8 @@ category('Viewers', () => {
       v != DG.VIEWER.SHAPE_MAP);
     df = grok.data.demo.demog();
     tv = grok.shell.addTableView(df);
+
+    viewerList = [];
   });
 
   test('addViewer(ViewerType)', async () => {
@@ -94,9 +101,68 @@ category('Viewers', () => {
     }
   });
 
+  test('setPropertyStringWithNumber', async () => {
+    // const v: TestViewerForProperties = tv.addViewer('TestViewerForProperties', {}) as TestViewerForProperties;
+    const dfTemp = DG.DataFrame.fromCsv('id');
+    const viewer: TestViewerForProperties = (
+      await dfTemp.plot.fromType('TestViewerForProperties')) as TestViewerForProperties;
+    viewerList.push(viewer);
+
+    let exCaught: boolean = false;
+    try {
+      viewer.setOptions({'testPropertyString': 1});
+    } catch {
+      // There should be an exception caught while
+      // assigning number value to string option of JsViewer
+      exCaught = true;
+    }
+    const propValueFromProps = viewer.props.get('testPropertyString');
+    const propValueFromObject = viewer.testPropertyString;
+
+    // Silent type cast or exception expected
+    if ((typeof propValueFromObject !== typeof 'str' || typeof propValueFromProps !== typeof 'str') && !exCaught)
+      throw new Error('JsViewer string property assigned with number value ' +
+        `become value of type '${typeof propValueFromObject}' without an exception or type conversion.`);
+  });
+
+  test('setPropertyIntWithString', async () => {
+    // const v: TestViewerForProperties = tv.addViewer('TestViewerForProperties', {}) as TestViewerForProperties;
+    const dfTemp = DG.DataFrame.fromCsv('id');
+    const viewer: TestViewerForProperties = (
+      await dfTemp.plot.fromType('TestViewerForProperties')) as TestViewerForProperties;
+    viewerList.push(viewer);
+
+    let exCaught: boolean = false;
+    try {
+      viewer.setOptions({'testPropertyInt': '1'}); // silent parse to int available
+    } catch {
+      // There should be an exception caught while
+      // assigning string value to int option of JsViewer
+      exCaught = true;
+    }
+    const propValueFromProps = viewer.props.get('testPropertyInt');
+    const propValueFromObject = viewer.testPropertyInt;
+
+    // Silent type cast or exception expected
+    if ((typeof propValueFromObject !== typeof 1 || typeof propValueFromProps !== typeof 1) && !exCaught)
+      throw new Error('JsViewer int property assigned with string value ' +
+        `become value of type '${typeof propValueFromObject}' without an exception or type conversion.`);
+  });
+
+
   after(async () => {
     tv.close();
     grok.shell.closeTable(df);
+
+    for (const viewer of viewerList) {
+      try {
+        // viewer.removeFromView();
+        viewer.close();
+      } catch (err: any) {
+        console.warn(`Closing viewer error: ${err.toString()}`);
+      } // ignore everything on closing viewers
+    }
+    viewerList = [];
   });
 });
 

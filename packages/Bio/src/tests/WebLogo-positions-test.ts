@@ -41,7 +41,7 @@ ATC-G-TTGC--
     seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     seqCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.DNA);
 
-    const wlViewer: WebLogo = await df.plot.fromType('WebLogo') as unknown as WebLogo;
+    const wlViewer: WebLogo = (await df.plot.fromType('WebLogo')) as WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
     tvList.push(tv);
@@ -94,8 +94,8 @@ ATC-G-TTGC--
       return i > 2;
     });
     df.filter.fireChanged();
-    const wlViewer: WebLogo = await df.plot.fromType('WebLogo', {'shrinkEmptyTail': true}) as unknown as WebLogo;
-
+    const wlViewer: WebLogo = (await df.plot.fromType('WebLogo',
+      {'shrinkEmptyTail': true})) as WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
     tvList.push(tv);
@@ -134,7 +134,8 @@ ATC-G-TTGC--
     seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     seqCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.DNA);
 
-    const wlViewer: WebLogo = await df.plot.fromType('WebLogo', {'skipEmptyPositions': true}) as unknown as WebLogo;
+    const wlViewer: WebLogo = (await df.plot.fromType('WebLogo',
+      {'skipEmptyPositions': true})) as WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
     tvList.push(tv);

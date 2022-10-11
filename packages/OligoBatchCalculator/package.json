@@ -5,7 +5,7 @@
     "name": "Vadym Kovadlo",
     "email": "vkovadlo@datagrok.ai"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
   "repository": {
     "type": "git",
@@ -16,7 +16,7 @@
     "datagrok-api": "^1.6.0",
     "ts-loader": "latest",
     "typescript": "latest",
-    "@datagrok-libraries/utils": "^0.2.9"
+    "@datagrok-libraries/utils": "^1.9.2"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^4.29.1",

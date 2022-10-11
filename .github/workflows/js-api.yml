@@ -55,7 +55,6 @@ jobs:
     name: Build and publish to npm
     runs-on: ubuntu-20.04
     needs: version
-    environment: Prod
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -114,7 +113,6 @@ jobs:
     needs:
       - build
       - version
-    environment: Prod
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.version.outputs.matrix) }}

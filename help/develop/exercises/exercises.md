@@ -237,7 +237,7 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    ![exercises-add-new-column](exercises-add-new-column.png)
    Observe how the `Preview Result Columns` change while you are modifying the expression. There, notice a
    namespace `<yourLogin>` as part of a qualified function name `<yourLogin>:<functionName>`,
-   `JDoe:CountSubseqnecePython` in this case. Namepaces are used through Datagrok very commonly. In general, there shall
+   `JDoe:CountSubsequencePython` in this case. Namespaces are used through Datagrok very commonly. In general, there shall
    be no case where you would call a function without specifying a namespace. Datagrok namespaces originate from the
    names of packages, projects, and users, and always qualify a resource name, be it a package, a function, a connection
    or a query. Now hit "Ok" and have the new column inserted to the dataframe.

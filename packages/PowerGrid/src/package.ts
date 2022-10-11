@@ -14,6 +14,7 @@ import {BarChartCellRenderer} from './sparklines/bar-chart';
 import {PieChartCellRenderer} from './sparklines/piechart';
 import {RadarChartCellRender} from './sparklines/radar-chart';
 import {names, SparklineType, sparklineTypes} from "./sparklines/shared";
+import * as PinnedUtils from '@datagrok-libraries/gridext/src/pinned/PinnedUtils';
 
 export const _package = new DG.Package();
 
@@ -162,4 +163,10 @@ export function demoTestUnitsCellRenderer() {
 
   grok.shell.addTableView(t);
   grok.shell.info('Different renderers even though semantic types are the same');
+}
+
+//description: pinnedColumns
+//tags: autostart
+export function _pinnedColumns(): void {
+  PinnedUtils.registerPinnedColumns();
 }

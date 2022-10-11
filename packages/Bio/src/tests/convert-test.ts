@@ -1,7 +1,8 @@
-import {category, expectArray, test} from '@datagrok-libraries/utils/src/test';
-
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+
+import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 
 import {ConverterFunc} from './types';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
@@ -139,6 +140,7 @@ RNA1{P.R(U)P.R(U)P.R(C)P.R(A)P.R(A)P.R(C)P.P.P}$$$
     return function(srcCol: DG.Column): DG.Column {
       const converter = new NotationConverter(srcCol);
       const resCol = converter.convert(tgtNotation, tgtSeparator);
+      expect(resCol.getTag('units'), tgtNotation);
       return resCol;
     };
   };

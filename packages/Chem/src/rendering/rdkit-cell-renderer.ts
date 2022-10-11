@@ -68,11 +68,12 @@ M  END
   get defaultWidth() {return 200;}
   get defaultHeight() {return 100;}
 
-  _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean): IMolInfo {
+  _fetchMolGetOrCreate(molString: string, scaffoldMolString: string,
+    molRegenerateCoords: boolean, details: object = {}): IMolInfo {
     let mol: RDMol | null = null;
     let substruct = {};
     try {
-      mol = this.rdKitModule.get_mol(molString, '{"mergeQueryHs":true}');
+      mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));
       if (!mol.is_valid()) {
         mol.delete();
         mol = null;
@@ -80,7 +81,7 @@ M  END
     } catch (e) { }
     if (!mol) {
       try {
-        mol = this.rdKitModule.get_mol(molString, '{"kekulize":false, "mergeQueryHs":true}');
+        mol = this.rdKitModule.get_mol(molString, JSON.stringify({...details, kekulize: false}));
         if (!mol.is_valid()) {
           mol.delete();
           mol = null;
@@ -103,25 +104,42 @@ M  END
     if (mol) {
       try {
         if (mol.is_valid()) {
+          let molHasOwnCoords = mol.has_coords();
           const scaffoldIsMolBlock = isMolBlock(scaffoldMolString);
           if (scaffoldIsMolBlock) {
-            const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false).mol;
+            const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true}).mol;
             if (rdKitScaffoldMol && rdKitScaffoldMol.is_valid()) {
+              rdKitScaffoldMol.normalize_depiction(0);
+              if (molHasOwnCoords)
+                mol.normalize_depiction(0);
               let substructJson;
               try {
-                substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, true, true, false);
+                substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
+                  useCoordGen: true,
+                  allowRGroups: true,
+                  acceptFailure: false,
+                  alignOnly: molHasOwnCoords,
+                }));
               } catch {
-                substructJson = '{}';
+                // exceptions should not be thrown anymore by RDKit, but let's play safe
+                substructJson = '';
               }
-              substruct = substructJson === '' ? {} : JSON.parse(substructJson);
+              if (substructJson === '') {
+                substruct = {};
+                if (molHasOwnCoords) {
+                  mol.straighten_depiction(true);
+                }
+              } else 
+                substruct = JSON.parse(substructJson);
             }
-          } else if (molRegenerateCoords)
-            mol.set_new_coords(true);
-          if (!scaffoldIsMolBlock || molRegenerateCoords) {
-            if (!mol.has_coords())
-              mol.set_new_coords();
-            mol!.normalize_depiction();
-            mol!.straighten_depiction();
+          }
+          if (!mol.has_coords() || molRegenerateCoords) {
+            mol.set_new_coords(molRegenerateCoords);
+            molHasOwnCoords = false;
+          }
+          if (!scaffoldIsMolBlock || !molHasOwnCoords) {
+            mol.normalize_depiction(molHasOwnCoords ? 0 : 1);
+            mol.straighten_depiction(molHasOwnCoords);
           }
         }
         if (!mol!.is_valid()) {
@@ -144,11 +162,11 @@ M  END
   }
 
   _fetchMol(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean,
-    scaffoldRegenerateCoords: boolean): IMolInfo {
+    scaffoldRegenerateCoords: boolean, details: object = {}): IMolInfo {
     const name = molString + ' || ' + scaffoldMolString + ' || ' +
-      molRegenerateCoords + ' || ' + scaffoldRegenerateCoords;
+      molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + (Object.keys(details).length ? ' || ' + JSON.stringify(details) : '');
     return this.molCache.getOrCreate(name, (_: any) =>
-      this._fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords));
+      this._fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords, details));
   }
 
   _rendererGetOrCreate(

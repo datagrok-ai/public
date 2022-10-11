@@ -22,8 +22,12 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
           fps.push(this._rdKitMols[i].get_pattern_fp_as_uint8array());
         break;
       case Fingerprint.Morgan:
-        for (let i = 0; i < this._rdKitMols.length; ++i)
-          fps.push(this._rdKitMols[i].get_morgan_fp_as_uint8array(this._fpRadius, this._fpLength));
+        for (let i = 0; i < this._rdKitMols.length; ++i) {
+          fps.push(this._rdKitMols[i].get_morgan_fp_as_uint8array(JSON.stringify({
+            radius: this._fpRadius,
+            nBits: this._fpLength,
+          })));
+        }
         break;
       default:
         throw Error('Unknown fingerprint type: ' + fingerprintType);

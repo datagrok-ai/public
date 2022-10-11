@@ -30,6 +30,30 @@ export const passErrorToShell = () => {
 
 export const INTERACTIVE_CSS_CLASS = 'cv-interactive';
 
+type DateOptions = 'Any time' | 'Today' | 'Yesterday' | 'This week' | 'Last week' | 'This month' | 'Last month' | 'This year' | 'Last year';
+
+type FilterOptions = {
+  text?: string | null,
+  date?: DateOptions | null,
+  author?: DG.User | null,
+};
+
+export const defaultUsersIds = {
+  'Test': 'ca1e672e-e3be-40e0-b79b-d2c68e68d380',
+  'Admin': '878c42b0-9a50-11e6-c537-6bf8e9ab02ee',
+  'System': '3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3',
+};
+
+export const defaultGroupsIds = {
+  'All users': 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6',
+  'Developers': 'ba9cd191-9a50-11e6-9cc9-910bf827f0ab',
+  'Need to create': '00000000-0000-0000-0000-000000000000',
+  'Test': 'ca1e672e-e3be-40e0-b79b-8546b8bf62e6',
+  'Admin': 'a4b45840-9a50-11e6-c537-6bf8e9ab02ee',
+  'System': 'a4b45840-ac9c-4d39-8b4b-4db3e576b3c3',
+  'Administrators': '1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5',
+};
+
 export class FunctionView extends DG.ViewBase {
   protected readonly context: DG.Context;
   protected _funcCall?: DG.FuncCall;
@@ -255,24 +279,48 @@ export class FunctionView extends DG.ViewBase {
     mainAcc.root.style.width = '100%';
     mainAcc.addTitle(ui.span(['History']));
 
-    // const buildFilterPane = () => {
-    //   const dateInput = ui.stringInput('Date', 'Any time');
-    //   dateInput.addPatternMenu('datetime');
-    //   const form =ui.divV([
-    //     ui.stringInput('Search', '', () => {}),
-    //     ui.choiceInput('User', 'Current user', ['Current user']),
-    //     dateInput,
-    //   ], 'ui-form-condensed ui-form');
-    //   form.style.marginLeft = '0px';
+    const filteringOptions: FilterOptions = {
+      text: null,
+      date: null,
+      author: null
+    };
 
-    //   return form;
-    // };
-    // let filterPane = mainAcc.addPane('Filter', buildFilterPane);
-    // const updateFilterPane = () => {
-    //   const isExpanded = filterPane.expanded;
-    //   mainAcc.removePane(filterPane);
-    //   filterPane = mainAcc.addPane('Filter', buildFilterPane, isExpanded, favoritesListPane);
-    // };
+    const buildFilterPane = () => ui.wait(async () => {
+      const textInput = ui.stringInput('Search', '', (v: string) => {
+        filteringOptions.text = v;
+        updateHistoryPane(filteringOptions);
+      });
+      const dateInput = ui.choiceInput('Date started', 'Any time', ['Any time', 'Today', 'Yesterday', 'This week', 'Last week', 'This month', 'Last month', 'This year', 'Last year'], (v: DateOptions) => {
+        filteringOptions.date = v;
+        updateHistoryPane(filteringOptions);
+        updateFavoritesPane();
+        updateSharedPane();
+      });
+
+      const defaultUsers = Object.values(defaultUsersIds);
+      const allUsers = await grok.dapi.users.list();
+      const filteredUsers = allUsers.filter((user) => !defaultUsers.includes(user.id));
+
+      const authorInput = ui.choiceInput<DG.User | string>('Author', 'Anyone', ['Anyone', ...filteredUsers], (v: DG.User | string) => {
+        filteringOptions.author = (v === 'Anyone') ? null : v as DG.User;
+        updateSharedPane();
+      });
+      dateInput.addPatternMenu('datetime');
+      const form = ui.divV([
+        // textInput,
+        dateInput,
+        authorInput,
+      ], 'ui-form-condensed ui-form');
+      form.style.marginLeft = '0px';
+
+      return form;
+    });
+    let filterPane = mainAcc.addPane('Filter', buildFilterPane);
+    const updateFilterPane = () => {
+      const isExpanded = filterPane.expanded;
+      mainAcc.removePane(filterPane);
+      filterPane = mainAcc.addPane('Filter', buildFilterPane, isExpanded, favoritesListPane);
+    };
 
     const showAddToFavoritesDialog = (funcCall: DG.FuncCall) => {
       let title = funcCall.options['title'] ?? '';
@@ -307,7 +355,7 @@ export class FunctionView extends DG.ViewBase {
         .show({center: true});
     };
 
-    const showDeleteFavoritesDialog = (funcCall: DG.FuncCall) => {
+    const showDeleteRunDialog = (funcCall: DG.FuncCall) => {
       ui.dialog({title: 'Delete run'})
         .add(ui.divText('The deleted run is impossible to restore. Are you sure?'))
         .onOK(async () => {
@@ -317,17 +365,59 @@ export class FunctionView extends DG.ViewBase {
         .show({center: true});
     };
 
+    const showAddToSharedDialog = (funcCall: DG.FuncCall) => {
+      let title = funcCall.options['title'] ?? '';
+      let annotation = funcCall.options['annotation'] ?? '';
+      const titleInput = ui.stringInput('Title', title, (s: string) => {
+        title = s;
+        if (s.length === 0) {
+          titleInput.setTooltip('Title cannot be empty');
+          setTimeout(() => titleInput.input.classList.add('d4-invalid'), 100);
+        } else {
+          titleInput.setTooltip('');
+          setTimeout(() => titleInput.input.classList.remove('d4-invalid'), 100);
+        }
+      });
+
+      ui.dialog({title: 'Add to shared'})
+        .add(ui.form([
+          titleInput,
+          ui.stringInput('Annotation', annotation, (s: string) => { annotation = s; }),
+        ]))
+        .onOK(async () => {
+          if (title.length > 0) {
+            funcCall = await this.loadRun(this.funcCall!.id);
+            funcCall.options['title'] = title;
+            funcCall.options['annotation'] = annotation;
+            await this.addRunToShared(funcCall);
+            updateHistoryPane();
+            updateFavoritesPane();
+            updateSharedPane();
+          } else {
+            grok.shell.warning('Title cannot be empty');
+          }
+        })
+        .show({center: true});
+    };
+
     let historyCards = [] as HTMLElement[];
     let favoriteCards = [] as HTMLElement[];
+    let sharedCards = [] as HTMLElement[];
     const renderFavoriteCards = async (funcCalls: DG.FuncCall[]) => {
       favoriteCards = funcCalls.map((funcCall) => {
-        const solidStar = ui.iconFA('star', async (ev) => {
+        const unstarIcon = ui.iconFA('star', async (ev) => {
           ev.stopPropagation();
           await this.removeRunFromFavorites(funcCall);
           updateHistoryPane();
           updateFavoritesPane();
         }, 'Unfavorite the run');
-        solidStar.classList.add('fas');
+        unstarIcon.classList.add('fas');
+
+        const shareIcon = ui.iconFA('eye', async (ev) => {
+          ev.stopPropagation();
+          showAddToSharedDialog(funcCall);
+        }, 'Add to shared');
+        shareIcon.classList.add('fal');
 
         const card = ui.divH([
           ui.divV([
@@ -336,25 +426,72 @@ export class FunctionView extends DG.ViewBase {
             ui.divH([ui.render(funcCall.author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
           ]),
           ui.divH([
+            shareIcon,
             ui.iconFA('pen', async (ev) => {
               ev.stopPropagation();
               showAddToFavoritesDialog(funcCall);
             }, 'Edit run metadata'),
-            solidStar
+            unstarIcon
           ], 'cv-funccall-card-icons')
         ], 'cv-funccall-card');
 
         card.addEventListener('click', async () => {
+          ui.setUpdateIndicator(this.root, true);
           this.linkFunccall(await this.loadRun(funcCall.id));
           card.classList.add('clicked');
+          ui.setUpdateIndicator(this.root, false);
         });
         return card;
       });
 
-      const allCards = [...historyCards, ...favoriteCards];
+      const allCards = [...historyCards, ...favoriteCards, ...sharedCards];
       allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
 
       return ui.divV(favoriteCards);
+    };
+
+    const renderSharedCards = async (funcCalls: DG.FuncCall[]) => {
+      sharedCards = funcCalls.map((funcCall) => {
+        const unshareIcon = ui.iconFA('eye-slash', async (ev) => {
+          ev.stopPropagation();
+          await this.removeRunFromShared(funcCall);
+          updateHistoryPane();
+          updateSharedPane();
+        }, 'Hide from shared');
+
+        const card = ui.divH([
+          ui.divV([
+            ui.divText(funcCall.options['title'] ?? 'Default title', 'title'),
+            ...(funcCall.options['annotation']) ? [ui.divText(funcCall.options['annotation'], 'description')]: [],
+            ui.divH([ui.render(funcCall.author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
+          ]),
+          ui.divH([
+            ui.iconFA('link', async (ev) => {
+              ev.stopPropagation();
+              await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?id=${funcCall.id}`);
+            }, 'Copy link to the run'),
+            ...(funcCall.author.id === grok.shell.user.id) ? [
+              ui.iconFA('pen', async (ev) => {
+                ev.stopPropagation();
+                showAddToSharedDialog(funcCall);
+              }, 'Edit run metadata'),
+              unshareIcon]: [],
+          ], 'cv-funccall-card-icons')
+        ], 'cv-funccall-card');
+
+        card.addEventListener('click', async () => {
+          ui.setUpdateIndicator(this.root, true);
+          this.linkFunccall(await this.loadRun(funcCall.id));
+          card.classList.add('clicked');
+          ui.setUpdateIndicator(this.root, false);
+        });
+        return card;
+      });
+
+      const allCards = [...historyCards, ...favoriteCards, ...sharedCards];
+      allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
+
+      return ui.divV(sharedCards);
     };
 
     const renderHistoryCards = async (funcCalls: DG.FuncCall[]) => {
@@ -368,6 +505,27 @@ export class FunctionView extends DG.ViewBase {
         const userLabel = ui.label(funcCall.author.friendlyName, 'd4-link-label');
         ui.bind(funcCall.author, icon);
 
+        const shareIcon = ui.iconFA('eye', async (ev) => {
+          ev.stopPropagation();
+          showAddToSharedDialog(funcCall);
+        }, 'Add to shared');
+        shareIcon.classList.add('fal');
+
+        const unshareIcon = ui.iconFA('eye-slash', async (ev) => {
+          ev.stopPropagation();
+          await this.removeRunFromShared(funcCall);
+          updateHistoryPane();
+          updateSharedPane();
+        }, 'Hide from shared');
+
+        const unstar = ui.iconFA('star', async (ev) => {
+          ev.stopPropagation();
+          await this.removeRunFromFavorites(funcCall);
+          updateHistoryPane();
+          updateFavoritesPane();
+        }, 'Unfavorite the run');
+        unstar.classList.add('fas');
+
         const card = ui.divH([
           ui.divH([
             icon,
@@ -377,62 +535,88 @@ export class FunctionView extends DG.ViewBase {
             ]),
           ]),
           ui.divH([
-            ui.iconFA('star', async (ev) => {
+            ...(funcCall.options['isShared']) ? [unshareIcon]: [shareIcon],
+            ...(funcCall.options['isFavorite']) ? [unstar] : [ui.iconFA('star', async (ev) => {
               ev.stopPropagation();
               showAddToFavoritesDialog(funcCall);
-            }, 'Add to favorites'),
-            ui.iconFA('link', async (ev) => {
-              ev.stopPropagation();
-              await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?id=${funcCall.id}`);
-            }, 'Copy link to the run'),
+            }, 'Add to favorites')],
             ui.iconFA('trash-alt', async (ev) => {
               ev.stopPropagation();
-              showDeleteFavoritesDialog(funcCall);
+              showDeleteRunDialog(funcCall);
             }, 'Delete the run'),
           ], 'cv-funccall-card-icons')
         ], 'cv-funccall-card');
 
         card.addEventListener('click', async () => {
+          ui.setUpdateIndicator(this.root, true);
           this.linkFunccall(await this.loadRun(funcCall.id));
           card.classList.add('clicked');
+          ui.setUpdateIndicator(this.root, false);
         });
 
         return card;
       });
 
-      const allCards =[...historyCards, ...favoriteCards];
+      const allCards = [...historyCards, ...favoriteCards, ...sharedCards];
       allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
 
       return ui.divV(historyCards);
     };
 
-    const buildFavoritesList = () => ui.wait(async () => {
-      const historicalRuns = await this.pullRuns(this.func!.id);
+    const buildSharedList = () => ui.wait(async () => {
+      const historicalRuns = await this.pullRuns(this.func!.id, filteringOptions);
+      const sharedRuns = historicalRuns.filter((run) => run.options['isShared']);
+      if (sharedRuns.length > 0)
+        return ui.wait(() => renderSharedCards(sharedRuns));
+      else
+        return ui.divText('No runs are marked as shared', 'description');
+    });
+    let sharedListPane = mainAcc.addPane('Shared', buildSharedList, true);
+    const updateSharedPane = () => {
+      const isExpanded = sharedListPane.expanded;
+      mainAcc.removePane(sharedListPane);
+      sharedListPane = mainAcc.addPane('Shared', buildSharedList, isExpanded, favoritesListPane);
+    };
+
+    const buildFavoritesList = (filterOptions: FilterOptions = {}) => ui.wait(async () => {
+      const historicalRuns = await this.pullRuns(this.func!.id, filterOptions);
       const favoriteRuns = historicalRuns.filter((run) => run.options['isFavorite'] && !run.options['isImported']);
       if (favoriteRuns.length > 0)
         return ui.wait(() => renderFavoriteCards(favoriteRuns));
       else
         return ui.divText('No runs are marked as favorites', 'description');
     });
-    let favoritesListPane = mainAcc.addPane('Favorites', buildFavoritesList, true);
-    const updateFavoritesPane = () => {
+    let favoritesListPane = mainAcc.addPane('My favorites', () => buildFavoritesList({
+      ...filteringOptions,
+      author: grok.shell.user
+    }), true);
+    const updateFavoritesPane = (filterOptions: FilterOptions = {}) => {
       const isExpanded = favoritesListPane.expanded;
       mainAcc.removePane(favoritesListPane);
-      favoritesListPane = mainAcc.addPane('Favorites', buildFavoritesList, isExpanded, historyPane);
+      favoritesListPane = mainAcc.addPane('My favorites', () => buildFavoritesList({
+        ...filteringOptions,
+        author: grok.shell.user
+      }), isExpanded, historyPane);
     };
 
-    const buildHistoryPane = () => ui.wait(async () => {
-      const historicalRuns = (await this.pullRuns(this.func!.id)).filter((run) => !run.options['isFavorite'] && !run.options['isImported']);
+    const buildHistoryPane = (filterOptions: FilterOptions = {}) => ui.wait(async () => {
+      const historicalRuns = (await this.pullRuns(this.func!.id, filterOptions));
       if (historicalRuns.length > 0)
         return ui.wait(() => renderHistoryCards(historicalRuns));
       else
         return ui.divText('No runs are found in history', 'description');
     });
-    let historyPane = mainAcc.addPane('History', buildHistoryPane, true);
-    const updateHistoryPane = () => {
+    let historyPane = mainAcc.addPane('My history', () => buildHistoryPane({
+      ...filteringOptions,
+      author: grok.shell.user
+    }), true);
+    const updateHistoryPane = (filterOptions: FilterOptions = {}) => {
       const isExpanded = historyPane.expanded;
       mainAcc.removePane(historyPane);
-      historyPane = mainAcc.addPane('History', buildHistoryPane, isExpanded);
+      historyPane = mainAcc.addPane('My history', () => buildHistoryPane({
+        ...filterOptions,
+        author: grok.shell.user
+      }), isExpanded);
     };
 
     const newHistoryBlock = mainAcc.root;
@@ -527,6 +711,64 @@ export class FunctionView extends DG.ViewBase {
     await this.onBeforeAddingToFavorites(callToFavorite);
     const savedFavorite = await grok.dapi.functions.calls.save(callToFavorite);
     await this.onAfterAddingToFavorites(savedFavorite);
+    return savedFavorite;
+  }
+
+  public async onBeforeRemoveRunFromShared(callToShare: DG.FuncCall) { }
+
+  public async onAfterRemoveRunFromSahred(sharedCall: DG.FuncCall) { }
+
+  /**
+   * Removes run from shared
+   * @param callToUnshare FuncCall object to remove from shared
+   * @returns Saved FuncCall
+   * @stability Experimental
+ */
+  @passErrorToShell()
+  public async removeRunFromShared(callToUnshare: DG.FuncCall): Promise<DG.FuncCall> {
+    callToUnshare.options['title'] = null;
+    callToUnshare.options['annotation'] = null;
+    callToUnshare.options['isShared'] = false;
+    await this.onBeforeRemoveRunFromFavorites(callToUnshare);
+    const savedShared = await grok.dapi.functions.calls.save(callToUnshare);
+    await this.onAfterRemoveRunFromFavorites(savedShared);
+    return savedShared;
+  }
+
+  public async onBeforeAddingToShared(callToAddToShared: DG.FuncCall) { }
+
+  public async onAfterAddingToShared(sharedCall: DG.FuncCall) { }
+
+  /**
+   * Saves the run as shared
+   * @param callToShare FuncCall object to add to shared
+   * @returns Saved FuncCall
+   * @stability Experimental
+ */
+  @passErrorToShell()
+  public async addRunToShared(callToShare: DG.FuncCall): Promise<DG.FuncCall> {
+    callToShare.options['isShared'] = true;
+    await this.onBeforeAddingToShared(callToShare);
+
+    const allGroup = await grok.dapi.groups.find(defaultGroupsIds['All users']);
+
+    const dfOutputs = wu(callToShare.outputParams.values() as DG.FuncCallParam[])
+      .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+
+    for (const output of dfOutputs) {
+      const df = callToShare.outputs[output.name] as DG.DataFrame;
+      await grok.dapi.permissions.grant(df.getTableInfo(), allGroup, false);
+    }
+
+    const dfInputs = wu(callToShare.inputParams.values() as DG.FuncCallParam[])
+      .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+    for (const input of dfInputs) {
+      const df = callToShare.outputs[input.name] as DG.DataFrame;
+      await grok.dapi.permissions.grant(df.getTableInfo(), allGroup, false);
+    }
+
+    const savedFavorite = await grok.dapi.functions.calls.save(callToShare);
+    await this.onAfterAddingToShared(savedFavorite);
     return savedFavorite;
   }
 
@@ -638,7 +880,6 @@ export class FunctionView extends DG.ViewBase {
     for (const input of dfInputs)
       pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
 
-
     await this.onAfterLoadRun(pulledRun);
     this.setRunViewReadonly();
     return pulledRun;
@@ -724,9 +965,40 @@ export class FunctionView extends DG.ViewBase {
    * @returns Promise on array of FuncCalls corresponding to the passed Func ID
    * @stability Stable
  */
-  public async pullRuns(funcId: string): Promise<DG.FuncCall[]> {
-    const filter = grok.dapi.functions.calls.filter(`func.id="${funcId}"`).include('session.user, options');
-    const list = filter.list({pageSize: 20});
+  public async pullRuns(funcId: string, filterOptions: FilterOptions = {}, listOptions: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {}): Promise<DG.FuncCall[]> {
+    let filteringString = `func.id="${funcId}"`;
+    filteringString += filterOptions.author ? ` and session.user.id="${filterOptions.author.id}"`:'';
+    switch (filterOptions.date) {
+    case 'Today':
+      filteringString += ` and started > -1d`;
+      break;
+    case 'Yesterday':
+      filteringString += ` and started > -2d and started < -1d`;
+      break;
+    case 'Any time':
+      filteringString += ``;
+      break;
+    case 'Last year':
+      filteringString += `and started > -2y and started < -1y`;
+      break;
+    case 'This year':
+      filteringString += ` and started > -1y`;
+      break;
+    case 'Last month':
+      filteringString += ` and started > -2m and started < -1m`;
+      break;
+    case 'This month':
+      filteringString += ` and started > -1m`;
+      break;
+    case 'Last week':
+      filteringString += ` and started > -2w and started < -1w`;
+      break;
+    case 'This week':
+      filteringString += ` and started > -1w`;
+      break;
+    }
+    const filter = grok.dapi.functions.calls.filter(filteringString).include('session.user, options');
+    const list = filter.list(listOptions);
     return list;
   }
 

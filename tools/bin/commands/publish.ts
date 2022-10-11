@@ -7,6 +7,7 @@ import os from 'os';
 import path from 'path';
 import walk from 'ignore-walk';
 import yaml from 'js-yaml';
+import { checkImportStatements, checkFuncSignatures, extractExternals } from './check';
 import * as utils from '../utils/utils';
 import { Indexable } from '../utils/utils';
 import * as color from '../utils/color-utils';
@@ -18,6 +19,10 @@ const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config
 const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, { encoding: 'utf-8' }));
 const curDir = process.cwd();
 const packDir = path.join(curDir, 'package.json');
+const packageFiles = [
+  'src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
+  'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js',
+];
 
 export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, suffix?: string) {
   // Get the server timestamps
@@ -68,6 +73,24 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   }
 
   let contentValidationLog = '';
+  console.log('Starting package checks...');
+  const checkStart = Date.now();
+  const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts')));
+
+  if (isWebpack) {
+    const webpackConfigPath = path.join(curDir, 'webpack.config.js');
+    const content = fs.readFileSync(webpackConfigPath, { encoding: 'utf-8' });
+    const externals = extractExternals(content);
+    if (externals) {
+      const importWarnings = checkImportStatements(curDir, jsTsFiles, externals);
+      contentValidationLog += importWarnings.join('\n') + (importWarnings.length ? '\n' : '');
+    }
+  }
+
+  const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f));
+  const funcWarnings = checkFuncSignatures(curDir, funcFiles);
+  contentValidationLog += funcWarnings.join('\n') + (funcWarnings.length ? '\n' : '');
+  console.log(`Checks finished in ${Date.now() - checkStart} ms`);
 
   files.forEach((file: any) => {
     let fullPath = file;
@@ -155,7 +178,7 @@ export function publish(args: PublishArgs) {
   'debug', 'release', 'k', 'key', 'suffix'].includes(option))) return false;
 
   if (args.build && args.rebuild) {
-    color.error('Incompatible options: --build and');
+    color.error('Incompatible options: --build and --rebuild');
     return false;
   }
 
