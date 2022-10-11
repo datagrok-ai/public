@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {isCurrentUserAppAdmin} from './helpers';
 
 export const CURRENT_USER = false;
 export const STORAGE_NAME = 'oligo-batch-calculator-storage';
@@ -13,7 +14,6 @@ export const COL_NAMES = {
   ACTION: 'Action',
   CHANGE_LOGS: 'Change logs',
 };
-export const ADMIN_USERS = ['Baozhong Zhao', 'Sijin Guo', 'Saika Siddiqui', 'Vadym Kovadlo'];
 
 export async function getAdditionalModifications(): Promise<DG.DataFrame> {
   const modifications: any[] = [];
@@ -43,8 +43,8 @@ export async function getAdditionalModifications(): Promise<DG.DataFrame> {
 }
 
 export async function addModificationButton(modificationsDf: DG.DataFrame): Promise<void> {
-  grok.dapi.users.current().then((user) => {
-    if (ADMIN_USERS.includes(user.firstName + ' ' + user.lastName)) {
+  grok.dapi.users.current().then(async (user) => {
+    if (await isCurrentUserAppAdmin()) {
       const longName = ui.stringInput(COL_NAMES.LONG_NAMES, '');
       ui.tooltip.bind(longName.root, 'Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'');
       const abbreviation = ui.stringInput(COL_NAMES.ABBREVIATION, '');
@@ -104,7 +104,7 @@ export function deleteAdditionalModification(additionalModificationsDf: DG.DataF
     .add(ui.divText('Do you want to delete row ' + v + ' ?'))
     .onOK(() => {
       grok.dapi.users.current().then(async (user) => {
-        if (!ADMIN_USERS.includes(user.firstName + ' ' + user.lastName))
+        if (!await isCurrentUserAppAdmin())
           return grok.shell.info('You don\'t have permission for this action');
         additionalModificationsDf.rows.removeAt(rowIndex, 1, true);
         const keyToDelete = additionalModificationsDf.getCol(COL_NAMES.ABBREVIATION).get(rowIndex);

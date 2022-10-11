@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {map, normalizedObj} from './map';
 import {COL_NAMES} from './additional-modifications';
 
@@ -9,6 +10,14 @@ export const UNITS = {
   MICRO_MOLE: 'µmole',
   NANO_MOLE: 'nmole',
 };
+
+export async function isCurrentUserAppAdmin() {
+  const userGroup = await grok.dapi.groups.filter('Oligo Batch Calculator Admins').first();
+  const membersLogins = userGroup.members.map((e) => e.name.toLowerCase());
+  const adminsLogins = userGroup.adminMembers.map((e) => e.name.toLowerCase());
+  const allLogins = membersLogins.concat(adminsLogins);
+  return allLogins.includes((await grok.dapi.users.current()).login.toLowerCase());
+}
 
 export function normalizeSequence(sequence: string, synthesizer: string | null, technology: string | null,
   additionalModsDf: DG.DataFrame): string {

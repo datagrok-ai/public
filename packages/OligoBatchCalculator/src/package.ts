@@ -4,8 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {weightsObj, individualBases, nearestNeighbour, SYNTHESIZERS} from './map';
 import {validate} from './validation';
-import {UNITS, deleteWord, saveAsCsv, sortByStringLengthInDescOrder, mergeOptions, normalizeSequence} from './helpers';
-import {COL_NAMES, CURRENT_USER, STORAGE_NAME, ADMIN_USERS, getAdditionalModifications, addModificationButton,
+import {UNITS, deleteWord, saveAsCsv, sortByStringLengthInDescOrder, mergeOptions, normalizeSequence,
+  isCurrentUserAppAdmin} from './helpers';
+import {COL_NAMES, CURRENT_USER, STORAGE_NAME, getAdditionalModifications, addModificationButton,
   deleteAdditionalModification} from './additional-modifications';
 
 export const _package = new DG.Package();
@@ -264,7 +265,8 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   title.style.maxHeight = '40px';
   $(title).children('h2').css('margin', '0px');
 
-  const additionaModifsGrid = DG.Viewer.grid(additionalModsDf, {showRowHeader: false, showCellTooltip: true});
+  const additionaModifsGrid = DG.Viewer.grid(additionalModsDf, {showRowHeader: false, showCellTooltip: true,
+    allowEdit: (await isCurrentUserAppAdmin())});
   additionaModifsGrid.col(COL_NAMES.LONG_NAMES)!.width = 110;
   additionaModifsGrid.col(COL_NAMES.ABBREVIATION)!.width = 80;
   additionaModifsGrid.col(COL_NAMES.MOLECULAR_WEIGHT)!.width = 105;
@@ -348,10 +350,8 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   });
 
   DG.debounce(additionalModsDf.onValuesChanged, 10).subscribe(async (_) => {
-    grok.dapi.users.current().then((user) => {
-      if (!ADMIN_USERS.includes(user.firstName + ' ' + user.lastName))
-        return grok.shell.warning('You don\'t have permission for this action');
-    });
+    if (!await isCurrentUserAppAdmin())
+      return grok.shell.warning('You don\'t have permission for this action');
     if (additionalModsDf.currentCol.name == COL_NAMES.ABBREVIATION) {
       const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
       if (additionalModsDf.currentCell.value.length > 100)
