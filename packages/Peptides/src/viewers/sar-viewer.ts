@@ -89,18 +89,12 @@ export class SARViewerBase extends DG.JsViewer {
           this.viewerGrid.invalidate();
         });
         invariantMapMode.addPostfix('Invariant Map');
-        // const modeSwitch = ui.switchInput('Invariant Map', this.model.isInvariantMap, () => {
-        //   this.model.isInvariantMap = modeSwitch.value;
-        //   this._titleHost.innerText = modeSwitch.value ? 'Invariant Map' : 'Mutation Cliffs';
-        //   this.viewerGrid.invalidate();
-        // });
-        // modeSwitch.root.style.position = 'absolute';
         const setDefaultProperties = (input: DG.InputBase): void => {
           $(input.root).find('.ui-input-editor').css('margin', '0px').attr('type', 'radio');
           $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
         };
         setDefaultProperties(mutationCliffsMode);
-        setDefaultProperties(invariantMapMode)
+        setDefaultProperties(invariantMapMode);
         $(mutationCliffsMode.root).css('padding-right', '10px').css('padding-left', '5px');
 
         switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root]);

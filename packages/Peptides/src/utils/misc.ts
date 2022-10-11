@@ -32,12 +32,8 @@ export function getSeparator(col: DG.Column<string>): string {
   return col.getTag(C.TAGS.SEPARATOR) ?? '';
 }
 
-export function getOrFindNext(i: number, val: boolean, filter: DG.BitSet) {
-  return filter.get(i) === val ? i : filter.findNext(i, val);
-}
-
 export function scaleActivity(activityScaling: string, activityCol: DG.Column<number>, indexes?: number[],
-  ): [DG.DataFrame, (x: number) => number, string] {
+): [DG.DataFrame, (x: number) => number, string] {
   const tempDf = DG.DataFrame.create(activityCol.length);
 
   let formula = (x: number): number => x;
