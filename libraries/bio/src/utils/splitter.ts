@@ -1,15 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 
-import {WebLogo} from '../viewers/web-logo';
+import {getSplitterForColumn} from './macromolecule';
 
 export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.DataFrame {
-  const splitter = WebLogo.getSplitterForColumn(sequenceColumn);
+  const splitter = getSplitterForColumn(sequenceColumn);
   const getCol = (index: number): DG.Column<string> | null => columnList[index] ?? null;
   const createCol = (index: number): DG.Column<string> => {
     const positionCol = resultDf.columns.addNewString((index + 1).toString());
     columnList.push(positionCol);
     return positionCol;
-  }
+  };
 
   let currentMonomerList = splitter(sequenceColumn.get(0)!);
   const columnList: DG.Column<string>[] = [];

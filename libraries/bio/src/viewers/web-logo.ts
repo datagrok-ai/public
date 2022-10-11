@@ -5,16 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import * as rxjs from 'rxjs';
 
-import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
-import {vectorLength, vectorDotProduct} from '@datagrok-libraries/utils/src/vector-operations';
-import {Aminoacids, AminoacidsPalettes} from '../aminoacids';
-import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
-import {UnknownSeqPalettes} from '../unknown';
 import {SeqPalette} from '../seq-palettes';
 import {Subscription} from 'rxjs';
-import {NOTATION, UnitsHandler} from '../utils/units-handler';
+import {UnitsHandler} from '../utils/units-handler';
 import {SliderOptions} from 'datagrok-api/dg';
-import {canvas} from 'datagrok-api/ui';
+import {getSplitter, monomerToShort, pickUpPalette, pickUpSeqCol, SplitterFunc} from '../utils/macromolecule';
 
 declare module 'datagrok-api/src/grid' {
   interface Rect {
@@ -32,10 +27,6 @@ declare global {
     getCursorPosition(event: MouseEvent, r: number): DG.Point;
   }
 }
-
-export type MonomerFreqs = { [m: string]: number };
-export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }
-export type SplitterFunc = (seq: string) => string[];
 
 /**@param {MouseEvent} event
  * @param {number} r devicePixelRation
@@ -82,7 +73,6 @@ export class PositionInfo {
     this.sumForHeightCalc = sumForHeightCalc;
   }
 }
-
 
 export class WebLogo extends DG.JsViewer {
   public static residuesSet = 'nucleotides';
@@ -366,17 +356,17 @@ export class WebLogo extends DG.JsViewer {
     if (this.dataFrame) {
       this.seqCol = this.sequenceColumnName ? this.dataFrame.col(this.sequenceColumnName) : null;
       if (this.seqCol == null) {
-        this.seqCol = WebLogo.pickUpSeqCol(this.dataFrame);
+        this.seqCol = pickUpSeqCol(this.dataFrame);
         this.sequenceColumnName = this.seqCol ? this.seqCol.name : null;
       }
       if (this.seqCol) {
         const units: string = this.seqCol!.getTag(DG.TAGS.UNITS);
         const separator: string = this.seqCol!.getTag(UnitsHandler.TAGS.separator);
-        this.splitter = WebLogo.getSplitter(units, separator);
+        this.splitter = getSplitter(units, separator);
         this.unitsHandler = new UnitsHandler(this.seqCol);
 
         this.updatePositions();
-        this.cp = WebLogo.pickUpPalette(this.seqCol);
+        this.cp = pickUpPalette(this.seqCol);
       } else {
         this.splitter = null;
         this.positionNames = [];
@@ -737,7 +727,7 @@ export class WebLogo extends DG.JsViewer {
     for (let jPos = this.firstVisibleIndex; jPos < lastVisibleIndex; jPos++) {
       for (const [monomer, pmInfo] of Object.entries(this.positions[jPos].freq)) {
         if (monomer !== '-') {
-          const monomerTxt = WebLogo.monomerToShort(monomer, 5);
+          const monomerTxt = monomerToShort(monomer, 5);
           const b = pmInfo.bounds;
           const left = b.left - this.positionWidthWithMargin * this.firstVisibleIndex;
 
@@ -843,230 +833,7 @@ export class WebLogo extends DG.JsViewer {
     }
   }
 
-  /** Selects a suitable palette based on column data
-   * @param {DG.Column} seqCol Column to look for a palette
-   * @param {number}  minLength minimum length of sequence to detect palette (empty strings are allowed)
-   * @return {SeqPalette} Palette corresponding to the alphabet of the sequences in the column
-   */
-  public static pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPalette {
-    let res: SeqPalette | null;
-    switch (seqCol.semType) {
-    case Aminoacids.SemTypeMultipleAlignment:
-      res = AminoacidsPalettes.GrokGroups;
-      break;
-    case Nucleotides.SemTypeMultipleAlignment:
-      res = NucleotidesPalettes.Chromatogram;
-      break;
-    }
-    const stats: SeqColStats = WebLogo.getStats(seqCol, minLength, WebLogo.splitterAsFasta);
-
-    const alphabetCandidates: [Set<string>, SeqPalette][] = [
-      [new Set(Object.keys(Nucleotides.Names)), NucleotidesPalettes.Chromatogram],
-      [new Set(Object.keys(Aminoacids.Names)), AminoacidsPalettes.GrokGroups],
-    ];
-    // Calculate likelihoods for alphabet_candidates
-    const alphabetCandidatesSim: number[] = alphabetCandidates
-      .map((c) => WebLogo.getAlphabetSimilarity(stats.freq, c[0]));
-    const maxCos = Math.max(...alphabetCandidatesSim);
-    if (maxCos > 0.55)
-      res = alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][1];
-    else
-      res = UnknownSeqPalettes.Color;
-
-    return res;
-  }
-
   public getAlphabetSize(): number {
     return this.unitsHandler?.getAlphabetSize() ?? 0;
-  }
-
-  /** Stats of sequences with specified splitter func, returns { freq, sameLength }.
-   * @param {DG.Column} seqCol
-   * @param {number} minLength
-   * @param {SplitterFunc} splitter
-   * @return { SeqColStats }, sameLength: boolean } stats of column sequences
-   */
-  static getStats(seqCol: DG.Column, minLength: number, splitter: SplitterFunc): SeqColStats {
-    const freq: { [m: string]: number } = {};
-    let sameLength = true;
-    let firstLength = null;
-
-    for (const seq of seqCol.categories) {
-      const mSeq = splitter(seq);
-
-      if (firstLength == null)
-        firstLength = mSeq.length;
-      else if (mSeq.length !== firstLength)
-        sameLength = false;
-
-      if (mSeq.length > minLength) {
-        for (const m of mSeq) {
-          if (!(m in freq))
-            freq[m] = 0;
-          freq[m] += 1;
-        }
-      }
-    }
-    return {freq: freq, sameLength: sameLength};
-  }
-
-  /** Calculate similarity in current sequence and alphabet.
-   * @param {MonomerFreqs} freq
-   * @param {Set<string>} alphabet
-   * @param {string} gapSymbol
-   * @return {number} Cosine similarity
-   */
-  public static getAlphabetSimilarity(freq: MonomerFreqs, alphabet: Set<string>, gapSymbol: string = '-'): number {
-    const keys = new Set<string>([...new Set(Object.keys(freq)), ...alphabet]);
-    keys.delete(gapSymbol);
-
-    const freqA: number[] = [];
-    const alphabetA: number[] = [];
-    for (const m of keys) {
-      freqA.push(m in freq ? freq[m] : 0);
-      alphabetA.push(alphabet.has(m) ? 1 : 0);
-    }
-    /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
-    const freqV: Vector = new Vector(freqA);
-    const alphabetV: Vector = new Vector(alphabetA);
-    return vectorDotProduct(freqV, alphabetV) / (vectorLength(freqV) * vectorLength(alphabetV));
-  }
-
-  // Previous version of pickUpSeqCol
-  // /** First try to find column with semType 'alignedSequence'.
-  //  * Next look for column with data alphabet corresponding to any of the known palettes.
-  //  * @param {DG.DataFrame} dataFrame
-  //  * @return {DG.Column} The column we were looking for or null
-  //  */
-  // private pickUpSeqCol(dataFrame: DG.DataFrame): DG.Column | null {
-  //   let res: DG.Column | null = dataFrame.columns.bySemType('alignedSequence');
-  //   if (res == null) {
-  //     for (const col of dataFrame.columns) {
-  //       const cp = WebLogo.pickUpPalette(col as DG.Column, 5);
-  //       if (cp !== null && !(cp instanceof UnknownSeqPalette)) {
-  //         res = col;
-  //         break;
-  //       }
-  //     }
-  //   }
-  //   return res;
-  // }
-
-  public static pickUpSeqCol(df: DG.DataFrame): DG.Column | null {
-    const semTypeColList = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
-    let resCol: DG.Column | null = semTypeColList.find((col) => {
-      const units = col.getTag(DG.TAGS.UNITS);
-      return units ? units.indexOf('MSA') !== -1 : false;
-    }) ?? null;
-    if (!resCol && semTypeColList.length > 0)
-      resCol = semTypeColList[0];
-    return resCol;
-  }
-
-  private static monomerRe = /\[(\w+)\]|(\w)|(-)/g;
-
-  /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
-  private static aaSynonyms: { [name: string]: string } = {
-    '[MeNle]': 'L', // Nle - norleucine
-    '[MeA]': 'A',
-    '[MeG]': 'G',
-    '[MeF]': 'F',
-  };
-
-  /** Split sequence for single character monomers, square brackets multichar monomer names or gap symbol.
-   * @param {any} seq object with sequence
-   * @return {string[]} array of monomers
-   */
-  public static splitterAsFasta(seq: any): string[] {
-    return wu<RegExpMatchArray>(seq.toString().matchAll(WebLogo.monomerRe))
-      .map((ma: RegExpMatchArray) => {
-        let mRes: string;
-        const m: string = ma[0];
-        if (m.length > 1) {
-          mRes = ma[1];
-        } else {
-          mRes = m;
-        }
-        return mRes;
-      }).toArray();
-  }
-
-  private static helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
-  private static helmPp1Re = /\[([^\[\]]+)]/g;
-
-  /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
-   * Only for linear polymers, does not split RNA for ribose and phosphate monomers.
-   * @param {string} seq Source string of HELM notation
-   * @return {string[]}
-   */
-  public static splitterAsHelm(seq: any): string[] {
-    WebLogo.helmRe.lastIndex = 0;
-    const ea: RegExpExecArray | null = WebLogo.helmRe.exec(seq.toString());
-    const inSeq: string | null = ea ? ea[2] : null;
-
-    const mmPostProcess = (mm: string): string => {
-      WebLogo.helmPp1Re.lastIndex = 0;
-      const pp1M = WebLogo.helmPp1Re.exec(mm);
-      if (pp1M && pp1M.length >= 2)
-        return pp1M[1];
-      else
-        return mm;
-    };
-
-    const mmList: string[] = inSeq ? inSeq.split('.') : [];
-    return mmList.map(mmPostProcess);
-  }
-
-  /** Gets method to split sequence by separator
-   * @param {string} separator
-   * @param limit
-   * @return {SplitterFunc}
-   */
-  public static getSplitterWithSeparator(separator: string, limit: number | undefined = undefined): SplitterFunc {
-    return (seq: string) => {
-      return seq.split(separator, limit);
-    };
-  }
-
-  /** Get splitter method to split sequences to monomers
-   * @param {string} units
-   * @param {string} separator
-   * @param limit
-   * @return {SplitterFunc}
-   */
-  public static getSplitter(units: string, separator: string, limit: number | undefined = undefined): SplitterFunc {
-    if (units.toLowerCase().startsWith(NOTATION.FASTA))
-      return WebLogo.splitterAsFasta;
-    else if (units.toLowerCase().startsWith(NOTATION.SEPARATOR))
-      return WebLogo.getSplitterWithSeparator(separator, limit);
-    else if (units.toLowerCase().startsWith(NOTATION.HELM))
-      return WebLogo.splitterAsHelm;
-    else
-      throw new Error(`Unexpected units ${units} .`);
-
-    // TODO: Splitter for HELM
-  }
-
-  /** Generate splitter function for sequence column
-   * @param {DG.Column} col
-   * @return {SplitterFunc} Splitter function
-   */
-  public static getSplitterForColumn(col: DG.Column): SplitterFunc {
-    if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
-      throw new Error(`Get splitter for semType "${DG.SEMTYPE.MACROMOLECULE}" only.`);
-
-    const units = col.getTag(DG.TAGS.UNITS);
-    const separator = col.getTag(UnitsHandler.TAGS.separator);
-    return WebLogo.getSplitter(units, separator);
-  }
-
-  private static longMonomerPartRe = /(\w+)/g;
-
-  /** Convert long monomer names to short ones */
-  public static monomerToShort(amino: string, maxLengthOfMonomer: number): string {
-    const shortAminoMatch: RegExpMatchArray | null = amino.match(WebLogo.longMonomerPartRe);
-    const needAddDots: boolean = amino.length > maxLengthOfMonomer || (shortAminoMatch?.length ?? 0) > 1;
-    const shortAmino = shortAminoMatch?.[0] ?? ' ';
-    return !needAddDots ? shortAmino : shortAmino.substring(0, maxLengthOfMonomer) + '…';
   }
 }

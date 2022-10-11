@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {WebLogo, SeqColStats} from '../viewers/web-logo';
+import {getAlphabetSimilarity, getStats, SeqColStats, splitterAsFasta} from './macromolecule';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 export const enum NOTATION {
@@ -49,7 +49,7 @@ export class UnitsHandler {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
       throw new Error('Fasta column must be MACROMOLECULE');
 
-    const stats: SeqColStats = WebLogo.getStats(col, 5, WebLogo.splitterAsFasta);
+    const stats: SeqColStats = getStats(col, 5, splitterAsFasta);
     const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
 
     const alphabetCandidates: [string, Set<string>][] = [
@@ -60,7 +60,7 @@ export class UnitsHandler {
 
     // Calculate likelihoods for alphabet_candidates
     const alphabetCandidatesSim: number[] = alphabetCandidates.map(
-      (c) => WebLogo.getAlphabetSimilarity(stats.freq, c[1]));
+      (c) => getAlphabetSimilarity(stats.freq, c[1]));
     const maxCos = Math.max(...alphabetCandidatesSim);
     const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
 
