@@ -265,9 +265,12 @@ export class WebLogo extends DG.JsViewer {
       }
       /* Resize slider if we can resize do that */
       if ((this.allowResize) && (!this.turnOfResizeForOneSetValue) &&
-        (this.slider.max - this.slider.min < this.Length - 1)) {
+        (this.visibleSlider)) {
         const countOfPositions = Math.ceil(this.slider.max - this.slider.min);
-        this._positionWidth = (this.canvas.width / countOfPositions) - this.positionMarginValue;
+        const calculatedWidth = (this.canvas.width / countOfPositions) - this.positionMarginValue;
+        // saving positionWidth value global (even if slider is not visible)
+        this.positionWidth = calculatedWidth;
+        this._positionWidth = calculatedWidth;
       }
       this.turnOfResizeForOneSetValue = false;
       this.render(true);
@@ -433,13 +436,13 @@ export class WebLogo extends DG.JsViewer {
   }
 
   private checkIsHideSlider(): boolean {
-    let showSliderWithfitArea = true;
+    let showSliderWithFitArea = true;
     const minScale = Math.min(this.xScale, this.yScale);
 
-    if ((minScale == this.xScale) || (minScale <= 1)) {
-      showSliderWithfitArea = false;
+    if (((minScale == this.xScale) || (minScale <= 1)) && (this.fitArea)) {
+      showSliderWithFitArea = false;
     }
-    return ((this.fixWidth || Math.floor(this.canvas.width / this.positionWidthWithMargin) >= this.Length) && (showSliderWithfitArea));
+    return ((this.fixWidth || Math.ceil(this.canvas.width / this.positionWidthWithMargin) >= this.Length) || (showSliderWithFitArea));
   }
 
   setSliderVisibility(visible: boolean): void {
@@ -763,13 +766,11 @@ export class WebLogo extends DG.JsViewer {
 
     const r: number = window.devicePixelRatio;
 
-    let width: number = this.Length * this.positionWidth / r;
-    let height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
+    let width: number = this.widthArea;
+    let height = this.heightArea;
 
     if ((this.fitArea) && (!this.visibleSlider)) {
-      const yScale: number = this.root.clientHeight / height;
-      const xScale: number = (this.root.clientWidth - this.Length * this.positionMarginValue) / width;
-      const scale = Math.max(1, Math.min(xScale, yScale));
+      const scale = Math.max(1, Math.min(this.xScale, this.yScale));
       width = width * scale;
       height = height * scale;
       this._positionWidth = this.positionWidth * scale;
@@ -820,10 +821,10 @@ export class WebLogo extends DG.JsViewer {
         hostLeftMargin = 0;
         break;
       case 'center':
-        hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2) * r;
+        hostLeftMargin = Math.max(0, (this.root.clientWidth - width) / 2);
         break;
       case 'right':
-        hostLeftMargin = Math.max(0, this.root.clientWidth - width) * r;
+        hostLeftMargin = Math.max(0, this.root.clientWidth - width);
         break;
       }
       this.host.style.setProperty('margin-top', `${hostTopMargin}px`, 'important');
