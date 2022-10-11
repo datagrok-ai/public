@@ -2,18 +2,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 export const _package = new DG.Package();
 
 import {MacromoleculeDifferenceCellRenderer, MonomerCellRenderer} from './utils/cell-renderer';
-import {WebLogo, SeqColStats} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
 import {SequenceAlignment, Aligned} from './seq_align';
-import {Nucleotides} from '@datagrok-libraries/bio/src/nucleotides';
-import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 import {getEmbeddingColsNames, sequenceSpace} from './analysis/sequence-space';
-import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './analysis/sequence-activity-cliffs';
 import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
@@ -21,8 +18,6 @@ import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {
   generateManySequences,
@@ -92,7 +87,7 @@ export function checkInputColumn(
   let res: boolean = true;
   let msg: string = '';
 
-  const uh = new UnitsHandler(col);
+  const uh = new bio.UnitsHandler(col);
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE) {
     grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
     res = false;
@@ -142,7 +137,7 @@ export function sequenceAlignment(alignType: string, alignTable: string, gap: nu
 //tags: viewer, panel
 //output: viewer result
 export function webLogoViewer() {
-  return new WebLogo();
+  return new bio.WebLogo();
 }
 
 //name: VdRegions
@@ -308,7 +303,7 @@ export async function compositionAnalysis(): Promise<void> {
     if (col.semType != DG.SEMTYPE.MACROMOLECULE)
       return false;
 
-    const colUH = new UnitsHandler(col);
+    const colUH = new bio.UnitsHandler(col);
     // TODO: prevent for cyclic, branched or multiple chains in Helm
     return true;
   });
@@ -327,7 +322,7 @@ export async function compositionAnalysis(): Promise<void> {
     return;
   } else if (colList.length > 1) {
     const colListNames: string [] = colList.map((col) => col.name);
-    const selectedCol = colList.find((c) => { return (new UnitsHandler(c)).isMsa(); });
+    const selectedCol = colList.find((c) => { return (new bio.UnitsHandler(c)).isMsa(); });
     const colInput: DG.InputBase = ui.choiceInput(
       'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
     ui.dialog({
@@ -379,7 +374,7 @@ export async function peptideMolecule(macroMolecule: DG.Cell): Promise<DG.Widget
 //input: string fileContent
 //output: list tables
 export function importFasta(fileContent: string): DG.DataFrame [] {
-  const ffh = new FastaFileHandler(fileContent);
+  const ffh = new bio.FastaFileHandler(fileContent);
   return ffh.importFasta();
 }
 
@@ -454,7 +449,7 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
 //tags: panel, bio
 //input: column col {semType: Macromolecule}
 export function splitToMonomers(col: DG.Column<string>): void {
-  if (!col.getTag(UnitsHandler.TAGS.aligned).includes(C.MSA))
+  if (!col.getTag(bio.UnitsHandler.TAGS.aligned).includes(C.MSA))
     return grok.shell.error('Splitting is applicable only for aligned sequences');
 
   const tempDf = splitAlignedSequences(col);
@@ -471,7 +466,7 @@ export function splitToMonomers(col: DG.Column<string>): void {
 //name: Bio: getHelmMonomers
 //input: column col {semType: Macromolecule}
 export function getHelmMonomers(seqCol: DG.Column<string>): string[] {
-  const stats = WebLogo.getStats(seqCol, 1, WebLogo.splitterAsHelm);
+  const stats = bio.getStats(seqCol, 1, bio.splitterAsHelm);
   return Object.keys(stats.freq);
 }
 
