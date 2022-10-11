@@ -36,11 +36,10 @@ export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName
     sequences = sequences.map((v: string, _) => AlignedSequenceEncoder.clean(v).replace(/\-/g, ''));
 
   const fasta = _stringsToFasta(sequences);
-  const CLI = await new Aioli({
-    tool: 'kalign',
-    version: '3.3.1',
-    reinit: true,
-  });
+  const CLI = await new Aioli([
+    'base/1.0.0',
+    {tool: 'kalign', version: '3.3.1', reinit: true,}
+  ]);
 
   console.log(['fasta.length =', fasta.length]);
 

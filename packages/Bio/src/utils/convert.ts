@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import $ from 'cash-dom';
 
+import $ from 'cash-dom';
 import {Subscription} from 'rxjs';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {NOTATION, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
