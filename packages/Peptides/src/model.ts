@@ -216,12 +216,12 @@ export class PeptidesModel {
     const activityCol = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY)!;
     splitSeqDf.columns.add(activityCol);
 
-    this.joinDataFrames(positionColumns, splitSeqDf);
+    this.joinDataFrames(positionColumns, splitSeqDf, alphabet);
 
-    for (const dfCol of this.df.columns) {
-      if (positionColumns.includes(dfCol.name))
-        setAARRenderer(dfCol, alphabet, this.sourceGrid);
-    }
+    // for (const dfCol of this.df.columns) {
+    //   if (positionColumns.includes(dfCol.name))
+    //     setAARRenderer(dfCol, alphabet, this.sourceGrid);
+    // }
 
     this.sortSourceGrid();
 
@@ -377,16 +377,20 @@ export class PeptidesModel {
     this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
   }
 
-  joinDataFrames(positionColumns: string[], splitSeqDf: DG.DataFrame): void {
+  joinDataFrames(positionColumns: string[], splitSeqDf: DG.DataFrame, alphabet: string): void {
     // append splitSeqDf columns to source table and make sure columns are not added more than once
     const name = this.df.name;
     // const dfColsSet = new Set(this.df.columns.names());
     for (const colName of positionColumns) {
       const col = this.df.col(colName);
+      const newCol = splitSeqDf.getCol(colName);
       if (col === null)
-        this.df.columns.add(splitSeqDf.getCol(colName));
-      else
-        this.df.columns.replace(colName, splitSeqDf.getCol(colName));
+        this.df.columns.add(newCol);
+      else {
+        this.df.columns.remove(colName);
+        this.df.columns.add(newCol);
+      }
+      setAARRenderer(newCol, alphabet, this.sourceGrid);
     }
     // if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
     //   this.df.join(splitSeqDf, [C.COLUMNS_NAMES.ACTIVITY], [C.COLUMNS_NAMES.ACTIVITY],
@@ -449,7 +453,7 @@ export class PeptidesModel {
     for (let i = 0; i < matrixDf.rowCount; i++) {
       const position: string = posCol.get(i);
       const aar: string = aarCol.get(i);
-      const mask = DG.BitSet.create(sourceDfLen, (j) => this.df.get(position, j) == aar);
+      const mask = DG.BitSet.create(sourceDfLen, (j) => this.df.get(position, j) === aar);
       const stats = getStats(activityCol, mask);
 
       mdCol.set(i, stats.meanDifference);
