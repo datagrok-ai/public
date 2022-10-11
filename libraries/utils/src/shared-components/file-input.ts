@@ -9,6 +9,8 @@ export const EXCEL_BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.sp
 export class FileInput {
   // events to emit
   public uploadedFile$ = new Subject<File | null>();
+  // same event as above but in DG-style
+  public onFileUploaded = new Subject<File | null>();
 
   public root = ui.div();
 
@@ -23,6 +25,8 @@ export class FileInput {
     public fileType = EXCEL_BLOB_TYPE
   ) {
     this.draw();
+
+    this.uploadedFile$.subscribe((file) => this.onFileUploaded.next(file));
 
     if (onValueChanged)
       this.uploadedFile$.subscribe((newValue: any) => onValueChanged(newValue));
