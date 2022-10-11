@@ -129,8 +129,7 @@ export async function _toAtomicLevel(
   const reconstructed: string[] = new Array(columnLength);
   for (let row = 0; row < columnLength; ++row) {
     const monomerSeq = monomerSequencesArray[row];
-    // reconstructed[row] = monomerSeqToMolfile(monomerSeq, monomersDict, alphabet, polymerType); // todo: restore dependence on polymerType
-    reconstructed[row] = monomerSeqToMolfile(monomerSeq, monomersDict, alphabet);
+    reconstructed[row] = monomerSeqToMolfile(monomerSeq, monomersDict, alphabet, polymerType);
     console.log(reconstructed[row]);
   }
 
@@ -251,14 +250,35 @@ function getMolGraph(
     const atoms = parseAtomBlock(molfileV3K, counts.atomCount);
     const bonds = parseBondBlock(molfileV3K, counts.bondCount);
     const meta = getMonomerMetadata(atoms, bonds, capGroups, capGroupIdxMap);
+
     const monomerGraph: MolGraph = {atoms: atoms, bonds: bonds, meta: meta};
 
-    if (polymerType === HELM_POLYMER_TYPE.PEPTIDE)
+    if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
       adjustPeptideMonomerGraph(monomerGraph);
+    } else { // nucleotides
+      if (monomerSymbol === RIBOSE || monomerSymbol === DEOXYRIBOSE)
+        adjustSugarMonomerGraph(monomerGraph);
+      else if (monomerSymbol === PHOSPHATE)
+        adjustPhosphateMonomerGraph(monomerGraph);
+      else
+        adjustBaseMonomerGraph(monomerGraph);
+    }
 
     setShifts(monomerGraph);
     removeHydrogen(monomerGraph);
-    removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
+    // remove the 'rightmost' chain-extending r-group node in the backbone
+    if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
+      removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
+    } else { // nucleotides
+      if (monomerSymbol === RIBOSE || monomerSymbol === DEOXYRIBOSE) {
+        // remove the 'rightmost' chain-extending r-group in the backbone
+        removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
+        // remove the branching r-group
+        removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[2]);
+      } else { // nucleobases
+        removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[0]);
+      }
+    }
 
     return monomerGraph;
   }
@@ -267,7 +287,7 @@ function getMolGraph(
 // todo: doc
 function getMonomerMetadata(atoms: Atoms, bonds: Bonds,
   capGroups: string[], capGroupIdxMap: Map<number, number>): MonomerMetadata {
-  const meta: MonomerMetadata = { // to be filled with actual values below
+  const meta: MonomerMetadata = {
     backboneShift: null,
     branchShift: null,
     terminalNodes: [],
@@ -337,7 +357,7 @@ function setTerminalNodes(bonds: Bonds, meta: MonomerMetadata): void {
   let i = 0;
   let j = 0;
   while ((i < atomPairs.length) && j < terminalNodes.length) {
-    // rNodes array is sorted so that its 0th and 1st elements (if
+    // rNodes array is sorted so that its 0th and 1st elements (if both
     // present) correspond to the chain extending (i.e. not branching) r-groups
     for (let k = 0; k < terminalNodes.length; ++k) {
       for (let l = 0; l < 2; ++l) {
@@ -583,69 +603,71 @@ function removeHydrogen(monomerGraph: MolGraph): void {
 
 /* Remove node 'removedNode' and the associated bonds. Notice, numeration of
  * nodes in molfiles starts from 1, not 0 */
-function removeNodeAndBonds(monomerGraph: MolGraph, removedNode: number): void {
-  const removedNodeIdx = removedNode - 1;
-  const atoms = monomerGraph.atoms;
-  const bonds = monomerGraph.bonds;
-  const meta = monomerGraph.meta;
+function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void {
+  if (typeof removedNode !== 'undefined') {
+    const removedNodeIdx = removedNode - 1;
+    const atoms = monomerGraph.atoms;
+    const bonds = monomerGraph.bonds;
+    const meta = monomerGraph.meta;
 
-  // remove the node from atoms
-  atoms.atomTypes.splice(removedNodeIdx, 1);
-  atoms.x.splice(removedNodeIdx, 1);
-  atoms.y.splice(removedNodeIdx, 1);
-  atoms.kwargs.splice(removedNodeIdx, 1);
+    // remove the node from atoms
+    atoms.atomTypes.splice(removedNodeIdx, 1);
+    atoms.x.splice(removedNodeIdx, 1);
+    atoms.y.splice(removedNodeIdx, 1);
+    atoms.kwargs.splice(removedNodeIdx, 1);
 
-  // update the values of terminal and r-group nodes if necessary
-  for (let i = 0; i < meta.terminalNodes.length; ++i) {
-    if (meta.terminalNodes[i] > removedNode)
-      --meta.terminalNodes[i];
-    else if (meta.terminalNodes[i] === removedNode)
-      meta.terminalNodes[i] = -1; // sentinel to mark the value as removed
-  }
-  for (let i = 0; i < meta.rNodes.length; ++i) {
-    if (meta.rNodes[i] > removedNode)
-      --meta.rNodes[i];
-    else if (meta.rNodes[i] === removedNode)
-      meta.rNodes[i] = -1; // sentinel to mark the value as removed
-  }
-
-  // update indices of atoms in bonds
-  let i = 0;
-  while (i < bonds.atomPairs.length) {
-    const firstAtom = bonds.atomPairs[i][0];
-    const secondAtom = bonds.atomPairs[i][1];
-    if (firstAtom === removedNode || secondAtom === removedNode) {
-      bonds.atomPairs.splice(i, 1);
-      bonds.bondTypes.splice(i, 1);
-      if (bonds.bondConfiguration.has(i))
-        bonds.bondConfiguration.delete(i);
-      if (bonds.kwargs.has(i))
-        bonds.kwargs.delete(i);
-      --i;
-    } else {
-      bonds.atomPairs[i][0] = (firstAtom > removedNode) ? firstAtom - 1 : firstAtom;
-      bonds.atomPairs[i][1] = (secondAtom > removedNode) ? secondAtom - 1 : secondAtom;
+    // update the values of terminal and r-group nodes if necessary
+    for (let i = 0; i < meta.terminalNodes.length; ++i) {
+      if (meta.terminalNodes[i] > removedNode)
+        --meta.terminalNodes[i];
+      else if (meta.terminalNodes[i] === removedNode)
+        meta.terminalNodes[i] = -1; // sentinel to mark the value as removed
     }
-    ++i;
-  }
+    for (let i = 0; i < meta.rNodes.length; ++i) {
+      if (meta.rNodes[i] > removedNode)
+        --meta.rNodes[i];
+      else if (meta.rNodes[i] === removedNode)
+        meta.rNodes[i] = -1; // sentinel to mark the value as removed
+    }
 
-  // update bondConfiguration and kwargs keys
-  let keys = Array.from(bonds.bondConfiguration.keys());
-  keys.forEach((key) => {
-    if (bonds.bondConfiguration.has(key) && key > removedNodeIdx) {
-      const value = bonds.bondConfiguration.get(key)!;
-      bonds.bondConfiguration.delete(key);
-      bonds.bondConfiguration.set(key - 1, value);
+    // update indices of atoms in bonds
+    let i = 0;
+    while (i < bonds.atomPairs.length) {
+      const firstAtom = bonds.atomPairs[i][0];
+      const secondAtom = bonds.atomPairs[i][1];
+      if (firstAtom === removedNode || secondAtom === removedNode) {
+        bonds.atomPairs.splice(i, 1);
+        bonds.bondTypes.splice(i, 1);
+        if (bonds.bondConfiguration.has(i))
+          bonds.bondConfiguration.delete(i);
+        if (bonds.kwargs.has(i))
+          bonds.kwargs.delete(i);
+        --i;
+      } else {
+        bonds.atomPairs[i][0] = (firstAtom > removedNode) ? firstAtom - 1 : firstAtom;
+        bonds.atomPairs[i][1] = (secondAtom > removedNode) ? secondAtom - 1 : secondAtom;
+      }
+      ++i;
     }
-  });
-  keys = Array.from(bonds.kwargs.keys());
-  keys.forEach((key) => {
-    if (bonds.kwargs.has(key) && key > removedNodeIdx) {
-      const value = bonds.kwargs.get(key)!;
-      bonds.kwargs.delete(key);
-      bonds.kwargs.set(key - 1, value);
-    }
-  });
+
+    // update bondConfiguration and kwargs keys
+    let keys = Array.from(bonds.bondConfiguration.keys());
+    keys.forEach((key) => {
+      if (bonds.bondConfiguration.has(key) && key > removedNodeIdx) {
+        const value = bonds.bondConfiguration.get(key)!;
+        bonds.bondConfiguration.delete(key);
+        bonds.bondConfiguration.set(key - 1, value);
+      }
+    });
+    keys = Array.from(bonds.kwargs.keys());
+    keys.forEach((key) => {
+      if (bonds.kwargs.has(key) && key > removedNodeIdx) {
+        const value = bonds.kwargs.get(key)!;
+        bonds.kwargs.delete(key);
+        bonds.kwargs.set(key - 1, value);
+      }
+    });
+  }
 }
 
 // todo: rewrite description
@@ -676,6 +698,10 @@ function adjustPeptideMonomerGraph(monomer: MolGraph): void {
   // flip hydroxyl group with double-bound O inside carboxyl group if necessary
   flipHydroxilGroup(monomer, doubleBondedOxygen);
 }
+
+function adjustPhosphateMonomerGraph(monomer: MolGraph):void { }
+function adjustSugarMonomerGraph(monomer: MolGraph):void { }
+function adjustBaseMonomerGraph(monomer: MolGraph):void { }
 
 /* Flip carboxyl group with the radical in a peptide monomer in case the
  * carboxyl group is in the lower half-plane */
@@ -761,7 +787,7 @@ function flipMolGraph(molGraph: MolGraph, axis: boolean): void {
   }
 }
 
-/* Flips double-bonded O in carbonyl group with OH in order for the monomers
+/* Flips double-bonded 'O' in carbonyl group with 'OH' in order for the monomers
  * to have standard representation simplifying their concatenation. The
  * monomer must already be adjusted with adjustPeptideMonomerGraph in order for this function to be implemented  */
 function flipHydroxilGroup(monomer: MolGraph, doubleBondedOxygen: number): void {
@@ -801,6 +827,7 @@ function swapNodes(monomer: MolGraph, nodeOne: number, nodeTwo: number): void {
   y[nodeTwoIdx] = tmpY;
 }
 
+// todo: doc
 function constructBondsMap(monomer: MolGraph): Map<number, Array<number>> {
   const map = new Map<number, Array<number>>();
   for (const atomPairs of monomer.bonds.atomPairs) {
@@ -816,7 +843,7 @@ function constructBondsMap(monomer: MolGraph): Map<number, Array<number>> {
   return map;
 }
 
-/* Shift the backbone's Cartesian coordinates, yShift is optional  */
+/* Shift molGraph in the XOY plane  */
 function shiftCoordinates(molGraph: MolGraph, xShift: number, yShift?: number): void {
   const x = molGraph.atoms.x;
   const y = molGraph.atoms.y;
@@ -829,32 +856,25 @@ function shiftCoordinates(molGraph: MolGraph, xShift: number, yShift?: number): 
 
 /* Translate a sequence of monomer symbols into Molfile V3000 */
 function monomerSeqToMolfile(monomerSeq: string[], monomersDict: Map<string,
-  MolGraph>, alphabet: ALPHABET): string {
+  MolGraph>, alphabet: ALPHABET, polymerType: HELM_POLYMER_TYPE
+): string {
   // todo: handle the case when the polymer is empty
   if (monomerSeq.length === 0)
-    throw new Error('The monomerSeq is empty');
+    throw new Error('monomerSeq is empty');
 
-  // define atom and bond counts
-  let atomCount = 0;
-  let bondCount = 0;
-  for (const monomerSymbol of monomerSeq) {
-    const monomer = monomersDict.get(monomerSymbol)!;
-    atomCount += monomer?.atoms.x.length;
-    bondCount += (monomer.bonds.bondTypes.length + 1); // +1 because of C-NH
-  }
-  if (alphabet === ALPHABET.PT)
-    atomCount += 1; // because of the terminal OH
-  // else
-  //   atomCount +=
+  // define atom and bond counts, taking into account the bond type
+  const {atomCount, bondCount} = getResultingAtomBondCounts(monomerSeq, monomersDict, alphabet, polymerType);
 
-  // create the arrays to store lines of the resulting molfile
+  // create arrays to store lines of the resulting molfile
   const molfileAtomBlock = new Array<string>(atomCount);
   const molfileBondBlock = new Array<string>(bondCount);
 
-  const positionShift = new Array<number>(2).fill(0);
   let nodeShift = 0;
   let bondShift = 0;
-  let attachNode = 0; // node to which the next monomer is attached
+  const backbonePositionShift = new Array<number>(2).fill(0);
+  const branchPositionShift = new Array<number>(2).fill(0);
+  let backboneAttachNode = 0; // node to which the next backbone is attached
+  let branchAttachNode = 0;
   let flipFactor = 1;
   // todo: should we consider representations other than planar?
 
@@ -868,8 +888,8 @@ function monomerSeqToMolfile(monomerSeq: string[], monomersDict: Map<string,
       const atomIdx = nodeShift + j + 1;
       molfileAtomBlock[nodeShift + j] = V3K_BEGIN_DATA_LINE + atomIdx + ' ' +
         monomer.atoms.atomTypes[j] + ' ' +
-        keepPrecision(positionShift[0] + monomer.atoms.x[j]) + ' ' +
-        keepPrecision(positionShift[1] + flipFactor * monomer.atoms.y[j]) +
+        keepPrecision(backbonePositionShift[0] + monomer.atoms.x[j]) + ' ' +
+        keepPrecision(backbonePositionShift[1] + flipFactor * monomer.atoms.y[j]) +
         ' ' + monomer.atoms.kwargs[j];
     }
 
@@ -897,9 +917,9 @@ function monomerSeqToMolfile(monomerSeq: string[], monomersDict: Map<string,
     // todo: refactor, this predicate should only be checked once for the column
     if (alphabet === ALPHABET.PT) {
       // hardcoded peptide bond
-      if (attachNode !== 0) {
+      if (backboneAttachNode !== 0) {
         const bondIdx = bondShift;
-        const firstAtom = attachNode;
+        const firstAtom = backboneAttachNode;
         const secondAtom = monomer.meta.terminalNodes[0] + nodeShift;
         molfileBondBlock[bondShift - 1] = V3K_BEGIN_DATA_LINE + bondIdx + ' ' +
           1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
@@ -907,31 +927,31 @@ function monomerSeqToMolfile(monomerSeq: string[], monomersDict: Map<string,
       }
     }
 
-    attachNode = nodeShift + monomer.meta.terminalNodes[1];
+    backboneAttachNode = nodeShift + monomer.meta.terminalNodes[1];
     bondShift += monomer.bonds.atomPairs.length + 1;
 
     nodeShift += monomer.atoms.atomTypes.length;
-    positionShift[0] += monomer.meta.backboneShift![0]; // todo: non-null check
-    positionShift[1] += flipFactor * monomer.meta.backboneShift![1];
+    backbonePositionShift[0] += monomer.meta.backboneShift![0]; // todo: non-null check
+    backbonePositionShift[1] += flipFactor * monomer.meta.backboneShift![1];
   }
 
   if (alphabet === ALPHABET.PT) {
     // add terminal oxygen
     const atomIdx = nodeShift + 1;
     molfileAtomBlock[atomCount] = V3K_BEGIN_DATA_LINE + atomIdx + ' ' +
-      OXYGEN + ' ' + keepPrecision(positionShift[0]) + ' ' +
-      flipFactor * keepPrecision(positionShift[1]) + ' ' + '0.000000 0' + '\n';
+      OXYGEN + ' ' + keepPrecision(backbonePositionShift[0]) + ' ' +
+      flipFactor * keepPrecision(backbonePositionShift[1]) + ' ' + '0.000000 0' + '\n';
 
     // add terminal bond
-    const firstAtom = attachNode;
+    const firstAtom = backboneAttachNode;
     const secondAtom = atomIdx;
     molfileBondBlock[bondCount] = V3K_BEGIN_DATA_LINE + bondShift + ' ' +
       1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
   }
 
-  // todo rewrite using constants
   const molfileCountsLine = V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + V3K_COUNTS_LINE_ENDING;
 
+  // todo: optimize concatenation using Alexander's hint
   const molfileParts = [
     V3K_HEADER_FIRST_LINE,
     V3K_HEADER_SECOND_LINE,
@@ -948,6 +968,49 @@ function monomerSeqToMolfile(monomerSeq: string[], monomersDict: Map<string,
   ];
 
   return molfileParts.join('');
+}
+
+/* Compute the atom/bond counts for the resulting molfile, depending on the
+ * type of polymer (peptide/nucleotide) */
+function getResultingAtomBondCounts(
+  monomerSeq: string[], monomersDict: Map<string, MolGraph>,
+  alphabet: ALPHABET, polymerType: HELM_POLYMER_TYPE
+): {atomCount: number, bondCount: number} {
+  let atomCount = 0;
+  let bondCount = 0;
+
+  // sum up all the atoms/nodes provided by the sequence
+  for (const monomerSymbol of monomerSeq) {
+    const monomer = monomersDict.get(monomerSymbol)!;
+    atomCount += monomer.atoms.x.length;
+    bondCount += monomer.bonds.bondTypes.length;
+  }
+
+  // add extra values depending on the polymer type
+  if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
+    // add the rightmost/terminating cap group 'OH' (i.e. 'O')
+    atomCount += 1;
+    // add chain-extending bonds (C-NH per each monomer pair and terminal C-OH)
+    bondCount += monomerSeq.length;
+  } else { // nucleotides
+    const sugar = (alphabet === ALPHABET.DNA) ?
+      monomersDict.get(DEOXYRIBOSE)! : monomersDict.get(RIBOSE)!;
+    const phosphate = monomersDict.get(PHOSPHATE)!;
+
+    // add phosphate and sugar per each nucleobase symbol
+    atomCount += monomerSeq.length * (phosphate.atoms.x.length + sugar.atoms.x.length);
+    bondCount += monomerSeq.length * (phosphate.bonds.bondTypes.length + sugar.bonds.bondTypes.length);
+
+    // add chain-extending bonds (O-P per each ribose-phosphate pair)
+    bondCount += monomerSeq.length;
+    // add pentose-nucleobase bond (C-N per each nucleobase symbol)
+    bondCount += monomerSeq.length;
+
+    // add the leftmost cap group 'OH' (i.e. 'O') to the first phosphate
+    atomCount += 1;
+  }
+
+  return {atomCount, bondCount};
 }
 
 /* Keep precision upon floating point operations over atom coordinates */
