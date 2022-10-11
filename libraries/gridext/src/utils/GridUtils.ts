@@ -1,8 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {GridCellRendererEx} from "../renderer/GridCellRendererEx";
 import * as TextUtils from "./TextUtils";
-import * as GridUtils from '../utils/GridUtils';
-
 /*
 const canvas = ui.canvas(200*r, 300*r);
 
