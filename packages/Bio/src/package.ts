@@ -34,7 +34,8 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 import * as C from './utils/constants';
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
-import { substructureSearchDialog } from './substructure-search/substructure-search';
+import {substructureSearchDialog} from './substructure-search/substructure-search';
+import {saveAsFastaUI} from './utils/save-as-fasta';
 
 //tags: init
 export async function initBio() {
@@ -516,3 +517,9 @@ export function bioSubstructureSearch(col: DG.Column): void {
   substructureSearchDialog(col);
 }
 
+//name: saveAsFasta
+//description: As FASTA...
+//tags: fileExporter
+export function saveAsFasta() {
+  saveAsFastaUI();
+}
