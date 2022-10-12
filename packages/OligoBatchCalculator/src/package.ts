@@ -107,7 +107,11 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
   let modificationsSum = 0;
   if (extCoefsObj != null) {
     for (const modif of Object.keys(extCoefsObj)) {//@ts-ignore
-      if (extCoefsObj[modif] != 'Base' && extCoefsObj[modif] != undefined) {//@ts-ignore
+      if (//@ts-ignore
+        extCoefsObj[modif] != 'Base' &&
+        extCoefsObj[modif] != undefined &&//@ts-ignore
+        !isNaN(parseFloat(extCoefsObj[modif]))
+      ) {//@ts-ignore
         modificationsSum += (sequence.match(new RegExp(modif, 'g')) || []).length * parseFloat(extCoefsObj[modif]);
         ns = deleteWord(ns, modif);
       }

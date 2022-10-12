@@ -5,7 +5,7 @@
     "name": "Vadym Kovadlo",
     "email": "vkovadlo@datagrok.ai"
   },
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
     "directory": "packages/OligoBatchCalculator"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "latest",
+    "@datagrok-libraries/utils": "^1.9.2",
     "cash-dom": "latest",
     "datagrok-api": "^1.6.9",
     "rxjs": "^6.5.5"
