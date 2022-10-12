@@ -1,0 +1,197 @@
+{
+    "lib1.c": {
+        "sumOfInts": {
+            "type": "int",
+            "arguments": {
+                "variables": {
+                    "a": {
+                        "type": "int",
+                        "map": "x"
+                    },
+                    "b": {
+                        "type": "int",
+                        "map": "y"
+                    }
+                },
+                "arrays": {}
+            },
+            "orderOfArguments": [
+                "a",
+                "b"
+            ],
+            "packageFunction": {
+                "name": "sumOfIntegers",
+                "input": {
+                    "x": {
+                        "type": "int",
+                        "update": null
+                    },
+                    "y": {
+                        "type": "int",
+                        "update": null
+                    }
+                },
+                "output": {
+                    "z": {
+                        "type": "int"
+                    }
+                },
+                "preambula": [
+                    "//name: sumOfIntegers",
+                    "//input: int x",
+                    "//input: int y",
+                    "//output: int z"
+                ]
+            }
+        },
+        "minOfArray": {
+            "type": "int",
+            "arguments": {
+                "variables": {
+                    "length": {
+                        "type": "int",
+                        "map": "col.length"
+                    }
+                },
+                "arrays": {
+                    "array": {
+                        "type": "int *",
+                        "map": "col",
+                        "length": null
+                    }
+                }
+            },
+            "orderOfArguments": [
+                "array",
+                "length"
+            ],
+            "packageFunction": {
+                "name": "minOfColumn",
+                "input": {
+                    "df": {
+                        "type": "dataframe",
+                        "update": null
+                    },
+                    "col": {
+                        "type": "column",
+                        "update": null
+                    }
+                },
+                "output": {
+                    "num": {
+                        "type": "int"
+                    }
+                },
+                "preambula": [
+                    "//name: minOfColumn",
+                    "//input: dataframe df",
+                    "//input: column col",
+                    "//output: int num"
+                ]
+            }
+        }
+    },
+    "lib2.c": {
+        "doubleArray": {
+            "type": "void",
+            "arguments": {
+                "variables": {
+                    "length": {
+                        "type": "int",
+                        "map": "col.length"
+                    }
+                },
+                "arrays": {
+                    "array": {
+                        "type": "float *",
+                        "map": "col",
+                        "length": null
+                    }
+                }
+            },
+            "orderOfArguments": [
+                "array",
+                "length"
+            ],
+            "packageFunction": {
+                "name": "doubleColumn",
+                "input": {
+                    "col": {
+                        "type": "column",
+                        "update": null
+                    }
+                },
+                "output": {
+                    "result": {
+                        "type": "column",
+                        "update": "array"
+                    }
+                },
+                "preambula": [
+                    "//name: doubleColumn",
+                    "//input: column col",
+                    "//output: column result"
+                ]
+            }
+        },
+        "sumOfArrays": {
+            "type": "void",
+            "arguments": {
+                "variables": {
+                    "length": {
+                        "type": "int",
+                        "map": "col1.length"
+                    }
+                },
+                "arrays": {
+                    "arr1": {
+                        "type": "float *",
+                        "map": "col1",
+                        "length": null
+                    },
+                    "arr2": {
+                        "type": "float *",
+                        "map": "col2",
+                        "length": null
+                    },
+                    "sum": {
+                        "type": "float *",
+                        "map": null,
+                        "length": "length"
+                    }
+                }
+            },
+            "orderOfArguments": [
+                "arr1",
+                "arr2",
+                "sum",
+                "length"
+            ],
+            "packageFunction": {
+                "name": "sumOfColumns",
+                "input": {
+                    "col1": {
+                        "type": "column",
+                        "update": null
+                    },
+                    "col2": {
+                        "type": "column",
+                        "update": null
+                    }
+                },
+                "output": {
+                    "result": {
+                        "type": "column",
+                        "update": "sum"
+                    }
+                },
+                "preambula": [
+                    "//name: sumOfColumns",
+                    "//input: column col1",
+                    "//input: column col2",
+                    "//output: column result"
+                ]
+            }
+        }
+    }
+}

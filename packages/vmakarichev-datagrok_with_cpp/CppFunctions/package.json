@@ -1,1 +1,49 @@
-{"name": "cppfunctions", "friendlyName": "CppFunctions", "version": "0.0.1", "description": "", "dependencies": {"datagrok-api": "latest", "cash-dom": "latest", "dayjs": "latest", "@datagrok-libraries/utils": "latest"}, "devDependencies": {"webpack": "latest", "webpack-cli": "latest", "jest-html-reporter": "^3.5.0", "jest": "^27.0.0", "@types/jest": "^27.0.0", "js-yaml": "^4.1.0", "@types/js-yaml": "^4.0.5", "@types/node-fetch": "^2.6.2", "node-fetch": "^2.6.7"}, "scripts": {"link-all": "", "debug-cppfunctions": "webpack && grok publish", "release-cppfunctions": "webpack && grok publish --release", "build-cppfunctions": "webpack", "build": "webpack", "debug-cppfunctions-dev": "webpack && grok publish dev", "release-cppfunctions-dev": "webpack && grok publish dev --release", "debug-cppfunctions-public": "webpack && grok publish public", "release-cppfunctions-public": "webpack && grok publish public --release", "test": "jest"}, "canEdit": ["Developers"], "canView": ["All users"], "repository": {"type": "git", "url": "https://github.com/datagrok-ai/public.git", "directory": "packages/vmakarichev-datagrok_with_cpp/CppFunctions"}, "sources": ["wasm/lib.js", "wasm/lib1.js", "vendor/newLib.js"]}
+{
+    "name": "cppfunctions",
+    "friendlyName": "CppFunctions",
+    "version": "0.0.1",
+    "description": "",
+    "dependencies": {
+        "datagrok-api": "latest",
+        "cash-dom": "latest",
+        "dayjs": "latest",
+        "@datagrok-libraries/utils": "latest"
+    },
+    "devDependencies": {
+        "webpack": "latest",
+        "webpack-cli": "latest",
+        "jest-html-reporter": "^3.5.0",
+        "jest": "^27.0.0",
+        "@types/jest": "^27.0.0",
+        "js-yaml": "^4.1.0",
+        "@types/js-yaml": "^4.0.5",
+        "@types/node-fetch": "^2.6.2",
+        "node-fetch": "^2.6.7"
+    },
+    "scripts": {
+        "link-all": "",
+        "debug-cppfunctions": "webpack && grok publish",
+        "release-cppfunctions": "webpack && grok publish --release",
+        "build-cppfunctions": "webpack",
+        "build": "webpack",
+        "debug-cppfunctions-dev": "webpack && grok publish dev",
+        "release-cppfunctions-dev": "webpack && grok publish dev --release",
+        "debug-cppfunctions-public": "webpack && grok publish public",
+        "release-cppfunctions-public": "webpack && grok publish public --release",
+        "test": "jest"
+    },
+    "canEdit": [
+        "Developers"
+    ],
+    "canView": [
+        "All users"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/public.git",
+        "directory": "packages/vmakarichev-datagrok_with_cpp/CppFunctions"
+    },
+    "sources": [
+        "wasm/newLib.js"
+    ]
+}

@@ -1,0 +1,16 @@
+await initNewModule();
+
+//name: doubleColumnTest
+//input: dataframe df
+//input: column col
+export function doubleColumnTest(df, col) {
+  df.columns.add(doubleColumn(col));
+}
+
+//name: sumOfColumnsTest
+//input: dataframe df
+//input: column col1
+//input: column col2
+export function sumOfColumnsTest(df, col1, col2) {
+  df.columns.add(sumOfColumns(col1, col2));
+}
