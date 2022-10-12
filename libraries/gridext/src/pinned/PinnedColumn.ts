@@ -127,15 +127,16 @@ export class PinnedColumn {
   private m_nWidthBug : number;
   //private m_observerResize : ResizeObserver | null;
   private m_observerResizeGrid : ResizeObserver | null;
-  private m_handlerColsRemoved : any;
-  private m_handlerColNameChanged : any;
-  private m_handlerVScroll : any;
-  private m_handlerRowsFiltering : any;
-  private m_handlerCurrRow : any;
-  private m_handlerSel : any;
+  private m_handlerKeyDown : rxjs.Subscription | null;
+  private m_handlerColsRemoved : rxjs.Subscription | null;
+  private m_handlerColNameChanged : rxjs.Subscription | null;
+  private m_handlerVScroll : rxjs.Subscription | null;
+  private m_handlerRowsFiltering : rxjs.Subscription | null;
+  private m_handlerCurrRow : rxjs.Subscription | null;
+  private m_handlerSel : rxjs.Subscription | null;
   //private m_handlerFilter : any;
-  private m_handlerRowsResized : any;
-  private m_handlerRowsSorted : any;
+  private m_handlerRowsResized : rxjs.Subscription | null;
+  private m_handlerRowsSorted : rxjs.Subscription | null;
 
   private m_nHResizeRowsBeforeDrag = -1;
   private m_nResizeRowGridDragging = -1;
@@ -302,6 +303,21 @@ export class PinnedColumn {
 
     this.m_observerResizeGrid?.observe(grid.canvas);
 
+
+    this.m_handlerKeyDown = rxjs.fromEvent<KeyboardEvent>(eCanvasThis, 'mousemove').subscribe((e : KeyboardEvent) => {
+
+      //alert('up');
+      setTimeout(() =>{
+        const ee = new KeyboardEvent(e.type, e);
+        try{grid.overlay.dispatchEvent(ee);}
+        catch(ex) {
+          //console.error(ex.message);
+        }
+      }, 1);
+
+    });
+
+
     const scrollVert = grid.vertScroll;
     this.m_handlerVScroll = scrollVert.onValuesChanged.subscribe(() => {
       const g = eCanvasThis.getContext('2d');
@@ -405,28 +421,31 @@ export class PinnedColumn {
     }
     */
 
-    this.m_handlerColsRemoved.unsubscribe();
+    this.m_handlerKeyDown?.unsubscribe();
+    this.m_handlerKeyDown = null;
+
+    this.m_handlerColsRemoved?.unsubscribe();
     this.m_handlerColsRemoved = null;
 
-    this.m_handlerColNameChanged.unsubscribe();
+    this.m_handlerColNameChanged?.unsubscribe();
     this.m_handlerColNameChanged = null;
 
-    this.m_handlerVScroll.unsubscribe();
+    this.m_handlerVScroll?.unsubscribe();
     this.m_handlerVScroll = null;
 
-    this.m_handlerRowsResized.unsubscribe();
+    this.m_handlerRowsResized?.unsubscribe();
     this.m_handlerRowsResized = null;
 
-    this.m_handlerRowsSorted.unsubscribe();
+    this.m_handlerRowsSorted?.unsubscribe();
     this.m_handlerRowsSorted = null;
 
-    this.m_handlerRowsFiltering.unsubscribe();
+    this.m_handlerRowsFiltering?.unsubscribe();
     this.m_handlerRowsFiltering = null;
 
-    this.m_handlerCurrRow.unsubscribe();
+    this.m_handlerCurrRow?.unsubscribe();
     this.m_handlerCurrRow = null;
 
-    this.m_handlerSel.unsubscribe();
+    this.m_handlerSel?.unsubscribe();
     this.m_handlerSel = null;
 
     const grid = getGrid(this.m_colGrid);
@@ -469,6 +488,7 @@ export class PinnedColumn {
     }
 
     try {
+      this.m_colGrid.width = this.m_root.offsetWidth;
       this.m_colGrid.visible = true;
     }
     catch(e) {

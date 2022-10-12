@@ -10,6 +10,7 @@ export declare class PinnedColumn {
     private m_root;
     private m_nWidthBug;
     private m_observerResizeGrid;
+    private m_handlerKeyDown;
     private m_handlerColsRemoved;
     private m_handlerColNameChanged;
     private m_handlerVScroll;
