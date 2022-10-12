@@ -169,8 +169,18 @@ export class OpenLayers {
   markerOpacity: number = 0.8;
   defaultColor: number = 0x1f77b4;
   selectedColor: number = 0xff8c00;
+  markerMinColor: number = 0x0000ff;
+  markerMaxColor: number = 0xff0000;
   heatmapBlurParam: number = 20;
   heatmapRadiusParam: number = 10;
+
+  //boundary properties for fieldSize, fieldColor (to interpolate in WebGL style function)
+  minFieldColor: number = 0;
+  maxFieldColor: number = 100;
+  useColorField: boolean = false;
+  minFieldSize: number = 0;
+  maxFieldSize: number = 100;
+  useSizeField: boolean = false;
 
   constructor(gV?: GisViewer) {
     if ((gV) && (gV instanceof GisViewer))
@@ -287,22 +297,41 @@ export class OpenLayers {
   }
 
   prepareGLStyle(sizeval?: number, colorval?: string, opaval?: number, symbolval?: string): LiteralStyle {
+    //prepare color value:
+    let colorValue: any;
+    let sizeValue: any;
+
+    if (typeof colorval !== 'undefined')
+      colorValue = colorval;
+    else if (this.useColorField === false)
+      colorValue = toStringColor(this.defaultColor, this.markerOpacity);
+    else {
+      colorValue = ['interpolate', ['linear'], ['get', 'fieldColor'],
+        this.minFieldColor, '#0000ff', this.maxFieldColor, '#ff0000'];
+      // this.minFieldColor, this.markerMinColor, this.maxFieldColor, this.markerMaxColor];
+    }
+
+    if (typeof sizeval !== 'undefined')
+      sizeValue = sizeval;
+    else if (this.useSizeField === false)
+      sizeValue = this.markerDefaultSize;
+    else {
+      sizeValue = ['interpolate', ['linear'], ['get', 'fieldSize'],
+        this.minFieldSize, this.markerMinSize, this.maxFieldSize, this.markerMaxSize];
+    }
+
     const markerGLStyle = {
       // variables: {
       //   minVal: 0,
       // },
       symbol: {
         symbolType: symbolval? symbolval : 'circle',
-        size: sizeval? sizeval : this.markerDefaultSize,
-        // size: [['get', '_fieldSize']],
-/*
-          size: [
-            ['interpolate', ['linear'], ['get', '_fieldSize'], ['var', 'minVal'], 5, ['var', 'maxVal'], 26],
-          ],
-*/
-        // color: ['interpolate', ['linear'], animRatio, 0, newColor, 1, oldColor],
-        color: colorval? colorval : toStringColor(this.defaultColor, this.markerOpacity),
-        // color: [['get', '_fieldColor']],
+        // size: sizeval? sizeval : this.markerDefaultSize,
+        // size: ['+', ['get', 'fieldSize'], 4],
+        size: sizeValue,
+        color: colorValue,
+        // color: colorval? colorval : toStringColor(this.defaultColor, this.markerOpacity),
+        // color: [['get', 'fieldColor']],
         opacity: opaval? opaval : this.markerOpacity,
       },
     };
@@ -324,12 +353,6 @@ export class OpenLayers {
       this.olMap.removeLayer(previousLayer);
       previousLayer.dispose();
     }
-    // this.olMarkersLayerGL.setSt
-    // this.olMarkersLayerGL = new WebGLPointsLayer({
-    //   source: new VectorSource<OLGeom.Point>(),
-    //   style: this.markerGLStyle,
-    // });
-    // this.olMarkersLayerGL.set('layerName', 'Markers GL');
   }
 
   getFeatureStyleFn(feature: Feature): OLStyle.Style {
@@ -549,8 +572,8 @@ export class OpenLayers {
       blur: this.heatmapBlur,
       radius: this.heatmapRadius,
       weight: function(feature: Feature): number {
-        let val = feature.get('_fieldValue');
-        // if (val === undefined) val = feature.get('_fieldValue');
+        let val = feature.get('fieldValue');
+        // if (val === undefined) val = feature.get('fieldValue');
         if (typeof(val) !== 'number')
           val = 1;
         return val;
@@ -596,9 +619,9 @@ export class OpenLayers {
 
   //map marker style function>>
   genStyleMarker(feature: FeatureLike, resolution: number): Style {
-    let val = feature.get('_fieldValue');
-    const size = feature.get('_fieldSize');
-    const clr = feature.get('_fieldColor');
+    let val = feature.get('fieldValue');
+    const size = feature.get('fieldSize');
+    const clr = feature.get('fieldColor');
     // if (typeof val !== 'number')
     //   val = 1;
     let stylePt: OLStyle.Style;
@@ -692,7 +715,7 @@ export class OpenLayers {
       this.onClickCallback(res);
     else {
       if (OLG) //TODO: remove this stuff (use bind)
-        if (OLG.onClickCallback) OLG.onClickCallback(res);
+        if (OLG.onClickCallback) OLG.onClickCallback(res); //remove this stuff (use bind)
     }
   }
 
@@ -709,7 +732,7 @@ export class OpenLayers {
       this.onPointermoveCallback(res);
     else {
       if (OLG) //TODO: remove this stuff (use bind)
-        if (OLG.onPointermoveCallback) OLG.onPointermoveCallback(res);
+        if (OLG.onPointermoveCallback) OLG.onPointermoveCallback(res); // remove this stuff (use bind)
     }
   }
 
@@ -768,7 +791,7 @@ export class OpenLayers {
         }),
       });
       marker.setStyle(style);
-      marker.set('_fieldValue', value);
+      marker.set('fieldValue', value);
 
       const src = aLayer.getSource();
       if (src)

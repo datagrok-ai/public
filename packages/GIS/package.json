@@ -16,7 +16,6 @@
 		"dayjs": "latest",
 		"jszip": "^3.10.1",
 		"ol": "^6.15.1",
-		"ol-geocoder": "^4.1.2",
 		"xhr2": "^0.2.1"
 	},
 	"devDependencies": {
