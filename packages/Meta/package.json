@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.0.43",
+  "version": "3.0.44",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -690,6 +690,9 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.0.3": {
+          "datagrok-api": "^1.6.9"
         }
       },
       "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
