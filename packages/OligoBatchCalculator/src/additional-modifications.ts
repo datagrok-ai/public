@@ -102,14 +102,12 @@ export function deleteAdditionalModification(additionalModificationsDf: DG.DataF
   const v = additionalModificationsDf.getCol(COL_NAMES.ABBREVIATION).getString(rowIndex);
   ui.dialog('Delete Additional Modification')
     .add(ui.divText('Do you want to delete row ' + v + ' ?'))
-    .onOK(() => {
-      grok.dapi.users.current().then(async (user) => {
-        if (!await isCurrentUserAppAdmin())
-          return grok.shell.info('You don\'t have permission for this action');
-        additionalModificationsDf.rows.removeAt(rowIndex, 1, true);
-        const keyToDelete = additionalModificationsDf.getCol(COL_NAMES.ABBREVIATION).get(rowIndex);
-        await grok.dapi.userDataStorage.remove(STORAGE_NAME, keyToDelete, CURRENT_USER);
-      });
+    .onOK(async () => {
+      if (!await isCurrentUserAppAdmin())
+        return grok.shell.info('You don\'t have permission for this action');
+      additionalModificationsDf.rows.removeAt(rowIndex, 1, true);
+      const keyToDelete = additionalModificationsDf.getCol(COL_NAMES.ABBREVIATION).get(rowIndex);
+      await grok.dapi.userDataStorage.remove(STORAGE_NAME, keyToDelete, CURRENT_USER);
     })
     .show();
 }
