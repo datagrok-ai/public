@@ -304,7 +304,7 @@ export class PinnedColumn {
     this.m_observerResizeGrid?.observe(grid.canvas);
 
 
-    this.m_handlerKeyDown = rxjs.fromEvent<KeyboardEvent>(eCanvasThis, 'mousemove').subscribe((e : KeyboardEvent) => {
+    this.m_handlerKeyDown = rxjs.fromEvent<KeyboardEvent>(eCanvasThis, 'keydown').subscribe((e : KeyboardEvent) => {
 
       //alert('up');
       setTimeout(() =>{
@@ -1072,6 +1072,7 @@ export class PinnedColumn {
     let nWW = nW*window.devicePixelRatio;
     //const nHH = nHRowGrid;
 
+
     const arTableRows = new Array(nRowMax - nRowMin +1);
     let nRowTable = -1;
     let bSel = false;
@@ -1143,12 +1144,15 @@ export class PinnedColumn {
     g.lineTo(nWW, nYOffset + 1);
     g.stroke();
 
+    const nPinnedColCount = PinnedUtils.getPinnedColumnCount(grid);
+    const colPinned = PinnedUtils.getPinnedColumn(nPinnedColCount -1, grid);
+    const bLast = this === colPinned;
+
     for(let nRG=nRowMin; nRG<=nRowMax; ++nRG)
     {
       nYY = nYOffset + (nRG - nRowMin) * nHRowGrid;
-
       //if(options.look.showRowGridlines) {
-
+        g.strokeStyle = "Gainsboro";
         g.beginPath();
         g.moveTo(0, nYY + nHRowGrid+1);
         g.lineTo(nWW, nYY + nHRowGrid+1);
@@ -1158,6 +1162,15 @@ export class PinnedColumn {
         g.moveTo(0, nYY);
         g.lineTo(0, nYY + nHRowGrid+1);
         g.stroke();
+
+        if(bLast) {
+          g.strokeStyle = "black";
+          g.beginPath();
+          g.moveTo(nWW - 1, nYY);
+          g.lineTo(nWW - 1, nYY + nHRowGrid + 1);
+          g.stroke();
+        }
+
       //}
       nRowTable = arTableRows[nRG - nRowMin];
       try{bSel = nRowTable === undefined || nRowTable < 0 ? false : bitsetSel.get(nRowTable);}
@@ -1180,7 +1193,7 @@ export class PinnedColumn {
         g.fillRect(0, nYY, nWW, nHRowGrid);
         g.globalAlpha = 1;
       }
-    }
+    }//for
   }
 
 
