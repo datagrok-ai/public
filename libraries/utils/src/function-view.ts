@@ -763,13 +763,13 @@ export class FunctionView extends DG.ViewBase {
     const dfInputs = wu(callToShare.inputParams.values() as DG.FuncCallParam[])
       .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
     for (const input of dfInputs) {
-      const df = callToShare.outputs[input.name] as DG.DataFrame;
+      const df = callToShare.inputs[input.name] as DG.DataFrame;
       await grok.dapi.permissions.grant(df.getTableInfo(), allGroup, false);
     }
 
-    const savedFavorite = await grok.dapi.functions.calls.save(callToShare);
-    await this.onAfterAddingToShared(savedFavorite);
-    return savedFavorite;
+    const savedShared = await grok.dapi.functions.calls.save(callToShare);
+    await this.onAfterAddingToShared(savedShared);
+    return savedShared;
   }
 
   /**
