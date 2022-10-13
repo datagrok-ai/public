@@ -21,8 +21,8 @@ export class RadarViewer extends DG.JsViewer {
 
   constructor() {
     super();
-    this.min = <minimalIndicator>this.string('min', '5', { choices: ['1', '5', '10', '25'], description: 'Choose the minimum percentile value to represent' });
-    this.max = <maximumIndicator>this.string('max', '95', { choices: ['75', '90', '95', '99'], description: 'Choose the maximum percentile value to represent' });
+    this.min = <minimalIndicator>this.string('min', '5', { choices: ['1', '5', '10', '25'], description: 'Minimum percentile value (indicated as dark blue area)' });
+    this.max = <maximumIndicator>this.string('max', '95', { choices: ['75', '90', '95', '99'], description: 'Maximum percentile value (indicated as light blue area)' });
     this.showCurrentRow = this.bool('showCurrentRow', false);
     this.showTooltip = this.bool('showTooltip', true);
     this.showAllRows = this.bool('showAllRows', false);
