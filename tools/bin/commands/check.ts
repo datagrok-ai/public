@@ -78,7 +78,7 @@ export function checkImportStatements(packagePath: string, files: string[], exte
     if (key.includes('/'))
       modules.push(key.split('/', 1)[0]);
   }
-  const importRegex = new RegExp(`import\\s+.*(${modules.join('|')}).*(?=\\s+?)`, 'g');
+  const importRegex = new RegExp(`^(?!\\/{2})\\s*import\\s+.*(${modules.join('|')}).*(?=\\s+?)`, 'g');
   const validImportRegex = new RegExp(`import\\s+.*(${Object.keys(externals).join('|')})['"]{1}`);
   const warnings: string[] = [];
 
