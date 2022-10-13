@@ -26,7 +26,7 @@ import { chemSimilaritySearch, ChemSimilarityViewer } from './analysis/chem-simi
 import { chemDiversitySearch, ChemDiversityViewer } from './analysis/chem-diversity-viewer';
 import { saveAsSdfDialog } from './utils/sdf-utils';
 import { Fingerprint } from './utils/chem-common';
-import { assure } from '@datagrok-libraries/utils/src/test';
+import { assure, delay } from '@datagrok-libraries/utils/src/test';
 import { OpenChemLibSketcher } from './open-chem/ocl-sketcher';
 import { _importSdf } from './open-chem/sdf-importer';
 import { OCLCellRenderer } from './open-chem/ocl-cell-renderer';
@@ -41,6 +41,9 @@ import { elementsTable } from './constants';
 import { getSimilaritiesMarix } from './utils/similarity-utils';
 import { molToMolblock } from './utils/convert-notation-utils'
 import { similarityMetric } from '@datagrok-libraries/utils/src/similarity-metrics';
+import { RadarViewer } from '../../Charts/src/radar-viewer';
+import {UiUtils} from '@datagrok-libraries/utils/src/shared-components/ui-utils';
+import { admetLab, cellImagingSegmentation } from '../src/scripts-api';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -84,6 +87,19 @@ export async function initChemAutostart(): Promise<void> { }
 //meta.semType: Molecule
 export function substructureFilter(): SubstructureFilter {
   return new SubstructureFilter();
+}
+
+//name: admetL
+//output: string res
+export async function admetL() : Promise<string> {
+  const res = await grok.functions.call('Chem:AdmetLab');
+  return res;
+}
+
+//name: image
+export async function image() {
+  let files = await grok.dapi.files.list('System:AppData/Chem', true, 'inage');
+  console.log(files);
 }
 
 //name: canvasMol
@@ -350,8 +366,8 @@ export function addInchisPanel(col: DG.Column): void {
   addInchis(col);
 }
 
-//top-menu: Chem | Elemental analysis...
-//name: Elemental analysis
+//top-menu: Chem | Elemental Analysis...
+//name: Elemental Analysis
 //description: function that implements elemental analysis
 //input: dataframe table
 //input: column molCol { semType: Molecule }
@@ -359,7 +375,8 @@ export function addInchisPanel(col: DG.Column): void {
 //input: bool radarGrid = false
 export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarView: boolean, radarGrid: boolean): void {
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
-  let columns: DG.Column<any>[] = [];
+  //let columns: DG.Column<any>[] = [];
+  let columnNames: string[] = [];
 
   if (invalid.length > 0)
     console.log(`Invalid rows ${invalid.map((i) => i.toString()).join(', ')}`);
@@ -369,21 +386,28 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     if (value) {
       let column = DG.Column.fromInt32Array(elName, value);
       table.columns.add(column);
-      columns.push(column);
+      //columns.push(column);
+      columnNames.push(elName);
     }
   }
 
   let view = grok.shell.addTableView(table);
 
-  /*if (radarView) {
-    let elementsDf: DG.DataFrame = DG.DataFrame.fromColumns(columns);
-    table.currentRowIdx = 0;
-    view.addViewer(radar(0, elementsDf));
-    table.onCurrentRowChanged.subscribe((_) => {
+  if (radarView) {
+    //let elementsDf: DG.DataFrame = DG.DataFrame.fromColumns(columns);
+    //table.currentRowIdx = 0;
+    //view.grid.dataFrame.currentRowIdx = 0;
+    //let viewer = DG.Viewer.fromType('RadarViewer', elementsDf);
+    delay(200);
+    let elementsDf = table.clone(undefined, columnNames);
+    let viewer = new RadarViewer();
+    viewer.dataFrame = elementsDf;
+    view.addViewer(viewer);
+    /*table.onCurrentRowChanged.subscribe((_) => {
       view.resetLayout();
       view.addViewer(radar(table.currentRowIdx, elementsDf));
-    });
-  }*/
+    });*/
+  }
 
   if (radarGrid) {
     let gc = view.grid.columns.add({gridColumnName: 'radar', cellType: 'radar'});

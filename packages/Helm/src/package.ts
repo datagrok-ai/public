@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
 import {createJsonMonomerLibFromSdf} from './utils';
-import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
+import {MONOMER_MANAGER_MAP, MONOMER_MANAGER_MAP_2, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import { delay } from '@datagrok-libraries/utils/src/test';
 
@@ -145,6 +145,7 @@ export async function libraryPanel(helmColumn: DG.Column): Promise<DG.Widget> {
     divInputs.append(ui.boolInput(libraryName, true, async v => {
       org.helm.webeditor.Monomers.clear();
       grok.dapi.userDataStorage.remove(STORAGE_NAME, libraryName, true);
+      addNaturalMonomers();
       await loadLibraries();
       grok.shell.tv.grid.invalidate();
     }).root);
@@ -281,6 +282,7 @@ export async function monomerManager(value: string) {
       m['rs'] = Object.keys(getRS(df[SMILES].toString())).length;
       m['at'] = getRS(df[SMILES].toString());
     }
+    console.log(m);
     org.helm.webeditor.Monomers.addOneMonomer(m);
   });
   let grid: DG.Grid = grok.shell.tv.grid;
@@ -426,6 +428,22 @@ export function parseHelm(s: string) {
       }
   }
   return monomers;
+}
+
+function addNaturalMonomers() {
+  let m = {};
+  const types = Object.keys(org.helm.webeditor.monomerTypeList());
+  for (var i = 0; i < types.length; i++) {
+    //@ts-ignore
+    let monomer = new scil.helm.Monomers.getMonomerSet(types[i]);
+    Object.keys(monomer).forEach(k => {
+      Object.keys(MONOMER_MANAGER_MAP_2).forEach(field => {
+        m[field] = monomer[k][field] ?? '';
+      });
+      org.helm.webeditor.Monomers.addOneMonomer(m);
+      m = {};
+    });
+  }
 }
 
 //name: findMonomers

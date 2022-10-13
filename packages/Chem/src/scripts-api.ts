@@ -7,6 +7,14 @@ export async function findMCS(molecules: string, df: DG.DataFrame, smarts?: bool
   return await grok.functions.call('Chem:FindMCS', {molecules, df, returnSmarts});
 }
 
+export async function admetLab() : Promise<string> {
+  return await grok.functions.call('Chem:AdmetLab');
+}
+
+export async function cellImagingSegmentation(file: DG.FileInfo): Promise<number> {
+  return await grok.functions.call('Chem:CellImagingSegmentation', { file });
+}
+
 export async function findRGroups(
   molecules: string,
   df: DG.DataFrame,
