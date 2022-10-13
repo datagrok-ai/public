@@ -204,6 +204,21 @@ section to learn the syntax for rules. The principle is mostly the same for the 
 when the desired color range is not specified, the cells are colored with standard shades. The missing values don't take
 on any special coloring.
 
+Dataframe columns have additional helper methods to set color-coding. So,
+instead of modifying tags directly, you can use `column.meta.colors`:
+
+```javascript
+let t = grok.data.demo.demog();
+
+grok.shell.info(`Column 'subj' color coding: ${t.col('subj').meta.colors.getType()}`);     // Off
+grok.shell.info(`Column 'height' color coding: ${t.col('height').meta.colors.getType()}`); // Conditional
+grok.shell.info(`Column 'age' color coding: ${t.col('age').meta.colors.getType()}`);       // Linear
+
+t.col('site').meta.colors.setCategorical({'New York': DG.Color.orange});
+t.col('started').meta.colors.setLinear([DG.Color.white, DG.Color.red]);
+t.col('weight').meta.colors.setConditional({'<100': DG.Color.green, '100-200': '#ff0000'});
+```
+
 See also:
 
 * [Grid](../../visualize/viewers/grid.md)
