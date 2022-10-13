@@ -21,6 +21,15 @@ export const MONOMER_MANAGER_MAP = {
     'm': 'molfile', 
 }
 
+export const MONOMER_MANAGER_MAP_2 = {
+    'id': 'symbol', 
+    'n': 'name',
+    'na': 'naturalAnalog',
+    'm': 'molfile', 
+    'rs': 'rgroups',
+    'at': 'positions'
+  }
+
 export const SMILES = 'smiles';
 export const RGROUPS = "rgroups";
 export const MONOMER_SYMBOL = "symbol";

@@ -39,8 +39,8 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
     return [elements, invalid];
   }
 
-export function radar(idx: number, dfRadar: DG.DataFrame) {
+export function radar(dfRadar: DG.DataFrame) {
+  //let viewer = DG.Viewer.fromType('RadarViewer', dfRadar);
   let viewer = DG.Viewer.fromType('RadarViewer', dfRadar);
-  //viewer.dataFrame = dfRadar;
   return viewer;
 }
