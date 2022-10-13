@@ -101,6 +101,22 @@ category('Viewers', () => {
     }
   });
 
+  test('onTableAttached', async () => {
+    const df1 = DG.DataFrame.fromCsv('id1');
+    const df2 = DG.DataFrame.fromCsv('id2');
+
+    const viewer: TestViewerForProperties = (await df1.plot.fromType(
+      'TestViewerForProperties', {})) as TestViewerForProperties;
+    expect(viewer.dataFrame.columns.byIndex(0).name, df1.columns.byIndex(0).name);
+    expect(viewer.onTableAttachedCounter, 1);
+
+    viewer.dataFrame = df2;
+    expect(viewer.dataFrame.columns.byIndex(0).name, df2.columns.byIndex(0).name);
+    expect(viewer.onTableAttachedCounter, 2);
+
+    // TODO: Check onTableAttached has been called
+  });
+
   test('setPropertyStringWithNumber', async () => {
     // const v: TestViewerForProperties = tv.addViewer('TestViewerForProperties', {}) as TestViewerForProperties;
     const dfTemp = DG.DataFrame.fromCsv('id');
