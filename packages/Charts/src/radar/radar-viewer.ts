@@ -3,12 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as echarts from 'echarts';
 import {option} from '../radar/constants';
 
+type MinimalIndicator = '1' | '5' | '10' | '25';
+type MaximumIndicator = '75' | '90' | '95' | '99';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
 export class RadarViewer extends DG.JsViewer {
   myChart: echarts.ECharts;
-  min: minimalIndicator;
-  max: maximumIndicator; 
+  min: MinimalIndicator;
+  max: MaximumIndicator;
   showCurrentRow: boolean;
   showTooltip: boolean;
   showAllRows: boolean;
@@ -21,8 +23,8 @@ export class RadarViewer extends DG.JsViewer {
 
   constructor() {
     super();
-    this.min = <minimalIndicator>this.string('min', '5', { choices: ['1', '5', '10', '25'], description: 'Minimum percentile value (indicated as dark blue area)' });
-    this.max = <maximumIndicator>this.string('max', '95', { choices: ['75', '90', '95', '99'], description: 'Maximum percentile value (indicated as light blue area)' });
+    this.min = <MinimalIndicator>this.string('min', '5', { choices: ['1', '5', '10', '25'], description: 'Minimum percentile value (indicated as dark blue area)' });
+    this.max = <MaximumIndicator>this.string('max', '95', { choices: ['75', '90', '95', '99'], description: 'Maximum percentile value (indicated as light blue area)' });
     this.showCurrentRow = this.bool('showCurrentRow', false);
     this.showTooltip = this.bool('showTooltip', true);
     this.showAllRows = this.bool('showAllRows', false);
@@ -236,6 +238,3 @@ export class RadarViewer extends DG.JsViewer {
     return result;
   }
 }
-
-type minimalIndicator = '1' | '5' | '10' | '25';
-type maximumIndicator = '75' | '90' | '95' | '99';
