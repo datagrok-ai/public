@@ -516,3 +516,19 @@ export function bioSubstructureSearch(col: DG.Column): void {
 export function saveAsFasta() {
   saveAsFastaUI();
 }
+
+//name: debugToAtomicLevel
+export async function debugToAtomicLevel(): Promise<void> {
+  // todo: to be deleted after debugging
+  const path = 'System:AppData/Bio/tests/toAtomicLevelTest.csv';
+  const df = await grok.data.files.openTable(path);
+
+  const macroMolCol = df.col('seq')!;
+  macroMolCol.semType = DG.SEMTYPE.MACROMOLECULE;
+  macroMolCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+  macroMolCol.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
+  macroMolCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.RNA);
+
+  grok.shell.addTableView(df);
+  toAtomicLevel(df, macroMolCol);
+}
