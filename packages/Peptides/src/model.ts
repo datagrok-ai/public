@@ -452,6 +452,8 @@ export class PeptidesModel {
       ratioCol.set(i, stats.ratio);
     }
 
+    const monomerCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    matrixDf = matrixDf.clone(DG.BitSet.create(matrixDf.rowCount, (i) => monomerCol.get(i) ? true : false));
     return matrixDf as DG.DataFrame;
   }
 
