@@ -31,6 +31,7 @@ import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 import {substructureSearchDialog} from './substructure-search/substructure-search';
 import {saveAsFastaUI} from './utils/save-as-fasta';
+import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 
 //tags: init
 export async function initBio() {
@@ -518,3 +519,13 @@ export function bioSubstructureSearch(col: DG.Column): void {
 export function saveAsFasta() {
   saveAsFastaUI();
 }
+//name: BioSubstructureFilter
+//description: Substructure filter for linear macromolecules
+//tags: filter
+//output: filter result
+//meta.semType: Macromolecule
+export function bioSubstructureFilter(): BioSubstructureFilter {
+  return new BioSubstructureFilter();
+}
+
+
