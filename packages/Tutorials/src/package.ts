@@ -9,10 +9,14 @@ import { ml } from './tracks/ml';
 import { TutorialWidget } from './widget';
 import '../css/tutorial.css';
 import { Tutorial } from './tutorial';
+import { Track } from './track';
 
 
 export const _package = new DG.Package();
-const tracks = [eda, chem, ml, da];
+
+const externalTutorials: Tutorial[] = [];
+const testTrack = new Track('Test Track', externalTutorials, '');
+const tracks = [eda, chem, ml, da, testTrack];
 
 //name: Tutorials
 //tags: app
@@ -31,12 +35,14 @@ export function tutorialWidget(): DG.Widget {
   return new TutorialWidget(...tracks.map((track) => new TutorialRunner(track)));
 }
 
-export async function findTutorials(): Promise<Tutorial[]> {
-  // which return type to specify? json serialization? or widget (tutorial.root)
-  // + tracks (meta.track: string track = "abc") or tag track-<some-kebab-name>
+//tags: init
+export async function tutorialsInit() {
   const tutorialFuncs = DG.Func.find({ tags: ['tutorial'] });
-  const tutorials: Tutorial[] = [];
-  for (const func of tutorialFuncs)
-    tutorials.push(await grok.functions.call(func.name));
-  return tutorials;
+  for (const func of tutorialFuncs) {
+    const tutorialList = await grok.functions.call(func.nqName);
+    for (const t of tutorialList) {
+      t.track = testTrack;
+      externalTutorials.push(t);
+    }
+  }
 }
