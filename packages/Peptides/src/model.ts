@@ -918,6 +918,8 @@ export class PeptidesModel {
 
   initMonomerPositionSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
     const tempSelection = isInvariantMapSelection ? this.invariantMapSelection : this.mutationCliffsSelection;
+    for (const key of Object.keys(tempSelection))
+      tempSelection[key] = [];
     tempSelection[position] = [aar];
 
     if (isInvariantMapSelection)
