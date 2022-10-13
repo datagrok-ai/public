@@ -273,7 +273,7 @@ export class MacromoleculeDifferenceCellRenderer extends DG.GridCellRenderer {
     const splitter = bio.getSplitter(units, separator);
     const subParts1 = splitter(s1);
     const subParts2 = splitter(s2);
-    drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, units, separator);
+    drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, units);
   }
 }
 
