@@ -11,7 +11,6 @@ export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.Dat
     return positionCol;
   };
 
-  let currentMonomerList = splitter(sequenceColumn.get(0)!);
   const columnList: DG.Column<string>[] = [];
   const rowCount = sequenceColumn.length;
   const resultDf = DG.DataFrame.create(rowCount);
@@ -21,7 +20,7 @@ export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.Dat
     if (sequence == null)
       continue;
 
-    currentMonomerList = splitter(sequence);
+    const currentMonomerList = splitter(sequence);
     currentMonomerList.forEach((monomer, positionIndex) => {
       const col = getCol(positionIndex) || createCol(positionIndex);
       col.set(rowIndex, monomer || '-', false);
