@@ -9,7 +9,7 @@ import {SeqPalette} from '../seq-palettes';
 import {Subscription} from 'rxjs';
 import {UnitsHandler} from '../utils/units-handler';
 import {SliderOptions} from 'datagrok-api/dg';
-import {getSplitter, monomerToShort, pickUpPalette, pickUpSeqCol, SplitterFunc} from '../utils/macromolecule';
+import {getSplitter, monomerToShort, pickUpPalette, pickUpSeqCol, SplitterFunc, TAGS} from '../utils/macromolecule';
 
 declare module 'datagrok-api/src/grid' {
   interface Rect {
@@ -361,7 +361,7 @@ export class WebLogo extends DG.JsViewer {
       }
       if (this.seqCol) {
         const units: string = this.seqCol!.getTag(DG.TAGS.UNITS);
-        const separator: string = this.seqCol!.getTag(UnitsHandler.TAGS.separator);
+        const separator: string = this.seqCol!.getTag(TAGS.separator);
         this.splitter = getSplitter(units, separator);
         this.unitsHandler = new UnitsHandler(this.seqCol);
 

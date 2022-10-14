@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {UnitsHandler, NOTATION} from './units-handler';
-import {getSplitterForColumn, SplitterFunc} from './macromolecule';
+import {UnitsHandler} from './units-handler';
+import {getSplitterForColumn, NOTATION, SplitterFunc, TAGS} from './macromolecule';
 
 /** Class for handling conversion of notation systems in Macromolecule columns */
 export class NotationConverter extends UnitsHandler {
@@ -43,7 +43,7 @@ export class NotationConverter extends UnitsHandler {
       }
       return fastaMonomersArray.join(separator);
     });
-    newColumn.setTag(UnitsHandler.TAGS.separator, separator);
+    newColumn.setTag(TAGS.separator, separator);
     return newColumn;
   }
 
