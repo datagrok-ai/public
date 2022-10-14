@@ -7,23 +7,6 @@ import * as C from './constants';
 const undefinedColor = 'rgb(100,100,100)';
 const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = bio.monomerToShort;
 
-
-function getPaletteByType(paletteType: string): bio.SeqPalette {
-  switch (paletteType) {
-  case 'PT':
-    return bio.AminoacidsPalettes.GrokGroups;
-  case 'NT':
-    return bio.NucleotidesPalettes.Chromatogram;
-  case 'DNA':
-    return bio.NucleotidesPalettes.Chromatogram;
-  case 'RNA':
-    return bio.NucleotidesPalettes.Chromatogram;
-    // other
-  default:
-    return bio.UnknownSeqPalettes.Color;
-  }
-}
-
 function getUpdatedWidth(grid: DG.Grid | null, g: CanvasRenderingContext2D, x: number, w: number): number {
   return grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
 }
@@ -61,7 +44,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.cell.column.getTag(bio.UnitsHandler.TAGS.aligned) !== 'SEQ.MSA')
+    if (gridCell.cell.column.getTag(bio.TAGS.aligned) !== 'SEQ.MSA')
       return;
 
     const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
@@ -126,7 +109,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     //TODO: can this be replaced/merged with splitSequence?
     const units = gridCell.cell.column.getTag(DG.TAGS.UNITS);
 
-    const palette = getPaletteByType(paletteType);
+    const palette = bio.getPaletteByType(paletteType);
 
     const separator = gridCell.cell.column.getTag('separator') ?? '';
     const splitLimit = gridCell.bounds.width / 5;
@@ -227,7 +210,7 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
     g.textBaseline = 'middle';
     g.textAlign = 'center';
 
-    const palette = getPaletteByType(gridCell.cell.column.getTag(C.TAGS.ALPHABET));
+    const palette = bio.getPaletteByType(gridCell.cell.column.getTag(C.TAGS.ALPHABET));
     const s: string = gridCell.cell.value;
     if (!s)
       return;
@@ -314,7 +297,7 @@ export function drawMoleculeDifferenceOnCanvas(
 
   let palette: bio.SeqPalette = bio.UnknownSeqPalettes.Color;
   if (units != 'HELM')
-    palette = getPaletteByType(units.substring(units.length - 2));
+    palette = bio.getPaletteByType(units.substring(units.length - 2));
 
   const vShift = 7;
   for (let i = 0; i < subParts1.length; i++) {

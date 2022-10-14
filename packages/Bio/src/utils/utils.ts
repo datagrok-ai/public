@@ -19,7 +19,7 @@ export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
   const monomerSymbolDict: { [key: string]: number } = {};
   const units = col.tags[DG.TAGS.UNITS];
-  const sep = col.getTag(UnitsHandler.TAGS.separator);
+  const sep = col.getTag(bio.TAGS.separator);
   const splitterFunc: bio.SplitterFunc = bio.getSplitter(units, sep);
   const encodedStringArray = [];
   for (let i = 0; i < col.length; ++i) {
