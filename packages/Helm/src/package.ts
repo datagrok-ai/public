@@ -2,11 +2,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {NotationConverter} from '@datagrok-libraries/bio/src/utils/notation-converter';
+import * as bio from '@datagrok-libraries/bio';
+
 import {createJsonMonomerLibFromSdf} from './utils';
 import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
-import {printLeftOrCentered} from '@datagrok-libraries/bio/src/utils/cell-renderer';
-import { delay } from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 export const _package = new DG.Package();
 
@@ -26,7 +26,7 @@ export async function initHelm(): Promise<void> {
 async function loadLibraries() {
   let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
   for (let i = 0; i < uploadedLibraries.length; ++i) {
-    await monomerManager(await grok.dapi.userDataStorage.getValue(STORAGE_NAME,uploadedLibraries[i], true));
+    await monomerManager(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, uploadedLibraries[i], true));
   }
 }
 
@@ -74,12 +74,12 @@ function webEditor(cell?: DG.GridCell, value?: string) {
   }, 200);
   //@ts-ignore
   ui.dialog({showHeader: false, showFooter: true})
-  .add(view)
-  .onOK(() => {
-    if (typeof cell !== 'undefined') {
-      cell.cell.value = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-    }
-  }).show({modal: true, fullScreen: true});
+    .add(view)
+    .onOK(() => {
+      if (typeof cell !== 'undefined') {
+        cell.cell.value = app.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+      }
+    }).show({modal: true, fullScreen: true});
 }
 
 
@@ -98,7 +98,7 @@ export function editMoleculeCell(cell: DG.GridCell): void {
 //input: string mol { semType: Macromolecule }
 export function openEditor(mol: string): void {
   let df = grok.shell.tv.grid.dataFrame;
-  let converter = new NotationConverter(df.columns.bySemType('Macromolecule'));
+  let converter = new bio.NotationConverter(df.columns.bySemType('Macromolecule'));
   const resStr = converter.convertStringToHelm(mol, '/');
   webEditor(undefined, resStr);
 }
@@ -141,7 +141,7 @@ export async function libraryPanel(helmColumn: DG.Column): Promise<DG.Widget> {
   let librariesList: string[] = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
   let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
   for (let i = 0; i < uploadedLibraries.length; ++i) {
-    let libraryName: string = uploadedLibraries[i]; 
+    let libraryName: string = uploadedLibraries[i];
     divInputs.append(ui.boolInput(libraryName, true, async v => {
       org.helm.webeditor.Monomers.clear();
       grok.dapi.userDataStorage.remove(STORAGE_NAME, libraryName, true);
@@ -258,7 +258,7 @@ export async function monomerManager(value: string) {
       dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
       df = createJsonMonomerLibFromSdf(dfSdf[0]);
     } else {
-      grok.shell.warning("Chem package is not installed");
+      grok.shell.warning('Chem package is not installed');
     }
   } else {
     const file = await _package.files.readAsText(`${LIB_PATH}${value}`);
@@ -296,44 +296,42 @@ export function helmColumnToSmiles(helmColumn: DG.Column) {
 
 function split(s: string, sep: string) {
   var ret = [];
-  var frag = "";
+  var frag = '';
   var parentheses = 0;
   var bracket = 0;
   var braces = 0;
   var quote = 0;
   for (var i = 0; i < s.length; ++i) {
-      var c = s.substring(i, i + 1);
-      if (c == sep && bracket == 0 && parentheses == 0 && braces == 0 && quote == 0) {
-          ret.push(frag);
-          frag = "";
+    var c = s.substring(i, i + 1);
+    if (c == sep && bracket == 0 && parentheses == 0 && braces == 0 && quote == 0) {
+      ret.push(frag);
+      frag = '';
+    } else {
+      frag += c;
+      if (quote > 0) {
+        if (c == '\\' && i + 1 < s.length) {
+          ++i;
+          var c2 = s.substring(i, i + 1);
+          frag += c2;
+          c += c2;
+        }
       }
-      else {
-          frag += c;
-          if (quote > 0) {
-              if (c == '\\' && i + 1 < s.length) {
-                  ++i;
-                  var c2 = s.substring(i, i + 1);
-                  frag += c2;
-                  c += c2;
-              }
-          }
-          if (c == '\"') {
-              if (!(i > 0 && s.substring(i - 1, i) == '\\'))
-                  quote = quote == 0 ? 1 : 0;
-          }
-          else if (c == '[')
-              ++bracket;
-          else if (c == ']')
-              --bracket;
-          else if (c == '(')
-              ++parentheses;
-          else if (c == ')')
-              --parentheses;
-          else if (c == '{')
-              ++braces;
-          else if (c == '}')
-              --braces;
-      }
+      if (c == '\"') {
+        if (!(i > 0 && s.substring(i - 1, i) == '\\'))
+          quote = quote == 0 ? 1 : 0;
+      } else if (c == '[')
+        ++bracket;
+      else if (c == ']')
+        --bracket;
+      else if (c == '(')
+        ++parentheses;
+      else if (c == ')')
+        --parentheses;
+      else if (c == '{')
+        ++braces;
+      else if (c == '}')
+        --braces;
+    }
   }
   ret.push(frag);
   return ret;
@@ -342,49 +340,49 @@ function split(s: string, sep: string) {
 function detachAnnotation(s: string) {
   var ret = _detachAppendix(s, '\"');
   if (ret.tag != null)
-      return ret;
+    return ret;
 
   var r = _detachAppendix(s, '\'');
-  return { tag: ret.tag, repeat: r.tag, str: r.str };
+  return {tag: ret.tag, repeat: r.tag, str: r.str};
 }
 
 function _detachAppendix(s: string, c: string) {
   var tag = null;
   //@ts-ignore
   if (scil.Utils.endswith(s, c)) {
-      var p = s.length - 1;
-      while (p > 0) {
-          p = s.lastIndexOf(c, p - 1);
-          if (p <= 0 || s.substring(p - 1, p) != '\\')
-              break;
-      }
+    var p = s.length - 1;
+    while (p > 0) {
+      p = s.lastIndexOf(c, p - 1);
+      if (p <= 0 || s.substring(p - 1, p) != '\\')
+        break;
+    }
 
-      if (p > 0 && p < s.length - 1) {
-          tag = s.substring(p + 1, s.length - 1);
-          s = s.substring(0, p);
-      }
+    if (p > 0 && p < s.length - 1) {
+      tag = s.substring(p + 1, s.length - 1);
+      s = s.substring(0, p);
+    }
   }
   if (tag != null)
-      tag = tag.replace(new RegExp("\\" + c, "g"), c);
-  return { tag: unescape(tag), str: s };
+    tag = tag.replace(new RegExp('\\' + c, 'g'), c);
+  return {tag: unescape(tag), str: s};
 }
 
 function unescape(s: string) {
   //@ts-ignore
   if (scil.Utils.isNullOrEmpty(s))
-      return s;
+    return s;
 
-  return s.replace(/[\\]./g, function (m) {
-      switch (m) {
-          case "\\r":
-              return "\r";
-          case "\\n":
-              return "\n";
-          case "\\t":
-              return "\t";
-          default:
-              return m.substring(1);
-      }
+  return s.replace(/[\\]./g, function(m) {
+    switch (m) {
+    case '\\r':
+      return '\r';
+    case '\\n':
+      return '\n';
+    case '\\t':
+      return '\t';
+    default:
+      return m.substring(1);
+    }
   });
 }
 
@@ -396,34 +394,32 @@ export function parseHelm(s: string) {
   var monomers = [];
   //@ts-ignore
   if (!scil.Utils.isNullOrEmpty(s)) {
-      var seqs = split(s, '|');
-      for (var i = 0; i < seqs.length; ++i) {
-          var e = detachAnnotation(seqs[i]);
-          s = e.str;
+    var seqs = split(s, '|');
+    for (var i = 0; i < seqs.length; ++i) {
+      var e = detachAnnotation(seqs[i]);
+      s = e.str;
 
-          var p = s.indexOf("{");
-          
-          s = s.substring(p + 1);
-          p = s.indexOf('}');
-          s = s.substring(0, p);
+      var p = s.indexOf('{');
 
-          var ss = split(s, '.');
-          for (var monomer of ss) {
-            if (monomer.includes('(') && monomer.includes(')')) {
-              var elements = monomer.replace(/[()]/g, "").split("");
-              for (var el of elements) {
-                monomers.push(el);
-              }
-            } 
-            else if (monomer.includes('[') && monomer.includes(']')){
-              var element = monomer.match(/(?<=\[).*?(?=\])/g, "");
-              monomers.push(element[0]);
-            } 
-            else {
-              monomers.push(monomer);
-            }
+      s = s.substring(p + 1);
+      p = s.indexOf('}');
+      s = s.substring(0, p);
+
+      var ss = split(s, '.');
+      for (var monomer of ss) {
+        if (monomer.includes('(') && monomer.includes(')')) {
+          var elements = monomer.replace(/[()]/g, '').split('');
+          for (var el of elements) {
+            monomers.push(el);
           }
+        } else if (monomer.includes('[') && monomer.includes(']')) {
+          var element = monomer.match(/(?<=\[).*?(?=\])/g, '');
+          monomers.push(element[0]);
+        } else {
+          monomers.push(monomer);
+        }
       }
+    }
   }
   return monomers;
 }
@@ -449,7 +445,7 @@ export function findMonomers(helmString: string) {
 //name: getMolfiles
 //input: column col {semType: Macromolecule}
 //output: column res 
-export function getMolfiles(col: DG.Column) : DG.Column {
+export function getMolfiles(col: DG.Column): DG.Column {
   let grid = grok.shell.tv.grid;
   let parent = grid.root.parentElement;
   let res = DG.Column.string('mols', col.length);
@@ -467,7 +463,7 @@ export function getMolfiles(col: DG.Column) : DG.Column {
   return res;
 }
 
-function getParts(subParts: string[], s: string) : string[] {
+function getParts(subParts: string[], s: string): string[] {
   let j = 0;
   let allParts: string[] = [];
   for (let k = 0; k < subParts.length; ++k) {
@@ -522,15 +518,15 @@ class HelmCellRenderer extends DG.GridCellRenderer {
     let allParts: string[] = getParts(subParts, s);
     let tooltipMessage: HTMLElement[] = [];
     for (let i = 0; i < allParts.length; ++i) {
-      if (monomers.has(allParts[i])) 
+      if (monomers.has(allParts[i]))
         tooltipMessage[i] = ui.divV([
           ui.divText(`Monomer ${allParts[i]} not found.`),
           ui.divText('Open the Property Panel, then expand Manage Libraries')
-        ])
-    };
-    (((tooltipMessage[left]?.childNodes.length ?? 0) > 0)) 
-    ? ui.tooltip.show(ui.div(tooltipMessage[left]), e.x + 16, e.y + 16) 
-    : ui.tooltip.hide();
+        ]);
+    }
+    (((tooltipMessage[left]?.childNodes.length ?? 0) > 0))
+      ? ui.tooltip.show(ui.div(tooltipMessage[left]), e.x + 16, e.y + 16)
+      : ui.tooltip.hide();
   }
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
@@ -567,9 +563,9 @@ class HelmCellRenderer extends DG.GridCellRenderer {
         maxLengthWords[i] = allParts[i].length * 7;
         let color = monomers.has(allParts[i]) ? 'red' : grayColor;
         g.fillStyle = undefinedColor;
-        x1 = printLeftOrCentered(x1, y, w, h, g, allParts[i], color, 0, true, 1.0);
-      };
-      
+        x1 = bio.printLeftOrCentered(x1, y, w, h, g, allParts[i], color, 0, true, 1.0);
+      }
+
       maxLengthWordSum[0] = maxLengthWords[0];
       for (let i = 1; i < allParts.length; i++) {
         maxLengthWordSum[i] = maxLengthWordSum[i - 1] + maxLengthWords[i];
