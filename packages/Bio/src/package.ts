@@ -450,7 +450,7 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
 //tags: panel, bio
 //input: column col {semType: Macromolecule}
 export function splitToMonomers(col: DG.Column<string>): void {
-  if (!col.getTag(bio.UnitsHandler.TAGS.aligned).includes(C.MSA))
+  if (!col.getTag(bio.TAGS.aligned).includes(C.MSA))
     return grok.shell.error('Splitting is applicable only for aligned sequences');
 
   const tempDf = splitAlignedSequences(col);
@@ -519,6 +519,7 @@ export function bioSubstructureSearch(col: DG.Column): void {
 export function saveAsFasta() {
   saveAsFastaUI();
 }
+
 //name: BioSubstructureFilter
 //description: Substructure filter for linear macromolecules
 //tags: filter

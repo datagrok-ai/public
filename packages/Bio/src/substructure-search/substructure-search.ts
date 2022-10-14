@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/units-handler';
+import * as bio from '@datagrok-libraries/bio';
+
 import * as C from '../utils/constants';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {BitSet} from 'datagrok-api/dg';
@@ -30,14 +31,14 @@ export function substructureSearchDialog(col: DG.Column): void {
   const df = DG.DataFrame.create(1);
   df.columns.addNewString('substr_helm').init((i) => '');
   df.col('substr_helm')!.semType = col.semType;
-  df.col('substr_helm')!.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+  df.col('substr_helm')!.setTag(DG.TAGS.UNITS, bio.NOTATION.HELM);
   const grid = df.plot.grid();
   const separatorInput = ui.textInput('Separator', separator);
 
   const inputsDiv = ui.div();
 
-  const inputs = units === NOTATION.HELM ? ui.divV([editHelmLink]) :
-    units === NOTATION.SEPARATOR ? ui.inputs([substructureInput, separatorInput]) :
+  const inputs = units === bio.NOTATION.HELM ? ui.divV([editHelmLink]) :
+    units === bio.NOTATION.SEPARATOR ? ui.inputs([substructureInput, separatorInput]) :
       ui.inputs([substructureInput]);
 
   updateDivInnerHTML(inputsDiv, inputs);
@@ -48,15 +49,15 @@ export function substructureSearchDialog(col: DG.Column): void {
       inputsDiv
     ]))
     .onOK(async () => {
-      let substructure = units === NOTATION.HELM ? df.get('substr_helm', 0) : substructureInput.value;
-      if (units === NOTATION.SEPARATOR && separatorInput.value !== separator && separatorInput.value !== '')
+      let substructure = units === bio.NOTATION.HELM ? df.get('substr_helm', 0) : substructureInput.value;
+      if (units === bio.NOTATION.SEPARATOR && separatorInput.value !== separator && separatorInput.value !== '')
         substructure = substructure.replaceAll(separatorInput.value, separator);
       const matchesColName = `Matches: ${substructure}`;
       const colExists = col.dataFrame.columns.names()
         .filter((it) => it.toLocaleLowerCase() === matchesColName.toLocaleLowerCase()).length > 0;
       if (!colExists) {
         let matches: BitSet;
-        if (units === NOTATION.HELM)
+        if (units === bio.NOTATION.HELM)
           matches = await helmSubstructureSearch(substructure, col);
         else
           matches = linearSubstructureSearch(substructure, col);
@@ -80,7 +81,7 @@ export function linearSubstructureSearch(substructure: string, col: DG.Column): 
 async function helmSubstructureSearch(substructure: string, col: DG.Column): Promise<BitSet> {
   const helmColWithSubstructure = DG.Column.string('helm', col.length + 1)
     .init((i) => i === col.length ? substructure : col.get(i));
-  helmColWithSubstructure.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+  helmColWithSubstructure.setTag(DG.TAGS.UNITS, bio.NOTATION.HELM);
   const monomericMolsCol = await getMonomericMols(helmColWithSubstructure, true);
   const molSubstructure = monomericMolsCol.get(col.length);
   const monomericMolsDf = DG.DataFrame.fromColumns([monomericMolsCol]);

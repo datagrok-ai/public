@@ -6,10 +6,11 @@
 
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
+
 import wu from 'wu';
 import {linearSubstructureSearch} from '../substructure-search/substructure-search';
 import {Subject, Subscription} from 'rxjs';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/units-handler';
 import * as C from '../utils/constants';
 
 export class BioSubstructureFilter extends DG.Filter {
@@ -19,6 +20,7 @@ export class BioSubstructureFilter extends DG.Filter {
   onBioFilterChangedSubs?: Subscription;
 
   get calculating(): boolean { return this.loader.style.display == 'initial'; }
+
   set calculating(value: boolean) { this.loader.style.display = value ? 'initial' : 'none'; }
 
   get filterSummary(): string {
@@ -44,7 +46,7 @@ export class BioSubstructureFilter extends DG.Filter {
     this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
     this.columnName = this.column?.name;
     const notation = this.column?.getTag(DG.TAGS.UNITS);
-    this.bioFilter = notation === NOTATION.FASTA ?
+    this.bioFilter = notation === bio.NOTATION.FASTA ?
       new FastaFilter() : new SeparatorFilter(this.column!.getTag(C.TAGS.SEPARATOR));
     this.root.appendChild(this.bioFilter!.filterPanel);
     this.root.appendChild(this.loader);
@@ -82,10 +84,10 @@ export class BioSubstructureFilter extends DG.Filter {
   }
 
   /**
-    * Performs the actual filtering
-    * When the results are ready, triggers `rows.requestFilter`, which in turn triggers `applyFilter`
-    * that would simply apply the bitset synchronously.
-    */
+   * Performs the actual filtering
+   * When the results are ready, triggers `rows.requestFilter`, which in turn triggers `applyFilter`
+   * that would simply apply the bitset synchronously.
+   */
   async _onInputChanged(): Promise<void> {
     if (!this.isFiltering) {
       this.bitset = null;
@@ -145,7 +147,7 @@ class SeparatorFilter extends FastaFilter {
 
   get substructure() {
     return this.separatorInput.value && this.separatorInput.value !== this.colSeparator ?
-      this.substructureInput.value.replaceAll(this.separatorInput.value, this.colSeparator):
+      this.substructureInput.value.replaceAll(this.separatorInput.value, this.colSeparator) :
       this.substructureInput.value;
   }
 }

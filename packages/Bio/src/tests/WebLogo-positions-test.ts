@@ -4,8 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import * as bio from '@datagrok-libraries/bio';
 
 import {after, before, category, test, expect, expectObject, delay} from '@datagrok-libraries/utils/src/test';
-import {Column} from 'datagrok-api/dg';
-import {ALPHABET, NOTATION, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 category('WebLogo-positions', () => {
   let tvList: DG.TableView[];
@@ -38,8 +36,8 @@ ATC-G-TTGC--
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    seqCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.DNA);
+    seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
+    seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
 
     const wlViewer: bio.WebLogo = (await df.plot.fromType('WebLogo')) as bio.WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
@@ -87,8 +85,8 @@ ATC-G-TTGC--
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    seqCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.DNA);
+    seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
+    seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
 
     df.filter.init((i) => {
       return i > 2;
@@ -131,8 +129,8 @@ ATC-G-TTGC--
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    seqCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.DNA);
+    seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
+    seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
 
     const wlViewer: bio.WebLogo = (await df.plot.fromType('WebLogo',
       {'skipEmptyPositions': true})) as bio.WebLogo;

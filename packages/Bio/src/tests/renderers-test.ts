@@ -1,10 +1,11 @@
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
-
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
+
+import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+
 import {importFasta, multipleSequenceAlignmentAny} from '../package';
 import {convertDo} from '../utils/convert';
-import {ALPHABET, NOTATION, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {SEM_TYPES, TAGS} from '../utils/constants';
 import {generateLongSequence, generateManySequences, performanceTest} from './test-sequnces-generators';
 
@@ -137,22 +138,22 @@ category('renderers', () => {
       `semType="${srcSeqCol!.semType}", units="${srcSeqCol!.getTag(DG.TAGS.UNITS)}", ` +
       `cell.renderer="${srcSeqCol!.getTag(DG.TAGS.CELL_RENDERER)}"`);
     expect(srcSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(srcSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
-    expect(srcSeqCol.getTag(UnitsHandler.TAGS.aligned), 'SEQ');
-    expect(srcSeqCol.getTag(UnitsHandler.TAGS.alphabet), ALPHABET.PT);
+    expect(srcSeqCol.getTag(DG.TAGS.UNITS), bio.NOTATION.FASTA);
+    expect(srcSeqCol.getTag(bio.TAGS.aligned), 'SEQ');
+    expect(srcSeqCol.getTag(bio.TAGS.alphabet), bio.ALPHABET.PT);
     expect(srcSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     const msaSeqCol: DG.Column = (await multipleSequenceAlignmentAny(df, srcSeqCol!))!;
     tv.grid.invalidate();
 
     expect(msaSeqCol.semType, DG.SEMTYPE.MACROMOLECULE);
-    expect(msaSeqCol.getTag(DG.TAGS.UNITS), NOTATION.FASTA);
-    expect(msaSeqCol.getTag(UnitsHandler.TAGS.aligned), 'SEQ.MSA');
-    expect(msaSeqCol.getTag(UnitsHandler.TAGS.alphabet), ALPHABET.PT);
+    expect(msaSeqCol.getTag(DG.TAGS.UNITS), bio.NOTATION.FASTA);
+    expect(msaSeqCol.getTag(bio.TAGS.aligned), 'SEQ.MSA');
+    expect(msaSeqCol.getTag(bio.TAGS.alphabet), bio.ALPHABET.PT);
     expect(msaSeqCol.getTag(DG.TAGS.CELL_RENDERER), 'sequence');
 
     // check newColumn with UnitsHandler constructor
-    const uh: UnitsHandler = new UnitsHandler(msaSeqCol);
+    const uh: bio.UnitsHandler = new bio.UnitsHandler(msaSeqCol);
 
     dfList.push(df);
     tvList.push(tv);
@@ -174,13 +175,13 @@ category('renderers', () => {
     tvList.push(tv);
     dfList.push(df);
 
-    const tgtCol: DG.Column = await convertDo(srcCol, NOTATION.SEPARATOR, '/');
+    const tgtCol: DG.Column = await convertDo(srcCol, bio.NOTATION.SEPARATOR, '/');
 
     const resCellRenderer = tgtCol.getTag(DG.TAGS.CELL_RENDERER);
     expect(resCellRenderer, 'sequence');
 
     // check tgtCol with UnitsHandler constructor
-    const uh: UnitsHandler = new UnitsHandler(tgtCol);
+    const uh: bio.UnitsHandler = new bio.UnitsHandler(tgtCol);
   }
 
   async function _selectRendererBySemType() {
