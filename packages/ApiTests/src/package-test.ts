@@ -38,6 +38,7 @@ import './ui/accordion';
 import './ui/tab-control';
 import './ui/list';
 import './ui/image';
+import './ui/users';
 //import './viewers/viewers-adding';
 import './viewers/viewers';
 //import './gui/chem-sketcher';
