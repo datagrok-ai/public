@@ -145,7 +145,7 @@ class BioPackageDetectors extends DG.Package {
       if (separator && BioPackageDetectors.checkForbiddenWithSeparators(stats.freq)) return null;
 
       const format = separator ? NOTATION.SEPARATOR : NOTATION.FASTA;
-      const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
+      const aligned = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
 
       // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
       const alphabet = BioPackageDetectors.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol);
@@ -153,7 +153,7 @@ class BioPackageDetectors extends DG.Package {
       // const forbidden = BioPackageDetectors.checkForbiddenWoSeparator(stats.freq);
       if (separator || alphabet != 'UN') {
         col.setTag(DG.TAGS.UNITS, format);
-        col.setTag(UnitsHandler.TAGS.aligned, seqType);
+        col.setTag(UnitsHandler.TAGS.aligned, aligned);
         col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
         if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
         if (alphabet === ALPHABET.UN) {
