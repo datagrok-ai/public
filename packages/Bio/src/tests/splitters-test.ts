@@ -1,11 +1,12 @@
-import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
-
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {WebLogo, SplitterFunc} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import {splitToMonomers, _package, getHelmMonomers} from '../package';
+import * as bio from '@datagrok-libraries/bio';
+
+import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
 import * as C from '../utils/constants';
+import {splitToMonomers, _package, getHelmMonomers} from '../package';
+
 
 category('splitters', () => {
   let tvList: DG.TableView[];
@@ -121,13 +122,13 @@ PEPTIDE1{hHis.Aca.Cys_SEt}$$$,5.72388
 });
 
 export async function _testFastaSplitter(src: string, tgt: string[]) {
-  const res: string[] = WebLogo.splitterAsFasta(src);
+  const res: string[] = bio.splitterAsFasta(src);
   console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
   expectArray(res, tgt);
 }
 
 export async function _testHelmSplitter(src: string, tgt: string[]) {
-  const res: string[] = WebLogo.splitterAsHelm(src);
+  const res: string[] = bio.splitterAsHelm(src);
   console.debug(`Bio: tests: splitters: src=${JSON.stringify(src)}, res=${JSON.stringify(res)} .`);
   expectArray(res, tgt);
 }

@@ -452,6 +452,8 @@ export class PeptidesModel {
       ratioCol.set(i, stats.ratio);
     }
 
+    const monomerCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    matrixDf = matrixDf.clone(DG.BitSet.create(matrixDf.rowCount, (i) => monomerCol.get(i) ? true : false));
     return matrixDf as DG.DataFrame;
   }
 
@@ -916,6 +918,8 @@ export class PeptidesModel {
 
   initMonomerPositionSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
     const tempSelection = isInvariantMapSelection ? this.invariantMapSelection : this.mutationCliffsSelection;
+    for (const key of Object.keys(tempSelection))
+      tempSelection[key] = [];
     tempSelection[position] = [aar];
 
     if (isInvariantMapSelection)

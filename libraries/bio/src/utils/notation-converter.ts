@@ -2,17 +2,19 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {SplitterFunc, WebLogo} from '../viewers/web-logo';
-import {UnitsHandler, NOTATION} from './units-handler';
+
+import {UnitsHandler} from './units-handler';
+import {getSplitterForColumn, getStats, NOTATION, SeqColStats, SplitterFunc, TAGS} from './macromolecule';
 
 /** Class for handling conversion of notation systems in Macromolecule columns */
 export class NotationConverter extends UnitsHandler {
   private _splitter: SplitterFunc | null = null;
+
   protected get splitter(): SplitterFunc {
     if (this._splitter === null)
-      this._splitter = WebLogo.getSplitterForColumn(this.column);
+      this._splitter = getSplitterForColumn(this.column);
     return this._splitter;
-  };
+  }
 
   public toFasta(targetNotation: NOTATION): boolean { return targetNotation === NOTATION.FASTA; }
 
@@ -43,7 +45,7 @@ export class NotationConverter extends UnitsHandler {
       return fastaMonomersArray.join(separator);
     });
     newColumn.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
-    newColumn.setTag(UnitsHandler.TAGS.separator, separator);
+    newColumn.setTag(TAGS.separator, separator);
     return newColumn;
   }
 
@@ -218,6 +220,13 @@ export class NotationConverter extends UnitsHandler {
       }
       return tgtMonomersArray.join(tgtSeparator);
     });
+
+    // TAGS.aligned is mandatory for columns of NOTATION.FASTA and NOTATION.SEPARATOR
+    const splitter: SplitterFunc = getSplitterForColumn(newColumn);
+    const stats: SeqColStats = getStats(newColumn, 5, splitter);
+    const aligned = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
+    newColumn.setTag(TAGS.aligned, aligned);
+
     return newColumn;
   }
 

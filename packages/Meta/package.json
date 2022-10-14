@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.0.42",
+  "version": "3.0.50",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -617,6 +617,12 @@
         },
         "1.3.1": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.3.2": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.3.3": {
+          "datagrok-api": "^1.6.0"
         }
       },
       "description": "Provides advanced tools for analyzing collections of peptides.",
@@ -690,6 +696,12 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.0.3": {
+          "datagrok-api": "^1.6.9"
+        },
+        "1.0.4": {
+          "datagrok-api": "^1.6.9"
         }
       },
       "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
@@ -1454,6 +1466,12 @@
         },
         "2.0.17": {
           "datagrok-api": "^1.7.0"
+        },
+        "2.0.18": {
+          "datagrok-api": "^1.7.0"
+        },
+        "2.0.21": {
+          "datagrok-api": "^1.7.0"
         }
       },
       "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
@@ -1688,6 +1706,9 @@
           "datagrok-api": "^1.6.7"
         },
         "1.1.3": {
+          "datagrok-api": "^1.6.7"
+        },
+        "1.1.4": {
           "datagrok-api": "^1.6.7"
         }
       },
@@ -1937,6 +1958,9 @@
           "datagrok-api": "^1.5.0"
         },
         "2.0.3": {
+          "datagrok-api": "^1.6.0"
+        },
+        "2.0.4": {
           "datagrok-api": "^1.6.0"
         }
       },

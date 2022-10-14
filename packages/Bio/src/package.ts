@@ -2,18 +2,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 export const _package = new DG.Package();
 
 import {MacromoleculeDifferenceCellRenderer, MonomerCellRenderer} from './utils/cell-renderer';
-import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
 import {SequenceAlignment, Aligned} from './seq_align';
-import {Nucleotides} from '@datagrok-libraries/bio/src/nucleotides';
-import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 import {getEmbeddingColsNames, sequenceSpace} from './analysis/sequence-space';
-import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './analysis/sequence-activity-cliffs';
 import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq} from '@datagrok-libraries/bio/src/utils/monomer-utils';
@@ -22,7 +19,9 @@ import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
-import {UnitsHandler, ALPHABET, NOTATION, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {UnitsHandler, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule'
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/utils/to-atomic-level';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
@@ -38,6 +37,7 @@ import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 import {substructureSearchDialog} from './substructure-search/substructure-search';
 import {saveAsFastaUI} from './utils/save-as-fasta';
+import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 
 //tags: init
 export async function initBio() {
@@ -94,7 +94,7 @@ export function checkInputColumn(
   let res: boolean = true;
   let msg: string = '';
 
-  const uh = new UnitsHandler(col);
+  const uh = new bio.UnitsHandler(col);
   if (col.semType !== DG.SEMTYPE.MACROMOLECULE) {
     grok.shell.warning(name + ' analysis is allowed for Macromolecules semantic type');
     res = false;
@@ -144,7 +144,7 @@ export function sequenceAlignment(alignType: string, alignTable: string, gap: nu
 //tags: viewer, panel
 //output: viewer result
 export function webLogoViewer() {
-  return new WebLogo();
+  return new bio.WebLogo();
 }
 
 //name: VdRegions
@@ -176,9 +176,9 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
   };
   const tags = {
     'units': macroMolecule.getTag(DG.TAGS.UNITS),
-    'aligned': macroMolecule.getTag(UnitsHandler.TAGS.aligned),
-    'separator': macroMolecule.getTag(UnitsHandler.TAGS.separator),
-    'alphabet': macroMolecule.getTag(UnitsHandler.TAGS.alphabet),
+    'aligned': macroMolecule.getTag(TAGS.aligned),
+    'separator': macroMolecule.getTag(TAGS.separator),
+    'alphabet': macroMolecule.getTag(TAGS.alphabet),
   };
   const sp = await getActivityCliffs(
     df,
@@ -301,7 +301,7 @@ export async function compositionAnalysis(): Promise<void> {
     if (col.semType != DG.SEMTYPE.MACROMOLECULE)
       return false;
 
-    const colUH = new UnitsHandler(col);
+    const colUH = new bio.UnitsHandler(col);
     // TODO: prevent for cyclic, branched or multiple chains in Helm
     return true;
   });
@@ -320,7 +320,7 @@ export async function compositionAnalysis(): Promise<void> {
     return;
   } else if (colList.length > 1) {
     const colListNames: string [] = colList.map((col) => col.name);
-    const selectedCol = colList.find((c) => { return (new UnitsHandler(c)).isMsa(); });
+    const selectedCol = colList.find((c) => { return (new bio.UnitsHandler(c)).isMsa(); });
     const colInput: DG.InputBase = ui.choiceInput(
       'Column', selectedCol ? selectedCol.name : colListNames[0], colListNames);
     ui.dialog({
@@ -372,7 +372,7 @@ export async function peptideMolecule(macroMolecule: DG.Cell): Promise<DG.Widget
 //input: string fileContent
 //output: list tables
 export function importFasta(fileContent: string): DG.DataFrame [] {
-  const ffh = new FastaFileHandler(fileContent);
+  const ffh = new bio.FastaFileHandler(fileContent);
   return ffh.importFasta();
 }
 
@@ -447,7 +447,7 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
 //tags: panel, bio
 //input: column col {semType: Macromolecule}
 export function splitToMonomers(col: DG.Column<string>): void {
-  if (!col.getTag(UnitsHandler.TAGS.aligned).includes(C.MSA))
+  if (!col.getTag(bio.TAGS.aligned).includes(C.MSA))
     return grok.shell.error('Splitting is applicable only for aligned sequences');
 
   const tempDf = splitAlignedSequences(col);
@@ -464,7 +464,7 @@ export function splitToMonomers(col: DG.Column<string>): void {
 //name: Bio: getHelmMonomers
 //input: column col {semType: Macromolecule}
 export function getHelmMonomers(seqCol: DG.Column<string>): string[] {
-  const stats = WebLogo.getStats(seqCol, 1, WebLogo.splitterAsHelm);
+  const stats = bio.getStats(seqCol, 1, bio.splitterAsHelm);
   return Object.keys(stats.freq);
 }
 
@@ -517,18 +517,11 @@ export function saveAsFasta() {
   saveAsFastaUI();
 }
 
-//name: debugToAtomicLevel
-export async function debugToAtomicLevel(): Promise<void> {
-  // todo: to be deleted after debugging
-  const path = 'System:AppData/Bio/tests/toAtomicLevelTest.csv';
-  const df = await grok.data.files.openTable(path);
-
-  const macroMolCol = df.col('seq')!;
-  macroMolCol.semType = DG.SEMTYPE.MACROMOLECULE;
-  macroMolCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-  macroMolCol.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
-  macroMolCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.RNA);
-
-  grok.shell.addTableView(df);
-  toAtomicLevel(df, macroMolCol);
+//name: BioSubstructureFilter
+//description: Substructure filter for linear macromolecules
+//tags: filter
+//output: filter result
+//meta.semType: Macromolecule
+export function bioSubstructureFilter(): BioSubstructureFilter {
+  return new BioSubstructureFilter();
 }

@@ -36,7 +36,7 @@ import { getActivityCliffs }  from '@datagrok-libraries/ml/src/viewers/activity-
 import { removeEmptyStringRows } from '@datagrok-libraries/utils/src/dataframe-utils';
 import { checkForStructuralAlerts } from './panels/structural-alerts';
 import { createPropPanelElement, createTooltipElement } from './analysis/activity-cliffs';
-import { getAtomsColumn, radar } from './utils/elemental-analysis-utils';
+import { getAtomsColumn } from './utils/elemental-analysis-utils';
 import { elementsTable } from './constants';
 import { getSimilaritiesMarix } from './utils/similarity-utils';
 import { molToMolblock } from './utils/convert-notation-utils'
@@ -350,7 +350,7 @@ export function addInchisPanel(col: DG.Column): void {
   addInchis(col);
 }
 
-//top-menu: Chem | Elemental analysis...
+//top-menu: Chem | Elemental Analysis...
 //name: Elemental analysis
 //description: function that implements elemental analysis
 //input: dataframe table
@@ -375,15 +375,11 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
 
   let view = grok.shell.addTableView(table);
 
-  /*if (radarView) {
+  if (radarView) {
     let elementsDf: DG.DataFrame = DG.DataFrame.fromColumns(columns);
-    table.currentRowIdx = 0;
-    view.addViewer(radar(0, elementsDf));
-    table.onCurrentRowChanged.subscribe((_) => {
-      view.resetLayout();
-      view.addViewer(radar(table.currentRowIdx, elementsDf));
-    });
-  }*/
+    let radarViewer = DG.Viewer.fromType('RadarViewer', elementsDf);
+    view.addViewer(radarViewer);
+  }
 
   if (radarGrid) {
     let gc = view.grid.columns.add({gridColumnName: 'radar', cellType: 'radar'});

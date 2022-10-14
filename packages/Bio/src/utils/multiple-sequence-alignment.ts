@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 
@@ -58,14 +59,14 @@ export async function runKalign(srcCol: DG.Column, isAligned = false, unUsedName
   // units
   const srcUnits = srcCol.getTag(DG.TAGS.UNITS);
   //aligned
-  const srcAligned = srcCol.getTag(UnitsHandler.TAGS.aligned);
+  const srcAligned = srcCol.getTag(bio.TAGS.aligned);
   const tgtAligned = srcAligned + '.MSA';
   //alphabet
-  const srcAlphabet = srcCol.getTag(UnitsHandler.TAGS.alphabet);
+  const srcAlphabet = srcCol.getTag(bio.TAGS.alphabet);
 
   tgtCol.setTag(DG.TAGS.UNITS, srcUnits);
-  tgtCol.setTag(UnitsHandler.TAGS.aligned, tgtAligned);
-  tgtCol.setTag(UnitsHandler.TAGS.alphabet, srcAlphabet);
+  tgtCol.setTag(bio.TAGS.aligned, tgtAligned);
+  tgtCol.setTag(bio.TAGS.alphabet, srcAlphabet);
   tgtCol.semType = DG.SEMTYPE.MACROMOLECULE;
   return tgtCol;
 }

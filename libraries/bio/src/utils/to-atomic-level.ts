@@ -1,9 +1,10 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {WebLogo, SplitterFunc} from '../../src/viewers/web-logo';
+import {SplitterFunc, TAGS, getSplitter} from '../../index';
 import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, RGROUP_FIELDS} from './const';
-import {ALPHABET, NOTATION, UnitsHandler} from './units-handler';
+import {ALPHABET, NOTATION} from './macromolecule';
+import {UnitsHandler} from './units-handler';
 import {NotationConverter} from './notation-converter';
 
 // constants for parsing molfile V2000
@@ -130,7 +131,7 @@ export async function _toAtomicLevel(
     macroMolCol = converter.convert(NOTATION.SEPARATOR, separator);
   }
 
-  const alphabet = macroMolCol.getTag(UnitsHandler.TAGS.alphabet);
+  const alphabet = macroMolCol.getTag(TAGS.alphabet);
 
   // determine the polymer type according to HELM specifications
   let polymerType;
@@ -204,8 +205,8 @@ function getMonomerSequencesArray(macroMolCol: DG.Column<string>): string[][] {
 
   // split the string into monomers
   const colUnits = macroMolCol.getTag(DG.TAGS.UNITS);
-  const separator = macroMolCol.getTag(UnitsHandler.TAGS.separator);
-  const splitterFunc: SplitterFunc = WebLogo.getSplitter(colUnits, separator);
+  const separator = macroMolCol.getTag(TAGS.separator);
+  const splitterFunc: SplitterFunc = getSplitter(colUnits, separator);
 
   for (let row = 0; row < columnLength; ++row) {
     const macroMolecule = macroMolCol.get(row);

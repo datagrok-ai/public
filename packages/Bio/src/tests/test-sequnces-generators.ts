@@ -2,7 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {DataFrame} from 'datagrok-api/dg';
 
-import {NOTATION, ALIGNMENT, UnitsHandler, ALPHABET} from '@datagrok-libraries/bio/src/utils/units-handler'
+import {ALIGNMENT, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {NOTATION, ALPHABET, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 export function generateManySequences(): DG.Column[] {
   let columns: DG.Column[] = [];
@@ -22,9 +23,9 @@ export function generateLongSequence(): DG.Column[] {
 export function setTagsMacromolecule(col: DG.Column) {
   col.semType = DG.SEMTYPE.MACROMOLECULE;
   col.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
-  col.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
-  col.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.UN);
-  col.setTag(UnitsHandler.TAGS.separator, '/');
+  col.setTag(TAGS.aligned, ALIGNMENT.SEQ_MSA);
+  col.setTag(TAGS.alphabet, ALPHABET.UN);
+  col.setTag(TAGS.separator, '/');
   return col;
 }
 

@@ -1,11 +1,13 @@
-import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
-
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
+
+import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
 
 import {importFasta} from '../package';
-import {UnitsHandler, NOTATION, ALPHABET, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {UnitsHandler, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {NOTATION, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 type DfReaderFunc = () => Promise<DG.DataFrame>;
 
@@ -407,10 +409,10 @@ export async function _testPos(
 
   expect(col.semType === DG.SEMTYPE.MACROMOLECULE, true);
   expect(col.getTag(DG.TAGS.UNITS), units);
-  expect(col.getTag(UnitsHandler.TAGS.aligned), aligned);
-  expect(col.getTag(UnitsHandler.TAGS.alphabet), alphabet);
+  expect(col.getTag(bio.TAGS.aligned), aligned);
+  expect(col.getTag(bio.TAGS.alphabet), alphabet);
   if (separator)
-    expect(col.getTag(UnitsHandler.TAGS.separator), separator);
+    expect(col.getTag(bio.TAGS.separator), separator);
 
   const uh = new UnitsHandler(col);
   expect(uh.getAlphabetSize(), alphabetSize);

@@ -1,17 +1,16 @@
 import * as DG from 'datagrok-api/dg';
 
-import {WebLogo} from '../viewers/web-logo';
+import {getSplitterForColumn} from './macromolecule';
 
 export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.DataFrame {
-  const splitter = WebLogo.getSplitterForColumn(sequenceColumn);
+  const splitter = getSplitterForColumn(sequenceColumn);
   const getCol = (index: number): DG.Column<string> | null => columnList[index] ?? null;
   const createCol = (index: number): DG.Column<string> => {
     const positionCol = resultDf.columns.addNewString((index + 1).toString());
     columnList.push(positionCol);
     return positionCol;
-  }
+  };
 
-  let currentMonomerList = splitter(sequenceColumn.get(0)!);
   const columnList: DG.Column<string>[] = [];
   const rowCount = sequenceColumn.length;
   const resultDf = DG.DataFrame.create(rowCount);
@@ -21,7 +20,7 @@ export function splitAlignedSequences(sequenceColumn: DG.Column<string>): DG.Dat
     if (sequence == null)
       continue;
 
-    currentMonomerList = splitter(sequence);
+    const currentMonomerList = splitter(sequence);
     currentMonomerList.forEach((monomer, positionIndex) => {
       const col = getCol(positionIndex) || createCol(positionIndex);
       col.set(rowIndex, monomer || '-', false);

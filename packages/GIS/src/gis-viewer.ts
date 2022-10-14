@@ -160,9 +160,11 @@ export class GisViewer extends DG.JsViewer {
       evt.stopImmediatePropagation();
       const divLayer = (evt.currentTarget as HTMLElement);
       const layerId = divLayer.getAttribute('layerId');
-      if (!layerId) return;
+      if (!layerId)
+        return;
       const layer = this.ol.getLayerById(layerId) as VectorLayer<any>;
-      if (!layer) return;
+      if (!layer)
+        return;
       const arrPreparedToDF: any[] = [];
       const arrFeatures = this.ol.getFeaturesFromLayer(layer);
       if (arrFeatures) {
@@ -362,7 +364,8 @@ export class GisViewer extends DG.JsViewer {
   }
 
   updateLayersList(): void {
-    if ((!this.ol) || (!this.panelLeft) || (!this.divLayersList)) return;
+    if ((!this.ol) || (!this.panelLeft) || (!this.divLayersList))
+      return;
 
     while (this.divLayersList.lastChild)
       this.divLayersList.removeChild(this.divLayersList.lastChild);
@@ -386,7 +389,8 @@ export class GisViewer extends DG.JsViewer {
       divLayer.onclick = (evt)=>{
         const layerName = divLayer.getAttribute('layerName');
         const layerID = divLayer.getAttribute('layerId');
-        if (!layerName || !layerID) return;
+        if (!layerName || !layerID)
+          return;
         this.currentLayer = layerName;
         this.setOptions({currentLayer: layerName});
         const curlayer = this.ol.getLayerById(layerID);
@@ -474,12 +478,12 @@ export class GisViewer extends DG.JsViewer {
   updateOpenLayerProperties(updateLayer: boolean = false) {
     this.ol.defaultColor = this.defaultColor;
     this.ol.selectedColor = this.selectedColor;
+    this.ol.markerMinColor = this.markerMinColor;
+    this.ol.markerMaxColor = this.markerMaxColor;
     this.ol.markerOpacity = this.markerOpacity / 100;
     this.ol.markerMinSize = this.markerMinSize;
     this.ol.markerMaxSize = this.markerMaxSize;
     this.ol.markerDefaultSize = this.markerDefaultSize;
-    // markerMinColor;
-    // markerMaxColor;
 
     this.ol.heatmapRadius = this.heatmapRadius;
     this.ol.heatmapBlur = this.heatmapBlur;
@@ -490,7 +494,7 @@ export class GisViewer extends DG.JsViewer {
     if (updateLayer)
       this.ol.updateMarkersGLLayer();
 
-    //TODO: experiment: i've try to refresh layer here without recreating of it but it's nor work still>>
+    //TODO: experiment: i've try to refresh layer here without recreating of it but it's not work yet>>
     // this.ol.olMap.render();
     // window.requestAnimationFrame(() => {
     //   this.ol.olMarkersLayerGL!.updateStyleVariables({'size': this.markerDefaultSize});
@@ -522,19 +526,6 @@ export class GisViewer extends DG.JsViewer {
       this.updateOpenLayerProperties(true);
       return;
     }
-    // if (prop.name === 'markerDefaultSize') {
-    //   this.ol.markerDefaultSize = this.markerDefaultSize;
-    //   this.updateOpenLayerProperties(true);
-    //   return;
-    // }
-    // if (prop.name === 'markerOpacity') {
-    //   this.ol.markerOpacity = this.markerOpacity / 100;
-    //   this.updateOpenLayerProperties(true);
-    //   return;
-    // }
-    // if (prop.name === 'defaultColor') {
-
-    // }
 
     this.render();
   }
@@ -548,18 +539,21 @@ export class GisViewer extends DG.JsViewer {
   }
 
   render(fit: boolean = false): void {
-    this.updateOpenLayerProperties(false);
+    // this.updateOpenLayerProperties(false);
 
     if (this.latitudeColumnName == null || this.longitudeColumnName == null)
       return;
 
     this.getCoordinates(); //TODO: not only coordinates but a data at all?
 
-    if (this.renderType === 'heat map')
+    if (this.renderType === 'heat map') {
+      this.updateOpenLayerProperties(false);
       this.renderHeat(this.features);
-    else if (this.renderType === 'markers')
+    } else if (this.renderType === 'markers') {
       this.renderMarkersBatch(this.features);
+      this.updateOpenLayerProperties(true);
       // this.renderMarkers();
+    }
 
     if (fit) {
       if (this.ol.olMarkersLayerGL)
@@ -568,74 +562,6 @@ export class GisViewer extends DG.JsViewer {
     }
 
     this.updateLayersList();
-  }
-
-  getCoordinatesOld(): void {
-  /*  this.coordinates.length = 0;
-    this.values.length = 0;
-    this.sizeValues.length = 0;
-    this.colorValues.length = 0;
-    const indexes = this.dataFrame.filter.getSelectedIndexes();
-    let val: Int32Array | Float32Array | Float64Array | Uint32Array;
-    let colorVal: Int32Array | Float32Array | Float64Array | Uint32Array;
-    let sizeVal: Int32Array | Float32Array | Float64Array | Uint32Array;
-    let colorCoeff: number;
-    let sizeCoeff: number;
-    let colorShift: number;
-    let sizeShift: number;
-
-    const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
-    const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
-    // val = this.dataFrame.getCol(this.valuesColumnName).getRawData();
-
-    if ((!lat) || (!lon)) return;
-
-    //TODO: change it to filling array of objects with all table data
-    const colValue = this.dataFrame.getCol(this.valuesColumnName);
-    if (colValue) val = colValue.getRawData();
-    else {
-      val = new Float32Array(lat.length); //create array of length equal to latitude array length
-      val.fill(1);
-    }
-    const colColor = this.dataFrame.getCol(this.colorColumnName);
-    if ((colColor) && (this.gradientColoring)) {
-      colorVal = colColor.getRawData();
-      if (colColor.max === colColor.min) colorCoeff = 1;
-      else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
-      colorShift = colColor.min;
-      //another scaling scheme for color (though gradient)
-    }
-    else {
-      colorCoeff = 1;
-      colorShift = 0;
-      colorVal = new Float32Array(lat.length); //create array of length equal to latitude array length
-      colorVal.fill(this.defaultColor);
-    }
-    //marker size data loading and scale calculation
-    const colSize = this.dataFrame.getCol(this.sizeColumnName);
-    if ((colSize) && (this.gradientSizing)) {
-      sizeVal = colSize.getRawData();
-      if (colSize.max === colSize.min) sizeCoeff = 1;
-      else sizeCoeff = (this.markerMaxSize-this.markerMinSize)/(colSize.max-colSize.min);
-      sizeShift = colSize.min;
-    }
-    else {
-      sizeCoeff = 1;
-      sizeShift = 0;
-      sizeVal = new Float32Array(lat.length); //create array of length equal to latitude array length
-      sizeVal.fill(this.markerDefaultSize);
-    }
-
-    for (let i = 0; i < indexes.length; i++) {
-      if ((i < lat.length) && (i < lon.length)) {
-        this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
-        this.values.push(val[indexes[i]]);
-        this.sizeValues.push((sizeVal[indexes[i]]-sizeShift)*sizeCoeff);
-        this.colorValues.push((colorVal[indexes[i]]-colorShift)*colorCoeff);
-      }
-    }
-    //<<getCoordinatesOld function
-*/
   }
 
   getCoordinates(): void {
@@ -656,10 +582,11 @@ export class GisViewer extends DG.JsViewer {
     const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
     // val = this.dataFrame.getCol(this.labelsColumnName).getRawData();
 
-    if ((!lat) || (!lon)) return;
-    // TODO: if (lat.length > lon.length) lat.length = lon.length;
+    if ((!lat) || (!lon))
+      return;
+    // TODO: if (lat.length > lon.length) lat.length = lon.length; ?
 
-    //TODO: change it to filling array of objects with all table data
+    //TODO: change it to filling array of objects with all table data (if we need it of course?)
     let colValue: DG.Column | null = null;
     let colColor: DG.Column | null = null;
     let colSize: DG.Column | null = null;
@@ -680,6 +607,9 @@ export class GisViewer extends DG.JsViewer {
       }
       if ((colColor)) {
         colorVal = colColor.getRawData();
+        this.ol.minFieldColor = colColor.min;
+        this.ol.maxFieldColor = colColor.max;
+        this.ol.useColorField = true;
         if (colColor.max === colColor.min)
           colorCoeff = 1;
         // else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
@@ -688,6 +618,7 @@ export class GisViewer extends DG.JsViewer {
         colorShift = colColor.min;
         //TODO: use another scaling scheme for color (though gradient)
       } else {
+        this.ol.useColorField = false;
         colorCoeff = 1;
         colorShift = 0;
         colorVal = new Float32Array(lat.length); //create array of length equal to latitude array length
@@ -697,12 +628,16 @@ export class GisViewer extends DG.JsViewer {
       //TODO: add checking for number column type
       if ((colSize)) {
         sizeVal = colSize.getRawData();
+        this.ol.minFieldSize = colSize.min;
+        this.ol.maxFieldSize = colSize.max;
+        this.ol.useSizeField = true;
         if (colSize.max === colSize.min)
           sizeCoeff = 1;
         else
           sizeCoeff = (this.markerMaxSize - this.markerMinSize) / (colSize.max - colSize.min);
         sizeShift = colSize.min;
       } else {
+        this.ol.useSizeField = false;
         sizeCoeff = 1;
         sizeShift = 0;
         sizeVal = new Float32Array(lat.length); //create array of length equal to latitude array length
@@ -714,16 +649,23 @@ export class GisViewer extends DG.JsViewer {
         if ((i < lat.length) && (i < lon.length)) {
           this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
           this.values.push(val[indexes[i]]);
-          this.sizeValues.push((sizeVal[indexes[i]] - sizeShift) * sizeCoeff);
-          this.colorValues.push((colorVal[indexes[i]] - colorShift) * colorCoeff);
+          this.sizeValues.push(sizeVal[indexes[i]]);
+          this.colorValues.push(colorVal[indexes[i]]);
+          //this is the old way where we scaled values initially>>
+          // this.sizeValues.push((sizeVal[indexes[i]] - sizeShift) * sizeCoeff);
+          // this.colorValues.push((colorVal[indexes[i]] - colorShift) * colorCoeff);
+
           // if (!colColor) this.colorValues.push(this.defaultColor);
           // colColor.meta.markers
           const coords = OLProj.fromLonLat([lon[indexes[i]], lat[indexes[i]]]);
           this.features.push(new Feature({
             geometry: new Point(coords),
-            _fieldValue: val[indexes[i]],
-            _fieldSize: ((sizeVal[indexes[i]] - sizeShift) * sizeCoeff),
-            _fieldColor: toStringColor(((colorVal[indexes[i]] - colorShift) * colorCoeff), this.markerOpacity / 100),
+            fieldValue: val[indexes[i]],
+            fieldSize: (sizeVal[indexes[i]]),
+            fieldColor: (colorVal[indexes[i]]),
+            //this is the old way where we scaled values initially>>
+            // fieldSize: ((sizeVal[indexes[i]] - sizeShift) * sizeCoeff),
+            // fieldColor: toStringColor(((colorVal[indexes[i]] - colorShift) * colorCoeff), this.markerOpacity / 100),
           }));
         }
       }

@@ -16,7 +16,8 @@ export async function isCurrentUserAppAdmin() {
   const membersLogins = userGroup.members.map((e) => e.name.toLowerCase());
   const adminsLogins = userGroup.adminMembers.map((e) => e.name.toLowerCase());
   const allLogins = membersLogins.concat(adminsLogins);
-  return allLogins.includes((await grok.dapi.users.current()).login.toLowerCase());
+  const loginOfCurrentUser = (await grok.dapi.users.current()).login.toLowerCase();
+  return allLogins.includes(loginOfCurrentUser);
 }
 
 export function normalizeSequence(sequence: string, synthesizer: string | null, technology: string | null,

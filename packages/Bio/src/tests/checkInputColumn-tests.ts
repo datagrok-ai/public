@@ -1,13 +1,14 @@
-import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
-
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
+
+
+import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 
 import {checkInputColumn, multipleSequenceAlignmentAny} from '../package';
 import {UNITS} from 'datagrok-api/dg';
-import {ALPHABET, NOTATION, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
-
+import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 category('checkInputColumn', () => {
   const csv = `seq
@@ -26,7 +27,7 @@ seq4`;
     const col: DG.Column = df.getCol('seq');
     col.semType = DG.SEMTYPE.MACROMOLECULE;
     col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    col.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.DNA);
+    col.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
 
     const [res, msg]: [boolean, string] = checkInputColumn(
       col, 'Test', [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);
@@ -39,8 +40,8 @@ seq4`;
     const col: DG.Column = df.getCol('seq');
     col.semType = DG.SEMTYPE.MACROMOLECULE;
     col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
-    col.setTag(UnitsHandler.TAGS.alphabetSize, '11');
-    col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, 'true');
+    col.setTag(bio.TAGS.alphabetSize, '11');
+    col.setTag(bio.TAGS.alphabetIsMultichar, 'true');
 
     const [res, msg]: [boolean, string] = checkInputColumn(
       col, 'Test', [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);
@@ -53,9 +54,9 @@ seq4`;
     const col: DG.Column = df.getCol('seq');
     col.semType = DG.SEMTYPE.MACROMOLECULE;
     col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    col.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.UN);
-    col.setTag(UnitsHandler.TAGS.alphabetSize, '11');
-    col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, 'true');
+    col.setTag(bio.TAGS.alphabet, 'UN');
+    col.setTag(bio.TAGS.alphabetSize, '11');
+    col.setTag(bio.TAGS.alphabetIsMultichar, 'true');
 
     const [res, msg]: [boolean, string] = checkInputColumn(
       col, 'Test', [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);

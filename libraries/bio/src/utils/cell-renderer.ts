@@ -1,10 +1,11 @@
 import * as DG from 'datagrok-api/dg';
-import {SplitterFunc, WebLogo} from '../viewers/web-logo';
+
+import {monomerToShort} from './macromolecule';
 
 const undefinedColor = 'rgb(100,100,100)';
 const grayColor = '#808080';
 const blackColor = 'rgb(0,0,0)';
-const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = WebLogo.monomerToShort;
+const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => string = monomerToShort;
 
 export enum DrawStyle {
   MSA = 'MSA',
