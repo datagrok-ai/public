@@ -34,11 +34,11 @@ export class UnitsHandler {
       throw new Error('Fasta column must be MACROMOLECULE');
 
     const stats: SeqColStats = getStats(col, 5, splitterAsFasta);
-    const seqType = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
+    const aligned = stats.sameLength ? 'SEQ.MSA' : 'SEQ';
     const alphabet = detectAlphabet(stats);
 
     col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    col.setTag(TAGS.aligned, seqType);
+    col.setTag(TAGS.aligned, aligned);
     col.setTag(TAGS.alphabet, alphabet);
   }
 
@@ -60,21 +60,23 @@ export class UnitsHandler {
 
   public get aligned(): string {
     const aligned = this.column.getTag(TAGS.aligned);
-    if (aligned !== null) {
-      return aligned;
-    } else {
+
+    // TAGS.aligned is mandatory for columns of NOTATION.FASTA and NOTATION.SEPARATOR
+    if (!aligned && (this.isFasta() || this.isSeparator()))
       throw new Error('Tag aligned not set');
-    }
+
+    return aligned;
   }
 
   /** Alphabet name (upper case) */
   public get alphabet(): string {
     const alphabet = this.column.getTag(TAGS.alphabet);
-    if (alphabet !== null) {
-      return alphabet.toUpperCase();
-    } else {
+
+    // TAGS.alphabet is mandatory for columns of NOTATION.FASTA and NOTATION.SEPARATOR
+    if (!alphabet && (this.isFasta() || this.isSeparator()))
       throw new Error('Tag alphabet not set');
-    }
+
+    return alphabet;
   }
 
   public getAlphabetSize(): number {
@@ -117,7 +119,7 @@ export class UnitsHandler {
 
   public isPeptide(): boolean { return this.alphabet === 'PT'; }
 
-  public isMsa(): boolean {return this.aligned.toUpperCase().includes('MSA'); }
+  public isMsa(): boolean { return this.aligned ? this.aligned.toUpperCase().includes('MSA') : false; }
 
   /** Associate notation types with the corresponding units */
   /**
@@ -150,6 +152,10 @@ export class UnitsHandler {
     newColumn.semType = DG.SEMTYPE.MACROMOLECULE;
     newColumn.setTag(DG.TAGS.UNITS, targetNotation);
     newColumn.setTag(DG.TAGS.CELL_RENDERER, 'Macromolecule');
+
+    const srcAligned = col.getTag(TAGS.aligned);
+    if (srcAligned)
+      newColumn.setTag(TAGS.aligned, srcAligned);
 
     const srcAlphabet = col.getTag(TAGS.alphabet);
     if (srcAlphabet)
@@ -235,6 +241,12 @@ export class UnitsHandler {
     this._defaultGapSymbol = (this.isFasta()) ? UnitsHandler._defaultGapSymbolsDict.FASTA :
       (this.isHelm()) ? UnitsHandler._defaultGapSymbolsDict.HELM :
         UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
+
+    if (!this.column.tags.has(TAGS.aligned)) {
+      if (this.isFasta() || this.isSeparator())
+        throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
+          `tag '${TAGS.aligned}' is mandatory.`);
+    }
 
     if (!this.column.tags.has(TAGS.alphabetSize)) {
       if (this.isHelm())
