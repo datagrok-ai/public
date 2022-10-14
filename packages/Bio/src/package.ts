@@ -99,7 +99,7 @@ export function checkInputColumn(
     ) {
       const notationAdd = allowedNotations.length == 0 ? 'any notation' :
         (`notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} `);
-      msg = `${name} + ' analysis is allowed for Macromolecules with notation ${notationAdd}.`;
+      msg = `${name} analysis is allowed for Macromolecules with ${notationAdd}.`;
       res = false;
     } else if (!uh.isHelm()) {
       // alphabet is not specified for 'helm' notation
