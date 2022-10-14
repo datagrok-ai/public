@@ -16,7 +16,30 @@ import {Aminoacids, AminoacidsPalettes} from '../aminoacids';
 import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
 import {UnknownSeqPalettes} from '../unknown';
 import wu from 'wu';
-import {NOTATION, UnitsHandler} from '../utils/units-handler';
+import {UnitsHandler} from '../utils/units-handler';
+import * as bio from '../../index';
+
+/** enum type to simplify setting "user-friendly" notation if necessary */
+export const enum NOTATION {
+  FASTA = 'fasta',
+  SEPARATOR = 'separator',
+  HELM = 'helm',
+}
+
+export const enum ALPHABET {
+  DNA = 'DNA',
+  RNA = 'RNA',
+  PT = 'PT',
+  UN = 'UN',
+}
+
+export const enum TAGS {
+  aligned = 'aligned',
+  alphabet = 'alphabet',
+  alphabetSize = '.alphabetSize',
+  alphabetIsMultichar = '.alphabetIsMultichar',
+  separator = 'separator',
+};
 
 export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }
 export type SplitterFunc = (seq: string) => string[];
@@ -132,7 +155,7 @@ export function getSplitterForColumn(col: DG.Column): SplitterFunc {
     throw new Error(`Get splitter for semType "${DG.SEMTYPE.MACROMOLECULE}" only.`);
 
   const units = col.getTag(DG.TAGS.UNITS);
-  const separator = col.getTag(UnitsHandler.TAGS.separator);
+  const separator = col.getTag(TAGS.separator);
   return getSplitter(units, separator);
 }
 
@@ -168,37 +191,52 @@ export function getAlphabetSimilarity(freq: MonomerFreqs, alphabet: Set<string>,
   return vectorDotProduct(freqV, alphabetV) / (vectorLength(freqV) * vectorLength(alphabetV));
 }
 
+export function detectAlphabet(stats: SeqColStats): string {
+  const alphabetCandidates: [string, Set<string>][] = [
+    [ALPHABET.PT, UnitsHandler.PeptideFastaAlphabet],
+    [ALPHABET.DNA, UnitsHandler.DnaFastaAlphabet],
+    [ALPHABET.RNA, UnitsHandler.RnaFastaAlphabet],
+  ];
+
+  // Calculate likelihoods for alphabet_candidates
+  const alphabetCandidatesSim: number[] = alphabetCandidates.map(
+    (c) => getAlphabetSimilarity(stats.freq, c[1]));
+  const maxCos = Math.max(...alphabetCandidatesSim);
+  const alphabet = maxCos > 0.65 ? alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][0] : 'UN';
+  return alphabet;
+}
+
 /** Selects a suitable palette based on column data
  * @param {DG.Column} seqCol Column to look for a palette
  * @param {number}  minLength minimum length of sequence to detect palette (empty strings are allowed)
  * @return {SeqPalette} Palette corresponding to the alphabet of the sequences in the column
  */
 export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPalette {
-  let res: SeqPalette | null;
-  switch (seqCol.semType) {
-  case Aminoacids.SemTypeMultipleAlignment:
-    res = AminoacidsPalettes.GrokGroups;
-    break;
-  case Nucleotides.SemTypeMultipleAlignment:
-    res = NucleotidesPalettes.Chromatogram;
-    break;
+  let alphabet: string;
+  if (seqCol.semType == DG.SEMTYPE.MACROMOLECULE) {
+    const uh: UnitsHandler = new UnitsHandler(seqCol);
+    alphabet = uh.alphabet;
+  } else {
+    const stats: SeqColStats = getStats(seqCol, minLength, splitterAsFasta);
+    alphabet = detectAlphabet(stats);
   }
-  const stats: SeqColStats = getStats(seqCol, minLength, splitterAsFasta);
 
-  const alphabetCandidates: [Set<string>, SeqPalette][] = [
-    [new Set(Object.keys(Nucleotides.Names)), NucleotidesPalettes.Chromatogram],
-    [new Set(Object.keys(Aminoacids.Names)), AminoacidsPalettes.GrokGroups],
-  ];
-  // Calculate likelihoods for alphabet_candidates
-  const alphabetCandidatesSim: number[] = alphabetCandidates
-    .map((c) => getAlphabetSimilarity(stats.freq, c[0]));
-  const maxCos = Math.max(...alphabetCandidatesSim);
-  if (maxCos > 0.55)
-    res = alphabetCandidates[alphabetCandidatesSim.indexOf(maxCos)][1];
-  else
-    res = UnknownSeqPalettes.Color;
-
+  const res = getPaletteByType(alphabet);
   return res;
+}
+
+export function getPaletteByType(paletteType: string): bio.SeqPalette {
+  switch (paletteType) {
+  case 'PT':
+    return bio.AminoacidsPalettes.GrokGroups;
+  case 'NT':
+  case 'DNA':
+  case 'RNA':
+    return bio.NucleotidesPalettes.Chromatogram;
+    // other
+  default:
+    return bio.UnknownSeqPalettes.Color;
+  }
 }
 
 export function pickUpSeqCol(df: DG.DataFrame): DG.Column | null {
