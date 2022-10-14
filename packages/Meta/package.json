@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.0.49",
+  "version": "3.0.50",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1468,6 +1468,9 @@
           "datagrok-api": "^1.7.0"
         },
         "2.0.18": {
+          "datagrok-api": "^1.7.0"
+        },
+        "2.0.21": {
           "datagrok-api": "^1.7.0"
         }
       },
