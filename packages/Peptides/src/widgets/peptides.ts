@@ -1,8 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
-import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
+import * as bio from '@datagrok-libraries/bio';
 
 import '../styles.css';
 import * as C from '../utils/constants';
@@ -84,7 +83,7 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
   });
   startBtn.style.alignSelf = 'center';
 
-  const viewer = await df.plot.fromType('WebLogo') as WebLogo;
+  const viewer = await df.plot.fromType('WebLogo') as bio.WebLogo;
   viewer.root.style.setProperty('height', '130px');
   const logoHost = ui.div();
   $(logoHost).empty().append(viewer.root);
@@ -109,7 +108,7 @@ export async function startAnalysis(activityColumn: DG.Column<number> | null, pe
     const f = currentDf.filter;
     //prepare new DF
     const newDf = DG.DataFrame.create(f.trueCount);
-    const getIndex = indexes.length !== 0 ? (i: number) : number => indexes[i] : (i: number): number => i;
+    const getIndex = indexes.length !== 0 ? (i: number): number => indexes[i] : (i: number): number => i;
     let activityCol: DG.Column<number> | null = null;
     for (const col of currentDf.columns.toList()) {
       let virtualCol: DG.Column<any>;
