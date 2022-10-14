@@ -16,9 +16,9 @@ category('UI: Users', () => {
     v = grok.shell.v;
     tb = v.toolbox;
 
-    // const filters = Array.from(tb.querySelectorAll('div.d4-accordion-pane-header'))
-    //   .find(el => el.textContent === 'Filters') as HTMLElement;
-    // if (!filters.classList.contains('expanded')) await filters.click();
+    const filters = Array.from(tb.querySelectorAll('div.d4-accordion-pane-header'))
+      .find(el => el.textContent === 'Filters') as HTMLElement;
+    if (!filters.classList.contains('expanded')) await filters.click();
 
     const actions = Array.from(tb.querySelectorAll('div.d4-accordion-pane-header'))
       .find(el => el.textContent === 'Actions') as HTMLElement;
@@ -27,17 +27,41 @@ category('UI: Users', () => {
 
 
   test('filters.all', async () => {
-    await grok.dapi.users
+    const usapi = await grok.dapi.users
       .list()
-      .then(users => expect(users.length > 0, true));
+      .then(users => users.length);
+
+    const all = Array.from(tb.querySelectorAll('label'))
+      .find(el => el.textContent === 'All');
+    if (all === undefined) throw 'Error: cannot find All!';
+    await all.click();
+
+    const usui = await new Promise(resolve => setTimeout(() => {
+      const ggg = document.querySelector('.grok-gallery-grid') || document.createElement('div');
+      resolve(ggg.children.length);
+    }, 500));
+
+    expect(usapi, usui);
   });
 
 
   test('filters.recentlyJoined', async () => {
-    await grok.dapi.users
+    const usapi = await grok.dapi.users
       .filter('joined > -1w')
       .list()
-      .then(users => expect(users.length >= 0, true));
+      .then(users => users.length);
+
+    const rj = Array.from(tb.querySelectorAll('label'))
+      .find(el => el.textContent === 'Recently joined');
+    if (rj === undefined) throw 'Error: cannot find Recently Joined!';
+    await rj.click();
+
+    const usui = await new Promise(resolve => setTimeout(() => {
+      const ggg = document.querySelector('.grok-gallery-grid') || document.createElement('div');
+      resolve(ggg.children.length);
+    }, 500));
+
+    expect(usapi, usui);
   });
 
 
@@ -77,11 +101,23 @@ category('UI: Users', () => {
 
 
   test('user.panel', async () => {
-    const user = await grok.dapi.users
-      .list()
-      .then(users => users.find(obj => obj.login === 'test')) as DG.User;
-    expect(user.picture === null, false);
-    expect(user.group === null, false);
+    const user: HTMLElement = await new Promise(resolve => setTimeout(() => {
+      const ggg = document.querySelector('.grok-gallery-grid') || document.createElement('div');
+      resolve(ggg.children[0] as HTMLElement);
+    }, 500));
+  
+    grok.shell.windows.showProperties = true;
+    user.click();
+    const user_info: HTMLElement = await new Promise(resolve => setTimeout(() => {
+      const gepp = document.querySelector('.grok-entity-prop-panel') || document.createElement('div');
+      resolve(gepp as HTMLElement);
+    }, 500));
+    
+    const pict = user_info.querySelector('.grok-user-profile-picture');
+    const desc = user_info.innerText;
+    const b = (pict !== null) && desc.includes('Groups') && desc.includes('Joined')
+    console.log(b);
+    expect(b, true);
   });
 
 
