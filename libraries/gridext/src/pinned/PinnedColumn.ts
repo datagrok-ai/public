@@ -172,7 +172,8 @@ export class PinnedColumn {
     //let nRowMax = grid.maxVisibleRow;
     //let nColMin = grid.minVisibleColumn;
     //let nColMax = grid.maxVisibleColumn;
-
+    //const it = grid.pinnedRows;
+    //const ar = Array.from(it);
 
     this.m_fDevicePixelRatio = window.devicePixelRatio;
 
@@ -811,15 +812,6 @@ export class PinnedColumn {
     if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
       return;
     }
-/*
-   if(e.button === 2) {
-
-     const eDivPOpup : HTMLElement | null = GridUtils.getGridDartPopupMenu();
-     eDivPOpup?.setAttribute('column_name', this.m_colGrid.name);
-     let d = 0;
-     return;
-   }*/
-
 
     if(this.m_nResizeRowGridDragging >= 0) {
       const nHRow = GridUtils.getGridRowHeight(grid);
@@ -836,11 +828,13 @@ export class PinnedColumn {
 
     if(this.m_nRowGridDragging >= 0) {
       const dframe = grid.dataFrame;
-      const bAddToSel = e.ctrlKey;
+      const bCtrl = e.ctrlKey;
       const bRangeSel = e.shiftKey;
 
+      let bSel = true;
+
       const nRowGrid = PinnedColumn.hitTestRows(this.m_root, grid, e, false, this.m_arXYMouseOnCellUp);
-      if(!bAddToSel && !bRangeSel && nRowGrid === this.m_nRowGridDragging) { //click on the same row which will become active
+      if(!bCtrl && !bRangeSel && nRowGrid === this.m_nRowGridDragging) { //click on the same row which will become active
 
         let cellRH = null;
         try {
@@ -866,21 +860,31 @@ export class PinnedColumn {
       {
         const bitsetSel = dframe.selection;
 
-        if(!bAddToSel || bRangeSel)
-          bitsetSel.setAll(false, true);
-
         let nRowMin = this.m_nRowGridDragging < nRowGrid ? this.m_nRowGridDragging : nRowGrid;
         let nRowMax = this.m_nRowGridDragging > nRowGrid ? this.m_nRowGridDragging : nRowGrid;
 
-        if(bRangeSel) {
+        if(bCtrl) {
+          nRowMin = nRowGrid;
+          nRowMax = nRowGrid;
+          let bCurSel = bitsetSel.get(nRowGrid);
+          bSel = !bCurSel;
+        }
+        else if(bRangeSel) {
           let nRowGridActive = GridUtils.getActiveGridRow(grid);
           if(nRowGridActive === null)
             nRowGridActive = 0;
 
-          nRowMin = nRowGridActive < nRowGrid ? nRowGridActive : nRowGrid;
-          nRowMax = nRowGridActive > nRowGrid ? nRowGridActive : nRowGrid;
+          if(nRowMin == nRowMax) {
+            bitsetSel.setAll(false, true);
+
+            nRowMin = nRowGridActive < nRowGrid ? nRowGridActive : nRowGrid;
+            nRowMax = nRowGridActive > nRowGrid ? nRowGridActive : nRowGrid;
+          }
         }
 
+
+        //if(!bCtrl || bRangeSel)
+          //bitsetSel.setAll(false, true);
 
         let cellRH = null;
         let nRowTable = -1;
@@ -902,7 +906,7 @@ export class PinnedColumn {
 
           if(cellRH !== null && cellRH.tableRowIndex !== null) {
             nRowTable = cellRH.tableRowIndex;
-            bitsetSel.set(nRowTable, true, true);
+            bitsetSel.set(nRowTable, bSel, true);
           }
         }
       }
@@ -1047,12 +1051,6 @@ export class PinnedColumn {
     //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nHCH);
     g.fillText(str, nXX, nYY);
 
-    //if(options.look.showRowGridlines) {
-
-
-    //}
-
-
 
     //Regular cells
     const nRowCurrent =  dframe.currentRow.idx;
@@ -1071,7 +1069,7 @@ export class PinnedColumn {
 
     let nWW = nW*window.devicePixelRatio;
     //const nHH = nHRowGrid;
-
+    //my changes const nPinnedRowCount = Array.from(grid.pinnedRows).length;
 
     const arTableRows = new Array(nRowMax - nRowMin +1);
     let nRowTable = -1;
@@ -1086,6 +1084,9 @@ export class PinnedColumn {
 
       if (cellRH.tableRowIndex === undefined)//DG bug
         continue;
+
+      //my changes if(this.m_colGrid.name == '')
+       //my changescellRH.customText = nRG - nRowMin < nPinnedRowCount ? '' : (nRG - nPinnedRowCount +1).toString();
 
       nRowTable = cellRH.tableRowIndex === null ? -1 : cellRH.tableRowIndex;
       arTableRows[nRG - nRowMin] = nRowTable;
@@ -1163,7 +1164,7 @@ export class PinnedColumn {
         g.lineTo(0, nYY + nHRowGrid+1);
         g.stroke();
 
-        if(bLast) {
+        if(bLast){//my changes  && (nRG - nRowMin) >= nPinnedRowCount) {
           g.strokeStyle = "black";
           g.beginPath();
           g.moveTo(nWW - 1, nYY);

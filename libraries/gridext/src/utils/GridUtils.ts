@@ -133,7 +133,8 @@ export function getGridRowHeight(grid : DG.Grid) : number {
 export function getGridVisibleRowCount(grid : DG.Grid) : number {
   const dframe = grid.dataFrame;
   const bitsetFilter = dframe.filter;
-  const nRowCount = bitsetFilter.trueCount;
+  const nRowCount = bitsetFilter.trueCount;// + Array.from(grid.pinnedRows).length;
+  //my changes pinned rows const nRowCount = bitsetFilter.trueCount + Array.from(grid.pinnedRows).length;
   return nRowCount;
 }
 
