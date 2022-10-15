@@ -27,11 +27,13 @@ seq4`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const col: DG.Column = df.getCol('seq');
     col.semType = DG.SEMTYPE.MACROMOLECULE;
-    col.setTag(DG.TAGS.UNITS, 'fasta');
+    col.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
     col.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
+    col.setTag(bio.TAGS.aligned, 'SEQ');
 
     const [res, msg]: [boolean, string] = checkInputColumn(
-      col, 'Test', ['fasta',], ['DNA', 'RNA', 'PT']);
+      col, 'Test', [bio.NOTATION.FASTA,],
+      [bio.ALPHABET.DNA, bio.ALPHABET.RNA, bio.ALPHABET.PT]);
 
     expect(res, true);
   });
@@ -45,7 +47,8 @@ seq4`;
     col.setTag(bio.TAGS.alphabetIsMultichar, 'true');
 
     const [res, msg]: [boolean, string] = checkInputColumn(
-      col, 'Test', ['fasta',], ['DNA', 'RNA', 'PT']);
+      col, 'Test', [bio.NOTATION.FASTA,],
+      [bio.ALPHABET.DNA, bio.ALPHABET.RNA, bio.ALPHABET.PT]);
 
     expect(res, false);
   });
@@ -58,9 +61,11 @@ seq4`;
     col.setTag(bio.TAGS.alphabet, 'UN');
     col.setTag(bio.TAGS.alphabetSize, '11');
     col.setTag(bio.TAGS.alphabetIsMultichar, 'true');
+    col.setTag(bio.TAGS.aligned, 'SEQ');
 
     const [res, msg]: [boolean, string] = checkInputColumn(
-      col, 'Test', ['fasta',], ['DNA', 'RNA', 'PT']);
+      col, 'Test', [bio.NOTATION.FASTA,],
+      [bio.ALPHABET.DNA, bio.ALPHABET.RNA, bio.ALPHABET.PT]);
 
     expect(res, false);
   });
