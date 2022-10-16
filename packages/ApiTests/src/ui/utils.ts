@@ -2,6 +2,7 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { HtmlTable } from 'datagrok-api/dg';
 
 
 export function caption(name: string, input: DG.InputBase, view: DG.View, selector: string): void {
@@ -44,4 +45,31 @@ export function enabled(name: string, input: DG.InputBase, v: DG.View, selector:
     input.enabled = true;
     input.root.remove();
   }
+}
+
+export function waitForHTMLCollection(selector: string, wait=3000): Promise<HTMLCollection> {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(selector)!.children.length !== 0) {
+      return resolve(document.querySelector(selector)!.children);
+    }
+
+    const observer = new MutationObserver(() => {
+      if (document.querySelector(selector)!.children.length !== 0) {
+        clearTimeout(timeout);
+        observer.disconnect();
+        resolve(document.querySelector(selector)!.children);
+      }
+    });
+
+    const timeout = setTimeout(() => {
+      observer.disconnect();
+      reject(`Error: cannot find ${selector}!`)
+    }, wait
+    );
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+  });
 }
