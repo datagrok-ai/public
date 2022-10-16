@@ -8,7 +8,7 @@ category('TreeViewer', () => {
   const TYPE = 'TreeViewer';
   let df: DG.DataFrame;
   let tv: DG.TableView;
-  
+
   before(async () => {
     df = grok.data.demo.demog(20);
     tv = grok.shell.addTableView(df);
