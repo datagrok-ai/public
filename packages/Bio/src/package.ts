@@ -518,7 +518,7 @@ export function saveAsFasta() {
 }
 
 //name: BioSubstructureFilter
-//description: Substructure filter for linear macromolecules
+//description: Substructure filter for macromolecules
 //tags: filter
 //output: filter result
 //meta.semType: Macromolecule

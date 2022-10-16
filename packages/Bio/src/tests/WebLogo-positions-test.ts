@@ -38,6 +38,7 @@ ATC-G-TTGC--
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
     seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
+    seqCol.setTag(bio.TAGS.aligned, 'SEQ.MSA');
 
     const wlViewer: bio.WebLogo = (await df.plot.fromType('WebLogo')) as bio.WebLogo;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
@@ -74,12 +75,12 @@ ATC-G-TTGC--
 
   test('positions with shrinkEmptyTail option true (filterd)', async () => {
     let csvDf2 = `seq 
-    -TC-G-TTGC--
-    -TC-GCTTGC--
-    -T--C-GT-
-    -T--C-GT-
-    -T--C-GT-
-    -T--CCGT-`;
+-TC-G-TTGC--
+-TC-GCTTGC--
+-T--C-GT-
+-T--C-GT-
+-T--C-GT-
+-T--CCGT-`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csvDf2);
     const tv: DG.TableView = grok.shell.addTableView(df);
 
@@ -87,6 +88,7 @@ ATC-G-TTGC--
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
     seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
+    seqCol.setTag(bio.TAGS.aligned, 'SEQ');
 
     df.filter.init((i) => {
       return i > 2;
@@ -131,6 +133,7 @@ ATC-G-TTGC--
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
     seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
+    seqCol.setTag(bio.TAGS.aligned, 'SEQ.MSA');
 
     const wlViewer: bio.WebLogo = (await df.plot.fromType('WebLogo',
       {'skipEmptyPositions': true})) as bio.WebLogo;

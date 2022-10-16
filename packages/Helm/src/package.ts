@@ -6,7 +6,7 @@ import * as bio from '@datagrok-libraries/bio';
 
 import {createJsonMonomerLibFromSdf} from './utils';
 import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
-import {delay} from '@datagrok-libraries/utils/src/test';
+import {HelmWebEditor} from './helm-web-editor';
 
 export const _package = new DG.Package();
 
@@ -26,7 +26,7 @@ export async function initHelm(): Promise<void> {
 async function loadLibraries() {
   let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
   for (let i = 0; i < uploadedLibraries.length; ++i) {
-    await monomerManager(await grok.dapi.userDataStorage.getValue(STORAGE_NAME, uploadedLibraries[i], true));
+    await monomerManager(uploadedLibraries[i]);
   }
 }
 
@@ -585,4 +585,11 @@ class HelmCellRenderer extends DG.GridCellRenderer {
 //output: string monomerSetJSON
 export function getMonomerLib(type: string): string {
   return JSON.stringify(scil.helm.Monomers.getMonomerSet(type));
+}
+
+
+//name: helmWebEditor
+//output: object
+export function helmWebEditor(): HelmWebEditor {
+  return new HelmWebEditor();
 }

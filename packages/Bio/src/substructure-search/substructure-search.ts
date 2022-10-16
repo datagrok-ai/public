@@ -78,7 +78,7 @@ export function linearSubstructureSearch(substructure: string, col: DG.Column): 
   return resultArray;
 }
 
-async function helmSubstructureSearch(substructure: string, col: DG.Column): Promise<BitSet> {
+export async function helmSubstructureSearch(substructure: string, col: DG.Column): Promise<BitSet> {
   const helmColWithSubstructure = DG.Column.string('helm', col.length + 1)
     .init((i) => i === col.length ? substructure : col.get(i));
   helmColWithSubstructure.setTag(DG.TAGS.UNITS, bio.NOTATION.HELM);
