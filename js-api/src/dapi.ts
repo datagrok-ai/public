@@ -284,6 +284,12 @@ export class HttpDataSource<T> {
     return new Promise((resolve, reject) => api.grok_DataSource_Delete(this.dart, e.dart, () => resolve(), (e: any) => reject(e)));
   }
 
+  /** Turns off package versions isolation. This DataSource will return all entities in all versions, not only the current one **/
+  allPackageVersions(): HttpDataSource<T> {
+    this.dart = api.grok_DataSource_AllPackageVersions(this.dart);
+    return this;
+  }
+
   by(i: number): HttpDataSource<T> {
     this.dart = api.grok_DataSource_By(this.dart, i);
     return this;
