@@ -20,6 +20,7 @@ export class RadarViewer extends DG.JsViewer {
   showMin: boolean;
   showMax: boolean;
   showValues: boolean;
+  columnNames: string[] | null;
 
   constructor() {
     super();
@@ -33,6 +34,7 @@ export class RadarViewer extends DG.JsViewer {
     this.showMin = this.bool('showMin', true);
     this.showMax = this.bool('showMax', true);
     this.showValues = this.bool('showValues', true);
+    this.columnNames = this.stringList('columnNames', null);
     this.initialized = false;
   
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
@@ -43,7 +45,7 @@ export class RadarViewer extends DG.JsViewer {
 
   init() {
       option.radar.indicator = [];
-      const columns = Array.from(this.dataFrame.columns.numerical);
+      const columns = this.getColumns();
       for (const c of columns) {
         option.radar.indicator.push({name: c.name, avg: c.max});
       }
@@ -57,8 +59,8 @@ export class RadarViewer extends DG.JsViewer {
           if (params.seriesIndex === 2) {
             let divs: HTMLElement[] = [];
             for (let i = 0; i < columns.length; ++i) {
-              divs[i] = ui.divText(`${columns[i].name} : ${params.data.value[i].toFixed(1)}`);
-            }
+              divs[i] = ui.divText(`${columns[i].name} : ${params.data.value[i]}`);
+            } 
             ui.tooltip.show(ui.div(divs), params.event.event.x,  params.event.event.y);
           }
         }
@@ -78,7 +80,7 @@ export class RadarViewer extends DG.JsViewer {
   }
 
   public override onPropertyChanged(property: DG.Property): void {
-    const columns = Array.from(this.dataFrame.columns.numerical);
+    const columns = this.getColumns();
     super.onPropertyChanged(property);
     switch (property.name) {
       case 'min':
@@ -146,7 +148,7 @@ export class RadarViewer extends DG.JsViewer {
           option.series[2].data = [];
           option.series[2].data.push({
             value: columns.map((c) => c.get(this.dataFrame.currentRowIdx)),
-            name: `row ${this.dataFrame.currentRowIdx}`,
+            name: `row ${this.dataFrame.currentRowIdx + 1}`,
             lineStyle: {
               width: 2,
               type: 'dashed',
@@ -161,13 +163,16 @@ export class RadarViewer extends DG.JsViewer {
           this.init();
         }
         break;
+      case 'columnNames':
+        this.init();
+        break;
     }
 
     this.render();
   }
 
   updateMin() {
-    const columns = Array.from(this.dataFrame.columns.numerical);
+    const columns = this.getColumns();
     option.series[0].data[0] = {
       value: this.getQuantile(columns, this.getOptions(true).look.min / 100),
       name: `${this.getOptions(true).look.min}th percentile`,
@@ -183,7 +188,7 @@ export class RadarViewer extends DG.JsViewer {
   }
 
   updateMax() {
-    const columns = Array.from(this.dataFrame.columns.numerical);
+    const columns = this.getColumns();
     option.series[1].data[0] = {
       value: this.getQuantile(columns, this.getOptions(true).look.max / 100),
       name: `${this.getOptions(true).look.max}th percentile`,
@@ -199,10 +204,10 @@ export class RadarViewer extends DG.JsViewer {
   }
 
   updateRow() {
-    const columns = Array.from(this.dataFrame.columns.numerical);
+    const columns = this.getColumns();
     option.series[2].data[0] = {
       value: columns.map((c) => c.get(this.dataFrame.currentRowIdx)),
-      name: `row ${this.dataFrame.currentRowIdx}`,
+      name: `row ${this.dataFrame.currentRowIdx + 1}`,
       lineStyle: {
         width: 2,
         type: 'dashed',
@@ -221,6 +226,16 @@ export class RadarViewer extends DG.JsViewer {
     for (let i = 0; i < indexes.length; ++i) {
       option.series[indexes[i]].data = [];
     }
+  }
+
+  getColumns() : DG.Column<any>[] {
+    let columns: DG.Column<any>[] = [];
+    if (this.columnNames === null) {
+      columns = Array.from(this.dataFrame.columns.numerical);
+    } else {
+      columns = this.dataFrame.columns.byNames(this.columnNames);
+    }
+    return columns;
   }
 
   render() {
