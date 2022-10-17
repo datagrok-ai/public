@@ -4,7 +4,7 @@
     "access": "public"
   },
   "fullName": "DG Grid Extensions",
-  "version": "1.3.17",
+  "version": "1.3.18",
   "description": "DG Grid Extensions",
   "dependencies": {
     "datagrok-api": ">=0.95.8",
