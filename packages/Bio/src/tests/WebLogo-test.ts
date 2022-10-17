@@ -4,11 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import * as bio from '@datagrok-libraries/bio';
 
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
-import {Nucleotides, NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
-import {Aminoacids, AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
-import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
-import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-import {UnknownSeqPalette} from '@datagrok-libraries/bio/src/unknown';
 
 category('WebLogo', () => {
   const csvDfN1: string = `seq
@@ -102,7 +97,7 @@ export async function _testGetAlphabetSimilarity() {
     'T': 2048,
     '-': 1000
   };
-  const alphabet: Set<string> = new Set(Object.keys(Nucleotides.Names));
+  const alphabet: Set<string> = new Set(Object.keys(bio.Nucleotides.Names));
   const res = bio.getAlphabetSimilarity(freq, alphabet);
 
   expect(res > 0.6, true);
@@ -113,7 +108,7 @@ export async function _testPickupPaletteN1(csvDfN1: string) {
   const col: DG.Column = df.col('seq')!;
   const cp = bio.pickUpPalette(col);
 
-  expect(cp instanceof NucleotidesPalettes, true);
+  expect(cp instanceof bio.NucleotidesPalettes, true);
 }
 
 export async function _testPickupPaletteN1e(csvDfN1e: string) {
@@ -121,7 +116,7 @@ export async function _testPickupPaletteN1e(csvDfN1e: string) {
   const col: DG.Column = df.col('seq')!;
   const cp = bio.pickUpPalette(col);
 
-  expect(cp instanceof NucleotidesPalettes, true);
+  expect(cp instanceof bio.NucleotidesPalettes, true);
 }
 
 export async function _testPickupPaletteAA1(csvDfAA1: string) {
@@ -129,7 +124,7 @@ export async function _testPickupPaletteAA1(csvDfAA1: string) {
   const col: DG.Column = df.col('seq')!;
   const cp = bio.pickUpPalette(col);
 
-  expect(cp instanceof AminoacidsPalettes, true);
+  expect(cp instanceof bio.AminoacidsPalettes, true);
 }
 
 export async function _testPickupPaletteX(csvDfX: string) {
@@ -137,13 +132,13 @@ export async function _testPickupPaletteX(csvDfX: string) {
   const col: DG.Column = df.col('seq')!;
   const cp = bio.pickUpPalette(col);
 
-  expect(cp instanceof UnknownSeqPalette, true);
+  expect(cp instanceof bio.UnknownSeqPalette, true);
 }
 
 export async function _testPickupPaletteAA2(dfAA2: DG.DataFrame) {
   const seqCol: DG.Column = dfAA2.col('seq')!;
   const cp = bio.pickUpPalette(seqCol);
 
-  expect(cp instanceof AminoacidsPalettes, true);
+  expect(cp instanceof bio.AminoacidsPalettes, true);
 }
 

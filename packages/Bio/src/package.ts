@@ -138,7 +138,7 @@ export function sequenceAlignment(alignType: string, alignTable: string, gap: nu
 //tags: viewer, panel
 //output: viewer result
 export function webLogoViewer() {
-  return new bio.WebLogo();
+  return new bio.WebLogoViewer();
 }
 
 //name: VdRegions
@@ -266,14 +266,14 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //input: dataframe table
 //input: column sequence { semType: Macromolecule, units: ['fasta'], alphabet: ['DNA', 'RNA', 'PT'] }
 //output: column result
-export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<DG.Column | null> {
+export async function multipleSequenceAlignmentAny(table: DG.DataFrame, sequence: DG.Column): Promise<DG.Column | null> {
   const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentAny'})[0];
 
-  if (!checkInputColumnUi(col, 'MSA', ['fasta'], ['DNA', 'RNA', 'PT']))
+  if (!checkInputColumnUi(sequence, 'MSA', ['fasta'], ['DNA', 'RNA', 'PT']))
     return null;
 
-  const unUsedName = table.columns.getUnusedName(`msa(${col.name})`);
-  const msaCol = await runKalign(col, false, unUsedName);
+  const unUsedName = table.columns.getUnusedName(`msa(${sequence.name})`);
+  const msaCol = await runKalign(sequence, false, unUsedName);
   table.columns.add(msaCol);
 
   // This call is required to enable cell renderer activation
@@ -288,8 +288,8 @@ export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.
 //tags: bio, panel
 //input: column sequence { semType: Macromolecule }
 //output: column result
-export async function panelMSA(col: DG.Column): Promise<DG.Column | null> {
-  return multipleSequenceAlignmentAny(col.dataFrame, col);
+export async function panelMSA(sequence: DG.Column): Promise<DG.Column | null> {
+  return multipleSequenceAlignmentAny(sequence.dataFrame, sequence);
 }
 
 //name: Composition Analysis
@@ -465,9 +465,9 @@ export function splitToMonomers(col: DG.Column<string>): void {
 }
 
 //name: Bio: getHelmMonomers
-//input: column col {semType: Macromolecule}
-export function getHelmMonomers(seqCol: DG.Column<string>): string[] {
-  const stats = bio.getStats(seqCol, 1, bio.splitterAsHelm);
+//input: column sequence {semType: Macromolecule}
+export function getHelmMonomers(sequence: DG.Column<string>): string[] {
+  const stats = bio.getStats(sequence, 1, bio.splitterAsHelm);
   return Object.keys(stats.freq);
 }
 
