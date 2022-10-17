@@ -335,7 +335,8 @@ export class TestManager extends DG.ViewBase {
         `${t.packageName}:test`, {
           'category': t.test.category,
           'test': t.test.name,
-        }); 
+          'catchUnhandled': false,
+        });
       res.columns.addNewString('funcTest').init((i) => '');
       testSucceeded = res.get('success', 0);
     }
