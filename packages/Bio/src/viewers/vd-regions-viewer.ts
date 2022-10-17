@@ -50,6 +50,7 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
 
   public skipEmptyPositions: boolean;
   public positionWidth: number;
+  public positionHeight: string;
 
 
   public get df(): DG.DataFrame {
@@ -77,6 +78,8 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
 
     this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
     this.positionWidth = this.float('positionWidth', 16);
+    this.positionHeight = this.string('positionHeight', bio.PositionHeight.Entropy,
+      {choices: Object.keys(bio.PositionHeight)});
   }
 
   public async init() {
@@ -139,6 +142,11 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
         await this.destroyView();
         await this.buildView();
         break;
+
+      case 'positionHeight':
+        await this.destroyView();
+        await this.buildView();
+        break;
       }
     }
   }
@@ -172,7 +180,7 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
   //#region -- View --
   private host: HTMLElement | null = null;
   private mainLayout: HTMLTableElement | null = null;
-  private logos: { [chain: string]: bio.WebLogo }[] = [];
+  private logos: { [chain: string]: bio.WebLogoViewer }[] = [];
 
   private async destroyView(): Promise<void> {
     // TODO: Unsubscribe from and remove all view elements
@@ -199,7 +207,7 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
     this.logos = [];
 
     for (let orderI = 0; orderI < orderList.length; orderI++) {
-      const regionChains: { [chain: string]: bio.WebLogo } = {};
+      const regionChains: { [chain: string]: bio.WebLogoViewer } = {};
       for (const chain of this.chains) {
         const region: bio.VdRegion | undefined = regionsFiltered
           .find((r) => r.order == orderList[orderI] && r.chain == chain);
@@ -210,7 +218,8 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
           fixWidth: true,
           skipEmptyPositions: this.skipEmptyPositions,
           positionWidth: this.positionWidth,
-        })) as unknown as bio.WebLogo;
+          positionHeight: this.positionHeight,
+        })) as unknown as bio.WebLogoViewer;
       }
       // WebLogo creation fires onRootSizeChanged event even before control being added to this.logos
       this.logos[orderI] = regionChains;
@@ -235,7 +244,7 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
           })] : []),
           // List with controls for regions
           ...[...Array(orderList.length).keys()].map((orderI) => {
-            const wl: bio.WebLogo = this.logos[orderI][chain];
+            const wl: bio.WebLogoViewer = this.logos[orderI][chain];
             wl.root.style.height = '100%';
 
             const resDiv = ui.div([wl.root]/*`${chain} ${regionsFiltered[rI]}`*/, {
