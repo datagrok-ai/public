@@ -37,5 +37,9 @@ export class HelmWebEditor {
     this.host = ui.div([], {style: {width: `${this.w}px`, height: `${this.h}px`}});
     this.editor = new JSDraw2.Editor(this.host, {width: this.w, height: this.h, viewonly: true});
   }
+
+  resizeEditor(w: number, h: number) {
+    this.editor.setSize(w, h);
+  }
 }
 
