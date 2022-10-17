@@ -143,12 +143,26 @@ export function installPinnedColumns(grid : DG.Grid) : void {
     return colOne.settings.idxPinned < colTwo.settings.idxPinned ? -1 : 1;
   });
 
+  let bPinned = false;
   for(let n=0;n<arColsToPin.length; ++n) {
     colGrid = arColsToPin[n];
     if(isPinnableColumn(colGrid)) {
       new PinnedColumn(colGrid);
+      bPinned = true;
     }
   }
+
+
+  const colGrid0 = !bPinned ? null : grid.columns.byIndex(0);
+  if(colGrid0 !== null && colGrid0 !== undefined) {//DG Bug from reading layout
+    try{
+      setTimeout(() => {colGrid0.visible = false}, 100);
+    }
+    catch(e) {
+      console.error("ERROR: Couldn't hide row header.");
+    }
+  }
+
 }
 
 
@@ -236,7 +250,6 @@ export function registerPinnedColumns() {
       console.error("View cannot be null; layout.view = null; grok.events.onViewLayoutApplied");
       return;
     }
-
 
     const itViewers = view.viewers;
     const arViewers = Array.from(itViewers);
