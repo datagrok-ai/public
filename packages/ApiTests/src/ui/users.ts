@@ -2,7 +2,7 @@ import {after, before, category, expect, test} from '@datagrok-libraries/utils/s
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {waitForHTMLCollection} from './utils';
+import {waitForHTMLCollection, waitForHTMLElement} from './utils';
 
 
 category('UI: Users', () => {
@@ -30,14 +30,14 @@ category('UI: Users', () => {
     const usapi = await grok.dapi.users
       .list()
       .then(users => users.length);
+    const regex = new RegExp(`[0-9]+ / ${usapi}`, 'g');
 
     const all = Array.from(tb.querySelectorAll('label'))
       .find(el => el.textContent === 'All');
     if (all === undefined) throw 'Error: cannot find All!';
     await all.click();
 
-    const usui = (await waitForHTMLCollection('.grok-gallery-grid')).length;
-    expect(usapi, usui);
+    await waitForHTMLElement('.grok-items-view-counts', regex, 'Number of users does not match!');
   });
 
 
@@ -46,14 +46,14 @@ category('UI: Users', () => {
       .filter('joined > -1w')
       .list()
       .then(users => users.length);
+    const regex = new RegExp(`[0-9]+ / ${usapi}`, 'g');
 
     const rj = Array.from(tb.querySelectorAll('label'))
       .find(el => el.textContent === 'Recently joined');
     if (rj === undefined) throw 'Error: cannot find Recently Joined!';
     await rj.click();
 
-    const usui = (await waitForHTMLCollection('.grok-gallery-grid')).length;
-    expect(usapi, usui);
+    await waitForHTMLElement('.grok-items-view-counts', regex, 'Number of users does not match!');
   });
 
 
@@ -99,37 +99,11 @@ category('UI: Users', () => {
     grok.shell.windows.showProperties = true;
     user.click();
 
-    const user_info = await new Promise<HTMLElement>((resolve, reject) => {
-      const selector = '.grok-entity-prop-panel';
-      if (document.querySelector(selector) !== null)
-        if ((document.querySelector(selector) as HTMLElement).innerText.includes('Groups')) {
-          return resolve(document.querySelector(selector) as HTMLElement);
-      }
-  
-      const observer = new MutationObserver(() => {
-        if (document.querySelector(selector) !== null)
-          if ((document.querySelector(selector) as HTMLElement).innerText.includes('Groups')) {
-            clearTimeout(timeout);
-            observer.disconnect();
-            resolve(document.querySelector(selector) as HTMLElement);
-        }
-      });
-  
-      const timeout = setTimeout(() => {
-        observer.disconnect();
-        reject(`Error: cannot find ${selector}!`)
-      }, 3000
-      );
-  
-      observer.observe(document.body, {
-          childList: true,
-          subtree: true
-      });
-    });
-    
-    const pict = user_info.querySelector('.grok-user-profile-picture');
-    const desc = user_info.innerText;
-    const b = (pict !== null) && desc.includes('Groups') && desc.includes('Joined')
+    const regex = new RegExp('Groups', 'g');
+    const userInfo = await waitForHTMLElement('.grok-entity-prop-panel', regex, 'Error in .grok-entity-prop-panel!');
+    const pict = userInfo.querySelector('.grok-user-profile-picture');
+    const desc = userInfo.innerText;
+    const b = (pict !== null) && desc.includes('Groups') && desc.includes('Joined');
     expect(b, true);
   });
 
