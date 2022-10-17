@@ -12,8 +12,9 @@ export {tests};
 //name: test
 //input: string category {optional: true}
 //input: string test {optional: true}
+//input: bool catchUnhandled {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string): Promise<DG.DataFrame> {
-  const data = await runTests({category, test});
+export async function test(category: string, test: string, catchUnhandled: boolean): Promise<DG.DataFrame> {
+  const data = await runTests({category, test, catchUnhandled});
   return DG.DataFrame.fromObjects(data)!;
 }
