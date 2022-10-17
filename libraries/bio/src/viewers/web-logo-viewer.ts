@@ -11,13 +11,7 @@ import {UnitsHandler} from '../utils/units-handler';
 import {SliderOptions} from 'datagrok-api/dg';
 import {getSplitter, monomerToShort, pickUpPalette, pickUpSeqCol, SplitterFunc, TAGS} from '../utils/macromolecule';
 
-declare module 'datagrok-api/src/grid' {
-  interface Rect {
-    contains(x: number, y: number): boolean;
-  }
-}
-
-enum PositionHeight {
+export enum PositionHeight {
   Entropy = 'Entropy',
   full = '100%',
 }
@@ -74,7 +68,7 @@ export class PositionInfo {
   }
 }
 
-export class WebLogo extends DG.JsViewer {
+export class WebLogoViewer extends DG.JsViewer {
   public static residuesSet = 'nucleotides';
   private static viewerCount: number = -1;
 
@@ -182,8 +176,8 @@ export class WebLogo extends DG.JsViewer {
   constructor() {
     super();
 
-    this.viewerId = WebLogo.viewerCount;
-    WebLogo.viewerCount += 1;
+    this.viewerId = WebLogoViewer.viewerCount;
+    WebLogoViewer.viewerCount += 1;
 
     this.textBaseline = 'top';
     this.unitsHandler = null;
