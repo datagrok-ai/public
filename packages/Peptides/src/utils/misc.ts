@@ -18,13 +18,10 @@ export function getSeparator(col: DG.Column<string>): string {
   return col.getTag(C.TAGS.SEPARATOR) ?? '';
 }
 
-export function scaleActivity(activityScaling: string, activityCol: DG.Column<number>, indexes?: number[],
-): [DG.DataFrame, (x: number) => number, string] {
-  const tempDf = DG.DataFrame.create(activityCol.length);
-
+export function scaleActivity(scaling: string, activityCol: DG.Column<number>): DG.Column<number> {
   let formula = (x: number): number => x;
   let newColName = 'activity';
-  switch (activityScaling) {
+  switch (scaling) {
   case 'none':
     break;
   case 'lg':
@@ -36,15 +33,16 @@ export function scaleActivity(activityScaling: string, activityCol: DG.Column<nu
     newColName = `-Log10(${newColName})`;
     break;
   default:
-    throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
+    throw new Error(`ScalingError: method \`${scaling}\` is not available.`);
   }
-  tempDf.columns.addNewVirtual(
-    C.COLUMNS_NAMES.ACTIVITY_SCALED, (i) => {
-      const val = activityCol.get(indexes ? indexes[i] : i);
-      return val ? formula(val) : val;
-    }, DG.TYPE.FLOAT);
+  const scaledCol = DG.Column.float(C.COLUMNS_NAMES.ACTIVITY_SCALED, activityCol.length).init((i) => {
+    const val = activityCol.get(i);
+    return val ? formula(val) : val;
+  });
+  scaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
+  scaledCol.setTag('gridName', newColName);
 
-  return [tempDf, formula, newColName];
+  return scaledCol;
 }
 
 export function calculateBarsData(columns: DG.Column<string>[], selection: DG.BitSet): type.MonomerDfStats {
