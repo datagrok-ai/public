@@ -41,7 +41,7 @@
   ],
   "dependencies": {
     "@datagrok-libraries/bio": "^4.4.3",
-    "@datagrok-libraries/utils": "^1.9.7",
+    "@datagrok-libraries/utils": "^1.11.1",
     "@deck.gl/core": "^8.7.5",
     "@deck.gl/layers": "^8.7.5",
     "@luma.gl/constants": "^8.5.10",

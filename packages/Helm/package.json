@@ -11,7 +11,7 @@
     "datagrok-api": "^1.6.0",
     "cash-dom": "^8.1.1",
     "dayjs": "^1.10.6",
-    "@datagrok-libraries/utils": "^1.6.2",
+    "@datagrok-libraries/utils": "^1.11.1",
     "@datagrok-libraries/bio": "^5.1.0"
   },
   "sources": [

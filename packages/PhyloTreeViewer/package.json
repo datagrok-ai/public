@@ -14,7 +14,7 @@
     "directory": "packages/PhyloTreeViewer"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.9.7",
+    "@datagrok-libraries/utils": "^1.11.1",
     "@datagrok-libraries/bio": "^4.4.0",
     "cash-dom": "latest",
     "d3": "^6.7.0",
