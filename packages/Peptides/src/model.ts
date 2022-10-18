@@ -36,9 +36,9 @@ export class PeptidesModel {
   edf: DG.DataFrame | null = null;
   monomerPositionStatsDf!: DG.DataFrame;
   clusterStatsDf!: DG.DataFrame;
-  _mutationCliffsSelection: type.PositionToAARList = {};
-  _invariantMapSelection: type.PositionToAARList = {};
-  _logoSummarySelection: number[] = [];
+  _mutationCliffsSelection!: type.PositionToAARList;
+  _invariantMapSelection!: type.PositionToAARList;
+  _logoSummarySelection!: number[];
   substitutionsInfo: type.SubstitutionsInfo = new Map();
   isInitialized = false;
   currentView!: DG.TableView;
@@ -959,10 +959,10 @@ export class PeptidesModel {
       const getBitAt = (i: number): boolean => {
         for (const position of positionList) {
           const positionCol: DG.Column<string> = this.df.getCol(position);
-          if (this._mutationCliffsSelection[position].includes(positionCol.get(i)!))
+          if (this.mutationCliffsSelection[position].includes(positionCol.get(i)!))
             return true;
         }
-        if (this._logoSummarySelection.includes(clusterCol?.get(i)!))
+        if (this.logoSummarySelection.includes(clusterCol?.get(i)!))
           return true;
         return false;
       };
@@ -977,7 +977,7 @@ export class PeptidesModel {
       filter.init((i) => {
         let result = true;
         for (const position of positionList) {
-          const aarList = this._invariantMapSelection[position];
+          const aarList = this.invariantMapSelection[position];
           result &&= aarList.length == 0 || aarList.includes(this.df.get(position, i));
         }
         return result;
