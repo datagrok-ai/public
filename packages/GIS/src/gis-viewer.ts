@@ -21,6 +21,7 @@ import * as OLProj from 'ol/proj';
 import Feature from 'ol/Feature';
 import { Point } from 'ol/geom';
 import { COLOR_CODING_TYPE } from 'datagrok-api/dg';
+import { forEach } from 'jszip';
 // import { numberSafeCompareFunction } from 'ol/array';
 
 function toStringColor(num : number, opacity?: number) : string {
@@ -330,11 +331,12 @@ export class GisViewer extends DG.JsViewer {
   init() {
     try {
       ui.setUpdateIndicator(this.root, true);
+      this.ol.useWebGL = true; //choose true if we want to use WebGL renderer
+
       this.initUi();
       // ui.setUpdateIndicator(this.panelTop!, true);
       this.ol.initMap('map-container');
 
-      //TODO: refactor here>
       this.updateOpenLayerProperties();
 
       this.updateLayersList();
@@ -417,9 +419,15 @@ export class GisViewer extends DG.JsViewer {
     if (this.lblStatusCoords) {
       if (p) {
         if (this.isRowFocusing) {
-          // this.lblStatusCoords.innerText = (p.coord[0]).toFixed(3) + ' / ' + (p.coord[1]).toFixed(3);
-          this.dataFrame.rows.select(
-            (row) => ((row[this.latitudeColumnName] == p.coord[0]) && (row[this.longitudeColumnName] == p.coord[1])));
+          // if (p.features) {
+          //   for (let i = 0; i < p.features.length; i++) {
+          //     // this.dataFrame.rows.select((row) => {
+          //     //   ((row[this.latitudeColumnName] == p.coord[0]) && (row[this.longitudeColumnName] == p.coord[1])));
+          //     // }
+          //   }
+          // }
+          // this.dataFrame.rows.select(
+          //   (row) => ((row[this.latitudeColumnName] == p.coord[0]) && (row[this.longitudeColumnName] == p.coord[1])));
         }
       }
     }

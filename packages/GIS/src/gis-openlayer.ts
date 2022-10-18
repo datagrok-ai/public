@@ -57,6 +57,7 @@ type WebGLPts = WebGLPointsLayer<VectorSource<OLGeom.Point>>;
 export interface OLCallbackParam {
   coord: Coordinate; //[number, number];
   pixel: [number, number];
+  features: FeatureLike[];
 }
 
 let OLG: OpenLayers; //TODO: remove this terrible stuff!
@@ -147,7 +148,9 @@ export class OpenLayers {
   olBaseLayer: BaseLayer | null;
   olMarkersLayer: VectorLayer<VectorSource> | null;
   olMarkersLayerGL: WebGLPts | null;
+  olMarkersSource: VectorSource<OLGeom.Point>;
 
+  useWebGLFlag: boolean = true;
   dragAndDropInteraction: OLInteractions.DragAndDrop;
   //styles>>
   styleVectorLayer: OLStyle.Style;
@@ -193,6 +196,9 @@ export class OpenLayers {
     this.olMarkersLayerGL = null;
     this.markerGLStyle = {};
 
+    this.olMarkersSource = new VectorSource<OLGeom.Point>();
+
+
     this.styleVectorLayer = new OLStyle.Style({
       fill: new OLStyle.Fill({
         color: '#eeeeee',
@@ -229,6 +235,13 @@ export class OpenLayers {
     OLG = this;
     //end of constructor
   }
+
+  set useWebGL(v: boolean) {
+    this.useWebGLFlag = v;
+    this.olMarkersLayer?.setVisible(!this.useWebGLFlag);
+    this.olMarkersLayerGL?.setVisible(this.useWebGLFlag);
+  }
+  get useWebGL(): boolean { return this.useWebGLFlag; }
 
   set heatmapBlur(val: number) {
     this.heatmapBlurParam = val;
@@ -267,20 +280,15 @@ export class OpenLayers {
     //add layers>>
     this.addNewBingLayer('Bing sat');
     this.olBaseLayer = this.addNewOSMLayer('BaseLayer');
-    // this.olMarkersLayer = this.addNewVectorLayer('Markers');
-    this.olMarkersLayer = this.addNewVectorLayer('Markers', null, this.genStyleMarker.bind(this));
+    //prepare markersLayer
+    this.olMarkersLayer = this.addNewVectorLayer('Markers', null, this.genStyleMarker.bind(this), this.olMarkersSource);
     this.olMarkersLayer.on('postrender', onPostrenderMarkers);
     this.olMarkersLayer.on('prerender', onPrerenderMarkers);
+    //prepare markersGLLayer
+    this.updateMarkersGLLayer();
 
-    this.markerGLStyle = this.prepareGLStyle();
-    //TODO: this is experimental code - manage it
-    this.olMarkersLayerGL = new WebGLPointsLayer({
-      source: new VectorSource<OLGeom.Point>(),
-      style: this.markerGLStyle,
-      // opacity: this.markerOpacity,
-    });
-    this.olMarkersLayerGL.set('layerName', 'Markers GL');
-    this.addLayer(this.olMarkersLayerGL);
+    this.olMarkersLayer?.setVisible(!this.useWebGLFlag);
+    this.olMarkersLayerGL?.setVisible(this.useWebGLFlag);
 
     //add base event handlers>>
     this.olMap.on('click', this.onMapClick.bind(this));
@@ -290,10 +298,12 @@ export class OpenLayers {
       condition: OLEventsCondition.click,
       style: this.styleVectorSelLayer,
     });
-    this.olMap.addInteraction(selectInteraction);
-    //add dragNdrop ability
-    this.olMap.addInteraction(this.dragAndDropInteraction);
-    //this.olMap.getInteractions().extend([selectInteraction]);
+
+    //add interactions to the map
+    this.olMap.addInteraction(selectInteraction); //select interaction
+    this.olMap.addInteraction(this.dragAndDropInteraction); //add dragNdrop ability
+
+    //<<end of InitMap function
   }
 
   prepareGLStyle(sizeval?: number, colorval?: string, opaval?: number, symbolval?: string): LiteralStyle {
@@ -343,11 +353,11 @@ export class OpenLayers {
     const previousLayer = this.olMarkersLayerGL;
     const src = this.olMarkersLayerGL?.getSource();
     this.olMarkersLayerGL = new WebGLPointsLayer({
-      source: src ? src : new VectorSource<OLGeom.Point>(),
+      source: src ? src : this.olMarkersSource, //new VectorSource<OLGeom.Point>(),
       style: this.markerGLStyle,
     });
     this.olMarkersLayerGL.set('layerName', 'Markers GL');
-    this.olMap.addLayer(this.olMarkersLayerGL);
+    this.addLayer(this.olMarkersLayerGL);
 
     if (previousLayer) {
       this.olMap.removeLayer(previousLayer);
@@ -498,7 +508,7 @@ export class OpenLayers {
   }
 
   addLayer(layerToAdd: BaseLayer) {
-    layerToAdd.set('layerId', Date.now()+'|'+(Math.random()*100));
+    layerToAdd.set('layerId', Date.now()+'|'+(Math.random()*100)); //create "UNIQUE ID"
     this.olMap.addLayer(layerToAdd);
     this.olCurrentLayer = layerToAdd;
     if (this.onRefreshCallback)
@@ -511,7 +521,7 @@ export class OpenLayers {
   addNewVectorLayer(lrName?: string, opt?: Object|null,
     style?: StyleLike|null, src?: VectorSource|null, focusOnContent?: boolean): VectorLayer<VectorSource> {
     let sourceVector: VectorSource;
-    if (src)
+    if ((typeof src != 'undefined') && (src))
       sourceVector = src;
     else sourceVector = new VectorSource();
     const newLayer = new VectorLayer({source: sourceVector});
@@ -522,7 +532,7 @@ export class OpenLayers {
       newLayer.setProperties(opt);
     if (style)
       newLayer.setStyle(style);
-    newLayer.setOpacity(0.2); //TODO: change this corresponding to layer opacity settings
+    newLayer.setOpacity(this.markerOpacity);
 
     this.addLayer(newLayer);
     if (focusOnContent)
@@ -690,17 +700,18 @@ export class OpenLayers {
 
   //map base events handlers>>
   onMapClick(evt: MapBrowserEvent<any>) {
+    const arrFeatures: FeatureLike[] = [];
     const res: OLCallbackParam = {
       coord: evt.coordinate,
       pixel: [evt.pixel[0], evt.pixel[1]],
+      features: arrFeatures,
     };
 
-    const features: FeatureLike[] = [];
     OLG.olMap.forEachFeatureAtPixel(evt.pixel, function(feature) {
-      features.push(feature);
+      arrFeatures.push(feature);
     });
-    if (features.length > 0) {
-      const ft = features[0];
+    if (arrFeatures.length > 0) {
+      const ft = arrFeatures[0];
       const gisObj = OpenLayers.gisObjFromGeometry(ft);
       if (gisObj) {
         setTimeout(() => {
@@ -726,6 +737,7 @@ export class OpenLayers {
     const res: OLCallbackParam = {
       coord: evt.coordinate,
       pixel: [evt.pixel[0], evt.pixel[1]],
+      features: [],
     };
 
     if (this.onPointermoveCallback)
@@ -755,8 +767,8 @@ export class OpenLayers {
   //map elements management functions>>
   clearLayer(layer?: VectorLayer<VectorSource> | WebGLPts | HeatmapLayer | undefined | null) {
     let aLayer: VectorLayer<VectorSource> | WebGLPts | HeatmapLayer | undefined | null;
-    aLayer = this.olMarkersLayerGL;
-    if (layer)
+    aLayer = this.useWebGL ? this.olMarkersLayerGL : this.olMarkersLayer;
+    if ((typeof layer != 'undefined') && (layer))
       aLayer = layer;
     if (aLayer) {
       const src = aLayer.getSource();
@@ -770,8 +782,8 @@ export class OpenLayers {
     layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
     //
     let aLayer: VectorLayer<VectorSource>|HeatmapLayer|WebGLPts|undefined|null;
-    aLayer = this.olMarkersLayer;
-    if (layer)
+    aLayer = this.useWebGL ? this.olMarkersLayerGL : this.olMarkersLayer;
+    if ((typeof layer != 'undefined') && (layer))
       aLayer = layer;
 
     const strCol = toStringColor(colorVal, this.markerOpacity);
@@ -781,7 +793,6 @@ export class OpenLayers {
         image: new OLStyle.Circle({
           radius: sizeVal,
           fill: new OLStyle.Fill({
-            // color: toStringColor(colorVal, this.markerOpacity), //TODO: change to gisView.markerOpacity
             color: strCol,
           }),
           stroke: new OLStyle.Stroke({
@@ -803,11 +814,9 @@ export class OpenLayers {
     layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
     //add array of features to the layer
     let aLayer: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined|null;
-    aLayer = this.olMarkersLayerGL;
-    if (layer)
+    aLayer = this.useWebGL ? this.olMarkersLayerGL : this.olMarkersLayer;
+    if ((typeof layer != 'undefined') && (layer))
       aLayer = layer;
-    if (!aLayer)
-      aLayer = this.olMarkersLayer;
     if (aLayer) {
       const src = aLayer.getSource();
       if (src)
