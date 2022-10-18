@@ -26,32 +26,18 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
   if (funcs.length == 0)
     return new DG.Widget(ui.label('Helm package is missing or out of date. Please install the latest version.'));
 
-  let tempCol = null;
-  let scaledDf: DG.DataFrame;
-  let newScaledColName: string;
-  let scalingFormula: (x: number) => number;
+  let scaledCol: DG.Column<number>;
 
-  for (const column of df.columns.numerical)
-    tempCol = column.type === DG.TYPE.FLOAT ? column : null;
-
-  const defaultActivityColumn: DG.Column<number> | null = df.col('activity') || df.col('IC50') || tempCol;
+  const defaultActivityColumn: DG.Column<number> | null =
+    df.col('activity') || df.col('IC50') || DG.Utils.firstOrNull(df.columns.numerical);;
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
-  const indexes: number[] = [];
-  const f = df.filter;
-  df.onFilterChanged.subscribe(() => {
-    for (let i = 0; i < f.length; ++i) {
-      if (f.get(i))
-        indexes.push(i);
-    }
-  });
   const activityScalingMethod = ui.choiceInput(
     'Scaling', 'none', ['none', 'lg', '-lg'],
     async (currentMethod: string): Promise<void> => {
-      [scaledDf, scalingFormula, newScaledColName] =
-        scaleActivity(currentMethod, activityColumnChoice.value!, indexes.length !== 0 ? indexes : undefined);
+      scaledCol = scaleActivity(currentMethod, activityColumnChoice.value!);
 
-      const hist = scaledDf.plot.histogram({
+      const hist = DG.DataFrame.fromColumns([scaledCol]).plot.histogram({
         filteringEnabled: false,
         valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
         legendVisibility: 'Never',
@@ -65,9 +51,9 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
     });
   activityScalingMethod.setTooltip('Function to apply for each value in activity column');
 
-  const activityScalingMethodState = (_: any): void => {
+  const activityScalingMethodState = (): void => {
     activityScalingMethod.enabled = (activityColumnChoice.value ?? false) &&
-      DG.Stats.fromColumn(activityColumnChoice.value!, df.filter).min > 0;
+      DG.Stats.fromColumn(activityColumnChoice.value!).min > 0;
     activityScalingMethod.fireChanged();
   };
   const activityColumnChoice = ui.columnInput('Activity', df, defaultActivityColumn, activityScalingMethodState);
@@ -77,9 +63,14 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
 
   const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice];
 
+  const bitsetChanged = df.filter.onChanged.subscribe(() => {
+    activityScalingMethodState();
+  })
+
   const startBtn = ui.button('Launch SAR', async () => {
-    await startAnalysis(activityColumnChoice.value, col, clustersColumnChoice.value, df, scalingFormula,
-      newScaledColName, activityScalingMethod.value ?? 'none', indexes);
+    await startAnalysis(activityColumnChoice.value!, col, clustersColumnChoice.value, df, scaledCol,
+      activityScalingMethod.value ?? 'none');
+    bitsetChanged.unsubscribe();
   });
   startBtn.style.alignSelf = 'center';
 
@@ -99,43 +90,30 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
   );
 }
 
-export async function startAnalysis(activityColumn: DG.Column<number> | null, peptidesCol: DG.Column<string>,
-  clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaleNum: (x: number) => number, newScaledColName: string,
-  scaling: string, indexes: number[]): Promise<PeptidesModel | null> {
+export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
+  clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: string,
+  ): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
-  if (activityColumn?.type === DG.TYPE.FLOAT) {
-    const f = currentDf.filter;
+  if (activityColumn.type === DG.TYPE.FLOAT || activityColumn.type === DG.TYPE.INT) {
     //prepare new DF
-    const newDf = DG.DataFrame.create(f.trueCount);
-    const getIndex = indexes.length !== 0 ? (i: number): number => indexes[i] : (i: number): number => i;
-    let activityCol: DG.Column<number> | null = null;
+    const newDf = DG.DataFrame.create(currentDf.rowCount);
+    const newDfCols = newDf.columns;
     for (const col of currentDf.columns.toList()) {
-      let virtualCol: DG.Column<any>;
-      if (col === activityColumn) {
-        virtualCol = newDf.columns.addNewVirtual(
-          C.COLUMNS_NAMES.ACTIVITY, (i) => activityColumn.get(getIndex(i)!), DG.TYPE.FLOAT);
-        activityCol = virtualCol;
-      } else if (col === peptidesCol) {
-        virtualCol = newDf.columns.addNewVirtual(
-          C.COLUMNS_NAMES.MACROMOLECULE, (i) => peptidesCol.get(getIndex(i)!), DG.TYPE.STRING);
-      } else
-        virtualCol = newDf.columns.addNewVirtual(col.name, (i) => col.get(getIndex(i)!), col.type as DG.TYPE);
-      virtualCol.setTag(C.TAGS.VISIBLE, '0');
+      const currentCol = newDfCols.add(col);
+      if (col === activityColumn)
+        currentCol.name = C.COLUMNS_NAMES.ACTIVITY;
+      else if (col === peptidesCol)
+        currentCol.name = C.COLUMNS_NAMES.MACROMOLECULE;
+      col.setTag(C.TAGS.VISIBLE, '0');
     }
-    activityCol!.semType = C.SEM_TYPES.ACTIVITY;
-    const activityScaledCol = newDf.columns.addNewVirtual(C.COLUMNS_NAMES.ACTIVITY_SCALED, (i) => {
-      const val = activityCol!.get(getIndex(i)!);
-      return val ? scaleNum(val) : val;
-    }, DG.TYPE.FLOAT);
-    activityScaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
+    activityColumn.semType = C.SEM_TYPES.ACTIVITY;
+    newDfCols.add(scaledCol);
     newDf.name = 'Peptides analysis';
-    newDf.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
     if (clustersColumn) {
       newDf.getCol(clustersColumn.name).name = C.COLUMNS_NAMES.CLUSTERS;
       newDf.tags[C.TAGS.CLUSTERS] = C.COLUMNS_NAMES.CLUSTERS;
     }
-    // newDf.tags[C.PEPTIDES_ANALYSIS] = 'true';
     newDf.tags['scaling'] = scaling;
 
     let monomerType = 'HELM_AA';
@@ -148,10 +126,9 @@ export async function startAnalysis(activityColumn: DG.Column<number> | null, pe
     }
 
     newDf.setTag('monomerType', monomerType);
-
     model = await PeptidesModel.getInstance(newDf);
   } else
-    grok.shell.error('The activity column must be of floating point number type!');
+    grok.shell.error('The activity column must be of numeric type!');
   progress.close();
   return model;
 }

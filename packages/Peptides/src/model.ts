@@ -375,14 +375,15 @@ export class PeptidesModel {
   joinDataFrames(positionColumns: string[], splitSeqDf: DG.DataFrame, alphabet: string): void {
     // append splitSeqDf columns to source table and make sure columns are not added more than once
     const name = this.df.name;
+    const cols = this.df.columns;
     for (const colName of positionColumns) {
       const col = this.df.col(colName);
       const newCol = splitSeqDf.getCol(colName);
       if (col === null)
-        this.df.columns.add(newCol);
+        cols.add(newCol);
       else {
-        this.df.columns.remove(colName);
-        this.df.columns.add(newCol);
+        cols.remove(colName);
+        cols.add(newCol);
       }
       CR.setAARRenderer(newCol, alphabet, this.sourceGrid);
     }
@@ -409,21 +410,15 @@ export class PeptidesModel {
   }
 
   createScaledCol(activityScaling: string, splitSeqDf: DG.DataFrame): void {
-    const [scaledDf, _, newColName] =
-      scaleActivity(activityScaling, this.df.getCol(C.COLUMNS_NAMES.ACTIVITY));
+    const scaledCol = scaleActivity(activityScaling, this.df.getCol(C.COLUMNS_NAMES.ACTIVITY));
     //TODO: make another func
-    const scaledCol = scaledDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    scaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
     splitSeqDf.columns.add(scaledCol);
-    const oldScaledCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    this.df.columns.replace(oldScaledCol, scaledCol);
+    this.df.columns.replace(C.COLUMNS_NAMES.ACTIVITY_SCALED, scaledCol);
     const gridCol = this.sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    if (gridCol !== null) {
-      gridCol.name = newColName;
-      this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newColName;
-    }
+    if (gridCol)
+      gridCol.name = scaledCol.getTag('gridName');
 
-    this.sourceGrid.columns.setOrder([newColName]);
+    this.sourceGrid.columns.setOrder([scaledCol.getTag('gridName')]);
   }
 
   calculateMonomerPositionStatistics(matrixDf: DG.DataFrame): DG.DataFrame {
@@ -1077,9 +1072,9 @@ export class PeptidesModel {
 
     this.df.tags[C.PEPTIDES_ANALYSIS] = 'true';
     const scaledGridCol = this.sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!;
-    scaledGridCol.name = this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED];
+    scaledGridCol.name = scaledGridCol.column!.getTag('gridName');
     scaledGridCol.format = '#.000';
-    this.sourceGrid.columns.setOrder([this.df.tags[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
+    this.sourceGrid.columns.setOrder([scaledGridCol.name]);
     this.sourceGrid.props.allowColSelection = false;
 
     this.df.temp[C.EMBEDDING_STATUS] = false;
