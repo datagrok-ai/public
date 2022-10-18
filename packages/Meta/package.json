@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.0.58",
+  "version": "3.0.59",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1837,6 +1837,9 @@
         },
         "1.2.25": {
           "datagrok-api": "^1.6.11"
+        },
+        "1.2.27": {
+          "datagrok-api": "^1.6.12"
         }
       },
       "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform to analyse variable region sequences of antibodies.",
