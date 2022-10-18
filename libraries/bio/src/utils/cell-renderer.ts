@@ -48,13 +48,19 @@ export function printLeftOrCentered(
   }
   let colorCode = true;
   let compareWithCurrent = true;
-  if (gridCell != null) {
-    colorCode = (gridCell.cell.column?.temp['color-code'] != null) ? gridCell.cell.column.temp['color-code'] : true;
-    compareWithCurrent = (gridCell.cell.column?.temp['compare-with-current'] != null) ? gridCell.cell.column.temp['compare-with-current'] : true;
+  let highlightDifference = 'difference';
+  if ((gridCell != null) && (gridCell.cell.column != null)) {
+    colorCode = gridCell.cell.column.temp['color-code'] ?? true;
+    compareWithCurrent = gridCell.cell.column.temp['compare-with-current'] ?? true;
+    highlightDifference = gridCell.cell.column.temp['highlight-difference'] ?? 'difference';
+
   }
   const currentMonomer: string = referenceSequence[wordIdx];
-  if (compareWithCurrent && (referenceSequence.length > 0)) {
+  if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'difference')) {
     transparencyRate = (colorPart == currentMonomer) ? 0.3 : transparencyRate;
+  }
+  if (compareWithCurrent && (referenceSequence.length > 0) && (highlightDifference === 'equal')) {
+    transparencyRate = (colorPart != currentMonomer) ? 0.3 : transparencyRate;
   }
   if (maxLengthOfMonomer != null) {
     colorPart = monomerToShortFunction(colorPart, maxLengthOfMonomer);
