@@ -47,7 +47,7 @@ import './grid/grid';
 import './connections/queries-test';
 import './scripts/scripts-params';
 
-import {runTests, tests} from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
 export {tests};
 
@@ -55,10 +55,11 @@ export {tests};
 //name: test
 //input: string category {optional: true}
 //input: string test {optional: true}
+//input: object testContext {optional: true}
 //output: dataframe result
 //top-menu: Tools | Dev | JS API Tests
-export async function test(category: string, test: string): Promise<DG.DataFrame> {
-  const data = await runTests({category, test});
+export async function test(category: string, test: string, testContext: TestContext): Promise<DG.DataFrame> {
+  const data = await runTests({category, test, testContext});
   return DG.DataFrame.fromObjects(data)!;
 }
 
