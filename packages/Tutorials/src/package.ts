@@ -37,6 +37,15 @@ export async function tutorialsInit() {
   const tutorialFuncs = DG.Func.find({ tags: ['tutorial'] });
   const trackFuncs = DG.Func.find({ tags: ['track'] });
   const defaultIcon = `${_package.webRoot}package.png`;
+  const tutorialIconPaths: { [packageName: string]: { [tutorialName: string]: {
+    tutorial: TutorialSubstitute,
+    imageUrl: string,
+  } } } = {};
+
+  for (const track of tracks) {
+    for (const tutorial of track.tutorials)
+      tutorial.imageUrl = `${_package.webRoot}images/${tutorial.name.toLowerCase().replace(/ /g, '-')}.png`;
+  }
 
   for (const func of trackFuncs) {
     const name = tracks.find((t) => t.name === func.options['name']) ?
@@ -46,9 +55,14 @@ export async function tutorialsInit() {
   }
 
   for (const func of tutorialFuncs) {
-    const icon = func.options['icon'] ? `${func.package.webRoot}${func.options['icon']}` : defaultIcon;
     const trackName = func.options['track'] ?? func.package.friendlyName;
-    const tutorial = new TutorialSubstitute(func.options['name'], func.description, icon, func);
+    const tutorial = new TutorialSubstitute(func.options['name'], func.description, defaultIcon, func);
+
+    if (func.options['icon'])
+      tutorialIconPaths[func.package.name] = { [func.options['name']]: {
+        tutorial,
+        imageUrl: func.options['icon'],
+      } };
 
     let track = tracks.find((t) => t.name === trackName);
     if (track)
@@ -56,4 +70,13 @@ export async function tutorialsInit() {
     else
       tracks.push(new Track(trackName, [tutorial], ''));
   }
+
+  grok.events.onPackageLoaded.subscribe((p) => {
+    if (p.name in tutorialIconPaths) {
+      for (const tutorial in tutorialIconPaths[p.name]) {
+        const data = tutorialIconPaths[p.name][tutorial];
+        data.tutorial.imageUrl = `${data.tutorial.func.package.webRoot}${data.imageUrl}`;
+      }
+    }
+  });
 }

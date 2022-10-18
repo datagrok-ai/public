@@ -104,7 +104,7 @@ class TutorialCard {
   constructor(tutorial: Tutorial) {
     this.tutorial = tutorial;
 
-    let img = ui.image(`${_package.webRoot}images/${tutorial.name.toLowerCase().replace(/ /g, '-')}.png`, 90, 70);
+    let img = ui.image(tutorial.imageUrl, 90, 70);
     let icon = ui.div([], 'tutorials-card-status');
     let title = ui.divText(tutorial.name, 'tutorials-card-title');
     let description = ui.divText(tutorial.description, 'tutorials-card-description');
@@ -141,14 +141,14 @@ class TutorialCard {
 export class TutorialSubstitute extends Tutorial {
   name: string;
   description: string;
-  icon: string;
+  imageUrl: string;
   func: DG.Func;
 
   constructor(name: string, description: string, icon: string, func: DG.Func) {
     super();
     this.name = name;
     this.description = description;
-    this.icon = icon;
+    this.imageUrl = icon;
     this.func = func;
   }
 
