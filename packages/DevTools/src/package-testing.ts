@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Test, TestContext} from '@datagrok-libraries/utils/src/test';
+import {delay, Test, TestContext} from '@datagrok-libraries/utils/src/test';
 import {c, testFunc} from './package';
 import {Menu} from 'datagrok-api/dg';
 
@@ -391,7 +391,6 @@ export class TestManager extends DG.ViewBase {
       this.updateTestResultsIcon(packageTests.resultDiv, testsSucceded);
       this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.package.name}`;
       progressBar.close();
-      break;
     }
     case NODE_TYPE.CATEGORY: {
       const progressBar = DG.TaskBarProgressIndicator.create(`${tests.packageName}/${tests.fullName}`);
@@ -408,6 +407,10 @@ export class TestManager extends DG.ViewBase {
       break;
     }
     }
+    await delay(1000);
+    if (grok.shell.lastError.length > 0)
+      grok.shell.error(`Unhandled exception: ${grok.shell.lastError}`);
+
     grok.shell.closeAll();
     setTimeout(() => {
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType);
@@ -512,7 +515,7 @@ export class TestManager extends DG.ViewBase {
         const result = testInfo.get('result', 0);
         const resColor = testInfo.get('success', 0) ? 'lightgreen' : 'red';
         info = ui.divV([
-          ui.divText(result, {style: {color: resColor}}),
+          ui.divText(result, {style: {color: resColor, userSelect: 'text'}}),
           ui.divText(`Time, ms: ${time}`),
         ]);
         if (cat === this.autoTestsCatName)
@@ -529,10 +532,8 @@ export class TestManager extends DG.ViewBase {
             }),
             testInfo.plot.grid().root,
           ]);
-        }
-        else {
+        } else
           return null;
-        }
       }
     }
     return info;
