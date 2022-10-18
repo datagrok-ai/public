@@ -14,7 +14,7 @@
   },
   "sources": [],
   "dependencies": {
-    "@datagrok-libraries/utils": "latest",
+    "@datagrok-libraries/utils": "^1.11.1",
     "datagrok-api": "^1.6.8",
     "cash-dom": "latest",
     "dayjs": "latest"

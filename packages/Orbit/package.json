@@ -11,7 +11,7 @@
 		"datagrok-api": "^1.6.4",
 		"cash-dom": "latest",
 		"dayjs": "latest",
-		"@datagrok-libraries/utils": "latest"
+		"@datagrok-libraries/utils": "^1.11.1"
 	},
 	"repository": {
 		"type": "git",
