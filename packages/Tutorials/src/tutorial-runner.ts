@@ -12,6 +12,9 @@ export class TutorialRunner {
   track: Track;
 
   async run(t: Tutorial): Promise<void> {
+    if (t instanceof TutorialSubstitute)
+      t = await TutorialSubstitute.getTutorial(t, this.track);
+
     $('.tutorial').hide();
     $('#tutorial-child-node').html('');
     $('#tutorial-child-node').append(t.root);
@@ -133,4 +136,29 @@ class TutorialCard {
     ], 'tutorials-card');
     this.root.setAttribute('data-name', tutorial.name);
   }
+}
+
+export class TutorialSubstitute extends Tutorial {
+  name: string;
+  description: string;
+  icon: string;
+  func: DG.Func;
+
+  constructor(name: string, description: string, icon: string, func: DG.Func) {
+    super();
+    this.name = name;
+    this.description = description;
+    this.icon = icon;
+    this.func = func;
+  }
+
+  static async getTutorial(substitute: TutorialSubstitute, track?: Track): Promise<Tutorial> {
+    const tutorial = await grok.functions.call(substitute.func.nqName);
+    if (track)
+      tutorial.track = track;
+    return tutorial;
+  }
+
+  get steps() { return 1; }
+  async _run() {}
 }
