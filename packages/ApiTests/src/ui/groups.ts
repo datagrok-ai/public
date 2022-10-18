@@ -67,6 +67,21 @@ category('UI: Groups', () => {
     if (diag.length === 0) throw 'Error: Create New Group does not work!';
     const cancel = diag[0].querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
     cancel.click();
+
+    const mainGroup = await grok.dapi.groups.createNew("APITests Main Group");
+    const subGroup = DG.Group.create("APITests Sub Group");
+    subGroup.includeTo(mainGroup);
+    const testUser = await grok.dapi.users.filter('login = "Test"').first();
+    subGroup.addMember(testUser.group);
+    await grok.dapi.groups.saveRelations(subGroup);
+
+    expect(subGroup.members.length, 1);
+    expect(subGroup.adminMembers.length, 1);
+    expect(subGroup.memberships.length, 2);
+    expect(subGroup.adminMemberships.length, 0);
+
+    await grok.dapi.groups.delete(subGroup);
+    await grok.dapi.groups.delete(mainGroup);
   });
 
 

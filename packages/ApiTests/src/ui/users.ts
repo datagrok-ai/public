@@ -53,12 +53,14 @@ category('UI: Users', () => {
     if (rj === undefined) throw 'Error: cannot find Recently Joined!';
     await rj.click();
 
-    await waitForHTMLElement('.grok-items-view-counts', regex, 'Number of users does not match!');
+    setTimeout(async () => {
+      await waitForHTMLElement('.grok-items-view-counts', regex, 'Number of users does not match!');
+    }, 10)
   });
 
 
   test('actions.addUser', async () => {
-    let user = DG.User.create();
+    const user = DG.User.create();
     user.login = 'newlogin';
     user.status = DG.USER_STATUS.STATUS_NEW;
     user.firstName = 'new';
