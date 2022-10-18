@@ -2,8 +2,9 @@ set package_dir=%cd%
 
 set dirs=^
 \..\..\js-api\ ^
-\..\..\libraries\utils\ ^
 \..\..\libraries\bio\ ^
+\..\..\libraries\utils\ ^
+\..\..\libraries\gridext\ ^
 \
 
 call npm uninstall -g datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio
