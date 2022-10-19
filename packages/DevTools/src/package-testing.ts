@@ -391,6 +391,7 @@ export class TestManager extends DG.ViewBase {
       this.updateTestResultsIcon(packageTests.resultDiv, testsSucceded);
       this.testManagerView.path = `/${this.testManagerView.name.replace(' ', '')}/${tests.package.name}`;
       progressBar.close();
+      break;
     }
     case NODE_TYPE.CATEGORY: {
       const progressBar = DG.TaskBarProgressIndicator.create(`${tests.packageName}/${tests.fullName}`);
