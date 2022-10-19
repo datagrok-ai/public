@@ -703,6 +703,7 @@ export function defineAxolabsPattern() {
       grok.shell.v = grok.shell.getTableView(tables.value!.name);
       grok.shell.info(((createAsStrand.value) ? 'Columns were' : 'Column was') +
       ' added to table \'' + tables.value!.name + '\'');
+      updateOutputExamples();
     }
   });
 

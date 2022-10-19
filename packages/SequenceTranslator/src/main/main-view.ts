@@ -19,8 +19,7 @@ export function mainView() {
     try {
       sequence = sequence.replace(/\s/g, '');
       const output = isValidSequence(sequence, null);
-      output.synthesizer = [inputFormat];
-      // inputFormatChoiceInput.value = output.synthesizer![0];
+      inputFormatChoiceInput.value = output.synthesizer![0];
       const outputSequenceObj = convertSequence(sequence, output);
       const tableRows = [];
 
