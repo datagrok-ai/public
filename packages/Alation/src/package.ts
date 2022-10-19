@@ -39,8 +39,28 @@ export async function getUserGroup() {
 //name: Alation
 //tags: app
 //top-menu: Admin | Alation @Toolbox Data | Alation
-export async function Alation() {
+export async function Alation(): Promise<void> {
   const progressIndicator = DG.TaskBarProgressIndicator.create('Loading Alation...');
+  await utils.retrieveKeys();
+
+  let search = new URLSearchParams(window.location.search);
+  if (search.toString() !== '') {
+    const oid = search.get('id')!;
+    switch (search.get('otype')) {
+      case 'table':
+        const tableObj = await alationApi.getTableObject(oid);
+        await openTable(tableObj);
+        break;
+      case 'query':
+        const queryObj = await alationApi.getQueryObject(oid);
+        await runQuery(queryObj);
+        break;
+      default:
+        throw new Error(`AlationError: object type parameter is empty (otype)`);
+    }
+    progressIndicator.close();
+    return;
+  }
 
   const treeHost = ui.box();
 
@@ -53,8 +73,6 @@ export async function Alation() {
   const v = grok.shell.newView('Alation Browser', [host]);
   v.box = true;
 
-  await utils.retrieveKeys();
-
   const dataSourcesList = await alationApi.getDataSources();
   const tree = view.createTree(dataSourcesList, 'data-source');
   treeHost.append(tree.root);
@@ -62,29 +80,31 @@ export async function Alation() {
   grok.events.onContextMenu.subscribe((args: any) => {
     const obj = args.args.item.value as types.table & types.query;
     const contextMenu = args.args.menu;
-    if (obj.ds_id && obj.table_type) {
-      contextMenu.item('Open table', async () => {
-        const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
-        try {
-          await view.connectToDb(obj.ds_id, async (conn: DG.DataConnection) => {await view.getTable(conn, obj);});
-        } catch {
-          grok.shell.error('Couldn\'t retrieve table');
-        }
-        progressIndicator.close();
-      });
-    } else if (obj.datasource_id && obj.content) {
-      contextMenu.item('Run query', async () => {
-        const progressIndicator = DG.TaskBarProgressIndicator.create('Running query...');
-        try {
-          await view.connectToDb(obj.datasource_id,
-            async (conn: DG.DataConnection) => {await view.runQuery(conn, obj);});
-        } catch {
-          grok.shell.error('Couldn\'t retrieve table');
-        }
-        progressIndicator.close();
-      });
-    }
+    if (obj.ds_id && obj.table_type)
+      contextMenu.item('Open table', async () => await openTable(obj));
+    else if (obj.datasource_id && obj.content)
+      contextMenu.item('Run query', async () => await runQuery(obj));
   });
 
+  progressIndicator.close();
+}
+
+async function openTable(obj: types.table): Promise<void> {
+  const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
+  try {
+    await view.connectToDb(obj.ds_id, async (conn: DG.DataConnection) => {await view.getTable(conn, obj);});
+  } catch {
+    grok.shell.error('Couldn\'t retrieve table');
+  }
+  progressIndicator.close();
+}
+
+async function runQuery(obj: types.query): Promise<void> {
+  const progressIndicator = DG.TaskBarProgressIndicator.create('Running query...');
+  try {
+    await view.connectToDb(obj.datasource_id, async (conn: DG.DataConnection) => {await view.runQuery(conn, obj);});
+  } catch {
+    grok.shell.error('Couldn\'t retrieve table');
+  }
   progressIndicator.close();
 }

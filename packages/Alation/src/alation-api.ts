@@ -71,7 +71,7 @@ async function getResponseFor(
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'TOKEN': await utils.getApiToken(),
+        'TOKEN': utils.getApiToken(),
       },
     };
   }
@@ -91,7 +91,7 @@ export async function getQueries(
     method: 'GET',
     headers: {
       'Accept': 'application/json',
-      'TOKEN': await utils.getApiToken(),
+      'TOKEN': utils.getApiToken(),
     },
   };
 
@@ -111,10 +111,36 @@ export async function getDataSourceById(dataSourceId: number): Promise<types.dat
     method: 'GET',
     headers: {
       'Accept': 'application/json',
-      'TOKEN': await utils.getApiToken(),
+      'TOKEN': utils.getApiToken(),
     },
   };
 
+  const response = await grok.dapi.fetchProxy(url, params);
+  return response.json();
+}
+
+export async function getTableObject(table_id: string): Promise<types.table> {
+  const url = `${await getBaseURL()}integration/v2/table/?id=${table_id}&limit=1`;
+  const params = {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'TOKEN': utils.getApiToken(),
+    },
+  };
+  const response = await grok.dapi.fetchProxy(url, params);
+  return await response.json();
+}
+
+export async function getQueryObject(query_id: string): Promise<types.query> {
+  const url = `${await getBaseURL()}integration/v1/query/${query_id}/`;
+  const params = {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'TOKEN': utils.getApiToken(),
+    },
+  };
   const response = await grok.dapi.fetchProxy(url, params);
   return response.json();
 }
