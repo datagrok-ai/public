@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {category, test, expect, delay} from '@datagrok-libraries/utils/src/test';
+import {UnitsHandler, NOTATION, ALPHABET, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
 
 import {_package} from '../package-test';
 import {startAnalysis} from '../widgets/peptides';
@@ -32,9 +33,9 @@ category('Core', () => {
     simpleActivityCol = simpleTable.getCol(simpleActivityColName);
     simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
     simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
-    simpleAlignedSeqCol.tags[C.TAGS.ALPHABET] = 'PT';
-    simpleAlignedSeqCol.tags[DG.TAGS.UNITS] = 'fasta';
-    simpleAlignedSeqCol.tags['aligned'] = 'SEQ.MSA';
+    simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
+    simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    simpleAlignedSeqCol.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
     simpleScaledCol = scaleActivity('-lg', simpleActivityCol);
 
     model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, '-lg');
@@ -52,9 +53,9 @@ category('Core', () => {
     complexActivityCol = complexTable.getCol(complexActivityColName);
     complexAlignedSeqCol = complexTable.getCol('MSA');
     complexAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
-    complexAlignedSeqCol.tags[C.TAGS.ALPHABET] = 'UN';
-    complexAlignedSeqCol.tags[DG.TAGS.UNITS] = 'separator';
-    complexAlignedSeqCol.tags['aligned'] = 'SEQ.MSA';
+    complexAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.UN);
+    complexAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+    complexAlignedSeqCol.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
     complexAlignedSeqCol.tags[C.TAGS.SEPARATOR] = '/';
     complexScaledCol = scaleActivity('-lg', complexActivityCol);
 
@@ -74,9 +75,9 @@ category('Core', () => {
     simpleActivityCol = simpleTable.getCol(simpleActivityColName);
     simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
     simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
-    simpleAlignedSeqCol.tags[C.TAGS.ALPHABET] = 'PT';
-    simpleAlignedSeqCol.tags[DG.TAGS.UNITS] = 'fasta';
-    simpleAlignedSeqCol.tags['aligned'] = 'SEQ.MSA';
+    simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
+    simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    simpleAlignedSeqCol.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
     simpleScaledCol = scaleActivity('-lg', simpleActivityCol);
 
     model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, '-lg');

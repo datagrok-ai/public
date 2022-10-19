@@ -10,6 +10,11 @@ import {
   detectAlphabet, TAGS
 } from './macromolecule';
 
+export const enum ALIGNMENT {
+  SEQ_MSA = 'SEQ.MSA',
+  SEQ = 'SEQ',
+}
+
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
   protected readonly _column: DG.Column; // the column to be converted
@@ -100,11 +105,10 @@ export class UnitsHandler {
   }
 
   public getAlphabetIsMultichar(): boolean {
-    if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN) {
+    if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN)
       return this.column.getTag(TAGS.alphabetIsMultichar) == 'true';
-    } else {
+    else
       return false;
-    }
   }
 
   public isFasta(): boolean { return this.notation === NOTATION.FASTA; }
@@ -113,11 +117,11 @@ export class UnitsHandler {
 
   public isHelm(): boolean { return this.notation === NOTATION.HELM; }
 
-  public isRna(): boolean { return this.alphabet === 'RNA'; }
+  public isRna(): boolean { return this.alphabet === ALPHABET.RNA; }
 
-  public isDna(): boolean { return this.alphabet === 'DNA'; }
+  public isDna(): boolean { return this.alphabet === ALPHABET.DNA; }
 
-  public isPeptide(): boolean { return this.alphabet === 'PT'; }
+  public isPeptide(): boolean { return this.alphabet === ALPHABET.PT; }
 
   public isMsa(): boolean { return this.aligned ? this.aligned.toUpperCase().includes('MSA') : false; }
 
