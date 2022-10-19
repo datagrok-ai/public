@@ -2,6 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {DataFrame} from 'datagrok-api/dg';
 
+import {ALIGNMENT, UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {NOTATION, ALPHABET, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+
 export function generateManySequences(): DG.Column[] {
   let columns: DG.Column[] = [];
   columns.push(DG.Column.fromList('string', 'MSA', new Array(10 ** 6).fill('meI/hHis/Aca/N/T/dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me')));
@@ -19,10 +22,10 @@ export function generateLongSequence(): DG.Column[] {
 
 export function setTagsMacromolecule(col: DG.Column) {
   col.semType = DG.SEMTYPE.MACROMOLECULE;
-  col.setTag('units', 'separator');
-  col.setTag('aligned', 'SEQ.MSA');
-  col.setTag('alphabet', 'UN');
-  col.setTag('separator', '/');
+  col.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
+  col.setTag(TAGS.aligned, ALIGNMENT.SEQ_MSA);
+  col.setTag(TAGS.alphabet, ALPHABET.UN);
+  col.setTag(TAGS.separator, '/');
   return col;
 }
 

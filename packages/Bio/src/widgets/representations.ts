@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getMolfilesFromSingleSeq, HELM_CORE_LIB_FILENAME} from '../utils/utils';
-import {getMacroMol} from '../utils/atomic-works';
+import {getMolfilesFromSingleSeq} from '@datagrok-libraries/bio/src/utils/monomer-utils';
+import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
+import {getMacroMol} from '@datagrok-libraries/bio/src/utils/atomic-works';
 
 /**
  * @export

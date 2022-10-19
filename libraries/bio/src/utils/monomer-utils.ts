@@ -1,19 +1,15 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
+// import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
+import * as grok from 'datagrok-api/grok';
 
-import {
-  CAP_GROUP_NAME, CAP_GROUP_SMILES, jsonSdfMonomerLibDict, MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, MONOMER_SYMBOL,
-  RGROUP_ALTER_ID, RGROUP_FIELD, RGROUP_LABEL, SDF_MONOMER_NAME
-} from '../const';
-import {UnitsHandler} from '@datagrok-libraries/bio/src/utils/units-handler';
+// import {WebLogo, SplitterFunc} from '../../src/viewers/web-logo';
+import {HELM_FIELDS, HELM_CORE_FIELDS, RGROUP_FIELDS, jsonSdfMonomerLibDict,
+  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME} from './const';
+// import {UnitsHandler} from './units-handler';
+
+import * as bio from '../../index';
 
 export const HELM_CORE_LIB_FILENAME = '/data/HELMCoreLibrary.json';
-export const HELM_CORE_LIB_MONOMER_SYMBOL = 'symbol';
-export const HELM_CORE_LIB_MOLFILE = 'molfile';
-export const HELM_CORE_FIELDS = ['symbol', 'molfile', 'rgroups', 'name'];
-
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
@@ -57,6 +53,7 @@ export function getMolfilesFromSeq(col: DG.Column, monomersLibObject: any[]): an
           grok.shell.warning(`Monomer ${monomers[j]} is missing in HELM library. Structure cannot be created`);
           return null;
         }
+        // what is the reason of double conversion?
         molFilesForSeq.push(JSON.parse(JSON.stringify(monomersDict[monomers[j]])));
       }
     }
@@ -95,32 +92,31 @@ export function createMomomersMolDict(lib: any[]): { [key: string]: string | any
       HELM_CORE_FIELDS.forEach((field) => {
         monomerObject[field] = it[field];
       });
-      dict[it[HELM_CORE_LIB_MONOMER_SYMBOL]] = monomerObject;
+      dict[it[HELM_FIELDS.SYMBOL]] = monomerObject;
     }
   });
   return dict;
 }
-
 
 export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
   const resultLib = [];
   for (let i = 0; i < table.rowCount; i++) {
     const monomer: { [key: string]: string | any } = {};
     Object.keys(jsonSdfMonomerLibDict).forEach((key) => {
-      if (key === MONOMER_SYMBOL) {
+      if (key === HELM_FIELDS.SYMBOL) {
         const monomerSymbol = table.get(jsonSdfMonomerLibDict[key], i);
         monomer[key] = monomerSymbol === '.' ? table.get(SDF_MONOMER_NAME, i) : monomerSymbol;
-      } else if (key === RGROUP_FIELD) {
+      } else if (key === HELM_FIELDS.RGROUPS) {
         const rgroups = table.get(jsonSdfMonomerLibDict[key], i).split('\n');
         const jsonRgroups: any[] = [];
         rgroups.forEach((g: string) => {
           const rgroup: { [key: string]: string | any } = {};
           const altAtom = g.substring(g.lastIndexOf(']') + 1);
           const radicalNum = g.match(/\[R(\d+)\]/)![1];
-          rgroup[CAP_GROUP_SMILES] = altAtom === 'H' ? `[*:${radicalNum}][H]` : `O[*:${radicalNum}]`;
-          rgroup[RGROUP_ALTER_ID] = altAtom === 'H' ? `R${radicalNum}-H` : `R${radicalNum}-OH`;
-          rgroup[CAP_GROUP_NAME] = altAtom === 'H' ? `H` : `OH`;
-          rgroup[RGROUP_LABEL] = `R${radicalNum}`;
+          rgroup[RGROUP_FIELDS.CAP_GROUP_SMILES] = altAtom === 'H' ? `[*:${radicalNum}][H]` : `O[*:${radicalNum}]`;
+          rgroup[RGROUP_FIELDS.ALTER_ID] = altAtom === 'H' ? `R${radicalNum}-H` : `R${radicalNum}-OH`;
+          rgroup[RGROUP_FIELDS.CAP_GROUP_NAME] = altAtom === 'H' ? `H` : `OH`;
+          rgroup[RGROUP_FIELDS.LABEL] = `R${radicalNum}`;
           jsonRgroups.push(rgroup);
         });
         monomer[key] = jsonRgroups;

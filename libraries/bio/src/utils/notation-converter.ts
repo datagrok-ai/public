@@ -44,6 +44,7 @@ export class NotationConverter extends UnitsHandler {
       }
       return fastaMonomersArray.join(separator);
     });
+    newColumn.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
     newColumn.setTag(TAGS.separator, separator);
     return newColumn;
   }
@@ -125,6 +126,7 @@ export class NotationConverter extends UnitsHandler {
       const sourcePolymer = this.column.get(idx);
       return this.convertToHelmHelper(sourcePolymer, sourceGapSymbol!, prefix, leftWrapper, rightWrapper, postfix);
     });
+    newColumn.setTag(DG.TAGS.UNITS, NOTATION.HELM);
     return newColumn;
   }
 
@@ -159,6 +161,7 @@ export class NotationConverter extends UnitsHandler {
       }
       return fastaMonomersArray.join('');
     });
+    newColumn.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     return newColumn;
   }
 

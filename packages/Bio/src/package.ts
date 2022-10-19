@@ -13,11 +13,17 @@ import {SequenceAlignment, Aligned} from './seq_align';
 import {getEmbeddingColsNames, sequenceSpace} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './analysis/sequence-activity-cliffs';
-import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq, HELM_CORE_LIB_FILENAME} from './utils/utils';
+import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq} from '@datagrok-libraries/bio/src/utils/monomer-utils';
+import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
+import {UnitsHandler, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule'
+import {_toAtomicLevel} from '@datagrok-libraries/bio/src/utils/to-atomic-level';
+import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {
   generateManySequences,
@@ -99,7 +105,7 @@ export function checkInputColumn(
     ) {
       const notationAdd = allowedNotations.length == 0 ? 'any notation' :
         (`notation${allowedNotations.length > 1 ? 's' : ''} ${allowedNotations.map((n) => `"${n}"`).join(', ')} `);
-      msg = `${name} analysis is allowed for Macromolecules with ${notationAdd}.`;
+      msg = `${name} + ' analysis is allowed for Macromolecules with notation ${notationAdd}.`;
       res = false;
     } else if (!uh.isHelm()) {
       // alphabet is not specified for 'helm' notation
@@ -169,10 +175,10 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
   };
   const tags = {
-    'units': macroMolecule.tags['units'],
-    'aligned': macroMolecule.tags['aligned'],
-    'separator': macroMolecule.tags['separator'],
-    'alphabet': macroMolecule.tags['alphabet'],
+    'units': macroMolecule.getTag(DG.TAGS.UNITS),
+    'aligned': macroMolecule.getTag(TAGS.aligned),
+    'separator': macroMolecule.getTag(TAGS.separator),
+    'alphabet': macroMolecule.getTag(TAGS.alphabet),
   };
   const sp = await getActivityCliffs(
     df,
@@ -247,19 +253,10 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
   }
   if (!checkInputColumnUi(macroMolecule, 'To Atomic Level'))
     return;
-
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-  const atomicCodes = getMolfilesFromSeq(macroMolecule, monomersLibObject);
-  const result = await getMacroMol(atomicCodes!);
-
-  const col = DG.Column.fromStrings('regenerated', result);
-  col.semType = DG.SEMTYPE.MOLECULE;
-  col.tags[DG.TAGS.UNITS] = 'molblock';
-  df.columns.add(col, true);
-  await grok.data.detectSemanticTypes(df);
+  _toAtomicLevel(df, macroMolecule, monomersLibObject);
 }
-
 
 //top-menu: Bio | MSA...
 //name: MSA
@@ -528,5 +525,3 @@ export function saveAsFasta() {
 export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter();
 }
-
-
