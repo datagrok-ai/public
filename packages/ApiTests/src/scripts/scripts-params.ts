@@ -11,7 +11,7 @@ category('Scripts input\output Params', () => {
   let colList:string[] = ['age', 'weight'];
 
 test('python.test', async () => {
-    let f = await grok.functions.eval(`"${_package.name}":PythonParamsTest)`);
+    let f = await grok.functions.eval(`${_package.name}:PythonParamsTest`);
 
     let call = f.prepare({i:10, d: -20.1, b: false, s: 'abc', dt:'1992-09-20 00:00:00', df:df, col:col});
     await call.call();
@@ -25,7 +25,7 @@ test('python.test', async () => {
   });
 
   test('r.test', async () => {
-    let f = await grok.functions.eval(`"${_package.name}":RParamsTest)`);
+    let f = await grok.functions.eval(`${_package.name}:RParamsTest`);
 
     let call = f.prepare({i:10, d: -20.1, b: false, s: 'abc', dt:'1992-09-20 00:00:00', df:df, col:col});
     await call.call();
@@ -39,7 +39,7 @@ test('python.test', async () => {
   });
 
   test('octave.test', async () => {
-    let f = await grok.functions.eval(`"${_package.name}":OctaveParamsTest)`);
+    let f = await grok.functions.eval(`${_package.name}:OctaveParamsTest`);
 
     let call = f.prepare({i:10, d: -20.1, b: false, s: 'abc', df:df, col:col, col_list: colList});
     await call.call();
@@ -48,6 +48,6 @@ test('python.test', async () => {
     expect(call.getParamValue('rd'), 9.9);
     expect(call.getParamValue('rb'), true);
     expect(call.getParamValue('rs'), 'abc-age');
-    expect(call.getParamValue('rdf').columns.length, 2);    
+    expect(call.getParamValue('rdf').columns.length, 2); 
   });
 });

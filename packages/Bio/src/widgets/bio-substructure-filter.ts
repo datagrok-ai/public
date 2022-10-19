@@ -183,20 +183,18 @@ class SeparatorFilter extends FastaFilter {
 
 class HelmFilter extends BioFilterBase {
   helmEditor: any;
-  _filterPanel = ui.div('', {style: {width: '100px', height: '100px'}});
+  _filterPanel = ui.div('', {style: {cursor: 'pointer'}});
   helmSubstructure = '';
-  editDiv = ui.divText('Click to edit', {style: {cursor: 'pointer'}});
 
   constructor() {
     super();
     this.init();
-    ui.setUpdateIndicator(this._filterPanel, true);
   }
 
   async init() {
     this.helmEditor = await grok.functions.call('HELM:helmWebEditor');
-    updateDivInnerHTML(this._filterPanel, this.editDiv);
-    ui.setUpdateIndicator(this._filterPanel, false);
+    await ui.tools.waitForElementInDom(this._filterPanel);
+    this.updateFilterPanel();
     this._filterPanel.addEventListener('click', (event: MouseEvent) => {
       //@ts-ignore
       ui.dialog({showHeader: false, showFooter: true})
@@ -204,13 +202,15 @@ class HelmFilter extends BioFilterBase {
         .onOK(() => {
           const helmString = this.helmEditor
             .webEditor.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-          if (helmString) {
-            updateDivInnerHTML(this._filterPanel, this.helmEditor.host);
-            this.helmEditor.editor.setHelm(helmString);
-          } else { updateDivInnerHTML(this._filterPanel, this.editDiv); }
+          this.updateFilterPanel(helmString);
           this.helmSubstructure = helmString;
           this.onChanged.next();
         }).show({modal: true, fullScreen: true});
+    });
+    ui.onSizeChanged(this._filterPanel).subscribe((_) => {
+      const helmString = this.helmEditor
+        .webEditor.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+      this.updateFilterPanel(helmString);
     });
   }
 
@@ -224,5 +224,27 @@ class HelmFilter extends BioFilterBase {
 
   set substructure(s: string) {
     this.helmEditor.editor.setHelm(s);
+  }
+
+  updateFilterPanel(helmString?: string) {
+    const width = this._filterPanel.parentElement!.clientWidth < 100 ? 100 :
+      this._filterPanel.parentElement!.clientWidth;
+    const height = width / 2;
+    if (!helmString) {
+      const editDivStyle = {style: {
+        width: `${width}px`,
+        height: `${height/2}px`,
+        textAlign: 'center',
+        verticalAlign: 'middle',
+        lineHeight: `${height/2}px`,
+        border: '1px solid #dbdcdf'
+      }};
+      const editDiv = ui.divText('Click to edit', editDivStyle);
+      updateDivInnerHTML(this._filterPanel, editDiv);
+    } else {
+      updateDivInnerHTML(this._filterPanel, this.helmEditor.host);
+      this.helmEditor.editor.setHelm(helmString);
+      this.helmEditor.resizeEditor(width, height);
+    }
   }
 }

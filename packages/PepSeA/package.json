@@ -11,7 +11,7 @@
 		"datagrok-api": "latest",
 		"cash-dom": "latest",
 		"dayjs": "latest",
-		"@datagrok-libraries/utils": "latest"
+		"@datagrok-libraries/utils": "^1.11.1"
 	},
 	"devDependencies": {
 		"webpack": "latest",

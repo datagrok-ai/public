@@ -13,7 +13,7 @@
     "directory": "packages/Arrow"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "1.5.3",
+    "@datagrok-libraries/utils": "^1.11.1",
     "apache-arrow": "^8.0.0",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.5.0",

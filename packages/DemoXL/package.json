@@ -13,7 +13,7 @@
     "directory": "packages/DemoXL"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.5.4",
+    "@datagrok-libraries/utils": "^1.11.1",
     "datagrok-api": "^1.0.0",
     "ts-loader": "latest",
     "typescript": "latest"

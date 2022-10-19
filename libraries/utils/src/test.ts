@@ -24,6 +24,14 @@ export interface TestOptions {
   unhandledExceptionTimeout?: number;
 }
 
+export class TestContext {
+  catchUnhandled = true;
+
+  constructor(catchUnhandled?: boolean) {
+    if (catchUnhandled !== undefined) this.catchUnhandled = catchUnhandled;
+  };
+}
+
 export class Test {
   test: () => Promise<any>;
   name: string;
@@ -146,9 +154,11 @@ export function after(after: () => Promise<void>): void {
 }
 
 
-export async function runTests(options?: { category?: string, test?: string }) {
+export async function runTests(options?: { category?: string, test?: string, testContext?: TestContext}) {
   const results: { category?: string, name?: string, success: boolean, result: string, ms: number }[] = [];
   console.log(`Running tests`);
+  options ??= {};
+  options!.testContext ??= new TestContext();
   grok.shell.lastError = '';
   for (const [key, value] of Object.entries(tests)) {
     if (options?.category != undefined) {
@@ -180,13 +190,15 @@ export async function runTests(options?: { category?: string, test?: string }) {
       data.push({category: key, name: 'init', result: value.beforeStatus, success: false, ms: 0});
     results.push(...data);
   }
-  await delay(1000);
-  if (grok.shell.lastError.length > 0) {
-    results.push({
-      category: 'Unhandled exceptions',
-      name: 'exceptions',
-      result: grok.shell.lastError, success: false, ms: 0
-    });
+  if (options.testContext.catchUnhandled) {
+    await delay(1000);
+    if (grok.shell.lastError.length > 0) {
+      results.push({
+        category: 'Unhandled exceptions',
+        name: 'exceptions',
+        result: grok.shell.lastError, success: false, ms: 0
+      });
+    }
   }
   return results;
 }

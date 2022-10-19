@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.0.51",
+  "version": "3.0.64",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -126,6 +126,18 @@
           "datagrok-api": "^1.6.0"
         },
         "1.3.20": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.3.21": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.3.22": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.3.23": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.3.24": {
           "datagrok-api": "^1.6.0"
         }
       },
@@ -300,6 +312,9 @@
         },
         "1.3.14": {
           "datagrok-api": "^1.6.11"
+        },
+        "1.3.16": {
+          "datagrok-api": "^1.7.2"
         }
       },
       "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis",
@@ -411,6 +426,9 @@
         },
         "1.0.9": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.0.10": {
+          "datagrok-api": "^1.6.0"
         }
       },
       "description": "SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform, used to translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
@@ -495,6 +513,9 @@
           "datagrok-api": "^1.5.2"
         },
         "1.0.0": {
+          "datagrok-api": "^1.5.2"
+        },
+        "1.0.1": {
           "datagrok-api": "^1.5.2"
         }
       },
@@ -622,6 +643,9 @@
           "datagrok-api": "^1.6.0"
         },
         "1.3.3": {
+          "datagrok-api": "^1.6.0"
+        },
+        "1.3.4": {
           "datagrok-api": "^1.6.0"
         }
       },
@@ -1071,6 +1095,9 @@
         },
         "1.0.5": {
           "datagrok-api": "^1.6.7"
+        },
+        "1.0.6": {
+          "datagrok-api": "^1.6.7"
         }
       },
       "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
@@ -1475,6 +1502,9 @@
         },
         "2.0.22": {
           "datagrok-api": "^1.7.0"
+        },
+        "2.0.24": {
+          "datagrok-api": "^1.7.0"
         }
       },
       "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
@@ -1713,6 +1743,12 @@
         },
         "1.1.4": {
           "datagrok-api": "^1.6.7"
+        },
+        "1.1.5": {
+          "datagrok-api": "^1.6.7"
+        },
+        "1.1.6": {
+          "datagrok-api": "^1.6.7"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
@@ -1816,6 +1852,9 @@
         },
         "1.2.25": {
           "datagrok-api": "^1.6.11"
+        },
+        "1.2.27": {
+          "datagrok-api": "^1.6.12"
         }
       },
       "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform to analyse variable region sequences of antibodies.",

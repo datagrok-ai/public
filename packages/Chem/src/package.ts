@@ -359,7 +359,7 @@ export function addInchisPanel(col: DG.Column): void {
 //input: bool radarGrid = false
 export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarView: boolean, radarGrid: boolean): void {
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
-  let columns: DG.Column<any>[] = [];
+  let columnNames: string[] = [];
 
   if (invalid.length > 0)
     console.log(`Invalid rows ${invalid.map((i) => i.toString()).join(', ')}`);
@@ -369,15 +369,16 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     if (value) {
       let column = DG.Column.fromInt32Array(elName, value);
       table.columns.add(column);
-      columns.push(column);
+      columnNames.push(elName);
     }
   }
 
   let view = grok.shell.addTableView(table);
 
   if (radarView) {
-    let elementsDf: DG.DataFrame = DG.DataFrame.fromColumns(columns);
-    let radarViewer = DG.Viewer.fromType('RadarViewer', elementsDf);
+    let radarViewer = DG.Viewer.fromType('RadarViewer', table, {
+      columnNames: columnNames,  
+    });
     view.addViewer(radarViewer);
   }
 

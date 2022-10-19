@@ -96,9 +96,10 @@ export function asoGapmersBioSpringToGcrs(nucleotides: string): string {
 //output: string result {semType: BioSpring / Gapmers}
 export function asoGapmersGcrsToBioSpring(nucleotides: string): string {
   const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
+    'fU': '1', 'fA': '2', 'fC': '3', 'fG': '4', 'mU': '5', 'mA': '6', 'mC': '7', 'mG': '8',
     'moeT': '5', 'moeA': '6', 'moe5mC': '7', 'moeG': '8', 'moeU': '5', '5mC': '9', 'nps': '*', 'ps': '*', 'U': 'T',
   };
-  return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|moeT|moeA|moe5mC|moeG|moeU|5mC|nps|ps|U)/g,
+  return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|fU|fA|fC|fG|mU|mA|mC|mG|moeT|moeA|moe5mC|moeG|moeU|5mC|nps|ps|U)/g,
     function(x: string) {return obj[x];});
 }
 

@@ -1,11 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
-} from '../structures-works/converters';
+import {siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
+  siRnaNucleotidesToGcrs} from '../structures-works/converters';
 import {map, COL_NAMES, MODIFICATIONS} from '../structures-works/map';
 import {isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
+import {linkV3000} from '../structures-works/mol-transformations';
 
 import {SALTS_CSV} from '../salts';
 import {USERS_CSV} from '../users';
@@ -54,6 +55,10 @@ function molecularWeight(sequence: string, weightsObj: {[index: string]: number}
   return weight - 61.97;
 }
 
+function parseStrandsFromDuplexCell(s: string): string[] {
+  return s.slice(3).split('\r\nAS ');
+}
+
 async function saveTableAsSdFile(table: DG.DataFrame) {
   if (!table.columns.contains('Compound Name')) {
     grok.shell.warning(
@@ -67,9 +72,23 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   let result = '';
   for (let i = 0; i < table.rowCount; i++) {
     const format = 'Janssen GCRS Codes'; //getFormat(structureColumn.get(i))!;
-    result += (typeColumn.get(i) == 'SS') ?
-      sequenceToMolV3000(structureColumn.get(i), false, true, format) + '\n' + `> <Sequence>\nSense Strand\n\n` :
-      sequenceToMolV3000(structureColumn.get(i), true, true, format) + '\n' + `> <Sequence>\nAnti Sense\n\n`;
+    if (typeColumn.get(i) == 'Duplex') {
+      const array = parseStrandsFromDuplexCell(structureColumn.get(i));
+      const as = sequenceToMolV3000(array[1], true, true, format) +
+      '\n' + `> <Sequence>\nAnti Sense\n\n`;
+      const ss = sequenceToMolV3000(array[0], false, true, format) +
+      '\n' + `> <Sequence>\nSense Strand\n\n`;
+      result += linkV3000([ss, as], true, true) + '\n\n';
+    } else if (typeColumn.get(i) == 'SS') {
+      const molSS = sequenceToMolV3000(structureColumn.get(i), false, true, format) +
+      '\n' + `> <Sequence>\nSense Strand\n\n`;
+      result += molSS;
+    } else if (typeColumn.get(i) == 'AS') {
+      const molAS = sequenceToMolV3000(structureColumn.get(i), true, true, format) +
+        '\n' + `> <Sequence>\nAnti Sense\n\n`;
+      result += molAS;
+    }
+
     for (const col of table.columns) {
       if (col.name != COL_NAMES.SEQUENCE)
         result += `> <${col.name}>\n${col.get(i)}\n\n`;
@@ -90,6 +109,13 @@ export function autostartOligoSdFileSubscription() {
       grok.events.onContextMenu.subscribe((args) => {
         const seqCol = args.args.context.table.currentCol; // /^[fsACGUacgu]{6,}$/
         if (DG.Detector.sampleCategories(seqCol,
+          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|A|U|G|C){6,}$/.test(s))) {
+          args.args.menu.item('Convert raw nucleotides to GCRS', () => {
+            args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+              return siRnaNucleotidesToGcrs(seqCol.get(i));
+            });
+          });
+        } else if (DG.Detector.sampleCategories(seqCol,
           (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|s|A|C|G|U|a|c|g|u){6,}$/.test(s))) {
           args.args.menu.item('Convert Axolabs to GCRS', () => {
             args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
@@ -121,7 +147,7 @@ export function autostartOligoSdFileSubscription() {
           (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|\*|1|2|3|4|5|6|7|8){6,}$/.test(s))) {
           args.args.menu.item('Convert Biospring to GCRS', () => {
             args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
-              return siRnaAxolabsToGcrs(seqCol.get(i));
+              return siRnaBioSpringToGcrs(seqCol.get(i));
             });
           });
         }
@@ -141,6 +167,7 @@ export function oligoSdFile(table: DG.DataFrame) {
   const saltCol = table.getCol(COL_NAMES.SALT);
   const equivalentsCol = table.getCol(COL_NAMES.EQUIVALENTS);
   const typeColumn = table.getCol(COL_NAMES.TYPE);
+  const chemistryNameCol = table.getCol(COL_NAMES.CHEMISTRY_NAME);
 
   const molWeightCol = saltsDf.getCol('MOLWEIGHT');
   const saltNamesList = saltsDf.getCol('DISPLAY').toList();
@@ -154,12 +181,17 @@ export function oligoSdFile(table: DG.DataFrame) {
         t.rows.removeAt(i, 1, false);
     }
 
-    t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => sequenceCol.get(i));
+    t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => {
+      return (typeColumn.get(i) == 'Duplex') ? chemistryNameCol.get(i) : sequenceCol.get(i);
+    });
 
-    t.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => (i > 2 && typeColumn.get(i) == 'Duplex') ?
-      sequenceCol.get(i) + '; duplex of SS: ' + sequenceCol.get(i - 2) + ' and AS: ' + sequenceCol.get(i - 1) :
-      sequenceCol.get(i),
-    );
+    t.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => {
+      if (typeColumn.get(i) == 'Duplex') {
+        const arr = parseStrandsFromDuplexCell(sequenceCol.get(i));
+        return chemistryNameCol.get(i) + '; duplex of SS: ' + arr[0] + ' and AS: ' + arr[1];
+      }
+      return sequenceCol.get(i);
+    });
 
     const weightsObj: {[code: string]: number} = {};
     for (const synthesizer of Object.keys(map)) {
@@ -172,6 +204,15 @@ export function oligoSdFile(table: DG.DataFrame) {
       weightsObj[key] = value.molecularWeight;
 
     t.columns.addNewFloat(COL_NAMES.CPD_MW).init((i: number) => {
+      if (typeColumn.get(i) == 'Duplex') {
+        const arr = parseStrandsFromDuplexCell(sequenceCol.get(i));
+        return (
+          isValidSequence(arr[0], null).indexOfFirstNotValidChar == -1 &&
+          isValidSequence(arr[1], null).indexOfFirstNotValidChar == -1
+        ) ?
+          molecularWeight(arr[0], weightsObj) + molecularWeight(arr[1], weightsObj) :
+          DG.FLOAT_NULL;
+      }
       return (isValidSequence(sequenceCol.get(i), null).indexOfFirstNotValidChar == -1) ?
         molecularWeight(sequenceCol.get(i), weightsObj) :
         DG.FLOAT_NULL;

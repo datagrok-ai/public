@@ -1,20 +1,28 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject} from 'rxjs';
+import {BehaviorSubject, Subject} from 'rxjs';
 import '../../css/shared-components.css';
+import Validation from '../validation';
 
 export const EXCEL_BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 export class FileInput {
   // events to emit
   public uploadedFile$ = new Subject<File | null>();
-
+  // same event as above but in DG-style
+  public onFileUploaded = new Subject<File | null>();
+  // HTML root of component
   public root = ui.div();
+  // Validation object
+  public validation = new Validation<File>();
 
   private visibleInput = ui.stringInput('Input file', this.initialText, null);
   private hiddenInput = document.createElement('input');
   private icon = ui.iconFA('cloud-upload', () => this.hiddenInput.click());
+
+  private isValid = new BehaviorSubject<boolean>(true);
 
   constructor(
     public initialText = 'Drag-n-drop here',
@@ -23,6 +31,24 @@ export class FileInput {
     public fileType = EXCEL_BLOB_TYPE
   ) {
     this.draw();
+
+    this.isValid.subscribe((isValid) => {
+      if (isValid) {
+        this.visibleInput.input.classList.remove('error');
+        this.visibleInput.input.classList.add('success');
+        const newIcon = ui.iconFA('times', () => this.reset());
+        this.icon.replaceWith(newIcon);
+        this.icon = newIcon;
+      } else {
+        this.visibleInput.input.classList.remove('success');
+        this.visibleInput.input.classList.add('error');
+        const newIcon = ui.iconFA('redo', () => this.hiddenInput.click());
+        this.icon.replaceWith(newIcon);
+        this.icon = newIcon;
+      }
+    });
+
+    this.uploadedFile$.subscribe((file) => this.onFileUploaded.next(file));
 
     if (onValueChanged)
       this.uploadedFile$.subscribe((newValue: any) => onValueChanged(newValue));
@@ -35,36 +61,29 @@ export class FileInput {
       (this.visibleInput.input as HTMLInputElement).readOnly = true;
       this.visibleInput.input.classList.add('default');
 
-      const handleFiles = (files: FileList | null) => {
+      const handleFiles = async (files: FileList | null) => {
         if (!files || !files.length) {
           this.uploadedFile$.next(null);
           return;
         }
 
         if (files.length > 1) {
-          this.visibleInput.input.classList.remove('success');
-          this.visibleInput.input.classList.add('error');
-          const newIcon = ui.iconFA('redo', () => this.hiddenInput.click());
-          this.icon.replaceWith(newIcon);
-          this.icon = newIcon;
+          this.isValid.next(false);
           throw new Error('Please specify single input file');
         }
 
         this.visibleInput.value = files[0].name;
         if (files[0].type !== this.fileType) {
-          this.visibleInput.input.classList.remove('success');
-          this.visibleInput.input.classList.add('error');
-          const newIcon = ui.iconFA('redo', () => this.hiddenInput.click());
-          this.icon.replaceWith(newIcon);
-          this.icon = newIcon;
+          this.isValid.next(false);
           throw new Error('File type is not supported');
         }
 
-        this.visibleInput.input.classList.add('success');
-        const newIcon = ui.iconFA('times', () => this.reset());
-        this.icon.replaceWith(newIcon);
-        this.icon = newIcon;
-        this.uploadedFile$.next(files[0]);
+        this.isValid.next(await this.validation.validate(files[0]));
+
+        if (this.isValid.value)
+          this.uploadedFile$.next(files[0]);
+        else
+          this.uploadedFile$.next(null);
       };
 
       this.visibleInput.root.classList.add('cv-drop-area');
@@ -73,7 +92,7 @@ export class FileInput {
       // hidden input to handle file dialog
 
       this.hiddenInput.type = 'file';
-      this.hiddenInput.addEventListener('change', () => handleFiles(this.hiddenInput.files), false);
+      this.hiddenInput.addEventListener('change', async () => await handleFiles(this.hiddenInput.files), false);
 
       // Prevent default drag behaviors
       ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {

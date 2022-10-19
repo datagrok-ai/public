@@ -1,7 +1,7 @@
-import {AminoacidsPalettes} from './src/aminoacids';
-import {NucleotidesPalettes} from './src/nucleotides';
+import {Aminoacids, AminoacidsPalettes} from './src/aminoacids';
+import {Nucleotides, NucleotidesPalettes} from './src/nucleotides';
 import {SeqPalette, SeqPaletteBase} from './src/seq-palettes';
-import {UnknownSeqPalettes} from './src/unknown';
+import {UnknownSeqPalette, UnknownSeqPalettes} from './src/unknown';
 import {DrawStyle, printLeftOrCentered} from './src/utils/cell-renderer';
 import {FastaFileHandler} from './src/utils/fasta-handler';
 import {
@@ -25,7 +25,7 @@ import {UnitsHandler} from './src/utils/units-handler';
 import {VdRegion, VdRegionType} from './src/vd-regions';
 import {IPhylocanvasGlViewer} from './src/viewers/phylocanvas-gl-viewer';
 import {IVdRegionsViewer} from './src/viewers/vd-regions-viewer';
-import {PositionInfo, PositionMonomerInfo, WebLogo} from './src/viewers/web-logo';
+import {PositionHeight, PositionInfo, PositionMonomerInfo, WebLogoViewer} from './src/viewers/web-logo-viewer';
 
 export {
   ALPHABET,
@@ -43,14 +43,18 @@ export {
   splitAlignedSequences,
   SeqPalette,
   SeqPaletteBase,
+  Aminoacids,
   AminoacidsPalettes,
+  Nucleotides,
   NucleotidesPalettes,
   UnknownSeqPalettes,
+  UnknownSeqPalette,
   pickUpPalette,
   getPaletteByType,
+  PositionHeight,
   PositionInfo,
   PositionMonomerInfo,
-  WebLogo,
+  WebLogoViewer,
   UnitsHandler,
   DrawStyle,
   printLeftOrCentered,

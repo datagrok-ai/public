@@ -8,7 +8,7 @@ import {after, before, category, test, expect, expectObject, delay} from '@datag
 category('WebLogo-positions', () => {
   let tvList: DG.TableView[];
   let dfList: DG.DataFrame[];
-  let currentView: DG.View;
+  let currentView: DG.ViewBase;
 
   const csvDf1 = `seq
 ATC-G-TTGC--
@@ -21,13 +21,13 @@ ATC-G-TTGC--
   before(async () => {
     tvList = [];
     dfList = [];
-    currentView = grok.shell.tv;
+    currentView = grok.shell.v;
   });
 
   after(async () => {
     dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df);});
     tvList.forEach((tv: DG.TableView) => tv.close());
-    currentView = grok.shell.tv;
+    grok.shell.v = currentView;
   });
 
   test('allPositions', async () => {
@@ -40,7 +40,7 @@ ATC-G-TTGC--
     seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
     seqCol.setTag(bio.TAGS.aligned, 'SEQ.MSA');
 
-    const wlViewer: bio.WebLogo = (await df.plot.fromType('WebLogo')) as bio.WebLogo;
+    const wlViewer: bio.WebLogoViewer = (await df.plot.fromType('WebLogo')) as bio.WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
     tvList.push(tv);
@@ -94,8 +94,8 @@ ATC-G-TTGC--
       return i > 2;
     });
     df.filter.fireChanged();
-    const wlViewer: bio.WebLogo = (await df.plot.fromType('WebLogo',
-      {'shrinkEmptyTail': true})) as bio.WebLogo;
+    const wlViewer: bio.WebLogoViewer = (await df.plot.fromType('WebLogo',
+      {'shrinkEmptyTail': true})) as bio.WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
     tvList.push(tv);
@@ -135,8 +135,8 @@ ATC-G-TTGC--
     seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
     seqCol.setTag(bio.TAGS.aligned, 'SEQ.MSA');
 
-    const wlViewer: bio.WebLogo = (await df.plot.fromType('WebLogo',
-      {'skipEmptyPositions': true})) as bio.WebLogo;
+    const wlViewer: bio.WebLogoViewer = (await df.plot.fromType('WebLogo',
+      {'skipEmptyPositions': true})) as bio.WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
     tvList.push(tv);
