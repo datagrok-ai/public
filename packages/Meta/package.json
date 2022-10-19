@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.0.65",
+  "version": "3.0.66",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1233,29 +1233,6 @@
       },
       "category": "Machine Learning"
     },
-    "phylotree-viewer": {
-      "dependencies": {
-        "0.0.3": {
-          "datagrok-api": ">0.94.10"
-        },
-        "0.0.4": {
-          "datagrok-api": ">=0.121.0"
-        },
-        "0.0.5": {
-          "datagrok-api": "^0.121.0"
-        },
-        "0.0.6": {
-          "datagrok-api": "^0.121.0"
-        }
-      },
-      "description": "*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees visualization.",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/PhyloTreeViewer"
-      },
-      "category": "Visualizations"
-    },
     "ketcher": {
       "dependencies": {
         "0.0.29": {
@@ -1945,32 +1922,10 @@
       },
       "category": "Development"
     },
-    "gridextdemo": {
-      "dependencies": {
-        "1.0.0": {
-          "datagrok-api": "^1.0.0"
-        }
-      },
-      "description": "Demos of Grid Extensions",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/datagrok-ai/public.git",
-        "directory": "packages/gridextdemo"
-      }
-    },
     "helm": {
       "dependencies": {
-        "0.0.4": {
-          "datagrok-api": "latest"
-        },
-        "0.0.5": {
-          "datagrok-api": "latest"
-        },
         "1.0.0": {
           "datagrok-api": "^1.4.12"
-        },
-        "1.0.1": {
-          "datagrok-api": "latest"
         },
         "1.0.2": {
           "datagrok-api": "^1.4.12"
