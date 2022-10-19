@@ -1,8 +1,7 @@
 
 import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, delimiter, gcrsCodesWithoutSmiles} from './map';
 import {asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
-  asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, asoGapmersGcrsToNucleotides,
-  asoGapmersGcrsToBioSpring, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
+  asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
   siRnaNucleotideToAxolabsSenseStrand, siRnaNucleotidesToGcrs, siRnaBioSpringToNucleotides,
   siRnaBioSpringToAxolabs, siRnaBioSpringToGcrs, siRnaAxolabsToNucleotides,
   siRnaAxolabsToBioSpring, siRnaAxolabsToGcrs, siRnaGcrsToNucleotides,
@@ -95,7 +94,7 @@ function sortByStringLengthInDescendingOrder(array: string[]): string[] {
 export function isValidSequence(sequence: string, format: string | null): {
   indexOfFirstNotValidChar: number,
   synthesizer: string[] | null,
-  technology: string[] | null
+  // technology: string[] | null
 } {
   const possibleSynthesizers = format == null ?
     getListOfPossibleSynthesizersByFirstMatchedCode(sequence) :
@@ -114,49 +113,51 @@ export function isValidSequence(sequence: string, format: string | null): {
   //     .show();
   // } else if (possibleSynthesizers.length == 0)
   if (possibleSynthesizers.length == 0)
-    return {indexOfFirstNotValidChar: 0, synthesizer: null, technology: null};
+    return {indexOfFirstNotValidChar: 0, synthesizer: null};//, technology: null};
 
-  let outputIndex = 0;
+  const outputIndices = Array(possibleSynthesizers.length).fill(0);
 
   const firstUniqueCharacters = ['r', 'd'];
   const nucleotides = ['A', 'U', 'T', 'C', 'G'];
-
-  possibleSynthesizers.forEach((synthesizer) => {
+  possibleSynthesizers.forEach(function(synthesizer, i) {
     const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer));
-    while (outputIndex < sequence.length) {
-      const matchedCode = codes.find((c) => c == sequence.slice(outputIndex, outputIndex + c.length));
+    while (outputIndices[i] < sequence.length) {
+      const matchedCode = codes.find((c) => c == sequence.slice(outputIndices[i], outputIndices[i] + c.length));
 
       if (matchedCode == null)
         break;
 
       if ( // for mistake pattern 'rAA'
-        outputIndex > 1 &&
-        nucleotides.includes(sequence[outputIndex]) &&
-        firstUniqueCharacters.includes(sequence[outputIndex - 2])
+        outputIndices[i] > 1 &&
+        nucleotides.includes(sequence[outputIndices[i]]) &&
+        firstUniqueCharacters.includes(sequence[outputIndices[i] - 2])
       ) break;
 
       if ( // for mistake pattern 'ArA'
-        firstUniqueCharacters.includes(sequence[outputIndex + 1]) &&
-        nucleotides.includes(sequence[outputIndex])
+        firstUniqueCharacters.includes(sequence[outputIndices[i] + 1]) &&
+        nucleotides.includes(sequence[outputIndices[i]])
       ) {
-        outputIndex++;
+        outputIndices[i]++;
         break;
       }
 
-      outputIndex += matchedCode.length;
+      outputIndices[i] += matchedCode.length;
     }
   });
 
+  const outputIndex = Math.max(...outputIndices);
+  const synthesizer = possibleSynthesizers[outputIndices.indexOf(outputIndex)];
   const indexOfFirstNotValidChar = (outputIndex == sequence.length) ? -1 : outputIndex;
   if (indexOfFirstNotValidChar != -1) {
     return {
       indexOfFirstNotValidChar: indexOfFirstNotValidChar,
-      synthesizer: possibleSynthesizers,
-      technology: null,
+      synthesizer: [synthesizer],
+      // technology: null,
     };
   }
 
-  const possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, possibleSynthesizers[0]);
+  // const possibleTechnologies =
+  //   getListOfPossibleTechnologiesByFirstMatchedCode(sequence, possibleSynthesizers[outputIndex]);
 
   // if (possibleTechnologies.length > 1) {
   //   const technology = ui.choiceInput('Choose technology from list: ', possibleTechnologies[0],
@@ -173,7 +174,7 @@ export function isValidSequence(sequence: string, format: string | null): {
   // if (possibleTechnologies.length == 0)
   //   return {indexOfFirstNotValidChar: 0, synthesizer: [possibleSynthesizers[3]], technology: null};
 
-  outputIndex = 0;
+  // outputIndex = 0;
 
   // possibleTechnologies.forEach((technology: string) => {
   //   const codes = Object.keys(map[possibleSynthesizers[0]][technology]);
@@ -203,8 +204,8 @@ export function isValidSequence(sequence: string, format: string | null): {
 
   return {
     indexOfFirstNotValidChar: indexOfFirstNotValidChar,
-    synthesizer: possibleSynthesizers,
-    technology: [possibleTechnologies[outputIndex]],
+    synthesizer: [synthesizer],
+    // technology: [possibleTechnologies[0]],
   };
 }
 
@@ -248,7 +249,7 @@ function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synth
 }
 
 export function convertSequence(sequence: string, output: {
-  indexOfFirstNotValidChar: number, synthesizer: string[] | null, technology: string[] | null}) {
+  indexOfFirstNotValidChar: number, synthesizer: string[] | null}) {//, technology: string[] | null}) {
   if (output.indexOfFirstNotValidChar != -1) {
     return {
       // type: '',
@@ -264,7 +265,8 @@ export function convertSequence(sequence: string, output: {
       GCRS: asoGapmersNucleotidesToGcrs(sequence),
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.BIOSPRING) && output.technology!.includes(TECHNOLOGIES.ASO_GAPMERS)) {
+  if (output.synthesizer!.includes(SYNTHESIZERS.BIOSPRING)) {
+    // && output.technology!.includes(TECHNOLOGIES.ASO_GAPMERS)) {
     return {
       type: SYNTHESIZERS.BIOSPRING + ' ' + TECHNOLOGIES.ASO_GAPMERS,
       Nucleotides: asoGapmersBioSpringToNucleotides(sequence),
@@ -272,17 +274,19 @@ export function convertSequence(sequence: string, output: {
       GCRS: asoGapmersBioSpringToGcrs(sequence),
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.GCRS) && output.technology!.includes(TECHNOLOGIES.ASO_GAPMERS)) {
+  if (output.synthesizer!.includes(SYNTHESIZERS.GCRS)) { // && output.technology!.includes(TECHNOLOGIES.ASO_GAPMERS)) {
     return {
       type: SYNTHESIZERS.GCRS + ' ' + TECHNOLOGIES.ASO_GAPMERS,
-      Nucleotides: asoGapmersGcrsToNucleotides(sequence),
-      BioSpring: asoGapmersGcrsToBioSpring(sequence),
+      Nucleotides: gcrsToNucleotides(sequence),
+      BioSpring: siRnaGcrsToBioSpring(sequence),
+      Axolabs: siRnaGcrsToAxolabs(sequence),
       Mermade12: gcrsToMermade12(sequence),
       GCRS: sequence,
       LCMS: gcrsToLcms(sequence),
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.RAW_NUCLEOTIDES) && output.technology!.includes(TECHNOLOGIES.RNA)) {
+  if (output.synthesizer!.includes(SYNTHESIZERS.RAW_NUCLEOTIDES)) {
+    // && output.technology!.includes(TECHNOLOGIES.RNA)) {
     return {
       type: SYNTHESIZERS.RAW_NUCLEOTIDES + ' ' + TECHNOLOGIES.RNA,
       Nucleotides: sequence,
@@ -291,7 +295,7 @@ export function convertSequence(sequence: string, output: {
       GCRS: siRnaNucleotidesToGcrs(sequence),
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.BIOSPRING) && output.technology!.includes(TECHNOLOGIES.SI_RNA)) {
+  if (output.synthesizer!.includes(SYNTHESIZERS.BIOSPRING)) { // && output.technology!.includes(TECHNOLOGIES.SI_RNA)) {
     return {
       type: SYNTHESIZERS.BIOSPRING + ' ' + TECHNOLOGIES.SI_RNA,
       Nucleotides: siRnaBioSpringToNucleotides(sequence),
@@ -309,7 +313,7 @@ export function convertSequence(sequence: string, output: {
       GCRS: siRnaAxolabsToGcrs(sequence),
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.GCRS) && output.technology!.includes(TECHNOLOGIES.SI_RNA)) {
+  if (output.synthesizer!.includes(SYNTHESIZERS.GCRS)) { // && output.technology!.includes(TECHNOLOGIES.SI_RNA)) {
     return {
       type: SYNTHESIZERS.GCRS + ' ' + TECHNOLOGIES.SI_RNA,
       Nucleotides: siRnaGcrsToNucleotides(sequence),
