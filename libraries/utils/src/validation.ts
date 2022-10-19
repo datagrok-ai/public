@@ -116,7 +116,7 @@ Please double-check:
 - No extra spaces are in the sheet name
 - Capitalization is the same as in the template
 \n
-${importedWb.worksheets.length > 0 ? `Current columns names are: \`${importedWb.worksheets.map((ws) => ws.name).join('`,`')}\``: `No columns have found.`} 
+${importedWb.worksheets.length > 0 ? `Found sheets: \`${importedWb.worksheets.map((ws) => ws.name).join('`,`')}\``: `No columns have found.`} 
         `
       };
     }
@@ -136,7 +136,7 @@ Please double-check:
 - No extra spaces are in the cell
 - Capitalization is the same as in the template
 \n
-${vals.length > 0 ? `Current columns names are: \`${vals.filter((val) => val !== '').join('`,`')}\``: `No columns have found.`} 
+${vals.length > 0 ? `Found columns: \`${vals.filter((val) => val !== '').join('`,`')}\``: `No columns have found.`} 
         `
       };
     }
