@@ -4,12 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, Subject} from 'rxjs';
 import '../../css/shared-components.css';
+import Validation from '../validation';
 
 export const EXCEL_BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-type ValidationSuccess = {isValid: true };
-type ValidationFailure = {isValid: false, caption: string, content: HTMLElement | string};
-type ValidationResult = ValidationSuccess | ValidationFailure;
-type ValidatingFunc = ((inputFile: File) => Promise<ValidationResult>);
 
 export class FileInput {
   // events to emit
@@ -18,34 +15,13 @@ export class FileInput {
   public onFileUploaded = new Subject<File | null>();
   // HTML root of component
   public root = ui.div();
-  // Validation functions applied on uploaded File
-  public validators: ValidatingFunc[] = [];
+  // Validation object
+  public validation = new Validation<File>();
 
   private visibleInput = ui.stringInput('Input file', this.initialText, null);
   private hiddenInput = document.createElement('input');
   private icon = ui.iconFA('cloud-upload', () => this.hiddenInput.click());
-  private validationHandler = async (file: File) => {
-    const failedValidations = [] as ValidationFailure[];
-    for (const validator of this.validators) {
-      const validationRes = await validator(file);
-      if (!validationRes.isValid)
-        failedValidations.push(validationRes);
-    }
-    if (failedValidations.length == 0) return true;
 
-    const wizard = new DG.Wizard({title: 'Data validation failed'});
-
-    failedValidations.forEach((validation) => {
-      wizard.page({
-        caption: validation.caption,
-        root: (validation.content instanceof HTMLElement ? validation.content : ui.markdown(validation.content)) as HTMLDivElement,
-      });
-    });
-    wizard.onOK(() => {});
-    if (wizard.getButton('CANCEL')) wizard.getButton('CANCEL').style.display = 'none';
-    wizard.show();
-    return false;
-  };
   private isValid = new BehaviorSubject<boolean>(true);
 
   constructor(
@@ -102,7 +78,7 @@ export class FileInput {
           throw new Error('File type is not supported');
         }
 
-        this.isValid.next(await this.validationHandler(files[0]));
+        this.isValid.next(await this.validation.validate(files[0]));
 
         if (this.isValid.value)
           this.uploadedFile$.next(files[0]);
