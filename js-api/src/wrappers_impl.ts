@@ -60,6 +60,8 @@ export function toJs(dart: any, check: boolean = false): any {
   return dart;
 }
 
+const isPlainObject = value => value?.constructor === Object;
+
 /** Extracts a Dart handle from the JavaScript wrapper. See also {@link toJs} */
 export function toDart(x: any): any {
   if (x === undefined || x === null)
@@ -70,6 +72,8 @@ export function toDart(x: any): any {
     return x.toDart();
   if (typeof x.dart !== 'undefined')
     return x.dart;
+  if (isPlainObject(x))
+    return (<any>window).grok_JS_To_Map(x);
   return x;
 }
 

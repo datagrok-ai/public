@@ -283,7 +283,7 @@ export class FuncCall extends Entity {
 
 export function callFuncWithDartParameters<T>(f: (...params: any[]) => T, params: object): T {
   let jsParams = paramsToJs(params);
-  return f.apply(null, jsParams);
+  return toDart(f.apply(null, jsParams));
 }
 
 export class StepEditor extends DartWidget {
