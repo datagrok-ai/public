@@ -48,6 +48,7 @@ import { Attribution, defaults as defaultControls } from 'ol/control';
 //ZIP utilities
 import JSZip from 'jszip';
 import { stopPropagation } from 'ol/events/Event';
+import LayerRenderer from 'ol/renderer/Layer';
 
 export { Coordinate } from 'ol/coordinate';
 
@@ -148,27 +149,35 @@ export class OpenLayers {
   olBaseLayer: BaseLayer | null;
   olMarkersLayer: VectorLayer<VectorSource> | null;
   olMarkersLayerGL: WebGLPts | null;
+  olMarkersSelLayerGL: WebGLPts | null;
   olMarkersSource: VectorSource<OLGeom.Point>;
+  olMarkersSelSource: VectorSource<OLGeom.Point>;
+  olSelectedMarkers: Collection<Feature>; //Feature<OLGeom.Point>[];
 
   useWebGLFlag: boolean = true;
   dragAndDropInteraction: OLInteractions.DragAndDrop;
+  selectInteraction: OLInteractions.Select;
+  dragBox: OLInteractions.DragBox;
+
   //styles>>
   styleVectorLayer: OLStyle.Style;
   styleVectorSelLayer: OLStyle.Style;
   //event handlers map
   //eventsMap = new Map<string, ()=>any>(); //TODO: solve this puzzle
+  onSelectCallback: Function | null = null;
   onClickCallback: Function | null = null;
   onPointermoveCallback: Function | null = null;
   onRefreshCallback: Function | null = null;
   // public labelStatus: HTMLElement | null = null;
 
   markerGLStyle: LiteralStyle;
+  markerGLSelStyle: LiteralStyle;
 
   //properties from viewer
   gisViewer: GisViewer | null = null; //TODO: check do we need it for the properties access or clone prop like below
   markerDefaultSize: number = 3;
-  markerMinSize: number = 1;
-  markerMaxSize: number = 20;
+  markerMinSize: number = 2;
+  markerMaxSize: number = 15;
   markerOpacity: number = 0.8;
   defaultColor: number = 0x1f77b4;
   selectedColor: number = 0xff8c00;
@@ -194,10 +203,13 @@ export class OpenLayers {
     this.olBaseLayer = null;
     this.olMarkersLayer = null;
     this.olMarkersLayerGL = null;
+    this.olMarkersSelLayerGL = null;
     this.markerGLStyle = {};
+    this.markerGLSelStyle = {};
+    this.olSelectedMarkers = new Collection<Feature>;
 
     this.olMarkersSource = new VectorSource<OLGeom.Point>();
-
+    this.olMarkersSelSource = new VectorSource<OLGeom.Point>();
 
     this.styleVectorLayer = new OLStyle.Style({
       fill: new OLStyle.Fill({
@@ -232,6 +244,60 @@ export class OpenLayers {
       ],
     });
     this.dragAndDropInteraction.on('addfeatures', this.dragNdropInteractionFn.bind(this));
+
+    this.selectInteraction = new OLInteractions.Select({
+      condition: OLEventsCondition.click,
+      multi: true,
+      style: this.styleVectorSelLayer,
+      layers: this.selectCondition.bind(this),
+      features: this.olSelectedMarkers,
+    });
+
+    this.selectInteraction.on('select', (e) => {
+      const res: OLCallbackParam = {
+        coord: [0],
+        pixel: [0, 0],
+        features: [],
+      };
+      if (this.olMarkersSelLayerGL) {
+        this.clearLayer(this.olMarkersSelLayerGL);
+        // this.olSelectedMarkers.forEach((ft) => {
+        e.target.getFeatures().forEach((ft: Feature) => {
+          const geom = ft.getGeometry();
+          if (geom?.getType() === 'Point') {
+            res.features.push(ft);
+            if (this.olMarkersSelLayerGL) {
+              const src = this.olMarkersSelLayerGL.getSource();
+              if (src)
+                src.addFeature((ft as Feature<OLGeom.Point>));
+            }
+          }
+        });
+        this.olMarkersSelLayerGL.changed();
+
+        if (this.onSelectCallback)
+          this.onSelectCallback(res);
+      }
+    });
+
+    this.dragBox = new OLInteractions.DragBox({
+      condition: OLEventsCondition.platformModifierKeyOnly,
+    });
+
+    this.dragBox.on('boxstart', () => {
+      this.selectInteraction.getFeatures().clear();
+      // this.olSelectedMarkers.clear();
+    });
+
+    this.dragBox.on('boxend', () => {
+      const extent = this.dragBox.getGeometry().getExtent();
+      const boxFeatures = this.olMarkersSource.getFeaturesInExtent(extent)
+        .filter((ft) => ft?.getGeometry()?.intersectsExtent(extent));
+      //
+      this.selectInteraction.getFeatures().extend(boxFeatures);
+      // this.olSelectedMarkers.extend(boxFeatures);
+    });
+
     OLG = this;
     //end of constructor
   }
@@ -240,6 +306,7 @@ export class OpenLayers {
     this.useWebGLFlag = v;
     this.olMarkersLayer?.setVisible(!this.useWebGLFlag);
     this.olMarkersLayerGL?.setVisible(this.useWebGLFlag);
+    this.olMarkersSelLayerGL?.setVisible(this.useWebGLFlag);
   }
   get useWebGL(): boolean { return this.useWebGLFlag; }
 
@@ -261,6 +328,10 @@ export class OpenLayers {
   }
   get heatmapRadius(): number { return this.heatmapRadiusParam; }
 
+  selectCondition(lr: Layer<Source, LayerRenderer<any>>) {
+    return ((lr === this.olMarkersLayer) || (lr === this.olMarkersLayerGL));
+  }
+
   initMap(targetName: string) {
     if (targetName === '')
       return;
@@ -269,55 +340,57 @@ export class OpenLayers {
       target: targetName,
       controls: defaultControls({attribution: false, rotate: false}),
       view: new OLView({
-        projection: 'EPSG:3857',
-        // projection: 'EPSG:4326',
+        projection: 'EPSG:3857', // projection: 'EPSG:4326',
         center: OLProj.fromLonLat([-77.01072, 38.91333]),
         zoom: 5,
       }),
     });
-    //useGeographic();
 
     //add layers>>
-    this.addNewBingLayer('Bing sat');
+    // this.addNewBingLayer('Bing sat');  //TODO: if we want to add sattelite leyer we have to manage it properly
     this.olBaseLayer = this.addNewOSMLayer('BaseLayer');
-    //prepare markersLayer
-    this.olMarkersLayer = this.addNewVectorLayer('Markers', null, this.genStyleMarker.bind(this), this.olMarkersSource);
-    this.olMarkersLayer.on('postrender', onPostrenderMarkers);
-    this.olMarkersLayer.on('prerender', onPrerenderMarkers);
+
     //prepare markersGLLayer
     this.updateMarkersGLLayer();
 
-    this.olMarkersLayer?.setVisible(!this.useWebGLFlag);
-    this.olMarkersLayerGL?.setVisible(this.useWebGLFlag);
+    //prepare markersLayer
+    if (!this.useWebGL) {
+      this.olMarkersLayer = this.addNewVectorLayer('Markers', null, this.genStyleMarker.bind(this), this.olMarkersSource);
+      this.olMarkersLayer.on('postrender', onPostrenderMarkers);
+      this.olMarkersLayer.on('prerender', onPrerenderMarkers);
+    }
+
+    this.useWebGL = true;
 
     //add base event handlers>>
     this.olMap.on('click', this.onMapClick.bind(this));
     // this.olMap.on('pointermove', this.onMapPointermove);
 
-    const selectInteraction = new OLInteractions.Select({
-      condition: OLEventsCondition.click,
-      style: this.styleVectorSelLayer,
-    });
-
     //add interactions to the map
-    this.olMap.addInteraction(selectInteraction); //select interaction
+    this.olMap.addInteraction(this.selectInteraction); //select interaction
+    this.olMap.addInteraction(this.dragBox); //add box selection interaction
     this.olMap.addInteraction(this.dragAndDropInteraction); //add dragNdrop ability
 
     //<<end of InitMap function
   }
 
-  prepareGLStyle(sizeval?: number, colorval?: string, opaval?: number, symbolval?: string): LiteralStyle {
+  prepareGLStyle(sizeval?: number, colorval?: string | number, opaval?: number, symbolval?: string): LiteralStyle {
     //prepare color value:
     let colorValue: any;
     let sizeValue: any;
+    let minColor = '#0000ff';
+    let maxColor = '#ff0000';
 
-    if (typeof colorval !== 'undefined')
-      colorValue = colorval;
-    else if (this.useColorField === false)
+    if (typeof colorval !== 'undefined') {
+      if (typeof colorval === 'string')
+        colorValue = colorval;
+      else
+        colorValue = toStringColor(colorval, this.markerOpacity);
+    } else if (this.useColorField === false)
       colorValue = toStringColor(this.defaultColor, this.markerOpacity);
     else {
       colorValue = ['interpolate', ['linear'], ['get', 'fieldColor'],
-        this.minFieldColor, '#0000ff', this.maxFieldColor, '#ff0000'];
+        this.minFieldColor, minColor, this.maxFieldColor, maxColor];
       // this.minFieldColor, this.markerMinColor, this.maxFieldColor, this.markerMaxColor];
     }
 
@@ -336,12 +409,8 @@ export class OpenLayers {
       // },
       symbol: {
         symbolType: symbolval? symbolval : 'circle',
-        // size: sizeval? sizeval : this.markerDefaultSize,
-        // size: ['+', ['get', 'fieldSize'], 4],
         size: sizeValue,
         color: colorValue,
-        // color: colorval? colorval : toStringColor(this.defaultColor, this.markerOpacity),
-        // color: [['get', 'fieldColor']],
         opacity: opaval? opaval : this.markerOpacity,
       },
     };
@@ -350,14 +419,34 @@ export class OpenLayers {
 
   updateMarkersGLLayer() {
     this.markerGLStyle = this.prepareGLStyle();
-    const previousLayer = this.olMarkersLayerGL;
-    const src = this.olMarkersLayerGL?.getSource();
+    this.markerGLSelStyle = this.prepareGLStyle(undefined, this.selectedColor, 0.9);
+
+    let previousLayer = this.olMarkersLayerGL;
+    let src = this.olMarkersLayerGL?.getSource();
     this.olMarkersLayerGL = new WebGLPointsLayer({
       source: src ? src : this.olMarkersSource, //new VectorSource<OLGeom.Point>(),
       style: this.markerGLStyle,
     });
     this.olMarkersLayerGL.set('layerName', 'Markers GL');
     this.addLayer(this.olMarkersLayerGL);
+
+    if (previousLayer) {
+      this.olMap.removeLayer(previousLayer);
+      previousLayer.dispose();
+    }
+    //prepare markers selection layer
+    previousLayer = this.olMarkersSelLayerGL;
+    src = this.olMarkersSelLayerGL?.getSource();
+    // const tstft = src?.getFeatures();
+    // alert(tstft?.length);
+    this.olMarkersSelLayerGL = new WebGLPointsLayer({
+      source: src ? src : this.olMarkersSelSource, //new VectorSource<OLGeom.Point>(),
+      style: this.markerGLSelStyle,
+      zIndex: 100,
+    });
+    this.olMarkersSelLayerGL.set('layerName', 'Markers GL Selection');
+    this.addLayer(this.olMarkersSelLayerGL);
+    this.olMarkersSelLayerGL.setZIndex(100);
 
     if (previousLayer) {
       this.olMap.removeLayer(previousLayer);
@@ -582,8 +671,8 @@ export class OpenLayers {
       blur: this.heatmapBlur,
       radius: this.heatmapRadius,
       weight: function(feature: Feature): number {
-        let val = feature.get('fieldValue');
-        // if (val === undefined) val = feature.get('fieldValue');
+        let val = feature.get('fieldSize');
+        // if (val === undefined) val = feature.get('fieldLabel');
         if (typeof(val) !== 'number')
           val = 1;
         return val;
@@ -593,7 +682,7 @@ export class OpenLayers {
       newLayer.set('layerName', layerName);
     if (options)
       newLayer.setProperties(options);
-    // newLayer.changed();
+
     this.addLayer(newLayer);
     return newLayer;
   }
@@ -629,11 +718,12 @@ export class OpenLayers {
 
   //map marker style function>>
   genStyleMarker(feature: FeatureLike, resolution: number): Style {
-    let val = feature.get('fieldValue');
+    let val = feature.get('fieldLabel');
     const size = feature.get('fieldSize');
     const clr = feature.get('fieldColor');
-    // if (typeof val !== 'number')
-    //   val = 1;
+    if (typeof val !== 'number')
+      val = 1;
+
     let stylePt: OLStyle.Style;
     //TODO: try to catch renrering time and change strategy on the flight
     if (resolution < 30000 || renderTime < 1000) {
@@ -713,21 +803,21 @@ export class OpenLayers {
     if (arrFeatures.length > 0) {
       const ft = arrFeatures[0];
       const gisObj = OpenLayers.gisObjFromGeometry(ft);
-      if (gisObj) {
-        setTimeout(() => {
-          // grok.shell.o = DG.SemanticValue.fromValueType(gisObj, gisObj.semtype);
-          grok.shell.o = gisObj;
-          grok.shell.windows.showProperties = true;
-        }, 500);
+      if (gisObj) { //here we can invoke properties panel for our selected object (but comment it for now)
+        // setTimeout(() => {
+        //   // grok.shell.o = DG.SemanticValue.fromValueType(gisObj, gisObj.semtype);
+        //   grok.shell.o = gisObj;
+        //   grok.shell.windows.showProperties = true;
+        // }, 500);
       }
     }
     // evt.stopPropagation(); //stopImmediatePropagation();
     if (this.onClickCallback)
       this.onClickCallback(res);
-    else {
-      if (OLG) //TODO: remove this stuff (use bind)
-        if (OLG.onClickCallback) OLG.onClickCallback(res); //remove this stuff (use bind)
-    }
+    // else {
+    //   if (OLG) //TODO: remove this stuff (use bind)
+    //     if (OLG.onClickCallback) OLG.onClickCallback(res); //remove this stuff (use bind)
+    // }
   }
 
   onMapPointermove(evt: MapBrowserEvent<any>) {
@@ -749,10 +839,8 @@ export class OpenLayers {
   }
 
   //map events management functions>>
-  setMapEventHandler() {
-    // this.olMap.on('click', function (evt) {
-    //   displayFeatureInfo(evt.pixel);
-    // });
+  setMapSelectionCallback(f: Function) {
+    this.onSelectCallback = f;
   }
   setMapClickCallback(f: Function) {
     this.onClickCallback = f;
@@ -778,7 +866,7 @@ export class OpenLayers {
   }
 
   addPointSc(coord: Coordinate, sizeVal: number, colorVal: number,
-    value?: string|number|undefined,
+    labelVal?: string|number|undefined, indexVal?: number|undefined,
     layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
     //
     let aLayer: VectorLayer<VectorSource>|HeatmapLayer|WebGLPts|undefined|null;
@@ -802,7 +890,10 @@ export class OpenLayers {
         }),
       });
       marker.setStyle(style);
-      marker.set('fieldValue', value);
+      marker.set('fieldSize', sizeVal);
+      marker.set('fieldColor', colorVal);
+      marker.set('fieldLabel', labelVal);
+      marker.set('fieldIndex', indexVal);
 
       const src = aLayer.getSource();
       if (src)

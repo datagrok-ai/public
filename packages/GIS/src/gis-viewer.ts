@@ -76,9 +76,10 @@ export class GisViewer extends DG.JsViewer {
   layers = [];
   features: Array<Feature> = [];
   coordinates: Coordinate[] = [];
-  values: Array<string | number> = [];
+  labelValues: Array<string | number> = [];
   colorValues: Array<number> = [];
   sizeValues: Array<number> = [];
+  indexValues: Array<number> = [];
 
   constructor() {
     super();
@@ -97,10 +98,10 @@ export class GisViewer extends DG.JsViewer {
 
     this.markerOpacity = this.float('markerOpacity', 80, {category: 'Markers', editor: 'slider', min: 0, max: 100});
     // this.gradientSizing = this.bool('gradientSizing', false, {category: 'Markers'});
-    this.markerDefaultSize = this.int('markerDefaultSize', 3, {category: 'Markers', min: 1, max: 30});
+    this.markerDefaultSize = this.int('markerDefaultSize', 5, {category: 'Markers', min: 1, max: 30});
     //DONE: there is no need in valitators: Min can be > Max
-    this.markerMinSize = this.int('markerMinSize', 1, {category: 'Markers', min: 1, max: 30});
-    this.markerMaxSize = this.int('markerMaxSize', 10, {category: 'Markers', min: 1, max: 30});
+    this.markerMinSize = this.int('markerMinSize', 2, {category: 'Markers', min: 1, max: 30});
+    this.markerMaxSize = this.int('markerMaxSize', 15, {category: 'Markers', min: 1, max: 30});
 
     // this.gradientColoring = this.bool('gradientColoring', false, {category: 'Markers'});
     this.defaultColor = this.int('defaultColor', 0x1f77b4, {category: 'Markers'});
@@ -177,10 +178,7 @@ export class GisViewer extends DG.JsViewer {
           if (arrFeatures[i].getId())
             newObj.id_ = arrFeatures[i].getId();
           newObj.gisObject = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
-          // if (gisObj) newObj.gisObject = DG.SemanticValue.fromValueType(gisObj, gisObj!.semtype);
-          // if (gisObj) newObj.gisObject = gisObj;
-          // else newObj.gisObjectCol = null;
-          // newObj.gisObject = gisObj;
+
           arrPreparedToDF.push(newObj);
         }
         // const df = DG.DataFrame.fromObjects(arrFeatures);
@@ -347,6 +345,8 @@ export class GisViewer extends DG.JsViewer {
       //setup callbacks
       // this.ol.setMapPointermoveCallback(this.showCoordsInStatus.bind(this));
       // this.ol.setMapClickCallback(this.showCoordsInStatus.bind(this));
+
+      this.ol.setMapSelectionCallback(this.handlerOnMarkerSelect.bind(this));
       this.ol.setMapClickCallback(this.handlerOnMapClick.bind(this));
       this.ol.setMapRefreshCallback(this.updateLayersList);
 
@@ -415,21 +415,46 @@ export class GisViewer extends DG.JsViewer {
     }
   }
 
+  handlerOnMarkerSelect(p: OLCallbackParam): void {
+    if (!p)
+      return;
+    if (p.features) {
+      let idx = 0;
+      this.dataFrame.selection.setAll(false, false);
+      for (let i = 0; i < p.features.length; i++) {
+        idx = p.features[i].get('fieldIndex');
+        //We need to search by element index not by coordinates because coords were tranfrormed while mapping
+        if (idx !== undefined)
+          this.dataFrame.selection.set(idx, true);
+      }
+      if (idx !== undefined)
+        this.dataFrame.currentRowIdx = idx; //set focus on the last selected item
+    }
+  }
+
   handlerOnMapClick(p: OLCallbackParam): void {
     if (this.lblStatusCoords) {
-      if (p) {
-        if (this.isRowFocusing) {
-          // if (p.features) {
-          //   for (let i = 0; i < p.features.length; i++) {
-          //     // this.dataFrame.rows.select((row) => {
-          //     //   ((row[this.latitudeColumnName] == p.coord[0]) && (row[this.longitudeColumnName] == p.coord[1])));
-          //     // }
-          //   }
-          // }
-          // this.dataFrame.rows.select(
-          //   (row) => ((row[this.latitudeColumnName] == p.coord[0]) && (row[this.longitudeColumnName] == p.coord[1])));
+      if (!p)
+        return;
+      if (p.features) {
+/*        let idx = 0;
+        for (let i = 0; i < p.features.length; i++) {
+          idx = p.features[i].get('fieldIndex');
+          //We need to search by element index not by coordinates because coords were tranfrormed while mapping
+          if (idx !== undefined)
+            this.dataFrame.selection.set(idx, true, false);
+
+          // this.dataFrame.rows.select((row) =>
+          //   ((row[this.latitudeColumnName] == gisObj.coordinates[0]) &&
+          //     (row[this.longitudeColumnName] == gisObj.coordinates[1])));
+          // });
         }
+        if (idx !== undefined)
+          this.dataFrame.currentRowIdx = idx; //set focus on the last selected item
+*/
       }
+      // this.dataFrame.rows.select(
+      //   (row) => ((row[this.latitudeColumnName] == p.coord[0]) && (row[this.longitudeColumnName] == p.coord[1])));
     }
   }
 
@@ -439,7 +464,8 @@ export class GisViewer extends DG.JsViewer {
     setTimeout( function(m) {m.updateSize();}, 200, this.ol.olMap);
   }
 
-  //temporary code that multiplyes amount of data to test performance
+  //temporary code that multiplies amount of data to test performance
+  //TODO: remove it after using
   testPerformanceLoader() {
     const colLat = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
     const colLon = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE);
@@ -475,11 +501,22 @@ export class GisViewer extends DG.JsViewer {
       if ((col) && (this.longitudeColumnName === null))
         this.longitudeColumnName = col.name;
     }
-    // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => {
-      this.render();
+
+    //events of dataframe handling
+    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 100).subscribe((_) => {
+      const selcount = this.dataFrame.selection.getSelectedIndexes();
+      if (!this.ol.olMarkersSelLayerGL)
+        return;
+      for (let i = 0; i < selcount.length; i++) {
+        this.ol.addPointSc(this.coordinates[selcount[i]], this.sizeValues[selcount[i]], this.colorValues[selcount[i]],
+          this.labelValues[selcount[i]], selcount[i], this.ol.olMarkersSelLayerGL);
+      }
+      // this.render();
     }));
-    // this.render(true);
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => {
+      this.render(true);
+    }));
+
     this.render(true);
   }
 
@@ -574,13 +611,16 @@ export class GisViewer extends DG.JsViewer {
 
   getCoordinates(): void {
     this.coordinates.length = 0;
-    this.values.length = 0;
+    this.labelValues.length = 0;
     this.sizeValues.length = 0;
     this.colorValues.length = 0;
+    this.indexValues.length = 0;
+
     const indexes = this.dataFrame.filter.getSelectedIndexes();
-    let val: Int32Array | Float32Array | Float64Array | Uint32Array;
+    let labelVal: Int32Array | Float32Array | Float64Array | Uint32Array;
     let colorVal: Int32Array | Float32Array | Float64Array | Uint32Array;
     let sizeVal: Int32Array | Float32Array | Float64Array | Uint32Array;
+    //scaling parameters for color and size (TODO: decide wether we need them here or all scaling will be in styles fn)
     let colorCoeff: number;
     let sizeCoeff: number;
     let colorShift: number;
@@ -592,7 +632,7 @@ export class GisViewer extends DG.JsViewer {
 
     if ((!lat) || (!lon))
       return;
-    // TODO: if (lat.length > lon.length) lat.length = lon.length; ?
+    // TODO: if (lat.length > lon.length) lat.length = lon.length; //do we need it?
 
     //TODO: change it to filling array of objects with all table data (if we need it of course?)
     let colValue: DG.Column | null = null;
@@ -608,10 +648,10 @@ export class GisViewer extends DG.JsViewer {
         colValue = this.dataFrame.getCol(this.labelsColumnName);
     } finally {
       if (colValue)
-        val = colValue.getRawData();
+        labelVal = colValue.getRawData();
       else {
-        val = new Float32Array(lat.length); //create array of length equal to latitude array length
-        val.fill(1);
+        labelVal = new Float32Array(lat.length); //create array of length equal to latitude array length
+        labelVal.fill(1);
       }
       if ((colColor)) {
         colorVal = colColor.getRawData();
@@ -642,7 +682,7 @@ export class GisViewer extends DG.JsViewer {
         if (colSize.max === colSize.min)
           sizeCoeff = 1;
         else
-          sizeCoeff = (this.markerMaxSize - this.markerMinSize) / (colSize.max - colSize.min);
+          sizeCoeff = Math.abs(this.markerMaxSize - this.markerMinSize) / (colSize.max - colSize.min);
         sizeShift = colSize.min;
       } else {
         this.ol.useSizeField = false;
@@ -656,9 +696,10 @@ export class GisViewer extends DG.JsViewer {
       for (let i = 0; i < indexes.length; i++) {
         if ((i < lat.length) && (i < lon.length)) {
           this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
-          this.values.push(val[indexes[i]]);
+          this.labelValues.push(labelVal[indexes[i]]);
           this.sizeValues.push(sizeVal[indexes[i]]);
           this.colorValues.push(colorVal[indexes[i]]);
+          this.indexValues.push(indexes[i]);
           //this is the old way where we scaled values initially>>
           // this.sizeValues.push((sizeVal[indexes[i]] - sizeShift) * sizeCoeff);
           // this.colorValues.push((colorVal[indexes[i]] - colorShift) * colorCoeff);
@@ -668,16 +709,17 @@ export class GisViewer extends DG.JsViewer {
           const coords = OLProj.fromLonLat([lon[indexes[i]], lat[indexes[i]]]);
           this.features.push(new Feature({
             geometry: new Point(coords),
-            fieldValue: val[indexes[i]],
+            fieldLabel: labelVal[indexes[i]],
             fieldSize: (sizeVal[indexes[i]]),
             fieldColor: (colorVal[indexes[i]]),
+            fieldIndex: indexes[i],
             //this is the old way where we scaled values initially>>
             // fieldSize: ((sizeVal[indexes[i]] - sizeShift) * sizeCoeff),
             // fieldColor: toStringColor(((colorVal[indexes[i]] - colorShift) * colorCoeff), this.markerOpacity / 100),
           }));
         }
       }
-    }
+    } //end of finally block
     //<<getCoordinates function
   }
 
@@ -701,8 +743,10 @@ export class GisViewer extends DG.JsViewer {
 
   renderMarkers(): void {
     this.ol.clearLayer(); //TODO: clear exact layer
-    for (let i = 0; i < this.coordinates.length; i++)
-      this.ol.addPointSc(this.coordinates[i], this.sizeValues[i], this.colorValues[i], this.values[i]);
+    for (let i = 0; i < this.coordinates.length; i++) {
+      this.ol.addPointSc(this.coordinates[i], this.sizeValues[i], this.colorValues[i],
+        this.labelValues[i], i);
+    }
   }
 
   renderMarkersBatch(arrFeatures: Array<Feature>): void {
