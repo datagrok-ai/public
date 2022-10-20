@@ -16,7 +16,6 @@ export class RadarViewer extends DG.JsViewer {
   showAllRows: boolean;
   backgroundMinColor: number;
   backgroundMaxColor: number;
-  initialized: boolean;
   showMin: boolean;
   showMax: boolean;
   showValues: boolean;
@@ -35,7 +34,6 @@ export class RadarViewer extends DG.JsViewer {
     this.showMax = this.bool('showMax', true);
     this.showValues = this.bool('showValues', true);
     this.columnNames = this.stringList('columnNames', null);
-    this.initialized = false;
   
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
@@ -52,7 +50,6 @@ export class RadarViewer extends DG.JsViewer {
       this.updateMin();
       this.updateMax();
       this.updateRow();
-      this.initialized = true;
       //@ts-ignore
       this.myChart.on('mouseover', function(params) {
         if (params.componentType === 'series') {
@@ -216,7 +213,7 @@ export class RadarViewer extends DG.JsViewer {
       label: {
         show: true,
         formatter: function (params: any) {
-          return params.value.toFixed(1) as string;
+          return params.value as string;
         }
       }
     };
