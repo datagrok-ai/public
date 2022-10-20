@@ -1027,6 +1027,11 @@ export class DateTimeColumn extends Column<dayjs.Dayjs> {
    * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
    */
   set(i: number, value: dayjs.Dayjs | null, notify: boolean = true): void {
+    // @ts-ignore
+    if (value == '')
+      value = null;
+    if (!(dayjs.isDayjs(value) || value == null))
+      value = dayjs(value);
     api.grok_DateTimeColumn_SetValue(this.dart, i, value?.valueOf(), notify);
   }
 }
