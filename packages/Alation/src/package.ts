@@ -56,7 +56,7 @@ export async function Alation(): Promise<void> {
         await runQuery(queryObj);
         break;
       default:
-        throw new Error(`AlationError: object type parameter is empty (otype)`);
+        throw new Error(`AlationError: wrong object type (otype)`);
     }
     progressIndicator.close();
     return;
