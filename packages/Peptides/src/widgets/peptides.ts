@@ -74,7 +74,7 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
   });
   startBtn.style.alignSelf = 'center';
 
-  const viewer = await df.plot.fromType('WebLogo') as bio.WebLogo;
+  const viewer = await df.plot.fromType('WebLogo') as bio.WebLogoViewer;
   viewer.root.style.setProperty('height', '130px');
   const logoHost = ui.div();
   $(logoHost).empty().append(viewer.root);

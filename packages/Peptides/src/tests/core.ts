@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {category, test, expect, delay} from '@datagrok-libraries/utils/src/test';
-import {UnitsHandler, NOTATION, ALPHABET, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {UnitsHandler, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
+import {NOTATION, ALPHABET, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {_package} from '../package-test';
 import {startAnalysis} from '../widgets/peptides';
@@ -35,7 +36,7 @@ category('Core', () => {
     simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    simpleAlignedSeqCol.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
+    simpleAlignedSeqCol.setTag(TAGS.aligned, ALIGNMENT.SEQ_MSA);
     simpleScaledCol = scaleActivity('-lg', simpleActivityCol);
 
     model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, '-lg');
@@ -55,7 +56,7 @@ category('Core', () => {
     complexAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
     complexAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.UN);
     complexAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
-    complexAlignedSeqCol.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
+    complexAlignedSeqCol.setTag(TAGS.aligned, ALIGNMENT.SEQ_MSA);
     complexAlignedSeqCol.tags[C.TAGS.SEPARATOR] = '/';
     complexScaledCol = scaleActivity('-lg', complexActivityCol);
 
@@ -77,7 +78,7 @@ category('Core', () => {
     simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    simpleAlignedSeqCol.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
+    simpleAlignedSeqCol.setTag(TAGS.aligned, ALIGNMENT.SEQ_MSA);
     simpleScaledCol = scaleActivity('-lg', simpleActivityCol);
 
     model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, '-lg');
