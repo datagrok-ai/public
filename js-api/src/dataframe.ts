@@ -2206,6 +2206,8 @@ export class ColumnDialogHelper {
 
 export class ColumnColorHelper {
   private readonly column: Column;
+  grid: Grid | null = null;
+
   constructor(column: Column) {
     this.column = column;
   }
@@ -2239,6 +2241,19 @@ export class ColumnColorHelper {
       }
       this.column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = JSON.stringify(rules);
     }
+  }
+
+  getColor(i: number): number | null {
+    return this.grid?.cell(this.column.name, i)?.color ?? null;
+  }
+
+  getColors(): Uint32Array {
+    const colors = new Uint32Array(this.column.length);
+    if (this.grid) {
+      for (let i = 0; i < this.column.length; i++)
+        colors[i] = this.getColor(i) ?? 0;
+    }
+    return colors;
   }
 }
 
