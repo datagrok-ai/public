@@ -12,7 +12,12 @@ category('Radar', () => {
   const subs: Subscription[] = [];
   
   before(async () => {
-    df = grok.data.demo.demog(20);
+    df = DG.DataFrame.fromCsv(
+        `USUBJID, SEX, AGE, COUNTRYID
+      s1, F, 48, 12
+      s2, M, 51, 3
+      s3, F, 39, 5
+      s4, M, 43, 89`);
     tv = grok.shell.addTableView(df);
   });
 
@@ -23,7 +28,7 @@ category('Radar', () => {
     expect(viewer.table.id, df.id);
   });
 
-  test('Properties', async () => {
+  test('Standard Properties', async () => {
     const viewer = DG.Viewer.fromType(TYPE, df);
     const standardOptions = {
       min: '5',
@@ -39,6 +44,21 @@ category('Radar', () => {
       columnNames: null,
     };
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
+  });
+
+  test('Changed properties', async () => {
+    const changedViewer = DG.Viewer.fromType(TYPE, df, {
+      min: '10',
+      showTooltip: false,
+      backgroundMaxColor: 0xFF4F616F,
+      showValues: false,
+    });
+
+    const options = await getOptions(changedViewer);
+    expect(options.min, '10');
+    expect(options.showTooltip, false);
+    expect(options.backgroundMaxColor, 0xFF4F616F);
+    expect(options.showValues, false);
   });
 
   after(async () => {
