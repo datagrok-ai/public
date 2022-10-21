@@ -15,9 +15,6 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
   const rowCount = activityScaledCol.length;
   const selectionObject = model.mutationCliffsSelection;
-  let isMutationCliffsSelectionEmpty = true;
-  for (const aarList of Object.values(selectionObject))
-    isMutationCliffsSelectionEmpty &&= aarList.length === 0;
   const clustersObject = model.logoSummarySelection;
   const positions = Object.keys(selectionObject);
   const positionsLen = positions.length;
@@ -145,16 +142,23 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   };
 
   const setDefaultProperties = (input: DG.InputBase): void => {
-    input.enabled = !isMutationCliffsSelectionEmpty;
+    input.enabled = !model.isMutationCliffSelectionEmpty;
     $(input.root).find('.ui-input-editor').css('margin', '0px');
     $(input.root).find('.ui-input-description').css('padding', '0px').css('padding-left', '5px');
   };
 
-  const splitByPosition = ui.boolInput('', model.splitByPos, updateDistributionHost);
+  let defaultValuePos = model.splitByPos;
+  let defaultValueAAR = model.splitByAAR;
+  if (!model.isLogoSummarySelectionEmpty && model.isMutationCliffSelectionEmpty) {
+    defaultValuePos = false;
+    defaultValueAAR = false;
+  }    
+
+  const splitByPosition = ui.boolInput('', defaultValuePos, updateDistributionHost);
   splitByPosition.addPostfix('Split by position');
   setDefaultProperties(splitByPosition);
   $(splitByPosition.root).css('margin-right', '10px');
-  const splitByAAR = ui.boolInput('', model.splitByAAR, updateDistributionHost);
+  const splitByAAR = ui.boolInput('', defaultValueAAR, updateDistributionHost);
   splitByAAR.addPostfix('Split by monomer');
   setDefaultProperties(splitByAAR);
 
