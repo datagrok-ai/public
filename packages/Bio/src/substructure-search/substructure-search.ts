@@ -8,6 +8,14 @@ import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {BitSet} from 'datagrok-api/dg';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 
+export const MONOMER_MOLS_COL = 'monomeric-mols';
+
+const enum MONOMERIC_COL_TAGS{
+  MONOMERIC_MOLS = 'monomeric-mols',
+  LAST_INVALIDATED_VERSION = 'last-invalidated-version',
+  MONOMERS_DICT = 'monomers-dict'
+}
+
 /**
  * Searches substructure in each row of Macromolecule column
  *
@@ -67,29 +75,48 @@ export function substructureSearchDialog(col: DG.Column): void {
     .show();
 }
 
-export function linearSubstructureSearch(substructure: string, col: DG.Column): DG.BitSet {
-  const lowerCaseSubstr = substructure.toLowerCase();
+export function linearSubstructureSearch(substructure: string, col: DG.Column, separator?: string): DG.BitSet {
+  const re = separator ? prepareSubstructureRegex(substructure, separator) : substructure;
   const resultArray = DG.BitSet.create(col.length);
   for (let i = 0; i < col.length; i++) {
-    const macromolecule = col.get(i).toLowerCase();
-    if (macromolecule.indexOf(lowerCaseSubstr) !== -1)
+    const macromolecule = col.get(i);
+    if (macromolecule.match(re) || macromolecule === substructure)
       resultArray.set(i, true, false);
   }
   return resultArray;
 }
 
+function prepareSubstructureRegex(substructure: string, separator: string) {
+  const char = `${separator}`.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
+  const startsWithSep = substructure.charAt(0) === separator;
+  const endsWithSep = substructure.charAt(substructure.length - 1) === separator;
+  const substrWithoutSep = substructure.replace(new RegExp(`^${char}|${char}$`, 'g'), '');
+  const re = startsWithSep ? endsWithSep ? `${char}${substrWithoutSep}${char}` :
+    `${char}${substrWithoutSep}${char}|${char}${substrWithoutSep}$` :
+    endsWithSep ? `^${substrWithoutSep}${char}|${char}${substrWithoutSep}${char}` :
+      `^${substrWithoutSep}${char}|${char}${substrWithoutSep}${char}|${char}${substrWithoutSep}$`;
+  return re;
+}
+
 export async function helmSubstructureSearch(substructure: string, col: DG.Column): Promise<BitSet> {
-  const helmColWithSubstructure = DG.Column.string('helm', col.length + 1)
-    .init((i) => i === col.length ? substructure : col.get(i));
-  helmColWithSubstructure.setTag(DG.TAGS.UNITS, bio.NOTATION.HELM);
-  const monomericMolsCol = await getMonomericMols(helmColWithSubstructure, true);
-  const molSubstructure = monomericMolsCol.get(col.length);
-  const monomericMolsDf = DG.DataFrame.fromColumns([monomericMolsCol]);
-  monomericMolsDf.rows.removeAt(col.length);
+  if (col.version !== col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
+    await invalidateHelmMols(col);
+  const substructureCol = DG.Column.string('helm', 1).init((i) => substructure);
+  substructureCol.setTag(DG.TAGS.UNITS, bio.NOTATION.HELM);
+  const substructureMolsCol =
+    await getMonomericMols(substructureCol, true, col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT]);
   const matchesCol = await grok.functions.call('Chem:searchSubstructure', {
-    molStringsColumn: monomericMolsDf.columns.byIndex(0),
-    molString: molSubstructure,
+    molStringsColumn: col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS],
+    molString: substructureMolsCol.get(0),
     molBlockFailover: '',
   });
   return matchesCol.get(0);
+}
+
+export async function invalidateHelmMols(col: DG.Column) {
+  const monomersDict = new Map();
+  const monomericMolsCol = await getMonomericMols(col, true, monomersDict);
+  col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS] = monomericMolsCol;
+  col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT] = monomersDict;
+  col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION] = col.version;
 }

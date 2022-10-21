@@ -8,17 +8,20 @@ import {getHelmMonomers} from '../package';
 
 const V2000_ATOM_NAME_POS = 31;
 
-export async function getMonomericMols(mcol: DG.Column, pattern: boolean = false): Promise<DG.Column> {
+export async function getMonomericMols(mcol: DG.Column,
+  pattern: boolean = false, monomersDict?: Map<string, string>): Promise<DG.Column> {
   const separator: string = mcol.tags[C.TAGS.SEPARATOR];
   const units: string = mcol.tags[DG.TAGS.UNITS];
   const splitter = bio.getSplitter(units, separator);
   let molV3000Array;
-  const monomersDict = new Map();
+  monomersDict ??= new Map();
   const monomers = units === 'helm' ?
     getHelmMonomers(mcol) : Object.keys(bio.getStats(mcol, 0, splitter).freq).filter((it) => it !== '');
 
-  for (let i = 0; i < monomers.length; i++)
-    monomersDict.set(monomers[i], `${i + 1}`);
+  for (let i = 0; i < monomers.length; i++) {
+    if (!monomersDict.has(monomers[i]))
+      monomersDict.set(monomers[i], `${monomersDict.size + 1}`);
+  }
 
   if (units === 'helm') {
     molV3000Array = await grok.functions.call('HELM:getMolFiles', {col: mcol});
