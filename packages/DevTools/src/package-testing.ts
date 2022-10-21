@@ -4,11 +4,15 @@ import * as DG from 'datagrok-api/dg';
 import {delay, Test, TestContext} from '@datagrok-libraries/utils/src/test';
 import {c, testFunc} from './package';
 import {Menu} from 'datagrok-api/dg';
+import '../css/styles.css';
 
 interface ITestManagerUI {
   testsTree: DG.TreeViewNode;
   runButton: HTMLButtonElement;
   runAllButton: HTMLButtonElement;
+  debugButton: DG.InputBase<boolean>;
+  benchmarkButton: DG.InputBase<boolean>;
+  ribbonPanelDiv: HTMLDivElement;
 }
 
 interface IPackageTests {
@@ -68,10 +72,13 @@ export class TestManager extends DG.ViewBase {
   benchmarkMode = false;
   tree: DG.TreeViewGroup;
   autoTestsCatName = 'Auto Tests';
+  ribbonPanelDiv = undefined;
+  dockLeft;
 
-  constructor(name) {
+  constructor(name, dockLeft?: boolean) {
     super({});
     this.name = name;
+    this.dockLeft = dockLeft;
   }
 
   async init(): Promise<void> {
@@ -85,15 +92,11 @@ export class TestManager extends DG.ViewBase {
     this.testManagerView.name = this.name;
     addView(this.testManagerView);
     this.testManagerView.temp['ignoreCloseAll'] = true;
-    this.testManagerView.setRibbonPanels(
-      [
-        [testUIElements.runButton],
-        [testUIElements.runAllButton],
-        [ui.switchInput('Debug', false, () => {this.debugMode = !this.debugMode;}).root],
-        [ui.switchInput('Benchmark', false, () => {this.benchmarkMode = !this.benchmarkMode;}).root],
-      ],
-    );
+    this.ribbonPanelDiv = testUIElements.ribbonPanelDiv;
+    this.testManagerView.append(testUIElements.ribbonPanelDiv);
     this.testManagerView.append(testUIElements.testsTree.root);
+    if (this.dockLeft)
+      grok.shell.dockManager.dock(this.testManagerView.root, 'left', null, this.name);
     this.runTestsForSelectedNode();
   }
 
@@ -248,6 +251,18 @@ export class TestManager extends DG.ViewBase {
       });
     }
 
+    const {run, runAll, debug, benchmark} = this.createButtons();
+    const {run: run1, runAll: runAll1, debug: debug1, benchmark: benchmark1} = this.createButtons();
+
+    const ribbonPanelDiv = ui.divH([run1, runAll1, debug1.root, benchmark1.root],
+      {style: {minHeight: '45px', maxHeight: '45px'}});
+    ribbonPanelDiv.classList.add('test');
+
+    return {runButton: run, runAllButton: runAll, testsTree: this.tree,
+      debugButton: debug, benchmarkButton: benchmark, ribbonPanelDiv: ribbonPanelDiv};
+  }
+
+  createButtons() {
     const runTestsButton = ui.bigButton('Run', async () => {
       this.runTestsForSelectedNode();
     });
@@ -260,7 +275,10 @@ export class TestManager extends DG.ViewBase {
       }
     });
 
-    return {runButton: runTestsButton, runAllButton: runAllButton, testsTree: this.tree};
+    const debugButton = ui.switchInput('Debug', false, () => {this.debugMode = !this.debugMode;});
+    const benchmarkButton = ui.switchInput('Benchmark', false, () => {this.benchmarkMode = !this.benchmarkMode;});
+
+    return {run: runTestsButton, runAll: runAllButton, debug: debugButton, benchmark: benchmarkButton};
   }
 
   async runTestsForSelectedNode() {
@@ -415,7 +433,6 @@ export class TestManager extends DG.ViewBase {
     grok.shell.closeAll();
     setTimeout(() => {
       grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType);
-      grok.shell.v = this.testManagerView;
     }, 30);
   }
 

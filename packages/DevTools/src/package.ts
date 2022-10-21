@@ -72,7 +72,7 @@ export function _IconTool(): void {
 //tags: app
 export async function testManager(): Promise<void> {
   c = grok.functions.getCurrentCall();
-  const testManager = new TestManager('Test Manager');
+  const testManager = new TestManager('Test Manager', true);
   await testManager.init();
 }
 
