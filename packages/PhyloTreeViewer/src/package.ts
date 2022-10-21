@@ -8,10 +8,12 @@ import {PhyloTreeViewer} from './tree-viewer';
 import {PhylocanvasGlViewer} from './viewers/phylocanvas-gl-viewer';
 import {PhylocanvasGlViewerApp} from './apps/phylocanvas-gl-viewer-app';
 import {GridWithTreeViewer} from './viewers/grid-with-tree-viewer';
-import {GridWithTreeViewerApp} from './apps/grid-with-tree-viewer-app';
+import {GridWithTreeApp} from './apps/grid-with-tree-app';
+import {injectTreeToGridUI} from './viewers/inject-tree-to-grid';
 
 
 export const _package = new DG.Package();
+
 
 //name: newickToDf
 //input: string newick
@@ -47,7 +49,7 @@ export function gridWithTreeViewer(): GridWithTreeViewer {
 }
 
 
-//tags: fileViewer, fileViewer-nwk
+//tags: fileViewer, fileViewer-nwk, fileViewer-newick
 //input: file file
 //output: view preview
 export async function nwkTreeViewer(file: DG.FileInfo) {
@@ -88,19 +90,45 @@ export async function phylocanvasGlViewerApp() {
   }
 }
 
-//name: GridWithTreeViewer
+//name: GridWithTree
 //tags: app
-export async function gridWithTreeViewerApp() {
+export async function gridWithTreeApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('open GridWithTreeViewer app');
   try {
-    const app = new GridWithTreeViewerApp();
+    const app = new GridWithTreeApp();
     await app.init();
   } catch (err: unknown) {
     const msg: string = 'PhyloTreeViewer gridWithTreeViewerApp() error: ' +
       `${err instanceof Error ? err.message : (err as Object).toString()}`;
     grok.shell.error(msg);
-    console.error(msg);
+    //@ts-ignore
+    console.error(err);
+    // if ('stack' in err)
+    //   console.error(err['stack']);
   } finally {
     pi.close();
   }
+}
+
+//name: importNwk
+//description: Opens Newick file
+//tags: file-handler
+//meta.ext: nwk, newick
+//input: string fileContent
+//output: list tables
+export async function importNewick(fileContent: string): Promise<DG.DataFrame[]> {
+  const df: DG.DataFrame = newickToDf(fileContent, '');
+
+  const app = new PhylocanvasGlViewerApp();
+  await app.init(df);
+
+  return [];
+}
+
+//name: injectTree
+//description: Opens Newick file
+//input: viewer grid
+//input: string newickText
+export async function injectTreeToGrid(grid: DG.Grid, newickText: string) {
+  injectTreeToGridUI(grid, newickText);
 }

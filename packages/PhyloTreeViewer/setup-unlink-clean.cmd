@@ -7,7 +7,7 @@ set dirs=^
 \..\..\libraries\gridext\ ^
 \
 
-call npm uninstall -g datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio
+call npm uninstall -g datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio @datagrok-libraries/gridext
 
 for %%p in (%dirs%) do cd %package_dir%\%%p & rmdir /s /q node_modules
 for %%p in (%dirs%) do cd %package_dir%\%%p & rmdir /s /q dist

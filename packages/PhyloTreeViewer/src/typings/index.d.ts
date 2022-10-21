@@ -1,12 +1,10 @@
-declare module 'logojs-react' {
-  function embedProteinLogo(div: HTMLElement, props: { [propName: string]: any });
-}
-
 declare module '@phylocanvas/phylocanvas.gl' {
   import {Deck} from '@deck.gl/core/typed';
 
   class PhylocanvasGL {
     get deck(): Deck;
+
+    get view(): HTMLDivElement;
 
     constructor(element: HTMLElement, props: { [propName: string]: any });
 
@@ -15,21 +13,23 @@ declare module '@phylocanvas/phylocanvas.gl' {
     selectNode: (nodeOrId: any, append: boolean = false) => void;
 
     destroy(): void;
-  }
 
-  const TreeTypes;
-  const Shapes: { [key: string]: string};
-
-  export interface NodeType {
-    name: string;
-    children: NodeType[];
-    branch_length: number;
+    getBranchScale(...arguments): number;
   }
 
   module Newick {
     function parse_newick(newick: string): NodeType;
   }
 }
+
+// declare module '@phylocanvas/phylocanvas.gl/utils/memoise' {
+//   function memoise(...arguments): CallableFunction;
+// }
+
+declare module '@phylocanvas/phylocanvas.gl/utils/zoom-to-scale' {
+  function zoomToScale(zoom: number): number;
+}
+
 
 declare module 'phylotree' {
   export interface PhylotreeNode {
