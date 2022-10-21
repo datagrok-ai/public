@@ -53,10 +53,10 @@ export class SARViewerBase extends DG.JsViewer {
 
   detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
 
-  get state(): string {
-    return this.dataFrame.getTag(C.TAGS.SAR_MODE) ?? '10';
+  get isMutationCliffsMode(): string {
+    return this.dataFrame.getTag(C.TAGS.SAR_MODE) ?? '1';
   }
-  set state(s: string) {
+  set isMutationCliffsMode(s: string) {
     this.dataFrame.setTag(C.TAGS.SAR_MODE, s);
   }
 
@@ -67,22 +67,24 @@ export class SARViewerBase extends DG.JsViewer {
       $(this.root).empty();
       let switchHost = ui.div();
       if (this.name == 'MC') {
-        const mutationCliffsMode = ui.boolInput('', this.state[0] === '1', () => {
+        const mutationCliffsMode = ui.boolInput('', this.isMutationCliffsMode === '1', () => {
           if (this.isModeChanging)
             return;
           this.isModeChanging = true;
           invariantMapMode.value = !invariantMapMode.value;
+          this.isMutationCliffsMode = '1';
           this.isModeChanging = false;
           this._titleHost.innerText = 'Mutation Cliffs';
           this.model.isInvariantMap = false;
           this.viewerGrid.invalidate();
         });
         mutationCliffsMode.addPostfix('Mutation Cliffs');
-        const invariantMapMode = ui.boolInput('', this.state[1] === '1', () => {
+        const invariantMapMode = ui.boolInput('', this.isMutationCliffsMode === '0', () => {
           if (this.isModeChanging)
             return;
           this.isModeChanging = true;
           mutationCliffsMode.value = !mutationCliffsMode.value;
+          this.isMutationCliffsMode = '0';
           this.isModeChanging = false;
           this._titleHost.innerText = 'Invariant Map';
           this.model.isInvariantMap = true;
