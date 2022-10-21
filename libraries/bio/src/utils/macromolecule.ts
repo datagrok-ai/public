@@ -58,7 +58,7 @@ export function getStats(seqCol: DG.Column, minLength: number, splitter: Splitte
     else if (mSeq.length !== firstLength)
       sameLength = false;
 
-    if (mSeq.length > minLength) {
+    if (mSeq.length >= minLength) {
       for (const m of mSeq) {
         if (!(m in freq))
           freq[m] = 0;
