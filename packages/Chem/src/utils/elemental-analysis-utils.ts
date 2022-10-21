@@ -39,3 +39,10 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
     return [elements, invalid];
   }
 
+/** Check that packages are installed */
+export function checkPackage(packageName: string, functionName: string) : boolean {
+  const funcList: DG.Func[] = DG.Func.find({package: packageName, name: functionName});
+  console.debug(`${packageName}: ${functionName} funcList.length = ${funcList.length}`);
+  return funcList.length === 1 ? true : false;
+}
+

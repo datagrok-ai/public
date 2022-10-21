@@ -36,7 +36,7 @@ import { getActivityCliffs }  from '@datagrok-libraries/ml/src/viewers/activity-
 import { removeEmptyStringRows } from '@datagrok-libraries/utils/src/dataframe-utils';
 import { checkForStructuralAlerts } from './panels/structural-alerts';
 import { createPropPanelElement, createTooltipElement } from './analysis/activity-cliffs';
-import { getAtomsColumn } from './utils/elemental-analysis-utils';
+import { getAtomsColumn, checkPackage } from './utils/elemental-analysis-utils';
 import { elementsTable } from './constants';
 import { getSimilaritiesMarix } from './utils/similarity-utils';
 import { molToMolblock } from './utils/convert-notation-utils'
@@ -376,16 +376,26 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   let view = grok.shell.addTableView(table);
 
   if (radarView) {
-    let radarViewer = DG.Viewer.fromType('RadarViewer', table, {
-      columnNames: columnNames,  
-    });
-    view.addViewer(radarViewer);
+    const packageExists = checkPackage('Charts', 'radarViewerDemo');
+    if (packageExists) {
+      let radarViewer = DG.Viewer.fromType('RadarViewer', table, {
+        columnNames: columnNames,  
+      });
+      view.addViewer(radarViewer);
+    } else {
+      grok.shell.warning("Charts package is not installed");
+    }
   }
 
   if (radarGrid) {
-    let gc = view.grid.columns.add({gridColumnName: 'radar', cellType: 'radar'});
-    gc.settings = {columnNames: Array.from(elements.keys())};
-    gc.width = 300;
+    const packageExists = checkPackage('PowerGrid', 'radarCellRenderer');
+    if (packageExists) {
+      let gc = view.grid.columns.add({gridColumnName: 'elementsRadar', cellType: 'radar'});
+      gc.settings = {columnNames: Array.from(elements.keys())};
+      gc.width = 300;
+    } else {
+      grok.shell.warning("PowerGrid package is not installed");
+    }
   }
 }
 
