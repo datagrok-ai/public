@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {newickToDf} from '../utils';
-import {Shapes} from '@phylocanvas/phylocanvas.gl';
+import {Shapes} from '@datagrok-libraries/bio/src/consts';
 import {PhylocanvasGlViewer, TreeTypesNames} from './phylocanvas-gl-viewer';
 import {DOCK_TYPE} from 'datagrok-api/dg';
 import {Unsubscribable} from 'rxjs';
@@ -34,8 +34,8 @@ export class GridWithTreeViewer extends DG.JsViewer {
 
     this.textDiv = ui.div('some text', {style: {backgroundColor: 'window'}});
 
-    this.leftDiv = ui.div([], {style: {backgroundColor: '#E0FFE0'}});
-    this.rightDiv = ui.div([], {style: {backgroundColor: '#FFE0E0', overflow: 'hidden'}});
+    this.leftDiv = ui.div([], {style: {backgroundColor: '#F0FFF0'}});
+    this.rightDiv = ui.div([], {style: {backgroundColor: '#FFF0F0', overflow: 'hidden'}});
     this.divH = ui.splitH([this.leftDiv, this.rightDiv], {}, true);
 
     this.root.append(this.divH);
@@ -128,21 +128,26 @@ export class GridWithTreeViewer extends DG.JsViewer {
       this.grid.root.style.height = '100%';
 
       this.viewSubs.push(this.grid.onRowsResized.subscribe((value: any) => {
+        console.debug('PhyloTreeViewer: GridWithTreeViewer.buildView/grid.onRowsResized()');
         this.updateTree();
       }));
     }
 
     if (!this.tree) {
       this.tree = await this.nwkDf.plot.fromType('PhylocanvasGl', {
-        interactive: true,
+        interactive: false,
         alignLabels: true,
         showLabels: true,
         showLeafLabels: true,
         nodeSize: 1,
-        padding: 0,
+        padding: 10,
         treeToCanvasRatio: 1,
       }) as PhylocanvasGlViewer;
       this.leftDiv.append(this.tree.root, this.textDiv);
+
+      this.tree.root.style.position = 'absolute';
+      this.tree.root.style.top = `${this.grid.colHeaderHeight}px`;
+      this.tree.root.style.border = 'solid 1px green';
     }
 
     // const styles: { [nodeName: string]: { [prop: string]: any } } = {};
@@ -205,8 +210,8 @@ export class GridWithTreeViewer extends DG.JsViewer {
     const leafCount = this.nwkDf.filter.trueCount;
 
     this.tree.root.style.height = `${rowHeight * (leafCount)}px`;
+    this.tree.root.style.top = `${this.grid.colHeaderHeight}px`;
 
     let k = 11;
-
   }
 }

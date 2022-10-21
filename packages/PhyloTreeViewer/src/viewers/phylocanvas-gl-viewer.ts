@@ -1,11 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 import * as rxjs from 'rxjs';
-import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
+import {TreeTypes, Shapes} from '@datagrok-libraries/bio/src/consts';
+import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
 import {TREE_TAGS} from '../consts';
 import {Unsubscribable} from 'rxjs';
+import $ from 'cash-dom';
+
+
 // // import {TreeAnalyzer, PhylocanvasTreeNode, getVId} from './utils/tree-stats';
 // import {Subscription, Unsubscribable} from 'rxjs';
 
@@ -55,7 +60,9 @@ const TreeTypesTypes: { [streeType: string]: string } = {
 
 type StylesType = { [nodeName: string]: { [prop: string]: any } };
 
-export class PhylocanvasGlViewer extends DG.JsViewer {
+export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvasGlViewer {
+  private viewed: boolean = false;
+
   alignLabels: boolean;
 
   treeType: string;
@@ -101,6 +108,8 @@ export class PhylocanvasGlViewer extends DG.JsViewer {
 //
   treeDiv: HTMLDivElement | null;
   phylocanvasViewer: PhylocanvasGL | null;
+  /** Container to store prop values while phylocanvasViewer is not created yet */
+  phylocanvasProps: { [p: string]: any } | null = {};
 
   private viewSubs: Unsubscribable[] = [];
 
@@ -155,11 +164,47 @@ export class PhylocanvasGlViewer extends DG.JsViewer {
       ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
   }
 
-  public async init() {
-    // await this.buildView();
-    // .catch((ex) => {
-    //   console.error(`TreeBrowser.init() > buildView() error:\n${ex ? ex.toString() : 'none'}`);
-    // });
+  // It breaks creating viewer with DataFrame.plot.fromType(...)
+  // public override get dataFrame(): DG.DataFrame {
+  //   throw new Error('Not supported while onTableAttached() problem');
+  // }
+  //
+  // public override set dataFrame(value: DG.DataFrame) {
+  //   throw new Error('Not supported while onTableAttached() problem');
+  // }
+
+  private _nwkDf: DG.DataFrame;
+
+  public get nwkDf(): DG.DataFrame {
+    return this._nwkDf;
+  }
+
+  public set nwkDf(value: DG.DataFrame) {
+    console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onTableAttached() ' +
+      `this.dataFrame = ${!this.nwkDf ? 'null' : 'value'} )`);
+
+    if (this.viewed) {
+      this.destroyView();
+      this.viewed = false;
+    }
+
+    this._nwkDf = value;
+
+    this.newick = this.nwkDf.getTag(TREE_TAGS.NEWICK);
+    if (this.newick) {
+      this.parsedNewick = JSON.parse(this.nwkDf.getTag('.newickJson')!);
+      //this.nodeIdColumn = this.dataFrame.getCol('id');
+      this.nodeNameColumn = this.nwkDf.getCol('node');
+      this.parentNameColumn = this.nwkDf.getCol('parent');
+    }
+    // else {
+    //   this.newickCol = this.dataFrame.columns.bySemType('newick');
+    // }
+
+    if (!this.viewed) {
+      this.buildView();
+      this.viewed = true;
+    }
   }
 
 //   /**
@@ -183,7 +228,6 @@ export class PhylocanvasGlViewer extends DG.JsViewer {
     this.calcSize();
   }
 
-
   calcSize(): void {
     if (!this.phylocanvasViewer)
       return;
@@ -191,7 +235,7 @@ export class PhylocanvasGlViewer extends DG.JsViewer {
     // this.treeDiv.innerText = `${this.root.clientWidth} x ${this.root.clientHeight}`;
     const cw: number = this.root.clientWidth;
     const ch: number = this.root.clientHeight;
-    console.debug(`PhylocanvasGlViewer: TreeBrowser.calcSize( ${cw.toString()} x ${ch.toString()} )`);
+    console.debug(`PhyloTreeViewer: PhylocanvasGlViewer.calcSize( ${cw.toString()} x ${ch.toString()} )`);
 
     const width = this.root.clientWidth;
     const height = this.root.clientHeight;
@@ -203,12 +247,15 @@ export class PhylocanvasGlViewer extends DG.JsViewer {
     }
   }
 
-  private async destroyView() {
+  private destroyView() {
+    console.debug('PhyloTreeViewer: PhylocanvasGlViewer.destroyView() ');
+
     this.viewSubs.forEach((s: Unsubscribable) => { s.unsubscribe(); });
 
     if (this.phylocanvasViewer) {
-      this.phylocanvasViewer!.destroy();
+      this.phylocanvasViewer.destroy();
       this.phylocanvasViewer = null;
+      this.phylocanvasProps = {};
 
       this.styles = null;
     }
@@ -219,7 +266,9 @@ export class PhylocanvasGlViewer extends DG.JsViewer {
     }
   }
 
-  private async buildView() {
+  private buildView() {
+    console.debug('PhyloTreeViewer: PhylocanvasGlViewer.buildView() ');
+
     //const color: string = `#bbff${Math.ceil(128 + Math.random() * 127).toString(16)}`;
     if (!this.treeDiv) {
       this.treeDiv = ui.div([], {
@@ -235,22 +284,26 @@ export class PhylocanvasGlViewer extends DG.JsViewer {
 
     if (!this.phylocanvasViewer) {
       const props: { [p: string]: any } = {
-        interactive: this.interactive,
-        showLabels: this.showLabels,
-        showLeafLabels: this.showLeafLabels,
-        nodeShape: this.nodeShape,
-        fontFamily: this.fontFamily,
-        fontSize: this.fontSize,
-        nodeSize: this.nodeSize,
-        size: this.treeDiv.getBoundingClientRect(),
+        // interactive: this.interactive,
+        // showLabels: this.showLabels,
+        // showLeafLabels: this.showLeafLabels,
+        // nodeShape: this.nodeShape,
+        // fontFamily: this.fontFamily,
+        // fontSize: this.fontSize,
+        // nodeSize: this.nodeSize,
+        // size: this.treeDiv.getBoundingClientRect(),
         source: this.newick,
-        type: TreeTypesTypes[this.type],
+        // type: TreeTypesTypes[this.type],
       };
-      if (this.styles)
-        props['styles'] = this.styles;
+      // if (this.styles)
+      //   props['styles'] = this.styles;
+      Object.assign(props, this.phylocanvasProps);
+      this.phylocanvasProps = null;
       this.phylocanvasViewer = new PhylocanvasGL(this.treeDiv, props);
       this.phylocanvasViewer.deck.setProps({useDevicePixels: true});
       this.calcSize();
+      let k = 11;
+
 
       // this.subs.push(
       //   rxjs.fromEvent<MouseEvent>(this.phylocanvasViewer.deck.canvas!, 'mousedown').subscribe((args: MouseEvent) => {
@@ -263,26 +316,40 @@ export class PhylocanvasGlViewer extends DG.JsViewer {
     // this._viewSubs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe((_) => this.render(false)));
   }
 
-  override async onTableAttached() {
-    console.debug(`PhyloTreeViewer: PhylocanvasGlViewer.onTableAttached( dataFrame = ${!this.dataFrame ? 'null' : 'value'} )`);
-    window.setTimeout(async () => {
-      await this.destroyView();
+  override onTableAttached() {
+    console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onTableAttached() ' +
+      `this.dataFrame = ${!this.nwkDf ? 'null' : 'value'} )`);
 
-      this.newick = this.dataFrame.getTag(TREE_TAGS.NEWICK);
-      if (this.newick) {
-        this.parsedNewick = JSON.parse(this.dataFrame.getTag('.newickJson')!);
-        //this.nodeIdColumn = this.dataFrame.getCol('id');
-        this.nodeNameColumn = this.dataFrame.getCol('node');
-        this.parentNameColumn = this.dataFrame.getCol('parent');
+    if (this.viewed) {
+      this.destroyView();
+      this.viewed = false;
+    }
 
-        // this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
-      }
-      // else {
-      //   this.newickCol = this.dataFrame.columns.bySemType('newick');
-      // }
+    super.onTableAttached();
+    this.nwkDf = this.dataFrame;
+    this.newick = this.nwkDf.getTag(TREE_TAGS.NEWICK);
+    if (this.newick) {
+      this.parsedNewick = JSON.parse(this.nwkDf.getTag('.newickJson')!);
+      //this.nodeIdColumn = this.dataFrame.getCol('id');
+      this.nodeNameColumn = this.nwkDf.getCol('node');
+      this.parentNameColumn = this.nwkDf.getCol('parent');
+    }
+    // else {
+    //   this.newickCol = this.dataFrame.columns.bySemType('newick');
+    // }
 
-      await this.buildView();
-    }, 0 /* next event cycle */);
+    if (!this.viewed) {
+      this.buildView();
+      this.viewed = true;
+    }
+  }
+
+  override detach() {
+    if (this.viewed) {
+      this.destroyView();
+      this.viewed = false;
+    }
+    super.detach();
   }
 
   override onPropertyChanged(property: DG.Property | null) {
@@ -293,70 +360,75 @@ export class PhylocanvasGlViewer extends DG.JsViewer {
       return;
     }
 
-    if (this.phylocanvasViewer) {
-      switch (property.name) {
-      case 'treeType':
-        const treeTypeValue = TreeTypesTypes[this.treeType];
-        this.phylocanvasViewer.setProps({type: treeTypeValue});
-        break;
+    const setProps = (props: { [p: string]: any }) => {
+      if (this.phylocanvasViewer)
+        this.phylocanvasViewer.setProps(props);
+      else
+        Object.assign(this.phylocanvasProps!, props);
+    };
 
-      case 'nodeShape':
-        const nodeShapeValue: string = Shapes[this.nodeShape];
-        this.phylocanvasViewer.setProps({nodeShape: nodeShapeValue});
-        break;
+    switch (property.name) {
+    case 'treeType':
+      const treeTypeValue = TreeTypesTypes[this.treeType];
+      setProps({type: treeTypeValue});
+      break;
 
-      case 'strokeColor':
-        const strokeColorValue: string = `#${(this.strokeColor & 0xFFFFFF).toString(16).padStart(6, '0')}`;
-        this.phylocanvasViewer.setProps({strokeColour: strokeColorValue});
-        console.debug('PhyloTreeView: PhylocanvasGlViewer.onPropertyChanged() ' +
-          `${property.name} = ${strokeColorValue} .`);
-        break;
+    case 'nodeShape':
+      const nodeShapeValue: string = Shapes[this.nodeShape];
+      setProps({nodeShape: nodeShapeValue});
+      break;
 
-      case 'fillColor':
-        const fillColorValue: string = `#${(this.fillColor & 0x00FFFFFF).toString(16).padStart(6, '0')}`;
-        this.phylocanvasViewer.setProps({fillColour: fillColorValue});
-        console.debug('PhyloTreeView: PhylocanvasGlViewer.onPropertyChanged() ' +
-          `${property.name} = ${fillColorValue} .`);
-        break;
+    case 'strokeColor':
+      const strokeColorValue: string = `#${(this.strokeColor & 0xFFFFFF).toString(16).padStart(6, '0')}`;
+      setProps({strokeColour: strokeColorValue});
+      console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onPropertyChanged() ' +
+        `${property.name} = ${strokeColorValue} .`);
+      break;
 
-      case 'highlightColor':
-        const highlightColorValue = `#${(this.highlightColor & 0xFFFFFF).toString(16).padStart(6, '0')}`;
-        this.phylocanvasViewer.setProps({highlightColour: highlightColorValue});
-        console.debug('PhyloTreeView: PhylocanvasGlViewer.onPropertyChanged() ' +
-          `${property.name} = ${highlightColorValue} .`);
-        break;
+    case 'fillColor':
+      const fillColorValue: string = `#${(this.fillColor & 0x00FFFFFF).toString(16).padStart(6, '0')}`;
+      setProps({fillColour: fillColorValue});
+      console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onPropertyChanged() ' +
+        `${property.name} = ${fillColorValue} .`);
+      break;
 
-      case 'lineWidth':
-      case 'nodeSize':
-      case 'showShapes':
-      case 'haloRadius':
-      case 'haloWidth':
-      case 'branchZoom':
-      case 'showShapeBorders':
-      case 'shapeBorderWidth':
-      case 'shapeBorderAlpha':
-      case 'showBranchLengths':
-      case 'showEdges':
-      case 'showLabels':
-      case 'showLeafLabels':
-      case 'showInternalLabels':
-      case 'fontFamily':
-      case 'fontSize':
-      case 'padding':
-      case 'treeToCanvasRatio':
-      case 'interactive':
-      case 'stepZoom':
-      case 'zoom':
-        const propValue: any = this[property.name];
-        this.phylocanvasViewer.setProps({[property.name]: propValue});
-        console.debug('PhyloTreeView: PhylocanvasGlViewer.onPropertyChanged() ' +
-          `${property.name} = ${propValue.toString()} .`);
-        break;
+    case 'highlightColor':
+      const highlightColorValue = `#${(this.highlightColor & 0xFFFFFF).toString(16).padStart(6, '0')}`;
+      setProps({highlightColour: highlightColorValue});
+      console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onPropertyChanged() ' +
+        `${property.name} = ${highlightColorValue} .`);
+      break;
 
-      default:
-        console.warn('PhyloTreeView: PhylocanvasGlViewer.onPropertyChanged() ' +
-          `Unexpected property '${property.name}'.`);
-      }
+    case 'lineWidth':
+    case 'nodeSize':
+    case 'showShapes':
+    case 'haloRadius':
+    case 'haloWidth':
+    case 'branchZoom':
+    case 'showShapeBorders':
+    case 'shapeBorderWidth':
+    case 'shapeBorderAlpha':
+    case 'showBranchLengths':
+    case 'showEdges':
+    case 'showLabels':
+    case 'showLeafLabels':
+    case 'showInternalLabels':
+    case 'fontFamily':
+    case 'fontSize':
+    case 'padding':
+    case 'treeToCanvasRatio':
+    case 'interactive':
+    case 'stepZoom':
+    case 'zoom':
+      const propValue: any = this[property.name];
+      setProps({[property.name]: propValue});
+      console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onPropertyChanged() ' +
+        `${property.name} = ${propValue.toString()} .`);
+      break;
+
+    default:
+      console.warn('PhyloTreeViewer: PhylocanvasGlViewer.onPropertyChanged() ' +
+        `Unexpected property '${property.name}'.`);
     }
   }
 

@@ -3,14 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {newickToDf} from '../utils';
-import {Shapes} from '@phylocanvas/phylocanvas.gl';
+import {Shapes} from '@datagrok-libraries/bio/src/consts';
 import {PhylocanvasGlViewer, TreeTypesNames} from '../viewers/phylocanvas-gl-viewer';
 import {DOCK_TYPE} from 'datagrok-api/dg';
 import {Unsubscribable} from 'rxjs';
 
 
 export class PhylocanvasGlViewerApp {
-
+  private viewed: boolean = false;
   private tv!: DG.TableView;
 
   // private ptv!: DG.Viewer; // PhyloTreeViewer
@@ -27,25 +27,32 @@ export class PhylocanvasGlViewerApp {
 
   }
 
-  async init(): Promise<void> {
-
-    await this.loadData();
+  async init(df?: DG.DataFrame): Promise<void> {
+    await this.loadData(df);
   }
 
-  async loadData(): Promise<void> {
-    const treeData: string = await grok.dapi.files.readAsText('System:AppData/PhyloTreeViewer/data/tree95.nwk');
-
-    const df: DG.DataFrame = newickToDf(treeData, 'tree95');
-
-    await this.setData(df);
+  async loadData(df?: DG.DataFrame): Promise<void> {
+    if (df) {
+      await this.setData(df);
+    } else {
+      const treeData: string = await grok.dapi.files.readAsText('System:AppData/PhylotreeViewer/data/tree95.nwk');
+      const df: DG.DataFrame = newickToDf(treeData, 'tree95');
+      await this.setData(df);
+    }
   }
 
   async setData(df: DG.DataFrame): Promise<void> {
-    await this.destroyView();
+    if (this.viewed) {
+      await this.destroyView();
+      this.viewed = false;
+    }
 
     this._df = df;
 
-    await this.buildView();
+    if (!this.viewed) {
+      await this.buildView();
+      this.viewed = true;
+    }
   }
 
   //#region -- View --
@@ -71,7 +78,6 @@ export class PhylocanvasGlViewerApp {
       this.treeDn.detachFromParent();
       this.treeDn = null;
     }
-
   }
 
   async buildView(): Promise<void> {
@@ -106,6 +112,7 @@ export class PhylocanvasGlViewerApp {
       // TableView.addViewer() returns JsViewer (no access to viewer's attributes)
       // DataFrame.plot.fromType() return viewers type object (with attributes)
       this.treeViewer = (await this.df.plot.fromType('PhylocanvasGl', {
+        interactive: true,
         alignLabels: true,
         showLabels: true,
         showLeafLabels: true,
