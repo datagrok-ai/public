@@ -145,6 +145,16 @@ export class PeptidesModel {
     this.df.setTag('isInvariantMap', x ? '1' : '0');
   }
 
+  get isMutationCliffSelectionEmpty(): boolean {
+    for (const aarList of Object.values(this.mutationCliffsSelection))
+      if (aarList.length !== 0)
+        return false;
+    return true;
+  }
+  get isLogoSummarySelectionEmpty(): boolean {
+    return this.logoSummarySelection.length === 0;
+  }
+
   createAccordion(): DG.Accordion {
     const acc = ui.accordion();
     acc.root.style.width = '100%';
