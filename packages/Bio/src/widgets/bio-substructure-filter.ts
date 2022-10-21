@@ -14,6 +14,7 @@ import {Subject, Subscription} from 'rxjs';
 import * as C from '../utils/constants';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {NOTATION} from '@datagrok-libraries/bio';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 export class BioSubstructureFilter extends DG.Filter {
   bioFilter: FastaFilter | SeparatorFilter | HelmFilter | null = null;
@@ -102,9 +103,7 @@ export class BioSubstructureFilter extends DG.Filter {
     } else {
       this.calculating = true;
       try {
-        this.bitset = this.notation === NOTATION.HELM ?
-          await helmSubstructureSearch(this.bioFilter!.substructure, this.column!) :
-          linearSubstructureSearch(this.bioFilter!.substructure, this.column!);
+        this.bitset = await this.bioFilter?.substrucrureSearch(this.column!)!;
         this.calculating = false;
         this.dataFrame?.rows.requestFilter();
       } finally {
@@ -127,6 +126,10 @@ abstract class BioFilterBase {
 
   set substructure(s: string) {
   }
+
+  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
+    return null;
+  }
 }
 
 class FastaFilter extends BioFilterBase {
@@ -148,6 +151,10 @@ class FastaFilter extends BioFilterBase {
 
   set substructure(s: string) {
     this.substructureInput.value = s;
+  }
+
+  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
+    return await linearSubstructureSearch(this.substructure, column);
   }
 }
 
@@ -179,6 +186,10 @@ class SeparatorFilter extends FastaFilter {
   set substructure(s: string) {
     this.substructureInput.value = s;
   }
+
+  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
+    return await linearSubstructureSearch(this.substructure, column, this.colSeparator);
+  }
 }
 
 class HelmFilter extends BioFilterBase {
@@ -202,9 +213,9 @@ class HelmFilter extends BioFilterBase {
         .onOK(() => {
           const helmString = this.helmEditor
             .webEditor.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-          this.updateFilterPanel(helmString);
           this.helmSubstructure = helmString;
-          this.onChanged.next();
+          this.updateFilterPanel(this.substructure);
+          setTimeout(() => { this.onChanged.next(); }, 10);
         }).show({modal: true, fullScreen: true});
     });
     ui.onSizeChanged(this._filterPanel).subscribe((_) => {
@@ -246,5 +257,13 @@ class HelmFilter extends BioFilterBase {
       this.helmEditor.editor.setHelm(helmString);
       this.helmEditor.resizeEditor(width, height);
     }
+  }
+
+  async substrucrureSearch(column: DG.Column): Promise<DG.BitSet | null> {
+    ui.setUpdateIndicator(this._filterPanel, true);
+    await delay(10);
+    const res = await helmSubstructureSearch(this.substructure, column);
+    ui.setUpdateIndicator(this._filterPanel, false);
+    return res;
   }
 }
