@@ -984,14 +984,16 @@ export class PeptidesModel {
     selection.onChanged.subscribe(() => changeSelectionBitset(selection));
     filter.onChanged.subscribe(() => {
       const positionList = Object.keys(this.invariantMapSelection);
-      filter.init((i) => {
+      for (let index = 0; index < this.df.rowCount; ++index) {
         let result = true;
         for (const position of positionList) {
           const aarList = this.invariantMapSelection[position];
-          result &&= aarList.length == 0 || aarList.includes(this.df.get(position, i));
+          result &&= aarList.length === 0 || aarList.includes(this.df.get(position, index));
+          if (!result)
+            break;
         }
-        return result;
-      }, false);
+        filter.set(index, filter.get(index) && result, false);
+      }
     });
     this.isBitsetChangedInitialized = true;
   }
