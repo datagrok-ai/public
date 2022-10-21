@@ -367,9 +367,13 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   for (let elName of elementsTable) {
     const value = elements.get(elName);
     if (value) {
-      let column = DG.Column.fromInt32Array(elName, value);
-      table.columns.add(column);
-      columnNames.push(elName);
+      if (table.columns.contains(elName)) {
+        break;
+      } else {
+        let column = DG.Column.fromInt32Array(elName, value);
+        table.columns.add(column);
+        columnNames.push(elName);
+      }
     }
   }
 
