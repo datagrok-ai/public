@@ -1,1 +1,1 @@
-emcc -O0 lib1.c lib2.c -o newLib.js -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME="exportNewModuleName" -s EXPORTED_FUNCTIONS=["_sumOfInts","_minOfArray","_doubleArray","_sumOfArrays","_malloc","_free"] -s EXPORTED_RUNTIME_METHODS=["cwrap"]
+emcc -O0 lib1.c lib2.c -o newLib.js -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME="exportNewModuleName" -s EXPORTED_FUNCTIONS=["_sumOfInts","_minOfArray","_sumOfArrays","_sumAndProdOfArrays","_powers","_malloc","_free"] -s EXPORTED_RUNTIME_METHODS=["cwrap","ccall"]

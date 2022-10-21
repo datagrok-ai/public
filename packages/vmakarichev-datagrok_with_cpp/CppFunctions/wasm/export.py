@@ -1,4 +1,4 @@
-""" export.py  Ocotber 17, 2022
+""" export.py  Release 3.0.0, Ocotber 21, 2022
 
     SMART EXPORT SCRIPT
     
@@ -22,8 +22,13 @@ import json
 # map between C- and JavaScript-types
 typesMap = {"int *": "Int32Array", "float *": "Float32Array"}
 
-# a set of types that represents data structures
+# sets of types that represents data structures
 structureTypes={"column", "array", "columns", "arrays"}
+simpleStructureTypes = {"column", "array"}
+complexStructureTypes = {"columns", "arrays"}
+
+# name of C-functions wrapper
+C_FUNC_WRAPPER_NAME = "cFuncWrapper"
 
 def getFunctionsFromFile(nameOfFile):
     """Process the C-file and returns dictionary of functions, type of return, types of arguments.
@@ -513,6 +518,210 @@ def appendPackageFileWithCfunctions(nameOfFile, moduleName, functions):
                 # Finish!
                 put("}\n\n")
 
+def appendPackage(settings, functions):
+    """ Append Datagrok package file with C-functions.
+        settings - dictionary of export settings
+        functions - functions data.
+
+        This function opens Datagrok package file and performes the following steps:
+          1) add the wrapper for exported C-functions - runtime system;
+          2) generate code for exported function call; 
+             for this purpose, for each C-file and each exported function the next actions are done:
+                2.1) write preambula or annotation of the function;
+                2.2) prepare a string of arguments of the function;
+                2.3) write the first line of function: <name>(args);
+                2.4) write declaration of new arrays (if they are used);
+                2.5) write C-function call lines & output lines.
+
+    """
+    
+    # open package file and append it with C-functions
+    with open(settings["packageFile"], 'a') as packageFile:
+
+        put = packageFile.write # a short form of the function that writes data to file
+        
+        # 1. ADD RUNTIME SYSTEM
+        with open(settings["runtimeSystemFile"], 'r') as runtimeSystemFile:
+            for line in runtimeSystemFile.readlines():
+                put(line)
+
+        # 2. GENERATE CODE FOR CALLING EXPORTED C-FUNCTIONS
+
+        put('\n' * 3 + '// EXPORTED C-FUNCTIONS')
+
+        # consider each exported file
+        for cFileName in functions.keys():
+
+            # write comment-line with a name of C-file
+            put('\n' * 2 + "// Functions from " + cFileName + '\n\n')
+
+            functionsFromCurrentFile = functions[cFileName]
+
+            # add each exported function
+            for nameOfFunction in functionsFromCurrentFile.keys():
+
+                # 2.0. Extract the current function data
+                functionData = functionsFromCurrentFile[nameOfFunction]
+                arguments = functionData["arguments"] 
+                typeOfOutput = functionData["type"]
+                packageFunctionData = functionData["packageFunction"]
+                cfuncArgs = functionData["orderOfArguments"]
+                isExportFunc = packageFunctionData["export"]                
+
+                # 2.1. Write preambula of the current package function
+                if isExportFunc:
+                    for line in packageFunctionData["preambula"]:
+                        put(line + '\n')
+                else:
+                    put('/*\n')  # in this case, annotation is written in /*...*/
+                    for line in packageFunctionData["preambula"]:
+                        put('   ' + line.strip("//") + '\n')
+                    put("*/\n")
+
+                # 2.2. Prepare string of arguments of the package function
+                stringOfArguments = ""
+
+                for argument in packageFunctionData["input"].keys():
+                    stringOfArguments += argument + ", "
+
+                # remove redundant ',' at the end
+                stringOfArguments = stringOfArguments.rstrip(", ")
+
+                # 2.3. Write the first line of package function
+                firstLine = "function " + packageFunctionData["name"] + "(" + stringOfArguments + ") {\n"
+                if isExportFunc:
+                    put("export " + firstLine)
+                else:
+                    put(firstLine)
+
+                # 2.4. Write declaration of new arrays (if they are used)
+                for nameOfArray, specification in arguments["arrays"].items():
+                    if specification["map"] is None:
+                        jsType = typesMap[specification["type"]]
+                        length =specification["length"]
+                        put(f"  let {nameOfArray} = new {jsType}({length});\n")
+                
+                # 2.5. Write C-function call lines & output lines
+
+                # return types flags
+                doExportFuncReturnNumber = (typeOfOutput != 'void')
+                doPackageFuncReturnNumber = False 
+                doPackageFuncReturnStructure = False      
+                
+                # 2.5.1. Prepare cFuncWrapper lines
+                firstLine = f"{C_FUNC_WRAPPER_NAME}({settings['moduleName']}, '{nameOfFunction}', "
+                
+                if doExportFuncReturnNumber:
+                    firstLine += " 'number',\n"
+                else:
+                    firstLine += " null,\n"
+
+                # line of argument type in the form like: ['Int32Array', 'number', ...]
+                argsTypesLine = '['
+
+                # line of arguments in the form: [arg1, arg2, ...]
+                argsLine = '['
+
+                # line of indeces of args that are to update
+                argsToUpdateLine = '['
+
+                # the last line(s) of the package function
+                returnLine = "  return "
+
+                # line with expression to be returned in the case of column(s) or array(s) return
+                expressionToBeReturned = ''
+
+                # complement argsTypesLine & argsLine with the required data defined by arguments
+                for arg in cfuncArgs:
+                    if arg in arguments["variables"].keys(): # arg is a variable
+                        argsTypesLine += "'number', "
+                        argsLine += arguments["variables"][arg]["map"] + ", "
+
+                    else: # arg is an array
+                        argsTypesLine += f"'{typesMap[arguments['arrays'][arg]['type']]}', "
+
+                        mapStructure = arguments['arrays'][arg]['map']
+
+                        if mapStructure is None: # it's newly created array
+                            argsLine += arg + ", "
+                        else:
+                            typeOfStructure = packageFunctionData["input"][mapStructure]["type"]
+
+                            if typeOfStructure == "column":
+                                argsLine += mapStructure + ".getRawData(), "
+                            elif typeOfStructure == "array":
+                                argsLine += mapStructure + ", "
+                          
+                # check output & complement argsToUpdateLine with the required indeces
+                                
+                for name, specification in packageFunctionData["output"].items():
+                    outputType = specification["type"]
+                    
+                    if outputType in simpleStructureTypes: # just one array or column 
+                        cArgName = specification["update"]                        
+                        argsToUpdateLine += str(cfuncArgs.index(cArgName))
+                        doPackageFuncReturnStructure = True
+
+                        if outputType == "array":
+                            expressionToBeReturned = cArgName + ";\n"
+                        elif outputType == "column":
+                            expressionToBeReturned = "DG.Column.from"
+                            expressionToBeReturned += typesMap[arguments['arrays'][cArgName]['type']]
+                            expressionToBeReturned += f"('{cArgName}', {cArgName});\n"
+
+                    elif outputType in complexStructureTypes: # arrays or columns 
+                        expressionToBeReturned = "[" 
+                        extraSpace = ' ' * (len(returnLine) + 1)    
+
+                        for cArgName in specification["update"]:
+                            argsToUpdateLine += str(cfuncArgs.index(cArgName)) + ', '
+
+                            if outputType == "arrays":
+                                expressionToBeReturned += cArgName + ", "
+                            elif outputType == "columns":
+                                expressionToBeReturned += "DG.Column.from"
+                                expressionToBeReturned += typesMap[arguments['arrays'][cArgName]['type']]
+                                expressionToBeReturned += f"('{cArgName}', {cArgName}),\n"
+                                expressionToBeReturned += extraSpace
+                        
+                        if outputType == "arrays":
+                            expressionToBeReturned = expressionToBeReturned.rstrip(", ") + "];\n"
+                        elif outputType == "columns":
+                            expressionToBeReturned = expressionToBeReturned.rstrip(",\n" + extraSpace)
+                            expressionToBeReturned += "];\n"
+                       
+                        argsToUpdateLine = argsToUpdateLine.rstrip(', ')  # remove extra ', '
+                        doPackageFuncReturnStructure = True                       
+
+                    else: # number
+                        doPackageFuncReturnNumber = True             
+                              
+                # remove extra ', ' (if required) and add the required ending
+                argsTypesLine = argsTypesLine.rstrip(', ') + '],\n'
+                argsLine = argsLine.rstrip(', ') + '],\n'
+                argsToUpdateLine += ']);\n'
+
+                # 2.5.2. Write cFuncWrapper lines
+                extraSpace = ' ' # space that makes generated code nicer
+
+                if doPackageFuncReturnNumber and doExportFuncReturnNumber: 
+                    extraSpace *= len(returnLine) + len(C_FUNC_WRAPPER_NAME) + 1 
+                    put(returnLine + firstLine)  # put "return cFuncWrapper(... "                  
+                else: 
+                    extraSpace *= len(C_FUNC_WRAPPER_NAME) + 3
+                    put(f"  {firstLine}")  # put "cFuncWrapper(... "
+                
+                put(extraSpace + argsTypesLine)
+                put(extraSpace + argsLine)
+                put(extraSpace + argsToUpdateLine)
+                
+                # 2.5.3. Return lines <- in the case of column(s) or array(s) return
+                if doPackageFuncReturnStructure:
+                    put(returnLine + expressionToBeReturned)
+                
+                # Finish!
+                put("}\n\n")
+
 def getSettings(nameOfFile):
     """
     Return dictionary with settings of C-functions export from json-file with settings.
@@ -568,7 +777,7 @@ def getCommand(settings, functionsData):
     command += '"_malloc","_free"]' 
 
     # add exported runtime methods
-    command += ' -s EXPORTED_RUNTIME_METHODS=["cwrap"]'  # also, "ccall" can be added 
+    command += ' -s EXPORTED_RUNTIME_METHODS=["cwrap","ccall"]'  # also, "ccall" can be added 
 
     return command
    
@@ -676,8 +885,11 @@ def main(nameOfSettingsFile="module.json"):
         # execute command by Emscripten (IT MUST BE INSTALLED!)   
         os.system(command)
       
-        # append Datagrok package file with exported functions
-        appendPackageFileWithCfunctions(settings["packageFile"], settings["moduleName"], functionsData)
+        # append Datagrok package file with exported functions: old style
+        #appendPackageFileWithCfunctions(settings["packageFile"], settings["moduleName"], functionsData)
+
+        # append Datagrok package file with exported functions: runtime system use
+        appendPackage(settings, functionsData)
 
         # add dependencies to the file package.json
         addDependenciesToPackageJsonFile(settings)

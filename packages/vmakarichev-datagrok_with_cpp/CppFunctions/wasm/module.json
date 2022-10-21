@@ -11,5 +11,6 @@
     "nameOfFileForFunctionsData": "functionsData.json",
     "packageFile": "..\\src\\package.js",
     "packageJsonFile": "..\\package.json",
-    "fileWithEmscriptenCommand": "command.txt"
+    "fileWithEmscriptenCommand": "command.txt",
+    "runtimeSystemFile": "runtime.js"
 }

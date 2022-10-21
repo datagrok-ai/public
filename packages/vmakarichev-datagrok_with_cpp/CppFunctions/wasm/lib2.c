@@ -1,9 +1,9 @@
 #include <emscripten.h>
 
-//name: doubleColumn (non-export)
+//name: doubleColumn
+//input: dataframe df
 //input: column col
-//output: column result [array]
-EMSCRIPTEN_KEEPALIVE
+//EMSCRIPTEN_KEEPALIVE
 void doubleArray(float * array, int arrayLength)
 {
     for(int i = 0; i < arrayLength; i++)

@@ -33,7 +33,7 @@ Module['ready'] = new Promise(function(resolve, reject) {
   readyPromiseResolve = resolve;
   readyPromiseReject = reject;
 });
-["_sumOfInts","_minOfArray","_doubleArray","_sumOfArrays","_malloc","_free","_fflush","onRuntimeInitialized"].forEach((prop) => {
+["_sumOfInts","_minOfArray","_sumOfArrays","_sumAndProdOfArrays","_powers","_malloc","_free","_fflush","onRuntimeInitialized"].forEach((prop) => {
   if (!Object.getOwnPropertyDescriptor(Module['ready'], prop)) {
     Object.defineProperty(Module['ready'], prop, {
       get: () => abort('You are getting ' + prop + ' on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js'),
@@ -1479,6 +1479,7 @@ var ASM_CONSTS = {
         return ccall(ident, returnType, argTypes, arguments, opts);
       }
     }
+
 var ASSERTIONS = true;
 
 function checkIncomingModuleAPI() {
@@ -1498,10 +1499,13 @@ var _sumOfInts = Module["_sumOfInts"] = createExportWrapper("sumOfInts");
 var _minOfArray = Module["_minOfArray"] = createExportWrapper("minOfArray");
 
 /** @type {function(...*):?} */
-var _doubleArray = Module["_doubleArray"] = createExportWrapper("doubleArray");
+var _sumOfArrays = Module["_sumOfArrays"] = createExportWrapper("sumOfArrays");
 
 /** @type {function(...*):?} */
-var _sumOfArrays = Module["_sumOfArrays"] = createExportWrapper("sumOfArrays");
+var _sumAndProdOfArrays = Module["_sumAndProdOfArrays"] = createExportWrapper("sumAndProdOfArrays");
+
+/** @type {function(...*):?} */
+var _powers = Module["_powers"] = createExportWrapper("powers");
 
 /** @type {function(...*):?} */
 var ___errno_location = Module["___errno_location"] = createExportWrapper("__errno_location");
@@ -1550,6 +1554,7 @@ var stackAlloc = Module["stackAlloc"] = createExportWrapper("stackAlloc");
 
 // === Auto-generated postamble setup entry stuff ===
 
+Module["ccall"] = ccall;
 Module["cwrap"] = cwrap;
 var unexportedRuntimeSymbols = [
   'run',
@@ -1649,7 +1654,6 @@ var unexportedRuntimeSymbols = [
   'convertI32PairToI53Checked',
   'convertU32PairToI53',
   'getCFunc',
-  'ccall',
   'uleb128Encode',
   'sigToWasmTypes',
   'generateFuncType',
