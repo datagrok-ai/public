@@ -1,7 +1,7 @@
 import {expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PdbEntry} from '../pdb-entry';
-import {createViewer} from '../viewers/molstar-viewer';
+import {byId} from '../viewers/molstar-viewer';
 
 export async function requireText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -52,7 +52,7 @@ export async function _testMolstarViewerIsOpening() {
   let noException = true;
 
   try {
-    await createViewer(_examplePDBID);
+    await byId(_examplePDBID);
   } catch (error) {
     noException = false;
   }
