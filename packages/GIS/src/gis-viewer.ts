@@ -54,6 +54,7 @@ export class GisViewer extends DG.JsViewer {
   renderType: string;
   heatmapRadius: number;
   heatmapBlur: number;
+  showTooltip: boolean;
 
 
   isRowFocusing: boolean = true;
@@ -93,7 +94,7 @@ export class GisViewer extends DG.JsViewer {
     this.longitudeColumnName = this.string('longitudeColumnName');
     this.colorColumnName = this.string('colorColumnName');
     this.sizeColumnName = this.string('sizeColumnName');
-    this.labelsColumnName = this.string('labelsColumnName', '', {userEditable: true});
+    this.labelsColumnName = this.string('labelsColumnName', '', {userEditable: false});
     this.markersColumnName = this.string('markersColumnName', '', {userEditable: false});
 
     this.markerOpacity = this.float('markerOpacity', 80, {category: 'Markers', editor: 'slider', min: 0, max: 100});
@@ -115,6 +116,9 @@ export class GisViewer extends DG.JsViewer {
       {category: 'Heatmap', description: 'Heatmap radius', min: 1, max: 50, userEditable: true});
     // DG.Property
     //JsViewer
+
+
+    this.showTooltip = this.bool('showTooltip', false);
 
     this.renderType = this.string('renderType', 'markers');
     const renderTypeProp = this.getProperty('renderType');
@@ -343,7 +347,7 @@ export class GisViewer extends DG.JsViewer {
       this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
       this.subs.push(ui.onSizeChanged((this.panelLeft as HTMLElement)).subscribe(this.rootOnSizeChanged.bind(this)));
       //setup callbacks
-      // this.ol.setMapPointermoveCallback(this.showCoordsInStatus.bind(this));
+      this.ol.setMapPointermoveCallback(this.showMarkerTooltip.bind(this));
       // this.ol.setMapClickCallback(this.showCoordsInStatus.bind(this));
 
       this.ol.setMapSelectionCallback(this.handlerOnMarkerSelect.bind(this));
@@ -415,6 +419,45 @@ export class GisViewer extends DG.JsViewer {
     }
   }
 
+  showMarkerTooltip(p: OLCallbackParam): void {
+    if (!this.showTooltip)
+      return;
+    if (!p)
+      return;
+    if (!p.features.length) {
+      ui.tooltip.hide;
+      this.ol.olMap.render();
+      return;
+    }
+    ui.tooltip.hide;
+
+    let xCrd = this.root.getBoundingClientRect().left;
+    // let xCrd = 600; //this.root.clientLeft;
+    let yCrd = 0; //this.root.clientTop;
+    if (this.viewerContainer) {
+      // xCrd += this.viewerContainer?.clientWidth + p.pixel[0];
+      // yCrd += this.viewerContainer?.clientHeight + p.pixel[1];
+      xCrd += p.pixel[0];// + 150;
+      yCrd += p.pixel[1] + 60;
+    }
+    const markerIdx = p.features[0].get('fieldIndex');
+    // ui.tooltip.showRowGroup(this.dataFrame, (i) => { return i === markerIdx; }, 300, 300);
+    const tipElement = ui.divV([]);
+    for (let cl = 0; cl < this.dataFrame.columns.length; cl ++) {
+      const vl = this.dataFrame.columns.byIndex(cl).name + ': ' + this.dataFrame.columns.byIndex(cl).get(markerIdx);
+      const subElem = ui.div(vl);
+      tipElement.append(subElem);
+    }
+
+    // const tipElement = ui.divV([ui.div(`Row № : ${markerIdx}`),
+    //   ui.div(`Row № : ${markerIdx}`)
+    // ]);
+    ui.tooltip.show(tipElement, xCrd, yCrd);
+    // ui.tooltip.show(tipElement, p.pixel[0], p.pixel[1]);
+    // ui.tooltip.show('fieldIndex:' + p.features[0].get('fieldIndex'), p.pixel[0], p.pixel[1]);
+    // ui.tooltip.show('p.feat', p.pixel[0], p.pixel[1]);
+  }
+
   handlerOnMarkerSelect(p: OLCallbackParam): void {
     if (!p)
       return;
@@ -464,28 +507,8 @@ export class GisViewer extends DG.JsViewer {
     setTimeout( function(m) {m.updateSize();}, 200, this.ol.olMap);
   }
 
-  //temporary code that multiplies amount of data to test performance
-  //TODO: remove it after using
-  testPerformanceLoader() {
-    const colLat = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
-    const colLon = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE);
-    const rowcnt = this.dataFrame.rowCount;
-    const colcnt = this.dataFrame.columns.length;
-    for (let rw = rowcnt; rw < rowcnt + 5000; rw++) {
-      for (let cw = 0; cw < colcnt; cw++) {
-        const curcol = this.dataFrame.columns.byIndex(cw);
-        if ((curcol == colLat) || (curcol == colLon))
-          curcol.set(rw, curcol.get(0) + (Math.random() * 10));
-        else
-          curcol.set(rw, curcol.get(0));
-      }
-    }
-  }
-
   onTableAttached(): void {
     this.init();
-    //TODO: add performance tester here
-    // this.testPerformanceLoader();
 
     if (this.latitudeColumnName === null && this.longitudeColumnName === null) {
       let col = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
@@ -507,12 +530,17 @@ export class GisViewer extends DG.JsViewer {
       const selcount = this.dataFrame.selection.getSelectedIndexes();
       if (!this.ol.olMarkersSelLayerGL)
         return;
+      if (this.ol.olMarkersSelSource)
+        this.ol.olMarkersSelSource.clear();
       for (let i = 0; i < selcount.length; i++) {
         this.ol.addPointSc(this.coordinates[selcount[i]], this.sizeValues[selcount[i]], this.colorValues[selcount[i]],
           this.labelValues[selcount[i]], selcount[i], this.ol.olMarkersSelLayerGL);
       }
+      this.ol.olMap.getView().fit(this.ol.olMarkersSelSource.getExtent(),
+        {padding: [50, 50, 50, 50], maxZoom: 10});
       // this.render();
     }));
+    //update on filtration
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => {
       this.render(true);
     }));
@@ -558,6 +586,8 @@ export class GisViewer extends DG.JsViewer {
       this.ol.heatmapRadius = this.heatmapRadius;
       return;
     }
+    if (prop.name === 'showTooltip')
+      return;
     if (prop.name === 'heatmapBlur') {
       this.ol.heatmapBlur = this.heatmapBlur;
       return;
