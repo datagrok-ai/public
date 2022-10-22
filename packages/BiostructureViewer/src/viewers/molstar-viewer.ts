@@ -36,17 +36,35 @@ const DefaultViewerOptions = {
   emdbProvider: 'rcsb',
 };
 
+function initViewer() {
+  const view = grok.shell.newView('Mol*');
+  const viewerContainer = view.root;
+  const viewer = Viewer.create(viewerContainer, DefaultViewerOptions);
+  return viewer;
+}
+
 /**
  * Creates an instance of Mol* viewer.
  *
  * @param {string} pdbID ID of an entity in PDB.
  */
-export async function createViewer(pdbID: string) {
-  const view = grok.shell.newView('Mol*');
-  const viewerContainer = view.root;
-  Viewer.create(viewerContainer, DefaultViewerOptions)
+export async function byId(pdbID: string) {
+  initViewer()
   .then((v: any) => {
     v.loadPdb(pdbID);
+  });
+  //v.handleResize();
+}
+
+/**
+ * Creates an instance of Mol* viewer.
+ *
+ * @param {string} pdbData Data in PDB
+ */
+ export async function byData(pdbData: string) {
+  initViewer()
+  .then((v: any) => {
+    v.loadStructureFromData(pdbData, 'pdb');
   });
   //v.handleResize();
 }

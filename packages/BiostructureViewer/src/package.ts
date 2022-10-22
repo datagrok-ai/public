@@ -4,7 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {BioStructureViewer} from './biostructure-viewer';
-import {createViewer} from './viewers/molstar-viewer';
+import {byId, byData} from './viewers/molstar-viewer';
 
 export const _package = new DG.Package();
 
@@ -17,11 +17,20 @@ export async function biostructureApp() {
   pi.close();
 }
 
-//name: Mol* BioStructure Viewer.
+//name: Mol* BioStructure Viewer Id.
 //tags: viewer
 //input: string pdbID
-export async function molstarView(pdbID: string) {
-  const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure* Viewer');
-  await createViewer(pdbID);
+export async function molstarViewId(pdbID: string) {
+  const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure* Viewer Id');
+  await byId(pdbID);
+  pi.close();
+}
+
+//name: Mol* BioStructure Viewer Data.
+//tags: viewer
+export async function molstarViewData() {
+  const pdbData = await _package.files.readAsText('1bdq.pdb');
+  const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure* Viewer Data');
+  await byData(pdbData);
   pi.close();
 }
