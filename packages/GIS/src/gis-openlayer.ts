@@ -295,6 +295,8 @@ export class OpenLayers {
         .filter((ft) => ft?.getGeometry()?.intersectsExtent(extent));
       //
       this.selectInteraction.getFeatures().extend(boxFeatures);
+      this.selectInteraction.changed();
+      this.olMarkersSelLayerGL?.changed();
       // this.olSelectedMarkers.extend(boxFeatures);
     });
 
@@ -343,6 +345,7 @@ export class OpenLayers {
         projection: 'EPSG:3857', // projection: 'EPSG:4326',
         center: OLProj.fromLonLat([-77.01072, 38.91333]),
         zoom: 5,
+        enableRotation: false,
       }),
     });
 
@@ -364,7 +367,7 @@ export class OpenLayers {
 
     //add base event handlers>>
     this.olMap.on('click', this.onMapClick.bind(this));
-    // this.olMap.on('pointermove', this.onMapPointermove);
+    this.olMap.on('pointermove', this.onMapPointermove.bind(this));
 
     //add interactions to the map
     this.olMap.addInteraction(this.selectInteraction); //select interaction
@@ -830,12 +833,22 @@ export class OpenLayers {
       features: [],
     };
 
+    // const ft = this.olMarkersSource.getClosestFeatureToCoordinate(evt.coordinate);
+    // const ft = this.olMarkersSource.getFeaturesAtCoordinate(evt.coordinate);
+    const getFeaturesOption = {
+      layerFilter: this.selectCondition.bind(this),
+    };
+    const ftArr = this.olMap.getFeaturesAtPixel(evt.pixel, getFeaturesOption);
+    if (ftArr.length > 0) {
+      for (let i = 0; i < ftArr.length; i++) {
+        const geom = ftArr[i].getGeometry();
+        if (geom?.getType() === 'Point')
+          res.features.push(ftArr[i]);
+      }
+    }
+
     if (this.onPointermoveCallback)
       this.onPointermoveCallback(res);
-    else {
-      if (OLG) //TODO: remove this stuff (use bind)
-        if (OLG.onPointermoveCallback) OLG.onPointermoveCallback(res); // remove this stuff (use bind)
-    }
   }
 
   //map events management functions>>
