@@ -16,7 +16,7 @@
     "css/ngl.css",
     "css/pviz-core.css",
     "css/additionalStyles.css",
-    "src/viewers/pviz-bundle.min.js",
+    "css/pviz-bundle.min.js",
     "common/ngl_viewer/ngl.js",
     "css/molstar.css"
   ],

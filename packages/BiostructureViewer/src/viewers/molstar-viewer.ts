@@ -31,6 +31,9 @@ const DefaultViewerOptions = {
 
   viewportShowExpand: false,
   viewportShowControls: false,
+
+  pdbProvider: 'rcsb',
+  emdbProvider: 'rcsb',
 };
 
 /**
@@ -41,9 +44,10 @@ const DefaultViewerOptions = {
 export async function createViewer(pdbID: string) {
   const view = grok.shell.newView('Mol*');
   const viewerContainer = view.root;
-  const v = new Viewer(viewerContainer, DefaultViewerOptions);
-
-  await v.loadPdb(pdbID);
+  Viewer.create(viewerContainer, DefaultViewerOptions)
+  .then((v: any) => {
+    v.loadPdb(pdbID);
+  });
   //v.handleResize();
 }
 
