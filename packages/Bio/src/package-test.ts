@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 
 import {runTests, TestContext, tests} from '@datagrok-libraries/utils/src/test';
 
-import './tests/WebLogo-test';
 import './tests/Palettes-test';
 import './tests/detectors-test';
 import './tests/msa-tests';
@@ -13,9 +12,11 @@ import './tests/renderers-test';
 import './tests/convert-test';
 import './tests/fasta-handler-test';
 import './tests/fasta-export-tests';
+import './tests/bio-tests';
 import './tests/WebLogo-positions-test';
 import './tests/checkInputColumn-tests';
 import './tests/similarity-diversity-tests';
+import './tests/substructure-filter-tests';
 
 export const _package = new DG.Package();
 export {tests};

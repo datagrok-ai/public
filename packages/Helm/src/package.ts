@@ -13,7 +13,6 @@ export const _package = new DG.Package();
 const STORAGE_NAME = 'Libraries';
 const LIB_PATH = 'libraries/';
 
-
 //tags: init
 export async function initHelm(): Promise<void> {
   return new Promise(async (resolve, reject) => {
@@ -23,11 +22,11 @@ export async function initHelm(): Promise<void> {
   });
 }
 
+
 async function loadLibraries() {
   let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
-  for (let i = 0; i < uploadedLibraries.length; ++i) {
+  for (let i = 0; i < uploadedLibraries.length; ++i)
     await monomerManager(uploadedLibraries[i]);
-  }
 }
 
 //name: helmCellRenderer
@@ -283,6 +282,7 @@ export async function monomerManager(value: string) {
     }
     org.helm.webeditor.Monomers.addOneMonomer(m);
   });
+  grok.events.fireCustomEvent('monomersLibChanged', null);
   let grid: DG.Grid = grok.shell.tv.grid;
   grid.invalidate();
 }
@@ -440,6 +440,19 @@ export function findMonomers(helmString: string) {
   }
   const split_string = parseHelm(helmString);
   return new Set(split_string.filter(val => !monomer_names.includes(val)));
+}
+
+//name: getAllLibsData
+export function getAllLibsData(): any[] {
+  //@ts-ignore
+  const types = Object.keys(org.helm.webeditor.monomerTypeList());
+  const monomers: any = [];
+  for (var i = 0; i < types.length; i++) {
+    //@ts-ignore
+    monomers.push(new scil.helm.Monomers.getMonomerSet(types[i]));
+  }
+
+  return monomers;
 }
 
 //name: getMolfiles

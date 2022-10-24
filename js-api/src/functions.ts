@@ -281,9 +281,11 @@ export class FuncCall extends Entity {
   clone(): FuncCall { return api.grok_FuncCall_Clone(this.dart); }
 }
 
-export function callFuncWithDartParameters<T>(f: (...params: any[]) => T, params: object): T {
+export function callFuncWithDartParameters<T>(f: (...params: any[]) => T, params: object, dartResult: boolean): T {
   let jsParams = paramsToJs(params);
-  return toDart(f.apply(null, jsParams));
+  if (dartResult)
+    return toDart(f.apply(null, jsParams));
+  return f.apply(null, jsParams);
 }
 
 export class StepEditor extends DartWidget {

@@ -158,7 +158,7 @@ class FastaFilter extends BioFilterBase {
   }
 }
 
-class SeparatorFilter extends FastaFilter {
+export class SeparatorFilter extends FastaFilter {
   separatorInput: DG.InputBase<string> = ui.stringInput('', '', () => {
     this.onChanged.next();
   }, {placeholder: 'Separator'});
@@ -192,7 +192,7 @@ class SeparatorFilter extends FastaFilter {
   }
 }
 
-class HelmFilter extends BioFilterBase {
+export class HelmFilter extends BioFilterBase {
   helmEditor: any;
   _filterPanel = ui.div('', {style: {cursor: 'pointer'}});
   helmSubstructure = '';
