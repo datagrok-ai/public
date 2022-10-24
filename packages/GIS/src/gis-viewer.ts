@@ -503,7 +503,6 @@ export class GisViewer extends DG.JsViewer {
 
   private rootOnSizeChanged(args: any): void {
     this.ol.olMap.setSize([this.root.clientWidth, this.root.clientHeight]);
-    //this.ol.olMap.updateSize();
     setTimeout( function(m) {m.updateSize();}, 200, this.ol.olMap);
   }
 
@@ -526,6 +525,7 @@ export class GisViewer extends DG.JsViewer {
     }
 
     //events of dataframe handling
+    //rows selecting
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 100).subscribe((_) => {
       const selcount = this.dataFrame.selection.getSelectedIndexes();
       if (!this.ol.olMarkersSelLayerGL)
@@ -536,8 +536,11 @@ export class GisViewer extends DG.JsViewer {
         this.ol.addPointSc(this.coordinates[selcount[i]], this.sizeValues[selcount[i]], this.colorValues[selcount[i]],
           this.labelValues[selcount[i]], selcount[i], this.ol.olMarkersSelLayerGL);
       }
-      this.ol.olMap.getView().fit(this.ol.olMarkersSelSource.getExtent(),
-        {padding: [50, 50, 50, 50], maxZoom: 10});
+      if (!this.ol.preventFocusing) {
+        this.ol.olMap.getView().fit(this.ol.olMarkersSelSource.getExtent(),
+          {padding: [50, 50, 50, 50], maxZoom: 9});
+      }
+      this.ol.preventFocusing = false;
       // this.render();
     }));
     //update on filtration

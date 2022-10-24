@@ -62,27 +62,8 @@ export interface OLCallbackParam {
 }
 
 let OLG: OpenLayers; //TODO: remove this terrible stuff!
-let renderTime: number = 0;
+let renderTime: number = 0; //temporery code for benchmarking
 
-//TODO: use this function to convert colors
-//color converting
-/*function hexToRGB(h: string) {
-  let aRgbHex: string[] | null = ['0', '0', '0'];
-  if (h.length==3) {
-    aRgbHex = h.match(/.{1,1}/g);
-    aRgbHex[0] = aRgbHex[0].toString().repeat(2);
-    aRgbHex[1] = aRgbHex[1].toString().repeat(2);
-    aRgbHex[2] = aRgbHex[2].toString().repeat(2);
-  } else if (h.length==6)
-    aRgbHex = h.match(/.{1,2}/g);
-
-  const aRgb = {
-    'R': parseInt(aRgbHex[0], 16),
-    'G': parseInt(aRgbHex[1], 16),
-    'B': parseInt(aRgbHex[2], 16),
-  };
-  return aRgb;
-} */
 
 function toStringColor(num : number, opacity?: number) : string {
   num >>>= 0;
@@ -155,6 +136,8 @@ export class OpenLayers {
   olSelectedMarkers: Collection<Feature>; //Feature<OLGeom.Point>[];
 
   useWebGLFlag: boolean = true;
+  preventFocusing: boolean = false;
+  //map interacions
   dragAndDropInteraction: OLInteractions.DragAndDrop;
   selectInteraction: OLInteractions.Select;
   dragBox: OLInteractions.DragBox;
@@ -162,19 +145,16 @@ export class OpenLayers {
   //styles>>
   styleVectorLayer: OLStyle.Style;
   styleVectorSelLayer: OLStyle.Style;
-  //event handlers map
-  //eventsMap = new Map<string, ()=>any>(); //TODO: solve this puzzle
+  //map event handlers
   onSelectCallback: Function | null = null;
   onClickCallback: Function | null = null;
   onPointermoveCallback: Function | null = null;
   onRefreshCallback: Function | null = null;
-  // public labelStatus: HTMLElement | null = null;
 
   markerGLStyle: LiteralStyle;
   markerGLSelStyle: LiteralStyle;
 
   //properties from viewer
-  gisViewer: GisViewer | null = null; //TODO: check do we need it for the properties access or clone prop like below
   markerDefaultSize: number = 3;
   markerMinSize: number = 2;
   markerMaxSize: number = 15;
@@ -195,8 +175,6 @@ export class OpenLayers {
   useSizeField: boolean = false;
 
   constructor(gV?: GisViewer) {
-    if ((gV) && (gV instanceof GisViewer))
-      this.gisViewer = gV;
     this.olMap = new OLMap({});
     this.olCurrentView = new OLView({});
     this.olCurrentLayer = null;
@@ -254,14 +232,14 @@ export class OpenLayers {
     });
 
     this.selectInteraction.on('select', (e) => {
-      const res: OLCallbackParam = {
+      this.updateSelection(e.target.getFeatures());
+      /*      const res: OLCallbackParam = {
         coord: [0],
         pixel: [0, 0],
         features: [],
       };
       if (this.olMarkersSelLayerGL) {
         this.clearLayer(this.olMarkersSelLayerGL);
-        // this.olSelectedMarkers.forEach((ft) => {
         e.target.getFeatures().forEach((ft: Feature) => {
           const geom = ft.getGeometry();
           if (geom?.getType() === 'Point') {
@@ -272,19 +250,21 @@ export class OpenLayers {
                 src.addFeature((ft as Feature<OLGeom.Point>));
             }
           }
-        });
+        }); //<<for each feature
         this.olMarkersSelLayerGL.changed();
 
+        this.preventFocusing = true;
         if (this.onSelectCallback)
           this.onSelectCallback(res);
       }
+*/
     });
 
     this.dragBox = new OLInteractions.DragBox({
       condition: OLEventsCondition.platformModifierKeyOnly,
     });
 
-    this.dragBox.on('boxstart', () => {
+    this.dragBox.on('boxstart', (e) => {
       this.selectInteraction.getFeatures().clear();
       // this.olSelectedMarkers.clear();
     });
@@ -294,14 +274,37 @@ export class OpenLayers {
       const boxFeatures = this.olMarkersSource.getFeaturesInExtent(extent)
         .filter((ft) => ft?.getGeometry()?.intersectsExtent(extent));
       //
-      this.selectInteraction.getFeatures().extend(boxFeatures);
-      this.selectInteraction.changed();
-      this.olMarkersSelLayerGL?.changed();
-      // this.olSelectedMarkers.extend(boxFeatures);
+      this.olSelectedMarkers.extend(boxFeatures);
+      this.updateSelection(this.olSelectedMarkers);
+
+      // this.selectInteraction.getFeatures().extend(boxFeatures);
+      // this.selectInteraction.changed();
     });
 
     OLG = this;
     //end of constructor
+  }
+
+  updateSelection(sel: Collection<Feature<OLGeom.Geometry>>) {
+    const res: OLCallbackParam = {
+      coord: [0],
+      pixel: [0, 0],
+      features: [],
+    };
+      // const src = this.olMarkersSelLayerGL.getSource();
+    sel.forEach((ft: Feature) => {
+      const geom = ft.getGeometry();
+      if (geom?.getType() === 'Point')
+        res.features.push(ft);
+    }); //<<for each feature
+    if (this.olMarkersSelLayerGL) {
+      this.clearLayer(this.olMarkersSelLayerGL);
+      // this.addFeaturesBulk((res.features as Feature<OLGeom.Geometry>[]), this.olMarkersSelLayerGL);
+      this.olMarkersSelLayerGL.changed();
+    }
+    this.preventFocusing = true;
+    if (this.onSelectCallback)
+      this.onSelectCallback(res);
   }
 
   set useWebGL(v: boolean) {
@@ -914,9 +917,9 @@ export class OpenLayers {
     }
   }
 
-  addFeaturesBulk(arrFeatures: Array<Feature>,
+  //add array of features to the layer
+  addFeaturesBulk(arrFeatures: Feature<OLGeom.Geometry>[],
     layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
-    //add array of features to the layer
     let aLayer: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined|null;
     aLayer = this.useWebGL ? this.olMarkersLayerGL : this.olMarkersLayer;
     if ((typeof layer != 'undefined') && (layer))
