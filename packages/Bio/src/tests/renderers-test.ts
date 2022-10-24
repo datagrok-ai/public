@@ -208,6 +208,8 @@ category('renderers', () => {
         `view renderer has set to '${renderer}' instead of correct 'MacromoleculeDifference'.`);
   }
 
+  /** GROK-11212 Do not overwrite / recalculate 'cell.renderer' tag that has been set programmatically
+   * https://reddata.atlassian.net/browse/GROK-11212 */
   async function _setRendererManually() {
     const seqDiffCol: DG.Column = DG.Column.fromStrings('SequencesDiff',
       ['meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca#D-Tyr_Et/Tyr_ab-dehydroMe/meN/E/N/dV']);
