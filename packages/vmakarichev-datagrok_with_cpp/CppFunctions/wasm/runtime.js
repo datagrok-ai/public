@@ -1,29 +1,46 @@
 
 // Wrapper for exported C-functions
-function cFuncWrapper(module, cFuncName, returnType, argTypes, args, argsToUpdate){    
+function cFuncWrapper(module, cFuncName, returnType, argTypes, args, argsToUpdate=[]){    
 
     // type-to-heap correspondence
-    let heapMap = {"Int32Array": "HEAP32",
-                   "Float32Array": "HEAPF32"}; // TODO: add other types
+    let heapMap = {"i32a": "HEAP32", // Int32Array
+                   "f32a": "HEAPF32", // Float32Array
+                   "i32c": "HEAP32", // column that contains Int32Array
+                   "f32c": "HEAPF32"}; // column that contains Float32Array
+                   // TODO: add other items
   
     let params = []; // parameters that are further substituted to C-function
     let paramTypes = []; // types of parameters that are further substituted to C-function
     let bufs = []; // buffers that are used for arrays    
-    let buffer; // the current buffer
+    let buffer; // the current buffer 
+    let extendedTypeOfReturn = (returnType == 'num') ? 'number' : null; // C-function return type
   
     // creation of parameters that are substituted to the exported C-function
-    for(let i = 0; i < args.length; i++){      
+    for(let i = 0; i < args.length; i++){          
+        let argType = argTypes[i];
   
-        if(argTypes[i] == 'number') {
+        if(argType == 'num') {
             params.push(args[i]);
             paramTypes.push('number');
             bufs.push(null); // i.e. no allocated memory is used
         }
   
         else { // the current argument is an array, so some buffer/heap routine shoude be performed
-            buffer = module._malloc(args[i].BYTES_PER_ELEMENT * args[i].length); // allocate memory
+            let arr; // raw data array
+            
+            // set arr taking into account the current structure feature: array or column
+            switch(argType[argType.length - 1]) { // check the last symbol: 'a' - array, 'c' - column
+              case 'a':
+                arr = args[i];
+                break;
+              case 'c':
+                arr = args[i].getRawData();
+                break;
+            }
+            
+            buffer = module._malloc(arr.BYTES_PER_ELEMENT * arr.length); // allocate memory
   
-            let heap = heapMap[argTypes[i]]; // choose the required heap            
+            let heap = heapMap[argType]; // choose the required heap            
             let shift = 0; // current shift
             
             // compute shift
@@ -35,34 +52,52 @@ function cFuncWrapper(module, cFuncName, returnType, argTypes, args, argsToUpdat
             }
   
             // assign the data to the heap
-            module[heap].set(args[i], buffer >> shift);
+            module[heap].set(arr, buffer >> shift);
   
             // append arrays that are passed to C-function
             params.push(buffer);
             paramTypes.push('number'); // in the case of array, 'number' is also used
             bufs.push(buffer);
+  
+            // append length of array
+            params.push(arr.length);
+            paramTypes.push('number');
         }
     }
   
     // call C-function
     let result;   
-    if(returnType)
-        result = module.ccall(cFuncName, returnType, paramTypes, params);
+    if(extendedTypeOfReturn)
+        result = module.ccall(cFuncName, extendedTypeOfReturn, paramTypes, params);
     else
-        module.ccall(cFuncName, returnType, paramTypes, params);
+        module.ccall(cFuncName, extendedTypeOfReturn, paramTypes, params);
   
     // process arrays that are modified, when executing C-function
     for(let j = 0; j < argsToUpdate.length; j++){
-        let m = argsToUpdate[j]; 
+        let m = argsToUpdate[j];
+        
+        let argType = argTypes[m];
   
-        if(argTypes[m] != 'number') {            
-            let heap = heapMap[argTypes[m]]; 
+        if(argType != 'num') {     
+            let arr; // raw data array
+  
+            // set arr taking into account the current structure feature: array or column
+            switch(argType[argType.length - 1]) { // check the last symbol: 'a' - array, 'c' - column
+              case 'a':
+                arr = args[m];
+                break;
+              case 'c':
+                arr = args[m].getRawData();
+                break;
+            }
+  
+            let heap = heapMap[argType]; 
             let buffer = bufs[m];
-            let bytes = args[m].BYTES_PER_ELEMENT;
+            let bytes = arr.BYTES_PER_ELEMENT;
             
             // update the current array
-            for(let n = 0; n < args[m].length; n++)
-                args[m][n] = module[heap][buffer/bytes + n];                
+            for(let n = 0; n < arr.length; n++)
+                arr[n] = module[heap][buffer/bytes + n];                
         } 
     }
     
