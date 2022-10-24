@@ -126,15 +126,15 @@ Datagrok will add a new folder, and you can then create additional folders in it
 While each data source requires its own configuration, most of the configuration options are similar across data
 sources. Refer to the next table for more information.
 
-| Option            | Description                                                                        |
-| ----------------- | ---------------------------------------------------------------------------------- |
-| Data source       | Source from which Datagrok creates a folder structure in the File Browser          |
-| Name              | Name for the folder                                                                |
-| Dir               | Directory from the data source that you want Datagrok to pull from the data source |
-| Index files       | Option to run indexing on the files                                                |
-| Credentials owner | Name of the Datagrok user who owns the files and folders from the data source      |
-| Login             | Login to the data source                                                           |
-| Password          | Password to data source                                                            |
+| Option      | Description                                                                        |
+|-------------|------------------------------------------------------------------------------------|
+| Data source | Source from which Datagrok creates a folder structure in the File Browser          |
+| Name        | Name for the folder                                                                |
+| Dir         | Directory from the data source that you want Datagrok to pull from the data source |
+| Index files | Option to run indexing on the files                                                |
+| Scope       | Datagrok user or group who can see credentials                                     |
+| Login       | Login to the data source                                                           |
+| Password    | Password to data source                                                            |
 
 ## Uploading a file
 
