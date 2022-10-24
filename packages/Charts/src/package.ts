@@ -6,6 +6,7 @@ import {TimelinesViewer} from './timelines/timelines-viewer';
 import {SankeyViewer} from './sankey-viewer';
 import {ChordViewer} from './chord-viewer';
 import { WordCloudViewer } from './word-cloud-viewer';
+import {SurfacePlot} from './surface-plot';
 import '../css/styles.css';
 
 import * as grok from 'datagrok-api/grok';
@@ -87,4 +88,11 @@ export function _WordCloudViewer() {
 //output: viewer result
 export function _TimelinesViewer() {
   return new TimelinesViewer();
+}
+
+//name: SurfacePlot
+//tags: viewer
+//output: viewer result
+export function _SurfacePlot() {
+  return new SurfacePlot();
 }
