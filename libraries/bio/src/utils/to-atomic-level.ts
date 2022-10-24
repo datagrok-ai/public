@@ -6,6 +6,7 @@ import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, RGR
 import {ALPHABET, NOTATION} from './macromolecule';
 import {UnitsHandler} from './units-handler';
 import {NotationConverter} from './notation-converter';
+import { Monomer } from '../types/index';
 
 // constants for parsing molfile V2000
 const V2K_RGP_SHIFT = 8;
@@ -1360,4 +1361,9 @@ export async function getSymbolToCappedMolfileMap(monomersLibList: any[]): Promi
     symbolToCappedMolfileMap.set(monomerSymbol, molfile);
   }
   return symbolToCappedMolfileMap;
+}
+
+//TODO
+export function capTheMonomer(monomer: Monomer): string {
+  return ' ';
 }
