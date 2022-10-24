@@ -5,7 +5,7 @@ import * as bio from '@datagrok-libraries/bio';
 
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
 
-category('WebLogo', () => {
+category('bio', () => {
   const csvDfN1: string = `seq
 ACGTCT
 CAGTGT
@@ -47,7 +47,21 @@ XZJ{}2
 `;
 
   // anonymous functions specified in test() registering must return Promise<any>
-  test('testGetStats', async () => { await _testGetStats(csvDfN1); });
+  test('testGetStatsHelm1', async () => {
+    const csv = `seq
+PEPTIDE1{meI}$$$$
+`;
+    const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
+    const seqCol: DG.Column = df.getCol('seq')!;
+    const stats = bio.getStats(seqCol, 1, bio.splitterAsHelm);
+
+    expectObject(stats.freq, {
+      'meI': 1
+    });
+    expect(stats.sameLength, true);
+  });
+
+  test('testGetStatsN1', async () => { await _testGetStats(csvDfN1); });
   test('testGetAlphabetSimilarity', async () => { await _testGetAlphabetSimilarity(); });
 
   test('testPickupPaletteN1', async () => { await _testPickupPaletteN1(csvDfN1); });
