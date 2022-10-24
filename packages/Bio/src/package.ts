@@ -13,7 +13,8 @@ import {SequenceAlignment, Aligned} from './seq_align';
 import {getEmbeddingColsNames, sequenceSpace} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './analysis/sequence-activity-cliffs';
-import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq} from '@datagrok-libraries/bio/src/utils/monomer-utils';
+import {createJsonMonomerLibFromSdf, encodeMonomers,
+  getMolfilesFromSeq} from '@datagrok-libraries/bio/src/utils/monomer-utils';
 import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
 import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
@@ -21,7 +22,7 @@ import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
 import {UnitsHandler, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule'
+import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/utils/to-atomic-level';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
@@ -38,6 +39,7 @@ import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
 import {substructureSearchDialog} from './substructure-search/substructure-search';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
+
 
 //tags: init
 export async function initBio() {
@@ -263,7 +265,9 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //input: dataframe table
 //input: column sequence { semType: Macromolecule, units: ['fasta'], alphabet: ['DNA', 'RNA', 'PT'] }
 //output: column result
-export async function multipleSequenceAlignmentAny(table: DG.DataFrame, sequence: DG.Column): Promise<DG.Column | null> {
+export async function multipleSequenceAlignmentAny(
+  table: DG.DataFrame, sequence: DG.Column
+): Promise<DG.Column | null> {
   const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentAny'})[0];
 
   if (!checkInputColumnUi(sequence, 'MSA', ['fasta'], ['DNA', 'RNA', 'PT']))
@@ -524,4 +528,20 @@ export function saveAsFasta() {
 //meta.semType: Macromolecule
 export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter();
+}
+
+//name: debugToAtomicLevel
+export async function debugToAtomicLevel(): Promise<void> {
+  // todo: to be deleted after debugging
+  const path = 'System:AppData/Bio/tests/toAtomicLevelTest.csv';
+  const df = await grok.data.files.openTable(path);
+
+  const macroMolCol = df.col('seq')!;
+  macroMolCol.semType = DG.SEMTYPE.MACROMOLECULE;
+  macroMolCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+  macroMolCol.setTag(TAGS.aligned, ALIGNMENT.SEQ_MSA);
+  macroMolCol.setTag(TAGS.alphabet, ALPHABET.RNA);
+
+  grok.shell.addTableView(df);
+  toAtomicLevel(df, macroMolCol);
 }
