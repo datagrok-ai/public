@@ -1,22 +1,28 @@
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+
 import {EChartViewer} from './echart-viewer';
 import 'echarts-gl';
 
 
 export class SurfacePlot extends EChartViewer {
-  XColumnName: string;
-  YColumnName: string;
-  ZColumnName: string;
-  colsDict: {[name: string]: number[];} = {};
-  colsNames: string[] = [];
+  X: string;
+  Y: string;
+  Z: string;
+  XArr: [number[], number, number] = [[], 0, 0];
+  YArr: [number[], number, number] = [[], 0, 0];
+  ZArr: [number[], number, number] = [[], 0, 0];
+  colsDict: {[name: string]: [number[], number, number]} = {};
+  //colsNames: string[] = [];
   zip = (a: number[], b: number[], c: number[]) => a.map((k, i) => [k, b[i], c[i]]);
 
   constructor() {
     super();
-    console.log('constructor');
 
-    this.XColumnName = this.string('XColumnName', '');
-    this.YColumnName = this.string('YColumnName', '');
-    this.ZColumnName = this.string('ZColumnName', '');
+    this.X = this.string('XColumnName', null);
+    this.Y = this.string('YColumnName', null);
+    this.Z = this.string('ZColumnName', null);
 
     this.option = {
       tooltip: {},
@@ -65,21 +71,42 @@ export class SurfacePlot extends EChartViewer {
     };
   }
 
-  render() {
-    console.log('render');
-    
+
+  onTableAttached() {
     const cols = this.dataFrame.columns;
     const num = Array.from(cols.numerical);
-    num.forEach(c => this.colsDict[c.name] = c.toList());
-    this.colsNames = Object.keys(this.colsDict);
+    if (num.length < 3) grok.shell.error(`Error: insufficient number of numerical columns: expected 3+, got ${num.length}`);
+    num.forEach(c => this.colsDict[c.name] = [c.toList(), c.min, c.max]);
+    //this.colsNames = Object.keys(this.colsDict);
 
-    const X_arr = this.colsDict[this.XColumnName];
-    const Y_arr = this.colsDict[this.YColumnName];
-    const Z_arr = this.colsDict[this.ZColumnName];
+    this.XArr = this.colsDict[Object.keys(this.colsDict)[0]];
+    this.YArr = this.colsDict[Object.keys(this.colsDict)[1]];
+    this.ZArr = this.colsDict[Object.keys(this.colsDict)[2]];
 
-    this.option.visualMap.min = Math.min(...Z_arr);
-    this.option.visualMap.max = Math.max(...Z_arr);
-    this.option.series[0].data = this.zip(X_arr, Y_arr, Z_arr);
+    this.render();
+  }
+
+
+  onPropertyChanged(property: DG.Property) {
+    switch (property.name) {
+      case 'XColumnName':
+        this.XArr = this.colsDict[property.get(this)];
+        break;
+      case 'YColumnName':
+        this.YArr = this.colsDict[property.get(this)];
+        break;
+      case 'ZColumnName':
+        this.ZArr = this.colsDict[property.get(this)];
+        break;
+    }
+    this.render();
+  }
+
+
+  render() {
+    this.option.visualMap.min = this.ZArr[1];
+    this.option.visualMap.max = this.ZArr[2];
+    this.option.series[0].data = this.zip(this.XArr[0], this.YArr[0], this.ZArr[0]);
     this.chart.setOption(this.option);
   }
 }
