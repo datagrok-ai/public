@@ -35,14 +35,14 @@ function getTextWidth(text: string, font: number): number {
   return 2 * context.measureText(text).width;
 }
 
-function getTextInsideCircle(
-  bases: string[], index: number, nucleotideCounter: number,
-  numberOfNucleotides: number, enumerateModifications: string[]): string {
-  return ((bases[index].slice(-3) == '(o)') || !enumerateModifications.includes(bases[index])) ?
+function getTextInsideCircle(bases: string[], index: number, enumerateModifications: string[]): string {
+  return (
+    bases[index].slice(-3) == '(o)' ||
+    !enumerateModifications.includes(bases[index]) ||
+    !['A', 'G', 'C', 'U', 'T'].includes(bases[index])
+  ) ?
     '' :
-    (['A', 'G', 'C', 'U', 'T'].includes(bases[index])) ?
-      bases[index] :
-      '';//String(numberOfNucleotides - nucleotideCounter);
+    bases[index];
 }
 
 function getFontColorVisibleOnBackground(rgbString: string): string {
@@ -160,14 +160,15 @@ export function drawAxolabsPattern(
     Math.max(xOfSsRightModifications, xOfAsRightModifications) +
       widthOfLeftModification + baseDiameter * (Math.max(ssRightOverhangs, asRightOverhangs));
   const yOfTitle = baseRadius;
-  const yOfNumbers = 2 * baseRadius;
+  const yOfSsNumbers = 2 * baseRadius;
+  const yOfAsNumbers = 8.5 * baseRadius;
   const yOfSsTexts = 4 * baseRadius;
   const yOfAsTexts = 7 * baseRadius;
   const yOfComment = asExists ? 11 * baseRadius : 8.5 * baseRadius;
   const yOfSsCircles = 3.5 * baseRadius;
   const yOfAsCircles = 6.5 * baseRadius;
-  const yOfCirclesInLegends = asExists ? 9 * baseRadius : 6 * baseRadius;
-  const yOfTextLegend = asExists ? 9.5 * baseRadius - 3 : yOfAsCircles - 3;
+  const yOfCirclesInLegends = asExists ? 9.5 * baseRadius : 6 * baseRadius;
+  const yOfTextLegend = asExists ? 10 * baseRadius - 3 : yOfAsCircles - 3;
 
   const image = svg.render(width, height);
 
@@ -197,10 +198,10 @@ export function drawAxolabsPattern(
     if (ssBases[i].slice(-3) != '(o)')
       nucleotideCounter--;
     image.append(
-      svg.text(String(numberOfSsNucleotides - nucleotideCounter), xOfNumbers, yOfNumbers, legendFontSize, fontColor),
+      svg.text(String(numberOfSsNucleotides - nucleotideCounter), xOfNumbers, yOfSsNumbers, legendFontSize, fontColor),
       svg.circle(getXOfBaseCircles(i, ssRightOverhangs), yOfSsCircles, baseRadius, getBaseColor(ssBases[i])),
-      svg.text(getTextInsideCircle(ssBases, i, nucleotideCounter, numberOfSsNucleotides, enumerateModifications),
-        xOfNumbers, yOfSsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[ssBases[i]]['color'])),
+      svg.text(getTextInsideCircle(ssBases, i, enumerateModifications),
+        xOfNumbers, yOfSsTexts, baseFontSize, getFontColorVisibleOnBackground(getBaseColor(ssBases[i]))),
       ssPtoStatuses[i] ?
         svg.star(getXOfBaseCircles(i, ssRightOverhangs) + baseRadius, yOfSsTexts + psLinkageRadius, psLinkageColor) :
         '',
@@ -222,13 +223,14 @@ export function drawAxolabsPattern(
     for (let i = asBases.length - 1; i > -1; i--) {
       if (asBases[i].slice(-3) != '(o)')
         nucleotideCounter--;
+      const xOfNumbers = getXOfBaseCircles(i, asRightOverhangs) +
+        getShiftToAlignNumberInsideCircle(asBases, asBases.length - i, numberOfAsNucleotides - nucleotideCounter);
       image.append(
+        svg.text(String(numberOfAsNucleotides - nucleotideCounter), xOfNumbers, yOfAsNumbers, legendFontSize, fontColor),
         svg.circle(getXOfBaseCircles(i, asRightOverhangs), yOfAsCircles, baseRadius, getBaseColor(asBases[i])),
-        svg.text(getTextInsideCircle(
-          asBases, i, numberOfAsNucleotides - nucleotideCounter - 1, numberOfAsNucleotides, enumerateModifications),
-        getXOfBaseCircles(i, asRightOverhangs) +
-          getShiftToAlignNumberInsideCircle(asBases, i, nucleotideCounter + 1),
-        yOfAsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[asBases[i]]['color'])),
+        svg.text(getTextInsideCircle(asBases, i, enumerateModifications),
+          getXOfBaseCircles(i, asRightOverhangs) + getShiftToAlignNumberInsideCircle(asBases, i, nucleotideCounter + 1),
+          yOfAsTexts, baseFontSize, getFontColorVisibleOnBackground(getBaseColor(asBases[i]))),
         asPtoStatuses[i] ? svg.star(getXOfBaseCircles(i, asRightOverhangs) +
           baseRadius, yOfAsTexts + psLinkageRadius, psLinkageColor) : '',
       );
