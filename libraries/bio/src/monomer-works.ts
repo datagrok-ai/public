@@ -1,32 +1,39 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {SeqPalette} from './seq-palettes';
+
+import { MonomerLib } from './types/index';
+import { capTheMonomer } from './utils/to-atomic-level';
+
 
 export class MonomerWorks {
-  monomerLibs: string[] | null = null;
-  acceptedMonomers: Set<string> | null = null;
+  monomerLib: MonomerLib | null = null;
+  //Forbid non sequences
+  sequenceCol: DG.Column | null = null;
 
-  constructor() {
+  public async init(sequenceCol: DG.Column | null): Promise<void> {
+    const funcList: DG.Func[] = DG.Func.find({package: 'Helm', name: 'getAllLibsData'});
+    if(funcList.length === 0)
+      await grok.functions.call('Helm:initHelm')
 
+    await this.refreshLib();
+    this.sequenceCol = sequenceCol;
+    
+    grok.events.onCustomEvent('monomersLibChanged').subscribe((_) => {
+      this.refreshLib();
+    });
   }
 
-  /*
-  getColors(seqCol: DG.Column<string>, method?: string): SeqPalette {
-    if (!method) {
-      // return Unknown
-      if () {} //monomer not in acceptedMonomers color it red
-
-    } else {
-      switch (method) {
-        case :
-          break;
-        default:
-          throw new Error('Not implemented');
-      }
-    }
-
-    return ;
+  private async refreshLib(): Promise<void> {
+    this.monomerLib = await grok.functions.call('Helm:getAllLibsData')
   }
-  */
+
+  //types according to Monomer possible 
+  public getCappedMonomer(name: string, type: string) : string {
+    const types = Object.keys(this.monomerLib!);
+    if(!types.includes(type))
+      throw '';
+
+    return capTheMonomer(this.monomerLib![type][name]);
+  }
 }
