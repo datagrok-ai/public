@@ -136,7 +136,7 @@ export function config(args: ConfigArgs) {
           default: config.default
         });
         config.default = defaultServer['default-server'];
-        // fs.writeFileSync(confPath, yaml.dump(config));
+        fs.writeFileSync(confPath, yaml.dump(config));
       }
     } catch (err) {
       color.error('The file is corrupted. Please run `grok config --reset` to restore the default template');
