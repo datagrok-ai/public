@@ -13,7 +13,6 @@ export const _package = new DG.Package();
 const STORAGE_NAME = 'Libraries';
 const LIB_PATH = 'libraries/';
 
-
 //tags: init
 export async function initHelm(): Promise<void> {
   return new Promise(async (resolve, reject) => {
@@ -22,6 +21,7 @@ export async function initHelm(): Promise<void> {
     await loadLibraries();
   });
 }
+
 
 async function loadLibraries() {
   let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
@@ -440,6 +440,19 @@ export function findMonomers(helmString: string) {
   }
   const split_string = parseHelm(helmString);
   return new Set(split_string.filter(val => !monomer_names.includes(val)));
+}
+
+//name: getAllLibsData
+export function getAllLibsData(): any[] {
+  //@ts-ignore
+  const types = Object.keys(org.helm.webeditor.monomerTypeList());
+  const monomers: any = [];
+  for (var i = 0; i < types.length; i++) {
+    //@ts-ignore
+    monomers.push(new scil.helm.Monomers.getMonomerSet(types[i]));
+  }
+
+  return monomers;
 }
 
 //name: getMolfiles
