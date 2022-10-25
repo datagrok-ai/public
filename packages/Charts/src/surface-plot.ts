@@ -19,7 +19,11 @@ export class SurfacePlot extends EChartViewer {
   YArr: [number[], number, number] = [[], 0, 0];
   ZArr: [number[], number, number] = [[], 0, 0];
   colsDict: {[name: string]: [number[], number, number]} = {};
-  zip = (a: number[], b: number[], c: number[]) => a.map((k, i) => [k, b[i], c[i]]);
+  zip = (a: number[], b: number[], c: number[]) => {
+    const arr = a.map((k, i) => [k, b[i], c[i]]);
+    return arr.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+  }
+
 
   constructor() {
     super();
