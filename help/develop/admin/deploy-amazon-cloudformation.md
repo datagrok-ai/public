@@ -21,7 +21,7 @@ More information about Datagrok design and components:
 ## Prerequisites
 
 1. Check that you
-   have [required permissions](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/iam.list)
+   have [required permissions](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/iam.list)
    on AWS account to perform CloudFormation deployment to ECS.
 
 2. Create secret in [AWS Secret Manager](https://aws.amazon.com/secrets-manager/) with Docker Hub credentials
