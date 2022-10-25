@@ -5,6 +5,8 @@ set dirs=^
 \..\..\libraries\utils\ ^
 \..\..\libraries\ml\ ^
 \..\..\libraries\bio\ ^
+\..\..\packages\Bio\ ^
+\..\..\packages\Helm\ ^
 \
 
 call npm uninstall -g ^

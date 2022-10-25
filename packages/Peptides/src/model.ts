@@ -1,6 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
@@ -49,12 +50,12 @@ export class PeptidesModel {
   mutationCliffsViewer!: MutationCliffsViewer;
   mostPotentResiduesViewer!: MostPotentResiduesViewer;
 
-  _usedProperties: {[propName: string]: string | number | boolean} = {};
-  monomerMap: {[key: string]: {molfile: string, fullName: string}} = {};
+  _usedProperties: { [propName: string]: string | number | boolean } = {};
+  monomerMap: { [key: string]: { molfile: string, fullName: string } } = {};
   barData: type.MonomerDfStats = {};
-  barsBounds: {[position: string]: type.BarCoordinates} = {};
-  cachedBarchartTooltip: {bar: string, tooltip: null | HTMLDivElement} = {bar: '', tooltip: null};
-  monomerLib: any;
+  barsBounds: { [position: string]: type.BarCoordinates } = {};
+  cachedBarchartTooltip: { bar: string, tooltip: null | HTMLDivElement } = {bar: '', tooltip: null};
+  monomerLib: bio.IMonomerLib | null = null;
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -82,6 +83,7 @@ export class PeptidesModel {
     this._mutationCliffsSelection ??= JSON.parse(this.df.tags[C.TAGS.SELECTION] || '{}');
     return this._mutationCliffsSelection;
   }
+
   set mutationCliffsSelection(selection: type.PositionToAARList) {
     this._mutationCliffsSelection = selection;
     this.df.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
@@ -93,6 +95,7 @@ export class PeptidesModel {
     this._invariantMapSelection ??= JSON.parse(this.df.tags[C.TAGS.FILTER] || '{}');
     return this._invariantMapSelection;
   }
+
   set invariantMapSelection(selection: type.PositionToAARList) {
     this._invariantMapSelection = selection;
     this.df.tags[C.TAGS.FILTER] = JSON.stringify(selection);
@@ -104,6 +107,7 @@ export class PeptidesModel {
     this._logoSummarySelection ??= JSON.parse(this.df.tags[C.TAGS.CLUSTER_SELECTION] || '[]');
     return this._logoSummarySelection;
   }
+
   set logoSummarySelection(selection: number[]) {
     this._logoSummarySelection = selection;
     this.df.tags[C.TAGS.CLUSTER_SELECTION] = JSON.stringify(selection);
@@ -111,11 +115,12 @@ export class PeptidesModel {
     this.invalidateGrids();
   }
 
-  get usedProperties(): {[propName: string]: string | number | boolean} {
+  get usedProperties(): { [propName: string]: string | number | boolean } {
     this._usedProperties = JSON.parse(this.df.tags['sarProperties'] ?? '{}');
     return this._usedProperties;
   }
-  set usedProperties(properties: {[propName: string]: string | number | boolean}) {
+
+  set usedProperties(properties: { [propName: string]: string | number | boolean }) {
     this.df.tags['sarProperties'] = JSON.stringify(properties);
     this._usedProperties = properties;
   }
@@ -124,6 +129,7 @@ export class PeptidesModel {
     const splitByPosFlag = (this.df.tags['distributionSplit'] ?? '00')[0];
     return splitByPosFlag == '1' ? true : false;
   }
+
   set splitByPos(flag: boolean) {
     const splitByAARFlag = (this.df.tags['distributionSplit'] ?? '00')[1];
     this.df.tags['distributionSplit'] = `${flag ? 1 : 0}${splitByAARFlag}`;
@@ -133,6 +139,7 @@ export class PeptidesModel {
     const splitByPosFlag = (this.df.tags['distributionSplit'] ?? '00')[1];
     return splitByPosFlag == '1' ? true : false;
   }
+
   set splitByAAR(flag: boolean) {
     const splitByAARFlag = (this.df.tags['distributionSplit'] ?? '00')[0];
     this.df.tags['distributionSplit'] = `${splitByAARFlag}${flag ? 1 : 0}`;
@@ -141,6 +148,7 @@ export class PeptidesModel {
   get isInvariantMap(): boolean {
     return this.df.getTag('isInvariantMap') === '1';
   }
+
   set isInvariantMap(x: boolean) {
     this.df.setTag('isInvariantMap', x ? '1' : '0');
   }
@@ -151,6 +159,7 @@ export class PeptidesModel {
         return false;
     return true;
   }
+
   get isLogoSummarySelectionEmpty(): boolean {
     return this.logoSummarySelection.length === 0;
   }
@@ -305,7 +314,7 @@ export class PeptidesModel {
           continue;
 
         let substCounterFlag = false;
-        const tempData: {pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number}[] =
+        const tempData: { pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number }[] =
           [];
         for (const currentPosCol of columnList) {
           const seq1monomer = currentPosCol.get(seq1Idx)!;
@@ -406,7 +415,7 @@ export class PeptidesModel {
     for (let i = 1; i < this.sourceGrid.columns.length; i++)
       colNames.push(this.sourceGrid.columns.byIndex(i)!);
 
-    colNames.sort((a, b)=>{
+    colNames.sort((a, b) => {
       if (a.column!.semType == C.SEM_TYPES.MONOMER) {
         if (b.column!.semType == C.SEM_TYPES.MONOMER)
           return 0;
@@ -436,7 +445,7 @@ export class PeptidesModel {
 
     //calculate p-values based on t-test
     const matrixCols = matrixDf.columns;
-    const mdCol= matrixCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
+    const mdCol = matrixCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     const pValCol = matrixCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE);
     const countCol = matrixCols.addNewInt(C.COLUMNS_NAMES.COUNT);
     const ratioCol = matrixCols.addNewFloat(C.COLUMNS_NAMES.RATIO);
@@ -467,7 +476,7 @@ export class PeptidesModel {
     const statsDf = this.df.groupBy([C.COLUMNS_NAMES.CLUSTERS]).aggregate();
     const clustersCol = statsDf.getCol(C.COLUMNS_NAMES.CLUSTERS);
     const statsDfCols = statsDf.columns;
-    const mdCol= statsDfCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
+    const mdCol = statsDfCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     const pValCol = statsDfCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE);
     const countCol = statsDfCols.addNewInt(C.COLUMNS_NAMES.COUNT);
     const ratioCol = statsDfCols.addNewFloat(C.COLUMNS_NAMES.RATIO);
@@ -517,7 +526,7 @@ export class PeptidesModel {
       .aggregate();
 
     let tempStats: DG.Stats;
-    const maxAtPos: {[index: string]: number} = {};
+    const maxAtPos: { [index: string]: number } = {};
     const posColCategories = sequenceDf.getCol(C.COLUMNS_NAMES.POSITION).categories;
     const mdCol = sequenceDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     const posCol = sequenceDf.getCol(C.COLUMNS_NAMES.POSITION);
@@ -665,7 +674,7 @@ export class PeptidesModel {
       .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
   }
 
-  findAARandPosition(cell: DG.GridCell, ev: MouseEvent): {monomer: string, position: string} | null {
+  findAARandPosition(cell: DG.GridCell, ev: MouseEvent): { monomer: string, position: string } | null {
     const barCoords = this.barsBounds[cell.tableColumn!.name];
     for (const [monomer, coords] of Object.entries(barCoords)) {
       const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
@@ -677,7 +686,7 @@ export class PeptidesModel {
     return null;
   }
 
-  requestBarchartAction(ev: MouseEvent, barPart: {position: string, monomer: string} | null): void {
+  requestBarchartAction(ev: MouseEvent, barPart: { position: string, monomer: string } | null): void {
     if (!barPart)
       return;
     const monomer = barPart.monomer;
@@ -803,7 +812,9 @@ export class PeptidesModel {
 
   showMonomerTooltip(aar: string, x: number, y: number): void {
     const tooltipElements: HTMLDivElement[] = [];
-    const monomer: type.HELMMonomer = this.monomerLib[aar.toLowerCase()];
+    const monomerName = aar.toLowerCase();
+    const monomer: bio.Monomer = this.monomerLib!.get('HELM_AA', monomerName) ??
+      this.monomerLib!.get('HELM_CHEM', monomerName)!;
 
     if (monomer) {
       tooltipElements.push(ui.div(monomer.n));
@@ -1056,7 +1067,7 @@ export class PeptidesModel {
       const [sourceViewer, targetViewer] = isSourceSAR ? [this.mutationCliffsViewer, this.mostPotentResiduesViewer] :
         [this.mostPotentResiduesViewer, this.mutationCliffsViewer];
       const properties = sourceViewer.props.getProperties();
-      const newProps: {[propName: string]: string | number | boolean} = {};
+      const newProps: { [propName: string]: string | number | boolean } = {};
       for (const property of properties) {
         const propName = property.name;
         const propVal = property.get(sourceViewer);
@@ -1073,8 +1084,11 @@ export class PeptidesModel {
     if (this.isInitialized)
       return;
 
-    this.monomerLib =
-      JSON.parse(await grok.functions.call('Helm:getMonomerLib', {type: this.df.getTag('monomerType')}) as string);
+    // Get monomer library through bio library
+    this.monomerLib = (await bio.getMonomerLib()) as bio.IMonomerLib;
+    this.monomerLib.onChanged.subscribe(() => {
+      this.sourceGrid.invalidate();
+    });
 
     this.currentView = this.df.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
       grok.shell.addTableView(this.df);
