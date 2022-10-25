@@ -7,6 +7,7 @@ import * as bio from '@datagrok-libraries/bio';
 import {createJsonMonomerLibFromSdf} from './utils';
 import {MONOMER_MANAGER_MAP, RGROUPS, RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from './constants';
 import {HelmWebEditor} from './helm-web-editor';
+import {Observable, Subject} from 'rxjs';
 
 export const _package = new DG.Package();
 
@@ -283,8 +284,11 @@ export async function monomerManager(value: string) {
     org.helm.webeditor.Monomers.addOneMonomer(m);
   });
 
-  window['monomerLib'] = getAllLibsData();
-  grok.events.fireCustomEvent('monomersLibChanged', null);
+  // Now after updating org.helm.webeditor.Monomers we update MonomerLib window singleton (fires onChanged event)
+  (getMonomerLibObj() as MonomerLib).update(getAllLibsData());
+  //grok.events.fireCustomEvent('monomersLibChanged', null);
+
+  // Obsolete
   let grid: DG.Grid = grok.shell.tv.grid;
   grid.invalidate();
 }
@@ -444,16 +448,52 @@ export function findMonomers(helmString: string) {
   return new Set(split_string.filter(val => !monomer_names.includes(val)));
 }
 
-function getAllLibsData(): any[] {
+
+class MonomerLib implements bio.IMonomerLib {
+  private _monomers: { [type: string]: { [name: string]: bio.Monomer } };
+  private _onChanged = new Subject<any>();
+
+  get(monomerType: string, monomerName: string): bio.Monomer | null {
+    if (monomerType in this._monomers && monomerName in this._monomers[monomerType])
+      return this._monomers[monomerType][monomerName];
+    else
+      return null;
+  }
+
+  get onChanged(): Observable<any> {
+    return this._onChanged;
+  }
+
+  public update(monomers: { [type: string]: { [name: string]: bio.Monomer } }): void {
+    this._monomers = monomers;
+    this._onChanged.next();
+  }
+}
+
+function getAllLibsData(): { [type: string]: { [name: string]: bio.Monomer } } {
   //@ts-ignore
   const types = Object.keys(org.helm.webeditor.monomerTypeList());
-  const monomers: any = [];
-  for (var i = 0; i < types.length; i++) {
+  //const monomers: any = [];
+  const monomers: { [type: string]: { [name: string]: bio.Monomer } } = {};
+  for (let i = 0; i < types.length; i++) {
+    monomers[types[i]] = new scil.helm.Monomers.getMonomerSet(types[i]);
     //@ts-ignore
-    monomers.push(new scil.helm.Monomers.getMonomerSet(types[i]));
+    //monomers.push(new scil.helm.Monomers.getMonomerSet(types[i]));
   }
 
   return monomers;
+}
+
+//name: getMonomerLibObj
+//description: Get object of IMonomerLib interface (singleton)
+//output: object result
+export function getMonomerLibObj(): bio.IMonomerLib {
+  if (!('monomerLib' in window)) {
+    window['monomerLib'] = new MonomerLib();
+    window['monomerLib'].update(getAllLibsData()); // TODO: refactor
+  }
+
+  return window['monomerLib'];
 }
 
 //name: getMolfiles
@@ -598,6 +638,7 @@ class HelmCellRenderer extends DG.GridCellRenderer {
 //input: string type
 //output: string monomerSetJSON
 export function getMonomerLib(type: string): string {
+  // TODO: deprecate
   return JSON.stringify(scil.helm.Monomers.getMonomerSet(type));
 }
 
