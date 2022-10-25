@@ -44,14 +44,16 @@ export async function tutorialsInit() {
 
   for (const track of tracks) {
     for (const tutorial of track.tutorials)
-      tutorial.imageUrl = `${_package.webRoot}images/${tutorial.name.toLowerCase().replace(/ /g, '-')}.png`;
+      if (tutorial.imageUrl === '')
+        tutorial.imageUrl = `${_package.webRoot}images/${tutorial.name.toLowerCase().replace(/ /g, '-')}.png`;
   }
 
   for (const func of trackFuncs) {
-    const name = tracks.find((t) => t.name === func.options['name']) ?
-      `${func.options['name']} (1)` : func.options['name'];
-    const helpUrl = func.helpUrl ?? '';
-    tracks.push(new Track(name, [], helpUrl));
+    const t = tracks.find((t) => t.name === func.options['name']);
+    if (!t)
+      tracks.push(new Track(func.options['name'], [], func.helpUrl ?? ''));
+    else
+      console.error(`Tutorials: Couldn't add a track. Track ${func.options['name']} already exists.`);
   }
 
   for (const func of tutorialFuncs) {
@@ -65,9 +67,14 @@ export async function tutorialsInit() {
       } };
 
     let track = tracks.find((t) => t.name === trackName);
-    if (track)
-      track.tutorials.push(tutorial);
-    else
+    if (track) {
+      const t = track.tutorials.find((t) => t.name === tutorial.name);
+      if (!t)
+        track.tutorials.push(tutorial);
+      else
+        console.error(`Tutorials: Couldn't add a tutorial to track ${track.name}. ` +
+          `Tutorial ${tutorial.name} already exists.`);
+    } else
       tracks.push(new Track(trackName, [tutorial], ''));
   }
 
