@@ -4,7 +4,7 @@
 
 Developers can extend Datagrok with column tooltips. This could be done by defining a function annotated with special
 comments. It should take a column with specified  `semType`,
-return [DG.Widget] (https://datagrok.ai/js-api/classes/dg.Widget) and have a tag `tooltip`. This is it!
+return [DG.Widget](https://datagrok.ai/js-api/classes/dg.Widget) and have a tag `tooltip`. This is it!
 
 The following example defines a tooltip for the column that has `semType: Macromolecule`.
 
