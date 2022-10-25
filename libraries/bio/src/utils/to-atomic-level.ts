@@ -5,6 +5,7 @@ import {SplitterFunc, TAGS, getSplitter} from '../../index';
 import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, RGROUP_FIELDS} from './const';
 import {ALPHABET, NOTATION} from './macromolecule';
 import {NotationConverter} from './notation-converter';
+import { Monomer } from '../types/index';
 
 // constants for parsing molfile V2000
 const V2K_RGP_SHIFT = 8;
@@ -1296,4 +1297,109 @@ function getResultingAtomBondCounts(
 /* Keep precision upon floating point operations over atom coordinates */
 function keepPrecision(x: number) {
   return Math.round(PRECISION_FACTOR * x)/PRECISION_FACTOR;
+}
+
+function convertMolGraphToMolfileV3K(molGraph: MolGraph): string {
+  // counts line
+  const atomType = molGraph.atoms.atomTypes;
+  const x = molGraph.atoms.x;
+  const y = molGraph.atoms.y;
+  const atomKwargs = molGraph.atoms.kwargs;
+  const bondType = molGraph.bonds.bondTypes;
+  const atomPair = molGraph.bonds.atomPairs;
+  const bondKwargs = molGraph.bonds.kwargs;
+  const bondConfig = molGraph.bonds.bondConfiguration;
+  const atomCount = atomType.length;
+  const bondCount = molGraph.bonds.bondTypes.length;
+
+  // todo rewrite using constants
+  const molfileCountsLine = V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + V3K_COUNTS_LINE_ENDING;
+
+  // atom block
+  let molfileAtomBlock = '';
+  for (let i = 0; i < atomCount; ++i) {
+    const atomIdx = i + 1;
+    const coordinate = [x[i].toString(), y[i].toString()];
+
+    // format coordinates so that they have 6 digits after decimal point
+    // for (let k = 0; k < 2; ++k) {
+    //   const formatted = coordinate[k].toString().split('.');
+    //   if (formatted.length === 1)
+    //     formatted.push('0');
+    //   formatted[1] = formatted[1].padEnd(V3K_ATOM_COORDINATE_PRECISION, '0');
+    //   coordinate[k] = formatted.join('.');
+    // }
+
+    const atomLine = V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
+      coordinate[0] + ' ' + coordinate[1] + ' ' + atomKwargs[i];
+    molfileAtomBlock += atomLine;
+  }
+
+  // bond block
+  let molfileBondBlock = '';
+  for (let i = 0; i < bondCount; ++i) {
+    const bondIdx = i + 1;
+    const firstAtom = atomPair[i][0];
+    const secondAtom = atomPair[i][1];
+    const kwargs = bondKwargs.has(i) ? ' ' + bondKwargs.get(i) : '';
+    const bondCfg = bondConfig.has(i) ? ' CFG=' + bondConfig.get(i) : '';
+    const bondLine = V3K_BEGIN_DATA_LINE + bondIdx + ' ' + bondType[i] + ' ' +
+      firstAtom + ' ' + secondAtom + bondCfg + kwargs + '\n';
+    molfileBondBlock += bondLine;
+  }
+
+  const molfileParts = [
+    V3K_HEADER_FIRST_LINE,
+    V3K_HEADER_SECOND_LINE,
+    V3K_BEGIN_CTAB_BLOCK,
+    molfileCountsLine,
+    V3K_BEGIN_ATOM_BLOCK,
+    molfileAtomBlock,
+    V3K_END_ATOM_BLOCK,
+    V3K_BEGIN_BOND_BLOCK,
+    molfileBondBlock,
+    V3K_END_BOND_BLOCK,
+    V3K_END_CTAB_BLOCK,
+    V3K_END,
+  ];
+  const resultingMolfile = molfileParts.join('');
+  // console.log(resultingMolfile);
+
+  return resultingMolfile;
+}
+
+export async function getSymbolToCappedMolfileMap(monomersLibList: any[]): Promise<Map<string, string> | undefined> {
+  if (DG.Func.find({package: 'Chem', name: 'getRdKitModule'}).length === 0) {
+    grok.shell.warning('Transformation to atomic level requires package "Chem" installed.');
+    return;
+  }
+
+  const symbolToCappedMolfileMap = new Map<string, string>;
+  const moduleRdkit = await grok.functions.call('Chem:getRdKitModule');
+
+  for (const monomerLibObject of monomersLibList) {
+    const monomerSymbol = monomerLibObject[HELM_FIELDS.SYMBOL];
+    const capGroups = parseCapGroups(monomerLibObject[HELM_FIELDS.RGROUPS]);
+    const capGroupIdxMap = parseCapGroupIdxMap(monomerLibObject[HELM_FIELDS.MOLFILE]);
+
+    const molfileV3K = convertMolfileToV3K(removeRGroupLines(monomerLibObject[HELM_FIELDS.MOLFILE]), moduleRdkit);
+    const counts = parseAtomAndBondCounts(molfileV3K);
+
+    const atoms = parseAtomBlock(molfileV3K, counts.atomCount);
+    const bonds = parseBondBlock(molfileV3K, counts.bondCount);
+    const meta = getMonomerMetadata(atoms, bonds, capGroups, capGroupIdxMap);
+
+    const monomerGraph: MolGraph = {atoms: atoms, bonds: bonds, meta: meta};
+
+    removeHydrogen(monomerGraph);
+
+    const molfile = convertMolGraphToMolfileV3K(monomerGraph);
+    symbolToCappedMolfileMap.set(monomerSymbol, molfile);
+  }
+  return symbolToCappedMolfileMap;
+}
+
+//TODO
+export function capTheMonomer(monomer: Monomer): string {
+  return ' ';
 }

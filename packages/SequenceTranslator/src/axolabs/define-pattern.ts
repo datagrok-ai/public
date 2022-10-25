@@ -131,17 +131,20 @@ export function defineAxolabsPattern() {
       asBases[i] = ui.choiceInput('', asBases[i].value, baseChoices, (v: string) => {
         if (!enumerateModifications.includes(v)) {
           enumerateModifications.push(v);
-          isEnumerateModificationsDiv.append(ui.boolInput(v, true, (boolV: boolean) => {
-            if (boolV) {
-              if (!enumerateModifications.includes(v))
-                enumerateModifications.push(v);
-            } else {
-              const index = enumerateModifications.indexOf(v, 0);
-              if (index > -1)
-                enumerateModifications.splice(index, 1);
-            }
-            updateSvgScheme();
-          }).root);
+          isEnumerateModificationsDiv.append(
+            ui.divText('', {style: {width: '25px'}}),
+            ui.boolInput(v, true, (boolV: boolean) => {
+              if (boolV) {
+                if (!enumerateModifications.includes(v))
+                  enumerateModifications.push(v);
+              } else {
+                const index = enumerateModifications.indexOf(v, 0);
+                if (index > -1)
+                  enumerateModifications.splice(index, 1);
+              }
+              updateSvgScheme();
+            }).root,
+          );
         }
         updateAsModification();
         updateSvgScheme();
@@ -174,17 +177,20 @@ export function defineAxolabsPattern() {
       ssBases[i] = ui.choiceInput('', ssBases[i].value, baseChoices, (v: string) => {
         if (!enumerateModifications.includes(v)) {
           enumerateModifications.push(v);
-          isEnumerateModificationsDiv.append(ui.boolInput(v, true, (boolV: boolean) => {
-            if (boolV) {
-              if (!enumerateModifications.includes(v))
-                enumerateModifications.push(v);
-            } else {
-              const index = enumerateModifications.indexOf(v, 0);
-              if (index > -1)
-                enumerateModifications.splice(index, 1);
-            }
-            updateSvgScheme();
-          }).root);
+          isEnumerateModificationsDiv.append(
+            ui.divText('', {style: {width: '25px'}}),
+            ui.boolInput(v, true, (boolV: boolean) => {
+              if (boolV) {
+                if (!enumerateModifications.includes(v))
+                  enumerateModifications.push(v);
+              } else {
+                const index = enumerateModifications.indexOf(v, 0);
+                if (index > -1)
+                  enumerateModifications.splice(index, 1);
+              }
+              updateSvgScheme();
+            }).root,
+          );
         }
         updateSsModification();
         updateSvgScheme();
@@ -499,18 +505,20 @@ export function defineAxolabsPattern() {
   const loadPatternDiv = ui.div([]);
   const asModificationDiv = ui.div([]);
   const firstAsPtoDiv = ui.div([]);
-  const isEnumerateModificationsDiv = ui.divH([ui.boolInput(defaultBase, true, (v: boolean) => {
-    if (v) {
-      if (!enumerateModifications.includes(defaultBase))
-        enumerateModifications.push(defaultBase);
-    } else {
-      const index = enumerateModifications.indexOf(defaultBase, 0);
-      if (index > -1)
-        enumerateModifications.splice(index, 1);
-    }
-    updateSvgScheme();
-    updateOutputExamples();
-  }).root]);
+  const isEnumerateModificationsDiv = ui.divH([
+    ui.boolInput(defaultBase, true, (v: boolean) => {
+      if (v) {
+        if (!enumerateModifications.includes(defaultBase))
+          enumerateModifications.push(defaultBase);
+      } else {
+        const index = enumerateModifications.indexOf(defaultBase, 0);
+        if (index > -1)
+          enumerateModifications.splice(index, 1);
+      }
+      updateSvgScheme();
+      updateOutputExamples();
+    }).root,
+  ]);
 
   let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices));
   let asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices));

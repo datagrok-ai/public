@@ -50,9 +50,10 @@ our [deployment script](https://github.com/datagrok-ai/public/blob/master/help/d
 3. Run the script. It will ask questions and deploy a datagrok stand based on your answers. The supported deployment
    platform:
    ECS, Kubernetes, Virtual Machine.
-    * EC2 instance should be treated like Virtual Machine. It is required to create EC2 instances before the script run.
-      You can check how to create instances
-      in [regular machine example preparations steps](deploy-regular.md#preparations)
+
+   * EC2 instance should be treated like Virtual Machine. It is required to create EC2 instances before the script run.
+     You can check how to create instances
+     in [regular machine example preparations steps](deploy-regular.md#preparations)
 
 ```bash
 sh deploy.sh
@@ -83,6 +84,10 @@ We prepared two options for effortless deployments to ECS:
 2. [CloudFormation](deploy-amazon-cloudformation.md). It is an elaborate setup that considers all common security
    policies. It uses the CloudFormation template, which creates all required resources with enabled security options
    such as encryption and privileges control.
+3. [Terraform](deploy-amazon-terraform.md). It is an elaborate setup that considers all common security
+   policies. We developed terraform modules, which create all required resources with enabled security options
+   such as encryption and privileges control. The modules are checked with checkov and tfsec to provide you the best
+   quality code.
 
 ### Kubernetes deployment
 

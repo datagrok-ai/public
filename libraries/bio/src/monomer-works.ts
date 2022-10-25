@@ -1,32 +1,25 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {SeqPalette} from './seq-palettes';
+
+import {IMonomerLib, Monomer} from './types/index';
+import {capTheMonomer} from './utils/to-atomic-level';
+
 
 export class MonomerWorks {
-  monomerLibs: string[] | null = null;
-  acceptedMonomers: Set<string> | null = null;
+  monomerLib: IMonomerLib;
 
-  constructor() {
-
+  constructor(monomerLib: IMonomerLib) {
+    this.monomerLib = monomerLib;
   }
 
-  /*
-  getColors(seqCol: DG.Column<string>, method?: string): SeqPalette {
-    if (!method) {
-      // return Unknown
-      if () {} //monomer not in acceptedMonomers color it red
+  //types according to Monomer possible
+  public getCappedMonomer(monomerType: string, monomerName: string): Monomer | null {
+    const types = Object.keys(this.monomerLib!);
+    if (!types.includes(monomerType))
+      throw '';
 
-    } else {
-      switch (method) {
-        case :
-          break;
-        default:
-          throw new Error('Not implemented');
-      }
-    }
-
-    return ;
+    //return capTheMonomer(this.monomerLib!.get(type, name));
+    return this.monomerLib.get(monomerType, monomerName);
   }
-  */
 }

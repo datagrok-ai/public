@@ -10,11 +10,6 @@ import {
   detectAlphabet, TAGS
 } from './macromolecule';
 
-export const enum ALIGNMENT {
-  SEQ_MSA = 'SEQ.MSA',
-  SEQ = 'SEQ',
-}
-
 /** Class for handling notation units in Macromolecule columns */
 export class UnitsHandler {
   protected readonly _column: DG.Column; // the column to be converted

@@ -20,7 +20,6 @@ import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
-import {UnitsHandler, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
 import {TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/utils/to-atomic-level';

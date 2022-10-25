@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
-import { fromEvent, interval } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { Tutorial } from '../../../tutorial';
 

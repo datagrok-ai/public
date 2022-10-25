@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {printLeftOrCentered, DrawStyle} from '@datagrok-libraries/bio/src/utils/cell-renderer';
-import {ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
 import * as bio from '@datagrok-libraries/bio';
 import * as C from './constants';
 
@@ -47,7 +46,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.cell.column.getTag(bio.TAGS.aligned) !== ALIGNMENT.SEQ_MSA)
+    if (gridCell.cell.column.getTag(bio.TAGS.aligned) !== bio.ALIGNMENT.SEQ_MSA)
       return;
 
     const maxLengthWordsSum = gridCell.cell.column.temp['bio-sum-maxLengthWords'];
