@@ -282,6 +282,8 @@ export async function monomerManager(value: string) {
     }
     org.helm.webeditor.Monomers.addOneMonomer(m);
   });
+
+  window['monomerLib'] = getAllLibsData();
   grok.events.fireCustomEvent('monomersLibChanged', null);
   let grid: DG.Grid = grok.shell.tv.grid;
   grid.invalidate();
@@ -442,8 +444,7 @@ export function findMonomers(helmString: string) {
   return new Set(split_string.filter(val => !monomer_names.includes(val)));
 }
 
-//name: getAllLibsData
-export function getAllLibsData(): any[] {
+function getAllLibsData(): any[] {
   //@ts-ignore
   const types = Object.keys(org.helm.webeditor.monomerTypeList());
   const monomers: any = [];
