@@ -26,9 +26,11 @@ class CustomTutorial extends Tutorial {
 }
 ```
 
-Steps are the key units in every tutorial, and they correspond to the `action`
-method or helper methods calling it internally. Steps can come with interactive
-hints or more detailed description.
+Each tutorial should have `name` and `description` as well as an implementation
+of the `_run` method, where you should define a number of steps. Steps are the
+key units in every tutorial, and they correspond to the `action` method or
+helper methods calling it internally. Steps can come with interactive hints or
+more detailed description.
 
 ## Registering a tutorial
 
@@ -77,3 +79,8 @@ export function registerTrack() {
 The function should have the `track` tag, parameters `helpUrl` and `meta.name`,
 and it should return a `Track` instance (marked as `output: object` in the
 function header).
+
+See also:
+
+* [Packages](../develop/develop.md#packages)
+* [JavaScript API](../develop/js-api.md)
