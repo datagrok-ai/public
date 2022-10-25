@@ -68,7 +68,7 @@ It is also possible to register a track:
 
 ```typescript
 //tags: track
-//helpUrl: https://datagrok.ai/help
+//help-url: https://datagrok.ai/help
 //output: object
 //meta.name: Test Track
 export function registerTrack() {
@@ -76,7 +76,7 @@ export function registerTrack() {
 }
 ```
 
-The function should have the `track` tag, parameters `helpUrl` and `meta.name`,
+The function should have the `track` tag, parameters `help-url` and `meta.name`,
 and it should return a `Track` instance (marked as `output: object` in the
 function header).
 
