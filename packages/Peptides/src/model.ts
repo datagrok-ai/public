@@ -5,6 +5,7 @@ import * as bio from '@datagrok-libraries/bio';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
+import wu from 'wu';
 import * as rxjs from 'rxjs';
 
 import * as C from './utils/constants';
@@ -55,7 +56,8 @@ export class PeptidesModel {
   barData: type.MonomerDfStats = {};
   barsBounds: { [position: string]: type.BarCoordinates } = {};
   cachedBarchartTooltip: { bar: string, tooltip: null | HTMLDivElement } = {bar: '', tooltip: null};
-  monomerLib: bio.IMonomerLib | null = null;
+  monomerLib: bio.IMonomerLib | null = null; // To get monomers from lib(s)
+  monomerWorks: bio.MonomerWorks | null = null; // To get processed monomers
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -813,8 +815,10 @@ export class PeptidesModel {
   showMonomerTooltip(aar: string, x: number, y: number): void {
     const tooltipElements: HTMLDivElement[] = [];
     const monomerName = aar.toLowerCase();
-    const monomer: bio.Monomer = this.monomerLib!.get('HELM_AA', monomerName) ??
-      this.monomerLib!.get('HELM_CHEM', monomerName)!;
+
+    const monomer: bio.Monomer | null = wu(['HELM_AA', 'HELM_CHEM'])
+      .map((monomerType) => this.monomerWorks!.getCappedMonomer(monomerType, monomerName))
+      .find((m) => m != null) ?? null;
 
     if (monomer) {
       tooltipElements.push(ui.div(monomer.n));
@@ -1085,10 +1089,11 @@ export class PeptidesModel {
       return;
 
     // Get monomer library through bio library
-    this.monomerLib = (await bio.getMonomerLib()) as bio.IMonomerLib;
+    this.monomerLib = await bio.getMonomerLib();
     this.monomerLib.onChanged.subscribe(() => {
       this.sourceGrid.invalidate();
     });
+    this.monomerWorks = new bio.MonomerWorks(this.monomerLib);
 
     this.currentView = this.df.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
       grok.shell.addTableView(this.df);
