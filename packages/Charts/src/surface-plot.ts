@@ -10,11 +10,15 @@ export class SurfacePlot extends EChartViewer {
   X: string;
   Y: string;
   Z: string;
+  projection: string;
+  bkgcolor: string | number;
+  visualMapComponent: boolean;
+  grid: boolean;
+  axisLabel: boolean;
   XArr: [number[], number, number] = [[], 0, 0];
   YArr: [number[], number, number] = [[], 0, 0];
   ZArr: [number[], number, number] = [[], 0, 0];
   colsDict: {[name: string]: [number[], number, number]} = {};
-  //colsNames: string[] = [];
   zip = (a: number[], b: number[], c: number[]) => a.map((k, i) => [k, b[i], c[i]]);
 
   constructor() {
@@ -23,6 +27,11 @@ export class SurfacePlot extends EChartViewer {
     this.X = this.string('XColumnName', null);
     this.Y = this.string('YColumnName', null);
     this.Z = this.string('ZColumnName', null);
+    this.projection = this.string('projection', 'perspective', {choices: ['perspective', 'orthographic']});
+    this.bkgcolor = this.int('backgroundColor', 0xFFF);
+    this.visualMapComponent = this.bool('legendVisualMapComponent', false);
+    this.grid = this.bool('axisGrid', true);
+    this.axisLabel = this.bool('axisLabel', true);
 
     this.option = {
       tooltip: {},
@@ -47,25 +56,26 @@ export class SurfacePlot extends EChartViewer {
         }
       },
       xAxis3D: {
-        type: 'value'
+        type: 'category'
       },
       yAxis3D: {
-        type: 'value'
+        type: 'category'
       },
       zAxis3D: {
-        type: 'value'
+        type: 'category'
       },
       grid3D: {
+        show: true,
         viewControl: {
-          // projection: 'orthographic'
+          projection: 'perspective'
+        },
+        axisLabel: {
+          show: true
         }
       },
       series: [
         {
-          type: 'surface',
-          wireframe: {
-            // show: false
-          }
+          type: 'surface'
         }
       ]
     };
@@ -73,32 +83,60 @@ export class SurfacePlot extends EChartViewer {
 
 
   onTableAttached() {
-    const cols = this.dataFrame.columns;
-    const num = Array.from(cols.numerical);
-    if (num.length < 3) grok.shell.error(`Error: insufficient number of numerical columns: expected 3+, got ${num.length}`);
+    const num = Array.from(this.dataFrame.columns);
+    if (num.length < 3) grok.shell.error(`Error: insufficient number of columns: expected 3+, got ${num.length}`);
     num.forEach(c => this.colsDict[c.name] = [c.toList(), c.min, c.max]);
-    //this.colsNames = Object.keys(this.colsDict);
 
-    this.XArr = this.colsDict[Object.keys(this.colsDict)[0]];
-    this.YArr = this.colsDict[Object.keys(this.colsDict)[1]];
-    this.ZArr = this.colsDict[Object.keys(this.colsDict)[2]];
+    this.X = Object.keys(this.colsDict)[0];
+    this.Y = Object.keys(this.colsDict)[1];
+    this.Z = Object.keys(this.colsDict)[2];
+
+    this.XArr = this.colsDict[this.X];
+    this.YArr = this.colsDict[this.Y];
+    this.ZArr = this.colsDict[this.Z];
 
     this.render();
   }
 
 
   onPropertyChanged(property: DG.Property) {
-    switch (property.name) {
-      case 'XColumnName':
-        this.XArr = this.colsDict[property.get(this)];
-        break;
-      case 'YColumnName':
-        this.YArr = this.colsDict[property.get(this)];
-        break;
-      case 'ZColumnName':
-        this.ZArr = this.colsDict[property.get(this)];
-        break;
-    }
+    const newVal = property.get(this);
+
+    if (property.name.endsWith('ColumnName')) {
+      const col = this.colsDict[newVal];
+      switch (property.name) {
+        case 'XColumnName':
+          this.X = newVal;
+          this.XArr = col;
+          break;
+        case 'YColumnName':
+          this.Y = newVal;
+          this.YArr = col;
+          break;
+        case 'ZColumnName':
+          this.Z = newVal;
+          this.ZArr = col;
+          break;
+      }
+    } else
+      switch (property.name) {
+        case 'projection':
+          this.projection = newVal;
+          break;
+        case 'backgroundColor':
+          this.bkgcolor = DG.Color.toHtml(newVal);
+          break;
+        case 'legendVisualMapComponent':
+          this.visualMapComponent = newVal;
+          break;
+        case 'axisGrid':
+          this.grid = newVal;
+          break;
+        case 'axisLabel':
+          this.axisLabel = newVal;
+          break;
+      }
+
     this.render();
   }
 
@@ -106,6 +144,14 @@ export class SurfacePlot extends EChartViewer {
   render() {
     this.option.visualMap.min = this.ZArr[1];
     this.option.visualMap.max = this.ZArr[2];
+    this.option.grid3D.viewControl.projection = this.projection;
+    this.option.backgroundColor = this.bkgcolor;
+    this.option.visualMap.show = this.visualMapComponent; 
+    this.option.grid3D.show = this.grid;
+    this.option.grid3D.axisLabel.show = this.axisLabel;
+    this.option.xAxis3D.name = this.X;
+    this.option.yAxis3D.name = this.Y;
+    this.option.zAxis3D.name = this.Z;
     this.option.series[0].data = this.zip(this.XArr[0], this.YArr[0], this.ZArr[0]);
     this.chart.setOption(this.option);
   }
