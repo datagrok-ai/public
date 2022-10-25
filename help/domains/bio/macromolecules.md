@@ -93,7 +93,6 @@ The system could be integrated with a custom monomer library service if needed.
 
 ![Monomer Library](../../uploads/macromolecules/MonomerLibrary.gif "Monomer Library")
 
-
 ### Atomic-Level structures from sequences
 
 We have developed an algorithm to generate the atomic structure of the sequences based on a specific monomer library or

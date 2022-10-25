@@ -431,7 +431,7 @@
   *  `docker pull datagrok/datagrok:1.6.12`
   *  `docker pull datagrok/datagrok:latest`
   
-* [Docker-Compose](admin/docker-compose.md)
+* [Docker-Compose](../docker-compose.md)
 
 ## Addressed Issues
 
