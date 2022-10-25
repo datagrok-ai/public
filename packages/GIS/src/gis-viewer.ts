@@ -468,10 +468,12 @@ export class GisViewer extends DG.JsViewer {
         idx = p.features[i].get('fieldIndex');
         //We need to search by element index not by coordinates because coords were tranfrormed while mapping
         if (idx !== undefined)
-          this.dataFrame.selection.set(idx, true);
+          this.dataFrame.selection.set(idx, true, false);
       }
-      if (idx !== undefined)
+      if (idx !== undefined) {
+        this.dataFrame.selection.set(idx, true, true);
         this.dataFrame.currentRowIdx = idx; //set focus on the last selected item
+      }
     }
   }
 

@@ -233,31 +233,6 @@ export class OpenLayers {
 
     this.selectInteraction.on('select', (e) => {
       this.updateSelection(e.target.getFeatures());
-      /*      const res: OLCallbackParam = {
-        coord: [0],
-        pixel: [0, 0],
-        features: [],
-      };
-      if (this.olMarkersSelLayerGL) {
-        this.clearLayer(this.olMarkersSelLayerGL);
-        e.target.getFeatures().forEach((ft: Feature) => {
-          const geom = ft.getGeometry();
-          if (geom?.getType() === 'Point') {
-            res.features.push(ft);
-            if (this.olMarkersSelLayerGL) {
-              const src = this.olMarkersSelLayerGL.getSource();
-              if (src)
-                src.addFeature((ft as Feature<OLGeom.Point>));
-            }
-          }
-        }); //<<for each feature
-        this.olMarkersSelLayerGL.changed();
-
-        this.preventFocusing = true;
-        if (this.onSelectCallback)
-          this.onSelectCallback(res);
-      }
-*/
     });
 
     this.dragBox = new OLInteractions.DragBox({
@@ -266,45 +241,19 @@ export class OpenLayers {
 
     this.dragBox.on('boxstart', (e) => {
       this.selectInteraction.getFeatures().clear();
-      // this.olSelectedMarkers.clear();
     });
 
     this.dragBox.on('boxend', () => {
       const extent = this.dragBox.getGeometry().getExtent();
       const boxFeatures = this.olMarkersSource.getFeaturesInExtent(extent)
         .filter((ft) => ft?.getGeometry()?.intersectsExtent(extent));
-      //
+
       this.olSelectedMarkers.extend(boxFeatures);
       this.updateSelection(this.olSelectedMarkers);
-
-      // this.selectInteraction.getFeatures().extend(boxFeatures);
-      // this.selectInteraction.changed();
     });
 
     OLG = this;
     //end of constructor
-  }
-
-  updateSelection(sel: Collection<Feature<OLGeom.Geometry>>) {
-    const res: OLCallbackParam = {
-      coord: [0],
-      pixel: [0, 0],
-      features: [],
-    };
-      // const src = this.olMarkersSelLayerGL.getSource();
-    sel.forEach((ft: Feature) => {
-      const geom = ft.getGeometry();
-      if (geom?.getType() === 'Point')
-        res.features.push(ft);
-    }); //<<for each feature
-    if (this.olMarkersSelLayerGL) {
-      this.clearLayer(this.olMarkersSelLayerGL);
-      // this.addFeaturesBulk((res.features as Feature<OLGeom.Geometry>[]), this.olMarkersSelLayerGL);
-      this.olMarkersSelLayerGL.changed();
-    }
-    this.preventFocusing = true;
-    if (this.onSelectCallback)
-      this.onSelectCallback(res);
   }
 
   set useWebGL(v: boolean) {
@@ -378,6 +327,29 @@ export class OpenLayers {
     this.olMap.addInteraction(this.dragAndDropInteraction); //add dragNdrop ability
 
     //<<end of InitMap function
+  }
+
+  updateSelection(sel: Collection<Feature<OLGeom.Geometry>>) {
+    const res: OLCallbackParam = {
+      coord: [0],
+      pixel: [0, 0],
+      features: [],
+    };
+      // const src = this.olMarkersSelLayerGL.getSource();
+    // sel.forEach((ft: Feature) => {
+    //   const geom = ft.getGeometry();
+    //   if (geom?.getType() === 'Point')
+    //     res.features.push(ft);
+    // }); //<<for each feature
+    res.features.push(...sel.getArray());
+    if (this.olMarkersSelLayerGL) {
+      this.clearLayer(this.olMarkersSelLayerGL);
+      this.addFeaturesBulk((res.features as Feature<OLGeom.Geometry>[]), this.olMarkersSelLayerGL);
+      this.olMarkersSelLayerGL.changed();
+    }
+    this.preventFocusing = true;
+    if (this.onSelectCallback)
+      this.onSelectCallback(res);
   }
 
   prepareGLStyle(sizeval?: number, colorval?: string | number, opaval?: number, symbolval?: string): LiteralStyle {
