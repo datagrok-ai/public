@@ -33,7 +33,7 @@ The following data providers were integrated into Datagrok by simply importing t
 ## Socrata
 
 From [wikipedia](https://en.wikipedia.org/wiki/Socrata):
-[Socrata](https://socrata.com/) develops and operates a government domain-specific, cloud-based data as a service
+[Socrata](https://dev.socrata.com/) develops and operates a government domain-specific, cloud-based data as a service
 platform that breaks down government data silos. This platform has the ability to ingest, store and serve all variety of
 public sector data workloads
 

@@ -80,5 +80,5 @@ The Terraform code is highly configurable. Feel free to adapt the code and varia
 requirements.
 Terraform modules documentation:
 
-* https://github.com/datagrok-ai/tf-module-datagrok-core/blob/main/aws/README.md
-* https://github.com/datagrok-ai/tf-module-datagrok-cvm/blob/main/aws/README.md
+* [Datagrok Core README](https://github.com/datagrok-ai/tf-module-datagrok-core/blob/main/aws/README.md)
+* [Datagrok CVM README](https://github.com/datagrok-ai/tf-module-datagrok-cvm/blob/main/aws/README.md)
