@@ -9,10 +9,8 @@ import {getMonomerLib} from './utils/monomer-lib';
 
 export class MonomerWorks {
   monomerLib: IMonomerLib | null = null;
-  //Forbid non sequences
-  sequenceCol: DG.Column | null = null;
 
-  public async init(sequenceCol: DG.Column | null): Promise<void> {
+  public async init(): Promise<void> {
     const funcList: DG.Func[] = DG.Func.find({package: 'Helm', name: 'getAllLibsData'});
     if (funcList.length === 0)
       await grok.functions.call('Helm:initHelm');
@@ -21,7 +19,6 @@ export class MonomerWorks {
     this.monomerLib.onChanged.subscribe(() => {
       // invalidate something
     });
-    this.sequenceCol = sequenceCol;
   }
 
   //types according to Monomer possible
