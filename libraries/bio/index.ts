@@ -2,6 +2,7 @@
 import {PhylocanvasTreeNode, Newick, Utils, PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
 
 import {Aminoacids, AminoacidsPalettes} from './src/aminoacids';
+import {MonomerWorks} from './src/monomer-works';
 import {Nucleotides, NucleotidesPalettes} from './src/nucleotides';
 import {SeqPalette, SeqPaletteBase} from './src/seq-palettes';
 import {IMonomerLib, Monomer} from './src/types';
@@ -82,4 +83,5 @@ export {
   Monomer,
   IMonomerLib,
   getMonomerLib,
+  MonomerWorks,
 };
