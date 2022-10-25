@@ -57,6 +57,7 @@ module "datagrok_cvm" {
   private_subnet_ids               = module.datagrok_core.private_subnets
   docker_hub_secret_arn            = module.datagrok_core.docker_hub_secret
   create_route53_internal_zone     = false
+  create_route53_external_zone     = false
   route53_internal_zone            = module.datagrok_core.route_53_internal_zone
   create_cloudwatch_log_group      = false
   cloudwatch_log_group_arn         = module.datagrok_core.cloudwatch_log_group_arn
