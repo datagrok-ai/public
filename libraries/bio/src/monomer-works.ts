@@ -2,38 +2,35 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { MonomerLib } from './types/index';
-import { capTheMonomer } from './utils/to-atomic-level';
+import {IMonomerLib} from './types/index';
+import {capTheMonomer} from './utils/to-atomic-level';
+import {getMonomerLib} from './utils/monomer-lib';
 
 
 export class MonomerWorks {
-  monomerLib: MonomerLib | null = null;
+  monomerLib: IMonomerLib | null = null;
   //Forbid non sequences
   sequenceCol: DG.Column | null = null;
 
   public async init(sequenceCol: DG.Column | null): Promise<void> {
     const funcList: DG.Func[] = DG.Func.find({package: 'Helm', name: 'getAllLibsData'});
-    if(funcList.length === 0)
-      await grok.functions.call('Helm:initHelm')
+    if (funcList.length === 0)
+      await grok.functions.call('Helm:initHelm');
 
-    await this.refreshLib();
-    this.sequenceCol = sequenceCol;
-    
-    grok.events.onCustomEvent('monomersLibChanged').subscribe((_) => {
-      this.refreshLib();
+    this.monomerLib = await getMonomerLib();
+    this.monomerLib.onChanged.subscribe(() => {
+      // invalidate something
     });
+    this.sequenceCol = sequenceCol;
   }
 
-  private async refreshLib(): Promise<void> {
-    this.monomerLib = await grok.functions.call('Helm:getAllLibsData')
-  }
-
-  //types according to Monomer possible 
-  public getCappedMonomer(name: string, type: string) : string {
+  //types according to Monomer possible
+  public getCappedMonomer(name: string, type: string): string {
     const types = Object.keys(this.monomerLib!);
-    if(!types.includes(type))
+    if (!types.includes(type))
       throw '';
 
-    return capTheMonomer(this.monomerLib![type][name]);
+    //return capTheMonomer(this.monomerLib!.get(type, name));
+    return this.monomerLib!.get(type, name)!.m;
   }
 }

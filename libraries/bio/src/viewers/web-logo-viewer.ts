@@ -412,7 +412,7 @@ export class WebLogoViewer extends DG.JsViewer {
   }
 
   private get xScale() {
-    return (this.root.clientWidth - this.Length * this.positionMarginValue) / this.widthArea;
+    return this.widthArea > 0 ? (this.root.clientWidth - this.Length * this.positionMarginValue) / this.widthArea : 0;
   }
 
   private get yScale() {
@@ -447,13 +447,13 @@ export class WebLogoViewer extends DG.JsViewer {
       this.setSliderVisibility(true);
     }
     if ((this.slider != null) && (this.canvas != null)) {
-      let diffEndScrollAndSliderMin = Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length;
-      diffEndScrollAndSliderMin = diffEndScrollAndSliderMin > 0 ? diffEndScrollAndSliderMin : 0;
+      const diffEndScrollAndSliderMin = Math.max(0,
+        Math.floor(this.slider.min + this.canvas.width / this.positionWidthWithMargin) - this.Length);
       let newMin = Math.floor(this.slider.min - diffEndScrollAndSliderMin);
       let newMax = Math.floor(this.slider.min - diffEndScrollAndSliderMin) + Math.floor(this.canvas.width / this.positionWidthWithMargin);
       if (this.checkIsHideSlider()) {
         newMin = 0;
-        newMax = this.Length - 1;
+        newMax = Math.max(newMin, this.Length - 1);
       }
       this.turnOfResizeForOneSetValue = true;
       this.slider.setValues(0, this.Length,
