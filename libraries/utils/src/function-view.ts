@@ -7,6 +7,7 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
+import {historyUtils} from './history-utils';
 
 /**
    * Decorator to pass all thrown errors to grok.shell.error
@@ -30,12 +31,13 @@ export const passErrorToShell = () => {
 
 export const INTERACTIVE_CSS_CLASS = 'cv-interactive';
 
-type DateOptions = 'Any time' | 'Today' | 'Yesterday' | 'This week' | 'Last week' | 'This month' | 'Last month' | 'This year' | 'Last year';
+export type DateOptions = 'Any time' | 'Today' | 'Yesterday' | 'This week' | 'Last week' | 'This month' | 'Last month' | 'This year' | 'Last year';
 
-type FilterOptions = {
-  text?: string | null,
-  date?: DateOptions | null,
-  author?: DG.User | null,
+export type FilterOptions = {
+  text?: string,
+  date?: DateOptions,
+  author?: DG.User,
+  isShared?: boolean,
 };
 
 export const defaultUsersIds = {
@@ -215,7 +217,6 @@ export class FunctionView extends DG.ViewBase {
    * Override to create a fully custom UI including ribbon menus and panels
    * @stability Stable
  */
-  @passErrorToShell()
   public build(): void {
     this.root.appendChild(this.buildIO());
     this.root.appendChild(this.overlayDiv);
@@ -279,11 +280,7 @@ export class FunctionView extends DG.ViewBase {
     mainAcc.root.style.width = '100%';
     mainAcc.addTitle(ui.span(['History']));
 
-    const filteringOptions: FilterOptions = {
-      text: null,
-      date: null,
-      author: null
-    };
+    const filteringOptions: FilterOptions = {};
 
     const buildFilterPane = () => ui.wait(async () => {
       const textInput = ui.stringInput('Search', '', (v: string) => {
@@ -302,7 +299,7 @@ export class FunctionView extends DG.ViewBase {
       const filteredUsers = allUsers.filter((user) => !defaultUsers.includes(user.id));
 
       const authorInput = ui.choiceInput<DG.User | string>('Author', 'Anyone', ['Anyone', ...filteredUsers], (v: DG.User | string) => {
-        filteringOptions.author = (v === 'Anyone') ? null : v as DG.User;
+        filteringOptions.author = (v === 'Anyone') ? undefined : v as DG.User;
         updateSharedPane();
       });
       dateInput.addPatternMenu('datetime');
@@ -386,7 +383,6 @@ export class FunctionView extends DG.ViewBase {
         ]))
         .onOK(async () => {
           if (title.length > 0) {
-            funcCall = await this.loadRun(this.funcCall!.id);
             funcCall.options['title'] = title;
             funcCall.options['annotation'] = annotation;
             await this.addRunToShared(funcCall);
@@ -684,7 +680,6 @@ export class FunctionView extends DG.ViewBase {
    * @returns Saved FuncCall
    * @stability Experimental
  */
-  @passErrorToShell()
   public async removeRunFromFavorites(callToUnfavorite: DG.FuncCall): Promise<DG.FuncCall> {
     callToUnfavorite.options['title'] = null;
     callToUnfavorite.options['annotation'] = null;
@@ -705,7 +700,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns Saved FuncCall
    * @stability Experimental
  */
-  @passErrorToShell()
+
   public async addRunToFavorites(callToFavorite: DG.FuncCall): Promise<DG.FuncCall> {
     callToFavorite.options['isFavorite'] = true;
     await this.onBeforeAddingToFavorites(callToFavorite);
@@ -724,7 +719,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns Saved FuncCall
    * @stability Experimental
  */
-  @passErrorToShell()
+
   public async removeRunFromShared(callToUnshare: DG.FuncCall): Promise<DG.FuncCall> {
     callToUnshare.options['title'] = null;
     callToUnshare.options['annotation'] = null;
@@ -745,7 +740,7 @@ export class FunctionView extends DG.ViewBase {
    * @returns Saved FuncCall
    * @stability Experimental
  */
-  @passErrorToShell()
+
   public async addRunToShared(callToShare: DG.FuncCall): Promise<DG.FuncCall> {
     callToShare.options['isShared'] = true;
     await this.onBeforeAddingToShared(callToShare);
@@ -796,18 +791,7 @@ export class FunctionView extends DG.ViewBase {
  */
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
     await this.onBeforeSaveRun(callToSave);
-
-    const dfOutputs = wu(callToSave.outputParams.values() as DG.FuncCallParam[])
-      .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const output of dfOutputs)
-      await grok.dapi.tables.uploadDataFrame(callToSave.outputs[output.name]);
-
-    const dfInputs = wu(callToSave.inputParams.values() as DG.FuncCallParam[])
-      .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const input of dfInputs)
-      await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
-
-    const savedCall = await grok.dapi.functions.calls.save(callToSave);
+    const savedCall = await historyUtils.saveRun(callToSave);
     this.buildHistoryBlock();
     this.path = `?id=${savedCall.id}`;
     await this.onAfterSaveRun(savedCall);
@@ -834,10 +818,10 @@ export class FunctionView extends DG.ViewBase {
    * @returns ID of deleted historical run
    * @stability Stable
  */
-  @passErrorToShell()
+
   public async deleteRun(callToDelete: DG.FuncCall): Promise<string> {
     await this.onBeforeDeleteRun(callToDelete);
-    await grok.dapi.functions.calls.delete(callToDelete);
+    await historyUtils.deleteRun(callToDelete);
     await this.onAfterDeleteRun(callToDelete);
     return callToDelete.id;
   }
@@ -861,25 +845,10 @@ export class FunctionView extends DG.ViewBase {
    * @returns FuncCall augemented with inputs' and outputs' values
    * @stability Stable
  */
-  @passErrorToShell()
+
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     await this.onBeforeLoadRun();
-    const pulledRun = await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
-    // FIX ME: manually get script since pulledRun contains empty Func
-    const script = await grok.dapi.functions.find(pulledRun.func.id);
-    //@ts-ignore
-    window.grok_FuncCall_Set_Func(pulledRun.dart, script.dart);
-    pulledRun.options['isHistorical'] = true;
-    const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
-      .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const output of dfOutputs)
-      pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
-
-    const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
-      .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
-    for (const input of dfInputs)
-      pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
-
+    const pulledRun = await historyUtils.loadRun(funcCallId);
     await this.onAfterLoadRun(pulledRun);
     this.setRunViewReadonly();
     return pulledRun;
@@ -889,7 +858,7 @@ export class FunctionView extends DG.ViewBase {
 
   public async onAfterCloneRunAsCurrent() { }
 
-  @passErrorToShell()
+
   public async cloneRunAsCurrent() {
     if (!this.funcCall) throw new Error('Current Funccall is not set');
 
@@ -966,40 +935,7 @@ export class FunctionView extends DG.ViewBase {
    * @stability Stable
  */
   public async pullRuns(funcId: string, filterOptions: FilterOptions = {}, listOptions: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {}): Promise<DG.FuncCall[]> {
-    let filteringString = `func.id="${funcId}"`;
-    filteringString += filterOptions.author ? ` and session.user.id="${filterOptions.author.id}"`:'';
-    switch (filterOptions.date) {
-    case 'Today':
-      filteringString += ` and started > -1d`;
-      break;
-    case 'Yesterday':
-      filteringString += ` and started > -2d and started < -1d`;
-      break;
-    case 'Any time':
-      filteringString += ``;
-      break;
-    case 'Last year':
-      filteringString += `and started > -2y and started < -1y`;
-      break;
-    case 'This year':
-      filteringString += ` and started > -1y`;
-      break;
-    case 'Last month':
-      filteringString += ` and started > -2m and started < -1m`;
-      break;
-    case 'This month':
-      filteringString += ` and started > -1m`;
-      break;
-    case 'Last week':
-      filteringString += ` and started > -2w and started < -1w`;
-      break;
-    case 'This week':
-      filteringString += ` and started > -1w`;
-      break;
-    }
-    const filter = grok.dapi.functions.calls.filter(filteringString).include('session.user, options');
-    const list = filter.list(listOptions);
-    return list;
+    return historyUtils.pullRuns(funcId, filterOptions, listOptions);
   }
 
   /**
@@ -1018,7 +954,7 @@ export class FunctionView extends DG.ViewBase {
     this.outputParametersToView(this.lastCall!);
   }
 
-  @passErrorToShell()
+
   public async run(): Promise<void> {
     if (!this.funcCall) throw new Error('The correspoding function is not specified');
 
