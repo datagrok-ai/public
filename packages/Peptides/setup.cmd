@@ -7,6 +7,8 @@ set dirs=^
 \..\..\libraries\utils\ ^
 \..\..\libraries\ml\ ^
 \..\..\libraries\bio\ ^
+\..\..\packages\Bio\ ^
+\..\..\packages\Helm\ ^
 \
 
 for %%p in (%dirs%) do cd %package_dir%\%%p & call npm install
