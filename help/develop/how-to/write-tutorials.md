@@ -82,5 +82,5 @@ function header).
 
 See also:
 
-* [Packages](../develop/develop.md#packages)
-* [JavaScript API](../develop/js-api.md)
+* [Packages](../develop.md#packages)
+* [JavaScript API](../js-api.md)
