@@ -8,6 +8,7 @@ import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {historyUtils} from './history-utils';
+import {Subject} from 'rxjs';
 
 /**
    * Decorator to pass all thrown errors to grok.shell.error
@@ -281,11 +282,13 @@ export class FunctionView extends DG.ViewBase {
     mainAcc.addTitle(ui.span(['History']));
 
     const filteringOptions: FilterOptions = {};
+    const filteringText = new Subject();
 
     const buildFilterPane = () => ui.wait(async () => {
-      const textInput = ui.stringInput('Search', '', (v: string) => {
-        filteringOptions.text = v;
-        updateHistoryPane(filteringOptions);
+      const textInput = ui.stringInput('Search', '', (v: string) => filteringText.next(v));
+      DG.debounce(filteringText.asObservable(), 600).subscribe(() => {
+        filteringOptions.text = textInput.stringValue;
+        updateSharedPane();
       });
       const dateInput = ui.choiceInput('Date started', 'Any time', ['Any time', 'Today', 'Yesterday', 'This week', 'Last week', 'This month', 'Last month', 'This year', 'Last year'], (v: DateOptions) => {
         filteringOptions.date = v;
@@ -304,7 +307,7 @@ export class FunctionView extends DG.ViewBase {
       });
       dateInput.addPatternMenu('datetime');
       const form = ui.divV([
-        // textInput,
+        textInput,
         dateInput,
         authorInput,
       ], 'ui-form-condensed ui-form');
@@ -560,22 +563,22 @@ export class FunctionView extends DG.ViewBase {
     };
 
     const buildSharedList = () => ui.wait(async () => {
-      const historicalRuns = await this.pullRuns(this.func!.id, filteringOptions);
+      const historicalRuns = await historyUtils.pullRunsByName(this.func!.name, filteringOptions);
       const sharedRuns = historicalRuns.filter((run) => run.options['isShared']);
       if (sharedRuns.length > 0)
         return ui.wait(() => renderSharedCards(sharedRuns));
       else
         return ui.divText('No runs are marked as shared', 'description');
     });
-    let sharedListPane = mainAcc.addPane('Shared', buildSharedList, true);
+    let sharedListPane = mainAcc.addPane('Shared', () => buildSharedList(), true);
     const updateSharedPane = () => {
       const isExpanded = sharedListPane.expanded;
       mainAcc.removePane(sharedListPane);
-      sharedListPane = mainAcc.addPane('Shared', buildSharedList, isExpanded, favoritesListPane);
+      sharedListPane = mainAcc.addPane('Shared', () => buildSharedList(), isExpanded, favoritesListPane);
     };
 
     const buildFavoritesList = (filterOptions: FilterOptions = {}) => ui.wait(async () => {
-      const historicalRuns = await this.pullRuns(this.func!.id, filterOptions);
+      const historicalRuns = await historyUtils.pullRunsByName(this.func!.name, filterOptions);
       const favoriteRuns = historicalRuns.filter((run) => run.options['isFavorite'] && !run.options['isImported']);
       if (favoriteRuns.length > 0)
         return ui.wait(() => renderFavoriteCards(favoriteRuns));
@@ -596,7 +599,7 @@ export class FunctionView extends DG.ViewBase {
     };
 
     const buildHistoryPane = (filterOptions: FilterOptions = {}) => ui.wait(async () => {
-      const historicalRuns = (await this.pullRuns(this.func!.id, filterOptions));
+      const historicalRuns = (await historyUtils.pullRunsByName(this.func!.name, filterOptions));
       if (historicalRuns.length > 0)
         return ui.wait(() => renderHistoryCards(historicalRuns));
       else

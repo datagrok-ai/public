@@ -104,8 +104,10 @@ export namespace historyUtils {
     let filteringString = `func.name="${funcName}"`;
     filteringString += filterOptions.author ? ` and session.user.id="${filterOptions.author.id}"`:'';
     filteringString += filterOptions.date ? getSearchStringByPattern(filterOptions.date): '';
-    filteringString += filterOptions.isShared ? `and options.isShared="true"`: '';
-    const filter = grok.dapi.functions.calls.filter(filteringString).include('session.user, options');
+    filteringString += filterOptions.isShared ? ` and options.isShared="true"`: '';
+    filteringString += filterOptions.text ?
+      ` and ((options.title like "${filterOptions.text}") or (options.annotation like "${filterOptions.text}"))`: '';
+    const filter = grok.dapi.functions.calls.filter(`(${filteringString})`).include('session.user, options');
     const list = filter.list(listOptions);
     return list;
   }
