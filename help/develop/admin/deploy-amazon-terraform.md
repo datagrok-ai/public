@@ -48,10 +48,7 @@ More information about Datagrok design and components:
 
 3. [Setup AWS credentials to run Terraform code](https://developer.hashicorp.com/terraform/language/settings/backends/s3#credentials-and-shared-configuration)
 
-4. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)
-   . It must be shorter than ten symbols to meet AWS naming requirements.
-
-5. Apply Terraform code
+4. Apply Terraform code
 
    ```shell
    terraform init
@@ -59,7 +56,7 @@ More information about Datagrok design and components:
    terraform apply -target module.datagrok_cvm
    ```
 
-6. After the Datagrok container starts, the Datagrok server will deploy the database. You can check the status by
+5. After the Datagrok container starts, the Datagrok server will deploy the database. You can check the status by
    checking the running task log in [CloudWatch](https://aws.amazon.com/cloudwatch/)
 
 ### Configure Datagrok settings
