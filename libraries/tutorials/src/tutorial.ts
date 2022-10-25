@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { fromEvent, interval, Observable, Subject } from 'rxjs';
 import { filter, first, map } from 'rxjs/operators';
-import { _package } from './package';
 import { Track } from './track';
 
 
@@ -22,7 +21,6 @@ export abstract class Tutorial extends DG.Widget {
     return this._t;
   }
 
-  imageUrl: string = '';
   nextLink: HTMLAnchorElement = ui.link('next',
     '',
     'Go to the next tutorial', {
@@ -98,6 +96,9 @@ export abstract class Tutorial extends DG.Widget {
 
     this.title('Congratulations!');
     this.describe('You have successfully completed this tutorial.');
+
+    // console.clear();
+    // console.log(id);
 
     await grok.dapi.userDataStorage.postValue(Tutorial.DATA_STORAGE_KEY, this.name, new Date().toUTCString());
     
