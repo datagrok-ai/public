@@ -26,6 +26,11 @@ export const enum NOTATION {
   HELM = 'helm',
 }
 
+export const enum ALIGNMENT {
+  SEQ_MSA = 'SEQ.MSA',
+  SEQ = 'SEQ',
+}
+
 export const enum ALPHABET {
   DNA = 'DNA',
   RNA = 'RNA',
