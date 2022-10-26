@@ -1087,23 +1087,26 @@ function monomerSeqToMolfile(
 
   const molfileCountsLine = V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + V3K_COUNTS_LINE_ENDING;
 
-  // todo: optimize concatenation using Alexander's hint
-  const molfileParts = [
-    V3K_HEADER_FIRST_LINE,
-    V3K_HEADER_SECOND_LINE,
-    V3K_BEGIN_CTAB_BLOCK,
-    molfileCountsLine,
-    V3K_BEGIN_ATOM_BLOCK,
-    molfileAtomBlock.join(''),
-    V3K_END_ATOM_BLOCK,
-    V3K_BEGIN_BOND_BLOCK,
-    molfileBondBlock.join(''),
-    V3K_END_BOND_BLOCK,
-    V3K_END_CTAB_BLOCK,
-    V3K_END,
-  ];
+  // todo: possible optimization may be achieved by replacing .join('') with +=
+  // since counterintuitively joining an array into a new string is reportedly
+  // slower than using += as below
 
-  return molfileParts.join('');
+  let result = '';
+  result += V3K_HEADER_FIRST_LINE;
+  result += V3K_HEADER_SECOND_LINE;
+  result += V3K_BEGIN_CTAB_BLOCK;
+  result += molfileCountsLine;
+  result += V3K_BEGIN_ATOM_BLOCK;
+  result += molfileAtomBlock.join('');
+  result += V3K_END_ATOM_BLOCK;
+  result += V3K_BEGIN_BOND_BLOCK;
+  result += molfileBondBlock.join('');
+  result += V3K_END_BOND_BLOCK;
+  result += V3K_END_CTAB_BLOCK;
+  result += V3K_END;
+
+  // return molfileParts.join('');
+  return result;
 }
 
 /* Add the terminal oxygen to peptide/nucleotide chains  */
