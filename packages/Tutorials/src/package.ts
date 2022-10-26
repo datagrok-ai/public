@@ -13,7 +13,7 @@ import { Track } from './track';
 
 export const _package = new DG.Package();
 
-const tracks = [eda, chem, ml, da];
+const tracks: Track[] = [];
 
 //name: Tutorials
 //tags: app
@@ -34,6 +34,9 @@ export function tutorialWidget(): DG.Widget {
 
 //tags: init
 export async function tutorialsInit() {
+  const properties = await _package.getProperties();
+  setProperties(properties as unknown as { [propertyName: string]: boolean });
+
   const tutorialFuncs = DG.Func.find({ tags: ['tutorial'] });
   const trackFuncs = DG.Func.find({ tags: ['track'] });
   const defaultIcon = `${_package.webRoot}package.png`;
@@ -86,4 +89,21 @@ export async function tutorialsInit() {
       }
     }
   });
+}
+
+function setProperties(properties: { [propertyName: string]: boolean }) {
+  if (tracks.length > 0)
+    return;
+
+  const registry: { [propertyName: string]: Track } = {
+    'dataAnalysisTrack': eda,
+    'machineLearningTrack': ml,
+    'cheminformaticsTrack': chem,
+    'dataAccessTrack': da,
+  };
+
+  for (const property in properties) {
+    if (property in registry && properties[property] === true)
+      tracks.push(registry[property]);
+  }
 }
