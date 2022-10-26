@@ -19,7 +19,7 @@ category('top menu chem space', async () => {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
       await chemCommonRdKit.initRdKitModuleLocal();
     }
-    smallDf = await readDataframe('sar-small.csv');
+    smallDf = await readDataframe('tests/sar-small_test.csv');
   });
 
   test('chemSpaceOpens', async () => {

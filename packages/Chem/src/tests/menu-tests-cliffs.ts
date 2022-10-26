@@ -18,11 +18,11 @@ category('top menu activity cliffs', async () => {
   });
 
   test('activityCliffsOpen', async () => {
-    await _testActivityCliffsOpen('activity_cliffs.csv', 92);
+    await _testActivityCliffsOpen('tests/activity_cliffs_test.csv', 2);
   });
 
   test('activityCliffsWithEmptyRows', async () => {
-    await _testActivityCliffsOpen('tests/activity_cliffs_empty_rows.csv', 91);
+    await _testActivityCliffsOpen('tests/activity_cliffs_empty_rows.csv', 1);
   });
 
   after(async () => {
@@ -41,6 +41,6 @@ async function _testActivityCliffsOpen(dfName: string, numberCliffs: number) {
   expect(scatterPlot != null, true);
 
   const cliffsLink = Array.from(scatterPlot.root.children).filter((it) => it.className === 'ui-btn ui-btn-ok');
-  expect((cliffsLink[0] as HTMLElement).innerText, `${numberCliffs} cliffs`);
+  expect((cliffsLink[0] as HTMLElement).innerText.toLowerCase(), `${numberCliffs} cliffs`);
   actCliffsTableView.close();
 }
