@@ -44,8 +44,8 @@ type Atoms = {
   /* element symbols for monomer's atoms */
   atomTypes: string[],
   /* Cartesian coordiantes of monomer's atoms */
-  x: number[], // todo: convert to Float32
-  y: number[],
+  x: Float32Array,
+  y: Float32Array,
   /* V3K atom line may contain keyword args */
   kwargs: string[],
 }
@@ -53,7 +53,7 @@ type Atoms = {
 /* Stores necessary data about bonds of a monomer parsed from Molfile */
 type Bonds = {
   /* bond types for all lines of Molfile bond block */
-  bondTypes: number[], // todo: convert to Ind32
+  bondTypes: Uint32Array,
   /* Indices of all atom pairs, indexing starting from 1  */
   atomPairs: number[][],
   /* If a bond has CFG=... keyword argument, it is parsed and sotred as a
@@ -496,7 +496,7 @@ function convertMolfileToV3K(molfileV2K: string, moduleRdkit: any): string {
 
 /* Parse V3000 bond block and construct the Bonds object */
 function parseBondBlock(molfileV3K: string, bondCount: number): Bonds {
-  const bondTypes: number[] = new Array(bondCount);
+  const bondTypes: Uint32Array = new Uint32Array(bondCount);
   const atomPairs: number[][] = new Array(bondCount);
   const bondConfiguration = new Map<number, number>();
   const kwargs = new Map<number, string>;
@@ -609,8 +609,8 @@ function parseAtomAndBondCounts(molfileV3K: string): {atomCount: number, bondCou
  * and kwargs fields are set in the return value, with other fields dummy */
 function parseAtomBlock(molfileV3K: string, atomCount: number): Atoms {
   const atomTypes: string[] = new Array(atomCount);
-  const x: number[] = new Array(atomCount);
-  const y: number[] = new Array(atomCount);
+  const x: Float32Array = new Float32Array(atomCount);
+  const y: Float32Array = new Float32Array(atomCount);
   const kwargs: string[] = new Array(atomCount);
 
   let begin = molfileV3K.indexOf(V3K_BEGIN_ATOM_BLOCK); // V3000 atoms block
@@ -676,8 +676,10 @@ function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void 
 
     // remove the node from atoms
     atoms.atomTypes.splice(removedNodeIdx, 1);
-    atoms.x.splice(removedNodeIdx, 1);
-    atoms.y.splice(removedNodeIdx, 1);
+    // atoms.x.splice(removedNodeIdx, 1);
+    // atoms.y.splice(removedNodeIdx, 1);
+    atoms.x = spliceFloat32Array(atoms.x, removedNodeIdx, 1);
+    atoms.y = spliceFloat32Array(atoms.y, removedNodeIdx, 1);
     atoms.kwargs.splice(removedNodeIdx, 1);
 
     // update the values of terminal and r-group nodes if necessary
@@ -701,7 +703,8 @@ function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void 
       const secondAtom = bonds.atomPairs[i][1];
       if (firstAtom === removedNode || secondAtom === removedNode) {
         bonds.atomPairs.splice(i, 1);
-        bonds.bondTypes.splice(i, 1);
+        bonds.bondTypes = spliceUint32Array(bonds.bondTypes, i, 1);
+        // bonds.bondTypes.splice(i, 1);
         if (bonds.bondConfiguration.has(i))
           bonds.bondConfiguration.delete(i);
         if (bonds.kwargs.has(i))
@@ -732,6 +735,35 @@ function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void 
       }
     });
   }
+}
+
+// todo: rewrite the following two functions using templates,
+function spliceUint32Array(array: Uint32Array, start: number, count: number) {
+  const result = new Uint32Array(array.length - count);
+  let i = 0;
+  let k = 0;
+  while (i < array.length) {
+    result[k] = array[i];
+    ++k;
+    if (i === start)
+      i += count;
+    ++i;
+  }
+  return result;
+}
+
+function spliceFloat32Array(array: Float32Array, start: number, count: number) {
+  const result = new Float32Array(array.length - count);
+  let i = 0;
+  let k = 0;
+  while (i < array.length) {
+    result[k] = array[i];
+    ++k;
+    if (i === start)
+      i += count;
+    ++i;
+  }
+  return result;
 }
 
 /* Adjust the peptide MolGraph to default/standardized position  */
