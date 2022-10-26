@@ -743,10 +743,10 @@ function spliceUint32Array(array: Uint32Array, start: number, count: number) {
   let i = 0;
   let k = 0;
   while (i < array.length) {
-    result[k] = array[i];
-    ++k;
     if (i === start)
       i += count;
+    result[k] = array[i];
+    ++k;
     ++i;
   }
   return result;
@@ -757,10 +757,10 @@ function spliceFloat32Array(array: Float32Array, start: number, count: number) {
   let i = 0;
   let k = 0;
   while (i < array.length) {
-    result[k] = array[i];
-    ++k;
     if (i === start)
       i += count;
+    result[k] = array[i];
+    ++k;
     ++i;
   }
   return result;
