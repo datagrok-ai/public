@@ -1,11 +1,11 @@
 //@ts-ignore
-import {PhylocanvasTreeNode, Newick, Utils, PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
+import {PhylocanvasTreeNode, Newick, Utils, PhylocanvasGL, Shapes, TreeTypes} from '@phylocanvas/phylocanvas.gl';
 
 import {Aminoacids, AminoacidsPalettes} from './src/aminoacids';
 import {MonomerWorks} from './src/monomer-works';
 import {Nucleotides, NucleotidesPalettes} from './src/nucleotides';
 import {SeqPalette, SeqPaletteBase} from './src/seq-palettes';
-import {IMonomerLib, Monomer} from './src/types';
+import {IMonomerLib, INode, Node, Monomer, isLeaf} from './src/types';
 import {UnknownSeqPalette, UnknownSeqPalettes} from './src/unknown';
 import {DrawStyle, printLeftOrCentered} from './src/utils/cell-renderer';
 import {FastaFileHandler} from './src/utils/fasta-handler';
@@ -72,10 +72,13 @@ export {
   VdRegionType,
   VdRegion,
   IVdRegionsViewer,
+
+  INode, Node, isLeaf,
   PhylocanvasTreeNode,
   NodeStyleType, StylesType,
   IPhylocanvasGlViewer,
   PhylocanvasGL,
+  Shapes, TreeTypes,
   Utils,
   Newick,
   INewickHelper,
