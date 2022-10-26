@@ -8,7 +8,6 @@ import {getMonomericMols} from '../calculations/monomerLevelMols';
 import * as C from '../utils/constants';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
-import {TableView} from 'datagrok-api/dg';
 import {Subject} from 'rxjs';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
@@ -70,7 +69,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         const targetMolRow = this.idxs?.getRawData().findIndex((it) => it == this.targetMoleculeIdx);
         const targetScoreCell = grid.cell('score', targetMolRow!);
         targetScoreCell.cell.value = null;
-        (grok.shell.v as TableView).grid.root.addEventListener('click', (event: MouseEvent) => {
+        (grok.shell.v as DG.TableView).grid.root.addEventListener('click', (event: MouseEvent) => {
           this.gridSelect = false;
         });
         updateDivInnerHTML(this.root, grid.root);
