@@ -186,7 +186,7 @@ jobs:
           for dep in $grok_deps; do
             current_dir=$(pwd);
             cd ../;
-            dep_dir=$(grep -l "\"name\": \"$dep\"" */package.json);
+            dep_dir=$(grep -l "\"name\": \"$dep\"" */package.json | xargs -I {} dirname {});
             cd $dep_dir;
             npm install;
             npm run build;
