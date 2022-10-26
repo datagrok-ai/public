@@ -7,8 +7,6 @@ import * as bio from '@datagrok-libraries/bio';
 import {after, before, category, test, expect, expectArray} from '@datagrok-libraries/utils/src/test';
 
 import {checkInputColumn, multipleSequenceAlignmentAny} from '../package';
-import {UNITS} from 'datagrok-api/dg';
-import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 category('checkInputColumn', () => {
   const csv = `seq
@@ -41,7 +39,7 @@ seq4`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const col: DG.Column = df.getCol('seq');
     col.semType = DG.SEMTYPE.MACROMOLECULE;
-    col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+    col.setTag(DG.TAGS.UNITS, bio.NOTATION.HELM);
     col.setTag(bio.TAGS.alphabetSize, '11');
     col.setTag(bio.TAGS.alphabetIsMultichar, 'true');
 
@@ -56,7 +54,7 @@ seq4`;
     const df: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const col: DG.Column = df.getCol('seq');
     col.semType = DG.SEMTYPE.MACROMOLECULE;
-    col.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    col.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
     col.setTag(bio.TAGS.alphabet, 'UN');
     col.setTag(bio.TAGS.alphabetSize, '11');
     col.setTag(bio.TAGS.alphabetIsMultichar, 'true');

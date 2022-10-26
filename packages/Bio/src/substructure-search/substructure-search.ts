@@ -5,12 +5,11 @@ import * as bio from '@datagrok-libraries/bio';
 
 import * as C from '../utils/constants';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
-import {BitSet} from 'datagrok-api/dg';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 
 export const MONOMER_MOLS_COL = 'monomeric-mols';
 
-const enum MONOMERIC_COL_TAGS{
+const enum MONOMERIC_COL_TAGS {
   MONOMERIC_MOLS = 'monomeric-mols',
   LAST_INVALIDATED_VERSION = 'last-invalidated-version',
   MONOMERS_DICT = 'monomers-dict'
@@ -64,7 +63,7 @@ export function substructureSearchDialog(col: DG.Column): void {
       const colExists = col.dataFrame.columns.names()
         .filter((it) => it.toLocaleLowerCase() === matchesColName.toLocaleLowerCase()).length > 0;
       if (!colExists) {
-        let matches: BitSet;
+        let matches: DG.BitSet;
         if (units === bio.NOTATION.HELM)
           matches = await helmSubstructureSearch(substructure, col);
         else
@@ -92,13 +91,13 @@ function prepareSubstructureRegex(substructure: string, separator: string) {
   const endsWithSep = substructure.charAt(substructure.length - 1) === separator;
   const substrWithoutSep = substructure.replace(new RegExp(`^${char}|${char}$`, 'g'), '');
   const re = startsWithSep ? endsWithSep ? `${char}${substrWithoutSep}${char}` :
-    `${char}${substrWithoutSep}${char}|${char}${substrWithoutSep}$` :
+      `${char}${substrWithoutSep}${char}|${char}${substrWithoutSep}$` :
     endsWithSep ? `^${substrWithoutSep}${char}|${char}${substrWithoutSep}${char}` :
       `^${substrWithoutSep}${char}|${char}${substrWithoutSep}${char}|${char}${substrWithoutSep}$`;
   return re;
 }
 
-export async function helmSubstructureSearch(substructure: string, col: DG.Column): Promise<BitSet> {
+export async function helmSubstructureSearch(substructure: string, col: DG.Column): Promise<DG.BitSet> {
   if (col.version !== col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
     await invalidateHelmMols(col);
   const substructureCol = DG.Column.string('helm', 1).init((i) => substructure);
