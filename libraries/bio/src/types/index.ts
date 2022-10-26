@@ -2,14 +2,35 @@
 
 import {Observable} from 'rxjs';
 
-interface NodeType {
+export interface INode<TNode extends INode<TNode>> {
   name: string;
-  children: NodeType[];
-  branch_length: number;
-  isLeaf: boolean;
+  branch_length?: number;
+  children: TNode[];
+
+  clone(): TNode;
 }
 
-export {NodeType as NodeType};
+export function isLeaf<TNode extends INode<TNode>>(node: TNode) {
+  return !node.children || node.children.length == 0;
+}
+
+
+export class Node implements INode<Node> {
+  name: string;
+  children: Node[];
+  branch_length?: number;
+
+  constructor(name: string, branch_length?: number, children: Node[] = [],) {
+    this.name = name;
+    this.branch_length = branch_length;
+    this.children = children;
+  }
+
+  /** Shallow copy, copies children list but children itself remains reference to the same */
+  clone() {
+    return new Node(this.name, this.branch_length, [...this.children],);
+  }
+}
 
 export type Monomer = {
   at: { [R: string]: string },
