@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/tutorials",
   "friendlyName": "Tutorials",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "author": {
     "name": "Diana Onufriienko",
     "email": "donufriienko@datagrok.ai"
@@ -62,6 +62,32 @@
     "test-dev": "set HOST=dev && jest",
     "test-local": "set HOST=localhost && jest"
   },
+  "properties": [
+    {
+      "name": "dataAnalysisTrack",
+      "propertyType": "bool",
+      "defaultValue": true,
+      "nullable": false
+    },
+    {
+      "name": "machineLearningTrack",
+      "propertyType": "bool",
+      "defaultValue": true,
+      "nullable": false
+    },
+    {
+      "name": "cheminformaticsTrack",
+      "propertyType": "bool",
+      "defaultValue": true,
+      "nullable": false
+    },
+    {
+      "name": "dataAccessTrack",
+      "propertyType": "bool",
+      "defaultValue": true,
+      "nullable": false
+    }
+  ],
   "canEdit": [
     "Developers"
   ],
