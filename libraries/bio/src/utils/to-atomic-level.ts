@@ -5,7 +5,7 @@ import {SplitterFunc, TAGS, getSplitter} from '../../index';
 import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, RGROUP_FIELDS} from './const';
 import {ALPHABET, NOTATION} from './macromolecule';
 import {NotationConverter} from './notation-converter';
-import { Monomer } from '../types/index';
+import {Monomer} from '../types/index';
 
 // constants for parsing molfile V2000
 const V2K_RGP_SHIFT = 8;
@@ -63,8 +63,7 @@ type Bonds = {
   kwargs: Map<number, string>,
 }
 
-/* Metadata associated with the monomer necessary to restore the resulting
- * molfile  */
+/* Metadata associated with the monomer necessary to restore the resulting molfile */
 type MonomerMetadata = {
   /* terminal nodes: 0-th corresponds to the "leftmost" one, 1st, to the "rightmost",
    * e.g. N-terminus and C-terminus in peptides */
@@ -112,7 +111,7 @@ type LoopConstants = {
 
 /* Helper structure to simulate pointer to number  */
 type NumberWrapper = {
-  value: number | null
+  value: number | null // null if there is no branch attach node
 }
 
 // todo: verify that all functions have return types
@@ -238,8 +237,8 @@ async function getMonomersDict(
     value: null
   };
 
-  // add deoxyribose/ribose and phosphate for nucleotide sequences
-  // this should NOT be placed after translating monomer sequences because
+  // this must NOT be placed after translating monomer sequences
+  // because adding branch monomers for nucleobases relies on these data
   if (polymerType === HELM_POLYMER_TYPE.RNA) {
     const symbols = (alphabet === ALPHABET.RNA) ?
       [RIBOSE, PHOSPHATE] : [DEOXYRIBOSE, PHOSPHATE];
@@ -331,7 +330,7 @@ function getMolGraph(
 
 function setShiftsAndTerminalNodes(
   polymerType: HELM_POLYMER_TYPE, monomerGraph: MolGraph, monomerSymbol: string
-) {
+): void {
   // remove the 'rightmost' chain-extending r-group node in the backbone
   if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
     setShifts(monomerGraph, polymerType);
@@ -447,7 +446,7 @@ function setTerminalNodes(bonds: Bonds, meta: MonomerMetadata): void {
   }
 }
 
-//todo: doc
+/* Sets shifts in 'meta' attribute of MolGraph  */
 function setShifts(molGraph: MolGraph, polymerType: HELM_POLYMER_TYPE): void {
   if (molGraph.meta.rNodes.length > 1) {
     molGraph.meta.backboneShift = [
@@ -579,19 +578,14 @@ function parseCapGroupIdxMap(molfileV2K: string): Map<number, number> {
     const rgpIndicesArray = rgpStringParsed.map((el) => parseInt(el))
       .slice(1); // slice from 1 because the 1st value is the number of pairs in the line
     for (let i = 0; i < rgpIndicesArray.length; i += 2) {
-      // notice: there may be conflicting cap group definitions, like 3-O-Methylribose (2,5 connectivity)
-      // (the last monomer in HELMCoreLibrary)
-      // there the indices of cap groups are self-contradictory
-      // todo: clarify why such situations occur in principle
+      // there may be conflicting cap group definitions, like 3-O-Methylribose (2,5 connectivity) in HELMCoreLibrary
       if (capGroupIdxMap.has(rgpIndicesArray[i]) && capGroupIdxMap.get(rgpIndicesArray[i]) !== rgpIndicesArray[i + 1])
         throw new Error(`r-group index ${rgpIndicesArray[i]} has already been added with a different value`);
       else
         capGroupIdxMap.set(rgpIndicesArray[i], rgpIndicesArray[i+1]);
     }
-
     begin = molfileV2K.indexOf(V2K_RGP_LINE, end);
   }
-
   return capGroupIdxMap;
 }
 
@@ -813,7 +807,6 @@ function adjustBaseMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberW
   const rotatedNode = monomer.meta.rNodes[0] - 1;
 
   // center graph at centeredNode
-  // todo: refactor using Point?
   shiftCoordinates(monomer, -x[centeredNode], -y[centeredNode]);
 
   // rotate so that the branch bond is aligned with that in sugar
@@ -845,7 +838,7 @@ function adjustBaseMonomerGraph(monomer: MolGraph, pointerToBranchAngle: NumberW
   }
 }
 
-function getEuclideanDistance(p1: Point, p2: Point) {
+function getEuclideanDistance(p1: Point, p2: Point): number {
   return keepPrecision(Math.sqrt(
     (p1.x - p2.x)**2 + (p1.y - p2.y)**2
   ));
@@ -975,7 +968,7 @@ function swapNodes(monomer: MolGraph, nodeOne: number, nodeTwo: number): void {
   y[nodeTwoIdx] = tmpY;
 }
 
-// todo: doc
+/* Maps a node to the list of nodes bound to it */
 function constructBondsMap(monomer: MolGraph): Map<number, Array<number>> {
   const map = new Map<number, Array<number>>();
   for (const atomPairs of monomer.bonds.atomPairs) {
@@ -1006,9 +999,9 @@ function shiftCoordinates(molGraph: MolGraph, xShift: number, yShift?: number): 
 function monomerSeqToMolfile(
   monomerSeq: string[], monomersDict: Map<string, MolGraph>, alphabet: ALPHABET, polymerType: HELM_POLYMER_TYPE
 ): string {
-  // todo: handle the case when the polymer is empty
   if (monomerSeq.length === 0)
-    throw new Error('monomerSeq is empty');
+    return '';
+    // throw new Error('monomerSeq is empty');
 
   // define atom and bond counts, taking into account the bond type
   const {atomCount, bondCount} = getResultingAtomBondCounts(monomerSeq, monomersDict, alphabet, polymerType);
@@ -1099,16 +1092,15 @@ function capMolblock(
     1 + ' ' + firstAtom + ' ' + secondAtom + '\n';
 }
 
-// todo: doc
 function addAminoAcidToMolblock(monomer: MolGraph, molfileAtomBlock: string[],
-  molfileBondBlock: string[], v: LoopVariables, C: LoopConstants
+  molfileBondBlock: string[], v: LoopVariables
 ): void {
   v.flipFactor = (-1)**(v.i % 2); // to flip every even monomer over OX
-  addBackboneMonomerToMolblock(monomer, molfileAtomBlock, molfileBondBlock, v, C);
+  addBackboneMonomerToMolblock(monomer, molfileAtomBlock, molfileBondBlock, v);
 }
 
 function addBackboneMonomerToMolblock(
-  monomer: MolGraph, molfileAtomBlock: string[], molfileBondBlock: string[], v: LoopVariables, C: LoopConstants
+  monomer: MolGraph, molfileAtomBlock: string[], molfileBondBlock: string[], v: LoopVariables
 ): void {
   // todo: remove these comments to the docstrings of the corr. functions
   // construnct the lines of V3K molfile atom block
@@ -1125,27 +1117,26 @@ function addBackboneMonomerToMolblock(
     updateBranchVariables(monomer, v);
 
   // update loop variables
-  updateChainExtendingVariables(monomer, v, C);
+  updateChainExtendingVariables(monomer, v);
 }
 
-// todo: doc
 function addNucleotideToMolblock(
   nucleobase: MolGraph, molfileAtomBlock: string[], molfileBondBlock: string[], v: LoopVariables, C: LoopConstants
 ): void {
   // construnct the lines of V3K molfile atom block corresponding to phosphate
   // and sugar
   if (v.i === 0) {
-    addBackboneMonomerToMolblock(C.sugar!, molfileAtomBlock, molfileBondBlock, v, C);
+    addBackboneMonomerToMolblock(C.sugar!, molfileAtomBlock, molfileBondBlock, v);
   } else {
     for (const monomer of [C.phosphate, C.sugar])
-      addBackboneMonomerToMolblock(monomer!, molfileAtomBlock, molfileBondBlock, v, C);
+      addBackboneMonomerToMolblock(monomer!, molfileAtomBlock, molfileBondBlock, v);
   }
 
-  addBranchMonomerToMolblock(nucleobase, molfileAtomBlock, molfileBondBlock, v, C);
+  addBranchMonomerToMolblock(nucleobase, molfileAtomBlock, molfileBondBlock, v);
 }
 
 function addBranchMonomerToMolblock(
-  monomer: MolGraph, molfileAtomBlock: string[], molfileBondBlock: string[], v: LoopVariables, C: LoopConstants
+  monomer: MolGraph, molfileAtomBlock: string[], molfileBondBlock: string[], v: LoopVariables
 ): void {
   fillBranchAtomLines(monomer, molfileAtomBlock, v);
   fillBondLines(monomer, molfileBondBlock, v);
@@ -1163,7 +1154,7 @@ function addBranchMonomerToMolblock(
   v.nodeShift += monomer.atoms.atomTypes.length;
 }
 
-function updateChainExtendingVariables(monomer: MolGraph, v: LoopVariables, C: LoopConstants): void {
+function updateChainExtendingVariables(monomer: MolGraph, v: LoopVariables): void {
   v.backboneAttachNode = v.nodeShift + monomer.meta.terminalNodes[1];
   v.bondShift += monomer.bonds.atomPairs.length + 1;
 
@@ -1172,7 +1163,7 @@ function updateChainExtendingVariables(monomer: MolGraph, v: LoopVariables, C: L
   v.backbonePositionShift[1] += v.flipFactor * monomer.meta.backboneShift![1];
 }
 
-function updateBranchVariables(monomer: MolGraph, v: LoopVariables) {
+function updateBranchVariables(monomer: MolGraph, v: LoopVariables): void {
   v.branchAttachNode = v.nodeShift + monomer.meta.terminalNodes[2];
   for (let i = 0; i < 2; ++i)
     v.branchPositionShift[i] = v.backbonePositionShift[i] + monomer.meta.branchShift![i];
@@ -1295,7 +1286,7 @@ function getResultingAtomBondCounts(
 }
 
 /* Keep precision upon floating point operations over atom coordinates */
-function keepPrecision(x: number) {
+function keepPrecision(x: number): number {
   return Math.round(PRECISION_FACTOR * x)/PRECISION_FACTOR;
 }
 

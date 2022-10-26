@@ -538,7 +538,7 @@ export async function debugToAtomicLevel(): Promise<void> {
   const macroMolCol = df.col('seq')!;
   macroMolCol.semType = DG.SEMTYPE.MACROMOLECULE;
   macroMolCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-  macroMolCol.setTag(TAGS.aligned, ALIGNMENT.SEQ_MSA);
+  macroMolCol.setTag(TAGS.aligned, bio.ALIGNMENT.SEQ_MSA);
   macroMolCol.setTag(TAGS.alphabet, ALPHABET.RNA);
 
   grok.shell.addTableView(df);
