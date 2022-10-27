@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
-import {NodeType} from '@datagrok-libraries/bio/src/types';
 
 import {Newick} from '@phylocanvas/phylocanvas.gl';
 

@@ -4,11 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import * as bio from '@datagrok-libraries/bio';
 
 import * as rxjs from 'rxjs';
-import {TreeTypes, Shapes} from '@datagrok-libraries/bio/src/consts';
-import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
 import {TREE_TAGS} from '../consts';
 import {Unsubscribable} from 'rxjs';
 import $ from 'cash-dom';
+import {Newick} from '@datagrok-libraries/bio';
 
 
 // // import {TreeAnalyzer, PhylocanvasTreeNode, getVId} from './utils/tree-stats';
@@ -51,14 +50,13 @@ export enum TreeTypesNames {
 }
 
 const TreeTypesTypes: { [streeType: string]: string } = {
-  [TreeTypesNames.Radial]: TreeTypes.Radial,
-  [TreeTypesNames.Rectangular]: TreeTypes.Rectangular, // rectangular edges, leaves listed vertically
-  [TreeTypesNames.Polar]: TreeTypes.Circular,
-  [TreeTypesNames.Diagonal]: TreeTypes.Diagonal,
-  [TreeTypesNames.Orthogonal]: TreeTypes.Hierarchical, // rectangular edges, leaves listed horizontally
+  [TreeTypesNames.Radial]: bio.TreeTypes.Radial,
+  [TreeTypesNames.Rectangular]: bio.TreeTypes.Rectangular, // rectangular edges, leaves listed vertically
+  [TreeTypesNames.Polar]: bio.TreeTypes.Circular,
+  [TreeTypesNames.Diagonal]: bio.TreeTypes.Diagonal,
+  [TreeTypesNames.Orthogonal]: bio.TreeTypes.Hierarchical, // rectangular edges, leaves listed horizontally
 };
 
-type StylesType = { [nodeName: string]: { [prop: string]: any } };
 
 export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvasGlViewer {
   private viewed: boolean = false;
@@ -96,7 +94,6 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
   zoom: number;
 
   newick: string | null = null;
-  styles: StylesType | null = null;
 
   parsedNewick: Object;
 
@@ -107,9 +104,9 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
 //   title: string;
 //
   treeDiv: HTMLDivElement | null;
-  phylocanvasViewer: PhylocanvasGL | null;
+  phylocanvasViewer: bio.PhylocanvasGL | null;
   /** Container to store prop values while phylocanvasViewer is not created yet */
-  phylocanvasProps: { [p: string]: any } | null = {};
+  phylocanvasProps: { [p: string]: any } = {};
 
   private viewSubs: Unsubscribable[] = [];
 
@@ -126,7 +123,7 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     this.strokeColor = this.int('strokeColor', 0x222222, {category: PROPS_CATS.APPEARANCE});
     this.showShapes = this.bool('showShapes', true, {category: PROPS_CATS.APPEARANCE});
     this.nodeShape = this.string('nodeShape', 'Circle',
-      {category: PROPS_CATS.APPEARANCE, choices: Object.keys(Shapes)});
+      {category: PROPS_CATS.APPEARANCE, choices: Object.keys(bio.Shapes)});
     this.haloRadius = this.float('haloRadius', 12,
       {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 1, max: 32});
     this.haloWidth = this.float('haloWidth', 4,
@@ -255,9 +252,7 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     if (this.phylocanvasViewer) {
       this.phylocanvasViewer.destroy();
       this.phylocanvasViewer = null;
-      this.phylocanvasProps = {};
-
-      this.styles = null;
+      // this.phylocanvasProps = {}; // the value is required to restore view in destroyView/buildView
     }
 
     if (this.treeDiv) {
@@ -283,26 +278,27 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     // const treeNode = mlbView.dockManager.dock(treeDiv, DG.DOCK_TYPE.DOWN);
 
     if (!this.phylocanvasViewer) {
-      const props: { [p: string]: any } = {
-        // interactive: this.interactive,
-        // showLabels: this.showLabels,
-        // showLeafLabels: this.showLeafLabels,
-        // nodeShape: this.nodeShape,
-        // fontFamily: this.fontFamily,
-        // fontSize: this.fontSize,
-        // nodeSize: this.nodeSize,
-        // size: this.treeDiv.getBoundingClientRect(),
-        source: this.newick,
-        // type: TreeTypesTypes[this.type],
-      };
-      // if (this.styles)
-      //   props['styles'] = this.styles;
+      const newickRoot = Newick.parse_newick(this.newick!);
+      const props: { [p: string]: any } = {};
       Object.assign(props, this.phylocanvasProps);
-      this.phylocanvasProps = null;
-      this.phylocanvasViewer = new PhylocanvasGL(this.treeDiv, props);
+      Object.assign(props, {source: {type: 'biojs', data: newickRoot}});
+      // this.phylocanvasProps = {}; / the value is required to restore view in destroyView/buildView
+
+      this.phylocanvasViewer = new bio.PhylocanvasGL(this.treeDiv, props);
       this.phylocanvasViewer.deck.setProps({useDevicePixels: true});
+      this.phylocanvasViewer.view.style.backgroundImage = 'none';
+
       this.calcSize();
+
+      //@ts-ignore
+      // const pCtx: CanvasRenderingContext2D = this.phylocanvasViewer.deck.canvas.getContext('2d');
+      // pCtx.fillStyle = '#80FFF0';
+      // pCtx.fillRect(10, 10, 50, 50);
+
       let k = 11;
+
+      //@ts-ignore
+      this.phylocanvasViewer.deck.animationLoop.redraw();
 
 
       // this.subs.push(
@@ -361,10 +357,9 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     }
 
     const setProps = (props: { [p: string]: any }) => {
+      Object.assign(this.phylocanvasProps!, props);
       if (this.phylocanvasViewer)
         this.phylocanvasViewer.setProps(props);
-      else
-        Object.assign(this.phylocanvasProps!, props);
     };
 
     switch (property.name) {
@@ -374,7 +369,7 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
       break;
 
     case 'nodeShape':
-      const nodeShapeValue: string = Shapes[this.nodeShape];
+      const nodeShapeValue: string = bio.Shapes[this.nodeShape];
       setProps({nodeShape: nodeShapeValue});
       break;
 
@@ -432,10 +427,10 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     }
   }
 
-  setStyles(styles: { [nodeName: string]: { [prop: string]: any } }): void {
-    this.styles = styles;
-    if (this.phylocanvasViewer)
-      this.phylocanvasViewer?.setProps({styles: this.styles});
+  setProps(updater: { [propName: string]: any }): void {
+    Object.assign(this.phylocanvasProps, updater);
+    if (this.phylocanvasViewer !== null)
+      this.phylocanvasViewer.setProps(updater);
   }
 }
 
