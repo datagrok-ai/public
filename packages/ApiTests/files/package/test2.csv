@@ -1,0 +1,10 @@
+friendly_name,entity_name,namespace,is_deleted,type_name,version_name,package_name,version,debug
+Test,Test,,false,GrokPackage,,,,false
+Test,Test,,false,GrokPublishedPackage,,,,false
+info,info,Test:,false,PackageFunc,Test,Test,1.0.1,false
+test,test,Test:,false,PackageFunc,Test,Test,1.0.1,false
+info,info,Test:,true,PackageFunc,,,,false
+test,test,Test:,true,PackageFunc,,,,false
+Test,Test,,false,Project,,,,false
+test,Test,Test:,false,Script,Test,Test,1.0.1,false
+test,Test,Test:,true,Script,,,,false
