@@ -1095,10 +1095,11 @@ export class PeptidesModel {
     });
     this.monomerWorks = new bio.MonomerWorks(this.monomerLib);
 
-    this.currentView = this.df.tags[C.PEPTIDES_ANALYSIS] == 'true' ? grok.shell.v as DG.TableView :
+    this.currentView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.tags[C.PEPTIDES_ANALYSIS] === 'true') ??
       grok.shell.addTableView(this.df);
+    grok.shell.v = this.currentView;
     this.sourceGrid = this.currentView.grid;
-    if (this.df.tags[C.PEPTIDES_ANALYSIS] == 'true')
+    if (this.df.tags[C.PEPTIDES_ANALYSIS] === 'true')
       return;
 
     this.df.tags[C.PEPTIDES_ANALYSIS] = 'true';
