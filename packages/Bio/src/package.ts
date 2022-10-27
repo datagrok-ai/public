@@ -12,7 +12,7 @@ import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignmen
 import {SequenceAlignment, Aligned} from './seq_align';
 import {getEmbeddingColsNames, sequenceSpace} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './analysis/sequence-activity-cliffs';
+import {createLinesGrid, createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './analysis/sequence-activity-cliffs';
 import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq} from '@datagrok-libraries/bio/src/utils/monomer-utils';
 import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
 import {getMacroMol} from './utils/atomic-works';
@@ -195,6 +195,7 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
     getSimilaritiesMarix,
     createTooltipElement,
     createPropPanelElement,
+    createLinesGrid,
     (options as any)[methodName]);
   return sp;
 }
