@@ -7,6 +7,12 @@ import {ALPHABET, NOTATION} from './macromolecule';
 import {NotationConverter} from './notation-converter';
 import {Monomer} from '../types/index';
 
+// interface for typed arrays, like Float32Array and Uint32Array
+interface ITypedArray {
+  length: number;
+  [key: number]: any;
+}
+
 // constants for parsing molfile V2000
 const V2K_RGP_SHIFT = 8;
 const V2K_RGP_LINE = 'M  RGP';
@@ -676,10 +682,8 @@ function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void 
 
     // remove the node from atoms
     atoms.atomTypes.splice(removedNodeIdx, 1);
-    // atoms.x.splice(removedNodeIdx, 1);
-    // atoms.y.splice(removedNodeIdx, 1);
-    atoms.x = spliceFloat32Array(atoms.x, removedNodeIdx, 1);
-    atoms.y = spliceFloat32Array(atoms.y, removedNodeIdx, 1);
+    atoms.x = spliceTypedArray<Float32Array>(Float32Array, atoms.x, removedNodeIdx, 1);
+    atoms.y = spliceTypedArray<Float32Array>(Float32Array, atoms.y, removedNodeIdx, 1);
     atoms.kwargs.splice(removedNodeIdx, 1);
 
     // update the values of terminal and r-group nodes if necessary
@@ -703,8 +707,7 @@ function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void 
       const secondAtom = bonds.atomPairs[i][1];
       if (firstAtom === removedNode || secondAtom === removedNode) {
         bonds.atomPairs.splice(i, 1);
-        bonds.bondTypes = spliceUint32Array(bonds.bondTypes, i, 1);
-        // bonds.bondTypes.splice(i, 1);
+        bonds.bondTypes = spliceTypedArray<Uint32Array>(Uint32Array, bonds.bondTypes, i, 1);
         if (bonds.bondConfiguration.has(i))
           bonds.bondConfiguration.delete(i);
         if (bonds.kwargs.has(i))
@@ -738,28 +741,16 @@ function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void 
 }
 
 // todo: rewrite the following two functions using templates,
-function spliceUint32Array(array: Uint32Array, start: number, count: number) {
-  const result = new Uint32Array(array.length - count);
+function spliceTypedArray<T extends ITypedArray>(
+  TConstructor: { new(length: number): T; }, typedArray: T, start: number, count: number
+) {
+  const result = new TConstructor(typedArray.length - count);
   let i = 0;
   let k = 0;
-  while (i < array.length) {
+  while (i < typedArray.length) {
     if (i === start)
       i += count;
-    result[k] = array[i];
-    ++k;
-    ++i;
-  }
-  return result;
-}
-
-function spliceFloat32Array(array: Float32Array, start: number, count: number) {
-  const result = new Float32Array(array.length - count);
-  let i = 0;
-  let k = 0;
-  while (i < array.length) {
-    if (i === start)
-      i += count;
-    result[k] = array[i];
+    result[k] = typedArray[i];
     ++k;
     ++i;
   }
