@@ -10,6 +10,8 @@ import {PhylocanvasGlViewerApp} from './apps/phylocanvas-gl-viewer-app';
 import {GridWithTreeViewer} from './viewers/grid-with-tree-viewer';
 import {GridWithTreeApp} from './apps/grid-with-tree-app';
 import {injectTreeToGridUI} from './viewers/inject-tree-to-grid';
+import {NewickHelper} from './utils/newick-helper';
+import {TreeInGridCellApp} from './apps/tree-in-grid-cell-app';
 
 
 export const _package = new DG.Package();
@@ -22,6 +24,17 @@ export const _package = new DG.Package();
 export function _newickToDf(newick: string, name: string): DG.DataFrame {
   return newickToDf(newick, name);
 };
+
+let _newickHelper: NewickHelper | null = null;
+
+//name: getNewickHelper
+//description: Get object of interface bio.NewickHelper
+//output: object result
+export function getNewickHelper() {
+  if (!_newickHelper)
+    _newickHelper = new NewickHelper();
+  return _newickHelper;
+}
 
 //name: PhyloTree
 //description: Phylogenetic tree visualization
@@ -99,6 +112,26 @@ export async function gridWithTreeApp(): Promise<void> {
     await app.init();
   } catch (err: unknown) {
     const msg: string = 'PhyloTreeViewer gridWithTreeViewerApp() error: ' +
+      `${err instanceof Error ? err.message : (err as Object).toString()}`;
+    grok.shell.error(msg);
+    //@ts-ignore
+    console.error(err);
+    // if ('stack' in err)
+    //   console.error(err['stack']);
+  } finally {
+    pi.close();
+  }
+}
+
+//name: TreeInGridCell
+//tags: app
+export async function treeInGridCellApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open TreeInGridCell app');
+  try {
+    const app = new TreeInGridCellApp();
+    await app.init();
+  } catch (err: unknown) {
+    const msg: string = 'PhyloTreeViewer treeInGridCellApp() error: ' +
       `${err instanceof Error ? err.message : (err as Object).toString()}`;
     grok.shell.error(msg);
     //@ts-ignore
