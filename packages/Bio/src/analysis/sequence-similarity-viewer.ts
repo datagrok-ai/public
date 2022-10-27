@@ -61,7 +61,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         const resDf = DG.DataFrame.fromColumns([this.idxs!, this.molCol!, this.scores!]);
         resDf.onCurrentRowChanged.subscribe((_) => {
           this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
-          this.createPropertyPanel(resDf);
+          setTimeout(() => { this.createPropertyPanel(resDf); }, 100);
           this.gridSelect = true;
         });
         const grid = resDf.plot.grid();
