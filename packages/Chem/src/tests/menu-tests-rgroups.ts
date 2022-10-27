@@ -44,15 +44,15 @@ category('top menu r-groups', () => {
       'core': 'c1ccccc1',
       'prefix': 'R'
     });
-    expect(rgroups.getCol('R1').get(0), '[R1]C(=NCC(=O)N[R1])C1CCCCC1');
-    expect(rgroups.getCol('R1').get(1), '[R1]C(=NCC(=O)N([R1])C)C1CCCCC1');
-    expect(rgroups.getCol('R1').get(2), '[R1]C(=NCC(=O)N([R1])CCCC)C1CCCCC1');
-    expect(rgroups.getCol('R1').get(3), '[R1]C(=NCC(=O)N([R1])CCC(C)C)C1CCCCC1');
-    expect(rgroups.getCol('R1').get(4), '[R1]C(=NCC(=O)N([R1])CC1CCCCC1)C1CCCCC1');
-    expect(rgroups.getCol('R1').get(5), '[R1]C(=NCC(=O)N[R1])C1CCCCC1');
-    expect(rgroups.getCol('R1').get(6), '[R1]C(=NCC(=O)N([R1])C)C1CCCCC1');
-    expect(rgroups.getCol('R2').get(5), '[R2]Cl');
-    expect(rgroups.getCol('R2').get(6), '[R2]Cl');
+    expect(rgroups.getCol('R1').get(0), '*C(=NCC(=O)N[1*])C1CCCCC1');
+    expect(rgroups.getCol('R1').get(1), '*C(=NCC(=O)N([1*])C)C1CCCCC1');
+    expect(rgroups.getCol('R1').get(2), '*C(=NCC(=O)N([1*])CCCC)C1CCCCC1');
+    expect(rgroups.getCol('R1').get(3), '*C(=NCC(=O)N([1*])CCC(C)C)C1CCCCC1');
+    expect(rgroups.getCol('R1').get(4), '*C(=NCC(=O)N([1*])CC1CCCCC1)C1CCCCC1');
+    expect(rgroups.getCol('R1').get(5), '*C(=NCC(=O)N[1*])C1CCCCC1');
+    expect(rgroups.getCol('R1').get(6), '*C(=NCC(=O)N([1*])C)C1CCCCC1');
+    expect(rgroups.getCol('R2').get(5), '[2*]Cl');
+    expect(rgroups.getCol('R2').get(6), '[2*]Cl');
   });
 
 });
