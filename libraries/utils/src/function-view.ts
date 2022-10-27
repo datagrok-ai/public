@@ -386,6 +386,7 @@ export class FunctionView extends DG.ViewBase {
         ]))
         .onOK(async () => {
           if (title.length > 0) {
+            funcCall = await historyUtils.loadRun(funcCall.id);
             funcCall.options['title'] = title;
             funcCall.options['annotation'] = annotation;
             await this.addRunToShared(funcCall);
