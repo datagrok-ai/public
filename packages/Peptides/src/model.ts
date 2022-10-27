@@ -17,6 +17,7 @@ import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
 import {getStats, Stats} from './utils/statistics';
 import {LogoSummary} from './viewers/logo-summary';
+import {getSettingsDialog} from './widgets/settings';
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -58,6 +59,9 @@ export class PeptidesModel {
   cachedBarchartTooltip: { bar: string, tooltip: null | HTMLDivElement } = {bar: '', tooltip: null};
   monomerLib: bio.IMonomerLib | null = null; // To get monomers from lib(s)
   monomerWorks: bio.MonomerWorks | null = null; // To get processed monomers
+
+  _settings!: type.PeptidesSettings;
+  isRibbonSet = false;
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -164,6 +168,15 @@ export class PeptidesModel {
 
   get isLogoSummarySelectionEmpty(): boolean {
     return this.logoSummarySelection.length === 0;
+  }
+
+  get settings(): type.PeptidesSettings {
+    this._settings ??= JSON.parse(this.df.getTag('settings') ?? '{}');
+    return this._settings;
+  }
+  set settings(s: type.PeptidesSettings) {
+    this._settings = s;
+    this.df.setTag('settings', JSON.stringify(s));
   }
 
   createAccordion(): DG.Accordion {
@@ -1097,6 +1110,10 @@ export class PeptidesModel {
 
     this.currentView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.tags[C.PEPTIDES_ANALYSIS] === 'true') ??
       grok.shell.addTableView(this.df);
+    if (!this.isRibbonSet) {
+      this.currentView.setRibbonPanels([[ui.icons.settings(() => getSettingsDialog(this))]], false);
+      this.isRibbonSet = true;
+    }
     grok.shell.v = this.currentView;
     this.sourceGrid = this.currentView.grid;
     if (this.df.tags[C.PEPTIDES_ANALYSIS] === 'true')
