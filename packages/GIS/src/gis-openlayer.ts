@@ -62,7 +62,7 @@ export interface OLCallbackParam {
 }
 
 let OLG: OpenLayers; //TODO: remove this terrible stuff!
-let renderTime: number = 0; //temporery code for benchmarking
+let renderTime: number = 0; //temporary code for benchmarking
 
 
 function toStringColor(num : number, opacity?: number) : string {
@@ -113,7 +113,6 @@ export class KMZ extends KML {
 }
 
 //functions to benchmark layer rendering and change render style to improve performance
-//TODO: apply singletone pattern here?
 function onPostrenderMarkers() {
   renderTime = Date.now() - renderTime;
   console.log('Markers render time = ' + renderTime);
@@ -310,6 +309,7 @@ export class OpenLayers {
 
     //prepare markersLayer
     if (!this.useWebGL) {
+      // eslint-disable-next-line max-len
       this.olMarkersLayer = this.addNewVectorLayer('Markers', null, this.genStyleMarker.bind(this), this.olMarkersSource);
       this.olMarkersLayer.on('postrender', onPostrenderMarkers);
       this.olMarkersLayer.on('prerender', onPrerenderMarkers);
@@ -335,12 +335,13 @@ export class OpenLayers {
       pixel: [0, 0],
       features: [],
     };
-      // const src = this.olMarkersSelLayerGL.getSource();
+    // const src = this.olMarkersSelLayerGL.getSource();
     // sel.forEach((ft: Feature) => {
     //   const geom = ft.getGeometry();
     //   if (geom?.getType() === 'Point')
     //     res.features.push(ft);
     // }); //<<for each feature
+    //the way commented is too slow (but in case of oushing the whole array there is a risk to push not only Points)
     res.features.push(...sel.getArray());
     if (this.olMarkersSelLayerGL) {
       this.clearLayer(this.olMarkersSelLayerGL);
@@ -433,7 +434,7 @@ export class OpenLayers {
   }
 
   getFeatureStyleFn(feature: Feature): OLStyle.Style {
-    //TODO: add here different combinations of style reading
+    //TODO: add here different combinations of style reading (?)
     const color = feature.get('COLOR') || '#ffeeee';
     this.styleVectorLayer.getFill().setColor(color);
     return this.styleVectorLayer;
@@ -450,9 +451,7 @@ export class OpenLayers {
         OLG.styleVectorLayer.getFill().setColor(color); // rgba()
         return OLG.styleVectorLayer;
       },
-      sourceVector);
-
-    OLG.olMap.getView().fit(sourceVector.getExtent()); //TODO: check is it doubling and remove it if need
+      sourceVector, true);
   }
 
   addKMLLayerFromStream(stream: string, focusOnContent: boolean = true): VectorLayer<VectorSource> {
@@ -465,12 +464,6 @@ export class OpenLayers {
 
   addGeoJSONLayerFromStream(stream: string, focusOnContent: boolean = true): VectorLayer<VectorSource> {
     const sourceVector = new VectorSource({
-      //TODO: try it (for universal loader instead of different function for each of loaders)
-      //var format = new ol.format.GeoJSON({
-      //   defaultDataProjection: "EPSG:4326",
-      //   featureProjection: "EPSG:3857"
-      // });
-      // var features = format.readFeatures(result);
       features: new GeoJSON().readFeatures(stream),
     });
     const newLayer = this.addNewVectorLayer('file.name', null, null, sourceVector, focusOnContent);
@@ -557,7 +550,8 @@ export class OpenLayers {
         const lId = layersArr[i].get('layerId');
         if (layerId === lId) {
           this.olMap.removeLayer(layersArr[i]);
-          layersArr[i].dispose(); //TODO: check is it works
+          if (layersArr[i] instanceof WebGLPointsLayer)
+            layersArr[i].dispose();
         }
       }
     }
@@ -568,8 +562,8 @@ export class OpenLayers {
       const layersArr = this.olMap.getAllLayers();
       for (let i = 0; i < layersArr.length; i++) {
         this.olMap.removeLayer(layersArr[i]);
-        // layersArr[i].unsubscribe?
-        layersArr[i].dispose();
+        if (layersArr[i] instanceof WebGLPointsLayer)
+          layersArr[i].dispose();
       }
     }
   }
@@ -582,7 +576,7 @@ export class OpenLayers {
       this.onRefreshCallback();
   }
 
-  // addNewTileLayer(layerToAdd: BaseLayer) //TODO: add
+  // addNewTileLayer(layerToAdd: BaseLayer) //TODO: add (if we will need it)
 
   //adds arbitrary Vector layer
   addNewVectorLayer(lrName?: string, opt?: Object|null,
@@ -703,16 +697,15 @@ export class OpenLayers {
       val = 1;
 
     let stylePt: OLStyle.Style;
-    //TODO: try to catch renrering time and change strategy on the flight
+    //trying to catch renrering time and change strategy on the flight
     if (resolution < 30000 || renderTime < 1000) {
       stylePt = new OLStyle.Style({
         image: new OLStyle.Circle({
           radius: size ? size : OLG.markerDefaultSize,
           fill: new OLStyle.Fill({
-            color: clr ? clr : `rgba(255, 0, 255, 0.9)`, // ${this.markerOpacity})`,
+            color: clr ? clr : `rgba(255, 0, 255, ${this.markerOpacity})`, // ${this.markerOpacity})`,
           }),
           stroke: new OLStyle.Stroke({
-            // color: 'rgba(255, 204, 0, 1)',
             color: 'rgba(255, 0, 0, 1)',
             width: 1,
           }),
@@ -781,7 +774,8 @@ export class OpenLayers {
     if (arrFeatures.length > 0) {
       const ft = arrFeatures[0];
       const gisObj = OpenLayers.gisObjFromGeometry(ft);
-      if (gisObj) { //here we can invoke properties panel for our selected object (but comment it for now)
+      if (gisObj) { 
+        //here we can invoke properties panel for our selected object (but comment it for now)
         // setTimeout(() => {
         //   // grok.shell.o = DG.SemanticValue.fromValueType(gisObj, gisObj.semtype);
         //   grok.shell.o = gisObj;
@@ -792,10 +786,6 @@ export class OpenLayers {
     // evt.stopPropagation(); //stopImmediatePropagation();
     if (this.onClickCallback)
       this.onClickCallback(res);
-    // else {
-    //   if (OLG) //TODO: remove this stuff (use bind)
-    //     if (OLG.onClickCallback) OLG.onClickCallback(res); //remove this stuff (use bind)
-    // }
   }
 
   onMapPointermove(evt: MapBrowserEvent<any>) {
@@ -856,7 +846,7 @@ export class OpenLayers {
   addPointSc(coord: Coordinate, sizeVal: number, colorVal: number,
     labelVal?: string|number|undefined, indexVal?: number|undefined,
     layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
-    //
+    //add marker with corresponding parameters
     let aLayer: VectorLayer<VectorSource>|HeatmapLayer|WebGLPts|undefined|null;
     aLayer = this.useWebGL ? this.olMarkersLayerGL : this.olMarkersLayer;
     if ((typeof layer != 'undefined') && (layer))
@@ -865,19 +855,19 @@ export class OpenLayers {
     const strCol = toStringColor(colorVal, this.markerOpacity);
     if (aLayer) {
       const marker = new Feature(new OLGeom.Point(OLProj.fromLonLat(coord)));
-      const style = new Style({
-        image: new OLStyle.Circle({
-          radius: sizeVal,
-          fill: new OLStyle.Fill({
-            color: strCol,
-          }),
-          stroke: new OLStyle.Stroke({
-            color: `rgba(255, 0, 0, 1)`, //toStringColor(colorVal, this.markerOpacity-0.1),
-            width: 1, //TODO: change to gisView.markerStrokeWidth
-          }),
-        }),
-      });
-      marker.setStyle(style);
+      // const style = new Style({
+      //   image: new OLStyle.Circle({
+      //     radius: sizeVal,
+      //     fill: new OLStyle.Fill({
+      //       color: strCol,
+      //     }),
+      //     stroke: new OLStyle.Stroke({
+      //       color: `rgba(255, 0, 0, 1)`,
+      //       width: 1,
+      //     }),
+      //   }),
+      // });
+      // marker.setStyle(style);
       marker.set('fieldSize', sizeVal);
       marker.set('fieldColor', colorVal);
       marker.set('fieldLabel', labelVal);
