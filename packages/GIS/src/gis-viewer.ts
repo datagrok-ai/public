@@ -1,6 +1,6 @@
 /*
  * GIS VIEWER
- * TODO: add description here
+ * this is the viewer module which manage viewer UI, map based on open-layers class
 */
 //base import
 import * as grok from 'datagrok-api/grok';
@@ -403,7 +403,7 @@ export class GisViewer extends DG.JsViewer {
         if (curlayer)
           this.ol.olCurrentLayer = curlayer;
 
-        //TODO: update currentLayer property when clicked in list
+        //TODO: update currentLayer property when clicked in list (now we hane in issue in updating property)
       };
       this.divLayersList.append(divLayer);
     }
@@ -432,16 +432,12 @@ export class GisViewer extends DG.JsViewer {
     ui.tooltip.hide;
 
     let xCrd = this.root.getBoundingClientRect().left;
-    // let xCrd = 600; //this.root.clientLeft;
     let yCrd = 0; //this.root.clientTop;
     if (this.viewerContainer) {
-      // xCrd += this.viewerContainer?.clientWidth + p.pixel[0];
-      // yCrd += this.viewerContainer?.clientHeight + p.pixel[1];
       xCrd += p.pixel[0];// + 150;
       yCrd += p.pixel[1] + 60;
     }
     const markerIdx = p.features[0].get('fieldIndex');
-    // ui.tooltip.showRowGroup(this.dataFrame, (i) => { return i === markerIdx; }, 300, 300);
     const tipElement = ui.divV([]);
     for (let cl = 0; cl < this.dataFrame.columns.length; cl ++) {
       const vl = this.dataFrame.columns.byIndex(cl).name + ': ' + this.dataFrame.columns.byIndex(cl).get(markerIdx);
@@ -449,13 +445,7 @@ export class GisViewer extends DG.JsViewer {
       tipElement.append(subElem);
     }
 
-    // const tipElement = ui.divV([ui.div(`Row № : ${markerIdx}`),
-    //   ui.div(`Row № : ${markerIdx}`)
-    // ]);
     ui.tooltip.show(tipElement, xCrd, yCrd);
-    // ui.tooltip.show(tipElement, p.pixel[0], p.pixel[1]);
-    // ui.tooltip.show('fieldIndex:' + p.features[0].get('fieldIndex'), p.pixel[0], p.pixel[1]);
-    // ui.tooltip.show('p.feat', p.pixel[0], p.pixel[1]);
   }
 
   handlerOnMarkerSelect(p: OLCallbackParam): void {
@@ -482,24 +472,8 @@ export class GisViewer extends DG.JsViewer {
       if (!p)
         return;
       if (p.features) {
-/*        let idx = 0;
-        for (let i = 0; i < p.features.length; i++) {
-          idx = p.features[i].get('fieldIndex');
-          //We need to search by element index not by coordinates because coords were tranfrormed while mapping
-          if (idx !== undefined)
-            this.dataFrame.selection.set(idx, true, false);
-
-          // this.dataFrame.rows.select((row) =>
-          //   ((row[this.latitudeColumnName] == gisObj.coordinates[0]) &&
-          //     (row[this.longitudeColumnName] == gisObj.coordinates[1])));
-          // });
-        }
-        if (idx !== undefined)
-          this.dataFrame.currentRowIdx = idx; //set focus on the last selected item
-*/
+        //perform some actions with clicked features
       }
-      // this.dataFrame.rows.select(
-      //   (row) => ((row[this.latitudeColumnName] == p.coord[0]) && (row[this.longitudeColumnName] == p.coord[1])));
     }
   }
 
@@ -572,7 +546,7 @@ export class GisViewer extends DG.JsViewer {
     if (updateLayer)
       this.ol.updateMarkersGLLayer();
 
-    //TODO: experiment: i've try to refresh layer here without recreating of it but it's not work yet>>
+    //TODO: experiment: i've try to refresh WebGL layer here without recreating of it but it's not work yet>>
     // this.ol.olMap.render();
     // window.requestAnimationFrame(() => {
     //   this.ol.olMarkersLayerGL!.updateStyleVariables({'size': this.markerDefaultSize});
@@ -624,7 +598,7 @@ export class GisViewer extends DG.JsViewer {
     if (this.latitudeColumnName == null || this.longitudeColumnName == null)
       return;
 
-    this.getCoordinates(); //TODO: not only coordinates but a data at all?
+    this.getCoordinates(); //TODO: not only coordinates but a data at all (?)
 
     if (this.renderType === 'heat map') {
       this.updateOpenLayerProperties(false);
@@ -667,7 +641,6 @@ export class GisViewer extends DG.JsViewer {
 
     if ((!lat) || (!lon))
       return;
-    // TODO: if (lat.length > lon.length) lat.length = lon.length; //do we need it?
 
     //TODO: change it to filling array of objects with all table data (if we need it of course?)
     let colValue: DG.Column | null = null;
