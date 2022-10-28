@@ -34,9 +34,11 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 import * as C from './utils/constants';
 import {SequenceSimilarityViewer} from './analysis/sequence-similarity-viewer';
 import {SequenceDiversityViewer} from './analysis/sequence-diversity-viewer';
-import {substructureSearchDialog} from './substructure-search/substructure-search';
+import {invalidateMols, MONOMERIC_COL_TAGS, substructureSearchDialog} from './substructure-search/substructure-search';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
+import { getMonomericMols } from './calculations/monomerLevelMols';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 
 //tags: init
@@ -206,13 +208,35 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 //input: dataframe table
 //input: column macroMolecule { semType: Macromolecule }
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
-//input: string similarityMetric { choices:["Levenshtein", "Tanimoto"] }
+//input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
-  similarityMetric: string = 'Levenshtein', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
-  if (!checkInputColumnUi(macroMolecule, 'Activity Cliffs'))
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
+  //delay is required for initial function dialog to close before starting invalidating of molfiles. Otherwise dialog is freezing
+  await delay(10);
+  if (!checkInputColumnUi(macroMolecule, 'Sequence space'))
     return;
-  const encodedCol = encodeMonomers(macroMolecule);
+
+  if (macroMolecule.version !== macroMolecule.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
+    await invalidateMols(macroMolecule, false);
+  const embedColsNames = getEmbeddingColsNames(table);
+
+  await grok.functions.call('Chem:getChemSpaceEmbeddings', {
+    table: table,
+    col: macroMolecule.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS],
+    methodName: methodName,
+    similarityMetric: similarityMetric,
+    xAxis: embedColsNames[0],
+    yAxis: embedColsNames[1]
+  });
+
+  if (plotEmbeddings) {
+    return grok.shell
+      .tableView(table.name)
+      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
+  };
+
+/*   const encodedCol = encodeMonomers(macroMolecule);
   if (!encodedCol)
     return;
   const embedColsNames = getEmbeddingColsNames(table);
@@ -238,8 +262,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
       if (v.name === table.name)
         sp = (v as DG.TableView).scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
     }
-  }
-  return sp;
+  } */
 };
 
 //top-menu: Bio | To Atomic Level...

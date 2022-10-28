@@ -6,10 +6,11 @@ import * as bio from '@datagrok-libraries/bio';
 import * as C from '../utils/constants';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {updateDivInnerHTML} from '../utils/ui-utils';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 export const MONOMER_MOLS_COL = 'monomeric-mols';
 
-const enum MONOMERIC_COL_TAGS {
+export const enum MONOMERIC_COL_TAGS {
   MONOMERIC_MOLS = 'monomeric-mols',
   LAST_INVALIDATED_VERSION = 'last-invalidated-version',
   MONOMERS_DICT = 'monomers-dict'
@@ -99,7 +100,7 @@ function prepareSubstructureRegex(substructure: string, separator: string) {
 
 export async function helmSubstructureSearch(substructure: string, col: DG.Column): Promise<DG.BitSet> {
   if (col.version !== col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
-    await invalidateHelmMols(col);
+    await invalidateMols(col, true);
   const substructureCol = DG.Column.string('helm', 1).init((i) => substructure);
   substructureCol.setTag(DG.TAGS.UNITS, bio.NOTATION.HELM);
   const substructureMolsCol =
@@ -112,10 +113,13 @@ export async function helmSubstructureSearch(substructure: string, col: DG.Colum
   return matchesCol.get(0);
 }
 
-export async function invalidateHelmMols(col: DG.Column) {
+export async function invalidateMols(col: DG.Column, pattern: boolean) {
+  const progressBar = DG.TaskBarProgressIndicator.create(`Invalidating molfiles for ${col.name}`);
+  await delay(10);
   const monomersDict = new Map();
-  const monomericMolsCol = await getMonomericMols(col, true, monomersDict);
+  const monomericMolsCol = await getMonomericMols(col, pattern, monomersDict);
   col.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS] = monomericMolsCol;
   col.temp[MONOMERIC_COL_TAGS.MONOMERS_DICT] = monomersDict;
   col.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION] = col.version;
+  progressBar.close();
 }
