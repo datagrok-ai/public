@@ -158,6 +158,11 @@ export class TimelinesViewer extends EChartViewer {
           this.updateLegend(columnData!.column);
           this.switchLegendVisibility(this.legendVisibility);
         }
+
+        if (property.name === 'eventsColumnNames' || this.eventsColumnNames?.length > 0) {
+          this.columnData.startColumnName = null;
+          this.columnData.endColumnName = null;
+        }
       } else {
         this.columnData[property.name] = null;
         if (property.name === 'colorByColumnName') {
@@ -255,6 +260,8 @@ export class TimelinesViewer extends EChartViewer {
           continue;
         this.columnData['eventsColumnNames'][columnName] = this.getColumnData(column);
       }
+      this.columnData.startColumnName = null;
+      this.columnData.endColumnName = null;
     }
 
     this.colorMap = this.getColorMap(this.columnData.colorByColumnName!.categories!);
