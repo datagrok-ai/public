@@ -14,7 +14,7 @@ category('similarity/diversity', async () => {
 });
 
 async function _testSimilaritySearchViewer() {
-  const molecules = await createTableView('samples/sample_MSA.csv');
+  const molecules = await createTableView('tests/sample_MSA_data.csv');
   const viewer = molecules.addViewer('SequenceSimilaritySearchViewer');
   await delay(100);
   const similaritySearchviewer = getSearchViewer(viewer, 'SequenceSimilaritySearchViewer');
@@ -25,11 +25,11 @@ async function _testSimilaritySearchViewer() {
   expect(similaritySearchviewer.scores!.get(0), DG.FLOAT_NULL);
   expect(similaritySearchviewer.idxs!.get(0), 0);
   expect(similaritySearchviewer.molCol!.get(0),
-    'meI/hHis/Aca/N/T/dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me');
-  expect(similaritySearchviewer.scores!.get(1), 0.6603773832321167);
-  expect(similaritySearchviewer.idxs!.get(1), 100);
+    'D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me');
+  expect(similaritySearchviewer.scores!.get(1), 0.4722222089767456);
+  expect(similaritySearchviewer.idxs!.get(1), 11);
   expect(similaritySearchviewer.molCol!.get(1),
-    'meI/hHis/Aca/N/T/W/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me');
+    'meI/hHis//Aca/meM/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me');
   molecules.dataFrame.currentRowIdx = 1;
   await delay(100);
   await waitForCompute(similaritySearchviewer);
@@ -42,7 +42,7 @@ async function _testSimilaritySearchViewer() {
 
 
 async function _testDiversitySearchViewer() {
-  const molecules = await createTableView('samples/sample_MSA.csv');
+  const molecules = await createTableView('tests/sample_MSA_data.csv');
   const viewer = molecules.addViewer('SequenceDiversitySearchViewer');
   await delay(10);
   const diversitySearchviewer = getSearchViewer(viewer, 'SequenceDiversitySearchViewer');
@@ -67,7 +67,6 @@ async function waitForCompute(viewer: SequenceSimilarityViewer) {
   const t = new Promise((resolve, reject) => {
     viewer.computeCompleted.subscribe(async (_: any) => {
       try {
-        console.log(`!@#$%^&*()`+viewer.targetMoleculeIdx);
         resolve(true);
       } catch (error) {
         reject(error);

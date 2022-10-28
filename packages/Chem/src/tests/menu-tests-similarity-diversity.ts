@@ -13,23 +13,24 @@ import {_testSearchSubstructure,
 import {findSimilar, getSimilarities} from '../package';
 import {chemDiversitySearch} from '../analysis/chem-diversity-viewer';
 import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metrics';
+import { chemSimilaritySearch } from '../analysis/chem-similarity-viewer';
 
 const testSimilarityResults = {
   'Tanimoto/Morgan': [
     {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
-    {smiles: 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3', indexes: 30, score: 0.6904761791229248}],
+    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.644444465637207}],
   'Dice/Morgan': [
     {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
-    {smiles: 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3', indexes: 30, score: 0.8169013857841492}],
+    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.7837837934494019}],
   'Cosine/Morgan': [
     {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
-    {smiles: 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3', indexes: 30, score: 0.8176316022872925}],
+    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.7863729000091553}],
   'Euclidean/Morgan': [
     {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
-    {smiles: 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3', indexes: 30, score: 0.21712927520275116}],
+    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.20000000298023224}],
   'Hamming/Morgan': [
     {smiles: 'O=C1CN=C(c2ccccc2N1)C3CCCCC3', indexes: 0, score: 1},
-    {smiles: 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3', indexes: 30, score: 0.0714285746216774}],
+    {smiles: 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3', indexes: 14, score: 0.05882352963089943}],
 };
 
 category('top menu similarity/diversity', () => {
@@ -135,9 +136,9 @@ export async function _testGetSimilarities(getSimilaritiesFunction: (...args: an
 }
 
 async function _testSimilaritySearchViewerOpen() {
-  const molecules = await createTableView('sar-small.csv');
+  const molecules = await createTableView('tests/sar-small_test.csv');
   const viewer = molecules.addViewer('SimilaritySearchViewer');
-  await delay(3000);
+  await delay(700);
   const similaritySearchviewer = getSearchViewer(viewer, 'SimilaritySearchViewer');
   expect(similaritySearchviewer.fingerprint, 'Morgan');
   expect(similaritySearchviewer.distanceMetric, 'Tanimoto');
@@ -145,7 +146,7 @@ async function _testSimilaritySearchViewerOpen() {
   expect(similaritySearchviewer.idxs!.get(0), 0);
   expect(similaritySearchviewer.molCol!.get(0), 'O=C1CN=C(c2ccccc2N1)C3CCCCC3');
   molecules.dataFrame.currentRowIdx = 1;
-  await delay(2000);
+  await delay(100);
   expect(similaritySearchviewer.curIdx, 1);
   expect(similaritySearchviewer.molCol!.get(0), 'CN1C(=O)CN=C(c2ccccc12)C3CCCCC3');
   similaritySearchviewer.close();
@@ -153,32 +154,22 @@ async function _testSimilaritySearchViewerOpen() {
 }
 
 async function _testSimilaritySearchFunctionality(distanceMetric: string, fingerprint: string) {
-  const molecules = await readDataframe('sar-small.csv');
+  const molecules = await readDataframe('tests/sar-small_test.csv');
   const moleculeColumn = molecules.col('smiles');
-  grok.functions.call(
-    `Chem:chemSimilaritySearch`, {
-      'table': molecules,
-      'smiles': moleculeColumn!,
-      'molecule': moleculeColumn!.get(0),
-      'metricName': distanceMetric,
-      'limit': 10,
-      'minSCore': 0.01,
-      'fingerprint': fingerprint as Fingerprint,
-    }).then((res) => {
-    const similarityDf = res;
+  const similarityDf = await chemSimilaritySearch(molecules, moleculeColumn!, moleculeColumn!.get(0),
+    distanceMetric, 10, 0.01, fingerprint as Fingerprint);
     //@ts-ignore
-    const testResults = testSimilarityResults[`${distanceMetric}/${fingerprint}`];
-    for (let i = 0; i < testResults.lenght; i++) {
-      console.log(testResults);
-      Object.keys(i).forEach((it) => expect(similarityDf.get(it, i), testResults[i][it]));
-    }
-  });
+  const testResults = testSimilarityResults[`${distanceMetric}/${fingerprint}`];
+  for (let i = 0; i < testResults.length; i++) {
+    console.log(testResults);
+    Object.keys(testResults[i]).forEach((it) => expect(similarityDf.get(it, i), testResults[i][it]));
+  }
 }
 
 async function _testDiversitySearchViewerOpen() {
-  const molecules = await createTableView('sar-small.csv');
+  const molecules = await createTableView('tests/sar-small_test.csv');
   const viewer = molecules.addViewer('DiversitySearchViewer');
-  await delay(3000);
+  await delay(500);
   const diversitySearchviewer = getSearchViewer(viewer, 'DiversitySearchViewer');
   expect(diversitySearchviewer.fingerprint, 'Morgan');
   expect(diversitySearchviewer.distanceMetric, 'Tanimoto');

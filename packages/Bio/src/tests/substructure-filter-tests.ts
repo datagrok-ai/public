@@ -47,7 +47,7 @@ category('substructureFilters', async () => {
     filter.attach(helm);
     (filter.bioFilter! as HelmFilter).helmSubstructure = 'PEPTIDE1{C}$$$$V2.0';
     filter.bioFilter!.onChanged.next();
-    await delay(1000);
+    await delay(2000);
     expect(filter.dataFrame!.filter.trueCount, 2);
     expect(filter.dataFrame!.filter.get(0), true);
     expect(filter.dataFrame!.filter.get(3), true);

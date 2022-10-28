@@ -22,6 +22,7 @@ export namespace assure {
 export interface TestOptions {
   timeout?: number;
   unhandledExceptionTimeout?: number;
+  skipReason?: string;
 }
 
 export class TestContext {
@@ -185,9 +186,9 @@ export async function runTests(options?: { category?: string, test?: string, tes
       value.afterStatus = x.toString();
     }
     if (value.afterStatus)
-      data.push({category: key, name: 'init', result: value.afterStatus, success: false, ms: 0});
+      data.push({category: key, name: 'init', result: value.afterStatus, success: false, ms: 0, skipped: false});
     if (value.beforeStatus)
-      data.push({category: key, name: 'init', result: value.beforeStatus, success: false, ms: 0});
+      data.push({category: key, name: 'init', result: value.beforeStatus, success: false, ms: 0, skipped: false});
     results.push(...data);
   }
   if (options.testContext.catchUnhandled) {
@@ -204,19 +205,21 @@ export async function runTests(options?: { category?: string, test?: string, tes
 }
 
 async function execTest(t: Test, predicate: string | undefined) {
-  let r: { category?: string, name?: string, success: boolean, result: string, ms: number };
-  const skip = predicate != undefined && (!t.name.toLowerCase().startsWith(predicate.toLowerCase()));
+  let r: { category?: string, name?: string, success: boolean, result: string, ms: number, skipped: boolean };
+  const filter = predicate != undefined && (!t.name.toLowerCase().startsWith(predicate.toLowerCase()));
+  const skip = t.options?.skipReason || filter;
+  const skipReason = filter ? 'skipped' : t.options?.skipReason;
   if (!skip)
     console.log(`Started ${t.category} ${t.name}`);
   const start = new Date();
 
   try {
     if (skip)
-      r = {success: true, result: 'skipped', ms: 0};
+      r = {success: true, result: skipReason!, ms: 0, skipped: true};
     else
-      r = {success: true, result: await t.test() ?? 'OK', ms: 0};
+      r = {success: true, result: await t.test() ?? 'OK', ms: 0, skipped: false};
   } catch (x: any) {
-    r = {success: false, result: x.toString(), ms: 0};
+    r = {success: false, result: x.toString(), ms: 0, skipped: false};
   }
   const stop = new Date();
   // @ts-ignore

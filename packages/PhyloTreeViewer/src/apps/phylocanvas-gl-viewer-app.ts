@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {newickToDf} from '../utils';
-import {Shapes} from '@datagrok-libraries/bio/src/consts';
 import {PhylocanvasGlViewer, TreeTypesNames} from '../viewers/phylocanvas-gl-viewer';
 import {DOCK_TYPE} from 'datagrok-api/dg';
 import {Unsubscribable} from 'rxjs';

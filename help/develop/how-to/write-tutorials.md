@@ -35,7 +35,7 @@ more detailed description.
 ## Registering a tutorial
 
 Tutorials from outside the public
-[Tutorial](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)
+[Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)
 package should be registered. To do that, add a function to your `package.ts`
 file. It should have the `tutorial` tag and the `meta.name` parameter. As it
 should return a tutorial instance, the output type must be `object`. There are
@@ -79,6 +79,12 @@ export function registerTrack() {
 The function should have the `track` tag, parameters `help-url` and `meta.name`,
 and it should return a `Track` instance (marked as `output: object` in the
 function header).
+
+## Standard tutorials visibility
+
+The `Tutorials` package provides a set of default tracks, such as *Exploratory
+Data Analysis* or *Data Access*. You can control their visibility on the user
+group level by applying relevant [package settings](../develop.md#package-settings).
 
 See also:
 

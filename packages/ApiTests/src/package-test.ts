@@ -42,6 +42,7 @@ import './ui/image';
 import './ui/users';
 import './ui/groups';
 import './ui/tags';
+import './package/upload';
 //import './viewers/viewers-adding';
 import './viewers/viewers';
 //import './gui/chem-sketcher';

@@ -8,6 +8,8 @@ import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarit
 import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {TAGS} from '../utils/constants';
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
+import * as C from '../utils/constants';
+import { GridColumn } from 'datagrok-api/dg';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
@@ -103,7 +105,7 @@ function createPropPanelField(name: string, value: number): HTMLDivElement {
   return ui.divH([
     ui.divText(`${name}: `, {style: {fontWeight: 'bold', paddingRight: '5px'}}),
     ui.divText(value.toFixed(2))
-  ], {style: {paddingTop: '5px'}});
+  ], {style: {paddingTop: '10px'}});
 }
 
 export function createDifferenceCanvas(
@@ -137,4 +139,17 @@ export function createDifferencesWithPositions(
     div.append(diffsPanel);
   }
   return div;
+}
+
+export function createLinesGrid(df: DG.DataFrame, colNames: string[]): DG.Grid {
+  const seqDiffCol = DG.Column.string('seq_diff', df.rowCount)
+    .init((i) => `${df.get(colNames[0], i)}#${df.get(colNames[1], i)}`);
+  seqDiffCol.semType = 'MacromoleculeDifference';
+  seqDiffCol.setTag(DG.TAGS.UNITS, df.col(colNames[0])!.getTag(DG.TAGS.UNITS));
+  seqDiffCol.setTag(C.TAGS.SEPARATOR, df.col(colNames[0])!.getTag(C.TAGS.SEPARATOR));
+  df.columns.add(seqDiffCol);
+  const grid = df.plot.grid();
+  grid.col(colNames[0])!.visible = false;
+  grid.col(colNames[1])!.visible = false;
+  return grid;
 }

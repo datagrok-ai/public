@@ -1,17 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 import {filter, map} from 'rxjs/operators';
 import {interval, Unsubscribable} from 'rxjs';
 
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
-import {PhylocanvasGL, Newick} from '@phylocanvas/phylocanvas.gl';
-import {zoomToScale} from '@phylocanvas/phylocanvas.gl/utils/zoom-to-scale';
-import {NodeType} from '@datagrok-libraries/bio/src/types';
 import * as th from '../utils/tree-helper';
 import $ from 'cash-dom';
-import {TreeTypes} from '@datagrok-libraries/bio/src/consts';
 import {cutTreeToGrid, TreeToGridSyncer} from '../utils/tree-helper';
 
 // const getBranchScaleOld = PhylocanvasGL.prototype.getBranchScale;
@@ -24,29 +21,29 @@ import {cutTreeToGrid, TreeToGridSyncer} from '../utils/tree-helper';
  *                                 undefined - use row index as leaf name/key
  */
 export function injectTreeToGridUI(
-  grid: DG.Grid, newickText: string, leafColName?: string, nWidth: number = 100,
+  grid: DG.Grid, newickText: string, leafColName?: string, neighborWidth: number = 100,
   cut?: { min: number, max: number, clusterColName: string }
 ): GridNeighbor {
   const subs: Unsubscribable[] = [];
   //const _grid = grid;
-  const treeN: GridNeighbor = attachDivToGrid(grid, nWidth);
-  const nDiv: HTMLElement = treeN.root!;
-  const pcDiv: HTMLDivElement = ui.div();
+  const treeN = attachDivToGrid(grid, neighborWidth);
+  const treeRoot = treeN.root!;
+  const pcDiv = ui.div();
 
   const leftMargin: number = 0;
 
-  nDiv.appendChild(pcDiv);
-  // nDiv.style.backgroundColor = '#FFF0F0';
-  nDiv.style.setProperty('overflow-y', 'hidden', 'important');
+  treeRoot.appendChild(pcDiv);
+  treeRoot.style.backgroundColor = '#FFF0F0';
+  treeRoot.style.setProperty('overflow-y', 'hidden', 'important');
 
-  // pcDiv.style.backgroundColor = '#F0FFF0';
+  pcDiv.style.backgroundColor = '#F0FFF0';
   pcDiv.style.position = 'absolute';
   pcDiv.style.left = `${leftMargin}px`;
 
-  const newickRoot: NodeType = Newick.parse_newick(newickText);
-  const [viewedRoot, warnings]: [NodeType, string[]] = th.setGridOrder(newickRoot, grid, 'id');
+  const newickRoot: bio.Node = bio.Newick.parse_newick(newickText);
+  const [viewedRoot, warnings]: [bio.Node, string[]] = th.setGridOrder(newickRoot, grid, 'id');
 
-  const pcViewer = new PhylocanvasGL(pcDiv, {
+  const pcViewer = new bio.PhylocanvasGL(pcDiv, {
     interactive: false,
     alignLabels: true,
     padding: 1, // required for top most joint
@@ -79,7 +76,7 @@ export function injectTreeToGridUI(
     cutSlider.root.style.position = 'absolute';
     cutSlider.root.style.backgroundColor = '#FFF0F0';
 
-    nDiv.appendChild(cutSlider.root);
+    treeRoot.appendChild(cutSlider.root);
 
     subs.push(cutSlider.onChanged(() => {
       console.debug('PhyloTreeViewer: injectTreeToGrid() cutSlider.onChanged() ' + `${cutSlider!.value}`);
@@ -94,7 +91,7 @@ export function injectTreeToGridUI(
   function pcCalcSize() {
     const leafCount = grid.dataFrame.filter.trueCount;
 
-    const width: number = nDiv.clientWidth - leftMargin;
+    const width: number = treeRoot.clientWidth - leftMargin;
     let height: number = grid.props.rowHeight * leafCount;
 
     const firstVisibleRowIdx: number = Math.floor(grid.vertScroll.min);
@@ -149,7 +146,7 @@ export function injectTreeToGridUI(
     pcCalcSize();
   });
 
-  ui.onSizeChanged(nDiv).subscribe(() => {
+  ui.onSizeChanged(treeRoot).subscribe(() => {
     pcCalcSize();
   });
 
