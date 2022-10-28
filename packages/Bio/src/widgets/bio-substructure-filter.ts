@@ -207,12 +207,12 @@ export class HelmFilter extends BioFilterBase {
     await ui.tools.waitForElementInDom(this._filterPanel);
     this.updateFilterPanel();
     this._filterPanel.addEventListener('click', (event: MouseEvent) => {
+      const {editorDiv, webEditor} = this.helmEditor.createWebEditor(this.helmSubstructure);
       //@ts-ignore
       ui.dialog({showHeader: false, showFooter: true})
-        .add(this.helmEditor.editorView)
+        .add(editorDiv)
         .onOK(() => {
-          const helmString = this.helmEditor
-            .webEditor.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+          const helmString = webEditor.canvas.getHelm(true).replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
           this.helmSubstructure = helmString;
           this.updateFilterPanel(this.substructure);
           setTimeout(() => { this.onChanged.next(); }, 10);
