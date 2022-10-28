@@ -294,16 +294,32 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
-    similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<DG.Viewer|undefined> {
-
+  similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<DG.Viewer|undefined> {
   const embedColsNames = getEmbeddingColsNames(table);
-  const withoutEmptyValues = DG.DataFrame.fromColumns([smiles]).clone();
-  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, smiles);
+  await getChemSpaceEmbeddings(table, smiles, methodName, similarityMetric, embedColsNames[0], embedColsNames[1]);
+  if (plotEmbeddings)
+    return grok.shell
+      .tableView(table.name)
+      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+}
+
+
+//name: Chem Space Embeddings
+//input: dataframe table
+//input: column col
+//input: string methodName
+//input: string similarityMetric
+//input: string xAxis
+//input: string yAxis
+export async function getChemSpaceEmbeddings(table: DG.DataFrame, col: DG.Column, methodName: string,
+  similarityMetric: string = 'Tanimoto', xAxis: string, yAxis: string) : Promise<void> {
+  const withoutEmptyValues = DG.DataFrame.fromColumns([col]).clone();
+  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, col);
   const chemSpaceParams = {
-    seqCol: withoutEmptyValues.col(smiles.name)!,
+    seqCol: withoutEmptyValues.col(col.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,
-    embedAxesNames: embedColsNames,
+    embedAxesNames: [xAxis, yAxis],
   };
   const chemSpaceRes = await chemSpace(chemSpaceParams);
   const embeddings = chemSpaceRes.coordinates;
@@ -312,11 +328,6 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, m
     emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
     table.columns.add(DG.Column.fromList('double', col.name, listValues));
   }
-
-  if (plotEmbeddings)
-    return grok.shell
-      .tableView(table.name)
-      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
 }
 
 //name: R-Groups Analysis
