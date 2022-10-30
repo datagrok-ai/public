@@ -21,6 +21,8 @@ grok.shell.v.addViewer(DG.VIEWER.TIMELINES, {
   endColumnName: "AEENDY",       // End date of event (an integer/datetime column)
   colorByColumnName: "AETERM",   // Color criterion (a categorical column with non-unique values to visually group the events)
   eventColumnName: "AETERM",     // Optional (used when `showEventInTooltip` is set to true)
+  eventsColumnNames: ["c1", "c2"], // Adds event columns (integer/datetime) that have only one coordinate (rendered as a point, if [showOpenIntervals] is `false`)
+  showOpenIntervals: false,      // Show an event with missing start/end coordinate as continuous
   showEventInTooltip: false,     // Switches between two tooltip modes: (1) the general number of co-occurring events and (2) the event details
   dateFormat: "",                // Optional (used when the start and/or end are represented as datetime).
                                  // Formats: '{yyyy}-{MM}-{dd}', '{M}/{d}/{yyyy}', '{MMM} {d}', '{dd}', '{d}'
@@ -33,6 +35,7 @@ grok.shell.v.addViewer(DG.VIEWER.TIMELINES, {
                                  // that converts to a value less than that of the marker size) to a given position on the Y axis within one subject.
                                  // Used for a large number of overlapping events. The 'scatter' option shifts data points up and down in turn
   lineWidth: 3,                  // Line width (the value is not applied to markers)
+  legendVisibility: "Auto",      // Legend visibility ('Always' | 'Auto' | 'Never') requires [colorByColumnName]
 });
 ```
 
