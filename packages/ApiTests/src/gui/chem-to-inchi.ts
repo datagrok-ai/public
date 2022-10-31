@@ -1,9 +1,7 @@
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getHTMLElementbyInnerText, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, checkHTMLElementbyInnerText, isColumnPresent} from './gui-utils';
-import { Viewer } from 'datagrok-api/dg';
 
 category('Chem: ToInchi', () => {
   let v: DG.TableView;
