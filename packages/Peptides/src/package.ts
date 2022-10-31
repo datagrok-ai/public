@@ -71,6 +71,13 @@ export async function Peptides(): Promise<void> {
   ]);
 }
 
+//top-menu: Bio | Peptides...
+//name: Bio Peptides
+export async function peptidesDialog(): Promise<DG.Dialog> {
+  const dialog = ui.dialog().add(await analyzePeptidesWidget(grok.shell.t));
+  return dialog.show();
+}
+
 //name: Peptides
 //tags: panel, widgets
 //input: column col {semType: Macromolecule}
