@@ -18,7 +18,7 @@ export function getSeparator(col: DG.Column<string>): string {
   return col.getTag(C.TAGS.SEPARATOR) ?? '';
 }
 
-export function scaleActivity(scaling: string, activityCol: DG.Column<number>): DG.Column<number> {
+export function scaleActivity(activityCol: DG.Column<number>, scaling: string = 'none'): DG.Column<number> {
   let formula = (x: number): number => x;
   let newColName = 'activity';
   switch (scaling) {

@@ -152,7 +152,7 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   if (!model.isLogoSummarySelectionEmpty && model.isMutationCliffSelectionEmpty) {
     defaultValuePos = false;
     defaultValueAAR = false;
-  }    
+  }
 
   const splitByPosition = ui.boolInput('', defaultValuePos, updateDistributionHost);
   splitByPosition.addPostfix('Split by position');

@@ -19,9 +19,9 @@ export function setAARRenderer(col: DG.Column, alphabet: string, grid: DG.Grid, 
 }
 
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
-  currentPosition: string, statsDf: DG.DataFrame, twoColorMode: boolean, mdCol: DG.Column<number>, bound: DG.Rect,
-  cellValue: number, mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.SubstitutionsInfo,
-): void {
+  currentPosition: string, statsDf: DG.DataFrame, mdCol: DG.Column<number>, bound: DG.Rect, cellValue: number,
+  mutationCliffsSelection: types.PositionToAARList, substitutionsInfo: types.SubstitutionsInfo,
+  twoColorMode: boolean = false): void {
   const queryAAR = `${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`;
   const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
   const pVal: number = statsDf

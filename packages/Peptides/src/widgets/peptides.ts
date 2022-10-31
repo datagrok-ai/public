@@ -29,13 +29,13 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
   let scaledCol: DG.Column<number>;
 
   const defaultActivityColumn: DG.Column<number> | null =
-    df.col('activity') || df.col('IC50') || DG.Utils.firstOrNull(df.columns.numerical);;
+    df.col('activity') || df.col('IC50') || DG.Utils.firstOrNull(df.columns.numerical); ;
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
   const activityScalingMethod = ui.choiceInput(
     'Scaling', 'none', ['none', 'lg', '-lg'],
     async (currentMethod: string): Promise<void> => {
-      scaledCol = scaleActivity(currentMethod, activityColumnChoice.value!);
+      scaledCol = scaleActivity(activityColumnChoice.value!, currentMethod);
 
       const hist = DG.DataFrame.fromColumns([scaledCol]).plot.histogram({
         filteringEnabled: false,
@@ -65,7 +65,7 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
 
   const bitsetChanged = df.filter.onChanged.subscribe(() => {
     activityScalingMethodState();
-  })
+  });
 
   const startBtn = ui.button('Launch SAR', async () => {
     await startAnalysis(activityColumnChoice.value!, col, clustersColumnChoice.value, df, scaledCol,
@@ -92,7 +92,7 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
 
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
   clustersColumn: DG.Column | null, currentDf: DG.DataFrame, scaledCol: DG.Column<number>, scaling: string,
-  ): Promise<PeptidesModel | null> {
+): Promise<PeptidesModel | null> {
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
   let model = null;
   if (activityColumn.type === DG.TYPE.FLOAT || activityColumn.type === DG.TYPE.INT) {
@@ -114,7 +114,8 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       newDf.getCol(clustersColumn.name).name = C.COLUMNS_NAMES.CLUSTERS;
       newDf.tags[C.TAGS.CLUSTERS] = C.COLUMNS_NAMES.CLUSTERS;
     }
-    newDf.tags['scaling'] = scaling;
+    // newDf.tags['scaling'] = scaling;
+    newDf.setTag('settings', JSON.stringify({scaling: scaling}));
 
     let monomerType = 'HELM_AA';
     if (peptidesCol.getTag(DG.TAGS.UNITS).toLowerCase() == 'helm') {
