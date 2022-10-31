@@ -19,7 +19,7 @@ export function getPackage(): DG.Package {
   return _p ?? _package;
 }
 
-export async function getBaseURL() {
+export async function getBaseURL(): Promise<string> {
   const properties = await getPackage().getProperties() as {[key: string]: any};
   let baseUrl = properties['Base URL'] as string;
   if (!baseUrl)
@@ -28,7 +28,7 @@ export async function getBaseURL() {
   return baseUrl;
 }
 
-export async function getUserGroup() {
+export async function getUserGroup(): Promise<string> {
   const properties = await getPackage().getProperties() as {[key: string]: any};
   const userGroupName = properties['User group'] as string;
   if (!userGroupName)
