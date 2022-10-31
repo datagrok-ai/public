@@ -14,8 +14,19 @@ import {scaleActivity} from '../utils/misc';
  * @param {DG.DataFrame} df Working table
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
-export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): Promise<DG.Widget> {
-  if (!col.tags['aligned']?.includes('MSA') && col.tags[DG.TAGS.UNITS].toLowerCase() != 'helm')
+export async function analyzePeptidesWidget(df: DG.DataFrame, col?: DG.Column<string>): Promise<DG.Widget> {
+  let seqColInput: DG.InputBase | null = null;
+  if (typeof col === 'undefined') {
+    const sequenceColumns = df.columns.toList().filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE);
+    let potentialCol = DG.Utils.firstOrNull(sequenceColumns);
+    if (potentialCol === null)
+      throw new Error('Peptides Error: table doesn\'t contain sequence columns');
+    seqColInput = ui.columnInput('Sequence', df, potentialCol, () => {
+      const seqCol = seqColInput!.value;
+      if (!seqCol.tags['aligned']?.includes('MSA') && seqCol.tags[DG.TAGS.UNITS].toLowerCase() !== 'helm')
+        grok.shell.warning('Peptides analysis only works with aligned sequences');
+    });
+  } else if (!col.tags['aligned']?.includes('MSA') && col.tags[DG.TAGS.UNITS].toLowerCase() !== 'helm')
     return new DG.Widget(ui.divText('Peptides analysis only works with aligned sequences'));
 
   let funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
@@ -62,13 +73,17 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
   activityScalingMethod.fireChanged();
 
   const inputsList = [activityColumnChoice, activityScalingMethod, clustersColumnChoice];
+  if (seqColInput !== null)
+    inputsList.splice(0, 0, seqColInput);
 
   const bitsetChanged = df.filter.onChanged.subscribe(() => {
     activityScalingMethodState();
   });
 
   const startBtn = ui.button('Launch SAR', async () => {
-    await startAnalysis(activityColumnChoice.value!, col, clustersColumnChoice.value, df, scaledCol,
+    const sequencesCol = col ?? seqColInput!.value;
+    if (sequencesCol)
+    await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df, scaledCol,
       activityScalingMethod.value ?? 'none');
     bitsetChanged.unsubscribe();
   });
@@ -79,15 +94,15 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col: DG.Column): P
   const logoHost = ui.div();
   $(logoHost).empty().append(viewer.root);
 
-  return new DG.Widget(
-    ui.divV([
-      logoHost,
-      ui.splitH([
-        ui.splitV([ui.inputs(inputsList), startBtn]),
-        histogramHost,
-      ], {style: {height: '215px'}}),
-    ]),
-  );
+  const mainHost = ui.divV([
+    logoHost,
+    ui.splitH([
+      ui.splitV([ui.inputs(inputsList), startBtn]),
+      histogramHost,
+    ], {style: {height: '215px'}}),
+  ]);
+  mainHost.style.maxWidth = '400px';
+  return new DG.Widget(mainHost);
 }
 
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
