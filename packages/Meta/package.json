@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.0.83",
+  "version": "3.0.84",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -773,6 +773,9 @@
         },
         "0.0.5": {
           "datagrok-api": "^0.94.10"
+        },
+        "1.0.1": {
+          "datagrok-api": "^1.0.0"
         }
       },
       "description": "DrugBank is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
