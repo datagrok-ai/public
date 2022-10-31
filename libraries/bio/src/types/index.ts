@@ -2,34 +2,21 @@
 
 import {Observable} from 'rxjs';
 
-export interface INode<TNode extends INode<TNode>> {
+
+/* Interface for hierarchical data structure returned by Newick.parse_newick */
+export interface NodeType {
   name: string;
   branch_length?: number;
-  children: TNode[];
-
-  clone(): TNode;
+  children?: NodeType[];
 }
 
-export function isLeaf<TNode extends INode<TNode>>(node: TNode) {
+export function isLeaf(node: NodeType) {
   return !node.children || node.children.length == 0;
 }
 
-
-export class Node implements INode<Node> {
-  name: string;
-  children: Node[];
-  branch_length?: number;
-
-  constructor(name: string, branch_length?: number, children: Node[] = [],) {
-    this.name = name;
-    this.branch_length = branch_length;
-    this.children = children;
-  }
-
-  /** Shallow copy, copies children list but children itself remains reference to the same */
-  clone() {
-    return new Node(this.name, this.branch_length, [...this.children],);
-  }
+export interface NodeCuttedType extends NodeType {
+  cuttedLeafNameList: string[];
+  cuttedChildren?: NodeType[];
 }
 
 export type Monomer = {

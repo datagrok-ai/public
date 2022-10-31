@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {Monomer, IMonomerLib} from '../types/index';
+import {Monomer, IMonomerLib} from '../types';
 
 /** Handles Helm package presence and initialization  */
 export async function getMonomerLib(): Promise<IMonomerLib> {
