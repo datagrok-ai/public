@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/pubchem-api",
   "friendlyName": "PubChem",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
