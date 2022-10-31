@@ -166,6 +166,34 @@ category('Viewers', () => {
   });
 
 
+  test('testViewersLayout', async () => {
+    let viewers = DG.Viewer.getViewerTypes().filter(vt => !vt.toLowerCase().includes('widget'));
+    const skipViewers = ['3d scatter plot', 'Network diagram'];
+    let layout, res, errorViewers = [], i = 0;
+    
+    for (let v of viewers) {
+      if (skipViewers.includes(v)) continue;
+      res = [];
+      try {
+        tv.addViewer(v);
+        res.push(Array.from(tv.viewers).length);
+        layout = tv.saveLayout();
+        tv.resetLayout();
+        res.push(Array.from(tv.viewers).length);
+        tv.loadLayout(layout);
+        res.push(Array.from(tv.viewers).length);
+      } finally {
+        i++;
+        if (!(res[0] === 2 && res[1] === 1 && res[2] === 2)) errorViewers.push([v, res]);
+        tv.resetLayout();
+      }
+    }
+
+    grok.shell.info(`Tested ${i} viewers of ${viewers.length}, skipped ${skipViewers.length}, error in ${errorViewers.length}`);
+    if (errorViewers.length !== 0) throw `Error viewers: ${errorViewers}`;
+  });
+
+
   after(async () => {
     tv.close();
     grok.shell.closeTable(df);
