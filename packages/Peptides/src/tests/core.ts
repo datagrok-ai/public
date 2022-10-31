@@ -36,7 +36,7 @@ category('Core', () => {
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, bio.ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
     simpleAlignedSeqCol.setTag(bio.TAGS.aligned, bio.ALIGNMENT.SEQ_MSA);
-    simpleScaledCol = scaleActivity('-lg', simpleActivityCol);
+    simpleScaledCol = scaleActivity(simpleActivityCol, '-lg');
 
     model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, '-lg');
     expect(model instanceof PeptidesModel, true);
@@ -57,7 +57,7 @@ category('Core', () => {
     complexAlignedSeqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.SEPARATOR);
     complexAlignedSeqCol.setTag(bio.TAGS.aligned, bio.ALIGNMENT.SEQ_MSA);
     complexAlignedSeqCol.tags[C.TAGS.SEPARATOR] = '/';
-    complexScaledCol = scaleActivity('-lg', complexActivityCol);
+    complexScaledCol = scaleActivity(complexActivityCol, '-lg');
 
     model = await startAnalysis(
       complexActivityCol, complexAlignedSeqCol, null, complexTable, complexScaledCol, '-lg');
@@ -78,7 +78,7 @@ category('Core', () => {
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, bio.ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
     simpleAlignedSeqCol.setTag(bio.TAGS.aligned, bio.ALIGNMENT.SEQ_MSA);
-    simpleScaledCol = scaleActivity('-lg', simpleActivityCol);
+    simpleScaledCol = scaleActivity(simpleActivityCol, '-lg');
 
     model = await startAnalysis(simpleActivityCol, simpleAlignedSeqCol, null, simpleTable, simpleScaledCol, '-lg');
     let v = grok.shell.getTableView('Peptides analysis');
