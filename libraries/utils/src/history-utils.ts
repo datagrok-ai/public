@@ -30,11 +30,10 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 
 export namespace historyUtils {
   export async function loadRun(funcCallId: string) {
-    const pulledRun = await grok.dapi.functions.calls.include('inputs, outputs').find(funcCallId);
+    const pulledRun = await grok.dapi.functions.calls.allPackageVersions().include('inputs, outputs').find(funcCallId);
     // FIX ME: manually get script since pulledRun contains empty Func
-    const script = await grok.dapi.functions.find(pulledRun.func.id);
-    //@ts-ignore
-    window.grok_FuncCall_Set_Func(pulledRun.dart, script.dart);
+    const script = await grok.dapi.functions.allPackageVersions().find(pulledRun.func.id);
+    pulledRun.func = script;
     pulledRun.options['isHistorical'] = true;
     const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
       .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
@@ -83,7 +82,10 @@ export namespace historyUtils {
     let filteringString = `func.id="${funcId}"`;
     filteringString += filterOptions.author ? ` and session.user.id="${filterOptions.author.id}"`:'';
     filteringString += filterOptions.date ? getSearchStringByPattern(filterOptions.date): '';
-    const filter = grok.dapi.functions.calls.filter(filteringString).include('session.user, options');
+    const filter = grok.dapi.functions.calls
+      .allPackageVersions()
+      .filter(filteringString)
+      .include('session.user, options');
     const list = filter.list(listOptions);
     return list;
   }
@@ -107,8 +109,12 @@ export namespace historyUtils {
     filteringString += filterOptions.isShared ? ` and options.isShared="true"`: '';
     filteringString += filterOptions.text ?
       ` and ((options.title like "${filterOptions.text}") or (options.annotation like "${filterOptions.text}"))`: '';
-    const filter = grok.dapi.functions.calls.filter(`(${filteringString})`).include('session.user, options');
-    const list = filter.list(listOptions);
-    return list;
+    const result =
+      grok.dapi.functions.calls
+        .allPackageVersions()
+        .filter(`(${filteringString})`)
+        .include('session.user, options')
+        .list(listOptions);
+    return result;
   }
 }
