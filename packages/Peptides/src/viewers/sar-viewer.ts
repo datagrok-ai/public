@@ -11,7 +11,6 @@ export class SARViewerBase extends DG.JsViewer {
   viewerGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
   model!: PeptidesModel;
-  _titleHost = ui.divText('SAR Viewer', {id: 'pep-viewer-title'});
   initialized = false;
   isPropertyChanging: boolean = false;
   _isVertical = false;
@@ -53,7 +52,6 @@ export class SARViewerBase extends DG.JsViewer {
           invariantMapMode.value = !invariantMapMode.value;
           this.isMutationCliffsMode = '1';
           this.isModeChanging = false;
-          this._titleHost.innerText = 'Mutation Cliffs';
           this.model.isInvariantMap = false;
           this.viewerGrid.invalidate();
         });
@@ -65,7 +63,6 @@ export class SARViewerBase extends DG.JsViewer {
           mutationCliffsMode.value = !mutationCliffsMode.value;
           this.isMutationCliffsMode = '0';
           this.isModeChanging = false;
-          this._titleHost.innerText = 'Invariant Map';
           this.model.isInvariantMap = true;
           this.viewerGrid.invalidate();
         });
@@ -78,12 +75,12 @@ export class SARViewerBase extends DG.JsViewer {
         setDefaultProperties(invariantMapMode);
         $(mutationCliffsMode.root).css('padding-right', '10px').css('padding-left', '5px');
 
-        switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root]);
-        switchHost.style.position = 'absolute';
+        switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root], {id: 'pep-viewer-title'});
+        $(switchHost).css('width', 'auto').css('align-self', 'center');
       }
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
-      this.root.appendChild(ui.divV([ui.divH([switchHost, this._titleHost]), viewerRoot]));
+      this.root.appendChild(ui.divV([switchHost, viewerRoot]));
     }
     this.viewerGrid?.invalidate();
   }
