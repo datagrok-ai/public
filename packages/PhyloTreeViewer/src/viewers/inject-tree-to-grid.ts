@@ -7,9 +7,8 @@ import {filter, map} from 'rxjs/operators';
 import {interval, Unsubscribable} from 'rxjs';
 
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
-import * as th from '../utils/tree-helper';
 import $ from 'cash-dom';
-import {cutTreeToGrid, TreeToGridSyncer} from '../utils/tree-helper';
+import {TreeHelper} from '../utils/tree-helper';
 
 // const getBranchScaleOld = PhylocanvasGL.prototype.getBranchScale;
 // PhylocanvasGL.prototype.getBranchScale = function(...args) {
@@ -24,6 +23,7 @@ export function injectTreeToGridUI(
   grid: DG.Grid, newickText: string, leafColName?: string, neighborWidth: number = 100,
   cut?: { min: number, max: number, clusterColName: string }
 ): GridNeighbor {
+  const th: bio.ITreeHelper = new TreeHelper();
   const subs: Unsubscribable[] = [];
   //const _grid = grid;
   const treeN = attachDivToGrid(grid, neighborWidth);
@@ -80,7 +80,7 @@ export function injectTreeToGridUI(
 
     subs.push(cutSlider.onChanged(() => {
       console.debug('PhyloTreeViewer: injectTreeToGrid() cutSlider.onChanged() ' + `${cutSlider!.value}`);
-      cutTreeToGrid(newickRoot, cutSlider!.value!, grid.dataFrame, 'id', 'Cluster');
+      th.cutTreeToGrid(newickRoot, cutSlider!.value!, grid.dataFrame, 'id', 'Cluster');
     }));
   }
 

@@ -14,6 +14,7 @@ import {injectTreeToGridUI} from './viewers/inject-tree-to-grid';
 import {NewickHelper} from './utils/newick-helper';
 import {TreeInGridCellApp} from './apps/tree-in-grid-cell-app';
 import {PhylocanvasGlService} from './utils/phylocanvas-gl-service';
+import {TreeHelper} from './utils/tree-helper';
 
 
 export const _package = new DG.Package();
@@ -180,4 +181,10 @@ export function getPhylocanvasGlService(): bio.PhylocanvasGlServiceBase {
   }
 
   return window.$phylocanvasGlService;
+}
+
+//name: getTreeHelper
+//output: object result
+export function getTreeHelper(): bio.ITreeHelper {
+  return new TreeHelper();
 }
