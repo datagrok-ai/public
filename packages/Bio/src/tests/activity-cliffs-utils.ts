@@ -11,7 +11,7 @@ export async function _testActivityCliffsOpen(df: DG.DataFrame, numberCliffs: nu
     df,
     df.col(colName)!,
     df.col('Activity')!,
-    90,
+    50,
     method);
 
   expect(scatterPlot != null, true);
