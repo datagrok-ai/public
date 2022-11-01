@@ -359,7 +359,7 @@ export class PvizAspect {
     chains.forEach((chain) => {
       const cdrFeatureMap: CdrFeatureType[] = [];
       const cdrRanges: PointType[] = this.json.cdr_ranges[this.cdrScheme.value + '_CDR' + chain + '_ranges'];
-      if (this.cdrScheme.value !== 'default') {
+      if (this.cdrScheme.value !== MiscMethods.NoSchemeItem) {
         Object.values(cdrRanges).forEach((range) => {
           cdrFeatureMap.push({
             category: 'CDR region',
