@@ -35,11 +35,11 @@ export enum DrawStyle {
  * @param maxLengthOfMonomer Is max length of monomer.
  * @return {number} x coordinate to start printing at.
  */
-export function printLeftOrCentered(
+export const printLeftOrCentered = (
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color: string = undefinedColor,
   pivot: number = 0, left = false, transparencyRate: number = 1.0,
-  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, referenceSequence: string[] = [], maxLengthOfMonomer: number | null = null): number {
+  separator: string = '', last: boolean = false, drawStyle: DrawStyle = DrawStyle.classic, maxWord: { [index: string]: number } = {}, wordIdx: number = 0, gridCell: DG.GridCell | null = null, referenceSequence: string[] = [], maxLengthOfMonomer: number | null = null): number => {
   g.textAlign = 'start';
   let colorPart = s.substring(0);
   let grayPart = last ? '' : separator;
@@ -72,7 +72,7 @@ export function printLeftOrCentered(
 
   let maxColorTextSize = g.measureText(colorPart).width;
   let colorTextSize = g.measureText(colorPart).width;
-  const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
+  const dy = h / 2 - (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2 + 1;
   textSize = textSize.width;
   if (drawStyle === DrawStyle.MSA) {
     maxColorTextSize = maxWord[wordIdx];
@@ -103,5 +103,5 @@ export function printLeftOrCentered(
     draw(dx, dx + maxColorTextSize);
     return x + dx + maxColorTextSize;
   }
-}
+};
 
