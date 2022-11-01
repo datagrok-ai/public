@@ -5,18 +5,11 @@ import * as bio from '@datagrok-libraries/bio';
 
 import * as rxjs from 'rxjs';
 import {TREE_TAGS} from '../consts';
-import {Unsubscribable} from 'rxjs';
+import {Observable, Subject, Unsubscribable} from 'rxjs';
 import $ from 'cash-dom';
-import {Newick} from '@datagrok-libraries/bio';
-
-
-// // import {TreeAnalyzer, PhylocanvasTreeNode, getVId} from './utils/tree-stats';
-// import {Subscription, Unsubscribable} from 'rxjs';
 
 // TODO: add test for these properties existing.
-/**
- * Represents a single tree node.
- */
+/** Represents a single tree node */
 export interface PhylocanvasTreeNode {
   branchLength: 0;
   children: PhylocanvasTreeNode[];
@@ -39,22 +32,12 @@ enum PROPS_CATS {
   LAYOUT = 'Layout',
 }
 
-export enum TreeTypesNames {
-  Radial = 'Radial',
-  /** Rectangular edges, leaves listed __vertically__ */
-  Rectangular = 'Rectangular',
-  Polar = 'Polar',
-  Diagonal = 'Diagonal',
-  /** Rectangular edges, leaves listed __horizontally__ */
-  Orthogonal = 'Orthogonal',
-}
-
 const TreeTypesTypes: { [streeType: string]: string } = {
-  [TreeTypesNames.Radial]: bio.TreeTypes.Radial,
-  [TreeTypesNames.Rectangular]: bio.TreeTypes.Rectangular, // rectangular edges, leaves listed vertically
-  [TreeTypesNames.Polar]: bio.TreeTypes.Circular,
-  [TreeTypesNames.Diagonal]: bio.TreeTypes.Diagonal,
-  [TreeTypesNames.Orthogonal]: bio.TreeTypes.Hierarchical, // rectangular edges, leaves listed horizontally
+  [bio.TreeTypesNames.Radial]: bio.TreeTypes.Radial,
+  [bio.TreeTypesNames.Rectangular]: bio.TreeTypes.Rectangular, // rectangular edges, leaves listed vertically
+  [bio.TreeTypesNames.Polar]: bio.TreeTypes.Circular,
+  [bio.TreeTypesNames.Diagonal]: bio.TreeTypes.Diagonal,
+  [bio.TreeTypesNames.Orthogonal]: bio.TreeTypes.Hierarchical, // rectangular edges, leaves listed horizontally
 };
 
 
@@ -108,15 +91,19 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
   /** Container to store prop values while phylocanvasViewer is not created yet */
   phylocanvasProps: { [p: string]: any } = {};
 
+  private _onAfterRender = new Subject<{ gl: WebGLRenderingContext }>();
+
   private viewSubs: Unsubscribable[] = [];
+
+  get onAfterRender(): Observable<{ gl: WebGLRenderingContext }> { return this._onAfterRender; }
 
   constructor() {
     super();
 
     this.alignLabels = this.bool('alignLabels', false);
 
-    this.treeType = this.string('treeType', TreeTypesNames.Rectangular,
-      {category: PROPS_CATS.APPEARANCE, choices: Object.values(TreeTypesNames)});
+    this.treeType = this.string('treeType', bio.TreeTypesNames.Rectangular,
+      {category: PROPS_CATS.APPEARANCE, choices: Object.values(bio.TreeTypesNames)});
     this.lineWidth = this.float('lineWidth', 1, {category: PROPS_CATS.APPEARANCE,});
     this.nodeSize = this.float('nodeSize', 14,
       {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 1, max: 32,});
@@ -278,28 +265,21 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     // const treeNode = mlbView.dockManager.dock(treeDiv, DG.DOCK_TYPE.DOWN);
 
     if (!this.phylocanvasViewer) {
-      const newickRoot = Newick.parse_newick(this.newick!);
+      const newickRoot = bio.Newick.parse_newick(this.newick!);
       const props: { [p: string]: any } = {};
       Object.assign(props, this.phylocanvasProps);
       Object.assign(props, {source: {type: 'biojs', data: newickRoot}});
       // this.phylocanvasProps = {}; / the value is required to restore view in destroyView/buildView
 
       this.phylocanvasViewer = new bio.PhylocanvasGL(this.treeDiv, props);
-      this.phylocanvasViewer.deck.setProps({useDevicePixels: true});
+      this.phylocanvasViewer.deck.setProps({
+        useDevicePixels: true,
+        onAfterRender: this.phylocanvasViewerDeckOnAfterRender.bind(this),
+      });
       this.phylocanvasViewer.view.style.backgroundImage = 'none';
 
       this.calcSize();
-
-      //@ts-ignore
-      // const pCtx: CanvasRenderingContext2D = this.phylocanvasViewer.deck.canvas.getContext('2d');
-      // pCtx.fillStyle = '#80FFF0';
-      // pCtx.fillRect(10, 10, 50, 50);
-
       let k = 11;
-
-      //@ts-ignore
-      this.phylocanvasViewer.deck.animationLoop.redraw();
-
 
       // this.subs.push(
       //   rxjs.fromEvent<MouseEvent>(this.phylocanvasViewer.deck.canvas!, 'mousedown').subscribe((args: MouseEvent) => {
@@ -357,7 +337,7 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     }
 
     const setProps = (props: { [p: string]: any }) => {
-      Object.assign(this.phylocanvasProps!, props);
+      Object.assign(this.phylocanvasProps, props);
       if (this.phylocanvasViewer)
         this.phylocanvasViewer.setProps(props);
     };
@@ -431,6 +411,10 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     Object.assign(this.phylocanvasProps, updater);
     if (this.phylocanvasViewer !== null)
       this.phylocanvasViewer.setProps(updater);
+  }
+
+  protected phylocanvasViewerDeckOnAfterRender({gl}: { gl: WebGLRenderingContext }) {
+    this._onAfterRender.next({gl});
   }
 }
 

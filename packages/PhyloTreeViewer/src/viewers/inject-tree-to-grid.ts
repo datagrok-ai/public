@@ -40,8 +40,8 @@ export function injectTreeToGridUI(
   pcDiv.style.position = 'absolute';
   pcDiv.style.left = `${leftMargin}px`;
 
-  const newickRoot: bio.Node = bio.Newick.parse_newick(newickText);
-  const [viewedRoot, warnings]: [bio.Node, string[]] = th.setGridOrder(newickRoot, grid, 'id');
+  const newickRoot: bio.NodeType = bio.Newick.parse_newick(newickText);
+  const [viewedRoot, warnings]: [bio.NodeType, string[]] = th.setGridOrder(newickRoot, grid, 'id');
 
   const pcViewer = new bio.PhylocanvasGL(pcDiv, {
     interactive: false,

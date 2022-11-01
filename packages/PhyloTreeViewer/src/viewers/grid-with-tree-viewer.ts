@@ -1,16 +1,16 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 import {newickToDf} from '../utils';
-import {PhylocanvasGlViewer, TreeTypesNames} from './phylocanvas-gl-viewer';
 import {Unsubscribable} from 'rxjs';
 
 export class GridWithTreeViewer extends DG.JsViewer {
   nodeNameColumnName: string | null;
 
   grid: DG.Grid | null = null;
-  tree: PhylocanvasGlViewer | null = null;
+  tree: bio.IPhylocanvasGlViewer | DG.JsViewer | null = null;
 
   _newick: string | null = null;
   _nwkDf: DG.DataFrame | null = null;
@@ -132,7 +132,7 @@ export class GridWithTreeViewer extends DG.JsViewer {
     }
 
     if (!this.tree) {
-      this.tree = await this.nwkDf.plot.fromType('PhylocanvasGl', {
+      this.tree = (await this.nwkDf.plot.fromType('PhylocanvasGl', {
         interactive: false,
         alignLabels: true,
         showLabels: true,
@@ -140,7 +140,7 @@ export class GridWithTreeViewer extends DG.JsViewer {
         nodeSize: 1,
         padding: 10,
         treeToCanvasRatio: 1,
-      }) as PhylocanvasGlViewer;
+      })) as DG.JsViewer;
       this.leftDiv.append(this.tree.root, this.textDiv);
 
       this.tree.root.style.position = 'absolute';

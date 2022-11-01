@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 import {newickToDf} from './utils';
 import {PhyloTreeViewer} from './tree-viewer';
@@ -12,6 +13,7 @@ import {GridWithTreeApp} from './apps/grid-with-tree-app';
 import {injectTreeToGridUI} from './viewers/inject-tree-to-grid';
 import {NewickHelper} from './utils/newick-helper';
 import {TreeInGridCellApp} from './apps/tree-in-grid-cell-app';
+import {PhylocanvasGlService} from './utils/phylocanvas-gl-service';
 
 
 export const _package = new DG.Package();
@@ -45,7 +47,7 @@ export function phyloTreeViewer(): PhyloTreeViewer {
 }
 
 
-//name: PhylocanvasGl
+//name: PhylocanvasGL
 //description: Phylogenetic tree visualization
 //tags: viewer
 //output: viewer result
@@ -164,4 +166,18 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
 //input: string newickText
 export async function injectTreeToGrid(grid: DG.Grid, newickText: string) {
   injectTreeToGridUI(grid, newickText);
+}
+
+type PtvWindowType = Window & { $phylocanvasGlService?: PhylocanvasGlService };
+declare var window: PtvWindowType;
+
+//name: getPhylocanvasGlService
+//output: object result
+export function getPhylocanvasGlService(): bio.PhylocanvasGlServiceBase {
+  if (!(window.$phylocanvasGlService)) {
+    const svc: PhylocanvasGlService = new PhylocanvasGlService();
+    window.$phylocanvasGlService = svc;
+  }
+
+  return window.$phylocanvasGlService;
 }

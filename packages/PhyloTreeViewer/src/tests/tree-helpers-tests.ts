@@ -42,15 +42,15 @@ category('treeHelpers', () => {
   });
 
   function _testGetLeafList(nwk: string, tgtLeafNameList: string[]) {
-    const root: bio.Node = bio.Newick.parse_newick(nwk);
-    const leafList: bio.Node[] = getLeafList(root);
+    const root: bio.NodeType = bio.Newick.parse_newick(nwk);
+    const leafList: bio.NodeType[] = getLeafList(root);
     const leafNameList: string[] = leafList.map((n) => n.name);
     expectArray(leafNameList, tgtLeafNameList);
   }
 
   function _testGetNodeList(nwk: string, tgtNodeNameList: string[]) {
-    const root: bio.Node = bio.Newick.parse_newick(nwk);
-    const nodeList: bio.Node[] = getNodeList(root);
+    const root: bio.NodeType = bio.Newick.parse_newick(nwk);
+    const nodeList: bio.NodeType[] = getNodeList(root);
     const nodeNameList: string[] = nodeList.map((n) => n.name);
 
     expectArray(nodeNameList, tgtNodeNameList);
@@ -62,11 +62,5 @@ category('treeHelpers', () => {
 
   function _testSetGridOrder(nwk: string) {
 
-  }
-
-  function _testCutTree(tree: bio.Node, cutHeight: number, tgtClusterList: bio.Node[]) {
-    const resClusterList = treeCutAsLeafs(tree, cutHeight, 0);
-
-    expectArray(resClusterList, tgtClusterList);
   }
 });
