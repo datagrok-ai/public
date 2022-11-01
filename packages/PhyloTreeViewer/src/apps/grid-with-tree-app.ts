@@ -33,11 +33,11 @@ export class GridWithTreeApp {
 
   async loadData(): Promise<void> {
     const dataPath: string = 'System:AppData/PhyloTreeViewer/data';
-    const csv = await _package.files.readAsText(`data/220524_FcRn_MH_FcRn_pepclust.csv`);
-    const newick = await _package.files.readAsText(`data/220524_FcRn_MH_FcRn_model_clustering.height.nwk`);
+    // const csv = await _package.files.readAsText(`data/220524_FcRn_MH_FcRn_pepclust.csv`);
+    // const newick = await _package.files.readAsText(`data/220524_FcRn_MH_FcRn_model_clustering.height.nwk`);
 
-    // const csv = await _package.files.readAsText(`data/tree95df.csv`);
-    // const newick = await _package.files.readAsText(`data/tree95.nwk`);
+    const csv = await _package.files.readAsText(`data/tree95df.csv`);
+    const newick = await _package.files.readAsText(`data/tree95.nwk`);
 
     const dataDf = DG.DataFrame.fromCsv(csv);
     dataDf.setTag('.newick', newick);
@@ -93,7 +93,7 @@ export class GridWithTreeApp {
   async buildView(): Promise<void> {
     if (!this.tableView) {
       this.tableView = grok.shell.addTableView(this.dataDf);
-      this.tableView.basePath = 'apps/PhyloTreeViewer/GridWithTree';
+      this.tableView.path = this.tableView.basePath = 'apps/PhyloTreeViewer/GridWithTree';
 
       this.dataDf.columns.addNewInt('Cluster').init((rowI: number) => { return 0;});
 

@@ -8,6 +8,7 @@ import './tests/newick-phylotree-tests';
 import './tests/newick-phylocanvas-tests';
 import './tests/tree-helpers-tests';
 import './tests/tree-cut-tests';
+import './tests/phylocanvas-gl-viewer-tests';
 
 export const _package = new DG.Package();
 export {tests};
