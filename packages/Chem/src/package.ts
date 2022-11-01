@@ -32,7 +32,7 @@ import { _importSdf } from './open-chem/sdf-importer';
 import { OCLCellRenderer } from './open-chem/ocl-cell-renderer';
 import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import Sketcher = DG.chem.Sketcher;
-import { getActivityCliffs }  from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import { getActivityCliffs, ISequenceSpaceResult }  from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import { removeEmptyStringRows } from '@datagrok-libraries/utils/src/dataframe-utils';
 import { checkForStructuralAlerts } from './panels/structural-alerts';
 import { createPropPanelElement, createTooltipElement } from './analysis/activity-cliffs';
@@ -296,31 +296,15 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<DG.Viewer|undefined> {
   const embedColsNames = getEmbeddingColsNames(table);
-  await getChemSpaceEmbeddings(table, smiles, methodName, similarityMetric, embedColsNames[0], embedColsNames[1]);
-  if (plotEmbeddings)
-    return grok.shell
-      .tableView(table.name)
-      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
-}
-
-
-//name: Chem Space Embeddings
-//input: dataframe table
-//input: column col
-//input: string methodName
-//input: string similarityMetric
-//input: string xAxis
-//input: string yAxis
-export async function getChemSpaceEmbeddings(table: DG.DataFrame, col: DG.Column, methodName: string,
-  similarityMetric: string = 'Tanimoto', xAxis: string, yAxis: string) : Promise<void> {
-  const withoutEmptyValues = DG.DataFrame.fromColumns([col]).clone();
-  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, col);
+  const withoutEmptyValues = DG.DataFrame.fromColumns([smiles]).clone();
+  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, smiles);
   const chemSpaceParams = {
-    seqCol: withoutEmptyValues.col(col.name)!,
+    seqCol: withoutEmptyValues.col(smiles.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,
-    embedAxesNames: [xAxis, yAxis],
+    embedAxesNames: [embedColsNames[0], embedColsNames[1]],
   };
+
   const chemSpaceRes = await chemSpace(chemSpaceParams);
   const embeddings = chemSpaceRes.coordinates;
   for (const col of embeddings) {
@@ -328,6 +312,52 @@ export async function getChemSpaceEmbeddings(table: DG.DataFrame, col: DG.Column
     emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
     table.columns.add(DG.Column.fromList('double', col.name, listValues));
   }
+    if (plotEmbeddings)
+    return grok.shell
+      .tableView(table.name)
+      .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chem space'});
+}
+
+
+//name: Chem Space Embeddings
+//input: string col
+//input: string methodName
+//input: string similarityMetric
+//input: string xAxis
+//input: string yAxis
+//output: object result
+export async function getChemSpaceEmbeddings(col: DG.Column, methodName: string,
+  similarityMetric: string = 'Tanimoto', xAxis: string, yAxis: string) : Promise<ISequenceSpaceResult> {
+  //need to create dataframe to add fingerprints column
+  if (!col.dataFrame) {
+    const dfForFp = DG.DataFrame.create(col.length);
+    dfForFp.columns.add(col);
+  }
+  const chemSpaceParams = {
+    seqCol: col,
+    methodName: methodName,
+    similarityMetric: similarityMetric,
+    embedAxesNames: [xAxis, yAxis],
+  };
+  const chemSpaceRes = await chemSpace(chemSpaceParams);
+  return chemSpaceRes;
+}
+
+//name: Chem Similarities Matrix
+//input: int dim
+//input: column col
+//input: dataframe df
+//input: string colName
+//input: object simArr
+//output: object res
+export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
+  df: DG.DataFrame, colName: string, simArr: DG.Column[]): Promise<DG.Column[]> {
+  //need to create dataframe to add fingerprints column
+  if (!col.dataFrame) {
+    const dfForFp = DG.DataFrame.create(col.length);
+    dfForFp.columns.add(col);
+  }
+  return await getSimilaritiesMarix(dim, col, df, colName, simArr);
 }
 
 //name: R-Groups Analysis
