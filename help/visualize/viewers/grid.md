@@ -69,7 +69,9 @@
 
 ![Date and number formatting](grid-formatting.gif "Date and number formatting")
 
-## Color-coding
+## Color coding
+
+### Grid color coding
 
 |              |                         |
 |--------------|-------------------------|
@@ -77,6 +79,34 @@
 | Menu \|  Color coding \|  Color scheme  | Select a palette  |
 
 ![Color-coding](grid-color-coding.gif "Color-coding")
+
+### Column color coding
+
+Color coding can be defined on the column level. Color coding types are
+suggested according to the column type: `Categorical` applies to categorical
+columns (`string` and `bool`); `Conditional` and `Linear` apply to numeric types
+(linear color coding additionally includes `datetime`).
+
+|                                           |                                    |
+|-------------------------------------------|------------------------------------|
+| Menu \|  Color coding \| Off              | Turn off column color coding       |
+| Menu \|  Color coding \| Categorical      | Turn on categorical color coding   |
+| Menu \|  Color coding \| Linear           | Turn on linear color coding        |
+| Menu \|  Color coding \| Conditional      | Turn on conditional color coding   |
+| Menu \|  Color coding \| Edit...          | Edit column color coding           |
+| Menu \|  Color coding \| Pick Up Coloring | Clone coloring settings            |
+| Menu \|  Color coding \| Apply Coloring   | Apply copied coloring settings     |
+
+Color coding configuration can be copied from one column to another via commands
+`Pick Up Coloring` and `Apply Coloring`. Application can work on multiple
+columns. Both standard and custom color coding are copied. The `Off` setting can
+get picked up as well (when applied, it will turn off the coloring on a column
+in question). However, except for the `Off` option, copied settings cannot be
+applied if you try to transfer them from a numeric column to a categorical one
+or vice versa. This means that the column type is always taken into account. The
+`Apply Coloring` command is disabled if nothing has been picked up. Settings are
+remembered for a viewer instance (currently, they are not preserved through
+layout serialization).
 
 ## Row summary columns
 
