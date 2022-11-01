@@ -3,8 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as bio from '@datagrok-libraries/bio';
 import * as u from '@datagrok-libraries/utils';
-
-import {getLeafList, toNewick, treeCutAsLeafs, treeCutAsTree} from '../utils/tree-helper';
+import {TreeHelper} from '../utils/tree-helper';
 
 /*
 R code to plot picture explaining tests
@@ -24,6 +23,8 @@ abline(v=3.0,  col='gray');
 
 */
 u.category('treeCut', () => {
+  const th: bio.ITreeHelper = new TreeHelper();
+
   const enum Tests {
     cut1 = 'cut1',
   }
@@ -284,9 +285,9 @@ u.category('treeCut', () => {
   });
 
   function _testTreeCutAsLeafs(tree: bio.NodeType, cutHeight: number, tgtLeafNameList: string[][]) {
-    const resClusterList: bio.NodeType[] = treeCutAsLeafs(tree, cutHeight);
+    const resClusterList: bio.NodeType[] = th.treeCutAsLeaves(tree, cutHeight);
     const resLeafNameList = resClusterList
-      .map((clusterRootNode) => getLeafList(clusterRootNode).map((l) => l.name));
+      .map((clusterRootNode) => th.getLeafList(clusterRootNode).map((l) => l.name));
     u.expectArray(resLeafNameList, tgtLeafNameList);
   }
 
@@ -308,10 +309,8 @@ u.category('treeCut', () => {
   });
 
   function _testTreeCutAsTree(tree: bio.NodeType, cutHeight: number, tgtTree: bio.NodeType) {
-    const resTree: bio.NodeType | null = treeCutAsTree(tree, cutHeight);
-    let k = 11;
-
-    const newickStr = toNewick(resTree);
+    const resTree: bio.NodeType | null = th.treeCutAsTree(tree, cutHeight);
+    //const newickStr = th.toNewick(resTree);
 
     u.expectObject(resTree!, tgtTree);
   }

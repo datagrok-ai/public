@@ -7,6 +7,8 @@ import * as rxjs from 'rxjs';
 import {TREE_TAGS} from '../consts';
 import {Observable, Subject, Unsubscribable} from 'rxjs';
 import $ from 'cash-dom';
+import {PickingInfo} from '@deck.gl/core/typed';
+import {MjolnirPointerEvent} from 'mjolnir.js';
 
 // TODO: add test for these properties existing.
 /** Represents a single tree node */
@@ -87,15 +89,19 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
 //   title: string;
 //
   treeDiv: HTMLDivElement | null;
-  phylocanvasViewer: bio.PhylocanvasGL | null;
+  viewer: bio.PhylocanvasGL | null;
   /** Container to store prop values while phylocanvasViewer is not created yet */
   phylocanvasProps: { [p: string]: any } = {};
 
   private _onAfterRender = new Subject<{ gl: WebGLRenderingContext }>();
 
+  private _onHover = new Subject<{ info: PickingInfo, event: MjolnirPointerEvent }>();
+
   private viewSubs: Unsubscribable[] = [];
 
   get onAfterRender(): Observable<{ gl: WebGLRenderingContext }> { return this._onAfterRender; }
+
+  get onHover(): Observable<{ info: PickingInfo, event: MjolnirPointerEvent }> { return this._onHover; }
 
   constructor() {
     super();
@@ -213,7 +219,7 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
   }
 
   calcSize(): void {
-    if (!this.phylocanvasViewer)
+    if (!this.viewer)
       return;
 
     // this.treeDiv.innerText = `${this.root.clientWidth} x ${this.root.clientHeight}`;
@@ -227,7 +233,7 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
       this.treeDiv.style.width = `${width}px`;
       this.treeDiv.style.height = `${height}px`;
 
-      this.phylocanvasViewer.setProps({size: this.treeDiv.getBoundingClientRect()});
+      this.viewer.setProps({size: this.treeDiv.getBoundingClientRect()});
     }
   }
 
@@ -235,24 +241,13 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     console.debug('PhyloTreeViewer: PhylocanvasGlViewer.destroyView() ');
 
     this.viewSubs.forEach((s: Unsubscribable) => { s.unsubscribe(); });
-
-    if (this.phylocanvasViewer) {
-      this.phylocanvasViewer.destroy();
-      this.phylocanvasViewer = null;
-      // this.phylocanvasProps = {}; // the value is required to restore view in destroyView/buildView
-    }
-
-    if (this.treeDiv) {
-      this.treeDiv.remove();
-      this.treeDiv = null;
-    }
   }
 
   private buildView() {
     console.debug('PhyloTreeViewer: PhylocanvasGlViewer.buildView() ');
 
     //const color: string = `#bbff${Math.ceil(128 + Math.random() * 127).toString(16)}`;
-    if (!this.treeDiv) {
+    if (!this.treeDiv && !this.viewer) {
       this.treeDiv = ui.div([], {
         style: {
           //backgroundColor: color,
@@ -261,22 +256,22 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
         }
       });
       this.root.appendChild(this.treeDiv);
-    }
-    // const treeNode = mlbView.dockManager.dock(treeDiv, DG.DOCK_TYPE.DOWN);
 
-    if (!this.phylocanvasViewer) {
-      const newickRoot = bio.Newick.parse_newick(this.newick!);
-      const props: { [p: string]: any } = {};
+      // default props required to prevent throwing exception
+      const defaultNwkStr = '(NONE:1);'; // minimal tree required to not throw exception in PhylocanvasGL
+      const defaultNwkRoot = bio.Newick.parse_newick(defaultNwkStr);
+      const props: { [p: string]: any } = {
+        source: {type: 'biojs', data: defaultNwkRoot},
+      };
+
       Object.assign(props, this.phylocanvasProps);
-      Object.assign(props, {source: {type: 'biojs', data: newickRoot}});
-      // this.phylocanvasProps = {}; / the value is required to restore view in destroyView/buildView
-
-      this.phylocanvasViewer = new bio.PhylocanvasGL(this.treeDiv, props);
-      this.phylocanvasViewer.deck.setProps({
+      this.viewer = new bio.PhylocanvasGL(this.treeDiv, props);
+      this.viewer.deck.setProps({
         useDevicePixels: true,
-        onAfterRender: this.phylocanvasViewerDeckOnAfterRender.bind(this),
+        onAfterRender: this.viewerDeckOnAfterRender.bind(this),
+        onHover: this.viewerOnHover.bind(this),
       });
-      this.phylocanvasViewer.view.style.backgroundImage = 'none';
+      this.viewer.view.style.backgroundImage = 'none';
 
       this.calcSize();
       let k = 11;
@@ -286,38 +281,19 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
       //
       //   }));
     }
+    const newickRoot = bio.Newick.parse_newick(this.newick!);
+    this.viewer!.setProps({source: {type: 'biojs', data: newickRoot}});
+
     // this.phyloTreeViewer.selectNode = this.tvSelectNode.bind(this);
-    // this.phyloTreeViewer.handleHover = this.tvHandleHover.bind(this);
+    //@ts-ignore
+    //this.viewer.handleHover = this.viewerHandleHover.bind(this);
 
     // this._viewSubs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe((_) => this.render(false)));
   }
 
   override onTableAttached() {
-    console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onTableAttached() ' +
-      `this.dataFrame = ${!this.nwkDf ? 'null' : 'value'} )`);
-
-    if (this.viewed) {
-      this.destroyView();
-      this.viewed = false;
-    }
-
     super.onTableAttached();
     this.nwkDf = this.dataFrame;
-    this.newick = this.nwkDf.getTag(TREE_TAGS.NEWICK);
-    if (this.newick) {
-      this.parsedNewick = JSON.parse(this.nwkDf.getTag('.newickJson')!);
-      //this.nodeIdColumn = this.dataFrame.getCol('id');
-      this.nodeNameColumn = this.nwkDf.getCol('node');
-      this.parentNameColumn = this.nwkDf.getCol('parent');
-    }
-    // else {
-    //   this.newickCol = this.dataFrame.columns.bySemType('newick');
-    // }
-
-    if (!this.viewed) {
-      this.buildView();
-      this.viewed = true;
-    }
   }
 
   override detach() {
@@ -325,6 +301,18 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
       this.destroyView();
       this.viewed = false;
     }
+
+    if (this.viewer) {
+      this.viewer.destroy();
+      this.viewer = null;
+      // this.phylocanvasProps = {}; // the value is required to restore view in destroyView/buildView
+    }
+
+    if (this.treeDiv) {
+      this.treeDiv.remove();
+      this.treeDiv = null;
+    }
+
     super.detach();
   }
 
@@ -338,8 +326,8 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
 
     const setProps = (props: { [p: string]: any }) => {
       Object.assign(this.phylocanvasProps, props);
-      if (this.phylocanvasViewer)
-        this.phylocanvasViewer.setProps(props);
+      if (this.viewer)
+        this.viewer.setProps(props);
     };
 
     switch (property.name) {
@@ -409,12 +397,16 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
 
   setProps(updater: { [propName: string]: any }): void {
     Object.assign(this.phylocanvasProps, updater);
-    if (this.phylocanvasViewer !== null)
-      this.phylocanvasViewer.setProps(updater);
+    if (this.viewer !== null)
+      this.viewer.setProps(updater);
   }
 
-  protected phylocanvasViewerDeckOnAfterRender({gl}: { gl: WebGLRenderingContext }) {
+  protected viewerDeckOnAfterRender({gl}: { gl: WebGLRenderingContext }): void {
     this._onAfterRender.next({gl});
+  }
+
+  protected viewerOnHover(info: PickingInfo, event: MjolnirPointerEvent): void {
+    this._onHover.next({info, event});
   }
 }
 
