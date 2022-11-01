@@ -662,10 +662,25 @@ export class GisViewer extends DG.JsViewer {
         labelVal.fill(1);
       }
       if ((colColor)) {
+        //get column color coding settings from column
+        this.ol.useColorField = true;
+        if (colColor.colors.getType() === DG.COLOR_CODING_TYPE.LINEAR) {
+          this.ol.colorCodingType = DG.COLOR_CODING_TYPE.LINEAR;
+          this.ol.colorCodingData = colColor.getTag(DG.TAGS.COLOR_CODING_LINEAR);
+        } else if (colColor.colors.getType() === DG.COLOR_CODING_TYPE.CATEGORICAL) {
+          this.ol.colorCodingType = DG.COLOR_CODING_TYPE.CATEGORICAL;
+          this.ol.colorCodingData = colColor.getTag(DG.TAGS.COLOR_CODING_CATEGORICAL);
+        } else if (colColor.colors.getType() === DG.COLOR_CODING_TYPE.CONDITIONAL) {
+          this.ol.colorCodingType = DG.COLOR_CODING_TYPE.CONDITIONAL;
+          this.ol.colorCodingData = colColor.getTag(DG.TAGS.COLOR_CODING_CONDITIONAL);
+        } else if ((colColor.type != DG.COLUMN_TYPE.BIG_INT) && (colColor.type != DG.COLUMN_TYPE.INT) &&
+                  (colColor.type != DG.COLUMN_TYPE.DATE_TIME) && (colColor.type != DG.COLUMN_TYPE.FLOAT))
+          this.ol.useColorField = false;
+        // alert(this.ol.colorCodingData);
+        //
         colorVal = colColor.getRawData();
         this.ol.minFieldColor = colColor.min;
         this.ol.maxFieldColor = colColor.max;
-        this.ol.useColorField = true;
         if (colColor.max === colColor.min)
           colorCoeff = 1;
         // else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
