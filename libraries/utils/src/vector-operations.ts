@@ -102,7 +102,7 @@ export function vectorLength(v: Vector): number {
 
 export function vectorDotProduct(v1: Vector, v2: Vector): number {
   if (v1.length != v2.length)
-    throw Error('The dimensionality of the vectors must match');
+    throw new Error('The dimensionality of the vectors must match');
   let prod: number = 0;
   for (let i: number = 0; i < v1.length; i++)
     prod += v1[i] * v2[i];
