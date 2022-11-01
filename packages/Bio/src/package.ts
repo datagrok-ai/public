@@ -10,9 +10,9 @@ import {MacromoleculeDifferenceCellRenderer, MonomerCellRenderer} from './utils/
 import {VdRegionsViewer} from './viewers/vd-regions-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
 import {SequenceAlignment, Aligned} from './seq_align';
-import {getEmbeddingColsNames, sequenceSpace} from './analysis/sequence-space';
+import {getEmbeddingColsNames, sequenceSpace, sequenceSpaceByFingerprints} from './analysis/sequence-space';
 import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {createLinesGrid, createPropPanelElement, createTooltipElement, getSimilaritiesMarix} from './analysis/sequence-activity-cliffs';
+import {createLinesGrid, createPropPanelElement, createTooltipElement, getChemSimilaritiesMarix, getSimilaritiesMarix} from './analysis/sequence-activity-cliffs';
 import {createJsonMonomerLibFromSdf, encodeMonomers, getMolfilesFromSeq} from '@datagrok-libraries/bio/src/utils/monomer-utils';
 import {HELM_CORE_LIB_FILENAME} from '@datagrok-libraries/bio/src/utils/const';
 import {getMacroMol} from './utils/atomic-works';
@@ -168,9 +168,6 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
   similarity: number, methodName: string): Promise<DG.Viewer | undefined> {
   if (!checkInputColumnUi(macroMolecule, 'Activity Cliffs'))
     return;
-  const encodedCol = encodeMonomers(macroMolecule);
-  if (!encodedCol)
-    return;
   const axesNames = getEmbeddingColsNames(df);
   const options = {
     'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
@@ -184,17 +181,17 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
   const sp = await getActivityCliffs(
     df,
     macroMolecule,
-    encodedCol,
+    null,
     axesNames,
     'Activity cliffs',
     activities,
     similarity,
-    'Levenshtein',
+    'Tanimoto',
     methodName,
     DG.SEMTYPE.MACROMOLECULE,
     tags,
-    sequenceSpace,
-    getSimilaritiesMarix,
+    sequenceSpaceByFingerprints,
+    getChemSimilaritiesMarix,
     createTooltipElement,
     createPropPanelElement,
     createLinesGrid,
@@ -216,26 +213,30 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   if (!checkInputColumnUi(macroMolecule, 'Sequence space'))
     return;
 
-  if (macroMolecule.version !== macroMolecule.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
-    await invalidateMols(macroMolecule, false);
   const embedColsNames = getEmbeddingColsNames(table);
+  const withoutEmptyValues = DG.DataFrame.fromColumns([macroMolecule]).clone();
+  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, macroMolecule);
 
-  await grok.functions.call('Chem:getChemSpaceEmbeddings', {
-    table: table,
-    col: macroMolecule.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS],
+  const chemSpaceParams = {
+    seqCol: withoutEmptyValues.col(macroMolecule.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,
-    xAxis: embedColsNames[0],
-    yAxis: embedColsNames[1]
-  });
-
+    embedAxesNames: embedColsNames
+  };
+  const sequenceSpaceRes = await sequenceSpaceByFingerprints(chemSpaceParams);
+  const embeddings = sequenceSpaceRes.coordinates;
+  for (const col of embeddings) {
+    const listValues = col.toList();
+    emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
+    table.columns.add(DG.Column.fromList('double', col.name, listValues));
+  }
   if (plotEmbeddings) {
     return grok.shell
       .tableView(table.name)
       .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
   };
 
-/*   const encodedCol = encodeMonomers(macroMolecule);
+  /*   const encodedCol = encodeMonomers(macroMolecule);
   if (!encodedCol)
     return;
   const embedColsNames = getEmbeddingColsNames(table);
