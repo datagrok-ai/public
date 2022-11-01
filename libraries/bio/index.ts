@@ -31,6 +31,7 @@ import {getMonomerLib} from './src/utils/monomer-lib';
 import {INewickHelper} from './src/utils/newick-helper';
 import {NotationConverter} from './src/utils/notation-converter';
 import {splitAlignedSequences} from './src/utils/splitter';
+import {getTreeHelper, ITreeHelper} from './src/utils/tree-helper';
 import {UnitsHandler} from './src/utils/units-handler';
 import {VdRegion, VdRegionType} from './src/vd-regions';
 import {
@@ -100,6 +101,8 @@ export {
   Utils,
   Newick,
   INewickHelper,
+  ITreeHelper,
+  getTreeHelper,
 
   Monomer,
   IMonomerLib,

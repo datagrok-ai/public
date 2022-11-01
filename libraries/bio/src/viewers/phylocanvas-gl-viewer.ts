@@ -4,6 +4,9 @@ import * as DG from 'datagrok-api/dg';
 
 import {IViewer} from './viewer';
 import {Observable} from 'rxjs';
+import {MjolnirPointerEvent} from 'mjolnir.js';
+import {PickingInfo} from '@deck.gl/core/typed';
+
 
 export type NodeStyleType = { [propName: string]: any };
 export type StylesType = { [nodeName: string]: NodeStyleType };
@@ -24,6 +27,10 @@ export interface IPhylocanvasGlViewer extends IViewer {
   set nwkDf(value: DG.DataFrame);
 
   setProps(updater: { [propName: string]: any }): void;
+
+  get onAfterRender(): Observable<{ gl: WebGLRenderingContext }>;
+
+  get onHover(): Observable<{ info: PickingInfo, event: MjolnirPointerEvent }>;
 }
 
 // export interface IPhylocanvasGlRenderer {
