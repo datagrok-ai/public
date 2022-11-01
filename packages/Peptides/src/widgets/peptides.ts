@@ -14,7 +14,8 @@ import {scaleActivity} from '../utils/misc';
  * @param {DG.DataFrame} df Working table
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
-export async function analyzePeptidesWidget(df: DG.DataFrame, col?: DG.Column<string>): Promise<DG.Widget> {
+export async function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
+Promise<{host: HTMLElement, callback: () => Promise<void>}> {
   let seqColInput: DG.InputBase | null = null;
   if (typeof col === 'undefined') {
     const sequenceColumns = df.columns.toList().filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE);
@@ -27,15 +28,15 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col?: DG.Column<st
         grok.shell.warning('Peptides analysis only works with aligned sequences');
     });
   } else if (!col.tags['aligned']?.includes('MSA') && col.tags[DG.TAGS.UNITS].toLowerCase() !== 'helm')
-    return new DG.Widget(ui.divText('Peptides analysis only works with aligned sequences'));
+    return {host: ui.label('Peptides analysis only works with aligned sequences'), callback: async () => {}};
 
   let funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
   if (funcs.length == 0)
-    return new DG.Widget(ui.label('Bio package is missing or out of date. Please install the latest version.'));
+    return {host: ui.label('Bio package is missing or out of date. Please install the latest version.'), callback: async () => {}};
 
   funcs = DG.Func.find({package: 'Helm', name: 'getMonomerLib'});
   if (funcs.length == 0)
-    return new DG.Widget(ui.label('Helm package is missing or out of date. Please install the latest version.'));
+    return {host: ui.label('Helm package is missing or out of date. Please install the latest version.'), callback: async () => {}};
 
   let scaledCol: DG.Column<number>;
 
@@ -80,14 +81,21 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col?: DG.Column<st
     activityScalingMethodState();
   });
 
-  const startBtn = ui.button('Launch SAR', async () => {
+  const startAnalysisCallback = async () => {
     const sequencesCol = col ?? seqColInput!.value;
     if (sequencesCol)
-    await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df, scaledCol,
-      activityScalingMethod.value ?? 'none');
+      await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df, scaledCol,
+        activityScalingMethod.value ?? 'none');
     bitsetChanged.unsubscribe();
-  });
-  startBtn.style.alignSelf = 'center';
+  };
+
+  const inputElements: HTMLElement[] = [ui.inputs(inputsList)];
+  $(inputElements[0]).find('label').css('width', 'unset');
+  if (typeof col !== 'undefined') {
+    const startBtn = ui.button('Launch SAR', startAnalysisCallback);
+    startBtn.style.alignSelf = 'center';
+    inputElements.push(startBtn);
+  }
 
   const viewer = await df.plot.fromType('WebLogo') as bio.WebLogoViewer;
   viewer.root.style.setProperty('height', '130px');
@@ -97,12 +105,12 @@ export async function analyzePeptidesWidget(df: DG.DataFrame, col?: DG.Column<st
   const mainHost = ui.divV([
     logoHost,
     ui.splitH([
-      ui.splitV([ui.inputs(inputsList), startBtn]),
+      ui.splitV(inputElements),
       histogramHost,
     ], {style: {height: '215px'}}),
   ]);
   mainHost.style.maxWidth = '400px';
-  return new DG.Widget(mainHost);
+  return {host: mainHost, callback: startAnalysisCallback};
 }
 
 export async function startAnalysis(activityColumn: DG.Column<number>, peptidesCol: DG.Column<string>,
@@ -127,9 +135,8 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     newDf.name = 'Peptides analysis';
     if (clustersColumn) {
       newDf.getCol(clustersColumn.name).name = C.COLUMNS_NAMES.CLUSTERS;
-      newDf.tags[C.TAGS.CLUSTERS] = C.COLUMNS_NAMES.CLUSTERS;
+      newDf.setTag(C.TAGS.CLUSTERS, C.COLUMNS_NAMES.CLUSTERS);
     }
-    // newDf.tags['scaling'] = scaling;
     newDf.setTag('settings', JSON.stringify({scaling: scaling}));
 
     let monomerType = 'HELM_AA';
