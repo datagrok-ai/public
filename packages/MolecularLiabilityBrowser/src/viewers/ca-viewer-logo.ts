@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 import $ from 'cash-dom';
 import * as logojs from 'logojs-react';
-import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 
 export class Logo extends DG.JsViewer {
   initialized: boolean;
@@ -84,12 +84,12 @@ export class Logo extends DG.JsViewer {
         if (c != '-') {
           if (c[1] == '(')
             this.ppm[index][this.PROT_NUMS[c.substr(0, 1).toUpperCase()]] += 1 / size;
-          else if (c.substr(0, 3) in Aminoacids.AAFullNames && (c.length == 3 || c.at(3) == '('))
-            this.ppm[index][this.PROT_NUMS[Aminoacids.AAFullNames[c.substr(0, 3)]]] += 1 / size;
-          else if (c.at(0)?.toLowerCase() == c.at(0) && c.substr(1, 3) in Aminoacids.AAFullNames &&
+          else if (c.substr(0, 3) in bio.Aminoacids.AAFullNames && (c.length == 3 || c.at(3) == '('))
+            this.ppm[index][this.PROT_NUMS[bio.Aminoacids.AAFullNames[c.substr(0, 3)]]] += 1 / size;
+          else if (c.at(0)?.toLowerCase() == c.at(0) && c.substr(1, 3) in bio.Aminoacids.AAFullNames &&
             (c.length == 4 || c.at(4) == '(')
           )
-            this.ppm[index][this.PROT_NUMS[Aminoacids.AAFullNames[c.substr(1, 3)]]] += 1 / size;
+            this.ppm[index][this.PROT_NUMS[bio.Aminoacids.AAFullNames[c.substr(1, 3)]]] += 1 / size;
           else
             this.ppm[index][this.PROT_NUMS[c]] += 1 / size;
         }

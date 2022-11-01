@@ -1,7 +1,12 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
+import * as u from '@datagrok-libraries/utils';
+import {PickingInfo} from '@deck.gl/core/typed';
+import {TooltipContent} from '@deck.gl/core/typed/lib/tooltip';
 
+import wu from 'wu';
 import {
   DataLoader,
   DataLoaderType,
@@ -12,14 +17,10 @@ import {
   PdbType
 } from './utils/data-loader';
 import {Subscription, Unsubscribable} from 'rxjs';
-import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
-import {UnitsHandler, NOTATION, ALPHABET, ALIGNMENT} from '@datagrok-libraries/bio/src/utils/units-handler';
-import {IVdRegionsViewer} from '@datagrok-libraries/bio/src/viewers/vd-regions-viewer';
 import {TreeBrowser} from './mlb-tree';
 import {getVId, TreeAnalyzer} from './utils/tree-stats';
 import {MiscMethods} from './viewers/misc';
 import {TwinPviewer} from './viewers/twin-p-viewer';
-import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {_properties, _startInit} from './package';
 import {MlbEvents} from './const';
 import {Tree3Browser} from './tree3';
@@ -28,8 +29,14 @@ import {_package} from './package';
 
 type FilterDesc = { type: string, column?: string, label?: string, [p: string]: any };
 
+const TREE_GRID_ROW_HEIGHT: number = 100;
+const TREE_GRID_COL_TREE_WIDTH: number = 300;
+
+
 export class MolecularLiabilityBrowser {
   dataLoader: DataLoader;
+  //newickHelper: bio.INewickHelper | null;
+  phylocanvasGlSvc: bio.PhylocanvasGlServiceBase | null = null;
 
   // uriParser: HTMLAnchorElement;
   baseUri: string = '/apps/MolecularLiabilityBrowser/MolecularLiabilityBrowser/';
@@ -68,8 +75,9 @@ export class MolecularLiabilityBrowser {
   filterHostDn: DG.DockNode;
   filterView: DG.FilterGroup | null = null;
   filterViewDn: DG.DockNode | null = null;
-  regionsViewer: IVdRegionsViewer;
+  regionsViewer: bio.IVdRegionsViewer;
   treeBrowser: TreeBrowser;
+  treeBrowserDn: DG.DockNode;
   tree3Browser: Tree3Browser;
   twinPviewer: TwinPviewer;
 
@@ -80,7 +88,7 @@ export class MolecularLiabilityBrowser {
   schemeInput: DG.InputBase<string | null | undefined>;
   cdrInput: DG.InputBase<string | null | undefined>;
   treeInput: DG.InputBase<string>;
-  treePopup: HTMLElement;
+  treePopupDiv: HTMLElement;
   treeGrid: DG.Grid;
   hideShowIcon: HTMLElement;
 
@@ -90,6 +98,10 @@ export class MolecularLiabilityBrowser {
 
   async init(urlParams: URLSearchParams) {
     try {
+      //this.newickHelper = (await grok.functions.call('PhyloTreeViewer:getNewickHelper')) as bio.INewickHelper;
+      this.phylocanvasGlSvc = await bio.getPhylocanvasGlService();
+
+
       //remove
       this.urlParams = urlParams;
 
@@ -170,7 +182,7 @@ export class MolecularLiabilityBrowser {
   setReloadInput(): HTMLElement {
     this.reloadIcon = ui.tooltip.bind(ui.iconFA('reload', () => {
       // window.setTimeout is used to adapt call async loadData() from handler (not async)
-      window.setTimeout(async () => { await this.loadData(); }, 10);
+      window.setTimeout(async () => { await this.loadData(); }, 0 /* next event cycle */);
     }), 'Reload');
     this.reloadIcon.classList.value = 'grok-icon reload';
 
@@ -279,14 +291,11 @@ export class MolecularLiabilityBrowser {
 
   setTreeInput(): DG.InputBase {
     this.treeInput = ui.stringInput('Tree', this.treeName ?? '', null, {});
-
-    const tempDf = DG.DataFrame.fromCsv('');
-
-    this.treePopup = ui.div([this.treeGrid.root]);
+    this.treePopupDiv = ui.div([this.treeGrid.root]);
 
     this.treeInput.root.addEventListener('mousedown', (event: MouseEvent) => {
-      this.treePopup.hidden = false;
-      ui.showPopup(this.treePopup, this.treeInput.root);
+      this.treePopupDiv.hidden = false;
+      ui.showPopup(this.treePopupDiv, this.treeInput.root);
     });
 
     return this.treeInput;
@@ -452,10 +461,10 @@ export class MolecularLiabilityBrowser {
       (i: number) => positionColumns.map((v) => df.get(v, i)).join('')
     );
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-    seqCol.setTag(UnitsHandler.TAGS.alphabet, ALPHABET.PT);
-    seqCol.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
-    seqCol.setTag(UnitsHandler.TAGS.separator, '');
+    seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
+    seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.PT);
+    seqCol.setTag(bio.TAGS.aligned, bio.ALIGNMENT.SEQ_MSA);
+    seqCol.setTag(bio.TAGS.separator, '');
     seqCol.setTag('gap.symbol', '-');
 
     const positionNamesTxt = positionNames.join(', '); /* Spaces are for word wrap */
@@ -467,7 +476,7 @@ export class MolecularLiabilityBrowser {
   // -- View --
 
   private _mlbDf: DG.DataFrame = DG.DataFrame.fromObjects([])!;
-  private _regions: VdRegion[] = [];
+  private _regions: bio.VdRegion[] = [];
   private _treeDf: DG.DataFrame = DG.DataFrame.fromObjects([])!;
   private _predictedPtmDf: DG.DataFrame;
   private _observedPtmDf: DG.DataFrame;
@@ -476,7 +485,7 @@ export class MolecularLiabilityBrowser {
 
   get mlbDf(): DG.DataFrame { return this._mlbDf; }
 
-  get regions(): VdRegion[] { return this._regions; }
+  get regions(): bio.VdRegion[] { return this._regions; }
 
   get treeDf(): DG.DataFrame { return this._treeDf; }
 
@@ -485,7 +494,7 @@ export class MolecularLiabilityBrowser {
   get observedPtmDf(): DG.DataFrame { return this._observedPtmDf; }
 
   async setData(
-    mlbDf: DG.DataFrame, treeDf: DG.DataFrame, regions: VdRegion[],
+    mlbDf: DG.DataFrame, treeDf: DG.DataFrame, regions: bio.VdRegion[],
     predictedPtmDf: DG.DataFrame, observedPtmDf: DG.DataFrame
   ): Promise<void> {
     console.debug(`MLB: MolecularLiabilityBrowser.setData() start, ${((Date.now() - _startInit) / 1000).toString()} s`);
@@ -712,15 +721,19 @@ export class MolecularLiabilityBrowser {
         this.treeGrid = this.treeDf.plot.grid({
           allowEdit: false,
           allowRowSelection: false,
-          allowRowResizing: false,
+          allowRowResizing: true,
           allowRowReordering: false,
           allowColReordering: false,
           allowBlockSelection: false,
-          showRowHeader: false,
+          showRowHeader: true,
+          addNewRowOnLastRowEdit: false,
+          showAddNewRowIcon: false,
+          rowHeight: TREE_GRID_ROW_HEIGHT,
         });
+        //this.mlbView?.dockManager.dock(this.treeGrid, DG.DOCK_TYPE.DOWN, this.treeBrowserDn, 'treeGrid', 0.35);
 
         this.treeBrowser = (await this.treeDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
-        this.mlbView.dockManager.dock(this.treeBrowser.root, DG.DOCK_TYPE.FILL, this.mlbGridDn, 'Clone');
+        this.treeBrowserDn = this.mlbView.dockManager.dock(this.treeBrowser.root, DG.DOCK_TYPE.FILL, this.mlbGridDn, 'Clone');
         //TODO: check the await
         await this.treeBrowser.setData(this.treeDf, this.mlbDf);// fires treeDfOnCurrentRowChanged
         //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
@@ -730,7 +743,7 @@ export class MolecularLiabilityBrowser {
         this.regionsViewer = (await tempDf.plot.fromType(
           'VdRegions', {
             skipEmptyPositions: true
-          })) as unknown as IVdRegionsViewer;
+          })) as unknown as bio.IVdRegionsViewer;
         const t2: number = Date.now();
         console.debug('MLB: MolecularLiabilityBrowser.buildView(), create regionsViewer ' +
           `ET: ${((t2 - t1) / 1000).toString()} s`);
@@ -747,6 +760,29 @@ export class MolecularLiabilityBrowser {
         //TODO: check the await
         await this.treeBrowser.setData(this.treeDf, this.mlbDf);
       }
+
+      // adjust treeGrid columns
+      const treeGridFirstColumns: string[] = ['CLONE', 'NSEQ', 'TREE'];
+      this.treeGrid.columns.setOrder([...treeGridFirstColumns,
+        ...this.treeGrid.dataFrame.columns.names().filter((n) => !treeGridFirstColumns.includes(n))]);
+      this.treeGrid.columns.byName('CLONE')!.width = 60;
+      this.treeGrid.columns.byName('NSEQ')!.width = 60;
+      const treeGCol = this.treeGrid.columns.byName('TREE')!;
+      //treeGCol.column!.setTag(DG.TAGS.CELL_RENDERER, 'html'); // breaks element drawing
+      //treeGCol.cellType = 'html';
+      treeGCol.width = TREE_GRID_COL_TREE_WIDTH;
+
+      const treeGridFirstColumnWidth: number = wu.count(1).take(4)
+        .map((colI) => this.treeGrid.columns.byIndex(colI)!.width).reduce((a, b) => a + b);
+      const popupWidth = treeGridFirstColumnWidth + 11;
+      const popupHeight = Math.min(
+        Math.floor(this.mlbView!.root.clientHeight * 0.85),
+        this.treeDf.rowCount * this.treeGrid.props.rowHeight + this.treeGrid.colHeaderHeight + 11);
+      this.treeGrid.root.style.width = `${popupWidth}px`;
+      this.treeGrid.root.style.height = `${popupHeight}px`;
+
+      //this.viewSubs.push(this.treeGrid.onCellPrepare(this.treeGridOnCellPrepare.bind(this)));
+      this.viewSubs.push(this.treeGrid.onCellRender.subscribe(this.treeGridOnCellRender.bind(this)));
 
       // await this.dataLoader.refDfPromise;
       const filterList: FilterDesc[] = MolecularLiabilityBrowser.buildFilterList(
@@ -776,7 +812,7 @@ export class MolecularLiabilityBrowser {
       //TODO: check the await
       await this.regionsViewer.setDf(this.mlbDf, this.regions);
 
-      this.updateView();
+      await this.updateView();
 
       this.viewSubs.push(this.mlbDf.onCurrentRowChanged.subscribe(this.onMLBGridCurrentRowChanged.bind(this)));
     } catch (err: unknown) {
@@ -788,11 +824,13 @@ export class MolecularLiabilityBrowser {
   }
 
   /** Restores column hiding, sets view path after dataFrame replacement. */
-  updateView() {
+  async updateView() {
     console.debug('MLB: MolecularLiabilityBrowser.updateView() start,' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
 
-    this.mlbView!.path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
+    const path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
+    console.debug('MLB: MolecularLiabilityBrowser.updateView() mlbView.path <- ' + `"${path}"`);
+    this.mlbView!.path = this.mlbView!.basePath = path;
 
     // Leonid instructed to hide the columns
     const mlbColumnsToHide: string[] = [
@@ -806,6 +844,9 @@ export class MolecularLiabilityBrowser {
         gridColumn.visible = false;
     }
 
+    //adjust column in treeGrid
+
+
     this.updateViewTreeBrowser();
 
     console.debug('MLB: MolecularLiabilityBrowser.updateView() end,' +
@@ -817,7 +858,7 @@ export class MolecularLiabilityBrowser {
     if (this.treeDf.rowCount > 0) {
       const treeDfIndex = treeIndex !== -1 ? treeIndex : 0;
       this.treeDf.currentRowIdx = treeDfIndex;
-      this.treeBrowser.selectTree(treeDfIndex);
+      //this.treeBrowser.selectTree(treeDfIndex); // Handled by treeDfOnCurrentRowChanged()
       this.treeName = this.treeDf.get('CLONE', treeDfIndex);
     }
   }
@@ -825,7 +866,7 @@ export class MolecularLiabilityBrowser {
   onMLBGridCurrentRowChanged(args: any) {
     this.vid = this.mlbDf.currentRow['v id'];
     // window.setTimeout is used to adapt call async changeVid() from handler (not async)
-    window.setTimeout(async () => { await this.changeVid(true); }, 10);
+    window.setTimeout(async () => { await this.changeVid(true); }, 0 /* next event cycle */);
   }
 
   onAntigenChanged(antigenName: string): void {
@@ -838,7 +879,7 @@ export class MolecularLiabilityBrowser {
 
     this.urlParams.set('antigen', this.antigenName);
     // window.setTimeout is used to adapt call async loadData() from handler (not async)
-    window.setTimeout(async () => { await this.loadData(); }, 10);
+    window.setTimeout(async () => { await this.loadData(); }, 0 /* next event cycle */);
 
     // const treeDf: DG.DataFrame = await this.dataLoader.getTreeByAntigen(this.antigenName);
     // this.treeBrowser.treeDf = treeDf;
@@ -853,7 +894,7 @@ export class MolecularLiabilityBrowser {
 
     this.urlParams!.set('scheme', this.schemeName);
     // window.setTimeout is used to adapt call async loadData() from handler (not async)
-    window.setTimeout(async () => { await this.loadData(); }, 10);
+    window.setTimeout(async () => { await this.loadData(); }, 0 /* next event cycle*/);
   }
 
   onCdrChanged(cdrName: string): void {
@@ -871,7 +912,7 @@ export class MolecularLiabilityBrowser {
         .catch((e) => {
           console.error(e);
         });
-    }, 10);
+    }, 0 /* next event cycle */);
   }
 
   onTreeChanged(treeName: string): void {
@@ -880,7 +921,10 @@ export class MolecularLiabilityBrowser {
       this.treeInput!.value = this.treeName;
 
     this.urlParams!.set('tree', this.treeName);
-    this.mlbView!.path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
+
+    const path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
+    console.debug('MLB: MolecularLiabilityBrowser.onTreeChange() mlbView.path <- ' + `${path}`);
+    this.mlbView!.path = this.mlbView!.basePath = path;
 
     this.updateViewTreeBrowser();
   }
@@ -891,7 +935,7 @@ export class MolecularLiabilityBrowser {
     this.urlParams.set('vid', this.vid);
 
     // window.setTimeout is used to adapt call async changeVid() from handler (not async)
-    window.setTimeout(async () => { await this.changeVid(); }, 10);
+    window.setTimeout(async () => { await this.changeVid(); }, 0 /* next event cycle */);
   }
 
   /** Loads MLB data and sets prepared DataFrame. Calls setData() -> destroyView(), buildView(). */
@@ -900,7 +944,7 @@ export class MolecularLiabilityBrowser {
     try {
       const t1 = Date.now();
       const [mlbDf, hChainDf, lChainDf, treeDf, regions, predictedPtmDf, observedPtmDf]:
-        [DG.DataFrame, DG.DataFrame, DG.DataFrame, DG.DataFrame, VdRegion[], DG.DataFrame, DG.DataFrame] =
+        [DG.DataFrame, DG.DataFrame, DG.DataFrame, DG.DataFrame, bio.VdRegion[], DG.DataFrame, DG.DataFrame] =
         await Promise.all([
           this.dataLoader.getMlbByAntigen(this.antigenName),
           this.dataLoader.getAnarci(this.schemeName, 'heavy', this.antigenName),
@@ -990,10 +1034,92 @@ export class MolecularLiabilityBrowser {
   // -- Handle controls' events --
 
   treeDfOnCurrentRowChanged(): void {
-    if (this.treePopup)
-      this.treePopup.hidden = true;
+    if (this.treePopupDiv)
+      this.treePopupDiv.hidden = true;
 
     const treeName = this.treeDf.get('CLONE', this.treeDf.currentRowIdx);
     this.onTreeChanged(treeName);
+  }
+
+//   treeGridOnCellPrepare(cell: DG.GridCell) {
+//     if (cell.isTableCell && cell.tableColumn?.name === 'TREE' && !cell.element) {
+//       console.debug('MLB: MolecularLiabilityBrowser.treeGridOnCellPrepare() ');
+//       const nwkStr: string = cell.cell.value;
+//       const nwkDf: DG.DataFrame = this.newickHelper!.newickToDf(nwkStr, '');
+//       // nwkDf.plot.fromType('PhylocanvasGL', {
+//       //   interactive: false,
+//       //   showLabels: true,
+//       //   showLeafLabels: true,
+//       //   treeToCanvasRation: 0.99,
+//       //   nodeSize: 5,
+//       //   nodeShape: bio.Shapes.Circle,
+//       //   padding: 1,
+//       // })
+//       //   .then((viewer: DG.Widget) => {
+//       //     cell.element = viewer.root;
+//       //   })
+//       //   .catch((err) => {
+//       //     console.error('MLB: MolecularLiabilityBrowser.treeGridOnCellPrepare() plot.fromType() ' +
+//       //       `Error: ${u.errorToConsoleString(err)}`);
+//       //   });
+//
+//       const csv = `seq
+// ATTTCG
+// ATTGCG
+// ATATCA`;
+//       const df = DG.DataFrame.fromCsv(csv);
+//       const seqCol = df.getCol('seq');
+//       seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+//       seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
+//       seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
+//       seqCol.setTag(bio.TAGS.aligned, bio.ALIGNMENT.SEQ_MSA);
+//
+//       df.plot.fromType('WebLogo', {
+//         maxHeight: 50,
+//         sequenceColumnName: 'seq',
+//       })
+//         .then((viewer) => {
+//           //cell.element = viewer.root;
+//           cell.element = viewer.root;
+//         })
+//         .catch((err) => {
+//           console.error('MLB: MolecularLiabilityBrowser.treeGridOnCellPrepare() plot.fromType() ' +
+//             `Error: ${u.errorToConsoleString(err)}`);
+//         });
+//     }
+//   }
+
+  treeGridOnCellRender(args: DG.GridCellRenderArgs): void {
+    const gCell = args.cell;
+    if (gCell.isTableCell && gCell.gridColumn.column && gCell.gridColumn.column.name == 'TREE'
+      // && [0, 2, 4].includes(gCell.gridRow)
+    ) {
+      try {
+        const bd = args.bounds;
+        const gCtx: CanvasRenderingContext2D = args.g;
+
+        const nwkStr: string = TreeBrowser.cleanMlbNewick(gCell.cell.value);
+        const nwkRoot: bio.NodeType = bio.Newick.parse_newick(nwkStr);
+
+        const nodeShape: string = bio.Shapes.Circle;
+        this.phylocanvasGlSvc!.render({
+          name: '',
+          backColor: gCell.grid.props.backColor,
+          props: {
+            size: {width: bd.width - 2, height: bd.height - 2},
+            nodeSize: 3,
+            nodeShape: nodeShape,
+            treeToCanvasRatio: 0.95,
+            padding: 5,
+            source: {type: 'biojs', data: nwkRoot},
+          }, onAfterRender: (canvas: HTMLCanvasElement) => {
+            this.phylocanvasGlSvc?.renderOnGridCell(gCtx, bd, gCell, canvas);
+          }
+        }, gCell.tableRow?.idx);
+
+      } finally {
+        args.preventDefault();
+      }
+    }
   }
 }

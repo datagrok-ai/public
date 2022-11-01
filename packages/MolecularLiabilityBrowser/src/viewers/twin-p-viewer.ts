@@ -79,7 +79,7 @@ export class TwinPviewer {
     this.repChoiceInput = ui.choiceInput('Representation', 'cartoon', representations);
 
     this.schemesList = MiscMethods.extractSchemes(json);
-    this.cdrSchemeInput = ui.choiceInput('CDR3 Scheme', 'default', this.schemesList);
+    this.cdrSchemeInput = ui.choiceInput('CDR3 Scheme', MiscMethods.NoSchemeItem, this.schemesList);
 
     this.root = ui.div();
     this.changeChoices();
@@ -136,7 +136,7 @@ export class TwinPviewer {
         const key = this.schemesList.find((v) => v.toUpperCase() == value.toUpperCase());
         console.debug(`MLB: CompositionPviewer.onCustomEvent(${MlbEvents.CdrChanged}) ` +
           `value="${value}" -> key="${key}".`);
-        this.cdrSchemeInput.value = key ? key : 'default';
+        this.cdrSchemeInput.value = key ? key : MiscMethods.NoSchemeItem;
       }));
     }
   }

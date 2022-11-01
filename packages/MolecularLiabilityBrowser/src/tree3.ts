@@ -9,7 +9,8 @@ export class Tree3Browser {
     let processed = null;
     for (let i = 1; i < treeCol.length; i++) {
       if (DG.Func.find({name: '_newickToDf'}).length == 0) return grok.shell.warning('Newick parser is unavailable');
-      const t = await grok.functions.call('PhyloTreeViewer:_newickToDf', {newick: treeCol.get(i), filename: 'nwk'});
+      const t = await grok.functions.call('PhyloTreeViewer:_newickToDf',
+        {newick: treeCol.get(i), name: cloneId.get(i)});
       const p = t.col('parent');
       const c = t.col('node');
       const id = cloneId.get(i);
