@@ -7,6 +7,8 @@ declare module '@phylocanvas/phylocanvas.gl' {
 
     get view(): HTMLDivElement;
 
+    get props(): { [propName: string]: any };
+
     constructor(element: HTMLElement, props: { [propName: string]: any });
 
     render(): void;
