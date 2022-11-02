@@ -81,11 +81,11 @@ export class PhylocanvasGlViewerApp {
   async buildView(): Promise<void> {
     if (!this.tv) {
       // filter for leafs only, to align tree with grid
-      const leafCol: DG.Column = this.treeDf.getCol('leaf');
-      this.treeDf.filter.init((rowI: number) => { return leafCol.get(rowI); });
+      //const leafCol: DG.Column = this.treeDf.getCol('leaf');
+      //this.treeDf.filter.init((rowI: number) => { return leafCol.get(rowI); });
 
       this.tv = grok.shell.addTableView(this.treeDf, DG.DOCK_TYPE.FILL);
-      this.tv.path = 'apps/PhyloTreeViewer/PhylocanvasGlViewer';
+      this.tv.path = this.tv.basePath = 'apps/PhyloTreeViewer/PhylocanvasGlViewer';
 
       this.viewSubs.push(this.tv.grid.onRowsResized.subscribe((args) => {
         if (!this.treeHost || !this.treeViewer) return;
@@ -117,7 +117,7 @@ export class PhylocanvasGlViewerApp {
         padding: 0,
         treeToCanvasRatio: 1,
       })) as DG.JsViewer;
-      this.treeDn = this.tv.dockManager.dock(this.treeViewer, DG.DOCK_TYPE.LEFT);
+      this.treeDn = this.tv.dockManager.dock(this.treeViewer, DG.DOCK_TYPE.RIGHT);
       let k = 11;
       //this.treeViewerDn = this.tv.dockManager.dock(this.treeViewer, DOCK_TYPE.LEFT);
     }

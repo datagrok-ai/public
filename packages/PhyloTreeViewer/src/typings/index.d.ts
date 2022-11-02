@@ -1,36 +1,3 @@
-declare module '@phylocanvas/phylocanvas.gl' {
-  import {Deck} from '@deck.gl/core/typed';
-
-  class PhylocanvasGL {
-    get deck(): Deck;
-
-    get view(): HTMLDivElement;
-
-    constructor(element: HTMLElement, props: { [propName: string]: any });
-
-    setProps(props: { [propName: string]: any });
-
-    selectNode: (nodeOrId: any, append: boolean = false) => void;
-
-    destroy(): void;
-
-    getBranchScale(...arguments): number;
-  }
-
-  module Newick {
-    function parse_newick(newick: string): NodeType;
-  }
-}
-
-// declare module '@phylocanvas/phylocanvas.gl/utils/memoise' {
-//   function memoise(...arguments): CallableFunction;
-// }
-
-declare module '@phylocanvas/phylocanvas.gl/utils/zoom-to-scale' {
-  function zoomToScale(zoom: number): number;
-}
-
-
 declare module 'phylotree' {
   export interface PhylotreeNode {
     id: string;

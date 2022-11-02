@@ -5,16 +5,6 @@ import * as bio from '@datagrok-libraries/bio';
 
 import wu from 'wu';
 
-import {PhylocanvasGL, Newick} from '@phylocanvas/phylocanvas.gl';
-
-
-// function filterTree(node: NodeType, df: DG.DataFrame, leafColName?: string): NodeType {
-//   // const grid :DG.Grid;
-//   // grid.setRowOrder();
-//   //
-//   // df.filter.get
-//   return null;
-// }
 
 type TreeLeafDict = { [nodeName: string]: bio.NodeType };
 type DataNodeDict = { [nodeName: string]: number };
@@ -268,7 +258,7 @@ export class TreeToGridSyncer {
   private readonly _grid: DG.Grid;
   private readonly _dataDf: DG.DataFrame;
 
-  private readonly _pc: PhylocanvasGL;
+  private readonly _pc: bio.PhylocanvasGL;
   private readonly _pcDiv: HTMLDivElement;
 
   private readonly _leafCol: DG.Column;
@@ -292,7 +282,7 @@ export class TreeToGridSyncer {
   get warnings(): string[] { return this._warnings; }
 
   constructor(
-    nDiv: HTMLElement, tree: bio.NodeType, phylocanvas: PhylocanvasGL, grid: DG.Grid,
+    nDiv: HTMLElement, tree: bio.NodeType, phylocanvas: bio.PhylocanvasGL, grid: DG.Grid,
     leafColName?: string, fixDf: boolean = false
   ) {
     this._nDiv = nDiv;
