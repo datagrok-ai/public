@@ -108,6 +108,8 @@ or vice versa. This means that the column type is always taken into account. The
 remembered for a viewer instance (currently, they are not preserved through
 layout serialization).
 
+!["Copy column color coding"](pick-up-apply-commands-color-coding.gif "Copy column color coding")
+
 ## Row summary columns
 
 Summary columns is a way to visualize multiple values numerical across the row. This feature is useful for quick visual
