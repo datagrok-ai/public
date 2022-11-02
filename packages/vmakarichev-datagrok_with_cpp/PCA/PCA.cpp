@@ -10,6 +10,7 @@ using namespace Eigen;
 #include "PCA.h"
 using pca::Float;
 using pca::Integer;
+using pca::Double;
 using pca::pcaUsingCorrelationMatrix;
 using pca::computeCorrelationMatrix;
 using pca::computeMeanOfEachRow;
@@ -166,6 +167,7 @@ template<typename Type>
 Float meanValue(Type * arr, const int length)
 {
 	Map<RowVector<Type, Dynamic>> vec(arr, length); // data assignment
+	//return (Float)vec.mean(); //
 	return static_cast<Float>(vec.sum()) / length;  // here, the method mean can be used, 
 	                                                // but for the case of integers it provides integer mean!
 } // meanValue
@@ -228,25 +230,27 @@ int pca::computeCorrelationMatrix(void ** data,
 		for (int j = i; j < heightOfFloats; j++)
 		{
 			Float * right = static_cast<Float *> (data[j]);
-			Float res = 0.0;
+			Double res = 0.0;
 
 			for (int k = 0; k < width; k++)
 				res += left[k] * right[k];
 
-			correlations[i * dim + j] = correlations[j * dim + i] = res / width - means[i] * means[j];
+			correlations[i * dim + j] = correlations[j * dim + i] 
+				= static_cast<Float>( res / width - means[i] * means[j] );
 		} // for j
 
 		// compute float-by-integer correlations
 		for (int j = 0; j < heightOfInts; j++)
 		{
 			Integer * right = static_cast<Integer *> (data[heightOfFloats + j]);
-			Float res = 0.0;
+			Double res = 0.0;
 
 			for (int k = 0; k < width; k++)
 				res += left[k] * right[k];
 
 			correlations[i * dim + heightOfFloats + j]
-				= correlations[(heightOfFloats + j) * dim + i] = res / width - means[i] * means[heightOfFloats + j];
+				= correlations[(heightOfFloats + j) * dim + i] 
+				= static_cast<Float>( res / width - means[i] * means[heightOfFloats + j] );
 		} // for j
 	} // for i
 

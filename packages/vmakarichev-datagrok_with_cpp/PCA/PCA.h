@@ -21,6 +21,7 @@ namespace pca {
 
 	typedef float Float;
 	typedef int Integer;
+	typedef double Double;
 
 	/* Principal Component Analysis of the data: using correlation matrix.
 	     data - input matrix;
