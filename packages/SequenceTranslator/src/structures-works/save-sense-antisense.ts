@@ -1,4 +1,5 @@
 import * as ui from 'datagrok-api/ui';
+import {download} from '../helpers';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 import {linkV3000} from '../structures-works/mol-transformations';
 import {getFormat} from '../structures-works/sequence-codes-tools';
@@ -18,11 +19,7 @@ export function saveSdf(as: string, ss: string, oneEntity: boolean, useChirality
     molAS + '\n' +
     `> <Sequence>\nAnti Sense\n$$$$\n`;
   }
-
-  const element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
-  element.setAttribute('download', ss.replace(/\s/g, '') + '.sdf');
-  element.click();
+  download(ss.replace(/\s/g, '') + '.sdf', encodeURIComponent(result));
 }
 
 export function saveSenseAntiSense() {

@@ -7,7 +7,7 @@ import {map, COL_NAMES, MODIFICATIONS} from '../structures-works/map';
 import {isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 import {linkV3000} from '../structures-works/mol-transformations';
-import {stringify, sortByStringLengthInDescendingOrder} from '../helpers';
+import {stringify, sortByStringLengthInDescendingOrder, download} from '../helpers';
 
 import {SALTS_CSV} from '../salts';
 import {USERS_CSV} from '../users';
@@ -93,10 +93,7 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
     }
     result += '$$$$\n';
   }
-  const element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
-  element.setAttribute('download', table.name + '.sdf');
-  element.click();
+  download(table.name + '.sdf', encodeURIComponent(result));
 }
 
 export function autostartOligoSdFileSubscription() {
