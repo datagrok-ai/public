@@ -13,7 +13,7 @@ location.
 1. In the dialog, select **Tree viewer** and click OK.
 
 When you add a tree viewer, Datagrok chooses two categorical columns with the
-least number of categories. They form the initial hierarchy of the tree chart.  
+least number of categories. They form the initial hierarchy of the tree chart.
 
 ## Configuring a tree viewer
 
