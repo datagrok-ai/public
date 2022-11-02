@@ -17,14 +17,13 @@ export function sequenceTranslator(): void {
   windows.showToolbox = false;
   windows.showHelp = false;
 
-  const v = grok.shell.newView('Sequence Translator', [
-    ui.tabControl({
-      'MAIN': mainView(),
-      'AXOLABS': defineAxolabsPattern(),
-      'SDF': saveSenseAntiSense(),
-    }),
-  ]);
+  const v = grok.shell.newView('Sequence Translator', []);
   v.box = true;
+  v.append(ui.tabControl({
+    'MAIN': mainView(),
+    'AXOLABS': defineAxolabsPattern(),
+    'SDF': saveSenseAntiSense(),
+  }));
 }
 
 //tags: autostart
