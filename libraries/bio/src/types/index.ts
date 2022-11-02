@@ -26,11 +26,14 @@ export type Monomer = {
   n: string,
   na: string,
   rs: number;
-}
+};
 
+export type MonomerType = 'HELM_AA' | 'HELM_BASE' | 'HELM_CHEM' | 'HELM_LINKER' | 'HELM_SUGAR';
 //expected types: HELM_AA, HELM_BASE, HELM_CHEM, HELM_LINKER, HELM_SUGAR
 export interface IMonomerLib {
-  get(monomerType: string, monomerName: string): Monomer | null;
+  get(monomerType: MonomerType, monomerName: string): Monomer | null;
+
+  get types(): MonomerType[];
 
   // TODO:
   get onChanged(): Observable<any>;
