@@ -12,9 +12,9 @@ category('File Panels: NLP', () => {
     testFiles.push(...(await _package.files.list('', true)));
   });
 
-  test('nlp.textStatistics', () => checkPane('Text Statistics'));
+  test('nlp.textStatistics', () => checkPane('Text Statistics'), {skipReason: 'GROK-11391'});
 
-  test('nlp.Summary', () => checkPane('Summary'));
+  test('nlp.Summary', () => checkPane('Summary'), {skipReason: 'GROK-11391'});
 
 	async function checkPane(name: string) {
     if (!testFiles.length)
