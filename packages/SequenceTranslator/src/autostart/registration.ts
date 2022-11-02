@@ -14,6 +14,11 @@ import {ICDS} from '../ICDs';
 import {SOURCES} from '../sources';
 import {IDPS} from '../IDPs';
 
+const SEQUENCE_TYPES = {
+  SENSE_STRAND: 'SS',
+  ANTISENSE_STRAND: 'AS',
+  DUPLEX: 'Duplex',
+};
 
 function sortByStringLengthInDescendingOrder(array: string[]): string[] {
   return array.sort(function(a, b) {return b.length - a.length;});
@@ -72,18 +77,18 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   let result = '';
   for (let i = 0; i < table.rowCount; i++) {
     const format = 'Janssen GCRS Codes'; //getFormat(structureColumn.get(i))!;
-    if (typeColumn.get(i) == 'Duplex') {
+    if (typeColumn.get(i) == SEQUENCE_TYPES.DUPLEX) {
       const array = parseStrandsFromDuplexCell(structureColumn.get(i));
       const as = sequenceToMolV3000(array[1], true, true, format) +
       '\n' + `> <Sequence>\nAnti Sense\n\n`;
       const ss = sequenceToMolV3000(array[0], false, true, format) +
       '\n' + `> <Sequence>\nSense Strand\n\n`;
       result += linkV3000([ss, as], true, true) + '\n\n';
-    } else if (typeColumn.get(i) == 'SS') {
+    } else if (typeColumn.get(i) == SEQUENCE_TYPES.SENSE_STRAND) {
       const molSS = sequenceToMolV3000(structureColumn.get(i), false, true, format) +
       '\n' + `> <Sequence>\nSense Strand\n\n`;
       result += molSS;
-    } else if (typeColumn.get(i) == 'AS') {
+    } else if (typeColumn.get(i) == SEQUENCE_TYPES.ANTISENSE_STRAND) {
       const molAS = sequenceToMolV3000(structureColumn.get(i), true, true, format) +
         '\n' + `> <Sequence>\nAnti Sense\n\n`;
       result += molAS;
@@ -251,7 +256,7 @@ export function oligoSdFile(table: DG.DataFrame) {
 
       const view = grok.shell.getTableView(table.name);
 
-      view.dataFrame.getCol(COL_NAMES.TYPE).setTag(DG.TAGS.CHOICES, '["AS", "SS", "Duplex"]');
+      view.dataFrame.getCol(COL_NAMES.TYPE).setTag(DG.TAGS.CHOICES, stringify(Object.values(SEQUENCE_TYPES)));
       view.dataFrame.getCol(COL_NAMES.OWNER).setTag(DG.TAGS.CHOICES, stringify(usersDf.columns.byIndex(0).toList()));
       view.dataFrame.getCol(COL_NAMES.SALT).setTag(DG.TAGS.CHOICES, stringify(saltsDf.columns.byIndex(0).toList()));
       view.dataFrame.getCol(COL_NAMES.SOURCE).setTag(DG.TAGS.CHOICES, stringify(sourcesDf.columns.byIndex(0).toList()));
