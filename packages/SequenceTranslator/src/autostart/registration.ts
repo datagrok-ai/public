@@ -5,10 +5,11 @@ import {siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersB
   siRnaNucleotidesToGcrs} from '../structures-works/converters';
 import {map, MODIFICATIONS} from '../structures-works/map';
 import {SEQUENCE_TYPES, COL_NAMES} from './constants';
+import {saltMass, saltMolWeigth, molecularWeight, batchMolWeight} from './calculations';
 import {isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 import {linkV3000} from '../structures-works/mol-transformations';
-import {stringify, sortByStringLengthInDescendingOrder, download} from '../helpers';
+import {stringify, download} from '../helpers';
 
 import {SALTS_CSV} from '../salts';
 import {USERS_CSV} from '../users';
@@ -16,38 +17,6 @@ import {ICDS} from '../ICDs';
 import {SOURCES} from '../sources';
 import {IDPS} from '../IDPs';
 
-
-function saltMass(saltNames: string[], molWeightCol: DG.Column, equivalentsCol: DG.Column, i: number,
-  saltCol: DG.Column) {
-  const saltRowIndex = saltNames.indexOf(saltCol.get(i));
-  return (
-    saltRowIndex == -1 || molWeightCol.get(saltRowIndex) == DG.FLOAT_NULL || equivalentsCol.get(i) == DG.INT_NULL) ?
-    DG.FLOAT_NULL :
-    molWeightCol.get(saltRowIndex) * equivalentsCol.get(i);
-}
-
-function saltMolWeigth(saltNamesList: string[], saltCol: DG.Column, molWeightCol: DG.Column, i: number) {
-  const saltRowIndex = saltNamesList.indexOf(saltCol.get(i));
-  return (saltRowIndex == -1) ? DG.FLOAT_NULL : molWeightCol.get(saltRowIndex);
-}
-
-function batchMolWeight(compoundMolWeightCol: DG.Column, saltMassCol: DG.Column, i: number) {
-  return (compoundMolWeightCol.getString(i) == '' || saltMassCol.getString(i) == '') ?
-    DG.FLOAT_NULL :
-    compoundMolWeightCol.get(i) + saltMassCol.get(i);
-}
-
-function molecularWeight(sequence: string, weightsObj: {[index: string]: number}): number {
-  const codes = sortByStringLengthInDescendingOrder(Object.keys(weightsObj)).concat(Object.keys(MODIFICATIONS));
-  let weight = 0;
-  let i = 0;
-  while (i < sequence.length) {
-    const matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
-    weight += weightsObj[sequence.slice(i, i + matchedCode.length)];
-    i += matchedCode.length;
-  }
-  return weight - 61.97;
-}
 
 function parseStrandsFromDuplexCell(s: string): string[] {
   return s.slice(3).split('\r\nAS ');
