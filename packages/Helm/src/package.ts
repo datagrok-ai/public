@@ -464,6 +464,10 @@ class MonomerLib implements bio.IMonomerLib {
     return this._onChanged;
   }
 
+  get types(): bio.MonomerType[] {
+    return Object.keys(this._monomers) as bio.MonomerType[];
+  }
+
   public update(monomers: { [type: string]: { [name: string]: bio.Monomer } }): void {
     this._monomers = monomers;
     this._onChanged.next();
