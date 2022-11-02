@@ -5,6 +5,7 @@ import {convertSequence, undefinedInputSequence, isValidSequence} from '../struc
 import {map, MODIFICATIONS} from '../structures-works/map';
 import {sequenceToSmiles, sequenceToMolV3000} from '../structures-works/from-monomers';
 import $ from 'cash-dom';
+import {download} from '../helpers';
 
 const defaultInput = 'fAmCmGmAmCpsmU';
 const sequenceWasCopied = 'Copied';
@@ -161,10 +162,7 @@ export function mainView() {
   const downloadMolFileIcon = ui.iconFA('download', () => {
     const clearSequence = inputSequenceField.value.replace(/\s/g, '');
     const result = sequenceToMolV3000(clearSequence, false, false, inputFormatChoiceInput.value!);
-    const element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
-    element.setAttribute('download', clearSequence + '.mol');
-    element.click();
+    download(clearSequence + '.mol', encodeURIComponent(result));
   }, 'Save .mol file');
 
   const copySmilesIcon = ui.iconFA('copy', () => {
