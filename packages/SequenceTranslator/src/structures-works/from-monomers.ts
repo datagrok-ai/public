@@ -1,6 +1,7 @@
 import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, delimiter} from './map';
 import {isValidSequence} from './sequence-codes-tools';
 import {getNucleotidesMol} from './mol-transformations';
+import {sortByStringLengthInDescendingOrder} from '../helpers';
 
 export function sequenceToMolV3000(sequence: string, inverted: boolean = false, oclRender: boolean = false,
   format: string): string {
@@ -107,8 +108,4 @@ function getObjectWithCodesAndSmiles(sequence: string, format: string) {
   else if (output.synthesizer!.includes(SYNTHESIZERS.AXOLABS))
     obj['g'] = map[SYNTHESIZERS.AXOLABS][TECHNOLOGIES.SI_RNA]['g'].SMILES;
   return obj;
-}
-
-function sortByStringLengthInDescendingOrder(array: string[]): string[] {
-  return array.sort(function(a: string, b: string) {return b.length - a.length;});
 }

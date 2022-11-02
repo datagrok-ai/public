@@ -7,6 +7,7 @@ import {map, COL_NAMES, MODIFICATIONS} from '../structures-works/map';
 import {isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 import {linkV3000} from '../structures-works/mol-transformations';
+import {stringify, sortByStringLengthInDescendingOrder} from '../helpers';
 
 import {SALTS_CSV} from '../salts';
 import {USERS_CSV} from '../users';
@@ -19,14 +20,6 @@ const SEQUENCE_TYPES = {
   ANTISENSE_STRAND: 'AS',
   DUPLEX: 'Duplex',
 };
-
-function sortByStringLengthInDescendingOrder(array: string[]): string[] {
-  return array.sort(function(a, b) {return b.length - a.length;});
-}
-
-function stringify(items: string[]): string {
-  return '["' + items.join('", "') + '"]';
-}
 
 function saltMass(saltNames: string[], molWeightCol: DG.Column, equivalentsCol: DG.Column, i: number,
   saltCol: DG.Column) {
