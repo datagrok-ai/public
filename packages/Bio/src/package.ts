@@ -39,9 +39,160 @@ import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import { getMonomericMols } from './calculations/monomerLevelMols';
 import { delay } from '@datagrok-libraries/utils/src/test';
+import {Observable, Subject} from 'rxjs';
+
+const STORAGE_NAME = 'Libraries';
+const LIB_PATH = 'libraries/';
+const expectedMonomerData = ['symbol', 'name', 'molfile', 'rgroups', 'polymerType', 'monomerType'];
+
+let monomerLib: IMonomerLib | null = null;
+
+class MonomerLib implements IMonomerLib {
+  private _monomers: { [type: string]: { [name: string]: Monomer } } | null = null;
+  private _onChanged = new Subject<any>();
+
+  getMonomer(monomerType: string, monomerName: string): Monomer | null {
+    if (monomerType in this._monomers! && monomerName in this._monomers![monomerType])
+      return this._monomers![monomerType][monomerName];
+    else
+      return null;
+  }
+
+  getTypes(): string[] {
+    return Object.keys(this._monomers!);
+  }
+
+  get onChanged(): Observable<any> {
+    return this._onChanged;
+  }
+
+  public update(monomers: { [type: string]: { [name: string]: Monomer } }): void {
+    Object.keys(monomers).forEach(type => {
+      //could possibly rewrite -> TODO: check duplicated monomer symbol
+      Object.keys(monomers[type]).forEach(monomerName =>{
+        this._monomers![type][monomerName] = monomers[type][monomerName];
+      })
+    });
+
+    this._onChanged.next();
+  }
+}
+
+export type Monomer = {
+  symbol: string,
+  name: string,
+  molfile: string,
+  rgroups: {capGroupSmiles: string, alternateId: string, capGroupName: string, label: string }[],
+  polymerType: string,
+  monomerType: string,
+  data: {[property: string]: string}
+}
+
+//expected types: HELM_AA, HELM_BASE, HELM_CHEM, HELM_LINKER, HELM_SUGAR
+export interface IMonomerLib {
+  getMonomer(monomerType: string, monomerName: string): Monomer | null;
+  getTypes(): string[];
+  update(monomers: { [type: string]: { [name: string]: Monomer } }): void;
+  get onChanged(): Observable<any>;
+}
 
 //tags: init
 export async function initBio() {
+  return new Promise(async (resolve, reject) => {
+    await loadLibraries();
+  });
+}
+
+async function loadLibraries() {
+  let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
+  for (let i = 0; i < uploadedLibraries.length; ++i)
+    await monomerManager(uploadedLibraries[i]);
+}
+
+//name: monomerManager
+//input: string value
+export async function monomerManager(value: string) {
+  let data: any[] = [];
+  let file;
+  let dfSdf;
+  if (value.endsWith('.sdf')) {
+    const funcList: DG.Func[] = DG.Func.find({package: 'Chem', name: 'importSdf'});
+    console.debug(`Helm: initHelm() funcList.length = ${funcList.length}`);
+    if (funcList.length === 1) {
+      file = await _package.files.readAsBytes(`${LIB_PATH}${value}`);
+      dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
+      data = createJsonMonomerLibFromSdf(dfSdf[0]);
+    } else {
+      grok.shell.warning('Chem package is not installed');
+    }
+  } else {
+    const file = await _package.files.readAsText(`${LIB_PATH}${value}`);
+    data = JSON.parse(file);
+  }
+
+  if (monomerLib !== null)
+    monomerLib = new MonomerLib();
+
+  let monomers: { [type: string]: { [name: string]: Monomer } } = {};
+  const types = monomerLib?.getTypes();
+  //group monomers by their type
+  data.forEach(monomer => {
+    let monomerAdd: Monomer = {
+      'symbol': monomer['symbol'],
+      'name': monomer['name'],
+      'molfile': monomer['molfile'],
+      'rgroups': monomer['rgroups'],
+      'polymerType': monomer['polymerType'],
+      'monomerType': monomer['monomerType'],
+      'data': {}
+    };
+
+    Object.keys(monomer).forEach(prop => {
+      if (!expectedMonomerData.includes(prop))
+        monomerAdd.data[prop] = monomer[prop];
+    });
+    
+    monomers[monomer['polymerType']][monomer['symbol']] = monomerAdd;
+  });
+
+  monomerLib!.update(monomers);
+
+
+  
+  let grid: DG.Grid = grok.shell.tv.grid;
+  grid.invalidate();
+}
+
+//name: Manage Libraries
+//tags: panel, widgets
+//input: column helmColumn {semType: Macromolecule}
+//output: widget result
+export async function libraryPanel(helmColumn: DG.Column): Promise<DG.Widget> {
+  //@ts-ignore
+  let filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
+  let divInputs: HTMLDivElement = ui.div();
+  let librariesList: string[] = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
+  let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
+  for (let i = 0; i < uploadedLibraries.length; ++i) {
+    let libraryName: string = uploadedLibraries[i];
+    divInputs.append(ui.boolInput(libraryName, true, async() => {
+      grok.dapi.userDataStorage.remove(STORAGE_NAME, libraryName, true);
+      await loadLibraries();
+      grok.shell.tv.grid.invalidate();
+    }).root);
+  }
+  let unusedLibraries: string[] = librariesList.filter(x => !uploadedLibraries.includes(x));
+  for (let i = 0; i < unusedLibraries.length; ++i) {
+    let libraryName: string = unusedLibraries[i];
+    divInputs.append(ui.boolInput(libraryName, false, () => {
+      monomerManager(libraryName);
+      grok.dapi.userDataStorage.postValue(STORAGE_NAME, libraryName, libraryName, true);
+    }).root);
+  }
+  return new DG.Widget(ui.splitV([
+    divInputs,
+    ui.divV([filesButton])
+  ]));
 }
 
 //name: fastaSequenceCellRenderer

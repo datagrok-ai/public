@@ -20,13 +20,19 @@ export interface NodeCuttedType extends NodeType {
 }
 
 export type Monomer = {
+  //R groups
   at: { [R: string]: string },
+  //monomer abbreviation
   id: string,
+  //mol file with explicit Rs
   m: string,
+  //monomer full name
   n: string,
+  //natural analog, if no -'rs'
   na: string,
+  //number of Rs
   rs: number;
-};
+}
 
 export type MonomerType = 'HELM_AA' | 'HELM_BASE' | 'HELM_CHEM' | 'HELM_LINKER' | 'HELM_SUGAR';
 //expected types: HELM_AA, HELM_BASE, HELM_CHEM, HELM_LINKER, HELM_SUGAR
