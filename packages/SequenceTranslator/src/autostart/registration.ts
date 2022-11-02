@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
   siRnaNucleotidesToGcrs} from '../structures-works/converters';
-import {map, COL_NAMES, MODIFICATIONS} from '../structures-works/map';
+import {map, MODIFICATIONS} from '../structures-works/map';
+import {SEQUENCE_TYPES, COL_NAMES} from './constants';
 import {isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 import {linkV3000} from '../structures-works/mol-transformations';
@@ -15,11 +16,6 @@ import {ICDS} from '../ICDs';
 import {SOURCES} from '../sources';
 import {IDPS} from '../IDPs';
 
-const SEQUENCE_TYPES = {
-  SENSE_STRAND: 'SS',
-  ANTISENSE_STRAND: 'AS',
-  DUPLEX: 'Duplex',
-};
 
 function saltMass(saltNames: string[], molWeightCol: DG.Column, equivalentsCol: DG.Column, i: number,
   saltCol: DG.Column) {
@@ -177,11 +173,11 @@ export function oligoSdFile(table: DG.DataFrame) {
     }
 
     t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => {
-      return (typeColumn.get(i) == 'Duplex') ? chemistryNameCol.get(i) : sequenceCol.get(i);
+      return (typeColumn.get(i) == SEQUENCE_TYPES.DUPLEX) ? chemistryNameCol.get(i) : sequenceCol.get(i);
     });
 
     t.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => {
-      if (typeColumn.get(i) == 'Duplex') {
+      if (typeColumn.get(i) == SEQUENCE_TYPES.DUPLEX) {
         const arr = parseStrandsFromDuplexCell(sequenceCol.get(i));
         return chemistryNameCol.get(i) + '; duplex of SS: ' + arr[0] + ' and AS: ' + arr[1];
       }
@@ -199,7 +195,7 @@ export function oligoSdFile(table: DG.DataFrame) {
       weightsObj[key] = value.molecularWeight;
 
     t.columns.addNewFloat(COL_NAMES.CPD_MW).init((i: number) => {
-      if (typeColumn.get(i) == 'Duplex') {
+      if (typeColumn.get(i) == SEQUENCE_TYPES.DUPLEX) {
         const arr = parseStrandsFromDuplexCell(sequenceCol.get(i));
         return (
           isValidSequence(arr[0], null).indexOfFirstNotValidChar == -1 &&
