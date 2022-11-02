@@ -49,11 +49,13 @@ export function newickToDf(newick: string, dfName: string): DG.DataFrame {
 
   traverse(obj);
 
-  const columns = [
-    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'node', nodes),
-    DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'parent', parents),
-    DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'leaf', leafs),
-  ];
+  const nodeCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'node', nodes);
+  const parentCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'parent', parents);
+  const leafCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'leaf', leafs);
+  // Preventing semType detectors to interpret data
+  nodeCol.semType = 'id';
+  parentCol.semType = 'id';
+  const columns = [nodeCol, parentCol, leafCol];
 
   if (distances.some(d => d !== null)) {
     columns.push(DG.Column.fromList('double', 'distance', distances));

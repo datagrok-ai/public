@@ -1,7 +1,6 @@
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
-
 module.exports = {
   mode: 'development',
   entry: {
@@ -13,6 +12,7 @@ module.exports = {
     },
   },
   resolve: {
+    fallback: {'url': false},
     extensions: ['.ts', '.tsx', '.js', '.json'],
   },
   module: {
@@ -32,6 +32,9 @@ module.exports = {
     'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
     'rxjs/operators': 'rxjs.operators',
+    'cash-dom': '$',
+    'dayjs': 'dayjs',
+    'wu': 'wu',
   },
   output: {
     filename: '[name].js',
