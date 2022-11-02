@@ -1,3 +1,6 @@
+<!-- TITLE: Tree viewer -->
+<!-- SUBTITLE: -->
+
 # Tree viewer
 
 Tree viewer shows the hierarchical structure of categorical data. It groups
