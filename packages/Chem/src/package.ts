@@ -41,6 +41,7 @@ import { elementsTable } from './constants';
 import { getSimilaritiesMarix } from './utils/similarity-utils';
 import { molToMolblock } from './utils/convert-notation-utils'
 import { similarityMetric } from '@datagrok-libraries/utils/src/similarity-metrics';
+import { SubstituentAnalysisViewer } from './analysis/substituent-analysis-viewer';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -362,6 +363,7 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column,
 
 //name: R-Groups Analysis
 //top-menu: Chem | R-Groups Analysis...
+
 export function rGroupsAnalysisMenu(): void {
   const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (col === null) {
@@ -370,6 +372,22 @@ export function rGroupsAnalysisMenu(): void {
   }
   rGroupAnalysis(col);
 }
+
+//top-menu: Chem | Substituent Analysis...
+//name: substituentAnalysis
+//input: dataframe table
+//output: viewer result
+export function substituentAnalysisMenu(table: DG.DataFrame): void {
+  const packageExists = checkPackage('Charts', '_SubstituentAnalysisViewer');
+  if (packageExists) {
+    const substituentAnalysisViewer = DG.Viewer.fromType('SubstituentAnalysisViewer', table, { 
+    });
+    grok.shell.tv.addViewer(substituentAnalysisViewer);
+  } else {
+    grok.shell.warning("Charts package is not installed");
+  }
+}
+
 
 //#endregion
 
