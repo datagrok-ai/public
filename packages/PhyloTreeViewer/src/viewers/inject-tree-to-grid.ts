@@ -20,7 +20,7 @@ import {TreeHelper} from '../utils/tree-helper';
  *                                 undefined - use row index as leaf name/key
  */
 export function injectTreeToGridUI(
-  grid: DG.Grid, newickText: string, leafColName?: string, neighborWidth: number = 100,
+  grid: DG.Grid, newickText: string, leafColName: string, neighborWidth: number = 100,
   cut?: { min: number, max: number, clusterColName: string }
 ): GridNeighbor {
   const th: bio.ITreeHelper = new TreeHelper();
@@ -41,7 +41,7 @@ export function injectTreeToGridUI(
   pcDiv.style.left = `${leftMargin}px`;
 
   const newickRoot: bio.NodeType = bio.Newick.parse_newick(newickText);
-  const [viewedRoot, warnings]: [bio.NodeType, string[]] = th.setGridOrder(newickRoot, grid, 'id');
+  const [viewedRoot, warnings]: [bio.NodeType, string[]] = th.setGridOrder(newickRoot, grid, leafColName);
 
   const pcViewer = new bio.PhylocanvasGL(pcDiv, {
     interactive: false,
@@ -80,7 +80,7 @@ export function injectTreeToGridUI(
 
     subs.push(cutSlider.onChanged(() => {
       console.debug('PhyloTreeViewer: injectTreeToGrid() cutSlider.onChanged() ' + `${cutSlider!.value}`);
-      th.cutTreeToGrid(newickRoot, cutSlider!.value!, grid.dataFrame, 'id', 'Cluster');
+      th.cutTreeToGrid(newickRoot, cutSlider!.value!, grid.dataFrame, leafColName, 'Cluster');
     }));
   }
 
