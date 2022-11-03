@@ -26,7 +26,7 @@ function parseStrandsFromDuplexCell(s: string): {SS: string, AS: string} {
 async function saveTableAsSdFile(table: DG.DataFrame) {
   if (GENERATED_COL_NAMES.some((colName) => !table.columns.contains(colName))) {
     const absentColNames = differenceOfTwoArrays(GENERATED_COL_NAMES, table.columns.names()).join('\', \'');
-    grok.shell.warning('File saved without columns \'' + absentColNames);
+    grok.shell.warning('File saved without columns \'' + absentColNames + '\'');
   }
 
   const structureColumn = table.getCol(COL_NAMES.SEQUENCE);
@@ -199,7 +199,7 @@ export function oligoSdFile(table: DG.DataFrame) {
           table = removeEmptyRows(table, sequenceCol);
           addColumns(table);
           view.grid.columns.setOrder(Object.values(COL_NAMES));
-        }, 'Add columns: \'' + GENERATED_COL_NAMES.join('\', \'')),
+        }, 'Add columns: \'' + GENERATED_COL_NAMES.join('\', \'') + '\''),
         ui.button('Save SD file', () => saveTableAsSdFile(addColumnsPressed ? newDf : table)),
       );
 
