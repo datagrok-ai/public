@@ -27,12 +27,14 @@ namespace pca {
 	     data - input matrix;
 	     height, width - sizes of the input;
 	     numOfPrincipalComponents - number of principal components to be computed;
-	     principalComponents - the principal components computed.  */
+	     principalComponents - the principal components computed;
+		 approxData - approximation of the input data using principal components obtained.  */
 	int pcaUsingCorrelationMatrix(Float * data,
 		const int height,
 		const int width,
 		const int numOfPrincipalComponents,
-		Float * principalComponents) noexcept;
+		Float * principalComponents,
+		Float * approxData = NULL) noexcept;
 
 	/* Principal Component Analysis of the data: using correlation matrix.
 	     data - matrix that has float rows and integer rows, each row contains values of the same type:
@@ -79,6 +81,9 @@ namespace pca {
 		const int heightOfInts,
 		const int width,
 		Float * correlations) noexcept;
+
+	// Maximum absolute deviation between arrays
+	Float mad(Float * arr1, Float * arr2, const int length);
 };
 
 #endif // PCA_H

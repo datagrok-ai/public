@@ -8,7 +8,7 @@
 void differentTypeValuesManipulation();
 
 // Test of PCA that is performed using correlation matrix
-void pcaUsingCorrelationMatrixTest();
+//void pcaUsingCorrelationMatrixTest();
 
 // Performance comparison of PCAs implemented using correlation matrix
 void comparePerformanceOfPCAwithCorMatr();

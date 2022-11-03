@@ -11,38 +11,35 @@ using namespace Eigen;
 using pca::Float;
 using pca::Integer;
 using pca::Double;
-using pca::pcaUsingCorrelationMatrix;
-using pca::computeCorrelationMatrix;
-using pca::computeMeanOfEachRow;
 
 /* Principal Component Analysis of the data: using correlation matrix.
      data - input matrix;
      height, width - sizes of the input;
      numOfPrincipalComponents - number of principal components to be computed;
-     principalComponents - the principal components computed.  */
+     principalComponents - the principal components computed;
+	 approxData - approximation of the input data using principal components obtained.  */
 int pca::pcaUsingCorrelationMatrix(Float * data,
 	const int height,
 	const int width,
 	const int numOfPrincipalComponents,
-	Float * principalComponents) noexcept
+	Float * principalComponents,
+	Float * approxData) noexcept
 {
 	// check number of principal components
 	if (height < numOfPrincipalComponents)
 		return 1;
 
 	// assign data and Eigen matrix
-	Map< Matrix<float, Dynamic, Dynamic, RowMajor> > dataMatrix(data, height, width);
+	Map< Matrix<Float, Dynamic, Dynamic, RowMajor> > dataMatrix(data, height, width);
 
 	//cout << "\nD:\n" << dataMatrix << endl;
 
-	Vector<float, Dynamic> means = dataMatrix.rowwise().mean();
+	Vector<Float, Dynamic> means = dataMatrix.rowwise().mean();
 
 	//cout << "\nmeans:\n" << means << endl;
 
-	Matrix<float, Dynamic, Dynamic> corMatrix 
+	Matrix<Float, Dynamic, Dynamic> corMatrix 
 		= dataMatrix * dataMatrix.transpose() / width - means * means.transpose();
-
-	//cout << "\nCorr matrix:\n" << corMatrix << endl;
 
 	// The following solver computes eigen vals & vectors: the order of eigen vals is increasing.
 	SelfAdjointEigenSolver<Matrix<Float, Dynamic, Dynamic>> eigensolver(corMatrix);
@@ -50,20 +47,25 @@ int pca::pcaUsingCorrelationMatrix(Float * data,
 	// Check result of eigen values & vectors computation.
 	if (eigensolver.info() != Success)
 		return 2;
-
-	//cout << "\nEigen vals:\n" << eigensolver.eigenvalues() << endl;
-
+	
 	// get feature vectors, taking into account increasing order of computed eigen values
 	Matrix<Float, Dynamic, Dynamic, ColMajor> featureVectors
 		= (eigensolver.eigenvectors().rowwise().reverse())(all, seq(0, numOfPrincipalComponents - 1));
 
 	// assign principal components and Eigen matrix
-	Map< Matrix<float, Dynamic, Dynamic, RowMajor> > princCompMatrix(principalComponents, numOfPrincipalComponents, width);
+	Map< Matrix<Float, Dynamic, Dynamic, RowMajor> > princCompMatrix(principalComponents, numOfPrincipalComponents, width);
 
 	// compute principal componets
 	princCompMatrix = featureVectors.transpose() * (dataMatrix.colwise() - means);
 
-	//cout << "\nprinc:\n" << princCompMatrix << endl;
+	// computation of approximation
+	if (approxData != NULL)
+	{
+		// assign data and Eigen matrix
+		Map< Matrix<Float, Dynamic, Dynamic, RowMajor> > approxMatrix(approxData, height, width);
+
+		approxMatrix = (featureVectors * princCompMatrix).colwise() + means;
+	}	
 
 	return 0;
 }
@@ -153,7 +155,7 @@ int pca::pcaUsingCorrelationMatrix(void ** data,
 
 	// get feature vectors, taking into account increasing order of computed eigen values
 	Matrix<Float, Dynamic, Dynamic, RowMajor> featureVectors
-		= (eigensolver.eigenvectors().rowwise().reverse())(all, seq(0, numOfPrincipalComponents - 1));
+		= (eigensolver.eigenvectors().rowwise().reverse())(all, seq(0, numOfPrincipalComponents - 1));	
 
 	computePrincipalComponents(data, meanValsOfRows.data(), featureVectors.data(),
 		heightOfFloats, heightOfInts, width, numOfPrincipalComponents, principalComponents);
@@ -275,3 +277,20 @@ int pca::computeCorrelationMatrix(void ** data,
 
 	return 0;
 } // computeCorrelationMatrix
+
+// Maximum absolute deviation between arrays
+Float pca::mad(Float * arr1, Float * arr2, const int length)
+{
+	// Solution using Eigen: nice, but additional structures are created! 
+	Map<Vector<Float, Dynamic>> vec1(arr1, length);
+	Map<Vector<Float, Dynamic>> vec2(arr2, length);
+	return ((vec1 - vec2).cwiseAbs()).maxCoeff();
+
+	// Naive solution
+	/*Float result = fabs(arr1[0] - arr2[0]);
+
+	for (int i = 1; i < length; i++)
+		result = max(result, fabs(arr1[i] - arr2[i]));
+
+	return result;*/
+}

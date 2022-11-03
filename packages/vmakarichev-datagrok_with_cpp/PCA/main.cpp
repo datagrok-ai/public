@@ -12,11 +12,11 @@ int main()
 
 	//pcaUsingCorrelationMatrixTest();
 
-	comparePerformanceOfPCAwithCorMatr();
+	//comparePerformanceOfPCAwithCorMatr();
 
 	//investigatePCAwithCorMatrVoidDataRepresentation(100);
 
-	//investigatePCAwithCorMatrFloatDataRepresentation(100);
+	investigatePCAwithCorMatrFloatDataRepresentation(10);
 
 	cin.get();
 
