@@ -7,6 +7,7 @@ export function sequenceToMolV3000(
   format: string, monomersLib: string,
 ): string {
   const obj = getObjectWithCodesAndSmilesFromFile(sequence, format, monomersLib);
+  console.log('obj', obj);
   let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
   let i = 0;
   const smilesCodes:string[] = [];
@@ -15,8 +16,11 @@ export function sequenceToMolV3000(
   const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
   codes = codes.concat(dropdowns).concat(delimiter);
+  console.log('codes', codes);
   while (i < sequence.length) {
-    const code = codes.find((s: string) => s == sequence.slice(i, i + s.length))!;
+    console.log(sequence.slice(i));
+    const code = codes.find((s: string) => s === sequence.slice(i, i + s.length))!;
+    console.log('code', code);
     i += code.length;
     inverted ? codesList.unshift(code) : codesList.push(code);
   }
@@ -125,11 +129,12 @@ function getObjectWithCodesAndSmilesFromFile(sequence: string, format: string, l
     for (const item of lib) {
       for (const synthesizer of Object.keys(item[CODES])) {
         for (const technology of Object.keys(item[CODES][synthesizer])) {
-          const code = item[CODES][synthesizer][technology];
+          const codes = item[CODES][synthesizer][technology];
           let smiles: string = item[SMILES];
           smiles = smiles.replace(/\[OH:1\]/g, 'O');
           smiles = smiles.replace(/\[OH:2\]/g, 'O');
-          obj[code] = smiles;
+          for (const code of codes)
+            obj[code] = smiles;
         }
       }
     }
@@ -138,11 +143,12 @@ function getObjectWithCodesAndSmilesFromFile(sequence: string, format: string, l
       for (const synthesizer of Object.keys(item[CODES])) {
         if (synthesizer === format) {
           for (const technology of Object.keys(item[CODES][synthesizer])) {
-            const code = item[CODES][synthesizer][technology];
+            const codes = item[CODES][synthesizer][technology];
             let smiles: string = item[SMILES];
             smiles = smiles.replace(/\[OH:1\]/g, 'O');
             smiles = smiles.replace(/\[OH:2\]/g, 'O');
-            obj[code] = smiles;
+            for (const code of codes)
+              obj[code] = smiles;
           }
         }
       }
@@ -171,16 +177,18 @@ function getObjectWithCodesAndSmilesFromFile(sequence: string, format: string, l
     for (const item of lib) {
       for (const synthesizer of Object.keys(item[CODES])) {
         for (const technology of Object.keys(item[CODES][synthesizer])) {
-          const code = item[CODES][synthesizer][technology];
-          const condition =
-            (code === 'g') &&
-            (synthesizer === SYNTHESIZERS.MERMADE_12) &&
-            (technology === TECHNOLOGIES.SI_RNA);
-          if (condition) {
-            let smiles: string = item[SMILES];
-            smiles = smiles.replace(/\[OH:1\]/g, 'O');
-            smiles = smiles.replace(/\[OH:2\]/g, 'O');
-            obj[code] = smiles;
+          const codes = item[CODES][synthesizer][technology];
+          for (const code of codes) {
+            const condition =
+              (code === 'g') &&
+              (synthesizer === SYNTHESIZERS.MERMADE_12) &&
+              (technology === TECHNOLOGIES.SI_RNA);
+            if (condition) {
+              let smiles: string = item[SMILES];
+              smiles = smiles.replace(/\[OH:1\]/g, 'O');
+              smiles = smiles.replace(/\[OH:2\]/g, 'O');
+              obj[code] = smiles;
+            }
           }
         }
       }
@@ -189,16 +197,18 @@ function getObjectWithCodesAndSmilesFromFile(sequence: string, format: string, l
     for (const item of lib) {
       for (const synthesizer of Object.keys(item[CODES])) {
         for (const technology of Object.keys(item[CODES][synthesizer])) {
-          const code = item[CODES][synthesizer][technology];
-          const condition =
-            (code === 'g') &&
-            (synthesizer === SYNTHESIZERS.AXOLABS) &&
-            (technology === TECHNOLOGIES.SI_RNA);
-          if (condition) {
-            let smiles: string = item[SMILES];
-            smiles = smiles.replace(/\[OH:1\]/g, 'O');
-            smiles = smiles.replace(/\[OH:2\]/g, 'O');
-            obj[code] = smiles;
+          const codes = item[CODES][synthesizer][technology];
+          for (const code of codes) {
+            const condition =
+              (code === 'g') &&
+              (synthesizer === SYNTHESIZERS.AXOLABS) &&
+              (technology === TECHNOLOGIES.SI_RNA);
+            if (condition) {
+              let smiles: string = item[SMILES];
+              smiles = smiles.replace(/\[OH:1\]/g, 'O');
+              smiles = smiles.replace(/\[OH:2\]/g, 'O');
+              obj[code] = smiles;
+            }
           }
         }
       }
