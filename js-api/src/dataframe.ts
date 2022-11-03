@@ -2206,7 +2206,6 @@ export class ColumnDialogHelper {
 
 export class ColumnColorHelper {
   private readonly column: Column;
-  grid: Grid | null = null;
 
   constructor(column: Column) {
     this.column = column;
@@ -2243,17 +2242,12 @@ export class ColumnColorHelper {
     }
   }
 
-  getColor(i: number): number | null {
-    return this.grid?.cell(this.column.name, i)?.color ?? null;
+  getColor(i: number): number {
+    return api.grok_Column_GetColor(this.column.dart, i);
   }
 
   getColors(): Uint32Array {
-    const colors = new Uint32Array(this.column.length);
-    if (this.grid) {
-      for (let i = 0; i < this.column.length; i++)
-        colors[i] = this.getColor(i) ?? 0;
-    }
-    return colors;
+    return api.grok_Column_GetColors(this.column.dart);
   }
 }
 
