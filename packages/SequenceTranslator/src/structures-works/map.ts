@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {getAllCodesOfSynthesizer} from './sequence-codes-tools';
+import {differenceOfTwoArrays} from '../helpers';
 
 export const delimiter = ';';
 export const SYNTHESIZERS = {
@@ -701,9 +702,6 @@ fU, fU
 /J-CbCS/, J-CbCS
 /J-MtCD/, J-MtCD`;
 
-function differenceOfTwoArrays(a: string[], b: string[]): string[] {
-  return a.filter((x) => !b.includes(x));
-}
 
 const codesWithSmiles = getAllCodesOfSynthesizer(SYNTHESIZERS.GCRS);
 const allGcrsCodes = DG.DataFrame.fromCsv(lcmsToGcrs).getCol('GCRS').toList();
