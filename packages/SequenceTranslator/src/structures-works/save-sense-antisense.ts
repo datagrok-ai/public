@@ -1,13 +1,27 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 import {linkV3000} from '../structures-works/mol-transformations';
 import {getFormat} from '../structures-works/sequence-codes-tools';
 
-export function saveSdf(as: string, ss: string, oneEntity: boolean, useChirality: boolean, invertSS: boolean, invertAS: boolean) {
+export async function saveSdf(
+  as: string, ss: string, oneEntity: boolean, useChirality: boolean, invertSS: boolean, invertAS: boolean,
+) {
+  const monomersLibAddress = 'System:AppData/SequenceTranslator/helmLib.json';
+  const fileExists = await grok.dapi.files.exists(monomersLibAddress);
+  if (!fileExists) {
+    // todo: improve behaviour in this case
+    grok.shell.warning('Please, provide the file with monomers library');
+    return;
+  }
+
+  const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
   const formatAs = getFormat(as);
   const formatSs = getFormat(ss);
-  const molSS = sequenceToMolV3000(ss, invertSS, false, formatSs!);
-  const molAS = sequenceToMolV3000(as, invertAS, false, formatAs!);
+  const molSS = sequenceToMolV3000(ss, invertSS, false, formatSs!, monomersLib);
+  const molAS = sequenceToMolV3000(as, invertAS, false, formatAs!, monomersLib!);
   let result: string;
   if (oneEntity)
     result = linkV3000([molSS, molAS], true, useChirality) + '\n$$$$\n';

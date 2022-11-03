@@ -67,6 +67,17 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
         COL_NAMES.SALT_MASS, COL_NAMES.BATCH_MW].join('\', \''),
     );
   }
+
+  const monomersLibAddress = 'System:AppData/SequenceTranslator/helmLib.json';
+  const fileExists = await grok.dapi.files.exists(monomersLibAddress);
+  if (!fileExists) {
+    // todo: improve behaviour in this case
+    grok.shell.warning('Please, provide the file with monomers library');
+    return;
+  }
+
+  const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
+
   const structureColumn = table.getCol(COL_NAMES.SEQUENCE);
   const typeColumn = table.getCol(COL_NAMES.TYPE);
   let result = '';
@@ -74,17 +85,17 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
     const format = 'Janssen GCRS Codes'; //getFormat(structureColumn.get(i))!;
     if (typeColumn.get(i) == 'Duplex') {
       const array = parseStrandsFromDuplexCell(structureColumn.get(i));
-      const as = sequenceToMolV3000(array[1], true, true, format) +
+      const as = sequenceToMolV3000(array[1], true, true, format, monomersLib) +
       '\n' + `> <Sequence>\nAnti Sense\n\n`;
-      const ss = sequenceToMolV3000(array[0], false, true, format) +
+      const ss = sequenceToMolV3000(array[0], false, true, format, monomersLib) +
       '\n' + `> <Sequence>\nSense Strand\n\n`;
       result += linkV3000([ss, as], true, true) + '\n\n';
     } else if (typeColumn.get(i) == 'SS') {
-      const molSS = sequenceToMolV3000(structureColumn.get(i), false, true, format) +
+      const molSS = sequenceToMolV3000(structureColumn.get(i), false, true, format, monomersLib) +
       '\n' + `> <Sequence>\nSense Strand\n\n`;
       result += molSS;
     } else if (typeColumn.get(i) == 'AS') {
-      const molAS = sequenceToMolV3000(structureColumn.get(i), true, true, format) +
+      const molAS = sequenceToMolV3000(structureColumn.get(i), true, true, format, monomersLib) +
         '\n' + `> <Sequence>\nAnti Sense\n\n`;
       result += molAS;
     }

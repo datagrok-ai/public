@@ -10,12 +10,26 @@ const defaultInput = 'fAmCmGmAmCpsmU';
 const sequenceWasCopied = 'Copied';
 const tooltipSequence = 'Copy sequence';
 
-export function mainView() {
-  function updateTableAndMolecule(sequence: string, inputFormat: string): void {
+export async function mainView(): Promise<HTMLDivElement> {
+  const monomersLibAddress = 'System:AppData/SequenceTranslator/helmLib.json';
+  async function updateTableAndMolecule(sequence: string, inputFormat: string): Promise<void> {
     moleculeSvgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
     let errorsExist = false;
+
+    // external helm-like monomers library
+    const fileExists = await grok.dapi.files.exists(monomersLibAddress);
+    if (!fileExists) {
+      // todo: improve behaviour in this case
+      grok.shell.warning('Please, provide the file with monomers library');
+      pi.close();
+      return;
+    }
+
+    const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
+    console.log(monomersLibAddress);
+
     try {
       sequence = sequence.replace(/\s/g, '');
       const output = isValidSequence(sequence, null);
@@ -38,16 +52,16 @@ export function mainView() {
         tableRows.push({
           'key': key,
           'value': ('indexOfFirstNotValidChar' in outputSequenceObj) ?
-            ui.divH([
-              ui.divText(sequence.slice(0, indexOfFirstNotValidChar), {style: {color: 'grey'}}),
-              ui.tooltip.bind(
-                ui.divText(sequence.slice(indexOfFirstNotValidChar), {style: {color: 'red'}}),
-                'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer +
-                '. See tables with valid codes on the right',
-              ),
-            ]) : //@ts-ignore
-            ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key])
-              .then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, ''),
+          ui.divH([
+            ui.divText(sequence.slice(0, indexOfFirstNotValidChar), {style: {color: 'grey'}}),
+            ui.tooltip.bind(
+              ui.divText(sequence.slice(indexOfFirstNotValidChar), {style: {color: 'red'}}),
+              'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer +
+              '. See tables with valid codes on the right',
+            ),
+          ]) : //@ts-ignore
+          ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key])
+            .then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, ''),
         });
       }
 
@@ -76,8 +90,11 @@ export function mainView() {
         const canvas = ui.canvas(300, 170);
         canvas.addEventListener('click', () => {
           const canv = ui.canvas($(window).width(), $(window).height());
-          const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true,
-            output.synthesizer![0]);
+          const mol = sequenceToMolV3000(
+            inputSequenceField.value.replace(/\s/g, ''), false, true,
+            output.synthesizer![0], monomersLib,
+          );
+          console.log(mol);
           // @ts-ignore
           OCL.StructureView.drawMolecule(canv, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
           ui.dialog('Molecule: ' + inputSequenceField.value)
@@ -87,7 +104,7 @@ export function mainView() {
         $(canvas).on('mouseover', () => $(canvas).css('cursor', 'zoom-in'));
         $(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
         const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true,
-        output.synthesizer![0]);
+          output.synthesizer![0], monomersLib);
         // @ts-ignore
         OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
         moleculeSvgDiv.append(canvas);
@@ -131,23 +148,23 @@ export function mainView() {
   });
 
   const omeAndFluoroGrid = DG.Viewer.grid(
-      DG.DataFrame.fromObjects([
-        {'Name': '2\'-fluoro-U', 'BioSpring': '1', 'Axolabs': 'Uf', 'Janssen GCRS': 'fU'},
-        {'Name': '2\'-fluoro-A', 'BioSpring': '2', 'Axolabs': 'Af', 'Janssen GCRS': 'fA'},
-        {'Name': '2\'-fluoro-C', 'BioSpring': '3', 'Axolabs': 'Cf', 'Janssen GCRS': 'fC'},
-        {'Name': '2\'-fluoro-G', 'BioSpring': '4', 'Axolabs': 'Gf', 'Janssen GCRS': 'fG'},
-        {'Name': '2\'OMe-rU', 'BioSpring': '5', 'Axolabs': 'u', 'Janssen GCRS': 'mU'},
-        {'Name': '2\'OMe-rA', 'BioSpring': '6', 'Axolabs': 'a', 'Janssen GCRS': 'mA'},
-        {'Name': '2\'OMe-rC', 'BioSpring': '7', 'Axolabs': 'c', 'Janssen GCRS': 'mC'},
-        {'Name': '2\'OMe-rG', 'BioSpring': '8', 'Axolabs': 'g', 'Janssen GCRS': 'mG'},
-        {'Name': 'ps linkage', 'BioSpring': '*', 'Axolabs': 's', 'Janssen GCRS': 'ps'},
-      ])!, {showRowHeader: false, showCellTooltip: false},
+    DG.DataFrame.fromObjects([
+      {'Name': '2\'-fluoro-U', 'BioSpring': '1', 'Axolabs': 'Uf', 'Janssen GCRS': 'fU'},
+      {'Name': '2\'-fluoro-A', 'BioSpring': '2', 'Axolabs': 'Af', 'Janssen GCRS': 'fA'},
+      {'Name': '2\'-fluoro-C', 'BioSpring': '3', 'Axolabs': 'Cf', 'Janssen GCRS': 'fC'},
+      {'Name': '2\'-fluoro-G', 'BioSpring': '4', 'Axolabs': 'Gf', 'Janssen GCRS': 'fG'},
+      {'Name': '2\'OMe-rU', 'BioSpring': '5', 'Axolabs': 'u', 'Janssen GCRS': 'mU'},
+      {'Name': '2\'OMe-rA', 'BioSpring': '6', 'Axolabs': 'a', 'Janssen GCRS': 'mA'},
+      {'Name': '2\'OMe-rC', 'BioSpring': '7', 'Axolabs': 'c', 'Janssen GCRS': 'mC'},
+      {'Name': '2\'OMe-rG', 'BioSpring': '8', 'Axolabs': 'g', 'Janssen GCRS': 'mG'},
+      {'Name': 'ps linkage', 'BioSpring': '*', 'Axolabs': 's', 'Janssen GCRS': 'ps'},
+    ])!, {showRowHeader: false, showCellTooltip: false},
   );
 
   const overhangModificationsGrid = DG.Viewer.grid(
-      DG.DataFrame.fromColumns([
-        DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
-      ])!, {showRowHeader: false, showCellTooltip: false},
+    DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
+    ])!, {showRowHeader: false, showCellTooltip: false},
   );
   updateTableAndMolecule(defaultInput, inputFormatChoiceInput.value!);
 
@@ -176,9 +193,10 @@ export function mainView() {
   );
 
   const topPanel = [
-    ui.iconFA('download', () => {
+    ui.iconFA('download', async () => {
+      const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
       const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false,
-        inputFormatChoiceInput.value!);
+        inputFormatChoiceInput.value!, monomersLib);
       const element = document.createElement('a');
       element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
       element.setAttribute('download', inputSequenceField.value.replace(/\s/g, '') + '.mol');

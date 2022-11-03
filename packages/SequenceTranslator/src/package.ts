@@ -11,7 +11,7 @@ export const _package = new DG.Package();
 
 //name: Sequence Translator
 //tags: app
-export function sequenceTranslator(): void {
+export async function sequenceTranslator(): Promise<void> {
   const windows = grok.shell.windows;
   windows.showProperties = false;
   windows.showToolbox = false;
@@ -19,7 +19,7 @@ export function sequenceTranslator(): void {
 
   const v = grok.shell.newView('Sequence Translator', [
     ui.tabControl({
-      'MAIN': mainView(),
+      'MAIN': await mainView(),
       'AXOLABS': defineAxolabsPattern(),
       'SDF': saveSenseAntiSense(),
     }),
