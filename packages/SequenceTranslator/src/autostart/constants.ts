@@ -17,11 +17,19 @@ export const COL_NAMES = {
   SALT: 'Salt',
   EQUIVALENTS: 'Equivalents',
   PURITY: 'Purity',
-  CPD_MW: 'Cpd MW',
+  COMPOUND_MOL_WEIGHT: 'Cpd MW',
   SALT_MOL_WEIGHT: 'Salt MW',
   SALT_MASS: 'Salt mass',
-  BATCH_MW: 'Batch MW',
+  BATCH_MOL_WEIGHT: 'Batch MW',
   SOURCE: 'Source',
   ICD: 'ICD',
   OWNER: 'Owner',
 };
+
+export const GENERATED_COL_NAMES = [
+  COL_NAMES.COMPOUND_NAME,
+  COL_NAMES.COMPOUND_COMMENTS,
+  COL_NAMES.COMPOUND_MOL_WEIGHT,
+  COL_NAMES.SALT_MASS,
+  COL_NAMES.BATCH_MOL_WEIGHT,
+];
