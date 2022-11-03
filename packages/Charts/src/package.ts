@@ -11,6 +11,7 @@ import '../css/styles.css';
 
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import { SubstituentAnalysisViewer } from './substituent-analysis-viewer';
 
 export const _package = new DG.Package();
 
@@ -95,4 +96,11 @@ export function _TimelinesViewer() {
 //output: viewer result
 export function _SurfacePlot() {
   return new SurfacePlot();
+}
+
+//name: SubstituentAnalysisViewer
+//tags: viewer
+//output: viewer result
+export function _SubstituentAnalysisViewer() {
+  return new SubstituentAnalysisViewer();
 }
