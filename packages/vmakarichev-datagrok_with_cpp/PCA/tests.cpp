@@ -37,123 +37,130 @@ void differentTypeValuesManipulation()
 } // differentTypeValuesManipulation
 
 // Test of PCA that is performed using correlation matrix
-void pcaUsingCorrelationMatrixTest()
-{
-	const int width = 6;
-
-	// float data
-	const int heightOfFloats = 3;
-	float a[width] = {103.1f, 202.2f, 305.3f, 410.4f, 505.5f, 606.6f};
-	float b[width] = {-106.1f, -216.2f, -390.3f, -441.4f, -552.5f, -606.f};
-	float c[width] = { 103.1f, -209.2f, 380.3f, -400.4f, 570.5f, 600.7f};
-
-	// int data
-	const int heightOfInts = 2;
-	int x[width] = { 64, 315, 205, 114, 196, 178 };
-	int y[width] = { 152, 61, 171, 212, 121, 290 };	
-
-	const int height = heightOfFloats + heightOfInts;
-
-	// test data
-	void ** data = new void * [height];
-	data[0] = a;
-	data[1] = b;
-	data[2] = c;
-	data[3] = x;
-	data[4] = y;
-
-	cout << "Test data:\n";
-
-	for (int i = 0; i < heightOfFloats; i++)
-	{
-		float * ptr = static_cast<float *>(data[i]);
-		for (int j = 0; j < width; j++)
-			cout << ptr[j] << "  ";
-		cout << endl;
-	} 
-
-	for (int i = heightOfFloats; i < height; i++)
-	{
-		int * ptr = static_cast<int *>(data[i]);
-		for (int j = 0; j < width; j++)
-			cout << ptr[j] << "  ";
-		cout << endl;
-	}
-
-	
-	const int numOfPrincipalComponents = 3;
-
-	float ** principalComponents = new float* [numOfPrincipalComponents];
-	for (int i = 0; i < numOfPrincipalComponents; i++)
-		principalComponents[i] = new float [width];
-
-	// compute principal components
-	pcaUsingCorrelationMatrix(data, heightOfFloats, heightOfInts, width, numOfPrincipalComponents, principalComponents);
-
-	cout << "\nPrincipal components (data is given by void **):\n";
-	for (int i = 0; i < numOfPrincipalComponents; i++)
-	{
-		for (int j = 0; j < width; j++)
-			cout << "  " << principalComponents[i][j];
-		cout << endl;
-	}
-	
-	// Now, we compute principal components using the second approach: data is given by float *
-
-	float matrix[] = { 103.1f, 202.2f, 305.3f, 410.4f, 505.5f, 606.6f,
-		-106.1f, -216.2f, -390.3f, -441.4f, -552.5f, -606.f,
-		103.1f, -209.2f, 380.3f, -400.4f, 570.5f, 600.7f,
-		64, 315, 205, 114, 196, 178,
-		152, 61, 171, 212, 121, 290 };
-
-	float princComp[numOfPrincipalComponents * width];
-
-	pcaUsingCorrelationMatrix(matrix, height, width, numOfPrincipalComponents, princComp);
-
-	cout << "\nPrincipal components (data is given by float *):\n";
-
-	for (int i = 0; i < numOfPrincipalComponents; i++)
-	{
-		for (int j = 0; j < width; j++)
-			cout << "  " << princComp[i * width + j];
-		cout << endl;
-	}
-
-	/*
-		
-	Vector<float, Dynamic> mu(heightOfFloats + heightOfInts);
-
-	mu = D.rowwise().mean();
-
-	Matrix<float, Dynamic, Dynamic> C(heightOfFloats + heightOfInts, heightOfFloats + heightOfInts);
-
-	C = D * D.transpose() / width - mu * mu.transpose();
-
-	SelfAdjointEigenSolver<Matrix<float, Dynamic, Dynamic>> eigensolver(C);
-	
-	Matrix<float, Dynamic, Dynamic, ColMajor> P = eigensolver.eigenvectors().rowwise().reverse();
-
-	Matrix<float, Dynamic, Dynamic> E = P(all, seq(0, numOfPrincipalComponents - 1));
-	
-	//Matrix<float, Dynamic, Dynamic> Princ = (D.colwise() - mu).transpose() * E;
-
-	Matrix<float, Dynamic, Dynamic> Princ = E.transpose() * (D.colwise() - mu) ;
-
-	cout << "\nPrincipal components:\n" << Princ  << endl;
-
-	//cout << "\nApproximation:\n" << (E * Princ.transpose()).colwise() + mu << endl;*/
-		
-	delete [] data;
-	
-	for (int i = 0; i < numOfPrincipalComponents; i++)
-		delete[] principalComponents[i];
-
-	delete[] principalComponents;
-} // pcaUsingCorrelationMatrixTest
+//void pcaUsingCorrelationMatrixTest()
+//{
+//	const int width = 6;
+//
+//	// float data
+//	const int heightOfFloats = 3;
+//	float a[width] = {103.1f, 202.2f, 305.3f, 410.4f, 505.5f, 606.6f};
+//	float b[width] = {-106.1f, -216.2f, -390.3f, -441.4f, -552.5f, -606.f};
+//	float c[width] = { 103.1f, -209.2f, 380.3f, -400.4f, 570.5f, 600.7f};
+//
+//	// int data
+//	const int heightOfInts = 2;
+//	int x[width] = { 64, 315, 205, 114, 196, 178 };
+//	int y[width] = { 152, 61, 171, 212, 121, 290 };	
+//
+//	const int height = heightOfFloats + heightOfInts;
+//
+//	// test data
+//	void ** data = new void * [height];
+//	data[0] = a;
+//	data[1] = b;
+//	data[2] = c;
+//	data[3] = x;
+//	data[4] = y;
+//
+//	cout << "Test data:\n";
+//
+//	for (int i = 0; i < heightOfFloats; i++)
+//	{
+//		float * ptr = static_cast<float *>(data[i]);
+//		for (int j = 0; j < width; j++)
+//			cout << ptr[j] << "  ";
+//		cout << endl;
+//	} 
+//
+//	for (int i = heightOfFloats; i < height; i++)
+//	{
+//		int * ptr = static_cast<int *>(data[i]);
+//		for (int j = 0; j < width; j++)
+//			cout << ptr[j] << "  ";
+//		cout << endl;
+//	}
+//
+//	
+//	const int numOfPrincipalComponents = 3;
+//
+//	float ** principalComponents = new float* [numOfPrincipalComponents];
+//	for (int i = 0; i < numOfPrincipalComponents; i++)
+//		principalComponents[i] = new float [width];
+//
+//	// compute principal components
+//	pcaUsingCorrelationMatrix(data, heightOfFloats, heightOfInts, width, numOfPrincipalComponents, principalComponents);
+//
+//	cout << "\nPrincipal components (data is given by void **):\n";
+//	for (int i = 0; i < numOfPrincipalComponents; i++)
+//	{
+//		for (int j = 0; j < width; j++)
+//			cout << "  " << principalComponents[i][j];
+//		cout << endl;
+//	}
+//	
+//	// Now, we compute principal components using the second approach: data is given by float *
+//
+//	float matrix[] = { 103.1f, 202.2f, 305.3f, 410.4f, 505.5f, 606.6f,
+//		-106.1f, -216.2f, -390.3f, -441.4f, -552.5f, -606.f,
+//		103.1f, -209.2f, 380.3f, -400.4f, 570.5f, 600.7f,
+//		64, 315, 205, 114, 196, 178,
+//		152, 61, 171, 212, 121, 290 };
+//
+//	float princComp[numOfPrincipalComponents * width];
+//
+//	pcaUsingCorrelationMatrix(matrix, height, width, numOfPrincipalComponents, princComp);
+//
+//	cout << "\nPrincipal components (data is given by float *):\n";
+//
+//	for (int i = 0; i < numOfPrincipalComponents; i++)
+//	{
+//		for (int j = 0; j < width; j++)
+//			cout << "  " << princComp[i * width + j];
+//		cout << endl;
+//	}
+//
+//	/*
+//		
+//	Vector<float, Dynamic> mu(heightOfFloats + heightOfInts);
+//
+//	mu = D.rowwise().mean();
+//
+//	Matrix<float, Dynamic, Dynamic> C(heightOfFloats + heightOfInts, heightOfFloats + heightOfInts);
+//
+//	C = D * D.transpose() / width - mu * mu.transpose();
+//
+//	SelfAdjointEigenSolver<Matrix<float, Dynamic, Dynamic>> eigensolver(C);
+//	
+//	Matrix<float, Dynamic, Dynamic, ColMajor> P = eigensolver.eigenvectors().rowwise().reverse();
+//
+//	Matrix<float, Dynamic, Dynamic> E = P(all, seq(0, numOfPrincipalComponents - 1));
+//	
+//	//Matrix<float, Dynamic, Dynamic> Princ = (D.colwise() - mu).transpose() * E;
+//
+//	Matrix<float, Dynamic, Dynamic> Princ = E.transpose() * (D.colwise() - mu) ;
+//
+//	cout << "\nPrincipal components:\n" << Princ  << endl;
+//
+//	//cout << "\nApproximation:\n" << (E * Princ.transpose()).colwise() + mu << endl;*/
+//		
+//	delete [] data;
+//	
+//	for (int i = 0; i < numOfPrincipalComponents; i++)
+//		delete[] principalComponents[i];
+//
+//	delete[] principalComponents;
+//} // pcaUsingCorrelationMatrixTest
 
 // Performance comparison of PCAs implemented using correlation matrix
 void comparePerformanceOfPCAwithCorMatr()
 {	
+	/*const int SEED = 1523;
+	const int WIDTH = 60000;
+	const int HEIGHT_OF_FLOATS = 50;
+	const int HEIGHT_OF_INTS = 50;
+	const int HEIGHT = HEIGHT_OF_FLOATS + HEIGHT_OF_INTS;
+	const int NUM_OF_PRINCIPAL_COMPONENTS = 3;*/
+
 	// set random seed
 	srand(SEED);
 	
@@ -193,9 +200,9 @@ void comparePerformanceOfPCAwithCorMatr()
 	}*/
 	
 	// Principal components: float **
-	float ** principalComponents = new float *[NUM_OF_PRINCIPAL_COMPONENTS];
+	Float ** principalComponents = new Float *[NUM_OF_PRINCIPAL_COMPONENTS];
 	for (int i = 0; i < NUM_OF_PRINCIPAL_COMPONENTS; i++)
-		principalComponents[i] = new float[WIDTH];
+		principalComponents[i] = new Float[WIDTH];
 
 	// compute principal components: data is given by void **
 	time_t t0 = time(0);
@@ -209,7 +216,7 @@ void comparePerformanceOfPCAwithCorMatr()
 
 	// Now, we compute principal components using the second approach: data is given by float *
 
-	float * matrix = new float[HEIGHT * WIDTH];
+	Float * matrix = new Float[HEIGHT * WIDTH];
 
 	// set data: float part
 	for (int i = 0; i < HEIGHT_OF_FLOATS; i++)
@@ -227,7 +234,7 @@ void comparePerformanceOfPCAwithCorMatr()
 	}
 
 	// principal components
-	float * princComp = new float [NUM_OF_PRINCIPAL_COMPONENTS * WIDTH];
+	Float * princComp = new Float [NUM_OF_PRINCIPAL_COMPONENTS * WIDTH];
 
 	// compute principal components: data is given by float *
 	t0 = time(0);
@@ -239,11 +246,11 @@ void comparePerformanceOfPCAwithCorMatr()
 	cout << "\nTime of PCA (data is given by float *):  " << t1 - t0 << " sec.\n";
 		
 	// Compute maximum absolute deviation (MAD) between the results obtained using different approaches
-	float mad = 0.0;
+	Float mad = 0.0;
 
 	for (int i = 0; i < NUM_OF_PRINCIPAL_COMPONENTS; i++)
 		for (int j = 0; j < WIDTH; j++)
-			mad = max(mad, fabsf(principalComponents[i][j] - princComp[i * WIDTH + j]));
+			mad = max(mad, fabs(principalComponents[i][j] - princComp[i * WIDTH + j]));
 
 	cout << "\nMaximum absolute deviation between obtained results:  " << mad << endl;
 
@@ -276,9 +283,9 @@ void investigatePCAwithCorMatrVoidDataRepresentation(int numOfLaunches)
 	// set int part
 	for (int i = 0; i < HEIGHT_OF_FLOATS; i++)
 	{
-		float * fPtr = new float[WIDTH];
+		Float * fPtr = new Float[WIDTH];
 		for (int j = 0; j < WIDTH; j++)
-			fPtr[j] = static_cast<float>(rand() % 200) / (1 + rand() % 10);
+			fPtr[j] = static_cast<Float>(rand() % 200) / (1 + rand() % 10);
 		data[i] = fPtr;
 	}
 
@@ -292,9 +299,9 @@ void investigatePCAwithCorMatrVoidDataRepresentation(int numOfLaunches)
 	}
 
 	// Principal components: float **
-	float ** principalComponents = new float *[NUM_OF_PRINCIPAL_COMPONENTS];
+	Float ** principalComponents = new Float *[NUM_OF_PRINCIPAL_COMPONENTS];
 	for (int i = 0; i < NUM_OF_PRINCIPAL_COMPONENTS; i++)
-		principalComponents[i] = new float[WIDTH];
+		principalComponents[i] = new Float[WIDTH];
 	
 	// vector to store time
 	Vector<float, Dynamic> numOfSecondsPerLaunch(numOfLaunches);
@@ -339,41 +346,49 @@ void investigatePCAwithCorMatrFloatDataRepresentation(int numOfLaunches)
 
 	// Set test data
 
-	float * matrix = new float[HEIGHT * WIDTH];
+	Float * matrix = new Float[HEIGHT * WIDTH];
+	Float * approxMatrix = new Float[HEIGHT * WIDTH];
 
 	for (int i = 0; i < HEIGHT_OF_FLOATS; i++)		
 		for (int j = 0; j < WIDTH; j++)
-			matrix[i * WIDTH + j] = static_cast<float>(rand() % 200) / (1 + rand() % 10);
+			matrix[i * WIDTH + j] = static_cast<Float>(rand() % 200) / (1 + rand() % 10);
 
 	for (int i = HEIGHT_OF_FLOATS; i < HEIGHT; i++)
 		for (int j = 0; j < WIDTH; j++)
-			matrix[i * WIDTH + j] = static_cast<float>(rand() % 20);
+			matrix[i * WIDTH + j] = static_cast<Float>(rand() % 20);
 		
 	// principal components
-	float * princComp = new float[NUM_OF_PRINCIPAL_COMPONENTS * WIDTH];
+	Float * princComp = new Float[NUM_OF_PRINCIPAL_COMPONENTS * WIDTH];
 
 	// vector to store time
 	Vector<float, Dynamic> numOfSecondsPerLaunch(numOfLaunches);
 
-	cout << "Time for PCA (data is given by float *).\n";
+	cout << "Perfromance of PCA: data is given by float *.\n\n"
+		<< "Input matrix: " << HEIGHT << " x " << WIDTH
+		<< "\nNumber of principal components: " << NUM_OF_PRINCIPAL_COMPONENTS << "\n\n";
 
 	// Launch computing process
 	for (int i = 1; i <= numOfLaunches; i++)
 	{
 		time_t t0 = time(0);
 
-		pcaUsingCorrelationMatrix(matrix, HEIGHT, WIDTH, NUM_OF_PRINCIPAL_COMPONENTS, princComp);
+		pcaUsingCorrelationMatrix(matrix, HEIGHT, WIDTH, NUM_OF_PRINCIPAL_COMPONENTS, princComp, approxMatrix);
 
 		time_t t1 = time(0);
 
-		cout << "  Launch " << i << ":  " << t1 - t0 << " sec.\n";
+		cout << "Launch " << i << endl
+			<< "   Time: " << t1 - t0 << " sec.\n"
+			<< "   Source data vs Approximated data: maximum absolute deviation is "
+			<< mad(matrix, approxMatrix, HEIGHT * WIDTH) << "\n\n";
 
 		numOfSecondsPerLaunch(i - 1) = static_cast<float>(t1 - t0);
 	}
 
-	cout << "\nAverage time per launch: " << numOfSecondsPerLaunch.mean() << " sec.";
+	cout << "\nAverage time per PCA launch: " << numOfSecondsPerLaunch.mean() << " sec.";
 	
 	delete[] matrix;
 
 	delete[] princComp;
+
+	delete[] approxMatrix;
 } // comparePerformanceOfPCAwithCorMatr
