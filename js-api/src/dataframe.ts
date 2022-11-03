@@ -2211,6 +2211,7 @@ export class ColumnDialogHelper {
 
 export class ColumnColorHelper {
   private readonly column: Column;
+
   constructor(column: Column) {
     this.column = column;
   }
@@ -2244,6 +2245,14 @@ export class ColumnColorHelper {
       }
       this.column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = JSON.stringify(rules);
     }
+  }
+
+  getColor(i: number): number {
+    return api.grok_Column_GetColor(this.column.dart, i);
+  }
+
+  getColors(): Uint32Array {
+    return api.grok_Column_GetColors(this.column.dart);
   }
 }
 
