@@ -19,7 +19,7 @@ import {getMacroMol} from './utils/atomic-works';
 import {MacromoleculeSequenceCellRenderer} from './utils/cell-renderer';
 import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
-import {TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {MonomerFreqs, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule'
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/utils/to-atomic-level';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
@@ -46,9 +46,10 @@ const LIB_PATH = 'libraries/';
 const expectedMonomerData = ['symbol', 'name', 'molfile', 'rgroups', 'polymerType', 'monomerType'];
 
 let monomerLib: IMonomerLib | null = null;
+export let hydrophobPalette: SeqPaletteCustom | null = null;
 
 class MonomerLib implements IMonomerLib {
-  private _monomers: { [type: string]: { [name: string]: Monomer } } | null = null;
+  private _monomers: { [type: string]: { [name: string]: Monomer } } = {};
   private _onChanged = new Subject<any>();
 
   getMonomer(monomerType: string, monomerName: string): Monomer | null {
@@ -59,7 +60,17 @@ class MonomerLib implements IMonomerLib {
   }
 
   getTypes(): string[] {
-    return Object.keys(this._monomers!);
+    return Object.keys(this._monomers);
+  }
+
+  getMonomersByType(type: string): {[symbol: string]: string} {
+    let res: {[symbol: string]: string} = {};
+
+    Object.keys(this._monomers[type]).forEach(monomerSymbol => {
+      res[monomerSymbol] = this._monomers[type][monomerSymbol].molfile;
+    });
+
+    return res;
   }
 
   get onChanged(): Observable<any> {
@@ -69,8 +80,12 @@ class MonomerLib implements IMonomerLib {
   public update(monomers: { [type: string]: { [name: string]: Monomer } }): void {
     Object.keys(monomers).forEach(type => {
       //could possibly rewrite -> TODO: check duplicated monomer symbol
+
+      if (!this.getTypes().includes(type))
+        this._monomers![type] = {};
+
       Object.keys(monomers[type]).forEach(monomerName =>{
-        this._monomers![type][monomerName] = monomers[type][monomerName];
+        this._monomers[type][monomerName] = monomers[type][monomerName];
       })
     });
 
@@ -91,21 +106,57 @@ export type Monomer = {
 //expected types: HELM_AA, HELM_BASE, HELM_CHEM, HELM_LINKER, HELM_SUGAR
 export interface IMonomerLib {
   getMonomer(monomerType: string, monomerName: string): Monomer | null;
+  getMonomersByType(type: string): {[symbol: string]: string} | null;
   getTypes(): string[];
   update(monomers: { [type: string]: { [name: string]: Monomer } }): void;
   get onChanged(): Observable<any>;
+}
+
+export class SeqPaletteCustom implements bio.SeqPalette {
+  private readonly _palette: { [m: string]: string };
+  constructor(palette: { [m: string]: string }) {
+    this._palette = palette;
+  }
+
+  public get(m: string): string {
+    return this._palette[m];
+  }
 }
 
 //tags: init
 export async function initBio() {
   return new Promise(async (resolve, reject) => {
     await loadLibraries();
+    let monomers: string[] = [];
+    let logPs: number[] = [];
+    const module = await grok.functions.call('Chem:getRdKitModule');
+
+    
+    const series = monomerLib!.getMonomersByType('PEPTIDE')!;
+    Object.keys(series).forEach(symbol => {
+      monomers.push(symbol);
+      const block = series[symbol].replaceAll('#R', 'O ');
+      const mol = module.get_mol(block);
+      const logP = JSON.parse(mol.get_descriptors()).CrippenClogP;
+      logPs.push(logP);
+      mol?.delete();
+    });
+
+    const sum = logPs.reduce((a, b) => a + b, 0);
+    const avg = (sum / logPs.length) || 0;
+
+    let palette: {[monomer: string]: string} = {};
+    for (let i = 0; i < monomers.length; i++) {
+      palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
+    }
+
+    hydrophobPalette = new SeqPaletteCustom(palette);
   });
 }
 
 async function loadLibraries() {
   let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
-  for (let i = 0; i < uploadedLibraries.length; ++i)
+  for (let i = 0; i < 1; ++i)
     await monomerManager(uploadedLibraries[i]);
 }
 
@@ -130,11 +181,11 @@ export async function monomerManager(value: string) {
     data = JSON.parse(file);
   }
 
-  if (monomerLib !== null)
+  if (monomerLib == null)
     monomerLib = new MonomerLib();
 
   let monomers: { [type: string]: { [name: string]: Monomer } } = {};
-  const types = monomerLib?.getTypes();
+  const types: string[] = [];
   //group monomers by their type
   data.forEach(monomer => {
     let monomerAdd: Monomer = {
@@ -152,15 +203,15 @@ export async function monomerManager(value: string) {
         monomerAdd.data[prop] = monomer[prop];
     });
     
+    if (!types.includes(monomer['polymerType'])) {
+      monomers[monomer['polymerType']] = {};
+      types.push(monomer['polymerType']);
+    } 
+
     monomers[monomer['polymerType']][monomer['symbol']] = monomerAdd;
   });
 
   monomerLib!.update(monomers);
-
-
-  
-  let grid: DG.Grid = grok.shell.tv.grid;
-  grid.invalidate();
 }
 
 //name: Manage Libraries
