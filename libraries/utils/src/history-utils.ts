@@ -8,29 +8,30 @@ import {DateOptions, FilterOptions} from './function-view';
 const getSearchStringByPattern = (datePattern: DateOptions) => {
   switch (datePattern) {
   case 'Today':
-    return ` and started > -1d`;
+    return `started > -1d`;
   case 'Yesterday':
-    return ` and started > -2d and started < -1d`;
+    return `started > -2d and started < -1d`;
   case 'Any time':
     return ``;
   case 'Last year':
-    return `and started > -2y and started < -1y`;
+    return `started > -2y and started < -1y`;
   case 'This year':
-    return ` and started > -1y`;
+    return `started > -1y`;
   case 'Last month':
-    return ` and started > -2m and started < -1m`;
+    return `started > -2m and started < -1m`;
   case 'This month':
-    return ` and started > -1m`;
+    return `started > -1m`;
   case 'Last week':
-    return ` and started > -2w and started < -1w`;
+    return `started > -2w and started < -1w`;
   case 'This week':
-    return ` and started > -1w`;
+    return `started > -1w`;
   }
 };
 
 export namespace historyUtils {
   export async function loadRun(funcCallId: string) {
-    const pulledRun = await grok.dapi.functions.calls.allPackageVersions().include('inputs, outputs').find(funcCallId);
+    const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
+      .include('inputs, outputs, session.user').find(funcCallId);
     // FIX ME: manually get script since pulledRun contains empty Func
     const script = await grok.dapi.functions.allPackageVersions().find(pulledRun.func.id);
     pulledRun.func = script;
@@ -100,21 +101,62 @@ export namespace historyUtils {
  */
   export async function pullRunsByName(
     funcName: string,
-    filterOptions: FilterOptions = {},
-    listOptions: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {}
+    filterOptions: FilterOptions[] = [],
+    listOptions: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {},
+    includedFields: string[] = []
   ): Promise<DG.FuncCall[]> {
-    let filteringString = `func.name="${funcName}"`;
-    filteringString += filterOptions.author ? ` and session.user.id="${filterOptions.author.id}"`:'';
-    filteringString += filterOptions.date ? getSearchStringByPattern(filterOptions.date): '';
-    filteringString += filterOptions.isShared ? ` and options.isShared="true"`: '';
-    filteringString += filterOptions.text ?
-      ` and ((options.title like "${filterOptions.text}") or (options.annotation like "${filterOptions.text}"))`: '';
+    let filteringString = ``;
+    for (const filterOption of filterOptions) {
+      const filterOptionCriteria = [] as string[];
+      if (filterOption.author) filterOptionCriteria.push(`session.user.id="${filterOption.author.id}"`);
+      if (filterOption.date) filterOptionCriteria.push(getSearchStringByPattern(filterOption.date));
+      if (filterOption.isShared) filterOptionCriteria.push(`options.isShared="true"`);
+      if (filterOption.text) {
+        filterOptionCriteria.push(
+          `((options.title like "${filterOption.text}") or (options.annotation like "${filterOption.text}"))`
+        );
+      }
+      const filterOptionString = filterOptionCriteria.join(' and ');
+      if (filterOptionString !== '') {
+        if (filteringString === '')
+          filteringString += `(${filterOptionString})`;
+        else
+          filteringString += ` or (${filterOptionString})`;
+      }
+    }
+    if (filteringString !== '')
+      filteringString = ` and (${filteringString})`;
+
     const result =
-      grok.dapi.functions.calls
+      await grok.dapi.functions.calls
         .allPackageVersions()
-        .filter(`(${filteringString})`)
-        .include('session.user, options')
+        .filter(`func.name="${funcName}"${filteringString}`)
+        .include(`${includedFields.join(',')}`)
         .list(listOptions);
+
+    for (const pulledRun of result) {
+      const script = await grok.dapi.functions.allPackageVersions().find(pulledRun.func.id);
+      pulledRun.func = script;
+    }
+
+    if (includedFields.includes('inputs') || includedFields.includes('func.params')) {
+      for (const pulledRun of result) {
+        const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
+          .filter((input) => input.property.propertyType === DG.TYPE.DATA_FRAME);
+        for (const input of dfInputs)
+          pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
+      }
+    }
+
+    if (includedFields.includes('outputs') || includedFields.includes('func.params')) {
+      for (const pulledRun of result) {
+        const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
+          .filter((output) => output.property.propertyType === DG.TYPE.DATA_FRAME);
+        for (const output of dfOutputs)
+          pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
+      }
+    }
+
     return result;
   }
 }
