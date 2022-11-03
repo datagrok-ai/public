@@ -15,6 +15,7 @@ import {NewickHelper} from './utils/newick-helper';
 import {TreeInGridCellApp} from './apps/tree-in-grid-cell-app';
 import {PhylocanvasGlService} from './utils/phylocanvas-gl-service';
 import {TreeHelper} from './utils/tree-helper';
+import {generateTree} from './utils/tree-generator';
 
 
 export const _package = new DG.Package();
@@ -165,8 +166,17 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
 //description: Opens Newick file
 //input: viewer grid
 //input: string newickText
-export async function injectTreeToGrid(grid: DG.Grid, newickText: string) {
-  injectTreeToGridUI(grid, newickText);
+export async function injectTreeToGrid(grid: DG.Grid, newickText: string, leafColName?: string) {
+  const colNameList: string[] = grid.dataFrame.columns.names();
+  leafColName = leafColName ??
+    grid.dataFrame.getTag('.newickLeafColumn') ??
+    colNameList.find((colName) => colName.toLowerCase() == 'node') ??
+    colNameList.find((colName) => colName.toLowerCase() == 'leaf') ??
+    colNameList.find((colName) => colName.toLowerCase() == 'id');
+  if (!leafColName)
+    throw new Error('The leaf column name can not be inferred. Specify it as an argument.');
+
+  injectTreeToGridUI(grid, newickText, leafColName!);
 }
 
 type PtvWindowType = Window & { $phylocanvasGlService?: PhylocanvasGlService };
@@ -187,4 +197,29 @@ export function getPhylocanvasGlService(): bio.PhylocanvasGlServiceBase {
 //output: object result
 export function getTreeHelper(): bio.ITreeHelper {
   return new TreeHelper();
+}
+
+//name: generateTreeDialog
+export function generateTreeDialog() {
+  const sizeInput = ui.intInput('Tree size (node count)', 10000);
+  const filenameInput = ui.stringInput('File name', 'tree-gen-10000');
+
+  return ui.dialog('Generate tree')
+    .add(ui.divV([sizeInput, filenameInput]))
+    .onOK(async () => {
+      const treeRoot: bio.NodeType = generateTree(sizeInput.value!);
+      const th = new TreeHelper();
+      const treeNwk = th.toNewick(treeRoot);
+
+      const leafList = th.getLeafList(treeRoot);
+      const leafCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Leaf',
+        leafList.map((n) => n.name));
+      const activityCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Activity',
+        leafList.map((n) => Math.random()));
+
+      const df = DG.DataFrame.fromColumns([leafCol, activityCol]);
+      await _package.files.writeAsText(filenameInput.value + '.nwk', treeNwk);
+      await _package.files.writeAsText(filenameInput.value + '.csv', df.toCsv());
+    })
+    .show();
 }

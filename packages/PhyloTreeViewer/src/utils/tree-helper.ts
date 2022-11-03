@@ -220,6 +220,11 @@ export class TreeHelper implements bio.ITreeHelper {
     node: bio.NodeType, cutHeight: number, dataDf: DG.DataFrame, leafColName: string, clusterColName: string
   ): void {
     const clusterList: bio.NodeType[] = this.treeCutAsLeaves(node, cutHeight, 0);
+
+    const clusterCol: DG.Column = dataDf.getCol(clusterColName);
+    for (let rowI = 0; rowI < clusterCol.length; rowI++)
+      clusterCol.set(rowI, 0);
+
     /* A leaf with cumulative height less than threshold
        will not be included in nor marked as cluster */
 
