@@ -1,0 +1,96 @@
+{
+    "lib1.c": {
+        "sumOfInts": {
+            "type": "int",
+            "arguments": {
+                "variables": {
+                    "a": {
+                        "type": "int",
+                        "map": "x"
+                    },
+                    "b": {
+                        "type": "int",
+                        "map": "y"
+                    }
+                },
+                "arrays": {}
+            },
+            "orderOfArguments": [
+                "a",
+                "b"
+            ],
+            "packageFunction": {
+                "name": "sumOfIntegers",
+                "export": true,
+                "input": {
+                    "x": {
+                        "type": "int",
+                        "update": null
+                    },
+                    "y": {
+                        "type": "int",
+                        "update": null
+                    }
+                },
+                "output": {
+                    "z": {
+                        "type": "int"
+                    }
+                },
+                "preambula": [
+                    "//name: sumOfIntegers",
+                    "//input: int x",
+                    "//input: int y",
+                    "//output: int z"
+                ]
+            }
+        },
+        "minOfArray": {
+            "type": "int",
+            "arguments": {
+                "variables": {
+                    "arrayLength": {
+                        "type": "int",
+                        "map": "col.length"
+                    }
+                },
+                "arrays": {
+                    "array": {
+                        "type": "int *",
+                        "map": "col",
+                        "length": null
+                    }
+                }
+            },
+            "orderOfArguments": [
+                "array",
+                "arrayLength"
+            ],
+            "packageFunction": {
+                "name": "minOfColumn",
+                "export": true,
+                "input": {
+                    "df": {
+                        "type": "dataframe",
+                        "update": null
+                    },
+                    "col": {
+                        "type": "column",
+                        "update": null
+                    }
+                },
+                "output": {
+                    "num": {
+                        "type": "int"
+                    }
+                },
+                "preambula": [
+                    "//name: minOfColumn",
+                    "//input: dataframe df",
+                    "//input: column col",
+                    "//output: int num"
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,36 @@
+{
+    "name": "eigenpca",
+    "friendlyName": "eigenPCA",
+    "version": "0.0.1",
+    "description": "",
+    "dependencies": {
+        "datagrok-api": "latest",
+        "cash-dom": "latest",
+        "dayjs": "latest",
+        "@datagrok-libraries/utils": "latest"
+    },
+    "devDependencies": {
+        "webpack": "latest",
+        "webpack-cli": "latest"
+    },
+    "scripts": {
+        "link-all": "",
+        "debug-eigenpca": "webpack && grok publish",
+        "release-eigenpca": "webpack && grok publish --release",
+        "build-eigenpca": "webpack",
+        "build": "webpack",
+        "debug-eigenpca-dev": "webpack && grok publish dev",
+        "release-eigenpca-dev": "webpack && grok publish dev --release",
+        "debug-eigenpca-public": "webpack && grok publish public",
+        "release-eigenpca-public": "webpack && grok publish public --release"
+    },
+    "canEdit": [
+        "Developers"
+    ],
+    "canView": [
+        "All users"
+    ],
+    "sources": [
+        "wasm/newLib.js"
+    ]
+}
