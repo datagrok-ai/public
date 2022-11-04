@@ -125,33 +125,31 @@ export class SeqPaletteCustom implements bio.SeqPalette {
 
 //tags: init
 export async function initBio() {
-  return new Promise(async (resolve, reject) => {
-    await loadLibraries();
-    let monomers: string[] = [];
-    let logPs: number[] = [];
-    const module = await grok.functions.call('Chem:getRdKitModule');
+  await loadLibraries();
+  let monomers: string[] = [];
+  let logPs: number[] = [];
+  const module = await grok.functions.call('Chem:getRdKitModule');
 
     
-    const series = monomerLib!.getMonomersByType('PEPTIDE')!;
-    Object.keys(series).forEach(symbol => {
-      monomers.push(symbol);
-      const block = series[symbol].replaceAll('#R', 'O ');
-      const mol = module.get_mol(block);
-      const logP = JSON.parse(mol.get_descriptors()).CrippenClogP;
-      logPs.push(logP);
-      mol?.delete();
-    });
-
-    const sum = logPs.reduce((a, b) => a + b, 0);
-    const avg = (sum / logPs.length) || 0;
-
-    let palette: {[monomer: string]: string} = {};
-    for (let i = 0; i < monomers.length; i++) {
-      palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
-    }
-
-    hydrophobPalette = new SeqPaletteCustom(palette);
+  const series = monomerLib!.getMonomersByType('PEPTIDE')!;
+  Object.keys(series).forEach(symbol => {
+    monomers.push(symbol);
+    const block = series[symbol].replaceAll('#R', 'O ');
+    const mol = module.get_mol(block);
+    const logP = JSON.parse(mol.get_descriptors()).CrippenClogP;
+    logPs.push(logP);
+    mol?.delete();
   });
+
+  const sum = logPs.reduce((a, b) => a + b, 0);
+  const avg = (sum / logPs.length) || 0;
+
+  let palette: {[monomer: string]: string} = {};
+  for (let i = 0; i < monomers.length; i++) {
+    palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
+  }
+
+  hydrophobPalette = new SeqPaletteCustom(palette);
 }
 
 async function loadLibraries() {
