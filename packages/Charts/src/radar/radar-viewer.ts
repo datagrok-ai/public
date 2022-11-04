@@ -45,7 +45,7 @@ export class RadarViewer extends DG.JsViewer {
       option.radar.indicator = [];
       const columns = this.getColumns();
       for (const c of columns) {
-        option.radar.indicator.push({name: c.name, avg: c.max});
+        option.radar.indicator.push({name: c.name, max: c.max});
       }
       this.updateMin();
       this.updateMax();
@@ -243,7 +243,7 @@ export class RadarViewer extends DG.JsViewer {
   getQuantile(columns: DG.Column<any>[], percent: number) {
     let result = [];
     for (const c of columns) {
-      let idx = Math.round(percent * (c.length + 1));
+      let idx = Math.floor(percent * c.length);
       let sortedIndexes = Array.from(c.getSortedOrder());
       result.push(c.get(sortedIndexes[idx]));
     }
