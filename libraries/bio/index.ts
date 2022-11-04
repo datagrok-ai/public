@@ -7,7 +7,7 @@ import {Aminoacids, AminoacidsPalettes} from './src/aminoacids';
 import {MonomerWorks} from './src/monomer-works';
 import {Nucleotides, NucleotidesPalettes} from './src/nucleotides';
 import {SeqPalette, SeqPaletteBase} from './src/seq-palettes';
-import {IMonomerLib, Monomer, MonomerType, NodeType, isLeaf, NodeCuttedType} from './src/types';
+import {IMonomerLib, Monomer, NodeType, isLeaf, NodeCuttedType} from './src/types';
 import {UnknownSeqPalette, UnknownSeqPalettes} from './src/unknown';
 import {DrawStyle, printLeftOrCentered} from './src/utils/cell-renderer';
 import {FastaFileHandler} from './src/utils/fasta-handler';
@@ -106,7 +106,6 @@ export {
 
   Monomer,
   IMonomerLib,
-  MonomerType,
   getMonomerLib,
   MonomerWorks,
 };
