@@ -20,27 +20,20 @@ export interface NodeCuttedType extends NodeType {
 }
 
 export type Monomer = {
-  //R groups
-  at: { [R: string]: string },
-  //monomer abbreviation
-  id: string,
-  //mol file with explicit Rs
-  m: string,
-  //monomer full name
-  n: string,
-  //natural analog, if no -'rs'
-  na: string,
-  //number of Rs
-  rs: number;
-}
+  symbol: string,
+  name: string,
+  naturalAnalog: string,
+  molfile: string,
+  polymerType: string,
+  monomerType: string,
+  rgroups: {capGroupSmiles: string, alternateId: string, capGroupName: string, label: string }[],
+  data: {[property: string]: any}
+};
 
-export type MonomerType = 'HELM_AA' | 'HELM_BASE' | 'HELM_CHEM' | 'HELM_LINKER' | 'HELM_SUGAR';
-//expected types: HELM_AA, HELM_BASE, HELM_CHEM, HELM_LINKER, HELM_SUGAR
 export interface IMonomerLib {
-  get(monomerType: MonomerType, monomerName: string): Monomer | null;
-
-  get types(): MonomerType[];
-
-  // TODO:
+  getMonomer(monomerType: string, monomerName: string): Monomer | null;
+  getMonomersByType(type: string): {[symbol: string]: string} | null;
+  getTypes(): string[];
+  update(monomers: { [type: string]: { [name: string]: Monomer } }): void;
   get onChanged(): Observable<any>;
 }
