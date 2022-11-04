@@ -15,7 +15,7 @@ category('Viewers: Form', () => {
   });
 
   
-  test('Form.visual', async () => {
+  test('form.visual', async () => {
     const formIcon = document.getElementsByClassName('svg-form')[0] as HTMLElement;
     await formIcon.click();
     isViewerPresent(Array.from(tv.viewers), 'Form');
@@ -61,6 +61,39 @@ category('Viewers: Form', () => {
       (cb as HTMLElement).click();
       await delay(10);
     }
+  });
+
+
+  test('form.api', async () => {
+    const form = tv.form({
+      title: 'SuperTitle',
+      description: 'SuperDescription'
+    });
+    await delay(100);
+    
+    if (form.props.title != 'SuperTitle')
+      throw 'title has not been set';
+    if (form.props.description != 'SuperDescription')
+      throw 'description has not been set';
+  
+    const titleElem = document.querySelector("#elementContent .d4-viewer-title > textarea") as HTMLTextAreaElement;
+    const descElem = document.querySelector("#elementContent .d4-viewer-description p") as HTMLElement;
+    
+    if (titleElem.value != 'SuperTitle')
+      throw 'title property has not been set'
+    if (descElem.innerHTML != 'SuperDescription')
+      throw 'description property has not been set'     
+  });
+
+
+  test('form.serialization', async () => {
+    tv.form();
+    await delay(100);
+    const layout = tv.saveLayout();
+    tv.resetLayout();
+    tv.loadLayout(layout);
+    await delay(100);
+    isViewerPresent(Array.from(tv.viewers), 'Form');    
   });
 
 
