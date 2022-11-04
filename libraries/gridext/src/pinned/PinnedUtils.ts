@@ -203,7 +203,7 @@ export function isPinnableColumn(colGrid : DG.GridColumn) : boolean {
   }
 
   //temporary disable to allow de-serialization from layout if(grid.canvas.offsetWidth <= colGrid.width) {
-    //return false;
+  //return false;
   //}
 
   if(colGrid.cellType === "html") {
@@ -223,7 +223,7 @@ export function registerPinnedColumns() {
   if(PINNED_COLUMNS_REGISTERED)
     return;
 
-   grok.events.onContextMenu.subscribe((args : any) => {
+  grok.events.onContextMenu.subscribe((args : any) => {
     PinnedUtils.handleContextMenu(args, (menu : DG.Menu, colGridOrPinned : DG.GridColumn | PinnedColumn,
                                          grid : DG.Grid) => {
       if (colGridOrPinned instanceof PinnedColumn) {

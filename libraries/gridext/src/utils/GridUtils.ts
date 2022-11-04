@@ -34,7 +34,7 @@ export function getToolIconDiv(grid : DG.Grid) : HTMLElement | null {
     if(eDivHamb == null)
       return null;
 
-    if(eDivHamb?.getAttribute('column_name') !== null){//'data') === 'ColHamb') {
+    if(eDivHamb?.getAttribute('column_name') !== null) {//'data') === 'ColHamb') {
       eParent = eDivHamb.parentElement;
       while(eParent !== null) {
         if(eParent === grid.root)
@@ -42,7 +42,7 @@ export function getToolIconDiv(grid : DG.Grid) : HTMLElement | null {
 
         eParent = eParent.parentElement;
       }
-     }
+    }
   }
   return null;
 }
@@ -133,7 +133,7 @@ export function getGridRowHeight(grid : DG.Grid) : number {
 export function getGridVisibleRowCount(grid : DG.Grid) : number {
   const dframe = grid.dataFrame;
   const bitsetFilter = dframe.filter;
-  const nRowCount = bitsetFilter.trueCount;// + Array.from(grid.pinnedRows).length;
+  const nRowCount = bitsetFilter.trueCount + Array.from(grid.pinnedRows).length;
   //my changes pinned rows const nRowCount = bitsetFilter.trueCount + Array.from(grid.pinnedRows).length;
   return nRowCount;
 }
