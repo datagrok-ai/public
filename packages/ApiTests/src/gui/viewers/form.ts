@@ -17,7 +17,8 @@ category('Viewers: Form', () => {
   
   test('form.visual', async () => {
     const formIcon = document.getElementsByClassName('svg-form')[0] as HTMLElement;
-    await formIcon.click();
+    formIcon.click();
+    await waitForElement('.d4-form', 'cannot find Form');
     isViewerPresent(Array.from(tv.viewers), 'Form');
 
     const form = document.querySelector('[name=viewer-Form]') as HTMLElement;
@@ -69,7 +70,7 @@ category('Viewers: Form', () => {
       title: 'SuperTitle',
       description: 'SuperDescription'
     });
-    await delay(100);
+    await waitForElement('.d4-form', 'cannot find Form');
     
     if (form.props.title != 'SuperTitle')
       throw 'title has not been set';
@@ -88,11 +89,11 @@ category('Viewers: Form', () => {
 
   test('form.serialization', async () => {
     tv.form();
-    await delay(100);
+    await waitForElement('.d4-form', 'cannot find Form');
     const layout = tv.saveLayout();
     tv.resetLayout();
     tv.loadLayout(layout);
-    await delay(100);
+    await waitForElement('.d4-form', 'cannot find Form');
     isViewerPresent(Array.from(tv.viewers), 'Form');    
   });
 
