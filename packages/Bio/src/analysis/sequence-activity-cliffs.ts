@@ -10,6 +10,7 @@ import {TAGS} from '../utils/constants';
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import * as C from '../utils/constants';
 import { GridColumn } from 'datagrok-api/dg';
+import { invalidateMols, MONOMERIC_COL_TAGS } from '../substructure-search/substructure-search';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
@@ -37,6 +38,23 @@ export async function getSimilaritiesMarix(dim: number, seqCol: DG.Column, df: D
     simArr[i] = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances', distances[i]);
   }
   return simArr;
+}
+
+export async function getChemSimilaritiesMarix(dim: number, seqCol: DG.Column,
+  df: DG.DataFrame, colName: string, simArr: DG.Column[])
+  : Promise<DG.Column[]> {
+  if (seqCol.version !== seqCol.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
+    await invalidateMols(seqCol, false);
+  const fpDf = DG.DataFrame.create(seqCol.length);
+  fpDf.columns.addNewString(colName).init((i) => seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS].get(i));
+  const res = await grok.functions.call('Chem:getChemSimilaritiesMatrix', {
+    dim: dim,
+    col: seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS],
+    df: fpDf,
+    colName: colName,
+    simArr: simArr
+  });
+  return res;
 }
 
 export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivElement {

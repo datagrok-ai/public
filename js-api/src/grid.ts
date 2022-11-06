@@ -748,6 +748,12 @@ export class Grid<TSettings = any> extends Viewer<TSettings> {
     return this;
   }
 
+  /** Pinned rows.
+   *  @returns {Iterable<number>} */
+  get pinnedRows(): Iterable<number> {
+    return _toIterable(api.grok_Grid_Get_PinnedRows(this.dart));
+  }
+
   /** Returns a grid cell at the specified position.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/scroll-to-cell}
    */
@@ -807,6 +813,7 @@ export class Grid<TSettings = any> extends Viewer<TSettings> {
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows} */
   get onRowsSorted(): Observable<any> { return __obs('d4-grid-rows-sorted', this.dart); }
+  get onPinnedRowsChanged(): Observable<any> { return __obs('d4-grid-pinned_rows-changed', this.dart); }
 
   get onCellValueEdited(): Observable<GridCell> { return __obs('d4-grid-cell-value-edited', this.dart); }
   get onCurrentCellChanged(): Observable<GridCell> { return __obs('d4-grid-current-cell-changed', this.dart); }

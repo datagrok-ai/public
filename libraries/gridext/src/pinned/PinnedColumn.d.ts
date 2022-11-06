@@ -19,6 +19,8 @@ export declare class PinnedColumn {
     private m_handlerSel;
     private m_handlerRowsResized;
     private m_handlerRowsSorted;
+    private m_handlerPinnedRowsChanged;
+    private m_handlerColorCoding;
     private m_nHResizeRowsBeforeDrag;
     private m_nResizeRowGridDragging;
     private m_nYResizeDraggingAnchor;

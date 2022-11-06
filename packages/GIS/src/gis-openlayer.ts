@@ -18,37 +18,33 @@ import VectorSource from 'ol/source/Vector';
 import Collection from 'ol/Collection';
 //Projections working itilities
 import * as OLProj from 'ol/proj';
-import { useGeographic } from 'ol/proj';
 import { Coordinate } from 'ol/coordinate';
 //geometry drawing funtions
-import * as OLGeometry from 'ol/geom/Geometry';
-import { Type as OLType } from 'ol/geom/Geometry';
-import * as OLPolygon from 'ol/geom/Polygon';
-//@type {import("../proj/Projection.js").default|undefined}
 import Feature, {FeatureLike} from 'ol/Feature';
-// import * as OLFeature from 'ol/Feature';
-// import Point from 'ol/geom/Point';
 import * as OLGeom from 'ol/geom';
+import { Type as OLType } from 'ol/geom/Geometry';
 import * as OLStyle from 'ol/style';
 import {LiteralStyle} from 'ol/style/literal';
 //Sources import
 import OSM from 'ol/source/OSM';
 import BingMaps from 'ol/source/BingMaps';
-import Style, { StyleLike } from 'ol/style/Style';
+import { StyleLike } from 'ol/style/Style';
 //import interactions and events
-// import {DragAndDrop, defaults as defaultInteractions} from 'ol/interaction';
 import * as OLInteractions from 'ol/interaction';
 import * as OLEvents from 'ol/events';
 import * as OLEventsCondition from 'ol/events/condition';
+import { stopPropagation } from 'ol/events/Event';
+
+import LayerRenderer from 'ol/renderer/Layer';
 
 //import processors
 import { GPX, GeoJSON, IGC, KML, TopoJSON } from 'ol/format';
 import Source from 'ol/source/Source';
 import { Attribution, defaults as defaultControls } from 'ol/control';
+
 //ZIP utilities
-import JSZip from 'jszip';
-import { stopPropagation } from 'ol/events/Event';
-import LayerRenderer from 'ol/renderer/Layer';
+import JSZip, { forEach } from 'jszip';
+import { zoomByDelta } from 'ol/interaction/Interaction';
 
 export { Coordinate } from 'ol/coordinate';
 
@@ -172,6 +168,8 @@ export class OpenLayers {
   minFieldSize: number = 0;
   maxFieldSize: number = 100;
   useSizeField: boolean = false;
+  colorCodingType: DG.ColorCodingType = DG.COLOR_CODING_TYPE.OFF;
+  colorCodingData: string = '';
 
   constructor(gV?: GisViewer) {
     this.olMap = new OLMap({});
@@ -341,7 +339,8 @@ export class OpenLayers {
     //   if (geom?.getType() === 'Point')
     //     res.features.push(ft);
     // }); //<<for each feature
-    //the way commented is too slow (but in case of oushing the whole array there is a risk to push not only Points)
+    //<<the way commented above is too slow
+    //(but in case of pushing the whole array there is a risk to push not only Points)
     res.features.push(...sel.getArray());
     if (this.olMarkersSelLayerGL) {
       this.clearLayer(this.olMarkersSelLayerGL);
@@ -353,25 +352,102 @@ export class OpenLayers {
       this.onSelectCallback(res);
   }
 
-  prepareGLStyle(sizeval?: number, colorval?: string | number, opaval?: number, symbolval?: string): LiteralStyle {
-    //prepare color value:
+  parseColorCondition(condStr: string): (any)[] {
+    const resArr: (any)[] = [];
+    // const regExp = /(\d*\.\d*|\d*|\D*)/ig;
+    let numbersRes = condStr.replace(/\s/g, '').match(/(\d*\.\d*|\d*)/ig);
+    let symbolsRes = condStr.replace(/\s/g, '').match(/\D*/ig);
+    if (!numbersRes || !symbolsRes)
+      return resArr;
+
+    numbersRes = numbersRes.filter( (e) => ((e != '') && (e != ' ')) );
+    symbolsRes = symbolsRes.filter( (e) => ((e != '') && (e != ' ')) );
+
+    if ((symbolsRes[0] === '>') || (symbolsRes[0] === '>=') ||
+     (symbolsRes[0] === '<') || (symbolsRes[0] === '<=')) {
+      resArr.push(symbolsRes[0]);
+      resArr.push(['get', 'fieldColor']);
+      resArr.push(parseFloat(numbersRes[0]));
+    } else if ((symbolsRes[0] === '=') || (symbolsRes[0] === '==')) {
+      resArr.push('==');
+      resArr.push(['get', 'fieldColor']);
+      resArr.push(parseFloat(numbersRes[0]));
+    } else {
+      resArr.push('between');
+      resArr.push(['get', 'fieldColor']);
+      resArr.push(parseFloat(numbersRes[0]));
+      resArr.push(parseFloat(numbersRes[numbersRes.length-1]));
+    }
+
+    return resArr;
+  }
+
+  prepareGLStyle(sizeval?: number, colorval?: string | number,
+    opaval?: number, symbolval?: string, applyfilter: boolean = true): LiteralStyle {
+    //
     let colorValue: any;
     let sizeValue: any;
-    let minColor = '#0000ff';
-    let maxColor = '#ff0000';
+    const minColor = toStringColor(this.markerMinColor, this.markerOpacity); //'#0000ff';
+    const maxColor = toStringColor(this.markerMaxColor, this.markerOpacity); //'#ff0000';
+    let colorsArray: (any)[] = [];
 
     if (typeof colorval !== 'undefined') {
       if (typeof colorval === 'string')
         colorValue = colorval;
       else
         colorValue = toStringColor(colorval, this.markerOpacity);
-    } else if (this.useColorField === false)
+    } else if (this.useColorField === false) {
+      //if color coding field doesn't assigned - we use marker defaultColor for all markers
       colorValue = toStringColor(this.defaultColor, this.markerOpacity);
-    else {
-      colorValue = ['interpolate', ['linear'], ['get', 'fieldColor'],
-        this.minFieldColor, minColor, this.maxFieldColor, maxColor];
-      // this.minFieldColor, this.markerMinColor, this.maxFieldColor, this.markerMaxColor];
+    } else {
+      colorValue = ['interpolate', ['linear'], ['get', 'fieldColor']]; //for linear style and for wrong colorCodingData
+      //the code below create color coding for LINEAR, CONDITIONAL, CATEGORICAL color shemes from column>>
+      if (this.colorCodingData?.length > 0) {
+        const parsedColors = JSON.parse(this.colorCodingData);
+        if (this.colorCodingType === DG.COLOR_CODING_TYPE.LINEAR) { //Linear color coding
+          if (parsedColors.length > 1) {
+            const interval = Math.abs(this.maxFieldColor - this.minFieldColor) / (parsedColors.length - 1);
+            for (let i = 0; i < parsedColors.length; i++) {
+              colorsArray.push((this.minFieldColor + (interval * i)));
+              colorsArray.push(toStringColor(parsedColors[i], this.markerOpacity));
+            }
+          } else
+            colorsArray = [this.minFieldColor, minColor, this.maxFieldColor, maxColor];
+        } else if (this.colorCodingType === DG.COLOR_CODING_TYPE.CONDITIONAL) {
+          //Conditional color coding
+          colorValue = ['case'];
+          for (const key in parsedColors) {
+            if (parsedColors.hasOwnProperty(key)) {
+              const parsedCondition = this.parseColorCondition(key);
+              if (!parsedCondition.length)
+                continue;
+              colorsArray.push(parsedCondition);
+              colorsArray.push(parsedColors[key]);
+            }
+          }
+          colorsArray.push(toStringColor(this.markerMinColor, this.markerOpacity)); //fallback value
+        } else if (this.colorCodingType === DG.COLOR_CODING_TYPE.CATEGORICAL) {
+          //Cathegorical color coding
+          colorValue = ['match', ['get', 'fieldColor']];
+          for (const key in parsedColors) {
+            if (parsedColors.hasOwnProperty(key)) {
+              colorsArray.push(key);
+              colorsArray.push(toStringColor(parsedColors[key], this.markerOpacity));
+            }
+          }
+          colorsArray.push(toStringColor(this.defaultColor, this.markerOpacity)); //fallback value
+        }
+      } else //if color coding string is empty - we use default pattern
+        colorsArray = [this.minFieldColor, minColor, this.maxFieldColor, maxColor];
+
+      //prepare final color coding string
+      colorValue = colorValue.concat(colorsArray);
+      // alert(colorValue);
     }
+    //OLD simple color coding approach>>
+    // colorValue = ['interpolate', ['linear'], ['get', 'fieldColor'],
+    //   this.minFieldColor, minColor, this.maxFieldColor, maxColor];
+    //// this.minFieldColor, this.markerMinColor, this.maxFieldColor, this.markerMaxColor];
 
     if (typeof sizeval !== 'undefined')
       sizeValue = sizeval;
@@ -382,10 +458,27 @@ export class OpenLayers {
         this.minFieldSize, this.markerMinSize, this.maxFieldSize, this.markerMaxSize];
     }
 
+    //TODO: remove this temp code>>
+    const arrayOfFilteredRows = [];
+    for (let i = 0; i < 150; i++) {
+      arrayOfFilteredRows.push(i.toString());
+      arrayOfFilteredRows.push(true);
+    }
+    //<<TODO: remove this temp code
+
+    // const filterValue = ['match', ['get', 'fieldIndex'], ...arrayOfFilteredRows, false];
+    // const filterValue = ['match', ['get', 'filtered'], 1, false, true];
+    // const filterValue = ['==', ['get', 'filterFlag'], 'true'];
+    let filterValue: any = true;
+    if (applyfilter)
+      filterValue = ['>', ['get', 'filtered'], 0];
+
     const markerGLStyle = {
       // variables: {
       //   minVal: 0,
       // },
+      filter: filterValue,
+      // filter: true,
       symbol: {
         symbolType: symbolval? symbolval : 'circle',
         size: sizeValue,
@@ -396,41 +489,41 @@ export class OpenLayers {
     return markerGLStyle as LiteralStyle;
   }
 
-  updateMarkersGLLayer() {
+  updateMarkersGLLayer(recreate: boolean = true) {
     this.markerGLStyle = this.prepareGLStyle();
-    this.markerGLSelStyle = this.prepareGLStyle(undefined, this.selectedColor, 0.9);
+    this.markerGLSelStyle = this.prepareGLStyle(undefined, this.selectedColor, 0.9, undefined, false);
 
-    let previousLayer = this.olMarkersLayerGL;
-    let src = this.olMarkersLayerGL?.getSource();
-    this.olMarkersLayerGL = new WebGLPointsLayer({
-      source: src ? src : this.olMarkersSource, //new VectorSource<OLGeom.Point>(),
-      style: this.markerGLStyle,
-    });
-    this.olMarkersLayerGL.set('layerName', 'Markers GL');
-    this.addLayer(this.olMarkersLayerGL);
+    if (recreate) {
+      let previousLayer = this.olMarkersLayerGL;
+      let src = this.olMarkersLayerGL?.getSource();
+      this.olMarkersLayerGL = new WebGLPointsLayer({
+        source: src ? src : this.olMarkersSource,
+        style: this.markerGLStyle,
+      });
+      this.olMarkersLayerGL.set('layerName', 'Markers GL');
+      this.addLayer(this.olMarkersLayerGL);
 
-    if (previousLayer) {
-      this.olMap.removeLayer(previousLayer);
-      previousLayer.dispose();
-    }
-    //prepare markers selection layer
-    previousLayer = this.olMarkersSelLayerGL;
-    src = this.olMarkersSelLayerGL?.getSource();
-    // const tstft = src?.getFeatures();
-    // alert(tstft?.length);
-    this.olMarkersSelLayerGL = new WebGLPointsLayer({
-      source: src ? src : this.olMarkersSelSource, //new VectorSource<OLGeom.Point>(),
-      style: this.markerGLSelStyle,
-      zIndex: 100,
-    });
-    this.olMarkersSelLayerGL.set('layerName', 'Markers GL Selection');
-    this.addLayer(this.olMarkersSelLayerGL);
-    this.olMarkersSelLayerGL.setZIndex(100);
+      if (previousLayer) {
+        this.olMap.removeLayer(previousLayer);
+        previousLayer.dispose();
+      }
+      //prepare markers selection layer
+      previousLayer = this.olMarkersSelLayerGL;
+      src = this.olMarkersSelLayerGL?.getSource();
+      this.olMarkersSelLayerGL = new WebGLPointsLayer({
+        source: src ? src : this.olMarkersSelSource,
+        style: this.markerGLSelStyle,
+        zIndex: 100,
+      });
+      this.olMarkersSelLayerGL.set('layerName', 'Markers GL Selection');
+      this.addLayer(this.olMarkersSelLayerGL);
+      this.olMarkersSelLayerGL.setZIndex(100);
 
-    if (previousLayer) {
-      this.olMap.removeLayer(previousLayer);
-      previousLayer.dispose();
-    }
+      if (previousLayer) {
+        this.olMap.removeLayer(previousLayer);
+        previousLayer.dispose();
+      }
+    } //<<if recreate
   }
 
   getFeatureStyleFn(feature: Feature): OLStyle.Style {
@@ -660,7 +753,7 @@ export class OpenLayers {
   }
 
   getFeaturesFromLayer(layer: VectorLayer<VectorSource>): any[] {
-    const arrFeatures: Feature[] = []; //any[]
+    const arrFeatures: Feature[] = [];
     const src = layer.getSource();
     if (!src)
       return [];
@@ -689,7 +782,7 @@ export class OpenLayers {
   }
 
   //map marker style function>>
-  genStyleMarker(feature: FeatureLike, resolution: number): Style {
+  genStyleMarker(feature: FeatureLike, resolution: number): OLStyle.Style {
     let val = feature.get('fieldLabel');
     const size = feature.get('fieldSize');
     const clr = feature.get('fieldColor');
@@ -768,13 +861,13 @@ export class OpenLayers {
       features: arrFeatures,
     };
 
-    OLG.olMap.forEachFeatureAtPixel(evt.pixel, function(feature) {
+    this.olMap.forEachFeatureAtPixel(evt.pixel, function(feature) {
       arrFeatures.push(feature);
     });
     if (arrFeatures.length > 0) {
       const ft = arrFeatures[0];
       const gisObj = OpenLayers.gisObjFromGeometry(ft);
-      if (gisObj) { 
+      if (gisObj) {
         //here we can invoke properties panel for our selected object (but comment it for now)
         // setTimeout(() => {
         //   // grok.shell.o = DG.SemanticValue.fromValueType(gisObj, gisObj.semtype);
@@ -855,7 +948,7 @@ export class OpenLayers {
     const strCol = toStringColor(colorVal, this.markerOpacity);
     if (aLayer) {
       const marker = new Feature(new OLGeom.Point(OLProj.fromLonLat(coord)));
-      // const style = new Style({
+      // const style = new OLStyle.Style({
       //   image: new OLStyle.Circle({
       //     radius: sizeVal,
       //     fill: new OLStyle.Fill({
@@ -872,6 +965,7 @@ export class OpenLayers {
       marker.set('fieldColor', colorVal);
       marker.set('fieldLabel', labelVal);
       marker.set('fieldIndex', indexVal);
+      marker.set('filtered', 1);
 
       const src = aLayer.getSource();
       if (src)

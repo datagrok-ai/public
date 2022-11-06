@@ -6,6 +6,7 @@ import {map} from '../structures-works/map';
 import {MODIFICATIONS} from '../structures-works/const';
 import {sequenceToSmiles, sequenceToMolV3000} from '../structures-works/from-monomers';
 import $ from 'cash-dom';
+import {download} from '../helpers';
 
 const defaultInput = 'fAmCmGmAmCpsmU'; // todo: capitalize constants
 const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into constants
@@ -66,20 +67,6 @@ export async function mainView(): Promise<HTMLDivElement> {
         });
       }
 
-      if (errorsExist) {
-        const synthesizer = JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer.slice(0, -6);
-        asoGapmersGrid.onCellPrepare(function(gc) {
-          gc.style.backColor = (gc.gridColumn.name == synthesizer) ? 0xFFF00000 : 0xFFFFFFFF;
-        });
-        omeAndFluoroGrid.onCellPrepare(function(gc) {
-          gc.style.backColor = (gc.gridColumn.name == synthesizer) ? 0xFFF00000 : 0xFFFFFFFF;
-        });
-        switchInput.enabled = true;
-      } else {
-        asoGapmersGrid.onCellPrepare(function(gc) {gc.style.backColor = 0xFFFFFFFF;});
-        omeAndFluoroGrid.onCellPrepare(function(gc) {gc.style.backColor = 0xFFFFFFFF;});
-      }
-
       outputTableDiv.append(
         ui.div([
           DG.HtmlTable.create(tableRows, (item: { key: string; value: string; }) =>
@@ -126,27 +113,24 @@ export async function mainView(): Promise<HTMLDivElement> {
     updateTableAndMolecule(sequence, inputFormatChoiceInput.value!);
   });
 
-  const asoDf = DG.DataFrame.fromObjects([
-    {'Name': '2\'MOE-5Me-rU', 'BioSpring': '5', 'Janssen GCRS': 'moeT'},
-    {'Name': '2\'MOE-rA', 'BioSpring': '6', 'Janssen GCRS': 'moeA'},
-    {'Name': '2\'MOE-5Me-rC', 'BioSpring': '7', 'Janssen GCRS': 'moe5mC'},
-    {'Name': '2\'MOE-rG', 'BioSpring': '8', 'Janssen GCRS': 'moeG'},
-    {'Name': '5-Methyl-dC', 'BioSpring': '9', 'Janssen GCRS': '5mC'},
-    {'Name': 'ps linkage', 'BioSpring': '*', 'Janssen GCRS': 'ps'},
-    {'Name': 'dA', 'BioSpring': 'A', 'Janssen GCRS': 'A, dA'},
-    {'Name': 'dC', 'BioSpring': 'C', 'Janssen GCRS': 'C, dC'},
-    {'Name': 'dG', 'BioSpring': 'G', 'Janssen GCRS': 'G, dG'},
-    {'Name': 'dT', 'BioSpring': 'T', 'Janssen GCRS': 'T, dT'},
-    {'Name': 'rA', 'BioSpring': '', 'Janssen GCRS': 'rA'},
-    {'Name': 'rC', 'BioSpring': '', 'Janssen GCRS': 'rC'},
-    {'Name': 'rG', 'BioSpring': '', 'Janssen GCRS': 'rG'},
-    {'Name': 'rU', 'BioSpring': '', 'Janssen GCRS': 'rU'},
-  ])!;
-  const asoGapmersGrid = DG.Viewer.grid(asoDf, {showRowHeader: false, showCellTooltip: false});
-
-  asoDf.onCurrentCellChanged.subscribe((_) => {
-    navigator.clipboard.writeText(asoDf.currentCell.value).then(() => grok.shell.info('Copied'));
-  });
+  const asoGapmersGrid = DG.Viewer.grid(
+    DG.DataFrame.fromObjects([
+      {'Name': '2\'MOE-5Me-rU', 'BioSpring': '5', 'Janssen GCRS': 'moeT'},
+      {'Name': '2\'MOE-rA', 'BioSpring': '6', 'Janssen GCRS': 'moeA'},
+      {'Name': '2\'MOE-5Me-rC', 'BioSpring': '7', 'Janssen GCRS': 'moe5mC'},
+      {'Name': '2\'MOE-rG', 'BioSpring': '8', 'Janssen GCRS': 'moeG'},
+      {'Name': '5-Methyl-dC', 'BioSpring': '9', 'Janssen GCRS': '5mC'},
+      {'Name': 'ps linkage', 'BioSpring': '*', 'Janssen GCRS': 'ps'},
+      {'Name': 'dA', 'BioSpring': 'A', 'Janssen GCRS': 'A, dA'},
+      {'Name': 'dC', 'BioSpring': 'C', 'Janssen GCRS': 'C, dC'},
+      {'Name': 'dG', 'BioSpring': 'G', 'Janssen GCRS': 'G, dG'},
+      {'Name': 'dT', 'BioSpring': 'T', 'Janssen GCRS': 'T, dT'},
+      {'Name': 'rA', 'BioSpring': '', 'Janssen GCRS': 'rA'},
+      {'Name': 'rC', 'BioSpring': '', 'Janssen GCRS': 'rC'},
+      {'Name': 'rG', 'BioSpring': '', 'Janssen GCRS': 'rG'},
+      {'Name': 'rU', 'BioSpring': '', 'Janssen GCRS': 'rU'},
+    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false},
+  );
 
   const omeAndFluoroGrid = DG.Viewer.grid(
     DG.DataFrame.fromObjects([
@@ -159,13 +143,13 @@ export async function mainView(): Promise<HTMLDivElement> {
       {'Name': '2\'OMe-rC', 'BioSpring': '7', 'Axolabs': 'c', 'Janssen GCRS': 'mC'},
       {'Name': '2\'OMe-rG', 'BioSpring': '8', 'Axolabs': 'g', 'Janssen GCRS': 'mG'},
       {'Name': 'ps linkage', 'BioSpring': '*', 'Axolabs': 's', 'Janssen GCRS': 'ps'},
-    ])!, {showRowHeader: false, showCellTooltip: false},
+    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false},
   );
 
   const overhangModificationsGrid = DG.Viewer.grid(
-    DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
-    ])!, {showRowHeader: false, showCellTooltip: false},
+      DG.DataFrame.fromColumns([
+        DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
+      ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false},
   );
   updateTableAndMolecule(defaultInput, inputFormatChoiceInput.value!);
 
@@ -193,28 +177,31 @@ export async function mainView(): Promise<HTMLDivElement> {
     $(codesTablesDiv).hide(),
   );
 
+  const downloadMolFileIcon = ui.iconFA('download', async () => {
+    const clearSequence = inputSequenceField.value.replace(/\s/g, '');
+    const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
+    const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false,
+      inputFormatChoiceInput.value!, monomersLib);
+    download(clearSequence + '.mol', encodeURIComponent(result));
+  }, 'Save .mol file');
+
+  const copySmilesIcon = ui.iconFA('copy', () => {
+    navigator.clipboard.writeText(
+      sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''), false, inputFormatChoiceInput.value!),
+    ).then(() => grok.shell.info(sequenceWasCopied));
+  }, 'Copy SMILES');
+
   const topPanel = [
-    ui.iconFA('download', async () => {
-      const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
-      const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false,
-        inputFormatChoiceInput.value!, monomersLib);
-      const element = document.createElement('a');
-      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
-      element.setAttribute('download', inputSequenceField.value.replace(/\s/g, '') + '.mol');
-      element.click();
-    }, 'Save .mol file'),
-    ui.iconFA('copy', () => {
-      navigator.clipboard.writeText(
-        sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''), false, inputFormatChoiceInput.value!))
-        .then(() => grok.shell.info(sequenceWasCopied));
-    }, 'Copy SMILES'),
+    downloadMolFileIcon,
+    copySmilesIcon,
     switchInput.root,
   ];
 
   const v = grok.shell.v;
   const tabControl = grok.shell.sidebar;
-  tabControl.onTabChanged.subscribe((_) =>
-    v.setRibbonPanels([(tabControl.currentPane.name == 'MAIN') ? topPanel : []]));
+  tabControl.onTabChanged.subscribe((_) => {
+    v.setRibbonPanels([(tabControl.currentPane.name == 'MAIN') ? topPanel : []])
+  });
   v.setRibbonPanels([topPanel]);
 
   return ui.box(

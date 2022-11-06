@@ -2,6 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as bio from '@datagrok-libraries/bio';
+import * as u from '@datagrok-libraries/utils';
+
+import {PickingInfo} from '@deck.gl/core/typed';
+import {TooltipContent} from '@deck.gl/core/typed/lib/tooltip';
+import {Rect} from '@deck.gl/core/typed/passes/layers-pass';
 
 // //@ts-ignore
 // const oldInit = bio.PhylocanvasGL.prototype.init;
@@ -11,29 +16,32 @@ import * as bio from '@datagrok-libraries/bio';
 // };
 
 export class TreeInGridCellApp {
+  private phylocanvasGlSvc: bio.PhylocanvasGlServiceBase | null = null;
+
   private view: DG.TableView | null = null;
 
   private _df: DG.DataFrame;
   get df(): DG.DataFrame { return this._df; }
 
   async init(): Promise<void> {
+    this.phylocanvasGlSvc = await bio.getPhylocanvasGlService();
     await this.loadData();
   }
 
   async loadData(): Promise<void> {
     const csv: string = `id,TREE
-0,"(a:1.0,b:0.7)ab:0.2;"
-1,"((a:1.,b:0.6)ab:0.2,c:1.2);"
-2,"((a:1.,b:0.6)ab:0.2,c:1.2)abc:0.1;"
-3,"((a:1.,b:0.6)ab:0.2,(c:1.2,d:0.3)abc:0.1;"
-4,"(a:1.0,b:0.7)ab:0.2;"
-5,"((a:1.,b:0.6)ab:0.2,c:1.2);"
-6,"((a:1.,b:0.6)ab:0.2,c:1.2)abc:0.1;"
-7,"((a:1.,b:0.6)ab:0.2,(c:1.2,d:0.3)abc:0.1;"
-8,"(a:1.0,b:0.7)ab:0.2;"
-9,"((a:1.,b:0.6)ab:0.2,c:1.2);"
-10,"((a:1.,b:0.6)ab:0.2,c:1.2)abc:0.1;"
-11,"((a:1.,b:0.6)ab:0.2,(c:1.2,d:0.3)abc:0.1;"
+0,"(a:1.0,b:1.0);","text of tree zero size" 
+1,"(a:1.0);","tree with one leaf"
+2,"(a:1.0,b:1.4);","two leaves in tree"
+3,"((a:1.0,b:1.2)ab:0.2,c:1.0);", "tree of three leaves and one internal node"
+4,"((a:1.0,b:1.2)ab:0.2,(c:0.6,d:1.3)cd:0.1);","some text for four leaves"
+5,"(((a:1.0,b:1.2)ab:0.2,(c:0.6,d:1.3)cd:0.1)abcd:0.4,e:0.8);","I was too lazy to invent text here"
+6,"(((a:1.0,b:1.2)ab:0.2,(c:0.6,d:1.3)cd:0.1)abcd:0.4,(e:0.8,f:0.6)ef:0.4);","short text for large tree"
+7,"((a:1.,b:0.6)ab:0.2,(c:1.2,d:0.3)cd:0.1)abcd:0.1;","text7"
+8,"(a:1.0,b:0.7)ab:0.2;", "text8"
+9,"((a:1.,b:0.6)ab:0.2,c:1.2);","text9"
+10,"((a:1.,b:0.6)ab:0.2,(c:0.2,d:0.3)cd:0.1);","text10"
+11,"((a:1.,b:0.6)ab:0.2,(c:1.2,d:0.3)cd:0.1)abcd:0.1;","text11"
 `;
     const df = DG.DataFrame.fromCsv(csv);
 
@@ -60,9 +68,9 @@ export class TreeInGridCellApp {
   async buildView(): Promise<void> {
     if (!this.view) {
       this.view = grok.shell.addTableView(this.df);
-      this.view.path = '/apps/PhyloTreeViewer/TreeInGridCell';
+      this.view.path = this.view.basePath = '/apps/PhyloTreeViewer/TreeInGridCell';
 
-      this.view.grid.props.rowHeight = 120;
+      this.view.grid.props.rowHeight = 150;
       const treeGCol: DG.GridColumn = this.view.grid.columns.byName('TREE')!;
       treeGCol.width = 300;
       this.view.grid.onCellRender.subscribe(this.gridOnCellRender.bind(this));
@@ -75,89 +83,41 @@ export class TreeInGridCellApp {
     const gCell = args.cell;
     if (
       gCell.isTableCell && gCell.gridColumn.column &&
-      gCell.gridColumn.column.name == 'TREE' &&
-      gCell.tableRowIndex !== undefined && [0, 2, 4].includes(gCell.tableRowIndex!)
+      gCell.gridColumn.column.name == 'TREE'
+      // && gCell.tableRowIndex !== undefined && [0, 2, 4].includes(gCell.tableRowIndex!)
     ) {
-      const nwk = gCell.cell.value;
-
-      const bd = args.bounds;
-      const gCtx: CanvasRenderingContext2D = args.g;
-      gCtx.save();
       try {
-        gCtx.beginPath();
-        gCtx.rect(bd.x, bd.y, bd.width, bd.height);
-        gCtx.clip();
+        const name: string = `gridRow = ${gCell.gridRow}`;
+        const bd = args.bounds;
+        const gCtx: CanvasRenderingContext2D = args.g;
+        //console.debug('PTV: TreeInGridCell.gridOnCellRender() start ' + `name: ${name}, bd: ${rectToString(bd)} `);
 
-        // renderTree(cc, gc.cell.value, bd);
-        const cellDiv = ui.div([], {style: {width: `100px`, height: `100px`, backgroundColor: '#F0F0FF'}});
-        const pcgl: bio.PhylocanvasGL = new bio.PhylocanvasGL(cellDiv, {
-          size: {width: 250, height: 100},
-          //size: {width: bd.width, height: bd.height},
-          treeType: bio.TreeTypes.Rectangular,
-          nodeSize: 5,
-          nodeShape: bio.Shapes.Circle,
-          source: nwk,
-        });
-        pcgl.deck.setProps({useDevicePixels: true});
-        pcgl.view.style.backgroundImage = 'none';
-        try {
-          // //@ts-ignore
-          // pcgl.resume();
-          //@ts-ignore
-          pcgl.render();
+        const nwkStr: string = gCell.cell.value;
+        const nwkRoot: bio.NodeType = bio.Newick.parse_newick(nwkStr);
 
-          //@ts-ignore
-          pcgl.deck.setProps({glOptions: {preserveDrawingBuffer: true}});
-          //@ts-ignore
-          pcgl.deck.redraw('true');
-
-          //@ts-ignore
-          const png = pcgl.exportPNG();
-
-          let k = 11;
-
-          // //@ts-ignore
-          // pcgl.deck.animationLoop._createWebGLContext();
-          // //@ts-ignore
-          // pcgl.deck.animationLoop.redraw();
-
-
-          //@ts-ignore
-          const pCtx: CanvasRenderingContext2D = pcgl.deck.canvas.getContext('2d');
-
-          pCtx.fillStyle = '#FFF0F0';
-          // pCtx.fillRect(10, 10, 50, 50);
-          pCtx.fillRect(0, 0, pCtx.canvas.width, pCtx.canvas.height);
-          //pcgl.deck.redraw('true');
-
-          pCtx.strokeStyle = '#008000';
-          //@ts-ignore
-          const a = pcgl.getDrawingArea();
-          pCtx.strokeRect(a.left, a.top, a.width, a.height);
-
-          gCtx.fillStyle = 'blue';
-          gCtx.fillRect(200, 30, 100, 70);
-
-          // TODO: Force draw tree
-          gCtx.strokeStyle = 'red';
-          gCtx.lineWidth = 2;
-          gCtx.beginPath();
-          // cc.moveTo(bd.left, bd.top);
-          // cc.lineTo(bd.right, bd.bottom);
-          gCtx.moveTo(4, 4);
-          gCtx.lineTo(8, 8);
-          gCtx.closePath();
-
-          // let k = 11;
-
-          //@ts-ignore
-          gCtx.drawImage(pCtx.canvas, bd.x+5, bd.y+5);
-        } finally {
-          pcgl.destroy();
-          args.preventDefault();
-        }
+        const nodeShape: string = bio.Shapes.Circle;
+        const treeType: string = bio.TreeTypes.Rectangular;
+        this.phylocanvasGlSvc!.render({
+          name: name,
+          backColor: gCell.grid.props.backColor,
+          props: {
+            size: {width: bd.width - 2, height: bd.height - 3},
+            treeType: treeType,
+            nodeSize: 3,
+            nodeShape: nodeShape,
+            treeToCanvasRatio: 0.95,
+            padding: 5,
+            source: {type: 'biojs', data: nwkRoot},
+          },
+          onAfterRender: (canvas: HTMLCanvasElement) => {
+            this.phylocanvasGlSvc!.renderOnGridCell(gCtx, bd, gCell, canvas);
+          }
+        }, gCell.tableRow?.idx);
+      } catch (err) {
+        console.error(u.errorToConsole(err));
       } finally {
-        gCtx.restore();
+        args.preventDefault();
+        //console.debug('PTV: TreeInGridCell.gridOnCellRender() end ' + `name: ${name}`);
       }
     }
   }

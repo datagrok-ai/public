@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {getAllCodesOfSynthesizer} from './sequence-codes-tools';
+import {differenceOfTwoArrays} from '../helpers';
 
 export const delimiter = ';';
 export const SYNTHESIZERS = {
@@ -16,29 +17,23 @@ export const TECHNOLOGIES = {
   ASO_GAPMERS: 'For ASO Gapmers',
   SI_RNA: 'For 2\'-OMe and 2\'-F modified siRNA',
 };
-export const COL_NAMES = {
-  CHEMISTRY: 'Chemistry',
-  NUMBER: 'Number',
-  TYPE: 'Type',
-  CHEMISTRY_NAME: 'Chemistry Name',
-  INTERNAL_COMPOUND_ID: 'Internal compound ID',
-  IDP: 'IDP',
-  SEQUENCE: 'Sequence',
-  COMPOUND_NAME: 'Compound Name',
-  COMPOUND_COMMENTS: 'Compound Comments',
-  SALT: 'Salt',
-  EQUIVALENTS: 'Equivalents',
-  PURITY: 'Purity',
-  CPD_MW: 'Cpd MW',
-  SALT_MOL_WEIGHT: 'Salt MW',
-  SALT_MASS: 'Salt mass',
-  BATCH_MW: 'Batch MW',
-  SOURCE: 'Source',
-  ICD: 'ICD',
-  OWNER: 'Owner',
+export const MODIFICATIONS: {[index: string]: {molecularWeight: number, left: string, right: string}} = {
+  '(invabasic)': {
+    molecularWeight: 118.13,
+    left: 'O[C@@H]1C[C@@H]O[C@H]1CO',
+    right: 'O[C@@H]1C[C@@H]O[C@H]1CO',
+  },
+  '(GalNAc-2-JNJ)': {
+    molecularWeight: 1273.3,
+    left: 'C(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
+    '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
+    '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)NC(=O)CCCC(=O)NCC(O)CO',
+    right: 'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
+    '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)'+
+    '(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)',
+  },
 };
-// interface CODES {
-// }
+export const stadardPhosphateLinkSmiles = 'OP(=O)(O)O';
 export const map: {[synthesizer: string]:
   {[technology: string]: {[code: string]:
     {'name'?: string, 'weight'?: number, 'normalized'?: string, 'SMILES': string}}}} = {
@@ -707,9 +702,6 @@ fU, fU
 /J-CbCS/, J-CbCS
 /J-MtCD/, J-MtCD`;
 
-function differenceOfTwoArrays(a: string[], b: string[]): string[] {
-  return a.filter((x) => !b.includes(x));
-}
 
 const codesWithSmiles = getAllCodesOfSynthesizer(SYNTHESIZERS.GCRS);
 const allGcrsCodes = DG.DataFrame.fromCsv(lcmsToGcrs).getCol('GCRS').toList();

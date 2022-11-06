@@ -13,19 +13,34 @@ category('activityCliffs', async () => {
   let actCliffsTableViewWithEmptyRows: DG.TableView;
   let actCliffsDfWithEmptyRows: DG.DataFrame;
 
+  let viewList: DG.ViewBase[] = [];
+  let dfList: DG.DataFrame[] = [];
+
+  before(async () => {
+    viewList = [];
+    dfList = [];
+  });
+
+  after(async () => {
+    for (const view of viewList) view.close();
+    for (const df of dfList) grok.shell.closeTable(df);
+  });
+
   test('activityCliffsOpens', async () => {
     actCliffsDf = await readDataframe('tests/sample_MSA_data.csv');
+    dfList.push(actCliffsDf);
     actCliffsTableView = grok.shell.addTableView(actCliffsDf);
-    await _testActivityCliffsOpen(actCliffsDf, 36, 'UMAP', 'MSA');
-    grok.shell.closeTable(actCliffsDf);
-    actCliffsTableView.close();
+    viewList.push(actCliffsTableView);
+
+    await _testActivityCliffsOpen(actCliffsDf, 57, 'UMAP', 'MSA');
   });
 
   test('activityCliffsWithEmptyRows', async () => {
     actCliffsDfWithEmptyRows = await readDataframe('tests/sample_MSA_data_empty_vals.csv');
+    dfList.push(actCliffsDfWithEmptyRows);
     actCliffsTableViewWithEmptyRows = grok.shell.addTableView(actCliffsDfWithEmptyRows);
-    await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, 37, 'UMAP', 'MSA');
-    grok.shell.closeTable(actCliffsDfWithEmptyRows);
-    actCliffsTableViewWithEmptyRows.close();
+    viewList.push(actCliffsTableViewWithEmptyRows);
+
+    await _testActivityCliffsOpen(actCliffsDfWithEmptyRows, 57, 'UMAP', 'MSA');
   });
 });

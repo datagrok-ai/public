@@ -5,8 +5,18 @@ import * as DG from 'datagrok-api/dg';
 
 import {BioStructureViewer} from './biostructure-viewer';
 import {byId, byData} from './viewers/molstar-viewer';
+import {PdbRenderer} from './utils/cell-renderer'; 
 
 export const _package = new DG.Package();
+
+//name: pdbCellRenderer
+//tags: cellRenderer
+//meta.cellType: xray
+//meta.columnTags: quality=xray
+//output: grid_cell_renderer result
+export function xRayCellRenderer(): PdbRenderer {
+  return new PdbRenderer();
+}
 
 //name: BioStructure Viewer
 //tags: app

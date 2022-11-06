@@ -1,6 +1,7 @@
 
-import {map, SYNTHESIZERS, TECHNOLOGIES, delimiter, gcrsCodesWithoutSmiles} from './map';
 import {MODIFICATIONS} from './const';
+import {map, SYNTHESIZERS, TECHNOLOGIES, delimiter, gcrsCodesWithoutSmiles} from './map';
+import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
   siRnaNucleotideToAxolabsSenseStrand, siRnaNucleotidesToGcrs, siRnaBioSpringToNucleotides,
@@ -88,9 +89,6 @@ export function getFormat(sequence: string): string | null {
   return possibleSynthesizers[0];
 }
 
-function sortByStringLengthInDescendingOrder(array: string[]): string[] {
-  return array.sort(function(a: string, b: string) {return b.length - a.length;});
-}
 
 export function isValidSequence(sequence: string, format: string | null): {
   indexOfFirstNotValidChar: number,

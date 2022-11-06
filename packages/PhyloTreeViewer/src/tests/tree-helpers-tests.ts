@@ -6,11 +6,13 @@ import * as bio from '@datagrok-libraries/bio';
 import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package-test';
-import {treeCutAsLeafs, getLeafList, getNodeList} from '../utils/tree-helper';
 import {newickToDf} from '../utils';
+import {TreeHelper} from '../utils/tree-helper';
 
 
 category('treeHelpers', () => {
+  const th: bio.ITreeHelper = new TreeHelper();
+
   const enum Tests {
     nwk1 = 'nwk1',
   }
@@ -42,15 +44,15 @@ category('treeHelpers', () => {
   });
 
   function _testGetLeafList(nwk: string, tgtLeafNameList: string[]) {
-    const root: bio.Node = bio.Newick.parse_newick(nwk);
-    const leafList: bio.Node[] = getLeafList(root);
+    const root: bio.NodeType = bio.Newick.parse_newick(nwk);
+    const leafList: bio.NodeType[] = th.getLeafList(root);
     const leafNameList: string[] = leafList.map((n) => n.name);
     expectArray(leafNameList, tgtLeafNameList);
   }
 
   function _testGetNodeList(nwk: string, tgtNodeNameList: string[]) {
-    const root: bio.Node = bio.Newick.parse_newick(nwk);
-    const nodeList: bio.Node[] = getNodeList(root);
+    const root: bio.NodeType = bio.Newick.parse_newick(nwk);
+    const nodeList: bio.NodeType[] = th.getNodeList(root);
     const nodeNameList: string[] = nodeList.map((n) => n.name);
 
     expectArray(nodeNameList, tgtNodeNameList);
@@ -62,11 +64,5 @@ category('treeHelpers', () => {
 
   function _testSetGridOrder(nwk: string) {
 
-  }
-
-  function _testCutTree(tree: bio.Node, cutHeight: number, tgtClusterList: bio.Node[]) {
-    const resClusterList = treeCutAsLeafs(tree, cutHeight, 0);
-
-    expectArray(resClusterList, tgtClusterList);
   }
 });

@@ -287,28 +287,6 @@ export async function getCensusInfo() {
 //name: info
 export async function info() {
   grok.shell.info('GIS Package info: ' +_package.webRoot);
-
-  //TODO: remove this temporary code (it was added for testing census SDK feature)
-  let censusRes: any = null;
-  try {
-    censusRes = await censusPromise(
-      {
-        statsKey: '2647d704d8734665d5c417dae1546887c2c90513', //TODO: hide credentials
-        vintage: '2017',
-        geoHierarchy: {
-          county: {
-            lat: 28.2639,
-            lng: -80.7214,
-          },
-        },
-      },
-    );
-  } catch (err: any) {
-    grok.shell.error('Census error: ' + err);
-  }
-  if (censusRes)
-    alert(censusRes);
-  //<<remove all above
 }
 
 //tags: init, autostart
@@ -422,6 +400,7 @@ export async function gisBatchGeocoding(address: string): Promise<string> {
 //name: Map
 //description: GIS map viewer
 //tags: viewer
+//meta.icon: icons/package.png
 //output: viewer result
 export function gisViewer(): GisViewer {
   // setTimeout(() => {grok.shell.windows.showProperties = true;}, 500);

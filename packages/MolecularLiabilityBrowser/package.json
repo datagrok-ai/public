@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser",
   "fullName": "MolecularLiabilityBrowser",
-  "version": "1.2.27",
+  "version": "1.2.28",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
@@ -40,17 +40,14 @@
     "css/vd-regions-viewer.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.4.0",
-    "@datagrok-libraries/utils": "^1.11.1",
-    "@deck.gl/core": "^8.7.5",
-    "@deck.gl/layers": "^8.7.5",
-    "@luma.gl/constants": "^8.5.10",
-    "@luma.gl/core": "^8.5.10",
-    "@phylocanvas/phylocanvas.gl": "^1.43.0",
-    "cash-dom": "latest",
-    "datagrok-api": "^1.6.12",
+    "@datagrok-libraries/bio": "^5.9.0",
+    "@datagrok-libraries/utils": "^1.14.1",
+    "@deck.gl/core": "8.8.12",
+    "cash-dom": "8.1.1",
+    "datagrok-api": "^1.8.2",
     "dexie": "^3.2.2",
     "logojs-react": "^2.1.1",
+    "mjolnir.js": "^2.7.0",
     "rxjs": "^6.5.5",
     "ts-transformer-keys": "^0.4.3",
     "uint8-to-base64": "^0.2.0",
@@ -93,7 +90,8 @@
     "test-local": "set HOST=localhost && jest"
   },
   "grokDependencies": {
-    "@datagrok/bio": "^2.0.16",
+    "@datagrok/bio": "latest",
+    "@datagrok/phylo-tree-viewer": "latest",
     "@datagrok/molecular-liability-browser-data": "^2.0.0"
   },
   "canEdit": [

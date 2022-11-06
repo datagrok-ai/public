@@ -110,8 +110,10 @@ export function expectObject(actual: { [key: string]: any }, expected: { [key: s
       expectArray(actualValue, expectedValue);
     else if (actualValue instanceof Object && expectedValue instanceof Object)
       expectObject(actualValue, expectedValue);
+    else if (Number.isFinite(actualValue) && Number.isFinite(expectedValue))
+      expectFloat(actualValue, expectedValue);
     else if (actualValue != expectedValue)
-      throw new Error(`Expected ${expectedValue} for key ${expectedKey}, got ${actualValue}`);
+      throw new Error(`Expected (${expectedValue}) for key '${expectedKey}', got (${actualValue})`);
   }
 }
 
@@ -155,7 +157,7 @@ export function after(after: () => Promise<void>): void {
 }
 
 
-export async function runTests(options?: { category?: string, test?: string, testContext?: TestContext}) {
+export async function runTests(options?: { category?: string, test?: string, testContext?: TestContext }) {
   const results: { category?: string, name?: string, success: boolean, result: string, ms: number }[] = [];
   console.log(`Running tests`);
   options ??= {};
@@ -245,6 +247,7 @@ export async function awaitCheck(checkHandler: () => boolean): Promise<void> {
       // eslint-disable-next-line prefer-promise-reject-errors
       reject('Timeout exceeded');
     }, 500);
+
     function check() {
       if (checkHandler()) {
         stop = false;
@@ -253,12 +256,13 @@ export async function awaitCheck(checkHandler: () => boolean): Promise<void> {
       if (!stop)
         setTimeout(check, 50);
     }
+
     check();
   });
 }
 
-export function isDialogPresent(dialogTitle:string): boolean {
-  for (let i=0; i < DG.Dialog.getOpenDialogs().length; i++) {
+export function isDialogPresent(dialogTitle: string): boolean {
+  for (let i = 0; i < DG.Dialog.getOpenDialogs().length; i++) {
     if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle)
       return true;
   }

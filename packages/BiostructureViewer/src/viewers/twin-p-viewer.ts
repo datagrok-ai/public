@@ -106,7 +106,7 @@ export class TwinPviewer {
 
     await this.ngl.init(
       bsView,
-      this.entry,
+      this.entry.body,
       this.colorScheme,
       this.nglHost,
       this.repChoice,

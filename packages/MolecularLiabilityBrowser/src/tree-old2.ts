@@ -2,9 +2,9 @@
 // import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
-import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
-import {TreeAnalyzer, PhylocanvasTreeNode, mlbTreeNodeRe} from './utils/tree-stats';
+import {TreeAnalyzer, mlbTreeNodeRe} from './utils/tree-stats';
 
 /** Code of tree browser before using Phylocanvas from lstolbov 2022-06-22 */
 export class TreeBrowserOld2 {// extends DG.JsViewer {
@@ -16,7 +16,7 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
   idColumnName: string = 'v id';
   treeSemanticType = 'newick';
   title: string;
-  phyloTreeViewer: PhylocanvasGL;
+  phyloTreeViewer: bio.PhylocanvasGL;
   dataFrame: DG.DataFrame;
   mlbView: DG.TableView;
   treeGrid: DG.Grid;
@@ -50,7 +50,7 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
    * @param {number} treeIndex Index of tree containing the node in trees column.
    * @return {PhylocanvasTreeNode} Modified node.
    */
-  private _collectLeavesMapping(node: PhylocanvasTreeNode, treeIndex: number) {
+  private _collectLeavesMapping(node: bio.PhylocanvasTreeNode, treeIndex: number) {
     if (node.isLeaf) {
       const id = node.id;
       const cloneId = this._getCloneIdAt(treeIndex);
@@ -227,16 +227,16 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
     const treeNode = mlbView.dockManager.dock(treeDiv, DG.DOCK_TYPE.DOWN);
     mlbView.dockManager.dock(this.treeGrid, DG.DOCK_TYPE.RIGHT, treeNode);
     this.treeGrid.dataFrame.currentRowIdx = 1;
-    this.phyloTreeViewer = new PhylocanvasGL(treeDiv, {
+    this.phyloTreeViewer = new bio.PhylocanvasGL(treeDiv, {
       interactive: true,
       showLabels: true,
       showLeafLabels: true,
-      shape: Shapes.Dot,
+      shape: bio.Shapes.Dot,
       fontFamily: 'Roboto',
       fontSize: 13,
       size: treeDiv.getBoundingClientRect(),
       source: this._takeTreeAt(this.treeGrid.dataFrame.currentRowIdx),
-      type: TreeTypes.Rectangular,
+      type: bio.TreeTypes.Rectangular,
     });
     this.phyloTreeViewer.selectNode = this.selectNode.bind(this);
     this.treeGrid.dataFrame.onCurrentRowChanged.subscribe(this._onTreeGridCurrentRowChanged.bind(this));
@@ -324,7 +324,7 @@ export class TreeBrowserOld2 {// extends DG.JsViewer {
           const color = this.treeAnalyser.getItemsAsSet().has(item) ? '#0000FF' : '#FF0000';
           style[item] = {fillColour: color};
         } else {
-          style[item] = {shape: Shapes.Dot};
+          style[item] = {shape: bio.Shapes.Dot};
         }
         styles = {...styles, ...style};
       }

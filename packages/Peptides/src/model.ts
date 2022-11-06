@@ -49,10 +49,6 @@ export class PeptidesModel {
   isPeptideSpaceChangingBitset = false;
   isChangingEdfBitset = false;
 
-  mutationCliffsViewer!: MutationCliffsViewer;
-  mostPotentResiduesViewer!: MostPotentResiduesViewer;
-
-  _usedProperties: { [propName: string]: string | number | boolean } = {};
   monomerMap: { [key: string]: { molfile: string, fullName: string } } = {};
   barData: type.MonomerDfStats = {};
   barsBounds: { [position: string]: type.BarCoordinates } = {};
@@ -121,16 +117,6 @@ export class PeptidesModel {
     this.invalidateGrids();
   }
 
-  get usedProperties(): { [propName: string]: string | number | boolean } {
-    this._usedProperties = JSON.parse(this.df.tags['sarProperties'] ?? '{}');
-    return this._usedProperties;
-  }
-
-  set usedProperties(properties: { [propName: string]: string | number | boolean }) {
-    this.df.tags['sarProperties'] = JSON.stringify(properties);
-    this._usedProperties = properties;
-  }
-
   get splitByPos(): boolean {
     const splitByPosFlag = (this.df.tags['distributionSplit'] ?? '00')[0];
     return splitByPosFlag == '1' ? true : false;
@@ -160,9 +146,10 @@ export class PeptidesModel {
   }
 
   get isMutationCliffSelectionEmpty(): boolean {
-    for (const aarList of Object.values(this.mutationCliffsSelection))
+    for (const aarList of Object.values(this.mutationCliffsSelection)) {
       if (aarList.length !== 0)
         return false;
+    }
     return true;
   }
 
@@ -175,8 +162,11 @@ export class PeptidesModel {
     return this._settings;
   }
   set settings(s: type.PeptidesSettings) {
-    this._settings = s;
-    this.df.setTag('settings', JSON.stringify(s));
+    for (const [key, value] of Object.entries(s))
+      this._settings[key as keyof type.PeptidesSettings] = value as any;
+    this.df.setTag('settings', JSON.stringify(this._settings));
+    //TODO: update only needed components
+    this.updateDefault();
   }
 
   createAccordion(): DG.Accordion {
@@ -189,36 +179,8 @@ export class PeptidesModel {
     return acc;
   }
 
-  getViewer(): SARViewerBase {
-    const viewer = this.mutationCliffsViewer ?? this.mostPotentResiduesViewer;
-    if (!viewer)
-      throw new Error('ViewerError: none of the SAR viewers is initialized');
-    return viewer;
-  }
-
-  isPropertyChanged(viewer: SARViewerBase): boolean {
-    let result = false;
-    if (typeof viewer == 'undefined')
-      return result;
-
-    const viewerProps = viewer.props.getProperties();
-    const tempProps = this.usedProperties;
-    for (const property of viewerProps) {
-      const propName = property.name;
-      const propVal = property.get(viewer);
-      if (tempProps[propName] != propVal) {
-        tempProps[propName] = propVal;
-        result = true;
-      }
-    }
-    this.usedProperties = tempProps;
-    return result;
-  }
-
   updateDefault(): void {
-    const proprtyChanged =
-      this.isPropertyChanged(this.mutationCliffsViewer) || this.isPropertyChanged(this.mostPotentResiduesViewer);
-    if ((this.sourceGrid && !this._isUpdating && proprtyChanged) || !this.isInitialized) {
+    if ((this.sourceGrid && !this._isUpdating) || !this.isInitialized) {
       this.isInitialized = true;
       this._isUpdating = true;
       this.initializeViewersComponents();
@@ -254,9 +216,7 @@ export class PeptidesModel {
 
     this.sortSourceGrid();
 
-    const viewer = this.getViewer();
-
-    this.createScaledCol(viewer.scaling, splitSeqDf);
+    this.createScaledCol(splitSeqDf);
 
     //unpivot a table and handle duplicates
     let matrixDf = splitSeqDf.groupBy(positionColumns).aggregate();
@@ -309,6 +269,7 @@ export class PeptidesModel {
     this.postProcessGrids();
   }
 
+  //TODO: move out
   calcSubstitutions(): void {
     const activityValues: DG.Column<number> = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
     const columnList: DG.Column<string>[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
@@ -316,7 +277,6 @@ export class PeptidesModel {
     if (nCols == 0)
       throw new Error(`Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
 
-    const viewer = this.getViewer();
     this.substitutionsInfo = new Map();
     const nRows = this.df.rowCount;
     for (let seq1Idx = 0; seq1Idx < nRows - 1; seq1Idx++) {
@@ -325,7 +285,7 @@ export class PeptidesModel {
         const activityValSeq1 = activityValues.get(seq1Idx)!;
         const activityValSeq2 = activityValues.get(seq2Idx)!;
         const delta = activityValSeq1 - activityValSeq2;
-        if (Math.abs(delta) < viewer.minActivityDelta)
+        if (Math.abs(delta) < (this.settings.minActivityDelta ?? 0))
           continue;
 
         let substCounterFlag = false;
@@ -338,7 +298,7 @@ export class PeptidesModel {
             continue;
 
           substCounter++;
-          substCounterFlag = substCounter > viewer.maxSubstitutions;
+          substCounterFlag = substCounter > (this.settings.maxMutations ?? 1);
           if (substCounterFlag)
             break;
 
@@ -443,8 +403,8 @@ export class PeptidesModel {
     this.sourceGrid.columns.setOrder(colNames.map((v) => v.name));
   }
 
-  createScaledCol(activityScaling: string, splitSeqDf: DG.DataFrame): void {
-    const scaledCol = scaleActivity(activityScaling, this.df.getCol(C.COLUMNS_NAMES.ACTIVITY));
+  createScaledCol(splitSeqDf: DG.DataFrame): void {
+    const scaledCol = scaleActivity(this.df.getCol(C.COLUMNS_NAMES.ACTIVITY), this.settings.scaling);
     //TODO: make another func
     splitSeqDf.columns.add(scaledCol);
     this.df.columns.replace(C.COLUMNS_NAMES.ACTIVITY_SCALED, scaledCol);
@@ -512,7 +472,7 @@ export class PeptidesModel {
 
   setCategoryOrder(matrixDf: DG.DataFrame): void {
     let sortArgument: string = C.COLUMNS_NAMES.MEAN_DIFFERENCE;
-    if (this.getViewer().bidirectionalAnalysis) {
+    if (this.settings.isBidirectional) {
       const mdCol = this.monomerPositionStatsDf.getCol(sortArgument);
       sortArgument = 'Absolute Mean difference';
       const absMDCol = this.monomerPositionStatsDf.columns.addNewFloat(sortArgument);
@@ -548,7 +508,7 @@ export class PeptidesModel {
     const rowCount = sequenceDf.rowCount;
     for (const pos of posColCategories) {
       tempStats = DG.Stats.fromColumn(mdCol, DG.BitSet.create(rowCount, (i) => posCol.get(i) === pos));
-      maxAtPos[pos] = this.getViewer().bidirectionalAnalysis ?
+      maxAtPos[pos] = this.settings.isBidirectional ?
         (tempStats.max > Math.abs(tempStats.min) ? tempStats.max : tempStats.min) :
         tempStats.max;
     }
@@ -750,7 +710,6 @@ export class PeptidesModel {
             tableColName : gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
           const currentAAR: string = gridTable.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
 
-          const viewer = this.getViewer();
           if (this.isInvariantMap) {
             const value: number = this.monomerPositionStatsDf
               .groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER, C.COLUMNS_NAMES.COUNT])
@@ -759,9 +718,9 @@ export class PeptidesModel {
             CR.renderInvaraintMapCell(
               canvasContext, currentAAR, currentPosition, this.invariantMapSelection, value, bound);
           } else {
-            CR.renderMutationCliffCell(
-              canvasContext, currentAAR, currentPosition, this.monomerPositionStatsDf, viewer.bidirectionalAnalysis,
-              mdCol, bound, cellValue, this.mutationCliffsSelection, this.substitutionsInfo);
+            CR.renderMutationCliffCell(canvasContext, currentAAR, currentPosition, this.monomerPositionStatsDf,
+              mdCol, bound, cellValue, this.mutationCliffsSelection, this.substitutionsInfo,
+              this.settings.isBidirectional);
           }
         }
         args.preventDefault();
@@ -1079,23 +1038,6 @@ export class PeptidesModel {
     this.splitCol.compact();
   }
 
-  syncProperties(isSourceSAR = true): void {
-    if (this.mutationCliffsViewer && this.mostPotentResiduesViewer) {
-      const [sourceViewer, targetViewer] = isSourceSAR ? [this.mutationCliffsViewer, this.mostPotentResiduesViewer] :
-        [this.mostPotentResiduesViewer, this.mutationCliffsViewer];
-      const properties = sourceViewer.props.getProperties();
-      const newProps: { [propName: string]: string | number | boolean } = {};
-      for (const property of properties) {
-        const propName = property.name;
-        const propVal = property.get(sourceViewer);
-        targetViewer.props.set(propName, propVal);
-        newProps[propName] = propVal;
-      }
-      this.usedProperties = newProps;
-    } else
-      console.warn('Warning: could not sync viewer properties, one of the viewers is not initialized');
-  }
-
   /** Class initializer */
   async init(): Promise<void> {
     if (this.isInitialized)
@@ -1146,9 +1088,9 @@ export class PeptidesModel {
 
     const dockManager = this.currentView.dockManager;
 
-    this.mutationCliffsViewer = await this.df.plot.fromType('peptide-sar-viewer', options) as MutationCliffsViewer;
+    const mutationCliffsViewer = await this.df.plot.fromType('peptide-sar-viewer', options) as MutationCliffsViewer;
 
-    this.mostPotentResiduesViewer =
+    const mostPotentResiduesViewer =
       await this.df.plot.fromType('peptide-sar-viewer-vertical', options) as MostPotentResiduesViewer;
 
     if (this.df.getTag(C.TAGS.CLUSTERS)) {
@@ -1159,10 +1101,9 @@ export class PeptidesModel {
     this.updateDefault();
 
     const mcNode =
-      dockManager.dock(this.mutationCliffsViewer, DG.DOCK_TYPE.DOWN, null, this.mutationCliffsViewer.name);
+      dockManager.dock(mutationCliffsViewer, DG.DOCK_TYPE.DOWN, null, mutationCliffsViewer.name);
 
-    dockManager.dock(
-      this.mostPotentResiduesViewer, DG.DOCK_TYPE.RIGHT, mcNode, this.mostPotentResiduesViewer.name, 0.3);
+    dockManager.dock(mostPotentResiduesViewer, DG.DOCK_TYPE.RIGHT, mcNode, mostPotentResiduesViewer.name, 0.3);
 
 
     this.sourceGrid.props.allowEdit = false;
@@ -1170,6 +1111,4 @@ export class PeptidesModel {
 
     this.invalidateGrids();
   }
-
-  invalidateSourceGrid(): void {this.sourceGrid.invalidate();}
 }

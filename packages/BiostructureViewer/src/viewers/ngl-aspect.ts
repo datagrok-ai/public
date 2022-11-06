@@ -9,7 +9,7 @@ import { PdbEntry } from '../pdb-entry.js';
 export class NglAspect {
 
   stage: any;
-  entry: PdbEntry;
+  entry: string;
   colorScheme: any;
   nglHost: HTMLElement;
   repChoice: DG.InputBase;
@@ -17,7 +17,7 @@ export class NglAspect {
   ligandSelection: { [key: string]: any };
   ligandRepresentations: { [key: string]: any } = {};
 
-  public async init(view: DG.TableView, entry: PdbEntry, colorScheme: {}, nglHost: HTMLElement,
+  public async init(view: DG.TableView, entry: string, colorScheme: {}, nglHost: HTMLElement,
     repChoice: DG.InputBase, twinSelections: {}, ligandSelection: { [key: string]: boolean }) {
 
     this.colorScheme = colorScheme;
@@ -86,7 +86,7 @@ export class NglAspect {
 
     if (reload) {
       this.stage.removeAllComponents();
-      await this.loadPdb(this.entry.body, this.repChoice, { color: schemeId });
+      await this.loadPdb(this.entry, this.repChoice, { color: schemeId });
 
       // //recovering ball and stick residual at cartoon view
       // if (this.repChoice.value === "cartoon") {
@@ -149,9 +149,9 @@ export class NglAspect {
 
   // load the 3D model
   private async loadPdb(pdbStr: string, repChoice: DG.InputBase, schemeObj: any) {
-    //var stringBlob = new Blob([pdbStr], { type: 'text/plain' });
-    //await this.stage.loadFile(stringBlob, { ext: "pdb" }).then(function (o: any) {
-    await this.stage.loadFile(pdbStr).then(function (o: any) {
+    var stringBlob = new Blob([pdbStr], { type: 'text/plain' });
+    await this.stage.loadFile(stringBlob, { ext: "pdb" }).then(function (o: any) {
+    //await this.stage.loadFile(pdbStr).then(function (o: any) {
       o.addRepresentation(repChoice.value, schemeObj);
       o.autoView();
     });

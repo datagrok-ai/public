@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './utils/constants';
 
-import {analyzePeptidesWidget} from './widgets/peptides';
+import {analyzePeptidesUI} from './widgets/peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {MutationCliffsViewer, MostPotentResiduesViewer} from './viewers/sar-viewer';
@@ -71,13 +71,23 @@ export async function Peptides(): Promise<void> {
   ]);
 }
 
+//top-menu: Bio | Peptides...
+//name: Bio Peptides
+export async function peptidesDialog(): Promise<DG.Dialog> {
+  const analyzeObject = await analyzePeptidesUI(grok.shell.t);
+  const dialog = ui.dialog('Analyze Peptides').add(analyzeObject.host).onOK(analyzeObject.callback);
+  dialog.show();
+  return dialog.show();
+}
+
 //name: Peptides
 //tags: panel, widgets
 //input: column col {semType: Macromolecule}
 //output: widget result
 export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
   [currentTable, alignedSequenceColumn] = getOrDefine(col.dataFrame, col);
-  return analyzePeptidesWidget(currentTable, alignedSequenceColumn);
+  const analyzeObject = await analyzePeptidesUI(currentTable, alignedSequenceColumn);
+  return new DG.Widget(analyzeObject.host);
 }
 
 //name: peptide-sar-viewer

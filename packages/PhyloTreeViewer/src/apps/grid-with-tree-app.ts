@@ -33,14 +33,20 @@ export class GridWithTreeApp {
 
   async loadData(): Promise<void> {
     const dataPath: string = 'System:AppData/PhyloTreeViewer/data';
-    const csv = await _package.files.readAsText(`data/220524_FcRn_MH_FcRn_pepclust.csv`);
-    const newick = await _package.files.readAsText(`data/220524_FcRn_MH_FcRn_model_clustering.height.nwk`);
+    // const csv = await _package.files.readAsText(`data/220524_FcRn_MH_FcRn_pepclust.csv`);
+    // const newick = await _package.files.readAsText(`data/220524_FcRn_MH_FcRn_model_clustering.height.nwk`);
 
-    // const csv = await _package.files.readAsText(`data/tree95df.csv`);
-    // const newick = await _package.files.readAsText(`data/tree95.nwk`);
+    const csv = await _package.files.readAsText(`data/tree95df.csv`);
+    const newick = await _package.files.readAsText(`data/tree95.nwk`);
+    const leafColName = 'id';
+
+    // const csv = await _package.files.readAsText('data/tree-gen-100000.csv');
+    // const newick = await _package.files.readAsText('data/tree-gen-100000.nwk');
+    // const leafColName = 'Leaf';
 
     const dataDf = DG.DataFrame.fromCsv(csv);
     dataDf.setTag('.newick', newick);
+    dataDf.setTag('.newickLeafColumn', leafColName);
 
     await this.setData(dataDf, newick);
   }
@@ -93,12 +99,14 @@ export class GridWithTreeApp {
   async buildView(): Promise<void> {
     if (!this.tableView) {
       this.tableView = grok.shell.addTableView(this.dataDf);
-      this.tableView.basePath = 'apps/PhyloTreeViewer/GridWithTree';
+      this.tableView.path = this.tableView.basePath = 'apps/PhyloTreeViewer/GridWithTree';
 
       this.dataDf.columns.addNewInt('Cluster').init((rowI: number) => { return 0;});
 
+      const colNameList: string[] = this.dataDf.columns.names();
+      const leafColumnName: string = this.dataDf.getTag('.newickLeafColumn')!;
       this.gridN = injectTreeToGridUI(
-        this.tableView.grid, this.newickText, 'id', 250,
+        this.tableView.grid, this.newickText, leafColumnName, 250,
         {min: 0, max: 1, clusterColName: 'Cluster'});
 
       // this.tableView.filters({

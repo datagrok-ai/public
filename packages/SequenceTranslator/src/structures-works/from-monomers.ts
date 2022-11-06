@@ -2,6 +2,7 @@
 import {map, SYNTHESIZERS, TECHNOLOGIES, delimiter} from './map';
 import {isValidSequence} from './sequence-codes-tools';
 import {getNucleotidesMol} from './mol-transformations';
+import {sortByStringLengthInDescendingOrder} from '../helpers';
 
 import {standardPhosphateLinkSmiles, MODIFICATIONS} from './const';
 
@@ -215,8 +216,4 @@ function getObjectWithCodesAndSmilesFromFile(sequence: string, format: string, l
     }
   }
   return obj;
-}
-
-function sortByStringLengthInDescendingOrder(array: string[]): string[] {
-  return array.sort(function(a: string, b: string) {return b.length - a.length;});
 }
