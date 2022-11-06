@@ -1,6 +1,9 @@
-import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, delimiter} from './map';
+// import {map, SYNTHESIZERS, TECHNOLOGIES, delimiter} from './map';
+import {map, SYNTHESIZERS, TECHNOLOGIES, delimiter} from './map';
 import {isValidSequence} from './sequence-codes-tools';
 import {getNucleotidesMol} from './mol-transformations';
+
+import {standardPhosphateLinkSmiles, MODIFICATIONS} from './const';
 
 export function sequenceToMolV3000(
   sequence: string, inverted: boolean = false, oclRender: boolean = false,
@@ -16,11 +19,8 @@ export function sequenceToMolV3000(
   const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
   codes = codes.concat(dropdowns).concat(delimiter);
-  console.log('codes', codes);
   while (i < sequence.length) {
-    console.log(sequence.slice(i));
     const code = codes.find((s: string) => s === sequence.slice(i, i + s.length))!;
-    console.log('code', code);
     i += code.length;
     inverted ? codesList.unshift(code) : codesList.push(code);
   }
@@ -29,7 +29,7 @@ export function sequenceToMolV3000(
       smilesCodes.push((i >= codesList.length / 2) ?
         MODIFICATIONS[codesList[i]].right : MODIFICATIONS[codesList[i]].left);
       if (!(i < codesList.length - 1 && links.includes(codesList[i + 1])))
-        smilesCodes.push(stadardPhosphateLinkSmiles);
+        smilesCodes.push(standardPhosphateLinkSmiles);
     } else {
       if (links.includes(codesList[i]) ||
         includesStandardLinkAlready.includes(codesList[i]) ||
@@ -38,7 +38,7 @@ export function sequenceToMolV3000(
         smilesCodes.push(obj[codesList[i]]);
       else {
         smilesCodes.push(obj[codesList[i]]);
-        smilesCodes.push(stadardPhosphateLinkSmiles);
+        smilesCodes.push(standardPhosphateLinkSmiles);
       }
     }
   }
@@ -64,8 +64,8 @@ export function sequenceToSmiles(sequence: string, inverted: boolean = false, fo
   for (let i = 0; i < codesList.length; i++) {
     if (dropdowns.includes(codesList[i])) {
       smiles += (i >= codesList.length / 2) ?
-        MODIFICATIONS[codesList[i]].right + stadardPhosphateLinkSmiles:
-        MODIFICATIONS[codesList[i]].left + stadardPhosphateLinkSmiles;
+        MODIFICATIONS[codesList[i]].right + standardPhosphateLinkSmiles:
+        MODIFICATIONS[codesList[i]].left + standardPhosphateLinkSmiles;
     } else {
       if (links.includes(codesList[i]) ||
         includesStandardLinkAlready.includes(codesList[i]) ||
@@ -73,7 +73,7 @@ export function sequenceToSmiles(sequence: string, inverted: boolean = false, fo
       )
         smiles += obj[codesList[i]];
       else
-        smiles += obj[codesList[i]] + stadardPhosphateLinkSmiles;
+        smiles += obj[codesList[i]] + standardPhosphateLinkSmiles;
     }
   }
   smiles = smiles.replace(/OO/g, 'O');
@@ -87,7 +87,7 @@ export function sequenceToSmiles(sequence: string, inverted: boolean = false, fo
     includesStandardLinkAlready.includes(codesList[codesList.length - 1])
   ) ?
     smiles :
-    smiles.slice(0, smiles.length - stadardPhosphateLinkSmiles.length + 1);
+    smiles.slice(0, smiles.length - standardPhosphateLinkSmiles.length + 1);
 }
 
 function getObjectWithCodesAndSmiles(sequence: string, format: string) {

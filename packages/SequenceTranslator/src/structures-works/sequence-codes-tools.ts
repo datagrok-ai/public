@@ -1,5 +1,6 @@
 
-import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, delimiter, gcrsCodesWithoutSmiles} from './map';
+import {map, SYNTHESIZERS, TECHNOLOGIES, delimiter, gcrsCodesWithoutSmiles} from './map';
+import {MODIFICATIONS} from './const';
 import {asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
   siRnaNucleotideToAxolabsSenseStrand, siRnaNucleotidesToGcrs, siRnaBioSpringToNucleotides,

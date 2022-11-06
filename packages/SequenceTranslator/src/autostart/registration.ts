@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
   siRnaNucleotidesToGcrs} from '../structures-works/converters';
-import {map, COL_NAMES, MODIFICATIONS} from '../structures-works/map';
+import {map, COL_NAMES} from '../structures-works/map';
+import {MODIFICATIONS} from '../structures-works/const';
 import {isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 import {linkV3000} from '../structures-works/mol-transformations';

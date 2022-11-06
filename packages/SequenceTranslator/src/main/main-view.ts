@@ -2,12 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {convertSequence, undefinedInputSequence, isValidSequence} from '../structures-works/sequence-codes-tools';
-import {map, MODIFICATIONS} from '../structures-works/map';
+import {map} from '../structures-works/map';
+import {MODIFICATIONS} from '../structures-works/const';
 import {sequenceToSmiles, sequenceToMolV3000} from '../structures-works/from-monomers';
 import $ from 'cash-dom';
 
-const defaultInput = 'fAmCmGmAmCpsmU';
-const sequenceWasCopied = 'Copied';
+const defaultInput = 'fAmCmGmAmCpsmU'; // todo: capitalize constants
+const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into constants
 const tooltipSequence = 'Copy sequence';
 
 export async function mainView(): Promise<HTMLDivElement> {
@@ -22,7 +23,7 @@ export async function mainView(): Promise<HTMLDivElement> {
     const fileExists = await grok.dapi.files.exists(monomersLibAddress);
     if (!fileExists) {
       // todo: improve behaviour in this case
-      grok.shell.warning('Please, provide the file with monomers library');
+      grok.shell.warning('Please, provide the file with monomers library as System:AppData/SequenceTranslator/helmLib.json');
       pi.close();
       return;
     }
