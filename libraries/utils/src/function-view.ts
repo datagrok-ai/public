@@ -906,7 +906,7 @@ export class FunctionView extends DG.ViewBase {
     () =>setTimeout(() => this.root.addEventListener('click', this.rootReadonlyEventListeners[2]), 100)
   ];
 
-  private setRunViewReadonly(): void {
+  protected setRunViewReadonly(): void {
     this.overlayDiv.style.removeProperty('display');
     this.root.addEventListener('click', this.rootReadonlyEventListeners[2]);
     this.root.addEventListener('mousedown', this.rootReadonlyEventListeners[0]);
