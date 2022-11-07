@@ -1363,7 +1363,21 @@ export async function getSymbolToCappedMolfileMap(monomersLibList: any[]): Promi
   return symbolToCappedMolfileMap;
 }
 
-//TODO
-export function capTheMonomer(monomer: Monomer): string {
-  return ' ';
+/* Get the V3K molfile corresponding to the capped Monomer (default cap groups)  */
+export function capPeptideMonomer(monomer: Monomer): string {
+  const capGroups = parseCapGroups(monomer[HELM_FIELDS.RGROUPS]);
+  const capGroupIdxMap = parseCapGroupIdxMap(monomer[HELM_FIELDS.MOLFILE]);
+  const molfileV3K = convertMolfileToV3K(removeRGroupLines(monomer[HELM_FIELDS.MOLFILE]), moduleRdkit);
+  const counts = parseAtomAndBondCounts(molfileV3K);
+
+  const atoms = parseAtomBlock(molfileV3K, counts.atomCount);
+  const bonds = parseBondBlock(molfileV3K, counts.bondCount);
+  const meta = getMonomerMetadata(atoms, bonds, capGroups, capGroupIdxMap);
+
+  const monomerGraph: MolGraph = {atoms: atoms, bonds: bonds, meta: meta};
+
+  adjustPeptideMonomerGraph(monomerGraph);
+
+  const molfile = convertMolGraphToMolfileV3K(monomerGraph);
+  return molfile;
 }
