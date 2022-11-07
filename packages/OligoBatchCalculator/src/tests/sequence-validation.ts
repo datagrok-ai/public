@@ -1,6 +1,6 @@
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 import {isValidSequence} from '../validation';
-import {SYNTHESIZERS, TECHNOLOGIES} from '../map';
+import {SYNTHESIZERS, TECHNOLOGIES} from '../constants';
 
 const ADDITIONAL_CODES: string[] = [];
 const inputOutputObjs: {
