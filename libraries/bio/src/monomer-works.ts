@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {IMonomerLib, Monomer} from './types';
-import {capTheMonomer} from './utils/to-atomic-level';
+
 
 
 export class MonomerWorks {
