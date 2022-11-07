@@ -3,6 +3,8 @@ import {map, SYNTHESIZERS, TECHNOLOGIES, delimiter} from './map';
 import {isValidSequence} from './sequence-codes-tools';
 import {getNucleotidesMol} from './mol-transformations';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
+import * as bio from '@datagrok-libraries/bio';
+import {capPeptideMonomer} from '@datagrok-libraries/bio/src/utils/to-atomic-level';
 
 import {standardPhosphateLinkSmiles, MODIFICATIONS} from './const';
 
@@ -10,11 +12,11 @@ export function sequenceToMolV3000(
   sequence: string, inverted: boolean = false, oclRender: boolean = false,
   format: string, monomersLib: string,
 ): string {
-  const obj = getObjectWithCodesAndSmilesFromFile(sequence, format, monomersLib);
+  const obj = getObjectWithCodesAndMolsFromFile(sequence, format, monomersLib);
   console.log('obj', obj);
   let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
   let i = 0;
-  const smilesCodes:string[] = [];
+  const molsCodes:string[] = [];
   const codesList = [];
   const links = ['s', 'ps', '*'];
   const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
@@ -27,24 +29,23 @@ export function sequenceToMolV3000(
   }
   for (let i = 0; i < codesList.length; i++) {
     if (dropdowns.includes(codesList[i])) {
-      smilesCodes.push((i >= codesList.length / 2) ?
-        MODIFICATIONS[codesList[i]].right : MODIFICATIONS[codesList[i]].left);
+      molsCodes.push(obj[codesList[i]]);
       if (!(i < codesList.length - 1 && links.includes(codesList[i + 1])))
-        smilesCodes.push(standardPhosphateLinkSmiles);
+        molsCodes.push(obj['p']);
     } else {
       if (links.includes(codesList[i]) ||
         includesStandardLinkAlready.includes(codesList[i]) ||
         (i < codesList.length - 1 && links.includes(codesList[i + 1]))
       )
-        smilesCodes.push(obj[codesList[i]]);
+      molsCodes.push(obj[codesList[i]]);
       else {
-        smilesCodes.push(obj[codesList[i]]);
-        smilesCodes.push(standardPhosphateLinkSmiles);
+        molsCodes.push(obj[codesList[i]]);
+        molsCodes.push(obj['p']);
       }
     }
   }
 
-  return getNucleotidesMol(smilesCodes);
+  return getNucleotidesMol(molsCodes);
 }
 
 export function sequenceToSmiles(sequence: string, inverted: boolean = false, format: string): string {
@@ -120,22 +121,34 @@ function getObjectWithCodesAndSmiles(sequence: string, format: string) {
 // const NAME = 'name';
 const CODES = 'codes';
 const SMILES = 'smiles';
+const MOL = 'molfile';
 
-function getObjectWithCodesAndSmilesFromFile(sequence: string, format: string, libFileContent: string) {
+function getObjectWithCodesAndMolsFromFile(sequence: string, format: string, libFileContent: string) {
   const obj: { [code: string]: string } = {};
   // todo: type
-  const lib: any[] = JSON.parse(libFileContent);
+  const lib: any[] = JSON.parse(libFileContent); //consider using library
 
   if (format == null) {
     for (const item of lib) {
       for (const synthesizer of Object.keys(item[CODES])) {
         for (const technology of Object.keys(item[CODES][synthesizer])) {
           const codes = item[CODES][synthesizer][technology];
-          let smiles: string = item[SMILES];
-          smiles = smiles.replace(/\[OH:1\]/g, 'O');
-          smiles = smiles.replace(/\[OH:2\]/g, 'O');
+
+          let monomer: bio.Monomer = {
+            symbol: item['symbol'],
+            name: item['name'],
+            naturalAnalog: item['naturalAnalog'],
+            molfile: item['molfile'],
+            polymerType: item['polymerType'],
+            monomerType: item['monomerType'],
+            rgroups: item['rgroups'],
+            data: {}
+          }
+
+          let mol = capPeptideMonomer(monomer);
+
           for (const code of codes)
-            obj[code] = smiles;
+            obj[code] = mol;
         }
       }
     }
@@ -145,11 +158,20 @@ function getObjectWithCodesAndSmilesFromFile(sequence: string, format: string, l
         if (synthesizer === format) {
           for (const technology of Object.keys(item[CODES][synthesizer])) {
             const codes = item[CODES][synthesizer][technology];
-            let smiles: string = item[SMILES];
-            smiles = smiles.replace(/\[OH:1\]/g, 'O');
-            smiles = smiles.replace(/\[OH:2\]/g, 'O');
+            let monomer: bio.Monomer = {
+              symbol: item['symbol'],
+              name: item['name'],
+              naturalAnalog: item['naturalAnalog'],
+              molfile: item['molfile'],
+              polymerType: item['polymerType'],
+              monomerType: item['monomerType'],
+              rgroups: item['rgroups'],
+              data: {}
+            }
+  
+            let mol = capPeptideMonomer(monomer);
             for (const code of codes)
-              obj[code] = smiles;
+              obj[code] = mol;
           }
         }
       }

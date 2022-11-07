@@ -1,22 +1,11 @@
 // todo: port these monomers to external lib
 import {PHOSPHATE, THIOPHOSHATE, INVABASIC, GALNAC, GALNACPRIME} from './const';
 
-export function getNucleotidesMol(smilesCodes: string[]) {
+export function getNucleotidesMol(mols: string[]) {
   const molBlocks: string[] = [];
 
-  for (let i = 0; i < smilesCodes.length - 1; i++) {
-    if (smilesCodes[i] === PHOSPHATE.SMILES)
-      molBlocks.push(PHOSPHATE.MOLFILE);
-    else if (smilesCodes[i] === THIOPHOSHATE.SMILES)
-      molBlocks.push(THIOPHOSHATE.MOLFILE);
-    else if (smilesCodes[i] === INVABASIC.SMILES)
-      molBlocks.push(rotateNucleotidesV3000(INVABASIC.MOLFILE));
-    else if (smilesCodes[i] === GALNAC.SMILES)
-      molBlocks.push(GALNAC.MOLFILE);
-    else if (smilesCodes[i] === GALNACPRIME.SMILES)
-      molBlocks.push(GALNACPRIME.MOLFILE);
-    else
-      molBlocks.push(rotateNucleotidesV3000(smilesCodes[i]));
+  for (let i = 0; i < mols.length - 1; i++) {
+      molBlocks.push(rotateNucleotidesV3000(mols[i]));
   }
 
   return linkV3000(molBlocks, false);
