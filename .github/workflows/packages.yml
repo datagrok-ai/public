@@ -23,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 3    # get access up to 3 dip 
+          fetch-depth: 3     
       - name: Generate matrix
         id: generate-matrix
         run: |
@@ -230,12 +230,12 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: github.ref == 'refs/heads/master' && always() && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success'
-#check dockerfiles & build starts !!!!!!
+
       - name: Check dockerfiles directory existence
         id: check_directory
         uses: andstor/file-existence-action@v2
         with:
-          files: "dockerfiles"  #directory is a file
+          files: "dockerfiles"  
       - name: check if dockerfies directory not empty 
         id: NEdockerdir
         run: |
@@ -287,7 +287,7 @@ jobs:
         with:
           image: "datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}"
         
-#check dockerfiles & build ends !!!!!!!
+
       - name: Get package information
         id: info
         if: always() && steps.publish.outcome == 'success' && matrix.package != 'Meta'
