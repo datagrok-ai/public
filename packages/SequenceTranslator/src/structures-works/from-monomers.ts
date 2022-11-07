@@ -134,18 +134,20 @@ function getObjectWithCodesAndMolsFromFile(sequence: string, format: string, lib
         for (const technology of Object.keys(item[CODES][synthesizer])) {
           const codes = item[CODES][synthesizer][technology];
 
-          let monomer: bio.Monomer = {
-            symbol: item['symbol'],
-            name: item['name'],
-            naturalAnalog: item['naturalAnalog'],
-            molfile: item['molfile'],
-            polymerType: item['polymerType'],
-            monomerType: item['monomerType'],
-            rgroups: item['rgroups'],
-            data: {}
-          }
+          // let monomer: bio.Monomer = {
+          //   symbol: item['symbol'],
+          //   name: item['name'],
+          //   naturalAnalog: item['naturalAnalog'],
+          //   molfile: item['molfile'],
+          //   polymerType: item['polymerType'],
+          //   monomerType: item['monomerType'],
+          //   rgroups: item['rgroups'],
+          //   data: {}
+          // }
 
-          let mol = capPeptideMonomer(monomer);
+          // let mol = capPeptideMonomer(monomer);
+          let mol: string = item[MOL];
+          mol = mol.replace(/ R /g, ' O ');
 
           for (const code of codes)
             obj[code] = mol;
@@ -158,18 +160,21 @@ function getObjectWithCodesAndMolsFromFile(sequence: string, format: string, lib
         if (synthesizer === format) {
           for (const technology of Object.keys(item[CODES][synthesizer])) {
             const codes = item[CODES][synthesizer][technology];
-            let monomer: bio.Monomer = {
-              symbol: item['symbol'],
-              name: item['name'],
-              naturalAnalog: item['naturalAnalog'],
-              molfile: item['molfile'],
-              polymerType: item['polymerType'],
-              monomerType: item['monomerType'],
-              rgroups: item['rgroups'],
-              data: {}
-            }
+            // let monomer: bio.Monomer = {
+            //   symbol: item['symbol'],
+            //   name: item['name'],
+            //   naturalAnalog: item['naturalAnalog'],
+            //   molfile: item['molfile'],
+            //   polymerType: item['polymerType'],
+            //   monomerType: item['monomerType'],
+            //   rgroups: item['rgroups'],
+            //   data: {}
+            // }
   
-            let mol = capPeptideMonomer(monomer);
+            // let mol = capPeptideMonomer(monomer);
+            let mol: string = item[MOL];
+            mol = mol.replace(/ R /g, ' O ');
+
             for (const code of codes)
               obj[code] = mol;
           }
