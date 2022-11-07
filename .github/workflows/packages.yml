@@ -248,6 +248,7 @@ jobs:
         id: directory_changes_checker
         uses: georgeneto/directory-changes-checker@v1
         with:
+          repo-token: ${{secrets.GITHUB_TOKEN}}
           directory: "packages/${{ matrix.package }}/dockerfiles"
       - name: login to DockerHub   
         uses: docker/login-action@v2
