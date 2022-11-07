@@ -260,7 +260,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: ${name}:${current_version}
+          tags: datagrok/$(jq .name "${DIR}/package.json" | sed -E 's/(^"|"$)//g'):$(jq .version "${DIR}/package.json" | sed -E 's/(^"|"$)//g')
         if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
 
     #   - name: get image version
@@ -271,12 +271,12 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: false
-          tags: ${name}:${current_version}
+          tags: datagrok/$(jq .name "${DIR}/package.json" | sed -E 's/(^"|"$)//g'):$(jq .version "${DIR}/package.json" | sed -E 's/(^"|"$)//g')
         if: ${{steps.directory_changes_checker.output.hasChanges}} == 'true' && && steps.publish.outcome == 'fail'
       - name: Upload dockerfiles as artifact when npm push failed
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
-          image: "datagrok/${name}:${current_version}"
+          image: datagrok/$(jq .name "${DIR}/package.json" | sed -E 's/(^"|"$)//g'):$(jq .version "${DIR}/package.json" | sed -E 's/(^"|"$)//g')
         if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
 #check dockerfiles & build ends !!!!!!!
       - name: Get package information
