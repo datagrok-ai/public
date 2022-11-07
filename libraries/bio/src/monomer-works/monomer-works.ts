@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMonomerLib, Monomer} from './types';
-import {capTheMonomer} from './utils/to-atomic-level';
+import {IMonomerLib, Monomer} from '../types';
+
 
 
 export class MonomerWorks {
@@ -14,8 +14,11 @@ export class MonomerWorks {
   }
 
   //types according to Monomer possible
-  public getCappedMonomer(monomerType: string, monomerName: string): Monomer | null {
-    //TODO
+  public getCappedRotatedMonomer(monomerType: string, monomerName: string): string | null {
+    const monomer = this.monomerLib.getMonomer(monomerType, monomerName);
+    if (monomer)
+      return monomer.molfile; //TODO cap 
+
     return null;
   }
 }

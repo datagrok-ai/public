@@ -1,10 +1,10 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, RGROUP_FIELDS} from './const';
-import {ALPHABET, getSplitter, NOTATION, SplitterFunc, TAGS} from './macromolecule';
-import {UnitsHandler} from './units-handler';
-import {NotationConverter} from './notation-converter';
+import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, RGROUP_FIELDS} from '../utils/const';
+import {ALPHABET, getSplitter, NOTATION, SplitterFunc, TAGS} from '../utils/macromolecule';
+import {UnitsHandler} from '../utils/units-handler';
+import {NotationConverter} from '../utils/notation-converter';
 import {Monomer} from '../types';
 
 // constants for parsing molfile V2000
@@ -347,7 +347,7 @@ function getMonomerMetadata(
 
 /* Parse element symbols for R-groups from the HELM monomer library R-groups
  * field  */
-function parseCapGroups(rGroupObjList: any[]): string[] {
+export function parseCapGroups(rGroupObjList: any[]): string[] {
   // specifically for HELMCoreLibrary
   // considered only monoatomic rgroups
   // supposing that elements in rGroupObjList are sorted w.r.t. the rgroups idx
@@ -1363,7 +1363,24 @@ export async function getSymbolToCappedMolfileMap(monomersLibList: any[]): Promi
   return symbolToCappedMolfileMap;
 }
 
-//TODO
-export function capTheMonomer(monomer: Monomer): string {
-  return ' ';
+/* Get the V3K molfile corresponding to the capped Monomer (default cap groups)  */
+export function capPeptideMonomer(monomer: Monomer): string {
+  const funcList: DG.Func[] = DG.Func.find({package: 'Chem', name: 'getRdKitModule'});
+  const moduleRdkit = funcList[0].apply();
+  
+  const capGroups = parseCapGroups(monomer[HELM_FIELDS.RGROUPS]);
+  const capGroupIdxMap = parseCapGroupIdxMap(monomer[HELM_FIELDS.MOLFILE]);
+  const molfileV3K = convertMolfileToV3K(removeRGroupLines(monomer[HELM_FIELDS.MOLFILE]), moduleRdkit);
+  const counts = parseAtomAndBondCounts(molfileV3K);
+
+  const atoms = parseAtomBlock(molfileV3K, counts.atomCount);
+  const bonds = parseBondBlock(molfileV3K, counts.bondCount);
+  const meta = getMonomerMetadata(atoms, bonds, capGroups, capGroupIdxMap);
+
+  const monomerGraph: MolGraph = {atoms: atoms, bonds: bonds, meta: meta};
+
+  adjustPeptideMonomerGraph(monomerGraph);
+
+  const molfile = convertMolGraphToMolfileV3K(monomerGraph);
+  return molfile;
 }

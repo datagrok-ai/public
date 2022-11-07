@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
+import * as bio from '@datagrok-libraries/bio';
 import * as C from './utils/constants';
 
 import {analyzePeptidesUI} from './widgets/peptides';
@@ -13,9 +13,15 @@ import {MutationCliffsViewer, MostPotentResiduesViewer} from './viewers/sar-view
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummary} from './viewers/logo-summary';
 
+export let monomerWorks: bio.MonomerWorks | null;
+
 export const _package = new DG.Package();
 let currentTable: DG.DataFrame;
 let alignedSequenceColumn: DG.Column;
+
+export function getMoomerWorks() {
+  return monomerWorks;
+};
 
 async function main(chosenFile: string): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
@@ -34,7 +40,10 @@ async function main(chosenFile: string): Promise<void> {
 export async function Peptides(): Promise<void> {
   const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
   const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
-
+  if (monomerWorks == null) {
+    let lib = await grok.functions.call('Bio:getBioLib');
+    monomerWorks = new bio.MonomerWorks(lib);
+  }
   const appDescription = ui.info(
     [
       ui.list([

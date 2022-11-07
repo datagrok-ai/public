@@ -288,6 +288,7 @@ export class FunctionView extends DG.ViewBase {
       const textInput = ui.stringInput('Search', '', (v: string) => filteringText.next(v));
       DG.debounce(filteringText.asObservable(), 600).subscribe(() => {
         filteringOptions.text = textInput.stringValue;
+        updateFavoritesPane();
         updateSharedPane();
       });
       const dateInput = ui.choiceInput('Date started', 'Any time', ['Any time', 'Today', 'Yesterday', 'This week', 'Last week', 'This month', 'Last month', 'This year', 'Last year'], (v: DateOptions) => {
@@ -564,7 +565,7 @@ export class FunctionView extends DG.ViewBase {
     };
 
     const buildSharedList = () => ui.wait(async () => {
-      const historicalRuns = await historyUtils.pullRunsByName(this.func!.name, [filteringOptions], {order: 'started'}, ['session.user', 'options']);
+      const historicalRuns = (await historyUtils.pullRunsByName(this.func!.name, [filteringOptions], {order: 'started'}, ['session.user', 'options'])).reverse();
       const sharedRuns = historicalRuns.filter((run) => run.options['isShared']);
       if (sharedRuns.length > 0)
         return ui.wait(() => renderSharedCards(sharedRuns));
@@ -579,7 +580,7 @@ export class FunctionView extends DG.ViewBase {
     };
 
     const buildFavoritesList = (filterOptions: FilterOptions = {}) => ui.wait(async () => {
-      const historicalRuns = await historyUtils.pullRunsByName(this.func!.name, [filterOptions], {order: 'started'}, ['session.user', 'options']);
+      const historicalRuns = (await historyUtils.pullRunsByName(this.func!.name, [filterOptions], {order: 'started'}, ['session.user', 'options'])).reverse();
       const favoriteRuns = historicalRuns.filter((run) => run.options['isFavorite'] && !run.options['isImported']);
       if (favoriteRuns.length > 0)
         return ui.wait(() => renderFavoriteCards(favoriteRuns));
@@ -590,7 +591,7 @@ export class FunctionView extends DG.ViewBase {
       ...filteringOptions,
       author: grok.shell.user
     }), true);
-    const updateFavoritesPane = (filterOptions: FilterOptions = {}) => {
+    const updateFavoritesPane = () => {
       const isExpanded = favoritesListPane.expanded;
       mainAcc.removePane(favoritesListPane);
       favoritesListPane = mainAcc.addPane('My favorites', () => buildFavoritesList({
@@ -600,7 +601,7 @@ export class FunctionView extends DG.ViewBase {
     };
 
     const buildHistoryPane = (filterOptions: FilterOptions = {}) => ui.wait(async () => {
-      const historicalRuns = (await historyUtils.pullRunsByName(this.func!.name, [filterOptions], {order: 'started'}, ['session.user', 'options']));
+      const historicalRuns = (await historyUtils.pullRunsByName(this.func!.name, [filterOptions], {order: 'started'}, ['session.user', 'options'])).reverse();
       if (historicalRuns.length > 0)
         return ui.wait(() => renderHistoryCards(historicalRuns));
       else
@@ -906,7 +907,7 @@ export class FunctionView extends DG.ViewBase {
     () =>setTimeout(() => this.root.addEventListener('click', this.rootReadonlyEventListeners[2]), 100)
   ];
 
-  private setRunViewReadonly(): void {
+  protected setRunViewReadonly(): void {
     this.overlayDiv.style.removeProperty('display');
     this.root.addEventListener('click', this.rootReadonlyEventListeners[2]);
     this.root.addEventListener('mousedown', this.rootReadonlyEventListeners[0]);

@@ -18,6 +18,7 @@ import {getDistributionAndStats, getDistributionWidget} from './widgets/distribu
 import {getStats, Stats} from './utils/statistics';
 import {LogoSummary} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
+import {getMoomerWorks} from './package';
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -53,8 +54,6 @@ export class PeptidesModel {
   barData: type.MonomerDfStats = {};
   barsBounds: { [position: string]: type.BarCoordinates } = {};
   cachedBarchartTooltip: { bar: string, tooltip: null | HTMLDivElement } = {bar: '', tooltip: null};
-  monomerLib: bio.IMonomerLib | null = null; // To get monomers from lib(s)
-  monomerWorks: bio.MonomerWorks | null = null; // To get processed monomers
 
   _settings!: type.PeptidesSettings;
   isRibbonSet = false;
@@ -788,14 +787,13 @@ export class PeptidesModel {
     const tooltipElements: HTMLDivElement[] = [];
     const monomerName = aar.toLowerCase();
 
-    const monomer: bio.Monomer | null = wu(['HELM_AA', 'HELM_CHEM'])
-      .map((monomerType) => this.monomerWorks!.getCappedMonomer(monomerType, monomerName))
-      .find((m) => m != null) ?? null;
+    let mw = getMoomerWorks();
+    let mol = mw?.getCappedRotatedMonomer('PEPTIDE', aar);
 
-    if (monomer) {
-      tooltipElements.push(ui.div(monomer.n));
+    if (mol) {
+      tooltipElements.push(ui.div(monomerName));
       const options = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
-      tooltipElements.push(grok.chem.svgMol(monomer.m, undefined, undefined, options));
+      tooltipElements.push(grok.chem.svgMol(mol, undefined, undefined, options));
     } else
       tooltipElements.push(ui.div(aar));
 
@@ -1042,13 +1040,6 @@ export class PeptidesModel {
   async init(): Promise<void> {
     if (this.isInitialized)
       return;
-
-    // Get monomer library through bio library
-    this.monomerLib = await bio.getMonomerLib();
-    this.monomerLib.onChanged.subscribe(() => {
-      this.sourceGrid.invalidate();
-    });
-    this.monomerWorks = new bio.MonomerWorks(this.monomerLib);
 
     this.currentView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.tags[C.PEPTIDES_ANALYSIS] === 'true') ??
       grok.shell.addTableView(this.df);

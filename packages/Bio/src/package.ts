@@ -21,7 +21,7 @@ import {convert} from './utils/convert';
 import {getMacroMolColumnPropertyPanel, representationsWidget} from './widgets/representations';
 import {MonomerFreqs, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule'
-import {_toAtomicLevel} from '@datagrok-libraries/bio/src/utils/to-atomic-level';
+import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {
@@ -104,7 +104,6 @@ export async function monomerManager(value: string) {
   let dfSdf;
   if (value.endsWith('.sdf')) {
     const funcList: DG.Func[] = DG.Func.find({package: 'Chem', name: 'importSdf'});
-    console.debug(`Bio: initHelm() funcList.length = ${funcList.length}`);
     if (funcList.length === 1) {
       file = await _package.files.readAsBytes(`${LIB_PATH}${value}`);
       dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
@@ -116,9 +115,6 @@ export async function monomerManager(value: string) {
     const file = await _package.files.readAsText(`${LIB_PATH}${value}`);
     data = JSON.parse(file);
   }
-
-  if (monomerLib == null)
-    monomerLib = new MonomerLib();
 
   let monomers: { [type: string]: { [name: string]: bio.Monomer } } = {};
   const types: string[] = [];
@@ -148,7 +144,16 @@ export async function monomerManager(value: string) {
     monomers[monomer['polymerType']][monomer['symbol']] = monomerAdd;
   });
 
+  if (monomerLib == null)
+    monomerLib = new bio.MonomerLib();
+
   monomerLib!.update(monomers);
+}
+
+//name: getBioLib
+//output: object monomerLib
+export function getBioLib(): bio.IMonomerLib | null {
+  return monomerLib;
 }
 
 //name: manageFiles
@@ -165,7 +170,7 @@ export async function manageFiles() {
 //input: column seqColumn {semType: Macromolecule}
 //output: widget result
 export async function libraryPanel(seqColumn: DG.Column): Promise<DG.Widget> {
-
+  //@ts-ignore
   let filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
   let divInputs: HTMLDivElement = ui.div();
   let librariesList: string[] = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
