@@ -266,6 +266,7 @@ jobs:
       - name: Build and push package dockerimages
         uses: docker/build-push-action@v3
         with:
+          context: packages/${{ matrix.package }}/dockerfiles/ .
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
         if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
@@ -274,6 +275,7 @@ jobs:
       - name: build dockerfiles as artifact when npm push failed
         uses: docker/build-push-action@v3
         with:
+          context: packages/${{ matrix.package }}/dockerfiles/ .
           push: false
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
         if: ${{steps.directory_changes_checker.output.hasChanges}} == 'true' && steps.publish.outcome == 'fail'
