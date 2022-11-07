@@ -1,5 +1,13 @@
 export const CURRENT_USER = false;
 export const STORAGE_NAME = 'oligo-batch-calculator-storage';
+export const EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION = 'Base';
+export const USER_GROUP_NAME = 'Oligo Batch Calculator Admins';
+export const USER_IS_NOT_ADMIN_MESSAGE = 'You don\'t have permission for this action';
+
+export const TOOLTIPS = {
+  LONG_NAME: 'Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'',
+  ABBREVIATIONS: 'Examples: \'invabasic\', \'Cy3\', \'5MedC\'',
+};
 
 export const ADDITIONAL_MODS_COL_NAMES = {
   LONG_NAMES: 'Long name',
@@ -23,7 +31,7 @@ export const MAIN_COL_NAMES = {
 
 export const BASE_MODIFICATIONS = {
   NO: 'NO',
-  URACIL: 'rU', 
+  URACIL: 'rU',
   RNA_ADENINE: 'rA',
   RNA_CYTOSINE: 'rC',
   RNA_GUANINE: 'rG',
