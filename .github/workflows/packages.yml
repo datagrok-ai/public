@@ -240,9 +240,9 @@ jobs:
         id: NEdockerdir
         run: |
           if [ -z "$(ls -A  packages/${{ matrix.package }}/dockerfiles)" ]; then
-          echo ::set-env name=DIR_EMPTY::true
+          echo "DIR_EMPTY=true" >> $GITHUB_ENV
           else
-          echo ::set-env name=DIR_EMPTY::false
+          echo "DIR_EMPTY=false" >> $GITHUB_ENV
           fi
       - name: Check if directory has changes
         id: directory_changes_checker
