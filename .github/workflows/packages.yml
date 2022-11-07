@@ -255,7 +255,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }} 
-        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
+        if: steps.check_directory.outputs.files_exists == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
 
       - name: get docker image version
         working-directory: packages/${{ matrix.package }}
@@ -264,7 +264,7 @@ jobs:
           echo "PACKAGE_NAME=`echo "$(jq .name package.json | sed -E -e 's/(^"|"$)//g' -e 's,@datagrok/,,g')"`" >> $GITHUB_ENV
 
       - name: Build and push package dockerimages
-        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
+        if: steps.check_directory.outputs.files_exists == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
         uses: docker/build-push-action@v3
         with:
           context: packages/${{ matrix.package }}/dockerfiles
@@ -274,7 +274,7 @@ jobs:
 
     
       - name: build dockerfiles as artifact when npm push failed
-        if: ${{steps.directory_changes_checker.output.hasChanges}} == 'true' && steps.publish.outcome == 'fail'
+        if: steps.directory_changes_checker.output.hasChanges == 'true' && steps.publish.outcome == 'failure'
         uses: docker/build-push-action@v3
         with:
           context: packages/${{ matrix.package }}/dockerfiles
@@ -282,7 +282,7 @@ jobs:
           tags: datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
         
       - name: Upload dockerfiles as artifact when npm push failed
-        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'fail'
+        if: steps.directory_changes_checker.output.hasChanges == 'true' && steps.publish.outcome == 'failure'
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
           image: "datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}"
