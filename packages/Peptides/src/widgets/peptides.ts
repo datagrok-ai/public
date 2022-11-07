@@ -34,9 +34,9 @@ Promise<{host: HTMLElement, callback: () => Promise<void>}> {
   if (funcs.length == 0)
     return {host: ui.label('Bio package is missing or out of date. Please install the latest version.'), callback: async () => {}};
 
-  funcs = DG.Func.find({package: 'Helm', name: 'getMonomerLib'});
+  funcs = DG.Func.find({package: 'Bio', name: 'getBioLib'});
   if (funcs.length == 0)
-    return {host: ui.label('Helm package is missing or out of date. Please install the latest version.'), callback: async () => {}};
+    return {host: ui.label('Bio package is missing or out of date. Please install the latest version.'), callback: async () => {}};
 
   let scaledCol: DG.Column<number>;
 
