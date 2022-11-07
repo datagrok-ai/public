@@ -240,9 +240,9 @@ jobs:
         id: NEdockerdir
         run: |
           if [ -z "$(ls -A  packages/${{ matrix.package }}/dockerfiles)" ]; then
-          exit 0
+          DIR_EMPTY = "true"
           else
-          exit 1
+          DIR_EMPTY = "false"
           fi
       - name: Check if directory has changes
         id: directory_changes_checker
@@ -254,13 +254,13 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }} 
-        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{steps.NEdockerdir.output}} == '1' && steps.publish.outcome == 'success'
+        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${DIR_EMPTY} == 'false' && steps.publish.outcome == 'success'
       - name: Build and push package dockerimages
         uses: docker/build-push-action@v3
         with:
           push: true
           tags: datagrok/${name}:${current_version}
-        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{steps.NEdockerdir.output}} == '1' && steps.publish.outcome == 'success'
+        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${DIR_EMPTY} == 'false' && steps.publish.outcome == 'success'
 
     #   - name: get image version
      #     run: |
@@ -276,7 +276,7 @@ jobs:
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
           image: "datagrok/${name}:${current_version}"
-        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{steps.NEdockerdir.output}} == '1' && steps.publish.outcome == 'success'
+        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${DIR_EMPTY} == 'false' && steps.publish.outcome == 'success'
 #check dockerfiles & build ends !!!!!!!
       - name: Get package information
         id: info
