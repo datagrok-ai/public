@@ -264,26 +264,29 @@ jobs:
           echo "PACKAGE_NAME=`echo "$(jq .name package.json | sed -E -e 's/(^"|"$)//g' -e 's,@datagrok/,,g')"`" >> $GITHUB_ENV
 
       - name: Build and push package dockerimages
+        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
         uses: docker/build-push-action@v3
         with:
           context: packages/${{ matrix.package }}/dockerfiles
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
-        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
+          tags: datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
+        
 
     
       - name: build dockerfiles as artifact when npm push failed
+        if: ${{steps.directory_changes_checker.output.hasChanges}} == 'true' && steps.publish.outcome == 'fail'
         uses: docker/build-push-action@v3
         with:
           context: packages/${{ matrix.package }}/dockerfiles
           push: false
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
-        if: ${{steps.directory_changes_checker.output.hasChanges}} == 'true' && steps.publish.outcome == 'fail'
+          tags: datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
+        
       - name: Upload dockerfiles as artifact when npm push failed
+        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'fail'
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
-          image: "${{ secrets.DOCKERHUB_USERNAME }}/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}"
-        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'fail'
+          image: "datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}"
+        
 #check dockerfiles & build ends !!!!!!!
       - name: Get package information
         id: info
