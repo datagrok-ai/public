@@ -347,7 +347,7 @@ function getMonomerMetadata(
 
 /* Parse element symbols for R-groups from the HELM monomer library R-groups
  * field  */
-function parseCapGroups(rGroupObjList: any[]): string[] {
+export function parseCapGroups(rGroupObjList: any[]): string[] {
   // specifically for HELMCoreLibrary
   // considered only monoatomic rgroups
   // supposing that elements in rGroupObjList are sorted w.r.t. the rgroups idx
@@ -1365,6 +1365,9 @@ export async function getSymbolToCappedMolfileMap(monomersLibList: any[]): Promi
 
 /* Get the V3K molfile corresponding to the capped Monomer (default cap groups)  */
 export function capPeptideMonomer(monomer: Monomer): string {
+  const funcList: DG.Func[] = DG.Func.find({package: 'Chem', name: 'getRdKitModule'});
+  const moduleRdkit = funcList[0].apply();
+  
   const capGroups = parseCapGroups(monomer[HELM_FIELDS.RGROUPS]);
   const capGroupIdxMap = parseCapGroupIdxMap(monomer[HELM_FIELDS.MOLFILE]);
   const molfileV3K = convertMolfileToV3K(removeRGroupLines(monomer[HELM_FIELDS.MOLFILE]), moduleRdkit);
