@@ -260,7 +260,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: datagrok/${name}:${current_version}
+          tags: ${name}:${current_version}
         if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
 
     #   - name: get image version
@@ -271,7 +271,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: false
-          tags: datagrok/${name}:${current_version}
+          tags: ${name}:${current_version}
         if: ${{steps.directory_changes_checker.output.hasChanges}} == 'true' && && steps.publish.outcome == 'fail'
       - name: Upload dockerfiles as artifact when npm push failed
         uses: ishworkh/docker-image-artifact-upload@v1
