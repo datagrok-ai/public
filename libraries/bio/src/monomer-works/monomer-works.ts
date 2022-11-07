@@ -14,8 +14,11 @@ export class MonomerWorks {
   }
 
   //types according to Monomer possible
-  public getCappedRotatedMonomer(monomerType: string, monomerName: string): Monomer | null {
-    //TODO
-    return this.monomerLib.getMonomer(monomerType, monomerName);
+  public getCappedRotatedMonomer(monomerType: string, monomerName: string): string | null {
+    const monomer = this.monomerLib.getMonomer(monomerType, monomerName);
+    if (monomer)
+      return monomer.molfile; //TODO cap 
+
+    return null;
   }
 }
