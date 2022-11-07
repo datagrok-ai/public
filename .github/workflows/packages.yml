@@ -23,11 +23,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 3    # дать доступ до 3 вложения влючительно
+          fetch-depth: 3    # get access up to 3 dip 
       - name: Generate matrix
         id: generate-matrix
         run: |
-          if [[ "${{ github.event.inputs.packages }}" == "" ]]; then    
+          if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
             if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
               commit="$(git log --format="%H" -n 1 --no-merges)"
             else
@@ -43,7 +43,7 @@ jobs:
           for PACKAGE in $(echo ${CHANGED_PACKAGES} | sort -u); do
             DIR="packages/${PACKAGE}"
             if [ -f "${DIR}/package.json" ]; then
-              MATRIX_PUBLISH_JSON+="{\"package\": \"${PACKAGE}\"" 
+              MATRIX_PUBLISH_JSON+="{\"package\": \"${PACKAGE}\""
 
               scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
               dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
@@ -276,12 +276,12 @@ jobs:
         with:
           push: false
           tags: datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
-        if: ${{steps.directory_changes_checker.output.hasChanges}} == 'true' && && steps.publish.outcome == 'fail'
+        if: ${{steps.directory_changes_checker.output.hasChanges}} == 'true' && steps.publish.outcome == 'fail'
       - name: Upload dockerfiles as artifact when npm push failed
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
           image: "datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}"
-        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
+        if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'fail'
 #check dockerfiles & build ends !!!!!!!
       - name: Get package information
         id: info
