@@ -276,6 +276,24 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     );
   }
 
+  get onDartPropertyChanged(): rxjs.Observable<null> {
+    let dartStream = api.grok_Viewer_Get_PropertyChanged_Events(this.dart);
+    return rxjs.fromEventPattern(
+      function (handler) {
+        return api.grok_Stream_Listen(dartStream, function (x: any) {
+          handler(new TypedEventArgs(x));
+        });
+      },
+      function (handler, dart) {
+        new StreamSubscription(dart).cancel();
+      }
+    );
+  }
+
+  copyViewersLook(other: Viewer) {
+    api.grok_Viewer_Copy_Viewers_Look(this.dart, other.dart);
+  }
+
   removeFromView() {
     return toJs(api.grok_Viewer_Remove_From_View(this.dart));
   }
