@@ -133,7 +133,7 @@ jobs:
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "::set-output name=commit_sha::$commit_sha"
-          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok --profile db up -d
+          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok --profile db --profile grok_spawner up -d
           docker_sha=$(docker images --quiet datagrok/datagrok:latest)
           echo "::set-output name=docker_sha::$docker_sha"
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:latest SHA=$docker_sha docker version was used for tests"
