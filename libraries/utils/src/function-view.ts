@@ -288,6 +288,7 @@ export class FunctionView extends DG.ViewBase {
       const textInput = ui.stringInput('Search', '', (v: string) => filteringText.next(v));
       DG.debounce(filteringText.asObservable(), 600).subscribe(() => {
         filteringOptions.text = textInput.stringValue;
+        updateFavoritesPane();
         updateSharedPane();
       });
       const dateInput = ui.choiceInput('Date started', 'Any time', ['Any time', 'Today', 'Yesterday', 'This week', 'Last week', 'This month', 'Last month', 'This year', 'Last year'], (v: DateOptions) => {
@@ -590,7 +591,7 @@ export class FunctionView extends DG.ViewBase {
       ...filteringOptions,
       author: grok.shell.user
     }), true);
-    const updateFavoritesPane = (filterOptions: FilterOptions = {}) => {
+    const updateFavoritesPane = () => {
       const isExpanded = favoritesListPane.expanded;
       mainAcc.removePane(favoritesListPane);
       favoritesListPane = mainAcc.addPane('My favorites', () => buildFavoritesList({
