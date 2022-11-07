@@ -46,7 +46,7 @@ import {
 } from './src/viewers/phylocanvas-gl-viewer';
 import {IVdRegionsViewer} from './src/viewers/vd-regions-viewer';
 import {PositionHeight, PositionInfo, PositionMonomerInfo, WebLogoViewer} from './src/viewers/web-logo-viewer';
-
+import {MonomerLib} from './src/monomer-works/monomer-lib';
 
 export {
   ALIGNMENT,
@@ -104,8 +104,10 @@ export {
   ITreeHelper,
   getTreeHelper,
 
+  //Monomer lib and features
   Monomer,
   IMonomerLib,
   getMonomerLib,
   MonomerWorks,
+  MonomerLib
 };

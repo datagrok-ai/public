@@ -4,7 +4,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok bio library",
-  "version": "5.9.7",
+  "version": "5.9.10",
   "description": "",
   "dependencies": {
     "@datagrok-libraries/utils": "^1.10.1",
