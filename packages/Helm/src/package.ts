@@ -13,13 +13,19 @@ export const _package = new DG.Package();
 
 const STORAGE_NAME = 'Libraries';
 const LIB_PATH = 'libraries/';
+let monomerLib: bio.IMonomerLib | null = null;
 
 //tags: init
 export async function initHelm(): Promise<void> {
-  return new Promise(async (resolve, reject) => {
+  return Promise.all([new Promise((resolve, reject) => {
     // @ts-ignore
     dojo.ready(function() { resolve(null); });
-    await loadLibraries();
+  }), grok.functions.call('')]).then(([_, lib]: [void, bio.IMonomerLib]) => {
+    monomerLib = lib;
+    rewriteLibraries();
+    monomerLib.onChanged.subscribe((_) => {
+      rewriteLibraries();
+    })
   });
 }
 
@@ -162,16 +168,6 @@ export async function libraryPanel(helmColumn: DG.Column): Promise<DG.Widget> {
     ui.divV([filesButton])
   ]));
 }
-
-//name: manageFiles
-export async function manageFiles() {
-  const a = ui.dialog({title: 'Manage files'})
-    //@ts-ignore
-    .add(ui.fileBrowser({path: 'System:AppData/Helm/libraries'}).root)
-    .addButton('OK', () => a.close())
-    .show();
-}
-
 
 async function accessServer(url: string, key: string) {
   const params: RequestInit = {
