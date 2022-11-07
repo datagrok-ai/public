@@ -267,7 +267,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
         if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
 
     
@@ -275,12 +275,12 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: false
-          tags: datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
         if: ${{steps.directory_changes_checker.output.hasChanges}} == 'true' && steps.publish.outcome == 'fail'
       - name: Upload dockerfiles as artifact when npm push failed
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
-          image: "datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}"
+          image: "${{ secrets.DOCKERHUB_USERNAME }}/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}"
         if: ${{steps.check_directory.outputs.files_exists}} == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'fail'
 #check dockerfiles & build ends !!!!!!!
       - name: Get package information
