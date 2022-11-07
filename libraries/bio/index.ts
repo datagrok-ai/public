@@ -4,7 +4,7 @@ import {PhylocanvasTreeNode, Newick, Utils, Shapes, TreeTypes} from '@phylocanva
 import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
 
 import {Aminoacids, AminoacidsPalettes} from './src/aminoacids';
-import {MonomerWorks} from './src/monomer-works';
+import {MonomerWorks} from './src/monomer-works/monomer-works';
 import {Nucleotides, NucleotidesPalettes} from './src/nucleotides';
 import {SeqPalette, SeqPaletteBase} from './src/seq-palettes';
 import {IMonomerLib, Monomer, NodeType, isLeaf, NodeCuttedType} from './src/types';
@@ -27,7 +27,6 @@ import {
   TAGS,
   ALIGNMENT
 } from './src/utils/macromolecule';
-import {getMonomerLib} from './src/utils/monomer-lib';
 import {INewickHelper} from './src/utils/newick-helper';
 import {NotationConverter} from './src/utils/notation-converter';
 import {splitAlignedSequences} from './src/utils/splitter';
@@ -107,7 +106,6 @@ export {
   //Monomer lib and features
   Monomer,
   IMonomerLib,
-  getMonomerLib,
   MonomerWorks,
   MonomerLib
 };

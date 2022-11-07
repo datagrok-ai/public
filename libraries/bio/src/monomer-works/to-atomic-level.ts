@@ -1,10 +1,10 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, RGROUP_FIELDS} from './const';
-import {ALPHABET, getSplitter, NOTATION, SplitterFunc, TAGS} from './macromolecule';
-import {UnitsHandler} from './units-handler';
-import {NotationConverter} from './notation-converter';
+import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE, RGROUP_FIELDS} from '../utils/const';
+import {ALPHABET, getSplitter, NOTATION, SplitterFunc, TAGS} from '../utils/macromolecule';
+import {UnitsHandler} from '../utils/units-handler';
+import {NotationConverter} from '../utils/notation-converter';
 import {Monomer} from '../types';
 
 // constants for parsing molfile V2000
