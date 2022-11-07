@@ -3,108 +3,109 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as alationApi from './alation-api';
-import * as utils from './utils';
-import * as view from './view';
-import * as types from './types';
-
 export const _package = new DG.Package();
-let _p: DG.Package;
 
-export function setPackage(p: DG.Package): void {
-  _p = p;
+//name: info
+export function info() {
+  grok.shell.info(_package.webRoot);
 }
 
-export function getPackage(): DG.Package {
-  return _p ?? _package;
+const methods = ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'];
+type PepseaRepsonse = {
+  Alignment: {
+    PolymerID: string, AlignedSubpeptide: string, HELM: string, ID: string, AlignedSeq: string, [key: string]: string,
+  }[],
+  AlignmentScore: {[key: string]: number | null},
+};
+type PepseaBodyUnit = {ID: string, HELM: string};
+
+//top-menu: Bio | PepSeA MSA...
+export function pepseaMSA(): void {
+  const table = grok.shell.t;
+  const colInput = ui.columnInput('Sequences', table, table.columns.bySemType('Macromolecule'),
+    (col: DG.Column<string>) => {
+      if (col.getTag(DG.TAGS.UNITS) != 'helm' || col.semType != DG.SEMTYPE.MACROMOLECULE)
+        grok.shell.info('Sequence column must contain sequences in HELM notation!');
+    });
+  const methodInput = ui.choiceInput('Method', 'ginsi', methods);
+  const gapOpenInput = ui.floatInput('Gap open', 1.53);
+  const gapExtendInput = ui.floatInput('Gap extend', 0.0);
+  const clusterColInput = ui.columnInput('Clusters', table, table.columns.byIndex(1));
+  const alignByClusterInput = ui.boolInput('Use clusters?', false,
+    () => clusterColInput.root.hidden = !alignByClusterInput.value!);
+  alignByClusterInput.fireChanged();
+
+  ui.dialog('PepSeA Multiple Sequence Alignment')
+    .add(colInput)
+    .add(methodInput)
+    .add(gapOpenInput)
+    .add(gapExtendInput)
+    .add(alignByClusterInput)
+    .add(clusterColInput)
+    .onOK(async () => {
+      const progress = DG.TaskBarProgressIndicator.create('Performing MSA...');
+      try {
+        await perfromPepseaMSA(colInput.value!, methodInput.stringValue, gapOpenInput.value, gapExtendInput.value,
+          alignByClusterInput.value ? clusterColInput.value : null);
+      } catch (e) {
+        grok.shell.error('PepseaMsaError: Could not perform alignment. See console for details.');
+        console.error(e);
+      }
+      progress.close();
+    })
+    .show();
 }
 
-export async function getBaseURL(): Promise<string> {
-  const properties = await getPackage().getProperties() as {[key: string]: any};
-  let baseUrl = properties['Base URL'] as string;
-  if (!baseUrl)
-    throw new Error('PackagePropertyError: Base URL is not set!');
-  baseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-  return baseUrl;
-}
+async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen: number | null,
+  gapExtend: number | null, clustersCol: DG.Column<string | number> | null): Promise<void> {
+  const peptideCount = col.length;
+  gapOpen ??= 1.53;
+  gapExtend ??= 0.0;
+  clustersCol ??= DG.Column.int('Clusters', peptideCount).init(0);
+  clustersCol = (clustersCol.type !== DG.TYPE.STRING ? clustersCol.convertTo(DG.TYPE.STRING) :
+    clustersCol) as DG.Column<string>;
 
-export async function getUserGroup(): Promise<string> {
-  const properties = await getPackage().getProperties() as {[key: string]: any};
-  const userGroupName = properties['User group'] as string;
-  if (!userGroupName)
-    throw new Error('PackagePropertyError: User group is not set!');
-  return userGroupName;
-}
+  const clusters = clustersCol.categories;
+  const bodies: PepseaBodyUnit[][] = new Array(clusters.length);
 
-//name: Alation
-//tags: app
-//top-menu: Admin | Alation @Toolbox Data | Alation
-export async function Alation(): Promise<void> {
-  const progressIndicator = DG.TaskBarProgressIndicator.create('Loading Alation...');
-  await utils.retrieveKeys();
+  // Grouping data by clusters
+  for (let rowIndex = 0; rowIndex < peptideCount; ++rowIndex) {
+    const cluster = clustersCol.get(rowIndex) as string;
+    if (cluster === '')
+      continue;
 
-  let search = new URLSearchParams(window.location.search);
-  if (search.toString() !== '') {
-    const oid = search.get('id')!;
-    switch (search.get('otype')) {
-      case 'table':
-        const tableObj = await alationApi.getTableObject(oid);
-        await openTable(tableObj);
-        break;
-      case 'query':
-        const queryObj = await alationApi.getQueryObject(oid);
-        await runQuery(queryObj);
-        break;
-      default:
-        throw new Error(`AlationError: wrong object type (otype)`);
-    }
-    progressIndicator.close();
-    return;
+    const clusterId = clusters.indexOf(cluster);
+    const helmSeq = col.get(rowIndex);
+    if (helmSeq)
+      (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
   }
 
-  const treeHost = ui.box();
+  const dockerfileId = (await grok.dapi.dockerfiles.filter('pepsea').first()).id;
+  const alignedSequencesCol = DG.Column.string('Aligned', peptideCount);
 
-  const descriptionHost = ui.panel(undefined, 'alation-description');
-  const title = ui.box(ui.h1('Data Sources'), {style: {maxHeight: '30px', margin: '5px'}});
-  const rightPanelHost = ui.splitV([title, treeHost], {style: {maxWidth: '300px'}});
+  for (const body of bodies) { // getting aligned sequences for each cluster
+    const alignedObject = await requestAlignedObjects(dockerfileId, body, method, gapOpen, gapExtend);
+    const alignments = alignedObject.Alignment;
 
-  const host = ui.splitH([rightPanelHost, descriptionHost]);
+    for (const alignment of alignments) // filling alignedSequencesCol
+      alignedSequencesCol.set(parseInt(alignment.ID), alignment.AlignedSubpeptide);
+  }
 
-  const v = grok.shell.newView('Alation Browser', [host]);
-  v.box = true;
+  const semType = await grok.functions.call('Bio:detectMacromolecule', {col: alignedSequencesCol}) as string;
+  if (semType)
+    alignedSequencesCol.semType = semType;
 
-  const dataSourcesList = await alationApi.getDataSources();
-  const tree = view.createTree(dataSourcesList, 'data-source');
-  treeHost.append(tree.root);
-
-  grok.events.onContextMenu.subscribe((args: any) => {
-    const obj = args.args.item.value as types.table & types.query;
-    const contextMenu = args.args.menu;
-    if (obj.ds_id && obj.table_type)
-      contextMenu.item('Open table', async () => await openTable(obj));
-    else if (obj.datasource_id && obj.content)
-      contextMenu.item('Run query', async () => await runQuery(obj));
-  });
-
-  progressIndicator.close();
+  col.dataFrame.columns.add(alignedSequencesCol);
 }
 
-async function openTable(obj: types.table): Promise<void> {
-  const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
-  try {
-    await view.connectToDb(obj.ds_id, async (conn: DG.DataConnection) => {await view.getTable(conn, obj);});
-  } catch {
-    grok.shell.error('Couldn\'t retrieve table');
-  }
-  progressIndicator.close();
-}
-
-async function runQuery(obj: types.query): Promise<void> {
-  const progressIndicator = DG.TaskBarProgressIndicator.create('Running query...');
-  try {
-    await view.connectToDb(obj.datasource_id, async (conn: DG.DataConnection) => {await view.runQuery(conn, obj);});
-  } catch {
-    grok.shell.error('Couldn\'t retrieve table');
-  }
-  progressIndicator.close();
+async function requestAlignedObjects(dockerfileId: string, body: PepseaBodyUnit[], method: string,
+  gapOpen: number | null, gapExtend: number | null): Promise<PepseaRepsonse> {
+  const params = {
+    method: 'POST',
+    headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  };
+  const path = `/align?method=${method}&gap_open=${gapOpen}&gap_extend=${gapExtend}`;
+  const response = await grok.dapi.dockerfiles.request(dockerfileId, path, params);
+  return JSON.parse(response ?? '{}');
 }
