@@ -1,4 +1,4 @@
-import {map, SYNTHESIZERS} from './map';
+import {map, SYNTHESIZERS} from './constants';
 import {sortByStringLengthInDescOrder, getAllCodesOfSynthesizer} from './helpers';
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string, additionalCodes: string[]): string[] {
@@ -147,4 +147,8 @@ export function validate(sequence: string, additionalCodes: string[]): number {
     i += matchedCode.length;
   }
   return (i == sequence.length) ? -1 : i;
+}
+
+export function isSequenceValid(indicesOfFirstNotValidCharacter: number): boolean {
+  return indicesOfFirstNotValidCharacter == -1;
 }

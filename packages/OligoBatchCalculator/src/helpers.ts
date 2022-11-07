@@ -1,18 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {map, normalizedObj} from './map';
-import {COL_NAMES} from './additional-modifications';
-
-export const UNITS = {
-  OPTICAL_DENSITY: 'OD',
-  MICRO_GRAM: 'µg',
-  MILLI_GRAM: 'mg',
-  MICRO_MOLE: 'µmole',
-  NANO_MOLE: 'nmole',
-};
+import {map, normalizedObj, ADDITIONAL_MODS_COL_NAMES, BASE_MODIFICATIONS} from './constants';
 
 export async function isCurrentUserAppAdmin() {
   const userGroup = await grok.dapi.groups.filter('Oligo Batch Calculator Admins').first();
+  if (userGroup == undefined)
+    return false;
   const membersLogins = userGroup.members.map((e) => e.name.toLowerCase());
   const adminsLogins = userGroup.adminMembers.map((e) => e.name.toLowerCase());
   const allLogins = membersLogins.concat(adminsLogins);
@@ -22,15 +15,15 @@ export async function isCurrentUserAppAdmin() {
 
 export function normalizeSequence(sequence: string, synthesizer: string | null, technology: string | null,
   additionalModsDf: DG.DataFrame): string {
-  const additionalCodesCol = additionalModsDf.getCol(COL_NAMES.ABBREVIATION);
-  const baseModifsCol = additionalModsDf.getCol(COL_NAMES.BASE_MODIFICATION);
+  const additionalCodesCol = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION);
+  const baseModifsCol = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION);
 
   const codes = (technology == null) ?
     getAllCodesOfSynthesizer(synthesizer!).concat(additionalCodesCol.toList()) :
     Object.keys(map[synthesizer!][technology]);
 
   for (let i = 0; i < additionalModsDf.rowCount; i++)
-    normalizedObj[additionalCodesCol.getString(i)] = (baseModifsCol.get(i) != 'NO') ? baseModifsCol.get(i) : '';
+    normalizedObj[additionalCodesCol.getString(i)] = (baseModifsCol.get(i) != BASE_MODIFICATIONS.NO) ? baseModifsCol.get(i) : '';
 
   for (let i = 0; i < codes.length; i++) {
     codes[i] = codes[i].replace('(', '\\(');
@@ -61,7 +54,7 @@ export function deleteWord(sequence: string, searchTerm: string): string {
 export function saveAsCsv(table: DG.DataFrame): void {
   const link = document.createElement('a');
   link.setAttribute('href', 'data:text/csv;charset=utf-8,\uFEFF' + encodeURI(table.toCsv()));
-  link.setAttribute('download', 'Oligo Properties.csv');
+  link.setAttribute('download', `Oligo Properties ${new Date()}}.csv`);
   link.click();
 }
 
@@ -80,4 +73,8 @@ export function mergeOptions(obj1: {[ind: string]: number}, obj2: {[ind: string]
       obj3[attrname] = obj2[attrname];
   }
   return obj3;
+}
+
+export function stringify(items: string[]): string {
+  return '["' + items.join('", "') + '"]';
 }
