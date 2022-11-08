@@ -1,3 +1,54 @@
+export const CURRENT_USER = false;
+export const STORAGE_NAME = 'oligo-batch-calculator-storage';
+export const EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION = 'Base';
+export const USER_GROUP_NAME = 'Oligo Batch Calculator Admins';
+export const USER_IS_NOT_ADMIN_MESSAGE = 'You don\'t have permission for this action';
+
+export const TOOLTIPS = {
+  LONG_NAME: 'Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'',
+  ABBREVIATIONS: 'Examples: \'invabasic\', \'Cy3\', \'5MedC\'',
+};
+
+export const ADDITIONAL_MODS_COL_NAMES = {
+  LONG_NAMES: 'Long name',
+  ABBREVIATION: 'Abbreviation',
+  MOLECULAR_WEIGHT: 'Molecular weight',
+  BASE_MODIFICATION: 'Base modification',
+  EXTINCTION_COEFFICIENT: 'Ext. coefficient',
+  ACTION: 'Action',
+  CHANGE_LOGS: 'Change logs',
+};
+
+export const MAIN_COL_NAMES = {
+  ITEM: 'Item',
+  SEQUENCE: 'Sequence',
+  LENGTH: 'Length',
+  OPTICAL_DENSITY: 'OD 260',
+  MASS_OD_RATIO: 'µg/OD',
+  MOLECULAR_WEIGHT: 'MW',
+  EXTINCTION_COEFFICIENT: 'Ext. Coefficient',
+};
+
+export const BASE_MODIFICATIONS = {
+  NO: 'NO',
+  URACIL: 'rU',
+  RNA_ADENINE: 'rA',
+  RNA_CYTOSINE: 'rC',
+  RNA_GUANINE: 'rG',
+  TYROSINE: 'dT',
+  DNA_ADENINE: 'dA',
+  DNA_CYTOSINE: 'dC',
+  DNA_GUANINE: 'dG',
+};
+
+export const UNITS = {
+  OPTICAL_DENSITY: 'OD',
+  MICRO_GRAM: 'µg',
+  MILLI_GRAM: 'mg',
+  MICRO_MOLE: 'µmole',
+  NANO_MOLE: 'nmole',
+};
+
 export const SYNTHESIZERS = {
   RAW_NUCLEOTIDES: 'Raw Nucleotides',
   BIOSPRING: 'BioSpring Codes',

@@ -1,13 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import '../styles.css';
 import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
+import {WebLogoViewer} from '@datagrok-libraries/bio';
 
 /** Peptide analysis widget.
  *
@@ -97,7 +97,7 @@ Promise<{host: HTMLElement, callback: () => Promise<void>}> {
     inputElements.push(startBtn);
   }
 
-  const viewer = await df.plot.fromType('WebLogo') as bio.WebLogoViewer;
+  const viewer = await df.plot.fromType('WebLogo') as WebLogoViewer;
   viewer.root.style.setProperty('height', '130px');
   const logoHost = ui.div();
   $(logoHost).empty().append(viewer.root);

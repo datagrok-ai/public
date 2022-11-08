@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import * as C from './constants';
 import * as types from './types';
+import {SeqPaletteBase, getPaletteByType} from '@datagrok-libraries/bio';
 
 function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
   canvasContext.strokeStyle = '#000';
@@ -103,7 +103,7 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
 export function renderBarchart(ctx: CanvasRenderingContext2D, col: DG.Column, monomerColStats: types.MonomerColStats,
   bounds: DG.Rect, max: number): types.BarCoordinates {
   let sum = col.length - (monomerColStats['-']?.count ?? 0);
-  const colorPalette = bio.getPaletteByType(col.tags[C.TAGS.ALPHABET]);
+  const colorPalette = getPaletteByType(col.tags[C.TAGS.ALPHABET]);
   const name = col.name;
   const colNameSize = ctx.measureText(name);
   const margin = 0.2;
@@ -143,7 +143,7 @@ export function renderBarchart(ctx: CanvasRenderingContext2D, col: DG.Column, mo
     ctx.fillStyle = color;
 
     if (textSize.width <= subBarHeight) {
-      if (color != bio.SeqPaletteBase.undefinedColor)
+      if (color != SeqPaletteBase.undefinedColor)
         ctx.fillRect(xStart, yStart, barWidth, subBarHeight);
       else {
         ctx.strokeRect(xStart + 0.5, yStart, barWidth - 1, subBarHeight);
