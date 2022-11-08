@@ -29,6 +29,7 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
   grouppedGridDiv = ui.div();
   mainView = ui.splitV([]);
   parentViewers: {[key: string]: DG.Viewer} = {};
+  viewersStorage: {[key: string]: {[key: number]: DG.Viewer}} = {};
 
   constructor() {
     super();
@@ -91,8 +92,8 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
       }
       else {
         aggrCheckbox.value ?
-          this.colsToAnalyze.push({colName: columnInput.value!.name, type: AGGR_TYPE, name: aggrTypesChoice.value}):
-          this.colsToAnalyze.push({colName: columnInput.value!.name, type: CHART_TYPE, name: chartTypesChoice.value})
+          this.colsToAnalyze.push({colName: columnInput.value!.name, type: AGGR_TYPE, typeName: aggrTypesChoice.value}):
+          this.colsToAnalyze.push({colName: columnInput.value!.name, type: CHART_TYPE, typeName: chartTypesChoice.value})
       }
       this.updateGrid();
     })
@@ -147,7 +148,7 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
         grouppedDfQuery = (AGGREGATE_TYPES as any)[col.name](grouppedDfQuery, col.colName);
       }
       else {
-        grouppedDfQuery = (AGGREGATE_TYPES as any)['count'](grouppedDfQuery, col.name, `${col.colName}_${col.name}`);
+        grouppedDfQuery = (AGGREGATE_TYPES as any)['count'](grouppedDfQuery, col.typeName, `${col.colName}_${col.typeName}`);
       }
     }
 
@@ -158,46 +159,75 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
     for (const col of this.grouppingCols)
       grid.col(col)!.width = 150;
 
+    for (const col of this.colsToAnalyze) {
+      if (col.type === AGGR_TYPE) {
+        grid.col(`${col.colName}_${col.typeName}`)!.cellType = 'html';
+      }
+    }
 
     grid.onCellPrepare((gc) => {
-      const colToAnalyze = this.colsToAnalyze.filter(it => gc.cell.column.name === `${it.colName}_${it.name}`);
+      const colToAnalyze = this.colsToAnalyze.length ?
+        this.colsToAnalyze.filter(it => gc.gridColumn.name === `${it.colName}_${it.typeName}`) : [];
       if (gc.isTableCell && colToAnalyze.length) {
-        const condition: { [key: string]: any } = {};
-        for (const col of this.grouppingCols)
-          condition[col] = this.grouppedDf!.get(col, gc.tableRowIndex!);
-        const colList = [];
-        this.grouppingCols.forEach((col) => colList.push(this.dataFrame.col(col)!));
-        colList.push(this.dataFrame.col(colToAnalyze[0].colName)!);
-        const df = DG.DataFrame.fromColumns(colList);
-        df.columns.addNewString('group').init((j) => {
-          for (const group of this.grouppingCols) {
-            if (df.get(group, j) !== this.grouppedDf!.get(group, gc.tableRowIndex!))
-              return 'other';
-          }
-          return 'current_group';
-        });
-        const viewer = DG.Viewer.fromType((CHART_TYPES as any)[colToAnalyze[0].name], df);
-        if (!this.parentViewers[gc.cell.column.name]) {
-          this.parentViewers[gc.cell.column.name] = viewer;
-        } else {
-          //@ts-ignore
-          this.parentViewers[gc.cell.column.name].onDartPropertyChanged
-            //@ts-ignore
-            .subscribe((_) => viewer.copyViewersLook(this.parentViewers[gc.cell.column.name]));
+        let condition = this.createFilterCondition(gc.tableRowIndex!);
+        let df: DG.DataFrame;
+        if (!this.parentViewers[gc.gridColumn.name]) {
+          df = this.createViewerDf(colToAnalyze[0].colName, gc.tableRowIndex!);
+          this.parentViewers[gc.gridColumn.name] = DG.Viewer.fromType((CHART_TYPES as any)[colToAnalyze[0].typeName], df);          
         }
-        gc.element = viewer.root;
-        df.rows.match(condition).filter();
+        if (!this.viewersStorage[gc.gridColumn.name])
+          this.viewersStorage[gc.gridColumn.name] = {};
+        else {
+          if (!this.viewersStorage[gc.gridColumn.name][gc.gridRow]) {
+            df ??= this.createViewerDf(colToAnalyze[0].colName, gc.tableRowIndex!);
+            const viewer = DG.Viewer.fromType((CHART_TYPES as any)[colToAnalyze[0].typeName], df);
+            this.viewersStorage[gc.gridColumn.name][gc.gridRow] = viewer;
+            //@ts-ignore
+            viewer.copyViewersLook(this.parentViewers[gc.gridColumn.name]);
+            //@ts-ignore
+            this.parentViewers[gc.gridColumn.name].onDartPropertyChanged
+            .subscribe(() => {
+              //@ts-ignore
+              viewer.copyViewersLook(this.parentViewers[gc.gridColumn.name]);
+              df.rows.match(condition).filter();
+            });
+          }
+        }
+        gc.element = this.viewersStorage[gc.gridColumn.name][gc.gridRow].root;
+        this.viewersStorage[gc.gridColumn.name][gc.gridRow].dataFrame.rows.match(condition).filter();
       }
     });
 
     grid.onCellClick.subscribe((gc) => {
-      const colToAnalyze = this.colsToAnalyze.filter(it => gc.cell.column.name === `${it.colName}_${it.name}`);
+      const colToAnalyze = this.colsToAnalyze.filter(it => gc.gridColumn.name === `${it.colName}_${it.typeName}`);
       if (!gc.isTableCell && colToAnalyze.length)
-        grok.shell.o = this.parentViewers[gc.cell.column.name];
+        grok.shell.o = this.parentViewers[gc.gridColumn.name];
     });
 
     ui.empty(this.grouppedGridDiv);
     this.grouppedGridDiv.append(grid.root);
+  }
+
+  createFilterCondition(idx: number): { [key: string]: any } {
+    const condition: { [key: string]: any } = {};
+    for (const col of this.grouppingCols)
+      condition[col] = this.grouppedDf!.get(col, idx);
+    return condition;
+  }
+
+  createViewerDf(colToAnalyzeName: string, idx: number): DG.DataFrame {
+    const colList = [];
+    this.grouppingCols.forEach((col) => colList.push(this.dataFrame.col(col)!));
+    colList.push(this.dataFrame.col(colToAnalyzeName)!);
+    const df = DG.DataFrame.fromColumns(colList);
+    df.columns.addNewString('group').init((j) => {
+      for (const group of this.grouppingCols) {
+        if (df.get(group, j) !== this.grouppedDf!.get(group, idx!))
+          return 'other';
+      }
+      return 'current_group';
+    });
+    return df;
   }
 
 }
