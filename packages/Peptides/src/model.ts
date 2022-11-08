@@ -1041,6 +1041,14 @@ export class PeptidesModel {
     setViewerGridProps(this.mostPotentResiduesGrid);
     if (this.df.getTag(C.TAGS.CLUSTERS))
       setViewerGridProps(this.logoSummaryGrid);
+
+    for (let gcIndex = 0; gcIndex < this.sourceGrid.columns.length; ++gcIndex) {
+      const col = this.sourceGrid.columns.byIndex(gcIndex)!;
+      col.visible =
+        col.column?.semType === C.SEM_TYPES.MONOMER ||
+        col.column?.name === C.COLUMNS_NAMES.ACTIVITY_SCALED ||
+        Object.keys(this.settings.columns ?? {}).includes(col.column?.name ?? '');
+    }
   }
 
   getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
