@@ -2,54 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {weightsObj, individualBases, nearestNeighbour, SYNTHESIZERS, CURRENT_USER, STORAGE_NAME,
-  ADDITIONAL_MODS_COL_NAMES, MAIN_COL_NAMES, BASE_MODIFICATIONS, UNITS,
-  EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION, USER_IS_NOT_ADMIN_MESSAGE} from './constants';
-import {validate} from './validation';
+import {weightsObj, individualBases, nearestNeighbour, SYNTHESIZERS, CURRENT_USER, STORAGE_NAME, DEFAULT_INPUT,
+  ADDITIONAL_MODS_COL_NAMES, MAIN_COL_NAMES, UNITS, EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION} from './constants';
+import {isValidSequence, validate} from './validation';
 import {deleteWord, saveAsCsv, sortByStringLengthInDescOrder, mergeOptions, normalizeSequence,
-  isCurrentUserAppAdmin, stringify} from './helpers';
-import {addModificationButton, deleteAdditionalModification} from './additional-modifications';
+  isCurrentUserAppAdmin} from './helpers';
+import {addModification, editModification} from './additional-modifications';
+import {opticalDensityCalc, molecularMassCalc, nMoleCalc} from './calculations-simplified';
 
 export const _package = new DG.Package();
 
-
-const additionalWeightsObj: {[index: string]: number} = {};
-const extinctionCoeffsObj: {[index: string]: number} = {};
-const additionalModsDf = DG.DataFrame.fromColumns(
-  Object.values(ADDITIONAL_MODS_COL_NAMES).map((colName) => DG.Column.fromStrings(colName, [])),
-);
-const additionalAbbreviations: string[] = [];
-(async () => {
-  const modifications: any[] = [];
-  const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
-  const invalidKeys = [
-    'baseModification', 'extinctionCoefficient', 'molecularWeight', 'abbreviation', 'longName', 'changeLogs',
-  ];
-  for (const key of Object.keys(entries)) {
-    if (!invalidKeys.includes(key))
-      modifications.push(JSON.parse(entries[key]));
-  }
-  const molWeightList = modifications.map((e) => (e.molecularWeight == undefined) ? 0 : e.molecularWeight);
-  const extinctionCoefList = modifications.map((e) => String(e.extinctionCoefficient));
-
-  const additionalModsDf = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES, modifications.map((e) => e.longName)),
-    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION, modifications.map((e) => e.abbreviation)), // @ts-ignore
-    DG.Column.fromFloat32Array(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, molWeightList),
-    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION, modifications.map((e) => e.baseModification)),
-    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT, extinctionCoefList),
-    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ACTION, Array(modifications.length)),
-    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.CHANGE_LOGS, modifications.map((e) => e.changeLogs)),
-  ]);
-  const additionalAbbreviations = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION).toList();
-  const additionalWeights = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT).toList();
-  const extinctionCoefficients = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT).toList();
-  additionalAbbreviations.forEach((key, i) => {
-    additionalWeightsObj[key] = additionalWeights[i];
-    if (extinctionCoefficients[i] != EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION)
-      extinctionCoeffsObj[key] = extinctionCoefficients[i] ?? 1;
-  });
-})();
+const windows = grok.shell.windows;
+windows.showProperties = false;
+windows.showToolbox = false;
+windows.showHelp = false;
 
 //name: getUnits
 //output: list<string> units
@@ -92,6 +58,25 @@ export async function nMole(sequence: string, amount: number, outputUnits: strin
 //input: string outputUnits {choices: OligoBatchCalculator: getUnits}
 //output: double molecularMass
 export async function molecularMass(sequence: string, amount: number, outputUnits: string): Promise<number> {
+  const additionalWeightsObj: {[index: string]: number} = {};
+  const extinctionCoeffsObj: {[index: string]: number} = {};
+  const modifications: any[] = [];
+  const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
+  const invalidKeys = [
+    'baseModification', 'extinctionCoefficient', 'molecularWeight', 'abbreviation', 'longName', 'changeLogs',
+  ];
+  for (const key of Object.keys(entries)) {
+    if (!invalidKeys.includes(key))
+      modifications.push(JSON.parse(entries[key]));
+  }
+  const additionalAbbreviations = modifications.map((e) => e.abbreviation);
+  const additionalWeights = modifications.map((e) => (e.molecularWeight == undefined) ? 0 : e.molecularWeight);
+  const extinctionCoefficients = modifications.map((e) => e.extinctionCoefficient);
+  additionalAbbreviations.forEach((key, i) => {
+    additionalWeightsObj[key] = additionalWeights[i];
+    if (extinctionCoefficients[i] != EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION)
+      extinctionCoeffsObj[key] = extinctionCoefficients[i] ?? 1;
+  });
   const ec = await extinctionCoefficient(sequence, extinctionCoeffsObj);
   const od = await opticalDensity(sequence, amount, outputUnits, extinctionCoeffsObj);
   const nm = await nMole(sequence, amount, outputUnits, extinctionCoeffsObj, additionalWeightsObj);
@@ -118,12 +103,33 @@ export function molecularWeight(sequence: string, additionalWeightsObj?: {[index
   while (i < sequence.length) {
     const matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
     weight += obj[sequence.slice(i, i + matchedCode.length)];
-    i += matchedCode!.length;
+    i += matchedCode.length;
   }
   return weight - 61.97;
 }
 
 export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i: string]: number}): Promise<number> {
+  const modifications: any[] = [];
+  const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
+  const invalidKeys = [
+    'baseModification', 'extinctionCoefficient', 'molecularWeight', 'abbreviation', 'longName', 'changeLogs',
+  ];
+  for (const key of Object.keys(entries)) {
+    if (!invalidKeys.includes(key))
+      modifications.push(JSON.parse(entries[key]));
+  }
+  const molWeightList = modifications.map((e) => (e.molecularWeight == undefined) ? 0 : e.molecularWeight);
+  const extinctionCoefList = modifications.map((e) => String(e.extinctionCoefficient));
+  const additionalModsDf = DG.DataFrame.fromColumns([
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES, modifications.map((e) => e.longName)),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION,
+      modifications.map((e) => e.abbreviation)), // @ts-ignore
+    DG.Column.fromFloat32Array(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, molWeightList),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION, modifications.map((e) => e.baseModification)),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT, extinctionCoefList),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ACTION, Array(modifications.length)),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.CHANGE_LOGS, modifications.map((e) => e.changeLogs)),
+  ]);
   let ns = normalizeSequence(sequence, SYNTHESIZERS.GCRS, null, additionalModsDf);
   let nearestNeighbourSum = 0;
   let individualBasisSum = 0;
@@ -156,12 +162,54 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
 //name: Oligo Batch Calculator
 //tags: app
 export async function OligoBatchCalculatorApp(): Promise<void> {
+  const additionalWeightsObj: {[index: string]: number} = {};
+  const extinctionCoeffsObj: {[index: string]: number} = {};
+  const modifications: any[] = [];
+  const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
+  const invalidKeys = [
+    'baseModification', 'extinctionCoefficient', 'molecularWeight', 'abbreviation', 'longName', 'changeLogs',
+  ];
+  for (const key of Object.keys(entries)) {
+    if (!invalidKeys.includes(key))
+      modifications.push(JSON.parse(entries[key]));
+  }
+  const molWeightList = modifications.map((e) => (e.molecularWeight == undefined) ? 0 : e.molecularWeight);
+  const extinctionCoefList = modifications.map((e) => String(e.extinctionCoefficient));
+  const additionalModsDf = DG.DataFrame.fromColumns([
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES, modifications.map((e) => e.longName)),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION,
+      modifications.map((e) => e.abbreviation)), // @ts-ignore
+    DG.Column.fromFloat32Array(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, molWeightList),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION, modifications.map((e) => e.baseModification)),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT, extinctionCoefList),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ACTION, Array(modifications.length)),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.CHANGE_LOGS, modifications.map((e) => e.changeLogs)),
+  ]);
+  const additionalAbbreviations = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION).toList();
+  const additionalWeights = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT).toList();
+  const extinctionCoefficients = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT).toList();
+  additionalAbbreviations.forEach((key, i) => {
+    additionalWeightsObj[key] = additionalWeights[i];
+    if (extinctionCoefficients[i] != EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION)
+      extinctionCoeffsObj[key] = extinctionCoefficients[i] ?? 1;
+  });
+
   const mainGrid = DG.Viewer.grid(DG.DataFrame.create(), {
     showRowHeader: false,
+    allowEdit: false,
     showCellTooltip: true,
   });
 
   async function render(text: string): Promise<void> {
+    const additionalAbbreviations = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION).toList();
+    const additionalWeights = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT).toList();
+    const extinctionCoefficients2 = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT).toList();
+    additionalAbbreviations.forEach((key, i) => {
+      additionalWeightsObj[key] = additionalWeights[i];
+      if (extinctionCoefficients2[i] != EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION)
+        extinctionCoeffsObj[key] = extinctionCoefficients2[i] ?? 1;
+    });
+
     const sequences = text.split('\n')
       .map((s) => s.replace(/\s/g, ''))
       .filter((item) => item);
@@ -177,16 +225,17 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
 
     for (const [i, sequence] of sequences.entries()) {
       indicesOfFirstNotValidCharacter[i] = validate(sequence, additionalAbbreviations);
-      if (indicesOfFirstNotValidCharacter[i] < 0) {
+      if (isValidSequence(indicesOfFirstNotValidCharacter[i])) {
         normalizedSequences[i] = normalizeSequence(sequence, SYNTHESIZERS.GCRS, null, additionalModsDf);
         if (normalizedSequences[i].length > 2) {
           try {
             molecularWeights[i] = molecularWeight(sequence, additionalWeightsObj);
             extinctionCoefficients[i] = await extinctionCoefficient(normalizedSequences[i], extinctionCoeffsObj);
-            nMoles[i] = await nMole(sequence, yieldAmount.value!, units.value!, extinctionCoeffsObj,
-              additionalWeightsObj);
-            opticalDensities[i] = await opticalDensity(sequence, yieldAmount.value!, units.value!, extinctionCoeffsObj);
-            molecularMasses[i] = await molecularMass(sequence, yieldAmount.value!, units.value!);
+            nMoles[i] = nMoleCalc(yieldAmount.value!, units.value!, molecularWeights[i], extinctionCoefficients[i]);
+            opticalDensities[i] = opticalDensityCalc(sequence, yieldAmount.value!, units.value!,
+              extinctionCoefficients[i]);
+            molecularMasses[i] = molecularMassCalc(sequence, yieldAmount.value!, units.value!,
+              extinctionCoefficients[i], opticalDensities[i], nMoles[i], additionalWeightsObj);
           } catch (e) {
             reasonsOfError[i] = 'Unknown error, please report it to Datagrok team';
             indicesOfFirstNotValidCharacter[i] = 0;
@@ -216,14 +265,16 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     const c = (units.value == UNITS.MILLI_GRAM || units.value == UNITS.MICRO_MOLE) ? 1000 : 1;
 
     mainGrid.dataFrame = DG.DataFrame.fromColumns([
-      DG.Column.fromList(DG.COLUMN_TYPE.INT, MAIN_COL_NAMES.ITEM, Array(...Array(sequences.length + 1).keys()).slice(1)),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, MAIN_COL_NAMES.ITEM,
+        Array(...Array(sequences.length + 1).keys()).slice(1)),
       DG.Column.fromStrings(MAIN_COL_NAMES.SEQUENCE, sequences),
       DG.Column.fromList(DG.COLUMN_TYPE.INT, MAIN_COL_NAMES.LENGTH, normalizedSequences.map((s) => s.length / 2)),
       DG.Column.fromFloat32Array(MAIN_COL_NAMES.OPTICAL_DENSITY, opticalDensities),
       DG.Column.fromFloat32Array(moleColumnName, nMoles),
       DG.Column.fromFloat32Array(`Mass [${massName}]`, molecularMasses),
       DG.Column.fromFloat32Array(`${moleName2}/OD`, nMoles.map(function(n, i) {return c * n / opticalDensities[i];})),
-      DG.Column.fromFloat32Array(MAIN_COL_NAMES.MASS_OD_RATIO, molecularMasses.map(function(n, i) {return c * n / opticalDensities[i];})),
+      DG.Column.fromFloat32Array(MAIN_COL_NAMES.MASS_OD_RATIO,
+        molecularMasses.map(function(n, i) {return c * n / opticalDensities[i];})),
       DG.Column.fromFloat32Array(MAIN_COL_NAMES.MOLECULAR_WEIGHT, molecularWeights),
       DG.Column.fromFloat32Array(MAIN_COL_NAMES.EXTINCTION_COEFFICIENT, extinctionCoefficients),
     ]);
@@ -246,18 +297,11 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     });
   }
 
-  const windows = grok.shell.windows;
-  windows.showProperties = false;
-  windows.showToolbox = false;
-  windows.showHelp = false;
-
-  const defaultInput = 'fAmCmGmAmCpsmU\nmApsmApsfGmAmUmCfGfAfC\nmAmUfGmGmUmCmAfAmGmA';
-
-  const inputSequences = ui.textInput('', defaultInput, (txt: string) => render(txt));
+  const inputSequences = ui.textInput('', DEFAULT_INPUT, (txt: string) => render(txt));
   const yieldAmount = ui.floatInput('', 1, () => render(inputSequences.value));
-  const units = ui.choiceInput('', UNITS.OPTICAL_DENSITY, Object.values(UNITS), () => render(inputSequences.value))!;
+  const units = ui.choiceInput('', UNITS.OPTICAL_DENSITY, Object.values(UNITS), () => render(inputSequences.value));
 
-  await render(defaultInput);
+  await render(DEFAULT_INPUT);
 
   const downloadIcon = ui.iconFA('download', () => saveAsCsv(mainGrid.dataFrame), 'Save as CSV file');
   $(downloadIcon).css('margin-left', '5px');
@@ -276,25 +320,8 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     showCellTooltip: false,
     allowEdit: (await isCurrentUserAppAdmin()),
   });
-  additionaModifsGrid.col(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES)!.width = 110;
-  additionaModifsGrid.col(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION)!.width = 80;
-  additionaModifsGrid.col(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT)!.width = 105;
-  additionaModifsGrid.col(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION)!.width = 110;
-  additionaModifsGrid.col(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT)!.width = 100;
 
-  // Hide 'CHANGE_LOGS' column, display its content in tooltip
-  additionaModifsGrid.columns.setVisible(additionalModsDf.columns.names().slice(0, -1));
-  additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.CHANGE_LOGS).name = '~' + ADDITIONAL_MODS_COL_NAMES.CHANGE_LOGS;
-  additionaModifsGrid.onCellTooltip(function(cell, x, y) {
-    if (cell.isTableCell) {
-      const v = additionalModsDf.getCol('~' + ADDITIONAL_MODS_COL_NAMES.CHANGE_LOGS)
-        .get(cell.gridRow).split('; ').slice(0, -1);
-      ui.tooltip.show(ui.divText(v), x, y);
-      return true;
-    }
-  });
-
-  const addModificationIcon = ui.iconFA('plus', () => addModificationButton(additionalModsDf), 'Add new modidfication');
+  const addModificationIcon = ui.iconFA('plus', () => addModification(additionalModsDf), 'Add new modidfication');
   $(addModificationIcon).css('margin-left', '5px');
   $(addModificationIcon).css('margin-top', '12px');
 
@@ -307,9 +334,6 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     ),
     additionaModifsGrid.root,
   ], {style: {maxWidth: '600px'}});
-
-  additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION)
-    .setTag(DG.TAGS.CHOICES, stringify(Object.values(BASE_MODIFICATIONS)));
 
   const clearIcon = ui.iconFA('redo', () => inputSequences.value = '', 'Clear input field');
   $(clearIcon).css('margin-left', '5px');
@@ -347,67 +371,5 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     }).root,
   ]]);
 
-  const col = additionaModifsGrid.col(ADDITIONAL_MODS_COL_NAMES.ACTION)!;
-  col.cellType = 'html';
-  additionaModifsGrid.onCellPrepare(function(gc) {
-    if (gc.isTableCell && gc.gridColumn.name == ADDITIONAL_MODS_COL_NAMES.ACTION) {
-      const icon = ui.iconFA('trash-alt');
-      gc.style.element = ui.button(icon, async () => await deleteAdditionalModification(additionalModsDf, gc.gridRow));
-    }
-  });
-
-  let tempValue = '';
-  additionalModsDf.onCurrentCellChanged.subscribe(() => {
-    tempValue = additionalModsDf.currentCell.value;
-  });
-
-  DG.debounce(additionalModsDf.onValuesChanged, 10).subscribe(async (_) => {
-    if (!await isCurrentUserAppAdmin())
-      return grok.shell.warning(USER_IS_NOT_ADMIN_MESSAGE);
-    if (additionalModsDf.currentCol.name == ADDITIONAL_MODS_COL_NAMES.ABBREVIATION) {
-      const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
-      if (additionalModsDf.currentCell.value.length > 100)
-        return grok.shell.warning('Abbreviation shouldn\'t contain more than 100 characters');
-      if (additionalModsDf.currentCell.value in entries) {
-        additionalModsDf.set(additionalModsDf.currentCol.name, additionalModsDf.currentRowIdx, tempValue);
-        return grok.shell.warning(`Abbreviation ${additionalModsDf.currentCell.value} already exists`);
-      }
-    }
-    if (additionalModsDf.currentCol.name == ADDITIONAL_MODS_COL_NAMES.LONG_NAMES &&
-      additionalModsDf.currentCell.value.length > 300)
-      return grok.shell.warning('Long Name shouldn\'t contain more than 300 characters');
-
-    const rowIndex = additionalModsDf.currentCell.rowIndex;
-    if (additionalModsDf.currentCol.name == ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION) {
-      if (additionalModsDf.currentCell.value == BASE_MODIFICATIONS.NO) {
-        const extCoefChoiceInput = ui.floatInput('', 0);
-        ui.dialog('Enter Extinction Coefficient Value')
-          .add(extCoefChoiceInput)
-          .onOK(() => {
-            const col = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT);
-            col.set(rowIndex, String(extCoefChoiceInput.value), false);
-            additionaModifsGrid.invalidate();
-          })
-          .show();
-      } else {
-        const col = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT);
-        col.set(rowIndex, EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION, false);
-        additionaModifsGrid.invalidate();
-      }
-    }
-
-    await grok.dapi.userDataStorage.postValue(
-      STORAGE_NAME,
-      additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION).get(rowIndex),
-      JSON.stringify({
-        longName: additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES).get(rowIndex),
-        abbreviation: additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION).get(rowIndex),
-        molecularWeight: additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT).get(rowIndex),
-        extinctionCoefficient: additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT).get(rowIndex),
-        baseModification: additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION).get(rowIndex),
-        changeLogs: additionalModsDf.getCol('~' + ADDITIONAL_MODS_COL_NAMES.CHANGE_LOGS).get(rowIndex),
-      }),
-      CURRENT_USER,
-    );
-  });
+  editModification(additionalModsDf, additionaModifsGrid);
 }
