@@ -1529,8 +1529,8 @@ export class BitSet {
 
   /** Inverts a bitset.
    * @returns {BitSet} */
-  invert(): BitSet {
-    api.grok_BitSet_Invert(this.dart);
+  invert(notify: boolean = true): BitSet {
+    api.grok_BitSet_Invert(this.dart, notify);
     return this;
   }
 
@@ -1645,8 +1645,8 @@ export class BitSet {
   /** Copies the content from the other {BitSet}.
    * @param {BitSet} b - BitSet to copy from.
    * @returns {BitSet} */
-  copyFrom(b: BitSet): BitSet {
-    api.grok_BitSet_CopyFrom(this.dart, b.dart);
+  copyFrom(b: BitSet, notify: boolean = true): BitSet {
+    api.grok_BitSet_CopyFrom(this.dart, b.dart, notify);
     return this;
   }
 
