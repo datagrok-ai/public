@@ -5,6 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
 
+import $ from 'cash-dom';
+
 //TODO: show sliderInput values
 export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
   const settings = model.settings;
@@ -15,12 +17,19 @@ export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
     () => result.isBidirectional = bidirectionalAnalysis.value!);
   const maxMutations = ui.sliderInput('Max mutations', settings.maxMutations ?? 1, 0, 50, () => {
     const val = Math.round(maxMutations.value!);
+    $(maxMutations.root).find('label.ui-input-description').remove();
     result.maxMutations = val;
+    maxMutations.addPostfix(val.toString());
   });
+  maxMutations.addPostfix((settings.maxMutations ?? 1).toString());
+
   const minActivityDelta = ui.sliderInput('Min activity delta', settings.minActivityDelta ?? 0, 0, 100, () => {
     const val = Math.round(minActivityDelta.value!);
     result.minActivityDelta = val;
+    $(minActivityDelta.root).find('label.ui-input-description').remove();
+    minActivityDelta.addPostfix(val.toString());
   });
+  minActivityDelta.addPostfix((settings.minActivityDelta ?? 0).toString());
 
   const accordion = ui.accordion();
   accordion.addPane('General', () => ui.inputs([activityScaling, bidirectionalAnalysis]), true);
@@ -33,5 +42,3 @@ export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
 
   return dialog.show();
 }
-
-

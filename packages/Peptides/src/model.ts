@@ -1064,7 +1064,8 @@ export class PeptidesModel {
     this.currentView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.tags[C.PEPTIDES_ANALYSIS] === 'true') ??
       grok.shell.addTableView(this.df);
     if (!this.isRibbonSet) {
-      this.currentView.setRibbonPanels([[ui.icons.settings(() => getSettingsDialog(this))]], false);
+      const settingsButton = ui.bigButton('Settings', () => getSettingsDialog(this), 'Peptides analysis settings');
+      this.currentView.setRibbonPanels([[settingsButton]], false);
       this.isRibbonSet = true;
     }
     grok.shell.v = this.currentView;
