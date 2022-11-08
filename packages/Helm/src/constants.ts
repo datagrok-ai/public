@@ -12,14 +12,16 @@ export const jsonSdfMonomerLibDict = {
     "symbol": "MonomerCode"
 }
 
-export const MONOMER_MANAGER_MAP = {
-    'id': 'symbol', 
-    'n': 'name',
-    'na': 'naturalAnalog',
-    'type': 'polymerType',
-    'mt': 'monomerType', 
-    'm': 'molfile', 
-}
+export type WebEditorMonomer = {
+    id: string,     //symbol
+    n: string,      //name
+    na: string,     //natural analog
+    type: string,   //polymer type
+    mt: string,     //monomer type
+    m: string,      //molfile
+    at: {[group: string]: string},   //substituents
+    rs: number      //number of substituents
+  };
 
 export const SMILES = 'smiles';
 export const RGROUPS = "rgroups";
