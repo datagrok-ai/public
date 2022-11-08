@@ -58,9 +58,13 @@ export class PeptidesModel {
   isRibbonSet = false;
 
   cp: bio.SeqPalette;
+  xorBitset?: DG.BitSet;
+  initBitset: DG.BitSet;
+  isInvariantMapTrigger: boolean = false;;
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
+    this.initBitset = this.df.filter.clone();
     this.cp = bio.pickUpPalette(this.df.getCol(C.COLUMNS_NAMES.MACROMOLECULE));
   }
 
@@ -102,7 +106,9 @@ export class PeptidesModel {
   set invariantMapSelection(selection: type.PositionToAARList) {
     this._invariantMapSelection = selection;
     this.df.tags[C.TAGS.FILTER] = JSON.stringify(selection);
+    this.isInvariantMapTrigger = true;
     this.df.filter.fireChanged();
+    this.isInvariantMapTrigger = false;
     this.invalidateGrids();
   }
 
@@ -987,18 +993,24 @@ export class PeptidesModel {
     };
 
     selection.onChanged.subscribe(() => changeSelectionBitset(selection));
+    
     filter.onChanged.subscribe(() => {
       const positionList = Object.keys(this.invariantMapSelection);
-      for (let index = 0; index < this.df.rowCount; ++index) {
+      const invariantMapBitset = DG.BitSet.create(filter.length, (index) => {
         let result = true;
         for (const position of positionList) {
           const aarList = this.invariantMapSelection[position];
           result &&= aarList.length === 0 || aarList.includes(this.df.get(position, index));
           if (!result)
-            break;
+            return result;
         }
-        filter.set(index, filter.get(index) && result, false);
-      }
+        return result;
+      });
+
+      if (!this.isInvariantMapTrigger)
+        this.initBitset = filter.clone();
+
+      filter.copyFrom(invariantMapBitset.and(this.initBitset), false);
     });
     this.isBitsetChangedInitialized = true;
   }
