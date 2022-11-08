@@ -1,4 +1,4 @@
-import {map, SYNTHESIZERS} from './constants';
+import {map, SYNTHESIZERS, NUCLEOTIDES, FIRST_UNIQUE_CHARACTERS} from './constants';
 import {sortByStringLengthInDescOrder, getAllCodesOfSynthesizer} from './helpers';
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string, additionalCodes: string[]): string[] {
@@ -38,9 +38,6 @@ export function sequenceValidation(sequence: string, additionalCodes: string[]):
 
   let outputIndices = Array(possibleSynthesizers.length).fill(0);
 
-  const firstUniqueCharacters = ['r', 'd'];
-  const nucleotides = ['A', 'U', 'T', 'C', 'G'];
-
   possibleSynthesizers.forEach((synthesizer, synthesizerIndex) => {
     const codes = sortByStringLengthInDescOrder(getAllCodesOfSynthesizer(synthesizer)
       .concat(sortedAdditionalCodes));
@@ -53,13 +50,13 @@ export function sequenceValidation(sequence: string, additionalCodes: string[]):
 
       if ( // for mistake pattern 'rAA'
         outputIndices[synthesizerIndex] > 1 &&
-        nucleotides.includes(sequence[outputIndices[synthesizerIndex]]) &&
-        firstUniqueCharacters.includes(sequence[outputIndices[synthesizerIndex] - 2])
+        NUCLEOTIDES.includes(sequence[outputIndices[synthesizerIndex]]) &&
+        FIRST_UNIQUE_CHARACTERS.includes(sequence[outputIndices[synthesizerIndex] - 2])
       ) break;
 
       if ( // for mistake pattern 'ArA'
-        firstUniqueCharacters.includes(sequence[outputIndices[synthesizerIndex] + 1]) &&
-        nucleotides.includes(sequence[outputIndices[synthesizerIndex]])
+        FIRST_UNIQUE_CHARACTERS.includes(sequence[outputIndices[synthesizerIndex] + 1]) &&
+        NUCLEOTIDES.includes(sequence[outputIndices[synthesizerIndex]])
       ) {
         outputIndices[synthesizerIndex]++;
         break;
@@ -99,13 +96,13 @@ export function sequenceValidation(sequence: string, additionalCodes: string[]):
 
       if ( // for mistake pattern 'rAA'
         outputIndices[technologyIndex] > 1 &&
-        nucleotides.includes(sequence[outputIndices[technologyIndex]]) &&
-        firstUniqueCharacters.includes(sequence[outputIndices[technologyIndex] - 2])
+        NUCLEOTIDES.includes(sequence[outputIndices[technologyIndex]]) &&
+        FIRST_UNIQUE_CHARACTERS.includes(sequence[outputIndices[technologyIndex] - 2])
       ) break;
 
       if ( // for mistake pattern 'ArA'
-        firstUniqueCharacters.includes(sequence[outputIndices[technologyIndex] + 1]) &&
-        nucleotides.includes(sequence[outputIndices[technologyIndex]])
+        FIRST_UNIQUE_CHARACTERS.includes(sequence[outputIndices[technologyIndex] + 1]) &&
+        NUCLEOTIDES.includes(sequence[outputIndices[technologyIndex]])
       ) {
         outputIndices[technologyIndex]++;
         break;
@@ -126,8 +123,6 @@ export function sequenceValidation(sequence: string, additionalCodes: string[]):
 }
 
 export function validate(sequence: string, additionalCodes: string[]): number {
-  const firstUniqueCharacters = ['r', 'd'];
-  const nucleotides = ['A', 'U', 'T', 'C', 'G'];
   const codes = sortByStringLengthInDescOrder(getAllCodesOfSynthesizer(SYNTHESIZERS.GCRS).concat(additionalCodes));
   let i = 0;
   while (i < sequence.length) {
@@ -136,7 +131,7 @@ export function validate(sequence: string, additionalCodes: string[]): number {
     if (matchedCode == null)
       break;
 
-    if (i > 1 && nucleotides.includes(sequence[i]) && firstUniqueCharacters.includes(sequence[i - 2]))
+    if (i > 1 && NUCLEOTIDES.includes(sequence[i]) && FIRST_UNIQUE_CHARACTERS.includes(sequence[i - 2]))
       break;
 
     // if (firstUniqueCharacters.includes(sequence[i + 1]) && nucleotides.includes(sequence[i])) {
