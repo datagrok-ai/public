@@ -108,7 +108,7 @@ or vice versa. This means that the column type is always taken into account. The
 remembered for a viewer instance (currently, they are not preserved through
 layout serialization).
 
-!["Copy column color coding"](pick-up-apply-commands-color-coding.gif "Copy column color coding")
+![Copy column color coding](pick-up-apply-commands-color-coding.gif "Copy column color coding")
 
 ## Row summary columns
 
