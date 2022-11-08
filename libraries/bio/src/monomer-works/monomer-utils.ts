@@ -5,10 +5,63 @@ import * as grok from 'datagrok-api/grok';
 import {
   HELM_FIELDS, HELM_CORE_FIELDS, RGROUP_FIELDS, jsonSdfMonomerLibDict,
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
-} from './const';
-import {getSplitter, SplitterFunc, TAGS} from './macromolecule';
+} from '../utils/const';
+import {getSplitter, SplitterFunc, TAGS} from '../utils/macromolecule';
+import {Monomer} from '../types/index';
+import { MonomerLib } from './monomer-lib';
 
-export const HELM_CORE_LIB_FILENAME = '/data/HELMCoreLibrary.json';
+const expectedMonomerData = ['symbol', 'name', 'molfile', 'rgroups', 'polymerType', 'monomerType'];
+
+export async function readLibrary(path: string, fileName: string): Promise<MonomerLib> {
+  let data: any[] = [];
+  let file;
+  let dfSdf;
+  let fileSource = new DG.FileSource(path);
+  if (fileName.endsWith('.sdf')) {
+    const funcList: DG.Func[] = DG.Func.find({package: 'Chem', name: 'importSdf'});
+    if (funcList.length === 1) {
+
+      file = await fileSource.readAsBytes(fileName);
+      dfSdf = await grok.functions.call('Chem:importSdf', {bytes: file});
+      data = createJsonMonomerLibFromSdf(dfSdf[0]);
+    } else {
+      grok.shell.warning('Chem package is not installed');
+    }
+  } else {
+    const file = await fileSource.readAsText(fileName);
+    data = JSON.parse(file);
+  }
+
+  let monomers: { [type: string]: { [name: string]: Monomer } } = {};
+  const types: string[] = [];
+  //group monomers by their type
+  data.forEach(monomer => {
+    let monomerAdd: Monomer = {
+      'symbol': monomer['symbol'],
+      'name': monomer['name'],
+      'naturalAnalog': monomer['naturalAnalog'],
+      'molfile': monomer['molfile'],
+      'rgroups': monomer['rgroups'],
+      'polymerType': monomer['polymerType'],
+      'monomerType': monomer['monomerType'],
+      'data': {}
+    };
+
+    Object.keys(monomer).forEach(prop => {
+      if (!expectedMonomerData.includes(prop))
+        monomerAdd.data[prop] = monomer[prop];
+    });
+    
+    if (!types.includes(monomer['polymerType'])) {
+      monomers[monomer['polymerType']] = {};
+      types.push(monomer['polymerType']);
+    } 
+
+    monomers[monomer['polymerType']][monomer['symbol']] = monomerAdd;
+  });
+
+  return new MonomerLib(monomers);
+}
 
 export function encodeMonomers(col: DG.Column): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
