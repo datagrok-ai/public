@@ -273,19 +273,19 @@ jobs:
         
 
     
-      - name: build dockerfiles as artifact when npm push failed
-        if: steps.directory_changes_checker.output.hasChanges == 'true' && steps.publish.outcome == 'failure'
+      - name: build dockerfiles as artifact when npm push failed or skipped
+        if: steps.directory_changes_checker.output.hasChanges == 'true' && steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped'
         uses: docker/build-push-action@v3
         with:
           context: packages/${{ matrix.package }}/dockerfiles
           push: false
-          tags: datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
+          tags: datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}${{ steps.datagrok-image.outputs.commit_sha }}
         
-      - name: Upload dockerfiles as artifact when npm push failed
-        if: steps.directory_changes_checker.output.hasChanges == 'true' && steps.publish.outcome == 'failure'
+      - name: Upload dockerfiles as artifact when npm push failed or skipped
+        if: steps.directory_changes_checker.output.hasChanges == 'true' && steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped'
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
-          image: "datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}"
+          image: "datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}${{ steps.datagrok-image.outputs.commit_sha }}"
         
 
       - name: Get package information
