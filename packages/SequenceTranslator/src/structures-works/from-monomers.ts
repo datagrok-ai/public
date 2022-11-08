@@ -1,22 +1,24 @@
 // import {map, SYNTHESIZERS, TECHNOLOGIES, delimiter} from './map';
 import {map, SYNTHESIZERS, TECHNOLOGIES, delimiter} from './map';
 import {isValidSequence} from './sequence-codes-tools';
-import {getNucleotidesMol} from './mol-transformations';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
-import * as bio from '@datagrok-libraries/bio';
-import {capPeptideMonomer} from '@datagrok-libraries/bio/src/utils/to-atomic-level';
+import {getMonomerWorks} from '../package';
 
 import {standardPhosphateLinkSmiles, MODIFICATIONS} from './const';
+
+// todo: remove
+// const NAME = 'name';
+const CODES = 'codes';
+// const SMILES = 'smiles';
+const MOL = 'molfile';
 
 export function sequenceToMolV3000(
   sequence: string, inverted: boolean = false, oclRender: boolean = false,
   format: string, monomersLib: string,
 ): string {
-  const obj = getObjectWithCodesAndMolsFromFile(sequence, format, monomersLib);
-  console.log('obj', obj);
-  let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
+  const monomerNameFromCode = getCodeToNameMap(sequence, format);
+  let codes = sortByStringLengthInDescendingOrder(Object.keys(monomerNameFromCode));
   let i = 0;
-  const molsCodes:string[] = [];
   const codesList = [];
   const links = ['s', 'ps', '*'];
   const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
@@ -27,25 +29,21 @@ export function sequenceToMolV3000(
     i += code.length;
     inverted ? codesList.unshift(code) : codesList.push(code);
   }
+
+  const monomers = [];
+
   for (let i = 0; i < codesList.length; i++) {
-    if (dropdowns.includes(codesList[i])) {
-      molsCodes.push(obj[codesList[i]]);
-      if (!(i < codesList.length - 1 && links.includes(codesList[i + 1])))
-        molsCodes.push(obj['p']);
-    } else {
-      if (links.includes(codesList[i]) ||
-        includesStandardLinkAlready.includes(codesList[i]) ||
-        (i < codesList.length - 1 && links.includes(codesList[i + 1]))
-      )
-      molsCodes.push(obj[codesList[i]]);
-      else {
-        molsCodes.push(obj[codesList[i]]);
-        molsCodes.push(obj['p']);
-      }
+    if (links.includes(codesList[i]) ||
+      includesStandardLinkAlready.includes(codesList[i]) ||
+      (i < codesList.length - 1 && links.includes(codesList[i + 1]))
+    )
+      monomers.push(monomerNameFromCode[codesList[i]]);
+    else {
+      monomers.push(monomerNameFromCode[codesList[i]]);
+      monomers.push(monomerNameFromCode['p linkage']);
     }
   }
-
-  return getNucleotidesMol(molsCodes);
+  return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA');
 }
 
 export function sequenceToSmiles(sequence: string, inverted: boolean = false, format: string): string {
@@ -92,6 +90,33 @@ export function sequenceToSmiles(sequence: string, inverted: boolean = false, fo
     smiles.slice(0, smiles.length - standardPhosphateLinkSmiles.length + 1);
 }
 
+function getCodeToNameMap(sequence: string, format: string) {
+  const obj: { [code: string]: string } = {};
+  const NAME = 'name';
+  if (format == null) {
+    for (const synthesizer of Object.keys(map)) {
+      for (const technology of Object.keys(map[synthesizer])) {
+        for (const code of Object.keys(map[synthesizer][technology]))
+          obj[code] = map[synthesizer][technology][code][NAME]!;
+      }
+    }
+  } else {
+    for (const technology of Object.keys(map[format])) {
+      for (const code of Object.keys(map[format][technology]))
+        obj[code] = map[format][technology][code][NAME]!;
+        // obj[code] = map[format][technology][code].SMILES;
+    }
+  }
+  obj[delimiter] = '';
+  // TODO: create object based from synthesizer type to avoid key(codes) duplicates
+  const output = isValidSequence(sequence, format);
+  if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12))
+    obj['g'] = map[SYNTHESIZERS.MERMADE_12][TECHNOLOGIES.SI_RNA]['g'][NAME]!;
+  else if (output.synthesizer!.includes(SYNTHESIZERS.AXOLABS))
+    obj['g'] = map[SYNTHESIZERS.AXOLABS][TECHNOLOGIES.SI_RNA]['g'][NAME]!;
+  return obj;
+}
+
 function getObjectWithCodesAndSmiles(sequence: string, format: string) {
   const obj: { [code: string]: string } = {};
   if (format == null) {
@@ -117,36 +142,18 @@ function getObjectWithCodesAndSmiles(sequence: string, format: string) {
   return obj;
 }
 
-// todo: remove
-// const NAME = 'name';
-const CODES = 'codes';
-const SMILES = 'smiles';
-const MOL = 'molfile';
-
 function getObjectWithCodesAndMolsFromFile(sequence: string, format: string, libFileContent: string) {
   const obj: { [code: string]: string } = {};
   // todo: type
   const lib: any[] = JSON.parse(libFileContent); //consider using library
 
-  if (format == null) {
-    for (const item of lib) {
-      for (const synthesizer of Object.keys(item[CODES])) {
+  for (const item of lib) {
+    for (const synthesizer of Object.keys(item[CODES])) {
+      if (synthesizer === format) {
         for (const technology of Object.keys(item[CODES][synthesizer])) {
           const codes = item[CODES][synthesizer][technology];
-
-          // let monomer: bio.Monomer = {
-          //   symbol: item['symbol'],
-          //   name: item['name'],
-          //   naturalAnalog: item['naturalAnalog'],
-          //   molfile: item['molfile'],
-          //   polymerType: item['polymerType'],
-          //   monomerType: item['monomerType'],
-          //   rgroups: item['rgroups'],
-          //   data: {}
-          // }
-
-          // let mol = capPeptideMonomer(monomer);
           let mol: string = item[MOL];
+          // todo: find another solution
           mol = mol.replace(/ R /g, ' O ');
 
           for (const code of codes)
@@ -154,51 +161,10 @@ function getObjectWithCodesAndMolsFromFile(sequence: string, format: string, lib
         }
       }
     }
-  } else {
-    for (const item of lib) {
-      for (const synthesizer of Object.keys(item[CODES])) {
-        if (synthesizer === format) {
-          for (const technology of Object.keys(item[CODES][synthesizer])) {
-            const codes = item[CODES][synthesizer][technology];
-            // let monomer: bio.Monomer = {
-            //   symbol: item['symbol'],
-            //   name: item['name'],
-            //   naturalAnalog: item['naturalAnalog'],
-            //   molfile: item['molfile'],
-            //   polymerType: item['polymerType'],
-            //   monomerType: item['monomerType'],
-            //   rgroups: item['rgroups'],
-            //   data: {}
-            // }
-  
-            // let mol = capPeptideMonomer(monomer);
-            let mol: string = item[MOL];
-            mol = mol.replace(/ R /g, ' O ');
-
-            for (const code of codes)
-              obj[code] = mol;
-          }
-        }
-      }
-    }
   }
-  // todo: don't forget to replace [OH:1] and ... by O in smiles strings
 
-  // if (format == null) {
-  //   for (const synthesizer of Object.keys(map)) {
-  //     for (const technology of Object.keys(map[synthesizer])) {
-  //       for (const code of Object.keys(map[synthesizer][technology]))
-  //         obj[code] = map[synthesizer][technology][code].SMILES;
-  //     }
-  //   }
-  // } else {
-  //   for (const technology of Object.keys(map[format])) {
-  //     for (const code of Object.keys(map[format][technology]))
-  //       obj[code] = map[format][technology][code].SMILES;
-  //   }
-  // }
   obj[delimiter] = '';
-  // TODO: create object based from synthesizer type to avoid key(codes) duplicates
+  // TODO: create object based on synthesizer type to avoid key(codes) duplicates
   const output = isValidSequence(sequence, format);
   if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12)) {
     // todo: remove as quickfix, optimize access to 'g'
@@ -212,10 +178,10 @@ function getObjectWithCodesAndMolsFromFile(sequence: string, format: string, lib
               (synthesizer === SYNTHESIZERS.MERMADE_12) &&
               (technology === TECHNOLOGIES.SI_RNA);
             if (condition) {
-              let smiles: string = item[SMILES];
-              smiles = smiles.replace(/\[OH:1\]/g, 'O');
-              smiles = smiles.replace(/\[OH:2\]/g, 'O');
-              obj[code] = smiles;
+              let mol: string = item[MOL];
+              // todo: find another solution
+              mol = mol.replace(/ R /g, ' O ');
+              obj[code] = mol;
             }
           }
         }
@@ -232,10 +198,10 @@ function getObjectWithCodesAndMolsFromFile(sequence: string, format: string, lib
               (synthesizer === SYNTHESIZERS.AXOLABS) &&
               (technology === TECHNOLOGIES.SI_RNA);
             if (condition) {
-              let smiles: string = item[SMILES];
-              smiles = smiles.replace(/\[OH:1\]/g, 'O');
-              smiles = smiles.replace(/\[OH:2\]/g, 'O');
-              obj[code] = smiles;
+              let mol: string = item[MOL];
+              // todo: find another solution
+              mol = mol.replace(/ R /g, ' O ');
+              obj[code] = mol;
             }
           }
         }

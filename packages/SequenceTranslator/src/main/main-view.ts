@@ -30,7 +30,6 @@ export async function mainView(): Promise<HTMLDivElement> {
     }
 
     const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
-    console.log(monomersLibAddress);
 
     try {
       sequence = sequence.replace(/\s/g, '');

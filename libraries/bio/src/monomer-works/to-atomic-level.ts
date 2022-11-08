@@ -155,7 +155,7 @@ export async function _toAtomicLevel(
   for (let row = 0; row < columnLength; ++row) {
     const monomerSeq = monomerSequencesArray[row];
     reconstructed[row] = monomerSeqToMolfile(monomerSeq, monomersDict, alphabet, polymerType);
-    console.log(reconstructed[row]);
+    // console.log(reconstructed[row]);
   }
 
   // exclude name collisions
@@ -1383,4 +1383,127 @@ export function capPeptideMonomer(monomer: Monomer): string {
 
   const molfile = convertMolGraphToMolfileV3K(monomerGraph);
   return molfile;
+}
+
+///////////////  Sequence translator quickfix /////////////////
+
+/* Translate a sequence of monomer symbols into Molfile V3000, version used as
+ * a quickfix in Sequence translator, to be refactered as the rest of this
+ * section */
+export function sequenceToMolFileST(
+  monomerSeq: string[], // sequence of values of 'symbol' field for monomers
+  symbolToMolfileObj: {[sym: string]: string},
+  polymerType: string // value of the field 'polymerType'
+): string | null {
+  // todo: translate symbolToMolfileObj into monomers dict
+
+  // todo: handle the case when the polymer is empty
+  if (monomerSeq.length === 0)
+    return null;
+
+  // define atom and bond counts, taking into account the bond type
+  const {atomCount, bondCount} = getResultingAtomBondCountsST(monomerSeq, monomersDict, ALPHABET.RNA, HELM_POLYMER_TYPE.RNA);
+
+  // create arrays to store lines of the resulting molfile
+  const molfileAtomBlock = new Array<string>(atomCount);
+  const molfileBondBlock = new Array<string>(bondCount);
+
+  let addMonomerToMolblock;
+  let capMolblock;
+  let nodeShiftInitValue;
+  let bondShiftInitValue;
+  let sugar = null;
+  let phosphate = null;
+
+  addMonomerToMolblock = addCustomToMolBlock;
+  capMolblock = capPeptideMolblock;
+  nodeShiftInitValue = bondShiftInitValue = 0;
+
+  const v: LoopVariables = {
+    i: 0,
+    nodeShift: nodeShiftInitValue,
+    bondShift: bondShiftInitValue,
+    backbonePositionShift: new Array<number>(2).fill(0),
+    branchPositionShift: new Array<number>(2).fill(0),
+    backboneAttachNode: 0,
+    branchAttachNode: 0,
+    flipFactor: 1,
+  };
+
+  const C: LoopConstants = {
+    sugar: sugar!,
+    phosphate: phosphate!,
+    seqLength: monomerSeq.length,
+    atomCount: atomCount,
+    bondCount: bondCount,
+  };
+
+  for (v.i = 0; v.i < C.seqLength; ++v.i) {
+    const monomer = monomersDict.get(monomerSeq[v.i])!;
+    addMonomerToMolblock(monomer, molfileAtomBlock, molfileBondBlock, v, C);
+  }
+
+  capMolblock(molfileAtomBlock, molfileBondBlock, v, C);
+
+  const molfileCountsLine = V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + V3K_COUNTS_LINE_ENDING;
+
+  // todo: optimize concatenation using Alexander's hint
+  const molfileParts = [
+    V3K_HEADER_FIRST_LINE,
+    V3K_HEADER_SECOND_LINE,
+    V3K_BEGIN_CTAB_BLOCK,
+    molfileCountsLine,
+    V3K_BEGIN_ATOM_BLOCK,
+    molfileAtomBlock.join(''),
+    V3K_END_ATOM_BLOCK,
+    V3K_BEGIN_BOND_BLOCK,
+    molfileBondBlock.join(''),
+    V3K_END_BOND_BLOCK,
+    V3K_END_CTAB_BLOCK,
+    V3K_END,
+  ];
+
+  return molfileParts.join('');
+}
+
+/* Compute the atom/bond counts for the resulting molfile, depending on the
+ * type of polymer (peptide/nucleotide) */
+function getResultingAtomBondCountsST(
+  monomerSeq: string[], monomersDict: Map<string, MolGraph>,
+  alphabet: ALPHABET, polymerType: HELM_POLYMER_TYPE
+): { atomCount: number, bondCount: number } {
+  let atomCount = 0;
+  let bondCount = 0;
+
+  // sum up all the atoms/nodes provided by the sequence
+  for (const monomerSymbol of monomerSeq) {
+    const monomer = monomersDict.get(monomerSymbol)!;
+    atomCount += monomer.atoms.x.length;
+    bondCount += monomer.bonds.bondTypes.length;
+  }
+
+  // add extra values depending on the polymer type
+  if (polymerType === HELM_POLYMER_TYPE.PEPTIDE) {
+    // add the rightmost/terminating cap group 'OH' (i.e. 'O')
+    atomCount += 1;
+    // add chain-extending bonds (C-NH per each monomer pair and terminal C-OH)
+    bondCount += monomerSeq.length;
+  } else { // nucleotides
+    const sugar = (alphabet === ALPHABET.DNA) ?
+      monomersDict.get(DEOXYRIBOSE)! : monomersDict.get(RIBOSE)!;
+    const phosphate = monomersDict.get(PHOSPHATE)!;
+
+    // add phosphate and sugar per each nucleobase symbol
+    atomCount += monomerSeq.length * (phosphate.atoms.x.length + sugar.atoms.x.length);
+    // add the leftmost cap group 'OH' (i.e. 'O') to the first phosphate
+    atomCount += 1;
+
+    // add bonds from phosphate and sugar
+    bondCount += monomerSeq.length * (phosphate.bonds.bondTypes.length + sugar.bonds.bondTypes.length);
+
+    // add chain-extending and branch bonds (O-P, C-O and C-N per each nucleotide)
+    bondCount += monomerSeq.length * 3;
+  }
+
+  return {atomCount, bondCount};
 }

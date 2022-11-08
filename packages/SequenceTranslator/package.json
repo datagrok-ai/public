@@ -15,7 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^1.11.1",
     "@types/react": "^18.0.15",
-    "@datagrok-libraries/bio": "^5.9.7",
+    "@datagrok-libraries/bio": "^5.9.13",
     "datagrok-api": "^1.7.2",
     "datagrok-tools": "^4.1.2",
     "npm": "^8.11.0",
