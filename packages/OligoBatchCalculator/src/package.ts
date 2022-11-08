@@ -138,9 +138,9 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
       if (//@ts-ignore
         extCoefsObj[modif] != EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION &&
         extCoefsObj[modif] != undefined &&//@ts-ignore
-        !isNaN(parseFloat(extCoefsObj[modif]))
+        !isNaN(Number(extCoefsObj[modif]))
       ) {//@ts-ignore
-        modificationsSum += (sequence.match(new RegExp(modif, 'g')) || []).length * parseFloat(extCoefsObj[modif]);
+        modificationsSum += (sequence.match(new RegExp(modif, 'g')) || []).length * Number(extCoefsObj[modif]);
         ns = deleteWord(ns, modif);
       }
     }

@@ -3,24 +3,42 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {isCurrentUserAppAdmin, stringify} from './helpers';
 import {STORAGE_NAME, CURRENT_USER, ADDITIONAL_MODS_COL_NAMES, BASE_MODIFICATIONS, TOOLTIPS,
-  EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION, USER_IS_NOT_ADMIN_MESSAGE} from './constants';
+  EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION, MESSAGES, CONSTRAINS} from './constants';
 
 
 export async function addModification(modificationsDf: DG.DataFrame): Promise<void> {
-  if (!await isCurrentUserAppAdmin()) return grok.shell.warning(USER_IS_NOT_ADMIN_MESSAGE);
+  if (!await isCurrentUserAppAdmin()) return grok.shell.warning(MESSAGES.USER_IS_NOT_ADMIN);
 
-  const longName = ui.stringInput(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES, '');
+  const longName = ui.textInput(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES, '');
   ui.tooltip.bind(longName.root, TOOLTIPS.LONG_NAME);
-  const abbreviation = ui.stringInput(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION, '');
+
+  const abbreviation = ui.textInput(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION, '');
   ui.tooltip.bind(abbreviation.root, TOOLTIPS.ABBREVIATIONS);
-  const molecularWeight = ui.floatInput(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, 0);
-  const baseModification = ui.choiceInput(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION,
-    BASE_MODIFICATIONS.NO, Object.values(BASE_MODIFICATIONS), (v: string) => {
+
+  const molecularWeight = ui.floatInput(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, 0, (v: string) => {
+    if (isNaN(Number(v)))
+      grok.shell.warning(MESSAGES.isNumericTypeValidation(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT));
+  });
+  ui.tooltip.bind(molecularWeight.root, TOOLTIPS.MOL_WEIGHT);
+
+  const baseModification = ui.choiceInput(
+    ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION,
+    BASE_MODIFICATIONS.NO,
+    Object.values(BASE_MODIFICATIONS),
+    (v: string) => {
       if (v != BASE_MODIFICATIONS.NO)
         extCoefficient.value = EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION;
       extCoefficient.enabled = (v == BASE_MODIFICATIONS.NO);
-    });
+    },
+  );
+  ui.tooltip.bind(baseModification.root, TOOLTIPS.BASE_MODIFICATION);
+
   const extCoefficient = ui.stringInput(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT, '');
+  extCoefficient.onInput(() => {
+    if (isNaN(Number(extCoefficient.value)))
+      grok.shell.warning(MESSAGES.isNumericTypeValidation(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT));
+  });
+  ui.tooltip.bind(extCoefficient.root, TOOLTIPS.EXT_COEFF);
 
   ui.dialog('Add Modification')
     .add(ui.block([
@@ -31,28 +49,36 @@ export async function addModification(modificationsDf: DG.DataFrame): Promise<vo
       extCoefficient.root,
     ]))
     .onOK(async () => {
-      if (longName.value.length > 300)
-        return grok.shell.warning('Long Name shouldn\'t contain more than 300 characters');
-      if (abbreviation.value.length > 100)
-        return grok.shell.warning('Abbreviation shouldn\'t contain more than 100 characters');
+      if (longName.value.length > CONSTRAINS.LONG_NAME_LENGTH_MAX)
+        return grok.shell.error(MESSAGES.TOO_LONG_NAME);
+
+      if (abbreviation.value.length > CONSTRAINS.ABBREVIATION_LENGTH_MAX)
+        return grok.shell.error(MESSAGES.TOO_LONG_ABBREVIATION);
+
+      if (typeof molecularWeight.value != 'number')
+        return grok.shell.error(MESSAGES.isNumericTypeValidation(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT));
+
+      if (molecularWeight.value! <= CONSTRAINS.MOL_WEIGHT_VALUE_MIN)
+        return grok.shell.error(MESSAGES.isPositiveNumberValidation(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT));
+
+      if (extCoefficient.value != EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION && isNaN(Number(extCoefficient.value)))
+        return grok.shell.error(MESSAGES.isPositiveNumberValidation(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT));
+
       const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
       if (abbreviation.value in entries)
-        return grok.shell.warning(`Abbreviation ${abbreviation.value} already exists`);
+        return grok.shell.error(MESSAGES.abbreviationAlreadyExist(abbreviation.value));
+
       const userObj = await grok.dapi.users.current();
       const modifiedLogs = Date() + ' by ' + userObj.firstName + ' ' + userObj.lastName + '; ';
-      await grok.dapi.userDataStorage.postValue(
-        STORAGE_NAME,
+
+      await postAdditionalModificationToStorage(
+        longName.value,
         abbreviation.value,
-        JSON.stringify({
-          longName: longName.value,
-          abbreviation: abbreviation.value,
-          molecularWeight: molecularWeight.value,
-          extinctionCoefficient: extCoefficient.value,
-          baseModification: baseModification.value,
-          changeLogs: modifiedLogs,
-        }),
-        CURRENT_USER,
-      ).then(() => grok.shell.info('New modification added'));
+        String(molecularWeight.value),
+        extCoefficient.value,
+        String(baseModification.value),
+        modifiedLogs,
+      );
 
       modificationsDf.rows.addNew([
         longName.value, abbreviation.value, molecularWeight.value,
@@ -99,7 +125,7 @@ export async function editModification(additionalModsDf: DG.DataFrame, additiona
 
   DG.debounce(additionalModsDf.onValuesChanged, 10).subscribe(async (_) => {
     if (!await isCurrentUserAppAdmin())
-      return grok.shell.warning(USER_IS_NOT_ADMIN_MESSAGE);
+      return grok.shell.warning(MESSAGES.USER_IS_NOT_ADMIN);
     if (additionalModsDf.currentCol.name == ADDITIONAL_MODS_COL_NAMES.ABBREVIATION) {
       const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
       if (additionalModsDf.currentCell.value.length > 100)
@@ -132,25 +158,20 @@ export async function editModification(additionalModsDf: DG.DataFrame, additiona
       }
     }
 
-    await grok.dapi.userDataStorage.postValue(
-      STORAGE_NAME,
+    await postAdditionalModificationToStorage(
+      additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES).getString(rowIndex),
       additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION).getString(rowIndex),
-      JSON.stringify({
-        longName: additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES).get(rowIndex),
-        abbreviation: additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION).get(rowIndex),
-        molecularWeight: additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT).get(rowIndex),
-        extinctionCoefficient: additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT).get(rowIndex),
-        baseModification: additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION).get(rowIndex),
-        changeLogs: additionalModsDf.getCol('~' + ADDITIONAL_MODS_COL_NAMES.CHANGE_LOGS).get(rowIndex),
-      }),
-      CURRENT_USER,
+      additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT).getString(rowIndex),
+      additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT).getString(rowIndex),
+      additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION).getString(rowIndex),
+      additionalModsDf.getCol('~' + ADDITIONAL_MODS_COL_NAMES.CHANGE_LOGS).getString(rowIndex),
     );
   });
 }
 
 
 export async function deleteModification(additionalModsDf: DG.DataFrame, rowIndex: number): Promise<void> {
-  if (!await isCurrentUserAppAdmin()) return grok.shell.warning(USER_IS_NOT_ADMIN_MESSAGE);
+  if (!await isCurrentUserAppAdmin()) return grok.shell.warning(MESSAGES.USER_IS_NOT_ADMIN);
   const keyToDelete = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION).getString(rowIndex);
   ui.dialog(`Do you want to delete abbreviation ${keyToDelete}?`)
     .onOK(async () => {
@@ -159,4 +180,22 @@ export async function deleteModification(additionalModsDf: DG.DataFrame, rowInde
         .then(() => grok.shell.info(`${keyToDelete} deleted`));
     })
     .show();
+}
+
+
+async function postAdditionalModificationToStorage(longName: string, abbreviation: string, molWeight: string,
+  extCoeff: string, baseModif: string, changeLogs: string): Promise<void> {
+  await grok.dapi.userDataStorage.postValue(
+    STORAGE_NAME,
+    abbreviation,
+    JSON.stringify({
+      longName: longName,
+      abbreviation: abbreviation,
+      molecularWeight: molWeight,
+      extinctionCoefficient: extCoeff,
+      baseModification: baseModif,
+      changeLogs: changeLogs,
+    }),
+    CURRENT_USER,
+  ).then(() => grok.shell.info('Posted'));
 }
