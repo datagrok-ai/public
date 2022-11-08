@@ -3,6 +3,7 @@ export const STORAGE_NAME = 'oligo-batch-calculator-storage';
 export const EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION = 'Base';
 export const USER_GROUP_NAME = 'Oligo Batch Calculator Admins';
 export const USER_IS_NOT_ADMIN_MESSAGE = 'You don\'t have permission for this action';
+export const DEFAULT_INPUT = 'fAmCmGmAmCpsmU\nmApsmApsfGmAmUmCfGfAfC\nmAmUfGmGmUmCmAfAmGmA';
 
 export const TOOLTIPS = {
   LONG_NAME: 'Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'',

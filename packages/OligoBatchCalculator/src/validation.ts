@@ -25,7 +25,7 @@ function possibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: s
   return technologies;
 }
 
-export function isValidSequence(sequence: string, additionalCodes: string[]): {
+export function sequenceValidation(sequence: string, additionalCodes: string[]): {
   indexOfFirstNotValidChar: number,
   synthesizer: string[] | null,
   technology: string[] | null
@@ -149,6 +149,6 @@ export function validate(sequence: string, additionalCodes: string[]): number {
   return (i == sequence.length) ? -1 : i;
 }
 
-export function isSequenceValid(indicesOfFirstNotValidCharacter: number): boolean {
+export function isValidSequence(indicesOfFirstNotValidCharacter: number): boolean {
   return indicesOfFirstNotValidCharacter == -1;
 }
