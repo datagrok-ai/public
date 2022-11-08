@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.0.95",
+  "version": "3.0.96",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -1798,6 +1798,9 @@
         },
         "1.1.6": {
           "datagrok-api": "^1.6.7"
+        },
+        "1.1.7": {
+          "datagrok-api": "^1.8.3"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
