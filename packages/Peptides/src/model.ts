@@ -1,7 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter';
 
@@ -18,7 +17,7 @@ import {getDistributionAndStats, getDistributionWidget} from './widgets/distribu
 import {getStats, Stats} from './utils/statistics';
 import {LogoSummary} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
-import {getMoomerWorks} from './package';
+import {getMonomerWorks} from './package';
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -787,7 +786,7 @@ export class PeptidesModel {
     const tooltipElements: HTMLDivElement[] = [];
     const monomerName = aar.toLowerCase();
 
-    let mw = getMoomerWorks();
+    let mw = getMonomerWorks();
     let mol = mw?.getCappedRotatedMonomer('PEPTIDE', aar);
 
     if (mol) {
