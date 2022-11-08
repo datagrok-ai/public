@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {weightsObj, individualBases, nearestNeighbour, SYNTHESIZERS, CURRENT_USER, STORAGE_NAME, DEFAULT_INPUT,
+import {WEIGHTS, INDIVIDUAL_BASES, NEAREST_NEIGHBOUR, SYNTHESIZERS, CURRENT_USER, STORAGE_NAME, DEFAULT_INPUT,
   ADDITIONAL_MODS_COL_NAMES, MAIN_COL_NAMES, UNITS, EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION} from './constants';
 import {isValidSequence, validate} from './validation';
 import {deleteWord, saveAsCsv, sortByStringLengthInDescOrder, mergeOptions, normalizeSequence,
@@ -11,7 +11,6 @@ import {addModification, editModification} from './additional-modifications';
 import {opticalDensityCalc, molecularMassCalc, nMoleCalc} from './calculations-simplified';
 
 export const _package = new DG.Package();
-
 const windows = grok.shell.windows;
 windows.showProperties = false;
 windows.showToolbox = false;
@@ -95,9 +94,9 @@ export async function molecularMass(sequence: string, amount: number, outputUnit
 //output: double molWeight
 export function molecularWeight(sequence: string, additionalWeightsObj?: {[index: string]: number}): number {
   const codes = (additionalWeightsObj == null) ?
-    sortByStringLengthInDescOrder(Object.keys(weightsObj)) :
-    sortByStringLengthInDescOrder(Object.keys(weightsObj).concat(Object.keys(additionalWeightsObj)));
-  const obj = (additionalWeightsObj != null) ? mergeOptions(weightsObj, additionalWeightsObj) : weightsObj;
+    sortByStringLengthInDescOrder(Object.keys(WEIGHTS)) :
+    sortByStringLengthInDescOrder(Object.keys(WEIGHTS).concat(Object.keys(additionalWeightsObj)));
+  const obj = (additionalWeightsObj != null) ? mergeOptions(WEIGHTS, additionalWeightsObj) : WEIGHTS;
   let weight = 0;
   let i = 0;
   while (i < sequence.length) {
@@ -148,14 +147,14 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
   }
   for (let i = 0; i < ns.length - 2; i += 2) {
     nearestNeighbourSum += (ns[i] == ns[i + 2]) ?
-      nearestNeighbour[ns.slice(i, i + 2)][ns.slice(i + 2, i + 4)] :
+      NEAREST_NEIGHBOUR[ns.slice(i, i + 2)][ns.slice(i + 2, i + 4)] :
       (
-        nearestNeighbour['r' + ((ns[i + 1] == 'T') ? 'U' : ns[i + 1])]['r' + ((ns[i + 3] == 'T') ? 'U' : ns[i + 3])] +
-        nearestNeighbour['d' + ((ns[i + 1] == 'U') ? 'T' : ns[i + 1])]['d' + ((ns[i + 3] == 'U') ? 'T' : ns[i + 3])]
+        NEAREST_NEIGHBOUR['r' + ((ns[i + 1] == 'T') ? 'U' : ns[i + 1])]['r' + ((ns[i + 3] == 'T') ? 'U' : ns[i + 3])] +
+        NEAREST_NEIGHBOUR['d' + ((ns[i + 1] == 'U') ? 'T' : ns[i + 1])]['d' + ((ns[i + 3] == 'U') ? 'T' : ns[i + 3])]
       ) / 2;
   }
   for (let i = 2; i < ns.length - 2; i += 2)
-    individualBasisSum += individualBases[ns.slice(i, i + 2)];
+    individualBasisSum += INDIVIDUAL_BASES[ns.slice(i, i + 2)];
   return nearestNeighbourSum - individualBasisSum + modificationsSum;
 }
 
