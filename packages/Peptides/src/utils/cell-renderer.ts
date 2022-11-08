@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
 import * as types from './types';
-import {SeqPaletteBase, getPaletteByType} from '@datagrok-libraries/bio';
+import * as bio from '@datagrok-libraries/bio';
 
 function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
   canvasContext.strokeStyle = '#000';
@@ -100,86 +100,40 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
     renderCellSelection(canvasContext, bound);
 }
 
-export function renderBarchart(ctx: CanvasRenderingContext2D, col: DG.Column, monomerColStats: types.MonomerColStats,
-  bounds: DG.Rect, max: number): types.BarCoordinates {
-  let sum = col.length - (monomerColStats['-']?.count ?? 0);
-  const colorPalette = getPaletteByType(col.tags[C.TAGS.ALPHABET]);
-  const name = col.name;
-  const colNameSize = ctx.measureText(name);
-  const margin = 0.2;
-  const innerMargin = 0.02;
-  const selectLineRatio = 0.1;
-  const fontSize = 11;
 
-  const xMargin = bounds.x + bounds.width * margin;
-  const yMargin = bounds.y + bounds.height * margin / 4;
-  const wMargin = bounds.width - bounds.width * margin * 2;
-  const hMargin = bounds.height - bounds.height * margin;
-  const barWidth = 10;
-  ctx.fillStyle = 'black';
-  ctx.textBaseline = 'top';
-  ctx.font = `${hMargin * margin / 2}px`;
-  ctx.fillText(name, xMargin + (wMargin - colNameSize.width) / 2, yMargin + hMargin + hMargin * margin / 4);
+export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, statsInfo: types.StatsInfo,
+  rowCount: number, cp: bio.SeqPalette, drawOptions: types.DrawOptions = {}): void {
+  drawOptions.fontStyle ??= '16px Roboto, Roboto Local, sans-serif';
+  drawOptions.upperLetterHeight ??= 12.2;
+  drawOptions.upperLetterAscent ??= 0.25;
+  drawOptions.marginVertical ??= 5;
+  drawOptions.marginHorizontal ??= 5;
+
+  const totalSpaceBetweenLetters = (statsInfo.orderedIndexes.length - 1) * drawOptions.upperLetterAscent;
+  const barHeight = bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters;
+  const leftShift = drawOptions.marginHorizontal * 2;
+  const barWidth = bounds.width - leftShift - drawOptions.marginHorizontal;
+  const xStart = bounds.x + leftShift;
+  let currentY = bounds.y + drawOptions.marginVertical;
 
 
-  const barCoordinates: types.BarCoordinates = {};
+  for (const index of statsInfo.orderedIndexes) {
+    const monomer = statsInfo.monomerCol.get(index)!;
+    const monomerHeight = barHeight * (statsInfo.countCol.get(index)! / rowCount);
 
-  const xStart = xMargin + (wMargin - barWidth) / 2;
-  for (const [monomer, monomerStats] of Object.entries(monomerColStats)) {
-    if (monomer == '-')
-      continue;
+    ctx.resetTransform();
+    if (monomer !== '-') {
+      const monomerTxt = bio.monomerToShort(monomer, 5);
+      const mTm: TextMetrics = ctx.measureText(monomerTxt);
 
-    const count = monomerStats.count;
-    const sBarHeight = hMargin * count / max;
-    const gapSize = sBarHeight * innerMargin;
-    const verticalShift = (max - sum) / max;
-    const textSize = ctx.measureText(monomer);
-    const subBarHeight = sBarHeight - gapSize;
-    const yStart = yMargin + hMargin * verticalShift + gapSize / 2;
-    barCoordinates[monomer] = new DG.Rect(xStart, yStart, barWidth, subBarHeight);
-
-    const color = colorPalette.get(monomer);
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-
-    if (textSize.width <= subBarHeight) {
-      if (color != SeqPaletteBase.undefinedColor)
-        ctx.fillRect(xStart, yStart, barWidth, subBarHeight);
-      else {
-        ctx.strokeRect(xStart + 0.5, yStart, barWidth - 1, subBarHeight);
-        barCoordinates[monomer].x -= 0.5;
-        barCoordinates[monomer].width -= 1;
-      }
-
-      const leftMargin = (wMargin - (monomer.length > 1 ? fontSize : textSize.width - 8)) / 2;
-      const absX = xMargin + leftMargin;
-      const absY = yStart + subBarHeight / 2 + (monomer.length == 1 ? 4 : 0);
-      const origTransform = ctx.getTransform();
-
-      if (monomer.length > 1) {
-        ctx.translate(absX, absY);
-        ctx.rotate(Math.PI / 2);
-        ctx.translate(-absX, -absY);
-      }
-
-      ctx.fillStyle = 'black';
-      ctx.font = `${fontSize}px monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(monomer, absX, absY);
-      ctx.setTransform(origTransform);
-    } else
-      ctx.fillRect(xStart, yStart, barWidth, subBarHeight);
-
-    const selectedCount = monomerStats.selected;
-    if (selectedCount) {
-      ctx.fillStyle = 'rgb(255,165,0)';
-      ctx.fillRect(xStart - wMargin * selectLineRatio * 2, yStart,
-        barWidth * selectLineRatio, hMargin * selectedCount / max - gapSize);
+      ctx.fillStyle = cp.get(monomer) ?? cp.get('other');
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.font = drawOptions.fontStyle;
+      // Hacks to scale uppercase characters to target rectangle
+      ctx.setTransform(barWidth / mTm.width, 0, 0, monomerHeight / drawOptions.upperLetterHeight, xStart, currentY);
+      ctx.fillText(monomerTxt, 0, 0);
     }
-
-    sum -= count;
+    currentY += monomerHeight + drawOptions.upperLetterAscent;
   }
-
-  return barCoordinates;
 }

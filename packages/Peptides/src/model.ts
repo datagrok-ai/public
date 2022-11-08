@@ -9,8 +9,8 @@ import * as rxjs from 'rxjs';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateBarsData, getTypedArrayConstructor, isGridCellInvalid, scaleActivity} from './utils/misc';
-import {MutationCliffsViewer, SARViewerBase, MostPotentResiduesViewer} from './viewers/sar-viewer';
+import {getTypedArrayConstructor, isGridCellInvalid, scaleActivity} from './utils/misc';
+import {MutationCliffsViewer, MostPotentResiduesViewer} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
 import {getDistributionAndStats, getDistributionWidget} from './widgets/distribution';
@@ -18,6 +18,7 @@ import {getStats, Stats} from './utils/statistics';
 import {LogoSummary} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
 import {getMonomerWorks} from './package';
+import * as bio from '@datagrok-libraries/bio';
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -50,15 +51,17 @@ export class PeptidesModel {
   isChangingEdfBitset = false;
 
   monomerMap: { [key: string]: { molfile: string, fullName: string } } = {};
-  barData: type.MonomerDfStats = {};
-  barsBounds: { [position: string]: type.BarCoordinates } = {};
-  cachedBarchartTooltip: { bar: string, tooltip: null | HTMLDivElement } = {bar: '', tooltip: null};
+  monomerLib: bio.IMonomerLib | null = null; // To get monomers from lib(s)
+  monomerWorks: bio.MonomerWorks | null = null; // To get processed monomers
 
   _settings!: type.PeptidesSettings;
   isRibbonSet = false;
 
+  cp: bio.SeqPalette;
+
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
+    this.cp = bio.pickUpPalette(this.df.getCol(C.COLUMNS_NAMES.MACROMOLECULE));
   }
 
   static async getInstance(dataFrame: DG.DataFrame): Promise<PeptidesModel> {
@@ -203,7 +206,7 @@ export class PeptidesModel {
     const alphabet = col.tags['alphabet'];
     const splitSeqDf = splitAlignedSequences(col);
 
-    this.barData = calculateBarsData(splitSeqDf.columns.toList(), this.df.selection);
+    // this.barData = calculateBarsData(splitSeqDf.columns.toList(), this.df.selection);
 
     const positionColumns = splitSeqDf.columns.names();
 
@@ -253,7 +256,7 @@ export class PeptidesModel {
 
     positionColumns.push(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
 
-    this.setBarChartInteraction();
+    // this.setBarChartInteraction();
 
     this.setCellRenderers(positionColumns);
 
@@ -361,7 +364,7 @@ export class PeptidesModel {
     }
     this.invariantMapSelection = tempInvariantMapSelection;
     this.mutationCliffsSelection = mutationCliffsSelection;
-    this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
+    // this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
   }
 
   joinDataFrames(positionColumns: string[], splitSeqDf: DG.DataFrame, alphabet: string): void {
@@ -588,7 +591,7 @@ export class PeptidesModel {
         this.modifyClusterSelection(cluster);
       else
         this.initClusterSelection(cluster);
-      this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
+      // this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
     });
     grid.onCellRender.subscribe((gridCellArgs) => {
       const gc = gridCellArgs.cell;
@@ -631,51 +634,51 @@ export class PeptidesModel {
     this.logoSummarySelection = [cluster];
   }
 
-  setBarChartInteraction(): void {
-    const eventAction = (ev: MouseEvent): void => {
-      const cell = this.sourceGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.MONOMER) {
-        const newBarPart = this.findAARandPosition(cell, ev);
-        this.requestBarchartAction(ev, newBarPart);
-      }
-    };
+  // setBarChartInteraction(): void {
+  //   const eventAction = (ev: MouseEvent): void => {
+  //     const cell = this.sourceGrid.hitTest(ev.offsetX, ev.offsetY);
+  //     if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.MONOMER) {
+  //       const newBarPart = this.findAARandPosition(cell, ev);
+  //       this.requestBarchartAction(ev, newBarPart);
+  //     }
+  //   };
 
-    // The following events makes the barchart interactive
-    rxjs.fromEvent<MouseEvent>(this.sourceGrid.overlay, 'mousemove')
-      .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
-    rxjs.fromEvent<MouseEvent>(this.sourceGrid.overlay, 'click')
-      .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
-  }
+  //   // The following events makes the barchart interactive
+  //   rxjs.fromEvent<MouseEvent>(this.sourceGrid.overlay, 'mousemove')
+  //     .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+  //   rxjs.fromEvent<MouseEvent>(this.sourceGrid.overlay, 'click')
+  //     .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+  // }
 
-  findAARandPosition(cell: DG.GridCell, ev: MouseEvent): { monomer: string, position: string } | null {
-    const barCoords = this.barsBounds[cell.tableColumn!.name];
-    for (const [monomer, coords] of Object.entries(barCoords)) {
-      const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
-      const isIntersectingY = ev.offsetY >= coords.y && ev.offsetY <= coords.y + coords.height;
-      if (isIntersectingX && isIntersectingY)
-        return {monomer: monomer, position: cell.tableColumn!.name};
-    }
+  // findAARandPosition(cell: DG.GridCell, ev: MouseEvent): { monomer: string, position: string } | null {
+  //   const barCoords = this.barsBounds[cell.tableColumn!.name];
+  //   for (const [monomer, coords] of Object.entries(barCoords)) {
+  //     const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
+  //     const isIntersectingY = ev.offsetY >= coords.y && ev.offsetY <= coords.y + coords.height;
+  //     if (isIntersectingX && isIntersectingY)
+  //       return {monomer: monomer, position: cell.tableColumn!.name};
+  //   }
 
-    return null;
-  }
+  //   return null;
+  // }
 
-  requestBarchartAction(ev: MouseEvent, barPart: { position: string, monomer: string } | null): void {
-    if (!barPart)
-      return;
-    const monomer = barPart.monomer;
-    const position = barPart.position;
-    if (ev.type === 'click') {
-      ev.shiftKey ? this.modifyMonomerPositionSelection(monomer, position, true) :
-        this.initMonomerPositionSelection(monomer, position, true);
-      this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
-    } else {
-      const bar = `${monomer}:${position}`;
-      if (this.cachedBarchartTooltip.bar == bar)
-        ui.tooltip.show(this.cachedBarchartTooltip.tooltip!, ev.clientX, ev.clientY);
-      else
-        this.cachedBarchartTooltip = {bar: bar, tooltip: this.showTooltipAt(monomer, position, ev.clientX, ev.clientY)};
-    }
-  }
+  // requestBarchartAction(ev: MouseEvent, barPart: { position: string, monomer: string } | null): void {
+  //   if (!barPart)
+  //     return;
+  //   const monomer = barPart.monomer;
+  //   const position = barPart.position;
+  //   if (ev.type === 'click') {
+  //     ev.shiftKey ? this.modifyMonomerPositionSelection(monomer, position, true) :
+  //       this.initMonomerPositionSelection(monomer, position, true);
+  //     this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
+  //   } else {
+  //     const bar = `${monomer}:${position}`;
+  //     if (this.cachedBarchartTooltip.bar == bar)
+  //       ui.tooltip.show(this.cachedBarchartTooltip.tooltip!, ev.clientX, ev.clientY);
+  //     else
+  //       this.cachedBarchartTooltip = {bar: bar, tooltip: this.showTooltipAt(monomer, position, ev.clientX, ev.clientY)};
+  //   }
+  // }
 
   setCellRenderers(renderColNames: string[]): void {
     const mdCol = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
@@ -730,22 +733,40 @@ export class PeptidesModel {
 
     this.sourceGrid.setOptions({'colHeaderHeight': 130});
     this.sourceGrid.onCellRender.subscribe((gcArgs) => {
-      const context = gcArgs.g;
+      const ctx = gcArgs.g;
       const bounds = gcArgs.bounds;
       const col = gcArgs.cell.tableColumn;
 
-      context.save();
-      context.beginPath();
-      context.rect(bounds.x, bounds.y, bounds.width, bounds.height);
-      context.clip();
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+      ctx.clip();
 
       if (gcArgs.cell.isColHeader && col?.semType == C.SEM_TYPES.MONOMER) {
-        const barBounds = CR.renderBarchart(context, col, this.barData[col.name], bounds, this.df.filter.trueCount);
-        this.barsBounds[col.name] = barBounds;
+        const countStatsCol: DG.Column<number> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.COUNT);
+        const monomerStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MONOMER);
+        const positionStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.POSITION);
+        const rowMask = DG.BitSet.create(this.monomerPositionStatsDf.rowCount, (i) => positionStatsCol.get(i) === col.name);
+        //TODO: precalc on stats creation
+        const sortedStatsOrder = this.monomerPositionStatsDf.getSortedOrder([C.COLUMNS_NAMES.COUNT], [false], rowMask)
+          .sort((a, b) => {
+            if (monomerStatsCol.get(a) === '-')
+              return -1;
+            else if (monomerStatsCol.get(b) === '-')
+              return +1;
+            return 0;
+          });
+        const statsInfo: type.StatsInfo = {
+          countCol: countStatsCol,
+          monomerCol: monomerStatsCol,
+          orderedIndexes: sortedStatsOrder,
+        };
+
+        CR.drawLogoInBounds(ctx, bounds, statsInfo, this.df.rowCount, this.cp);
         gcArgs.preventDefault();
       }
 
-      context.restore();
+      ctx.restore();
     });
   }
 
@@ -855,7 +876,7 @@ export class PeptidesModel {
       (aar: string, position: string, isShiftPressed: boolean, isInvariantMapSelection: boolean = true): void => {
         isShiftPressed ? this.modifyMonomerPositionSelection(aar, position, isInvariantMapSelection) :
           this.initMonomerPositionSelection(aar, position, isInvariantMapSelection);
-        this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
+        // this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
       };
 
     this.mutationCliffsGrid.root.addEventListener('click', (ev) => {
