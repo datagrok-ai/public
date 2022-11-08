@@ -23,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 3     
+          fetch-depth: 3
       - name: Generate matrix
         id: generate-matrix
         run: |
@@ -240,9 +240,9 @@ jobs:
         id: NEdockerdir
         run: |
           if [ -z "$(ls -A  packages/${{ matrix.package }}/dockerfiles)" ]; then
-          echo "DIR_EMPTY=true" >> $GITHUB_ENV
+          echo "::set-output name=DIR_EMPTY::true"
           else
-          echo "DIR_EMPTY=false" >> $GITHUB_ENV
+          echo "::set-output name=DIR_EMPTY::false"
           fi
       - name: Check if directory has changes
         id: directory_changes_checker
@@ -255,21 +255,24 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }} 
-        if: steps.check_directory.outputs.files_exists == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
+        if: steps.check_directory.outputs.files_exists == 'true' && steps.NEdockerdir.outputs.DIR_EMPTY == 'false' && steps.publish.outcome == 'success'
 
       - name: get docker image version
+        id: docker_name_ver
         working-directory: packages/${{ matrix.package }}
         run: |
-          echo "IMAGE_VER=`echo "$(jq .version package.json | sed -E -e 's/(^"|"$)//g')"`" >> $GITHUB_ENV
-          echo "PACKAGE_NAME=`echo "$(jq .name package.json | sed -E -e 's/(^"|"$)//g' -e 's,@datagrok/,,g')"`" >> $GITHUB_ENV
+          echo "::set-output name=IMAGE_VER::$(jq -r .version package.json)"
+          echo "::set-output name=PACKAGE_NAME::$(jq -r .version package.json | sed -e 's,@datagrok/,,g')"
+ #         echo "IMAGE_VER=`echo "$(jq .version package.json | sed -E -e 's/(^"|"$)//g')"`" >> $GITHUB_ENV
+ #         echo "PACKAGE_NAME=`echo "$(jq .name package.json | sed -E -e 's/(^"|"$)//g' -e 's,@datagrok/,,g')"`" >> $GITHUB_ENV
 
       - name: Build and push package dockerimages
-        if: steps.check_directory.outputs.files_exists == 'true' && ${{env.DIR_EMPTY}} == 'false' && steps.publish.outcome == 'success'
+        if: steps.check_directory.outputs.files_exists == 'true' && steps.NEdockerdir.outputs.DIR_EMPTY == 'false' && steps.publish.outcome == 'success'
         uses: docker/build-push-action@v3
         with:
           context: packages/${{ matrix.package }}/dockerfiles
           push: true
-          tags: datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}
+          tags: datagrok/${{ steps.docker_name_ver.outputs.PACKAGE_NAME }}:${{ steps.docker_name_ver.outputs.IMAGE_VER }}
         
 
     
@@ -279,13 +282,13 @@ jobs:
         with:
           context: packages/${{ matrix.package }}/dockerfiles
           push: false
-          tags: datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}${{ steps.datagrok-image.outputs.commit_sha }}
+          tags: datagrok/${{ steps.docker_name_ver.outputs.PACKAGE_NAME }}:${{ steps.docker_name_ver.outputs.IMAGE_VER }}${{ steps.datagrok-image.outputs.commit_sha }}
         
       - name: Upload dockerfiles as artifact when npm push failed or skipped
         if: steps.directory_changes_checker.output.hasChanges == 'true' && steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped'
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
-          image: "datagrok/${{env.PACKAGE_NAME}}:${{env.IMAGE_VER}}${{ steps.datagrok-image.outputs.commit_sha }}"
+          image: "datagrok/${{ steps.docker_name_ver.outputs.PACKAGE_NAME }}:${{ steps.docker_name_ver.outputs.IMAGE_VER }}${{ steps.datagrok-image.outputs.commit_sha }}"
         
 
       - name: Get package information
@@ -464,8 +467,3 @@ jobs:
             done
             echo "::set-output name=push::yes"
           fi
-
-
-
-
-            
