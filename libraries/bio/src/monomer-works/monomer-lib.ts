@@ -50,7 +50,7 @@ export class MonomerLib implements IMonomerLib {
         this._monomers![type] = {};
 
       const monomers = lib.getMonomerNamesByType(type);
-      Object.keys(monomers).forEach(monomerName =>{
+      monomers.forEach(monomerName =>{
         this._monomers[type][monomerName] = lib.getMonomer(type, monomerName)!;
       })
     });
