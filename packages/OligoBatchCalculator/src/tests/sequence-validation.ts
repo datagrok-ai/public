@@ -1,5 +1,5 @@
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {isValidSequence} from '../validation';
+import {validate} from '../validation';
 import {SYNTHESIZERS, TECHNOLOGIES} from '../constants';
 
 const ADDITIONAL_CODES: string[] = [];
@@ -100,7 +100,7 @@ const inputOutputObjs: {
 category('oligo-batch-calculator-sequence-validation', () => {
   for (const [inputSequence, outputObj] of Object.entries(inputOutputObjs)) {
     test(inputSequence, async () => expect(
-      JSON.stringify(isValidSequence(inputSequence, ADDITIONAL_CODES)),
+      JSON.stringify(validate(inputSequence, ADDITIONAL_CODES)),
       JSON.stringify(outputObj)),
     );
   }

@@ -2,14 +2,15 @@ export const CURRENT_USER = false;
 export const STORAGE_NAME = 'oligo-batch-calculator-storage';
 export const EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION = 'Base';
 export const USER_GROUP_NAME = 'Oligo Batch Calculator Admins';
-export const USER_IS_NOT_ADMIN_MESSAGE = 'You don\'t have permission for this action';
 export const DEFAULT_INPUT = 'fAmCmGmAmCpsmU\nmApsmApsfGmAmUmCfGfAfC\nmAmUfGmGmUmCmAfAmGmA';
 export const FIRST_UNIQUE_CHARACTERS = ['r', 'd'];
 export const NUCLEOTIDES = ['A', 'U', 'T', 'C', 'G'];
 
-export const TOOLTIPS = {
-  LONG_NAME: 'Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'',
-  ABBREVIATIONS: 'Examples: \'invabasic\', \'Cy3\', \'5MedC\'',
+export const CONSTRAINS = {
+  LONG_NAME_LENGTH_MAX: 300,
+  ABBREVIATION_LENGTH_MAX: 100,
+  MOL_WEIGHT_VALUE_MIN: 0,
+  EXT_COEFF_VALUE_MIN: 0,
 };
 
 export const ADDITIONAL_MODS_COL_NAMES = {
@@ -407,3 +408,22 @@ for (const synthesizer of Object.keys(map)) {
   }
 }
 
+export const TOOLTIPS = {
+  LONG_NAME: `Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'; max length = 
+              ${CONSTRAINS.LONG_NAME_LENGTH_MAX}`,
+  ABBREVIATIONS: `Examples: \'invabasic\', \'Cy3\', \'5MedC\'; max length = ${CONSTRAINS.ABBREVIATION_LENGTH_MAX}`,
+  MOL_WEIGHT: `Value should be positive`,
+  BASE_MODIFICATION: `If value is not set to ${BASE_MODIFICATIONS.NO}, 
+                      ${ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT} value is set to 
+                      ${EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION}`,
+  EXT_COEFF: `Value should be numeric and positive if base modification = ${BASE_MODIFICATIONS.NO}`,
+};
+
+export const MESSAGES = {
+  USER_IS_NOT_ADMIN: `You don\'t have permission for this action, ask to join ${USER_GROUP_NAME} user group`,
+  isNumericTypeValidation: (name: string) => `${name} value should be numeric`,
+  isPositiveNumberValidation: (name: string) => `${name} value should be positive`,
+  abbreviationAlreadyExist: (name: string) => `Abbreviation ${name} already exists`,
+  TOO_LONG_NAME: `Long Name shouldn\'t contain more than ${CONSTRAINS.LONG_NAME_LENGTH_MAX} characters`,
+  TOO_LONG_ABBREVIATION: `Abbreviation shouldn\'t contain more than ${CONSTRAINS.ABBREVIATION_LENGTH_MAX} characters`,
+};
