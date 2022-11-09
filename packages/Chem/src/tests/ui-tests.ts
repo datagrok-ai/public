@@ -12,7 +12,7 @@ category('UI', () => {
   let v: DG.TableView;
   let smiles = grok.data.demo.molecules(20);
 
-  test('Skipped', async () => {//'similarity search'
+  test('similarity search', async () => {
     v = grok.shell.addTableView(smiles);
     await delay(4000);
     smiles.currentRowIdx = 0;
@@ -63,7 +63,7 @@ category('UI', () => {
     grok.shell.closeAll(); 
   }, {skipReason: '#1183'});  
   
-  test('Skipped', async () => {//'descriptors'
+  test('descriptors', async () => {
     v = grok.shell.addTableView(smiles);
     await delay(5000);
 
@@ -125,7 +125,7 @@ category('UI', () => {
     grok.shell.closeAll(); 
   }, {skipReason: '#1183'});
 
-  test('Skipped', async () => {//'info panel: gasteiger'
+  test('info panel: gasteiger', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await delay(3000);
@@ -156,7 +156,7 @@ category('UI', () => {
     grok.shell.closeAll(); 
   }, {skipReason: '#1183'});
 
-  test('Skipped', async () => {//'info panel: identifiers'
+  test('info panel: identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await delay(5000);
@@ -182,7 +182,7 @@ category('UI', () => {
     grok.shell.closeAll(); 
   }, {skipReason: '#1183'}); 
 
-  test('Skipped', async () => {//'info panel: structure2D'
+  test('info panel: structure2D', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await delay(3000);
@@ -204,7 +204,7 @@ category('UI', () => {
     grok.shell.closeAll(); 
   }, {skipReason: '#1183'});
 
-  test('Skipped', async () => {//'info panel: structure3D'
+  test('info panel: structure3D', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await delay(3000);
@@ -226,7 +226,7 @@ category('UI', () => {
     grok.shell.closeAll();
   }, {skipReason: '#1183'});
 
-  test('Skipped', async () => {//'info panel: properties'
+  test('info panel: properties', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await delay(3000);
@@ -250,7 +250,7 @@ category('UI', () => {
     grok.shell.closeAll();
   }, {skipReason: '#1183'});
 
-  test('Skipped', async () => {//'info panel: toxicity'
+  test('info panel: toxicity', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await delay(3000);
@@ -274,7 +274,7 @@ category('UI', () => {
     grok.shell.closeAll();
   }, {skipReason: '#1183'});
 
-  test('Skipped', async () => {//'info panel: drug likeness'
+  test('info panel: drug likeness', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await delay(3000);
@@ -298,7 +298,7 @@ category('UI', () => {
     grok.shell.closeAll();
   }, {skipReason: '#1183'});
 
-  test('Skipped', async () => {//'info panel: structural alerts'
+  test('info panel: structural alerts', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await delay(3000);
@@ -322,7 +322,7 @@ category('UI', () => {
     grok.shell.closeAll();
   }, {skipReason: '#1183'});
 
-  test('Skipped', async () => {//'chem inputs'
+  test('chem inputs', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await delay(3000);
@@ -340,7 +340,7 @@ category('UI', () => {
     grok.shell.closeAll();
   }, {skipReason: '#1183'});
 
-  test('Skipped', async () => { //'map identifiers'
+  test('map identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
     v = grok.shell.addTableView(smiles);
     await delay(3000);
