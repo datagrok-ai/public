@@ -5,8 +5,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export const SEMTYPEGIS = {
-  LONGITUDE: 'gis-longitude',
-  LATIITUDE: 'gis-latitude',
+  LONGITUDE: 'Longitude',
+  LATIITUDE: 'Latitude',
   ALTITUDE: 'gis-altitude',
   GISPOINT: 'gis-point',
   GISAREA: 'gis-area',
@@ -53,14 +53,6 @@ function drawContourByCoords(g: CanvasRenderingContext2D,
     xMax = Math.max(xMax, coordinates[i][0]);
     yMin = Math.min(yMin, coordinates[i][1]);
     yMax = Math.max(yMax, coordinates[i][1]);
-    // if (coordinates[i][0] < xMin)
-    //   xMin = coordinates[i][0];
-    // if (coordinates[i][0] > xMax)
-    //   xMax = coordinates[i][0];
-    // if (coordinates[i][1] < yMin)
-    //   yMin = coordinates[i][1];
-    // if (coordinates[i][1] > yMax)
-    //   yMax = coordinates[i][1];
   }
   let xScale = (w - 10) / Math.abs(xMax - xMin);
   let yScale = (h - 10) / Math.abs(yMax - yMin);
@@ -105,7 +97,7 @@ export class GisAreaCanvasRenderer extends DG.CanvasRenderer {
 //condition: true
 export function gisAreaWidget(gisArea: any): DG.Widget | null {
 //this is temporary code - should be filled with usefull functionality
-  if ((!gisArea) && !(gisArea instanceof GisArea)) return null;
+  if ((!gisArea) || !(gisArea instanceof GisArea)) return null;
 
   const strToAdd: string = (gisArea as GisArea).semtype;
   let widgetStyle: DG.ElementOptions = { };
