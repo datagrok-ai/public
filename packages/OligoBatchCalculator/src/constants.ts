@@ -1,4 +1,5 @@
 export const CURRENT_USER = false;
+export const LOGS_DELIMITER = '; ';
 export const STORAGE_NAME = 'oligo-batch-calculator-storage';
 export const EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION = 'Base';
 export const USER_GROUP_NAME = 'Oligo Batch Calculator Admins';
@@ -413,14 +414,14 @@ export const TOOLTIPS = {
               ${CONSTRAINS.LONG_NAME_LENGTH_MAX}`,
   ABBREVIATIONS: `Examples: \'invabasic\', \'Cy3\', \'5MedC\'; max length = ${CONSTRAINS.ABBREVIATION_LENGTH_MAX}`,
   MOL_WEIGHT: `Value should be positive`,
-  BASE_MODIFICATION: `If value is not set to ${BASE_MODIFICATIONS.NO}, 
+  BASE_MODIFICATION: `If value is not set to '${BASE_MODIFICATIONS.NO}', 
                       ${ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT} value is set to 
-                      ${EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION}`,
-  EXT_COEFF: `Value should be numeric and positive if base modification = ${BASE_MODIFICATIONS.NO}`,
+                      '${EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION}'`,
+  EXT_COEFF: `Value should be numeric and positive if base modification = '${BASE_MODIFICATIONS.NO}'`,
 };
 
 export const MESSAGES = {
-  USER_IS_NOT_ADMIN: `You don\'t have permission for this action, ask to join ${USER_GROUP_NAME} user group`,
+  USER_IS_NOT_ADMIN: `You don\'t have permission for this action, ask to join '${USER_GROUP_NAME}' user group`,
   isNumericTypeValidation: (name: string) => `${name} value should be numeric`,
   isPositiveNumberValidation: (name: string) => `${name} value should be positive`,
   abbreviationAlreadyExist: (name: string) => `Abbreviation ${name} already exists`,
