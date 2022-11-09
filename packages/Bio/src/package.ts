@@ -44,6 +44,7 @@ import {Monomer, IMonomerLib, MonomerWorks, MonomerLib, readLibrary,
 
 const STORAGE_NAME = 'Libraries';
 const LIB_PATH = 'System:AppData/Bio/libraries';
+const LIBS_PATH = 'libraries/';
 
 let monomerLib: IMonomerLib | null = null;
 export let hydrophobPalette: SeqPaletteCustom | null = null;
@@ -127,7 +128,7 @@ export async function libraryPanel(seqColumn: DG.Column): Promise<DG.Widget> {
   //@ts-ignore
   let filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
   let divInputs: HTMLDivElement = ui.div();
-  let librariesList: string[] = (await _package.files.list(`${LIB_PATH}`, false, '')).map(it => it.fileName);
+  let librariesList: string[] = (await _package.files.list(`${LIBS_PATH}`, false, '')).map(it => it.fileName);
   let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
   for (let i = 0; i < uploadedLibraries.length; ++i) {
     let libraryName: string = uploadedLibraries[i];
