@@ -189,7 +189,7 @@ export class PeptidesModel {
 
   updateDefault(): void {
     if ((this.sourceGrid && !this._isUpdating) || !this.isInitialized) {
-      this.isInitialized = true;
+      // this.isInitialized = true;
       this._isUpdating = true;
       this.initializeViewersComponents();
       //FIXME: modify during the initializeViewersComponents stages
@@ -998,9 +998,15 @@ export class PeptidesModel {
   async init(): Promise<void> {
     if (this.isInitialized)
       return;
+    this.isInitialized = true;
 
-    this.currentView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.tags[C.PEPTIDES_ANALYSIS] === 'true') ??
-      grok.shell.addTableView(this.df);
+    // Don't find the dataset if the analysis started from button
+    if (this.df.getTag('newAnalysis') !== '1')
+      this.currentView = wu(grok.shell.tableViews).find(({dataFrame}) => dataFrame.tags[C.PEPTIDES_ANALYSIS] === '1')!;
+
+    this.currentView ??= grok.shell.addTableView(this.df);
+
+    this.df.setTag('newAnalysis', '');
     if (!this.isRibbonSet) {
       const settingsButton = ui.bigButton('Settings', () => getSettingsDialog(this), 'Peptides analysis settings');
       this.currentView.setRibbonPanels([[settingsButton]], false);
@@ -1008,10 +1014,10 @@ export class PeptidesModel {
     }
     grok.shell.v = this.currentView;
     this.sourceGrid = this.currentView.grid;
-    if (this.df.tags[C.PEPTIDES_ANALYSIS] === 'true')
+    if (this.df.tags[C.PEPTIDES_ANALYSIS] === '1')
       return;
 
-    this.df.tags[C.PEPTIDES_ANALYSIS] = 'true';
+    this.df.tags[C.PEPTIDES_ANALYSIS] = '1';
     const scaledGridCol = this.sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!;
     scaledGridCol.name = scaledGridCol.column!.getTag('gridName');
     scaledGridCol.format = '#.000';
