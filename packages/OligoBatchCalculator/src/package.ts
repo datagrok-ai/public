@@ -117,13 +117,12 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
     if (!invalidKeys.includes(key))
       modifications.push(JSON.parse(entries[key]));
   }
-  const molWeightList = modifications.map((e) => (e.molecularWeight == undefined) ? 0 : e.molecularWeight);
+  const molWeightList = modifications.map((e) => (e.molecularWeight == undefined) ? '0' : String(e.molecularWeight));
   const extinctionCoefList = modifications.map((e) => String(e.extinctionCoefficient));
   const additionalModsDf = DG.DataFrame.fromColumns([
     DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES, modifications.map((e) => e.longName)),
-    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION,
-      modifications.map((e) => e.abbreviation)), // @ts-ignore
-    DG.Column.fromFloat32Array(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, molWeightList),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION, modifications.map((e) => e.abbreviation)),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, molWeightList),
     DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION, modifications.map((e) => e.baseModification)),
     DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT, extinctionCoefList),
     DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ACTION, Array(modifications.length)),
@@ -134,12 +133,12 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
   let individualBasisSum = 0;
   let modificationsSum = 0;
   if (extCoefsObj != null) {
-    for (const modif of Object.keys(extCoefsObj)) {//@ts-ignore
-      if (//@ts-ignore
-        extCoefsObj[modif] != EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION &&
-        extCoefsObj[modif] != undefined &&//@ts-ignore
+    for (const modif of Object.keys(extCoefsObj)) {
+      if (
+        String(extCoefsObj[modif]) != EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION &&
+        extCoefsObj[modif] != undefined &&
         !isNaN(Number(extCoefsObj[modif]))
-      ) {//@ts-ignore
+      ) {
         modificationsSum += (sequence.match(new RegExp(modif, 'g')) || []).length * Number(extCoefsObj[modif]);
         ns = deleteWord(ns, modif);
       }
@@ -172,13 +171,12 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     if (!invalidKeys.includes(key))
       modifications.push(JSON.parse(entries[key]));
   }
-  const molWeightList = modifications.map((e) => (e.molecularWeight == undefined) ? 0 : e.molecularWeight);
+  const molWeightList = modifications.map((e) => (e.molecularWeight == undefined) ? '0' : String(e.molecularWeight));
   const extinctionCoefList = modifications.map((e) => String(e.extinctionCoefficient));
   const additionalModsDf = DG.DataFrame.fromColumns([
     DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES, modifications.map((e) => e.longName)),
-    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION,
-      modifications.map((e) => e.abbreviation)), // @ts-ignore
-    DG.Column.fromFloat32Array(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, molWeightList),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION, modifications.map((e) => e.abbreviation)),
+    DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT, molWeightList),
     DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION, modifications.map((e) => e.baseModification)),
     DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT, extinctionCoefList),
     DG.Column.fromStrings(ADDITIONAL_MODS_COL_NAMES.ACTION, Array(modifications.length)),
@@ -316,7 +314,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
 
   const additionaModifsGrid = DG.Viewer.grid(additionalModsDf, {
     showRowHeader: false,
-    showCellTooltip: false,
+    showCellTooltip: true,
     allowEdit: (await isCurrentUserAppAdmin()),
   });
 
