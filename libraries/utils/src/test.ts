@@ -27,9 +27,11 @@ export interface TestOptions {
 
 export class TestContext {
   catchUnhandled = true;
+  report = false;
 
-  constructor(catchUnhandled?: boolean) {
+  constructor(catchUnhandled?: boolean, report?: boolean) {
     if (catchUnhandled !== undefined) this.catchUnhandled = catchUnhandled;
+    if (report !== undefined) this.report = report;
   };
 }
 
@@ -202,6 +204,12 @@ export async function runTests(options?: { category?: string, test?: string, tes
         result: grok.shell.lastError, success: false, ms: 0
       });
     }
+  }
+  if (options.testContext.report) {
+    const logger = new DG.Logger();
+    for (const r of results)
+      if (!r.success)
+        logger.log('runTests', r);
   }
   return results;
 }

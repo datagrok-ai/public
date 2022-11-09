@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, expect, test, delay} from '@datagrok-libraries/utils/src/test';
-
 import {TestViewerForProperties} from './test-viewer-for-properties';
+import {waitForElement} from '../gui/gui-utils';
+
 
 category('Viewers', () => {
   let df: DG.DataFrame;
@@ -197,7 +198,7 @@ category('Viewers', () => {
 
     grok.shell.info(`Tested ${i} viewers of ${viewers.length}, skipped ${skipViewers.length}, error in ${errorViewers.length}`);
     if (errorViewers.length !== 0) throw `Error viewers: ${errorViewers}`;
-  });
+  }, {skipReason: 'too long execution'});
 
 
   after(async () => {
