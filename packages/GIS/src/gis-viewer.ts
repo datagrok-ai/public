@@ -747,6 +747,7 @@ export class GisViewer extends DG.JsViewer {
     let labelVal: Int32Array | Float32Array | Float64Array | Uint32Array;
     let colorVal: Int32Array | Float32Array | Float64Array | Uint32Array;
     let sizeVal: Int32Array | Float32Array | Float64Array | Uint32Array;
+    let colorCodes: Uint32Array = new Uint32Array();
 
     const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
     const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
@@ -778,8 +779,11 @@ export class GisViewer extends DG.JsViewer {
         this.refreshColorCodingStyle(colColor);
 
         //new way of color coding
-        // colColor.meta.colors.grid = this.view.grid;
-        //const colorCodes: Uint32Array = colColor.meta.colors.getColors();
+        colorCodes = colColor.meta.colors.getColors();
+        if (colorCodes.length === 0) {
+          colorVal = new Uint32Array(lat.length);
+          colorCodes.fill(this.defaultColor);
+        }
 
         colorVal = colColor.getRawData();
         this.ol.minFieldColor = colColor.min;
@@ -817,7 +821,7 @@ export class GisViewer extends DG.JsViewer {
           fieldLabel: labelVal[i],
           fieldSize: (sizeVal[i]),
           fieldColor: (colorVal[i]),
-          // fieldColorD: (colorCodes[i]),
+          fieldColorD: (colorCodes[i]),
           fieldIndex: i,
           filtered: 1,
         });
@@ -842,6 +846,7 @@ export class GisViewer extends DG.JsViewer {
     let layer = this.ol.getLayerByName('HL: ' + colName);
     if (!layer)
       layer = this.ol.addNewHeatMap('HL: ' + colName);
+
 
     this.ol.clearLayer(layer);
     this.ol.addFeaturesBulk(arrFeatures, layer);

@@ -45,6 +45,7 @@ import { Attribution, defaults as defaultControls } from 'ol/control';
 //ZIP utilities
 import JSZip, { forEach } from 'jszip';
 import { zoomByDelta } from 'ol/interaction/Interaction';
+import WebGLLayerRenderer from 'ol/renderer/webgl/Layer';
 
 export { Coordinate } from 'ol/coordinate';
 
@@ -462,8 +463,9 @@ export class OpenLayers {
 
       //prepare final color coding string
       colorValue = colorValue.concat(colorsArray);
-      //new way of color coding
-      // colorValue = [['get', 'fieldColorD']]; //new way of color coding - receive direct color codes
+      //TODO: remove all code with old color coding above
+      //new way of color coding:
+      colorValue = ['get', 'fieldColorD']; //receive color codes stored from calls
       // alert(colorValue);
     }
     //OLD simple color coding approach>>
@@ -481,12 +483,12 @@ export class OpenLayers {
     }
 
     //prepare filtering condition
-    // let filterValue: any = true;
-    // if (applyfilter)
-    //   filterValue = ['>', ['get', 'filtered'], 0];
+    let filterValue: any = true;
+    if (applyfilter)
+      filterValue = ['>', ['get', 'filtered'], 0];
 
     const markerGLStyle = {
-      // filter: filterValue,
+      filter: filterValue,
       symbol: {
         symbolType: symbolval? symbolval : 'circle',
         size: sizeValue,
