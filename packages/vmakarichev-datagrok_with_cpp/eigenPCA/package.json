@@ -31,6 +31,6 @@
         "All users"
     ],
     "sources": [
-        "wasm/newLib.js"
+        "wasm/eigenPCA.js"
     ]
 }

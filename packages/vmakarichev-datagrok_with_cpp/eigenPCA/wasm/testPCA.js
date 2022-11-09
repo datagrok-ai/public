@@ -1,12 +1,7 @@
 var factory = require('./newLib');
 
-function pca(module, sourceArrays, numOfPrincipalComponents, principalComponents, approxData ){
+function pca(module, sourceArrays, numOfPrincipalComponents, principalComponents, approxData){
     
-    /*console.log('\n\nSource data is:');
-    for(let arr of sourceArrays){
-        console.log(arr);
-    }*/
-
     let height = sourceArrays.length;
     let width = sourceArrays[0].length;
     let sizeOfData = height * width;
@@ -44,9 +39,8 @@ function pca(module, sourceArrays, numOfPrincipalComponents, principalComponents
         approxData.push(new Float32Array(heap.buffer, 
             bufForApprox + i * width * numOfBytes, width));
     
-    /*console.log('\nData again:');
-    for(let i = 0; i < height; i++)
-        console.log(new Float32Array(heap.buffer, bufForData + i * width * numOfBytes, width));*/
+    console.log("Maximum absolute deviation: ");
+    console.log(module._error(bufForData, bufForApprox, sizeOfData));
 
     module._free(bufForData);
     module._free(bufForPrincComp);
@@ -129,8 +123,14 @@ factory().then((instance) => {
     let approx = [];
     
     let data = [tArr1, tArr2, tArr3, tArr4];
+
+    let start = new Date().getTime();
     
     pca(instance, data, 3, princComp, approx);
+
+    let finish = new Date().getTime();
+
+    console.log('Time for execution: ' + (finish - start) + ' ms.');
 
     console.log('\nPrincipal Components:');
     console.log(princComp);
