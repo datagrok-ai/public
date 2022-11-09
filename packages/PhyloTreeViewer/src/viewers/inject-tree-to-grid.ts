@@ -20,7 +20,7 @@ import {TreeHelper} from '../utils/tree-helper';
  *                                 undefined - use row index as leaf name/key
  */
 export function injectTreeToGridUI(
-  grid: DG.Grid, newickText: string, leafColName: string, neighborWidth: number = 100,
+  grid: DG.Grid, newickStr: string, leafColName: string, neighborWidth: number = 100,
   cut?: { min: number, max: number, clusterColName: string }
 ): GridNeighbor {
   const th: bio.ITreeHelper = new TreeHelper();
@@ -40,7 +40,7 @@ export function injectTreeToGridUI(
   pcDiv.style.position = 'absolute';
   pcDiv.style.left = `${leftMargin}px`;
 
-  const newickRoot: bio.NodeType = bio.Newick.parse_newick(newickText);
+  const newickRoot: bio.NodeType = bio.Newick.parse_newick(newickStr);
   const [viewedRoot, warnings]: [bio.NodeType, string[]] = th.setGridOrder(newickRoot, grid, leafColName);
 
   const pcViewer = new bio.PhylocanvasGL(pcDiv, {
@@ -176,7 +176,7 @@ export function injectTreeToGridUI(
 }
 
 /** By Dimitri Petrov */
-export function attachDivToGrid(grid: DG.Grid, nWidth: number = 100): GridNeighbor {
+export function attachDivToGrid(grid: DG.Grid, neighborWidth: number = 100): GridNeighbor {
   // const nRowCount = 100;
   // const nColCount = 5;
   // const dframe: DG.DataFrame = grok.data.demo.randomWalk(nRowCount, nColCount);
@@ -191,6 +191,6 @@ export function attachDivToGrid(grid: DG.Grid, nWidth: number = 100): GridNeighb
   //   neighbor.close();
   // });
   // eDiv.appendChild(button);
-  neighbor = new GridNeighbor(eDiv, grid, nWidth);
+  neighbor = new GridNeighbor(eDiv, grid, neighborWidth);
   return neighbor;
 }

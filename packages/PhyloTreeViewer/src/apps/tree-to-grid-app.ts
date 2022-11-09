@@ -7,25 +7,28 @@ import {GridWithTreeViewer} from '../viewers/grid-with-tree-viewer';
 import {injectTreeToGridUI} from '../viewers/inject-tree-to-grid';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {_package} from '../package';
+import {TAGS} from '../utils/tree-helper';
 
 class AppView extends DG.ViewBase {
 
 }
 
-export class GridWithTreeApp {
-  private view: DG.TableView | null;
-
+export class TreeToGridApp {
+  private viewed: boolean = false;
   // viewer: GridWithTreeViewer | null;
   // viewerDn: DG.DockNode | null;
   tableView: DG.TableView | null = null;
   gridN: GridNeighbor | null = null;
 
   _dataDf: DG.DataFrame;
-  _newickText: string;
+  _leafCol: DG.Column;
+  _newickStr: string;
 
   get dataDf(): DG.DataFrame { return this._dataDf; }
 
-  get newickText(): string { return this._newickText; }
+  get leafCol(): DG.Column { return this._leafCol; }
+
+  get newickStr(): string { return this._newickStr; }
 
   async init(): Promise<void> {
     await this.loadData();
@@ -45,17 +48,24 @@ export class GridWithTreeApp {
     // const leafColName = 'Leaf';
 
     const dataDf = DG.DataFrame.fromCsv(csv);
-    dataDf.setTag('.newick', newick);
-    dataDf.setTag('.newickLeafColumn', leafColName);
+    dataDf.setTag(TAGS.DF_NEWICK, newick);
+    dataDf.setTag(TAGS.DF_NEWICK_LEAF_COL_NAME, leafColName);
 
     await this.setData(dataDf, newick);
   }
 
-  async setData(dataDf: DG.DataFrame, newickText: string): Promise<void> {
-    await this.destroyView();
+  async setData(dataDf: DG.DataFrame, newickStr: string): Promise<void> {
+    if (this.viewed) {
+      await this.destroyView();
+      this.viewed = false;
+    }
 
     this._dataDf = dataDf;
-    this._newickText = newickText;
+    const leafColName = dataDf.getTag(TAGS.DF_NEWICK_LEAF_COL_NAME);
+    if (!leafColName)
+      throw new Error(`Specify leaf column name in DataFrame tag '${TAGS.DF_NEWICK_LEAF_COL_NAME}'.`);
+    this._leafCol = dataDf.getCol(leafColName);
+    this._newickStr = newickStr;
 
     // const colClusterNum: DG.Column = this.dataDf.getCol('Cluster');
     // const colClusterStr: DG.Column = colClusterNum.convertTo('string', '#');
@@ -63,7 +73,10 @@ export class GridWithTreeApp {
     // this.dataDf.columns.remove(colClusterNum.name);
     // this.dataDf.columns.insert(colClusterStr, colClusterIdx);
 
-    await this.buildView();
+    if (!this.viewed) {
+      await this.buildView();
+      this.viewed = true;
+    }
   }
 
   // region -- View --
@@ -80,33 +93,18 @@ export class GridWithTreeApp {
       this.tableView.close();
       this.tableView = null;
     }
-    // if (this.viewer) {
-    //   this.viewer.close();
-    //   this.viewer.removeFromView();
-    // }
-    //
-    // if (this.viewerDn) {
-    //   this.viewerDn.detachFromParent();
-    //   this.viewer = null;
-    // }
-    //
-    // if (this.view) {
-    //   this.view.close();
-    //   this.view = null;
-    // }
   }
 
   async buildView(): Promise<void> {
     if (!this.tableView) {
       this.tableView = grok.shell.addTableView(this.dataDf);
-      this.tableView.path = this.tableView.basePath = 'apps/PhyloTreeViewer/GridWithTree';
+      //this.tableView.path = this.tableView.basePath = 'apps/PhyloTreeViewer/GridWithTree';
 
+      // TODO: No cluster mark
       this.dataDf.columns.addNewInt('Cluster').init((rowI: number) => { return 0;});
 
-      const colNameList: string[] = this.dataDf.columns.names();
-      const leafColumnName: string = this.dataDf.getTag('.newickLeafColumn')!;
       this.gridN = injectTreeToGridUI(
-        this.tableView.grid, this.newickText, leafColumnName, 250,
+        this.tableView.grid, this.newickStr, this.leafCol.name, 250,
         {min: 0, max: 1, clusterColName: 'Cluster'});
 
       // this.tableView.filters({

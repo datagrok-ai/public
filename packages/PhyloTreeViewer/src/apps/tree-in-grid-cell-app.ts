@@ -68,7 +68,7 @@ export class TreeInGridCellApp {
   async buildView(): Promise<void> {
     if (!this.view) {
       this.view = grok.shell.addTableView(this.df);
-      this.view.path = this.view.basePath = '/apps/PhyloTreeViewer/TreeInGridCell';
+      //this.view.path = this.view.basePath = '/apps/PhyloTreeViewer/TreeInGridCell';
 
       this.view.grid.props.rowHeight = 150;
       const treeGCol: DG.GridColumn = this.view.grid.columns.byName('TREE')!;
