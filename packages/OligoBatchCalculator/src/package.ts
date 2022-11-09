@@ -246,6 +246,12 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       // else if (output.synthesizer == null)
       // reasonsOfError[i] = 'Not valid input';
       } else {
+        normalizedSequences[i] = [];
+        molecularWeights[i] = NaN;
+        extinctionCoefficients[i] = NaN;
+        nMoles[i] = NaN;
+        opticalDensities[i] = NaN;
+        molecularMasses[i] = NaN;
         reasonsOfError[i] = 'Sequence is expected to be in synthesizer \'' + SYNTHESIZERS.GCRS +
           '\', please see table below to see list of valid codes';
       }
