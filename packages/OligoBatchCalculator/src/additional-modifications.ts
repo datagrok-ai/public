@@ -175,16 +175,32 @@ export async function editModification(additionalModsDf: DG.DataFrame, additiona
         const extCoefChoiceInput = ui.floatInput('', 0);
         ui.dialog('Enter Extinction Coefficient Value')
           .add(extCoefChoiceInput)
-          .onOK(() => {
-            const col = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT);
-            col.set(rowIndex, String(extCoefChoiceInput.value), false);
+          .onOK(async () => {
+            additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT)
+              .set(rowIndex, String(extCoefChoiceInput.value), false);
             additionaModifsGrid.invalidate();
+            await postAdditionalModificationToStorage(
+              additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES).getString(rowIndex),
+              additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION).getString(rowIndex),
+              additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT).getString(rowIndex),
+              additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT).getString(rowIndex),
+              additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION).getString(rowIndex),
+              additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.CHANGE_LOGS).getString(rowIndex),
+            );
           })
           .show();
       } else {
-        const col = additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT);
-        col.set(rowIndex, EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION, false);
+        additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT)
+          .set(rowIndex, EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION, false);
         additionaModifsGrid.invalidate();
+        await postAdditionalModificationToStorage(
+          additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.LONG_NAMES).getString(rowIndex),
+          additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.ABBREVIATION).getString(rowIndex),
+          additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.MOLECULAR_WEIGHT).getString(rowIndex),
+          additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT).getString(rowIndex),
+          additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.BASE_MODIFICATION).getString(rowIndex),
+          additionalModsDf.getCol(ADDITIONAL_MODS_COL_NAMES.CHANGE_LOGS).getString(rowIndex),
+        );
       }
     }
 
