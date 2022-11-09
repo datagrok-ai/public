@@ -37,6 +37,15 @@ confirmation and forgot password emails.
 
 To configure SMTP for Datagrok check [the instructions on wiki](configure-smtp.md).
 
+## Oauth authentication
+
+Datagrok supports Google, Facebook and GitHub OAUTH authentication.
+
+1) Go to the Datagrok Settings section 'Users and Sessions'; this section contains all authentication settings.
+2) Enable 'Google authentication' to use the Google Oauth method (or another provider)
+3) Set 'Client Id' and 'Secret' if applicable
+4) Make sure the correct Web Root is set in 'Admin' section
+
 ## OpenID authentication
 
 Datagrok supports the OpenID protocol to allow users to be authenticated using OpenID providers, for example, Azure AD.
@@ -50,6 +59,7 @@ Datagrok supports the OpenID protocol to allow users to be authenticated using O
 6) Set 'Open Id Login Claim', 'Open Id Email Claim', 'Open Id First Name Claim', and 'Open Id Last Name Claim' to
    provide optional claims for the application
 7) OpenID auto-login can be enabled using the 'Open Id Auto Login' option
+8) Make sure the correct Web Root is set in 'Admin' section
 
 ## LDAP authentication
 
