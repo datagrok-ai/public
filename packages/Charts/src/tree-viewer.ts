@@ -112,7 +112,7 @@ export class TreeViewer extends EChartViewer {
 
     super.onTableAttached();
     this.initChartEventListeners();
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/Charts/README.md#treeviewer';
+    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/help/visualize/viewers/tree-viewer.md';
   }
 
   colorCodeTree(data: treeDataType): void {
