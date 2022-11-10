@@ -1036,6 +1036,16 @@ export class DateTimeColumn extends Column<dayjs.Dayjs> {
   }
 }
 
+
+export class ObjectColumn extends Column<any> {
+  /**
+   * Gets [i]-th value.
+   */
+  get(row: number): any | null {
+    return DG.toJs(api.grok_Column_GetValue(this.dart, row));
+  }
+}
+
 /** Columns in a [DataFrame]. */
 export class ColumnList {
   private readonly dart: any;
