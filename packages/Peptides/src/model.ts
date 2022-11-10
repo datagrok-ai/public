@@ -489,6 +489,9 @@ export class PeptidesModel {
       tempDfList[index] = dfSlice;
       webLogoCol.set(index, index.toString());
       membersCol.set(index, dfSlice.rowCount);
+      //TODO: user should be able to choose threshold
+      if (dfSlice.rowCount <= Math.ceil(this.clusterStatsDf.getCol(C.COLUMNS_NAMES.COUNT).stats.max * 0.70))
+        summaryTable.filter.set(index, false, false);
     }
     webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
 
@@ -928,7 +931,9 @@ export class PeptidesModel {
       if (!this.isInvariantMapTrigger)
         this.initBitset = filter.clone();
 
-      filter.copyFrom(invariantMapBitset.and(this.initBitset), false);
+      // filter.copyFrom(invariantMapBitset.and(this.initBitset), false);
+      const temp = invariantMapBitset.and(this.initBitset);
+      filter.init((i) => temp.get(i), false);
     });
     this.isBitsetChangedInitialized = true;
   }
