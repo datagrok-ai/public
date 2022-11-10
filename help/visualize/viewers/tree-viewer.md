@@ -10,18 +10,20 @@ location.
 
 ![Tree viewer](tree-viewer.png)
 
+>Note: To use a tree viewer, install the package [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts).
+
 ## Create a tree viewer
 
 1. On the menu ribbon, click the **Add viewer** icon. A dialog opens.
-1. In the dialog, select **Tree viewer** and click OK.
+1. In the dialog, select **Tree viewer**.
 
 When you add a tree viewer, Datagrok chooses two categorical columns with the
-least number of categories. They form the initial hierarchy of the tree chart.
+least number of categories. They form the initial hierarchy of the tree viewer.
 
 ## Configuring a tree viewer
 
 You can set the tree hierarchy and customize a tree viewer. To do that, click
-the **gear** icon on top of the viewer and use the **Data** and **Misc** info
+the **Gear** icon on top of the viewer and use the **Data** and **Misc** info
 panels on the **Context Pane** to manage the tree viewer’s settings.
 
 For example, you can:
@@ -41,6 +43,12 @@ For example, you can:
   * Define the tree **direction** using the **Orient** setting.
   * Change the **shape of the branches** using the **Edge Shape** setting.
 
+## Interaction with other viewers
+
+A tree viewer responds to data filters but has limited interaction in rows
+selection. For the node to be selected, you need to select all rows comprising
+the node.
+
 ![Tree viewer](tree-viewer.gif "Tree viewer")
 
 ## Viewer controls
@@ -54,6 +62,6 @@ For example, you can:
 ## See also
 
 * [Viewers](../viewers.md)
-* Network viewer
+* [Network viewer](network-diagram.md)
 * BiostructureViewer
 * PhyloTreeViewer
