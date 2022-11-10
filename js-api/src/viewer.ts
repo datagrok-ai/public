@@ -276,6 +276,10 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     );
   }
 
+  toCompactLook() {
+    api.grok_Viewer_To_Trellis_Look(this.dart);
+  }
+
   get onDartPropertyChanged(): rxjs.Observable<null> {
     let dartStream = api.grok_Viewer_Get_PropertyChanged_Events(this.dart);
     return rxjs.fromEventPattern(
