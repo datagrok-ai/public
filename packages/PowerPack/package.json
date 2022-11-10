@@ -5,7 +5,7 @@
     "css/power-pack.css",
     "css/viewers-gallery.css"
   ],
-  "version": "1.0.5",
+  "version": "1.0.6",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -17,7 +17,7 @@
     "directory": "packages/PowerPack"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.11.1",
+    "@datagrok-libraries/utils": "^1.15.5",
     "cash-dom": "latest",
     "datagrok-api": "^1.6.9",
     "rxjs": "^6.5.5"
