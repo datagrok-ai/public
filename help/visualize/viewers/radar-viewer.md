@@ -17,8 +17,7 @@ cheminformatics](https://github.com/datagrok-ai/public/tree/master/packages/Chem
 ![Radar viewer](radar-viewer.png)
 
 You can use a radar viewer as a standalone chart or as an [inline viewer in
-summary column]
-(grid.md#row-summary-columns) of [grid](grid.md).
+summary column](grid.md#row-summary-columns) of [grid](grid.md).
 
 >Note: To use a radar viewer, install the package
 [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts).
