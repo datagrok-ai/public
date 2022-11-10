@@ -1,7 +1,7 @@
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 //import {findMonomers, helmToFasta, helmToPeptide, helmToRNA, initHelm} from '../package';
 import {_package} from '../package-test';
-import {manageFiles, parseHelm} from '../package';
+import {parseHelm} from '../utils';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
@@ -46,31 +46,6 @@ category('Helm', () => {
   //   expect(col.tags[DG.TAGS.UNITS], 'HELM');
   // });
 
-  test('manageFiles', async () => {
-    return await manageFiles();
-  });
-
-  
-  test('monomerManager', async() => {
-    const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/test.csv'));
-    grok.shell.addTableView(df);
-    await grok.functions.call('Helm:monomerManager', {value: 'HELMCoreLibrary.json'});
-    const checkName = '2-Chloroadenine';
-    let flag = false;
-    const types = Object.keys(org.helm.webeditor.monomerTypeList());
-    const monomers: any = [];
-    for (var i = 0; i < types.length; i++) {
-      //@ts-ignore
-      monomers.push(new scil.helm.Monomers.getMonomerSet(types[i]));
-      Object.keys(monomers[i]).forEach(k => {
-        if (monomers[i][k].n == checkName){
-          flag = true;
-        }
-      });
-    }
-    expect(flag, true);
-  });
-
   test('parseHelm', async() => {
     const expectedResults = [
       ['meI', 'hHis', 'Aca', 'N', 'T', 'dK', 'Thr_PO3H2', 'D-Tyr_Et', 'Aze', 'dV', 'E', 'Phe_4Me'],
@@ -90,5 +65,4 @@ category('Helm', () => {
       expect(JSON.stringify(monomerArray), JSON.stringify(expectedResults[idx]));
     }
   });
-
 });

@@ -85,7 +85,7 @@ export class PhylocanvasGlViewerApp {
       //this.treeDf.filter.init((rowI: number) => { return leafCol.get(rowI); });
 
       this.tv = grok.shell.addTableView(this.treeDf, DG.DOCK_TYPE.FILL);
-      this.tv.path = this.tv.basePath = 'apps/PhyloTreeViewer/PhylocanvasGlViewer';
+      //this.tv.path = this.tv.basePath = 'apps/PhyloTreeViewer/PhylocanvasGlViewer';
 
       this.viewSubs.push(this.tv.grid.onRowsResized.subscribe((args) => {
         if (!this.treeHost || !this.treeViewer) return;

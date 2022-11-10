@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as bio from '@datagrok-libraries/bio';
-import * as u from '@datagrok-libraries/utils';
+
+import { category, test, expect, expectArray, expectObject } from '@datagrok-libraries/utils/src/test';
 import {TreeHelper} from '../utils/tree-helper';
 
 /*
@@ -22,7 +23,7 @@ abline(v=2.6,  col='brown');
 abline(v=3.0,  col='gray');
 
 */
-u.category('treeCut', () => {
+category('treeCut', () => {
   const th: bio.ITreeHelper = new TreeHelper();
 
   const enum Tests {
@@ -244,42 +245,42 @@ u.category('treeCut', () => {
 
   // -- treeCutAsLeafs --
 
-  u.test('treeCutAsLeafs1_0.05', async () => {
+  test('treeCutAsLeafs1_0.05', async () => {
     const v = data[Tests.cut1];
     _testTreeCutAsLeafs(v.tree, v.tgt[0].cutLevel, v.tgt[0].leafNameList);
   });
 
-  u.test('treeCutAsLeafs1_1.20', async () => {
+  test('treeCutAsLeafs1_1.20', async () => {
     const v = data[Tests.cut1];
     _testTreeCutAsLeafs(v.tree, v.tgt[1].cutLevel, v.tgt[1].leafNameList);
   });
 
-  u.test('treeCutAsLeafs1_1.50', async () => {
+  test('treeCutAsLeafs1_1.50', async () => {
     const v = data[Tests.cut1];
     _testTreeCutAsLeafs(v.tree, v.tgt[2].cutLevel, v.tgt[2].leafNameList);
   });
 
-  u.test('treeCutAsLeafs1_1.80', async () => {
+  test('treeCutAsLeafs1_1.80', async () => {
     const v = data[Tests.cut1];
     _testTreeCutAsLeafs(v.tree, v.tgt[3].cutLevel, v.tgt[3].leafNameList);
   });
 
-  u.test('treeCutAsLeafs1_2.05', async () => {
+  test('treeCutAsLeafs1_2.05', async () => {
     const v = data[Tests.cut1];
     _testTreeCutAsLeafs(v.tree, v.tgt[4].cutLevel, v.tgt[4].leafNameList);
   });
 
-  u.test('treeCutAsLeafs1_2.60', async () => {
+  test('treeCutAsLeafs1_2.60', async () => {
     const v = data[Tests.cut1];
     _testTreeCutAsLeafs(v.tree, v.tgt[5].cutLevel, v.tgt[5].leafNameList);
   });
 
-  u.test('treeCutAsLeafs1_3.00', async () => {
+  test('treeCutAsLeafs1_3.00', async () => {
     const v = data[Tests.cut1];
     _testTreeCutAsLeafs(v.tree, v.tgt[6].cutLevel, v.tgt[6].leafNameList);
   });
 
-  u.test('treeCutAsLeafs1_3.10', async () => {
+  test('treeCutAsLeafs1_3.10', async () => {
     const v = data[Tests.cut1];
     _testTreeCutAsLeafs(v.tree, v.tgt[7].cutLevel, v.tgt[7].leafNameList);
   });
@@ -288,22 +289,22 @@ u.category('treeCut', () => {
     const resClusterList: bio.NodeType[] = th.treeCutAsLeaves(tree, cutHeight);
     const resLeafNameList = resClusterList
       .map((clusterRootNode) => th.getLeafList(clusterRootNode).map((l) => l.name));
-    u.expectArray(resLeafNameList, tgtLeafNameList);
+    expectArray(resLeafNameList, tgtLeafNameList);
   }
 
   // -- treeCutAsTree --
 
-  u.test('treeCutAsTree1_0.05', async () => {
+  test('treeCutAsTree1_0.05', async () => {
     const v = data[Tests.cut1];
     _testTreeCutAsTree(v.tree, v.tgt[0].cutLevel, v.tgt[0].tree!);
   });
 
-  u.test('treeCutAsTree1_1.20', async () => {
+  test('treeCutAsTree1_1.20', async () => {
     const v = data[Tests.cut1];
     _testTreeCutAsTree(v.tree, v.tgt[1].cutLevel, v.tgt[1].tree!);
   });
 
-  u.test('treeCutAsTree1_2.60', async () => {
+  test('treeCutAsTree1_2.60', async () => {
     const v = data[Tests.cut1];
     _testTreeCutAsTree(v.tree, v.tgt[5].cutLevel, v.tgt[5].tree!);
   });
@@ -312,6 +313,6 @@ u.category('treeCut', () => {
     const resTree: bio.NodeType | null = th.treeCutAsTree(tree, cutHeight);
     //const newickStr = th.toNewick(resTree);
 
-    u.expectObject(resTree!, tgtTree);
+    expectObject(resTree!, tgtTree);
   }
 });

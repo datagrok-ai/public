@@ -7,11 +7,8 @@ import {ColorUtils} from '../utils/ColorUtils';
 import * as rxjs from 'rxjs';
 import { GridCellRendererEx} from "../renderer/GridCellRendererEx";
 import * as PinnedUtils from "./PinnedUtils";
-import {getGridDartPopupMenu, isHitTestOnElement} from "../utils/GridUtils";
 import {MouseDispatcher} from "../ui/MouseDispatcher";
 import {ColumnsArgs, Events, toDart} from "datagrok-api/dg";
-//import {TableView} from "datagrok-api/dg";
-
 
 /* temp
 const hSubscriber  = grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewLayout) => {
@@ -119,6 +116,7 @@ export class PinnedColumn {
   private static MAX_ROW_HEIGHT = 500;
   private static SELECTION_COLOR = ColorUtils.toRgb(ColorUtils.colSelection); //"rgba(237, 220, 88, 0.15)";
   private static ACTIVE_CELL_COLOR = ColorUtils.toRgb(ColorUtils.currentRow); //"rgba(153, 237, 82, 0.25)";
+  private static SORT_ARROW_COLOR = ColorUtils.toRgb(ColorUtils.sortArrow);
   private static Y_RESIZE_SENSITIVITY = 2;
 
   private m_fDevicePixelRatio : number;
@@ -150,12 +148,13 @@ export class PinnedColumn {
 
   private m_nWheelCount : number = 0;
 
-
   private m_arXYMouseOnCellDown = [-2, -2];
   private m_arXYMouseOnCellUp = [-1, -1];
   private m_bSortedAscending : boolean | null = null;
 
   private m_cellCurrent : DG.GridCell | null = null;
+
+  private m_bThisColumnIsSorting = false;
 
   constructor(colGrid : DG.GridColumn) {
 
@@ -391,6 +390,11 @@ export class PinnedColumn {
     );
 
     this.m_handlerRowsSorted = grid.onRowsSorted.subscribe((e : any) => {
+          if(!headerThis.m_bThisColumnIsSorting)
+            headerThis.m_bSortedAscending = null;
+
+          headerThis.m_bThisColumnIsSorting = false;
+
           const g = eCanvasThis.getContext('2d');
           headerThis.paint(g, grid);
         }
@@ -744,17 +748,18 @@ export class PinnedColumn {
       return;
 
     if(this.m_bSortedAscending == null)
-      this.m_bSortedAscending = true;
-    else if(this.m_bSortedAscending)
       this.m_bSortedAscending = false;
-    else this.m_bSortedAscending = true;
+    else if(!this.m_bSortedAscending)
+      this.m_bSortedAscending = true;
+    else this.m_bSortedAscending = null;
 
     const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
 
     if(0 <= e.offsetX && e.offsetX <= this.m_root.offsetWidth &&
         0 <= e.offsetY && e.offsetY <= nHHeaderCols)   //on the rows header
     {
-      grid?.sort([this.m_colGrid?.name], [this.m_bSortedAscending]);
+      this.m_bThisColumnIsSorting = true;
+      grid?.sort(this.m_bSortedAscending === null ? [] : [this.m_colGrid?.name], this.m_bSortedAscending === null ? [] : [this.m_bSortedAscending]);
     }
   }
 
@@ -1080,6 +1085,26 @@ export class PinnedColumn {
     g.fillText(str, nXX, nYY);
 
 
+    //Paint Sort Arrow
+    if(this.m_colGrid.idx > 0) {
+      const arSortCols  = grid.sortByColumns;
+      const arSortTypes = grid.sortTypes;
+      let nIdxCol = -1;
+      for(let n=0; n<arSortCols.length; ++n) {
+        if(arSortCols[n].name === this.m_colGrid.name) {
+          nIdxCol = n;
+          break;
+        }
+      }
+
+      const strArrow = nIdxCol < 0 ? '' : arSortTypes[nIdxCol] ? GridUtils.UpArrow : GridUtils.DownArrow;
+      if(fontScaled != null)
+        g.font = fontScaled;
+      g.fillStyle = PinnedColumn.SORT_ARROW_COLOR;
+      g.fillText(strArrow, (nW-12)*window.devicePixelRatio, (nY + Math.floor(nHCH - nHFont) / 2) + nHFont);
+    }
+
+
     //Regular cells
     const nRowCurrent =  dframe.currentRow.idx;
     const bitsetSel = dframe.selection;
@@ -1136,8 +1161,6 @@ export class PinnedColumn {
       }
 
       //let nYY = nY;//*window.devicePixelRatio;
-
-
       font = cellRH.style.font;
       fontScaled = GridUtils.scaleFont(font, window.devicePixelRatio);
       if (fontScaled !== null) {
@@ -1158,7 +1181,6 @@ export class PinnedColumn {
         }
       }
     }
-
 
     //Paint Grid
     g.strokeStyle = "Gainsboro";

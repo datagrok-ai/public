@@ -66,6 +66,18 @@ For some real-life examples, please refer to the
 [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem) package,
 which has `Jest` properly configured and all tests written properly.
 
+## Skipping tests
+
+If a test fails for some reason, you can skip it using the skipReason parameter
+(specify a reason for skipping the test, for example,
+the associated Jira issue key or GitHub issue number):
+
+```js
+test('Skipped', async () => {
+  expect(1, 11);
+}, {skipReason: 'GROK-99999'});
+```
+
 ## Testing functions
 
 Every package utilizes the concept of [functions](../../datagrok/functions/function.md).

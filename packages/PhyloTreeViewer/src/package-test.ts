@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 
+import './tests/tree-for-grid-tests';
 import './tests/grid-with-tree-tests';
 import './tests/newick-phylotree-tests';
 import './tests/newick-phylocanvas-tests';

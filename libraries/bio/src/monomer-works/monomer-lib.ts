@@ -6,6 +6,10 @@ export class MonomerLib implements IMonomerLib {
   private _monomers: { [type: string]: { [name: string]: Monomer } } = {};
   private _onChanged = new Subject<any>();
 
+  constructor(monomers: { [type: string]: { [name: string]: Monomer } }) {
+    this._monomers = monomers;
+  }
+
   getMonomer(monomerType: string, monomerName: string): Monomer | null {
     if (monomerType in this._monomers! && monomerName in this._monomers![monomerType])
       return this._monomers![monomerType][monomerName];
@@ -17,7 +21,7 @@ export class MonomerLib implements IMonomerLib {
     return Object.keys(this._monomers);
   }
 
-  getMonomersByType(type: string): {[symbol: string]: string} {
+  getMonomerMolsByType(type: string): {[symbol: string]: string} {
     let res: {[symbol: string]: string} = {};
 
     Object.keys(this._monomers[type]).forEach(monomerSymbol => {
@@ -27,19 +31,27 @@ export class MonomerLib implements IMonomerLib {
     return res;
   }
 
+  getMonomerNamesByType(type: string): string[] {
+    return Object.keys(this._monomers[type]);
+  }
+
   get onChanged(): Observable<any> { 
     return this._onChanged;
   }
 
-  public update(monomers: { [type: string]: { [name: string]: Monomer } }): void {
-    Object.keys(monomers).forEach(type => {
+  public update(lib: IMonomerLib): void {
+    const typesNew = lib.getTypes();
+    const types = this.getTypes();
+
+    typesNew.forEach(type => {
       //could possibly rewrite -> TODO: check duplicated monomer symbol
 
-      if (!this.getTypes().includes(type))
+      if (!types.includes(type))
         this._monomers![type] = {};
 
-      Object.keys(monomers[type]).forEach(monomerName =>{
-        this._monomers[type][monomerName] = monomers[type][monomerName];
+      const monomers = lib.getMonomerNamesByType(type);
+      monomers.forEach(monomerName =>{
+        this._monomers[type][monomerName] = lib.getMonomer(type, monomerName)!;
       })
     });
 

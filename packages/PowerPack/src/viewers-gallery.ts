@@ -38,6 +38,7 @@ const cat_maps = [
     'Shape map',
     'Google map',
     'Globe',
+    'Map',
 ];
 const viewerOptions = {
     "showXAxis": false,

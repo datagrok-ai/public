@@ -10,6 +10,11 @@ type TreeLeafDict = { [nodeName: string]: bio.NodeType };
 type DataNodeDict = { [nodeName: string]: number };
 type NodeNameCallback = (nodeName: string) => void;
 
+export const enum TAGS {
+  DF_NEWICK = '.newick',
+  DF_NEWICK_LEAF_COL_NAME = '.newickLeafColumn',
+}
+
 export class TreeHelper implements bio.ITreeHelper {
   toNewick(node: bio.NodeType | null): string {
 

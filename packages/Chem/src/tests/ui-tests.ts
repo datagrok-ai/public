@@ -61,7 +61,7 @@ category('UI', () => {
     }
 
     grok.shell.closeAll(); 
-  });  
+  }, {skipReason: '#1183'});  
   
   test('descriptors', async () => {
     v = grok.shell.addTableView(smiles);
@@ -123,7 +123,7 @@ category('UI', () => {
     isColumnPresent(smiles.columns, 'RingCount');
 
     grok.shell.closeAll(); 
-  });
+  }, {skipReason: '#1183'});
 
   test('info panel: gasteiger', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -154,7 +154,7 @@ category('UI', () => {
     gastaigerPanel!.click(); await delay(500);
 
     grok.shell.closeAll(); 
-  });
+  }, {skipReason: '#1183'});
 
   test('info panel: identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -180,7 +180,7 @@ category('UI', () => {
     let identifiersPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Identifiers')
     identifiersPanel!.click(); await delay(500);
     grok.shell.closeAll(); 
-  }); 
+  }, {skipReason: '#1183'}); 
 
   test('info panel: structure2D', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -202,7 +202,7 @@ category('UI', () => {
     structure2DPanel!.click(); await delay(500);
 
     grok.shell.closeAll(); 
-  });
+  }, {skipReason: '#1183'});
 
   test('info panel: structure3D', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -224,7 +224,7 @@ category('UI', () => {
     structure3DPanel!.click(); await delay(500);
 
     grok.shell.closeAll();
-  });
+  }, {skipReason: '#1183'});
 
   test('info panel: properties', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -248,7 +248,7 @@ category('UI', () => {
     propertiesPanel!.click(); await delay(500);
 
     grok.shell.closeAll();
-  });
+  }, {skipReason: '#1183'});
 
   test('info panel: toxicity', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -272,7 +272,7 @@ category('UI', () => {
     toxicityPanel!.click(); await delay(500);
 
     grok.shell.closeAll();
-  });
+  }, {skipReason: '#1183'});
 
   test('info panel: drug likeness', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -296,7 +296,7 @@ category('UI', () => {
     drugLikenessPanel!.click(); await delay(500);
 
     grok.shell.closeAll();
-  });
+  }, {skipReason: '#1183'});
 
   test('info panel: structural alerts', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -320,7 +320,7 @@ category('UI', () => {
     structuralAlertsPanel!.click(); await delay(500);
 
     grok.shell.closeAll();
-  });
+  }, {skipReason: '#1183'});
 
   test('chem inputs', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -338,7 +338,7 @@ category('UI', () => {
     expect(grok.shell.t.name, 'mutations')
 
     grok.shell.closeAll();
-  });
+  }, {skipReason: '#1183'});
 
   test('map identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -401,5 +401,5 @@ category('UI', () => {
 
     v.close();
     grok.shell.closeAll();
-  });
+  }, {skipReason: '#1183'});
 });

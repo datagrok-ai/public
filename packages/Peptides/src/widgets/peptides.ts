@@ -1,13 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import '../styles.css';
 import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
+import {WebLogoViewer} from '@datagrok-libraries/bio';
 
 /** Peptide analysis widget.
  *
@@ -34,9 +34,9 @@ Promise<{host: HTMLElement, callback: () => Promise<void>}> {
   if (funcs.length == 0)
     return {host: ui.label('Bio package is missing or out of date. Please install the latest version.'), callback: async () => {}};
 
-  funcs = DG.Func.find({package: 'Helm', name: 'getMonomerLib'});
+  funcs = DG.Func.find({package: 'Bio', name: 'getBioLib'});
   if (funcs.length == 0)
-    return {host: ui.label('Helm package is missing or out of date. Please install the latest version.'), callback: async () => {}};
+    return {host: ui.label('Bio package is missing or out of date. Please install the latest version.'), callback: async () => {}};
 
   let scaledCol: DG.Column<number>;
 
@@ -97,7 +97,7 @@ Promise<{host: HTMLElement, callback: () => Promise<void>}> {
     inputElements.push(startBtn);
   }
 
-  const viewer = await df.plot.fromType('WebLogo') as bio.WebLogoViewer;
+  const viewer = await df.plot.fromType('WebLogo') as WebLogoViewer;
   viewer.root.style.setProperty('height', '130px');
   const logoHost = ui.div();
   $(logoHost).empty().append(viewer.root);
@@ -149,6 +149,7 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     }
 
     newDf.setTag('monomerType', monomerType);
+    newDf.setTag('newAnalysis', '1');
     model = await PeptidesModel.getInstance(newDf);
   } else
     grok.shell.error('The activity column must be of numeric type!');

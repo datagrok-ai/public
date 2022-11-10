@@ -46,6 +46,7 @@ import {
 import {IVdRegionsViewer} from './src/viewers/vd-regions-viewer';
 import {PositionHeight, PositionInfo, PositionMonomerInfo, WebLogoViewer} from './src/viewers/web-logo-viewer';
 import {MonomerLib} from './src/monomer-works/monomer-lib';
+import {readLibrary} from './src/monomer-works/monomer-utils';
 
 export {
   ALIGNMENT,
@@ -107,5 +108,6 @@ export {
   Monomer,
   IMonomerLib,
   MonomerWorks,
-  MonomerLib
+  MonomerLib,
+  readLibrary
 };

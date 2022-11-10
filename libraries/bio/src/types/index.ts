@@ -32,8 +32,9 @@ export type Monomer = {
 
 export interface IMonomerLib {
   getMonomer(monomerType: string, monomerName: string): Monomer | null;
-  getMonomersByType(type: string): {[symbol: string]: string} | null;
+  getMonomerMolsByType(type: string): {[symbol: string]: string} | null;
+  getMonomerNamesByType(type: string): string[];
   getTypes(): string[];
-  update(monomers: { [type: string]: { [name: string]: Monomer } }): void;
+  update(lib: IMonomerLib): void;
   get onChanged(): Observable<any>;
 }

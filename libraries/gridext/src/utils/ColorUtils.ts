@@ -30,4 +30,8 @@ export class ColorUtils {
   static get colSelection(): number {
     return 0x60dcdca0;
   }
+
+  static get sortArrow(): number {
+    return 0xFF0000A0;
+  }
 }
