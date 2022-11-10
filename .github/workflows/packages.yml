@@ -90,8 +90,8 @@ jobs:
             CONTINUE_PUBLISH_JOB="yes"
           fi
           echo '::echo::on'
-          echo "::set-output name=publish::${CONTINUE_PUBLISH_JOB}"
-          echo "::set-output name=matrix_publish::${PUBLISH_JSON}"
+          echo "publish=${CONTINUE_PUBLISH_JOB}" >> $GITHUB_OUTPUT
+          echo "matrix_publish=${PUBLISH_JSON}" >> $GITHUB_OUTPUT
           echo '::echo::off'
 
   publish:
@@ -132,10 +132,10 @@ jobs:
         if: ${{ matrix.test == 'true' }}
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
-          echo "::set-output name=commit_sha::$commit_sha"
-          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok --profile db up -d
+          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok --profile db --profile grok_spawner up -d
           docker_sha=$(docker images --quiet datagrok/datagrok:latest)
-          echo "::set-output name=docker_sha::$docker_sha"
+          echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:latest SHA=$docker_sha docker version was used for tests"
       - name: Setup Node
         uses: actions/setup-node@v2
@@ -214,7 +214,7 @@ jobs:
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
           echo "::error title=${{ matrix.package }}: failed tests with datagrok:latest SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html report for results"
-          echo "::set-output name=status::error"
+          echo "status=error" >> $GITHUB_OUTPUT
 
       - name: Upload Artifact
         if: always() && (steps.test-package.outcome == 'failure' || steps.test-package.outcome == 'success')
@@ -230,6 +230,62 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: github.ref == 'refs/heads/master' && always() && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success'
+
+      - name: Check dockerfiles directory existence
+        id: check_directory
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "dockerfiles"  
+      - name: Check if dockerfies directory is not empty 
+        id: check_empty_dir
+        run: |
+          if [ -z "$(ls -A  packages/${{ matrix.package }}/dockerfiles)" ]; then
+            echo "dir_empty=true" >> $GITHUB_OUTPUT
+          else
+            echo "dir_empty=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Check if the dockerfiles directory has changes
+        id: directory_changes_checker
+        uses: georgeneto/directory-changes-checker@v1
+        with:
+          repo-token: ${{secrets.GITHUB_TOKEN}}
+          directory: "packages/${{ matrix.package }}/dockerfiles"
+      - name: Login to DockerHub   
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }} 
+        if: steps.check_directory.outputs.files_exists == 'true' && steps.check_empty_dir.outputs.dir_empty == 'false' && steps.publish.outcome == 'success'
+
+      - name: Get docker image version
+        id: docker_name_ver
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          echo "image_ver=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+          echo "package_name=$(jq -r .version package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
+
+      - name: Build and push package  Docker image
+        if: steps.check_directory.outputs.files_exists == 'true' && steps.check_empty_dir.outputs.dir_empty == 'false' && steps.publish.outcome == 'success'
+        uses: docker/build-push-action@v3
+        with:
+          context: packages/${{ matrix.package }}/dockerfiles
+          push: true
+          tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
+      
+      - name: Build docker image
+        if: steps.directory_changes_checker.output.hasChanges == 'true' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
+        uses: docker/build-push-action@v3
+        with:
+          context: packages/${{ matrix.package }}/dockerfiles
+          push: false
+          tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}-${{ steps.datagrok-image.outputs.commit_sha }}
+        
+      - name: Upload docker image as artifact
+        if: steps.directory_changes_checker.output.hasChanges == 'true' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
+        uses: ishworkh/docker-image-artifact-upload@v1
+        with:
+          image: "datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}-${{ steps.datagrok-image.outputs.commit_sha }}"
+        
       - name: Get package information
         id: info
         if: always() && steps.publish.outcome == 'success' && matrix.package != 'Meta'
@@ -247,7 +303,7 @@ jobs:
           echo "$(jq '. | select( has("category") == true ).category' package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.category.txt
           echo "$(jq .version package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.version.txt
           echo "${deps}" >> gh-cache/${{ matrix.package }}.dependencies.txt
-          echo "::set-output name=push::yes"
+          echo "push=yes" >> $GITHUB_OUTPUT
       - name: Upload artifact with package information
         id: cache
         if: always() && steps.info.outcome == 'success'
@@ -308,7 +364,7 @@ jobs:
         id: branch
         run: |
           branch=$(echo ${GITHUB_REF#refs/heads/})
-          echo "::set-output name=branch::${branch}"
+          echo "branch=${branch}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
         with:
           token: ${{ secrets.WRITE_TOKEN }}
@@ -353,7 +409,7 @@ jobs:
         working-directory: packages/Meta
         run: |
           packages=$(find $GITHUB_WORKSPACE/gh-cache -mindepth 1 -maxdepth 1 -type d -name info-* -printf '%P '| sed 's/info-//g')
-          echo "::set-output name=packages::$packages"
+          echo "packages=$packages" >> $GITHUB_OUTPUT
           for package in $packages; do
             path="$GITHUB_WORKSPACE/gh-cache/info-${package}"
             name=$(cat ${path}/${package}.name.txt)
@@ -404,5 +460,5 @@ jobs:
                 exit $exit
               fi
             done
-            echo "::set-output name=push::yes"
+            echo "push=yes" >> $GITHUB_OUTPUT
           fi
