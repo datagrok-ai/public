@@ -210,7 +210,8 @@ export async function runTests(options?: { category?: string, test?: string, tes
     const successful = results.filter(r => r.success).length;
     const skipped = results.filter(r => r.skipped).length;
     const failed = results.filter(r => !r.success);
-    const description = `Package tested: ${successful} successful, ${skipped} skipped, ${failed.length} failed tests`;
+    const packageName = new Error().stack?.match(/(?<=api\/packages\/published\/files\/)\w{1,50}(?=\/)/)?.toString() || 'undefined'; // Bad approach, needs to change
+    const description = `Package ${packageName} tested: ${successful} successful, ${skipped} skipped, ${failed.length} failed tests`;
     const params = {
       successful: successful,
       skipped: skipped,
