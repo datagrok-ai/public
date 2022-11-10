@@ -160,7 +160,7 @@ export function after(after: () => Promise<void>): void {
 
 
 export async function runTests(options?: { category?: string, test?: string, testContext?: TestContext }) {
-  const results: { category?: string, name?: string, success: boolean, result: string, ms: number }[] = [];
+  const results: { category?: string, name?: string, success: boolean, result: string, ms: number, skipped: boolean }[] = [];
   console.log(`Running tests`);
   options ??= {};
   options!.testContext ??= new TestContext();
@@ -201,15 +201,23 @@ export async function runTests(options?: { category?: string, test?: string, tes
       results.push({
         category: 'Unhandled exceptions',
         name: 'exceptions',
-        result: grok.shell.lastError, success: false, ms: 0
+        result: grok.shell.lastError, success: false, ms: 0, skipped: false
       });
     }
   }
   if (options.testContext.report) {
     const logger = new DG.Logger();
-    for (const r of results)
-      if (!r.success)
-        logger.log('runTests', r);
+    const successful = results.filter(r => r.success).length;
+    const skipped = results.filter(r => r.skipped).length;
+    const failed = results.filter(r => !r.success);
+    const description = `Package tested: ${successful} successful, ${skipped} skipped, ${failed.length} failed tests`;
+    const params = {
+      successful: successful,
+      skipped: skipped,
+      failed: failed.length,
+    }
+    for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
+    logger.log(description, params, 'package-tested');
   }
   return results;
 }

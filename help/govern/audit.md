@@ -61,6 +61,7 @@ All audit records have fixed types:
 * tutorial-completed
 * viewer-rendered
 * log
+* package-tested
 
 ## JavaScript API
 
