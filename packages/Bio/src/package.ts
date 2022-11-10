@@ -91,6 +91,8 @@ export async function initBio() {
 
 async function loadLibraries() {
   let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
+  if (uploadedLibraries.length == 0 && monomerLib == null)
+    monomerLib = new MonomerLib({});
   for (let i = 0; i < uploadedLibraries.length; ++i)
     await monomerManager(uploadedLibraries[i]);
 }
