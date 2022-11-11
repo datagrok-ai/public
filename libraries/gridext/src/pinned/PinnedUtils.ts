@@ -53,6 +53,63 @@ export function getPinnedColumnLeft(colPinned : PinnedColumn) : number {
 }
 
 
+export function setPinnedColumnWidth(colPinned : PinnedColumn, nW : number) : void {
+  const grid = colPinned.getGridColumn()?.grid;
+  if(grid === null || grid === undefined)
+    return;
+
+  const dart = DG.toDart(grid);
+  let colPinnedTmp = null;
+  const nPinnedColCount =dart.m_arPinnedCols === undefined ? 0 : dart.m_arPinnedCols.length;
+  let n=0;
+  for(; n<nPinnedColCount; ++n) {
+    colPinnedTmp = dart.m_arPinnedCols[n];
+    if(colPinned === colPinnedTmp) {
+      break;
+    }
+  }
+
+  if(n === nPinnedColCount)
+    return;
+
+  let eCanvas = colPinnedTmp.getRoot();
+  if(eCanvas === null)
+    return;
+
+  //This Pinned Column
+  const nWCol = colPinned.getWidth();
+  let nXDiff = nW - nWCol;
+  if(grid.canvas.offsetWidth - nXDiff < 20) {
+    nXDiff = grid.canvas.offsetWidth - 20;
+    nW = nWCol + nXDiff;
+  }
+  eCanvas.width = nW*window.devicePixelRatio;
+  eCanvas.style.width = nW.toString() + "px";
+  //console.log('nWWWCol: ' + nW + " nXDiff= " + nXDiff + " new W= " + nXDiff);
+
+  const g = eCanvas.getContext('2d');
+  colPinned.paint(g, grid);
+
+  ++n;
+  for(; n<nPinnedColCount; ++n) {
+    colPinnedTmp = dart.m_arPinnedCols[n];
+    eCanvas = colPinnedTmp.getRoot();
+    if(eCanvas === null)
+      continue;
+
+    eCanvas.style.left = (eCanvas.offsetLeft + nXDiff).toString() + "px";
+   }
+
+  //Grid
+  grid.canvas.style.left = (grid.canvas.offsetLeft + nXDiff).toString() + "px";
+  grid.overlay.style.left= (grid.overlay.offsetLeft + nXDiff).toString() + "px";
+
+  grid.canvas.style.width = (grid.canvas.offsetWidth - nXDiff).toString() + "px";
+  grid.overlay.style.width= (grid.overlay.offsetWidth - nXDiff).toString() + "px";
+  grid.invalidate();
+}
+
+
 export function getTotalPinnedColsWidth(grid : DG.Grid) : number {
   const dart = DG.toDart(grid);
   const nPinnedColsCounnt = dart.m_arPinnedCols === undefined ? 0 : dart.m_arPinnedCols.length;
