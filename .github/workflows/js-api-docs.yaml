@@ -21,7 +21,7 @@ jobs:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
       - name: Upgrade npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@8.x
       - run: npm version
       - run: npm install
         working-directory: ./js-api
