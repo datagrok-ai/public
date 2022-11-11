@@ -701,7 +701,7 @@ export class GisViewer extends DG.JsViewer {
     if (reloadData)
       this.getCoordinates();
 
-    this.updateOpenLayerProperties(false);
+    this.updateOpenLayerProperties(true);
     if (this.renderType === 'heat map') {
       //render heat map
       this.renderHeat(this.features);
@@ -821,7 +821,7 @@ export class GisViewer extends DG.JsViewer {
           fieldLabel: labelVal[i],
           fieldSize: (sizeVal[i]),
           fieldColor: (colorVal[i]),
-          fieldColorD: (colorCodes[i]),
+          fieldColorCode: (toStringColor(colorCodes[i], this.markerOpacity)),
           fieldIndex: i,
           filtered: 1,
         });
