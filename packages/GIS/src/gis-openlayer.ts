@@ -465,7 +465,7 @@ export class OpenLayers {
       colorValue = colorValue.concat(colorsArray);
       //TODO: remove all code with old color coding above
       //new way of color coding:
-      colorValue = ['get', 'fieldColorD']; //receive color codes stored from calls
+      colorValue = ['get', 'fieldColorCode']; //receive color codes stored from calls
       // alert(colorValue);
     }
     //OLD simple color coding approach>>
