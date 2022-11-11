@@ -3,87 +3,50 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
   siRnaNucleotidesToGcrs} from '../structures-works/converters';
-import {map, COL_NAMES, MODIFICATIONS} from '../structures-works/map';
+import {map, MODIFICATIONS, SYNTHESIZERS} from '../structures-works/map';
+import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
+import {saltMass, saltMolWeigth, molecularWeight, batchMolWeight} from './calculations';
 import {isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 import {linkV3000} from '../structures-works/mol-transformations';
+import {stringify, download, removeEmptyRows, differenceOfTwoArrays} from '../helpers';
 
-import {SALTS_CSV} from '../salts';
-import {USERS_CSV} from '../users';
-import {ICDS} from '../ICDs';
-import {SOURCES} from '../sources';
-import {IDPS} from '../IDPs';
+import {SALTS_CSV} from './salts';
+import {USERS_CSV} from './users';
+import {ICDS} from './ICDs';
+import {SOURCES} from './sources';
+import {IDPS} from './IDPs';
 
 
-function sortByStringLengthInDescendingOrder(array: string[]): string[] {
-  return array.sort(function(a, b) {return b.length - a.length;});
-}
-
-function stringify(items: string[]): string {
-  return '["' + items.join('", "') + '"]';
-}
-
-function saltMass(saltNames: string[], molWeightCol: DG.Column, equivalentsCol: DG.Column, i: number,
-  saltCol: DG.Column) {
-  const saltRowIndex = saltNames.indexOf(saltCol.get(i));
-  return (
-    saltRowIndex == -1 || molWeightCol.get(saltRowIndex) == DG.FLOAT_NULL || equivalentsCol.get(i) == DG.INT_NULL) ?
-    DG.FLOAT_NULL :
-    molWeightCol.get(saltRowIndex) * equivalentsCol.get(i);
-}
-
-function saltMolWeigth(saltNamesList: string[], saltCol: DG.Column, molWeightCol: DG.Column, i: number) {
-  const saltRowIndex = saltNamesList.indexOf(saltCol.get(i));
-  return (saltRowIndex == -1) ? DG.FLOAT_NULL : molWeightCol.get(saltRowIndex);
-}
-
-function batchMolWeight(compoundMolWeightCol: DG.Column, saltMassCol: DG.Column, i: number) {
-  return (compoundMolWeightCol.getString(i) == '' || saltMassCol.getString(i) == '') ?
-    DG.FLOAT_NULL :
-    compoundMolWeightCol.get(i) + saltMassCol.get(i);
-}
-
-function molecularWeight(sequence: string, weightsObj: {[index: string]: number}): number {
-  const codes = sortByStringLengthInDescendingOrder(Object.keys(weightsObj)).concat(Object.keys(MODIFICATIONS));
-  let weight = 0;
-  let i = 0;
-  while (i < sequence.length) {
-    const matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
-    weight += weightsObj[sequence.slice(i, i + matchedCode.length)];
-    i += matchedCode.length;
-  }
-  return weight - 61.97;
-}
-
-function parseStrandsFromDuplexCell(s: string): string[] {
-  return s.slice(3).split('\r\nAS ');
+function parseStrandsFromDuplexCell(s: string): {SS: string, AS: string} {
+  const arr = s.slice(3).split('\r\nAS ');
+  return {SS: arr[0], AS: arr[1]};
 }
 
 async function saveTableAsSdFile(table: DG.DataFrame) {
-  if (!table.columns.contains('Compound Name')) {
-    grok.shell.warning(
-      'File saved without columns \'' +
-      [COL_NAMES.COMPOUND_NAME, COL_NAMES.COMPOUND_COMMENTS, COL_NAMES.CPD_MW,
-        COL_NAMES.SALT_MASS, COL_NAMES.BATCH_MW].join('\', \''),
-    );
+  if (GENERATED_COL_NAMES.some((colName) => !table.columns.contains(colName))) {
+    const absentColNames = differenceOfTwoArrays(GENERATED_COL_NAMES, table.columns.names()).join('\', \'');
+    grok.shell.warning('File saved without columns \'' + absentColNames + '\'');
   }
+
   const structureColumn = table.getCol(COL_NAMES.SEQUENCE);
   const typeColumn = table.getCol(COL_NAMES.TYPE);
+
   let result = '';
   for (let i = 0; i < table.rowCount; i++) {
-    const format = 'Janssen GCRS Codes'; //getFormat(structureColumn.get(i))!;
-    if (typeColumn.get(i) == 'Duplex') {
-      const array = parseStrandsFromDuplexCell(structureColumn.get(i));
-      const as = sequenceToMolV3000(array[1], true, true, format) +
+    const format = SYNTHESIZERS.GCRS; //getFormat(structureColumn.get(i))!;
+    if (typeColumn.get(i) == SEQUENCE_TYPES.DUPLEX) {
+      const obj = parseStrandsFromDuplexCell(structureColumn.get(i));
+      const as = sequenceToMolV3000(obj.AS, true, true, format) +
       '\n' + `> <Sequence>\nAnti Sense\n\n`;
-      const ss = sequenceToMolV3000(array[0], false, true, format) +
+      const ss = sequenceToMolV3000(obj.SS, false, true, format) +
       '\n' + `> <Sequence>\nSense Strand\n\n`;
       result += linkV3000([ss, as], true, true) + '\n\n';
-    } else if (typeColumn.get(i) == 'SS') {
+    } else if (typeColumn.get(i) == SEQUENCE_TYPES.SENSE_STRAND) {
       const molSS = sequenceToMolV3000(structureColumn.get(i), false, true, format) +
       '\n' + `> <Sequence>\nSense Strand\n\n`;
       result += molSS;
-    } else if (typeColumn.get(i) == 'AS') {
+    } else if (typeColumn.get(i) == SEQUENCE_TYPES.ANTISENSE_STRAND) {
       const molAS = sequenceToMolV3000(structureColumn.get(i), true, true, format) +
         '\n' + `> <Sequence>\nAnti Sense\n\n`;
       result += molAS;
@@ -95,15 +58,12 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
     }
     result += '$$$$\n';
   }
-  const element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
-  element.setAttribute('download', table.name + '.sdf');
-  element.click();
+  download(table.name + '.sdf', encodeURIComponent(result));
 }
 
 export function autostartOligoSdFileSubscription() {
   grok.events.onViewAdded.subscribe((v: any) => {
-    if (v.type == 'TableView') {
+    if (v.type == DG.VIEW_TYPE.TABLE_VIEW) {
       if (v.dataFrame.columns.contains(COL_NAMES.TYPE))
         oligoSdFile(v.dataFrame);
       grok.events.onContextMenu.subscribe((args) => {
@@ -173,22 +133,17 @@ export function oligoSdFile(table: DG.DataFrame) {
   const saltNamesList = saltsDf.getCol('DISPLAY').toList();
 
   function addColumns(t: DG.DataFrame) {
-    if (t.columns.contains(COL_NAMES.COMPOUND_NAME))
+    if (GENERATED_COL_NAMES.some((colName) => t.columns.contains(colName)))
       return grok.shell.error('Columns already exist');
 
-    for (let i = t.rowCount - 1; i > -1; i--) {
-      if (sequenceCol.get(i) == '')
-        t.rows.removeAt(i, 1, false);
-    }
-
     t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => {
-      return (typeColumn.get(i) == 'Duplex') ? chemistryNameCol.get(i) : sequenceCol.get(i);
+      return (typeColumn.get(i) == SEQUENCE_TYPES.DUPLEX) ? chemistryNameCol.get(i) : sequenceCol.get(i);
     });
 
     t.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => {
-      if (typeColumn.get(i) == 'Duplex') {
-        const arr = parseStrandsFromDuplexCell(sequenceCol.get(i));
-        return chemistryNameCol.get(i) + '; duplex of SS: ' + arr[0] + ' and AS: ' + arr[1];
+      if (typeColumn.get(i) == SEQUENCE_TYPES.DUPLEX) {
+        const obj = parseStrandsFromDuplexCell(sequenceCol.get(i));
+        return chemistryNameCol.get(i) + '; duplex of SS: ' + obj.SS + ' and AS: ' + obj.AS;
       }
       return sequenceCol.get(i);
     });
@@ -203,14 +158,14 @@ export function oligoSdFile(table: DG.DataFrame) {
     for (const [key, value] of Object.entries(MODIFICATIONS))
       weightsObj[key] = value.molecularWeight;
 
-    t.columns.addNewFloat(COL_NAMES.CPD_MW).init((i: number) => {
-      if (typeColumn.get(i) == 'Duplex') {
-        const arr = parseStrandsFromDuplexCell(sequenceCol.get(i));
+    t.columns.addNewFloat(COL_NAMES.COMPOUND_MOL_WEIGHT).init((i: number) => {
+      if (typeColumn.get(i) == SEQUENCE_TYPES.DUPLEX) {
+        const obj = parseStrandsFromDuplexCell(sequenceCol.get(i));
         return (
-          isValidSequence(arr[0], null).indexOfFirstNotValidChar == -1 &&
-          isValidSequence(arr[1], null).indexOfFirstNotValidChar == -1
+          isValidSequence(obj.SS, null).indexOfFirstNotValidChar == -1 &&
+          isValidSequence(obj.AS, null).indexOfFirstNotValidChar == -1
         ) ?
-          molecularWeight(arr[0], weightsObj) + molecularWeight(arr[1], weightsObj) :
+          molecularWeight(obj.SS, weightsObj) + molecularWeight(obj.AS, weightsObj) :
           DG.FLOAT_NULL;
       }
       return (isValidSequence(sequenceCol.get(i), null).indexOfFirstNotValidChar == -1) ?
@@ -224,8 +179,8 @@ export function oligoSdFile(table: DG.DataFrame) {
     t.columns.addNewFloat(COL_NAMES.SALT_MOL_WEIGHT).init((i: number) =>
       saltMolWeigth(saltNamesList, saltCol, molWeightCol, i));
 
-    t.columns.addNewFloat(COL_NAMES.BATCH_MW).init((i: number) =>
-      batchMolWeight(t.getCol(COL_NAMES.CPD_MW), t.getCol(COL_NAMES.SALT_MASS), i));
+    t.columns.addNewFloat(COL_NAMES.BATCH_MOL_WEIGHT).init((i: number) =>
+      batchMolWeight(t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT), t.getCol(COL_NAMES.SALT_MASS), i));
 
     addColumnsPressed = true;
     return newDf = t;
@@ -241,17 +196,16 @@ export function oligoSdFile(table: DG.DataFrame) {
         table.changeColumnType(COL_NAMES.IDP, DG.COLUMN_TYPE.STRING);
       d.append(
         ui.link('Add Columns', () => {
+          table = removeEmptyRows(table, sequenceCol);
           addColumns(table);
           view.grid.columns.setOrder(Object.values(COL_NAMES));
-        }, 'Add columns: \'' + [COL_NAMES.COMPOUND_NAME, COL_NAMES.COMPOUND_COMMENTS, COL_NAMES.CPD_MW,
-          COL_NAMES.SALT_MASS, COL_NAMES.BATCH_MW].join('\', \''), '',
-        ),
+        }, 'Add columns: \'' + GENERATED_COL_NAMES.join('\', \'') + '\''),
         ui.button('Save SD file', () => saveTableAsSdFile(addColumnsPressed ? newDf : table)),
       );
 
       const view = grok.shell.getTableView(table.name);
 
-      view.dataFrame.getCol(COL_NAMES.TYPE).setTag(DG.TAGS.CHOICES, '["AS", "SS", "Duplex"]');
+      view.dataFrame.getCol(COL_NAMES.TYPE).setTag(DG.TAGS.CHOICES, stringify(Object.values(SEQUENCE_TYPES)));
       view.dataFrame.getCol(COL_NAMES.OWNER).setTag(DG.TAGS.CHOICES, stringify(usersDf.columns.byIndex(0).toList()));
       view.dataFrame.getCol(COL_NAMES.SALT).setTag(DG.TAGS.CHOICES, stringify(saltsDf.columns.byIndex(0).toList()));
       view.dataFrame.getCol(COL_NAMES.SOURCE).setTag(DG.TAGS.CHOICES, stringify(sourcesDf.columns.byIndex(0).toList()));
@@ -281,8 +235,8 @@ export function oligoSdFile(table: DG.DataFrame) {
         t.getCol(COL_NAMES.SALT_MASS).set(i, smValue, false);
         const smwValue = saltMolWeigth(saltNamesList, saltCol, molWeightCol, i);
         t.getCol(COL_NAMES.SALT_MOL_WEIGHT).set(i, smwValue, false);
-        const bmw = batchMolWeight(t.getCol(COL_NAMES.CPD_MW), t.getCol(COL_NAMES.SALT_MASS), i);
-        t.getCol(COL_NAMES.BATCH_MW).set(i, bmw, false);
+        const bmw = batchMolWeight(t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT), t.getCol(COL_NAMES.SALT_MASS), i);
+        t.getCol(COL_NAMES.BATCH_MOL_WEIGHT).set(i, bmw, false);
       }
     }),
   ]);

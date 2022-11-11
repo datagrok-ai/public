@@ -107,3 +107,29 @@ export function getHTMLElementbyInnerText(className:string, innerText:string):HT
         return element;
   }
 }
+
+export async function waitForElement(selector: string, error: string, wait=3000) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(selector)) {
+      return resolve(document.querySelector(selector));
+    }
+
+    const observer = new MutationObserver(() => {
+      if (document.querySelector(selector)) {
+        clearTimeout(timeout);
+        observer.disconnect();
+        resolve(document.querySelector(selector));
+      }
+    });
+    
+    const timeout = setTimeout(() => {
+      observer.disconnect();
+      reject(new Error(error));
+    }, wait);
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  });
+}

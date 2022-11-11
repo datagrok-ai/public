@@ -1,10 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 import {after, before, category, test, expect, expectObject} from '@datagrok-libraries/utils/src/test';
-
-import {Newick} from '@phylocanvas/phylocanvas.gl';
 
 category('newickParser_phylocanvas', () => {
   const nwk0 = `;`;
@@ -172,7 +171,7 @@ category('newickParser_phylocanvas', () => {
   });
 
   function _testNewickToObject(nwk: string, tgtObj: Object) {
-    const resObj = Newick.parse_newick(nwk);
+    const resObj = bio.Newick.parse_newick(nwk);
     expectObject(resObj, tgtObj);
   }
 

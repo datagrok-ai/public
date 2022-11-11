@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FunctionView} from './function-view';
 import '../css/computation-view.css';
+import {historyUtils} from './history-utils';
 
 /**
  * Base class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md).
@@ -40,9 +41,13 @@ export class ComputationView extends FunctionView {
     if (runId) {
       setTimeout(async () => {
         await this.init();
-        this.linkFunccall(await this.loadRun(runId));
+        const urlRun = await historyUtils.loadRun(runId);
+        this.linkFunccall(urlRun);
         this.build();
-        this.linkFunccall(await this.loadRun(runId));
+        await this.onBeforeLoadRun();
+        this.linkFunccall(urlRun);
+        await this.onAfterLoadRun(urlRun);
+        this.setRunViewReadonly();
         ui.setUpdateIndicator(this.root, false);
       }, 0);
     } else {

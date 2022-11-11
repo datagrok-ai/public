@@ -1,13 +1,13 @@
 /*
  * GIS VIEWER
- * TODO: add description here
+ * this is the viewer module which manage viewer UI, map based on open-layers class
 */
 //base import
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 //QJuery import
-import $ from 'cash-dom';
+// import $ from 'cash-dom';
 
 //GIS semantic types import
 import {SEMTYPEGIS} from '../src/gis-semtypes';
@@ -19,10 +19,13 @@ import {OLCallbackParam} from '../src/gis-openlayer';
 import VectorLayer from 'ol/layer/Vector';
 import * as OLProj from 'ol/proj';
 import Feature from 'ol/Feature';
-import { Point } from 'ol/geom';
-import { COLOR_CODING_TYPE } from 'datagrok-api/dg';
+import { Circle, Point } from 'ol/geom';
+import { COLOR_CODING_TYPE, Column } from 'datagrok-api/dg';
 import { forEach } from 'jszip';
 // import { numberSafeCompareFunction } from 'ol/array';
+
+//release mode flag: set to true to hide all experimental UI features
+const releaseMode = false;
 
 function toStringColor(num : number, opacity?: number) : string {
   num >>>= 0;
@@ -56,13 +59,11 @@ export class GisViewer extends DG.JsViewer {
   heatmapBlur: number;
   showTooltip: boolean;
 
-
-  isRowFocusing: boolean = true;
   isShortUI: boolean = true;
 
   //ui elements
   panelLeft: HTMLElement | null = null;
-  leftPanelBtn: HTMLElement | null = null;
+  btnLeftPanel: HTMLElement | null = null;
   panelRight: HTMLElement | null = null;
   panelTop: HTMLElement | null = null;
   panelBottom: HTMLElement | null = null;
@@ -76,6 +77,7 @@ export class GisViewer extends DG.JsViewer {
   ol: OpenLayers;
   layers = [];
   features: Array<Feature> = [];
+  featuresFull: Array<Feature> = [];
   coordinates: Coordinate[] = [];
   labelValues: Array<string | number> = [];
   colorValues: Array<number> = [];
@@ -126,7 +128,10 @@ export class GisViewer extends DG.JsViewer {
       renderTypeProp.choices = ['markers', 'heat map'];
   }
 
-  layerUIElement(num: number, layerName: string, layerId: string, isVisible: boolean): HTMLElement {
+  layerUIElement(num: number, layerName: string, layerId: string,
+    isVisible: boolean, isExportable: boolean = true): HTMLElement {
+    //
+    let btnExport: HTMLElement = ui.div();
     const l1 = ui.div(num+': '+layerName);
     l1.style.overflow = 'hidden';
     l1.style.flexWrap = 'nowrap';
@@ -141,11 +146,9 @@ export class GisViewer extends DG.JsViewer {
       el.setAttribute('layerName', layerName);
       el.setAttribute('layerId', layerId);
     }
-    //l1.style.border = '1px solid blue';
-    // const btnVisible = ui.button(ui.iconFA('eye'), ()=>{
-    const btnVisible = ui.iconFA(isVisible ? 'eye' : 'eye-slash', (evt)=>{ //cogs
+    //Visible button>>
+    const btnVisible = ui.iconFA(isVisible ? 'eye' : 'eye-slash', (evt) => {
       evt.stopImmediatePropagation();
-      // evt.stopPropagation();
       const divLayer = (evt.currentTarget as HTMLElement);
       const layerId = divLayer.getAttribute('layerId');
       if (!layerId)
@@ -159,49 +162,52 @@ export class GisViewer extends DG.JsViewer {
       // if (!isVisible) divLayer.style.background = 'lightblue';
       // else divLayer.style.background = 'lightgray';
     }, 'Show/hide layer');
-    //temporary this is the save layer button
     setupBtn(btnVisible, layerName, layerId);
-    //Setup button>>
-    const btnSetup = ui.iconFA('download', (evt)=>{ //cogs
-      evt.stopImmediatePropagation();
-      const divLayer = (evt.currentTarget as HTMLElement);
-      const layerId = divLayer.getAttribute('layerId');
-      if (!layerId)
-        return;
-      const layer = this.ol.getLayerById(layerId) as VectorLayer<any>;
-      if (!layer)
-        return;
-      const arrPreparedToDF: any[] = [];
-      const arrFeatures = this.ol.getFeaturesFromLayer(layer);
-      if (arrFeatures) {
-        for (let i = 0; i < arrFeatures.length; i++) {
-          // const gisObj = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
-          const newObj = arrFeatures[i].getProperties();
-          if (newObj.hasOwnProperty('geometry'))
-            delete newObj.geometry;
-          if (arrFeatures[i].getId())
-            newObj.id_ = arrFeatures[i].getId();
-          newObj.gisObject = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
 
-          arrPreparedToDF.push(newObj);
+    //Export button>>
+    if (isExportable) {
+      btnExport = ui.iconFA('download', (evt) => { //cogs
+        evt.stopImmediatePropagation();
+        const divLayer = (evt.currentTarget as HTMLElement);
+        const layerId = divLayer.getAttribute('layerId');
+        if (!layerId)
+          return;
+        const layer = this.ol.getLayerById(layerId) as VectorLayer<any>;
+        if (!layer)
+          return;
+        const arrPreparedToDF: any[] = [];
+        const arrFeatures = this.ol.getFeaturesFromLayer(layer);
+        if (arrFeatures) {
+          for (let i = 0; i < arrFeatures.length; i++) {
+            // const gisObj = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
+            const newObj = arrFeatures[i].getProperties();
+            if (newObj.hasOwnProperty('geometry'))
+              delete newObj.geometry;
+            if (arrFeatures[i].getId())
+              newObj.id_ = arrFeatures[i].getId();
+            newObj.gisObject = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
+
+            arrPreparedToDF.push(newObj);
+          }
+          // const df = DG.DataFrame.fromObjects(arrFeatures);
+          const df = DG.DataFrame.fromObjects(arrPreparedToDF);
+          if (df) {
+            const gisCol = df.col('gisObject');
+            if (gisCol)
+              gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
+            df.name = layer.get('layerName');
+
+            // df.toCsv()
+            // this.view.addTableView(df as DG.DataFrame);
+            grok.shell.addTableView(df as DG.DataFrame);
+
+            // this.view.addTableView(df as DG.DataFrame);
+          }
         }
-        // const df = DG.DataFrame.fromObjects(arrFeatures);
-        const df = DG.DataFrame.fromObjects(arrPreparedToDF);
-        if (df) {
-          const gisCol = df.col('gisObject');
-          if (gisCol)
-            gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
-          df.name = layer.get('layerName');
+      }, 'Export layer data to table');
+      setupBtn(btnExport, layerName, layerId);
+    } //<<if the flag isExportable
 
-          // df.toCsv()
-          // this.view.addTableView(df as DG.DataFrame);
-          grok.shell.addTableView(df as DG.DataFrame);
-
-          // this.view.addTableView(df as DG.DataFrame);
-        }
-      }
-    }, 'Layer properties');
-    setupBtn(btnSetup, layerName, layerId);
     //Delete button>>
     const btnDelete = ui.iconFA('trash-alt', (evt)=>{ //trash
       const divLayer = (evt.currentTarget as HTMLElement);
@@ -212,14 +218,20 @@ export class GisViewer extends DG.JsViewer {
     }, 'Delete layer');
     setupBtn(btnDelete, layerName, layerId);
 
-    const panelButtons = ui.divH([btnVisible, btnSetup, btnDelete]);
+    const panelButtons = ui.divH([btnVisible, btnDelete]);
+
+    //add export button if the flag isExportable == true
+    if (isExportable)
+      panelButtons.append(btnExport);
 
     const divLayerUI = ui.divV([l1, panelButtons]);
     if (layerName == this.currentLayer)
       divLayerUI.style.border = '2px solid blue';
     else
       divLayerUI.style.border = '1px solid lightgray';
+
     divLayerUI.style.overflow = 'hidden';
+
     return divLayerUI;
   }
 
@@ -234,15 +246,17 @@ export class GisViewer extends DG.JsViewer {
       // this.panelBottom.style.visibility = shortUI ? 'hidden' : 'visible';
       // this.panelBottom.style.maxHeight = shortUI ? '2px' : '20px';
     }
-    if ((this.panelLeft) && (this.leftPanelBtn)) {
+    if ((this.panelLeft) && (this.btnLeftPanel)) {
       this.panelLeft.style.visibility = shortUI ? 'visible' : 'hidden';
-      this.leftPanelBtn.click();
+      this.btnLeftPanel.click();
     }
   }
 
   initUi(shortUI: boolean = true): HTMLElement {
     this.isShortUI = shortUI;
     //create UI>>
+    const uiButtonsToAdd: HTMLElement[] = [];
+
     this.lblStatusCoords = ui.div('long, lat');
     this.lblStatusCoords.id = 'lbl-coord';
     const divStatusBody = ui.divH([ui.div('coord :'), this.lblStatusCoords]);
@@ -259,7 +273,7 @@ export class GisViewer extends DG.JsViewer {
     this.panelLeft.style.minWidth = '70px';
 
     //menu bar icons>>
-    this.leftPanelBtn = ui.button(ui.iconFA('layer-group'), ()=>{ //cogs
+    this.btnLeftPanel = ui.button(ui.iconFA('layer-group'), ()=>{ //cogs
       if (this.panelLeft) {
         if (this.panelLeft.style.visibility == 'visible') {
           this.panelLeft.style.visibility = 'hidden';
@@ -274,31 +288,73 @@ export class GisViewer extends DG.JsViewer {
         }
       }
       this.rootOnSizeChanged(this.root);
-    });
-    this.leftPanelBtn.style.margin = '1px';
+    }, 'Show/hide layers panel');
+    this.btnLeftPanel.style.margin = '1px';
+    uiButtonsToAdd.push(this.btnLeftPanel);
 
-    const btnRowFocusing = ui.button(ui.iconFA('bullseye'), ()=>{
-      this.isRowFocusing = !this.isRowFocusing;
-      // this.dataFrame.
-    });
-    btnRowFocusing.style.margin = '1px';
-    const heatmapBtn = ui.button('HM', ()=>{
+    //Heatmap button
+    const btnHeatmap = ui.button('HM', () => {
       this.getCoordinates();
       this.renderHeat(this.features);
       this.updateLayersList();
     }, 'Build heat-map for data');
-    heatmapBtn.style.margin = '1px';
+    btnHeatmap.style.margin = '1px';
+    uiButtonsToAdd.push(btnHeatmap);
+
+    //Export selected button
+    const btnExportSelected = ui.button(ui.iconFA('copy'), () => {
+      // this.dataFrame.selection
+      const selDF = this.dataFrame.clone(this.dataFrame.selection);
+      selDF.name = this.dataFrame.name + ' selection';
+      grok.shell.addTableView(selDF as DG.DataFrame);
+    }, 'Export selected markers to new table');
+    btnExportSelected.style.margin = '1px';
+    if (!releaseMode)
+      uiButtonsToAdd.push(btnExportSelected);
+
+    //Select features by area button
+    const btnSelectByArea = ui.button(ui.iconFA('lasso'), () => {
+      // this.dataFrame.selection
+      if (!this.ol)
+        return;
+      if (!this.ol.currentAreaObject)
+        return;
+      this.ol.selectMarkersByGeometry(this.ol.currentAreaObject.getGeometry());
+    }, 'Select markers by area');
+    btnSelectByArea.style.margin = '1px';
+    if (!releaseMode)
+      uiButtonsToAdd.push(btnSelectByArea);
+
+    //Select features by area button
+    const btnSelectByDistance = ui.button(ui.iconFA('bullseye'), () => {
+      // this.dataFrame.selection
+      if (!this.ol)
+        return;
+      if (!this.ol.currentAreaObject)
+        return;
+      if (this.ol.currentAreaObject.getGeometry()?.getType() === 'Point') {
+        const coords = (this.ol.currentAreaObject.getGeometry() as Point).getCoordinates();
+        const searchArea = new Circle(coords, 500);
+        this.ol.selectMarkersByGeometry(searchArea);
+      }
+      // const searchFT = new Feature({
+      //   geometry: new Circle(coords, ) };
+    }, 'Select within distance');
+    btnSelectByDistance.style.margin = '1px';
+    // if (!releaseMode)
+    //   uiButtonsToAdd.push(btnSelectByDistance);
 
     //add buttons to top menu panel
-    // this.panelTop.append(ui.divH([leftPanelBtn, heatmapBtn, btnRowFocusing]));
-    this.panelTop.append(ui.divH([this.leftPanelBtn, heatmapBtn]));
+    this.panelTop.append(ui.divH(uiButtonsToAdd));
+    // this.panelTop.append(ui.divH([this.btnLeftPanel, btnHeatmap, btnExportSelected]));
+    // this.panelTop.append(ui.divH([this.btnLeftPanel, heatmapBtn]));
 
     //left panel icons>>
     this.divLayersList = ui.divV([]);
     this.panelLeft.append(this.divLayersList);
 
     this.panelLeft.style.visibility = 'visible';
-    this.leftPanelBtn.click();
+    this.btnLeftPanel.click();
 
     const body = ui.box();
     body.id = 'map-container';
@@ -314,7 +370,7 @@ export class GisViewer extends DG.JsViewer {
 
     //setup context menu
     this.onContextMenu.subscribe((menu) => {
-      if (this.isShortUI == true) {
+      if (this.isShortUI === true) {
         menu.item('Extended UI', () => {
           this.isShortUI = false;
           this.switchUI(this.isShortUI);
@@ -352,7 +408,7 @@ export class GisViewer extends DG.JsViewer {
 
       this.ol.setMapSelectionCallback(this.handlerOnMarkerSelect.bind(this));
       this.ol.setMapClickCallback(this.handlerOnMapClick.bind(this));
-      this.ol.setMapRefreshCallback(this.updateLayersList);
+      this.ol.setMapRefreshCallback(this.updateLayersList.bind(this));
 
       this.initialized = true;
     } catch (e: any) {
@@ -370,6 +426,8 @@ export class GisViewer extends DG.JsViewer {
   }
 
   updateLayersList(): void {
+    if (this.isShortUI)
+      return;
     if ((!this.ol) || (!this.panelLeft) || (!this.divLayersList))
       return;
 
@@ -403,7 +461,7 @@ export class GisViewer extends DG.JsViewer {
         if (curlayer)
           this.ol.olCurrentLayer = curlayer;
 
-        //TODO: update currentLayer property when clicked in list
+        //TODO: update currentLayer property when clicked in list (now we hane in issue in updating property)
       };
       this.divLayersList.append(divLayer);
     }
@@ -420,28 +478,24 @@ export class GisViewer extends DG.JsViewer {
   }
 
   showMarkerTooltip(p: OLCallbackParam): void {
-    if (!this.showTooltip)
+    if ((!this.showTooltip) || (!p))
       return;
-    if (!p)
-      return;
+
+    this.ol.olMap.render();
+    ui.tooltip.hide;
     if (!p.features.length) {
-      ui.tooltip.hide;
-      this.ol.olMap.render();
+      // ui.tooltip.hide;
+      // this.ol.olMap.render();
       return;
     }
-    ui.tooltip.hide;
 
     let xCrd = this.root.getBoundingClientRect().left;
-    // let xCrd = 600; //this.root.clientLeft;
     let yCrd = 0; //this.root.clientTop;
     if (this.viewerContainer) {
-      // xCrd += this.viewerContainer?.clientWidth + p.pixel[0];
-      // yCrd += this.viewerContainer?.clientHeight + p.pixel[1];
       xCrd += p.pixel[0];// + 150;
       yCrd += p.pixel[1] + 60;
     }
     const markerIdx = p.features[0].get('fieldIndex');
-    // ui.tooltip.showRowGroup(this.dataFrame, (i) => { return i === markerIdx; }, 300, 300);
     const tipElement = ui.divV([]);
     for (let cl = 0; cl < this.dataFrame.columns.length; cl ++) {
       const vl = this.dataFrame.columns.byIndex(cl).name + ': ' + this.dataFrame.columns.byIndex(cl).get(markerIdx);
@@ -449,13 +503,7 @@ export class GisViewer extends DG.JsViewer {
       tipElement.append(subElem);
     }
 
-    // const tipElement = ui.divV([ui.div(`Row № : ${markerIdx}`),
-    //   ui.div(`Row № : ${markerIdx}`)
-    // ]);
     ui.tooltip.show(tipElement, xCrd, yCrd);
-    // ui.tooltip.show(tipElement, p.pixel[0], p.pixel[1]);
-    // ui.tooltip.show('fieldIndex:' + p.features[0].get('fieldIndex'), p.pixel[0], p.pixel[1]);
-    // ui.tooltip.show('p.feat', p.pixel[0], p.pixel[1]);
   }
 
   handlerOnMarkerSelect(p: OLCallbackParam): void {
@@ -466,12 +514,13 @@ export class GisViewer extends DG.JsViewer {
       this.dataFrame.selection.setAll(false, false);
       for (let i = 0; i < p.features.length; i++) {
         idx = p.features[i].get('fieldIndex');
-        //We need to search by element index not by coordinates because coords were tranfrormed while mapping
+        //We need to search by element index because coords were tranfrormed while mapping
         if (idx !== undefined)
           this.dataFrame.selection.set(idx, true, false);
       }
+      this.dataFrame.selection.fireChanged();
       if (idx !== undefined) {
-        this.dataFrame.selection.set(idx, true, true);
+        // this.dataFrame.selection.set(idx, true, true);
         this.dataFrame.currentRowIdx = idx; //set focus on the last selected item
       }
     }
@@ -481,25 +530,14 @@ export class GisViewer extends DG.JsViewer {
     if (this.lblStatusCoords) {
       if (!p)
         return;
-      if (p.features) {
-/*        let idx = 0;
-        for (let i = 0; i < p.features.length; i++) {
-          idx = p.features[i].get('fieldIndex');
-          //We need to search by element index not by coordinates because coords were tranfrormed while mapping
-          if (idx !== undefined)
-            this.dataFrame.selection.set(idx, true, false);
-
-          // this.dataFrame.rows.select((row) =>
-          //   ((row[this.latitudeColumnName] == gisObj.coordinates[0]) &&
-          //     (row[this.longitudeColumnName] == gisObj.coordinates[1])));
-          // });
-        }
-        if (idx !== undefined)
-          this.dataFrame.currentRowIdx = idx; //set focus on the last selected item
-*/
+      if (p.features && p.features.length > 0) {
+        //perform some actions with clicked features
+      } else { //if no features were clicked - just show properties for map
+        setTimeout(() => {
+          grok.shell.o = this;
+          grok.shell.windows.showProperties = true;
+        }, 50);
       }
-      // this.dataFrame.rows.select(
-      //   (row) => ((row[this.latitudeColumnName] == p.coord[0]) && (row[this.longitudeColumnName] == p.coord[1])));
     }
   }
 
@@ -535,7 +573,7 @@ export class GisViewer extends DG.JsViewer {
       if (this.ol.olMarkersSelSource)
         this.ol.olMarkersSelSource.clear();
       for (let i = 0; i < selcount.length; i++) {
-        this.ol.addPointSc(this.coordinates[selcount[i]], this.sizeValues[selcount[i]], this.colorValues[selcount[i]],
+        this.ol.addPoint(this.coordinates[selcount[i]], this.sizeValues[selcount[i]], this.colorValues[selcount[i]],
           this.labelValues[selcount[i]], selcount[i], this.ol.olMarkersSelLayerGL);
       }
       if (!this.ol.preventFocusing) {
@@ -543,11 +581,51 @@ export class GisViewer extends DG.JsViewer {
           {padding: [50, 50, 50, 50], maxZoom: 9});
       }
       this.ol.preventFocusing = false;
-      // this.render();
     }));
+
     //update on filtration
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => {
-      this.render(true);
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 300).subscribe((_) => {
+      // this.render(true);
+      const indexes = this.dataFrame.filter.getSelectedIndexes();
+
+      //new way of filtering
+      this.features.length = 0;
+      for (let i = 0; i < indexes.length; i++)
+        this.features.push(this.featuresFull[indexes[i]]);
+
+      this.render(false, false);
+
+      // for (let i = 0; i < this.features.length; i++)
+      //   this.features[i].set('filtered', 0);
+
+      // for (let i = 0; i < indexes.length; i++)
+      //   this.features[indexes[i]].set('filtered', 1);
+
+      // this.ol.olMarkersSource.changed();
+      // this.ol.olMap.render();
+      // this.ol.updateMarkersGLLayer();
+    }));
+
+    //update on color coding change
+    // eslint-disable-next-line max-len
+    this.subs.push(DG.debounce(this.dataFrame.onMetadataChanged, 100).subscribe((data) => {
+      const eventColumn = ((data.args.source as unknown) as DG.Column);
+      if (!eventColumn)
+        return;
+
+      // eventColumn.meta.colors.getColors();
+
+      if (eventColumn.name === this.colorColumnName) {
+        // if (data.args.key.includes('.color-coding')) {
+        // if (tt.key.includes('.color-coding')) {
+        this.refreshColorCodingStyle(eventColumn); //refilling of color coding
+        this.ol.updateMarkersGLLayer();
+        // this.ol.olMarkersLayerGL?.changed();
+        // this.ol.olMarkersSource.changed();
+        // this.ol.olMap.render();
+        // this.ol.updateMarkersGLLayer();
+        // }
+      }
     }));
 
     this.render(true);
@@ -569,15 +647,12 @@ export class GisViewer extends DG.JsViewer {
     if (!this.initialized)
       return;
 
-    if (updateLayer)
-      this.ol.updateMarkersGLLayer();
-
-    //TODO: experiment: i've try to refresh layer here without recreating of it but it's not work yet>>
-    // this.ol.olMap.render();
-    // window.requestAnimationFrame(() => {
-    //   this.ol.olMarkersLayerGL!.updateStyleVariables({'size': this.markerDefaultSize});
-    //   this.ol.olMap.render();
-    // });
+    if (updateLayer) {
+    //TODO: experiment: i've try to refresh WebGL layer here without recreating of it but it's not work yet>>
+      // this.ol.olMarkersSource.changed();
+      // this.ol.olMap.render();
+      this.ol.updateMarkersGLLayer(true);
+    }
   }
 
   onPropertyChanged(prop: DG.Property): void {
@@ -618,21 +693,21 @@ export class GisViewer extends DG.JsViewer {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
-  render(fit: boolean = false): void {
-    // this.updateOpenLayerProperties(false);
-
+  render(fit: boolean = false, reloadData: boolean = true): void {
+    //
     if (this.latitudeColumnName == null || this.longitudeColumnName == null)
       return;
 
-    this.getCoordinates(); //TODO: not only coordinates but a data at all?
+    if (reloadData)
+      this.getCoordinates();
 
+    this.updateOpenLayerProperties(false);
     if (this.renderType === 'heat map') {
-      this.updateOpenLayerProperties(false);
+      //render heat map
       this.renderHeat(this.features);
     } else if (this.renderType === 'markers') {
+      //render markers map
       this.renderMarkersBatch(this.features);
-      this.updateOpenLayerProperties(true);
-      // this.renderMarkers();
     }
 
     if (fit) {
@@ -642,6 +717,23 @@ export class GisViewer extends DG.JsViewer {
     }
 
     this.updateLayersList();
+  }
+
+  refreshColorCodingStyle(colColor: DG.Column): void {
+    this.ol.useColorField = true;
+    this.ol.colorCodingData = '';
+    if (colColor.colors.getType() === DG.COLOR_CODING_TYPE.LINEAR) {
+      this.ol.colorCodingType = DG.COLOR_CODING_TYPE.LINEAR;
+      this.ol.colorCodingData = colColor.getTag(DG.TAGS.COLOR_CODING_LINEAR);
+    } else if (colColor.colors.getType() === DG.COLOR_CODING_TYPE.CATEGORICAL) {
+      this.ol.colorCodingType = DG.COLOR_CODING_TYPE.CATEGORICAL;
+      this.ol.colorCodingData = colColor.getTag(DG.TAGS.COLOR_CODING_CATEGORICAL);
+    } else if (colColor.colors.getType() === DG.COLOR_CODING_TYPE.CONDITIONAL) {
+      this.ol.colorCodingType = DG.COLOR_CODING_TYPE.CONDITIONAL;
+      this.ol.colorCodingData = colColor.getTag(DG.TAGS.COLOR_CODING_CONDITIONAL);
+    } else if ((colColor.type != DG.COLUMN_TYPE.BIG_INT) && (colColor.type != DG.COLUMN_TYPE.INT) &&
+              (colColor.type != DG.COLUMN_TYPE.DATE_TIME) && (colColor.type != DG.COLUMN_TYPE.FLOAT))
+      this.ol.useColorField = false;
   }
 
   getCoordinates(): void {
@@ -655,19 +747,13 @@ export class GisViewer extends DG.JsViewer {
     let labelVal: Int32Array | Float32Array | Float64Array | Uint32Array;
     let colorVal: Int32Array | Float32Array | Float64Array | Uint32Array;
     let sizeVal: Int32Array | Float32Array | Float64Array | Uint32Array;
-    //scaling parameters for color and size (TODO: decide wether we need them here or all scaling will be in styles fn)
-    let colorCoeff: number;
-    let sizeCoeff: number;
-    let colorShift: number;
-    let sizeShift: number;
+    let colorCodes: Uint32Array = new Uint32Array();
 
     const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
     const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
-    // val = this.dataFrame.getCol(this.labelsColumnName).getRawData();
 
     if ((!lat) || (!lon))
       return;
-    // TODO: if (lat.length > lon.length) lat.length = lon.length; //do we need it?
 
     //TODO: change it to filling array of objects with all table data (if we need it of course?)
     let colValue: DG.Column | null = null;
@@ -686,80 +772,71 @@ export class GisViewer extends DG.JsViewer {
         labelVal = colValue.getRawData();
       else {
         labelVal = new Float32Array(lat.length); //create array of length equal to latitude array length
-        labelVal.fill(1);
+        labelVal.fill(0);
       }
       if ((colColor)) {
+        //get column color coding settings from column
+        this.refreshColorCodingStyle(colColor);
+
+        //new way of color coding
+        colorCodes = colColor.meta.colors.getColors();
+        if (colorCodes.length === 0) {
+          colorVal = new Uint32Array(lat.length);
+          colorCodes.fill(this.defaultColor);
+        }
+
         colorVal = colColor.getRawData();
         this.ol.minFieldColor = colColor.min;
         this.ol.maxFieldColor = colColor.max;
-        this.ol.useColorField = true;
-        if (colColor.max === colColor.min)
-          colorCoeff = 1;
-        // else colorCoeff = (this.markerMaxColor-this.markerMinColor)/(colColor.max-colColor.min);
-        else
-          colorCoeff = (0xff0000-0x0000ff) / (colColor.max - colColor.min);
-        colorShift = colColor.min;
-        //TODO: use another scaling scheme for color (though gradient)
       } else {
         this.ol.useColorField = false;
-        colorCoeff = 1;
-        colorShift = 0;
         colorVal = new Float32Array(lat.length); //create array of length equal to latitude array length
         colorVal.fill(this.defaultColor);
       }
       //marker size data loading and scale calculation
-      //TODO: add checking for number column type
-      if ((colSize)) {
+      if ((colSize) &&
+      ((colSize.type === DG.COLUMN_TYPE.BIG_INT) || (colSize.type === DG.COLUMN_TYPE.INT) ||
+      (colSize.type === DG.COLUMN_TYPE.DATE_TIME) || (colSize.type === DG.COLUMN_TYPE.FLOAT)) ) {
         sizeVal = colSize.getRawData();
         this.ol.minFieldSize = colSize.min;
         this.ol.maxFieldSize = colSize.max;
         this.ol.useSizeField = true;
-        if (colSize.max === colSize.min)
-          sizeCoeff = 1;
-        else
-          sizeCoeff = Math.abs(this.markerMaxSize - this.markerMinSize) / (colSize.max - colSize.min);
-        sizeShift = colSize.min;
       } else {
         this.ol.useSizeField = false;
-        sizeCoeff = 1;
-        sizeShift = 0;
         sizeVal = new Float32Array(lat.length); //create array of length equal to latitude array length
         sizeVal.fill(this.markerDefaultSize);
       }
 
-      this.features.length = 0; //clear array of features
-      for (let i = 0; i < indexes.length; i++) {
-        if ((i < lat.length) && (i < lon.length)) {
-          this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
-          this.labelValues.push(labelVal[indexes[i]]);
-          this.sizeValues.push(sizeVal[indexes[i]]);
-          this.colorValues.push(colorVal[indexes[i]]);
-          this.indexValues.push(indexes[i]);
-          //this is the old way where we scaled values initially>>
-          // this.sizeValues.push((sizeVal[indexes[i]] - sizeShift) * sizeCoeff);
-          // this.colorValues.push((colorVal[indexes[i]] - colorShift) * colorCoeff);
+      this.featuresFull.length = 0;
+      for (let i = 0; i < lat.length; i++) {
+        this.coordinates.push([lon[i], lat[i]]);
+        this.labelValues.push(labelVal[i]);
+        this.sizeValues.push(sizeVal[i]);
+        this.colorValues.push(colorVal[i]);
+        this.indexValues.push(i);
 
-          // if (!colColor) this.colorValues.push(this.defaultColor);
-          // colColor.meta.markers
-          const coords = OLProj.fromLonLat([lon[indexes[i]], lat[indexes[i]]]);
-          this.features.push(new Feature({
-            geometry: new Point(coords),
-            fieldLabel: labelVal[indexes[i]],
-            fieldSize: (sizeVal[indexes[i]]),
-            fieldColor: (colorVal[indexes[i]]),
-            fieldIndex: indexes[i],
-            //this is the old way where we scaled values initially>>
-            // fieldSize: ((sizeVal[indexes[i]] - sizeShift) * sizeCoeff),
-            // fieldColor: toStringColor(((colorVal[indexes[i]] - colorShift) * colorCoeff), this.markerOpacity / 100),
-          }));
-        }
+        const coords = OLProj.fromLonLat([lon[i], lat[i]]);
+        const ft = new Feature({
+          geometry: new Point(coords),
+          fieldLabel: labelVal[i],
+          fieldSize: (sizeVal[i]),
+          fieldColor: (colorVal[i]),
+          fieldColorD: (colorCodes[i]),
+          fieldIndex: i,
+          filtered: 1,
+        });
+        this.featuresFull.push(ft);
       }
+
+      this.features.length = 0; //clear array of features
+      for (let i = 0; i < indexes.length; i++)
+        this.features.push(this.featuresFull[indexes[i]]);
     } //end of finally block
     //<<getCoordinates function
   }
 
   renderHeat(arrFeatures: Array<Feature>): void {
-    this.getCoordinates();
+    // this.getCoordinates();
     let colName = this.colorColumnName;
     if (colName === 'null')
       colName = this.dataFrame.name;
@@ -770,16 +847,15 @@ export class GisViewer extends DG.JsViewer {
     if (!layer)
       layer = this.ol.addNewHeatMap('HL: ' + colName);
 
+
     this.ol.clearLayer(layer);
     this.ol.addFeaturesBulk(arrFeatures, layer);
-    // for (let i = 0; i < this.coordinates.length; i++)
-    //   this.ol.addPointSc(this.coordinates[i], this.sizeValues[i], this.colorValues[i], this.values[i], layer);
   }
 
   renderMarkers(): void {
     this.ol.clearLayer(); //TODO: clear exact layer
     for (let i = 0; i < this.coordinates.length; i++) {
-      this.ol.addPointSc(this.coordinates[i], this.sizeValues[i], this.colorValues[i],
+      this.ol.addPoint(this.coordinates[i], this.sizeValues[i], this.colorValues[i],
         this.labelValues[i], i);
     }
   }

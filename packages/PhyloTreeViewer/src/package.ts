@@ -2,16 +2,21 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 import {newickToDf} from './utils';
 import {PhyloTreeViewer} from './tree-viewer';
 import {PhylocanvasGlViewer} from './viewers/phylocanvas-gl-viewer';
 import {PhylocanvasGlViewerApp} from './apps/phylocanvas-gl-viewer-app';
 import {GridWithTreeViewer} from './viewers/grid-with-tree-viewer';
-import {GridWithTreeApp} from './apps/grid-with-tree-app';
+import {TreeToGridApp} from './apps/tree-to-grid-app';
 import {injectTreeToGridUI} from './viewers/inject-tree-to-grid';
 import {NewickHelper} from './utils/newick-helper';
 import {TreeInGridCellApp} from './apps/tree-in-grid-cell-app';
+import {PhylocanvasGlService} from './utils/phylocanvas-gl-service';
+import {TreeHelper} from './utils/tree-helper';
+import {generateTree} from './utils/tree-generator';
+import {TreeForGridApp} from './apps/tree-for-grid-app';
 
 
 export const _package = new DG.Package();
@@ -45,7 +50,7 @@ export function phyloTreeViewer(): PhyloTreeViewer {
 }
 
 
-//name: PhylocanvasGl
+//name: PhylocanvasGL
 //description: Phylogenetic tree visualization
 //tags: viewer
 //output: viewer result
@@ -87,7 +92,7 @@ export async function nwkTreeViewer(file: DG.FileInfo) {
 
 
 //name: PhylocanvasGlViewer
-//tags: app
+//description: Test/demo app for PhylocanvasGlViewer
 export async function phylocanvasGlViewerApp() {
   const pi = DG.TaskBarProgressIndicator.create('open PhylocanvasGlViewer app');
   try {
@@ -103,12 +108,12 @@ export async function phylocanvasGlViewerApp() {
   }
 }
 
-//name: GridWithTree
-//tags: app
-export async function gridWithTreeApp(): Promise<void> {
-  const pi = DG.TaskBarProgressIndicator.create('open GridWithTreeViewer app');
+//name: TreeToGrid
+//description: Test/demo app for TreeInGrid
+export async function treeToGridApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open treeInGrid app');
   try {
-    const app = new GridWithTreeApp();
+    const app = new TreeToGridApp();
     await app.init();
   } catch (err: unknown) {
     const msg: string = 'PhyloTreeViewer gridWithTreeViewerApp() error: ' +
@@ -123,8 +128,21 @@ export async function gridWithTreeApp(): Promise<void> {
   }
 }
 
+//name: TreeForGrid
+//description: Test/demo app for TreeInGrid (custom renderer)
+export async function treeForGridApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open treeForGrid app');
+  try {
+    const app = new TreeForGridApp();
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+
 //name: TreeInGridCell
-//tags: app
+//description: Test/demo app for TreeInGridCell
 export async function treeInGridCellApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('open TreeInGridCell app');
   try {
@@ -162,6 +180,60 @@ export async function importNewick(fileContent: string): Promise<DG.DataFrame[]>
 //description: Opens Newick file
 //input: viewer grid
 //input: string newickText
-export async function injectTreeToGrid(grid: DG.Grid, newickText: string) {
-  injectTreeToGridUI(grid, newickText);
+export async function injectTreeToGrid(grid: DG.Grid, newickText: string, leafColName?: string) {
+  const colNameList: string[] = grid.dataFrame.columns.names();
+  leafColName = leafColName ??
+    grid.dataFrame.getTag('.newickLeafColumn') ??
+    colNameList.find((colName) => colName.toLowerCase() == 'node') ??
+    colNameList.find((colName) => colName.toLowerCase() == 'leaf') ??
+    colNameList.find((colName) => colName.toLowerCase() == 'id');
+  if (!leafColName)
+    throw new Error('The leaf column name can not be inferred. Specify it as an argument.');
+
+  injectTreeToGridUI(grid, newickText, leafColName!);
+}
+
+type PtvWindowType = Window & { $phylocanvasGlService?: PhylocanvasGlService };
+declare var window: PtvWindowType;
+
+//name: getPhylocanvasGlService
+//output: object result
+export function getPhylocanvasGlService(): bio.PhylocanvasGlServiceBase {
+  if (!(window.$phylocanvasGlService)) {
+    const svc: PhylocanvasGlService = new PhylocanvasGlService();
+    window.$phylocanvasGlService = svc;
+  }
+
+  return window.$phylocanvasGlService;
+}
+
+//name: getTreeHelper
+//output: object result
+export function getTreeHelper(): bio.ITreeHelper {
+  return new TreeHelper();
+}
+
+//name: generateTreeDialog
+export function generateTreeDialog() {
+  const sizeInput = ui.intInput('Tree size (node count)', 10000);
+  const filenameInput = ui.stringInput('File name', 'tree-gen-10000');
+
+  return ui.dialog('Generate tree')
+    .add(ui.divV([sizeInput, filenameInput]))
+    .onOK(async () => {
+      const treeRoot: bio.NodeType = generateTree(sizeInput.value!);
+      const th = new TreeHelper();
+      const treeNwk = th.toNewick(treeRoot);
+
+      const leafList = th.getLeafList(treeRoot);
+      const leafCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Leaf',
+        leafList.map((n) => n.name));
+      const activityCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Activity',
+        leafList.map((n) => Math.random()));
+
+      const df = DG.DataFrame.fromColumns([leafCol, activityCol]);
+      await _package.files.writeAsText(filenameInput.value + '.nwk', treeNwk);
+      await _package.files.writeAsText(filenameInput.value + '.csv', df.toCsv());
+    })
+    .show();
 }

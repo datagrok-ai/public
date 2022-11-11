@@ -1,10 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 
 export class MiscMethods {
-  // processes JSON to derive scheme names
+  static NoSchemeItem: string = '<not selected>';
+
+  /** processes JSON to derive scheme names */
   static extractSchemes(json: any) {
     const rawSchemeNames = Object.keys(json.cdr_ranges);
-    const schemesLst = ['default'];
+    const schemesLst = [MiscMethods.NoSchemeItem];
     rawSchemeNames.forEach((str) => {
       const strArr = str.split('_');
       if (schemesLst.includes(strArr[0]) === false)

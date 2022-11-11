@@ -45,9 +45,21 @@ category('substructureFilters', async () => {
     const filter = new BioSubstructureFilter();
     await grok.data.detectSemanticTypes(helm);
     filter.attach(helm);
+
+    const helmFilterChanged = new Promise((resolve, reject) => {
+      helm.onFilterChanged.subscribe(async (_: any) => {
+        try {
+          resolve(true);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
     (filter.bioFilter! as HelmFilter).helmSubstructure = 'PEPTIDE1{C}$$$$V2.0';
     filter.bioFilter!.onChanged.next();
-    await delay(2000);
+    await helmFilterChanged;
+
+    //await delay(3000);
     expect(filter.dataFrame!.filter.trueCount, 2);
     expect(filter.dataFrame!.filter.get(0), true);
     expect(filter.dataFrame!.filter.get(3), true);

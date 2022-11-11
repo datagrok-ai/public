@@ -6,18 +6,11 @@ import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
 
-let IS_PROPERTY_CHANGING = false;
-
 export class SARViewerBase extends DG.JsViewer {
   tempName!: string;
   viewerGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
   model!: PeptidesModel;
-  scaling: string;
-  bidirectionalAnalysis: boolean;
-  maxSubstitutions: number;
-  minActivityDelta: number;
-  _titleHost = ui.divText('SAR Viewer', {id: 'pep-viewer-title'});
   initialized = false;
   isPropertyChanging: boolean = false;
   _isVertical = false;
@@ -25,11 +18,6 @@ export class SARViewerBase extends DG.JsViewer {
 
   constructor() {
     super();
-
-    this.scaling = this.string('scaling', 'none', {choices: ['none', 'lg', '-lg']});
-    this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
-    this.maxSubstitutions = this.int('maxSubstitutions', 1);
-    this.minActivityDelta = this.float('minActivityDelta', 0);
   }
 
   get name(): string {return '';}
@@ -39,16 +27,6 @@ export class SARViewerBase extends DG.JsViewer {
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
     this.model = await PeptidesModel.getInstance(this.dataFrame);
     this.helpUrl = '/help/domains/bio/peptides.md';
-
-    this.initProperties();
-  }
-
-  initProperties(): void {
-    const props = this.model.usedProperties;
-    IS_PROPERTY_CHANGING = true;
-    for (const [propName, propVal] of Object.entries(props))
-      this.props.set(propName, propVal as any as object);
-    IS_PROPERTY_CHANGING = false;
   }
 
   detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
@@ -74,7 +52,6 @@ export class SARViewerBase extends DG.JsViewer {
           invariantMapMode.value = !invariantMapMode.value;
           this.isMutationCliffsMode = '1';
           this.isModeChanging = false;
-          this._titleHost.innerText = 'Mutation Cliffs';
           this.model.isInvariantMap = false;
           this.viewerGrid.invalidate();
         });
@@ -86,7 +63,6 @@ export class SARViewerBase extends DG.JsViewer {
           mutationCliffsMode.value = !mutationCliffsMode.value;
           this.isMutationCliffsMode = '0';
           this.isModeChanging = false;
-          this._titleHost.innerText = 'Invariant Map';
           this.model.isInvariantMap = true;
           this.viewerGrid.invalidate();
         });
@@ -99,34 +75,21 @@ export class SARViewerBase extends DG.JsViewer {
         setDefaultProperties(invariantMapMode);
         $(mutationCliffsMode.root).css('padding-right', '10px').css('padding-left', '5px');
 
-        switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root]);
-        switchHost.style.position = 'absolute';
+        switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root], {id: 'pep-viewer-title'});
+        $(switchHost).css('width', 'auto').css('align-self', 'center');
       }
       const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
-      this.root.appendChild(ui.divV([ui.divH([switchHost, this._titleHost]), viewerRoot]));
+      this.root.appendChild(ui.divV([switchHost, viewerRoot]));
     }
     this.viewerGrid?.invalidate();
   }
 
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
-    this.dataFrame.tags[property.name] = `${property.get(this)}`;
-    if (!this.initialized || IS_PROPERTY_CHANGING)
+
+    if (!this.initialized)
       return;
-
-    const propName = property.name;
-
-    if (propName === 'scaling' && typeof this.dataFrame !== 'undefined') {
-      const activityCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY)!;
-      const minActivity = activityCol.stats.min;
-      if (minActivity && minActivity <= 0 && this.scaling !== 'none') {
-        grok.shell.warning(`Could not apply ${this.scaling}: ` +
-          `activity column ${activityCol.name} contains zero or negative values, falling back to 'none'.`);
-        property.set(this, 'none');
-        return;
-      }
-    }
 
     this.model.updateDefault();
     this.render(true);
@@ -147,7 +110,6 @@ export class MutationCliffsViewer extends SARViewerBase {
 
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
-    this.model.mutationCliffsViewer ??= this;
 
     this.subs.push(this.model.onMutationCliffsGridChanged.subscribe((data) => {
       this.viewerGrid = data;
@@ -164,16 +126,10 @@ export class MutationCliffsViewer extends SARViewerBase {
 
   //1. debouncing in rxjs; 2. flags?
   onPropertyChanged(property: DG.Property): void {
-    if (!this.isInitialized() || IS_PROPERTY_CHANGING)
+    if (!this.isInitialized())
       return;
 
-    if (property.name == 'invariantMap')
-      this._titleHost = ui.divText(property.get(this) ? 'Invariant Map' : 'Mutation Cliffs', {id: 'pep-viewer-title'});
-
     super.onPropertyChanged(property);
-    IS_PROPERTY_CHANGING = true;
-    this.model.syncProperties(true);
-    IS_PROPERTY_CHANGING = false;
   }
 }
 
@@ -191,7 +147,6 @@ export class MostPotentResiduesViewer extends SARViewerBase {
 
   async onTableAttached(): Promise<void> {
     await super.onTableAttached();
-    this.model.mostPotentResiduesViewer ??= this;
 
     this.subs.push(this.model.onMostPotentResiduesGridChanged.subscribe((data) => {
       this.viewerGrid = data;
@@ -208,12 +163,9 @@ export class MostPotentResiduesViewer extends SARViewerBase {
   isInitialized(): DG.Grid {return this.model?.mostPotentResiduesGrid;}
 
   onPropertyChanged(property: DG.Property): void {
-    if (!this.isInitialized() || IS_PROPERTY_CHANGING)
+    if (!this.isInitialized())
       return;
 
     super.onPropertyChanged(property);
-    IS_PROPERTY_CHANGING = true;
-    this.model.syncProperties(false);
-    IS_PROPERTY_CHANGING = false;
   }
 }

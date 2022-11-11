@@ -3,20 +3,17 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as bio from '@datagrok-libraries/bio';
 
+import wu from 'wu';
+
 import * as rxjs from 'rxjs';
 import {TREE_TAGS} from '../consts';
-import {Unsubscribable} from 'rxjs';
+import {Observable, Subject, Unsubscribable} from 'rxjs';
 import $ from 'cash-dom';
-import {Newick} from '@datagrok-libraries/bio';
-
-
-// // import {TreeAnalyzer, PhylocanvasTreeNode, getVId} from './utils/tree-stats';
-// import {Subscription, Unsubscribable} from 'rxjs';
+import {PickingInfo} from '@deck.gl/core/typed';
+import {MjolnirPointerEvent} from 'mjolnir.js';
 
 // TODO: add test for these properties existing.
-/**
- * Represents a single tree node.
- */
+/** Represents a single tree node */
 export interface PhylocanvasTreeNode {
   branchLength: 0;
   children: PhylocanvasTreeNode[];
@@ -37,24 +34,15 @@ enum PROPS_CATS {
   APPEARANCE = 'Appearance',
   BEHAVIOR = 'Behavior',
   LAYOUT = 'Layout',
-}
-
-export enum TreeTypesNames {
-  Radial = 'Radial',
-  /** Rectangular edges, leaves listed __vertically__ */
-  Rectangular = 'Rectangular',
-  Polar = 'Polar',
-  Diagonal = 'Diagonal',
-  /** Rectangular edges, leaves listed __horizontally__ */
-  Orthogonal = 'Orthogonal',
+  DATA = 'Data',
 }
 
 const TreeTypesTypes: { [streeType: string]: string } = {
-  [TreeTypesNames.Radial]: bio.TreeTypes.Radial,
-  [TreeTypesNames.Rectangular]: bio.TreeTypes.Rectangular, // rectangular edges, leaves listed vertically
-  [TreeTypesNames.Polar]: bio.TreeTypes.Circular,
-  [TreeTypesNames.Diagonal]: bio.TreeTypes.Diagonal,
-  [TreeTypesNames.Orthogonal]: bio.TreeTypes.Hierarchical, // rectangular edges, leaves listed horizontally
+  [bio.TreeTypesNames.Radial]: bio.TreeTypes.Radial,
+  [bio.TreeTypesNames.Rectangular]: bio.TreeTypes.Rectangular, // rectangular edges, leaves listed vertically
+  [bio.TreeTypesNames.Polar]: bio.TreeTypes.Circular,
+  [bio.TreeTypesNames.Diagonal]: bio.TreeTypes.Diagonal,
+  [bio.TreeTypesNames.Orthogonal]: bio.TreeTypes.Hierarchical, // rectangular edges, leaves listed horizontally
 };
 
 
@@ -93,30 +81,40 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
   stepZoom: number;
   zoom: number;
 
+  nodeColumnName: string;
+  parentColumnName: string;
+
   newick: string | null = null;
 
   parsedNewick: Object;
 
-  nodeIdColumn: DG.Column;
-  nodeNameColumn: DG.Column;
-  parentNameColumn: DG.Column;
+  nodeCol: DG.Column;
+  parentCol: DG.Column;
 
 //   title: string;
 //
   treeDiv: HTMLDivElement | null;
-  phylocanvasViewer: bio.PhylocanvasGL | null;
+  viewer: bio.PhylocanvasGL | null;
   /** Container to store prop values while phylocanvasViewer is not created yet */
   phylocanvasProps: { [p: string]: any } = {};
 
+  private _onAfterRender = new Subject<{ gl: WebGLRenderingContext }>();
+
+  private _onHover = new Subject<{ info: PickingInfo, event: MjolnirPointerEvent }>();
+
   private viewSubs: Unsubscribable[] = [];
+
+  get onAfterRender(): Observable<{ gl: WebGLRenderingContext }> { return this._onAfterRender; }
+
+  get onHover(): Observable<{ info: PickingInfo, event: MjolnirPointerEvent }> { return this._onHover; }
 
   constructor() {
     super();
 
     this.alignLabels = this.bool('alignLabels', false);
 
-    this.treeType = this.string('treeType', TreeTypesNames.Rectangular,
-      {category: PROPS_CATS.APPEARANCE, choices: Object.values(TreeTypesNames)});
+    this.treeType = this.string('treeType', bio.TreeTypesNames.Rectangular,
+      {category: PROPS_CATS.APPEARANCE, choices: Object.values(bio.TreeTypesNames)});
     this.lineWidth = this.float('lineWidth', 1, {category: PROPS_CATS.APPEARANCE,});
     this.nodeSize = this.float('nodeSize', 14,
       {category: PROPS_CATS.APPEARANCE, editor: 'slider', min: 1, max: 32,});
@@ -147,15 +145,20 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     this.padding = this.float('padding', 16,
       {category: PROPS_CATS.LAYOUT, editor: 'slider', min: 0, max: 50,});
     this.treeToCanvasRatio = this.float('treeToCanvasRatio', 0.25,
-      {category: PROPS_CATS.BEHAVIOR, editor: 'slider', min: -4, max: 4, step: 0.25});
+      {category: PROPS_CATS.BEHAVIOR, editor: 'slider', min: 0.01, max: 2, step: 0.01});
 
-    this.interactive = this.bool('interactive', false, {category: PROPS_CATS.BEHAVIOR});
+    this.interactive = this.bool('interactive', true, {category: PROPS_CATS.BEHAVIOR});
     this.branchZoom = this.float('branchZoom', 0,
       {category: PROPS_CATS.BEHAVIOR, editor: 'slider', min: -4, max: 4, step: 0.1});
     this.stepZoom = this.float('stepZoom', 0,
       {category: PROPS_CATS.BEHAVIOR, editor: 'slider', min: -4, max: 4, step: 0.1});
     this.zoom = this.float('zoom', 0,
       {category: PROPS_CATS.BEHAVIOR, editor: 'slider', min: -4, max: +4, step: 0.1});
+
+    this.nodeColumnName = this.string('nodeColumnName', 'node',
+      {category: PROPS_CATS.DATA});
+    this.parentColumnName = this.string('parentColumnName', 'parent',
+      {category: PROPS_CATS.DATA});
 
     this.subs.push(
       ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
@@ -190,9 +193,8 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     this.newick = this.nwkDf.getTag(TREE_TAGS.NEWICK);
     if (this.newick) {
       this.parsedNewick = JSON.parse(this.nwkDf.getTag('.newickJson')!);
-      //this.nodeIdColumn = this.dataFrame.getCol('id');
-      this.nodeNameColumn = this.nwkDf.getCol('node');
-      this.parentNameColumn = this.nwkDf.getCol('parent');
+      this.nodeCol = this.nwkDf.getCol(this.nodeColumnName);
+      this.parentCol = this.nwkDf.getCol(this.parentColumnName);
     }
     // else {
     //   this.newickCol = this.dataFrame.columns.bySemType('newick');
@@ -226,7 +228,7 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
   }
 
   calcSize(): void {
-    if (!this.phylocanvasViewer)
+    if (!this.viewer)
       return;
 
     // this.treeDiv.innerText = `${this.root.clientWidth} x ${this.root.clientHeight}`;
@@ -240,7 +242,7 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
       this.treeDiv.style.width = `${width}px`;
       this.treeDiv.style.height = `${height}px`;
 
-      this.phylocanvasViewer.setProps({size: this.treeDiv.getBoundingClientRect()});
+      this.viewer.setProps({size: this.treeDiv.getBoundingClientRect()});
     }
   }
 
@@ -248,24 +250,13 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     console.debug('PhyloTreeViewer: PhylocanvasGlViewer.destroyView() ');
 
     this.viewSubs.forEach((s: Unsubscribable) => { s.unsubscribe(); });
-
-    if (this.phylocanvasViewer) {
-      this.phylocanvasViewer.destroy();
-      this.phylocanvasViewer = null;
-      // this.phylocanvasProps = {}; // the value is required to restore view in destroyView/buildView
-    }
-
-    if (this.treeDiv) {
-      this.treeDiv.remove();
-      this.treeDiv = null;
-    }
   }
 
   private buildView() {
     console.debug('PhyloTreeViewer: PhylocanvasGlViewer.buildView() ');
 
     //const color: string = `#bbff${Math.ceil(128 + Math.random() * 127).toString(16)}`;
-    if (!this.treeDiv) {
+    if (!this.treeDiv && !this.viewer) {
       this.treeDiv = ui.div([], {
         style: {
           //backgroundColor: color,
@@ -274,70 +265,54 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
         }
       });
       this.root.appendChild(this.treeDiv);
-    }
-    // const treeNode = mlbView.dockManager.dock(treeDiv, DG.DOCK_TYPE.DOWN);
 
-    if (!this.phylocanvasViewer) {
-      const newickRoot = Newick.parse_newick(this.newick!);
-      const props: { [p: string]: any } = {};
+      // default props required to prevent throwing exception
+      const defaultNwkStr = '(NONE:1);'; // minimal tree required to not throw exception in PhylocanvasGL
+      const defaultNwkRoot = bio.Newick.parse_newick(defaultNwkStr);
+      const props: { [p: string]: any } = {
+        source: {type: 'biojs', data: defaultNwkRoot},
+        interactive: true,
+      };
+
       Object.assign(props, this.phylocanvasProps);
-      Object.assign(props, {source: {type: 'biojs', data: newickRoot}});
-      // this.phylocanvasProps = {}; / the value is required to restore view in destroyView/buildView
+      this.viewer = new bio.PhylocanvasGL(this.treeDiv, props);
+      this.viewer.deck.setProps({
+        useDevicePixels: true,
+        onAfterRender: this.viewerDeckOnAfterRender.bind(this),
+        onHover: this.viewerOnHover.bind(this),
+      });
+      this.viewer.view.style.backgroundImage = 'none';
 
-      this.phylocanvasViewer = new bio.PhylocanvasGL(this.treeDiv, props);
-      this.phylocanvasViewer.deck.setProps({useDevicePixels: true});
-      this.phylocanvasViewer.view.style.backgroundImage = 'none';
+      // Preserve original selectNode method to call it bound from replacing method
+      const viewerSelectNodeSuper = this.viewer.selectNode.bind(this.viewer);
+      const viewerSelectNodeHandler = this.viewerOnSelected.bind(this);
+      this.viewer.selectNode = function(nodeOrId: any, append = false) {
+        viewerSelectNodeSuper(nodeOrId, append);
+        viewerSelectNodeHandler();
+      }.bind(this);
 
       this.calcSize();
-
-      //@ts-ignore
-      // const pCtx: CanvasRenderingContext2D = this.phylocanvasViewer.deck.canvas.getContext('2d');
-      // pCtx.fillStyle = '#80FFF0';
-      // pCtx.fillRect(10, 10, 50, 50);
-
       let k = 11;
-
-      //@ts-ignore
-      this.phylocanvasViewer.deck.animationLoop.redraw();
-
 
       // this.subs.push(
       //   rxjs.fromEvent<MouseEvent>(this.phylocanvasViewer.deck.canvas!, 'mousedown').subscribe((args: MouseEvent) => {
       //
       //   }));
     }
+    const newickRoot = bio.Newick.parse_newick(this.newick!);
+    this.viewer!.setProps({source: {type: 'biojs', data: newickRoot}});
+
+    this.viewSubs.push(this.nwkDf.onSelectionChanged.subscribe(this.dfOnSelectionChanged.bind(this)));
     // this.phyloTreeViewer.selectNode = this.tvSelectNode.bind(this);
-    // this.phyloTreeViewer.handleHover = this.tvHandleHover.bind(this);
+    //@ts-ignore
+    //this.viewer.handleHover = this.viewerHandleHover.bind(this);
 
     // this._viewSubs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe((_) => this.render(false)));
   }
 
   override onTableAttached() {
-    console.debug('PhyloTreeViewer: PhylocanvasGlViewer.onTableAttached() ' +
-      `this.dataFrame = ${!this.nwkDf ? 'null' : 'value'} )`);
-
-    if (this.viewed) {
-      this.destroyView();
-      this.viewed = false;
-    }
-
     super.onTableAttached();
     this.nwkDf = this.dataFrame;
-    this.newick = this.nwkDf.getTag(TREE_TAGS.NEWICK);
-    if (this.newick) {
-      this.parsedNewick = JSON.parse(this.nwkDf.getTag('.newickJson')!);
-      //this.nodeIdColumn = this.dataFrame.getCol('id');
-      this.nodeNameColumn = this.nwkDf.getCol('node');
-      this.parentNameColumn = this.nwkDf.getCol('parent');
-    }
-    // else {
-    //   this.newickCol = this.dataFrame.columns.bySemType('newick');
-    // }
-
-    if (!this.viewed) {
-      this.buildView();
-      this.viewed = true;
-    }
   }
 
   override detach() {
@@ -345,6 +320,18 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
       this.destroyView();
       this.viewed = false;
     }
+
+    if (this.viewer) {
+      this.viewer.destroy();
+      this.viewer = null;
+      // this.phylocanvasProps = {}; // the value is required to restore view in destroyView/buildView
+    }
+
+    if (this.treeDiv) {
+      this.treeDiv.remove();
+      this.treeDiv = null;
+    }
+
     super.detach();
   }
 
@@ -357,9 +344,9 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
     }
 
     const setProps = (props: { [p: string]: any }) => {
-      Object.assign(this.phylocanvasProps!, props);
-      if (this.phylocanvasViewer)
-        this.phylocanvasViewer.setProps(props);
+      Object.assign(this.phylocanvasProps, props);
+      if (this.viewer)
+        this.viewer.setProps(props);
     };
 
     switch (property.name) {
@@ -429,8 +416,33 @@ export class PhylocanvasGlViewer extends DG.JsViewer implements bio.IPhylocanvas
 
   setProps(updater: { [propName: string]: any }): void {
     Object.assign(this.phylocanvasProps, updater);
-    if (this.phylocanvasViewer !== null)
-      this.phylocanvasViewer.setProps(updater);
+    if (this.viewer !== null)
+      this.viewer.setProps(updater);
+  }
+
+  protected viewerDeckOnAfterRender({gl}: { gl: WebGLRenderingContext }): void {
+    this._onAfterRender.next({gl});
+  }
+
+  protected viewerOnHover(info: PickingInfo, event: MjolnirPointerEvent): void {
+    this._onHover.next({info, event});
+  }
+
+  /** Sync selection from nwkDf to PhylocanvasGL viewer */
+  protected dfOnSelectionChanged(value: any) {
+    const nodeCol: DG.Column = this.nwkDf.getCol(this.nodeColumnName);
+    const selectedIds: string[] = wu.count(0).take(nodeCol.length)
+      .filter((rowI) => this.nwkDf.selection.get(rowI))
+      .map((rowI) => nodeCol.get(rowI))
+      .toArray();
+    this.viewer!.setProps({selectedIds: selectedIds});
+  }
+
+  /** Sync selection from PhylocanvasGL viewer to nwkDf */
+  protected viewerOnSelected() {
+    const nodeCol: DG.Column = this.nwkDf.getCol(this.nodeColumnName);
+    const selectedIdSet = new Set(this.viewer!.props.selectedIds);
+    this.nwkDf.selection.init((rowI) => selectedIdSet.has(nodeCol.get(rowI)));
   }
 }
 

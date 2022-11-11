@@ -42,27 +42,28 @@ export class RadarViewer extends DG.JsViewer {
   }
 
   init() {
-      option.radar.indicator = [];
-      const columns = this.getColumns();
-      for (const c of columns) {
-        option.radar.indicator.push({name: c.name, avg: c.max});
-      }
-      this.updateMin();
-      this.updateMax();
-      this.updateRow();
-      //@ts-ignore
-      this.myChart.on('mouseover', function(params) {
-        if (params.componentType === 'series') {
-          if (params.seriesIndex === 2) {
-            let divs: HTMLElement[] = [];
-            for (let i = 0; i < columns.length; ++i) {
-              divs[i] = ui.divText(`${columns[i].name} : ${params.data.value[i]}`);
-            } 
-            ui.tooltip.show(ui.div(divs), params.event.event.x,  params.event.event.y);
-          }
+    option.radar.indicator = [];
+    const columns = this.getColumns();
+    for (const c of columns) {
+      option.radar.indicator.push({name: c.name, max: c.max});
+    }
+    this.updateMin();
+    this.updateMax();
+    this.updateRow();
+    //@ts-ignore
+    this.myChart.on('mouseover', function(params) {
+      if (params.componentType === 'series') {
+        if (params.seriesIndex === 2) {
+          let divs: HTMLElement[] = [];
+          for (let i = 0; i < columns.length; ++i) {
+            divs[i] = ui.divText(`${columns[i].name} : ${params.data.value[i]}`);
+          } 
+          ui.tooltip.show(ui.div(divs), params.event.event.x,  params.event.event.y);
         }
-      });
-      this.myChart.on('mouseout', () => ui.tooltip.hide());
+      }
+    });
+    this.myChart.on('mouseout', () => ui.tooltip.hide());
+    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/help/visualize/viewers/radar-viewer.md';
   }
 
   onTableAttached() {
@@ -243,7 +244,7 @@ export class RadarViewer extends DG.JsViewer {
   getQuantile(columns: DG.Column<any>[], percent: number) {
     let result = [];
     for (const c of columns) {
-      let idx = Math.round(percent * (c.length + 1));
+      let idx = Math.floor(percent * c.length);
       let sortedIndexes = Array.from(c.getSortedOrder());
       result.push(c.get(sortedIndexes[idx]));
     }

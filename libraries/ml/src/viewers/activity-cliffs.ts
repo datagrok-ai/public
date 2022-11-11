@@ -91,10 +91,10 @@ export async function getActivityCliffs(
 
   const dfSeq = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'seq', dimensionalityReduceCol.toList())]);
   const dim = dimensionalityReduceCol.length;
-  const simArr: DG.Column[] = Array(dim - 1);
+  let simArr: DG.Column[] = Array(dim - 1);
 
   if (!distance || emptyValsIdxs.length !== 0 || nonNormalizedDistances.includes(similarityMetric)) {
-    await simMatrixFunc(dim, dimensionalityReduceCol, dfSeq, 'seq', simArr);
+    simArr = await simMatrixFunc(dim, dimensionalityReduceCol, dfSeq, 'seq', simArr);
   } else {
     getSimilaritiesFromDistances(dim, distance, simArr);
   }

@@ -58,7 +58,7 @@ category('renderers', () => {
 
   test('setRendererManually', async () => {
     await _setRendererManually();
-  });
+  }, {skipReason: 'GROK-11212'});
 
   async function _rendererMacromoleculeFasta() {
     const csv: string = await grok.dapi.files.readAsText('System:AppData/Bio/samples/sample_FASTA.csv');

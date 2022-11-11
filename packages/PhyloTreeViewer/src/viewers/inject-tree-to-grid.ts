@@ -7,9 +7,8 @@ import {filter, map} from 'rxjs/operators';
 import {interval, Unsubscribable} from 'rxjs';
 
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
-import * as th from '../utils/tree-helper';
 import $ from 'cash-dom';
-import {cutTreeToGrid, TreeToGridSyncer} from '../utils/tree-helper';
+import {TreeHelper} from '../utils/tree-helper';
 
 // const getBranchScaleOld = PhylocanvasGL.prototype.getBranchScale;
 // PhylocanvasGL.prototype.getBranchScale = function(...args) {
@@ -21,9 +20,10 @@ import {cutTreeToGrid, TreeToGridSyncer} from '../utils/tree-helper';
  *                                 undefined - use row index as leaf name/key
  */
 export function injectTreeToGridUI(
-  grid: DG.Grid, newickText: string, leafColName?: string, neighborWidth: number = 100,
+  grid: DG.Grid, newickStr: string, leafColName: string, neighborWidth: number = 100,
   cut?: { min: number, max: number, clusterColName: string }
 ): GridNeighbor {
+  const th: bio.ITreeHelper = new TreeHelper();
   const subs: Unsubscribable[] = [];
   //const _grid = grid;
   const treeN = attachDivToGrid(grid, neighborWidth);
@@ -40,8 +40,8 @@ export function injectTreeToGridUI(
   pcDiv.style.position = 'absolute';
   pcDiv.style.left = `${leftMargin}px`;
 
-  const newickRoot: bio.Node = bio.Newick.parse_newick(newickText);
-  const [viewedRoot, warnings]: [bio.Node, string[]] = th.setGridOrder(newickRoot, grid, 'id');
+  const newickRoot: bio.NodeType = bio.Newick.parse_newick(newickStr);
+  const [viewedRoot, warnings]: [bio.NodeType, string[]] = th.setGridOrder(newickRoot, grid, leafColName);
 
   const pcViewer = new bio.PhylocanvasGL(pcDiv, {
     interactive: false,
@@ -80,7 +80,7 @@ export function injectTreeToGridUI(
 
     subs.push(cutSlider.onChanged(() => {
       console.debug('PhyloTreeViewer: injectTreeToGrid() cutSlider.onChanged() ' + `${cutSlider!.value}`);
-      cutTreeToGrid(newickRoot, cutSlider!.value!, grid.dataFrame, 'id', 'Cluster');
+      th.cutTreeToGrid(newickRoot, cutSlider!.value!, grid.dataFrame, leafColName, 'Cluster');
     }));
   }
 
@@ -176,7 +176,7 @@ export function injectTreeToGridUI(
 }
 
 /** By Dimitri Petrov */
-export function attachDivToGrid(grid: DG.Grid, nWidth: number = 100): GridNeighbor {
+export function attachDivToGrid(grid: DG.Grid, neighborWidth: number = 100): GridNeighbor {
   // const nRowCount = 100;
   // const nColCount = 5;
   // const dframe: DG.DataFrame = grok.data.demo.randomWalk(nRowCount, nColCount);
@@ -191,6 +191,6 @@ export function attachDivToGrid(grid: DG.Grid, nWidth: number = 100): GridNeighb
   //   neighbor.close();
   // });
   // eDiv.appendChild(button);
-  neighbor = new GridNeighbor(eDiv, grid, nWidth);
+  neighbor = new GridNeighbor(eDiv, grid, neighborWidth);
   return neighbor;
 }

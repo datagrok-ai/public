@@ -57,7 +57,7 @@ export const _package = new DG.Package();
 
 async function test() {
   // List files in `files/templates/` recursively
-  const files = await package.files.list('templates/', true);
+  const files = await _package.files.list('templates/', true);
 
   // Read a dataframe, json, or binary data
   const f1 = DG.DataFrame.fromCsv(await _package.files.readAsText('df.csv'));

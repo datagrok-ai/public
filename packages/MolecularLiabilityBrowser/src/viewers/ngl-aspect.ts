@@ -43,7 +43,7 @@ export class NglAspect {
     const colPara = this.colorScheme['colPara'];
     const colParatopesLow = this.colorScheme['colParatopesLow']; //col_para in rgb
     const colParatopesHigh = this.colorScheme['colParatopesHigh'];
-    const colHighlight = (this.cdrScheme.value === 'default' || this.paratopes.value === true) ?
+    const colHighlight = (this.cdrScheme.value === MiscMethods.NoSchemeItem || this.paratopes.value === true) ?
       this.colorScheme['colHighlight'] : this.colorScheme['colHighlightCdr'];
 
     //highlights in NGL
@@ -73,7 +73,7 @@ export class NglAspect {
       //@ts-ignore
       schemeId = NGL.ColormakerRegistry.addSelectionScheme(schemeBuffer);
     } else {
-      if (this.cdrScheme.value === 'default') {
+      if (this.cdrScheme.value === MiscMethods.NoSchemeItem) {
         schemeBuffer.push([colHeavyChain, '* and :H']);
         schemeBuffer.push([colLightChain, '* and :L']);
         //@ts-ignore

@@ -46,7 +46,7 @@ function molV3000FromNonHelmSequence(
 M  V30 BEGIN CTAB
 `;
 
-  molV3000 += `M  V30 COUNTS ${monomers.length} ${monomers.length - 1} 0 0 0\n`;
+  molV3000 += `M  V30 COUNTS ${monomers.length} ${monomers.length ? monomers.length - 1 : 0} 0 0 0\n`;
   molV3000 += 'M  V30 BEGIN ATOM\n';
 
   for (let atomRowI = 0; atomRowI < monomers.length; atomRowI++) {

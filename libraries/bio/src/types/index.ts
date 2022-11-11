@@ -2,49 +2,39 @@
 
 import {Observable} from 'rxjs';
 
-export interface INode<TNode extends INode<TNode>> {
+
+/* Interface for hierarchical data structure returned by Newick.parse_newick */
+export interface NodeType {
   name: string;
   branch_length?: number;
-  children: TNode[];
-
-  clone(): TNode;
+  children?: NodeType[];
 }
 
-export function isLeaf<TNode extends INode<TNode>>(node: TNode) {
+export function isLeaf(node: NodeType) {
   return !node.children || node.children.length == 0;
 }
 
-
-export class Node implements INode<Node> {
-  name: string;
-  children: Node[];
-  branch_length?: number;
-
-  constructor(name: string, branch_length?: number, children: Node[] = [],) {
-    this.name = name;
-    this.branch_length = branch_length;
-    this.children = children;
-  }
-
-  /** Shallow copy, copies children list but children itself remains reference to the same */
-  clone() {
-    return new Node(this.name, this.branch_length, [...this.children],);
-  }
+export interface NodeCuttedType extends NodeType {
+  cuttedLeafNameList: string[];
+  cuttedChildren?: NodeType[];
 }
 
 export type Monomer = {
-  at: { [R: string]: string },
-  id: string,
-  m: string,
-  n: string,
-  na: string,
-  rs: number;
-}
+  symbol: string,
+  name: string,
+  naturalAnalog: string,
+  molfile: string,
+  polymerType: string,
+  monomerType: string,
+  rgroups: {capGroupSmiles: string, alternateId: string, capGroupName: string, label: string }[],
+  data: {[property: string]: any}
+};
 
-//expected types: HELM_AA, HELM_BASE, HELM_CHEM, HELM_LINKER, HELM_SUGAR
 export interface IMonomerLib {
-  get(monomerType: string, monomerName: string): Monomer | null;
-
-  // TODO:
+  getMonomer(monomerType: string, monomerName: string): Monomer | null;
+  getMonomerMolsByType(type: string): {[symbol: string]: string} | null;
+  getMonomerNamesByType(type: string): string[];
+  getTypes(): string[];
+  update(lib: IMonomerLib): void;
   get onChanged(): Observable<any>;
 }

@@ -1,23 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import wu from 'wu';
 
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
 import {vectorLength, vectorDotProduct} from '@datagrok-libraries/utils/src/vector-operations';
-
-/** Stats of sequences with specified splitter func, returns { freq, sameLength }.
- * @param {DG.Column} seqCol
- * @param {number} minLength
- * @param {SplitterFunc} splitter
- * @return { SeqColStats }, sameLength: boolean } stats of column sequences
- */
 import {SeqPalette} from '../seq-palettes';
 import {Aminoacids, AminoacidsPalettes} from '../aminoacids';
 import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
 import {UnknownSeqPalettes} from '../unknown';
-import wu from 'wu';
 import {UnitsHandler} from '../utils/units-handler';
-import * as bio from '../../index';
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 export const enum NOTATION {
@@ -50,6 +42,12 @@ export type SeqColStats = { freq: MonomerFreqs, sameLength: boolean }
 export type SplitterFunc = (seq: string) => string[];
 export type MonomerFreqs = { [m: string]: number };
 
+/** Stats of sequences with specified splitter func, returns { freq, sameLength }.
+ * @param {DG.Column} seqCol
+ * @param {number} minLength
+ * @param {SplitterFunc} splitter
+ * @return { SeqColStats }, sameLength: boolean } stats of column sequences
+ */
 export function getStats(seqCol: DG.Column, minLength: number, splitter: SplitterFunc): SeqColStats {
   const freq: { [m: string]: number } = {};
   let sameLength = true;
@@ -230,17 +228,17 @@ export function pickUpPalette(seqCol: DG.Column, minLength: number = 5): SeqPale
   return res;
 }
 
-export function getPaletteByType(paletteType: string): bio.SeqPalette {
+export function getPaletteByType(paletteType: string): SeqPalette {
   switch (paletteType) {
   case 'PT':
-    return bio.AminoacidsPalettes.GrokGroups;
+    return AminoacidsPalettes.GrokGroups;
   case 'NT':
   case 'DNA':
   case 'RNA':
-    return bio.NucleotidesPalettes.Chromatogram;
+    return NucleotidesPalettes.Chromatogram;
     // other
   default:
-    return bio.UnknownSeqPalettes.Color;
+    return UnknownSeqPalettes.Color;
   }
 }
 

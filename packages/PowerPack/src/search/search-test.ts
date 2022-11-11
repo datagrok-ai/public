@@ -6,6 +6,6 @@ import {initTemplates} from "./templates-search";
 
 category('Search', () => {
 
-  test('InitTemplates', async () => await initTemplates());
+  test('InitTemplates', async () => await initTemplates(), {skipReason : 'GROK-11445'});
 
 });

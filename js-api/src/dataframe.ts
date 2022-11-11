@@ -1036,6 +1036,16 @@ export class DateTimeColumn extends Column<dayjs.Dayjs> {
   }
 }
 
+
+export class ObjectColumn extends Column<any> {
+  /**
+   * Gets [i]-th value.
+   */
+  get(row: number): any | null {
+    return DG.toJs(api.grok_Column_GetValue(this.dart, row));
+  }
+}
+
 /** Columns in a [DataFrame]. */
 export class ColumnList {
   private readonly dart: any;
@@ -1529,8 +1539,8 @@ export class BitSet {
 
   /** Inverts a bitset.
    * @returns {BitSet} */
-  invert(): BitSet {
-    api.grok_BitSet_Invert(this.dart);
+  invert(notify: boolean = true): BitSet {
+    api.grok_BitSet_Invert(this.dart, notify);
     return this;
   }
 
@@ -1645,8 +1655,8 @@ export class BitSet {
   /** Copies the content from the other {BitSet}.
    * @param {BitSet} b - BitSet to copy from.
    * @returns {BitSet} */
-  copyFrom(b: BitSet): BitSet {
-    api.grok_BitSet_CopyFrom(this.dart, b.dart);
+  copyFrom(b: BitSet, notify: boolean = true): BitSet {
+    api.grok_BitSet_CopyFrom(this.dart, b.dart, notify);
     return this;
   }
 
@@ -2211,6 +2221,7 @@ export class ColumnDialogHelper {
 
 export class ColumnColorHelper {
   private readonly column: Column;
+
   constructor(column: Column) {
     this.column = column;
   }
@@ -2244,6 +2255,14 @@ export class ColumnColorHelper {
       }
       this.column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = JSON.stringify(rules);
     }
+  }
+
+  getColor(i: number): number {
+    return api.grok_Column_GetColor(this.column.dart, i);
+  }
+
+  getColors(): Uint32Array {
+    return api.grok_Column_GetColors(this.column.dart);
   }
 }
 

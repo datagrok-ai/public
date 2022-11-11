@@ -27,9 +27,11 @@ export interface TestOptions {
 
 export class TestContext {
   catchUnhandled = true;
+  report = false;
 
-  constructor(catchUnhandled?: boolean) {
+  constructor(catchUnhandled?: boolean, report?: boolean) {
     if (catchUnhandled !== undefined) this.catchUnhandled = catchUnhandled;
+    if (report !== undefined) this.report = report;
   };
 }
 
@@ -110,8 +112,10 @@ export function expectObject(actual: { [key: string]: any }, expected: { [key: s
       expectArray(actualValue, expectedValue);
     else if (actualValue instanceof Object && expectedValue instanceof Object)
       expectObject(actualValue, expectedValue);
+    else if (Number.isFinite(actualValue) && Number.isFinite(expectedValue))
+      expectFloat(actualValue, expectedValue);
     else if (actualValue != expectedValue)
-      throw new Error(`Expected ${expectedValue} for key ${expectedKey}, got ${actualValue}`);
+      throw new Error(`Expected (${expectedValue}) for key '${expectedKey}', got (${actualValue})`);
   }
 }
 
@@ -155,8 +159,8 @@ export function after(after: () => Promise<void>): void {
 }
 
 
-export async function runTests(options?: { category?: string, test?: string, testContext?: TestContext}) {
-  const results: { category?: string, name?: string, success: boolean, result: string, ms: number }[] = [];
+export async function runTests(options?: { category?: string, test?: string, testContext?: TestContext }) {
+  const results: { category?: string, name?: string, success: boolean, result: string, ms: number, skipped: boolean }[] = [];
   console.log(`Running tests`);
   options ??= {};
   options!.testContext ??= new TestContext();
@@ -197,9 +201,24 @@ export async function runTests(options?: { category?: string, test?: string, tes
       results.push({
         category: 'Unhandled exceptions',
         name: 'exceptions',
-        result: grok.shell.lastError, success: false, ms: 0
+        result: grok.shell.lastError, success: false, ms: 0, skipped: false
       });
     }
+  }
+  if (options.testContext.report) {
+    const logger = new DG.Logger();
+    const successful = results.filter(r => r.success).length;
+    const skipped = results.filter(r => r.skipped).length;
+    const failed = results.filter(r => !r.success);
+    const packageName = new Error().stack?.match(/(?<=api\/packages\/published\/files\/)\w{1,50}(?=\/)/)?.toString() || 'undefined'; // Bad approach, needs to change
+    const description = `Package ${packageName} tested: ${successful} successful, ${skipped} skipped, ${failed.length} failed tests`;
+    const params = {
+      successful: successful,
+      skipped: skipped,
+      failed: failed.length,
+    }
+    for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
+    logger.log(description, params, 'package-tested');
   }
   return results;
 }
@@ -245,6 +264,7 @@ export async function awaitCheck(checkHandler: () => boolean): Promise<void> {
       // eslint-disable-next-line prefer-promise-reject-errors
       reject('Timeout exceeded');
     }, 500);
+
     function check() {
       if (checkHandler()) {
         stop = false;
@@ -253,12 +273,13 @@ export async function awaitCheck(checkHandler: () => boolean): Promise<void> {
       if (!stop)
         setTimeout(check, 50);
     }
+
     check();
   });
 }
 
-export function isDialogPresent(dialogTitle:string): boolean {
-  for (let i=0; i < DG.Dialog.getOpenDialogs().length; i++) {
+export function isDialogPresent(dialogTitle: string): boolean {
+  for (let i = 0; i < DG.Dialog.getOpenDialogs().length; i++) {
     if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle)
       return true;
   }

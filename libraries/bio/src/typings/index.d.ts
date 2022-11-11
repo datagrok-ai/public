@@ -1,14 +1,21 @@
 declare module '@phylocanvas/phylocanvas.gl' {
   import {Deck} from '@deck.gl/core/typed';
+  import {NodeType} from '../types';
 
   export class PhylocanvasGL {
     get deck(): Deck;
 
     get view(): HTMLDivElement;
 
+    get props(): { [propName: string]: any };
+
     constructor(element: HTMLElement, props: { [propName: string]: any });
 
-    setProps(props: { [propName: string]: any });
+    render(): void;
+
+    resume(): void;
+
+    setProps(props: { [propName: string]: any }): void;
 
     selectNode: (nodeOrId: any, append: boolean = false) => void;
 
@@ -19,12 +26,6 @@ declare module '@phylocanvas/phylocanvas.gl' {
 
   export const TreeTypes;
   export const Shapes: { [key: string]: string };
-
-  // export interface NodeType {
-  //   name: string;
-  //   children: NodeType[];
-  //   branch_length: number;
-  // }
 
   module Newick {
     function parse_newick(newick: string): NodeType;

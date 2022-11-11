@@ -138,7 +138,7 @@ export async function _testGetSimilarities(getSimilaritiesFunction: (...args: an
 async function _testSimilaritySearchViewerOpen() {
   const molecules = await createTableView('tests/sar-small_test.csv');
   const viewer = molecules.addViewer('SimilaritySearchViewer');
-  await delay(700);
+  await delay(1000);
   const similaritySearchviewer = getSearchViewer(viewer, 'SimilaritySearchViewer');
   expect(similaritySearchviewer.fingerprint, 'Morgan');
   expect(similaritySearchviewer.distanceMetric, 'Tanimoto');

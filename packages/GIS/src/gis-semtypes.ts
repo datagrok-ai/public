@@ -5,8 +5,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export const SEMTYPEGIS = {
-  LONGITUDE: 'gis-longitude',
-  LATIITUDE: 'gis-latitude',
+  LONGITUDE: 'Longitude',
+  LATIITUDE: 'Latitude',
   ALTITUDE: 'gis-altitude',
   GISPOINT: 'gis-point',
   GISAREA: 'gis-area',
@@ -41,38 +41,36 @@ export class GisArea {
 function drawContourByCoords(g: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number,
   coordinates: Array<gisCoordinate>) {
-  if (coordinates.length == 0) return;
+  if (coordinates.length == 0)
+    return;
   //detect scale>>
-  // TODO: Math.min()
   let xMin = coordinates[0][0];
   let xMax = coordinates[0][0];
   let yMin = coordinates[0][1];
   let yMax = coordinates[0][1];
   for (let i = 0; i < coordinates.length; i++) {
-    if (coordinates[i][0] < xMin)
-      xMin = coordinates[i][0];
-    if (coordinates[i][0] > xMax)
-      xMax = coordinates[i][0];
-    if (coordinates[i][1] < yMin)
-      yMin = coordinates[i][1];
-    if (coordinates[i][1] > yMax)
-      yMax = coordinates[i][1];
+    xMin = Math.min(xMin, coordinates[i][0]);
+    xMax = Math.max(xMax, coordinates[i][0]);
+    yMin = Math.min(yMin, coordinates[i][1]);
+    yMax = Math.max(yMax, coordinates[i][1]);
   }
   let xScale = (w - 10) / Math.abs(xMax - xMin);
   let yScale = (h - 10) / Math.abs(yMax - yMin);
   if (yScale < xScale)
     xScale = yScale;
   else yScale = xScale;
-  //TODO: add centering of contour for canvas
+  //centering coefficients of contour for canvas
+  let xShift = ((w - 10) - Math.abs((xMax - xMin) * xScale)) / 2;
+  let yShift = ((h - 10) - Math.abs((yMax - yMin) * yScale)) / 2;
   //draw contour>>
   g.fillStyle = '#FEEEEE';
-  g.strokeStyle = '#FF0000';
+  g.strokeStyle = '#0000F0';
   g.beginPath();
   for (let i = 0; i < coordinates.length - 1; i++) {
-    const x1 = (x + 5) + (coordinates[i][0] - xMin) * xScale;
-    const y1 = (y + h - 5) - (coordinates[i][1] - yMin) * yScale;
-    const x2 = (x + 5) + (coordinates[i+1][0] - xMin) * xScale;
-    const y2 = (y + h - 5) - (coordinates[i+1][1] - yMin) * yScale;
+    const x1 = (x + 5 + xShift) + (coordinates[i][0] - xMin) * xScale;
+    const y1 = (y + h - 5 - yShift) - (coordinates[i][1] - yMin) * yScale;
+    const x2 = (x + 5 + xShift) + (coordinates[i+1][0] - xMin) * xScale;
+    const y2 = (y + h - 5 - yShift) - (coordinates[i+1][1] - yMin) * yScale;
     g.moveTo(x1, y1);
     g.lineTo(x2, y2);
   }
@@ -99,7 +97,7 @@ export class GisAreaCanvasRenderer extends DG.CanvasRenderer {
 //condition: true
 export function gisAreaWidget(gisArea: any): DG.Widget | null {
 //this is temporary code - should be filled with usefull functionality
-  if ((!gisArea) && !(gisArea instanceof GisArea)) return null;
+  if ((!gisArea) || !(gisArea instanceof GisArea)) return null;
 
   const strToAdd: string = (gisArea as GisArea).semtype;
   let widgetStyle: DG.ElementOptions = { };

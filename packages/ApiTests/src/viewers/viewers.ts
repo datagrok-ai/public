@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, expect, test, delay} from '@datagrok-libraries/utils/src/test';
-
 import {TestViewerForProperties} from './test-viewer-for-properties';
+import {waitForElement} from '../gui/gui-utils';
+
 
 category('Viewers', () => {
   let df: DG.DataFrame;
@@ -166,6 +167,40 @@ category('Viewers', () => {
   });
 
 
+  test('testViewersLayout', async () => {
+    let viewers = DG.Viewer.getViewerTypes().filter(vt => !vt.toLowerCase().includes('widget'));
+    const skipViewers = ['3d scatter plot', 'Google map', 'Network diagram', 'Sankey'];
+    let layout, res, errorViewers = [], i = 0;
+    
+    for (let v of viewers) {
+      if (skipViewers.includes(v)) continue;
+      res = [];
+      try { 
+        tv.addViewer(v);
+        await delay(100);
+        res.push(Array.from(tv.viewers).length);
+        layout = tv.saveLayout();
+        tv.resetLayout();
+        res.push(Array.from(tv.viewers).length);
+        tv.loadLayout(layout);
+        await delay(1000);
+        res.push(Array.from(tv.viewers).length);
+        await testBoolProps();
+      } catch (e: any) {
+        errorViewers.push([v, e.message]);
+      } finally {
+        i++;
+        console.log(v, i);
+        if (!(res[0] === 2 && res[1] === 1 && res[2] === 2)) errorViewers.push([v, res]);
+        tv.resetLayout();
+      }
+    }
+
+    grok.shell.info(`Tested ${i} viewers of ${viewers.length}, skipped ${skipViewers.length}, error in ${errorViewers.length}`);
+    if (errorViewers.length !== 0) throw `Error viewers: ${errorViewers}`;
+  }, {skipReason: 'too long execution'});
+
+
   after(async () => {
     tv.close();
     grok.shell.closeTable(df);
@@ -203,4 +238,15 @@ function addViewerAndWait(tv: DG.TableView, viewerType: string | DG.Viewer): Pro
       reject('timeout');
     }, 100);
   });
+}
+
+async function testBoolProps() {
+  const params = document.querySelectorAll('.grok-font-icon-settings')[2] as HTMLElement;
+  params.click();
+  await delay(1000);
+  const checkboxes = Array.from(document.querySelectorAll('.property-grid-item-editor-checkbox'));
+  for (let cb of checkboxes) {
+    (cb as HTMLElement).click();
+    await delay(50);
+  }
 }

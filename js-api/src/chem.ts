@@ -18,7 +18,7 @@ declare let grok: any;
 const STORAGE_NAME = 'sketcher';
 const KEY = 'selected';
 const DEFAULT_SKETCHER = 'openChemLibSketcher';
-const WHITE_MOLBLOCK = `
+export const WHITE_MOLBLOCK = `
   Datagrok empty molecule
 
 0  0  0  0  0  0  0  0  0  0999 V2000
@@ -280,15 +280,18 @@ export namespace chem {
         let canvas = ui.canvas(width, height);
         canvas.style.height = '100%';
         canvas.style.width = '100%';
+        ui.tooltip.bind(canvas, 'Click to edit');
+        const clearButton = this.createClearSketcherButton(canvas);
         canvasMol(0, 0, width, height, canvas, this.getMolFile()!)
           .then((_) => {
             ui.empty(this.extSketcherDiv);
             this.extSketcherDiv.append(canvas);
+            this.extSketcherDiv.append(clearButton);
           });
       }
 
       const sketchLinkStyle = {style: {
-        width: `${width}px`, 
+        width: `${width*0.9}px`, 
         height: `${height/2}px`,
         textAlign: 'center',
         verticalAlign: 'middle',
@@ -296,15 +299,28 @@ export namespace chem {
         border: '1px solid #dbdcdf'
       }}
       let sketchLink = ui.divText('Click to edit', sketchLinkStyle);
+      ui.tooltip.bind(sketchLink, 'Click to edit');
       sketchLink.onclick = () => this.updateExtSketcherContent(extSketcherDiv);
       sketchLink.style.paddingLeft = '0px';
       sketchLink.style.marginLeft = '0px';
       this._updateExtSketcherInnerHTML(sketchLink);
     };
 
+    createClearSketcherButton(canvas: HTMLCanvasElement): HTMLButtonElement {
+      const clearButton = ui.button('Clear', () => this.setMolecule(''));
+      ui.tooltip.bind(clearButton, 'Clear sketcher');
+      clearButton.style.position = 'absolute';
+      clearButton.style.right = '0px';
+      clearButton.style.fontSize = '10px';
+      clearButton.style.visibility = 'hidden';
+      clearButton.onmouseover = () => {clearButton.style.visibility = 'visible'};
+      canvas.onmouseenter = () => {clearButton.style.visibility = 'visible'};
+      canvas.onmouseout = () => {clearButton.style.visibility = 'hidden'};
+      return clearButton;
+    }
+
     createExternalModeSketcher(): HTMLElement {
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
-      ui.tooltip.bind(this.extSketcherDiv, 'Click to edit');
 
       this.extSketcherDiv.onclick = () => {
 

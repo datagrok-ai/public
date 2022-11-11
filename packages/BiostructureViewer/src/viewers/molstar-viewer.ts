@@ -36,8 +36,8 @@ const DefaultViewerOptions = {
   emdbProvider: 'rcsb',
 };
 
-function initViewer() {
-  const view = grok.shell.newView('Mol*');
+export function initViewer(viewName: string = 'Mol*') {
+  const view = grok.shell.newView(viewName);
   const viewerContainer = view.root;
   const viewer = Viewer.create(viewerContainer, DefaultViewerOptions);
   return viewer;
@@ -61,8 +61,8 @@ export async function byId(pdbID: string) {
  *
  * @param {string} pdbData Data in PDB
  */
- export async function byData(pdbData: string) {
-  initViewer()
+ export async function byData(pdbData: string, name: string = 'Mol*') {
+  initViewer(name)
   .then((v: any) => {
     v.loadStructureFromData(pdbData, 'pdb');
   });

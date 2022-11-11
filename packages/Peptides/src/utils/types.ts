@@ -1,5 +1,4 @@
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 export type DataFrameDict = {[key: string]: DG.DataFrame};
 
@@ -8,13 +7,31 @@ export type UTypedArray = Uint8Array | Uint16Array | Uint32Array;
 export type SubstitutionsInfo = Map<string, Map<string, Map<number, number[] | UTypedArray>>>;
 export type PositionToAARList = {[postiton: string]: string[]};
 
-export type HELMMonomer = bio.Monomer;
-
 export type MonomerColStats = {[monomer: string]: {count: number, selected: number}};
 export type MonomerDfStats = {[position: string]: MonomerColStats};
 
-export type BarCoordinates = {[monomer: string]: DG.Rect};
-
 export type ScalingMethods = 'none' | 'lg' | '-lg';
-export type PeptidesSettings =
-  {scaling?: ScalingMethods, isBidirectional?: boolean, maxMutations?: number, minActivityDelta?: number};
+export type PeptidesSettings = {
+  scaling?: ScalingMethods,
+  isBidirectional?: boolean,
+  maxMutations?: number,
+  minActivityDelta?: number,
+  columns?: {[col: string]: string},
+};
+
+export type DrawOptions = {
+  fontStyle?: string,
+  upperLetterHeight?: number,
+  upperLetterAscent?: number,
+  bounds?: DG.Rect,
+  textAlign?: CanvasTextAlign,
+  textBaseline?: CanvasTextBaseline,
+  marginVertical?: number,
+  marginHorizontal?: number,
+};
+
+export type StatsInfo = {
+  monomerCol: DG.Column<string>,
+  countCol: DG.Column<number>,
+  orderedIndexes: Int32Array,
+}
