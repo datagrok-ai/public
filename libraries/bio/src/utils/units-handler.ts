@@ -7,7 +7,7 @@ import {
   getStats,
   SeqColStats,
   splitterAsFasta,
-  detectAlphabet, TAGS
+  detectAlphabet, TAGS, getSplitterForColumn, SplitterFunc
 } from './macromolecule';
 
 /** Class for handling notation units in Macromolecule columns */
@@ -81,7 +81,16 @@ export class UnitsHandler {
 
   public getAlphabetSize(): number {
     if (this.notation == NOTATION.HELM || this.alphabet == ALPHABET.UN) {
-      const alphabetSize = parseInt(this.column.getTag(TAGS.alphabetSize));
+      const alphabetSizeStr = this.column.getTag(TAGS.alphabetSize);
+      let alphabetSize: number;
+      if (alphabetSizeStr) {
+        alphabetSize = parseInt(alphabetSizeStr);
+      } else {
+        // calculate alphabetSize on demand
+        const splitter: SplitterFunc = getSplitterForColumn(this.column);
+        const stats = getStats(this.column, 1, splitter);
+        alphabetSize = Object.keys(stats.freq).length;
+      }
       return alphabetSize;
     } else {
       switch (this.alphabet) {
@@ -247,14 +256,14 @@ export class UnitsHandler {
           `tag '${TAGS.aligned}' is mandatory.`);
     }
 
-    if (!this.column.tags.has(TAGS.alphabetSize)) {
-      if (this.isHelm())
-        throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
-          `tag '${TAGS.alphabetSize}' is mandatory.`);
-      else if (['UN'].includes(this.alphabet))
-        throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
-          `tag '${TAGS.alphabetSize}' is mandatory.`);
-    }
+    // if (!this.column.tags.has(TAGS.alphabetSize)) {
+    //   if (this.isHelm())
+    //     throw new Error(`For column '${this.column.name}' of notation '${this.notation}' ` +
+    //       `tag '${TAGS.alphabetSize}' is mandatory.`);
+    //   else if (['UN'].includes(this.alphabet))
+    //     throw new Error(`For column '${this.column.name}' of alphabet '${this.alphabet}' ` +
+    //       `tag '${TAGS.alphabetSize}' is mandatory.`);
+    // }
 
     if (!this.column.tags.has(TAGS.alphabetIsMultichar)) {
       if (this.isHelm())
