@@ -477,6 +477,8 @@ export interface ILineChartLookSettings {
   /// Defines a Y column for the chart on the bottom used for zooming
   overviewColumnName: string;
 
+  overviewAggrType: string;
+
   filter: string;
 
   /// When true, multiple *Y Columns* charts get rendered on top of each other,
@@ -1086,6 +1088,8 @@ export interface IGridLookSettings {
 
   rowHeight: number;
 
+  pinnedRows: Array<number>;
+
   /// Indicates the way colors are sampled in the heatmap mode when there is not enough
   /// pixels on the screen for each row:
   /// True: each row is draws (but the result is blended and the resulting color might not represent any row)
@@ -1272,6 +1276,10 @@ export interface ITrellisPlotLookSettings {
   categoryLabelFont: string;
 
   //Map innerViewerLookState;
+  showXAxes: boolean;
+
+  showYAxes: boolean;
+
   showControlPanel: boolean;
 
   syncMouseOverRow: boolean;
