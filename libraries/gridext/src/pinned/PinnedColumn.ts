@@ -112,12 +112,15 @@ const DEBUG : boolean = false;
 
 export class PinnedColumn {
 
+  private static MIN_COL_WIDTH = 20;
+  private static MAX_COL_WIDTH = 5000;
   private static MIN_ROW_HEIGHT = 20;
   private static MAX_ROW_HEIGHT = 500;
   private static SELECTION_COLOR = ColorUtils.toRgb(ColorUtils.colSelection); //"rgba(237, 220, 88, 0.15)";
   private static ACTIVE_CELL_COLOR = ColorUtils.toRgb(ColorUtils.currentRow); //"rgba(153, 237, 82, 0.25)";
   private static SORT_ARROW_COLOR = ColorUtils.toRgb(ColorUtils.sortArrow);
   private static Y_RESIZE_SENSITIVITY = 2;
+  private static X_RESIZE_SENSITIVITY = 5;
 
   private m_fDevicePixelRatio : number;
   private m_colGrid : DG.GridColumn | null;
@@ -142,6 +145,11 @@ export class PinnedColumn {
   private m_nResizeRowGridDragging = -1;
   private m_nYResizeDraggingAnchor = -1;
   private m_nResizeRowGridMoving = -1;
+
+  private m_nWResizeColPinBeforeDrag = -1;
+  private m_bResizeColPinMoving = false;
+  private m_bResizeColPinDragging = false;
+  private m_nXResizeColPinDraggingAnchor = -1;
 
   private m_nYDraggingAnchor = -1;
   private m_nRowGridDragging = -1;
@@ -278,11 +286,16 @@ export class PinnedColumn {
       if(!bCurrent)
         return;
 
+      if(headerThis.m_bResizeColPinDragging)
+        return;
+
       if(headerThis.m_fDevicePixelRatio !== window.devicePixelRatio || grid.canvas.height !== eCanvasThis.height) {
-        eCanvasThis.width = nW*window.devicePixelRatio;
+        const nWCanvas = eCanvasThis.offsetWidth;
+
+        eCanvasThis.width = nWCanvas*window.devicePixelRatio;
         eCanvasThis.height = grid.canvas.height;
         eCanvasThis.style.top = grid.canvas.offsetTop + "px";
-        eCanvasThis.style.width = nW + "px";
+        eCanvasThis.style.width = nWCanvas + "px";
         eCanvasThis.style.height = Math.round(grid.canvas.height/window.devicePixelRatio) + "px";
 
         headerThis.m_fDevicePixelRatio = window.devicePixelRatio;
@@ -324,7 +337,6 @@ export class PinnedColumn {
       const g = eCanvasThis.getContext('2d');
       headerThis.paint(g, grid);
     });
-
 
     const scrollVert = grid.vertScroll;
     this.m_handlerVScroll = scrollVert.onValuesChanged.subscribe(() => {
@@ -579,7 +591,6 @@ export class PinnedColumn {
 
         if (this.m_cellCurrent !== null && nRowGrid !== this.m_cellCurrent.gridRow) {
           renderer.onMouseLeaveEx(this.m_cellCurrent, e, -1, -1);
-
           renderer.onMouseEnterEx(cell, e, arXYOnCell[0], arXYOnCell[1]);
         }
 
@@ -604,6 +615,7 @@ export class PinnedColumn {
       return;
     }
 
+
     if(this.m_nResizeRowGridMoving >= 0) {
       this.m_nResizeRowGridMoving = -1;
       document.body.style.cursor = "auto";
@@ -618,6 +630,14 @@ export class PinnedColumn {
     const eDivHamb = GridUtils.getToolIconDiv(colGrid.grid);
     const nHColHeader = GridUtils.getGridColumnHeaderHeight(colGrid.grid);
     if(0 <= e.offsetY && e.offsetY < nHColHeader) {
+      //Resizing Columns
+      if(this.m_root.offsetWidth - PinnedColumn.X_RESIZE_SENSITIVITY <= e.offsetX && e.offsetX <= this.m_root.offsetWidth) {
+        this.m_bResizeColPinMoving = true;
+        document.body.style.cursor = "ew-resize";
+        return;
+      }
+
+      //Hamburger Menu
 
       eDivHamb?.style.removeProperty('visibility');
       eDivHamb?.setAttribute('column_name', colGrid.name);
@@ -634,6 +654,17 @@ export class PinnedColumn {
         eDivHamb?.style.visibility = 'hidden';
       }
     }
+
+    if(this.m_nResizeRowGridMoving >= 0) {
+      this.m_nResizeRowGridMoving = -1;
+      document.body.style.cursor = "auto";
+    }
+
+    if(this.m_bResizeColPinMoving) {
+      this.m_bResizeColPinMoving = false;
+      document.body.style.cursor = "auto";
+    }
+
   }
 
   public onMouseDrag(e : MouseEvent) : void {
@@ -650,9 +681,8 @@ export class PinnedColumn {
       return;
     }
 
-    const bResizing = this.m_nResizeRowGridDragging >= 0;
-    if (bResizing) {
-
+    const bRowResizing = this.m_nResizeRowGridDragging >= 0;
+    if (bRowResizing) {
       //console.log("Dragging : " + headerThis.m_strColName);
       const nYDiff = e.clientY - this.m_nYResizeDraggingAnchor;
       let nHRowGrid = this.m_nHResizeRowsBeforeDrag + nYDiff;
@@ -698,7 +728,18 @@ export class PinnedColumn {
       return;
     }
 
+    const bColResizing = this.m_bResizeColPinDragging;
+    if(bColResizing) {
+      const nXDiff = e.clientX - this.m_nXResizeColPinDraggingAnchor;
+      let nWColPin = this.m_nWResizeColPinBeforeDrag + nXDiff;
 
+      if (nWColPin < PinnedColumn.MIN_COL_WIDTH)
+        nWColPin = PinnedColumn.MIN_COL_WIDTH;
+      else if (nWColPin > PinnedColumn.MAX_COL_WIDTH)
+        nWColPin = PinnedColumn.MAX_COL_WIDTH;
+
+      PinnedUtils.setPinnedColumnWidth(this, nWColPin);
+     }
   }
 
   public onMouseLeave(e : MouseEvent, bOverlap : boolean) : void {
@@ -707,6 +748,11 @@ export class PinnedColumn {
 
     if(this.m_nResizeRowGridMoving >= 0) {
       this.m_nResizeRowGridMoving = -1;
+      document.body.style.cursor = "auto";
+    }
+
+    if(this.m_bResizeColPinMoving) {
+      this.m_bResizeColPinMoving = false;
       document.body.style.cursor = "auto";
     }
 
@@ -786,6 +832,9 @@ export class PinnedColumn {
     if(e.buttons !== 1)
       return;
 
+
+    //PinnedUtils.setPinnedColumnWidth(this, 150);
+
     let eCanvasThis = this.m_root;
     if(eCanvasThis === null)
       return;
@@ -800,10 +849,8 @@ export class PinnedColumn {
       this.m_nYResizeDraggingAnchor = e.clientY;
       this.m_nHResizeRowsBeforeDrag = nHRows;
     }
-    else
-    {
-
-      nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e, false, this.m_arXYMouseOnCellDown);
+    else {
+     nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e, false, this.m_arXYMouseOnCellDown);
 
       this.m_nRowGridDragging = nRowGrid;
       this.m_nYDraggingAnchor = e.clientY;
@@ -814,6 +861,27 @@ export class PinnedColumn {
         renderer.onMouseDownEx(cell, e, this.m_arXYMouseOnCellDown[0], this.m_arXYMouseOnCellDown[1]);
       }
     }
+
+    this.m_bResizeColPinMoving = false;
+
+    const colGrid = this.getGridColumn();
+    if(colGrid === null || colGrid.name === '' || this.m_root === null)
+      return;
+
+    const eDivHamb = GridUtils.getToolIconDiv(colGrid.grid);
+    const nHColHeader = GridUtils.getGridColumnHeaderHeight(colGrid.grid);
+    if(0 <= e.offsetY && e.offsetY < nHColHeader && this.m_root.offsetWidth -PinnedColumn.X_RESIZE_SENSITIVITY <= e.offsetX && e.offsetX <= this.m_root.offsetWidth) {
+      //Resizing Columns
+      const eDivHamb = GridUtils.getToolIconDiv(colGrid.grid);
+      // @ts-ignore
+      eDivHamb?.style.visibility = 'hidden';
+
+      this.m_bResizeColPinDragging = true;
+      this.m_nXResizeColPinDraggingAnchor = e.clientX;
+      this.m_nWResizeColPinBeforeDrag = eCanvasThis.offsetWidth;
+      return;
+    }
+
   }
 
   public onMouseUp(e : MouseEvent) : void {
@@ -855,6 +923,12 @@ export class PinnedColumn {
     this.m_nResizeRowGridDragging = -1;
     this.m_nYResizeDraggingAnchor = -1;
     this.m_nResizeRowGridMoving = -1;
+
+    this.m_nWResizeColPinBeforeDrag = -1;
+    this.m_bResizeColPinMoving = false;
+    this.m_bResizeColPinDragging = false;
+    this.m_nXResizeColPinDraggingAnchor = -1;
+
 
     document.body.style.cursor = "auto";
 
@@ -1023,7 +1097,7 @@ export class PinnedColumn {
   }
 
 
-  private paint(g : CanvasRenderingContext2D | null, grid : DG.Grid) : void {
+   paint(g : CanvasRenderingContext2D | null, grid : DG.Grid) : void {
     //const nWDiv = entry.contentBoxSize ? entry.contentBoxSize[0].inlineSize : entry.contentRect.width;
 
     if(g === null) {
