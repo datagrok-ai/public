@@ -40,7 +40,7 @@ seq4`;
     const col: DG.Column = df.getCol('seq');
     col.semType = DG.SEMTYPE.MACROMOLECULE;
     col.setTag(DG.TAGS.UNITS, bio.NOTATION.HELM);
-    col.setTag(bio.TAGS.alphabetSize, '11');
+    // col.setTag(bio.TAGS.alphabetSize, '11');
     col.setTag(bio.TAGS.alphabetIsMultichar, 'true');
 
     const [res, msg]: [boolean, string] = checkInputColumn(

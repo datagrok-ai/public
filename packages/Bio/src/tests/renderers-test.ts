@@ -8,15 +8,20 @@ import {importFasta, multipleSequenceAlignmentAny} from '../package';
 import {convertDo} from '../utils/convert';
 import {SEM_TYPES, TAGS} from '../utils/constants';
 import {generateLongSequence, generateManySequences, performanceTest} from './test-sequnces-generators';
+import {errorToConsole} from '../../../../libraries/utils';
 
 category('renderers', () => {
   let tvList: DG.TableView[];
   let dfList: DG.DataFrame[];
 
   before(async () => {
-    await grok.functions.call('Bio:initBio');
     tvList = [];
     dfList = [];
+    await grok.functions.call('Bio:initBio')
+      .catch((err) => {
+        console.error(errorToConsole(err));
+        throw err;
+      });
   });
 
   after(async () => {
