@@ -9,8 +9,8 @@ let y = new Float32Array(len);
 let z = new Float32Array(len);
 
 for (let i = 0; i < len; i++) {
-  x[i] = Math.floor(i / n);
-  y[i] = i % n;
+  x[i] = Math.floor(i / n) - n / 2;
+  y[i] = i % n - n / 2;
   z[i] = x[i] * y[i];
 }
 
