@@ -12,7 +12,7 @@
 		"@datagrok-libraries/utils": "^1.11.1",
 		"cash-dom": "latest",
 		"citysdk": "^2.2.3",
-		"datagrok-api": "latest",
+		"datagrok-api": "1.8.3",
 		"dayjs": "latest",
 		"jszip": "^3.10.1",
 		"ol": "^6.15.1",

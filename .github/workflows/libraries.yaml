@@ -110,7 +110,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok-libraries'
       - name: Upgrade npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@8.x
       - name: npm version
         run: npm version
       - run: npm install

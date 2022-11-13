@@ -9,13 +9,14 @@ import {PhyloTreeViewer} from './tree-viewer';
 import {PhylocanvasGlViewer} from './viewers/phylocanvas-gl-viewer';
 import {PhylocanvasGlViewerApp} from './apps/phylocanvas-gl-viewer-app';
 import {GridWithTreeViewer} from './viewers/grid-with-tree-viewer';
-import {GridWithTreeApp} from './apps/grid-with-tree-app';
+import {TreeToGridApp} from './apps/tree-to-grid-app';
 import {injectTreeToGridUI} from './viewers/inject-tree-to-grid';
 import {NewickHelper} from './utils/newick-helper';
 import {TreeInGridCellApp} from './apps/tree-in-grid-cell-app';
 import {PhylocanvasGlService} from './utils/phylocanvas-gl-service';
 import {TreeHelper} from './utils/tree-helper';
 import {generateTree} from './utils/tree-generator';
+import {TreeForGridApp} from './apps/tree-for-grid-app';
 
 
 export const _package = new DG.Package();
@@ -91,7 +92,7 @@ export async function nwkTreeViewer(file: DG.FileInfo) {
 
 
 //name: PhylocanvasGlViewer
-//tags: app
+//description: Test/demo app for PhylocanvasGlViewer
 export async function phylocanvasGlViewerApp() {
   const pi = DG.TaskBarProgressIndicator.create('open PhylocanvasGlViewer app');
   try {
@@ -107,12 +108,12 @@ export async function phylocanvasGlViewerApp() {
   }
 }
 
-//name: GridWithTree
-//tags: app
-export async function gridWithTreeApp(): Promise<void> {
-  const pi = DG.TaskBarProgressIndicator.create('open GridWithTreeViewer app');
+//name: TreeToGrid
+//description: Test/demo app for TreeInGrid
+export async function treeToGridApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open treeInGrid app');
   try {
-    const app = new GridWithTreeApp();
+    const app = new TreeToGridApp();
     await app.init();
   } catch (err: unknown) {
     const msg: string = 'PhyloTreeViewer gridWithTreeViewerApp() error: ' +
@@ -127,8 +128,21 @@ export async function gridWithTreeApp(): Promise<void> {
   }
 }
 
+//name: TreeForGrid
+//description: Test/demo app for TreeInGrid (custom renderer)
+export async function treeForGridApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open treeForGrid app');
+  try {
+    const app = new TreeForGridApp();
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+
 //name: TreeInGridCell
-//tags: app
+//description: Test/demo app for TreeInGridCell
 export async function treeInGridCellApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('open TreeInGridCell app');
   try {

@@ -130,24 +130,24 @@ MWRSWY-CKHP
   }
 
   const samples: { [key: string]: string } = {
-    'fastaCsv': 'System:AppData/Bio/samples/sample_FASTA.csv',
-    'fastaFasta': 'System:AppData/Bio/data/sample_FASTA.fasta',
-    'fastaPtCsv': 'System:AppData/Bio/data/sample_FASTA_PT.csv',
-    'msaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
-    'helmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
-    'peptidesComplex': 'System:AppData/Bio/tests/peptides_complex_msa.csv',
-    'peptidesSimple': 'System:AppData/Bio/tests/peptides_simple_msa.csv',
-    'testDemogCsv': 'System:AppData/Bio/tests/testDemog.csv',
-    'testHelmCsv': 'System:AppData/Bio/tests/testHelm.csv',
-    'testIdCsv': 'System:AppData/Bio/tests/testId.csv',
-    'testSmilesCsv': 'System:AppData/Bio/tests/testSmiles.csv',
-    'testSmiles2Csv': 'System:AppData/Bio/tests/testSmiles2.csv',
-    'testActivityCliffsCsv': 'System:AppData/Bio/tests/testActivityCliffs.csv', // smiles
-    'testCerealCsv': 'System:AppData/Bio/tests/testCereal.csv',
-    'testSpgi100': 'System:AppData/Bio/tests/testSpgi100.csv',
-    'testUnichemSources': 'System:AppData/Bio/tests/testUnichemSources.csv',
-    'testDmvOffices': 'System:AppData/Bio/tests/testDmvOffices.csv',
-    'testAlertCollection': 'System:AppData/Bio/tests/testAlertCollection.csv',
+    [Samples.fastaFasta]: 'System:AppData/Bio/data/sample_FASTA.fasta',
+    [Samples.fastaPtCsv]: 'System:AppData/Bio/data/sample_FASTA_PT.csv',
+    [Samples.msaComplex]: 'System:AppData/Bio/samples/sample_MSA.csv',
+    [Samples.fastaCsv]: 'System:AppData/Bio/samples/sample_FASTA.csv',
+    [Samples.helmCsv]: 'System:AppData/Bio/samples/sample_HELM.csv',
+    [Samples.peptidesComplex]: 'System:AppData/Bio/tests/peptides_complex_msa.csv',
+    [Samples.peptidesSimple]: 'System:AppData/Bio/tests/peptides_simple_msa.csv',
+    [Samples.testDemogCsv]: 'System:AppData/Bio/tests/testDemog.csv',
+    [Samples.testHelmCsv]: 'System:AppData/Bio/tests/testHelm.csv',
+    [Samples.testIdCsv]: 'System:AppData/Bio/tests/testId.csv',
+    [Samples.testSmilesCsv]: 'System:AppData/Bio/tests/testSmiles.csv',
+    [Samples.testSmiles2Csv]: 'System:AppData/Bio/tests/testSmiles2.csv',
+    [Samples.testActivityCliffsCsv]: 'System:AppData/Bio/tests/testActivityCliffs.csv', // smiles
+    [Samples.testCerealCsv]: 'System:AppData/Bio/tests/testCereal.csv',
+    [Samples.testSpgi100]: 'System:AppData/Bio/tests/testSpgi100.csv',
+    [Samples.testUnichemSources]: 'System:AppData/Bio/tests/testUnichemSources.csv',
+    [Samples.testDmvOffices]: 'System:AppData/Bio/tests/testDmvOffices.csv',
+    [Samples.testAlertCollection]: 'System:AppData/Bio/tests/testAlertCollection.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};

@@ -1,12 +1,17 @@
 export const CURRENT_USER = false;
+export const LOGS_DELIMITER = '; ';
 export const STORAGE_NAME = 'oligo-batch-calculator-storage';
 export const EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION = 'Base';
 export const USER_GROUP_NAME = 'Oligo Batch Calculator Admins';
-export const USER_IS_NOT_ADMIN_MESSAGE = 'You don\'t have permission for this action';
+export const DEFAULT_INPUT = 'fAmCmGmAmCpsmU\nmApsmApsfGmAmUmCfGfAfC\nmAmUfGmGmUmCmAfAmGmA';
+export const FIRST_UNIQUE_CHARACTERS = ['r', 'd'];
+export const NUCLEOTIDES = ['A', 'U', 'T', 'C', 'G'];
 
-export const TOOLTIPS = {
-  LONG_NAME: 'Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'',
-  ABBREVIATIONS: 'Examples: \'invabasic\', \'Cy3\', \'5MedC\'',
+export const CONSTRAINS = {
+  LONG_NAME_LENGTH_MAX: 300,
+  ABBREVIATION_LENGTH_MAX: 100,
+  MOL_WEIGHT_VALUE_MIN: 0,
+  EXT_COEFF_VALUE_MIN: 0,
 };
 
 export const ADDITIONAL_MODS_COL_NAMES = {
@@ -56,18 +61,19 @@ export const SYNTHESIZERS = {
   AXOLABS: 'Axolabs Codes',
   MERMADE_12: 'Mermade 12',
 };
+
 export const TECHNOLOGIES = {
   DNA: 'DNA',
   RNA: 'RNA',
   ASO_GAPMERS: 'For ASO Gapmers',
   SI_RNA: 'For 2\'-OMe and 2\'-F modified siRNA',
 };
-export const firstUniqueCharacters = ['r', 'd'];
-export const nucleotides = ['A', 'U', 'T', 'C', 'G'];
-export const individualBases: {[index: string]: number} = {
+
+export const INDIVIDUAL_BASES: {[index: string]: number} = {
   'dA': 15400, 'dC': 7400, 'dG': 11500, 'dT': 8700, 'rA': 15400, 'rC': 7200, 'rG': 11500, 'rU': 9900,
 };
-export const nearestNeighbour: {[firstBase: string]: {[secondBase: string]: number}} = {
+
+export const NEAREST_NEIGHBOUR: {[firstBase: string]: {[secondBase: string]: number}} = {
   'dA': {'dA': 27400, 'dC': 21200, 'dG': 25000, 'dT': 22800, 'rA': 27400, 'rC': 21000, 'rG': 25000, 'rU': 24000},
   'dC': {'dA': 21200, 'dC': 14600, 'dG': 18000, 'dT': 15200, 'rA': 21000, 'rC': 14200, 'rG': 17800, 'rU': 16200},
   'dG': {'dA': 25200, 'dC': 17600, 'dG': 21600, 'dT': 20000, 'rA': 25200, 'rC': 17400, 'rG': 21600, 'rU': 21200},
@@ -77,6 +83,7 @@ export const nearestNeighbour: {[firstBase: string]: {[secondBase: string]: numb
   'rG': {'rA': 25200, 'rC': 17400, 'rG': 21600, 'rU': 21200, 'dA': 25200, 'dC': 17600, 'dG': 21600, 'dT': 20000},
   'rU': {'rA': 24600, 'rC': 17200, 'rG': 20000, 'rU': 19600, 'dA': 23400, 'dC': 16200, 'dG': 19000, 'dT': 16800},
 };
+
 export const map: {
   [synthesizer: string]: {
     [technology: string]: {
@@ -391,31 +398,33 @@ export const map: {
   },
 };
 
-export const weightsObj: {[code: string]: number} = {};
-export const normalizedObj: {[code: string]: string} = {};
+export const WEIGHTS: {[code: string]: number} = {};
+export const NORMALIZED: {[code: string]: string} = {};
 for (const synthesizer of Object.keys(map)) {
   for (const technology of Object.keys(map[synthesizer])) {
     for (const code of Object.keys(map[synthesizer][technology])) {
-      weightsObj[code] = map[synthesizer][technology][code].weight;
-      normalizedObj[code] = map[synthesizer][technology][code].normalized;
+      WEIGHTS[code] = map[synthesizer][technology][code].weight;
+      NORMALIZED[code] = map[synthesizer][technology][code].normalized;
     }
   }
 }
-function getAllCodesOfSynthesizer(synthesizer: string): string[] {
-  let codes: string[] = [];
-  for (const technology of Object.keys(map[synthesizer]))
-    codes = codes.concat(Object.keys(map[synthesizer][technology]));
-  return codes;
-}
-export const firstLoopClasses: string[] = [
-  'BioSpring Codes For ASO Gapmers',
-  'BioSpring Codes For 2\'-OMe and 2\'-F modified siRNA',
-  'Axolabs Codes',
-  'Janssen GCRS Codes',
-];
-export const obj: {[i: string]: string[]} = {};
-// obj['BioSpring Codes For ASO Gapmers'] = Object.keys(map['BioSpring Codes']['For ASO Gapmers']);
-// obj['BioSpring Codes For 2\'-OMe and 2\'-F modified siRNA'] = Object.keys(
-//   map['BioSpring Codes']['For 2\'-OMe and 2\'-F modified siRNA']);
-// obj['Axolabs Codes'] = getAllCodesOfSynthesizer('Axolabs Codes');
-obj['Janssen GCRS Codes'] = getAllCodesOfSynthesizer('Janssen GCRS Codes');
+
+export const TOOLTIPS = {
+  LONG_NAME: `Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'; max length = 
+              ${CONSTRAINS.LONG_NAME_LENGTH_MAX}`,
+  ABBREVIATIONS: `Examples: \'invabasic\', \'Cy3\', \'5MedC\'; max length = ${CONSTRAINS.ABBREVIATION_LENGTH_MAX}`,
+  MOL_WEIGHT: `Value should be positive`,
+  BASE_MODIFICATION: `If value is not set to '${BASE_MODIFICATIONS.NO}', 
+                      ${ADDITIONAL_MODS_COL_NAMES.EXTINCTION_COEFFICIENT} value is set to 
+                      '${EXT_COEFF_VALUE_FOR_NO_BASE_MODIFICATION}'`,
+  EXT_COEFF: `Value should be numeric and positive if base modification = '${BASE_MODIFICATIONS.NO}'`,
+};
+
+export const MESSAGES = {
+  USER_IS_NOT_ADMIN: `You don\'t have permission for this action, ask to join '${USER_GROUP_NAME}' user group`,
+  isNumericTypeValidation: (name: string) => `${name} value should be numeric`,
+  isPositiveNumberValidation: (name: string) => `${name} value should be positive`,
+  abbreviationAlreadyExist: (name: string) => `Abbreviation ${name} already exists`,
+  TOO_LONG_NAME: `Long Name shouldn\'t contain more than ${CONSTRAINS.LONG_NAME_LENGTH_MAX} characters`,
+  TOO_LONG_ABBREVIATION: `Abbreviation shouldn\'t contain more than ${CONSTRAINS.ABBREVIATION_LENGTH_MAX} characters`,
+};

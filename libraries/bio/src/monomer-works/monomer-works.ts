@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {sequenceToMolFileST} from './to-atomic-level';
+// import {sequenceToMolFileST} from './to-atomic-level';
 
 import {IMonomerLib, Monomer} from '../types';
 
@@ -22,9 +22,9 @@ export class MonomerWorks {
   }
 
   /* Consumes a list of monomer symbols and restores molfileV3K  */
-  public getAtomicLevel(monomers: string[], polymerType: string): string | null {
-    return sequenceToMolFileST(
-      monomers, this.monomerLib.getMonomersByType(polymerType)!, polymerType
-    );
-  }
+  // public getAtomicLevel(monomers: string[], polymerType: string): string | null {
+  //   return sequenceToMolFileST(
+  //     monomers, this.monomerLib.getMonomersByType(polymerType)!, polymerType
+  //   );
+  // }
 }

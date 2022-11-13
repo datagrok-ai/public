@@ -45,6 +45,7 @@ import { Attribution, defaults as defaultControls } from 'ol/control';
 //ZIP utilities
 import JSZip, { forEach } from 'jszip';
 import { zoomByDelta } from 'ol/interaction/Interaction';
+import WebGLLayerRenderer from 'ol/renderer/webgl/Layer';
 
 export { Coordinate } from 'ol/coordinate';
 
@@ -462,6 +463,9 @@ export class OpenLayers {
 
       //prepare final color coding string
       colorValue = colorValue.concat(colorsArray);
+      //TODO: remove all code with old color coding above
+      //new way of color coding:
+      colorValue = ['get', 'fieldColorCode']; //receive color codes stored from calls
       // alert(colorValue);
     }
     //OLD simple color coding approach>>
@@ -479,12 +483,12 @@ export class OpenLayers {
     }
 
     //prepare filtering condition
-    // let filterValue: any = true;
-    // if (applyfilter)
-    //   filterValue = ['>', ['get', 'filtered'], 0];
+    let filterValue: any = true;
+    if (applyfilter)
+      filterValue = ['>', ['get', 'filtered'], 0];
 
     const markerGLStyle = {
-      // filter: filterValue,
+      filter: filterValue,
       symbol: {
         symbolType: symbolval? symbolval : 'circle',
         size: sizeValue,
@@ -960,19 +964,6 @@ export class OpenLayers {
     const strCol = toStringColor(colorVal, this.markerOpacity);
     if (aLayer) {
       const marker = new Feature(new OLGeom.Point(OLProj.fromLonLat(coord)));
-      // const style = new OLStyle.Style({
-      //   image: new OLStyle.Circle({
-      //     radius: sizeVal,
-      //     fill: new OLStyle.Fill({
-      //       color: strCol,
-      //     }),
-      //     stroke: new OLStyle.Stroke({
-      //       color: `rgba(255, 0, 0, 1)`,
-      //       width: 1,
-      //     }),
-      //   }),
-      // });
-      // marker.setStyle(style);
       marker.set('fieldSize', sizeVal);
       marker.set('fieldColor', colorVal);
       marker.set('fieldLabel', labelVal);
@@ -982,6 +973,22 @@ export class OpenLayers {
       const src = aLayer.getSource();
       if (src)
         src.addFeature(marker);
+    }
+  }
+
+  addPointFt(feature: Feature, layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
+    //add marker as a predefined feature object
+    if (!feature)
+      return;
+    let aLayer: VectorLayer<VectorSource>|HeatmapLayer|WebGLPts|undefined|null;
+    aLayer = this.useWebGL ? this.olMarkersLayerGL : this.olMarkersLayer;
+    if ((typeof layer != 'undefined') && (layer))
+      aLayer = layer;
+
+    if (aLayer) {
+      const src = aLayer.getSource();
+      if (src)
+        src.addFeature(feature);
     }
   }
 

@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {map, normalizedObj, ADDITIONAL_MODS_COL_NAMES, BASE_MODIFICATIONS, USER_GROUP_NAME} from './constants';
+import {map, NORMALIZED, ADDITIONAL_MODS_COL_NAMES, BASE_MODIFICATIONS, USER_GROUP_NAME} from './constants';
 
 export async function isCurrentUserAppAdmin() {
   const userGroup = await grok.dapi.groups.filter(USER_GROUP_NAME).first();
@@ -22,8 +22,10 @@ export function normalizeSequence(sequence: string, synthesizer: string | null, 
     getAllCodesOfSynthesizer(synthesizer!).concat(additionalCodesCol.toList()) :
     Object.keys(map[synthesizer!][technology]);
 
-  for (let i = 0; i < additionalModsDf.rowCount; i++)
-    normalizedObj[additionalCodesCol.getString(i)] = (baseModifsCol.get(i) != BASE_MODIFICATIONS.NO) ? baseModifsCol.get(i) : '';
+  for (let i = 0; i < additionalModsDf.rowCount; i++) {
+    NORMALIZED[additionalCodesCol.getString(i)] = (baseModifsCol.get(i) != BASE_MODIFICATIONS.NO) ?
+      baseModifsCol.get(i) : '';
+  }
 
   for (let i = 0; i < codes.length; i++) {
     codes[i] = codes[i].replace('(', '\\(');
@@ -32,7 +34,7 @@ export function normalizeSequence(sequence: string, synthesizer: string | null, 
 
   const sortedCodes = sortByStringLengthInDescOrder(codes);
   const regExp = new RegExp('(' + sortedCodes.join('|') + ')', 'g');
-  return sequence.replace(regExp, function(code) {return normalizedObj[code];});
+  return sequence.replace(regExp, function(code) {return NORMALIZED[code];});
 }
 
 export function getAllCodesOfSynthesizer(synthesizer: string): string[] {

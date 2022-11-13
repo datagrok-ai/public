@@ -370,7 +370,7 @@ export class GisViewer extends DG.JsViewer {
 
     //setup context menu
     this.onContextMenu.subscribe((menu) => {
-      if (this.isShortUI == true) {
+      if (this.isShortUI === true) {
         menu.item('Extended UI', () => {
           this.isShortUI = false;
           this.switchUI(this.isShortUI);
@@ -408,7 +408,7 @@ export class GisViewer extends DG.JsViewer {
 
       this.ol.setMapSelectionCallback(this.handlerOnMarkerSelect.bind(this));
       this.ol.setMapClickCallback(this.handlerOnMapClick.bind(this));
-      this.ol.setMapRefreshCallback(this.updateLayersList);
+      this.ol.setMapRefreshCallback(this.updateLayersList.bind(this));
 
       this.initialized = true;
     } catch (e: any) {
@@ -426,6 +426,8 @@ export class GisViewer extends DG.JsViewer {
   }
 
   updateLayersList(): void {
+    if (this.isShortUI)
+      return;
     if ((!this.ol) || (!this.panelLeft) || (!this.divLayersList))
       return;
 
@@ -582,7 +584,7 @@ export class GisViewer extends DG.JsViewer {
     }));
 
     //update on filtration
-    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 200).subscribe((_) => {
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 300).subscribe((_) => {
       // this.render(true);
       const indexes = this.dataFrame.filter.getSelectedIndexes();
 
@@ -610,6 +612,9 @@ export class GisViewer extends DG.JsViewer {
       const eventColumn = ((data.args.source as unknown) as DG.Column);
       if (!eventColumn)
         return;
+
+      // eventColumn.meta.colors.getColors();
+
       if (eventColumn.name === this.colorColumnName) {
         // if (data.args.key.includes('.color-coding')) {
         // if (tt.key.includes('.color-coding')) {
@@ -696,7 +701,7 @@ export class GisViewer extends DG.JsViewer {
     if (reloadData)
       this.getCoordinates();
 
-    this.updateOpenLayerProperties(false);
+    this.updateOpenLayerProperties(true);
     if (this.renderType === 'heat map') {
       //render heat map
       this.renderHeat(this.features);
@@ -742,6 +747,7 @@ export class GisViewer extends DG.JsViewer {
     let labelVal: Int32Array | Float32Array | Float64Array | Uint32Array;
     let colorVal: Int32Array | Float32Array | Float64Array | Uint32Array;
     let sizeVal: Int32Array | Float32Array | Float64Array | Uint32Array;
+    let colorCodes: Uint32Array = new Uint32Array();
 
     const lat = this.dataFrame.getCol(this.latitudeColumnName).getRawData();
     const lon = this.dataFrame.getCol(this.longitudeColumnName).getRawData();
@@ -771,6 +777,13 @@ export class GisViewer extends DG.JsViewer {
       if ((colColor)) {
         //get column color coding settings from column
         this.refreshColorCodingStyle(colColor);
+
+        //new way of color coding
+        colorCodes = colColor.meta.colors.getColors();
+        if (colorCodes.length === 0) {
+          colorVal = new Uint32Array(lat.length);
+          colorCodes.fill(this.defaultColor);
+        }
 
         colorVal = colColor.getRawData();
         this.ol.minFieldColor = colColor.min;
@@ -808,36 +821,16 @@ export class GisViewer extends DG.JsViewer {
           fieldLabel: labelVal[i],
           fieldSize: (sizeVal[i]),
           fieldColor: (colorVal[i]),
+          fieldColorCode: (toStringColor(colorCodes[i], this.markerOpacity)),
           fieldIndex: i,
           filtered: 1,
         });
         this.featuresFull.push(ft);
       }
+
       this.features.length = 0; //clear array of features
       for (let i = 0; i < indexes.length; i++)
         this.features.push(this.featuresFull[indexes[i]]);
-
-      // for (let i = 0; i < indexes.length; i++) {
-      //   if ((i < lat.length) && (i < lon.length)) {
-      //     this.coordinates.push([lon[indexes[i]], lat[indexes[i]]]);
-      //     this.labelValues.push(labelVal[indexes[i]]);
-      //     this.sizeValues.push(sizeVal[indexes[i]]);
-      //     this.colorValues.push(colorVal[indexes[i]]);
-      //     this.indexValues.push(indexes[i]);
-
-      //     const coords = OLProj.fromLonLat([lon[indexes[i]], lat[indexes[i]]]);
-      //     const ft = new Feature({
-      //       geometry: new Point(coords),
-      //       fieldLabel: labelVal[indexes[i]],
-      //       fieldSize: (sizeVal[indexes[i]]),
-      //       fieldColor: (colorVal[indexes[i]]),
-      //       fieldIndex: indexes[i],
-      //       filtered: 1,
-      //     });
-      //     this.features.push(ft);
-      //     this.featuresFull.push(ft);
-      //   }
-      // }
     } //end of finally block
     //<<getCoordinates function
   }
@@ -853,6 +846,7 @@ export class GisViewer extends DG.JsViewer {
     let layer = this.ol.getLayerByName('HL: ' + colName);
     if (!layer)
       layer = this.ol.addNewHeatMap('HL: ' + colName);
+
 
     this.ol.clearLayer(layer);
     this.ol.addFeaturesBulk(arrFeatures, layer);

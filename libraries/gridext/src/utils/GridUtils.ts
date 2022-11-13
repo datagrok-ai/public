@@ -253,10 +253,14 @@ export function paintColHeaderCell(g : CanvasRenderingContext2D | null, nX : num
   const nHH = nH*window.devicePixelRatio;
 
   g.textAlign = 'start';
-  g.fillStyle = "Black";
+  g.fillStyle = "black";
   const nXX = nX*window.devicePixelRatio + Math.ceil(3*window.devicePixelRatio);//((nW*window.devicePixelRatio - nWLabel) >> 1);
   const nYY = (nY*window.devicePixelRatio + nHH - Math.ceil(3*window.devicePixelRatio));//-2*window.devicePixelRatio);
   g.fillText(str, nXX, nYY);
 }
 
 
+export const LeftArrow = '←';
+export const RightArrow = '→';
+export const UpArrow = '↑';
+export const DownArrow = '↓';

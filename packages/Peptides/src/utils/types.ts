@@ -10,8 +10,28 @@ export type PositionToAARList = {[postiton: string]: string[]};
 export type MonomerColStats = {[monomer: string]: {count: number, selected: number}};
 export type MonomerDfStats = {[position: string]: MonomerColStats};
 
-export type BarCoordinates = {[monomer: string]: DG.Rect};
-
 export type ScalingMethods = 'none' | 'lg' | '-lg';
-export type PeptidesSettings =
-  {scaling?: ScalingMethods, isBidirectional?: boolean, maxMutations?: number, minActivityDelta?: number};
+export type PeptidesSettings = {
+  scaling?: ScalingMethods,
+  isBidirectional?: boolean,
+  maxMutations?: number,
+  minActivityDelta?: number,
+  columns?: {[col: string]: string},
+};
+
+export type DrawOptions = {
+  fontStyle?: string,
+  upperLetterHeight?: number,
+  upperLetterAscent?: number,
+  bounds?: DG.Rect,
+  textAlign?: CanvasTextAlign,
+  textBaseline?: CanvasTextBaseline,
+  marginVertical?: number,
+  marginHorizontal?: number,
+};
+
+export type StatsInfo = {
+  monomerCol: DG.Column<string>,
+  countCol: DG.Column<number>,
+  orderedIndexes: Int32Array,
+}

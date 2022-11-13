@@ -8,6 +8,8 @@
  * TODO: Use detectors from WebLogo pickUp.. methods
  */
 
+const CATEGORIES_SAMPLE_LIMIT = 100;
+
 /** enum type to simplify setting "user-friendly" notation if necessary */
 const NOTATION = {
   FASTA: 'fasta',
@@ -76,18 +78,25 @@ class BioPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectMacromolecule(col) {
+    // Fail early
+    if (col.type !== DG.TYPE.STRING) return null;
+
+    const categoriesSample = col.categories.length < CATEGORIES_SAMPLE_LIMIT ? col.categories :
+      BioPackageDetectors.sample(col.categories, CATEGORIES_SAMPLE_LIMIT);
+
     // To collect alphabet freq three strategies can be used:
     // as chars, as fasta (single or within square brackets), as with the separator.
     if (
       !(col.categories.length == 1 && !col.categories[0]) && // TODO: Remove with tests for single empty category value
-      DG.Detector.sampleCategories(col, (s) => BioPackageDetectors.isHelm(s), 1)
+      DG.Detector.sampleCategories(col, (s) => BioPackageDetectors.isHelm(s), 1, CATEGORIES_SAMPLE_LIMIT)
     ) {
-      const statsAsHelm = BioPackageDetectors.getStats(col, 2, BioPackageDetectors.splitterAsHelm);
+      const statsAsHelm = BioPackageDetectors.getStats(categoriesSample, 2, BioPackageDetectors.splitterAsHelm);
       col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
 
-      const alphabetSize = Object.keys(statsAsHelm.freq).length;
+      // alphabetSize calculated on (sub)sample of data is incorrect
+      // const alphabetSize = Object.keys(statsAsHelm.freq).length;
       const alphabetIsMultichar = Object.keys(statsAsHelm.freq).some((m) => m.length > 1);
-      col.setTag(UnitsHandler.TAGS.alphabetSize, alphabetSize.toString());
+      // col.setTag(UnitsHandler.TAGS.alphabetSize, alphabetSize.toString());
       col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
 
       return DG.SEMTYPE.MACROMOLECULE;
@@ -115,12 +124,12 @@ class BioPackageDetectors extends DG.Package {
       }
       return res;
     };
-    const isUrl = DG.Detector.sampleCategories(col, isUrlCheck, 1);
+    const isUrl = categoriesSample.every((v) => { return !v || isUrlCheck(v); });
     if (isUrl) return null;
 
     // TODO: Detect HELM sequence
     // TODO: Lazy calculations could be helpful for performance and convenient for expressing classification logic.
-    const statsAsChars = BioPackageDetectors.getStats(col, 5, BioPackageDetectors.splitterAsChars);
+    const statsAsChars = BioPackageDetectors.getStats(categoriesSample, 5, BioPackageDetectors.splitterAsChars);
     // if (Object.keys(statsAsChars.freq).length === 0) return;
 
     const decoy = BioPackageDetectors.detectAlphabet(statsAsChars.freq, decoyAlphabets, null);
@@ -143,7 +152,7 @@ class BioPackageDetectors extends DG.Package {
       const splitter = separator ? BioPackageDetectors.getSplitterWithSeparator(separator) :
         BioPackageDetectors.splitterAsFasta;
 
-      const stats = BioPackageDetectors.getStats(col, 5, splitter);
+      const stats = BioPackageDetectors.getStats(categoriesSample, 5, splitter);
       // Empty monomer alphabet is not allowed
       if (Object.keys(stats.freq).length === 0) return null;
       // Long monomer names for sequences with separators have constraints
@@ -162,9 +171,10 @@ class BioPackageDetectors extends DG.Package {
         col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
         if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
         if (alphabet === ALPHABET.UN) {
-          const alphabetSize = Object.keys(stats.freq).length;
+          // alphabetSize calculated on (sub)sample of data is incorrect
+          // const alphabetSize = Object.keys(stats.freq).length;
           const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
-          col.setTag(UnitsHandler.TAGS.alphabetSize, alphabetSize.toString());
+          // col.setTag(UnitsHandler.TAGS.alphabetSize, alphabetSize.toString());
           col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
         return DG.SEMTYPE.MACROMOLECULE;
@@ -220,12 +230,12 @@ class BioPackageDetectors extends DG.Package {
   // }
 
   /** Stats of sequences with specified splitter func, returns { freq, sameLength } */
-  static getStats(seqCol, minLength, splitter) {
+  static getStats(values, minLength, splitter) {
     const freq = {};
     let sameLength = true;
     let firstLength = null;
 
-    for (const seq of seqCol.categories) {
+    for (const seq of values) {
       const mSeq = splitter(seq);
 
       if (firstLength == null) {
@@ -359,5 +369,21 @@ class BioPackageDetectors extends DG.Package {
     const mmList = inSeq ? inSeq.split('.') : [];
     const mmListRes = mmList.map(mmPostProcess);
     return mmListRes;
+  }
+
+  static sample(src, n) {
+    if (src.length < n) {
+      throw new Error('Sample source is less than n requested.');
+    }
+
+    const idxSet = new Set();
+    while (idxSet.size < n) {
+      const idx = Math.floor(Math.random() * src.length);
+      if (!idxSet.has(idx)) {
+        idxSet.add(idx);
+      }
+    }
+
+    return [...idxSet].map((idx) => src[idx]);
   }
 }
