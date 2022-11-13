@@ -16,7 +16,6 @@ export function mainView() {
     moleculeSvgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
-    let errorsExist = false;
     try {
       sequence = sequence.replace(/\s/g, '');
       const output = isValidSequence(sequence, null);
@@ -28,13 +27,6 @@ export function mainView() {
         const indexOfFirstNotValidChar = ('indexOfFirstNotValidChar' in outputSequenceObj) ?
           JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).indexOfFirstNotValidChar :
           -1;
-        if ('indexOfFirstNotValidChar' in outputSequenceObj) {
-          const indexOfFirstNotValidChar = ('indexOfFirstNotValidChar' in outputSequenceObj) ?
-            JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).indexOfFirstNotValidChar :
-            -1;
-          if (indexOfFirstNotValidChar != -1)
-            errorsExist = true;
-        }
 
         tableRows.push({
           'key': key,
@@ -180,7 +172,7 @@ export function mainView() {
   const v = grok.shell.v;
   const tabControl = grok.shell.sidebar;
   tabControl.onTabChanged.subscribe((_) => {
-    v.setRibbonPanels([(tabControl.currentPane.name == 'MAIN') ? topPanel : []])
+    v.setRibbonPanels([(tabControl.currentPane.name == 'MAIN') ? topPanel : []]);
   });
   v.setRibbonPanels([topPanel]);
 
