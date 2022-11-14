@@ -1,10 +1,7 @@
 // PCA.cpp
 // Principal Component Analysis using the lib Eigen: implementations of functions
 
-#include <iostream>
-using namespace std;
-
-#include "../../../Eigen/Eigen/Dense"
+#include "..\..\..\Eigen\Eigen\Dense"
 using namespace Eigen;
 
 #include "PCA.h"
@@ -27,16 +24,12 @@ int pca::pcaUsingCorrelationMatrix(Float * data,
 {
 	// check number of principal components
 	if (height < numOfPrincipalComponents)
-		return 1;
+		return UNCORRECT_ARGUMENTS_ERROR;
 
 	// assign data and Eigen matrix
 	Map< Matrix<Float, Dynamic, Dynamic, RowMajor> > dataMatrix(data, height, width);
-
-	//cout << "\nD:\n" << dataMatrix << endl;
-
+	
 	Vector<Float, Dynamic> means = dataMatrix.rowwise().mean();
-
-	//cout << "\nmeans:\n" << means << endl;
 
 	Matrix<Float, Dynamic, Dynamic> corMatrix 
 		= dataMatrix * dataMatrix.transpose() / width - means * means.transpose();
@@ -46,14 +39,21 @@ int pca::pcaUsingCorrelationMatrix(Float * data,
 
 	// Check result of eigen values & vectors computation.
 	if (eigensolver.info() != Success)
-		return 2;
+		return COMPUTATION_ERROR;
+
+	// Check order of computed eigen values: increasing order is expected
+	Vector<Float, Dynamic> eigenVals = eigensolver.eigenvalues();
+	for(int i = 1; i < eigenVals.size(); i++)
+	    if(eigenVals(i - 1) > eigenVals(i))
+		    return METHOD_ERROR;
 	
 	// get feature vectors, taking into account increasing order of computed eigen values
 	Matrix<Float, Dynamic, Dynamic, ColMajor> featureVectors
 		= (eigensolver.eigenvectors().rowwise().reverse())(all, seq(0, numOfPrincipalComponents - 1));
 
 	// assign principal components and Eigen matrix
-	Map< Matrix<Float, Dynamic, Dynamic, RowMajor> > princCompMatrix(principalComponents, numOfPrincipalComponents, width);
+	Map< Matrix<Float, Dynamic, Dynamic, RowMajor> > 
+	     princCompMatrix(principalComponents, numOfPrincipalComponents, width);
 
 	// compute principal componets
 	princCompMatrix = featureVectors.transpose() * (dataMatrix.colwise() - means);
@@ -67,7 +67,7 @@ int pca::pcaUsingCorrelationMatrix(Float * data,
 		approxMatrix = (featureVectors * princCompMatrix).colwise() + means;
 	}	
 
-	return 0;
+	return NO_ERROR;
 }
 
 // Cumpute principal components of the data.
@@ -279,18 +279,18 @@ int pca::computeCorrelationMatrix(void ** data,
 } // computeCorrelationMatrix
 
 // Maximum absolute deviation between arrays
-Float pca::mad(Float * arr1, Float * arr2, const int length)
+Float pca::mad(Float * arr1, Float * arr2, const int length) noexcept
 {
 	// Solution using Eigen: nice, but additional structures are created! 
-	Map<Vector<Float, Dynamic>> vec1(arr1, length);
+	/*Map<Vector<Float, Dynamic>> vec1(arr1, length);
 	Map<Vector<Float, Dynamic>> vec2(arr2, length);
-	return ((vec1 - vec2).cwiseAbs()).maxCoeff();
+	return ((vec1 - vec2).cwiseAbs()).maxCoeff();*/
 
 	// Naive solution
-	/*Float result = fabs(arr1[0] - arr2[0]);
+	Float result = fabs(arr1[0] - arr2[0]);
 
 	for (int i = 1; i < length; i++)
-		result = max(result, fabs(arr1[i] - arr2[i]));
+		result = fmax(result, fabs(arr1[i] - arr2[i]));
 
-	return result;*/
+	return result;
 }

@@ -1,0 +1,36 @@
+{
+	"name": "pca",
+	"friendlyName": "PCA",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest",
+		"@datagrok-libraries/utils": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"link-all": "",
+		"debug-pca": "webpack && grok publish",
+		"release-pca": "webpack && grok publish --release",
+		"build-pca": "webpack",
+		"build": "webpack",
+		"debug-pca-dev": "webpack && grok publish dev",
+		"release-pca-dev": "webpack && grok publish dev --release",
+		"debug-pca-public": "webpack && grok publish public",
+		"release-pca-public": "webpack && grok publish public --release"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
+	"sources": [
+        "wasm/eigenPCA.js"
+    ]
+}

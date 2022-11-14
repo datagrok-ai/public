@@ -23,6 +23,8 @@ namespace pca {
 	typedef int Integer;
 	typedef double Double;
 
+	enum ResultCode {NO_ERROR = 0, UNCORRECT_ARGUMENTS_ERROR, COMPUTATION_ERROR, METHOD_ERROR};
+
 	/* Principal Component Analysis of the data: using correlation matrix.
 	     data - input matrix;
 	     height, width - sizes of the input;
@@ -34,7 +36,7 @@ namespace pca {
 		const int width,
 		const int numOfPrincipalComponents,
 		Float * principalComponents,
-		Float * approxData = NULL) noexcept;
+		Float * approxData = 0) noexcept;
 
 	/* Principal Component Analysis of the data: using correlation matrix.
 	     data - matrix that has float rows and integer rows, each row contains values of the same type:
@@ -83,7 +85,7 @@ namespace pca {
 		Float * correlations) noexcept;
 
 	// Maximum absolute deviation between arrays
-	Float mad(Float * arr1, Float * arr2, const int length);
+	Float mad(Float * arr1, Float * arr2, const int length) noexcept;
 };
 
 #endif // PCA_H
