@@ -31,8 +31,11 @@ export class NglAspect {
     this.selection = twinSelections;
     //@ts-ignore
     this.stage = new NGL.Stage(nglHost);
-    this.render(true, ligandSelection);
-    this.nglResize(nglHost);
+    await this.render(true, ligandSelection);
+    await this.nglResize(nglHost);
+
+    let va = this.stage;
+    console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
   }
 
   public async render(reload: boolean, ligandSelection: { [key: string]: boolean }) {
@@ -150,23 +153,39 @@ export class NglAspect {
   // load the 3D model
   private async loadPdb(pdbStr: string, repChoice: DG.InputBase, schemeObj: any) {
     var stringBlob = new Blob([pdbStr], { type: 'text/plain' });
-    await this.stage.loadFile(stringBlob, { ext: "pdb" }).then(function (o: any) {
-    //await this.stage.loadFile(pdbStr).then(function (o: any) {
-      o.addRepresentation(repChoice.value, schemeObj);
-      o.autoView();
-    });
+    let a = await this.stage.loadFile(stringBlob, { ext: "pdb" });
+    // .then((o: any) => {
+    // //await this.stage.loadFile(pdbStr).then(function (o: any) {
+    //   let vv = this.stage;
+    //   console.log(vv.viewer.renderer.domElement.toDataURL('image/png'));
+    //   o.addRepresentation(repChoice.value, schemeObj);
+    //   vv = this.stage;
+    //   console.log(vv.viewer.renderer.domElement.toDataURL('image/png'));
+    //   o.autoView();
+    //   vv = this.stage;
+    //   console.log(vv.viewer.renderer.domElement.toDataURL('image/png'));
+    // });
+
+    await this.stage.compList[0].addRepresentation(repChoice.value, schemeObj);
+    await this.stage.compList[0].autoView();
+
+    let va = this.stage;
+    console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
   }
 
   // viewer resize
-  private _resize(host: HTMLElement) {
+  private async _resize(host: HTMLElement) {
     let canvas = host.querySelector('canvas');
     canvas!.width = Math.floor(host.clientWidth * window.devicePixelRatio);
     canvas!.height = Math.floor(host.clientHeight * window.devicePixelRatio);
-    this.stage.handleResize();
+    await this.stage.handleResize();
+    console.log(this.stage.viewer.renderer.domElement.toDataURL('image/png'));
   }
 
-  private nglResize(host: HTMLElement) {
-    ui.onSizeChanged(host).subscribe((_) => this._resize(host));
-    this._resize(host);
+  private async nglResize(host: HTMLElement) {
+    ui.onSizeChanged(host).subscribe((_) => {
+      this._resize(host)
+    });
+    await this._resize(host);
   }
 }
