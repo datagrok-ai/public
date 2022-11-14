@@ -20,11 +20,10 @@ export function getStats(data: StatsData, mask: DG.BitSet): Stats {
 
   const testResult = tTest(selected, rest);
   const currentMeanDiff = testResult['Mean difference']!;
-  const realCount = selected.length || data.length;
   return {
-    count: realCount,
+    count: selected.length,
     pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'],
     meanDifference: currentMeanDiff,
-    ratio: realCount / data.length,
+    ratio: selected.length / data.length,
   };
 }

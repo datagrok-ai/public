@@ -46,16 +46,18 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: string = 
 }
 
 export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats {
+  const monomerColumns: DG.Column<string>[] = df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
   const selectedObj: type.MonomerSelectionStats = {};
-  for (const colName of df.columns.names()) {
-    const currentPosSelection: {[monomer: string]: number} = {};
-    const tempDf = df.groupBy([colName]).count(C.COLUMNS_NAMES.COUNT).aggregate();
-    const monomerCol: DG.Column<string> = tempDf.getCol(colName);
-    const countCol: DG.Column<number> = tempDf.getCol(C.COLUMNS_NAMES.COUNT);
-    for (let rowIdx = 0; rowIdx < tempDf.rowCount; ++rowIdx)
-      currentPosSelection[monomerCol.get(rowIdx)!] = countCol.get(rowIdx)!;
-
-    selectedObj[colName] = currentPosSelection;
+  for (const idx of df.selection.getSelectedIndexes()) {
+    for (const col of monomerColumns) {
+      const monomer = col.get(idx);
+      if (!monomer)
+        continue;
+      
+      selectedObj[col.name] ??= {};
+      selectedObj[col.name][monomer] ??= 0;
+      selectedObj[col.name][monomer] += 1;
+    }
   }
 
   return selectedObj;

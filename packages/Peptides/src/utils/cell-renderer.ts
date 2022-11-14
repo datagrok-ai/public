@@ -103,7 +103,7 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
 
 
 export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, statsInfo: types.StatsInfo,
-  monomerSelectionStats: {[monomer: string]: number}, rowCount: number, cp: bio.SeqPalette,
+  rowCount: number, cp: bio.SeqPalette, monomerSelectionStats: {[monomer: string]: number} = {},
   drawOptions: types.DrawOptions = {}): {[monomer: string]: DG.Rect} {
   drawOptions.fontStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;

@@ -223,8 +223,6 @@ export class PeptidesModel {
     for (const col of splitSeqDf.columns)
       col.name = `p${col.name}`;
 
-    // this.barData = calculateBarsData(splitSeqDf.columns.toList(), this.df.selection);
-
     const positionColumns = splitSeqDf.columns.names();
 
     const activityCol = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY)!;
@@ -353,8 +351,9 @@ export class PeptidesModel {
   calculateMonomerPositionStatistics(matrixDf: DG.DataFrame): DG.DataFrame {
     matrixDf = matrixDf.groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER]).aggregate();
 
-    const monomerCol: DG.Column<string> = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    let monomerCol: DG.Column<string> = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
     matrixDf = matrixDf.clone(DG.BitSet.create(matrixDf.rowCount, (i) => monomerCol.get(i) ? true : false));
+    monomerCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
 
     //calculate p-values based on t-test
     const matrixCols = matrixDf.columns;
@@ -534,7 +533,6 @@ export class PeptidesModel {
         //TODO: how to unghighlight?
       // this.df.rows.match(bar).highlight();
     }
-    
   }
 
   setCellRenderers(renderColNames: string[]): void {
@@ -619,7 +617,7 @@ export class PeptidesModel {
         };
 
         this.webLogoBounds[col.name] =
-          CR.drawLogoInBounds(ctx, bounds, statsInfo, this.headerSelectedMonomers[col.name], this.df.rowCount, this.cp);
+          CR.drawLogoInBounds(ctx, bounds, statsInfo, this.df.rowCount, this.cp, this.headerSelectedMonomers[col.name]);
         gcArgs.preventDefault();
       }
 
@@ -871,8 +869,7 @@ export class PeptidesModel {
     this.isPeptideSpaceChangingBitset = isPeptideSpaceSource;
     this.df.selection.fireChanged();
     this.modifyOrCreateSplitCol();
-    const monomerDf = DG.DataFrame.fromColumns(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER)).clone(this.df.selection);
-    this.headerSelectedMonomers = calculateSelected(monomerDf);
+    this.headerSelectedMonomers = calculateSelected(this.df);
     grok.shell.o = this.createAccordion().root;
     this.isPeptideSpaceChangingBitset = false;
   }
