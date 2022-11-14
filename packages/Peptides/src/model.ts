@@ -63,6 +63,8 @@ export class PeptidesModel {
   initBitset: DG.BitSet;
   isInvariantMapTrigger: boolean = false;
   headerSelectedMonomers: type.MonomerSelectionStats = {};
+  webLogoBounds: {[positon: string]: {[monomer: string]: DG.Rect}} = {};
+  cachedWebLogoTooltip: {bar: string; tooltip: HTMLDivElement | null;} = {bar: '', tooltip: null};
 
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
@@ -213,6 +215,8 @@ export class PeptidesModel {
     const col = this.df.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
     const alphabet = col.tags['alphabet'];
     const splitSeqDf = splitAlignedSequences(col);
+    for (const col of splitSeqDf.columns)
+      col.name = `p${col.name}`;
 
     // this.barData = calculateBarsData(splitSeqDf.columns.toList(), this.df.selection);
 
@@ -264,20 +268,21 @@ export class PeptidesModel {
     // init invariant map & mutation cliffs selections
     this.initSelections(positionColumns);
 
-    positionColumns.push(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
+    // positionColumns.push(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
 
-    // this.setBarChartInteraction();
+    this.setWebLogoInteraction();
+    this.webLogoBounds = {};
 
-    this.setCellRenderers(positionColumns);
+    this.setCellRenderers([...positionColumns, C.COLUMNS_NAMES.MEAN_DIFFERENCE]);
 
     // show all the statistics in a tooltip over cell
-    this.setTooltips(positionColumns);
+    this.setTooltips([...positionColumns, C.COLUMNS_NAMES.MEAN_DIFFERENCE]);
 
     this.setInteractionCallback();
 
     this.setBitsetCallback();
 
-    this.postProcessGrids();
+    this.postProcessGrids(positionColumns);
   }
 
   initSelections(positionColumns: string[]): void {
@@ -560,51 +565,54 @@ export class PeptidesModel {
     this.logoSummarySelection = [cluster];
   }
 
-  // setBarChartInteraction(): void {
-  //   const eventAction = (ev: MouseEvent): void => {
-  //     const cell = this.sourceGrid.hitTest(ev.offsetX, ev.offsetY);
-  //     if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.MONOMER) {
-  //       const newBarPart = this.findAARandPosition(cell, ev);
-  //       this.requestBarchartAction(ev, newBarPart);
-  //     }
-  //   };
+  setWebLogoInteraction(): void {
+    const eventAction = (ev: MouseEvent): void => {
+      const cell = this.sourceGrid.hitTest(ev.offsetX, ev.offsetY);
+      if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.MONOMER) {
+        const newBarPart = this.findAARandPosition(cell, ev);
+        this.requestBarchartAction(ev, newBarPart);
+      }
+    };
 
-  //   // The following events makes the barchart interactive
-  //   rxjs.fromEvent<MouseEvent>(this.sourceGrid.overlay, 'mousemove')
-  //     .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
-  //   rxjs.fromEvent<MouseEvent>(this.sourceGrid.overlay, 'click')
-  //     .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
-  // }
+    // The following events makes the barchart interactive
+    rxjs.fromEvent<MouseEvent>(this.sourceGrid.overlay, 'mousemove')
+      .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+    rxjs.fromEvent<MouseEvent>(this.sourceGrid.overlay, 'click')
+      .subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+  }
 
-  // findAARandPosition(cell: DG.GridCell, ev: MouseEvent): { monomer: string, position: string } | null {
-  //   const barCoords = this.barsBounds[cell.tableColumn!.name];
-  //   for (const [monomer, coords] of Object.entries(barCoords)) {
-  //     const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
-  //     const isIntersectingY = ev.offsetY >= coords.y && ev.offsetY <= coords.y + coords.height;
-  //     if (isIntersectingX && isIntersectingY)
-  //       return {monomer: monomer, position: cell.tableColumn!.name};
-  //   }
+  findAARandPosition(cell: DG.GridCell, ev: MouseEvent): { monomer: string, position: string } | null {
+    const barCoords = this.webLogoBounds[cell.tableColumn!.name];
+    for (const [monomer, coords] of Object.entries(barCoords)) {
+      const isIntersectingX = ev.offsetX >= coords.x && ev.offsetX <= coords.x + coords.width;
+      const isIntersectingY = ev.offsetY >= coords.y && ev.offsetY <= coords.y + coords.height;
+      if (isIntersectingX && isIntersectingY)
+        return {monomer: monomer, position: cell.tableColumn!.name};
+    }
 
-  //   return null;
-  // }
+    return null;
+  }
 
-  // requestBarchartAction(ev: MouseEvent, barPart: { position: string, monomer: string } | null): void {
-  //   if (!barPart)
-  //     return;
-  //   const monomer = barPart.monomer;
-  //   const position = barPart.position;
-  //   if (ev.type === 'click') {
-  //     ev.shiftKey ? this.modifyMonomerPositionSelection(monomer, position, true) :
-  //       this.initMonomerPositionSelection(monomer, position, true);
-  //     this.barData = calculateBarsData(this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER), this.df.selection);
-  //   } else {
-  //     const bar = `${monomer}:${position}`;
-  //     if (this.cachedBarchartTooltip.bar == bar)
-  //       ui.tooltip.show(this.cachedBarchartTooltip.tooltip!, ev.clientX, ev.clientY);
-  //     else
-  //       this.cachedBarchartTooltip = {bar: bar, tooltip: this.showTooltipAt(monomer, position, ev.clientX, ev.clientY)};
-  //   }
-  // }
+  requestBarchartAction(ev: MouseEvent, barPart: { position: string, monomer: string } | null): void {
+    if (!barPart)
+      return;
+    const monomer = barPart.monomer;
+    const position = barPart.position;
+    if (ev.type === 'click') {
+      ev.shiftKey ? this.modifyMonomerPositionSelection(monomer, position, false) :
+        this.initMonomerPositionSelection(monomer, position, false);
+    } else {
+      const bar = `${position} = ${monomer}`;
+      if (this.cachedWebLogoTooltip.bar == bar)
+        ui.tooltip.show(this.cachedWebLogoTooltip.tooltip!, ev.clientX, ev.clientY);
+      else
+        this.cachedWebLogoTooltip = {bar: bar, tooltip: this.showTooltipAt(monomer, position, ev.clientX, ev.clientY)};
+
+        //TODO: how to unghighlight?
+      // this.df.rows.match(bar).highlight();
+    }
+    
+  }
 
   setCellRenderers(renderColNames: string[]): void {
     const mdCol = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
@@ -687,7 +695,8 @@ export class PeptidesModel {
           orderedIndexes: sortedStatsOrder,
         };
 
-        CR.drawLogoInBounds(ctx, bounds, statsInfo, this.headerSelectedMonomers[col.name], this.df.rowCount, this.cp);
+        this.webLogoBounds[col.name] =
+          CR.drawLogoInBounds(ctx, bounds, statsInfo, this.headerSelectedMonomers[col.name], this.df.rowCount, this.cp);
         gcArgs.preventDefault();
       }
 
@@ -945,7 +954,7 @@ export class PeptidesModel {
     this.isPeptideSpaceChangingBitset = false;
   }
 
-  postProcessGrids(): void {
+  postProcessGrids(posCols: string[]): void {
     const mdCol: DG.GridColumn = this.mostPotentResiduesGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
     mdCol.name = 'Diff';
 
@@ -978,10 +987,16 @@ export class PeptidesModel {
 
     for (let gcIndex = 0; gcIndex < this.sourceGrid.columns.length; ++gcIndex) {
       const col = this.sourceGrid.columns.byIndex(gcIndex)!;
+      if (!col.column)
+        continue;
+
+      if (posCols.includes(col.name))
+        col.name = col.name.substring(1);
+
       col.visible =
         col.column?.semType === C.SEM_TYPES.MONOMER ||
-        col.column?.name === C.COLUMNS_NAMES.ACTIVITY_SCALED ||
-        Object.keys(this.settings.columns ?? {}).includes(col.column?.name ?? '');
+        col.column.name === C.COLUMNS_NAMES.ACTIVITY_SCALED ||
+        Object.keys(this.settings.columns ?? {}).includes(col.column.name ?? '');
     }
   }
 
