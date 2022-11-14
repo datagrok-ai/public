@@ -26,7 +26,10 @@ export class LogoSummary extends DG.JsViewer {
     super.onTableAttached();
 
     this.model = await PeptidesModel.getInstance(this.dataFrame);
-
+    this.subs.push(this.model.onSettingsChanged.subscribe(() => {
+      this.createLogoSummaryGrid();
+      this.render();
+    }));
     // this.subs.push(this.model.onLogoSummaryGridChanged.subscribe((grid) => {
     //   this.viewerGrid = grid;
     //   this.render();
@@ -55,7 +58,11 @@ export class LogoSummary extends DG.JsViewer {
   }
 
   createLogoSummaryGrid(): DG.Grid {
-    const summaryTable = this.dataFrame.groupBy([C.COLUMNS_NAMES.CLUSTERS]).aggregate();
+    let summaryTableBuilder = this.dataFrame.groupBy([C.COLUMNS_NAMES.CLUSTERS]);
+    for (const [colName, aggregationFunc] of Object.entries(this.model.settings.columns ?? {}))
+      summaryTableBuilder = summaryTableBuilder.add(aggregationFunc as any, colName, `${aggregationFunc}(${colName})`);
+
+    const summaryTable = summaryTableBuilder.aggregate();
     const summaryTableLength = summaryTable.rowCount;
     const clustersCol: DG.Column<number> = summaryTable.getCol(C.COLUMNS_NAMES.CLUSTERS);
     const membersCol: DG.Column<number> = summaryTable.columns.addNewInt('Members');
