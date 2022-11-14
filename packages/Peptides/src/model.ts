@@ -244,6 +244,8 @@ export class PeptidesModel {
 
     // SAR matrix table
     //pivot a table to make it matrix-like
+    const monomerCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    matrixDf = matrixDf.clone(DG.BitSet.create(matrixDf.rowCount, (i) => monomerCol.get(i) ? true : false));
     matrixDf = this.monomerPositionStatsDf.groupBy([C.COLUMNS_NAMES.MONOMER])
       .pivot(C.COLUMNS_NAMES.POSITION)
       .add('first', C.COLUMNS_NAMES.MEAN_DIFFERENCE, '')
@@ -251,7 +253,7 @@ export class PeptidesModel {
     matrixDf.name = 'SAR';
 
     // Setting category order
-    this.setCategoryOrder(matrixDf);
+    // this.setCategoryOrder(matrixDf);
 
     // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
     const sequenceDf = this.createVerticalTable();
@@ -352,8 +354,7 @@ export class PeptidesModel {
     matrixDf = matrixDf.groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER]).aggregate();
 
     let monomerCol: DG.Column<string> = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    matrixDf = matrixDf.clone(DG.BitSet.create(matrixDf.rowCount, (i) => monomerCol.get(i) ? true : false));
-    monomerCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    // monomerCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
 
     //calculate p-values based on t-test
     const matrixCols = matrixDf.columns;
@@ -404,27 +405,27 @@ export class PeptidesModel {
     return statsDf;
   }
 
-  setCategoryOrder(matrixDf: DG.DataFrame): void {
-    let sortArgument: string = C.COLUMNS_NAMES.MEAN_DIFFERENCE;
-    if (this.settings.isBidirectional) {
-      const mdCol = this.monomerPositionStatsDf.getCol(sortArgument);
-      sortArgument = 'Absolute Mean difference';
-      const absMDCol = this.monomerPositionStatsDf.columns.addNewFloat(sortArgument);
-      absMDCol.init((i) => Math.abs(mdCol.get(i)));
-    }
+  // setCategoryOrder(matrixDf: DG.DataFrame): void {
+  //   let sortArgument: string = C.COLUMNS_NAMES.MEAN_DIFFERENCE;
+  //   if (this.settings.isBidirectional) {
+  //     const mdCol = this.monomerPositionStatsDf.getCol(sortArgument);
+  //     sortArgument = 'Absolute Mean difference';
+  //     const absMDCol = this.monomerPositionStatsDf.columns.addNewFloat(sortArgument);
+  //     absMDCol.init((i) => Math.abs(mdCol.get(i)));
+  //   }
 
-    const aarWeightsDf = this.monomerPositionStatsDf.groupBy([C.COLUMNS_NAMES.MONOMER]).sum(sortArgument, 'weight')
-      .aggregate();
-    const aarList = aarWeightsDf.getCol(C.COLUMNS_NAMES.MONOMER).toList();
-    const getWeight = (aar: string): number => aarWeightsDf
-      .groupBy(['weight'])
-      .where(`${C.COLUMNS_NAMES.MONOMER} = ${aar}`)
-      .aggregate()
-      .get('weight', 0) as number;
-    aarList.sort((first, second) => getWeight(second) - getWeight(first));
+  //   const aarWeightsDf = this.monomerPositionStatsDf.groupBy([C.COLUMNS_NAMES.MONOMER]).sum(sortArgument, 'weight')
+  //     .aggregate();
+  //   const aarList = aarWeightsDf.getCol(C.COLUMNS_NAMES.MONOMER).toList();
+  //   const getWeight = (aar: string): number => aarWeightsDf
+  //     .groupBy(['weight'])
+  //     .where(`${C.COLUMNS_NAMES.MONOMER} = ${aar}`)
+  //     .aggregate()
+  //     .get('weight', 0) as number;
+  //   aarList.sort((first, second) => getWeight(second) - getWeight(first));
 
-    matrixDf.getCol(C.COLUMNS_NAMES.MONOMER).setCategoryOrder(aarList);
-  }
+  //   matrixDf.getCol(C.COLUMNS_NAMES.MONOMER).setCategoryOrder(aarList);
+  // }
 
   createVerticalTable(): DG.DataFrame {
     // TODO: aquire ALL of the positions
@@ -604,9 +605,9 @@ export class PeptidesModel {
         //TODO: precalc on stats creation
         const sortedStatsOrder = this.monomerPositionStatsDf.getSortedOrder([C.COLUMNS_NAMES.COUNT], [false], rowMask)
           .sort((a, b) => {
-            if (monomerStatsCol.get(a) === '-')
+            if (monomerStatsCol.get(a) === '-' || monomerStatsCol.get(a) === '')
               return -1;
-            else if (monomerStatsCol.get(b) === '-')
+            else if (monomerStatsCol.get(b) === '-' || monomerStatsCol.get(b) === '')
               return +1;
             return 0;
           });
