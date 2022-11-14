@@ -21,13 +21,32 @@ export class SurfacePlot extends EChartViewer {
   YArr: AxisArray = {data: [], min: 0, max: 0, type: ''};
   ZArr: AxisArray = {data: [], min: 0, max: 0, type: ''};
   rawData: number[][] = [[]];
-  colsDict: {[name: string]: {data: number[], min: number, max: number, type: string}} = {};
+  colsDict: {[name: string]: {data: any[], min: number, max: number, type: string}} = {};
 
-  zip = (a: number[], b: number[], c: number[]) => a.map((k, i) => [k, b[i], c[i]]);
-  sort = (a: number[], b: number[]) => a[1] - b[1] || a[0] - b[0];
+  zip = (a: any[], b: any[], c: any[]) => a.map((k, i) => [k, b[i], c[i]]);
+  sort = (a: any[], b: any[]) => {
+    const x = this.switch(a, b, 0, this.XArr.type);
+    const y = this.switch(a, b, 1, this.YArr.type);
+    return y || x;
+  }
   filter = () => {
     const ind = Array.from(this.dataFrame.filter.getSelectedIndexes());
     return ind.map(id => this.rawData[id]);
+  }
+  switch = (a: any[], b: any[], n: number, type: string) => {
+    let res;
+    switch (type) {
+      case 'category':
+        res = a[n].localeCompare(b[n]);
+        break;
+      case 'time':
+        res = a[n].getTime() - b[n].getTime();
+        break;
+      default:
+        res = a[n] - b[n];
+        break;
+    }
+    return res;
   }
 
   constructor() {
@@ -103,19 +122,21 @@ export class SurfacePlot extends EChartViewer {
     const num = Array.from(this.dataFrame.columns);
     if (num.length < 3) grok.shell.error(`Error: insufficient number of columns: expected 3+, got ${num.length}`);
     num.forEach(c => {
-      let type: string;
+      let type: string, isTime = false;
       switch (c.type) {
         case 'string':
           type = 'category';
           break;
         case 'datetime':
           type = 'time';
+          isTime = true;
           break
         default:
           type = 'value';
           break;
       }
-      this.colsDict[c.name] = {data: c.toList(), min: c.min, max: c.max, type: type}
+      if (isTime) this.colsDict[c.name] = {data: c.toList().map(val => new Date(val)), min: c.min, max: c.max, type: type};
+      else this.colsDict[c.name] = {data: c.toList(), min: c.min, max: c.max, type: type};
     });
 
     this.X = Object.keys(this.colsDict)[0];
