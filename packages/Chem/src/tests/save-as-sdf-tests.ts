@@ -36,6 +36,6 @@ category('saveAsSdf', async () => {
 
   test('saveMolblockColumn', async () => {
     const savedColumn = inputDf.col('Scaffold')!;
-    expect(getSdfString(inputDf, savedColumn), fileWithSavedMolblock);
+    expect(getSdfString(inputDf, savedColumn).replace(/\r/g, ''), fileWithSavedMolblock);
   });
 });

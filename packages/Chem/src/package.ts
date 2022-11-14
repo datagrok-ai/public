@@ -138,25 +138,25 @@ export async function chemCellRenderer(): Promise<DG.GridCellRenderer> {
   return renderer;
 }
 
-//name: getMorganFingerprints
-//input: column molColumn {semType: Molecule}
-//output: column result [fingerprints]
-export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Column> {
-  assure.notNull(molColumn, 'molColumn');
+// //name: getMorganFingerprints
+// //input: column molColumn {semType: Molecule}
+// //output: column result [fingerprints]
+// export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Column> {
+//   assure.notNull(molColumn, 'molColumn');
 
-  try {
-    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan);
-    const fingerprintsBitsets: DG.BitSet[] = [];
-    for (let i = 0; i < fingerprints.length; ++i) {
-      const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
-      fingerprintsBitsets.push(fingerprint);
-    }
-    return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
-  } catch (e: any) {
-    console.error('Chem | Catch in getMorganFingerprints: ' + e.toString());
-    throw e;
-  }
-}
+//   try {
+//     const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan);
+//     const fingerprintsBitsets: DG.BitSet[] = [];
+//     for (let i = 0; i < fingerprints.length; ++i) {
+//       const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
+//       fingerprintsBitsets.push(fingerprint);
+//     }
+//     return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
+//   } catch (e: any) {
+//     console.error('Chem | Catch in getMorganFingerprints: ' + e.toString());
+//     throw e;
+//   }
+// }
 
 //name: getMorganFingerprint
 //input: string molString {semType: Molecule}
@@ -605,7 +605,6 @@ export function similaritySearchViewer(): ChemSimilarityViewer {
 //top-menu: Chem | Similarity Search...
 //name: similaritySearch
 //description: finds the most similar molecule
-//output: viewer result
 export function similaritySearchTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('SimilaritySearchViewer');
 }
@@ -620,7 +619,6 @@ export function diversitySearchViewer(): ChemDiversityViewer {
 //top-menu: Chem | Diversity Search...
 //name: diversitySearch
 //description: finds the most diverse molecules
-//output: viewer result
 export function diversitySearchTopMenu() {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
