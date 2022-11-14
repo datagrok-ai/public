@@ -27,6 +27,7 @@ export class PeptidesModel {
   mutationCliffsGridSubject = new rxjs.Subject<DG.Grid>();
   mostPotentResiduesGridSubject = new rxjs.Subject<DG.Grid>();
   logoSummaryGridSubject = new rxjs.Subject<DG.Grid>();
+  settingsSubject = new rxjs.Subject();
 
   _isUpdating: boolean = false;
   isBitsetChangedInitialized = false;
@@ -87,6 +88,10 @@ export class PeptidesModel {
 
   get onLogoSummaryGridChanged(): rxjs.Observable<DG.Grid> {
     return this.logoSummaryGridSubject.asObservable();
+  }
+
+  get onSettingsChanged(): rxjs.Observable<unknown> {
+    return this.settingsSubject.asObservable();
   }
 
   get mutationCliffsSelection(): type.PositionToAARList {
@@ -177,6 +182,7 @@ export class PeptidesModel {
     this.df.setTag('settings', JSON.stringify(this._settings));
     //TODO: update only needed components
     this.updateDefault();
+    this.settingsSubject.next();
   }
 
   createAccordion(): DG.Accordion {
@@ -944,6 +950,7 @@ export class PeptidesModel {
 
     this.df.setTag('newAnalysis', '');
     if (!this.isRibbonSet) {
+      //TODO: don't pass model, pass parameters instead
       const settingsButton = ui.bigButton('Settings', () => getSettingsDialog(this), 'Peptides analysis settings');
       this.currentView.setRibbonPanels([[settingsButton]], false);
       this.isRibbonSet = true;
