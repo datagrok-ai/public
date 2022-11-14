@@ -2,7 +2,7 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer} from '../gui-utils';
+import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer, waitForElement} from '../gui-utils';
 import { Viewer } from 'datagrok-api/dg';
 
 category('Viewers: 3D Scatter Plot', () => {  
@@ -14,12 +14,15 @@ category('Viewers: 3D Scatter Plot', () => {
 
   test('scatterPlot3D.visual', async () => {
     let ScatterPlot3DIcon = document.getElementsByClassName('svg-3d-scatter-plot')[0] as HTMLElement;
-    ScatterPlot3DIcon.click(); await delay(1000);
+    ScatterPlot3DIcon.click(); 
+    await waitForElement('.d4-3d-scatter-plot', '3D scatter plot not found')
 
     isViewerPresent(Array.from(v.viewers), '3d scatter plot');
 
     let protpertiesBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0].getElementsByClassName('grok-icon grok-font-icon-settings')[0] as HTMLElement;
-    protpertiesBtn.click(); await delay(1000);
+    protpertiesBtn.click(); 
+    await waitForElement('.grok-prop-panel', '3D scatter plot properties not found');
+
     if (document.getElementsByClassName('property-grid-base property-grid-disable-selection').length == 0)
         throw 'Properties table does not open'
 

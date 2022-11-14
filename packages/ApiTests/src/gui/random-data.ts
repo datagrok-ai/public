@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {checkHTMLElement} from '../ui/utils';
 import './gui-utils';
-import {isDialogPresent, isViewerPresent, isExceptionElement, isErrorBallon, setDialogInputValue, returnDialog, isColumnPresent} from './gui-utils';
+import {isDialogPresent, isViewerPresent, isExceptionElement, isErrorBallon, setDialogInputValue, returnDialog, isColumnPresent, waitForElement} from './gui-utils';
 import {Column, ColumnList} from 'datagrok-api/dg';
 
 category('Dialog: Random Data', () => {
@@ -16,7 +16,9 @@ category('Dialog: Random Data', () => {
   });
 
   test('dialogs.randomData', async () => {
-    grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').click(); await delay(1000);
+    grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').click();
+    await waitForElement('.d4-dialog', 'cant find dialog'); 
+
     isDialogPresent('Random Data');
     let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click(); await delay(1000);

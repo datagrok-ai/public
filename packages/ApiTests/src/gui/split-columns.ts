@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {checkHTMLElement} from '../ui/utils';
-import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue} from './gui-utils';
+import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, waitForElement} from './gui-utils';
 
 category('Dialog: Split Column', () => {
   let v: DG.TableView;
@@ -14,7 +14,8 @@ category('Dialog: Split Column', () => {
   });
 
   test('dialogs.splitColumn', async () => {
-    grok.shell.topMenu.find('Data').find('Split Column...').click(); await delay(1000);
+    grok.shell.topMenu.find('Data').find('Split Column...').click();
+    await waitForElement('.d4-dialog', 'cant find dialog'); 
 
     let studyColumn = demog.columns.byName('study');
     setDialogInputValue('Split Column', 'Column', studyColumn);
