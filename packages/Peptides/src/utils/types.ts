@@ -7,8 +7,7 @@ export type UTypedArray = Uint8Array | Uint16Array | Uint32Array;
 export type SubstitutionsInfo = Map<string, Map<string, Map<number, number[] | UTypedArray>>>;
 export type PositionToAARList = {[postiton: string]: string[]};
 
-export type MonomerColStats = {[monomer: string]: {count: number, selected: number}};
-export type MonomerDfStats = {[position: string]: MonomerColStats};
+export type MonomerSelectionStats = {[position: string]: {[monomer: string]: number}};
 
 export type ScalingMethods = 'none' | 'lg' | '-lg';
 export type PeptidesSettings = {

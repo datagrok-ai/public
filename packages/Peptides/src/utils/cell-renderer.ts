@@ -102,7 +102,8 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
 
 
 export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, statsInfo: types.StatsInfo,
-  rowCount: number, cp: bio.SeqPalette, drawOptions: types.DrawOptions = {}): void {
+  monomerSelectionStats: {[monomer: string]: number}, rowCount: number, cp: bio.SeqPalette,
+  drawOptions: types.DrawOptions = {}): void {
   drawOptions.fontStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;
   drawOptions.upperLetterAscent ??= 0.25;
@@ -112,19 +113,26 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   const totalSpaceBetweenLetters = (statsInfo.orderedIndexes.length - 1) * drawOptions.upperLetterAscent;
   const barHeight = bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters;
   const leftShift = drawOptions.marginHorizontal * 2;
-  const barWidth = bounds.width - leftShift - drawOptions.marginHorizontal;
+  const barWidth = bounds.width - leftShift * 2;
   const xStart = bounds.x + leftShift;
+  const selectionWidth = 4;
+  const xSelection = bounds.x + 3;
   let currentY = bounds.y + drawOptions.marginVertical;
 
 
   for (const index of statsInfo.orderedIndexes) {
     const monomer = statsInfo.monomerCol.get(index)!;
     const monomerHeight = barHeight * (statsInfo.countCol.get(index)! / rowCount);
+    const selectionHeight = barHeight * (monomerSelectionStats[monomer] ?? 0 / rowCount);
 
     ctx.resetTransform();
     if (monomer !== '-') {
       const monomerTxt = bio.monomerToShort(monomer, 5);
       const mTm: TextMetrics = ctx.measureText(monomerTxt);
+
+      // Filling selection
+      ctx.lineWidth = selectionWidth;
+      ctx.line(xSelection, currentY, xSelection, currentY + selectionHeight, DG.Color.rowSelection);
 
       ctx.fillStyle = cp.get(monomer) ?? cp.get('other');
       ctx.textAlign = 'left';
