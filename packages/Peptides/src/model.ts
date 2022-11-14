@@ -34,7 +34,7 @@ export class PeptidesModel {
 
   mutationCliffsGrid!: DG.Grid;
   mostPotentResiduesGrid!: DG.Grid;
-  logoSummaryGrid!: DG.Grid;
+  // logoSummaryGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
   df: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
@@ -59,7 +59,6 @@ export class PeptidesModel {
   isRibbonSet = false;
 
   cp: bio.SeqPalette;
-  xorBitset?: DG.BitSet;
   initBitset: DG.BitSet;
   isInvariantMapTrigger: boolean = false;
   headerSelectedMonomers: type.MonomerSelectionStats = {};
@@ -198,8 +197,8 @@ export class PeptidesModel {
       //FIXME: modify during the initializeViewersComponents stages
       this.mutationCliffsGridSubject.next(this.mutationCliffsGrid);
       this.mostPotentResiduesGridSubject.next(this.mostPotentResiduesGrid);
-      if (this.df.getTag(C.TAGS.CLUSTERS))
-        this.logoSummaryGridSubject.next(this.logoSummaryGrid);
+      // if (this.df.getTag(C.TAGS.CLUSTERS))
+      //   this.logoSummaryGridSubject.next(this.logoSummaryGrid);
 
       this.fireBitsetChanged();
       this.invalidateGrids();
@@ -262,7 +261,7 @@ export class PeptidesModel {
 
     if (this.df.getTag(C.TAGS.CLUSTERS)) {
       this.clusterStatsDf = this.calculateClusterStatistics();
-      this.logoSummaryGrid = this.createLogoSummaryGrid();
+      // this.logoSummaryGrid = this.createLogoSummaryGrid();
     }
 
     // init invariant map & mutation cliffs selections
@@ -466,88 +465,6 @@ export class PeptidesModel {
     CR.setAARRenderer(mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER), alphabet, mostPotentResiduesGrid);
 
     return [mutationCliffsGrid, mostPotentResiduesGrid];
-  }
-
-  createLogoSummaryGrid(thresholdMultiplier = 0.7): DG.Grid {
-    const summaryTable = this.df.groupBy([C.COLUMNS_NAMES.CLUSTERS]).aggregate();
-    const summaryTableLength = summaryTable.rowCount;
-    const clustersCol: DG.Column<number> = summaryTable.getCol(C.COLUMNS_NAMES.CLUSTERS);
-    const membersCol: DG.Column<number> = summaryTable.columns.addNewInt('Members');
-    const webLogoCol: DG.Column<string> = summaryTable.columns.addNew('WebLogo', DG.COLUMN_TYPE.STRING);
-    const tempDfList: DG.DataFrame[] = new Array(summaryTableLength);
-    const originalClustersCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
-    const peptideCol: DG.Column<string> = this.df.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
-
-    for (let index = 0; index < summaryTableLength; ++index) {
-      const indexes: number[] = [];
-      for (let j = 0; j < originalClustersCol.length; ++j) {
-        if (originalClustersCol.get(j) === clustersCol.get(index))
-          indexes.push(j);
-      }
-      const tCol = DG.Column.string('peptides', indexes.length);
-      tCol.init((i) => peptideCol.get(indexes[i]));
-
-      for (const tag of peptideCol.tags)
-        tCol.setTag(tag[0], tag[1]);
-
-      const dfSlice = DG.DataFrame.fromColumns([tCol]);
-      tempDfList[index] = dfSlice;
-      webLogoCol.set(index, index.toString());
-      membersCol.set(index, dfSlice.rowCount);
-      //TODO: user should be able to choose threshold
-      if (dfSlice.rowCount <= Math.ceil(this.clusterStatsDf.getCol(C.COLUMNS_NAMES.COUNT).stats.max * thresholdMultiplier))
-        summaryTable.filter.set(index, false, false);
-    }
-    webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
-
-    const grid = summaryTable.plot.grid();
-    const gridClustersCol = grid.col(C.COLUMNS_NAMES.CLUSTERS)!;
-    gridClustersCol.name = 'Clusters';
-    gridClustersCol.visible = true;
-    grid.columns.rowHeader!.visible = false;
-    grid.props.rowHeight = 55;
-    grid.onCellPrepare((cell) => {
-      if (cell.isTableCell && cell.tableColumn?.name === 'WebLogo') {
-        tempDfList[parseInt(cell.cell.value)].plot.fromType('WebLogo', {maxHeight: 50})
-          .then((viewer) => cell.element = viewer.root);
-      }
-    });
-    grid.root.addEventListener('click', (ev) => {
-      const cell = grid.hitTest(ev.offsetX, ev.offsetY);
-      if (!cell || !cell.isTableCell)
-        return;
-
-      const cluster = clustersCol.get(cell.tableRowIndex!)!;
-      summaryTable.currentRowIdx = -1;
-      if (ev.shiftKey)
-        this.modifyClusterSelection(cluster);
-      else
-        this.initClusterSelection(cluster);
-    });
-    grid.onCellRender.subscribe((gridCellArgs) => {
-      const gc = gridCellArgs.cell;
-      if (gc.tableColumn?.name !== C.COLUMNS_NAMES.CLUSTERS || gc.isColHeader)
-        return;
-      const canvasContext = gridCellArgs.g;
-      const bound = gridCellArgs.bounds;
-      canvasContext.save();
-      canvasContext.beginPath();
-      canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
-      canvasContext.clip();
-      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, this.logoSummarySelection, bound);
-      gridCellArgs.preventDefault();
-      canvasContext.restore();
-    });
-    grid.onCellTooltip((cell, x, y) => {
-      if (!cell.isColHeader && cell.tableColumn?.name === C.COLUMNS_NAMES.CLUSTERS)
-        this.showTooltipCluster(cell.cell.value, x, y);
-      return true;
-    });
-    const webLogoGridCol = grid.columns.byName('WebLogo')!;
-    webLogoGridCol.cellType = 'html';
-    webLogoGridCol.width = 350;
-
-    return grid;
   }
 
   modifyClusterSelection(cluster: number): void {
@@ -874,7 +791,7 @@ export class PeptidesModel {
   invalidateGrids(): void {
     this.mutationCliffsGrid.invalidate();
     this.mostPotentResiduesGrid.invalidate();
-    this.logoSummaryGrid?.invalidate();
+    // this.logoSummaryGrid?.invalidate();
     this.sourceGrid?.invalidate();
   }
 
@@ -982,8 +899,8 @@ export class PeptidesModel {
 
     setViewerGridProps(this.mutationCliffsGrid);
     setViewerGridProps(this.mostPotentResiduesGrid);
-    if (this.df.getTag(C.TAGS.CLUSTERS))
-      setViewerGridProps(this.logoSummaryGrid);
+    // if (this.df.getTag(C.TAGS.CLUSTERS))
+    //   setViewerGridProps(this.logoSummaryGrid);
 
     for (let gcIndex = 0; gcIndex < this.sourceGrid.columns.length; ++gcIndex) {
       const col = this.sourceGrid.columns.byIndex(gcIndex)!;
