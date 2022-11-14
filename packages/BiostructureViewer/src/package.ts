@@ -6,6 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import {BioStructureViewer} from './biostructure-viewer';
 import {byId, byData} from './viewers/molstar-viewer';
 import {PdbRenderer} from './utils/cell-renderer'; 
+import {NglGlService} from './utils/ngl-gl-service';
+import * as bio from '@datagrok-libraries/bio';
 
 export const _package = new DG.Package();
 
@@ -43,4 +45,19 @@ export async function molstarViewData() {
   const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure* Viewer Data');
   await byData(pdbData);
   pi.close();
+}
+
+
+type BsvWindowType = Window & { $phylocanvasGlService?: NglGlService };
+declare var window: BsvWindowType;
+
+//name: getNglGlService
+//output: object result
+export function getNglGlService(): bio.NglGlServiceBase {
+  if (!(window.$phylocanvasGlService)) {
+    const svc: NglGlService = new NglGlService();
+    window.$phylocanvasGlService = svc;
+  }
+
+  return window.$phylocanvasGlService;
 }

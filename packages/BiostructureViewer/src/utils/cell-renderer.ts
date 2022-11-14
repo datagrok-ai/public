@@ -5,7 +5,8 @@ import * as ui from 'datagrok-api/ui';
 import * as bio from '@datagrok-libraries/bio';
 import { TwinProteinView } from '../viewers/twin-p-cells';
 import { initViewer, byData } from '../viewers/molstar-viewer';
-import { TableView } from 'datagrok-api/dg';
+import { Rect, TableView } from 'datagrok-api/dg';
+import {getNglGlService} from '../package';
 
 export class PdbRenderer extends DG.GridCellRenderer {
   get name(): string { return 'xray'; }
@@ -56,31 +57,62 @@ export class PdbRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle
   ): void {
+    let service = getNglGlService();
     g.save();
 
     try {
-      g.beginPath();
-      g.rect(x + 1, y + 1, w - 2, h - 2);
-      g.clip();
-      g.fillStyle = '#0095B6';
+      let task: bio.NglGlTask = {
+        name: gridCell.cell.rowIndex.toString(),
+        backColor: gridCell.grid.props.backColor,
+        props: {pdb: gridCell.cell.value},
+        onAfterRender: (canvas: HTMLCanvasElement) => {
+          service.renderOnGridCell(g, new Rect(x, y, w, h), gridCell, canvas);
+        }
+      };
 
-      const iconPath = 'files/pdb-icon-file-format.png';
+      service.render(task, gridCell.cell.rowIndex);
 
-      const indexStart = gridCell.cell.value.indexOf('TITLE');
-      const indexEnd = gridCell.cell.value.indexOf('\n', indexStart + 1);
-      const name = gridCell.cell.value.substring(indexStart + 10, indexEnd);
 
-      g.textAlign = 'left';
-      g.textBaseline = 'middle';
-      g.fillText(name, x + 33, y + h/2);
+      // stage.loadFile(stringBlob, { ext: "pdb" }).then(function (o: any) {
+      //  //await this.stage.loadFile(pdbStr).then(function (o: any) {
+      //   // o.addRepresentation(repChoice.value, schemeObj);
+      //  o.autoView();
+      // });
+      // g.beginPath();
+      // g.rect(x + 1, y + 1, w - 2, h - 2);
+      // g.clip();
+      // g.fillStyle = '#0095B6';
 
-      const imgDG = PdbRenderer.imgDG;
+      // // const iconPath = 'files/pdb-icon-file-format.png';
 
-      g.transform((h - 2)/imgDG.width, 0, 0, (h - 2)/imgDG.height, x + 1, y + 1);
-      g.drawImage(imgDG, 0, 0);
+      // // const indexStart = gridCell.cell.value.indexOf('TITLE');
+      // // const indexEnd = gridCell.cell.value.indexOf('\n', indexStart + 1);
+      // // const name = gridCell.cell.value.substring(indexStart + 10, indexEnd);
+
+      // // g.textAlign = 'left';
+      // // g.textBaseline = 'middle';
+      // // g.fillText(name, x + 33, y + h/2);
+
+      // // const imgDG = PdbRenderer.imgDG;
+
+      // // g.transform((h - 2)/imgDG.width, 0, 0, (h - 2)/imgDG.height, x + 1, y + 1);
+      // // g.drawImage(imgDG, 0, 0);
+
+      // const nglHost = ui.div([], 'd4-ngl-viewer');
+      // gridCell.element = nglHost;
+      // //@ts-ignore
+      // let stage = new NGL.Stage(nglHost);
+
+      // var stringBlob = new Blob([gridCell.cell.value], { type: 'text/plain' });
+      // stage.loadFile(stringBlob, { ext: "pdb" }).then(function (o: any) {
+      //  //await this.stage.loadFile(pdbStr).then(function (o: any) {
+      //   // o.addRepresentation(repChoice.value, schemeObj);
+      //  o.autoView();
+      // });
+
 
     } finally{
-      g.restore();
+      //g.restore();
     }
 
     return;
