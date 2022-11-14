@@ -8,7 +8,7 @@ import {importFasta, multipleSequenceAlignmentAny} from '../package';
 import {convertDo} from '../utils/convert';
 import {SEM_TYPES, TAGS} from '../utils/constants';
 import {generateLongSequence, generateManySequences, performanceTest} from './test-sequnces-generators';
-import {errorToConsole} from '../../../../libraries/utils';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 category('renderers', () => {
   let tvList: DG.TableView[];
