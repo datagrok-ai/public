@@ -103,7 +103,7 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
 
 export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, statsInfo: types.StatsInfo,
   monomerSelectionStats: {[monomer: string]: number}, rowCount: number, cp: bio.SeqPalette,
-  drawOptions: types.DrawOptions = {}): void {
+  drawOptions: types.DrawOptions = {}): {[monomer: string]: DG.Rect} {
   drawOptions.fontStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;
   drawOptions.upperLetterAscent ??= 0.25;
@@ -119,11 +119,13 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   const xSelection = bounds.x + 3;
   let currentY = bounds.y + drawOptions.marginVertical;
 
-
+  const monomerBounds: {[monomer: string]: DG.Rect} = {};
   for (const index of statsInfo.orderedIndexes) {
     const monomer = statsInfo.monomerCol.get(index)!;
     const monomerHeight = barHeight * (statsInfo.countCol.get(index)! / rowCount);
-    const selectionHeight = barHeight * (monomerSelectionStats[monomer] ?? 0 / rowCount);
+    const selectionHeight = barHeight * ((monomerSelectionStats[monomer] ?? 0) / rowCount);
+    const currentBound = new DG.Rect(xStart, currentY, barWidth, monomerHeight);
+    monomerBounds[monomer] = currentBound;
 
     ctx.resetTransform();
     if (monomer !== '-') {
@@ -144,4 +146,6 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
     }
     currentY += monomerHeight + drawOptions.upperLetterAscent;
   }
+
+  return monomerBounds;
 }
