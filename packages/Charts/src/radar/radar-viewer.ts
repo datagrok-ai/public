@@ -117,6 +117,7 @@ export class RadarViewer extends DG.JsViewer {
         break;
       case 'showAllRows':
         if (this.showAllRows === true) {
+          option.legend.show = false;
           this.clearData([0, 1, 2]);
           let data = option.series[2].data; 
           for (let i = 0; i < this.dataFrame.rowCount; i++) {
@@ -126,6 +127,7 @@ export class RadarViewer extends DG.JsViewer {
             });
           }
         } else {
+          option.legend.show = true;
           this.clearData([2]);
           this.init();
         }
