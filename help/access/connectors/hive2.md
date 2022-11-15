@@ -4,7 +4,7 @@
 # Hive2
 
 Provides access to [Apache Hive](https://hive.apache.org/) NoSQL database using
-SQL queries HiveSever2 JDBC driver.
+SQL queries via HiveSever2 JDBC driver.
 
 ## Connection parameters
 
