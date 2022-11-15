@@ -50,7 +50,7 @@ function pcaWithApporx(columns, numOfComponents,
 export function verifyPCA(df, numOfComponents) {
   // check input
   if(numOfComponents < 1) {
-    console.log('Uncorrect number of principal components: ' + numOfComponents);
+    grok.shell.error('Number of principal components must be less of equal the number of columns!');
     return;
   }
 
@@ -58,12 +58,20 @@ export function verifyPCA(df, numOfComponents) {
   let columns = [];
   let principalComponents = [];
   let approximation = [];
-  
-  for(let col of df.columns.toList())    
-    columns.push(col);
-  
+
+  // complete a list of numerical columns
+  for(let col of df.columns.toList())
+    if(col.type == 'double' || col.type == 'int')
+      columns.push(col);
+
+  // check sizes
+  if(numOfComponents > columns.length) {
+    grok.shell.error('Number of principal components must be less of equal the number of columns!');  
+    return;
+  }
+    
   // PCA
-  console.log('PCA . . .');
+  console.log('Computing ...');
   
   let start = new Date().getTime();
   
@@ -72,7 +80,7 @@ export function verifyPCA(df, numOfComponents) {
   
   let finish = new Date().getTime();
 
-  console.log(`Time for computing PCA: ${finish - start} ms.`);
+  console.log(`DONE! Time for computing PCA: ${finish - start} ms.`);
 
   // create dataframes with principal components and approximation if computation is successful
   if(resultCode == 0) {
@@ -88,7 +96,7 @@ export function verifyPCA(df, numOfComponents) {
     grok.shell.addTableView(tableWithPrincComp);
   }
   else
-    console.log('PCA FAIL! Result code: ' + resultCode);  
+  console.log('PCA FAIL! Result code: ' + resultCode);  
 }
 
 //name: mad
@@ -120,18 +128,19 @@ function pcaWithoutApporx(columns, numOfComponents, principalComponents) {
     return result;
   }
 
+//top-menu: Tools | Data Science | PCA by Eigen
 //name: pca
-//input: dataframe df
-export function pca(df) { 
-  
+//input: dataframe df [Input data table]
+export function pca(df) {   
   let dlg = ui.dialog('Principal Component Analysis');
-  
+
   let colsInput = ui.columnsInput('Select columns', df);    
   dlg.add(colsInput);
+
   let numOfCompInput = ui.intInput('Number of components', 1);
   dlg.add(numOfCompInput);
-  dlg.addButton('Compute', () => {
 
+  dlg.addButton('Compute', () => {
     let columns = [];
     let principalComponents = [];    
     let numOfComponents = numOfCompInput.value;
@@ -148,9 +157,7 @@ export function pca(df) {
       return;
     }
 
-    // PCA
-    grok.shell.info('Computing ...');
-
+    // PCA 
     let resultCode = pcaWithoutApporx(columns, numOfComponents, principalComponents);    
 
     // create dataframes with principal components and approximation if computation is successful
