@@ -24,10 +24,12 @@ export interface INglGlViewer extends IViewer {
 }
 
 
-
-export type NglGlTask = { name: string, backColor: number, props: { [propName: string]: any }, onAfterRender: CanvasCallback };
-
-export type CanvasCallback = (canvas: HTMLCanvasElement) => void;
+export type NglGlTask = {
+  name: string,
+  backColor: number,
+  props: { [propName: string]: any },
+  onAfterRender: (canvas: HTMLCanvasElement) => Promise<void>
+};
 
 export abstract class NglGlServiceBase {
   public static noneSource: { type: string, data: any } = {
