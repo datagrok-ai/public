@@ -3,7 +3,19 @@
 
 # MySQL
 
-Provides access to [MySQL](https://www.mysql.com/) database using SQL queries via JDBC driver.
+Provides access to [MySQL](https://www.mysql.com/) database using SQL queries
+via JDBC driver.
+
+## Connection parameters
+
+```json
+{
+    "server": "",
+    "port": "",
+    "db": "",
+    "connString": ""
+}
+```
 
 See also:
 
