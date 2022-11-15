@@ -3,7 +3,19 @@
 
 # MariaDB
 
-Provides access to [MariaDB](https://mariadb.org/) database using SQL queries via JDBC driver .
+Provides access to [MariaDB](https://mariadb.org/) database using SQL queries
+via JDBC driver.
+
+## Connection parameters
+
+```json
+{
+    "server": "",
+    "port": "",
+    "db": "",
+    "connString": ""
+}
+```
 
 See also:
 

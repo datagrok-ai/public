@@ -4,7 +4,18 @@
 # MS SQL
 
 Provides access to [Microsoft SQL](https://www.microsoft.com/en-us/sql-server) database using SQL queries via JDBC
-driver .
+driver.
+
+## Connection parameters
+
+```json
+{
+    "server": "",
+    "port": "",
+    "db": "",
+    "connString": ""
+}
+```
 
 See also:
 
