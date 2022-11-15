@@ -9,14 +9,15 @@ category('Dapi: connection', () => {
   const dcParams = {
     dataSource: 'PostgreSQL', server: 'localhost:5432', db: 'datagrok_dev', login: 'datagrok_dev', password: '123'};
 
-  test('Create, save, delete', async () => {
+  test('Create, save, delete, share', async () => {
     let dc = DG.DataConnection.create('Local DG Test', dcParams);
     dc = await GDC.save(dc);
     expectObject(dc.parameters, {server: 'localhost:5432', db: 'datagrok_dev'});
-    //expect(await dc.test(), 'ok'); // how it supposed to work?
     expect(dc.friendlyName, 'Local D G Test');
     expect((await GDC.find(dc.id)).id, dc.id);
     await GDC.delete(dc);
     expect(await GDC.find(dc.id), undefined);
+    await grok.dapi.permissions.grant(dc, await grok.dapi.groups.filter('').first(), true);
+    expect(await grok.dapi.permissions.check(dc, "Edit"), true);
   });
 });
