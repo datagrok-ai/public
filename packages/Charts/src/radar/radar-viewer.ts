@@ -74,6 +74,10 @@ export class RadarViewer extends DG.JsViewer {
       this.updateRow();
       this.myChart.setOption(option);
     }));
+    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((_) => {
+      this.init();
+      this.myChart.setOption(option);
+    }));
     this.render();
   }
 
