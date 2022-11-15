@@ -5,9 +5,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {BioStructureViewer} from './biostructure-viewer';
 import {byId, byData} from './viewers/molstar-viewer';
-import {PdbRenderer} from './utils/cell-renderer'; 
+import {PdbRenderer} from './utils/cell-renderer';
 import {NglGlService} from './utils/ngl-gl-service';
 import * as bio from '@datagrok-libraries/bio';
+import {NglForGridTestApp} from './apps/ngl-for-grid-test-app';
 
 export const _package = new DG.Package();
 
@@ -60,4 +61,16 @@ export function getNglGlService(): bio.NglGlServiceBase {
   }
 
   return window.$phylocanvasGlService;
+}
+
+//name: nglForGridTestApp
+//description: Example app for NGL drawing in grid cells
+export async function nglForGridTestApp() {
+  const pi = DG.TaskBarProgressIndicator.create('open nglForGridTest app');
+  try {
+    const app = new NglForGridTestApp();
+    await app.init();
+  } finally {
+    pi.close();
+  }
 }
