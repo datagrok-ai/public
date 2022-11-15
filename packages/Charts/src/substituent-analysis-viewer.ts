@@ -11,10 +11,16 @@ const CHART_TYPES = {
 };
 
 const AGGREGATE_TYPES = {
-  'min': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder  => { return query.min(colName, resColName) },
-  'max': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => { return query.max(colName, resColName) },
-  'avg': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => { return query.avg(colName, resColName) },
-  'count': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => { return query.count(resColName) },
+  'min': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {return query.min(colName, resColName);},
+  'max': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {return query.max(colName, resColName);},
+  'avg': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {return query.avg(colName, resColName);},
+  'count': (query: DG.GroupByBuilder, colName: string, resColName?: string): DG.GroupByBuilder => {return query.count(resColName);},
+};
+
+interface IAnalyzedColumn {
+  colName: string, // name of analyzed column
+  type: string, // aggregation or chart
+  typeName: string //name of exact aggr method or exact chart
 }
 
 const AGGR_TYPE = 'aggr';
@@ -23,7 +29,7 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
   initialized: boolean = false;
   name = 'substituent';
   grouppingCols: string[] = [];
-  colsToAnalyze: any[] = [];
+  colsToAnalyze: IAnalyzedColumn[] = [];
   totalCols: string[] = [];
   grouppedDf: DG.DataFrame | undefined = undefined;
   grouppedGridDiv = ui.div();
@@ -50,14 +56,14 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
     this.grouppingCols.push(this.totalCols[0]);
     this.updateColumnChoices(this.grouppingCols, 'Group by', grouppingColsDiv);
     this.mainView.append(ui.box(ui.panel([grouppingColsDiv], {style: {padding: '0px'}}), {style: {maxHeight: '30px'}}));
-    const addColToAnalyze = ui.icons.add(() => {this.createAddColumnDialog()}, 'Add column to analyze');
+    const addColToAnalyze = ui.icons.add(() => {this.createAddColumnDialog();}, 'Add column to analyze');
     this.mainView.append(ui.box(ui.panel([addColToAnalyze], {style: {padding: '0px'}}), {style: {maxHeight: '30px'}}));
     this.mainView.append(this.grouppedGridDiv);
     this.root.append(this.mainView);
     this.updateGrid();
   }
 
-  createAddColumnDialog(){
+  createAddColumnDialog() {
     const columnInput = ui.columnInput('Column', this.dataFrame, this.dataFrame.columns.byIndex(0));
     columnInput.input.style.width = '100px';
 
@@ -78,41 +84,47 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
 
 
     ui.dialog('Add column')
-    .add(ui.narrowForm([
-      columnInput,
-      //@ts-ignore
-      checkboxesDiv,
-      //@ts-ignore
-      columnTypeDiv,
-    ]))
-    .onOK(() => {
-      if ([aggrCheckbox, chartCheckbox].every(it => !it.value)) {
-        grok.shell.error(`Chart/statistic hasn't been selected`);
-        return;
-      }
-      else {
-        aggrCheckbox.value ?
-          this.colsToAnalyze.push({colName: columnInput.value!.name, type: AGGR_TYPE, typeName: aggrTypesChoice.value}):
-          this.colsToAnalyze.push({colName: columnInput.value!.name, type: CHART_TYPE, typeName: chartTypesChoice.value})
-      }
-      this.updateGrid();
-    })
-    .show();
+      .add(ui.narrowForm([
+        columnInput,
+        //@ts-ignore
+        checkboxesDiv,
+        //@ts-ignore
+        columnTypeDiv,
+      ]))
+      .onOK(() => {
+        if ([aggrCheckbox, chartCheckbox].every((it) => !it.value)) {
+          grok.shell.error(`Chart/statistic hasn't been selected`);
+          return;
+        } else {
+          const selectedType = aggrCheckbox.value ? AGGR_TYPE : CHART_TYPE;
+          const selectedFunc = aggrCheckbox.value ? aggrTypesChoice.value : chartTypesChoice.value;
+          if (!this.colExists(columnInput.value!.name, selectedType, selectedFunc!))
+            this.colsToAnalyze.push({colName: columnInput.value!.name, type: selectedType, typeName: selectedFunc!});
+          else
+            grok.shell.warning('Column has already been selected');
+        }
+        this.updateGrid();
+      })
+      .show();
+  }
+
+  colExists(colName: string, type: string, typeName: string) {
+    return this.colsToAnalyze
+      .filter((it) => it.colName === colName && it.type === type && it.typeName === typeName).length > 0;
   }
 
 
-  registerCheckBoxChanged(currentCheckbox: DG.InputBase, 
+  registerCheckBoxChanged(currentCheckbox: DG.InputBase,
     otherCheckboxes: DG.InputBase[], columnTypeChoice: DG.InputBase, colTypeDiv: HTMLDivElement) {
-      currentCheckbox.root.onclick = () => {
-        if (currentCheckbox.value) {
-          otherCheckboxes.forEach((it) => it.value = false);
-          columnTypeChoice.input.style.width = '100px';
-          ui.empty(colTypeDiv);
-          colTypeDiv.append(columnTypeChoice.root);
-        } else {
-          ui.empty(colTypeDiv);
-        }
-      };
+    currentCheckbox.root.onclick = () => {
+      if (currentCheckbox.value) {
+        otherCheckboxes.forEach((it) => it.value = false);
+        columnTypeChoice.input.style.width = '100px';
+        ui.empty(colTypeDiv);
+        colTypeDiv.append(columnTypeChoice.root);
+      } else
+        ui.empty(colTypeDiv);
+    };
   }
 
   updateColumnChoices(selectedCols: string[], choicesInputsName: string, choicesDiv: HTMLDivElement) {
@@ -144,12 +156,10 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
     let grouppedDfQuery = this.dataFrame.groupBy(this.grouppingCols);
 
     for (const col of this.colsToAnalyze) {
-      if (col.type === AGGR_TYPE) {
-        grouppedDfQuery = (AGGREGATE_TYPES as any)[col.name](grouppedDfQuery, col.colName);
-      }
-      else {
+      if (col.type === AGGR_TYPE)
+        grouppedDfQuery = (AGGREGATE_TYPES as any)[col.typeName](grouppedDfQuery, col.colName);
+      else
         grouppedDfQuery = (AGGREGATE_TYPES as any)['count'](grouppedDfQuery, col.typeName, `${col.colName}_${col.typeName}`);
-      }
     }
 
     this.grouppedDf = grouppedDfQuery.aggregate();
@@ -160,20 +170,19 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
       grid.col(col)!.width = 150;
 
     for (const col of this.colsToAnalyze) {
-      if (col.type === AGGR_TYPE) {
+      if (col.type === CHART_TYPE)
         grid.col(`${col.colName}_${col.typeName}`)!.cellType = 'html';
-      }
     }
 
     grid.onCellPrepare((gc) => {
       const colToAnalyze = this.colsToAnalyze.length ?
-        this.colsToAnalyze.filter(it => gc.gridColumn.name === `${it.colName}_${it.typeName}`) : [];
+        this.colsToAnalyze.filter((it) => gc.gridColumn.name === `${it.colName}_${it.typeName}`) : [];
       if (gc.isTableCell && colToAnalyze.length) {
-        let condition = this.createFilterCondition(gc.tableRowIndex!);
+        const condition = this.createFilterCondition(gc.tableRowIndex!);
         let df: DG.DataFrame;
         if (!this.parentViewers[gc.gridColumn.name]) {
           df = this.createViewerDf(colToAnalyze[0].colName, gc.tableRowIndex!);
-          this.parentViewers[gc.gridColumn.name] = DG.Viewer.fromType((CHART_TYPES as any)[colToAnalyze[0].typeName], df);          
+          this.parentViewers[gc.gridColumn.name] = DG.Viewer.fromType((CHART_TYPES as any)[colToAnalyze[0].typeName], df);
         }
         if (!this.viewersStorage[gc.gridColumn.name])
           this.viewersStorage[gc.gridColumn.name] = {};
@@ -186,11 +195,11 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
             viewer.copyViewersLook(this.parentViewers[gc.gridColumn.name]);
             //@ts-ignore
             this.parentViewers[gc.gridColumn.name].onDartPropertyChanged
-            .subscribe(() => {
+              .subscribe(() => {
               //@ts-ignore
-              viewer.copyViewersLook(this.parentViewers[gc.gridColumn.name]);
-              df.rows.match(condition).filter();
-            });
+                viewer.copyViewersLook(this.parentViewers[gc.gridColumn.name]);
+                df.rows.match(condition).filter();
+              });
           }
         }
         gc.element = this.viewersStorage[gc.gridColumn.name][gc.gridRow].root;
@@ -199,7 +208,7 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
     });
 
     grid.onCellClick.subscribe((gc) => {
-      const colToAnalyze = this.colsToAnalyze.filter(it => gc.gridColumn.name === `${it.colName}_${it.typeName}`);
+      const colToAnalyze = this.colsToAnalyze.filter((it) => gc.gridColumn.name === `${it.colName}_${it.typeName}`);
       if (!gc.isTableCell && colToAnalyze.length)
         grok.shell.o = this.parentViewers[gc.gridColumn.name];
     });
@@ -229,5 +238,4 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
     });
     return df;
   }
-
 }
