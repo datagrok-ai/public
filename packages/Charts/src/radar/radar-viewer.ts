@@ -36,7 +36,7 @@ export class RadarViewer extends DG.JsViewer {
     this.showValues = this.bool('showValues', true);
     this.columnNames = this.stringList('columnNames', null);
   
-    const chartDiv = ui.div([], { id: 'chart' ,style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
+    const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.myChart = echarts.init(chartDiv);
     this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.myChart.resize()));
