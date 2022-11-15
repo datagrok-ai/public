@@ -31,9 +31,36 @@ export class NglAspect {
     this.selection = twinSelections;
     //@ts-ignore
     this.stage = new NGL.Stage(nglHost);
-    await this.render(true, ligandSelection);
-    await this.nglResize(nglHost);
+    // let originalRender = this.stage.viewer.renderer.render;
+    // this.stage.viewer.renderer.render = function(scene: any, camera: any) {
+    //     //@ts-ignore
+    //     let va = this.stage;
+    //     console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
+    //   //@ts-ignore
+    //   originalRender.bind(this.stage.viewer.renderer)(scene, camera);
+    //   //@ts-ignore
+    //   va = this.stage;
+    //   console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
+    // }
+    // .bind(this);
 
+    let originalRender = this.stage.viewer.render;
+    this.stage.viewer.render = function() {
+      //@ts-ignore
+      originalRender.bind(this.stage.viewer)();
+      console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAA');
+    }
+    .bind(this);
+
+    // let listener = () => {
+    //   let va = this.stage;
+    //   console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
+    // };
+    // this.stage.viewer.signals.rendered.add(listener);
+
+    await this.render(true, ligandSelection);
+    await new Promise((r) => setTimeout(r, 4000));
+    await this.nglResize(nglHost);
     let va = this.stage;
     console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
   }
