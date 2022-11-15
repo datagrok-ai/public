@@ -36,7 +36,7 @@ export class RadarViewer extends DG.JsViewer {
     this.showValues = this.bool('showValues', true);
     this.columnNames = this.stringList('columnNames', null);
   
-    const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
+    const chartDiv = ui.div([], { id: 'chart' ,style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.myChart = echarts.init(chartDiv);
     this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.myChart.resize()));
@@ -115,7 +115,7 @@ export class RadarViewer extends DG.JsViewer {
           this.clearData([0, 1]);
         } else {
           this.clearData([2]);
-          this.init();
+          this.checkConditions();
         }
         break;
       case 'showAllRows':
@@ -132,7 +132,7 @@ export class RadarViewer extends DG.JsViewer {
         } else {
           option.legend.show = true;
           this.clearData([2]);
-          this.init();
+          this.checkConditions();
         }
         break;
       case 'showTooltip':
@@ -143,12 +143,14 @@ export class RadarViewer extends DG.JsViewer {
         }
         break;
       case 'backgroundMinColor':
-        this.clearData([0, 1, 2]);
-        this.init();
+        if (this.showMin === true) {
+          this.updateMin();
+        }
         break;
       case 'backgroundMaxColor':
-        this.clearData([0, 1, 2]);
-        this.init();
+        if (this.showMax === true) {
+          this.updateMax();
+        }
         break;
       case 'showValues':
         if (this.showValues === false) {
@@ -159,15 +161,18 @@ export class RadarViewer extends DG.JsViewer {
             lineStyle: {
               width: 2,
               type: 'dashed',
+              color: 'rgba(66, 135, 204, 0.8)'
             },
             label: {
               show: false,
             },
             symbolSize: 6,
+            itemStyle: {
+              color: 'rgba(66, 135, 204, 0.8)'
+            },
           });
         } else {
-          this.clearData([0, 1, 2]);
-          this.init();
+          this.checkConditions();
         }
         break;
       case 'columnNames':
@@ -175,6 +180,14 @@ export class RadarViewer extends DG.JsViewer {
         break;
     }
     this.render();
+  }
+
+  checkConditions() {
+    if (this.showMin === true)
+      this.updateMin();
+    if (this.showMax === true) 
+      this.updateMax();
+    this.updateRow();
   }
 
   updateMin() {
@@ -217,8 +230,12 @@ export class RadarViewer extends DG.JsViewer {
       lineStyle: {
         width: 2,
         type: 'dashed',
+        color: 'rgba(66, 135, 204, 0.8)'
       },
       symbolSize: 6,
+      itemStyle: {
+        color: 'rgba(66, 135, 204, 0.8)'
+      },
       label: {
         show: true,
         formatter: function (params: any) {
