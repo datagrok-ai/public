@@ -3,7 +3,19 @@
 
 # Denodo
 
-Provides access to [Denodo](https://www.denodo.com/) database virtualization platform via JDBC driver.
+Provides access to [Denodo](https://www.denodo.com/) database virtualization
+platform via JDBC driver.
+
+## Connection parameters
+
+```json
+{
+    "server": "",
+    "port": "",
+    "db": "",
+    "connString": ""
+}
+```
 
 See also:
 
