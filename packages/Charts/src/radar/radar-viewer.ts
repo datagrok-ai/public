@@ -230,6 +230,11 @@ export class RadarViewer extends DG.JsViewer {
     let columns: DG.Column<any>[] = [];
     if (this.columnNames === null) {
       columns = Array.from(this.dataFrame.columns.numerical);
+      for (let i = 0; i < columns.length; ++i) {
+        if (columns[i].type === 'datetime') {
+          columns.splice(i, 1);
+        }
+      }
     } else {
       columns = this.dataFrame.columns.byNames(this.columnNames);
     }
