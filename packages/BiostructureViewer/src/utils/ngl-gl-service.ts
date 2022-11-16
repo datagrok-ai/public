@@ -12,7 +12,7 @@ export class NglGlService implements bio.NglGlServiceBase {
   readonly nglDiv: HTMLDivElement;
   private readonly ngl: any;
 
-  hostDn: DG.DockNode;
+  hostDn?: DG.DockNode;
 
   //private renderQueue: Subject<bio.NglGlRenderTask>;
   private readonly _queue: { key?: keyof any, task: bio.NglGlTask }[];
@@ -109,19 +109,19 @@ export class NglGlService implements bio.NglGlServiceBase {
   private async onNglRendered(): Promise<void> {
     if (this.task === undefined) return;
 
-    console.debug('PTV: NglGlService onAfterRenderHandler()');
+    console.debug('PTV: NglGlService onAfterRenderHandler() ' + `key = ${JSON.stringify(this.key)}`);
     let taskCompleted: boolean = false;
 
-    // if (this.emptyPaintingSize === undefined) {
-    //   this.emptyPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
-    //   let k = 11;
-    // } else {
-    //   const currentPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
-    //   if (currentPaintingSize > this.emptyPaintingSize * 2) {
-    //     console.debug('PTV: NglGlService taskCompleted ' + `key = ${JSON.stringify(this.key)}`);
-    //     taskCompleted = true;
-    //   }
-    // }
+    if (this.emptyPaintingSize === undefined) {
+      this.emptyPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
+      let k = 11;
+    } else {
+      const currentPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
+      if (currentPaintingSize > this.emptyPaintingSize * 2) {
+        console.debug('PTV: NglGlService taskCompleted ' + `key = ${JSON.stringify(this.key)}`);
+        taskCompleted = true;
+      }
+    }
 
     taskCompleted = true;
 
@@ -133,8 +133,6 @@ export class NglGlService implements bio.NglGlServiceBase {
       this.emptyPaintingSize = undefined;
 
       if (this._queue.length > 0) {
-        // window.clearInterval(timer);
-        // TODO: Disable window.setInterval
         // Schedule processQueue the next item only afterRender has asynchronously completed for the previous one
         window.setTimeout(async () => { await this._processQueue(); }, 0 /* next event cycle */);
       } else {
@@ -142,10 +140,9 @@ export class NglGlService implements bio.NglGlServiceBase {
         this._busy = false;
 
         try {
-          grok.shell.tv.dockManager.close(this.hostDn);
+          grok.shell.tv.dockManager.close(this.hostDn!);
         } catch (err) {}
-        // this.hostDn.detachFromParent();
-        // this.hostDn = null;
+        delete this.hostDn;
         console.debug('PTV: NglGlService undock()');
       }
     }

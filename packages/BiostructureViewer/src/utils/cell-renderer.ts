@@ -68,12 +68,13 @@ export class PdbRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle
   ): void {
-    console.debug('PTV: PdbRenderer.render() start');
     const r = window.devicePixelRatio;
+    const service = getNglGlService();
 
-    let service = getNglGlService();
+    const rowIdx = gridCell.tableRowIndex;
+    console.debug('PTV: PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
+
     g.save();
-
     try {
       if (!gridCell.tableColumn.temp.has(PDB_RENDERER_IMAGE_CACHE_KEY)) {
         gridCell.tableColumn.temp.set(PDB_RENDERER_IMAGE_CACHE_KEY, {});
@@ -81,7 +82,6 @@ export class PdbRenderer extends DG.GridCellRenderer {
       const imageCache: { [rowIdx: number]: HTMLImageElement } =
         gridCell.tableColumn.temp.get(PDB_RENDERER_IMAGE_CACHE_KEY);
 
-      const rowIdx = gridCell.tableRowIndex;
       const image = rowIdx in imageCache ? imageCache[rowIdx] : null;
 
       if (!image ||
@@ -105,15 +105,12 @@ export class PdbRenderer extends DG.GridCellRenderer {
           onAfterRender: async (canvas: HTMLCanvasElement) => {
             console.debug('PTV: PdbRenderer.render() onAfterRender() ' + `rowIdx = ${rowIdx}`);
             const imageStr: string = canvas.toDataURL();
-            const image2: HTMLImageElement = await base64ToImg(imageStr);
+            const image: HTMLImageElement = await base64ToImg(imageStr);
 
-            const imageCache2 = gridCell.tableColumn.temp.get(PDB_RENDERER_IMAGE_CACHE_KEY);
-            imageCache2[rowIdx] = image2;
-            gridCell.tableColumn.temp.set(PDB_RENDERER_IMAGE_CACHE_KEY, imageCache2);
+            const imageCache = gridCell.tableColumn.temp.get(PDB_RENDERER_IMAGE_CACHE_KEY);
+            imageCache[rowIdx] = image;
+            gridCell.tableColumn.temp.set(PDB_RENDERER_IMAGE_CACHE_KEY, imageCache);
 
-            const imageCache: { [rowIdx: number]: HTMLImageElement } =
-              gridCell.tableColumn.temp.get(PDB_RENDERER_IMAGE_CACHE_KEY);
-            const image: HTMLImageElement = imageCache[rowIdx];
             service.renderOnGridCell(g, new Rect(x, y, w, h), gridCell, image);
           }
         };
@@ -128,47 +125,8 @@ export class PdbRenderer extends DG.GridCellRenderer {
           console.debug('PTV: PdbRenderer.render() ' + `imageCache[${rowIdx}] = null`);
         }
       }
-
-      // stage.loadFile(stringBlob, { ext: "pdb" }).then(function (o: any) {
-      //  //await this.stage.loadFile(pdbStr).then(function (o: any) {
-      //   // o.addRepresentation(repChoice.value, schemeObj);
-      //  o.autoView();
-      // });
-      // g.beginPath();
-      // g.rect(x + 1, y + 1, w - 2, h - 2);
-      // g.clip();
-      // g.fillStyle = '#0095B6';
-
-      // // const iconPath = 'files/pdb-icon-file-format.png';
-
-      // // const indexStart = gridCell.cell.value.indexOf('TITLE');
-      // // const indexEnd = gridCell.cell.value.indexOf('\n', indexStart + 1);
-      // // const name = gridCell.cell.value.substring(indexStart + 10, indexEnd);
-
-      // // g.textAlign = 'left';
-      // // g.textBaseline = 'middle';
-      // // g.fillText(name, x + 33, y + h/2);
-
-      // // const imgDG = PdbRenderer.imgDG;
-
-      // // g.transform((h - 2)/imgDG.width, 0, 0, (h - 2)/imgDG.height, x + 1, y + 1);
-      // // g.drawImage(imgDG, 0, 0);
-
-      // const nglHost = ui.div([], 'd4-ngl-viewer');
-      // gridCell.element = nglHost;
-      // //@ts-ignore
-      // let stage = new NGL.Stage(nglHost);
-
-      // var stringBlob = new Blob([gridCell.cell.value], { type: 'text/plain' });
-      // stage.loadFile(stringBlob, { ext: "pdb" }).then(function (o: any) {
-      //  //await this.stage.loadFile(pdbStr).then(function (o: any) {
-      //   // o.addRepresentation(repChoice.value, schemeObj);
-      //  o.autoView();
-      // });
-
-
     } finally {
-      //g.restore();
+      g.restore();
     }
 
     return;
