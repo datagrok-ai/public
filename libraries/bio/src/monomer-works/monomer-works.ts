@@ -24,7 +24,7 @@ export class MonomerWorks {
   /* Consumes a list of monomer symbols and restores molfileV3K  */
   public getAtomicLevel(monomers: string[], polymerType: string): string | null {
     return sequenceToMolFileST(
-      monomers, this.monomerLib.getMonomerMolsByType(polymerType)!, polymerType
+      monomers, this.monomerLib.getMonomerMolsByType(polymerType)!
     );
   }
 }

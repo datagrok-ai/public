@@ -39,8 +39,6 @@ const PHOSPHATE = 'p';
 const OXYGEN = 'O';
 const HYDROGEN = 'H';
 
-const UNDEFINED_TYPE = 'undefined';
-
 /* Stores necessary data about atoms of a monomer parsed from Molfile */
 type Atoms = {
   /* element symbols for monomer's atoms */
@@ -264,12 +262,25 @@ function getMonomersDictFromMap(symbolToMolfileV3KMap: Map<string, string>): Map
     const counts = parseAtomAndBondCounts(molfileV3K);
     const atoms = parseAtomBlock(molfileV3K, counts.atomCount);
     const bonds = parseBondBlock(molfileV3K, counts.bondCount);
+
+    // the rNodes are set to 0th and the last atom!
+    // this is used because as for now it is unclear how to include the R-groups
+    // into the V3K molfile
     const meta = getMonomerMetadata(atoms, bonds);
+
     const monomerGraph: MolGraph = {atoms: atoms, bonds: bonds, meta: meta};
 
-    adjustPeptideMonomerGraph(monomerGraph);
-
+    const leftNodeIdx = meta.rNodes[0] - 1;
+    const rightNodeIdx = meta.terminalNodes[1] - 1;
     // todo: consider rotation?
+    adjustBackboneMonomerGraph(monomerGraph, leftNodeIdx, rightNodeIdx);
+
+    // set shifts
+    // todo: wrap as a separate function?
+    monomerGraph.meta.backboneShift = getShiftBetweenNodes(monomerGraph, rightNodeIdx, leftNodeIdx);
+
+    removeNodeAndBonds(monomerGraph, monomerGraph.meta.rNodes[1]);
+
     monomersDict.set(sym, monomerGraph);
   }
   // console.log(monomersDict);
@@ -372,7 +383,7 @@ function getMonomerMetadata( atoms: Atoms, bonds: Bonds, capGroups?: string[], c
   };
 
   // corresponds to MODE.STANDARD
-  const standardMode = typeof capGroups !== UNDEFINED_TYPE && typeof capGroupIdxMap !== UNDEFINED_TYPE;
+  const standardMode = typeof capGroups !== 'undefined' && typeof capGroupIdxMap !== 'undefined';
 
   if (standardMode) {
     substituteCapGroups(atoms, capGroups!, capGroupIdxMap!);
@@ -462,30 +473,34 @@ function setTerminalNodes(bonds: Bonds, meta: MonomerMetadata): void {
 //todo: doc
 function setShifts(molGraph: MolGraph, polymerType: HELM_POLYMER_TYPE): void {
   if (molGraph.meta.rNodes.length > 1) {
-    molGraph.meta.backboneShift = [
-      keepPrecision(
-        molGraph.atoms.x[molGraph.meta.rNodes[1] - 1] -
-        molGraph.atoms.x[molGraph.meta.terminalNodes[0] - 1]
-      ),
-      keepPrecision(
-        molGraph.atoms.y[molGraph.meta.rNodes[1] - 1] -
-        molGraph.atoms.y[molGraph.meta.terminalNodes[0] - 1]
-      ),
-    ];
+    molGraph.meta.backboneShift = getShiftBetweenNodes(
+      molGraph, molGraph.meta.rNodes[1] - 1,
+      molGraph.meta.terminalNodes[0] - 1
+    );
   }
 
   if (polymerType === HELM_POLYMER_TYPE.RNA && molGraph.meta.rNodes.length > 2) {
-    molGraph.meta.branchShift = [
-      keepPrecision(
-        molGraph.atoms.x[molGraph.meta.rNodes[2] - 1] -
-        molGraph.atoms.x[molGraph.meta.terminalNodes[0] - 1]
-      ),
-      keepPrecision(
-        molGraph.atoms.y[molGraph.meta.rNodes[2] - 1] -
-        molGraph.atoms.y[molGraph.meta.terminalNodes[0] - 1]
-      ),
-    ];
+    molGraph.meta.branchShift = getShiftBetweenNodes(
+      molGraph, molGraph.meta.rNodes[2] - 1,
+      molGraph.meta.terminalNodes[0] - 1
+    );
   }
+}
+
+/* Returns the pair [xShift, yShift] for specified node indices */
+function getShiftBetweenNodes(
+  molGraph: MolGraph, rightNodeIdx: number, leftNodeIdx: number
+): number[] {
+  return [
+    keepPrecision(
+      molGraph.atoms.x[rightNodeIdx] -
+      molGraph.atoms.x[leftNodeIdx]
+    ),
+    keepPrecision(
+      molGraph.atoms.y[rightNodeIdx] -
+      molGraph.atoms.y[leftNodeIdx]
+    ),
+  ];
 }
 
 /* Helper function necessary to build a correct V3000 molfile out of V2000 with
@@ -691,7 +706,7 @@ function removeHydrogen(monomerGraph: MolGraph): void {
 /* Remove node 'removedNode' and the associated bonds. Notice, numeration of
  * nodes in molfiles starts from 1, not 0 */
 function removeNodeAndBonds(monomerGraph: MolGraph, removedNode?: number): void {
-  if (typeof removedNode !== UNDEFINED_TYPE) {
+  if (typeof removedNode !== 'undefined') {
     const removedNodeIdx = removedNode - 1;
     const atoms = monomerGraph.atoms;
     const bonds = monomerGraph.bonds;
@@ -788,7 +803,7 @@ function adjustPeptideMonomerGraph(monomer: MolGraph): void {
 
 function adjustPhosphateMonomerGraph(monomer: MolGraph): void {
   const nodeOneIdx = monomer.meta.terminalNodes[0] - 1; // node indexing in molfiles starts from 1
-  const nodeTwoIdx = monomer.meta.rNodes[0] - 1;
+  // const nodeTwoIdx = monomer.meta.rNodes[0] - 1;
   const x = monomer.atoms.x;
   const y = monomer.atoms.y;
 
@@ -813,9 +828,27 @@ function adjustPhosphateMonomerGraph(monomer: MolGraph): void {
   // flipHydroxilGroup(monomer, doubleBondedOxygen);
 }
 
+/* Adjust a backbone graph so that nodeOne is at origin and nodeTwo is at OX.
+ * Notice: node indexing in molfiles starts from 1 */
+function adjustBackboneMonomerGraph(
+  monomer: MolGraph, nodeOneIdx: number, nodeTwoIdx: number
+): void {
+  const x = monomer.atoms.x;
+  const y = monomer.atoms.y;
+
+  // place nodeOne at origin
+  shiftCoordinates(monomer, -x[nodeOneIdx], -y[nodeOneIdx]);
+
+  // angle is measured between OX and the rotated node
+  const angle = findAngleWithOX(x[nodeTwoIdx], y[nodeTwoIdx]);
+
+  // rotate the centered graph, so that 'nodeTwo' ends up on the positive ray of OX
+  rotateCenteredGraph(monomer.atoms, -angle);
+}
+
 function adjustSugarMonomerGraph(monomer: MolGraph): void {
   const nodeOneIdx = monomer.meta.terminalNodes[0] - 1; // node indexing in molfiles starts from 1
-  const nodeTwoIdx = monomer.meta.rNodes[0] - 1;
+  // const nodeTwoIdx = monomer.meta.rNodes[0] - 1;
   const x = monomer.atoms.x;
   const y = monomer.atoms.y;
 
@@ -842,7 +875,7 @@ function adjustSugarMonomerGraph(monomer: MolGraph): void {
 
 function adjustBaseMonomerGraph(monomer: MolGraph): void {
   const nodeOneIdx = monomer.meta.terminalNodes[0] - 1; // node indexing in molfiles starts from 1
-  const nodeTwoIdx = monomer.meta.rNodes[0] - 1;
+  // const nodeTwoIdx = monomer.meta.rNodes[0] - 1;
   const x = monomer.atoms.x;
   const y = monomer.atoms.y;
 
@@ -1013,7 +1046,7 @@ function shiftCoordinates(molGraph: MolGraph, xShift: number, yShift?: number): 
   const y = molGraph.atoms.y;
   for (let i = 0; i < x.length; ++i) {
     x[i] = keepPrecision(x[i] + xShift);
-    if (typeof yShift !== UNDEFINED_TYPE)
+    if (typeof yShift !== 'undefined')
       y[i] = keepPrecision(y[i] + yShift);
   }
 }
@@ -1028,7 +1061,9 @@ function monomerSeqToMolfile(
     throw new Error('monomerSeq is empty');
 
   // define atom and bond counts, taking into account the bond type
-  const {atomCount, bondCount} = getResultingAtomBondCounts(monomerSeq, monomersDict, alphabet, polymerType, mode);
+  const getAtomAndBondCounts = (mode === MODE.STANDARD) ?
+    getResultingAtomBondCounts : getResultingAtomBondCountsST;
+  const {atomCount, bondCount} = getAtomAndBondCounts(monomerSeq, monomersDict, alphabet, polymerType, mode);
 
   // create arrays to store lines of the resulting molfile
   const molfileAtomBlock = new Array<string>(atomCount);
@@ -1446,7 +1481,7 @@ export function capPeptideMonomer(monomer: Monomer): string {
 
 export function sequenceToMolFileST(
   monomerSeq: string[], // sequence of values of 'symbol' field for monomers
-  symbolToMolfileV3KMap: Map<string, string> // maps symbol to molfile V3000
+  symbolToMolfileV3KObj: {[symbol: string]: string} // mapping of symbol to molfile V3000
 ): string | null {
   // work in SEQ_TRAN mode, where:
   // - monomers with polymerType 'RNA' have monomer type 'backbone'
@@ -1454,6 +1489,11 @@ export function sequenceToMolFileST(
   const mode = MODE.SEQ_TRAN;
   const alphabet = ALPHABET.PT; // dummy value! todo: make the argument optional
   const polymerType = HELM_POLYMER_TYPE.RNA; // dummy value! todo: make the argument optional
+
+  // todo: consider refactoring from obj to map in monomer-worls
+  const symbolToMolfileV3KMap = new Map<string, string>();
+  for (const sym in symbolToMolfileV3KObj)
+    symbolToMolfileV3KMap.set(sym, symbolToMolfileV3KObj[sym]);
 
   const monomersDict = getMonomersDictFromMap(symbolToMolfileV3KMap);
   const result = monomerSeqToMolfile(monomerSeq, monomersDict, alphabet, polymerType, mode);
