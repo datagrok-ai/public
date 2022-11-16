@@ -19,165 +19,28 @@ export async function init() {
   await initEigenPCA();  
 }
 
-// Principal Component Analysis with approximation
-function pcaWithApporx(columns, numOfComponents, 
-  principalComponents, approximation) {
-
-    // create arguments
-    let argData = new ArgColumns(columns, 'f32');
-    let argNumComp = new Arg(numOfComponents);
-    let argPComp = new ArgNewColumns('f32', columns[0].length, numOfComponents);
-    let argApprox = new ArgNewColumns('f32', columns[0].length, columns.length);
-    let args = [argData, argNumComp, argPComp, argApprox];
-
-    // call exported function
-    let result = cppFuncWrapper(EigenPCA, 'pcaWithApproximation', 'num', args);    
-
-    // complete output: principalComponents
-    for(let col of argPComp.data)
-      principalComponents.push(col);
-
-    // complete output: approximation
-    for(let col of argApprox.data)
-      approximation.push(col);
-
-    return result;
-  }
-
-//name: verifyPCA
-//input: dataframe df
-//input: int numOfComponents = 4
-export function verifyPCA(df, numOfComponents) {
-  // check input
-  if(numOfComponents < 1) {
-    grok.shell.error('Number of principal components must be less of equal the number of columns!');
-    return;
-  }
-
-  // arguments for PCA-function call
-  let columns = [];
-  let principalComponents = [];
-  let approximation = [];
-
-  // complete a list of numerical columns
-  for(let col of df.columns.toList())
-    if(col.type == 'double' || col.type == 'int')
-      columns.push(col);
-
-  // check sizes
-  if(numOfComponents > columns.length) {
-    grok.shell.error('Number of principal components must be less of equal the number of columns!');  
-    return;
-  }
-    
-  // PCA
-  console.log('Computing ...');
-  
-  let start = new Date().getTime();
-  
-  let resultCode = pcaWithApporx(columns, numOfComponents, 
-                                 principalComponents, approximation);
-  
-  let finish = new Date().getTime();
-
-  console.log(`DONE! Time for computing PCA: ${finish - start} ms.`);
-
-  // create dataframes with principal components and approximation if computation is successful
-  if(resultCode == 0) {
-
-    // create table with source data approximation
-    let tableWithApprox = DG.DataFrame.fromColumns(approximation);
-    tableWithApprox.name = 'Approximation';
-    grok.shell.addTableView(tableWithApprox);
-
-    // create table with principal components
-    let tableWithPrincComp = DG.DataFrame.fromColumns(principalComponents);  
-    tableWithPrincComp.name = 'PrincipalComponents';
-    grok.shell.addTableView(tableWithPrincComp);
-  }
-  else
-  console.log('PCA FAIL! Result code: ' + resultCode);  
-}
-
-//name: mad
-//input: dataframe df
-//input: column col1
-//input: column col2
-//output: double error
-export function mad(df, col1, col2) {
-  return cppFuncWrapper(EigenPCA, 'error', 'num', 
-                        [new ArgColumn(col1, 'f32'), new ArgColumn(col2, 'f32')] );
-}
-
-// Principal Component Analysis with approximation
-function pcaWithoutApporx(columns, numOfComponents, principalComponents) {
-
-    // create arguments
-    let argData = new ArgColumns(columns, 'f32');
-    let argNumComp = new Arg(numOfComponents);
-    let argPComp = new ArgNewColumns('f32', columns[0].length, numOfComponents);    
-    let args = [argData, argNumComp, argPComp];
-
-    // call exported function
-    let result = cppFuncWrapper(EigenPCA, 'principalComponentAnalysis', 'num', args);    
-
-    // complete output: principalComponents
-    for(let col of argPComp.data)
-      principalComponents.push(col); 
-
-    return result;
-  }
-
-//top-menu: Tools | Data Science | PCA by Eigen
+//top-menu: Tools | Data Science | Principal Component Analysis by Eigen
 //name: pca
-//input: dataframe df [Input data table]
-export function pca(df) {   
-  let dlg = ui.dialog('Principal Component Analysis');
+//tags: ml
+//input: dataframe table
+//input: column_list columns
+//input: int numOfPrincipalComponents
+//output: dataframe principalComponents
+export function pca(table, columns, numOfPrincipalComponents) {
 
-  let colsInput = ui.columnsInput('Select columns', df);    
-  dlg.add(colsInput);
+  // create arguments for exported C/C++-function call
+  let data = columns.toList();
+  let argData = new ArgColumns(data, 'f32');  
+  let argNumComp = new Arg(numOfPrincipalComponents);
+  let argPrincipalComponents = new ArgNewColumns('f32', data[0].length, numOfPrincipalComponents);    
+  let args = [argData, argNumComp, argPrincipalComponents];
+  
+  // call exported C/C++-function: result code is obtained
+  // let resultCode = cppFuncWrapper(EigenPCA, 'principalComponentAnalysis', 'num', args);  
+  // console.log('Exported C/C++-function result code: ' + resultCode);
 
-  let numOfCompInput = ui.intInput('Number of components', 1);
-  dlg.add(numOfCompInput);
+  // call exported function
+  cppFuncWrapper(EigenPCA, 'principalComponentAnalysis', 'num', args);
 
-  dlg.addButton('Compute', () => {
-    let columns = [];
-    let principalComponents = [];    
-    let numOfComponents = numOfCompInput.value;
-
-    // complete a list of numerical columns
-    for(let col of colsInput.value)
-      if(col.type == 'double' || col.type == 'int')
-        columns.push(col);
-    
-    // check sizes
-    if(numOfComponents > columns.length) {
-      grok.shell.error('Number of principal components must be less of equal the number of columns!');
-      dlg.close();
-      return;
-    }
-
-    // PCA 
-    let resultCode = pcaWithoutApporx(columns, numOfComponents, principalComponents);    
-
-    // create dataframes with principal components and approximation if computation is successful
-    if(resultCode == 0) {    
-      grok.shell.info('Done!');
-
-      // change names of columns
-      for(let i = 0; i < numOfComponents; i++)
-        principalComponents[i].name = `Comp. ${i + 1}`;
-    
-      // create table with principal components
-      let tableWithPrincComp = DG.DataFrame.fromColumns(principalComponents);  
-      tableWithPrincComp.name = `Principal Components for ${df.name}`;
-      grok.shell.addTableView(tableWithPrincComp);
-    }
-    else
-      grok.shell.error(`PCA compation fail! Result code: ${resultCode}`);
-
-    dlg.close();
-  });  
-
-  dlg.show(); 
+  return DG.DataFrame.fromColumns(argPrincipalComponents.data); 
 }

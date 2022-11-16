@@ -1,8 +1,8 @@
 {
 	"name": "pca",
 	"friendlyName": "PCA",
-	"version": "0.0.1",
-	"description": "",
+	"version": "1.0.0",
+	"description": "Principal Component Analysis.",
 	"dependencies": {
 		"datagrok-api": "latest",
 		"cash-dom": "latest",
