@@ -55,7 +55,10 @@
     "debug-phylotreeviewer-public": "grok publish public",
     "release-phylotreeviewer-public": "grok publish public --release",
     "debug-local": "grok publish local",
-    "release-local": "grok publish local --release"
+    "release-local": "grok publish local --release",
+    "test": "jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
   },
   "canEdit": [
     "Developers"

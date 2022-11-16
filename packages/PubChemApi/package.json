@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "datagrok-api": "^1.0.0",
-    "@datagrok-libraries/utils": "^1.11.1"
+    "@datagrok-libraries/utils": "^1.15.5"
   },
   "devDependencies": {
     "ts-loader": "latest",

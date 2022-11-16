@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "^0.1.7",
-    "@datagrok-libraries/utils": "^1.11.1",
+    "@datagrok-libraries/utils": "^1.15.5",
     "@datagrok/charts": "^1.0.0",
     "@datagrok/multiplot": "^0.0.4",
     "cash-dom": "latest",

@@ -68,6 +68,9 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
           });
         }
         if (jest) {
+          Object.assign(_package.dependencies, {
+            '@datagrok-libraries/utils': 'latest',
+          });
           Object.assign(_package.devDependencies, {
             'jest-html-reporter': '^3.5.0',
             'jest': '^27.0.0',
