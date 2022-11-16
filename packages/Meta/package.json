@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.8",
+  "version": "3.1.9",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -740,7 +740,7 @@
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/labs.git",
-        "directory": "packages/marvin"
+        "directory": "packages/Marvin"
       }
     },
     "oligo-batch-calculator": {
@@ -2154,6 +2154,20 @@
         "directory": "packages/PhyloTreeViewer"
       },
       "category": "Visualizations"
+    },
+    "chem-draw-sketcher": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^1.6.0"
+        }
+      },
+      "description": "ChemDraw is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
+      "category": "Cheminformatics",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/datagrok-ai/labs.git",
+        "directory": "packages/ChemDraw"
+      }
     }
   }
 }
