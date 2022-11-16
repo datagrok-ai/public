@@ -564,10 +564,10 @@ export function getNucleotidesMol(smilesCodes: string[]) {
           molBlocks.push(rotateNucleotidesV3000(smilesCodes[i]));
   }
 
-  return linkV3000(molBlocks, false);
+  return linkV3000(molBlocks);
 }
 
-export function linkV3000(molBlocks: string[], twoChains: boolean = false, useChirality: boolean = true) {
+export function linkStrandsV3000(strands:{senseStrands: string[], antiStrands: string[]}, useChirality: boolean = true) {
   let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
   macroMolBlock += '  0  0  0  0  0  0            999 V3000\n';
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
@@ -579,18 +579,34 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false, useCh
   let nbond = 0;
   let xShift = 0;
 
-  if (twoChains && molBlocks.length > 1)
-    molBlocks[1] = invertNucleotidesV3000(molBlocks[1]);
+  // if (twoChains && molBlocks.length > 1)
+  //   molBlocks[1] = invertNucleotidesV3000(molBlocks[1]);
+
+  if (strands.antiStrands.length > 0) {
+    for(let i = 0; i < strands.antiStrands.length; i++) {
+      strands.antiStrands[i] = invertNucleotidesV3000(strands.antiStrands[i]);
+    }
+  }
+
+  let inverted = false;
+  let molBlocks = strands.senseStrands.concat(strands.antiStrands);
 
   for (let i = 0; i < molBlocks.length; i++) {
+
+    if (i >= strands.senseStrands.length && inverted == false) {
+      inverted = true;
+      xShift = 0;
+    }
+
+
     molBlocks[i] = molBlocks[i].replaceAll('(-\nM  V30 ', '(')
       .replaceAll('-\nM  V30 ', '').replaceAll(' )', ')');
     const numbers = extractAtomsBondsNumbersV3000(molBlocks[i]);
     const coordinates = extractAtomDataV3000(molBlocks[i]);
 
-    if (twoChains) {
-      const xShiftRight = Math.min(...coordinates.x);
-      const yShift = i == 0 ? Math.min(...coordinates.y) - 1 : Math.max(...coordinates.y) + 1;
+    if (inverted) {
+      const xShiftRight = Math.min(...coordinates.x) - xShift;
+      const yShift = !inverted ? Math.min(...coordinates.y) - 1 : Math.max(...coordinates.y) + 10;
       for (let j = 0; j < coordinates.x.length; j++)
         coordinates.x[j] -= xShiftRight;
       for (let j = 0; j < coordinates.y.length; j++)
@@ -603,7 +619,154 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false, useCh
     let indexEnd = indexAtoms;
 
     for (let j = 0; j < numbers.natom; j++) {
-      if (coordinates.atomIndex[j] != 1 || i == 0 || twoChains) {
+      // if (coordinates.atomIndex[j] != 1 || i == 0 || twoChains) {
+      //rewrite atom number
+      index = molBlocks[i].indexOf('V30', index) + 4;
+      indexEnd = molBlocks[i].indexOf(' ', index);
+      const atomNumber = parseInt(molBlocks[i].substring(index, indexEnd)) + natom;
+      molBlocks[i] = molBlocks[i].slice(0, index) + atomNumber + molBlocks[i].slice(indexEnd);
+
+      //rewrite coordinates
+      index = molBlocks[i].indexOf(' ', index) + 1;
+      index = molBlocks[i].indexOf(' ', index) + 1;
+      indexEnd = molBlocks[i].indexOf(' ', index);
+
+      const totalShift = true ? 0 : xShift - coordinates.x[0];
+      let coordinate = true ?
+        Math.round(10000*coordinates.x[j])/10000 :
+        Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd)) + totalShift))/10000;
+      molBlocks[i] = molBlocks[i].slice(0, index) + coordinate + molBlocks[i].slice(indexEnd);
+
+      index = molBlocks[i].indexOf(' ', index) + 1;
+      indexEnd = molBlocks[i].indexOf(' ', index);
+      coordinate = true ?
+        Math.round(10000*coordinates.y[j])/10000 :
+        Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd))))/10000;
+      molBlocks[i] = molBlocks[i].slice(0, index) + coordinate + molBlocks[i].slice(indexEnd);
+
+      index = molBlocks[i].indexOf('\n', index) + 1;
+    }
+
+    const indexAtomsEnd = molBlocks[i].indexOf('M  V30 END ATOM');
+    atomBlock += molBlocks[i].substring(indexAtoms + 1, indexAtomsEnd);
+
+    let indexBonds = molBlocks[i].indexOf('M  V30 BEGIN BOND'); // V3000 index for bonds
+    indexBonds = molBlocks[i].indexOf('\n', indexBonds);
+    index = indexBonds;
+    indexEnd = indexBonds;
+
+    for (let j = 0; j < numbers.nbond; j++) {
+      //rewrite bond number
+      index = molBlocks[i].indexOf('V30', index) + 4;
+      indexEnd = molBlocks[i].indexOf(' ', index);
+      const bondNumber = parseInt(molBlocks[i].substring(index, indexEnd)) + nbond;
+      molBlocks[i] = molBlocks[i].slice(0, index) + bondNumber + molBlocks[i].slice(indexEnd);
+
+      //rewrite atom pair in bond
+      index = molBlocks[i].indexOf(' ', index) + 1;
+      index = molBlocks[i].indexOf(' ', index) + 1;
+      indexEnd = molBlocks[i].indexOf(' ', index);
+      let atomNumber = parseInt(molBlocks[i].substring(index, indexEnd)) + natom;
+      molBlocks[i] = molBlocks[i].slice(0, index) + atomNumber + molBlocks[i].slice(indexEnd);
+      index = molBlocks[i].indexOf(' ', index) + 1;
+      indexEnd = Math.min(molBlocks[i].indexOf('\n', index), molBlocks[i].indexOf(' ', index));
+      atomNumber = parseInt(molBlocks[i].substring(index, indexEnd)) + natom;
+      molBlocks[i] = molBlocks[i].slice(0, index) + atomNumber + molBlocks[i].slice(indexEnd);
+
+      index = molBlocks[i].indexOf('\n', index) + 1;
+    }
+
+    const indexBondEnd = molBlocks[i].indexOf('M  V30 END BOND');
+    bondBlock += molBlocks[i].substring(indexBonds + 1, indexBondEnd);
+
+    let indexCollection = molBlocks[i].indexOf('M  V30 MDLV30/STEABS ATOMS=('); // V3000 index for collections
+
+    while (indexCollection != -1) {
+      indexCollection += 28;
+      const collectionEnd = molBlocks[i].indexOf(')', indexCollection);
+      const collectionEntries = molBlocks[i].substring(indexCollection, collectionEnd).split(' ').slice(1);
+      collectionEntries.forEach((e) => {
+        collection.push(parseInt(e) + natom);
+      });
+      indexCollection = collectionEnd;
+      indexCollection = molBlocks[i].indexOf('M  V30 MDLV30/STEABS ATOMS=(', indexCollection);
+    }
+
+    natom += true ? numbers.natom : numbers.natom - 1;
+    nbond += numbers.nbond;
+    xShift += Math.max(...coordinates.x) + 1;//twoChains ? 0 : coordinates.x[numbers.natom - 1] - coordinates.x[0];
+  }
+
+  const entries = 4;
+  const collNumber = Math.ceil(collection.length / entries);
+
+  //if (oclRender) {
+    // collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length;
+
+    // for (let j = 0; j < collection.length; j++)
+    //   collectionBlock += ' ' + collection[j];
+
+    // collectionBlock += ')\n';
+  //} else {
+    collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length + ' -\n';
+    for (let i = 0; i < collNumber; i++) {
+      collectionBlock += 'M  V30 ';
+      const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1)*entries : entries;
+      for (let j = 0; j < entriesCurrent; j++) {
+        collectionBlock += (j + 1 == entriesCurrent) ?
+          (i == collNumber - 1 ? collection[entries*i + j] + ')\n' : collection[entries*i + j] + ' -\n') :
+          collection[entries*i + j] + ' ';
+      }
+    }
+  //}
+
+  //generate file
+  true? natom : natom++;
+  macroMolBlock += 'M  V30 COUNTS ' + natom + ' ' + nbond + ' 0 0 0\n';
+  macroMolBlock += 'M  V30 BEGIN ATOM\n';
+  macroMolBlock += atomBlock;
+  macroMolBlock += 'M  V30 END ATOM\n';
+  macroMolBlock += 'M  V30 BEGIN BOND\n';
+  macroMolBlock += bondBlock;
+  macroMolBlock += 'M  V30 END BOND\n';
+  if(useChirality){
+    macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
+    macroMolBlock += collectionBlock;
+    macroMolBlock += 'M  V30 END COLLECTION\n';
+  } else
+    macroMolBlock = macroMolBlock.replace(/ CFG=\d/g, ' ');
+
+  macroMolBlock += 'M  V30 END CTAB\n';
+  macroMolBlock += 'M  END';
+
+  return macroMolBlock;
+}
+
+export function linkV3000(molBlocks: string[], useChirality: boolean = true) {
+  let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
+  macroMolBlock += '  0  0  0  0  0  0            999 V3000\n';
+  macroMolBlock += 'M  V30 BEGIN CTAB\n';
+  let atomBlock = '';
+  let bondBlock = '';
+  let collectionBlock = '';
+  const collection: number [] = [];
+  let natom = 0;
+  let nbond = 0;
+  let xShift = 0;
+
+  for (let i = 0; i < molBlocks.length; i++) {
+    molBlocks[i] = molBlocks[i].replaceAll('(-\nM  V30 ', '(')
+      .replaceAll('-\nM  V30 ', '').replaceAll(' )', ')');
+    const numbers = extractAtomsBondsNumbersV3000(molBlocks[i]);
+    const coordinates = extractAtomDataV3000(molBlocks[i]);
+
+    let indexAtoms = molBlocks[i].indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms coordinates
+    indexAtoms = molBlocks[i].indexOf('\n', indexAtoms);
+    let index = indexAtoms;
+    let indexEnd = indexAtoms;
+
+    for (let j = 0; j < numbers.natom; j++) {
+      if (coordinates.atomIndex[j] != 1 || i == 0) {
         //rewrite atom number
         index = molBlocks[i].indexOf('V30', index) + 4;
         indexEnd = molBlocks[i].indexOf(' ', index);
@@ -615,16 +778,14 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false, useCh
         index = molBlocks[i].indexOf(' ', index) + 1;
         indexEnd = molBlocks[i].indexOf(' ', index);
 
-        const totalShift = twoChains ? 0 : xShift - coordinates.x[0];
-        let coordinate = twoChains ?
-          Math.round(10000*coordinates.x[j])/10000 :
+        const totalShift = xShift - coordinates.x[0];
+        let coordinate = 
           Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd)) + totalShift))/10000;
         molBlocks[i] = molBlocks[i].slice(0, index) + coordinate + molBlocks[i].slice(indexEnd);
 
         index = molBlocks[i].indexOf(' ', index) + 1;
         indexEnd = molBlocks[i].indexOf(' ', index);
-        coordinate = twoChains ?
-          Math.round(10000*coordinates.y[j])/10000 :
+        coordinate = 
           Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd))))/10000;
         molBlocks[i] = molBlocks[i].slice(0, index) + coordinate + molBlocks[i].slice(indexEnd);
 
@@ -681,9 +842,9 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false, useCh
       indexCollection = molBlocks[i].indexOf('M  V30 MDLV30/STEABS ATOMS=(', indexCollection);
     }
 
-    natom += twoChains ? numbers.natom : numbers.natom - 1;
+    natom += numbers.natom - 1;
     nbond += numbers.nbond;
-    xShift += twoChains ? 0 : coordinates.x[numbers.natom - 1] - coordinates.x[0];
+    xShift += coordinates.x[numbers.natom - 1] - coordinates.x[0];
   }
 
   const entries = 4;
@@ -710,7 +871,7 @@ export function linkV3000(molBlocks: string[], twoChains: boolean = false, useCh
   //}
 
   //generate file
-  twoChains? natom : natom++;
+  natom++;
   macroMolBlock += 'M  V30 COUNTS ' + natom + ' ' + nbond + ' 0 0 0\n';
   macroMolBlock += 'M  V30 BEGIN ATOM\n';
   macroMolBlock += atomBlock;

@@ -41,7 +41,7 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
       '\n' + `> <Sequence>\nAnti Sense\n\n`;
       const ss = sequenceToMolV3000(obj.SS, false, true, format) +
       '\n' + `> <Sequence>\nSense Strand\n\n`;
-      result += linkV3000([ss, as], true, true) + '\n\n';
+      result += linkV3000([ss, as], true) + '\n\n';
     } else if (typeColumn.get(i) == SEQUENCE_TYPES.SENSE_STRAND) {
       const molSS = sequenceToMolV3000(structureColumn.get(i), false, true, format) +
       '\n' + `> <Sequence>\nSense Strand\n\n`;
