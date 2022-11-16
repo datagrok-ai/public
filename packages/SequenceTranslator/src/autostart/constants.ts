@@ -3,6 +3,7 @@ export const SEQUENCE_TYPES = {
   ANTISENSE_STRAND: 'AS',
   DUPLEX: 'Duplex',
   TRIPLEX: 'Triplex',
+  DIMER: 'Dimer',
 };
 
 export const COL_NAMES = {

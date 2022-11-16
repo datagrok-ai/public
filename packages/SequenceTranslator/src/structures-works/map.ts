@@ -36,7 +36,7 @@ export const MODIFICATIONS: {[index: string]: {molecularWeight: number, left: st
 export const stadardPhosphateLinkSmiles = 'OP(=O)(O)O';
 export const map: {[synthesizer: string]:
   {[technology: string]: {[code: string]:
-    {'name'?: string, 'weight'?: number, 'normalized'?: string, 'SMILES': string}}}} = {
+    {'name': string, 'weight': number, 'normalized': string, 'SMILES': string}}}} = {
       'Raw Nucleotides': {
         'DNA': {
           'A': {
@@ -707,4 +707,15 @@ const codesWithSmiles = getAllCodesOfSynthesizer(SYNTHESIZERS.GCRS);
 const allGcrsCodes = DG.DataFrame.fromCsv(lcmsToGcrs).getCol('GCRS').toList();
 export const gcrsCodesWithoutSmiles = differenceOfTwoArrays(allGcrsCodes, codesWithSmiles);
 for (const e of gcrsCodesWithoutSmiles)
-  map[SYNTHESIZERS.GCRS]['Others'][e] = {'SMILES': ''};
+  map[SYNTHESIZERS.GCRS]['Others'][e] = {name: '', weight: 0, normalized: '', SMILES: ''};
+
+
+export const weightsObj: {[code: string]: number} = {};
+for (const synthesizer of Object.keys(map)) {
+  for (const technology of Object.keys(map[synthesizer])) {
+    for (const code of Object.keys(map[synthesizer][technology]))
+      weightsObj[code] = map[synthesizer][technology][code].weight;
+  }
+}
+for (const [key, value] of Object.entries(MODIFICATIONS))
+  weightsObj[key] = value.molecularWeight;
