@@ -13,7 +13,7 @@
     "directory": "packages/SequenceTranslator"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.11.1",
+    "@datagrok-libraries/utils": "^1.15.5",
     "@types/react": "^18.0.15",
     "datagrok-api": "^1.7.2",
     "datagrok-tools": "^4.1.2",

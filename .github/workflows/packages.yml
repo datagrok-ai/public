@@ -223,20 +223,21 @@ jobs:
           name: test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
           path: packages/${{ matrix.package }}/test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
           retention-days: 7
+
       - name: Publish to npm
         run: npm publish --access public
         id: publish
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && always() && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success'
+        if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped')
 
       - name: Check dockerfiles directory existence
         id: check_directory
         uses: andstor/file-existence-action@v2
         with:
-          files: "dockerfiles"  
-      - name: Check if dockerfies directory is not empty 
+          files: "dockerfiles"
+      - name: Check if dockerfies directory is not empty
         id: check_empty_dir
         run: |
           if [ -z "$(ls -A  packages/${{ matrix.package }}/dockerfiles)" ]; then
@@ -250,11 +251,11 @@ jobs:
         with:
           repo-token: ${{secrets.GITHUB_TOKEN}}
           directory: "packages/${{ matrix.package }}/dockerfiles"
-      - name: Login to DockerHub   
+      - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }} 
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         if: steps.check_directory.outputs.files_exists == 'true' && steps.check_empty_dir.outputs.dir_empty == 'false' && steps.publish.outcome == 'success'
 
       - name: Get docker image version
@@ -271,7 +272,7 @@ jobs:
           context: packages/${{ matrix.package }}/dockerfiles
           push: true
           tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
-      
+
       - name: Build docker image
         if: steps.directory_changes_checker.output.hasChanges == 'true' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
         uses: docker/build-push-action@v3
@@ -279,13 +280,13 @@ jobs:
           context: packages/${{ matrix.package }}/dockerfiles
           push: false
           tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}-${{ steps.datagrok-image.outputs.commit_sha }}
-        
+
       - name: Upload docker image as artifact
         if: steps.directory_changes_checker.output.hasChanges == 'true' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
         uses: ishworkh/docker-image-artifact-upload@v1
         with:
           image: "datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}-${{ steps.datagrok-image.outputs.commit_sha }}"
-        
+
       - name: Get package information
         id: info
         if: always() && steps.publish.outcome == 'success' && matrix.package != 'Meta'

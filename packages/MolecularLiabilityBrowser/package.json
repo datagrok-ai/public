@@ -41,7 +41,7 @@
   ],
   "dependencies": {
     "@datagrok-libraries/bio": "^5.9.13",
-    "@datagrok-libraries/utils": "^1.14.1",
+    "@datagrok-libraries/utils": "^1.15.5",
     "@deck.gl/core": "8.8.12",
     "cash-dom": "8.1.1",
     "datagrok-api": "^1.8.2",
