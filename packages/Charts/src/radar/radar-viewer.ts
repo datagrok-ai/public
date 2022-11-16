@@ -46,7 +46,9 @@ export class RadarViewer extends DG.JsViewer {
     option.radar.indicator = [];
     const columns = this.getColumns();
     for (const c of columns) {
-      option.radar.indicator.push({name: c.name, max: c.max});
+      let minimalVal = 0;
+      c.min < 0 ? minimalVal = c.min : minimalVal = 0;
+      option.radar.indicator.push({name: c.name, max: c.max, min: minimalVal});
     }
     this.updateMin();
     this.updateMax();
