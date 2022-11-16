@@ -2296,10 +2296,24 @@ export class ColumnMarkerHelper {
   }
 }
 
+export class ColumnFormatHelper {
+  private readonly column: Column;
+
+  constructor(column: Column) {
+    this.column = column;
+  }
+
+  /** Returns the format best applicable to the column's content. */
+  getAutoFormat(): string | null {
+    return api.grok_Column_GetAutoColor(this.column.dart);
+  }
+}
+
 export class ColumnMetaHelper {
   private readonly column: Column;
   private _colors: ColumnColorHelper | undefined;
   private _markers: ColumnMarkerHelper | undefined;
+  private _format: ColumnFormatHelper | undefined;
 
   constructor(column: Column) {
     this.column = column;
@@ -2315,5 +2329,11 @@ export class ColumnMetaHelper {
     if (this._markers == undefined)
       this._markers = new ColumnMarkerHelper(this.column);
     return this._markers;
+  }
+
+  get format(): ColumnFormatHelper {
+    if (this._format == undefined)
+      this._format = new ColumnFormatHelper(this.column);
+    return this._format;
   }
 }
