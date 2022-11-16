@@ -41,7 +41,7 @@ category('Radar', () => {
       showMin: true,
       showMax: true,
       showValues: true,
-      columnNames: null,
+      eventsColumnNames: null,
     };
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
   });
