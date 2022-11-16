@@ -140,9 +140,14 @@ export function oligoSdFile(table: DG.DataFrame) {
   const molWeightCol = saltsDf.getCol('MOLWEIGHT');
   const saltNamesList = saltsDf.getCol('DISPLAY').toList();
 
+  let newDf: DG.DataFrame;
+  let addColumnsPressed = false;
+
   function addColumns(t: DG.DataFrame) {
     if (GENERATED_COL_NAMES.some((colName) => t.columns.contains(colName)))
       return grok.shell.error('Columns already exist');
+
+    t = removeEmptyRows(t, sequenceCol);
 
     t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => {
       return ([SEQUENCE_TYPES.DUPLEX, SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) ?
@@ -187,15 +192,24 @@ export function oligoSdFile(table: DG.DataFrame) {
     t.columns.addNewFloat(COL_NAMES.SALT_MOL_WEIGHT).init((i: number) =>
       saltMolWeigth(saltNamesList, saltCol, molWeightCol, i));
 
+    const compoundMolWeightCol = t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT);
+    const saltMassCol = t.getCol(COL_NAMES.SALT_MASS);
     t.columns.addNewFloat(COL_NAMES.BATCH_MOL_WEIGHT).init((i: number) =>
-      batchMolWeight(t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT), t.getCol(COL_NAMES.SALT_MASS), i));
+      batchMolWeight(compoundMolWeightCol, saltMassCol, i));
 
+    grok.shell.getTableView(table.name).grid.columns.setOrder(Object.values(COL_NAMES));
     addColumnsPressed = true;
     return newDf = t;
   }
 
-  let newDf: DG.DataFrame;
-  let addColumnsPressed = false;
+  function updateCalculatedColumns(t: DG.DataFrame, i: number): void {
+    const smValue = saltMass(saltNamesList, molWeightCol, equivalentsCol, i, saltCol);
+    t.getCol(COL_NAMES.SALT_MASS).set(i, smValue, false);
+    const smwValue = saltMolWeigth(saltNamesList, saltCol, molWeightCol, i);
+    t.getCol(COL_NAMES.SALT_MOL_WEIGHT).set(i, smwValue, false);
+    const bmw = batchMolWeight(t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT), t.getCol(COL_NAMES.SALT_MASS), i);
+    t.getCol(COL_NAMES.BATCH_MOL_WEIGHT).set(i, bmw, false);
+  }
 
   const d = ui.div([
     ui.icons.edit(() => {
@@ -203,16 +217,14 @@ export function oligoSdFile(table: DG.DataFrame) {
       if (table.getCol(COL_NAMES.IDP).type != DG.COLUMN_TYPE.STRING)
         table.changeColumnType(COL_NAMES.IDP, DG.COLUMN_TYPE.STRING);
       d.append(
-        ui.link('Add Columns', () => {
-          table = removeEmptyRows(table, sequenceCol);
-          addColumns(table);
-          view.grid.columns.setOrder(Object.values(COL_NAMES));
-        }, `Add columns: '${GENERATED_COL_NAMES.join(`', '`)}'`),
-        ui.button('Save SD file', () => saveTableAsSdFile(addColumnsPressed ? newDf : table)),
+        ui.divH([
+          ui.icons.add(() => addColumns(table), `Add columns: '${GENERATED_COL_NAMES.join(`', '`)}'`),
+          ui.icons.save(() => saveTableAsSdFile(addColumnsPressed ? newDf : table), 'Save SD file'),
+        ]),
       );
 
       const view = grok.shell.getTableView(table.name);
-
+      view.grid.setOptions({rowHeight: 45});
       view.dataFrame.getCol(COL_NAMES.TYPE).setTag(DG.TAGS.CHOICES, stringify(Object.values(SEQUENCE_TYPES)));
       view.dataFrame.getCol(COL_NAMES.OWNER).setTag(DG.TAGS.CHOICES, stringify(usersDf.columns.byIndex(0).toList()));
       view.dataFrame.getCol(COL_NAMES.SALT).setTag(DG.TAGS.CHOICES, stringify(saltsDf.columns.byIndex(0).toList()));
@@ -237,15 +249,6 @@ export function oligoSdFile(table: DG.DataFrame) {
         if ([COL_NAMES.SALT, COL_NAMES.EQUIVALENTS, COL_NAMES.SALT_MOL_WEIGHT].includes(colName))
           updateCalculatedColumns(view.dataFrame, view.dataFrame.currentRowIdx);
       });
-
-      function updateCalculatedColumns(t: DG.DataFrame, i: number): void {
-        const smValue = saltMass(saltNamesList, molWeightCol, equivalentsCol, i, saltCol);
-        t.getCol(COL_NAMES.SALT_MASS).set(i, smValue, false);
-        const smwValue = saltMolWeigth(saltNamesList, saltCol, molWeightCol, i);
-        t.getCol(COL_NAMES.SALT_MOL_WEIGHT).set(i, smwValue, false);
-        const bmw = batchMolWeight(t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT), t.getCol(COL_NAMES.SALT_MASS), i);
-        t.getCol(COL_NAMES.BATCH_MOL_WEIGHT).set(i, bmw, false);
-      }
     }),
   ]);
   grok.shell.v.setRibbonPanels([[d]]);
