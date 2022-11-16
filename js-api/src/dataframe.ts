@@ -2307,6 +2307,11 @@ export class ColumnFormatHelper {
   getAutoFormat(): string | null {
     return api.grok_Column_GetAutoColor(this.column.dart);
   }
+
+  /** Returns the format of the dataframe column. See also [GridColumn.format] */
+  get format(): string | null {
+    return this.column.getTag(TAGS.FORMAT) ?? this.getAutoFormat();
+  }
 }
 
 export class ColumnMetaHelper {
