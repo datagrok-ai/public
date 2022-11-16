@@ -8,7 +8,7 @@ import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
 import {saltMass, saltMolWeigth, molecularWeight, batchMolWeight} from './calculations';
 import {isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
-import {linkV3000} from '../structures-works/mol-transformations';
+import {linkStrandsV3000} from '../structures-works/mol-transformations';
 import {stringify, download, removeEmptyRows, differenceOfTwoArrays} from '../helpers';
 
 import {SALTS_CSV} from './salts';
@@ -41,7 +41,7 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
       '\n' + `> <Sequence>\nAnti Sense\n\n`;
       const ss = sequenceToMolV3000(obj.SS, false, true, format) +
       '\n' + `> <Sequence>\nSense Strand\n\n`;
-      result += linkV3000([ss, as], true) + '\n\n';
+      result += linkStrandsV3000({senseStrands: [ss], antiStrands:[as]}, true) + '\n\n';
     } else if (typeColumn.get(i) == SEQUENCE_TYPES.SENSE_STRAND) {
       const molSS = sequenceToMolV3000(structureColumn.get(i), false, true, format) +
       '\n' + `> <Sequence>\nSense Strand\n\n`;
@@ -50,6 +50,15 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
       const molAS = sequenceToMolV3000(structureColumn.get(i), true, true, format) +
         '\n' + `> <Sequence>\nAnti Sense\n\n`;
       result += molAS;
+    } else if (typeColumn.get(i) == SEQUENCE_TYPES.TRIPLEX) {
+      const obj = parseStrandsFromDuplexCell(structureColumn.get(i));
+      const as = sequenceToMolV3000(obj.AS, true, true, format) +
+      '\n' + `> <Sequence>\nAnti Sense\n\n`;
+      const as2 = sequenceToMolV3000(obj.AS2, true, true, format) +
+      '\n' + `> <Sequence>\nAnti Sense\n\n`;
+      const ss = sequenceToMolV3000(obj.SS, false, true, format) +
+      '\n' + `> <Sequence>\nSense Strand\n\n`;
+      result += linkStrandsV3000({senseStrands: [ss], antiStrands:[as, as2]}, true) + '\n\n';
     }
 
     for (const col of table.columns) {
