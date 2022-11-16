@@ -207,7 +207,7 @@ export function modelCatalog() {
   let modelsView = ModelHandler.findModelCatalogView();
   if (modelsView == null) {
     let view = new ModelCatalogView();
-    view.name = 'Models';
+    view.name = 'ModelHub';
     let parser = document.createElement('a');
     parser.href = window.location.href;
     let pathSegments = parser.pathname.split('/');
