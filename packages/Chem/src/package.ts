@@ -441,7 +441,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     const packageExists = checkPackage('Charts', 'radarViewerDemo');
     if (packageExists) {
       let radarViewer = DG.Viewer.fromType('RadarViewer', table, {
-        columnNames: columnNames,  
+        eventsColumnNames: columnNames,  
       });
       view.addViewer(radarViewer);
     } else {
