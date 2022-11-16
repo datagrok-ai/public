@@ -40,7 +40,7 @@ category('TableQuery', async () => {
   before(async () => {
     const dcParams = {dataSource: 'PostgresNet', server: 'dev.datagrok.ai:54322', db: 'northwind',
       login: 'datagrok', password: 'datagrok'};
-    dc = DG.DataConnection.createDB('test', dcParams);
+    dc = DG.DataConnection.create('test', dcParams);
     dc = await grok.dapi.connections.save(dc);
   });
 
