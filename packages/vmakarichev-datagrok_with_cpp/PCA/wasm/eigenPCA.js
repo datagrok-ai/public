@@ -20,14 +20,14 @@ else if (typeof define === 'function' && define['amd'])
 else if (typeof exports === 'object')
   exports["exportEigenPCA"] = exportEigenPCA;
 
+  
+var EigenPCA = undefined;
 
-  var EigenPCA = undefined;
-
-  async function initEigenPCA() {
-    if (EigenPCA === undefined) {
-      console.log("Wasm not Loaded, Loading");
-      EigenPCA  = await exportEigenPCA();
-    } else {
-      console.log("Wasm Loaded, Passing");
-    }
+async function initEigenPCA() {
+  if (EigenPCA === undefined) {
+    console.log("Wasm not Loaded, Loading");
+    EigenPCA  = await exportEigenPCA();
+  } else {
+    console.log("Wasm Loaded, Passing");
   }
+}

@@ -23,7 +23,7 @@ int pca::pcaUsingCorrelationMatrix(Float * data,
 	Float * approxData) noexcept
 {
 	// check number of principal components
-	if (height < numOfPrincipalComponents)
+	if (height < numOfPrincipalComponents || numOfPrincipalComponents < 1)
 		return UNCORRECT_ARGUMENTS_ERROR;
 
 	// assign data and Eigen matrix
