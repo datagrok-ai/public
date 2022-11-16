@@ -20,7 +20,7 @@ export class RadarViewer extends DG.JsViewer {
   showMin: boolean;
   showMax: boolean;
   showValues: boolean;
-  columnNames: string[] | null;
+  eventsColumnNames: string[];
 
   constructor() {
     super();
@@ -34,8 +34,8 @@ export class RadarViewer extends DG.JsViewer {
     this.showMin = this.bool('showMin', true);
     this.showMax = this.bool('showMax', true);
     this.showValues = this.bool('showValues', true);
-    this.columnNames = this.stringList('columnNames', null);
-  
+    this.eventsColumnNames = this.addProperty('eventsColumnNames', DG.TYPE.COLUMN_LIST);
+    
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.myChart = echarts.init(chartDiv);
@@ -177,7 +177,7 @@ export class RadarViewer extends DG.JsViewer {
           this.checkConditions();
         }
         break;
-      case 'columnNames':
+      case 'eventsColumnNames':
         this.init();
         break;
     }
@@ -255,16 +255,18 @@ export class RadarViewer extends DG.JsViewer {
 
   getColumns() : DG.Column<any>[] {
     let columns: DG.Column<any>[] = [];
-    if (this.columnNames === null) {
-      columns = Array.from(this.dataFrame.columns.numerical);
-      for (let i = 0; i < columns.length; ++i) {
-        if (columns[i].type === 'datetime') {
-          columns.splice(i, 1);
-        }
-      }
+    let numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numerical);
+    if (this.eventsColumnNames?.length > 0) {
+      let selectedColumns = this.dataFrame.columns.byNames(this.eventsColumnNames);
+      for (let i = 0; i < selectedColumns.length; ++i) 
+        if (numericalColumns.includes(selectedColumns[i])) 
+          columns.push(selectedColumns[i]);
     } else {
-      columns = this.dataFrame.columns.byNames(this.columnNames);
+      columns = numericalColumns.slice(0, 20);
     }
+    for (let i = 0; i < columns.length; ++i) 
+      if (columns[i].type === 'datetime') 
+        columns.splice(i, 1);
     return columns;
   }
 
