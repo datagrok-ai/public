@@ -362,30 +362,6 @@ export class TableQuery extends DataQuery {
    * @type {string[]} */
   get fields(): string[] { return api.grok_TableQuery_GetFields(this.dart); }
   set fields(fields: string[]) { api.grok_TableQuery_SetFields(this.dart, fields); }
-}
-
-/** Represents a table query
- * @extends DataQuery */
-export class TableQuery extends DataQuery {
-  /** @constructs TableQeury */
-  constructor(dart: any) { super(dart); }
-
-  /** Creates a TableQuery
-   * @param {DataConnection} connection - DataConnection to query table from
-   * @returns {TableQuery} */
-  static create(connection: DataConnection): TableQuery {
-    return toJs(api.grok_TableQuery_Create(connection.dart));
-  }
-
-  /** Table name
-   * @type {string} */
-  get table(): string { return api.grok_TableQuery_GetTable(this.dart); }
-  set table(tableName: string) { api.grok_TableQuery_SetTable(this.dart, tableName); }
-
-  /** Fields array
-   * @type {string[]} */
-  get fields(): string[] { return api.grok_TableQuery_GetFields(this.dart); }
-  set fields(fields: string[]) { api.grok_TableQuery_SetFields(this.dart, fields); }
 
   /** Executes query
    * @returns {Promise<DataFrame>} */
