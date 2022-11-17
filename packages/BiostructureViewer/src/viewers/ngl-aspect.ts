@@ -1,13 +1,24 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from "datagrok-api/dg";
-import { PdbEntry } from '../pdb-entry.js';
-
+import * as DG from 'datagrok-api/dg';
+import {PdbEntry} from '../pdb-entry.js';
 
 // export let _package = new DG.Package();
 
-export class NglAspect {
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+};
 
+export class NglAspect {
   stage: any;
   entry: string;
   colorScheme: any;
@@ -19,10 +30,9 @@ export class NglAspect {
 
   public async init(view: DG.TableView, entry: string, colorScheme: {}, nglHost: HTMLElement,
     repChoice: DG.InputBase, twinSelections: {}, ligandSelection: { [key: string]: boolean }) {
-
     this.colorScheme = colorScheme;
-    let col_background = this.colorScheme["col_background"];
-    let col_helix = this.colorScheme[""]
+    const col_background = this.colorScheme['col_background'];
+    const col_helix = this.colorScheme[''];
 
     nglHost.style.backgroundColor = col_background;
     view.box = true;
@@ -31,17 +41,48 @@ export class NglAspect {
     this.selection = twinSelections;
     //@ts-ignore
     this.stage = new NGL.Stage(nglHost);
-    this.render(true, ligandSelection);
-    this.nglResize(nglHost);
+    // let originalRender = this.stage.viewer.renderer.render;
+    // this.stage.viewer.renderer.render = function(scene: any, camera: any) {
+    //     //@ts-ignore
+    //     let va = this.stage;
+    //     console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
+    //   //@ts-ignore
+    //   originalRender.bind(this.stage.viewer.renderer)(scene, camera);
+    //   //@ts-ignore
+    //   va = this.stage;
+    //   console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
+    // }
+    // .bind(this);
+
+    const originalRender = this.stage.viewer.render;
+    this.stage.viewer.render = function() {
+      //@ts-ignore
+      originalRender.bind(this.stage.viewer)();
+      console.log('ABABABABABABABABABABAB');
+      console.debug('JSON stage: ' + JSON.stringify(this.stage, getCircularReplacer()));
+    }
+      .bind(this);
+
+    // let listener = () => {
+    //   let va = this.stage;
+    //   console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
+    // };
+    // this.stage.viewer.signals.rendered.add(listener);
+
+    await this.render(true, ligandSelection);
+    await new Promise((r) => setTimeout(r, 4000));
+    await this.nglResize(nglHost);
+    let va = this.stage;
+    console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
   }
 
   public async render(reload: boolean, ligandSelection: { [key: string]: boolean }) {
     let switchObj = this.selection;
     this.ligandSelection = ligandSelection;
 
-    let col_chain = this.colorScheme["col_chain"];
-    let col_helix = this.colorScheme["col_helix"];
-    let col_highlight = this.colorScheme["col_highlight"];
+    let col_chain = this.colorScheme['col_chain'];
+    let col_helix = this.colorScheme['col_helix'];
+    let col_highlight = this.colorScheme['col_highlight'];
 
     //highlights in NGL
     let scheme_buffer: string[][] = [];
@@ -83,10 +124,9 @@ export class NglAspect {
     schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
 
 
-
     if (reload) {
       this.stage.removeAllComponents();
-      await this.loadPdb(this.entry, this.repChoice, { color: schemeId });
+      await this.loadPdb(this.entry, this.repChoice, {color: schemeId});
 
       // //recovering ball and stick residual at cartoon view
       // if (this.repChoice.value === "cartoon") {
@@ -107,9 +147,9 @@ export class NglAspect {
       // }
 
     } else {
-      this.stage.compList[0].addRepresentation(this.repChoice.value, { color: schemeId });
+      this.stage.compList[0].addRepresentation(this.repChoice.value, {color: schemeId});
 
-      if (this.repChoice.value === "cartoon") {
+      if (this.repChoice.value === 'cartoon') {
         Object.keys(switchObj).forEach((keyChain) => {
           Object.keys(switchObj[keyChain]).forEach((keyFtStart) => {
 
@@ -117,7 +157,7 @@ export class NglAspect {
 
             if (typeof switchObj[keyChain][keyFtStart]['representation'] === 'undefined') {
               let selection = `${index} and :${keyChain} and (not backbone or .CA or (PRO and .N))`;
-              let addedRepresentation = this.stage.compList[0].addRepresentation("ball+stick", { sele: selection });
+              let addedRepresentation = this.stage.compList[0].addRepresentation('ball+stick', {sele: selection});
               switchObj[keyChain][keyFtStart]['representation'] = addedRepresentation;
             }
 
@@ -134,7 +174,7 @@ export class NglAspect {
         if (this.ligandSelection[ligand][0] === true) {
           if (!Object.keys(this.ligandRepresentations).includes(ligand)) {
             this.ligandRepresentations[ligand] =
-              this.stage.compList[0].addRepresentation("licorice", { sele: `${this.ligandSelection[ligand][1]} and :${ligand}` });
+              this.stage.compList[0].addRepresentation('licorice', {sele: `${this.ligandSelection[ligand][1]} and :${ligand}`});
           }
           this.ligandRepresentations[ligand].setVisibility(true);
         } else if (Object.keys(this.ligandRepresentations).includes(ligand)) {
@@ -149,24 +189,40 @@ export class NglAspect {
 
   // load the 3D model
   private async loadPdb(pdbStr: string, repChoice: DG.InputBase, schemeObj: any) {
-    var stringBlob = new Blob([pdbStr], { type: 'text/plain' });
-    await this.stage.loadFile(stringBlob, { ext: "pdb" }).then(function (o: any) {
-    //await this.stage.loadFile(pdbStr).then(function (o: any) {
-      o.addRepresentation(repChoice.value, schemeObj);
-      o.autoView();
-    });
+    var stringBlob = new Blob([pdbStr], {type: 'text/plain'});
+    let a = await this.stage.loadFile(stringBlob, {ext: 'pdb'});
+    // .then((o: any) => {
+    // //await this.stage.loadFile(pdbStr).then(function (o: any) {
+    //   let vv = this.stage;
+    //   console.log(vv.viewer.renderer.domElement.toDataURL('image/png'));
+    //   o.addRepresentation(repChoice.value, schemeObj);
+    //   vv = this.stage;
+    //   console.log(vv.viewer.renderer.domElement.toDataURL('image/png'));
+    //   o.autoView();
+    //   vv = this.stage;
+    //   console.log(vv.viewer.renderer.domElement.toDataURL('image/png'));
+    // });
+
+    await this.stage.compList[0].addRepresentation(repChoice.value, schemeObj);
+    await this.stage.compList[0].autoView();
+
+    let va = this.stage;
+    console.log(va.viewer.renderer.domElement.toDataURL('image/png'));
   }
 
   // viewer resize
-  private _resize(host: HTMLElement) {
+  private async _resize(host: HTMLElement) {
     let canvas = host.querySelector('canvas');
     canvas!.width = Math.floor(host.clientWidth * window.devicePixelRatio);
-    canvas!.height = Math.floor(host.clientHeight * window.devicePixelRatio);
-    this.stage.handleResize();
+    canvas!.height = Math.floor(host.clientWidth * window.devicePixelRatio);
+    await this.stage.handleResize();
+    console.log(this.stage.viewer.renderer.domElement.toDataURL('image/png'));
   }
 
-  private nglResize(host: HTMLElement) {
-    ui.onSizeChanged(host).subscribe((_) => this._resize(host));
-    this._resize(host);
+  private async nglResize(host: HTMLElement) {
+    ui.onSizeChanged(host).subscribe((_) => {
+      this._resize(host);
+    });
+    await this._resize(host);
   }
 }
