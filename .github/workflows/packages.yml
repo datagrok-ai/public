@@ -250,6 +250,7 @@ jobs:
           directory: "packages/${{ matrix.package }}/dockerfiles"
 
       - name: Get docker image version
+        if: steps.check_directory.outputs.files_exists == 'true' && steps.check_empty_dir.outputs.dir_empty == 'false' && (matrix.publish == 'true' || steps.directory_changes_checker.output.hasChanges == 'true')
         id: docker_name_ver
         working-directory: packages/${{ matrix.package }}
         run: |
