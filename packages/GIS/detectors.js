@@ -153,7 +153,7 @@ class GisPackageDetectors extends DG.Package {
     let estCoeff = 0; //coefficient of estimation [0-100] the more value - the more probability
     const colName = col.name.toLowerCase();
 
-    if ((colName.includes('address') || colName.includes('street')))
+    if (colName.includes('address') || colName.includes('street') || colName.includes('location'))
       estCoeff += 40;
 
     //TODO: put variants of patterns into array and perform check for array elements (?)

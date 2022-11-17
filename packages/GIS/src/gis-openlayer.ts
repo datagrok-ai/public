@@ -247,9 +247,6 @@ export class OpenLayers {
 
     this.dragBox.on('boxend', () => {
       this.selectMarkersByGeometry(this.dragBox.getGeometry());
-
-      // this.olSelectedMarkers.extend(boxFeatures);
-      // this.updateSelection(this.olSelectedMarkers);
     });
 
     OLG = this;
@@ -275,7 +272,7 @@ export class OpenLayers {
       //NOTE: this will be usefull in case of multilayers approach - for a now we have just one layer
       // this.olMap.getAllLayers()
     }
-    */
+  */
   }
   get heatmapBlur(): number {return this.heatmapBlurParam;}
 
@@ -512,6 +509,9 @@ export class OpenLayers {
   updateMarkersGLLayer(recreate: boolean = true) {
     this.markerGLStyle = this.prepareGLStyle();
     this.markerGLSelStyle = this.prepareGLStyle(undefined, this.selectedColor, 0.9, undefined, false);
+
+    // this.olMarkersLayerGL?.updateStyleVariables
+    this.olMarkersLayerGL?.setProperties({style: this.markerGLStyle});
 
     if (recreate) {
       let previousLayer = this.olMarkersLayerGL;
@@ -1009,12 +1009,12 @@ export class OpenLayers {
     aLayer = this.useWebGL ? this.olMarkersLayerGL : this.olMarkersLayer;
     if ((typeof layer != 'undefined') && (layer))
       aLayer = layer;
-    const startTime = Date.now();
+    // const startTime = Date.now();
     if (aLayer) {
       const src = aLayer.getSource();
       if (src)
         src.addFeatures(arrFeatures);
     }
-    console.log('GIS addFeaturesBulk: ' + (Date.now() - startTime));
+    // console.log('GIS addFeaturesBulk: ' + (Date.now() - startTime));
   }
 }
