@@ -49,6 +49,7 @@ import './viewers/viewers';
 //import './gui/chem-sketcher';
 import './grid/grid';
 import './connections/queries-test';
+import './scripts/scripts-params';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
