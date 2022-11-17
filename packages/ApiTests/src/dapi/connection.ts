@@ -17,7 +17,5 @@ category('Dapi: connection', () => {
     expect((await GDC.find(dc.id)).id, dc.id);
     await GDC.delete(dc);
     expect(await GDC.find(dc.id), undefined);
-    await grok.dapi.permissions.grant(dc, await grok.dapi.groups.filter('').first(), true);
-    expect(await grok.dapi.permissions.check(dc, "Edit"), true);
   });
 });
