@@ -88,11 +88,12 @@ jobs:
           CONTINUE_PUBLISH_JOB="no"
           if [[ "${MATRIX_PUBLISH_JSON}" != "[]" ]]; then
             CONTINUE_PUBLISH_JOB="yes"
+
+            echo 'Result GitHub Actions Matrix JSON'
+            echo "${MATRIX_PUBLISH_JSON}"
           fi
-          echo '::echo::on'
           echo "publish=${CONTINUE_PUBLISH_JOB}" >> $GITHUB_OUTPUT
           echo "matrix_publish=${PUBLISH_JSON}" >> $GITHUB_OUTPUT
-          echo '::echo::off'
 
   publish:
     name: Test and publish to npm
