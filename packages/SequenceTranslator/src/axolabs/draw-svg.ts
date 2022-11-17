@@ -128,11 +128,7 @@ export function drawAxolabsPattern(
     isPtoExist ? svg.text('ps linkage', 2 * BASE_RADIUS - 8, Y.textLegend(asExists), LEGEND_FONT_SIZE, FONT_COLOR) : '',
   );
 
-  let numberOfSsNucleotides = 0;
-  for (let i = 0; i < ssBases.length; i++) {
-    if (!isOverhang(ssBases[i]))
-      numberOfSsNucleotides++;
-  }
+  const numberOfSsNucleotides = ssBases.filter((value) => !isOverhang(value)).length;
   let nucleotideCounter = numberOfSsNucleotides;
   for (let i = ssBases.length - 1; i > -1; i--) {
     const xOfNumbers = xOfBaseCircles(i, ssRightOverhangs) +
@@ -157,11 +153,7 @@ export function drawAxolabsPattern(
       BASE_RADIUS, Y.SS_TEXTS + PS_LINKAGE_RADIUS, PS_LINKAGE_COLOR) : '',
   );
 
-  let numberOfAsNucleotides = 0;
-  for (let i = 0; i < asBases.length; i++) {
-    if (!isOverhang(asBases[i]))
-      numberOfAsNucleotides++;
-  }
+  const numberOfAsNucleotides = asBases.filter((value) => !isOverhang(value)).length;
   if (asExists) {
     let nucleotideCounter = numberOfAsNucleotides;
     for (let i = asBases.length - 1; i > -1; i--) {
