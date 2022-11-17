@@ -1,4 +1,6 @@
-import {axolabsMap} from './constants';
+import {AXOLABS_MAP} from './constants';
+import {NUCLEOTIDES} from '../structures-works/map';
+import {isOverhang} from './helpers';
 
 // https://uxdesign.cc/star-rating-make-svg-great-again-d4ce4731347e
 function getPointsToDrawStar(centerX: number, centerY: number): string {
@@ -15,14 +17,14 @@ function getPointsToDrawStar(centerX: number, centerY: number): string {
     const r = (i % 2 == 0) ? outerRadius : innerRadius;
     const currentX = centerX + Math.cos(i * angle + angleOffsetToCenterStar) * r;
     const currentY = centerY + Math.sin(i * angle + angleOffsetToCenterStar) * r;
-    points += currentX + ',' + currentY + ' ';
+    points += `${currentX},${currentY} `;
   }
   return points;
 }
 
 function countOverhangsOnTheRightEdge(modifications: string[]): number {
   let i = 0;
-  while (i < modifications.length && modifications[i].slice(-3) == '(o)')
+  while (i < modifications.length && isOverhang(modifications[i]))
     i++;
   return (i == modifications.length - 1) ? 0 : i;
 }
@@ -36,7 +38,7 @@ function getTextWidth(text: string, font: number): number {
 }
 
 function getTextInsideCircle(bases: string[], index: number): string {
-  return (bases[index].slice(-3) == '(o)' || !['A', 'G', 'C', 'U', 'T'].includes(bases[index])) ? '' : bases[index];
+  return (isOverhang(bases[index]) || !NUCLEOTIDES.includes(bases[index])) ? '' : bases[index];
 }
 
 function getFontColorVisibleOnBackground(rgbString: string): string {
@@ -45,15 +47,68 @@ function getFontColorVisibleOnBackground(rgbString: string): string {
 }
 
 function getBaseColor(base: string): string {
-  return axolabsMap[base]['color'];
+  return AXOLABS_MAP[base]['color'];
 }
+
+const svg = {
+  xmlns: 'http://www.w3.org/2000/svg',
+  render: function(width: number, height: number): Element {
+    const e = document.createElementNS(this.xmlns, 'svg');
+    e.setAttribute('id', 'mySvg');
+    e.setAttribute('width', String(width));
+    e.setAttribute('height', String(height));
+    return e;
+  },
+  circle: function(x: number, y: number, radius: number, color: string): Element {
+    const e = document.createElementNS(this.xmlns, 'circle');
+    e.setAttribute('cx', String(x));
+    e.setAttribute('cy', String(y));
+    e.setAttribute('r', String(radius));
+    e.setAttribute('fill', color);
+    return e;
+  },
+  text: function(text: string, x: number, y: number, fontSize: number, color: string): Element {
+    const e = document.createElementNS(this.xmlns, 'text');
+    e.setAttribute('x', String(x));
+    e.setAttribute('y', String(y));
+    e.setAttribute('font-size', String(fontSize));
+    e.setAttribute('font-weight', 'normal');
+    e.setAttribute('font-family', 'Arial');
+    e.setAttribute('fill', color);
+    e.innerHTML = text;
+    return e;
+  },
+  star: function(x: number, y: number, fill: string): Element {
+    const e = document.createElementNS(this.xmlns, 'polygon');
+    e.setAttribute('points', getPointsToDrawStar(x, y));
+    e.setAttribute('fill', fill);
+    return e;
+  },
+};
+
+const BASE_RADIUS = 15;
+const shiftToAlignTwoDigitNumberNearCircle = -10;
+const shiftToAlignOneDigitNumberNearCircle = -5;
+const legendRadius = 6;
+const psLinkageRadius = 5;
+const baseFontSize = 17;
+const legendFontSize = 14;
+const psLinkageColor = 'red';
+const fontColor = 'var(--grey-6)';
+const titleFontColor = 'black';
+const modificationsColor = 'red';
+const ssLeftText = 'SS: 5\'';
+const asLeftText = 'AS: 3\'';
+const ssRightText = '3\'';
+const asRightText = '5\'';
 
 export function drawAxolabsPattern(
   patternName: string, asExists: boolean, ssBases: string[],
   asBases: string[], ssPtoStatuses: boolean[], asPtoStatuses: boolean[],
   ssThreeModification: string, ssFiveModification: string,
   asThreeModification: string, asFiveModification: string, comment: string,
-  enumerateModifications: string[]) {
+  enumerateModifications: string[],
+): Element {
   function getEquidistantXForLegend(index: number): number {
     return Math.round((index + startFrom) * width / (uniqueBases.length + startFrom) + legendRadius);
   }
@@ -64,70 +119,18 @@ export function drawAxolabsPattern(
   }
 
   function getShiftToAlignNumberInsideCircle(bases: string[], generalIndex: number, nucleotideIndex: number): number {
-    return (nucleotideIndex < 10 || ['A', 'G', 'C', 'U', 'T'].
-      includes(bases[generalIndex])) ? shiftToAlignOneDigitNumberInsideCircle : shiftToAlignTwoDigitNumberInsideCircle;
+    return (nucleotideIndex < 10 || NUCLEOTIDES.includes(bases[generalIndex])) ?
+      shiftToAlignOneDigitNumberNearCircle : shiftToAlignTwoDigitNumberNearCircle;
   }
-
-  const svg = {
-    xmlns: 'http://www.w3.org/2000/svg',
-    render: function(width: number, height: number) {
-      const e = document.createElementNS(this.xmlns, 'svg');
-      e.setAttribute('id', 'mySvg');
-      e.setAttribute('width', String(width));
-      e.setAttribute('height', String(height));
-      return e;
-    },
-    circle: function(x: number, y: number, radius: number, color: string) {
-      const e = document.createElementNS(this.xmlns, 'circle');
-      e.setAttribute('cx', String(x));
-      e.setAttribute('cy', String(y));
-      e.setAttribute('r', String(radius));
-      e.setAttribute('fill', color);
-      return e;
-    },
-    text: function(text: string, x: number, y: number, fontSize: number, color: string) {
-      const e = document.createElementNS(this.xmlns, 'text');
-      e.setAttribute('x', String(x));
-      e.setAttribute('y', String(y));
-      e.setAttribute('font-size', String(fontSize));
-      e.setAttribute('font-weight', 'normal');
-      e.setAttribute('font-family', 'Arial');
-      e.setAttribute('fill', color);
-      e.innerHTML = text;
-      return e;
-    },
-    star: function(x: number, y: number, fill: string) {
-      const e = document.createElementNS(this.xmlns, 'polygon');
-      e.setAttribute('points', getPointsToDrawStar(x, y));
-      e.setAttribute('fill', fill);
-      return e;
-    },
-  };
 
   ssBases = ssBases.reverse();
   ssPtoStatuses = ssPtoStatuses.reverse();
-
-  const baseRadius = 15;
-  const shiftToAlignTwoDigitNumberInsideCircle = -10;
-  const shiftToAlignOneDigitNumberInsideCircle = -5;
-  const legendRadius = 6;
-  const psLinkageRadius = 5;
-  const baseFontSize = 17;
-  const legendFontSize = 14;
-  const psLinkageColor = 'red';
-  const fontColor = 'var(--grey-6)';
-  const titleFontColor = 'black';
-  const modificationsColor = 'red';
-  const ssLeftText = 'SS: 5\'';
-  const asLeftText = 'AS: 3\'';
-  const ssRightText = '3\'';
-  const asRightText = '5\'';
 
   const ssRightOverhangs = countOverhangsOnTheRightEdge(ssBases);
   const asRightOverhangs = countOverhangsOnTheRightEdge(asBases);
   const resultingNumberOfNucleotidesInStrands =
     Math.max(ssBases.length - ssRightOverhangs, asBases.length - asRightOverhangs);
-  const baseDiameter = 2 * baseRadius;
+  const baseDiameter = 2 * BASE_RADIUS;
   const widthOfBases =
     baseDiameter * (resultingNumberOfNucleotidesInStrands + Math.max(ssRightOverhangs, asRightOverhangs));
   const widthOfLeftModification =
@@ -139,12 +142,12 @@ export function drawAxolabsPattern(
   const width =
     widthOfLeftText + widthOfLeftModification + widthOfBases +
     widthOfRightModification + widthOfRightText + baseDiameter;
-  const height = asExists ? 11 * baseRadius : 9 * baseRadius;
-  const xOfTitle = baseRadius; // Math.round(width / 4),
+  const height = asExists ? 11 * BASE_RADIUS : 9 * BASE_RADIUS;
+  const xOfTitle = BASE_RADIUS; // Math.round(width / 4),
   const uniqueBases = asExists ? [...new Set(ssBases.concat(asBases))] : [...new Set(ssBases)];
-  const isPtoExist =
-    asExists ? [...new Set(ssPtoStatuses.concat(asPtoStatuses))].includes(true) :
-      [...new Set(ssPtoStatuses)].includes(true);
+  const isPtoExist = asExists ?
+    [...new Set(ssPtoStatuses.concat(asPtoStatuses))].includes(true) :
+    [...new Set(ssPtoStatuses)].includes(true);
   const startFrom = isPtoExist ? 1 : 0;
   const xOfLeftTexts = 0;
   const xOfLeftModifications = xOfLeftTexts + widthOfLeftText - 5;
@@ -153,16 +156,16 @@ export function drawAxolabsPattern(
   const xOfRightTexts =
     Math.max(xOfSsRightModifications, xOfAsRightModifications) +
       widthOfLeftModification + baseDiameter * (Math.max(ssRightOverhangs, asRightOverhangs));
-  const yOfTitle = baseRadius;
-  const yOfSsNumbers = 2 * baseRadius;
-  const yOfAsNumbers = 8.5 * baseRadius;
-  const yOfSsTexts = 4 * baseRadius;
-  const yOfAsTexts = 7 * baseRadius;
-  const yOfComment = asExists ? 11 * baseRadius : 8.5 * baseRadius;
-  const yOfSsCircles = 3.5 * baseRadius;
-  const yOfAsCircles = 6.5 * baseRadius;
-  const yOfCirclesInLegends = asExists ? 9.5 * baseRadius : 6 * baseRadius;
-  const yOfTextLegend = asExists ? 10 * baseRadius - 3 : yOfAsCircles - 3;
+  const yOfTitle = BASE_RADIUS;
+  const yOfSsNumbers = 2 * BASE_RADIUS;
+  const yOfAsNumbers = 8.5 * BASE_RADIUS;
+  const yOfSsTexts = 4 * BASE_RADIUS;
+  const yOfAsTexts = 7 * BASE_RADIUS;
+  const yOfComment = asExists ? 11 * BASE_RADIUS : 8.5 * BASE_RADIUS;
+  const yOfSsCircles = 3.5 * BASE_RADIUS;
+  const yOfAsCircles = 6.5 * BASE_RADIUS;
+  const yOfCirclesInLegends = asExists ? 9.5 * BASE_RADIUS : 6 * BASE_RADIUS;
+  const yOfTextLegend = asExists ? 10 * BASE_RADIUS - 3 : yOfAsCircles - 3;
 
   const image = svg.render(width, height);
 
@@ -176,67 +179,67 @@ export function drawAxolabsPattern(
     svg.text(ssThreeModification, xOfSsRightModifications, yOfSsTexts, baseFontSize, modificationsColor),
     asExists ? svg.text(asFiveModification, xOfAsRightModifications, yOfAsTexts, baseFontSize, modificationsColor) : '',
     svg.text(comment, xOfLeftTexts, yOfComment, legendFontSize, fontColor),
-    isPtoExist ? svg.star(baseRadius, yOfCirclesInLegends, psLinkageColor) : '',
-    isPtoExist ? svg.text('ps linkage', 2 * baseRadius - 8, yOfTextLegend, legendFontSize, fontColor) : '',
+    isPtoExist ? svg.star(BASE_RADIUS, yOfCirclesInLegends, psLinkageColor) : '',
+    isPtoExist ? svg.text('ps linkage', 2 * BASE_RADIUS - 8, yOfTextLegend, legendFontSize, fontColor) : '',
   );
 
   let numberOfSsNucleotides = 0;
   for (let i = 0; i < ssBases.length; i++) {
-    if (ssBases[i].slice(-3) != '(o)')
+    if (!isOverhang(ssBases[i]))
       numberOfSsNucleotides++;
   }
   let nucleotideCounter = numberOfSsNucleotides;
   for (let i = ssBases.length - 1; i > -1; i--) {
     const xOfNumbers = getXOfBaseCircles(i, ssRightOverhangs) +
       getShiftToAlignNumberInsideCircle(ssBases, ssBases.length - i, numberOfSsNucleotides - nucleotideCounter);
-    if (ssBases[i].slice(-3) != '(o)')
+    if (!isOverhang(ssBases[i]))
       nucleotideCounter--;
-    const n = (ssBases[i].slice(-3) != '(o)' && enumerateModifications.includes(ssBases[i])) ?
+    const n = (!isOverhang(ssBases[i]) && enumerateModifications.includes(ssBases[i])) ?
       String(numberOfSsNucleotides - nucleotideCounter) : '';
     image.append(
       svg.text(n, xOfNumbers, yOfSsNumbers, legendFontSize, fontColor),
-      svg.circle(getXOfBaseCircles(i, ssRightOverhangs), yOfSsCircles, baseRadius, getBaseColor(ssBases[i])),
+      svg.circle(getXOfBaseCircles(i, ssRightOverhangs), yOfSsCircles, BASE_RADIUS, getBaseColor(ssBases[i])),
       svg.text(getTextInsideCircle(ssBases, i), xOfNumbers, yOfSsTexts, baseFontSize,
         getFontColorVisibleOnBackground(getBaseColor(ssBases[i]))),
       ssPtoStatuses[i] ?
-        svg.star(getXOfBaseCircles(i, ssRightOverhangs) + baseRadius, yOfSsTexts + psLinkageRadius, psLinkageColor) :
+        svg.star(getXOfBaseCircles(i, ssRightOverhangs) + BASE_RADIUS, yOfSsTexts + psLinkageRadius, psLinkageColor) :
         '',
     );
   }
   image.append(
     ssPtoStatuses[ssBases.length] ?
       svg.star(getXOfBaseCircles(ssBases.length, ssRightOverhangs) +
-      baseRadius, yOfSsTexts + psLinkageRadius, psLinkageColor) : '',
+      BASE_RADIUS, yOfSsTexts + psLinkageRadius, psLinkageColor) : '',
   );
 
   let numberOfAsNucleotides = 0;
   for (let i = 0; i < asBases.length; i++) {
-    if (asBases[i].slice(-3) != '(o)')
+    if (!isOverhang(asBases[i]))
       numberOfAsNucleotides++;
   }
   if (asExists) {
     let nucleotideCounter = numberOfAsNucleotides;
     for (let i = asBases.length - 1; i > -1; i--) {
-      if (asBases[i].slice(-3) != '(o)')
+      if (!isOverhang(asBases[i]))
         nucleotideCounter--;
       const xOfNumbers = getXOfBaseCircles(i, asRightOverhangs) +
         getShiftToAlignNumberInsideCircle(asBases, i, nucleotideCounter + 1);
-      const n = (asBases[i].slice(-3) != '(o)' && enumerateModifications.includes(asBases[i])) ?
+      const n = (!isOverhang(asBases[i]) && enumerateModifications.includes(asBases[i])) ?
         String(nucleotideCounter + 1) : '';
       image.append(
         svg.text(n, xOfNumbers, yOfAsNumbers, legendFontSize, fontColor),
-        svg.circle(getXOfBaseCircles(i, asRightOverhangs), yOfAsCircles, baseRadius, getBaseColor(asBases[i])),
+        svg.circle(getXOfBaseCircles(i, asRightOverhangs), yOfAsCircles, BASE_RADIUS, getBaseColor(asBases[i])),
         svg.text(getTextInsideCircle(asBases, i),
           getXOfBaseCircles(i, asRightOverhangs) + getShiftToAlignNumberInsideCircle(asBases, i, nucleotideCounter + 1),
           yOfAsTexts, baseFontSize, getFontColorVisibleOnBackground(getBaseColor(asBases[i]))),
         asPtoStatuses[i] ? svg.star(getXOfBaseCircles(i, asRightOverhangs) +
-          baseRadius, yOfAsTexts + psLinkageRadius, psLinkageColor) : '',
+          BASE_RADIUS, yOfAsTexts + psLinkageRadius, psLinkageColor) : '',
       );
     }
     image.append(
       asPtoStatuses[asBases.length] ?
         svg.star(getXOfBaseCircles(asBases.length, asRightOverhangs) +
-         baseRadius, yOfAsTexts + psLinkageRadius, psLinkageColor) : '',
+         BASE_RADIUS, yOfAsTexts + psLinkageRadius, psLinkageColor) : '',
     );
   }
 
