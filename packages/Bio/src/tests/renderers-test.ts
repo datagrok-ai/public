@@ -17,11 +17,6 @@ category('renderers', () => {
   before(async () => {
     tvList = [];
     dfList = [];
-    await grok.functions.call('Bio:initBio')
-      .catch((err) => {
-        console.error(errorToConsole(err));
-        throw err;
-      });
   });
 
   after(async () => {
