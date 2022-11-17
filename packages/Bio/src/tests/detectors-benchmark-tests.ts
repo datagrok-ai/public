@@ -49,8 +49,9 @@ category('detectorsBenchmark', () => {
     { /* skipReason: 'slow transmit large dataset to detector' */});
 
   test('separatorDnaLong1e6Few50', async () => {
-    const et: number = await detectMacromoleculeBenchmark(10, bio.NOTATION.SEPARATOR, bio.ALPHABET.DNA, 1E6, 50, '/');
-  });
+      const et: number = await detectMacromoleculeBenchmark(10, bio.NOTATION.SEPARATOR, bio.ALPHABET.DNA, 1E6, 50, '/');
+    },
+    {skipReason: '#1192'});
 
   async function detectMacromoleculeBenchmark(
     maxET: number, notation: bio.NOTATION, alphabet: bio.ALPHABET, length: number, count: number, separator?: string
