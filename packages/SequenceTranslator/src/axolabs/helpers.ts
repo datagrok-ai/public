@@ -5,6 +5,10 @@ export function isOverhang(modification: string): boolean {
   return modification.slice(-3) == '(o)';
 }
 
+export function isOneDigitNumber(n: number): boolean {
+  return n < 10;
+}
+
 // https://uxdesign.cc/star-rating-make-svg-great-again-d4ce4731347e
 export function getPointsToDrawStar(centerX: number, centerY: number): string {
   const innerCirclePoints = 5; // a 5 point star
@@ -40,17 +44,17 @@ export function textWidth(text: string, font: number): number {
   return 2 * context.measureText(text).width;
 }
 
-export function getTextInsideCircle(bases: string[], index: number): string {
+export function textInsideCircle(bases: string[], index: number): string {
   return (isOverhang(bases[index]) || !NUCLEOTIDES.includes(bases[index])) ? '' : bases[index];
 }
 
-export function getFontColorVisibleOnBackground(rgbString: string): string {
-  const rgbIntList = rgbString.match(/\d+/g)!.map((e) => Number(e));
+export function fontColorVisibleOnBackground(base: string): string {
+  const rgbIntList = AXOLABS_MAP[base].color.match(/\d+/g)!.map((e) => Number(e));
   return (rgbIntList[0] * 0.299 + rgbIntList[1] * 0.587 + rgbIntList[2] * 0.114) > 186 ? '#33333' : '#ffffff';
 }
 
-export function getBaseColor(base: string): string {
-  return AXOLABS_MAP[base]['color'];
+export function baseColor(base: string): string {
+  return AXOLABS_MAP[base].color;
 }
 
 export const svg = {
