@@ -2160,7 +2160,7 @@
     },
     "chem-draw-sketcher": {
       "dependencies": {
-        "1.0.0": {
+        "1.0.1": {
           "datagrok-api": "^1.6.0"
         }
       },
