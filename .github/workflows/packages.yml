@@ -229,7 +229,7 @@ jobs:
         id: check_directory
         uses: andstor/file-existence-action@v2
         with:
-          files: "dockerfiles"
+          files: "packages/${{ matrix.package }}/dockerfiles"
 
       - name: Check if dockerfies directory is not empty
         id: check_empty_dir
