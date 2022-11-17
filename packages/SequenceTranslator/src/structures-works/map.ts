@@ -2,7 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import {getAllCodesOfSynthesizer} from './sequence-codes-tools';
 import {differenceOfTwoArrays} from '../helpers';
 
-export const delimiter = ';';
+export const DELIMITER = ';';
+export const NUCLEOTIDES = ['A', 'G', 'C', 'U', 'T'];
 export const SYNTHESIZERS = {
   RAW_NUCLEOTIDES: 'Raw Nucleotides',
   BIOSPRING: 'BioSpring Codes',
@@ -550,8 +551,6 @@ export const map: {[synthesizer: string]:
           },
         },
       },
-      // 'LCMS': {
-      //   'For 2\'-OMe and 2\'-F modified siRNA': {
     };
 
 export const lcmsToGcrs = `LCMS, GCRS
