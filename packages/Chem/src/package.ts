@@ -441,7 +441,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     const packageExists = checkPackage('Charts', 'radarViewerDemo');
     if (packageExists) {
       let radarViewer = DG.Viewer.fromType('RadarViewer', table, {
-        eventsColumnNames: columnNames,  
+        valuesColumnNames: columnNames,  
       });
       view.addViewer(radarViewer);
     } else {
@@ -577,7 +577,6 @@ export async function identifiers(smiles: string): Promise<DG.Widget> {
 export function convertMolNotation(molecule: string, sourceNotation: string, targetNotation: string): string {
   return _convertMolNotation(molecule, sourceNotation, targetNotation, getRdKitModule());
 }
-
 
 //tags: cellEditor
 //description: Molecule
