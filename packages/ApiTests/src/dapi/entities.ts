@@ -26,7 +26,7 @@ category('DataConnection', () => {
   
 });
 
-category('TableQuery', async () => {
+category('TableQuery', () => {
   let dc: DG.DataConnection;
   const tableName = 'public.orders';
   const fields = ['orderid', 'freight'];
@@ -34,10 +34,12 @@ category('TableQuery', async () => {
   const aggregationsDb = [{orderid: '10250'}];
   const havingDb = [{'COUNT(shipcountry)': '2'}];
   const orderByDb = [{orderid: 'ASC'}];
-  const fromTable = await grok.dapi.tables.first();
-  const from = fromTable.name;
+  let fromTable: DG.TableInfo;
+  let from: string;
 
   before(async () => {
+    fromTable = await grok.dapi.tables.first();
+    from = fromTable.name;
     const dcParams = {dataSource: 'PostgresNet', server: 'dev.datagrok.ai:54322', db: 'northwind',
       login: 'datagrok', password: 'datagrok'};
     dc = DG.DataConnection.create('test', dcParams);
@@ -96,9 +98,15 @@ category('TableQuery', async () => {
   });
 });
 
-category('DbTableQueryBuilder', async () => {
-  const fromTable = await grok.dapi.tables.first();
-  const from = fromTable.name;
+category('DbTableQueryBuilder', () => {
+
+  before(async () => {
+    fromTable = await grok.dapi.tables.first();
+    from = fromTable.name;
+  });
+
+  let fromTable: DG.TableInfo;
+  let from: string;
 
   test('From table', async () => {
     const dtqb = DG.DbTableQueryBuilder.fromTable(fromTable);
