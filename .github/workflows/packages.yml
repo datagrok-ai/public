@@ -259,7 +259,7 @@ jobs:
             image_ver+="-${{ steps.datagrok-image.outputs.commit_sha }}"
           fi
           echo "image_ver=$image_ver" >> $GITHUB_OUTPUT
-          echo "package_name=$(jq -r .version package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
+          echo "package_name=$(jq -r .name package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
 
       - name: Build package Docker image
         if: steps.check_directory.outputs.files_exists == 'true' && steps.check_empty_dir.outputs.dir_empty == 'false' && (matrix.publish == 'true' || steps.directory_changes_checker.output.hasChanges == 'true')
