@@ -2296,29 +2296,10 @@ export class ColumnMarkerHelper {
   }
 }
 
-export class ColumnFormatHelper {
-  private readonly column: Column;
-
-  constructor(column: Column) {
-    this.column = column;
-  }
-
-  /** Returns the format best applicable to the column's content. */
-  getAutoFormat(): string | null {
-    return api.grok_Column_GetAutoColor(this.column.dart);
-  }
-
-  /** Returns the format of the dataframe column. See also [GridColumn.format] */
-  get format(): string | null {
-    return this.column.getTag(TAGS.FORMAT) ?? this.getAutoFormat();
-  }
-}
-
 export class ColumnMetaHelper {
   private readonly column: Column;
   private _colors: ColumnColorHelper | undefined;
   private _markers: ColumnMarkerHelper | undefined;
-  private _format: ColumnFormatHelper | undefined;
 
   constructor(column: Column) {
     this.column = column;
@@ -2336,9 +2317,8 @@ export class ColumnMetaHelper {
     return this._markers;
   }
 
-  get format(): ColumnFormatHelper {
-    if (this._format == undefined)
-      this._format = new ColumnFormatHelper(this.column);
-    return this._format;
+  /** Returns the format of the dataframe column. See also [GridColumn.format] */
+  get format(): string | null {
+    return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
   }
 }
