@@ -19,7 +19,8 @@ category('Viewers', () => {
       v != DG.VIEWER.GLOBE &&
       v != DG.VIEWER.SCATTER_PLOT_3D &&
       v != DG.VIEWER.GOOGLE_MAP &&
-      v != DG.VIEWER.SHAPE_MAP);
+      v != DG.VIEWER.SHAPE_MAP &&
+      v != DG.VIEWER.SURFACE_PLOT);
     df = grok.data.demo.demog();
     tv = grok.shell.addTableView(df);
 
