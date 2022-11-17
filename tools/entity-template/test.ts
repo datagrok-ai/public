@@ -9,4 +9,8 @@ category('Examples', () => {
   test('Fail', () => {
     throw 'Exception';
   });
+
+  test('Skipped', async () => {
+    expect(1 === 1 , false);
+  }, {skipReason: 'TASK-ID'});
 });
