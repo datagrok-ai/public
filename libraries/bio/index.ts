@@ -21,11 +21,12 @@ import {
   getStats,
   pickUpPalette,
   getPaletteByType,
+  getAlphabet,
   getAlphabetSimilarity,
   ALPHABET,
   NOTATION,
   TAGS,
-  ALIGNMENT
+  ALIGNMENT,
 } from './src/utils/macromolecule';
 import {INewickHelper} from './src/utils/newick-helper';
 import {NotationConverter} from './src/utils/notation-converter';
@@ -56,6 +57,7 @@ export {
   NotationConverter,
   SplitterFunc,
   getStats,
+  getAlphabet,
   getAlphabetSimilarity,
   getSplitter,
   splitterAsFasta,
