@@ -207,7 +207,7 @@ class BioPackageDetectors extends DG.Package {
     // !!! What is the difference between the gap symbol and separator symbol in stats terms?
     // const noSeparatorRe = /[a-z\d]+$/i;
     const noSeparatorChemRe = /[HBCNOFPSKVYI]/i; // Mendeleev's periodic table single char elements
-    const noSeparatorAlphaDigitRe = /[\dA-Z,& _]/i; // ..., comma, ampersand, space, underscore
+    const noSeparatorAlphaDigitRe = /[\dA-Z,& _\r\n]/i; // ..., comma, ampersand, space, underscore, CR, LF
     const noSeparatorBracketsRe = /[\[\]()<>{}]/i;
     const cleanFreq = Object.assign({}, ...Object.entries(freq)
       .filter(([m, f]) =>
