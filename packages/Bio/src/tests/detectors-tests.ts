@@ -7,6 +7,17 @@ import {after, before, category, test, expect, expectObject} from '@datagrok-lib
 
 import {importFasta} from '../package';
 
+/*
+// snippet to list df columns of semType='Macromolecule' (false positive)
+const df = grok.shell.tableByName('SPGI');
+for (let i = 0; i < df.columns.length; i++) {
+  const col = df.columns.byIndex(i);
+  if (col.semType == 'Macromolecule') {
+  console.log( i + ' - ' + col.name + ' - ' + col.semType);
+  }
+}
+ */
+
 type DfReaderFunc = () => Promise<DG.DataFrame>;
 
 category('detectors', () => {
@@ -127,6 +138,7 @@ MWRSWY-CKHP
     testUnichemSources = 'testUnichemSources',
     testDmvOffices = 'testDmvOffices',
     testAlertCollection = 'testAlertCollection',
+    testSpgi = 'testSpgi',
   }
 
   const samples: { [key: string]: string } = {
@@ -148,6 +160,7 @@ MWRSWY-CKHP
     [Samples.testUnichemSources]: 'System:AppData/Bio/tests/testUnichemSources.csv',
     [Samples.testDmvOffices]: 'System:AppData/Bio/tests/testDmvOffices.csv',
     [Samples.testAlertCollection]: 'System:AppData/Bio/tests/testAlertCollection.csv',
+    [Samples.testSpgi]: 'System:AppData/Bio/tests/SPGI-derived.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -337,7 +350,8 @@ MWRSWY-CKHP
   });
 
   test('samplesFastaPtPosSequence', async () => {
-    await _testPos(readSamples(Samples.fastaPtCsv), 'sequence', bio.NOTATION.FASTA, bio.ALIGNMENT.SEQ, bio.ALPHABET.PT, 20, false);
+    await _testPos(readSamples(Samples.fastaPtCsv), 'sequence',
+      bio.NOTATION.FASTA, bio.ALIGNMENT.SEQ, bio.ALPHABET.PT, 20, false);
   });
 
   test('samplesTestCerealNegativeCerealName', async () => {
@@ -373,6 +387,10 @@ MWRSWY-CKHP
 
   test('samplesTestAlertCollectionNegativeSmarts', async () => {
     await _testNeg(readSamples(Samples.testAlertCollection), 'smarts');
+  });
+
+  test('samplesTestSpgiNegativeVals', async () => {
+    await _testNeg(readSamples(Samples.testSpgi), 'vals');
   });
 });
 
