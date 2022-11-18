@@ -16,8 +16,8 @@ export function _importSdf(bytes: Uint8Array): DG.DataFrame[] {
       if (!data[field])
         data[field] = [];
       data[field][rows] = parser.getField(field);
-      data['molecule'][rows] = parser.getNextMolFile();
     }
+    data['molecule'][rows] = parser.getNextMolFile();
     rows++;
   }
 
