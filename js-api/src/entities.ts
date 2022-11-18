@@ -1,6 +1,6 @@
 import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
-import {toJs} from "./wrappers";
+import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
 import {MapProxy} from "./utils";
 import {DataFrame} from "./dataframe";
@@ -12,7 +12,9 @@ type PropertyGetter = (a: object) => any;
 type PropertySetter = (a: object, value: any) => void;
 type ValueValidator<T> = (value: T) => string;
 type DataConnectionDBParams = {dataSource: string, server: string, db: string, login?: string, password?: string};
-type queryPartParams = {[key: string]: string}[];
+type FieldPredicate = {field: string, pattern: string};
+type FieldOrder = {field: string, asc?: boolean};
+type GroupAggregation = {aggType: string, colName: string, resultColName?: string, function?: string};
 
 /** @class
  * Base class for system objects stored in the database in a structured manner.
@@ -369,23 +371,23 @@ export class TableQuery extends DataQuery {
 
   /** Where clauses
    * @type {queryPartParams} */
-  get whereClauses(): queryPartParams { return api.grok_TableQuery_GetWhereClausesDB(this.dart); }
-  set whereClauses(wl: queryPartParams) { api.grok_TableQuery_SetWhereClausesDB(this.dart, wl); }
+  get where(): FieldPredicate[] { return toJs(api.grok_TableQuery_GetWhereClausesDB(this.dart)); }
+  set where(wl: FieldPredicate[]) { api.grok_TableQuery_SetWhereClausesDB(this.dart, wl.map(param => toDart(param))); }
 
   /** Aggregation clauses
    * @type {queryPartParams} */
-  get aggregationsDb(): queryPartParams { return api.grok_TableQuery_GetAggregationsDB(this.dart); }
-  set aggregationsDb(wl: queryPartParams) { api.grok_TableQuery_SetAggregationsDB(this.dart, wl); }
+  get aggregations(): GroupAggregation[] { return toJs(api.grok_TableQuery_GetAggregationsDB(this.dart)); }
+  set aggregations(wl: GroupAggregation[]) { api.grok_TableQuery_SetAggregationsDB(this.dart, wl.map(param => toDart(param))); }
 
   /** Having clauses
    * @type {queryPartParams} */
-  get havingDb(): queryPartParams { return api.grok_TableQuery_GetHavingDB(this.dart); }
-  set havingDb(wl: queryPartParams) { api.grok_TableQuery_SetHavingDB(this.dart, wl); }
+  get having(): FieldPredicate[] { return toJs(api.grok_TableQuery_GetHavingDB(this.dart)); }
+  set having(wl: FieldPredicate[]) { api.grok_TableQuery_SetHavingDB(this.dart, wl.map(param => toDart(param))); }
 
   /** Order By clauses
    * @type {queryPartParams} */
-  get orderByDb(): queryPartParams { return api.grok_TableQuery_GetHavingDB(this.dart); }
-  set orderByDb(wl: queryPartParams) { api.grok_TableQuery_SetHavingDB(this.dart, wl); }
+  get orderBy(): FieldOrder[] { return toJs(api.grok_TableQuery_GetOrderByDB(this.dart)); }
+  set orderBy(wl: FieldOrder[]) { api.grok_TableQuery_SetOrderByDB(this.dart, wl.map(param => toDart(param))); }
 
   /** Creates {@link DbTableQueryBuilder} from table name
    * @param {string} table - Table name 
