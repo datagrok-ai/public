@@ -30,10 +30,21 @@ category('TableQuery', () => {
   let dc: DG.DataConnection;
   const tableName = 'public.orders';
   const fields = ['orderid', 'freight'];
-  const whereClauses = [{orderid: '10250'}];
-  const aggregationsDb = [{orderid: '10250'}];
-  const havingDb = [{'COUNT(shipcountry)': '2'}];
-  const orderByDb = [{orderid: 'ASC'}];
+  const whereClauses = [{
+    field: 'orderid',
+    pattern: '10250',
+  }];
+  const aggregationsDb = [{
+    colName: 'orderid',
+    aggType: 'count',
+  }];
+  const havingDb = [{
+    field: 'COUNT(shipcountry)',
+    pattern: '2',
+  }];
+  const orderByDb = [{
+    field: 'orderid',
+  }];
   let fromTable: DG.TableInfo;
   let from: string;
 
@@ -65,26 +76,27 @@ category('TableQuery', () => {
 
   test('Where clauses', async () => {
     const tq = DG.TableQuery.create(dc);
-    tq.whereClauses = whereClauses;
-    expectArray(tq.whereClauses, whereClauses);
+    tq.fields = fields;
+    tq.where = whereClauses;
+    expectArray(tq.where, whereClauses);
   });
 
   test('Aggregations', async () => {
     const tq = DG.TableQuery.create(dc);
-    tq.aggregationsDb = aggregationsDb;
-    expectArray(tq.aggregationsDb, aggregationsDb);
+    tq.aggregations = aggregationsDb;
+    expectArray(tq.aggregations, aggregationsDb);
   });
 
   test('Having', async () => {
     const tq = DG.TableQuery.create(dc);
-    tq.havingDb = havingDb;
-    expectArray(tq.havingDb, havingDb);
+    tq.having = havingDb;
+    expectArray(tq.having, havingDb);
   });
 
   test('Order by', async () => {
     const tq = DG.TableQuery.create(dc);
-    tq.orderByDb = orderByDb;
-    expectArray(tq.orderByDb, orderByDb);
+    tq.orderBy = orderByDb;
+    expectArray(tq.orderBy, orderByDb);
   });
 
   test('From table', async () => {
@@ -99,7 +111,6 @@ category('TableQuery', () => {
 });
 
 category('DbTableQueryBuilder', () => {
-
   before(async () => {
     fromTable = await grok.dapi.tables.first();
     from = fromTable.name;
