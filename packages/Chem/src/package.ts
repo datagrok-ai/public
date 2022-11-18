@@ -41,6 +41,7 @@ import { elementsTable } from './constants';
 import { getSimilaritiesMarix } from './utils/similarity-utils';
 import { molToMolblock } from './utils/convert-notation-utils'
 import { similarityMetric } from '@datagrok-libraries/utils/src/similarity-metrics';
+import { _importSmi } from './file-importers/smi-importer';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -647,6 +648,16 @@ export function openChemLibSketcher(): OpenChemLibSketcher {
 //output: list tables
 export function importSdf(bytes: Uint8Array): DG.DataFrame[] {
   return _importSdf(Uint8Array.from(bytes));
+}
+
+//name: importSmi
+//description: Opens smi file
+//tags: file-handler
+//meta.ext: smi
+//input: list bytes
+//output: list tables
+export function importSmi(bytes: Uint8Array): DG.DataFrame[] {
+  return _importSmi(Uint8Array.from(bytes));
 }
 
 //name: importMol
