@@ -5,9 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
-// Tools for calling exported C/C++-functions
-import {cppFuncWrapper, Arg, ArgColumn, ArgNewColumn, ArgColumns, ArgNewColumns} 
-       from '../wasm/cppRuntimeSystem';
+import { callWasm } from '../wasm/callWasm';
 
 //name: info
 export function info() {
@@ -24,23 +22,17 @@ export async function init() {
 //tags: ml
 //input: dataframe table
 //input: column_list columns
-//input: int numOfPrincipalComponents
-//output: dataframe principalComponents
-export function pca(table, columns, numOfPrincipalComponents) {
+//input: int componentsCount
+//output: dataframe result
+export function pca(table, columns, componentsCount) {
+  return callWasm(EigenPCA, 'principalComponentAnalysis', [columns, componentsCount]);
+}
 
-  // create arguments for exported C/C++-function call
-  let data = columns.toList();
-  let argData = new ArgColumns(data, 'f32');  
-  let argNumComp = new Arg(numOfPrincipalComponents);
-  let argPrincipalComponents = new ArgNewColumns('f32', data[0].length, numOfPrincipalComponents);    
-  let args = [argData, argNumComp, argPrincipalComponents];
-  
-  // call exported C/C++-function: result code is obtained
-  // let resultCode = cppFuncWrapper(EigenPCA, 'principalComponentAnalysis', 'num', args);  
-  // console.log('Exported C/C++-function result code: ' + resultCode);
-
-  // call exported function
-  cppFuncWrapper(EigenPCA, 'principalComponentAnalysis', 'num', args);
-
-  return DG.DataFrame.fromColumns(argPrincipalComponents.data); 
+//name: mad
+//input: dataframe table
+//input: column column1
+//input: column column2
+//output: double result
+export function mad(table, column1, column2) {
+  return callWasm(EigenPCA, 'error', [column1, column2]);
 }
