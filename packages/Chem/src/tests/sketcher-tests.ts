@@ -23,27 +23,27 @@ category('sketcher testing', () => {
   
   test('smiles', async () => {
     await testSmiles(rdkitModule, funcs);
-  });
+  }, {skipReason: 'test'});
 
   test('input_smiles', async () => {
     await testSmiles(rdkitModule, funcs, true);
-  });
+  }, {skipReason: 'test'});
 
   test('molV2000', async () => {
     await testMolV2000(rdkitModule, funcs);
-  });
+  }, {skipReason: 'test'});
 
   test('paste_input_molV2000', async () => {
     await testMolV2000(rdkitModule, funcs, true);
-  });
+  }, {skipReason: 'test'});
 
   test('smarts', async () => {
     await testSmarts(rdkitModule, funcs);
-  });
+  }, {skipReason: 'test'});
 
   test('inchi', async () => {
     await testInchi(rdkitModule, funcs);
-  });
+  }, {skipReason: 'test'});
 
   after(async () => {
     dg.close();
@@ -212,5 +212,3 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
   }
   mol?.delete();
 }
-
-
