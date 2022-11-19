@@ -34,6 +34,7 @@ export class SurfacePlot extends EChartViewer {
     return ind.map((id) => this.rawData[id]);
   };
   switch = (a: any[], b: any[], n: number, type: string) => {
+    if (a[n] === undefined || b[n] === undefined) return 0;
     let res;
     switch (type) {
     case 'category':
