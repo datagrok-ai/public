@@ -1,6 +1,6 @@
 import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
+//import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {waitForHTMLElement} from './utils';
 
@@ -28,8 +28,8 @@ category('UI: Tags', () => {
     const prapi = await grok.dapi.projects
       .filter('#demo')
       .list()
-      .then(projects => projects.length);
-    await waitForHTMLElement('.grok-items-view-counts', /[0-9]+ \/ [0-9]+/g, 'Error: cannot load Projects!')
+      .then((projects) => projects.length);
+    await waitForHTMLElement('.grok-items-view-counts', /[0-9]+ \/ [0-9]+/g, 'Error: cannot load Projects!');
     const search = v.root.querySelector('.ui-input-editor') as HTMLInputElement;
     search.value = '#demo';
     search.dispatchEvent(new Event('input'));
@@ -54,7 +54,7 @@ category('UI: Tags', () => {
     await testTags(DG.DataConnection.create('apitests', {
       dataSource: '',
       server: '',
-      db: ''
+      db: '',
     }), grok.dapi.connections, 'connection');
     await testTags(DG.Script.create('apitests'), grok.dapi.scripts, 'script');
   });
