@@ -86,7 +86,7 @@ class GisPackageDetectors extends DG.Package {
     if (col.type !== DG.COLUMN_TYPE.STRING)
       return null;
     const colName = col.name.toLowerCase();
-    if ((colName.includes('country') || colName.includes('countri')) && col.type === DG.TYPE.STRING) {
+    if ((colName.includes('country') || colName.includes('countri'))) {
       col.semType = SEMTYPEGIS.GISCOUNTRY;
       return col.semType;
     }
@@ -121,18 +121,22 @@ class GisPackageDetectors extends DG.Package {
         continue;
       }
       //check for pattern matching
-      if ((col.categories[i].match(zipJPN) != null) ||
-        (col.categories[i].match(zipUS1EU1) != null) ||
-        (col.categories[i].match(zipUS2BRZ) != null) ||
-        (col.categories[i].match(zipCAN) != null))
+      if ((col.categories[i].match(zipJPN) !== null) ||
+        (col.categories[i].match(zipUS1EU1) !== null) ||
+        (col.categories[i].match(zipUS2BRZ) !== null) ||
+        (col.categories[i].match(zipCAN) !== null))
         estCoeff += caseWeight;
       else
         estCoeff -= caseWeight * 2;
     }
     //TODO: should we add checking for "Почтовый индекс"?
     const colName = col.name.toLowerCase();
-    if (colName.includes('zip') || colName.includes('code') || colName.includes('post') || colName.includes('postcode'))
+    if (colName.includes('zip') || colName.includes('code') || colName.includes('post')) {
+      console.log('detectGisZipcode: (before estCoeff += 40) ' + estCoeff);
       estCoeff += 40;
+    }
+
+    console.log('detectGisZipcode (fin): ' + estCoeff);
 
     if (estCoeff > 75) {
       col.semType = SEMTYPEGIS.GISZIPCODE;
@@ -145,7 +149,7 @@ class GisPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
-  //description: detector of ZIP codes for different countries
+  //description: detector address
   detectGisAddress(col) {
     if (col.type !== DG.TYPE.STRING)
       return null;
@@ -170,10 +174,10 @@ class GisPackageDetectors extends DG.Package {
         estCoeff -= caseWeight * 2;
         continue;
       }
-      if (col.categories[i].match(Addr1) != null) estCoeff += caseWeight;
-      else if (col.categories[i].match(Addr2) != null) estCoeff += caseWeight;
-      else if (col.categories[i].match(Addr3) != null) estCoeff += caseWeight;
-      else if (col.categories[i].match(Addr4) != null) estCoeff += caseWeight;
+      if (col.categories[i].match(Addr1) !== null) estCoeff += caseWeight;
+      else if (col.categories[i].match(Addr2) !== null) estCoeff += caseWeight;
+      else if (col.categories[i].match(Addr3) !== null) estCoeff += caseWeight;
+      else if (col.categories[i].match(Addr4) !== null) estCoeff += caseWeight;
       else estCoeff -= caseWeight * 2;
     }
 
