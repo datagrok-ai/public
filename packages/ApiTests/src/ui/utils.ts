@@ -48,58 +48,60 @@ export function enabled(name: string, input: DG.InputBase, v: DG.View, selector:
 
 export function waitForHTMLCollection(selector: string, wait=3000): Promise<HTMLCollection> {
   return new Promise((resolve, reject) => {
-    if (document.querySelector(selector) !== null)
-      if (document.querySelector(selector)!.children.length !== 0) {
+    if (document.querySelector(selector) !== null) {
+      if (document.querySelector(selector)!.children.length !== 0)
         return resolve(document.querySelector(selector)!.children);
     }
 
     const observer = new MutationObserver(() => {
-      if (document.querySelector(selector) !== null)
+      if (document.querySelector(selector) !== null) {
         if (document.querySelector(selector)!.children.length !== 0) {
           clearTimeout(timeout);
           observer.disconnect();
           resolve(document.querySelector(selector)!.children);
         }
+      }
     });
 
     const timeout = setTimeout(() => {
       observer.disconnect();
-      reject(`Error: cannot find ${selector}!`)
-    }, wait
+      reject(new Error(`cannot find ${selector}!`));
+    }, wait,
     );
 
     observer.observe(document.body, {
-        childList: true,
-        subtree: true
+      childList: true,
+      subtree: true,
     });
   });
 }
 
 export function waitForHTMLElement(selector: string, regex: RegExp, error: string, wait=3000): Promise<HTMLElement> {
   return new Promise((resolve, reject) => {
-    if (document.querySelector(selector) !== null)
-      if (regex.test((document.querySelector(selector) as HTMLElement).innerText)) {
+    if (document.querySelector(selector) !== null) {
+      if (regex.test((document.querySelector(selector) as HTMLElement).innerText))
         return resolve(document.querySelector(selector) as HTMLElement);
     }
 
     const observer = new MutationObserver(() => {
-      if (document.querySelector(selector) !== null)
+      if (document.querySelector(selector) !== null) {
         if (regex.test((document.querySelector(selector) as HTMLElement).innerText)) {
           clearTimeout(timeout);
           observer.disconnect();
           resolve(document.querySelector(selector) as HTMLElement);
+        }
       }
     });
 
     const timeout = setTimeout(() => {
       observer.disconnect();
-      reject(error)
-    }, wait
+      reject(new Error(error));
+    }, wait,
     );
 
     observer.observe(document.body, {
-        childList: true,
-        subtree: true
+      childList: true,
+      subtree: true,
     });
   });
 }
