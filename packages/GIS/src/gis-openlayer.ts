@@ -12,7 +12,7 @@ import Layer from 'ol/layer/Layer';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import WebGLPointsLayer from 'ol/layer/WebGLPoints';
-import TileImage from 'ol/source/TileImage'; //this is the base class for XYZ, BingMaps etc..
+// import TileImage from 'ol/source/TileImage'; //this is the base class for XYZ, BingMaps etc..
 import VectorSource from 'ol/source/Vector';
 import Collection from 'ol/Collection';
 //Projections working itilities
@@ -42,7 +42,7 @@ import Source from 'ol/source/Source';
 import {defaults as defaultControls} from 'ol/control'; //Attribution include?
 
 //ZIP utilities
-import JSZip, {forEach} from 'jszip';
+import JSZip from 'jszip';
 // import {zoomByDelta} from 'ol/interaction/Interaction';
 // import WebGLLayerRenderer from 'ol/renderer/webgl/Layer';
 

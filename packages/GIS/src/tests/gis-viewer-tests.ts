@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import {before, after, category, expect, test, delay} from '@datagrok-libraries/utils/src/test';
+// import * as ui from 'datagrok-api/ui';
+import {before, after, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 import * as GUIUTILS from './gui-utils';
 import {SEMTYPEGIS} from '../gis-semtypes';
@@ -35,7 +35,7 @@ category('GIS: MapViewer', async () => {
 
   test('GIS:viewerProperties', async () => {
     const mapViewer = (DG.Viewer.fromType('Map', testDF) as GisViewer);
-    const options = await GUIUTILS.getOptions(mapViewer);
+    let options = await GUIUTILS.getOptions(mapViewer);
     expect(options.markerOpacity, 80);
     expect(options.markerDefaultSize, 5);
     expect(options.defaultColor, 0x1f77b4);
@@ -43,6 +43,8 @@ category('GIS: MapViewer', async () => {
     // mapViewer.markerDefaultSize = 13;
     // mapViewer.defaultColor = 0xff00ff;
     mapViewer.setOptions({markerDefaultSize: 13, defaultColor: 0xff00ff});
+    //delay(200);
+    options = await GUIUTILS.getOptions(mapViewer);
     expect(options.markerDefaultSize, 13);
     expect(options.defaultColor, 0xff00ff);
   });
