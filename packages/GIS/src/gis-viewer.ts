@@ -384,7 +384,6 @@ export class GisViewer extends DG.JsViewer {
       this.ol.useWebGL = true; //choose true if we want to use WebGL renderer
 
       this.initUi();
-      // ui.setUpdateIndicator(this.panelTop!, true);
       this.ol.initMap('map-container');
 
       this.updateOpenLayerProperties();
@@ -407,7 +406,7 @@ export class GisViewer extends DG.JsViewer {
       this.initialized = false;
       grok.shell.error(e.toString());
       this.root.appendChild(
-        ui.divV([ui.div('Error loading GIS map! /n'), ui.div(e.toString())]));
+        ui.divV([ui.div('Error loading GIS map! /n '), ui.div(e.toString())]));
     } finally {
       ui.setUpdateIndicator(this.root, false);
       setTimeout(() => {
@@ -473,8 +472,8 @@ export class GisViewer extends DG.JsViewer {
     if ((!this.showTooltip) || (!p))
       return;
 
-    this.ol.olMap.render();
     ui.tooltip.hide;
+    this.ol.olMap.render();
     if (!p.features.length) {
       // ui.tooltip.hide;
       // this.ol.olMap.render();
@@ -538,7 +537,7 @@ export class GisViewer extends DG.JsViewer {
     setTimeout( function(m) {m.updateSize();}, 200, this.ol.olMap);
   }
 
-  onTableAttached(): void {
+  async onTableAttached(): Promise<void> {
     this.init();
     if (this.latitudeColumnName === null && this.longitudeColumnName === null) {
       let col = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE);
@@ -613,7 +612,10 @@ export class GisViewer extends DG.JsViewer {
       }
     }));
 
-    this.render(true, true);
+    setTimeout(async () => {
+      await this.render(true, true);
+    }, 2);
+
   //<< end of onTableAttached method
   }
 
@@ -635,7 +637,7 @@ export class GisViewer extends DG.JsViewer {
 
     if (updateLayer) {
     //TODO: experiment: i've tried to refresh WebGL layer here without recreating of it but it's not work yet>>
-      this.ol.updateMarkersGLLayer(false);
+      this.ol.updateMarkersGLLayer(true);
       // this.ol.olMarkersSource.changed();
       // this.ol.olMap.render();
     }
@@ -682,43 +684,61 @@ export class GisViewer extends DG.JsViewer {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
-  render(fit: boolean = false, reloadData: boolean = true): void {
+  async render(fit: boolean = false, reloadData: boolean = true): Promise<void> {
     //
     if (this.latitudeColumnName == null || this.longitudeColumnName == null)
       return;
 
-    if (reloadData)
-      this.getCoordinates();
+    ui.setUpdateIndicator(this.root, true);
+    let progressBar: DG.TaskBarProgressIndicator | null = null;
+    try {
+      progressBar = DG.TaskBarProgressIndicator.create('Open map..');
 
-    this.updateOpenLayerProperties(false);
-    if (this.renderType === 'heat map') {
-      //render heat map
-      this.renderHeat(this.features);
-      //TODO: this style of switching visibility is a bad but temporary decision
-      this.ol.olHeatmapLayer?.setVisible(true);
-      this.ol.olMarkersLayerGL?.setVisible(false);
+      if (progressBar)
+        progressBar.update(10, 'Open map: 10% completed');
+      if (reloadData)
+        this.getCoordinates();
+
+      if (progressBar)
+        progressBar.update(30, 'Open map: 30% completed');
+
+      this.updateOpenLayerProperties(true);
+      if (this.renderType === 'heat map') {
+        //render heat map
+        this.renderHeat(this.features);
+        //TODO: this style of switching visibility is a bad but temporary decision
+        this.ol.olHeatmapLayer?.setVisible(true);
+        this.ol.olMarkersLayerGL?.setVisible(false);
+        this.updateLayersList();
+      } else if (this.renderType === 'markers') {
+        //render markers map
+        this.renderMarkersBatch(this.features);
+        this.ol.olHeatmapLayer?.setVisible(false);
+        this.ol.olMarkersLayerGL?.setVisible(true);
+        this.updateLayersList();
+      } else if (this.renderType === 'both') {
+        //render markers map
+        this.renderMarkersBatch(this.features);
+        this.ol.olHeatmapLayer?.setVisible(true);
+        this.ol.olMarkersLayerGL?.setVisible(true);
+        this.updateLayersList();
+      }
+      if (progressBar)
+        progressBar.update(70, 'Open map: 70% completed');
+
+      if (fit) {
+        if ((this.ol.olMarkersLayerGL) && (this.features.length > 0))
+          this.ol.olMap.getView().fit((this.ol.olMarkersSource).getExtent());
+          // this.ol.olMap.getView().fit((this.ol.olMarkersLayerGL.getSource()!).getExtent());
+      }
+    } finally {
+      ui.setUpdateIndicator(this.root, false);
+      if (progressBar)
+        progressBar.update(95, 'Load data: 95% completed');
       this.updateLayersList();
-    } else if (this.renderType === 'markers') {
-      //render markers map
-      this.renderMarkersBatch(this.features);
-      this.ol.olHeatmapLayer?.setVisible(false);
-      this.ol.olMarkersLayerGL?.setVisible(true);
-      this.updateLayersList();
-    } else if (this.renderType === 'both') {
-      //render markers map
-      this.renderMarkersBatch(this.features);
-      this.ol.olHeatmapLayer?.setVisible(true);
-      this.ol.olMarkersLayerGL?.setVisible(true);
-      this.updateLayersList();
+      if (progressBar)
+        progressBar.close();
     }
-
-    if (fit) {
-      if ((this.ol.olMarkersLayerGL) && (this.features.length > 0))
-        this.ol.olMap.getView().fit((this.ol.olMarkersSource).getExtent());
-        // this.ol.olMap.getView().fit((this.ol.olMarkersLayerGL.getSource()!).getExtent());
-    }
-
-    this.updateLayersList();
   }
 
   refreshColorCodingStyle(colColor: DG.Column): void {

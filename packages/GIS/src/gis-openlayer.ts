@@ -511,7 +511,7 @@ export class OpenLayers {
     this.markerGLSelStyle = this.prepareGLStyle(undefined, this.selectedColor, 0.9, undefined, false);
 
     // this.olMarkersLayerGL?.updateStyleVariables
-    this.olMarkersLayerGL?.setProperties({style: this.markerGLStyle});
+    // this.olMarkersLayerGL?.setProperties({style: this.markerGLStyle});
 
     if (recreate) {
       let previousLayer = this.olMarkersLayerGL;
