@@ -389,84 +389,84 @@ export class TableQuery extends DataQuery {
   get orderBy(): FieldOrder[] { return toJs(api.grok_TableQuery_GetOrderByDB(this.dart)); }
   set orderBy(wl: FieldOrder[]) { api.grok_TableQuery_SetOrderByDB(this.dart, wl.map(param => toDart(param))); }
 
-  /** Creates {@link DbTableQueryBuilder} from table name
+  /** Creates {@link TableQueryBuilder} from table name
    * @param {string} table - Table name 
-   * @returns {DbTableQueryBuilder} */
-  static from(table: string): DbTableQueryBuilder {return toJs(api.grok_TableQuery_From(table)); }
+   * @returns {TableQueryBuilder} */
+  static from(table: string): TableQueryBuilder {return toJs(api.grok_TableQuery_From(table)); }
   
-  /** Creates {@link DbTableQueryBuilder} from {@link TableInfo}
+  /** Creates {@link TableQueryBuilder} from {@link TableInfo}
    * @param {TableInfo} table - TableInfo object 
-   * @returns {DbTableQueryBuilder} */
-  static fromTable(table: TableInfo): DbTableQueryBuilder {return toJs(api.grok_TableQuery_FromTable(table.dart)); }
+   * @returns {TableQueryBuilder} */
+  static fromTable(table: TableInfo): TableQueryBuilder {return toJs(api.grok_TableQuery_FromTable(table.dart)); }
 }
 
 /** Table query builder that works with database tables */
-export class DbTableQueryBuilder {
+export class TableQueryBuilder {
   dart: any;
 
-  /** @constructs DbTableQueryBuilder */
+  /** @constructs TableQueryBuilder */
   constructor(dart: any) { this.dart = dart; }
 
-  /** Creates {@link DbTableQueryBuilder} from table name
+  /** Creates {@link TableQueryBuilder} from table name
    * @param {string} table - Table name 
-   * @returns {DbTableQueryBuilder} */
-  static from(table: string): DbTableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_From(table)); }
+   * @returns {TableQueryBuilder} */
+  static from(table: string): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_From(table)); }
 
-  /** Creates {@link DbTableQueryBuilder} from {@link TableInfo}
+  /** Creates {@link TableQueryBuilder} from {@link TableInfo}
    * @param {TableInfo} table - TableInfo object 
-   * @returns {DbTableQueryBuilder} */
-  static fromTable(table: TableInfo): DbTableQueryBuilder {
-    return toJs(api.grok_DbTableQueryBuilder_FromTable(table.dart));
+   * @returns {TableQueryBuilder} */
+  static fromTable(table: TableInfo): TableQueryBuilder {
+    return toJs(api.grok_TableQueryBuilder_FromTable(table.dart));
   }
 
   /** Selects all fields of the table 
-   * @returns {DbTableQueryBuilder} */
-  selectAll(): DbTableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_SelectAll(this.dart)); }
+   * @returns {TableQueryBuilder} */
+  selectAll(): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_SelectAll(this.dart)); }
 
   /** Selects specified fields of the table
    * @param {string[]} fields - Array of fields to select
-   * @returns {DbTableQueryBuilder} */
-  select(fields: string[]): DbTableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_Select(this.dart, fields)); }
+   * @returns {TableQueryBuilder} */
+  select(fields: string[]): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_Select(this.dart, fields)); }
 
   /** Groups rows that have the same values into summary values
    * @param {string[]} fields - Array of fields to group by
-   * @returns {DbTableQueryBuilder} */
-  groupBy(fields: string[]): DbTableQueryBuilder {
-    return toJs(api.grok_DbTableQueryBuilder_GroupBy(this.dart, fields));
+   * @returns {TableQueryBuilder} */
+  groupBy(fields: string[]): TableQueryBuilder {
+    return toJs(api.grok_TableQueryBuilder_GroupBy(this.dart, fields));
   }
 
   /** Rotates a table-valued expression by turning the unique values from one column in the expression into multiple
    * columns in the output
    * @param {string[]} fields - Array of fields to pivot on
-   * @returns {DbTableQueryBuilder} */
-  pivotOn(fields: string[]): DbTableQueryBuilder {
-    return toJs(api.grok_DbTableQueryBuilder_PivotOn(this.dart, fields));
+   * @returns {TableQueryBuilder} */
+  pivotOn(fields: string[]): TableQueryBuilder {
+    return toJs(api.grok_TableQueryBuilder_PivotOn(this.dart, fields));
   }
 
   /** Adds a where clause to the query
    * @param {string} field - Field name
    * @param {string} pattern - Pattern to test field values against
-   * @returns {DbTableQueryBuilder} */
-  where(field: string, pattern: string): DbTableQueryBuilder {
-    return toJs(api.grok_DbTableQueryBuilder_Where(this.dart, field, pattern));
+   * @returns {TableQueryBuilder} */
+  where(field: string, pattern: string): TableQueryBuilder {
+    return toJs(api.grok_TableQueryBuilder_Where(this.dart, field, pattern));
   }
 
   /** Sorts results in ascending or descending order
    * @param {string} field - Field to sort based on
-   * @param {boolean} as - Sort in ascending order
-   * @returns {DbTableQueryBuilder} */
-  sortBy(field: string, as?: boolean): DbTableQueryBuilder {
-    return toJs(api.grok_DbTableQueryBuilder_SortBy(this.dart, field, as));
+   * @param {boolean} asc - Sort in ascending order
+   * @returns {TableQueryBuilder} */
+  sortBy(field: string, asc: boolean = true): TableQueryBuilder {
+    return toJs(api.grok_TableQueryBuilder_SortBy(this.dart, field, asc));
   }
 
   /** Selects limited number of records
-   * @param {DbTableQueryBuilder} n - Number of records to select
-   * @returns {DbTableQueryBuilder} */
-  limit(n: number): DbTableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_Limit(this.dart, n)); }
+   * @param {TableQueryBuilder} n - Number of records to select
+   * @returns {TableQueryBuilder} */
+  limit(n: number): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_Limit(this.dart, n)); }
 
   /** Builds a query
    * @returns {TableQuery} */
-  build(): TableQuery { return toJs(api.grok_DbTableQueryBuilder_Build(this.dart)); }
+  build(): TableQuery { return toJs(api.grok_TableQueryBuilder_Build(this.dart)); }
 }
 
 /** Represents a data job
