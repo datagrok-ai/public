@@ -30,7 +30,7 @@ export function sequenceToMolV3000(
     inverted ? codesList.unshift(code) : codesList.push(code);
   }
 
-  const monomers = [];
+  const monomers: string[] = [];
 
   for (let i = 0; i < codesList.length; i++) {
     if (links.includes(codesList[i]) ||
@@ -40,7 +40,7 @@ export function sequenceToMolV3000(
       monomers.push(monomerNameFromCode[codesList[i]]);
     else {
       monomers.push(monomerNameFromCode[codesList[i]]);
-      monomers.push(monomerNameFromCode['p linkage']);
+      monomers.push('p linkage');
     }
   }
   return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA')!;

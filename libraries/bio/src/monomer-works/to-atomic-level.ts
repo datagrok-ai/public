@@ -633,12 +633,12 @@ function parseAtomAndBondCounts(molfileV3K: string): { atomCount: number, bondCo
 
   // parse atom count
   let begin = molfileV3K.indexOf(V3K_BEGIN_COUNTS_LINE) + V3K_COUNTS_SHIFT;
-  let end = molfileV3K.indexOf(' ', begin);
+  let end = molfileV3K.indexOf(' ', begin + 1);
   const numOfAtoms = parseInt(molfileV3K.substring(begin, end));
 
   // parse bond count
   begin = end + 1;
-  end = molfileV3K.indexOf(' ', begin);
+  end = molfileV3K.indexOf(' ', begin + 1);
   const numOfBonds = parseInt(molfileV3K.substring(begin, end));
 
   return {atomCount: numOfAtoms, bondCount: numOfBonds};
