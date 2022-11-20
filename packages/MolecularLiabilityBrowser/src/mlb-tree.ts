@@ -447,12 +447,18 @@ export class TreeBrowser extends DG.JsViewer {
 
       const leafList: bio.NodeType[] = this.th.getLeafList(obj as bio.NodeType);
 
+      let tooltipContent: HTMLElement = ui.table(leafList, (l) => {
+        //@ts-ignore
+        return l.id.split('|').map(
+          (idPart: string) => ui.div(idPart, {
+            style: {marginTop: '4px', marginBottom: '4px'},
+          }));
+      }, ['TPP', 'AG', 'VR', 'PRJ']);
+
       //@ts-ignore
-      const toolTipText = leafList.map((l) => l.id).join('\n');
-      ui.tooltip.show(ui.div(toolTipText),
+      //const toolTipText = leafList.map((l) => l.id.replace('|', ' | ')).join('\n');
+      ui.tooltip.show(tooltipContent,
         tgtRect.left + centre[0] + info.object.x, tgtRect.top + centre[1] + info.object.y + 12);
-
-
     } else {
       ui.tooltip.hide();
     }

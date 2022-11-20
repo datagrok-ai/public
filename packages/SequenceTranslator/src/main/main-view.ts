@@ -42,13 +42,6 @@ export async function mainView(): Promise<HTMLDivElement> {
         const indexOfFirstNotValidChar = ('indexOfFirstNotValidChar' in outputSequenceObj) ?
           JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).indexOfFirstNotValidChar :
           -1;
-        if ('indexOfFirstNotValidChar' in outputSequenceObj) {
-          const indexOfFirstNotValidChar = ('indexOfFirstNotValidChar' in outputSequenceObj) ?
-            JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).indexOfFirstNotValidChar :
-            -1;
-          if (indexOfFirstNotValidChar != -1)
-            errorsExist = true;
-        }
 
         tableRows.push({
           'key': key,
@@ -199,7 +192,7 @@ export async function mainView(): Promise<HTMLDivElement> {
   const v = grok.shell.v;
   const tabControl = grok.shell.sidebar;
   tabControl.onTabChanged.subscribe((_) => {
-    v.setRibbonPanels([(tabControl.currentPane.name == 'MAIN') ? topPanel : []])
+    v.setRibbonPanels([(tabControl.currentPane.name == 'MAIN') ? topPanel : []]);
   });
   v.setRibbonPanels([topPanel]);
 

@@ -174,21 +174,18 @@ export class NotationConverter extends UnitsHandler {
    * SEPARATOR)
    * @return {DG.Column} Converted column
    */
-  private convertHelm(
-    tgtNotation: string,
-    tgtSeparator: string = '',
-    tgtGapSymbol: string | null = null
-  ): DG.Column {
+  private convertHelm(tgtNotation: string, tgtSeparator?: string, tgtGapSymbol?: string): DG.Column {
     // This function must not contain calls of isDna() and isRna(), for
     // source helm columns may contain RNA, DNA and PT across different rows
-    if (tgtGapSymbol === null) {
+    if (!tgtGapSymbol) {
       tgtGapSymbol = (this.toFasta(tgtNotation as NOTATION)) ?
         UnitsHandler._defaultGapSymbolsDict.FASTA :
         UnitsHandler._defaultGapSymbolsDict.SEPARATOR;
     }
 
-    if (this.toSeparator(tgtNotation as NOTATION) && tgtSeparator === '')
-      tgtSeparator = this.separator;
+    if (!tgtSeparator) {
+      tgtSeparator = (this.toFasta(tgtNotation as NOTATION)) ? '' : this.separator;
+    }
 
     const helmWrappersRe = /(R\(|D\(|\)|P)/g;
     const newColumn = this.getNewColumn(tgtNotation as NOTATION);
@@ -256,8 +253,11 @@ export class NotationConverter extends UnitsHandler {
       return this.convertSeparatorToFasta();
     else if (this.isHelm() && this.toFasta(tgtNotation)) // the case of HELM
       return this.convertHelm(tgtNotation);
-    else // this.isHelm() && this.toSeparator(tgtNotation)
+    else if (this.isHelm() && this.toSeparator(tgtNotation))
       return this.convertHelm(tgtNotation, tgtSeparator!);
+    else
+      throw new Error('Not supported conversion ' +
+        `from source notation '${this.notation}' to target notation '${tgtNotation}'.`);
   }
 
   public constructor(col: DG.Column) {

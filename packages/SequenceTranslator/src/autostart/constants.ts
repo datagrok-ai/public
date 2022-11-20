@@ -2,6 +2,8 @@ export const SEQUENCE_TYPES = {
   SENSE_STRAND: 'SS',
   ANTISENSE_STRAND: 'AS',
   DUPLEX: 'Duplex',
+  TRIPLEX: 'Triplex',
+  DIMER: 'Dimer',
 };
 
 export const COL_NAMES = {

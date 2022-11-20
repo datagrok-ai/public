@@ -483,21 +483,21 @@ export async function gisKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
 function gisGeoJSONFileDetector(strBuf: string): [boolean, boolean] {
   let arrTmp: any[] | null;
   //searching for patterns of GeoJSON data
-  arrTmp = strBuf.match(/['']type['']\s?:\s?[''](?:Multi)?Polygon/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?[''|"](?:Multi)?Polygon/ig);
   let cntTypeGeo = arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['']type['']\s?:\s?\'|\'(?:Multi)?Point/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?\'|\'(?:Multi)?Point/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['']type['']\s?:\s?\'|\'(?:Multi)?LineString/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?\'|\'(?:Multi)?LineString/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['']type['']\s?:\s?['']Feature/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?[''|"]Feature/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['']type['']\s?:\s?['']GeometryCollection/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?[''|"]GeometryCollection/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
   //searching for patterns of TopoJSON data
-  arrTmp = strBuf.match(/['']type['']\s?:\s?['']Topology['']/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?[''|"]Topology[''|"]/ig);
   const cntTypeTopo = arrTmp ? arrTmp.length : 0;
 
-  if (cntTypeGeo == 0) return [false, false];
+  if (cntTypeGeo === 0) return [false, false];
   if (cntTypeTopo > 0) return [true, true];
 
   return [true, false];
@@ -507,7 +507,7 @@ function gisGeoJSONFileDetector(strBuf: string): [boolean, boolean] {
 //tags: fileViewer, fileViewer-geojson, fileViewer-topojson, fileViewer-json
 //input: file file
 //output: view result
-export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View | null> {
+export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View | null | DG.DataFrame> {
   //read file
   const strBuf = await file.readAsString();
   const isGeoTopo = gisGeoJSONFileDetector(strBuf);
@@ -517,6 +517,7 @@ export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View |
     const df = DG.DataFrame.fromJson(strBuf);
     const viewFile = DG.TableView.create(df);
     return viewFile;
+    // return df;
   }
 
   const viewFile = DG.View.create();
@@ -538,9 +539,10 @@ export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View |
   return viewFile;
 }
 
+//, json
 //name: gisGeoJSONFileHandler
 //tags: file-handler
-//meta.ext: geojson, topojson, json
+//meta.ext: geojson, topojson
 //input: string filecontent
 //output: list tables
 export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
@@ -561,17 +563,20 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
   const arrFeatures = ol.getFeaturesFromLayer(newLayer);
   if (arrFeatures) {
     if (arrFeatures.length > 0) {
-      const dfFormJSON = DG.DataFrame.fromObjects(arrFeatures);
+      dfFormJSON = DG.DataFrame.fromObjects(arrFeatures);
       if (dfFormJSON) {
         dfFormJSON.name = newLayer.get('layerName');
         const tv = grok.shell.addTableView(dfFormJSON as DG.DataFrame);
         tv.name = 'dfFormJSON.name' + ' (manual)';
+        // const mapViewer = DG.Viewer.fromType('Map', (dfFormJSON as DG.DataFrame));
         //TODO: fix issue with GisViewer opening for a table with data
-        setTimeout((tv) => {
+        setTimeout((tv, dfFormJSON) => {
           // const v = grok.shell.v;
           const v = tv;
-          if ((v) && (v instanceof DG.TableView)) (v as DG.TableView).addViewer(new GisViewer());
-        }, 500);
+          // if ((v) && (v instanceof DG.TableView)) (v as DG.TableView).addViewer(new GisViewer());
+          if ((v) && (v instanceof DG.TableView))
+            (v as DG.TableView).addViewer(DG.Viewer.fromType('Map', (v as DG.TableView).dataFrame));
+        }, 500, tv, dfFormJSON);
       }
     }
   }

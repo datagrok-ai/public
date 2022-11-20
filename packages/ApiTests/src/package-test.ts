@@ -26,6 +26,7 @@ import './dapi/projects';
 import './dapi/tables';
 import './dapi/user-data-storage';
 import './dapi/users';
+import './dapi/benchmarks';
 import './shell/ml';
 import './ui/divs';
 import './ui/buttons';

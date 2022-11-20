@@ -259,6 +259,13 @@ export class HttpDataSource<T> {
     return new Promise((resolve, reject) => api.grok_DataSource_List(this.dart, (q: any) => resolve(q.map(toJs)), (e: any) => reject(e)));
   }
 
+  /** Counts entities that satisfy the filtering criteria (see {@link filter}).
+   *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
+   *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search} */
+  count(): Promise<number> {
+    return new Promise((resolve, reject) => api.grok_DataSource_Count(this.dart, (q: number) => resolve(q), (e: any) => reject(e)));
+  }
+
   /** Returns fist entity that satisfies the filtering criteria (see {@link filter}).
    *  @returns Promise<object>  */
   first(): Promise<T> {

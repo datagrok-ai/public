@@ -43,7 +43,7 @@ export class SARViewerBase extends DG.JsViewer {
       return;
     if (!refreshOnly) {
       $(this.root).empty();
-      let switchHost = ui.div();
+      let switchHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
       if (this.name == 'MC') {
         const mutationCliffsMode = ui.boolInput('', this.isMutationCliffsMode === '1', () => {
           if (this.isModeChanging)

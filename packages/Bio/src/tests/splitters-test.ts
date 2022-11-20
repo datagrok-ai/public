@@ -6,7 +6,7 @@ import * as bio from '@datagrok-libraries/bio';
 import {after, before, category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
 import * as C from '../utils/constants';
 import {splitToMonomers, _package, getHelmMonomers} from '../package';
-import {errorToConsole} from '../../../../libraries/utils';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 
 category('splitters', () => {
@@ -16,11 +16,6 @@ category('splitters', () => {
   before(async () => {
     tvList = [];
     dfList = [];
-    await grok.functions.call('Bio:initBio')
-      .catch((err) => {
-        console.error(errorToConsole(err));
-        throw err;
-      });
   });
 
   after(async () => {

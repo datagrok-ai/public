@@ -1,6 +1,5 @@
 
-import {MODIFICATIONS} from './const';
-import {map, SYNTHESIZERS, TECHNOLOGIES, delimiter, gcrsCodesWithoutSmiles} from './map';
+import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, DELIMITER, gcrsCodesWithoutSmiles, NUCLEOTIDES} from './map';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
@@ -21,7 +20,6 @@ export function getFormat(sequence: string): string | null {
   let outputIndex = 0;
 
   const firstUniqueCharacters = ['r', 'd'];
-  const nucleotides = ['A', 'U', 'T', 'C', 'G'];
 
   possibleSynthesizers.forEach((synthesizer) => {
     const codes = getAllCodesOfSynthesizer(synthesizer);
@@ -33,13 +31,13 @@ export function getFormat(sequence: string): string | null {
 
       if ( // for mistake pattern 'rAA'
         outputIndex > 1 &&
-        nucleotides.includes(sequence[outputIndex]) &&
+        NUCLEOTIDES.includes(sequence[outputIndex]) &&
         firstUniqueCharacters.includes(sequence[outputIndex - 2])
       ) break;
 
       if ( // for mistake pattern 'ArA'
         firstUniqueCharacters.includes(sequence[outputIndex + 1]) &&
-        nucleotides.includes(sequence[outputIndex])
+        NUCLEOTIDES.includes(sequence[outputIndex])
       ) {
         outputIndex++;
         break;
@@ -70,13 +68,13 @@ export function getFormat(sequence: string): string | null {
 
       if ( // for mistake pattern 'rAA'
         outputIndex > 1 &&
-        nucleotides.includes(sequence[outputIndex]) &&
+        NUCLEOTIDES.includes(sequence[outputIndex]) &&
         firstUniqueCharacters.includes(sequence[outputIndex - 2])
       ) break;
 
       if ( // for mistake pattern 'ArA'
         firstUniqueCharacters.includes(sequence[outputIndex + 1]) &&
-        nucleotides.includes(sequence[outputIndex])
+        NUCLEOTIDES.includes(sequence[outputIndex])
       ) {
         outputIndex++;
         break;
@@ -117,7 +115,6 @@ export function isValidSequence(sequence: string, format: string | null): {
   const outputIndices = Array(possibleSynthesizers.length).fill(0);
 
   const firstUniqueCharacters = ['r', 'd'];
-  const nucleotides = ['A', 'U', 'T', 'C', 'G'];
   possibleSynthesizers.forEach(function(synthesizer, i) {
     const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer));
     while (outputIndices[i] < sequence.length) {
@@ -128,13 +125,13 @@ export function isValidSequence(sequence: string, format: string | null): {
 
       if ( // for mistake pattern 'rAA'
         outputIndices[i] > 1 &&
-        nucleotides.includes(sequence[outputIndices[i]]) &&
+        NUCLEOTIDES.includes(sequence[outputIndices[i]]) &&
         firstUniqueCharacters.includes(sequence[outputIndices[i] - 2])
       ) break;
 
       if ( // for mistake pattern 'ArA'
         firstUniqueCharacters.includes(sequence[outputIndices[i] + 1]) &&
-        nucleotides.includes(sequence[outputIndices[i]])
+        NUCLEOTIDES.includes(sequence[outputIndices[i]])
       ) {
         outputIndices[i]++;
         break;
@@ -212,7 +209,7 @@ export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
   let codes: string[] = [];
   for (const technology of Object.keys(map[synthesizer]))
     codes = codes.concat(Object.keys(map[synthesizer][technology]));
-  return codes.concat(Object.keys(MODIFICATIONS)).concat(delimiter);
+  return codes.concat(Object.keys(MODIFICATIONS)).concat(DELIMITER);
 }
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): string[] {

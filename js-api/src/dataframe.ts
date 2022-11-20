@@ -2316,4 +2316,9 @@ export class ColumnMetaHelper {
       this._markers = new ColumnMarkerHelper(this.column);
     return this._markers;
   }
+
+  /** Returns the format of the dataframe column. See also [GridColumn.format] */
+  get format(): string | null {
+    return this.column.getTag(TAGS.FORMAT) ?? api.grok_Column_GetAutoFormat(this.column.dart);
+  }
 }

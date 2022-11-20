@@ -37,22 +37,22 @@ export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
 
   const inputsRows: HTMLElement[] = [];
   for (const col of model.df.columns.numerical) {
-    const isIncluded = ui.boolInput('', typeof (settings.columns ?? {})[col.name] !== 'undefined',
+    const isIncludedInput = ui.boolInput('', typeof (settings.columns ?? {})[col.name] !== 'undefined',
       () => {
-        if (isIncluded)
-          result.columns![col.name] = aggregation.stringValue;
+        if (isIncludedInput.value)
+          result.columns![col.name] = aggregationInput.stringValue;
         else
           delete result.columns![col.name];
       }) as DG.InputBase<boolean>;
-    const aggregation = ui.choiceInput('Aggregation', (settings.columns ?? {})[col.name] ?? 'avg', Object.values(DG.STATS),
-      () => {
-        if (isIncluded)
-          result.columns![col.name] = aggregation.stringValue;
-        else
-          delete result.columns![col.name];
-      }) as DG.InputBase<string>;
-    $(aggregation.root).find('label').css('width', 'auto');
-    const inputsRow = ui.inputsRow(col.name, [isIncluded, aggregation]);
+    const aggregationInput = ui.choiceInput('Aggregation', (settings.columns ?? {})[col.name] ?? 'avg',
+    Object.values(DG.STATS), () => {
+      if (isIncludedInput.value)
+        result.columns![col.name] = aggregationInput.stringValue;
+      else
+        delete result.columns![col.name];
+    }) as DG.InputBase<string>;
+    $(aggregationInput.root).find('label').css('width', 'auto');
+    const inputsRow = ui.inputsRow(col.name, [isIncludedInput, aggregationInput]);
     $(inputsRow).find('div.ui-div').css('display', 'inline-flex');
     inputsRows.push(inputsRow);
   }

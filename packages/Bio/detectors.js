@@ -8,7 +8,8 @@
  * TODO: Use detectors from WebLogo pickUp.. methods
  */
 
-const CATEGORIES_SAMPLE_LIMIT = 100;
+const SEQ_SAMPLE_LIMIT = 100;
+const SEQ_SAMPLE_LENGTH_LIMIT = 500;
 
 /** enum type to simplify setting "user-friendly" notation if necessary */
 const NOTATION = {
@@ -30,35 +31,37 @@ const ALIGNMENT = {
 };
 
 /** Class for handling notation units in Macromolecule columns */
-class UnitsHandler {
-  static TAGS = {
+const UnitsHandler = {
+  TAGS: {
     aligned: 'aligned',
     alphabet: 'alphabet',
     alphabetSize: '.alphabetSize',
     alphabetIsMultichar: '.alphabetIsMultichar',
     separator: 'separator',
-  };
-}
+  },
+};
+
+const isUrlRe = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/i;
 
 class BioPackageDetectors extends DG.Package {
 
-  static PeptideFastaAlphabet = new Set([
+  PeptideFastaAlphabet = new Set([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
     'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
     'MeNle', 'MeA', 'MeG', 'MeF',
   ]);
 
-  static DnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
+  DnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
 
-  static RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
+  RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
 
-  static SmilesRawAlphabet = new Set([
+  SmilesRawAlphabet = new Set([
     'A', 'B', 'C', 'E', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'Z',
     'a', 'c', 'e', 'g', 'i', 'l', 'n', 'o', 'r', 's', 't', 'u',
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     '+', '-', '.', , '/', '\\', '@', '[', ']', '(', ')', '#', '%', '=']);
 
-  static SmartsRawAlphabet = new Set([
+  SmartsRawAlphabet = new Set([
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     '!', '#', '$', '&', '(', ')', '*', '+', ',', '-', '.', ':', ';', '=', '@', '~', '[', ']',
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M',
@@ -69,7 +72,7 @@ class BioPackageDetectors extends DG.Package {
 
   /** @param s {String} - string to check
    * @returns {boolean} */
-  static isHelm(s) {
+  isHelm(s) {
     return s.startsWith('PEPTIDE1{') || s.startsWith('CHEM1{') || s.startsWith('BLOB1{') ||
       s.startsWith('RNA1{') || s.startsWith('DNA1{');
   }
@@ -78,114 +81,123 @@ class BioPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectMacromolecule(col) {
-    // Fail early
-    if (col.type !== DG.TYPE.STRING) return null;
+    const t1 = Date.now();
+    try {
+      // Fail early
+      if (col.type !== DG.TYPE.STRING) return null;
 
-    const categoriesSample = col.categories.length < CATEGORIES_SAMPLE_LIMIT ? col.categories :
-      BioPackageDetectors.sample(col.categories, CATEGORIES_SAMPLE_LIMIT);
+      const categoriesSample = col.categories.length < SEQ_SAMPLE_LIMIT ? col.categories :
+        this.sample(col.categories, SEQ_SAMPLE_LIMIT);
 
-    // To collect alphabet freq three strategies can be used:
-    // as chars, as fasta (single or within square brackets), as with the separator.
-    if (
-      !(col.categories.length == 1 && !col.categories[0]) && // TODO: Remove with tests for single empty category value
-      DG.Detector.sampleCategories(col, (s) => BioPackageDetectors.isHelm(s), 1, CATEGORIES_SAMPLE_LIMIT)
-    ) {
-      const statsAsHelm = BioPackageDetectors.getStats(categoriesSample, 2, BioPackageDetectors.splitterAsHelm);
-      col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
+      // To collect alphabet freq three strategies can be used:
+      // as chars, as fasta (single or within square brackets), as with the separator.
+      if (
+        !(col.categories.length == 1 && !col.categories[0]) && // TODO: Remove with tests for single empty category value
+        DG.Detector.sampleCategories(col, (s) => this.isHelm(s), 1, SEQ_SAMPLE_LIMIT)
+      ) {
+        const statsAsHelm = this.getStats(categoriesSample, 2,
+          this.getSplitterAsHelm(SEQ_SAMPLE_LENGTH_LIMIT));
+        col.setTag(DG.TAGS.UNITS, NOTATION.HELM);
 
-      // alphabetSize calculated on (sub)sample of data is incorrect
-      // const alphabetSize = Object.keys(statsAsHelm.freq).length;
-      const alphabetIsMultichar = Object.keys(statsAsHelm.freq).some((m) => m.length > 1);
-      // col.setTag(UnitsHandler.TAGS.alphabetSize, alphabetSize.toString());
-      col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
+        // alphabetSize calculated on (sub)sample of data is incorrect
+        // const alphabetSize = Object.keys(statsAsHelm.freq).length;
+        const alphabetIsMultichar = Object.keys(statsAsHelm.freq).some((m) => m.length > 1);
+        // col.setTag(UnitsHandler.TAGS.alphabetSize, alphabetSize.toString());
+        col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
 
-      return DG.SEMTYPE.MACROMOLECULE;
-    }
-
-    const decoyAlphabets = [
-      ['SMILES', BioPackageDetectors.SmilesRawAlphabet, 0.30],
-      ['SMARTS', BioPackageDetectors.SmartsRawAlphabet, 0.45],
-    ];
-
-    const candidateAlphabets = [
-      [ALPHABET.PT, BioPackageDetectors.PeptideFastaAlphabet, 0.50],
-      [ALPHABET.DNA, BioPackageDetectors.DnaFastaAlphabet, 0.55],
-      [ALPHABET.RNA, BioPackageDetectors.RnaFastaAlphabet, 0.55],
-    ];
-
-    // Check for url column, maybe it is too heavy check
-    const isUrlCheck = (s) => {
-      let res = true;
-      try {
-        const url = new URL(s);
-        res = true;
-      } catch {
-        res = false;
-      }
-      return res;
-    };
-    const isUrl = categoriesSample.every((v) => { return !v || isUrlCheck(v); });
-    if (isUrl) return null;
-
-    // TODO: Detect HELM sequence
-    // TODO: Lazy calculations could be helpful for performance and convenient for expressing classification logic.
-    const statsAsChars = BioPackageDetectors.getStats(categoriesSample, 5, BioPackageDetectors.splitterAsChars);
-    // if (Object.keys(statsAsChars.freq).length === 0) return;
-
-    const decoy = BioPackageDetectors.detectAlphabet(statsAsChars.freq, decoyAlphabets, null);
-    if (decoy != ALPHABET.UN) return null;
-
-    if (statsAsChars.sameLength) {
-      if (Object.keys(statsAsChars.freq).length > 0) { // require non empty alphabet
-        const alphabet = BioPackageDetectors.detectAlphabet(statsAsChars.freq, candidateAlphabets, '-');
-        if (alphabet === ALPHABET.UN) return null;
-
-        const units = NOTATION.FASTA;
-        col.setTag(DG.TAGS.UNITS, units);
-        col.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
-        col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
         return DG.SEMTYPE.MACROMOLECULE;
       }
-    } else {
-      const separator = BioPackageDetectors.detectSeparator(statsAsChars.freq);
-      const gapSymbol = separator ? '' : '-';
-      const splitter = separator ? BioPackageDetectors.getSplitterWithSeparator(separator) :
-        BioPackageDetectors.splitterAsFasta;
 
-      const stats = BioPackageDetectors.getStats(categoriesSample, 5, splitter);
-      // Empty monomer alphabet is not allowed
-      if (Object.keys(stats.freq).length === 0) return null;
-      // Long monomer names for sequences with separators have constraints
-      if (separator && BioPackageDetectors.checkForbiddenWithSeparators(stats.freq)) return null;
+      const decoyAlphabets = [
+        ['SMILES', this.SmilesRawAlphabet, 0.30],
+        ['SMARTS', this.SmartsRawAlphabet, 0.43],
+      ];
 
-      const format = separator ? NOTATION.SEPARATOR : NOTATION.FASTA;
-      const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
+      const candidateAlphabets = [
+        [ALPHABET.PT, this.PeptideFastaAlphabet, 0.50],
+        [ALPHABET.DNA, this.DnaFastaAlphabet, 0.55],
+        [ALPHABET.RNA, this.RnaFastaAlphabet, 0.55],
+      ];
 
-      // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
-      const alphabet = BioPackageDetectors.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol);
-
-      // const forbidden = BioPackageDetectors.checkForbiddenWoSeparator(stats.freq);
-      if (separator || alphabet != 'UN') {
-        col.setTag(DG.TAGS.UNITS, format);
-        col.setTag(UnitsHandler.TAGS.aligned, aligned);
-        col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
-        if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
-        if (alphabet === ALPHABET.UN) {
-          // alphabetSize calculated on (sub)sample of data is incorrect
-          // const alphabetSize = Object.keys(stats.freq).length;
-          const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
-          // col.setTag(UnitsHandler.TAGS.alphabetSize, alphabetSize.toString());
-          col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
+      // Check for url column, maybe it is too heavy check
+      const isUrlCheck = (s) => {
+        let res = true;
+        try {
+          const url = new URL(s);
+          res = true;
+        } catch {
+          res = false;
         }
-        return DG.SEMTYPE.MACROMOLECULE;
+        return res;
+        // return isUrlRe.test(s);
+      };
+      const isUrl = categoriesSample.every((v) => { return !v || isUrlCheck(v); });
+      if (isUrl) return null;
+
+      // TODO: Detect HELM sequence
+      // TODO: Lazy calculations could be helpful for performance and convenient for expressing classification logic.
+      const statsAsChars = this.getStats(categoriesSample, 5,
+        this.getSplitterAsChars(SEQ_SAMPLE_LENGTH_LIMIT));
+      // if (Object.keys(statsAsChars.freq).length === 0) return;
+
+      const decoy = this.detectAlphabet(statsAsChars.freq, decoyAlphabets, null);
+      if (decoy != ALPHABET.UN) return null;
+
+      const separator = this.detectSeparator(statsAsChars.freq);
+      const units = separator ? NOTATION.SEPARATOR : NOTATION.FASTA;
+      const gapSymbol = separator ? '' : '-';
+      const splitter = separator ? this.getSplitterWithSeparator(separator, SEQ_SAMPLE_LENGTH_LIMIT) :
+        this.getSplitterAsFasta(SEQ_SAMPLE_LENGTH_LIMIT);
+
+      col.setTag(DG.TAGS.UNITS, units);
+      if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
+
+      if (statsAsChars.sameLength) {
+        if (Object.keys(statsAsChars.freq).length > 0) { // require non empty alphabet
+          const stats = this.getStats(categoriesSample, 5, splitter);
+          const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-');
+          if (alphabet === ALPHABET.UN) return null;
+
+          col.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
+          col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
+          return DG.SEMTYPE.MACROMOLECULE;
+        }
+      } else {
+        const stats = this.getStats(categoriesSample, 5, splitter);
+        // Empty monomer alphabet is not allowed
+        if (Object.keys(stats.freq).length === 0) return null;
+        // Long monomer names for sequences with separators have constraints
+        if (separator && this.checkForbiddenWithSeparators(stats.freq)) return null;
+
+        const aligned = stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
+
+        // TODO: If separator detected, then extra efforts to detect alphabet are allowed.
+        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, gapSymbol);
+
+        // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
+        if (separator || alphabet != 'UN') {
+          col.setTag(UnitsHandler.TAGS.aligned, aligned);
+          col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
+          if (alphabet === ALPHABET.UN) {
+            // alphabetSize calculated on (sub)sample of data is incorrect
+            // const alphabetSize = Object.keys(stats.freq).length;
+            const alphabetIsMultichar = Object.keys(stats.freq).some((m) => m.length > 1);
+            // col.setTag(UnitsHandler.TAGS.alphabetSize, alphabetSize.toString());
+            col.setTag(UnitsHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
+          }
+          return DG.SEMTYPE.MACROMOLECULE;
+        }
       }
+    } finally {
+      const t2 = Date.now();
+      console.debug('Bio: detectMacromolecule() ' + `ET = ${t2 - t1} ms.`);
     }
   }
 
   /** Detects the most frequent char with a rate of at least 0.15 of others in sum.
    * Does not use any splitting strategies, estimates just by single characters.
    * */
-  static detectSeparator(freq) {
+  detectSeparator(freq) {
     // To detect a separator we analyse col's sequences character frequencies.
     // If there is an exceptionally frequent symbol, then we will call it the separator.
     // The most frequent symbol should occur with a rate of at least 0.15
@@ -195,13 +207,13 @@ class BioPackageDetectors extends DG.Package {
     // !!! What is the difference between the gap symbol and separator symbol in stats terms?
     // const noSeparatorRe = /[a-z\d]+$/i;
     const noSeparatorChemRe = /[HBCNOFPSKVYI]/i; // Mendeleev's periodic table single char elements
-    const noSeparatorAlphaDigitRe = /[\dA-Z,& _]/i; // ..., comma, ampersand, space, underscore
+    const noSeparatorAlphaDigitRe = /[\dA-Z,& _\r\n]/i; // ..., comma, ampersand, space, underscore, CR, LF
     const noSeparatorBracketsRe = /[\[\]()<>{}]/i;
     const cleanFreq = Object.assign({}, ...Object.entries(freq)
       .filter(([m, f]) =>
         !noSeparatorChemRe.test(m) && !noSeparatorAlphaDigitRe.test(m) && !noSeparatorBracketsRe.test(m) &&
-        !BioPackageDetectors.PeptideFastaAlphabet.has(m) &&
-        !BioPackageDetectors.DnaFastaAlphabet.has(m))
+        !this.PeptideFastaAlphabet.has(m) &&
+        !this.DnaFastaAlphabet.has(m))
       .map(([m, f]) => ({[m]: f})));
     if (Object.keys(cleanFreq).length == 0) return null;
 
@@ -218,19 +230,19 @@ class BioPackageDetectors extends DG.Package {
   /** With a separator, spaces are nor allowed in monomer names.
    * The monomer name/label cannot contain digits only.
    */
-  static checkForbiddenWithSeparators(freq) {
+  checkForbiddenWithSeparators(freq) {
     const forbiddenRe = /[ ]|^\d+$/i;
     return Object.keys(freq).filter((m) => forbiddenRe.test(m)).length > 0;
   }
 
   // /** Without a separator, special symbols or digits are not allowed as monomers. */
-  // static checkForbiddenWoSeparator(freq) {
+  //  checkForbiddenWoSeparator(freq) {
   //   const forbiddenRe = /[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/i;
   //   return Object.keys(freq).filter((m) => forbiddenRe.test(m)).length > 0;
   // }
 
   /** Stats of sequences with specified splitter func, returns { freq, sameLength } */
-  static getStats(values, minLength, splitter) {
+  getStats(values, minLength, splitter) {
     const freq = {};
     let sameLength = true;
     let firstLength = null;
@@ -260,9 +272,9 @@ class BioPackageDetectors extends DG.Package {
    * @param freq       frequencies of monomers in sequence set
    * @param candidates  an array of pairs [name, monomer set]
    * */
-  static detectAlphabet(freq, candidates, gapSymbol) {
+  detectAlphabet(freq, candidates, gapSymbol) {
     const candidatesSims = candidates.map((c) => {
-      const sim = BioPackageDetectors.getAlphabetSimilarity(freq, c[1], gapSymbol);
+      const sim = this.getAlphabetSimilarity(freq, c[1], gapSymbol);
       return [c[0], c[1], c[2], freq, sim];
     });
 
@@ -277,7 +289,7 @@ class BioPackageDetectors extends DG.Package {
     return alphabetName;
   }
 
-  static getAlphabetSimilarity(freq, alphabet, gapSymbol) {
+  getAlphabetSimilarity(freq, alphabet, gapSymbol) {
     const keys = new Set([...new Set(Object.keys(freq)), ...alphabet]);
     keys.delete(gapSymbol);
 
@@ -288,11 +300,11 @@ class BioPackageDetectors extends DG.Package {
       alphabetA.push(alphabet.has(m) ? 10 : -20 /* penalty for character outside alphabet set*/);
     }
     /* There were a few ideas: chi-squared, pearson correlation (variance?), scalar product */
-    const cos = BioPackageDetectors.vectorDotProduct(freqA, alphabetA) / (BioPackageDetectors.vectorLength(freqA) * BioPackageDetectors.vectorLength(alphabetA));
+    const cos = this.vectorDotProduct(freqA, alphabetA) / (this.vectorLength(freqA) * this.vectorLength(alphabetA));
     return cos;
   }
 
-  static vectorLength(v) {
+  vectorLength(v) {
     let sqrSum = 0;
     for (let i = 0; i < v.length; i++) {
       sqrSum += v[i] * v[i];
@@ -300,7 +312,7 @@ class BioPackageDetectors extends DG.Package {
     return Math.sqrt(sqrSum);
   }
 
-  static vectorDotProduct(v1, v2) {
+  vectorDotProduct(v1, v2) {
     if (v1.length != v2.length) {
       throw Error('The dimensionality of the vectors must match');
     }
@@ -312,66 +324,87 @@ class BioPackageDetectors extends DG.Package {
   }
 
   /** For trivial checks split by single chars*/
-  static splitterAsChars(seq) {
-    return seq.split('');
+  getSplitterAsChars(lengthLimit) {
+    return function(seq) {
+      return seq.split('', lengthLimit);
+    }.bind(this);
   }
 
-  static getSplitterWithSeparator(separator) {
+  getSplitterWithSeparator(separator, lengthLimit) {
     return function(seq) {
-      return seq.split(separator);
-    };
+      // if (!!lengthLimit) {
+      //   const res = new Array(lengthLimit);
+      //   let pos = 0, count = 0;
+      //   while (pos < seq.length && count < lengthLimit) {
+      //     const newPos = seq.indexOf(separator, pos);
+      //     res[count] = seq.substring(pos, newPos);
+      //     count++;
+      //     pos = newPos;
+      //   }
+      //
+      //   return res.slice(0, count);
+      // } else {
+      return seq.split(separator, lengthLimit);
+      // }
+    }.bind(this);
   }
 
   // Multichar monomer names in square brackets, single char monomers or gap symbol
-  static monomerRe = /\[(\w+)\]|(\w)|(-)/g;
+  monomerRe = /\[(\w+)\]|(\w)|(-)/g;
 
   /** Split sequence for single character monomers, square brackets multichar monomer names or gap symbol. */
-  static splitterAsFasta(seq) {
-    const res = wu(seq.toString().matchAll(BioPackageDetectors.monomerRe)).map((ma) => {
-      let mRes;
-      const m = ma[0];
-      if (m.length > 1) {
-        mRes = ma[1];
-      } else {
-        mRes = m;
-      }
-      return mRes;
-    }).toArray();
+  getSplitterAsFasta(lengthLimit) {
+    return function(seq) {
+      const res = wu(seq.toString().matchAll(this.monomerRe))
+        .take(lengthLimit)
+        .map((ma) => {
+          let mRes;
+          const m = ma[0];
+          if (m.length > 1) {
+            mRes = ma[1];
+          } else {
+            mRes = m;
+          }
+          return mRes;
+        }).toArray();
 
-    return res;
+      return res;
+    }.bind(this);
   }
 
   /** Only some of the synonyms. These were obtained from the clustered oligopeptide dataset. */
-  static aaSynonyms = {
+  aaSynonyms = {
     '[MeNle]': 'L', // Nle - norleucine
     '[MeA]': 'A', '[MeG]': 'G', '[MeF]': 'F',
   };
 
-  static helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
-  static helmPp1Re = /\[([^\[\]]+)]/g;
+  helmRe = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
+  helmPp1Re = /\[([^\[\]]+)]/g;
 
   /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA). */
-  static splitterAsHelm(seq) {
-    BioPackageDetectors.helmRe.lastIndex = 0;
-    const ea = BioPackageDetectors.helmRe.exec(seq.toString());
-    const inSeq = ea ? ea[2] : null;
+  getSplitterAsHelm(lengthLimit) {
+    return function(seq) {
+      this.helmRe.lastIndex = 0;
+      const ea = this.helmRe.exec(seq.toString());
+      const inSeq = ea ? ea[2] : null;
 
-    const mmPostProcess = (mm) => {
-      BioPackageDetectors.helmPp1Re.lastIndex = 0;
-      const pp1M = BioPackageDetectors.helmPp1Re.exec(mm);
-      if (pp1M && pp1M.length >= 2) {
-        return pp1M[1];
-      } else {
-        return mm;
-      }
-    };
+      const mmPostProcess = (mm) => {
+        this.helmPp1Re.lastIndex = 0;
+        const pp1M = this.helmPp1Re.exec(mm);
+        if (pp1M && pp1M.length >= 2) {
+          return pp1M[1];
+        } else {
+          return mm;
+        }
+      };
 
-    const mmList = inSeq ? inSeq.split('.') : [];
-    const mmListRes = mmList.map(mmPostProcess);
-    return mmListRes;
+      const mmList = inSeq ? inSeq.split('.') : [];
+      const mmListRes = mmList.map(mmPostProcess);
+      return mmListRes;
+    }.bind(this);
   }
 
-  static sample(src, n) {
+  sample(src, n) {
     if (src.length < n) {
       throw new Error('Sample source is less than n requested.');
     }

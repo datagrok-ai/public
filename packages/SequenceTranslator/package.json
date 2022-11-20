@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "author": {
     "name": "Vadym Kovadlo",
     "email": "vkovadlo@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/SequenceTranslator"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.11.1",
+    "@datagrok-libraries/utils": "^1.15.5",
     "@types/react": "^18.0.15",
     "@datagrok-libraries/bio": "^5.9.13",
     "datagrok-api": "^1.7.2",

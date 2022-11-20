@@ -41,6 +41,7 @@ import { elementsTable } from './constants';
 import { getSimilaritiesMarix } from './utils/similarity-utils';
 import { molToMolblock } from './utils/convert-notation-utils'
 import { similarityMetric } from '@datagrok-libraries/utils/src/similarity-metrics';
+import { _importSmi } from './file-importers/smi-importer';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -138,25 +139,25 @@ export async function chemCellRenderer(): Promise<DG.GridCellRenderer> {
   return renderer;
 }
 
-//name: getMorganFingerprints
-//input: column molColumn {semType: Molecule}
-//output: column result [fingerprints]
-export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Column> {
-  assure.notNull(molColumn, 'molColumn');
+// //name: getMorganFingerprints
+// //input: column molColumn {semType: Molecule}
+// //output: column result [fingerprints]
+// export async function getMorganFingerprints(molColumn: DG.Column): Promise<DG.Column> {
+//   assure.notNull(molColumn, 'molColumn');
 
-  try {
-    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan);
-    const fingerprintsBitsets: DG.BitSet[] = [];
-    for (let i = 0; i < fingerprints.length; ++i) {
-      const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
-      fingerprintsBitsets.push(fingerprint);
-    }
-    return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
-  } catch (e: any) {
-    console.error('Chem | Catch in getMorganFingerprints: ' + e.toString());
-    throw e;
-  }
-}
+//   try {
+//     const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan);
+//     const fingerprintsBitsets: DG.BitSet[] = [];
+//     for (let i = 0; i < fingerprints.length; ++i) {
+//       const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
+//       fingerprintsBitsets.push(fingerprint);
+//     }
+//     return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
+//   } catch (e: any) {
+//     console.error('Chem | Catch in getMorganFingerprints: ' + e.toString());
+//     throw e;
+//   }
+// }
 
 //name: getMorganFingerprint
 //input: string molString {semType: Molecule}
@@ -441,7 +442,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     const packageExists = checkPackage('Charts', 'radarViewerDemo');
     if (packageExists) {
       let radarViewer = DG.Viewer.fromType('RadarViewer', table, {
-        columnNames: columnNames,  
+        valuesColumnNames: columnNames,  
       });
       view.addViewer(radarViewer);
     } else {
@@ -578,7 +579,6 @@ export function convertMolNotation(molecule: string, sourceNotation: string, tar
   return _convertMolNotation(molecule, sourceNotation, targetNotation, getRdKitModule());
 }
 
-
 //tags: cellEditor
 //description: Molecule
 //input: grid_cell cell
@@ -605,7 +605,6 @@ export function similaritySearchViewer(): ChemSimilarityViewer {
 //top-menu: Chem | Similarity Search...
 //name: similaritySearch
 //description: finds the most similar molecule
-//output: viewer result
 export function similaritySearchTopMenu(): void {
   (grok.shell.v as DG.TableView).addViewer('SimilaritySearchViewer');
 }
@@ -620,7 +619,6 @@ export function diversitySearchViewer(): ChemDiversityViewer {
 //top-menu: Chem | Diversity Search...
 //name: diversitySearch
 //description: finds the most diverse molecules
-//output: viewer result
 export function diversitySearchTopMenu() {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
@@ -650,6 +648,16 @@ export function openChemLibSketcher(): OpenChemLibSketcher {
 //output: list tables
 export function importSdf(bytes: Uint8Array): DG.DataFrame[] {
   return _importSdf(Uint8Array.from(bytes));
+}
+
+//name: importSmi
+//description: Opens smi file
+//tags: file-handler
+//meta.ext: smi
+//input: list bytes
+//output: list tables
+export function importSmi(bytes: Uint8Array): DG.DataFrame[] {
+  return _importSmi(Uint8Array.from(bytes));
 }
 
 //name: importMol

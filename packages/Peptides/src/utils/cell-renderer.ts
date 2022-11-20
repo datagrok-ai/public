@@ -62,7 +62,8 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   if (substitutionsInfo.size > 0) {
     canvasContext.textBaseline = 'middle';
     canvasContext.textAlign = 'center';
-    canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(coef)));
+    // canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(coef)));
+    canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
     canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
     let substValue = 0;
     substitutionsInfo.get(currentAAR)?.get(currentPosition)?.forEach((idxs) => substValue += idxs.length);
@@ -102,7 +103,8 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
 
 
 export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, statsInfo: types.StatsInfo,
-  rowCount: number, cp: bio.SeqPalette, drawOptions: types.DrawOptions = {}): void {
+  rowCount: number, cp: bio.SeqPalette, monomerSelectionStats: {[monomer: string]: number} = {},
+  drawOptions: types.DrawOptions = {}): {[monomer: string]: DG.Rect} {
   drawOptions.fontStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;
   drawOptions.upperLetterAscent ??= 0.25;
@@ -112,19 +114,28 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   const totalSpaceBetweenLetters = (statsInfo.orderedIndexes.length - 1) * drawOptions.upperLetterAscent;
   const barHeight = bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters;
   const leftShift = drawOptions.marginHorizontal * 2;
-  const barWidth = bounds.width - leftShift - drawOptions.marginHorizontal;
+  const barWidth = bounds.width - leftShift * 2;
   const xStart = bounds.x + leftShift;
+  const selectionWidth = 4;
+  const xSelection = bounds.x + 3;
   let currentY = bounds.y + drawOptions.marginVertical;
 
-
+  const monomerBounds: {[monomer: string]: DG.Rect} = {};
   for (const index of statsInfo.orderedIndexes) {
     const monomer = statsInfo.monomerCol.get(index)!;
     const monomerHeight = barHeight * (statsInfo.countCol.get(index)! / rowCount);
+    const selectionHeight = barHeight * ((monomerSelectionStats[monomer] ?? 0) / rowCount);
+    const currentBound = new DG.Rect(xStart, currentY, barWidth, monomerHeight);
+    monomerBounds[monomer] = currentBound;
 
     ctx.resetTransform();
     if (monomer !== '-') {
       const monomerTxt = bio.monomerToShort(monomer, 5);
       const mTm: TextMetrics = ctx.measureText(monomerTxt);
+
+      // Filling selection
+      ctx.lineWidth = selectionWidth;
+      ctx.line(xSelection, currentY, xSelection, currentY + selectionHeight, DG.Color.rowSelection);
 
       ctx.fillStyle = cp.get(monomer) ?? cp.get('other');
       ctx.textAlign = 'left';
@@ -136,4 +147,6 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
     }
     currentY += monomerHeight + drawOptions.upperLetterAscent;
   }
+
+  return monomerBounds;
 }

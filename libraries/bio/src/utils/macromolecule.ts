@@ -11,6 +11,7 @@ import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
 import {UnknownSeqPalettes} from '../unknown';
 import {UnitsHandler} from '../utils/units-handler';
 
+
 /** enum type to simplify setting "user-friendly" notation if necessary */
 export const enum NOTATION {
   FASTA = 'fasta',
@@ -106,7 +107,6 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
 const helmRe: RegExp = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
 const helmPp1Re: RegExp = /\[([^\[\]]+)]/g;
 
-
 /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
  * Only for linear polymers, does not split RNA for ribose and phosphate monomers.
  * @param {string} seq Source string of HELM notation
@@ -170,6 +170,20 @@ export function monomerToShort(amino: string, maxLengthOfMonomer: number): strin
   const needAddDots: boolean = amino.length > maxLengthOfMonomer || (shortAminoMatch?.length ?? 0) > 1;
   const shortAmino = shortAminoMatch?.[0] ?? ' ';
   return !needAddDots ? shortAmino : shortAmino.substring(0, maxLengthOfMonomer) + '…';
+}
+
+/** */
+export function getAlphabet(alphabet: ALPHABET): Set<string> {
+  switch (alphabet) {
+  case ALPHABET.DNA:
+    return UnitsHandler.DnaFastaAlphabet;
+  case ALPHABET.RNA:
+    return UnitsHandler.RnaFastaAlphabet;
+  case ALPHABET.PT:
+    return UnitsHandler.PeptideFastaAlphabet;
+  default:
+    throw new Error(`Unsupported alphabet '${alphabet}'.`);
+  }
 }
 
 /** Calculate similarity in current sequence and alphabet.

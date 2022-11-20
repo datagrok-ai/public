@@ -6,7 +6,5 @@ import * as DG from 'datagrok-api/dg';
 category('Dapi: layouts', () => {
   test('Dapi: layouts - get applicable', async () => {
     const layouts = await grok.dapi.layouts.getApplicable(grok.data.demo.demog());
-    if (layouts.length === 0)
-      throw 'Can\'t find any applicable layouts';
   });
 });

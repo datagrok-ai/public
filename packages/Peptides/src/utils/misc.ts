@@ -45,30 +45,22 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: string = 
   return scaledCol;
 }
 
-export function calculateBarsData(columns: DG.Column<string>[], selection: DG.BitSet): type.MonomerDfStats {
-  const dfStats: type.MonomerDfStats = {};
-  const columnsLen = columns.length;
-
-  for (let colIndex = 0; colIndex < columnsLen; colIndex++) {
-    const col = columns[colIndex];
-    dfStats[col.name] = calculateSingleBarData(col, selection);
+export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats {
+  const monomerColumns: DG.Column<string>[] = df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
+  const selectedObj: type.MonomerSelectionStats = {};
+  for (const idx of df.selection.getSelectedIndexes()) {
+    for (const col of monomerColumns) {
+      const monomer = col.get(idx);
+      if (!monomer)
+        continue;
+      
+      selectedObj[col.name] ??= {};
+      selectedObj[col.name][monomer] ??= 0;
+      selectedObj[col.name][monomer] += 1;
+    }
   }
 
-  return dfStats;
-}
-
-export function calculateSingleBarData(col: DG.Column<string>, selection: DG.BitSet): type.MonomerColStats {
-  const colLen = col.length;
-  const colStats: type.MonomerColStats = {};
-  col.categories.forEach((monomer) => colStats[monomer] = {count: 0, selected: 0});
-
-  for (let rowIndex = 0; rowIndex < colLen; rowIndex++) {
-    const monomerStats = colStats[col.get(rowIndex)!];
-    monomerStats.count += 1;
-    monomerStats.selected += +selection.get(rowIndex);
-  }
-
-  return colStats;
+  return selectedObj;
 }
 
 export function isGridCellInvalid(gc: DG.GridCell | null): boolean {

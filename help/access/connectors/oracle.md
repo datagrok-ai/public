@@ -3,7 +3,19 @@
 
 # Oracle
 
-Provides access to [Oracle Database](https://www.oracle.com/database/) database using SQL queries via the JDBC driver.
+Provides access to [Oracle Database](https://www.oracle.com/database/) database
+using SQL queries via the JDBC driver.
+
+## Connection parameters
+
+```json
+{
+    "server": "",
+    "port": "",
+    "db": "",
+    "connString": ""
+}
+```
 
 See also:
 

@@ -26,7 +26,8 @@ category('Functions: Date', () => {
 
   test('DateNow', async () => {
     const now = await grok.functions.eval('DateNow()');
-    const tolerance = 1;
+    const tolerance = 10;
+    console.log('Date', now.valueOf());
     expect(Math.abs(dayjs().valueOf() - now.valueOf()) <= tolerance, true);
   });
 

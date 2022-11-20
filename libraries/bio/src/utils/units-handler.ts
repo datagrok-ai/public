@@ -1,13 +1,15 @@
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
 
 import {
-  ALPHABET, NOTATION,
+  ALPHABET,
+  detectAlphabet,
+  getSplitterForColumn,
   getStats,
+  NOTATION,
   SeqColStats,
   splitterAsFasta,
-  detectAlphabet, TAGS, getSplitterForColumn, SplitterFunc
+  SplitterFunc,
+  TAGS
 } from './macromolecule';
 
 /** Class for handling notation units in Macromolecule columns */
@@ -22,12 +24,12 @@ export class UnitsHandler {
     FASTA: '-',
   };
 
-  public static readonly PeptideFastaAlphabet = new Set([
+  public static readonly PeptideFastaAlphabet = new Set<string>([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
     'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',
   ]);
-  public static readonly DnaFastaAlphabet = new Set(['A', 'C', 'G', 'T']);
-  public static readonly RnaFastaAlphabet = new Set(['A', 'C', 'G', 'U']);
+  public static readonly DnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'T']);
+  public static readonly RnaFastaAlphabet = new Set<string>(['A', 'C', 'G', 'U']);
 
   public static setUnitsToFastaColumn(col: DG.Column) {
     if (col.semType !== DG.SEMTYPE.MACROMOLECULE)
@@ -50,12 +52,11 @@ export class UnitsHandler {
 
   public get defaultGapSymbol(): string { return this._defaultGapSymbol; }
 
-  public get separator(): string {
-    const separator = this.column.getTag(TAGS.separator);
-    if (separator !== null)
-      return separator;
-    else
-      throw new Error('Separator not set');
+  public get separator(): string | undefined {
+    const separator: string | undefined = this.column.getTag(TAGS.separator) ?? undefined;
+    if (this.notation === NOTATION.SEPARATOR && separator === undefined)
+      throw new Error(`Separator is mandatory  for column '${this.column.name}' of notation '${this.notation}'.`);
+    return separator;
   }
 
   public get aligned(): string {

@@ -19,7 +19,8 @@ category('Viewers', () => {
       v != DG.VIEWER.GLOBE &&
       v != DG.VIEWER.SCATTER_PLOT_3D &&
       v != DG.VIEWER.GOOGLE_MAP &&
-      v != DG.VIEWER.SHAPE_MAP);
+      v != DG.VIEWER.SHAPE_MAP &&
+      v != DG.VIEWER.SURFACE_PLOT);
     df = grok.data.demo.demog();
     tv = grok.shell.addTableView(df);
 
@@ -116,7 +117,7 @@ category('Viewers', () => {
     expect(viewer.onTableAttachedCounter, 2);
 
     // TODO: Check onTableAttached has been called
-  });
+  }, {skipReason: 'GROK-11484'});
 
   test('setPropertyStringWithNumber', async () => {
     // const v: TestViewerForProperties = tv.addViewer('TestViewerForProperties', {}) as TestViewerForProperties;
@@ -140,7 +141,7 @@ category('Viewers', () => {
     if ((typeof propValueFromObject !== typeof 'str' || typeof propValueFromProps !== typeof 'str') && !exCaught)
       throw new Error('JsViewer string property assigned with number value ' +
         `become value of type '${typeof propValueFromObject}' without an exception or type conversion.`);
-  });
+  }, {skipReason: 'GROK-11485'});
 
   test('setPropertyIntWithString', async () => {
     // const v: TestViewerForProperties = tv.addViewer('TestViewerForProperties', {}) as TestViewerForProperties;
@@ -164,7 +165,7 @@ category('Viewers', () => {
     if ((typeof propValueFromObject !== typeof 1 || typeof propValueFromProps !== typeof 1) && !exCaught)
       throw new Error('JsViewer int property assigned with string value ' +
         `become value of type '${typeof propValueFromObject}' without an exception or type conversion.`);
-  });
+  }, {skipReason: 'GROK-11485'});
 
 
   test('testViewersLayout', async () => {

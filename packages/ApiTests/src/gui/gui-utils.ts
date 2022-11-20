@@ -110,9 +110,8 @@ export function getHTMLElementbyInnerText(className:string, innerText:string):HT
 
 export async function waitForElement(selector: string, error: string, wait=3000) {
   return new Promise((resolve, reject) => {
-    if (document.querySelector(selector)) {
+    if (document.querySelector(selector))
       return resolve(document.querySelector(selector));
-    }
 
     const observer = new MutationObserver(() => {
       if (document.querySelector(selector)) {
@@ -129,7 +128,7 @@ export async function waitForElement(selector: string, error: string, wait=3000)
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
   });
 }

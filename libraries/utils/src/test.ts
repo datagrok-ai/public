@@ -160,7 +160,8 @@ export function after(after: () => Promise<void>): void {
 
 
 export async function runTests(options?: { category?: string, test?: string, testContext?: TestContext }) {
-  const results: { category?: string, name?: string, success: boolean, result: string, ms: number, skipped: boolean }[] = [];
+  const results: { category?: string, name?: string, success: boolean,
+                   result: string, ms: number, skipped: boolean }[] = [];
   const packageName = grok.functions.getCurrentCall()?.func?.package;
   console.log(`Running tests`);
   options ??= {};
@@ -208,16 +209,16 @@ export async function runTests(options?: { category?: string, test?: string, tes
   }
   if (options.testContext.report) {
     const logger = new DG.Logger();
-    const successful = results.filter(r => r.success).length;
-    const skipped = results.filter(r => r.skipped).length;
-    const failed = results.filter(r => !r.success);
+    const successful = results.filter((r) => r.success).length;
+    const skipped = results.filter((r) => r.skipped).length;
+    const failed = results.filter((r) => !r.success);
     const description = 'Package @package tested: @successful successful, @skipped skipped, @failed failed tests';
     const params = {
       successful: successful,
       skipped: skipped,
       failed: failed.length,
       package: packageName
-    }
+    };
     for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
     logger.log(description, params, 'package-tested');
   }

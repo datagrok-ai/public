@@ -3,7 +3,19 @@
 
 # Firebird
 
-Provides access to [FirebirdSQL](https://firebirdsql.org/) database using SQL queries via JDBC driver .
+Provides access to [FirebirdSQL](https://firebirdsql.org/) database using SQL
+queries via JDBC driver.
+
+## Connection parameters
+
+```json
+{
+    "server": "",
+    "port": "",
+    "db": "",
+    "connString": ""
+}
+```
 
 See also:
 

@@ -6,9 +6,10 @@ import * as svg from 'save-svg-as-png';
 import $ from 'cash-dom';
 
 import {drawAxolabsPattern} from './draw-svg';
-import {axolabsMap} from './constants';
+import {AXOLABS_MAP} from './constants';
+import {isOverhang} from './helpers';
 
-const baseChoices: string[] = Object.keys(axolabsMap);
+const baseChoices: string[] = Object.keys(AXOLABS_MAP);
 const defaultBase: string = baseChoices[0];
 const defaultPto: boolean = true;
 const defaultSequenceLength: number = 23;
@@ -17,7 +18,7 @@ const userStorageKey: string = 'SequenceTranslator';
 const exampleMinWidth: string = '400px';
 
 function generateExample(sequenceLength: number, sequenceBasis: string): string {
-  const uniqueSymbols = axolabsMap[sequenceBasis].symbols.join('');
+  const uniqueSymbols = AXOLABS_MAP[sequenceBasis].symbols.join('');
   return uniqueSymbols.repeat(Math.floor(sequenceLength / 4)) + uniqueSymbols.slice(0, sequenceLength % 4);
 }
 
@@ -64,12 +65,12 @@ function translateSequence(
   let i: number = -1;
   let mainSequence = sequence.replace(/[AUGC]/g, function(x: string) {
     i++;
-    const indexOfSymbol = axolabsMap['RNA']['symbols'].indexOf(x);
-    let symbol = axolabsMap[bases[i].value]['symbols'][indexOfSymbol];
-    if (bases[i].value.slice(-3) == '(o)') {
-      if (i < sequence.length / 2 && bases[i + 1].value.slice(-3) != '(o)')
+    const indexOfSymbol = AXOLABS_MAP['RNA']['symbols'].indexOf(x);
+    let symbol = AXOLABS_MAP[bases[i].value]['symbols'][indexOfSymbol];
+    if (isOverhang(bases[i].value)) {
+      if (i < sequence.length / 2 && !isOverhang(bases[i + 1].value))
         symbol = symbol + x + 'f';
-      else if (i > sequence.length / 2 && bases[i - 1].value.slice(-3) != '(o)')
+      else if (i > sequence.length / 2 && !isOverhang(bases[i - 1].value))
         symbol = x + 'f' + symbol;
     }
     return (ptoLinkages[i].value) ? symbol + 's' : symbol;
@@ -150,12 +151,12 @@ export function defineAxolabsPattern() {
         updateSvgScheme();
         updateOutputExamples();
       });
-      if (asBases[i].value.slice(-3) != '(o)')
+      if (!isOverhang(asBases[i].value))
         nucleotideCounter++;
 
       asModificationItems.append(
         ui.divH([
-          ui.div([ui.label(asBases[i].value.slice(-3) == '(o)' ? '' : String(nucleotideCounter))],
+          ui.div([ui.label(isOverhang(asBases[i].value) ? '' : String(nucleotideCounter))],
             {style: {width: '20px'}})!,
           ui.block75([asBases[i]])!,
           ui.div([asPtoLinkages[i]])!,
@@ -196,12 +197,12 @@ export function defineAxolabsPattern() {
         updateSvgScheme();
         updateOutputExamples();
       });
-      if (ssBases[i].value.slice(-3) != '(o)')
+      if (!isOverhang(ssBases[i].value))
         nucleotideCounter++;
 
       ssModificationItems.append(
         ui.divH([
-          ui.div([ui.label(ssBases[i].value.slice(-3) == '(o)' ? '' : String(nucleotideCounter))],
+          ui.div([ui.label(isOverhang(ssBases[i].value) ? '' : String(nucleotideCounter))],
             {style: {width: '20px'}})!,
           ui.block75([ssBases[i]])!,
           ui.div([ssPtoLinkages[i]])!,
