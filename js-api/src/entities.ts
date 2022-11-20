@@ -1108,6 +1108,13 @@ export class Property {
   static jsDateTime(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.DATE_TIME, options); }
 
   static fromOptions(options: PropertyOptions): Property { return Property.js(options.name!, options.type! as TYPE, options); }
+
+  /** Registers the attached (dynamic) property for the specified type.
+   * It is editable via the property panel, and gets saved into the view layout as well.
+   * Property getter/setter typically uses Widget's "temp" property for storing the value. */
+  static registerAttachedProperty(typeName: string, property: Property) {
+    api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
+  }
 }
 
 /*
