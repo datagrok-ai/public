@@ -255,8 +255,9 @@ async function getMonomersDictFromLib(
  * are symbols and values, V3000 molfiles */
 function getMonomersDictFromMap(symbolToMolfileV3KMap: Map<string, string>): Map<string, MolGraph> {
   const monomersDict = new Map<string, MolGraph>();
+  const mapKeyList = Array.from(symbolToMolfileV3KMap.keys());
 
-  for (const sym in symbolToMolfileV3KMap) {
+  for (const sym of mapKeyList) {
     const molfileV3K = symbolToMolfileV3KMap.get(sym)!; // ! is guaranteed
 
     const counts = parseAtomAndBondCounts(molfileV3K);
@@ -373,7 +374,7 @@ function getMolGraph(
 }
 
 // todo: sdoc
-function getMonomerMetadata( atoms: Atoms, bonds: Bonds, capGroups?: string[], capGroupIdxMap?: Map<number, number>
+function getMonomerMetadata(atoms: Atoms, bonds: Bonds, capGroups?: string[], capGroupIdxMap?: Map<number, number>
 ): MonomerMetadata {
   const meta: MonomerMetadata = {
     backboneShift: null,
@@ -1481,7 +1482,7 @@ export function capPeptideMonomer(monomer: Monomer): string {
 
 export function sequenceToMolFileST(
   monomerSeq: string[], // sequence of values of 'symbol' field for monomers
-  symbolToMolfileV3KObj: {[symbol: string]: string} // mapping of symbol to molfile V3000
+  symbolToMolfileV3KObj: { [symbol: string]: string } // mapping of symbol to molfile V3000
 ): string | null {
   // work in SEQ_TRAN mode, where:
   // - monomers with polymerType 'RNA' have monomer type 'backbone'

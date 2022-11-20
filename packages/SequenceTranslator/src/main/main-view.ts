@@ -72,7 +72,7 @@ export async function mainView(): Promise<HTMLDivElement> {
           const canv = ui.canvas($(window).width(), $(window).height());
           const mol = sequenceToMolV3000(
             inputSequenceField.value.replace(/\s/g, ''), false, true,
-            output.synthesizer![0], monomersLib,
+            output.synthesizer![0],
           );
           console.log(mol);
           // @ts-ignore
@@ -84,7 +84,7 @@ export async function mainView(): Promise<HTMLDivElement> {
         $(canvas).on('mouseover', () => $(canvas).css('cursor', 'zoom-in'));
         $(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
         const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true,
-          output.synthesizer![0], monomersLib);
+          output.synthesizer![0]);
         // @ts-ignore
         OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
         moleculeSvgDiv.append(canvas);
@@ -173,7 +173,7 @@ export async function mainView(): Promise<HTMLDivElement> {
     const clearSequence = inputSequenceField.value.replace(/\s/g, '');
     const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
     const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false,
-      inputFormatChoiceInput.value!, monomersLib);
+      inputFormatChoiceInput.value!);
     download(clearSequence + '.mol', encodeURIComponent(result));
   }, 'Save .mol file');
 

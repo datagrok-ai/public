@@ -26,6 +26,7 @@
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
     "debug-sequencetranslator": "grok publish",
     "release-sequencetranslator": "grok publish localhost --release",
     "build-sequencetranslator": "webpack",

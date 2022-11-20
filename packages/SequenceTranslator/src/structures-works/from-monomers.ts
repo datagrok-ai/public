@@ -1,5 +1,5 @@
 // import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, DELIMITER} from './map';
-import {map, SYNTHESIZERS, TECHNOLOGIES, delimiter} from './map';
+import {map, SYNTHESIZERS, TECHNOLOGIES, DELIMITER} from './map';
 import {isValidSequence} from './sequence-codes-tools';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {getMonomerWorks} from '../package';
@@ -14,7 +14,7 @@ const MOL = 'molfile';
 
 export function sequenceToMolV3000(
   sequence: string, inverted: boolean = false, oclRender: boolean = false,
-  format: string, monomersLib: string,
+  format: string,
 ): string {
   const monomerNameFromCode = getCodeToNameMap(sequence, format);
   let codes = sortByStringLengthInDescendingOrder(Object.keys(monomerNameFromCode));
@@ -43,7 +43,7 @@ export function sequenceToMolV3000(
       monomers.push(monomerNameFromCode['p linkage']);
     }
   }
-  return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA');
+  return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA')!;
 }
 
 export function sequenceToSmiles(sequence: string, inverted: boolean = false, format: string): string {
@@ -64,7 +64,7 @@ export function sequenceToSmiles(sequence: string, inverted: boolean = false, fo
   for (let i = 0; i < codesList.length; i++) {
     if (dropdowns.includes(codesList[i])) {
       smiles += (i >= codesList.length / 2) ?
-        MODIFICATIONS[codesList[i]].right + standardPhosphateLinkSmiles:
+        MODIFICATIONS[codesList[i]].right + standardPhosphateLinkSmiles :
         MODIFICATIONS[codesList[i]].left + standardPhosphateLinkSmiles;
     } else {
       if (links.includes(codesList[i]) ||
@@ -104,10 +104,10 @@ function getCodeToNameMap(sequence: string, format: string) {
     for (const technology of Object.keys(map[format])) {
       for (const code of Object.keys(map[format][technology]))
         obj[code] = map[format][technology][code][NAME]!;
-        // obj[code] = map[format][technology][code].SMILES;
+      // obj[code] = map[format][technology][code].SMILES;
     }
   }
-  obj[delimiter] = '';
+  obj[DELIMITER] = '';
   // TODO: create object based from synthesizer type to avoid key(codes) duplicates
   const output = isValidSequence(sequence, format);
   if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12))
@@ -163,7 +163,7 @@ function getObjectWithCodesAndMolsFromFile(sequence: string, format: string, lib
     }
   }
 
-  obj[delimiter] = '';
+  obj[DELIMITER] = '';
   // TODO: create object based on synthesizer type to avoid key(codes) duplicates
   const output = isValidSequence(sequence, format);
   if (output.synthesizer!.includes(SYNTHESIZERS.MERMADE_12)) {
