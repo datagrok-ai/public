@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
   siRnaNucleotidesToGcrs} from '../structures-works/converters';
 import {weightsObj, SYNTHESIZERS} from '../structures-works/map';
-import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
+import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES, CELL_STRUCTURE} from './constants';
 import {saltMass, saltMolWeigth, molecularWeight, batchMolWeight} from './calculations';
 import {isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
@@ -19,13 +19,18 @@ import {IDPS} from './IDPs';
 
 
 function parseStrandsFromDuplexCell(s: string): {SS: string, AS: string} {
-  const arr = s.slice(3).split('\r\nAS ');
+  const arr = s
+    .slice(CELL_STRUCTURE.DUPLEX.BEFORE_SS.length)
+    .split(CELL_STRUCTURE.DUPLEX.BEFORE_AS);
   return {SS: arr[0], AS: arr[1]};
 }
 
 function parseStrandsFromTriplexOrDimerCell(s: string): {SS: string, AS1: string, AS2: string} {
-  const arr1 = s.slice(3).split('\r\nAS1 ');
-  const arr2 = arr1[1].split('\r\nAS2 ');
+  const arr1 = s
+    .slice(CELL_STRUCTURE.TRIPLEX_OR_DIMER.BEFORE_SS.length)
+    .split(CELL_STRUCTURE.TRIPLEX_OR_DIMER.BEFORE_AS1);
+  const arr2 = arr1[1]
+    .split(CELL_STRUCTURE.TRIPLEX_OR_DIMER.BEFORE_AS2);
   return {SS: arr1[0], AS1: arr2[0], AS2: arr2[1]};
 }
 
