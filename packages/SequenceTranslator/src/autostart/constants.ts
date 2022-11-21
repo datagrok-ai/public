@@ -8,11 +8,11 @@ export const SEQUENCE_TYPES = {
 
 export const CELL_STRUCTURE = {
   DUPLEX: {
-    BEFORE_SS: 'SS: ',
+    BEFORE_SS: 'SS ',
     BEFORE_AS: '\r\nAS ',
   },
   TRIPLEX_OR_DIMER: {
-    BEFORE_SS: 'SS: ',
+    BEFORE_SS: 'SS ',
     BEFORE_AS1: '\r\nAS1 ',
     BEFORE_AS2: '\r\nAS2 ',
   },
