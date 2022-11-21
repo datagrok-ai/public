@@ -398,7 +398,7 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
     return;
   const monomersLibFile = await _package.files.readAsText(HELM_CORE_LIB_FILENAME);
   const monomersLibObject: any[] = JSON.parse(monomersLibFile);
-  _toAtomicLevel(df, macroMolecule, monomersLibObject);
+  await _toAtomicLevel(df, macroMolecule, monomersLibObject);
 }
 
 //top-menu: Bio | MSA...

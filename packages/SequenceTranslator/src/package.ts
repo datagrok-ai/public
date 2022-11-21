@@ -12,7 +12,7 @@ export const _package = new DG.Package();
 const LIB_PATH = 'System:AppData/SequenceTranslator';
 
 let monomerLib: IMonomerLib | null = null;
-export let monomerWorks: MonomerWorks | null;
+export let monomerWorks: MonomerWorks | null = null;
 
 export function getMonomerWorks() {
   return monomerWorks;

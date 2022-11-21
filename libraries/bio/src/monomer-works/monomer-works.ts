@@ -5,11 +5,25 @@ import {sequenceToMolFileST} from './to-atomic-level';
 
 import {IMonomerLib, Monomer} from '../types';
 
+
+/** Hypothetical interface to convert mol block notation.
+ * It should be placed in the chem-meta package, and have an implementation in the Chem package.
+ * So dependency of MonomerWorks on molfile conversion operation becomes explicit.
+ */
+export interface IMolfileConverter {
+  convertV2000toV3000(src: string): string;
+
+  convertV3000toV2000(src: string): string;
+}
+
 export class MonomerWorks {
   private monomerLib: IMonomerLib;
 
-  constructor(monomerLib: IMonomerLib) {
+  //private molfileConverter: IMolfileConverter;
+
+  constructor(monomerLib: IMonomerLib/*, molfileConverter: IMolfileConverter*/) {
     this.monomerLib = monomerLib;
+    //this.molfileConverter = molfileConverter;
   }
 
   //types according to Monomer possible
@@ -21,7 +35,7 @@ export class MonomerWorks {
     return null;
   }
 
-  /* Consumes a list of monomer symbols and restores molfileV3K  */
+  /** Consumes a list of monomer symbols and restores molfileV3K (SequenceTranslator/ST version) */
   public getAtomicLevel(monomers: string[], polymerType: string): string | null {
     return sequenceToMolFileST(
       monomers, this.monomerLib.getMonomerMolsByType(polymerType)!

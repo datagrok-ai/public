@@ -174,8 +174,9 @@ export async function _toAtomicLevel(
   await grok.data.detectSemanticTypes(df);
 }
 
-/* Get a mapping of peptide symbols to HELM monomer library objects with
- * selectted fields  */
+/** Get a mapping of peptide symbols to HELM monomer library
+ * objects with selected fields.
+ */
 function getFormattedMonomerLib(
   monomersLibList: any[], polymerType: HELM_POLYMER_TYPE, alphabet: ALPHABET
 ): Map<string, any> {
@@ -1475,11 +1476,12 @@ export function capPeptideMonomer(monomer: Monomer): string {
 
 ///////////////  Sequence translator /////////////////
 
-/* Currently the ST has peculiar types of monomers, which do not fit the HELM
+/** Currently the ST has peculiar types of monomers, which do not fit the HELM
  * Core library types (in particular, the RNA monomers are backbones only,
- * and presented in Molfile V3K format). Todo: integrate this part with the
- * above functionality */
-
+ * and presented in Molfile V3K format).
+ * TODO: integrate this part with the above functionality
+ * Custom _toAtomicLevel version for SequenceTranslator
+ */
 export function sequenceToMolFileST(
   monomerSeq: string[], // sequence of values of 'symbol' field for monomers
   symbolToMolfileV3KObj: { [symbol: string]: string } // mapping of symbol to molfile V3000
