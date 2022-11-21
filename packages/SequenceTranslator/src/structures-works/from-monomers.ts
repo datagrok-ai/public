@@ -3,9 +3,10 @@ import {map, SYNTHESIZERS, TECHNOLOGIES, DELIMITER} from './map';
 import {isValidSequence} from './sequence-codes-tools';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {getMonomerWorks} from '../package';
+import {getNucleotidesMol} from './mol-transformations';
 
 import {standardPhosphateLinkSmiles, MODIFICATIONS} from './const';
-
+import {getMonomerLib} from '../package';
 // todo: remove
 // const NAME = 'name';
 const CODES = 'codes';
@@ -36,6 +37,59 @@ export function sequenceToMolV3000(
     if (links.includes(codesList[i]) ||
       includesStandardLinkAlready.includes(codesList[i]) ||
       (i < codesList.length - 1 && links.includes(codesList[i + 1]))
+    ) {
+      let aa = monomerNameFromCode[codesList[i]];
+      if(aa !== undefined)
+        monomers.push(aa);
+      else
+        monomers.push(codesList[i]);
+    }
+    else {
+      let aa = monomerNameFromCode[codesList[i]];
+      if(aa !== undefined)
+      monomers.push(aa);
+    else
+      monomers.push(codesList[i]);
+      monomers.push('p linkage');
+    }
+  }
+
+  const lib = getMonomerLib();
+  const mols: string [] = [];
+  for(let i = 0; i < monomers.length; i++) {
+    const mnmr = lib?.getMonomer('RNA', monomers[i]);
+    mols.push(mnmr?.molfile!);
+  }
+
+
+  return getNucleotidesMol(mols);
+  //return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA')!;
+}
+
+export function sequenceToMolV3000_new(
+  sequence: string, inverted: boolean = false, oclRender: boolean = false,
+  format: string,
+): string {
+  const monomerNameFromCode = getCodeToNameMap(sequence, format);
+  let codes = sortByStringLengthInDescendingOrder(Object.keys(monomerNameFromCode));
+  let i = 0;
+  const codesList = [];
+  const links = ['s', 'ps', '*'];
+  const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
+  const dropdowns = Object.keys(MODIFICATIONS);
+  codes = codes.concat(dropdowns).concat(DELIMITER);
+  while (i < sequence.length) {
+    const code = codes.find((s: string) => s === sequence.slice(i, i + s.length))!;
+    i += code.length;
+    inverted ? codesList.unshift(code) : codesList.push(code);
+  }
+
+  const monomers: string[] = [];
+
+  for (let i = 0; i < codesList.length; i++) {
+    if (links.includes(codesList[i]) ||
+      includesStandardLinkAlready.includes(codesList[i]) ||
+      (i < codesList.length - 1 && links.includes(codesList[i + 1]))
     )
       monomers.push(monomerNameFromCode[codesList[i]]);
     else {
@@ -43,6 +97,7 @@ export function sequenceToMolV3000(
       monomers.push('p linkage');
     }
   }
+
   return getMonomerWorks()?.getAtomicLevel(monomers, 'RNA')!;
 }
 

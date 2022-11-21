@@ -18,6 +18,10 @@ export function getMonomerWorks() {
   return monomerWorks;
 };
 
+export function getMonomerLib() {
+  return monomerLib;
+};
+
 //name: Sequence Translator
 //tags: app
 export async function sequenceTranslator(): Promise<void> {
