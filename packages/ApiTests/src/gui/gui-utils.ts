@@ -108,16 +108,16 @@ export function getHTMLElementbyInnerText(className:string, innerText:string):HT
   }
 }
 
-export async function waitForElement(selector: string, error: string, wait=3000) {
+export async function waitForElement(selector: string, error: string, wait=3000): Promise<HTMLElement> {
   return new Promise((resolve, reject) => {
     if (document.querySelector(selector))
-      return resolve(document.querySelector(selector));
+      return resolve(document.querySelector(selector) as HTMLElement);
 
     const observer = new MutationObserver(() => {
       if (document.querySelector(selector)) {
         clearTimeout(timeout);
         observer.disconnect();
-        resolve(document.querySelector(selector));
+        resolve(document.querySelector(selector) as HTMLElement);
       }
     });
     
