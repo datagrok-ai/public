@@ -10,7 +10,7 @@ export async function drugBankSearchWidget(
   molString: string, searchType: drugBankSearchTypes, dbdf: DG.DataFrame): Promise<DG.Widget> {
   const headerHost = ui.div();
   const compsHost = ui.divV([]);
-  const panel = ui.divV([compsHost]);
+  const panel = ui.divV([headerHost, compsHost]);
 
   let table: DG.DataFrame | null;
   switch (searchType) {
@@ -25,7 +25,6 @@ export async function drugBankSearchWidget(
   }
 
   compsHost.firstChild?.remove();
-  // compsHost.removeChild(compsHost.firstChild!);
   if (table === null || table.filter.trueCount === 0) {
     compsHost.appendChild(ui.divText('No matches'));
     return new DG.Widget(panel);
@@ -37,7 +36,7 @@ export async function drugBankSearchWidget(
   const moleculeCol: DG.Column<string> = table.getCol('molecule');
   const idCol: DG.Column<string> = table.getCol('DRUGBANK_ID');
   const nameCol: DG.Column<string> = table.getCol('COMMON_NAME');
-  // const linkCol: DG.Column<string> = table.getCol('link');
+
   for (let n = 0; n < iterations; n++) {
     const piv = bitsetIndexes[n];
     const molHost = ui.canvas();
@@ -46,7 +45,6 @@ export async function drugBankSearchWidget(
     OCL.StructureView.drawMolecule(molHost, molecule, {'suppressChiralText': true});
 
     ui.tooltip.bind(molHost, () => getTooltip(nameCol.get(piv)!));
-    // molHost.addEventListener('click', () => window.open(linkCol.get(piv)!, '_blank'));
     molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));
     compsHost.appendChild(molHost);
   }
@@ -58,10 +56,14 @@ export async function drugBankSearchWidget(
 }
 
 export function drugNameMoleculeWidget(id: string, dbdf: DG.DataFrame): string | null {
-  const drugName = id.slice(3);
-  for (var i = 0; i < dbdf.rowCount; i++) {
-    if (dbdf.get('SYNONYMS', i).toLowerCase().includes(drugName))
-      return dbdf.get('Smiles', i);
+  const drugName = id.slice(3).toLowerCase();
+  const synonymsCol = dbdf.getCol('SYNONYMS');
+  const smilesCol = dbdf.getCol('Smiles');
+
+  for (let i = 0; i < dbdf.rowCount; i++) {
+    const currentSynonym = synonymsCol.get(i).toLowerCase();
+    if (currentSynonym.includes(drugName))
+      return smilesCol.get(i);
   }
   return null;
 }
