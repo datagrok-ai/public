@@ -138,7 +138,8 @@ class BioPackageDetectors extends DG.Package {
       // TODO: Lazy calculations could be helpful for performance and convenient for expressing classification logic.
       const statsAsChars = this.getStats(categoriesSample, 5,
         this.getSplitterAsChars(SEQ_SAMPLE_LENGTH_LIMIT));
-      // if (Object.keys(statsAsChars.freq).length === 0) return;
+      // Empty statsAsShars.freq alphabet means no strings of enough length presented in the data
+      if (Object.keys(statsAsChars.freq).length === 0) return;
 
       const decoy = this.detectAlphabet(statsAsChars.freq, decoyAlphabets, null);
       if (decoy != ALPHABET.UN) return null;
@@ -153,15 +154,13 @@ class BioPackageDetectors extends DG.Package {
       if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
 
       if (statsAsChars.sameLength) {
-        if (Object.keys(statsAsChars.freq).length > 0) { // require non empty alphabet
-          const stats = this.getStats(categoriesSample, 5, splitter);
-          const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-');
-          if (alphabet === ALPHABET.UN) return null;
+        const stats = this.getStats(categoriesSample, 5, splitter);
+        const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-');
+        if (alphabet === ALPHABET.UN) return null;
 
-          col.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
-          col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
-          return DG.SEMTYPE.MACROMOLECULE;
-        }
+        col.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
+        col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
+        return DG.SEMTYPE.MACROMOLECULE;
       } else {
         const stats = this.getStats(categoriesSample, 5, splitter);
         // Empty monomer alphabet is not allowed
