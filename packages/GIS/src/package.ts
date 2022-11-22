@@ -10,6 +10,9 @@ import {OpenLayers} from '../src/gis-openlayer';
 import {useGeographic} from 'ol/proj';
 // import * as cns from '../node_modules/citysdk';
 
+//GIS semantic types import
+import {SEMTYPEGIS} from '../src/gis-semtypes';
+
 const census = require('citysdk');
 
 //ZIP utilities
@@ -539,10 +542,9 @@ export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View |
   return viewFile;
 }
 
-//, json
 //name: gisGeoJSONFileHandler
 //tags: file-handler
-//meta.ext: geojson, topojson
+//meta.ext: geojson, topojson, json
 //input: string filecontent
 //output: list tables
 export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
@@ -560,14 +562,28 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
   let newLayer;
   if (isGeoTopo[1] === false) newLayer = ol.addGeoJSONLayerFromStream(filecontent);
   else newLayer = ol.addTopoJSONLayerFromStream(filecontent);
-  const arrFeatures = ol.getFeaturesFromLayer(newLayer);
+  // const arrFeatures = ol.getFeaturesFromLayer(newLayer);
+  const arrFeatures = ol.exportLayerToArray(newLayer);
   if (arrFeatures) {
     if (arrFeatures.length > 0) {
       dfFromJSON = DG.DataFrame.fromObjects(arrFeatures);
       if (dfFromJSON) {
+        const gisCol = dfFromJSON.col('gisObject');
+        if (gisCol)
+          gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
+
         dfFromJSON.name = newLayer.get('layerName');
         const tv = grok.shell.addTableView(dfFromJSON as DG.DataFrame);
         tv.name = 'dfFromJSON.name' + ' (manual)';
+
+        const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromJSON));
+        if (mapViewer) {
+          //
+          (mapViewer as GisViewer).ol.addLayer(newLayer);
+        // if (isGeoTopo[1] === false) newLayer = (mapViewer as GisViewer).ol.addGeoJSONLayerFromStream(filecontent);
+        //   else newLayer = (mapViewer as GisViewer).ol.addTopoJSONLayerFromStream(filecontent);
+        }
+
         // const mapViewer = DG.Viewer.fromType('Map', (dfFromJSON as DG.DataFrame));
         //TODO: fix issue with GisViewer opening for a table with data
         setTimeout((tv, dfFromJSON) => {
@@ -575,9 +591,9 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
           const v = tv;
           // if ((v) && (v instanceof DG.TableView)) (v as DG.TableView).addViewer(new GisViewer());
           if ((v) && (v instanceof DG.TableView)) {
-            const mapViewer = ((v as DG.TableView).addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer);
-            if (isGeoTopo[1] === false) newLayer = mapViewer.ol.addGeoJSONLayerFromStream(filecontent);
-            else newLayer = mapViewer.ol.addTopoJSONLayerFromStream(filecontent);
+            // const mapViewer = ((v as DG.TableView).addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer);
+            // if (isGeoTopo[1] === false) newLayer = mapViewer.ol.addGeoJSONLayerFromStream(filecontent);
+            // else newLayer = mapViewer.ol.addTopoJSONLayerFromStream(filecontent);
           }
           // (v as DG.TableView).addViewer(DG.Viewer.fromType('Map', (v as DG.TableView).dataFrame));
         }, 1000, tv, dfFromJSON);

@@ -853,14 +853,13 @@ export class OpenLayers {
         const gisPoint = new GisTypes.GisPoint(coords[0], coords[1], xyz ? coords[2] : 0, ft.getProperties());
         return gisPoint;
       }
-      // case 'MultiPolygon':
       case 'Polygon': {
         const gobj = geom as OLGeom.Polygon;
         const coords = gobj.getCoordinates();
         const area: GisTypes.gisPolygons = [];
         const areaPolygon: GisTypes.gisPolygon = [];
         const xyz = (gobj.getLayout().toLowerCase === 'xyz');
-
+        //store polygon coordinates into special array>>
         for (let p = 0; p < coords.length; p++) {
           const polygonCoords: GisTypes.gisPolygonCoords = [];
           for (let i = 0; i < coords[p].length; i++) {
@@ -873,19 +872,53 @@ export class OpenLayers {
         area.push(areaPolygon);
         const gisArea = new GisTypes.GisArea(area, ft.getProperties());
         return gisArea;
-
-        //old simplified way (without inner polygons)
-        // for (let i = 0; i < coords[0].length; i++) {
-        //   const vertex = coords[0][i]; //TODO: add inner polygons (holes) - now we use just a contour
-        //   areaCoords.push([vertex[0] as number, vertex[1], xyz ? vertex[2] : 0]);
-        // }
-        // const gisArea = new GisTypes.GisArea(areaCoords, ft.getProperties());
-        // return gisArea;
       }
-      //TODO: add multi polygon
+      case 'MultiPolygon': {
+        const gobj = geom as OLGeom.MultiPolygon;
+        const coords = gobj.getCoordinates();
+        const area: GisTypes.gisPolygons = [];
+        const xyz = (gobj.getLayout().toLowerCase === 'xyz');
+        //store multipolygon coordinates into special array>>
+        for (let a = 0; a < coords.length; a++) {
+          const areaPolygon: GisTypes.gisPolygon = [];
+          for (let p = 0; p < coords[a].length; p++) {
+            const polygonCoords: GisTypes.gisPolygonCoords = [];
+            for (let i = 0; i < coords[a][p].length; i++) {
+              const vertex = coords[a][p][i];
+              const vertCrd: GisTypes.gisCoordinate = [vertex[0] as number, vertex[1], xyz ? vertex[2] : 0];
+              polygonCoords.push(vertCrd);
+            }
+            areaPolygon.push(polygonCoords);
+          }
+          area.push(areaPolygon);
+        }
+        const gisArea = new GisTypes.GisArea(area, ft.getProperties());
+        return gisArea;
+      } //<<multi polygon converter
+      } //case
+    } //if geometry is valid
+    return null;
+  }
+
+  exportLayerToArray(layer: VectorLayer<any>): any[] {
+    const arrPreparedToDF: any[] = [];
+    if (!layer)
+      return arrPreparedToDF;
+
+    const arrFeatures = this.getFeaturesFromLayer(layer);
+    if (arrFeatures) {
+      for (let i = 0; i < arrFeatures.length; i++) {
+        const newObj = arrFeatures[i].getProperties();
+        if (newObj.hasOwnProperty('geometry'))
+          delete newObj.geometry;
+        if (arrFeatures[i].getId())
+          newObj.id_ = arrFeatures[i].getId();
+        newObj.gisObject = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
+
+        arrPreparedToDF.push(newObj);
       }
     }
-    return null;
+    return arrPreparedToDF;
   }
 
   //map base events handlers>>

@@ -167,21 +167,8 @@ export class GisViewer extends DG.JsViewer {
         const layer = this.ol.getLayerById(layerId) as VectorLayer<any>;
         if (!layer)
           return;
-        const arrPreparedToDF: any[] = [];
-        const arrFeatures = this.ol.getFeaturesFromLayer(layer);
-        if (arrFeatures) {
-          for (let i = 0; i < arrFeatures.length; i++) {
-            // const gisObj = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
-            const newObj = arrFeatures[i].getProperties();
-            if (newObj.hasOwnProperty('geometry'))
-              delete newObj.geometry;
-            if (arrFeatures[i].getId())
-              newObj.id_ = arrFeatures[i].getId();
-            newObj.gisObject = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
-
-            arrPreparedToDF.push(newObj);
-          }
-          // const df = DG.DataFrame.fromObjects(arrFeatures);
+        const arrPreparedToDF: any[] = this.ol.exportLayerToArray(layer);
+        if (arrPreparedToDF.length) {
           const df = DG.DataFrame.fromObjects(arrPreparedToDF);
           if (df) {
             const gisCol = df.col('gisObject');
@@ -189,11 +176,8 @@ export class GisViewer extends DG.JsViewer {
               gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
             df.name = layer.get('layerName');
 
-            // df.toCsv()
             // this.view.addTableView(df as DG.DataFrame);
             grok.shell.addTableView(df as DG.DataFrame);
-
-            // this.view.addTableView(df as DG.DataFrame);
           }
         }
       }, 'Export layer data to table');
