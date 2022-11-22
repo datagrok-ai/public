@@ -48,4 +48,13 @@ category('Algorithms', () => {
     expect(c32[0], 3);
     expect(d33[0], 2);
   });
+
+  test('MutationCliffs - Benchmark 5k', async () => {
+    const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
+    const activityCol: DG.Column<number> = df.getCol('Activity');
+    const monomerCols: DG.Column<string>[] = [];
+    for (let i = 1; i < 16; ++i)
+      monomerCols.push(df.getCol(i.toString()));
+    DG.time('MutationCliffs', () => findMutations(activityCol, monomerCols));
+  }, {skipReason: 'Benchmark'});
 });
