@@ -26,7 +26,7 @@ category('sketcher testing', () => {
 
   test('input_smiles', async () => {
     await testSmiles(rdkitModule, funcs, true);
-  },  {skipReason: 'test'});
+  });
 
   test('molV2000', async () => {
     await testMolV2000(rdkitModule, funcs);
