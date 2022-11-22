@@ -436,7 +436,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     }
   }
 
-  let view = grok.shell.addTableView(table);
+  let view = grok.shell.getTableView(table.name);
 
   if (radarView) {
     const packageExists = checkPackage('Charts', 'radarViewerDemo');
