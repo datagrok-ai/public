@@ -283,6 +283,7 @@ export interface IScatterPlotLookSettings {
   /// Labels to show next to the markers.
   labelsColumnName: string;
 
+  /// Determines the rows shown on the scatter plot.
   /// A categorical column that determines the shape of the markers.
   markersColumnName: string;
 
@@ -436,12 +437,6 @@ export interface IScatterPlotLookSettings {
   showDropLines: boolean;
 
   defaultRenderer: boolean;
-
-  onPointClicked: string;
-
-  onPointDoubleClicked: string;
-
-  onPointsSelected: string;
 
   //StreamController _changes;
   allowDynamicMenus: boolean;
