@@ -42,7 +42,7 @@ category('sketcher testing', () => {
 
   test('inchi', async () => {
     await testInchi(rdkitModule, funcs);
-  },  {skipReason: 'test'});
+  });
 
   after(async () => {
     
