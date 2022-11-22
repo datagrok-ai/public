@@ -870,7 +870,6 @@ export class FileSource {
    * @returns {Promise<String>} */
   readAsText(file: FileInfo | string): Promise<string> {
     file = this.setRoot(file);
-
     return api.grok_Dapi_UserFiles_ReadAsText(file);
   }
 
@@ -884,7 +883,6 @@ export class FileSource {
    * @returns {Promise<Uint8Array>} */
   readAsBytes(file: FileInfo | string): Promise<Uint8Array> {
     file = this.setRoot(file);
-
     return api.grok_Dapi_UserFiles_ReadAsBytes(file);
   }
 
@@ -893,8 +891,7 @@ export class FileSource {
    * @returns {Promise<DataFrame[]>} */
   async readBinaryDataFrames(file: FileInfo | string): Promise<DataFrame[]> {
     file = this.setRoot(file);
-    const dfList = await api.grok_Dapi_UserFiles_ReadBinaryDataFrames(file);
-    return dfList.map((t: any) => new DataFrame(t));
+    return api.grok_Dapi_UserFiles_ReadBinaryDataFrames(this.setRoot(file));
   }
 
   /** Writes a file.

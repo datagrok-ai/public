@@ -437,6 +437,12 @@ export interface IScatterPlotLookSettings {
 
   defaultRenderer: boolean;
 
+  onPointClicked: string;
+
+  onPointDoubleClicked: string;
+
+  onPointsSelected: string;
+
   //StreamController _changes;
   allowDynamicMenus: boolean;
 

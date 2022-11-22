@@ -590,9 +590,6 @@ export async function testDetectMacromolecule(path: string): Promise<DG.DataFram
 //tags: panel, bio
 //input: column col {semType: Macromolecule}
 export function splitToMonomers(col: DG.Column<string>): void {
-  if (!col.getTag(bio_TAGS.aligned).includes(C.MSA))
-    return grok.shell.error('Splitting is applicable only for aligned sequences');
-
   const tempDf = splitAlignedSequences(col);
   const originalDf = col.dataFrame;
   for (const tempCol of tempDf.columns) {

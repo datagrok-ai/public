@@ -1,4 +1,4 @@
-import {after, before, category, expect, test, expectArray} from "@datagrok-libraries/utils/src/test";
+import {after, before, category, expect, test, expectArray, expectObject} from "@datagrok-libraries/utils/src/test";
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -49,7 +49,7 @@ category('TableQuery', () => {
   let from: string;
 
   before(async () => {
-    fromTable = await grok.dapi.tables.first();
+    fromTable = DG.TableInfo.fromDataFrame(grok.data.testData('demog', 5000));
     from = fromTable.name;
     const dcParams = {dataSource: 'PostgresNet', server: 'dev.datagrok.ai:54322', db: 'northwind',
       login: 'datagrok', password: 'datagrok'};
@@ -101,70 +101,85 @@ category('TableQuery', () => {
 
   test('From table', async () => {
     const dtqb = DG.TableQuery.fromTable(fromTable);
-    expect(dtqb instanceof DG.DbTableQueryBuilder, true);
+    expect(dtqb instanceof DG.TableQueryBuilder, true);
   });
 
   test('From', async () => {
     const dtqb = DG.TableQuery.from(from);
-    expect(dtqb instanceof DG.DbTableQueryBuilder, true);
+    expect(dtqb instanceof DG.TableQueryBuilder, true);
   });
 });
 
-category('DbTableQueryBuilder', () => {
+category('TableQueryBuilder', () => {
   before(async () => {
-    fromTable = await grok.dapi.tables.first();
+    table = grok.data.testData('demog', 5000);
+    fromTable = DG.TableInfo.fromDataFrame(table);
     from = fromTable.name;
   });
 
   let fromTable: DG.TableInfo;
   let from: string;
+  let table: DG.DataFrame;
+  const fields = ['race'];
 
   test('From table', async () => {
-    const dtqb = DG.DbTableQueryBuilder.fromTable(fromTable);
-    expect(dtqb instanceof DG.DbTableQueryBuilder, true);
+    const dtqb = DG.TableQueryBuilder.fromTable(fromTable);
+    expect(dtqb instanceof DG.TableQueryBuilder, true);
   });
 
   test('From', async () => {
-    const dtqb = DG.DbTableQueryBuilder.from(from);
-    expect(dtqb instanceof DG.DbTableQueryBuilder, true);
+    const dtqb = DG.TableQueryBuilder.from(from);
+    expect(dtqb instanceof DG.TableQueryBuilder, true);
   });
 
   test('Select all', async () => {
-    let dtqb = DG.DbTableQueryBuilder.fromTable(fromTable);
-    dtqb.selectAll();
+    let dtqb = DG.TableQueryBuilder.fromTable(fromTable);
+    dtqb = dtqb.selectAll();
+    const tq = dtqb.build();
+    expectArray(tq.fields, table.columns.names());
   });
   
   test('Select', async () => {
-    let dtqb = DG.DbTableQueryBuilder.fromTable(fromTable);
-    dtqb.select([]);
+    let dtqb = DG.TableQueryBuilder.fromTable(fromTable);
+    dtqb = dtqb.select(fields);
+    const tq = dtqb.build();
+    expectArray(tq.fields, fields);
   });
 
   test('Group by', async () => {
-    let dtqb = DG.DbTableQueryBuilder.fromTable(fromTable);
-    dtqb.groupBy([]);
+    let dtqb = DG.TableQueryBuilder.fromTable(fromTable);
+    dtqb = dtqb.groupBy(fields);
+    dtqb.build();
   });
 
   test('Pivot on', async () => {
-    let dtqb = DG.DbTableQueryBuilder.fromTable(fromTable);
-    dtqb.pivotOn([]);
+    let dtqb = DG.TableQueryBuilder.fromTable(fromTable);
+    dtqb = dtqb.pivotOn(fields);
+    dtqb.build();
   });
 
-  test('where', async () => {
-    let dtqb = DG.DbTableQueryBuilder.fromTable(fromTable);
-    dtqb.where('', '');
+  test('Where', async () => {
+    let dtqb = DG.TableQueryBuilder.fromTable(fromTable);
+    dtqb = dtqb.where('race', 'Asian');
+    const tq = dtqb.build();
+    expectObject(tq.where[0], {field: 'race', pattern: 'Asian'});
   });
 
   test('Sort by', async () => {
-    let dtqb = DG.DbTableQueryBuilder.fromTable(fromTable);
-    dtqb.sortBy('');
+    let dtqb = DG.TableQueryBuilder.fromTable(fromTable);
+    dtqb = dtqb.sortBy('age');
+     dtqb.build();
   });
 
   test('Limit', async () => {
-    let dtqb = DG.DbTableQueryBuilder.fromTable(fromTable);
-    dtqb.limit(10);
+    let dtqb = DG.TableQueryBuilder.fromTable(fromTable);
+    dtqb = dtqb.limit(10);
+    dtqb.build();
   });
 
   test('Build', async () => {
-
+    const dtqb = DG.TableQueryBuilder.fromTable(fromTable);
+    const tq = dtqb.build();
+    expect(tq instanceof DG.TableQuery, true);
   });
 });

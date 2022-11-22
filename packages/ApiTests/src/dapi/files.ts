@@ -88,6 +88,12 @@ category('Dapi: files', () => {
     }
   });
 
+  test('Dapi: files - readBinaryDataFrames', async () => {
+    const dfList = await _package.files.readBinaryDataFrames('datasets/country-languages.d42');
+    expect(dfList.length, 1);
+    expect(dfList[0] instanceof DG.DataFrame, true);
+  });
+
   after(async () => {
     await grok.dapi.files.delete(testTextFilePath);
   });
