@@ -30,7 +30,7 @@ category('sketcher testing', () => {
 
   test('molV2000', async () => {
     await testMolV2000(rdkitModule, funcs);
-  },  {skipReason: 'test'});
+  });
 
   test('paste_input_molV2000', async () => {
     await testMolV2000(rdkitModule, funcs, true);
