@@ -18,6 +18,12 @@ export const enum HELM_FIELDS {
   SYMBOL = 'symbol'
 }
 
+/* Modes of work for toAtomicLevel functions */
+export const enum MODE {
+  STANDARD, // work with standard monomer types, as in HELM Core Library
+  SEQ_TRAN // non-standard monomer types for SequenceTranslator app, todo: consider possibility of the unification
+}
+
 // fields of "rgroups" sub-object in HELM library
 export const enum RGROUP_FIELDS {
   CAP_GROUP_SMILES = 'capGroupSmiles',

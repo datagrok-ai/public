@@ -7,12 +7,12 @@ import {
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME
 } from '../utils/const';
 import {getSplitter, SplitterFunc, TAGS} from '../utils/macromolecule';
-import {Monomer} from '../types/index';
-import { MonomerLib } from './monomer-lib';
+import {IMonomerLib, Monomer} from '../types/index';
+import {MonomerLib} from './monomer-lib';
 
 const expectedMonomerData = ['symbol', 'name', 'molfile', 'rgroups', 'polymerType', 'monomerType'];
 
-export async function readLibrary(path: string, fileName: string): Promise<MonomerLib> {
+export async function readLibrary(path: string, fileName: string): Promise<IMonomerLib> {
   let data: any[] = [];
   let file;
   let dfSdf;
@@ -51,11 +51,11 @@ export async function readLibrary(path: string, fileName: string): Promise<Monom
       if (!expectedMonomerData.includes(prop))
         monomerAdd.data[prop] = monomer[prop];
     });
-    
+
     if (!types.includes(monomer['polymerType'])) {
       monomers[monomer['polymerType']] = {};
       types.push(monomer['polymerType']);
-    } 
+    }
 
     monomers[monomer['polymerType']][monomer['symbol']] = monomerAdd;
   });

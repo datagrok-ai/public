@@ -1,11 +1,14 @@
-cd ../../js-api
-call npm install
-call npm link
-cd ../libraries/utils
-call npm install
-call npm link
-call npm link datagrok-api
-cd ../../packages/SequenceTranslator
-call npm install
-call npm link datagrok-api @datagrok-libraries/utils
-webpack
+call setup-unlink-clean.cmd
+
+set package_dir=%cd%
+
+set dirs=^
+\..\..\js-api\ ^
+\..\..\libraries\utils\ ^
+\..\..\libraries\bio\ ^
+\
+
+for %%p in (%dirs%) do cd %package_dir%\%%p & call npm install
+for %%p in (%dirs%) do cd %package_dir%\%%p & call npm link
+for %%p in (%dirs%) do cd %package_dir%\%%p & call npm run link-all
+for %%p in (%dirs%) do cd %package_dir%\%%p & call npm run build

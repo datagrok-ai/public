@@ -2,20 +2,35 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {convertSequence, undefinedInputSequence, isValidSequence} from '../structures-works/sequence-codes-tools';
-import {map, MODIFICATIONS} from '../structures-works/map';
+import {map} from '../structures-works/map';
+import {MODIFICATIONS} from '../structures-works/const';
 import {sequenceToSmiles, sequenceToMolV3000} from '../structures-works/from-monomers';
 import $ from 'cash-dom';
 import {download} from '../helpers';
 
-const defaultInput = 'fAmCmGmAmCpsmU';
-const sequenceWasCopied = 'Copied';
+const defaultInput = 'fAmCmGmAmCpsmU'; // todo: capitalize constants
+const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into constants
 const tooltipSequence = 'Copy sequence';
 
-export function mainView() {
-  function updateTableAndMolecule(sequence: string, inputFormat: string): void {
+export async function mainView(): Promise<HTMLDivElement> {
+  const monomersLibAddress = 'System:AppData/SequenceTranslator/helmLib.json';
+  async function updateTableAndMolecule(sequence: string, inputFormat: string): Promise<void> {
     moleculeSvgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
+    let errorsExist = false;
+
+    // external helm-like monomers library
+    const fileExists = await grok.dapi.files.exists(monomersLibAddress);
+    if (!fileExists) {
+      // todo: improve behaviour in this case
+      grok.shell.warning('Please, provide the file with monomers library as System:AppData/SequenceTranslator/helmLib.json');
+      pi.close();
+      return;
+    }
+
+    const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
+
     try {
       sequence = sequence.replace(/\s/g, '');
       const output = isValidSequence(sequence, null);
@@ -31,16 +46,16 @@ export function mainView() {
         tableRows.push({
           'key': key,
           'value': ('indexOfFirstNotValidChar' in outputSequenceObj) ?
-            ui.divH([
-              ui.divText(sequence.slice(0, indexOfFirstNotValidChar), {style: {color: 'grey'}}),
-              ui.tooltip.bind(
-                ui.divText(sequence.slice(indexOfFirstNotValidChar), {style: {color: 'red'}}),
-                'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer +
-                '. See tables with valid codes on the right',
-              ),
-            ]) : //@ts-ignore
-            ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key])
-              .then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, ''),
+          ui.divH([
+            ui.divText(sequence.slice(0, indexOfFirstNotValidChar), {style: {color: 'grey'}}),
+            ui.tooltip.bind(
+              ui.divText(sequence.slice(indexOfFirstNotValidChar), {style: {color: 'red'}}),
+              'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer +
+              '. See tables with valid codes on the right',
+            ),
+          ]) : //@ts-ignore
+          ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key])
+            .then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, ''),
         });
       }
 
@@ -55,8 +70,11 @@ export function mainView() {
         const canvas = ui.canvas(300, 170);
         canvas.addEventListener('click', () => {
           const canv = ui.canvas($(window).width(), $(window).height());
-          const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true,
-            output.synthesizer![0]);
+          const mol = sequenceToMolV3000(
+            inputSequenceField.value.replace(/\s/g, ''), false, true,
+            output.synthesizer![0],
+          );
+          console.log(mol);
           // @ts-ignore
           OCL.StructureView.drawMolecule(canv, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
           ui.dialog('Molecule: ' + inputSequenceField.value)
@@ -66,7 +84,7 @@ export function mainView() {
         $(canvas).on('mouseover', () => $(canvas).css('cursor', 'zoom-in'));
         $(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
         const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true,
-        output.synthesizer![0]);
+          output.synthesizer![0]);
         // @ts-ignore
         OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
         moleculeSvgDiv.append(canvas);
@@ -151,9 +169,11 @@ export function mainView() {
     $(codesTablesDiv).hide(),
   );
 
-  const downloadMolFileIcon = ui.iconFA('download', () => {
+  const downloadMolFileIcon = ui.iconFA('download', async () => {
     const clearSequence = inputSequenceField.value.replace(/\s/g, '');
-    const result = sequenceToMolV3000(clearSequence, false, false, inputFormatChoiceInput.value!);
+    const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
+    const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false,
+      inputFormatChoiceInput.value!);
     download(clearSequence + '.mol', encodeURIComponent(result));
   }, 'Save .mol file');
 

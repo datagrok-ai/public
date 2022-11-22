@@ -15,6 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^1.15.5",
     "@types/react": "^18.0.15",
+    "@datagrok-libraries/bio": "^5.9.13",
     "datagrok-api": "^1.7.2",
     "datagrok-tools": "^4.1.2",
     "npm": "^8.11.0",
@@ -25,6 +26,7 @@
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
     "debug-sequencetranslator": "grok publish",
     "release-sequencetranslator": "grok publish localhost --release",
     "build-sequencetranslator": "webpack",
