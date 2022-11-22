@@ -8,13 +8,14 @@ export const SEMTYPEGIS = {
   LONGITUDE: 'Longitude',
   LATIITUDE: 'Latitude',
   ALTITUDE: 'gis-altitude',
-  GISPOINT: 'gis-point',
-  GISAREA: 'gis-area',
-  GISOBJECT: 'gis-object',
   GISCOUNTRY: 'gis-country',
   GISSTATE: 'gis-state',
   GISADDRESS: 'gis-address',
   GISZIPCODE: 'gis-zipcode',
+
+  GISOBJECT: 'gis-object',
+  GISPOINT: 'gis-point',
+  GISAREA: 'gis-area',
 };
 
 export type gisCoordinate = [number, number, number?];
