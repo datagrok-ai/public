@@ -550,7 +550,7 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
   const isGeoTopo = gisGeoJSONFileDetector(filecontent);
   if (isGeoTopo[0] === false) return [DG.DataFrame.fromJson(filecontent)];
 
-  let dfFormJSON = null;
+  let dfFromJSON = null;
   const ol = new OpenLayers();
   // ol.initMap('map-container');
   // useGeographic();
@@ -563,24 +563,28 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
   const arrFeatures = ol.getFeaturesFromLayer(newLayer);
   if (arrFeatures) {
     if (arrFeatures.length > 0) {
-      dfFormJSON = DG.DataFrame.fromObjects(arrFeatures);
-      if (dfFormJSON) {
-        dfFormJSON.name = newLayer.get('layerName');
-        const tv = grok.shell.addTableView(dfFormJSON as DG.DataFrame);
-        tv.name = 'dfFormJSON.name' + ' (manual)';
-        // const mapViewer = DG.Viewer.fromType('Map', (dfFormJSON as DG.DataFrame));
+      dfFromJSON = DG.DataFrame.fromObjects(arrFeatures);
+      if (dfFromJSON) {
+        dfFromJSON.name = newLayer.get('layerName');
+        const tv = grok.shell.addTableView(dfFromJSON as DG.DataFrame);
+        tv.name = 'dfFromJSON.name' + ' (manual)';
+        // const mapViewer = DG.Viewer.fromType('Map', (dfFromJSON as DG.DataFrame));
         //TODO: fix issue with GisViewer opening for a table with data
-        setTimeout((tv, dfFormJSON) => {
+        setTimeout((tv, dfFromJSON) => {
           // const v = grok.shell.v;
           const v = tv;
           // if ((v) && (v instanceof DG.TableView)) (v as DG.TableView).addViewer(new GisViewer());
-          if ((v) && (v instanceof DG.TableView))
-            (v as DG.TableView).addViewer(DG.Viewer.fromType('Map', (v as DG.TableView).dataFrame));
-        }, 500, tv, dfFormJSON);
+          if ((v) && (v instanceof DG.TableView)) {
+            const mapViewer = ((v as DG.TableView).addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer);
+            if (isGeoTopo[1] === false) newLayer = mapViewer.ol.addGeoJSONLayerFromStream(filecontent);
+            else newLayer = mapViewer.ol.addTopoJSONLayerFromStream(filecontent);
+          }
+          // (v as DG.TableView).addViewer(DG.Viewer.fromType('Map', (v as DG.TableView).dataFrame));
+        }, 1000, tv, dfFromJSON);
       }
     }
   }
-  if (dfFormJSON) return [dfFormJSON];
+  if (dfFromJSON) return [dfFromJSON];
   return [DG.DataFrame.fromJson(filecontent)];
 }
 

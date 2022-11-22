@@ -853,18 +853,34 @@ export class OpenLayers {
         const gisPoint = new GisTypes.GisPoint(coords[0], coords[1], xyz ? coords[2] : 0, ft.getProperties());
         return gisPoint;
       }
-      case 'MultiPolygon':
+      // case 'MultiPolygon':
       case 'Polygon': {
         const gobj = geom as OLGeom.Polygon;
         const coords = gobj.getCoordinates();
-        const areaCoords: Array<GisTypes.gisCoordinate> = [];
-        const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
-        for (let i = 0; i < coords[0].length; i++) {
-          const vertex = coords[0][i]; //TODO: add inner polygons (holes) - now we use just a contour
-          areaCoords.push([vertex[0] as number, vertex[1], xyz ? vertex[2] : 0]);
+        const area: GisTypes.gisPolygons = [];
+        const areaPolygon: GisTypes.gisPolygon = [];
+        const xyz = (gobj.getLayout().toLowerCase === 'xyz');
+
+        for (let p = 0; p < coords.length; p++) {
+          const polygonCoords: GisTypes.gisPolygonCoords = [];
+          for (let i = 0; i < coords[p].length; i++) {
+            const vertex = coords[p][i];
+            const vertCrd: GisTypes.gisCoordinate = [vertex[0] as number, vertex[1], xyz ? vertex[2] : 0];
+            polygonCoords.push(vertCrd);
+          }
+          areaPolygon.push(polygonCoords);
         }
-        const gisArea = new GisTypes.GisArea(areaCoords, ft.getProperties());
+        area.push(areaPolygon);
+        const gisArea = new GisTypes.GisArea(area, ft.getProperties());
         return gisArea;
+
+        //old simplified way (without inner polygons)
+        // for (let i = 0; i < coords[0].length; i++) {
+        //   const vertex = coords[0][i]; //TODO: add inner polygons (holes) - now we use just a contour
+        //   areaCoords.push([vertex[0] as number, vertex[1], xyz ? vertex[2] : 0]);
+        // }
+        // const gisArea = new GisTypes.GisArea(areaCoords, ft.getProperties());
+        // return gisArea;
       }
       //TODO: add multi polygon
       }
