@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import { _package } from '../package-test';
 import * as DG from 'datagrok-api/dg';
 
-category('Scripts input\output Params', () => {
+category('Scripts Params', () => {
 
   const df = grok.data.demo.demog(20); 
   const col = df.col('sex');

@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {checkHTMLElement} from '../ui/utils';
 import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, waitForElement} from './gui-utils';
 
-category('GUI: Aggregate Rows', () => {
+category('GUI: Anonymize', () => {
   let v: DG.TableView;
   const demog = grok.data.demo.demog(1000);
 
@@ -13,9 +13,23 @@ category('GUI: Aggregate Rows', () => {
     v = grok.shell.addTableView(demog);
   });
 
-  test('dialogs.aggregateRows', async () => {
-    grok.shell.topMenu.find('Data').find('Aggregate Rows...').click(); 
-    await awaitCheck(() => {return document.querySelector('.grok-pivot') != undefined}); 
+  test('dialogs.anonymize', async () => {
+    grok.shell.topMenu.find('Data').find('Anonymize...').click(); 
+
+    function checkDialog(dialogTitle:string):boolean {
+      let check = false;
+      for (let i=0; i < DG.Dialog.getOpenDialogs().length; i++) {
+        if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle) {
+          check = true;
+          break;
+        }
+      }
+      return check;  
+    }
+
+    await awaitCheck(() => {return checkDialog('Anonymize Data')});
+
+    setDialogInputValue('Anonymize Data', 'Number randomization factor', 1);
 
     let okButton:HTMLElement | undefined;
     let button;
@@ -25,21 +39,7 @@ category('GUI: Aggregate Rows', () => {
         okButton = button;
     }
     okButton!.click();
-    await awaitCheck(() => {return grok.shell.v.name == "result"}); 
-
-    function isTablePresent() {
-      let check = false;
-      for (let i=0; i<grok.shell.tables.length; i++) {
-        if (grok.shell.tables[i].name == 'result') {
-          check = true;
-          break;
-        }
-      }
-      if (check == false)
-        throw 'Aggregation table was not created';
-    }
-
-    isTablePresent();
+    await awaitCheck(() => {return !checkDialog('Anonimize Data')});
   });
 
   after(async () => {
