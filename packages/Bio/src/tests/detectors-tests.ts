@@ -132,6 +132,7 @@ MWRSWY-CKHP
     testIdCsv = 'testIdCsv',
     testSmilesCsv = 'testSmilesCsv',
     testSmiles2Csv = 'testSmiles2Csv',
+    testSmilesShort = 'testSmilesShort',
     testCerealCsv = 'testCerealCsv',
     testActivityCliffsCsv = 'testActivityCliffsCsv',
     testSpgi100 = 'testSpgi100',
@@ -154,6 +155,7 @@ MWRSWY-CKHP
     [Samples.testIdCsv]: 'System:AppData/Bio/tests/testId.csv',
     [Samples.testSmilesCsv]: 'System:AppData/Bio/tests/testSmiles.csv',
     [Samples.testSmiles2Csv]: 'System:AppData/Bio/tests/testSmiles2.csv',
+    [Samples.testSmilesShort]: 'System:AppData/Bio/tests/testSmilesShort.csv',
     [Samples.testActivityCliffsCsv]: 'System:AppData/Bio/tests/testActivityCliffs.csv', // smiles
     [Samples.testCerealCsv]: 'System:AppData/Bio/tests/testCereal.csv',
     [Samples.testSpgi100]: 'System:AppData/Bio/tests/testSpgi100.csv',
@@ -343,6 +345,10 @@ MWRSWY-CKHP
 
   test('samplesTestSmiles2NegativeSmiles', async () => {
     await _testNeg(readSamples(Samples.testSmiles2Csv), 'SMILES');
+  });
+
+  test('samplesTestSmilesShortNegativeSmiles', async () => {
+    await _testNeg(readSamples(Samples.testSmilesShort), 'SMILES');
   });
 
   test('samplesTestActivityCliffsNegativeSmiles', async () => {
