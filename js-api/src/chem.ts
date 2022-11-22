@@ -313,6 +313,7 @@ export namespace chem {
       clearButton.style.right = '0px';
       clearButton.style.fontSize = '10px';
       clearButton.style.visibility = 'hidden';
+      clearButton.style.display = 'inline-flex';
       clearButton.onmouseover = () => {clearButton.style.visibility = 'visible'};
       canvas.onmouseenter = () => {clearButton.style.visibility = 'visible'};
       canvas.onmouseout = () => {clearButton.style.visibility = 'hidden'};
