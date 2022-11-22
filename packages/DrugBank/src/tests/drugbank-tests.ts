@@ -18,7 +18,7 @@ category('DrugBank', () => {
   test('substructure-search', async () => {
     await drugBankSearchWidget(molString, 'substructure', dbdf);
   });
-  
+
   test('drugNameMolecule', async () => {
     expect(drugNameMoleculeWidget('db:aspirin', dbdf), 'CC(Oc(cccc1)c1C(O)=O)=O');
     expect(drugNameMoleculeWidget('db:carbono', dbdf), '[C]');
