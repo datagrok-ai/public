@@ -47,7 +47,7 @@ export const map: {[synthesizer: string]:
             'SMILES': 'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)C[C@@H]1O',
           },
           'T': {
-            'name': 'Tyrosine',
+            'name': 'Thymine',
             'weight': 304.2,
             'normalized': 'dT',
             'SMILES': 'OC[C@H]1O[C@@H](N2C=C(C)C(=O)NC2(=O))C[C@@H]1O',
@@ -149,7 +149,7 @@ export const map: {[synthesizer: string]:
             'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C[C@@H]1O',
           },
           'T': {
-            'name': 'Tyrosine',
+            'name': 'Thymine',
             'weight': 304.2,
             'normalized': 'dT',
             'SMILES': 'OC[C@H]1O[C@@H](N2C=C(C)C(=O)NC2(=O))C[C@@H]1O',
@@ -363,13 +363,13 @@ export const map: {[synthesizer: string]:
             'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C[C@@H]1O',
           },
           'T': {
-            'name': 'Tyrosine',
+            'name': 'Thymine',
             'weight': 304.2,
             'normalized': 'dT',
             'SMILES': 'OC[C@H]1O[C@@H](N2C=C(C)C(=O)NC2(=O))C[C@@H]1O',
           },
           'dT': {
-            'name': 'Tyrosine',
+            'name': 'Thymine',
             'weight': 304.2,
             'normalized': 'dT',
             'SMILES': 'OC[C@H]1O[C@@H](N2C=C(C)C(=O)NC2(=O))C[C@@H]1O',

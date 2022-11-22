@@ -1,11 +1,14 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
 import {download} from '../helpers';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
 import {linkStrandsV3000} from '../structures-works/mol-transformations';
 import {getFormat} from '../structures-works/sequence-codes-tools';
 
-export function saveSdf(as: string, ss: string, 
-                        oneEntity: boolean, useChirality: boolean, 
+export function saveSdf(as: string, ss: string,
+                        oneEntity: boolean, useChirality: boolean,
                         invertSS: boolean, invertAS: boolean,
                         as2: string | null = null, invertAS2: boolean | null) {
   const formatAs = getFormat(as);
@@ -25,7 +28,7 @@ export function saveSdf(as: string, ss: string,
   if (oneEntity) {
     const antiStrands = molAS2 == null ? [molAS] : [molAS, molAS2];
     result = linkStrandsV3000({senseStrands: [molSS], antiStrands: antiStrands}, useChirality) + '\n$$$$\n';
-  
+
   } else {
     result =
     molSS + '\n' +

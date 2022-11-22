@@ -254,6 +254,15 @@ export function oligoSdFile(table: DG.DataFrame) {
         if ([COL_NAMES.SALT, COL_NAMES.EQUIVALENTS, COL_NAMES.SALT_MOL_WEIGHT].includes(colName))
           updateCalculatedColumns(view.dataFrame, view.dataFrame.currentRowIdx);
       });
+
+      function updateCalculatedColumns(t: DG.DataFrame, i: number): void {
+        const smValue = saltMass(saltNamesList, molWeightCol, equivalentsCol, i, saltCol);
+        t.getCol(COL_NAMES.SALT_MASS).set(i, smValue, false);
+        const smwValue = saltMolWeigth(saltNamesList, saltCol, molWeightCol, i);
+        t.getCol(COL_NAMES.SALT_MOL_WEIGHT).set(i, smwValue, false);
+        const bmw = batchMolWeight(t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT), t.getCol(COL_NAMES.SALT_MASS), i);
+        t.getCol(COL_NAMES.BATCH_MOL_WEIGHT).set(i, bmw, false);
+      }
     }),
   ]);
   grok.shell.v.setRibbonPanels([[d]]);
