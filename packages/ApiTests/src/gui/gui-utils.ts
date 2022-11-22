@@ -28,6 +28,17 @@ export function isViewerPresent(viewers:DG.Viewer[], viewerName:string): void {
     throw viewerName + ' not found';
 }
 
+export function checkViewer(viewers:DG.Viewer[], viewerName:string): boolean {
+  let check = false;
+  for (let i:number = 0; i < viewers.length; i++) {
+    if (viewers[i].type == viewerName) {
+      check = true;
+      break;
+    }
+  }
+  return check;
+}
+
 export function isErrorBallon(ballonText: string):void {
   const exceptionElement = document.getElementsByClassName('d4-balloon-content')[0] as HTMLElement;
   if (exceptionElement == undefined)
@@ -37,7 +48,7 @@ export function isErrorBallon(ballonText: string):void {
   exceptionElement.click();
 }
 
-export function isDialogPresent(dialogTitle:string):void {
+export function isDialogPresent(dialogTitle:string):boolean {
   let check = false;
   for (let i=0; i < DG.Dialog.getOpenDialogs().length; i++) {
     if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle) {
@@ -47,6 +58,18 @@ export function isDialogPresent(dialogTitle:string):void {
   }
   if (check == false)
     throw 'Dialog ' + dialogTitle + ' not found';
+  return check;  
+}
+
+export function checkDialog(dialogTitle:string):boolean {
+  let check = false;
+  for (let i=0; i < DG.Dialog.getOpenDialogs().length; i++) {
+    if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle) {
+      check = true;
+      break;
+    }
+  }
+  return check;  
 }
 
 export function returnDialog(dialogTitle:string):DG.Dialog | undefined {
