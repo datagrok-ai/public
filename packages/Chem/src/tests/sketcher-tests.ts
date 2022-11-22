@@ -22,7 +22,7 @@ category('sketcher testing', () => {
   
   test('smiles', async () => {
     await testSmiles(rdkitModule, funcs);
-  },  {skipReason: 'test'});
+  });
 
   test('input_smiles', async () => {
     await testSmiles(rdkitModule, funcs, true);
@@ -38,7 +38,7 @@ category('sketcher testing', () => {
 
   test('smarts', async () => {
     await testSmarts(rdkitModule, funcs);
-  },  {skipReason: 'test'});
+  });
 
   test('inchi', async () => {
     await testInchi(rdkitModule, funcs);
