@@ -134,7 +134,13 @@ jobs:
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
-          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok --profile db --profile grok_spawner up -d
+
+          profiles='--profile datagrok --profile db --profile grok_spawner'
+          if [[ "${{ matrix.package }}" == "Chem" ]]; then
+            profiles+=' --profile cvm'
+          fi
+
+          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
           docker_sha=$(docker images --quiet datagrok/datagrok:latest)
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
           echo "::notice title=${{ matrix.package }}::datagrok/datagrok:latest SHA=$docker_sha docker version was used for tests"
