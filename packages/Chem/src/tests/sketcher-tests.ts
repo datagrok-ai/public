@@ -14,7 +14,6 @@ category('sketcher testing', () => {
 
   let rdkitModule: any;
   let funcs: DG.Func[];
-  let dg: DG.Dialog;
 
   before(async () => {
     rdkitModule = await grok.functions.call('Chem:getRdKitModule');
@@ -46,7 +45,7 @@ category('sketcher testing', () => {
   },  {skipReason: 'test'});
 
   after(async () => {
-    dg.close();
+    
   });
 
 });
@@ -121,7 +120,7 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean) {
   const mol = rdkitModule.get_mol(exampleSmiles);
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
-    continue;
+      continue;
     await grok.dapi.userDataStorage.postValue('sketcher', 'selected', func.name, true);
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
@@ -157,7 +156,7 @@ async function testMolV2000(rdkitModule: any, funcs: DG.Func[], input?: boolean)
 
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
-    continue;
+      continue;
     await grok.dapi.userDataStorage.postValue('sketcher', 'selected', func.name, true);
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
@@ -196,7 +195,7 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
   const mol = rdkitModule.get_mol(exampleInchiSmiles);
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
-    continue;
+      continue;
     await grok.dapi.userDataStorage.postValue('sketcher', 'selected', func.name, true);
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
