@@ -1,13 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {drugBankSimilaritySearch, drugBankSubstructureSearch} from './searches';
 
 import * as OCL from 'openchemlib/full';
-import {drugBankSearchTypes, getTooltip} from './utils';
+import {findSimilar, searchSubstructure} from './searches';
 
-export async function drugBankSearchWidget(
-  molString: string, searchType: drugBankSearchTypes, dbdf: DG.DataFrame): Promise<DG.Widget> {
+export async function searchWidget(molString: string, searchType: 'similarity' | 'substructure', dbdf: DG.DataFrame,
+): Promise<DG.Widget> {
   const headerHost = ui.div();
   const compsHost = ui.divV([]);
   const panel = ui.divV([headerHost, compsHost]);
@@ -15,10 +14,10 @@ export async function drugBankSearchWidget(
   let table: DG.DataFrame | null;
   switch (searchType) {
   case 'similarity':
-    table = await drugBankSimilaritySearch(molString, 20, 0, dbdf);
+    table = await findSimilar(molString, 20, 0, dbdf);
     break;
   case 'substructure':
-    table = await drugBankSubstructureSearch(molString, dbdf);
+    table = await searchSubstructure(molString, dbdf);
     break;
   default:
     throw new Error(`DrugBankSearch: No such search type ${searchType}`);
@@ -44,7 +43,7 @@ export async function drugBankSearchWidget(
     const molecule = OCL.Molecule.fromMolfile(molfile);
     OCL.StructureView.drawMolecule(molHost, molecule, {'suppressChiralText': true});
 
-    ui.tooltip.bind(molHost, () => getTooltip(nameCol.get(piv)!));
+    ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));
     molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));
     compsHost.appendChild(molHost);
   }
@@ -55,15 +54,16 @@ export async function drugBankSearchWidget(
   return new DG.Widget(panel);
 }
 
-export function drugNameMoleculeWidget(id: string, dbdf: DG.DataFrame): string | null {
+export function drugNameMoleculeConvert(id: string, dbdfRowCount: number, synonymsCol: DG.Column<string>,
+  smilesCol: DG.Column<string>): string {
   const drugName = id.slice(3).toLowerCase();
-  const synonymsCol = dbdf.getCol('SYNONYMS');
-  const smilesCol = dbdf.getCol('Smiles');
-
-  for (let i = 0; i < dbdf.rowCount; i++) {
-    const currentSynonym = synonymsCol.get(i).toLowerCase();
+  //TODO: consider using raw data instead of .get or column iterator (see ApiSamples)
+  //TODO: benchmark it
+  for (let i = 0; i < dbdfRowCount; i++) {
+    const currentSynonym = synonymsCol.get(i)!.toLowerCase();
+    //TODO: check why .includes & consider using hash-map
     if (currentSynonym.includes(drugName))
-      return smilesCol.get(i);
+      return smilesCol.get(i)!;
   }
-  return null;
+  return '';
 }
