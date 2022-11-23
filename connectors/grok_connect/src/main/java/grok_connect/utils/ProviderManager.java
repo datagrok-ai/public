@@ -11,13 +11,13 @@ import java.util.ListIterator;
 public class ProviderManager {
     public Logger logger;
     public QueryMonitor queryMonitor;
-    public List<DataProvider> Providers;
+    public List<JdbcDataProvider> Providers;
 
     public ProviderManager(Logger logger) {
         this.queryMonitor = new QueryMonitor();
         this.logger = logger;
 
-        Providers = new ArrayList<DataProvider>() {{
+        Providers = new ArrayList<JdbcDataProvider>() {{
             add(new AccessDataProvider(ProviderManager.this));
             add(new AthenaDataProvider(ProviderManager.this));
             add(new BigQueryDataProvider(ProviderManager.this));
@@ -57,11 +57,11 @@ public class ProviderManager {
 
         return types;
     }
-    public DataProvider getByName(String name) {
-        DataProvider provider = Providers.get(0);
+    public JdbcDataProvider getByName(String name) {
+        JdbcDataProvider provider = Providers.get(0);
 
-        for (ListIterator<DataProvider> providers = Providers.listIterator(); providers.hasNext(); ) {
-            DataProvider tmp = providers.next();
+        for (ListIterator<JdbcDataProvider> providers = Providers.listIterator(); providers.hasNext(); ) {
+            JdbcDataProvider tmp = providers.next();
             if (tmp.descriptor.type.equals(name)) {
                 provider = tmp;
                 break;
