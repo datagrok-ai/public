@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {NodeType} from '../types';
+import {NodeCuttedType, NodeType} from '../types';
 
 
 export interface ITreeHelper {
@@ -16,11 +16,16 @@ export interface ITreeHelper {
 
   treeCutAsLeaves(node: NodeType, cutHeight: number, currentHeight?: number): NodeType[];
 
-  treeCutAsTree(node: NodeType, cutHeight: number, currentHeight?: number): NodeType | null;
+  treeCutAsTree(node: NodeType, cutHeight: number, keepShorts?: boolean, currentHeight?: number): NodeType | null;
 
   setGridOrder(node: NodeType, grid: DG.Grid, leafColName: string): [NodeType, string[]];
 
-  cutTreeToGrid(node:NodeType, cutHeight: number, dataDf: DG.DataFrame, leafColName: string, clusterColName: string): void;
+  markClusters(tree: NodeCuttedType, dataDf: DG.DataFrame, leafColName: string, clusterColName: string, na?: any): void;
+
+  buildClusters(tree: NodeCuttedType, clusterDf: DG.DataFrame, clusterColName: string, leafColName: string): void;
+
+  cutTreeToGrid(node: NodeType, cutHeight: number, dataDf: DG.DataFrame,
+    leafColName: string, clusterColName: string, na?: any): void;
 }
 
 export async function getTreeHelper(): Promise<ITreeHelper> {
