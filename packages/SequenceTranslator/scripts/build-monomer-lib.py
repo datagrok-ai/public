@@ -1,10 +1,8 @@
 from io import TextIOWrapper
 
-from rdkit.Chem import AllChem
 from rdkit import Chem
 
 import orjson
-import json
 
 import click
 
@@ -12,16 +10,51 @@ from click_default_group import DefaultGroup
 from rdkit.Chem.rdchem import Mol
 
 
+def molAddCollection(mol: Mol, title: str = None) -> str:
+    """
+    Get and postprocess (atom's CFG, title, e.t.c.) molblock
+    :param mol:    Mol molecule structure / object
+    :param title:  title to replace in Chem.MolToMolBlock() string output
+    :return:       molblock string
+    """
+    res: str = Chem.MolToMolBlock(mol, forceV3000=True)  # MolToMolFile
+
+    mf_line_list: list[str] = res.split('\n')
+    if title:
+        mf_line_list[1] = title
+
+    end_bond_idx: int = mf_line_list.index('M  V30 END BOND')
+    chirality = [atom.GetChiralTag() for atom in mol.GetAtoms()]
+    begin_atom_idx = mf_line_list.index('M  V30 BEGIN ATOM')
+    end_atom_idx = mf_line_list.index('M  V30 END ATOM')
+    for atom_idx in range(1, end_atom_idx - begin_atom_idx):
+        line_idx = begin_atom_idx + atom_idx
+        atom_ch = chirality[atom_idx - 1]
+        if atom_ch != Chem.rdchem.CHI_UNSPECIFIED:
+            mf_line_list[line_idx] += " CFG={0}".format(int(atom_ch))
+
+    steabs: list[int] = [i + 1 for (i, ch) in enumerate(chirality) if ch != Chem.rdchem.CHI_UNSPECIFIED]
+    if len(steabs) > 0:
+        steabs_str: str = "M  V30 MDLV30/STEABS ATOMS=({count} {list})" \
+            .format(count=len(steabs), list=' '.join([str(idx) for idx in steabs]))
+
+        mf_line_list = mf_line_list[:(end_bond_idx + 1)] + \
+                       ["M  V30 BEGIN COLLECTION", steabs_str, "M  V30 END COLLECTION"] + \
+                       mf_line_list[(end_bond_idx + 1):]
+
+    return '\n'.join(mf_line_list)
+
+
+def molfile2molfile(src_mol: str) -> str:
+    mol: Mol = Chem.MolFromMolBlock(src_mol)
+    src_mf_lines = src_mol.split('\n')
+    title = src_mf_lines[1]
+    return molAddCollection(mol, title=title)
+
+
 def smiles2molfile(smiles: str) -> str:
     mol: Mol = Chem.MolFromSmiles(smiles)
-    res: str = Chem.MolToMolBlock(mol, forceV3000=True)  # MolToMolFile
-    return res
-
-
-def molV2000toMolV3000(molV2K: str) -> str:
-    mol: str = Chem.MolFromMolBlock(molV2K)
-    res: str = Chem.MolToMolBlock(mol, forceV3000=True)
-    return res.replace('Pol', 'O  ')
+    return molAddCollection(mol)
 
 
 CodesType = dict[str, dict[str, list[str]]]
@@ -29,13 +62,13 @@ CodesType = dict[str, dict[str, list[str]]]
 
 class Monomer:
     def __init__(self,
-                 symbol: str, name: str, smiles: str,
+                 symbol: str, name: str, molfile: str, smiles: str,
                  codes: CodesType):
         self.monomerType = 'Backbone'
         self.smiles = smiles
         self.name = name
         self.author = 'SequenceTranslator'
-        self.molfile = smiles2molfile(smiles)
+        self.molfile = molfile2molfile(molfile) if molfile else smiles2molfile(smiles)
         self.naturalAnalog = ''
         self.rgroups = [
             {
@@ -58,8 +91,9 @@ class Monomer:
 
     @staticmethod
     def from_json(src_json: {}):
-        obj = Monomer(src_json['symbol'], src_json['name'], src_json['smiles'], src_json['codes'])
-        obj.molfile = src_json['molfile']
+        obj = Monomer(src_json['symbol'], src_json['name'],
+                      src_json['molfile'], src_json['smiles'],
+                      src_json['codes'])
         return obj
 
     def to_json(self):
@@ -89,7 +123,7 @@ def codes2monomers(codes_json: {}) -> dict[str, Monomer]:
                     symbol = monomer_json['name']
                     name = monomer_json['name']
                     smiles = monomer_json['SMILES']
-                    monomers_res[monomer_name] = Monomer(symbol, name, smiles, {})
+                    monomers_res[monomer_name] = Monomer(symbol, name, None, smiles, {})
                 codes = monomers_res[monomer_name].codes
                 if codes_src not in codes:
                     codes[codes_src] = {}
