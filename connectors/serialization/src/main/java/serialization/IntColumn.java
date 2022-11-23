@@ -12,6 +12,11 @@ public class IntColumn extends Column<Integer> {
         return TYPE;
     }
 
+    public void empty() {
+        length = 0;
+        data = new int[100]; 
+    }
+    
     public IntColumn() {
         data = new int[100];
     }

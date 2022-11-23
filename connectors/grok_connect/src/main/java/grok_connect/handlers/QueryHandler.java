@@ -89,7 +89,7 @@ public class QueryHandler {
                 if (ex instanceof OutOfMemoryError)
                     GrokConnect.needToReboot = true;
                 else {
-                    System.out.println(ex);
+                    System.out.println(ex.getMessage());
                     throw ex;
                 }
             }

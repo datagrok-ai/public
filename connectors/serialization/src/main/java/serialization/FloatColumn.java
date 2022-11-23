@@ -12,6 +12,11 @@ public class FloatColumn extends Column<Float> {
         return TYPE;
     }
 
+    public void empty() {
+        length = 0;
+        data = new float[100];
+    }
+
     public FloatColumn() {
         data = new float[100];
     }
