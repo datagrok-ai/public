@@ -16,7 +16,7 @@ import {
 import {NodeCuttedType} from '@datagrok-libraries/bio';
 
 
-export function injectTreeForGridUI(
+export function injectTreeForGridUI2(
   grid: DG.Grid, newickRoot: bio.NodeType, dataDf: DG.DataFrame, clusterDf: DG.DataFrame, leafColName: string, neighborWidth: number = 100,
   cut?: { min: number, max: number, clusterColName: string }
 ): GridNeighbor {
@@ -49,15 +49,20 @@ export function injectTreeForGridUI(
     }
   });
 
-  // grid.dataFrame.onFilterChanged.subscribe((args) => {
-  //   console.debug('PhyloTreeViewer: injectTreeForGrid() grid.dataFrame.onFilterChanged()');
-  //
-  //   window.setTimeout(() => {
-  //     const [viewedRoot] = th.setGridOrder(newickRoot, grid, leafColName);
-  //
-  //
-  //   }, 0);
-  // });
+  grid.dataFrame.onFilterChanged.subscribe((args) => {
+    // TODO: Filter newick tree
+    console.debug('PhyloTreeViewer: injectTreeForGridUI2() grid.dataFrame.onFilterChanged()');
+
+    // to prevent nested fire event in event handler
+    window.setTimeout(() => {
+      const [viewedRoot] = th.setGridOrder(newickRoot, grid, leafColName);
+      LeafRangeGridTreeRenderer.markupNode(viewedRoot);
+      const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
+        {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
+
+      treeRenderer.tree = viewedRoot as MarkupNodeType;
+    }, 0 /* next event cycle */);
+  });
 
   let cutSlider: DG.InputBase<number | null> | null = null;
   if (cut) {
@@ -93,8 +98,6 @@ export function injectTreeForGridUI(
 
       LeafRangeGridTreeRenderer.markupNode(newickRootCutted!);
       treeRenderer.tree = newickRootCutted as MarkupNodeType;
-
-      treeRenderer.render();
     });
   }
 

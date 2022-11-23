@@ -30,6 +30,6 @@
                 leaf11:0.4565486798
             )node-l9-l10-l11:0.12234324
         )node-l6-l7-l8-l9-l10-l11:0.2287542231
-    )node-all,
-    leaf-side:0.1000000000
-)tree;
+    )node-all:0.25,
+    leaf-side:0.35
+)tree:0.05;

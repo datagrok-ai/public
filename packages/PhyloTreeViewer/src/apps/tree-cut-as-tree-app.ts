@@ -8,9 +8,10 @@ import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 
 import {_package} from '../package';
 import {TAGS} from '../utils/tree-helper';
+import {data} from 'datagrok-api/grok';
 import {injectTreeForGridUI} from '../viewers/inject-tree-for-grid';
 
-export class TreeForGridApp {
+export class TreeCutAsTreeApp {
   private viewed: boolean = false;
   private tableView: DG.TableView | null;
   gridN: GridNeighbor | null;
@@ -33,13 +34,9 @@ export class TreeForGridApp {
   }
 
   async loadData(): Promise<void> {
-    // const csv = await _package.files.readAsText('data/tree-gen-100000.csv');
-    // const newick = await _package.files.readAsText('data/tree-gen-100000.nwk');
-    // const leafColName = 'Leaf';
-
-    const csv = await _package.files.readAsText('data/tree95df.csv');
-    const newick = await _package.files.readAsText('data/tree95.nwk');
-    const leafColName = 'id';
+    const csv = await _package.files.readAsText('data/tree-gen-10000.csv');
+    const newick = await _package.files.readAsText('data/tree-gen-10000.nwk');
+    const leafColName = 'Leaf';
 
     const dataDf = DG.DataFrame.fromCsv(csv);
     dataDf.setTag(TAGS.DF_NEWICK, newick);
@@ -83,20 +80,13 @@ export class TreeForGridApp {
 
   async buildView() {
     if (!this.tableView) {
-      const dataDf: DG.DataFrame = this.dataDf;
-      dataDf.columns.addNewInt('Cluster').init((rowI) => { return null; });
+      this.tableView = grok.shell.addTableView(this.dataDf);
+      this.tableView.path = this.tableView.basePath = 'func/PhyloTreeViewer.treeForGridApp';
 
-      const clusterDf: DG.DataFrame = DG.DataFrame.create(0);
-      clusterDf.columns.addNewInt('Cluster');
-      clusterDf.columns.addNewString(this.leafCol.name);
-      clusterDf.columns.addNewInt(`${this.leafCol.name}_Count`);
-
-      this.tableView = grok.shell.addTableView(clusterDf);
-      this.tableView.path = this.tableView.basePath = '/func/PhyloTreeViewer.treeForGridApp';
-
-      this.gridN = injectTreeForGridUI(
-        this.tableView.grid, this.newickRoot, dataDf, clusterDf, this.leafCol.name, 250,
-        {min: 0, max: 20, clusterColName: 'Cluster'});
+      this.dataDf.columns.addNewInt('Cluster').init((rowI)=> { return null;})
+      // this.gridN = injectTreeForGridUI(
+      //   this.tableView.grid, this.newickRoot, this.leafCol.name, 250,
+      //   {min: 0, max: 20, clusterColName: 'Cluster'});
 
       // const activityCol = this.dataDf.col('Activity');
       // if (activityCol) {

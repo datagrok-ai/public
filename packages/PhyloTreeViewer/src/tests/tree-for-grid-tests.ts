@@ -1,11 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
-import {TreeForGridRenderer, MarkupNodeType} from '../viewers/inject-tree-for-grid';
+
 import {minIndex, tree} from 'd3';
+import {NodeType} from '@datagrok-libraries/bio';
+import {LeafRangeGridTreeRenderer, MarkupNodeType} from '../viewers/grid-tree-renderer';
 
 category('treeForGrid', () => {
 
@@ -13,7 +14,7 @@ category('treeForGrid', () => {
     markup1 = 'markup1',
   }
 
-  const data: { [test: string]: { tree: bio.NodeType, tgt: MarkupNodeType } } =
+  const data: { [test: string]: { tree: NodeType, tgt: MarkupNodeType } } =
     {
       [Tests.markup1]: {
         tree: {
@@ -97,10 +98,11 @@ category('treeForGrid', () => {
     };
 
   test('markup1', async () => {
-    const tree: bio.NodeType = JSON.parse(JSON.stringify(data[Tests.markup1].tree)); // Deep copy
+    const tree: NodeType = JSON.parse(JSON.stringify(data[Tests.markup1].tree)); // Deep copy
     const tgt: MarkupNodeType = data[Tests.markup1].tgt;
-    TreeForGridRenderer.markupNode(tree as MarkupNodeType);
 
-    expectObject(tree, data[Tests.markup1].tgt);
+    LeafRangeGridTreeRenderer.markupNode(tree);
+
+    expectObject(tree, tgt);
   });
 });
