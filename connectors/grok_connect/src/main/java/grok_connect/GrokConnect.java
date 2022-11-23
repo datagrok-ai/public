@@ -7,6 +7,7 @@ import org.joda.time.*;
 import javax.servlet.*;
 import com.google.gson.*;
 import org.apache.log4j.*;
+
 import static spark.Spark.*;
 import serialization.*;
 import org.restlet.data.Status;
@@ -14,6 +15,8 @@ import javax.ws.rs.core.MediaType;
 import grok_connect.utils.*;
 import grok_connect.table_query.*;
 import grok_connect.connectors_info.*;
+import grok_connect.handlers.QueryHandler;
+import grok_connect.SocketsHandler;
 
 
 public class GrokConnect {
@@ -23,7 +26,7 @@ public class GrokConnect {
     private static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(Property.class, new PropertyAdapter())
             .create();
-    private static boolean needToReboot = false;
+    public static boolean needToReboot = false;
 
     public static void main(String[] args) {
         int port = 1234;
@@ -33,7 +36,7 @@ public class GrokConnect {
             BasicConfigurator.configure();
             logger = Logger.getLogger(GrokConnect.class.getName());
             logger.setLevel(Level.INFO);
-
+            
             logMemory();
 
             providerManager = new ProviderManager(logger);
@@ -53,12 +56,18 @@ public class GrokConnect {
     }
 
     private static void connectorsModule() {
+        webSocket("/sockettest", SocketsHandler.class);
+
+        webSocket("/querystream", QueryHandler.class);
+        
+
         post("/query", (request, response) -> {
             logMemory();
 
             BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();
             result.log = "";
+            System.out.print(request.body());
 
             FuncCall call = null;
             if (SettingsManager.getInstance().settings != null) {
@@ -284,7 +293,7 @@ public class GrokConnect {
         return buffer;
     }
 
-    private static BufferAccessor packException(DataQueryRunResult result, Throwable ex) {
+    public static BufferAccessor packException(DataQueryRunResult result, Throwable ex) {
         Map<String, String> exception = printError(ex);
         result.errorMessage = exception.get("errorMessage");
         result.errorStackTrace = exception.get("errorStackTrace");
@@ -331,7 +340,7 @@ public class GrokConnect {
         }};
     }
 
-    private static String logMemory() {
+    public static String logMemory() {
         long used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         long free = Runtime.getRuntime().maxMemory() - used;
         long total = Runtime.getRuntime().maxMemory();

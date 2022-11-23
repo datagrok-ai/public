@@ -277,6 +277,291 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryBuffer.append("?");
     }
 
+    public ResultSet getResultSet(FuncCall queryRun) throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
+        Integer providerTimeout = getTimeout();
+        int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
+
+        Connection connection = null;
+        try {
+            // Remove header lines
+            DataQuery dataQuery = queryRun.func;
+            String query = dataQuery.query;
+            connection = getConnection(dataQuery.connection);
+            String commentStart = descriptor.commentStart;
+
+            ResultSet resultSet = null;
+
+            // 
+
+            if (!(queryRun.func.options != null
+                    && queryRun.func.options.containsKey("batchMode")
+                    && queryRun.func.options.get("batchMode").equals("true"))) {
+                query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
+                System.out.println(query);
+                resultSet = executeQuery(query, queryRun, connection, timeout);
+            } else {
+                String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
+
+                for (String currentQuery : queries)
+                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout);
+            }
+
+            return resultSet;
+        } catch (SQLException e) {
+            if (providerManager.queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
+                throw new QueryCancelledByUser();
+            else throw e;
+        }
+        finally {
+            if (connection != null)
+                connection.close();
+        }
+    }
+
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
+            List<Boolean> supportedType,List<Boolean> initColumn) throws IOException, SQLException, QueryCancelledByUser {
+        return getResultSetSubDf(queryRun, resultSet, columns, supportedType, initColumn, 10000);
+    }
+
+    public SchemeInfo resultSetScheme(FuncCall queryRun, ResultSet resultSet) throws QueryCancelledByUser, SQLException {
+        
+        try {
+            // if (resultSet == null)
+            //     return new DataFrame();
+
+            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+
+            int columnCount = resultSetMetaData.getColumnCount();
+            List<Column> columns = new ArrayList<>(columnCount);
+            List<Boolean> supportedType = new ArrayList<>(columnCount);
+            List<Boolean> initColumn = new ArrayList<>(columnCount);
+            for (int c = 1; c < columnCount + 1; c++) {
+                Column column;
+
+                String label = resultSetMetaData.getColumnLabel(c);
+                int type = resultSetMetaData.getColumnType(c);
+                String typeName = resultSetMetaData.getColumnTypeName(c);
+                supportedType.add(c - 1, true);
+                initColumn.add(c - 1, true);
+
+                int precision = resultSetMetaData.getPrecision(c);
+                int scale = resultSetMetaData.getScale(c);
+
+                String logString1 = String.format("Column: %s, type: %d, type name: %s, precision: %d, scale: %d \n",
+                        label, type, typeName, precision, scale);
+                if (queryRun.debugQuery)
+                    queryRun.log += logString1;
+                providerManager.logger.info(logString1);
+
+                if (isInteger(type, typeName, precision, scale))
+                    column = new IntColumn();
+                else if (isFloat(type, typeName, precision, scale) || isDecimal(type, typeName))
+                    column = new FloatColumn();
+                else if (isBoolean(type, typeName))
+                    column = new BoolColumn();
+                else if (isString(type, typeName) ||
+                        typeName.equalsIgnoreCase("uuid") ||
+                        typeName.equalsIgnoreCase("set"))
+                    column = new StringColumn();
+                else if (isBigInt(type, typeName))
+                    column = new BigIntColumn();
+                else if (isTime(type, typeName))
+                    column = new DateTimeColumn();
+                else {
+                    column = new StringColumn();
+                    supportedType.set(c - 1, false);
+                    initColumn.set(c - 1, false);
+                }
+
+                String logString2 = String.format("Java type: %s \n", column.getClass().getName());
+                if (queryRun.debugQuery)
+                    queryRun.log += logString2;
+                providerManager.logger.info(logString2);
+
+                column.name = resultSetMetaData.getColumnLabel(c);
+                columns.add(c - 1, column);
+            }
+            return new SchemeInfo(columns, supportedType, initColumn);
+        
+        } catch (SQLException e) {
+            if (providerManager.queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
+                throw new QueryCancelledByUser();
+            else throw e;
+        }
+    }
+
+    public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
+                                       List<Boolean> supportedType,List<Boolean> initColumn, int maxIterations) 
+            throws IOException, SQLException, QueryCancelledByUser {
+        int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
+        int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
+        try {
+
+            int columnCount = columns.size(); 
+
+            if (resultSet == null)
+                return new DataFrame();
+
+            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+
+            DateTime fillingDataframeStart = DateTime.now();
+
+            BufferedWriter csvWriter = null;
+            if (outputCsv != null) {
+                csvWriter = new BufferedWriter(new FileWriter(outputCsv));
+
+                for (int c = 1; c < columnCount + 1; c++) {
+                    csvWriter.append(resultSetMetaData.getColumnLabel(c));
+                    csvWriter.append(c == columnCount ? '\n' : ',');
+                }
+            }
+
+            int rowCount = 0;
+            List<DebugUtils.NumericColumnStats> numericColumnStats = new ArrayList<>();
+            for (int i = 0; i < columnCount; i++)
+                numericColumnStats.add(new DebugUtils.NumericColumnStats());
+
+            while (rowCount < maxIterations && resultSet.next()) {
+                rowCount++;
+
+                for (int c = 1; c < columnCount + 1; c++) {
+                    Object value = resultSet.getObject(c);
+
+                    if (queryRun.debugQuery && value != null)
+                        numericColumnStats.get(c-1).updateStats(value);
+
+                    if (outputCsv != null) {
+                        if (value != null)
+                            csvWriter.append(StringEscapeUtils.escapeCsv(value.toString()));
+
+                        csvWriter.append(c == columnCount ? '\n' : ',');
+                    }
+
+                    int type = resultSetMetaData.getColumnType(c);
+                    String typeName = resultSetMetaData.getColumnTypeName(c);
+                    int precision = resultSetMetaData.getPrecision(c);
+                    int scale = resultSetMetaData.getScale(c);
+
+                    if (supportedType.get(c - 1)) {
+                        String colType = columns.get(c - 1).getType();
+                        if (isInteger(type, typeName, precision, scale) || isBoolean(type, typeName) ||
+                                colType.equals(Types.INT) || colType.equals(Types.BOOL))
+                            if (value instanceof Short)
+                                columns.get(c - 1).add(((Short)value).intValue());
+                            else if (value instanceof Double)
+                                columns.get(c - 1).add(((Double)value).intValue());
+                            else if (value instanceof Float)
+                                columns.get(c - 1).add(((Float)value).intValue());
+                            else if (value instanceof BigDecimal)
+                                columns.get(c - 1).add(((BigDecimal)value).intValue());
+                            else
+                                columns.get(c - 1).add(value);
+                        else if (isString(type, typeName)) {
+                            if ((type == java.sql.Types.CLOB || value instanceof Clob) && value != null) {
+                                Reader reader = ((Clob)value).getCharacterStream();
+                                StringWriter writer = new StringWriter();
+                                IOUtils.copy(reader, writer);
+                                columns.get(c - 1).add(writer.toString());
+                            } else
+                                columns.get(c - 1).add(value);
+                        } else if (isDecimal(type, typeName))
+                            columns.get(c - 1).add((value == null) ? null : ((BigDecimal)value).floatValue());
+                        else if (isFloat(type, typeName, precision, scale) || (colType.equals(Types.FLOAT)))
+                            if (value instanceof Double)
+                                columns.get(c - 1).add(new Float((Double)value));
+                            else
+                                columns.get(c - 1).add(value);
+                        else if (isBigInt(type, typeName) ||
+                                typeName.equalsIgnoreCase("uuid") ||
+                                typeName.equalsIgnoreCase("set") ||
+                                colType.equals(Types.STRING))
+                            columns.get(c - 1).add((value != null) ? value.toString() : "");
+                        else if (isTime(type, typeName)) {
+                            java.util.Date time;
+                            if (value instanceof java.sql.Timestamp)
+                                time = java.util.Date.from(((java.sql.Timestamp)value).toInstant());
+                            else if (value instanceof java.time.ZonedDateTime)
+                                time = java.util.Date.from(((java.time.ZonedDateTime)value).toInstant());
+                            else
+                                time = ((java.util.Date) value);
+
+                            columns.get(c - 1).add((time == null) ? null : time.getTime() * 1000.0);
+                        }
+                    } else {
+                        Column column = columns.get(c - 1);
+                        if (!initColumn.get(c - 1) && value != null) {
+                            if ((value instanceof Byte) || (value instanceof Short) || (value instanceof Integer)) {
+                                column = new IntColumn();
+                                column.addAll(new Integer[rowCount - 1]);
+                            } else if ((value instanceof Float) || (value instanceof Double)) {
+                                column = new FloatColumn();
+                                column.addAll(new Float[rowCount - 1]);
+                            } else if ((value instanceof Boolean)) {
+                                column = new BoolColumn();
+                                column.addAll(new Boolean[rowCount - 1]);
+                            }
+                            column.name = resultSetMetaData.getColumnLabel(c);
+                            columns.set(c - 1, column);
+                            initColumn.set(c - 1, true);
+
+                            System.out.printf("Data type '%s' is not supported yet. Write as '%s'.\n",
+                                    resultSetMetaData.getColumnTypeName(c), column.getType());
+                        }
+
+                        if (value instanceof Double)
+                            value = new Float((Double)value);
+                        else if (!(value instanceof Byte) && !(value instanceof Short) &&
+                                !(value instanceof Integer) && !(value instanceof Boolean))
+                            value = (value != null) ? value.toString() : null;
+
+                        column.add(value);
+                    }
+                }
+
+                if (rowCount % 1000 == 0) {
+                    int size = 0;
+                    for (Column column : columns)
+                        size += column.memoryInBytes();
+                    size = ((count > 0) ? (int)((long)count * size / rowCount) : size) / 1000000;
+                    if (memoryLimit > 0 && size > memoryLimit)
+                        throw new SQLException("Too large query result: " +
+                                String.valueOf(size) + " > " + String.valueOf(memoryLimit) + " MB");
+                }
+            }
+            if (queryRun.debugQuery) {
+                for (int i = 0; i < columnCount; i++) {
+                    if (!numericColumnStats.get(i).valuesCounter.equals(new BigDecimal(0))) {
+                        String logString = String.format("Column: %s, min: %s, max: %s, mean: %s\n", columns.get(i).name, numericColumnStats.get(i).min, numericColumnStats.get(i).max, numericColumnStats.get(i).mean);
+                        queryRun.log += logString;
+                        providerManager.logger.info(logString);
+                    }
+                }
+            }
+            DateTime finish = DateTime.now();
+
+            String logString = String.format(" dataframe filling: %s s \n",
+                    (finish.getMillis() - fillingDataframeStart.getMillis())/ 1000.0);
+            if (queryRun.debugQuery)
+                queryRun.log += logString;
+            providerManager.logger.info(logString);
+
+            if (outputCsv != null)
+                csvWriter.close();
+
+            DataFrame dataFrame = new DataFrame();
+            dataFrame.addColumns(columns);
+
+            return dataFrame;
+        } catch (SQLException e) {
+            if (providerManager.queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
+                throw new QueryCancelledByUser();
+            else throw e;
+        }
+    };
+
     @SuppressWarnings("unchecked")
     public DataFrame execute(FuncCall queryRun)
             throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
@@ -293,28 +578,9 @@ public abstract class JdbcDataProvider extends DataProvider {
 
         Connection connection = null;
         try {
-            // Remove header lines
-            DataQuery dataQuery = queryRun.func;
-            String query = dataQuery.query;
-            connection = getConnection(dataQuery.connection);
-            String commentStart = descriptor.commentStart;
-
-            ResultSet resultSet = null;
-
             DateTime queryExecutionStart = DateTime.now();
 
-            if (!(queryRun.func.options != null
-                    && queryRun.func.options.containsKey("batchMode")
-                    && queryRun.func.options.get("batchMode").equals("true"))) {
-                query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
-                System.out.println(query);
-                resultSet = executeQuery(query, queryRun, connection, timeout);
-            } else {
-                String[] queries = query.replaceAll("\r\n", "\n").split("\n--batch\n");
-
-                for (String currentQuery : queries)
-                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout);
-            }
+            ResultSet resultSet = getResultSet(queryRun);
 
             DateTime columnAssignmentStart = DateTime.now();
 
