@@ -17,6 +17,8 @@ import {PhylocanvasGlService} from './utils/phylocanvas-gl-service';
 import {TreeHelper} from './utils/tree-helper';
 import {generateTree} from './utils/tree-generator';
 import {TreeForGridApp} from './apps/tree-for-grid-app';
+import {TreeCutAsTreeApp} from './apps/tree-cut-as-tree-app';
+import {TreeForGridFilterApp} from './apps/tree-for-grid-filter-app';
 
 
 export const _package = new DG.Package();
@@ -109,7 +111,7 @@ export async function phylocanvasGlViewerApp() {
 }
 
 //name: TreeToGrid
-//description: Test/demo app for TreeInGrid
+//description: Test/demo app for TreeToGrid (PhylocanvasGL based)
 export async function treeToGridApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('open treeInGrid app');
   try {
@@ -129,11 +131,36 @@ export async function treeToGridApp(): Promise<void> {
 }
 
 //name: TreeForGrid
-//description: Test/demo app for TreeInGrid (custom renderer)
+//description: Test/demo app for TreeForGrid (custom renderer)
 export async function treeForGridApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('open treeForGrid app');
   try {
     const app = new TreeForGridApp();
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+
+//name: TreeForGridFilter
+//description: Test/demo app for TreeForGridFilter (custom renderer)
+export async function treeForGridFilterApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open treeForGrid large app');
+  try {
+    const app = new TreeForGridFilterApp();
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: TreeCutAsTree
+//description: Test/demo app for TreeCutAsTree
+export async function treeCutAsTreeApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open treeCutAsTree app');
+  try {
+    const app = new TreeCutAsTreeApp();
     await app.init();
   } finally {
     pi.close();

@@ -7,10 +7,13 @@ import {Unsubscribable} from 'rxjs';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 
 import {_package} from '../package';
-import {TAGS} from '../utils/tree-helper';
-import {injectTreeForGridUI} from '../viewers/inject-tree-for-grid';
+import {TAGS, TreeHelper} from '../utils/tree-helper';
+import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
+import {generateTree} from '../utils/tree-generator';
 
-export class TreeForGridApp {
+export class TreeForGridFilterApp {
+  private th: bio.ITreeHelper;
+
   private viewed: boolean = false;
   private tableView: DG.TableView | null;
   gridN: GridNeighbor | null;
@@ -29,19 +32,27 @@ export class TreeForGridApp {
   get newickRoot(): bio.NodeType { return this._newickRoot; }
 
   async init(): Promise<void> {
+    this.th = new TreeHelper();
     await this.loadData();
   }
 
   async loadData(): Promise<void> {
+    const tree = generateTree(5000);
+    const newick = this.th.toNewick(tree);
+    const leafColName = 'Leaf';
+
+    const leafList = this.th.getLeafList(tree);
+    const leafCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, leafColName,
+      leafList.map((n) => n.name));
+    const activityCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Activity',
+      leafList.map((n) => Math.random()));
+    const dataDf = DG.DataFrame.fromColumns([leafCol, activityCol]);
+
     // const csv = await _package.files.readAsText('data/tree-gen-100000.csv');
     // const newick = await _package.files.readAsText('data/tree-gen-100000.nwk');
     // const leafColName = 'Leaf';
+    // const dataDf = DG.DataFrame.fromCsv(csv);
 
-    const csv = await _package.files.readAsText('data/tree95df.csv');
-    const newick = await _package.files.readAsText('data/tree95.nwk');
-    const leafColName = 'id';
-
-    const dataDf = DG.DataFrame.fromCsv(csv);
     dataDf.setTag(TAGS.DF_NEWICK, newick);
     dataDf.setTag(TAGS.DF_NEWICK_LEAF_COL_NAME, leafColName);
 
@@ -91,12 +102,11 @@ export class TreeForGridApp {
       clusterDf.columns.addNewString(this.leafCol.name);
       clusterDf.columns.addNewInt(`${this.leafCol.name}_Count`);
 
-      this.tableView = grok.shell.addTableView(clusterDf);
-      this.tableView.path = this.tableView.basePath = '/func/PhyloTreeViewer.treeForGridApp';
+      this.tableView = grok.shell.addTableView(dataDf);
+      this.tableView.path = this.tableView.basePath = '/func/PhyloTreeViewer.treeForGridFilterApp';
 
-      this.gridN = injectTreeForGridUI(
-        this.tableView.grid, this.newickRoot, dataDf, clusterDf, this.leafCol.name, 250,
-        {min: 0, max: 20, clusterColName: 'Cluster'});
+      this.gridN = injectTreeForGridUI2(
+        this.tableView.grid, this.newickRoot, dataDf, clusterDf, this.leafCol.name, 300);
 
       // const activityCol = this.dataDf.col('Activity');
       // if (activityCol) {

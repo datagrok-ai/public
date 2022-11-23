@@ -1,12 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import wu from 'wu';
+import {isLeaf, ITreeHelper, NodeCuttedType, NodeType, PhylocanvasGL} from '@datagrok-libraries/bio';
 
 
-type TreeLeafDict = { [nodeName: string]: bio.NodeType };
+type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };
 type NodeNameCallback = (nodeName: string) => void;
 
@@ -15,10 +15,10 @@ export const enum TAGS {
   DF_NEWICK_LEAF_COL_NAME = '.newickLeafColumn',
 }
 
-export class TreeHelper implements bio.ITreeHelper {
-  toNewick(node: bio.NodeType | null): string {
+export class TreeHelper implements ITreeHelper {
+  toNewick(node: NodeType | null): string {
 
-    function toNewickInt(node: bio.NodeType): string {
+    function toNewickInt(node: NodeType): string {
       const isLeaf = !node.children || node.children.length == 0;
 
       if (isLeaf) {
@@ -39,38 +39,38 @@ export class TreeHelper implements bio.ITreeHelper {
     return !node ? ';' : `${toNewickInt(node)};`;
   }
 
-  getLeafList(node: bio.NodeType): bio.NodeType[] {
+  getLeafList(node: NodeType): NodeType[] {
     if (node == null) return [];
 
-    if (bio.isLeaf(node)) {
+    if (isLeaf(node)) {
       return [node]; // node is a leaf
     } else {
-      return Array<bio.NodeType>().concat(
+      return Array<NodeType>().concat(
         ...(node.children ?? []).map((child) => this.getLeafList(child)));
     }
   }
 
-  getNodeList(node: bio.NodeType): bio.NodeType[] {
-    if (bio.isLeaf(node)) {
+  getNodeList(node: NodeType): NodeType[] {
+    if (isLeaf(node)) {
       return [node]; // node is a leaf
     } else {
       const childNodeListList = node.children!.map((child) => this.getNodeList(child));
-      return Array<bio.NodeType>().concat(
+      return Array<NodeType>().concat(
         [node],
         ...childNodeListList);
     }
   }
 
-  treeFilterByLeaves(node: bio.NodeType, leaves: { [name: string]: any }): bio.NodeType | null {
+  treeFilterByLeaves(node: NodeType, leaves: { [name: string]: any }): NodeType | null {
     // copy node because phylocanvas.gl changes data structure completely
     const resNode = Object.assign({}, node); // shallow copy
 
-    if (bio.isLeaf(resNode)) {
+    if (isLeaf(resNode)) {
       return resNode.name in leaves ? resNode : null;
     } else {
       resNode.children = node.children!
         .map((child) => this.treeFilterByLeaves(child, leaves))
-        .filter((child) => child != null) as bio.NodeType[];
+        .filter((child) => child != null) as NodeType[];
 
       return resNode.children.length > 0 ? resNode : null;
     }
@@ -78,14 +78,14 @@ export class TreeHelper implements bio.ITreeHelper {
 
   /** Cuts tree, gets list of clusters as lists of leafs */
   treeCutAsLeaves(
-    node: bio.NodeType, cutHeight: number, currentHeight: number = 0
-  ): bio.NodeType[] {
-    let res: bio.NodeType[];
+    node: NodeType, cutHeight: number, currentHeight: number = 0
+  ): NodeType[] {
+    let res: NodeType[];
 
     const nodeBranchLength = node.branch_length ?? 0;
     if ((currentHeight + nodeBranchLength) < cutHeight) {
       /* if node has no children, then an empty list will be returned */
-      res = new Array<bio.NodeType>().concat(
+      res = new Array<NodeType>().concat(
         ...(node.children ?? [])
           .map((child) => this.treeCutAsLeaves(child, cutHeight, currentHeight + nodeBranchLength)));
     } else {
@@ -96,23 +96,26 @@ export class TreeHelper implements bio.ITreeHelper {
   }
 
   /** Cuts tree, gets cutted tree of clusters as lists of leafs */
-  treeCutAsTree(node: bio.NodeType, cutHeight: number, currentHeight?: number): bio.NodeType | null {
+  treeCutAsTree(
+    node: NodeType, cutHeight: number, keepShorts?: boolean, currentHeight?: number
+  ): NodeCuttedType | null {
     const nodeBranchHeight = node.branch_length ?? 0;
     const currentHeightV: number = currentHeight ?? 0;
+    const keepShortsV: boolean = keepShorts ?? false;
     if ((currentHeightV + nodeBranchHeight) < cutHeight) {
-      if (!bio.isLeaf(node)) {
-        const res: bio.NodeType = Object.assign({}, node);
+      if (!isLeaf(node)) {
+        const res: NodeCuttedType = Object.assign({}, node) as NodeCuttedType;
         res.children = node.children!
           .map((child) => {
-            return this.treeCutAsTree(child, cutHeight, currentHeightV + nodeBranchHeight);
+            return this.treeCutAsTree(child, cutHeight, keepShortsV, currentHeightV + nodeBranchHeight);
           })
-          .filter((n) => n != null) as bio.NodeType[];
+          .filter((n) => n != null) as NodeType[];
         return res;
       } else {
-        return null;
+        return keepShortsV ? node as NodeCuttedType : null;
       }
     } else {
-      const res: bio.NodeCuttedType = Object.assign({}, node) as bio.NodeCuttedType;
+      const res: NodeCuttedType = Object.assign({}, node) as NodeCuttedType;
       res.branch_length = cutHeight - currentHeightV; // shorten branch_length of the node to cut_length remains
       res.children = [];
       res.cuttedChildren = [{
@@ -127,9 +130,9 @@ export class TreeHelper implements bio.ITreeHelper {
 
   /** Sets grid's row order and returns tree (root node) of nodes presented in data */
   setGridOrder(
-    tree: bio.NodeType, grid: DG.Grid, leafColName: string,
+    tree: NodeType, grid: DG.Grid, leafColName: string,
     removeMissingDataRows: boolean = false
-  ): [bio.NodeType, string[]] {
+  ): [NodeType, string[]] {
     console.debug('PhyloTreeViewer.setGridOrder() start');
 
     const dataDf: DG.DataFrame = grid.dataFrame;
@@ -139,7 +142,7 @@ export class TreeHelper implements bio.ITreeHelper {
 
     // Build TREE node name dictionary
     const treeLeafList = this.getLeafList(tree); // ordered by tree
-    const treeLeafDict: { [nodeName: string]: bio.NodeType } = {};
+    const treeLeafDict: { [nodeName: string]: NodeType } = {};
     for (const treeLeaf of treeLeafList) {
       if (treeLeaf.name in treeLeafDict)
         throw new Error('Non unique key tree leaf name');
@@ -184,7 +187,7 @@ export class TreeHelper implements bio.ITreeHelper {
 
     // TODO: Fire filter event (?)
 
-    const resTree: bio.NodeType = this.treeFilterByLeaves(tree, dataNodeDict)!;
+    const resTree: NodeType = this.treeFilterByLeaves(tree, dataNodeDict)!;
     const resTreeLeafList = this.getLeafList(resTree);
 
     const order: number[] = new Array<number>(resTreeLeafList.length); // rowCount filtered for leaves
@@ -220,15 +223,59 @@ export class TreeHelper implements bio.ITreeHelper {
     ];
   }
 
+  markClusters(
+    tree: NodeCuttedType, dataDf: DG.DataFrame, leafColName: string, clusterColName: string, na?: any
+  ): void {
+    const na_value = na ?? null;
+    const clusterCol: DG.Column = dataDf.getCol(clusterColName);
+    clusterCol.init((rowI) => { return na_value; });
+
+    const dataNodeDict: DataNodeDict = {};
+    for (let dataRowI: number = 0; dataRowI < dataDf.rowCount; dataRowI++) {
+      const dataNodeName = dataDf.get(leafColName, dataRowI);
+      dataNodeDict[dataNodeName] = dataRowI;
+    }
+
+    const clusterList = this.getLeafList(tree);
+    for (let clusterI: number = 1; clusterI < clusterList.length + 1; clusterI++) {
+      const cluster: NodeCuttedType = clusterList[clusterI - 1] as NodeCuttedType;
+      for (const leafName of cluster.cuttedLeafNameList ?? []) {
+        const dataRowI = dataNodeDict[leafName];
+        clusterCol.set(dataRowI, clusterI, false);
+      }
+      let k = 9;
+    }
+    let k = 11;
+  }
+
+  buildClusters(
+    tree: NodeCuttedType, clusterDf: DG.DataFrame, clusterColName: string, leafColName: string
+  ) {
+    for (let clusterRowI = clusterDf.rowCount - 1; clusterRowI >= 0; clusterRowI--) {
+      clusterDf.rows.removeAt(clusterRowI);
+    }
+
+    const clusterList = this.getLeafList(tree);
+    for (let clusterI: number = 1; clusterI < clusterList.length + 1; clusterI++) {
+      const clusterNode = clusterList[clusterI - 1] as NodeCuttedType;
+      const leafNameList: string[] = clusterNode.cuttedLeafNameList ?? [];
+      const clusterLeavesStr = leafNameList.join(', ');
+      clusterDf.rows.addNew([clusterI, clusterLeavesStr, leafNameList.length], false);
+    }
+  }
+
   /** Cuts tree at threshold (from root), returns array of subtrees, marks leafs for cluster in data */
   cutTreeToGrid(
-    node: bio.NodeType, cutHeight: number, dataDf: DG.DataFrame, leafColName: string, clusterColName: string
+    node: NodeType, cutHeight: number, dataDf: DG.DataFrame,
+    leafColName: string, clusterColName: string, na?: any
   ): void {
-    const clusterList: bio.NodeType[] = this.treeCutAsLeaves(node, cutHeight, 0);
+    const clusterList: NodeType[] = this.treeCutAsLeaves(node, cutHeight, 0);
 
+    const na_value: any = na ?? null;
     const clusterCol: DG.Column = dataDf.getCol(clusterColName);
-    for (let rowI = 0; rowI < clusterCol.length; rowI++)
-      clusterCol.set(rowI, 0);
+    // for (let rowI = 0; rowI < clusterCol.length; rowI++)
+    //   clusterCol.set(rowI, na_value);
+    clusterCol.init((rowI) => { return na_value;});
 
     /* A leaf with cumulative height less than threshold
        will not be included in nor marked as cluster */
@@ -239,8 +286,8 @@ export class TreeHelper implements bio.ITreeHelper {
       dataNodeDict[dataNodeName] = dataRowI;
     }
 
-    function markCluster(node: bio.NodeType, cluster: number) {
-      if (bio.isLeaf(node)) {
+    function markCluster(node: NodeType, cluster: number) {
+      if (isLeaf(node)) {
         const nodeName = node.name;
         const dataRowI: number = dataNodeDict[nodeName];
         dataDf.set(clusterColName, dataRowI, cluster);
@@ -257,24 +304,23 @@ export class TreeHelper implements bio.ITreeHelper {
       markCluster(clusterList[clusterI - 1], clusterI);
     }
   }
-
 }
 
 export class TreeToGridSyncer {
   private _th: TreeHelper = new TreeHelper();
 
   private readonly _nDiv: HTMLElement;
-  private readonly _tree: bio.NodeType;
+  private readonly _tree: NodeType;
   private readonly _grid: DG.Grid;
   private readonly _dataDf: DG.DataFrame;
 
-  private readonly _pc: bio.PhylocanvasGL;
+  private readonly _pc: PhylocanvasGL;
   private readonly _pcDiv: HTMLDivElement;
 
   private readonly _leafCol: DG.Column;
 
   /** order of tree leaves */
-  private readonly _treeLeafList: bio.NodeType[];
+  private readonly _treeLeafList: NodeType[];
   private readonly _treeLeafDict: TreeLeafDict;
   private readonly _dataNodeDict: DataNodeDict;
 
@@ -283,7 +329,7 @@ export class TreeToGridSyncer {
   private readonly _missedDataNodeList: string[] = [];
   private readonly _missedTreeLeafList: string[] = [];
 
-  get tree(): bio.NodeType { return this._tree; }
+  get tree(): NodeType { return this._tree; }
 
   get grid(): DG.Grid { return this._grid; }
 
@@ -292,7 +338,7 @@ export class TreeToGridSyncer {
   get warnings(): string[] { return this._warnings; }
 
   constructor(
-    nDiv: HTMLElement, tree: bio.NodeType, phylocanvas: bio.PhylocanvasGL, grid: DG.Grid,
+    nDiv: HTMLElement, tree: NodeType, phylocanvas: PhylocanvasGL, grid: DG.Grid,
     leafColName?: string, fixDf: boolean = false
   ) {
     this._nDiv = nDiv;
@@ -321,7 +367,7 @@ export class TreeToGridSyncer {
     this._grid.onBeforeDrawContent.subscribe(this.gridOnBeforeDrawContent.bind(this));
   }
 
-  private static _getTreeLeafListAndDict(tree: bio.NodeType, th: bio.ITreeHelper): [bio.NodeType[], TreeLeafDict] {
+  private static _getTreeLeafListAndDict(tree: NodeType, th: ITreeHelper): [NodeType[], TreeLeafDict] {
     // Build TREE node name dictionary
     const treeLeafList = th.getLeafList(tree); // ordered by tree
     const treeLeafDict: TreeLeafDict = {};
@@ -336,7 +382,7 @@ export class TreeToGridSyncer {
 
   /** Removes data rows missed in tree, and orders data rows in tree leaves order. */
   private static _fixDataFrameForTree(
-    dataDf: DG.DataFrame, leafColName: string, treeLeafList: bio.NodeType[], treeLeafDict: TreeLeafDict,
+    dataDf: DG.DataFrame, leafColName: string, treeLeafList: NodeType[], treeLeafDict: TreeLeafDict,
     missedDataNodeCallback: NodeNameCallback
   ): DG.DataFrame {
     // Skip dataFrame fix for now
@@ -399,7 +445,7 @@ export class TreeToGridSyncer {
   }
 
   private sync(): void {
-    const resTree: bio.NodeType = this._th.treeFilterByLeaves(this._tree, this._dataNodeDict)!;
+    const resTree: NodeType = this._th.treeFilterByLeaves(this._tree, this._dataNodeDict)!;
     const resTreeLeafList = this._th.getLeafList(resTree);
 
     const order: number[] = new Array<number>(resTreeLeafList.length); // rowCount filtered for leaves
