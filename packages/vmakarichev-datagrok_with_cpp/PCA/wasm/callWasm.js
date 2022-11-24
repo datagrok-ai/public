@@ -133,10 +133,23 @@ class ArgNewColumn extends ArgColumn {
         if(this.toUpdate && this.isMemoryForBufferAllocated()) {
             let type = this.type;
             let heap = module[heapMap[type]];
+            let buf = this.buf;
             
-            let columnCreator = typeToColumnCreatorMap[type];          
+            let columnCreator = typeToColumnCreatorMap[type];   
+            
+            let arr = new typeMap[type](this.numOfRows);            
 
-            this.data = columnCreator('name', new typeMap[type](heap.buffer, this.buf, this.numOfRows));
+            for(let i = 0; i < arr.length; i++)
+                arr[i] = heap[buf / arr.BYTES_PER_ELEMENT + i];
+
+            this.data = columnCreator('name', arr);
+
+            //console.log(arr);
+            
+            // This makes mistake, when this.numOfRows = 5 (TODO: investigate why)
+            //this.data = columnCreator('name', new typeMap[type](heap.buffer, this.buf, this.numOfRows));
+
+            //console.log(this.data.getRawData());
         }
     }
 }
@@ -244,11 +257,21 @@ class ArgNewColumns extends ArgColumns {
             let numOfCols = this.numOfColumns;
             let numOfBytes = typeMap[type].BYTES_PER_ELEMENT;                       
             let columnCreator = typeToColumnCreatorMap[type];
+            let buf = this.buf;
 
-            // create columns            
-            for(let i = 0; i < numOfCols; i++)
+            for(let i = 0; i < numOfCols; i++) {
+                let arr = new typeMap[type](numOfRows);
+
+                for(let j = 0; j < numOfRows; j++)
+                    arr[j] = heap[buf / numOfBytes + j + i * numOfRows];
+                
+                this.data.push(columnCreator((i + 1).toString(), arr));
+            }
+
+            // create columns: here, may be a problem when numOfRows = 5            
+            /*for(let i = 0; i < numOfCols; i++)
                 this.data.push(columnCreator((i + 1).toString(), new typeMap[type](heap.buffer, 
-                    this.buf + i * numOfRows * numOfBytes, numOfRows)));
+                    this.buf + i * numOfRows * numOfBytes, numOfRows)));*/
         }
     }
 }
@@ -311,6 +334,10 @@ let Param = {
         return new ArgColumn(column, 'f32');
     },
 
+    newFloatColumn (numOfRows) {
+        return new ArgNewColumn('f32', numOfRows);
+    },
+
     floatColumns(columns){
         return new ArgColumns(columns.toList(), 'f32');
     },
@@ -336,13 +363,17 @@ let Return = {
 
     num(number) {
         return number;
+    },
+
+    column(argColumn) {
+        return argColumn.data;
     }
 };
 
 // The main tool that combines all together
 export function callWasm(module, funcName, inputs) {
 
-    //let start = new Date().getTime();
+    let start = new Date().getTime();
 
     // get specification of exported C/C++-function
     let funcSpecification = module[funcName];
@@ -375,6 +406,10 @@ export function callWasm(module, funcName, inputs) {
                 let val2 = args[ arg['numOfColumns']['ref'] ].data[arg['numOfColumns']['value']];
                 arg.data = Param[arg.type](val1, val2);
                 break;
+            case 'newFloatColumn':
+                let val = args[ arg['numOfRows']['ref'] ].data[arg['numOfRows']['value']];
+                arg.data = Param[arg.type](val);
+                break;
             } // switch
 
         cppFuncInput.push(args[key].data);
@@ -389,9 +424,15 @@ export function callWasm(module, funcName, inputs) {
     // create output
     let output = funcSpecification.output;
 
-    //let finish = new Date().getTime();
+    let finish = new Date().getTime();
 
-    //console.log(`Time for PCA is ${finish - start} ms.`)
+    console.log(`Time for C/C++-function is ${finish - start} ms.`)
+
+    /*console.log('Regression Coefficients:');
+    console.log(cppFuncInput[4].data.getRawData());
+
+    console.log('Predicted:');
+    console.log(cppFuncInput[3].data.getRawData());*/
 
     return Return[output['type']](args[output['source']].data);
 
