@@ -147,7 +147,9 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     newDfCols.add(scaledCol);
     newDf.name = 'Peptides analysis';
     if (clustersColumn) {
-      newDf.getCol(clustersColumn.name).name = C.COLUMNS_NAMES.CLUSTERS;
+      const clusterCol = newDf.getCol(clustersColumn.name);
+      clusterCol.name = C.COLUMNS_NAMES.CLUSTERS;
+      newDf.columns.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
       newDf.setTag(C.TAGS.CLUSTERS, C.COLUMNS_NAMES.CLUSTERS);
     }
     newDf.setTag('settings', JSON.stringify({scaling: scaling}));

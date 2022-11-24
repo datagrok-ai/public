@@ -3,12 +3,12 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package-test';
-import {findMutations, MonomerInfo} from '../utils/algorithms';
+import {findMutations} from '../utils/algorithms';
 import * as type from '../utils/types';
 
 category('Algorithms', () => {
   let activityCol: type.RawData;
-  let monomerColumns: MonomerInfo[];
+  let monomerColumns: type.RawColumn[];
   let settings: type.PeptidesSettings;
 
   before(async () => {
@@ -50,10 +50,10 @@ category('Algorithms', () => {
   test('MutationCliffs - Benchmark 5k', async () => {
     const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
     const activityCol: type.RawData = df.getCol('Activity').getRawData();
-    const monomerCols: MonomerInfo[] = [];
+    const monomerCols: type.RawColumn[] = [];
     for (let i = 1; i < 16; ++i) {
       const col = df.getCol(i.toString());
-      monomerCols.push({name: col.name, rawData: col.getRawData(), categories: col.categories});
+      monomerCols.push({name: col.name, rawData: col.getRawData(), cat: col.categories});
     }
     DG.time('MutationCliffs', () => findMutations(activityCol, monomerCols));
   }, {skipReason: 'Benchmark'});

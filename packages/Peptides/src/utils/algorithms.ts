@@ -2,11 +2,9 @@ import * as C from './constants';
 import * as type from './types';
 import {getTypedArrayConstructor} from './misc';
 
-export type MonomerInfo = {name: string, rawData: type.RawData, categories?: string[]};
 type MutationCliffInfo = {pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number};
 
-//TODO: move out
-export function findMutations(activityArray: type.RawData, monomerInfoArray: MonomerInfo[],
+export function findMutations(activityArray: type.RawData, monomerInfoArray: type.RawColumn[],
   settings: type.PeptidesSettings = {}): type.SubstitutionsInfo {
   const nCols = monomerInfoArray.length;
   if (nCols == 0)
@@ -38,8 +36,8 @@ export function findMutations(activityArray: type.RawData, monomerInfoArray: Mon
 
         tempData.push({
           pos: monomerInfo.name,
-          seq1monomer: monomerInfo.categories![seq1category],
-          seq2monomer: monomerInfo.categories![seq2category],
+          seq1monomer: monomerInfo.cat![seq1category],
+          seq2monomer: monomerInfo.cat![seq2category],
           seq1Idx: seq1Idx,
           seq2Idx: seq2Idx,
         });
