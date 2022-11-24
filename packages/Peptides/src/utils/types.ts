@@ -35,3 +35,5 @@ export type StatsInfo = {
   countCol: DG.Column<number>,
   orderedIndexes: Int32Array,
 }
+
+export type RawColumn = {name: string, rawData: RawData, cat?: string[]};

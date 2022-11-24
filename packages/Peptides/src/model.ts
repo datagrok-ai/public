@@ -19,7 +19,7 @@ import {LogoSummary} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
 import {getMonomerWorks} from './package';
 import * as bio from '@datagrok-libraries/bio';
-import {findMutations, MonomerInfo} from './utils/algorithms';
+import {findMutations} from './utils/algorithms';
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -258,14 +258,14 @@ export class PeptidesModel {
     // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
     const sequenceDf = this.createVerticalTable();
 
-    const extractMonomerInfo = (col: DG.Column<string>): MonomerInfo => ({
+    const extractMonomerInfo = (col: DG.Column<string>): type.RawColumn => ({
       name: col.name,
-      categories: col.categories,
+      cat: col.categories,
       rawData: col.getRawData(),
     });
     const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: set categories ordering the same to share compare indexes instead of strings
-    const monomerColumns: MonomerInfo[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
+    const monomerColumns: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
     this.substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
 
     [this.mutationCliffsGrid, this.mostPotentResiduesGrid] =
@@ -358,30 +358,61 @@ export class PeptidesModel {
 
   calculateMonomerPositionStatistics(matrixDf: DG.DataFrame): DG.DataFrame {
     matrixDf = matrixDf.groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER]).aggregate();
+    const matrixLen = matrixDf.rowCount;
+
+    const posRawColumns: type.RawColumn[] = [];
+
+    const posCol: DG.Column<string> = matrixDf.getCol(C.COLUMNS_NAMES.POSITION);
+    const posColData = posCol.getRawData();
+    const posColCategories = posCol.categories;
+    for (const position of posColCategories) {
+      const currentCol = this.df.getCol(position);
+      posRawColumns.push({
+        name: position,
+        rawData: currentCol.getRawData(),
+        cat: currentCol.categories,
+      });
+    }
 
     const monomerCol: DG.Column<string> = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    // monomerCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    const monomerColData = monomerCol.getRawData();
+    const monomerColCategories = monomerCol.categories;
 
     //calculate p-values based on t-test
     const matrixCols = matrixDf.columns;
-    const mdCol = matrixCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
-    const pValCol = matrixCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE);
-    const countCol = matrixCols.addNewInt(C.COLUMNS_NAMES.COUNT);
-    const ratioCol = matrixCols.addNewFloat(C.COLUMNS_NAMES.RATIO);
-    const posCol: DG.Column<string> = matrixDf.getCol(C.COLUMNS_NAMES.POSITION);
-    const activityCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
-    const sourceDfLen = activityCol.length;
+    const mdColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE).getRawData();
+    const pValColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE).getRawData();
+    const countColData = matrixCols.addNewInt(C.COLUMNS_NAMES.COUNT).getRawData();
+    const ratioColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.RATIO).getRawData();
+    const activityColData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
+    const sourceDfLen = activityColData.length;
 
-    for (let i = 0; i < matrixDf.rowCount; i++) {
-      const position = posCol.get(i)!;
-      const monomer = monomerCol.get(i)!;
-      const mask = DG.BitSet.create(sourceDfLen, (j) => this.df.get(position, j) === monomer);
-      const stats = getStats(activityCol, mask);
+    for (let i = 0; i < matrixLen; i++) {
+      const positionRawIdx = posColData[i];
+      const currentPosRawCol = posRawColumns[positionRawIdx];
+      const monomerRawIdx = monomerColData[i];
+      const mask: boolean[] = new Array(sourceDfLen);
 
-      mdCol.set(i, stats.meanDifference);
-      pValCol.set(i, stats.pValue);
-      countCol.set(i, stats.count);
-      ratioCol.set(i, stats.ratio);
+      let trueCount = 0;
+      for (let j = 0; j < sourceDfLen; ++j) {
+        mask[j] = currentPosRawCol.cat![currentPosRawCol.rawData[j]] == monomerColCategories[monomerRawIdx];
+
+        if (mask[j])
+          ++trueCount;
+      }
+
+      const maskInfo = {
+        trueCount: trueCount,
+        falseCount: sourceDfLen - trueCount,
+        mask: mask,
+      };
+
+      const stats = getStats(activityColData, maskInfo);
+
+      mdColData[i] = stats.meanDifference;
+      pValColData[i] = stats.pValue;
+      countColData[i] = stats.count;
+      ratioColData[i] = stats.ratio;
     }
 
     return matrixDf as DG.DataFrame;
@@ -389,24 +420,45 @@ export class PeptidesModel {
 
   calculateClusterStatistics(): DG.DataFrame {
     const originalClustersCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    const originalClustersColData = originalClustersCol.getRawData();
+    const originalClustersColCategories = originalClustersCol.categories;
+
     const statsDf = this.df.groupBy([C.COLUMNS_NAMES.CLUSTERS]).aggregate();
     const clustersCol = statsDf.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    clustersCol.setCategoryOrder(originalClustersColCategories);
+    const clustersColData = clustersCol.getRawData();
+
     const statsDfCols = statsDf.columns;
-    const mdCol = statsDfCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
-    const pValCol = statsDfCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE);
-    const countCol = statsDfCols.addNewInt(C.COLUMNS_NAMES.COUNT);
-    const ratioCol = statsDfCols.addNewFloat(C.COLUMNS_NAMES.RATIO);
-    const activityList: number[] = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).toList();
+    const mdColData = statsDfCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE).getRawData();
+    const pValColData = statsDfCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE).getRawData();
+    const countColData = statsDfCols.addNewInt(C.COLUMNS_NAMES.COUNT).getRawData();
+    const ratioColData = statsDfCols.addNewFloat(C.COLUMNS_NAMES.RATIO).getRawData();
+    const activityColData: type.RawData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
+    const activityColLen = activityColData.length;
 
-    for (let rowIdx = 0; rowIdx < clustersCol.length; ++rowIdx) {
-      const cluster = clustersCol.get(rowIdx);
-      const mask = DG.BitSet.create(activityList.length, (bitIdx) => originalClustersCol.get(bitIdx) === cluster);
-      const stats = getStats(activityList, mask);
+    for (let rowIdx = 0; rowIdx < clustersColData.length; ++rowIdx) {
+      const clusterIdx = clustersColData[rowIdx];
+      const mask = new Array(activityColLen);
+      let trueCount = 0;
+      for (let maskIdx = 0; maskIdx < activityColLen; ++maskIdx) {
+        mask[maskIdx] = clusterIdx == originalClustersColData[maskIdx];
 
-      mdCol.set(rowIdx, stats.meanDifference);
-      pValCol.set(rowIdx, stats.pValue);
-      countCol.set(rowIdx, stats.count);
-      ratioCol.set(rowIdx, stats.ratio);
+        if (mask[maskIdx])
+          ++trueCount;
+      }
+
+      const maskInfo = {
+        trueCount: trueCount,
+        falseCount: activityColLen - trueCount,
+        mask: mask,
+      };
+
+      const stats = getStats(activityColData, maskInfo);
+
+      mdColData[rowIdx] = stats.meanDifference;
+      pValColData[rowIdx] = stats.pValue;
+      countColData[rowIdx] = stats.count;
+      ratioColData[rowIdx] = stats.ratio;
     }
     return statsDf;
   }
