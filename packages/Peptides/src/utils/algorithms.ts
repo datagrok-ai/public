@@ -4,31 +4,33 @@ import * as C from './constants';
 import * as type from './types';
 import {getTypedArrayConstructor} from './misc';
 
+export type MonomerInfo = {name: string, rawData: type.RawData, categories?: string[]};
+type MutationCliffInfo = {pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number};
+
 //TODO: move out
-export function findMutations(activityCol: DG.Column<number>, monomerColumns: DG.Column<string>[],
+export function findMutations(activityArray: type.RawData, monomerInfoArray: MonomerInfo[],
   settings: type.PeptidesSettings = {}): type.SubstitutionsInfo {
-  const nCols = monomerColumns.length;
+  const nCols = monomerInfoArray.length;
   if (nCols == 0)
     throw new Error(`PepAlgorithmError: Couldn't find any column of semType '${C.SEM_TYPES.MONOMER}'`);
 
   const substitutionsInfo: type.SubstitutionsInfo = new Map();
-  const nRows = activityCol.length;
+  const nRows = activityArray.length;
   for (let seq1Idx = 0; seq1Idx < nRows - 1; seq1Idx++) {
     for (let seq2Idx = seq1Idx + 1; seq2Idx < nRows; seq2Idx++) {
       let substCounter = 0;
-      const activityValSeq1 = activityCol.get(seq1Idx)!;
-      const activityValSeq2 = activityCol.get(seq2Idx)!;
+      const activityValSeq1 = activityArray[seq1Idx];
+      const activityValSeq2 = activityArray[seq2Idx];
       const delta = activityValSeq1 - activityValSeq2;
       if (Math.abs(delta) < (settings.minActivityDelta ?? 0))
         continue;
 
       let substCounterFlag = false;
-      const tempData: { pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number }[] =
-        [];
-      for (const currentPosCol of monomerColumns) {
-        const seq1monomer = currentPosCol.get(seq1Idx)!;
-        const seq2monomer = currentPosCol.get(seq2Idx)!;
-        if (seq1monomer == seq2monomer)
+      const tempData: MutationCliffInfo[] = [];
+      for (const monomerInfo of monomerInfoArray) {
+        const seq1category = monomerInfo.rawData[seq1Idx];
+        const seq2category = monomerInfo.rawData[seq2Idx];
+        if (seq1category == seq2category)
           continue;
 
         substCounter++;
@@ -37,9 +39,9 @@ export function findMutations(activityCol: DG.Column<number>, monomerColumns: DG
           break;
 
         tempData.push({
-          pos: currentPosCol.name,
-          seq1monomer: seq1monomer,
-          seq2monomer: seq2monomer,
+          pos: monomerInfo.name,
+          seq1monomer: monomerInfo.categories![seq1category],
+          seq2monomer: monomerInfo.categories![seq2category],
           seq1Idx: seq1Idx,
           seq2Idx: seq2Idx,
         });
@@ -49,20 +51,22 @@ export function findMutations(activityCol: DG.Column<number>, monomerColumns: DG
         continue;
 
       for (const tempDataElement of tempData) {
-        const position = tempDataElement.pos;
-
         //Working with seq1monomer
         const seq1monomer = tempDataElement.seq1monomer;
         if (!substitutionsInfo.has(seq1monomer))
           substitutionsInfo.set(seq1monomer, new Map());
+
+        const position = tempDataElement.pos;
 
         let positionsMap = substitutionsInfo.get(seq1monomer)!;
         if (!positionsMap.has(position))
           positionsMap.set(position, new Map());
 
         let indexes = positionsMap.get(position)!;
-
-        !indexes.has(seq1Idx) ? indexes.set(seq1Idx, [seq2Idx]) : (indexes.get(seq1Idx)! as number[]).push(seq2Idx);
+        if (indexes.has(seq1Idx))
+          (indexes.get(seq1Idx)! as number[]).push(seq2Idx);
+        else
+          indexes.set(seq1Idx, [seq2Idx]);
 
         //Working with seq2monomer
         const seq2monomer = tempDataElement.seq2monomer;
@@ -74,7 +78,10 @@ export function findMutations(activityCol: DG.Column<number>, monomerColumns: DG
           positionsMap.set(position, new Map());
 
         indexes = positionsMap.get(position)!;
-        !indexes.has(seq2Idx) ? indexes.set(seq2Idx, [seq1Idx]) : (indexes.get(seq2Idx)! as number[]).push(seq1Idx);
+        if (indexes.has(seq2Idx))
+          (indexes.get(seq2Idx)! as number[]).push(seq1Idx);
+        else
+          indexes.set(seq2Idx, [seq1Idx]);
       }
     }
   }

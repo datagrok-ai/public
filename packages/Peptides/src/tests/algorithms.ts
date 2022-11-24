@@ -9,21 +9,25 @@ import {PeptidesModel} from '../model';
 import * as C from '../utils/constants';
 import {scaleActivity} from '../utils/misc';
 import {ALPHABET, TAGS, NOTATION, ALIGNMENT} from '@datagrok-libraries/bio';
-import {findMutations} from '../utils/algorithms';
+import {findMutations, MonomerInfo} from '../utils/algorithms';
 import * as type from '../utils/types';
 
 category('Algorithms', () => {
-  let activityCol: DG.Column<number>;
-  let monomerColumns: DG.Column<string>[];
+  let activityCol: type.RawData;
+  let monomerColumns: MonomerInfo[];
   let settings: type.PeptidesSettings;
 
   before(async () => {
-    activityCol = DG.Column.fromList('int', 'test', [1, 2, 5]);
+    activityCol = DG.Column.fromList('int', 'test', [1, 2, 5]).getRawData();
     monomerColumns = [
-      DG.Column.fromList('string', '1', 'ABC'.split('')),
-      DG.Column.fromList('string', '2', 'ACC'.split('')),
-      DG.Column.fromList('string', '3', 'ACD'.split('')),
-    ];
+      DG.Column.fromList('string', '1', 'AAA'.split('')),
+      DG.Column.fromList('string', '2', 'BCC'.split('')),
+      DG.Column.fromList('string', '3', 'CCD'.split('')),
+    ].map((col) => ({
+      name: col.name,
+      rawData: col.getRawData(),
+      categories: col.categories,
+    }));
     settings = {maxMutations: 1, minActivityDelta: 2};
   });
 
@@ -40,21 +44,23 @@ category('Algorithms', () => {
 
     const c3 = c.get('3')!;
     const d3 = d.get('3')!;
-    expect(c3.has(2), true);
-    expect(d3.has(3), true);
+    expect(c3.has(1), true);
+    expect(d3.has(2), true);
 
-    const c32 = c3.get(2)!;
-    const d33 = d3.get(3)!;
-    expect(c32[0], 3);
-    expect(d33[0], 2);
+    const c31 = c3.get(1)!;
+    const d32 = d3.get(2)!;
+    expect(c31[0], 2);
+    expect(d32[0], 1);
   });
 
   test('MutationCliffs - Benchmark 5k', async () => {
     const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
-    const activityCol: DG.Column<number> = df.getCol('Activity');
-    const monomerCols: DG.Column<string>[] = [];
-    for (let i = 1; i < 16; ++i)
-      monomerCols.push(df.getCol(i.toString()));
+    const activityCol: type.RawData = df.getCol('Activity').getRawData();
+    const monomerCols: MonomerInfo[] = [];
+    for (let i = 1; i < 16; ++i) {
+      const col = df.getCol(i.toString());
+      monomerCols.push({name: col.name, rawData: col.getRawData(), categories: col.categories});
+    }
     DG.time('MutationCliffs', () => findMutations(activityCol, monomerCols));
   }, {skipReason: 'Benchmark'});
 });
