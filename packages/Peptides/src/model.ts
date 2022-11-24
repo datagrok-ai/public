@@ -19,7 +19,7 @@ import {LogoSummary} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
 import {getMonomerWorks} from './package';
 import * as bio from '@datagrok-libraries/bio';
-import {findMutations} from './utils/algorithms';
+import {findMutations, MonomerInfo} from './utils/algorithms';
 
 export class PeptidesModel {
   static modelName = 'peptidesModel';
@@ -258,17 +258,23 @@ export class PeptidesModel {
     // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
     const sequenceDf = this.createVerticalTable();
 
-    const scaledActivityCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    const monomerColumns = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
-    this.substitutionsInfo = findMutations(scaledActivityCol, monomerColumns, this.settings);
+    const extractMutationInfo = (col: DG.Column<string>) => ({
+      name: col.name,
+      categories: col.categories,
+      rawData: col.getRawData(),
+    });
+    const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    //TODO: set categories ordering the same to share compare indexes instead of strings
+    const monomerColumns: MonomerInfo[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMutationInfo);
+    this.substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
 
     [this.mutationCliffsGrid, this.mostPotentResiduesGrid] =
       this.createGrids(matrixDf, sequenceDf, positionColumns, alphabet);
 
-    if (this.df.getTag(C.TAGS.CLUSTERS)) {
+    if (this.df.getTag(C.TAGS.CLUSTERS))
       this.clusterStatsDf = this.calculateClusterStatistics();
       // this.logoSummaryGrid = this.createLogoSummaryGrid();
-    }
+
 
     // init invariant map & mutation cliffs selections
     this.initSelections(positionColumns);
@@ -353,7 +359,7 @@ export class PeptidesModel {
   calculateMonomerPositionStatistics(matrixDf: DG.DataFrame): DG.DataFrame {
     matrixDf = matrixDf.groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER]).aggregate();
 
-    let monomerCol: DG.Column<string> = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    const monomerCol: DG.Column<string> = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
     // monomerCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
 
     //calculate p-values based on t-test
@@ -531,7 +537,7 @@ export class PeptidesModel {
       else
         this.cachedWebLogoTooltip = {bar: bar, tooltip: this.showTooltipAt(monomer, position, ev.clientX, ev.clientY)};
 
-        //TODO: how to unghighlight?
+      //TODO: how to unghighlight?
       // this.df.rows.match(bar).highlight();
     }
   }
@@ -663,8 +669,8 @@ export class PeptidesModel {
     const tooltipElements: HTMLDivElement[] = [];
     const monomerName = aar.toLowerCase();
 
-    let mw = getMonomerWorks();
-    let mol = mw?.getCappedRotatedMonomer('PEPTIDE', aar);
+    const mw = getMonomerWorks();
+    const mol = mw?.getCappedRotatedMonomer('PEPTIDE', aar);
 
     if (mol) {
       tooltipElements.push(ui.div(monomerName));
@@ -842,7 +848,7 @@ export class PeptidesModel {
     };
 
     selection.onChanged.subscribe(() => changeSelectionBitset(selection));
-    
+
     filter.onChanged.subscribe(() => {
       const positionList = Object.keys(this.invariantMapSelection);
       const invariantMapBitset = DG.BitSet.create(filter.length, (index) => {
