@@ -88,12 +88,18 @@ export class SurfacePlot extends EChartViewer {
       },
       xAxis3D: {
         type: 'value',
+        min: 'dataMin',
+        max: 'dataMax',
       },
       yAxis3D: {
         type: 'value',
+        min: 'dataMin',
+        max: 'dataMax',
       },
       zAxis3D: {
         type: 'value',
+        min: 'dataMin',
+        max: 'dataMax',
       },
       grid3D: {
         show: true,
@@ -193,8 +199,8 @@ export class SurfacePlot extends EChartViewer {
         this.wireframe = newVal;
         break;
       }
+      this.render();
     }
-    this.render();
   }
 
   render(computeData=false, filter=true) {
