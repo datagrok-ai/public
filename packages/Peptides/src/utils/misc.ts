@@ -2,11 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as C from './constants';
 import * as type from './types';
 
-import {AminoacidsPalettes} from '@datagrok-libraries/bio/src/aminoacids';
-import {NucleotidesPalettes} from '@datagrok-libraries/bio/src/nucleotides';
-import {UnknownSeqPalettes} from '@datagrok-libraries/bio/src/unknown';
-import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
-
 export function getTypedArrayConstructor(
   maxNum: number): Uint8ArrayConstructor | Uint16ArrayConstructor | Uint32ArrayConstructor {
   return maxNum < 256 ? Uint8Array :
@@ -35,10 +30,11 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: string = 
   default:
     throw new Error(`ScalingError: method \`${scaling}\` is not available.`);
   }
-  const scaledCol = DG.Column.float(C.COLUMNS_NAMES.ACTIVITY_SCALED, activityCol.length).init((i) => {
-    const val = activityCol.get(i);
-    return val ? formula(val) : val;
-  });
+  const scaledCol: DG.Column<number> = DG.Column.float(C.COLUMNS_NAMES.ACTIVITY_SCALED, activityCol.length)
+    .init((i) => {
+      const val = activityCol.get(i);
+      return val ? formula(val) : val;
+    });
   scaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
   scaledCol.setTag('gridName', newColName);
 
@@ -53,7 +49,7 @@ export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats 
       const monomer = col.get(idx);
       if (!monomer)
         continue;
-      
+
       selectedObj[col.name] ??= {};
       selectedObj[col.name][monomer] ??= 0;
       selectedObj[col.name][monomer] += 1;

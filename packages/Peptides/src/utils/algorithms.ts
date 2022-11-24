@@ -1,5 +1,3 @@
-import * as DG from 'datagrok-api/dg';
-
 import * as C from './constants';
 import * as type from './types';
 import {getTypedArrayConstructor} from './misc';

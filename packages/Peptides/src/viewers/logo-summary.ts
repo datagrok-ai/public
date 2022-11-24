@@ -18,7 +18,8 @@ export class LogoSummary extends DG.JsViewer {
   constructor() {
     super();
 
-    this.webLogoMode = this.string('webLogoMode', bio.PositionHeight.full, {choices: [bio.PositionHeight.full, bio.PositionHeight.Entropy]});
+    this.webLogoMode = this.string('webLogoMode', bio.PositionHeight.full,
+      {choices: [bio.PositionHeight.full, bio.PositionHeight.Entropy]});
     this.importanceThreshold = this.float('importanceThreshold', 0.7);
   }
 
@@ -91,7 +92,8 @@ export class LogoSummary extends DG.JsViewer {
       webLogoCol.set(index, index.toString());
       membersCol.set(index, dfSlice.rowCount);
       //TODO: user should be able to choose threshold
-      if (dfSlice.rowCount <= Math.ceil(this.model.clusterStatsDf.getCol(C.COLUMNS_NAMES.COUNT).stats.max * this.importanceThreshold))
+      const maxCount = this.model.clusterStatsDf.getCol(C.COLUMNS_NAMES.COUNT).stats.max;
+      if (dfSlice.rowCount <= Math.ceil(maxCount * this.importanceThreshold))
         summaryTable.filter.set(index, false, false);
     }
     webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
@@ -104,7 +106,8 @@ export class LogoSummary extends DG.JsViewer {
     this.viewerGrid.props.rowHeight = 55;
     this.viewerGrid.onCellPrepare((cell) => {
       if (cell.isTableCell && cell.tableColumn?.name === 'WebLogo') {
-        tempDfList[parseInt(cell.cell.value)].plot.fromType('WebLogo', {maxHeight: 50, positionHeight: this.webLogoMode})
+        tempDfList[parseInt(cell.cell.value)].plot
+          .fromType('WebLogo', {maxHeight: 50, positionHeight: this.webLogoMode})
           .then((viewer) => cell.element = viewer.root);
       }
     });

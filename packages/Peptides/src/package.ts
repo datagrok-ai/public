@@ -19,7 +19,7 @@ export const _package = new DG.Package();
 let currentTable: DG.DataFrame;
 let alignedSequenceColumn: DG.Column;
 
-export function getMonomerWorks() {
+export function getMonomerWorks(): MonomerWorks | null {
   return monomerWorks;
 };
 
@@ -41,7 +41,7 @@ export async function Peptides(): Promise<void> {
   const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
   const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
   if (monomerWorks == null) {
-    let lib = await grok.functions.call('Bio:getBioLib');
+    const lib = await grok.functions.call('Bio:getBioLib');
     monomerWorks = new MonomerWorks(lib);
   }
   const appDescription = ui.info(
