@@ -258,14 +258,14 @@ export class PeptidesModel {
     // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
     const sequenceDf = this.createVerticalTable();
 
-    const extractMutationInfo = (col: DG.Column<string>) => ({
+    const extractMonomerInfo = (col: DG.Column<string>): MonomerInfo => ({
       name: col.name,
       categories: col.categories,
       rawData: col.getRawData(),
     });
     const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: set categories ordering the same to share compare indexes instead of strings
-    const monomerColumns: MonomerInfo[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMutationInfo);
+    const monomerColumns: MonomerInfo[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
     this.substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
 
     [this.mutationCliffsGrid, this.mostPotentResiduesGrid] =
@@ -607,7 +607,8 @@ export class PeptidesModel {
       if (gcArgs.cell.isColHeader && col?.semType == C.SEM_TYPES.MONOMER) {
         const monomerStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MONOMER);
         const positionStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.POSITION);
-        const rowMask = DG.BitSet.create(this.monomerPositionStatsDf.rowCount, (i) => positionStatsCol.get(i) === col.name);
+        const rowMask = DG.BitSet.create(this.monomerPositionStatsDf.rowCount,
+          (i) => positionStatsCol.get(i) === col.name);
         //TODO: precalc on stats creation
         const sortedStatsOrder = this.monomerPositionStatsDf.getSortedOrder([C.COLUMNS_NAMES.COUNT], [false], rowMask)
           .sort((a, b) => {

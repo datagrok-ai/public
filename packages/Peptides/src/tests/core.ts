@@ -15,14 +15,11 @@ category('Core', () => {
   let simpleActivityCol: DG.Column<number>;
   let simpleAlignedSeqCol: DG.Column<string>;
   let simpleScaledCol: DG.Column<number>;
-  let scalingFormula: (x: number) => number;
-  let simpleScaledColName: string;
 
   let complexTable: DG.DataFrame;
   let complexActivityCol: DG.Column<number>;
   let complexAlignedSeqCol: DG.Column<string>;
   let complexScaledCol: DG.Column<number>;
-  let complexScaledColName: string;
   const alignedSequenceCol = 'AlignedSequence';
 
   let model: PeptidesModel | null = null;

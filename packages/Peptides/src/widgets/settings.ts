@@ -1,12 +1,10 @@
 import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
 
 import $ from 'cash-dom';
-import wu from 'wu';
 
 //TODO: show sliderInput values
 export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
@@ -45,12 +43,12 @@ export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
           delete result.columns![col.name];
       }) as DG.InputBase<boolean>;
     const aggregationInput = ui.choiceInput('Aggregation', (settings.columns ?? {})[col.name] ?? 'avg',
-    Object.values(DG.STATS), () => {
-      if (isIncludedInput.value)
+      Object.values(DG.STATS), () => {
+        if (isIncludedInput.value)
         result.columns![col.name] = aggregationInput.stringValue;
-      else
-        delete result.columns![col.name];
-    }) as DG.InputBase<string>;
+        else
+          delete result.columns![col.name];
+      }) as DG.InputBase<string>;
     $(aggregationInput.root).find('label').css('width', 'auto');
     const inputsRow = ui.inputsRow(col.name, [isIncludedInput, aggregationInput]);
     $(inputsRow).find('div.ui-div').css('display', 'inline-flex');

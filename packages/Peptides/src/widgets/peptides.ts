@@ -19,7 +19,7 @@ Promise<{host: HTMLElement, callback: () => Promise<void>}> {
   let seqColInput: DG.InputBase | null = null;
   if (typeof col === 'undefined') {
     const sequenceColumns = df.columns.toList().filter((dfCol) => dfCol.semType === DG.SEMTYPE.MACROMOLECULE);
-    let potentialCol = DG.Utils.firstOrNull(sequenceColumns);
+    const potentialCol = DG.Utils.firstOrNull(sequenceColumns);
     if (potentialCol === null)
       throw new Error('Peptides Error: table doesn\'t contain sequence columns');
     seqColInput = ui.columnInput('Sequence', df, potentialCol, () => {
@@ -27,16 +27,28 @@ Promise<{host: HTMLElement, callback: () => Promise<void>}> {
       if (!seqCol.tags['aligned']?.includes('MSA') && seqCol.tags[DG.TAGS.UNITS].toLowerCase() !== 'helm')
         grok.shell.warning('Peptides analysis only works with aligned sequences');
     });
-  } else if (!col.tags['aligned']?.includes('MSA') && col.tags[DG.TAGS.UNITS].toLowerCase() !== 'helm')
-    return {host: ui.label('Peptides analysis only works with aligned sequences'), callback: async () => {}};
+  } else if (!col.tags['aligned']?.includes('MSA') && col.tags[DG.TAGS.UNITS].toLowerCase() !== 'helm') {
+    return {
+      host: ui.label('Peptides analysis only works with aligned sequences'),
+      callback: async (): Promise<void> => {},
+    };
+  }
 
   let funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
-  if (funcs.length == 0)
-    return {host: ui.label('Bio package is missing or out of date. Please install the latest version.'), callback: async () => {}};
+  if (funcs.length == 0) {
+    return {
+      host: ui.label('Bio package is missing or out of date. Please install the latest version.'),
+      callback: async (): Promise<void> => {},
+    };
+  }
 
   funcs = DG.Func.find({package: 'Bio', name: 'getBioLib'});
-  if (funcs.length == 0)
-    return {host: ui.label('Bio package is missing or out of date. Please install the latest version.'), callback: async () => {}};
+  if (funcs.length == 0) {
+    return {
+      host: ui.label('Bio package is missing or out of date. Please install the latest version.'),
+      callback: async (): Promise<void> => {},
+    };
+  }
 
   let scaledCol: DG.Column<number>;
 
@@ -81,11 +93,12 @@ Promise<{host: HTMLElement, callback: () => Promise<void>}> {
     activityScalingMethodState();
   });
 
-  const startAnalysisCallback = async () => {
+  const startAnalysisCallback = async (): Promise<void> => {
     const sequencesCol = col ?? seqColInput!.value;
-    if (sequencesCol)
+    if (sequencesCol) {
       await startAnalysis(activityColumnChoice.value!, sequencesCol, clustersColumnChoice.value, df, scaledCol,
         activityScalingMethod.value ?? 'none');
+    }
     bitsetChanged.unsubscribe();
   };
 

@@ -1,14 +1,8 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, delay, before} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package-test';
-import {startAnalysis} from '../widgets/peptides';
-import {PeptidesModel} from '../model';
-import * as C from '../utils/constants';
-import {scaleActivity} from '../utils/misc';
-import {ALPHABET, TAGS, NOTATION, ALIGNMENT} from '@datagrok-libraries/bio';
 import {findMutations, MonomerInfo} from '../utils/algorithms';
 import * as type from '../utils/types';
 
