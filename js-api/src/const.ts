@@ -259,6 +259,7 @@ export const TAGS = {
   UNITS: 'units',  // see DG.UNITS
 
   FRIENDLY_NAME: 'friendlyName',
+  ALLOW_RENAME: '.allow-rename',
 
   CHEM: {
     SCAFFOLD: 'chem-scaffold'
