@@ -198,11 +198,15 @@ void tryPLS1_ver2()
 
 void testPLS1()
 {
-	Float inputData[] = { 1, 22, 3, 4, 25, 16, 8, 10, 121, 14, 16, 329, 22, 25, 208 };
+	Float inputData[] = //{1,1,1,1,1,-1,1,-1,1,-1,0,2,0,2,1,2,0,2,1,3};
+		{ 1, 22, 3, 4, 25, 16, 8, 10, 121, 14, 16, 329, 22, 25, 208 };
 
 	const int ROWS_COUNT = 5;
-	const int COLUMNS_COUNT = 3;
-	const int L = COLUMNS_COUNT;// 1;
+	const int COLUMNS_COUNT = //4;
+	                          3;
+	const int L = //2;
+		COLUMNS_COUNT;
+	    // 1;
 
 	Float outputData[ROWS_COUNT]
 		= { 0 };
@@ -225,7 +229,10 @@ void testPLS1()
 	Float coefs[ROWS_COUNT] = { 0 };
 
 	cout << "PLS result code: " 
-		<< partialLeastSquare(inputData, ROWS_COUNT, COLUMNS_COUNT, outputData, L, prediction, coefs) << endl;
+		//<< partialLeastSquare_slow(inputData, ROWS_COUNT, COLUMNS_COUNT, outputData, L, prediction, coefs)
+		//<< partialLeastSquare(inputData, ROWS_COUNT, COLUMNS_COUNT, outputData, L, prediction, coefs)
+		<< partialLeastSquare_norm(inputData, ROWS_COUNT, COLUMNS_COUNT, outputData, L, prediction, coefs)
+		<< endl;
 
 	cout << "\ncoefficients:\n";
 
@@ -243,10 +250,12 @@ void testPLS1()
 
 void plsPerformance()
 {		
-	const int SEED = time(0);//342311;
-	const int ROWS_COUNT = 1000000;
-	const int COLUMNS_COUNT = 150;
-	const int COMPONENTS_COUNT = 3;// COLUMNS_COUNT;
+	const int SEED = 654546;
+		//time(0);//342311;
+	const int ROWS_COUNT = 100000;
+	const int COLUMNS_COUNT = 100;
+	const int COMPONENTS_COUNT = 3;
+	 //COLUMNS_COUNT;
 	const int ITERATIONS_NUM = 20;
 
 	srand(SEED);
@@ -295,7 +304,9 @@ void plsPerformance()
 
 		cout << "Launch " << i 
 			<<"\n    result code: "
-			<< partialLeastSquare(inputData, ROWS_COUNT, COLUMNS_COUNT, outputData, COMPONENTS_COUNT, prediction, coefs) 
+			<< partialLeastSquare(inputData, ROWS_COUNT, COLUMNS_COUNT, outputData, COMPONENTS_COUNT, prediction, coefs)
+			//<< partialLeastSquare_norm(inputData, ROWS_COUNT, COLUMNS_COUNT, outputData, COMPONENTS_COUNT, prediction, coefs)
+			//<< partialLeastSquare_slow(inputData, ROWS_COUNT, COLUMNS_COUNT, outputData, COMPONENTS_COUNT, prediction, coefs)
 			<< "\n";
 
 		finish = time(0);

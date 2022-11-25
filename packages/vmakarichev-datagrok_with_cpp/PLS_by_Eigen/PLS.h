@@ -23,9 +23,48 @@ namespace pls {
 		  responseColumnDataPtr - data from column that is predicted, i.e. responce
 		  componentsCount - number of components that extracted in PLS
 		  predictionDataPtr - prediction obtained using PLS (its size is equal to the size of responce)
-		  regressionCoefficients - coeffcient of linear regression that are computed (their size is eqaul to the number of columns)
+		  regressionCoefficients - coeffcient of linear regression that are computed (their size is eqaul to the number of columns).
+
+	   WARNING! This provides correct results for the case, when predictor columns have the same distribution!	  
 	*/
 	int partialLeastSquare(Float * predictorColumnsDataPtr,
+		const int rowCount,
+		const int columnCount,
+		Float * responseColumnDataPtr,
+		const int componentsCount,
+		Float * predictionDataPtr,
+		Float * regressionCoefficients) noexcept;
+
+	/* Partial Least Square (PLS1).
+	      predictorColumnsDataPtr - data from columns that are used for prediction
+	      rowCount - number of rows
+	      columnCount - number of columns
+	      responseColumnDataPtr - data from column that is predicted, i.e. responce
+	      componentsCount - number of components that extracted in PLS
+	      predictionDataPtr - prediction obtained using PLS (its size is equal to the size of responce)
+	      regressionCoefficients - coeffcient of linear regression that are computed (their size is eqaul to the number of columns)
+
+	WARNING! This provides correct results for the case, when predictor columns have the same distribution!
+
+	This implementation of PLS uses deflation step, so it's slower!	*/
+	int partialLeastSquare_slow(Float * predictorColumnsDataPtr,
+		const int rowCount,
+		const int columnCount,
+		Float * responseColumnDataPtr,
+		const int componentsCount,
+		Float * predictionDataPtr,
+		Float * regressionCoefficients) noexcept;
+
+	/* Partial Least Square (PLS1).
+	      predictorColumnsDataPtr - data from columns that are used for prediction
+	      rowCount - number of rows
+	      columnCount - number of columns
+	      responseColumnDataPtr - data from column that is predicted, i.e. responce
+	      componentsCount - number of components that extracted in PLS
+	      predictionDataPtr - prediction obtained using PLS (its size is equal to the size of responce)
+	      regressionCoefficients - coeffcient of linear regression that are computed (their size is eqaul to the number of columns)
+	*/
+	int partialLeastSquare_norm(Float * predictorColumnsDataPtr,
 		const int rowCount,
 		const int columnCount,
 		Float * responseColumnDataPtr,
