@@ -42,6 +42,7 @@ import { getSimilaritiesMarix } from './utils/similarity-utils';
 import { molToMolblock } from './utils/convert-notation-utils'
 import { similarityMetric } from '@datagrok-libraries/utils/src/similarity-metrics';
 import { _importSmi } from './file-importers/smi-importer';
+import { scaffoldTreeGeneration } from './scripts-api';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -764,5 +765,13 @@ export async function callChemDiversitySearch(
     return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint) ;
 }
 
-
-
+//name: scaffoldTree
+//input: dataframe data
+//output: string result
+export async function scaffoldTree(data: DG.DataFrame) : Promise<string> {
+  const smilesColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  const idsColumn = DG.Column.int('smilesId', data.rowCount);
+  idsColumn.init((i) => i);
+  data.columns.add(idsColumn);
+  return await scaffoldTreeGeneration(data, smilesColumn!.name, idsColumn.name);
+}

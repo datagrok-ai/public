@@ -30,3 +30,10 @@ export async function getDescriptorsPy(
   df2: DG.DataFrame): Promise<any> {
   return await grok.functions.call('Chem:Desc', {smiles, df1, selected, df2});
 }
+
+export async function scaffoldTreeGeneration(
+  data: DG.DataFrame, 
+  smiles: string, 
+  names: string) : Promise<string> {
+    return await grok.functions.call('Chem: ScaffoldTreeGeneration', {data, smiles, names});
+}
