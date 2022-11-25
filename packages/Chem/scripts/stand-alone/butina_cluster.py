@@ -5,13 +5,12 @@
 #sample: chem/smiles_coordinates.csv
 #tags: demo, chem, rdkit
 #input: dataframe data [Input data table]
-#input: column smiles {type:categorical, semType: Molecule} [Molecules, in SMILES format]
-#output: dataframe clusters {action:join(data)} [Clusters]
+#input: column smiles {semType: Molecule} [Molecules, in SMILES format]
+#output: dataframe clusters [Clusters]
 
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem
-
 
 def cluster_fingerprints(fingerprints, cutoff=0.2):
     from rdkit import DataStructs
@@ -36,4 +35,5 @@ for n in range(0, len(groups)):
     clusters[idxs] = np.ones(len(idxs)) * n
 
 # Convert to Pandas DataFrame
-clusters = pd.DataFrame(clusters, columns=['clusters'])
+clustersDf = pd.DataFrame(clusters, columns=['clusters'])
+clusters = pd.concat([data, clustersDf], axis=1)
