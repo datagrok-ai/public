@@ -13,23 +13,11 @@ const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into consta
 const tooltipSequence = 'Copy sequence';
 
 export async function mainView(): Promise<HTMLDivElement> {
-  const monomersLibAddress = 'System:AppData/SequenceTranslator/helmLib.json';
   async function updateTableAndMolecule(sequence: string, inputFormat: string): Promise<void> {
     moleculeSvgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
     let errorsExist = false;
-
-    // external helm-like monomers library
-    const fileExists = await grok.dapi.files.exists(monomersLibAddress);
-    if (!fileExists) {
-      // todo: improve behaviour in this case
-      grok.shell.warning('Please, provide the file with monomers library as System:AppData/SequenceTranslator/helmLib.json');
-      pi.close();
-      return;
-    }
-
-    const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
 
     try {
       sequence = sequence.replace(/\s/g, '');
@@ -67,7 +55,7 @@ export async function mainView(): Promise<HTMLDivElement> {
       );
 
       if (outputSequenceObj.type != undefinedInputSequence && outputSequenceObj.Error != undefinedInputSequence) {
-        const canvas = ui.canvas(300, 170);
+        const canvas = ui.canvas(500, 170);
         canvas.addEventListener('click', () => {
           const canv = ui.canvas($(window).width(), $(window).height());
           const mol = sequenceToMolV3000(
@@ -75,10 +63,14 @@ export async function mainView(): Promise<HTMLDivElement> {
             output.synthesizer![0],
           );
           console.log(mol);
+          const addDiv = ui.div();
+          addDiv.append(canv);
+          addDiv.style.overflowX = 'scroll';
+
           // @ts-ignore
           OCL.StructureView.drawMolecule(canv, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
           ui.dialog('Molecule: ' + inputSequenceField.value)
-            .add(canv)
+            .add(addDiv)
             .showModal(true);
         });
         $(canvas).on('mouseover', () => $(canvas).css('cursor', 'zoom-in'));
@@ -171,7 +163,6 @@ export async function mainView(): Promise<HTMLDivElement> {
 
   const downloadMolFileIcon = ui.iconFA('download', async () => {
     const clearSequence = inputSequenceField.value.replace(/\s/g, '');
-    const monomersLib = await grok.dapi.files.readAsText(monomersLibAddress);
     const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, false,
       inputFormatChoiceInput.value!);
     download(clearSequence + '.mol', encodeURIComponent(result));
@@ -204,8 +195,8 @@ export async function mainView(): Promise<HTMLDivElement> {
           ui.div([
             ui.h1('Input sequence'),
             ui.div([
-              inputSequenceField.root,
             ], 'input-base'),
+              inputSequenceField.root,
           ], 'inputSequence'),
           ui.div([inputFormatChoiceInput], {style: {padding: '5px 0'}}),
           ui.block([
