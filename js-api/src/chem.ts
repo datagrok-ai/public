@@ -595,7 +595,7 @@ export namespace chem {
    * @returns {Promise<string>}
    * */
    export async function mcs(column: Column): Promise<string> {
-    return await grok.functions.call('Chem:searchSubstructure', {
+    return await grok.functions.call('Chem:FindMCS', {
       'molecules': column
     });
   }
