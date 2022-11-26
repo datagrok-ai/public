@@ -840,7 +840,7 @@ export class PinnedColumn {
       return;
 
     this.m_nResizeRowGridMoving = -1;
-    const bAddToSel : boolean = e.ctrlKey || e.shiftKey;
+    const bAddToSel : boolean = e.ctrlKey || e.shiftKey || e.metaKey;
 
     let nRowGrid = bAddToSel ? -1 : PinnedColumn.hitTestRows(eCanvasThis, grid, e, true, undefined);
     if (nRowGrid >= 0) {
@@ -934,7 +934,7 @@ export class PinnedColumn {
 
     if(this.m_nRowGridDragging >= 0) {
       const dframe = grid.dataFrame;
-      const bCtrl = e.ctrlKey;
+      const bCtrl = e.ctrlKey || e.metaKey;
       const bRangeSel = e.shiftKey;
 
       let bSel = true;
@@ -958,8 +958,16 @@ export class PinnedColumn {
         }
         if(cellRH !== null) {
           const nRowTable : any = cellRH.tableRowIndex;
-          if(nRowTable !== null)
+          if(nRowTable !== null) {
+
+            if(this.m_colGrid.name === '') {
+              dframe.selection.set(nRowTable, true, true);
+              if(dframe.currentRow.idx >= 0)
+                dframe.selection.set(dframe.currentRow.idx, false, true);
+            }
+
             dframe.currentRow = nRowTable;
+          }
         }
       }
       else
