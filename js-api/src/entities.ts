@@ -4,6 +4,7 @@ import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
 import {MapProxy} from "./utils";
 import {DataFrame} from "./dataframe";
+import * as Module from "module";
 
 declare var grok: any;
 let api = <any>window;
@@ -365,27 +366,22 @@ export class TableQuery extends DataQuery {
   get fields(): string[] { return api.grok_TableQuery_GetFields(this.dart); }
   set fields(fields: string[]) { api.grok_TableQuery_SetFields(this.dart, fields); }
 
-  /** Executes query
-   * @returns {Promise<DataFrame>} */
+  /** Executes query */
   async executeTable(): Promise<DataFrame> { return toJs(await api.grok_TableQuery_ExecuteTable(this.dart)); }
 
-  /** Where clauses
-   * @type {queryPartParams} */
+  /** Where clauses */
   get where(): FieldPredicate[] { return toJs(api.grok_TableQuery_GetWhereClausesDB(this.dart)); }
   set where(wl: FieldPredicate[]) { api.grok_TableQuery_SetWhereClausesDB(this.dart, wl.map(param => toDart(param))); }
 
-  /** Aggregation clauses
-   * @type {queryPartParams} */
+  /** Aggregation clauses {queryPartParams} */
   get aggregations(): GroupAggregation[] { return toJs(api.grok_TableQuery_GetAggregationsDB(this.dart)); }
   set aggregations(wl: GroupAggregation[]) { api.grok_TableQuery_SetAggregationsDB(this.dart, wl.map(param => toDart(param))); }
 
-  /** Having clauses
-   * @type {queryPartParams} */
+  /** Having clauses */
   get having(): FieldPredicate[] { return toJs(api.grok_TableQuery_GetHavingDB(this.dart)); }
   set having(wl: FieldPredicate[]) { api.grok_TableQuery_SetHavingDB(this.dart, wl.map(param => toDart(param))); }
 
-  /** Order By clauses
-   * @type {queryPartParams} */
+  /** Order By clauses */
   get orderBy(): FieldOrder[] { return toJs(api.grok_TableQuery_GetOrderByDB(this.dart)); }
   set orderBy(wl: FieldOrder[]) { api.grok_TableQuery_SetOrderByDB(this.dart, wl.map(param => toDart(param))); }
 
@@ -852,10 +848,10 @@ export class Package extends Entity {
    */
   init(): Promise<null> { return Promise.resolve(null); }
 
-  private _name: string | undefined;
-  /** Package short name
-   *  @type {string} */
-  get name() {
+  private _name: string = '';
+
+  /** Package short name */
+  get name(): string {
     if (this.dart != null)
       return api.grok_Entity_Get_Name(this.dart);
     else
@@ -869,28 +865,35 @@ export class Package extends Entity {
       this._name = x;
   }
 
-  getModuleName(file: String) {
+  getModuleName(file: string): string {
     if (this.dart != null)
       return api.grok_Package_GetModuleName(this.dart, file);
     else
-      return null;
+      return '';
   }
 
   getIconUrl(): string {
     return api.grok_Package_GetIconUrl(this.dart);
   }
 
-  getModule(file: String) {
+  /** Returns a JavaScript module for this package. */
+  getModule(file: string): any {
     if (this.dart != null)
       return api.grok_Package_GetModule(this.dart, file)();
     else
       return null;
   }
 
-  get meta() { return (this.dart == null) ? null : toJs(api.grok_Package_Get_Meta(this.dart)); }
+  /** Returns metadata associated with the package.
+   * The metadata gets generated when the package is built.
+   * It is a concatenation of JSON files located under the /meta folder.
+   * See example: /packages/PowerPack. */
+  get meta(): {[key: string]: any} {
+    return (this.dart == null) ? null : toJs(api.grok_Package_Get_Meta(this.dart));
+  }
 
   /** Loads package. */
-  async load(options?: {file: String}): Promise<Package> {
+  async load(options?: {file: string}): Promise<Package> {
     return new api.grok_Dapi_Packages_Load(this.dart, options?.file);
   }
 
@@ -918,6 +921,7 @@ export class Package extends Entity {
     return this._files;
   }
 }
+
 
 export class Dockerfile extends Entity {
   constructor(dart: any) {
