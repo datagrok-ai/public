@@ -35,6 +35,7 @@ export class Entity {
   get id(): string { return api.grok_Entity_Get_Id(this.dart); }
   set id(x: string) { api.grok_Entity_Set_Id(this.dart, x); }
 
+  /** Generates new {@link id} for this entity. */
   newId(): void { api.grok_Entity_New_Id(this.dart); }
 
   /** Entity friendly name
@@ -93,9 +94,13 @@ export class User extends Entity {
     super(dart);
   }
 
-  static create(): User {return new User(api.grok_User_From_Id(null)); };
+  /** Creates a new user.
+   * Note that it's just a client object, it won't be saved in the database. */
+  static create(): User { return new User(api.grok_User_From_Id(null)); };
+
   static fromId(id: string): User { return new User(api.grok_User_From_Id(id)); }
 
+  /** Returns current user. */
   static current(): User { return new User(api.grok_User()); }
 
   /** First name */
@@ -147,7 +152,8 @@ export class UserSession extends Entity {
   get id(): string { return api.grok_Entity_Get_Id(this.dart); }
   set id(x: string) { api.grok_Entity_Set_Id(this.dart, x); }
 
-  get type(): string { return api.grok_UserSession_Get_Type(this.dart); }
+  /** */
+  get type(): 'internal' | 'guest' { return api.grok_UserSession_Get_Type(this.dart); }
 
   /** External Token */
   get externalToken(): string { return api.grok_UserSession_Get_ExternalToken(this.dart); }
