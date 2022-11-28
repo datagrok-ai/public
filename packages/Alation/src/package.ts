@@ -28,14 +28,6 @@ export async function getBaseURL(): Promise<string> {
   return baseUrl;
 }
 
-export async function getUserGroup(): Promise<string> {
-  const properties = await getPackage().getProperties() as {[key: string]: any};
-  const userGroupName = properties['User group'] as string;
-  if (!userGroupName)
-    throw new Error('PackagePropertyError: User group is not set!');
-  return userGroupName;
-}
-
 //name: Alation
 //tags: app
 //top-menu: Admin | Alation @Toolbox Data | Alation
@@ -92,7 +84,7 @@ export async function Alation(): Promise<void> {
 async function openTable(obj: types.table): Promise<void> {
   const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
   try {
-    await view.connectToDb(obj.ds_id, async (conn: DG.DataConnection) => {await view.getTable(conn, obj);});
+    await view.connectToDb(obj.ds_id, async (c: DG.DataConnection) => view.getTable(c, obj));
   } catch {
     grok.shell.error('Couldn\'t retrieve table');
   }
@@ -102,7 +94,7 @@ async function openTable(obj: types.table): Promise<void> {
 async function runQuery(obj: types.query): Promise<void> {
   const progressIndicator = DG.TaskBarProgressIndicator.create('Running query...');
   try {
-    await view.connectToDb(obj.datasource_id, async (conn: DG.DataConnection) => {await view.runQuery(conn, obj);});
+    await view.connectToDb(obj.datasource_id, async (c: DG.DataConnection) => view.runQuery(c, obj));
   } catch {
     grok.shell.error('Couldn\'t retrieve table');
   }
