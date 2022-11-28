@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+import * as rxjs from 'rxjs';
 import {convertSequence, undefinedInputSequence, isValidSequence} from '../structures-works/sequence-codes-tools';
 import {map} from '../structures-works/map';
 import {MODIFICATIONS} from '../structures-works/const';
@@ -13,6 +15,8 @@ const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into consta
 const tooltipSequence = 'Copy sequence';
 
 export async function mainView(): Promise<HTMLDivElement> {
+  const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
+
   async function updateTableAndMolecule(sequence: string, inputFormat: string): Promise<void> {
     moleculeSvgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
@@ -34,16 +38,16 @@ export async function mainView(): Promise<HTMLDivElement> {
         tableRows.push({
           'key': key,
           'value': ('indexOfFirstNotValidChar' in outputSequenceObj) ?
-          ui.divH([
-            ui.divText(sequence.slice(0, indexOfFirstNotValidChar), {style: {color: 'grey'}}),
-            ui.tooltip.bind(
-              ui.divText(sequence.slice(indexOfFirstNotValidChar), {style: {color: 'red'}}),
-              'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer +
-              '. See tables with valid codes on the right',
-            ),
-          ]) : //@ts-ignore
-          ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key])
-            .then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, ''),
+            ui.divH([
+              ui.divText(sequence.slice(0, indexOfFirstNotValidChar), {style: {color: 'grey'}}),
+              ui.tooltip.bind(
+                ui.divText(sequence.slice(indexOfFirstNotValidChar), {style: {color: 'red'}}),
+                'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer +
+                '. See tables with valid codes on the right',
+              ),
+            ]) : //@ts-ignore
+            ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key])
+              .then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, ''),
         });
       }
 
@@ -94,6 +98,11 @@ export async function mainView(): Promise<HTMLDivElement> {
   const moleculeSvgDiv = ui.block([]);
   const outputTableDiv = ui.div([]);
   const inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => {
+    // Send event to DG.debounce()
+    onInput.next(sequence);
+  });
+
+  DG.debounce<string>(onInput, 300).subscribe((sequence) => {
     updateTableAndMolecule(sequence, inputFormatChoiceInput.value!);
   });
 
@@ -131,9 +140,9 @@ export async function mainView(): Promise<HTMLDivElement> {
   );
 
   const overhangModificationsGrid = DG.Viewer.grid(
-      DG.DataFrame.fromColumns([
-        DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
-      ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false},
+    DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
+    ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false},
   );
   updateTableAndMolecule(defaultInput, inputFormatChoiceInput.value!);
 
@@ -194,9 +203,8 @@ export async function mainView(): Promise<HTMLDivElement> {
           appMainDescription,
           ui.div([
             ui.h1('Input sequence'),
-            ui.div([
-            ], 'input-base'),
-              inputSequenceField.root,
+            ui.div([], 'input-base'),
+            inputSequenceField.root,
           ], 'inputSequence'),
           ui.div([inputFormatChoiceInput], {style: {padding: '5px 0'}}),
           ui.block([
