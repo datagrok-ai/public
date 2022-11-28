@@ -9,6 +9,7 @@ import {MODIFICATIONS} from '../structures-works/const';
 import {sequenceToSmiles, sequenceToMolV3000} from '../structures-works/from-monomers';
 import $ from 'cash-dom';
 import {download} from '../helpers';
+import { extractAtomDataV3000 } from '../structures-works/mol-transformations';
 
 const defaultInput = 'fAmCmGmAmCpsmU'; // todo: capitalize constants
 const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into constants
@@ -61,18 +62,22 @@ export async function mainView(): Promise<HTMLDivElement> {
       if (outputSequenceObj.type != undefinedInputSequence && outputSequenceObj.Error != undefinedInputSequence) {
         const canvas = ui.canvas(500, 170);
         canvas.addEventListener('click', () => {
-          const canv = ui.canvas($(window).width(), $(window).height());
           const mol = sequenceToMolV3000(
             inputSequenceField.value.replace(/\s/g, ''), false, true,
             output.synthesizer![0],
           );
+          const coordinates = extractAtomDataV3000(mol);
+          const maxWidth = 10 * (Math.max(...coordinates.x) - Math.min(...coordinates.x));
+          const maxHeight = $(window).height() / 1.75;
+          const dlgCanvas = ui.canvas(maxWidth, maxHeight);
+          // dlgCanvas.style.width = maxWidth * window.devicePixelRatio;
           console.log(mol);
           const addDiv = ui.div();
-          addDiv.append(canv);
+          addDiv.append(dlgCanvas);
           addDiv.style.overflowX = 'scroll';
 
           // @ts-ignore
-          OCL.StructureView.drawMolecule(canv, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
+          OCL.StructureView.drawMolecule(dlgCanvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
           ui.dialog('Molecule: ' + inputSequenceField.value)
             .add(addDiv)
             .showModal(true);

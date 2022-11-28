@@ -600,7 +600,7 @@ function extractAtomsBondsNumbersV3000(molBlock: string): { natom: number, nbond
   return {natom: atomsNumber, nbond: bondsNumber};
 }
 
-function extractAtomDataV3000(molBlock: string) {
+export function extractAtomDataV3000(molBlock: string) {
   const numbers = extractAtomsBondsNumbersV3000(molBlock);
   let index = molBlock.indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms coordinates
   index = molBlock.indexOf('\n', index);
