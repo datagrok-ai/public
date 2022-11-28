@@ -34,4 +34,7 @@ $(function () {
   (<any>window).$ = $;
   (<any>window).dayjs = dayjs;
   (<any>window).wu = wu;
+  (<any>window).addEventListener("unhandledrejection", function(e) {
+    (<any>window).grok_Unhandled_Error(e.reason);
+  });
 });
