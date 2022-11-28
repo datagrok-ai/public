@@ -434,6 +434,7 @@ export function callWasm(module, funcName, inputs) {
     console.log('Predicted:');
     console.log(cppFuncInput[3].data.getRawData());*/
 
-    return Return[output['type']](args[output['source']].data);
+    //return Return[output['type']](args[output['source']].data);
 
+    return [args['predictionColumn'].data.data, args['regressionCoefficients'].data.data];
   } // callWasm

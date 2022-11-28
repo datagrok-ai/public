@@ -31,10 +31,7 @@ namespace pls {
 		Float * responseColumnDataPtr,
 		const int componentsCount,
 		Float * predictionDataPtr,
-		Float * regressionCoefficients) noexcept;
-
-	// Maximum absolute deviation between arrays
-	Float mad(Float * arr1, Float * arr2, const int length) noexcept;
+		Float * regressionCoefficients) noexcept;	
 };
 
 #endif

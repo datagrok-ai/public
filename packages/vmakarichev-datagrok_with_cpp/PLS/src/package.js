@@ -17,19 +17,54 @@ export async function init() {
   await initEigenPLS();  
 }
 
+//top-menu: Tools | Data Science | MVA (PLS) by Eigen 
 //name: pls
 //input: dataframe df
-//input: column_list predictorColumns
-//input: column responceColumn
-//input: int componentsCount = 2
-export function pls(df, predictorColumns, responceColumn, componentsCount) {
+//input: column predict
+//input: column_list features
+//input: int components = 3
+export function pls(df, predict, features, components) {  
   
-  let prediction = callWasm(EigenPLS, 'partialLeastSquareRegression', 
-    [predictorColumns, responceColumn, componentsCount]);
+  let callOutput = callWasm(EigenPLS, 'partialLeastSquareRegression', 
+    [features, predict, components]);    
 
-  prediction.name = responceColumn.name + '(pred)';
+  let dfView = grok.shell.getTableView(df.name);
 
-  df.columns.add(prediction);  
+  // Regression Coefficients Bar Chart
+  let regressionCoefficients = callOutput[1];
+  regressionCoefficients.name = 'regression coefficient';
+
+  let namesOfPredictors = [];
+  for(let col of features)
+    namesOfPredictors.push(col.name); 
   
+  let  predictorNamesColumn = DG.Column.fromStrings('feature', namesOfPredictors);  
+
+  let dfRegrCoefs = DG.DataFrame.fromColumns([predictorNamesColumn, regressionCoefficients]);
+  dfRegrCoefs.name = 'Regression Coefficients';
+  
+  
+  dfView.addViewer(DG.Viewer.barChart(dfRegrCoefs, 
+    {title: dfRegrCoefs.name, split: 'feature', 
+     value: 'regression coefficient', valueAggrType: 'avg'}));
+  
+
+  // Predicted vs Reference scatter plot
+
+  let prediction = callOutput[0];
+  prediction.name = predict.name + '(predicted)';
+
+  let dfReferencePrediction = DG.DataFrame.fromColumns([predict, prediction]);
+  dfReferencePrediction.name = 'Reference vs. Predicted';
+  
+  dfView.addViewer(DG.Viewer.scatterPlot(dfReferencePrediction, 
+    { title: dfReferencePrediction.name,
+      x: predict.name,
+      y: prediction.name,
+      showRegressionLine: true,
+      markerType: 'circle'
+     }));
+
+  //df.columns.add(prediction);    
 }
 

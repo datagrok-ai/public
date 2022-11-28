@@ -20,47 +20,48 @@ else if (typeof define === 'function' && define['amd'])
 else if (typeof exports === 'object')
   exports["exportEigenPLS"] = exportEigenPLS;
 
-var partialLeastSquareRegression = {
-  arguments: {
-    predictorColumns: {
-      type: 'floatColumns'
-    },
-    responseColumn: {
-      type: 'floatColumn'
-    },
-    componentsCount: {
-      type: 'int'
-    },
-    predictionColumn: {
-      type: 'newFloatColumn',
-      numOfRows: {
-        ref: 'responseColumn',
-        value: 'numOfRows'
+
+  var partialLeastSquareRegression = {
+    arguments: {
+      predictorColumns: {
+        type: 'floatColumns'
+      },
+      responseColumn: {
+        type: 'floatColumn'
+      },
+      componentsCount: {
+        type: 'int'
+      },
+      predictionColumn: {
+        type: 'newFloatColumn',
+        numOfRows: {
+          ref: 'responseColumn',
+          value: 'numOfRows'
+        }
+      },
+      regressionCoefficients: {
+        type: 'newFloatColumn',
+        numOfRows: {
+          ref: 'predictorColumns',
+          value: 'numOfColumns'
+        }
       }
     },
-    regressionCoefficients: {
-      type: 'newFloatColumn',
-      numOfRows: {
-        ref: 'predictorColumns',
-        value: 'numOfColumns'
-      }
+    output: {
+      type: 'column',
+      source: 'predictionColumn' 
     }
-  },
-  output: {
-    type: 'column',
-    source: 'predictionColumn' 
+  };
+  
+  var EigenPLS = undefined;
+  
+  async function initEigenPLS() {
+    if (EigenPLS === undefined) {
+      console.log("Wasm not Loaded, Loading");
+      EigenPLS  = await exportEigenPLS();
+       
+      EigenPLS.partialLeastSquareRegression = partialLeastSquareRegression;     
+    } else {
+      console.log("Wasm Loaded, Passing");
+    }
   }
-};
-
-var EigenPLS = undefined;
-
-async function initEigenPLS() {
-  if (EigenPLS === undefined) {
-    console.log("Wasm not Loaded, Loading");
-    EigenPLS  = await exportEigenPLS();
-     
-    EigenPLS.partialLeastSquareRegression = partialLeastSquareRegression;     
-  } else {
-    console.log("Wasm Loaded, Passing");
-  }
-}

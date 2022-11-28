@@ -1,22 +1,25 @@
 // pls.cpp
 // Principal Component Analysis (PCA) using the lib Eigen: implementation of functions
 
-#include "..\..\..\Eigen\Eigen\Dense"
+#include<iostream>
+using namespace std;
+
+#include "../../../Eigen/Eigen/Dense"
 using namespace Eigen;
 
 #include "PLS.h"
 using pls::Float;
 using pls::Double;
 
-/* Partial Least Square (PLS1).
-      predictorColumnsDataPtr - data from columns that are used for prediction
-	  rowCount - number of rows
-	  columnCount - number of columns
-	  responseColumnDataPtr - data from column that is predicted, i.e. responce
-	  componentsCount - number of components that extracted in PLS
-	  predictionDataPtr - prediction obtained using PLS (its size is equal to the size of responce)
-	  regressionCoefficients - coeffcient of linear regression that are computed (their size is eqaul to the number of columns)
-*/
+  /* Partial Least Square (PLS1).
+  predictorColumnsDataPtr - data from columns that are used for prediction
+  rowCount - number of rows
+  columnCount - number of columns
+  responseColumnDataPtr - data from column that is predicted, i.e. responce
+  componentsCount - number of components that extracted in PLS
+  predictionDataPtr - prediction obtained using PLS (its size is equal to the size of responce)
+  regressionCoefficients - coeffcient of linear regression that are computed (their size is eqaul to the number of columns)
+  */
 int pls::partialLeastSquare(Float * predictorColumnsDataPtr,
 	const int rowCount,
 	const int columnCount,
@@ -34,18 +37,39 @@ int pls::partialLeastSquare(Float * predictorColumnsDataPtr,
 	// create matrix, which is associated with predictor data
 	Map < Matrix<Float, Dynamic, Dynamic, ColMajor>> D(predictorColumnsDataPtr, rowCount, columnCount);
 
-	//cout << "\nD:\n" << D << endl;
-
 	// compute mean value of each column of D
 	Vector<Float, Dynamic> mu = D.colwise().mean();
-
-	//cout << "\nmu:\n" << mu << endl;
 
 	// mean-centered version of D
 	Matrix<Float, Dynamic, Dynamic, ColMajor> X = D.rowwise() - mu.transpose();
 
+    // vector for standard deviations of X
+	Vector<Float, Dynamic> stdDevX(columnCount);
+	
+	Float rowCountSqrt = sqrt(static_cast<Float>(rowCount));
+
+    // normilizing X-columns
+	for (int i = 0; i < columnCount; i++)
+	{
+		stdDevX(i) = X.col(i).norm() / rowCountSqrt;
+		X.col(i) = X.col(i) / stdDevX(i);		
+	}	
+
 	// create a vector, which is associated with responce or predicted data 
-	Map<Vector<Float, Dynamic>> y(responseColumnDataPtr, rowCount);
+	Map<Vector<Float, Dynamic>> ySource(responseColumnDataPtr, rowCount);		
+
+    // mean value of the responce
+	Vector<Float, 1> meanY;
+	meanY(0) = ySource.mean();		
+
+    // mean-centered version of the responce
+	Vector<Float, Dynamic> y = ySource.rowwise() - meanY;
+
+    // standard deviation
+	Float stdDevY = sqrt(y.squaredNorm() / rowCount);
+
+    // normalizing
+	y /= stdDevY;	
 
 	// create a vector, which is associtated with regression coefficients
 	Map<Vector<Float, Dynamic>> b(regressionCoefficients, columnCount);
@@ -133,8 +157,8 @@ int pls::partialLeastSquare(Float * predictorColumnsDataPtr,
 
 		q(a) = t.transpose() * y;
 	} // for a	
-	
-	// compute coefficients of regression
+
+	  // compute coefficients of regression
 	Matrix<Float, Dynamic, Dynamic> H = P.transpose() * W;
 
 	// chech existence of inverse matrix
@@ -143,33 +167,10 @@ int pls::partialLeastSquare(Float * predictorColumnsDataPtr,
 
 	b = W * H.inverse() * q;
 
-	//cout << "\nb:\n" << b << endl;
-
-	//cout << "\nq:\n" << q << endl;
-
-	//cout << "\nD:\n" << D << endl;
-
-	prediction = D * b;
-
-	//cout << "\nprediction\n" << prediction << endl;
+	for (int i = 0; i < columnCount; i++)
+		b(i) *= stdDevY / stdDevX(i);   
+	
+	prediction = D * b;	
 
 	return NO_ERROR;
 } // partialLeastSquare
-
-// Maximum absolute deviation between arrays
-Float pls::mad(Float * arr1, Float * arr2, const int length) noexcept
-{
-	// Solution using Eigen: nice, but additional structures are created! 
-	/*Map<Vector<Float, Dynamic>> vec1(arr1, length);
-	Map<Vector<Float, Dynamic>> vec2(arr2, length);
-	return ((vec1 - vec2).cwiseAbs()).maxCoeff();*/
-
-	// Naive solution
-	Float result = fabs(arr1[0] - arr2[0]);
-
-	for (int i = 1; i < length; i++)
-		result = fmax(result, fabs(arr1[i] - arr2[i]));
-
-	return result;
-} // mad
-
