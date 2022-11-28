@@ -129,7 +129,8 @@ export async function getTableObject(table_id: string): Promise<types.table> {
     },
   };
   const response = await grok.dapi.fetchProxy(url, params);
-  return (await response.json())[0];
+  const json = await response.json();
+  return json[0];
 }
 
 export async function getQueryObject(query_id: string): Promise<types.query> {
