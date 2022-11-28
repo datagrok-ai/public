@@ -177,6 +177,9 @@ FROM compound_structures s
 --name: compound activity details for @target
 --connection: Chembl
 --input: string target = "CHEMBL1827"
+--meta.cache: true
+--meta.localCache: true
+--meta.invalidate: 0 0 * ? * * *
 SELECT m.chembl_id AS compound_chembl_id,
 s.canonical_smiles,
 r.compound_key,
