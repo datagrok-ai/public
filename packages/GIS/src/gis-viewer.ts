@@ -116,7 +116,7 @@ export class GisViewer extends DG.JsViewer {
 
     this.showTooltip = this.bool('showTooltip', false);
     this.autoScaling = this.bool('autoScaling', false);
-    this.renderType = this.string('renderType', 'markers', {choices: ['markers', 'heat map', 'both']});
+    this.renderType = this.string('renderType', 'markers', {choices: ['markers', 'heatmap', 'both']});
     //<<end of constructor()
   }
 
@@ -347,12 +347,12 @@ export class GisViewer extends DG.JsViewer {
     //setup context menu
     this.onContextMenu.subscribe((menu) => {
       if (this.isShortUI === true) {
-        menu.item('Extended UI', () => {
+        menu.item('Show toolbar', () => {
           this.isShortUI = false;
           this.switchUI(this.isShortUI);
         });
       } else {
-        menu.item('Shortened UI', () => {
+        menu.item('Hide toolbar', () => {
           this.isShortUI = true;
           this.switchUI(this.isShortUI);
         });
@@ -688,8 +688,8 @@ export class GisViewer extends DG.JsViewer {
         progressBar.update(30, 'Open map: 30% completed');
 
       this.updateOpenLayerProperties(true);
-      if (this.renderType === 'heat map') {
-        //render heat map
+      if (this.renderType === 'heatmap') {
+        //render Heatmap
         this.renderHeat(this.features);
         //TODO: this style of switching visibility is a bad but temporary decision
         this.ol.olHeatmapLayer?.setVisible(true);

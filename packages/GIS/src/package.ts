@@ -449,6 +449,85 @@ export async function gisKMZFileViewer(file: DG.FileInfo): Promise<DG.View> {
   return viewFile;
 }
 
+//name: gisGeoKMLFileHandler
+//tags: file-handler
+//meta.ext: kmz
+//input: string filecontent
+//output: list tables
+export function gisGeoKMLFileHandler(filecontent: string): DG.DataFrame[] {
+  //TODO: detect the kind of file and join KML/KMZ handler
+
+  let dfFromKML: DG.DataFrame | undefined = undefined;
+  const ol = new OpenLayers();
+
+  const kmlData = filecontent;
+  const newLayer = ol.addKMLLayerFromStream(kmlData);
+  const arrFeatures = ol.exportLayerToArray(newLayer);
+
+  if (arrFeatures) {
+    if (arrFeatures.length > 0) {
+      dfFromKML = DG.DataFrame.fromObjects(arrFeatures);
+      if (dfFromKML) {
+        const gisCol = dfFromKML.col('gisObject');
+        if (gisCol)
+          gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
+
+        dfFromKML.name = newLayer.get('layerName');
+        const tv = grok.shell.addTableView(dfFromKML as DG.DataFrame);
+        tv.name = 'dfFromKML.name' + ' (manual)';
+
+        const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromKML)) as GisViewer;
+        if (mapViewer) {
+          (mapViewer as GisViewer).init();
+          (mapViewer as GisViewer).ol.addLayer(newLayer);
+        }
+      }
+    }
+  }
+  if (dfFromKML) return [dfFromKML];
+  return [];
+}
+
+//name: gisGeoKMZFileHandler
+//tags: file-handler
+//meta.ext: kmz
+//input: list bytes
+//output: list tables
+export async function gisGeoKMZFileHandler(filecontent: Uint8Array): Promise<DG.DataFrame[]> {
+  // export function gisGeoKMLFileHandler(filecontent: string): DG.DataFrame[] {
+  //detect the kind of file
+
+  let dfFromKML: DG.DataFrame | undefined = undefined;
+  const ol = new OpenLayers();
+
+  const kmlData = await getKMZData(filecontent);
+  const newLayer = ol.addKMLLayerFromStream(kmlData);
+  const arrFeatures = ol.exportLayerToArray(newLayer);
+
+  if (arrFeatures) {
+    if (arrFeatures.length > 0) {
+      dfFromKML = DG.DataFrame.fromObjects(arrFeatures);
+      if (dfFromKML) {
+        const gisCol = dfFromKML.col('gisObject');
+        if (gisCol)
+          gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
+
+        dfFromKML.name = newLayer.get('layerName');
+        const tv = grok.shell.addTableView(dfFromKML as DG.DataFrame);
+        tv.name = 'dfFromKML.name' + ' (manual)';
+
+        const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromKML)) as GisViewer;
+        if (mapViewer) {
+          (mapViewer as GisViewer).init();
+          (mapViewer as GisViewer).ol.addLayer(newLayer);
+        }
+      }
+    }
+  }
+  if (dfFromKML) return [dfFromKML];
+  return [];
+}
+
 /*
 //_name: gisKMLFileViewer
 //_tags: fileViewer, fileViewer-kml
@@ -576,9 +655,10 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
         const tv = grok.shell.addTableView(dfFromJSON as DG.DataFrame);
         tv.name = 'dfFromJSON.name' + ' (manual)';
 
-        const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromJSON));
+        const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer;
         if (mapViewer) {
           //
+          (mapViewer as GisViewer).init();
           (mapViewer as GisViewer).ol.addLayer(newLayer);
         // if (isGeoTopo[1] === false) newLayer = (mapViewer as GisViewer).ol.addGeoJSONLayerFromStream(filecontent);
         //   else newLayer = (mapViewer as GisViewer).ol.addTopoJSONLayerFromStream(filecontent);
