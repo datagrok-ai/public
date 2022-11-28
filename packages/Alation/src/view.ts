@@ -179,8 +179,9 @@ export async function runQuery(conn: DG.DataConnection, queryObject: types.query
 export async function connectToDb(
   dataSrouceId: number, handler: (conn: DG.DataConnection) => Promise<void>): Promise<void> {
   const dataSource = await alationApi.getDataSourceById(dataSrouceId);
+  const connName = dataSource.title || dataSource.qualified_name || dataSource.dbname;
+  const dsConnections = await grok.dapi.connections.filter(connName).list();
 
-  const dsConnections = await grok.dapi.connections.filter(`name = ${dataSource.dbname}`).list();
   for (const conn of dsConnections) {
     if (await grok.dapi.permissions.check(conn, "Edit"))
       return handler(conn);
@@ -211,7 +212,8 @@ function connectToDbDialog(dataSource: types.dataSource, func: (conn: DG.DataCon
   const passwordField = ui.stringInput('Password', '');
   $(passwordField.root as HTMLInputElement).children('.ui-input-editor').attr('type', 'password');
 
-  const dialog = ui.dialog(`Connect to ${dataSource.title || dataSource.dbname || dataSource.qualified_name}`)
+  const connectionName = dataSource.title || dataSource.qualified_name || dataSource.dbname;
+  const dialog = ui.dialog(`Connect to ${connectionName}`)
     .add(ui.divV([helpHost, usernameField, passwordField]))
     .onOK(async () => {
       const dcParams = {
@@ -221,7 +223,7 @@ function connectToDbDialog(dataSource: types.dataSource, func: (conn: DG.DataCon
         login: usernameField.stringValue,
         password: passwordField.value,
       };
-      let dsConnection = DG.DataConnection.create(dataSource.dbname, dcParams);
+      let dsConnection = DG.DataConnection.create(connectionName, dcParams);
       dsConnection = await grok.dapi.connections.save(dsConnection);
 
       await func(dsConnection);
