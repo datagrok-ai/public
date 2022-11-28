@@ -22,7 +22,6 @@
     "datagrok-api": "^1.6.6",
     "cash-dom": "latest",
     "dayjs": "latest",
-    "uuid-by-string": "latest",
     "@datagrok-libraries/utils": "^1.16.1",
     "rxjs": "^6.5.5"
   },

@@ -32,7 +32,7 @@ export const FORMAT = {
   csv: 'csv',
 };
 
-export const DATA_SOURCE_TYPES = ['Access', 'Athena', 'BigQuery', 'Cassandra', 'DB2', 'Excel', 'Firebird', 'HBase',
+export const DATA_SOURCE_TYPES = ['Access', 'Athena', 'BigQuery', 'Cassandra', 'DB2', 'Denodo', 'Firebird', 'HBase',
   'Hive', 'Hive2', 'MariaDB', 'MongoDB', 'MS SQL', 'MySQL', 'Neo4j', 'ODATA', 'ODBC', 'Oracle', 'PostgreSQL',
   'PostgresNet', 'Redshift', 'SQLite', 'Square', 'Socrata', 'Sparql', 'Terdata', 'Twitter', 'Vertica', 'Web', 'Dropbox',
-  'GitHub', 'Git', 'FTP', 'GoogleCloud', 'S3', 'HTTP', 'Files', 'SFTP', 'AWS'];
+  'GitHub', 'Git', 'FTP', 'GoogleCloud', 'S3', 'HTTP', 'Files', 'SFTP', 'AWS', 'Impala'];
