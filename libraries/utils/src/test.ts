@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
+import Timeout = NodeJS.Timeout;
 
 export const tests: {
   [key: string]: {
@@ -260,23 +261,17 @@ export async function delay(ms: number) {
 
 export async function awaitCheck(checkHandler: () => boolean): Promise<void> {
   return new Promise((resolve, reject) => {
-    let stop: boolean = false;
     setTimeout(() => {
-      stop = true;
+      clearInterval(interval);
       // eslint-disable-next-line prefer-promise-reject-errors
       reject('Timeout exceeded');
     }, 500);
-
-    function check() {
+    const interval: Timeout = setInterval(() => {
       if (checkHandler()) {
-        stop = false;
+        clearInterval(interval);
         resolve();
       }
-      if (!stop)
-        setTimeout(check, 50);
-    }
-
-    check();
+    }, 50);
   });
 }
 
