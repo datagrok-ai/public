@@ -39,7 +39,7 @@ export function sequenceToMolV3000(
       (i < codesList.length - 1 && links.includes(codesList[i + 1]))
     ) {
       let aa = monomerNameFromCode[codesList[i]];
-      if(aa !== "")
+      if(aa !== undefined)
         monomers.push(aa);
       else
         monomers.push(codesList[i]);
