@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import {ModelHandler} from './model-handler';
-import {TYPE} from "datagrok-api/dg";
 import $ from 'cash-dom';
 import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
 const api = <any>window;

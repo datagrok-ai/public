@@ -1,12 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as rxjs from "rxjs";
 import {ModelHandler} from './model-handler';
-import {Subscription} from "rxjs";
 
 /* eslint-disable */
 
-let propsSub: Subscription;
+let propsSub: rxjs.Subscription;
 
 export class ModelCatalogView extends DG.CustomCardView {
 
