@@ -44,22 +44,22 @@ export const AXOLABS_MAP:
     color: 'rgb(255,192,0)',
   },
   'A': {
-    fullName: 'Adenine',
+    fullName: 'Adenosine',
     symbols: ['a', 'a', 'a', 'a'],
     color: RNA_COLOR,
   },
   'C': {
-    fullName: 'Cytosine',
+    fullName: 'Cytidine',
     symbols: ['c', 'c', 'c', 'c'],
     color: RNA_COLOR,
   },
   'G': {
-    fullName: 'Guanine',
+    fullName: 'Guanosine',
     symbols: ['g', 'g', 'g', 'g'],
     color: RNA_COLOR,
   },
   'U': {
-    fullName: 'Uracil',
+    fullName: 'Uridine',
     symbols: ['u', 'u', 'u', 'u'],
     color: RNA_COLOR,
   },

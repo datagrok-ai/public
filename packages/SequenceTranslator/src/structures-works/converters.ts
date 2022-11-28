@@ -6,26 +6,30 @@ import {sortByStringLengthInDescendingOrder} from '../helpers';
 //input: string nucleotides {semType: GCRS}
 //output: string result {semType: LCMS}
 export function gcrsToLcms(sequence: string): string {
-  const df = DG.DataFrame.fromCsv(lcmsToGcrs);
-  const arr1: string[] = df.getCol('GCRS').toList();
-  const arr2: string[] = df.getCol('LCMS').toList();
-  const obj: {[i: string]: string} = {};
-  arr1.forEach((element, index) => obj[element] = arr2[index]);
-  obj[DELIMITER] = DELIMITER;
-  const codes = arr1
-    .concat(DELIMITER)
-    .concat(Object.keys(MODIFICATIONS));
-  const sortedCodes = sortByStringLengthInDescendingOrder(codes);
-  let i = 0;
-  let r1 = '';
-  while (i < sequence.length) {
-    const matchedCode = sortedCodes.find((c) => c == sequence.slice(i, i + c.length))!;
-    r1 += obj[sequence.slice(i, i + matchedCode.length)];
-    i += matchedCode.length;
+  try {
+    const df = DG.DataFrame.fromCsv(lcmsToGcrs);
+    const arr1: string[] = df.getCol('GCRS').toList();
+    const arr2: string[] = df.getCol('LCMS').toList();
+    const obj: { [i: string]: string } = {};
+    arr1.forEach((element, index) => obj[element] = arr2[index]);
+    obj[DELIMITER] = DELIMITER;
+    const codes = arr1
+      .concat(DELIMITER)
+      .concat(Object.keys(MODIFICATIONS));
+    const sortedCodes = sortByStringLengthInDescendingOrder(codes);
+    let i = 0;
+    let r1 = '';
+    while (i < sequence.length) {
+      const matchedCode = sortedCodes.find((c) => c == sequence.slice(i, i + c.length))!;
+      r1 += obj[sequence.slice(i, i + matchedCode.length)];
+      i += matchedCode.length;
+    }
+    while (r1.indexOf('//') != -1)
+      r1 = r1.replace('//', '/');
+    return r1;
+  } catch {
+    return '<error>';
   }
-  while (r1.indexOf('//') != -1)
-    r1 = r1.replace('//', '/');
-  return r1;
 }
 
 //name: asoGapmersNucleotidesToBioSpring
@@ -33,9 +37,9 @@ export function gcrsToLcms(sequence: string): string {
 //output: string result {semType: BioSpring / Gapmers}
 export function asoGapmersNucleotidesToBioSpring(nucleotides: string): string {
   let count: number = -1;
-  const objForEdges: {[index: string]: string} = {
+  const objForEdges: { [index: string]: string } = {
     '(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'T': '5*', 'A': '6*', 'C': '7*', 'G': '8*'};
-  const objForCenter: {[index: string]: string} = {
+  const objForCenter: { [index: string]: string } = {
     '(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'T': 'T*', 'A': 'A*', 'C': '9*', 'G': 'G*'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|A|T|C|G)/g, function(x: string) {
     count++;
@@ -49,7 +53,7 @@ export function asoGapmersNucleotidesToBioSpring(nucleotides: string): string {
 //output: string result {semType: GCRS / Gapmers}
 export function asoGapmersNucleotidesToGcrs(nucleotides: string): string {
   let count: number = -1;
-  const objForEdges: {[index: string]: string} = {
+  const objForEdges: { [index: string]: string } = {
     '(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'T': 'moeUnps',
     'A': 'moeAnps', 'C': 'moe5mCnps', 'G': 'moeGnps'};
   const objForCenter: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
