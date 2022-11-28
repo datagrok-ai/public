@@ -256,11 +256,11 @@ export function saveAsSdf(): void {
 //name: Activity Cliffs
 //description: detect activity cliffs
 //input: dataframe table [Input data table]
-//input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
+//input: column molecules {type:categorical; semType: Molecule}
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
-export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
+export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
     similarity: number, methodName: string) : Promise<DG.Viewer> {
 
   const axesNames = getEmbeddingColsNames(df);
@@ -269,7 +269,7 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
   };
   return await getActivityCliffs(
     df,
-    smiles,
+    molecules,
     null as any,
     axesNames,
     'Activity cliffs',
@@ -278,7 +278,7 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
     'Tanimoto',
     methodName,
     DG.SEMTYPE.MOLECULE,
-    {'units': smiles.tags['units']},
+    {'units': molecules.tags['units']},
     chemSpace,
     getSimilaritiesMarix,
     createTooltipElement,
@@ -289,17 +289,17 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //top-menu: Chem | Chemical Space...
 //name: Chem Space
 //input: dataframe table
-//input: column smiles { semType: Molecule }
+//input: column molecules { semType: Molecule }
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
-export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
+export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: string,
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<DG.Viewer|undefined> {
   const embedColsNames = getEmbeddingColsNames(table);
-  const withoutEmptyValues = DG.DataFrame.fromColumns([smiles]).clone();
-  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, smiles);
+  const withoutEmptyValues = DG.DataFrame.fromColumns([molecules]).clone();
+  const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, molecules);
   const chemSpaceParams = {
-    seqCol: withoutEmptyValues.col(smiles.name)!,
+    seqCol: withoutEmptyValues.col(molecules.name)!,
     methodName: methodName,
     similarityMetric: similarityMetric,
     embedAxesNames: [embedColsNames[0], embedColsNames[1]],
