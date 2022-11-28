@@ -594,9 +594,11 @@ export namespace chem {
    * @param {Column} column - Column with SMILES to analyze.
    * @returns {Promise<string>}
    * */
-   export async function mcs(column: Column): Promise<string> {
+   export async function mcs(table: DataFrame, column: string, returnSmarts: boolean = false): Promise<string> {
     return await grok.functions.call('Chem:FindMCS', {
-      'molecules': column
+      'molecules': column,
+      'df': table,
+      'returnSmarts': returnSmarts
     });
   }
 
