@@ -621,7 +621,11 @@ export class PermissionsDataSource {
     return data;
   }
 
-  check(e: Entity, permission: 'Edit' | 'View' | 'Share' | 'Delete' ): Promise<boolean> {
+  /** Checks if current user has permission {permission} for entity {e}
+   * @param {Entity} e Entity to check permission for
+   * @param {'Edit' | 'View' | 'Share' | 'Delete'} permission Permission type
+   * @returns {boolean} Result */
+  check(e: Entity, permission: 'Edit' | 'View' | 'Share' | 'Delete'): Promise<boolean> {
     return api.grok_Dapi_Check_Permissions(e.dart, permission);
   }
 
