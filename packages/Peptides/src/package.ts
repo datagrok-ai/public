@@ -7,7 +7,7 @@ import * as C from './utils/constants';
 import {analyzePeptidesUI} from './widgets/peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
-import {MutationCliffsViewer, MostPotentResiduesViewer} from './viewers/sar-viewer';
+import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
 
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {LogoSummary} from './viewers/logo-summary';
@@ -103,8 +103,8 @@ export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
 //description: Peptides SAR Viewer
 //tags: viewer
 //output: viewer result
-export function sar(): MutationCliffsViewer {
-  return new MutationCliffsViewer();
+export function sar(): MonomerPosition {
+  return new MonomerPosition();
 }
 
 //name: peptide-sar-viewer-vertical

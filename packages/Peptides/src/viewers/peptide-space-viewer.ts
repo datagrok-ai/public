@@ -40,7 +40,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
   async onTableAttached(): Promise<void> {
     super.onTableAttached();
 
-    this.model = await PeptidesModel.getInstance(this.dataFrame);
+    this.model = PeptidesModel.getInstance(this.dataFrame);
 
     await this.render(!this.dataFrame.temp[C.EMBEDDING_STATUS]);
   }

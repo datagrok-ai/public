@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import * as C from '../utils/constants';
+import * as CR from '../utils/cell-renderer';
 import {PeptidesModel} from '../model';
 
 export class SARViewerBase extends DG.JsViewer {
@@ -22,10 +23,10 @@ export class SARViewerBase extends DG.JsViewer {
 
   get name(): string {return '';}
 
-  async onTableAttached(): Promise<void> {
+  onTableAttached(): void {
     super.onTableAttached();
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
-    this.model = await PeptidesModel.getInstance(this.dataFrame);
+    this.model = PeptidesModel.getInstance(this.dataFrame);
     this.helpUrl = '/help/domains/bio/peptides.md';
   }
 
@@ -99,7 +100,7 @@ export class SARViewerBase extends DG.JsViewer {
 /**
  * Structure-activity relationship viewer.
  */
-export class MutationCliffsViewer extends SARViewerBase {
+export class MonomerPosition extends SARViewerBase {
   _titleHost = ui.divText('Mutation Cliffs', {id: 'pep-viewer-title'});
   _name = 'MC';
   _isVertical = false;
@@ -108,8 +109,8 @@ export class MutationCliffsViewer extends SARViewerBase {
 
   get name(): string {return this._name;}
 
-  async onTableAttached(): Promise<void> {
-    await super.onTableAttached();
+  onTableAttached(): void {
+    super.onTableAttached();
 
     this.subs.push(this.model.onMutationCliffsGridChanged.subscribe((data) => {
       this.viewerGrid = data;
@@ -131,6 +132,13 @@ export class MutationCliffsViewer extends SARViewerBase {
 
     super.onPropertyChanged(property);
   }
+
+  createMonomerPositionGrid(): void {
+    const monomerPositionGrid = this.model.monomerPositionDf.plot.grid();
+    monomerPositionGrid.sort([C.COLUMNS_NAMES.MONOMER]);
+    monomerPositionGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this.model.splitSeqDf.columns.names()]);
+    CR.setAARRenderer(this.model.monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER), this.model.alphabet, monomerPositionGrid);
+  }
 }
 
 /** Vertical structure activity relationship viewer. */
@@ -145,8 +153,8 @@ export class MostPotentResiduesViewer extends SARViewerBase {
 
   get name(): string {return this._name;}
 
-  async onTableAttached(): Promise<void> {
-    await super.onTableAttached();
+  onTableAttached(): void {
+    super.onTableAttached();
 
     this.subs.push(this.model.onMostPotentResiduesGridChanged.subscribe((data) => {
       this.viewerGrid = data;
@@ -167,5 +175,16 @@ export class MostPotentResiduesViewer extends SARViewerBase {
       return;
 
     super.onPropertyChanged(property);
+  }
+
+  createMostPotentResiduesGrid(): void {
+    const mostPotentResiduesGrid = this.model.mostPotentResiduesDf.plot.grid();
+    mostPotentResiduesGrid.sort([C.COLUMNS_NAMES.POSITION]);
+    const pValGridCol = mostPotentResiduesGrid.col(C.COLUMNS_NAMES.P_VALUE)!;
+    pValGridCol.format = '#.000';
+    pValGridCol.name = 'P-value';
+
+    // Setting Monomer column renderer
+    CR.setAARRenderer(this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER), this.model.alphabet, mostPotentResiduesGrid);
   }
 }
