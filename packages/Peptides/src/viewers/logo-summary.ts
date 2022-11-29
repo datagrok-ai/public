@@ -23,10 +23,10 @@ export class LogoSummary extends DG.JsViewer {
     this.importanceThreshold = this.float('importanceThreshold', 0.7);
   }
 
-  async onTableAttached(): Promise<void> {
+  onTableAttached(): void {
     super.onTableAttached();
 
-    this.model = await PeptidesModel.getInstance(this.dataFrame);
+    this.model = PeptidesModel.getInstance(this.dataFrame);
     this.subs.push(this.model.onSettingsChanged.subscribe(() => {
       this.createLogoSummaryGrid();
       this.render();
