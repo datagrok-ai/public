@@ -9,6 +9,7 @@
 !pip install scaffoldgraph
 import scaffoldgraph as sg
 import networkx as nx
+import json
 
 #function that recursively adds child_nodes to hierarchies depending on the prev_scaffold value
 def recurs_append_nodes(key, value, node, obj):
@@ -80,4 +81,6 @@ def get_json_representation(tree):
 tree = sg.ScaffoldTree.from_dataframe(
     data, smiles_column=smiles, name_column=names, progress=True,
 )
-result = str(get_json_representation(tree))
+
+res = get_json_representation(tree)
+result = json.dumps(res)
