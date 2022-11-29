@@ -9,5 +9,7 @@ void testPLS1();
 
 void plsPerformance();
 
+void testPLS1Extended();
+
 #endif
 

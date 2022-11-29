@@ -13,7 +13,9 @@ int main()
 
 	//testPLS1();
 
-	plsPerformance();
+	//plsPerformance();
+
+	testPLS1Extended();
 
 	cin.get();
 	return 0;

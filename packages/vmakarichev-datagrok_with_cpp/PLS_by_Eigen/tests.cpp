@@ -208,8 +208,8 @@ void testPLS1()
 		COLUMNS_COUNT;
 	    // 1;
 
-	Float outputData[ROWS_COUNT]
-		= { 0 };
+	Float outputData[ROWS_COUNT] = {2, 2, 2, 2, 2};
+		// = { 0 };
 		// = { -1, 0, 1, 0, -1 };
 		// = { 1, -2, 0, -4, 5};
 
@@ -342,3 +342,57 @@ void plsPerformance()
 	delete[] linCombCoef;
 	delete[] coefs;
 } // plsPerformance
+
+void testPLS1Extended()
+{
+	Float inputData[] = //{1,1,1,1,1,-1,1,-1,1,-1,0,2,0,2,1,2,0,2,1,3};
+	{ 1, 22, 3, 4, 25, 16, 8, 10, 121, 14, 16, 329, 22, 25, 208 };
+
+	const int ROWS_COUNT = 5;
+	const int COLUMNS_COUNT = //4;
+		3;
+	const int L = //2;
+		COLUMNS_COUNT;
+	// 1;
+
+	Float outputData[ROWS_COUNT] = { 2, 2, 2, 2, 2 };
+	// = { 0 };
+	// = { -1, 0, 1, 0, -1 };
+	// = { 1, -2, 0, -4, 5};
+
+	Float prediction[ROWS_COUNT] = { 0 };
+
+	cout << "X & Y:\n";
+	for (int i = 0; i < ROWS_COUNT; i++)
+	{
+		for (int j = 0; j < COLUMNS_COUNT; j++)
+		{
+			outputData[i] += (j + 1) * inputData[i + j * ROWS_COUNT];
+			cout << "  " << inputData[i + j * ROWS_COUNT];
+		}
+		cout << "     " << outputData[i] << endl;
+	}
+
+	Float coefs[ROWS_COUNT] = { 0 };
+
+	Float Xscores[ROWS_COUNT * L] = { 0 };
+	Float Yscores[ROWS_COUNT * L] = { 0 };
+
+	cout << "\nPLS result code: "
+		<< partialLeastSquareExtended(inputData, ROWS_COUNT, COLUMNS_COUNT, 
+			outputData, L, prediction, coefs, Xscores, Yscores)
+		<< endl;
+
+	cout << "\ncoefficients:\n";
+
+	for (int i = 0; i < COLUMNS_COUNT; i++)
+		cout << "  " << coefs[i];
+
+	cout << "\n\nY  & its prediction:\n";
+	for (int i = 0; i < ROWS_COUNT; i++)
+		cout << "  " << outputData[i] << "   " << prediction[i] << endl;
+
+	cout << "\nMaximum absolute deviation between Y & its prediction: "
+		<< mad(outputData, prediction, COLUMNS_COUNT) << endl;
+
+} // testPLS1Extended
