@@ -22,6 +22,7 @@ import './dapi/dapi';
 import './dapi/connection';
 import './dapi/entities';
 import './dapi/layouts';
+import './dapi/packages';
 import './dapi/projects';
 import './dapi/tables';
 import './dapi/user-data-storage';
