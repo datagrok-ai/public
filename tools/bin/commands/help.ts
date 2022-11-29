@@ -10,6 +10,7 @@ Commands:
     config    Create and manage config files
     create    Create a package
     publish   Upload a package
+    test      Run package tests
 
 To get help on a particular command, use:
     grok <command> --help
@@ -105,6 +106,20 @@ Options:
 Check package content (function signatures, import statements of external modules, etc.)
 `;
 
+const HELP_TEST = `
+Usage: grok test
+
+Options:
+[--host]
+
+--host       Host alias as in the config file
+
+Run package tests
+
+See instructions:
+https://datagrok.ai/help/develop/how-to/test-packages#local-testing
+`;
+
 const HELP_MIGRATE = `
 Usage: grok migrate
 
@@ -119,5 +134,6 @@ export const help = {
   config: HELP_CONFIG,
   create: HELP_CREATE,
   publish: HELP_PUBLISH,
+  test: HELP_TEST,
   help: HELP
 };
