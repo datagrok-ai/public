@@ -102,6 +102,7 @@ export namespace chem {
     sketcherFunctions: Func[] = [];
     selectedSketcher: Func | undefined = undefined;
     extractorsCreated = new Subject<boolean>();
+    sketcherDialogOpened = false;
 
     /** Whether the currently drawn molecule becomes the current object as you sketch it */
     syncCurrentObject: boolean = true;
@@ -156,7 +157,7 @@ export namespace chem {
 
     async getSmarts(): Promise<string | null> {
       let returnConvertedSmarts = async() => { // in case getter is called before sketcher initialized
-        if(this._smiles) {
+        if (this._smiles) {
           const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(this._smiles);
           this._smarts = mol.get_smarts();
           mol?.delete();
@@ -300,7 +301,6 @@ export namespace chem {
       }}
       let sketchLink = ui.divText('Click to edit', sketchLinkStyle);
       ui.tooltip.bind(sketchLink, 'Click to edit');
-      sketchLink.onclick = () => this.updateExtSketcherContent(extSketcherDiv);
       sketchLink.style.paddingLeft = '0px';
       sketchLink.style.marginLeft = '0px';
       this._updateExtSketcherInnerHTML(sketchLink);
@@ -324,19 +324,23 @@ export namespace chem {
       this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
 
       this.extSketcherDiv.onclick = () => {
+        if (!this.sketcherDialogOpened) {
+          this.sketcherDialogOpened = true;
+          let savedMolFile = this.getMolFile();
 
-        let savedMolFile = this.getMolFile();
-
-        let dlg = ui.dialog();
-        dlg.add(this.createInplaceModeSketcher(savedMolFile!))
-          .onOK(() => {
-            this.updateExtSketcherContent(this.extSketcherDiv);
-            Sketcher.addRecent(savedMolFile!);
-          })
-          .onCancel(() => {
-            this.setMolFile(savedMolFile!);
-          })
-          .show();
+          let dlg = ui.dialog();
+          dlg.add(this.createInplaceModeSketcher(savedMolFile!))
+            .onOK(() => {
+              this.updateExtSketcherContent(this.extSketcherDiv);
+              Sketcher.addRecent(savedMolFile!);
+              this.sketcherDialogOpened = false;
+            })
+            .onCancel(() => {
+              this.setMolFile(savedMolFile!);
+              this.sketcherDialogOpened = false;
+            })
+            .show();
+        }
       };
 
       ui.onSizeChanged(this.extSketcherDiv).subscribe((_) => {
