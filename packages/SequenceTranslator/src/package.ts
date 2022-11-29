@@ -16,11 +16,11 @@ export let monomerWorks: MonomerWorks | null = null;
 
 export function getMonomerWorks() {
   return monomerWorks;
-};
+}
 
 export function getMonomerLib() {
   return monomerLib;
-};
+}
 
 //name: Sequence Translator
 //tags: app
