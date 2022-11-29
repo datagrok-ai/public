@@ -10,51 +10,55 @@ from click_default_group import DefaultGroup
 from rdkit.Chem.rdchem import Mol
 
 
-def molAddCollection(mol: Mol, title: str = None) -> str:
+def molAddCollection(mol: Mol, name: str, title: str = None) -> str:
     """
     Get and postprocess (atom's CFG, title, e.t.c.) molblock
     :param mol:    Mol molecule structure / object
+    :param name:   Monomer name to add to molblock title
     :param title:  title to replace in Chem.MolToMolBlock() string output
     :return:       molblock string
     """
     res: str = Chem.MolToMolBlock(mol, forceV3000=True)  # MolToMolFile
 
-    mf_line_list: list[str] = res.split('\n')
+    mb_line_list: list[str] = res.split('\n')
     if title:
-        mf_line_list[1] = title
+        mb_line_list[1] = title
 
-    end_bond_idx: int = mf_line_list.index('M  V30 END BOND')
+    if name and name not in mb_line_list[1]:
+        mb_line_list[1] += '|' + name
+
+    end_bond_idx: int = mb_line_list.index('M  V30 END BOND')
     chirality = [atom.GetChiralTag() for atom in mol.GetAtoms()]
-    begin_atom_idx = mf_line_list.index('M  V30 BEGIN ATOM')
-    end_atom_idx = mf_line_list.index('M  V30 END ATOM')
+    begin_atom_idx = mb_line_list.index('M  V30 BEGIN ATOM')
+    end_atom_idx = mb_line_list.index('M  V30 END ATOM')
     for atom_idx in range(1, end_atom_idx - begin_atom_idx):
         line_idx = begin_atom_idx + atom_idx
         atom_ch = chirality[atom_idx - 1]
         if atom_ch != Chem.rdchem.CHI_UNSPECIFIED:
-            mf_line_list[line_idx] += " CFG={0}".format(int(atom_ch))
+            mb_line_list[line_idx] += " CFG={0}".format(int(atom_ch))
 
     steabs: list[int] = [i + 1 for (i, ch) in enumerate(chirality) if ch != Chem.rdchem.CHI_UNSPECIFIED]
     if len(steabs) > 0:
         steabs_str: str = "M  V30 MDLV30/STEABS ATOMS=({count} {list})" \
             .format(count=len(steabs), list=' '.join([str(idx) for idx in steabs]))
 
-        mf_line_list = mf_line_list[:(end_bond_idx + 1)] + \
+        mb_line_list = mb_line_list[:(end_bond_idx + 1)] + \
                        ["M  V30 BEGIN COLLECTION", steabs_str, "M  V30 END COLLECTION"] + \
-                       mf_line_list[(end_bond_idx + 1):]
+                       mb_line_list[(end_bond_idx + 1):]
 
-    return '\n'.join(mf_line_list)
+    return '\n'.join(mb_line_list)
 
 
-def molfile2molfile(src_mol: str) -> str:
+def molfile2molfile(src_mol: str, name: str) -> str:
     mol: Mol = Chem.MolFromMolBlock(src_mol)
     src_mf_lines = src_mol.split('\n')
     title = src_mf_lines[1]
-    return molAddCollection(mol, title=title)
+    return molAddCollection(mol, name, title=title)
 
 
-def smiles2molfile(smiles: str) -> str:
+def smiles2molfile(smiles: str, name: str) -> str:
     mol: Mol = Chem.MolFromSmiles(smiles)
-    return molAddCollection(mol)
+    return molAddCollection(mol, name)
 
 
 CodesType = dict[str, dict[str, list[str]]]
@@ -68,7 +72,7 @@ class Monomer:
         self.smiles = smiles
         self.name = name
         self.author = 'SequenceTranslator'
-        self.molfile = molfile2molfile(molfile) if molfile else smiles2molfile(smiles)
+        self.molfile = molfile2molfile(molfile, name) if molfile else smiles2molfile(smiles, name)
         self.naturalAnalog = ''
         self.rgroups = [
             {
