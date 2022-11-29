@@ -772,5 +772,6 @@ export async function callChemDiversitySearch(
 //output: string result
 export async function scaffoldTree(data: DG.DataFrame): Promise<string> {
   const smilesColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  return await scaffoldTreeGeneration(data, smilesColumn!.name, smilesColumn!.name);
+  const scriptRes = await scaffoldTreeGeneration(data, smilesColumn!.name, smilesColumn!.name);
+  return JSON.stringify(scriptRes);
 }
