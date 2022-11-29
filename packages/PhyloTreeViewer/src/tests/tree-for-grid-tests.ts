@@ -6,7 +6,8 @@ import {category, test, expect, expectArray, expectObject} from '@datagrok-libra
 
 import {minIndex, tree} from 'd3';
 import {NodeType} from '@datagrok-libraries/bio';
-import {LeafRangeGridTreeRenderer, MarkupNodeType} from '../viewers/grid-tree-renderer';
+import {markupNode, MarkupNodeType} from '../viewers/tree-renderers/markup';
+import {LeafRangeGridTreeRenderer} from '../viewers/tree-renderers/grid-tree-renderer';
 
 category('treeForGrid', () => {
 
@@ -101,7 +102,7 @@ category('treeForGrid', () => {
     const tree: NodeType = JSON.parse(JSON.stringify(data[Tests.markup1].tree)); // Deep copy
     const tgt: MarkupNodeType = data[Tests.markup1].tgt;
 
-    LeafRangeGridTreeRenderer.markupNode(tree);
+    markupNode(tree);
 
     expectObject(tree, tgt);
   });
