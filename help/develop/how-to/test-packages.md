@@ -10,13 +10,25 @@ those tests any time during development.
 
 ## Local testing
 
-To test packages locally before publishing you can use the Jest framework.
+To test packages locally before release, you can use the Jest framework.
+The easiest way is to execute the following commands:
+
+```shell
+cd <package-dir>
+grok test [--host]
+```
+
+It will publish your package in the debug mode to a specified host and run the
+tests. The `host` option should correspond to one of the server aliases provided
+in the configuration file. If not given, the default host is used for testing.
+For your local setup, there may be additional steps to successfully launch tests
+(see the full algorithm below).
 
 1. Set environment variables:
 
    - HOST - for host to publish and test package, for example 'localhost'. It should be the same as the host alias
      in `~/.grok/config.yaml`
-   - TARGET_PACKAGE - `friendlyName` for the package from `package.json`
+   - TARGET_PACKAGE - `friendlyName` or `fullName` for the package from `package.json`
 
 2. [Run Datagrok instance locally](../admin/docker-compose.md). Skip this step if you already have a stand.
 3. [Configure grok tool](../set-up-environment.md#configuration) with the credentials of you local stand, for example '
@@ -35,7 +47,7 @@ To test packages locally before publishing you can use the Jest framework.
    grok publish %HOST%
    ```
 
-5. Set proper Web Root and Api Root for the stand: Logg in as admin user go to Settings -> Admin:
+5. Set proper Web Root and Api Root for the stand: Log in as admin user go to Settings -> Admin:
    set `Web Root` and `Api Root` -> Apply. In most cases `Web Root` is the same as the main URL you use to access the
    platform, for example `http://localhost:8080`, and `Api Root` is the same with suffix `/api`, for
    example `http://localhost:8080/api`.
