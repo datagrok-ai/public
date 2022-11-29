@@ -9,7 +9,8 @@ import {MODIFICATIONS} from '../structures-works/const';
 import {sequenceToSmiles, sequenceToMolV3000} from '../structures-works/from-monomers';
 import $ from 'cash-dom';
 import {download} from '../helpers';
-import { extractAtomDataV3000 } from '../structures-works/mol-transformations';
+import {extractAtomDataV3000} from '../structures-works/mol-transformations';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 const defaultInput = 'fAmCmGmAmCpsmU'; // todo: capitalize constants
 const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into constants
@@ -60,35 +61,71 @@ export async function mainView(): Promise<HTMLDivElement> {
       );
 
       if (outputSequenceObj.type != undefinedInputSequence && outputSequenceObj.Error != undefinedInputSequence) {
-        const canvas = ui.canvas(500, 170);
-        canvas.addEventListener('click', () => {
-          const mol = sequenceToMolV3000(
-            inputSequenceField.value.replace(/\s/g, ''), false, true,
-            output.synthesizer![0],
-          );
-          const coordinates = extractAtomDataV3000(mol);
-          const maxWidth = 10 * (Math.max(...coordinates.x) - Math.min(...coordinates.x));
-          const maxHeight = $(window).height() / 1.75;
-          const dlgCanvas = ui.canvas(maxWidth, maxHeight);
-          // dlgCanvas.style.width = maxWidth * window.devicePixelRatio;
-          console.log(mol);
-          const addDiv = ui.div();
-          addDiv.append(dlgCanvas);
-          addDiv.style.overflowX = 'scroll';
+        const formCanvasWidth = 500;
+        const formCanvasHeight = 170;
+        const formCanvas = ui.canvas(
+          formCanvasWidth * window.devicePixelRatio, formCanvasHeight * window.devicePixelRatio);
+        formCanvas.style.width = `${formCanvasWidth}px`;
+        formCanvas.style.height = `${formCanvasHeight}px`;
 
-          // @ts-ignore
-          OCL.StructureView.drawMolecule(dlgCanvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
-          ui.dialog('Molecule: ' + inputSequenceField.value)
-            .add(addDiv)
-            .showModal(true);
+        formCanvas.addEventListener('click', async () => {
+          try {
+            const mol = sequenceToMolV3000(
+              inputSequenceField.value.replace(/\s/g, ''), false, true,
+              output.synthesizer![0],
+            );
+            console.log(mol);
+
+            const addDiv = ui.div([], {style: {overflowX: 'scroll'}});
+
+            // addDiv size required, but now available before dialog show()
+            const coordinates = extractAtomDataV3000(mol);
+            const cw: number = $(window).width() * 0.80; // addDiv.clientWidth
+            const ch: number = $(window).height() * 0.70; // addDiv.clientHeight
+            const molWidth: number = Math.max(...coordinates.x) - Math.min(...coordinates.x);
+            const molHeight: number = Math.max(...coordinates.y) - Math.min(...coordinates.y);
+
+            const wR: number = cw / molWidth;
+            const hR: number = ch / molHeight;
+            const r: number = hR; // Math.max(wR, hR);
+            const dlgCanvasWidth = r * molWidth;
+            const dlgCanvasHeight = r * molHeight;
+
+            const dlgCanvas = ui.canvas(dlgCanvasWidth * window.devicePixelRatio, dlgCanvasHeight * window.devicePixelRatio);
+            dlgCanvas.style.width = `${dlgCanvasWidth}px`;
+            dlgCanvas.style.height = `${dlgCanvasHeight}px`;
+
+            // // @ts-ignore
+            // OCL.StructureView.drawMolecule(dlgCanvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
+            // await grok.chem.canvasMol(0, 0, dlgCanvas.width, dlgCanvas.height, dlgCanvas, mol, null,
+            //   {setNewCoords: false, normalizeDepiction: false, straightenDepiction: false});
+            await grok.functions.call('Chem:canvasMol', {
+              x: 0, y: 0, w: dlgCanvas.width, h: dlgCanvas.height, canvas: dlgCanvas,
+              molString: mol, scaffoldMolString: '',
+              options: {setNewCoords: false, normalizeDepiction: false, straightenDepiction: false}
+            });
+
+            addDiv.appendChild(dlgCanvas);
+            ui.dialog('Molecule: ' + inputSequenceField.value)
+              .add(addDiv)
+              .showModal(true);
+          } catch (err) {
+            const errStr = errorToConsole(err);
+            console.error(errStr);
+          }
         });
-        $(canvas).on('mouseover', () => $(canvas).css('cursor', 'zoom-in'));
-        $(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
+        $(formCanvas).on('mouseover', () => $(formCanvas).css('cursor', 'zoom-in'));
+        $(formCanvas).on('mouseout', () => $(formCanvas).css('cursor', 'default'));
         const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true,
           output.synthesizer![0]);
-        // @ts-ignore
-        OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
-        moleculeSvgDiv.append(canvas);
+        // // @ts-ignore
+        // OCL.StructureView.drawMolecule(formCanvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
+        await grok.functions.call('Chem:canvasMol', {
+          x: 0, y: 0, w: formCanvas.width, h: formCanvas.height, canvas: formCanvas,
+          molString: mol, scaffoldMolString: '',
+          options: {setNewCoords: false, normalizeDepiction: false, straightenDepiction: false}
+        });
+        moleculeSvgDiv.append(formCanvas);
       } else
         moleculeSvgDiv.innerHTML = '';
     } finally {
