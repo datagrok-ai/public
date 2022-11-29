@@ -43,6 +43,7 @@ import {molToMolblock} from './utils/convert-notation-utils';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {_importSmi} from './file-importers/smi-importer';
 import {scaffoldTreeGeneration} from './scripts-api';
+import {_importTripos} from './utils/tripos-utils';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -651,6 +652,16 @@ export function openChemLibSketcher(): OpenChemLibSketcher {
 //output: list tables
 export function importSdf(bytes: Uint8Array): DG.DataFrame[] {
   return _importSdf(Uint8Array.from(bytes));
+}
+
+//name: importMol2
+//description: Opens mol2 file (TRIPOS)
+//tags: file-handler
+//meta.ext: mol2
+//input: list bytes
+//output: list tables
+export function importTripos(bytes: Uint8Array): DG.DataFrame[] {
+  return _importTripos(Uint8Array.from(bytes));
 }
 
 //name: importSmi
