@@ -1,4 +1,4 @@
-import {category, test, expect, delay, before} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, delay, before, testEvent} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -60,27 +60,13 @@ M  END
   1  5  1  0  0  0  0
 M  END
 `);
-    filter1._onSketchChanged();
-    await waitForFilter(df);
-    filter2._onSketchChanged();
-    await waitForFilter(df);
-    expect(df.filter.trueCount, 2);
-    expect(df.filter.get(4), true);
-    expect(df.filter.get(5), true);
-    expect(df.filter.get(0), false);
+    await testEvent(df.onFilterChanged, (_) => {}, () => { filter1._onSketchChanged() }, 5000);
+    await testEvent(df.onFilterChanged, (_) => {
+      expect(df.filter.trueCount, 2);
+      expect(df.filter.get(4), true);
+      expect(df.filter.get(5), true);
+      expect(df.filter.get(0), false);
+    }, () => { filter2._onSketchChanged() }, 5000);
   });
 });
-
-async function waitForFilter(df: DG.DataFrame) {
-  const t = new Promise((resolve, reject) => {
-    df.onFilterChanged.subscribe(async (_: any) => {
-      try {
-        resolve(true);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  });
-  await t;
-}
   
