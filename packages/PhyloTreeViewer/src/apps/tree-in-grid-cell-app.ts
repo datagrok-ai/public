@@ -90,7 +90,7 @@ export class TreeInGridCellApp {
         const name: string = `gridRow = ${gCell.gridRow}`;
         const bd = args.bounds;
         const gCtx: CanvasRenderingContext2D = args.g;
-        //console.debug('PTV: TreeInGridCell.gridOnCellRender() start ' + `name: ${name}, bd: ${rectToString(bd)} `);
+        //console.debug('PhyloTreeViewer: TreeInGridCell.gridOnCellRender() start ' + `name: ${name}, bd: ${rectToString(bd)} `);
 
         const nwkStr: string = gCell.cell.value;
         const nwkRoot: bio.NodeType = bio.Newick.parse_newick(nwkStr);
@@ -117,7 +117,7 @@ export class TreeInGridCellApp {
         console.error(u.errorToConsole(err));
       } finally {
         args.preventDefault();
-        //console.debug('PTV: TreeInGridCell.gridOnCellRender() end ' + `name: ${name}`);
+        //console.debug('PhyloTreeViewer: TreeInGridCell.gridOnCellRender() end ' + `name: ${name}`);
       }
     }
   }

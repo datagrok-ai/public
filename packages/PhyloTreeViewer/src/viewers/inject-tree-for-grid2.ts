@@ -9,11 +9,10 @@ import {TreeHelper} from '../utils/tree-helper';
 import {attachDivToGrid} from './inject-tree-to-grid';
 import {
   GridTreeRendererBase,
-  GridTreeRendererEventArgsType,
-  LeafRangeGridTreeRenderer,
-  MarkupNodeType
 } from './grid-tree-renderer';
 import {NodeCuttedType} from '@datagrok-libraries/bio';
+import {markupNode, MarkupNodeType} from './tree-renderers/markup';
+import {LeafRangeGridTreeRenderer} from './tree-renderers/grid-tree-renderer';
 
 
 export function injectTreeForGridUI2(
@@ -32,20 +31,20 @@ export function injectTreeForGridUI2(
 
   const treeRenderer: GridTreeRendererBase<MarkupNodeType> =
     LeafRangeGridTreeRenderer.create(newickRoot, treeRoot, grid);
-  treeRenderer.onAfterRender.subscribe((args: GridTreeRendererEventArgsType<MarkupNodeType>) => {
+  treeRenderer.onAfterRender.subscribe(({target, context, lengthRatio}) => {
     if (cutSlider) {
-      const tgt = args.target;
+      const tgt = target as GridTreeRendererBase<MarkupNodeType>;
+
       cutSlider.root.style.left = `${0}px`;
       cutSlider.root.style.width = `${tgt.view.clientWidth}px`;
       cutSlider.root.style.height = `${tgt.grid.colHeaderHeight}px`;
 
-      const posX = cutSlider.value! * args.lengthRatio + tgt.leftPadding * window.devicePixelRatio;
+      const posX = cutSlider.value! * lengthRatio + tgt.leftPadding * window.devicePixelRatio;
 
-      args.context.beginPath();
-      args.context.strokeStyle = '#A00000';
-      args.context.moveTo(posX, 0);
-      args.context.lineTo(posX, args.context.canvas.height);
-      args.context.stroke();
+      context.strokeStyle = '#A00000';
+      context.moveTo(posX, 0);
+      context.lineTo(posX, context.canvas.height);
+      context.stroke();
     }
   });
 
@@ -56,11 +55,11 @@ export function injectTreeForGridUI2(
     // to prevent nested fire event in event handler
     window.setTimeout(() => {
       const [viewedRoot] = th.setGridOrder(newickRoot, grid, leafColName);
-      LeafRangeGridTreeRenderer.markupNode(viewedRoot);
+      markupNode(viewedRoot);
       const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
         {type: 'biojs', data: {name: 'NONE', branch_length: 1, children: []}};
 
-      treeRenderer.tree = viewedRoot as MarkupNodeType;
+      treeRenderer.treeRoot = viewedRoot as MarkupNodeType;
     }, 0 /* next event cycle */);
   });
 
@@ -96,8 +95,8 @@ export function injectTreeForGridUI2(
       th.markClusters(newickRootCutted as NodeCuttedType, dataDf, leafColName, cut.clusterColName);
       th.buildClusters(newickRootCutted as NodeCuttedType, clusterDf, cut.clusterColName, leafColName);
 
-      LeafRangeGridTreeRenderer.markupNode(newickRootCutted!);
-      treeRenderer.tree = newickRootCutted as MarkupNodeType;
+      markupNode(newickRootCutted!);
+      treeRenderer.treeRoot = newickRootCutted as MarkupNodeType;
     });
   }
 

@@ -2,29 +2,18 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as bio from '@datagrok-libraries/bio';
-
-import {newickToDf} from '../utils';
 import {Unsubscribable} from 'rxjs';
+import {newickToDf} from '../utils';
 import {_package} from '../package';
 
-
-export class PhylocanvasGlViewerApp {
-  private viewed: boolean = false;
-  private tv!: DG.TableView;
-
-  // private ptv!: DG.Viewer; // PhyloTreeViewer
-
-  treeHost!: HTMLDivElement | null;
-  treeViewer!: bio.IPhylocanvasGlViewer | DG.JsViewer | null; // PhylocanvasGL
-  treeDn!: DG.DockNode | null;
+export class DendrogramApp {
+  private viewed: boolean;
 
   _treeDf!: DG.DataFrame;
 
   get treeDf() { return this._treeDf; }
 
-  constructor() {
-
-  }
+  constructor() {}
 
   async init(df?: DG.DataFrame): Promise<void> {
     await this.loadData(df);
@@ -32,7 +21,7 @@ export class PhylocanvasGlViewerApp {
 
   async loadData(df?: DG.DataFrame): Promise<void> {
     if (df) {
-      await this.setData(df);
+      await this.setData(df!);
     } else {
       const newickStr: string = await _package.files.readAsText('data/tree95.nwk');
       const treeDf: DG.DataFrame = newickToDf(newickStr, 'tree95');
@@ -47,7 +36,6 @@ export class PhylocanvasGlViewerApp {
     }
 
     this._treeDf = treeDf;
-
     if (!this.viewed) {
       await this.buildView();
       this.viewed = true;
@@ -57,6 +45,12 @@ export class PhylocanvasGlViewerApp {
   // -- View --
 
   viewSubs: Unsubscribable[] = [];
+
+  tv!: DG.TableView;
+  treeHost!: HTMLDivElement | null;
+  treeViewer!: DG.JsViewer | null; // Dendrogram
+  treeDn!: DG.DockNode | null;
+
 
   async destroyView(): Promise<void> {
     this.viewSubs.forEach((sub) => sub.unsubscribe());
@@ -82,45 +76,22 @@ export class PhylocanvasGlViewerApp {
   async buildView(): Promise<void> {
     if (!this.tv) {
       // filter for leafs only, to align tree with grid
-      //const leafCol: DG.Column = this.treeDf.getCol('leaf');
-      //this.treeDf.filter.init((rowI: number) => { return leafCol.get(rowI); });
 
       this.tv = grok.shell.addTableView(this.treeDf, DG.DOCK_TYPE.FILL);
-      //this.tv.path = this.tv.basePath = 'apps/PhyloTreeViewer/PhylocanvasGlViewer';
-
-      this.viewSubs.push(this.tv.grid.onRowsResized.subscribe((args) => {
-        if (!this.treeHost || !this.treeViewer) return;
-
-        const cw: number = this.treeHost.clientWidth;
-        const ch: number = this.treeHost.clientHeight;
-
-        this.treeViewer.root.style.width = `${cw}px`;
-        this.treeViewer.root.style.height = `${ch}px`;
-      }));
+      this.tv.path = this.tv.basePath = '/func/PhyloTreeViewer.DendrogramApp';
     }
 
-    // if (!this.treeHost) {
-    //   this.treeHost = ui.div();
-    // }
-    //
-    // if (!this.treeDn) {
-    //   this.treeDn = this.tv.dockManager.dock(this.treeHost, DOCK_TYPE.LEFT);
-    // }
-
     if (!this.treeViewer) {
-      // TableView.addViewer() returns JsViewer (no access to viewer's attributes)
-      // DataFrame.plot.fromType() return viewers type object (with attributes)
-      this.treeViewer = (await this.treeDf.plot.fromType('PhylocanvasGl', {
-        interactive: true,
-        alignLabels: true,
-        showLabels: true,
-        showLeafLabels: true,
-        padding: 0,
-        treeToCanvasRatio: 1,
+      this.treeViewer = (await this.treeDf.plot.fromType('Dendrogram', {
+        // interactive: true,
+        // alignLabels: true,
+        // showLabels: true,
+        // showLeafLabels: true,
+        // padding: 0,
+        // treeToCanvasRatio: 1,
       })) as DG.JsViewer;
       this.treeDn = this.tv.dockManager.dock(this.treeViewer, DG.DOCK_TYPE.RIGHT);
       let k = 11;
-      //this.treeViewerDn = this.tv.dockManager.dock(this.treeViewer, DOCK_TYPE.LEFT);
     }
   }
 }

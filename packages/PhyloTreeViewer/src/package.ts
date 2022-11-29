@@ -19,6 +19,8 @@ import {generateTree} from './utils/tree-generator';
 import {TreeForGridApp} from './apps/tree-for-grid-app';
 import {TreeCutAsTreeApp} from './apps/tree-cut-as-tree-app';
 import {TreeForGridFilterApp} from './apps/tree-for-grid-filter-app';
+import {Dendrogram, MyViewer} from './viewers/dendrogram';
+import {DendrogramApp} from './apps/dendrogram-app';
 
 
 export const _package = new DG.Package();
@@ -30,7 +32,7 @@ export const _package = new DG.Package();
 //output: dataframe df
 export function _newickToDf(newick: string, name: string): DG.DataFrame {
   return newickToDf(newick, name);
-};
+}
 
 let _newickHelper: NewickHelper | null = null;
 
@@ -41,31 +43,6 @@ export function getNewickHelper() {
   if (!_newickHelper)
     _newickHelper = new NewickHelper();
   return _newickHelper;
-}
-
-//name: PhyloTree
-//description: Phylogenetic tree visualization
-//tags: viewer
-//output: viewer result
-export function phyloTreeViewer(): PhyloTreeViewer {
-  return new PhyloTreeViewer();
-}
-
-
-//name: PhylocanvasGL
-//description: Phylogenetic tree visualization
-//tags: viewer
-//output: viewer result
-export function phylocanvasGlViewer(): PhylocanvasGlViewer {
-  return new PhylocanvasGlViewer();
-}
-
-
-//name: GridWithTree
-//tags: viewer
-//output: viewer result
-export function gridWithTreeViewer(): GridWithTreeViewer {
-  return new GridWithTreeViewer();
 }
 
 
@@ -92,8 +69,60 @@ export async function nwkTreeViewer(file: DG.FileInfo) {
   return preview;
 }
 
+// -- Viewers --
 
-//name: PhylocanvasGlViewer
+//name: Dendrogram
+//description: Dendrogram tree visualization
+//tags: viewer
+//output: viewer result
+export function dendrogram(): DG.JsViewer {
+  return new Dendrogram();
+}
+
+//name: PhylocanvasGL
+//description: Phylogenetic tree visualization
+//tags: viewer
+//output: viewer result
+export function phylocanvasGlViewer(): PhylocanvasGlViewer {
+  return new PhylocanvasGlViewer();
+}
+
+//name: PhyloTree
+//description: Phylogenetic tree visualization
+//tags: viewer
+//output: viewer result
+export function phyloTreeViewer(): PhyloTreeViewer {
+  return new PhyloTreeViewer();
+}
+
+// //name: GridWithTree
+// //tags: viewer
+// //output: viewer result
+// export function gridWithTreeViewer(): GridWithTreeViewer {
+//   return new GridWithTreeViewer();
+// }
+
+
+// -- apps for tests --
+
+//name: dendrogramApp
+//description: Test/demo app for Dendrogram
+export async function dendrogramApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open Dendrogram app');
+  try {
+    const app = new DendrogramApp();
+    await app.init();
+  } catch (err: unknown) {
+    const msg: string = 'PhyloTreeViewer dendrogramApp() error: ' +
+      `${err instanceof Error ? err.message : (err as Object).toString()}`;
+    grok.shell.error(msg);
+    console.error(msg);
+  } finally {
+    pi.close();
+  }
+}
+
+//name: phylocanvasGlViewerApp
 //description: Test/demo app for PhylocanvasGlViewer
 export async function phylocanvasGlViewerApp() {
   const pi = DG.TaskBarProgressIndicator.create('open PhylocanvasGlViewer app');
@@ -142,7 +171,6 @@ export async function treeForGridApp(): Promise<void> {
   }
 }
 
-
 //name: TreeForGridFilter
 //description: Test/demo app for TreeForGridFilter (custom renderer)
 export async function treeForGridFilterApp(): Promise<void> {
@@ -188,6 +216,8 @@ export async function treeInGridCellApp(): Promise<void> {
   }
 }
 
+// -- File handlers --
+
 //name: importNwk
 //description: Opens Newick file
 //tags: file-handler
@@ -197,11 +227,16 @@ export async function treeInGridCellApp(): Promise<void> {
 export async function importNewick(fileContent: string): Promise<DG.DataFrame[]> {
   const df: DG.DataFrame = newickToDf(fileContent, '');
 
-  const app = new PhylocanvasGlViewerApp();
+  // const app = new PhylocanvasGlViewerApp();
+  // await app.init(df);
+
+  const app = new DendrogramApp();
   await app.init(df);
 
   return [];
 }
+
+// -- Custom helpers --
 
 //name: injectTree
 //description: Opens Newick file
@@ -263,4 +298,12 @@ export function generateTreeDialog() {
       await _package.files.writeAsText(filenameInput.value + '.csv', df.toCsv());
     })
     .show();
+}
+
+//name: MyViewer
+//description: MyViewer test
+//tags: viewer
+//output: viewer result
+export function myViewer(): DG.JsViewer {
+  return new MyViewer();
 }
