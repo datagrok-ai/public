@@ -1,6 +1,5 @@
 // This file will be used from Web Workers
 // There should be no imports from Datagrok or OCL
-
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import {convertToRDKit} from '../analysis/r-group-analysis';
 //@ts-ignore
@@ -8,6 +7,7 @@ import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {isMolBlock} from '../utils/convert-notation-utils';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -94,7 +94,7 @@ export function drawMoleculeToCanvas(
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null) {
   let mol = null;
   try {
-    mol = getRdKitModule().get_mol(convertToRDKit(molString)!);
+    mol = isMolBlock(molString) ? getRdKitModule().get_mol(molString) : getRdKitModule().get_mol(convertToRDKit(molString)!);
     mol.set_new_coords(true);
     mol.normalize_depiction(1);
     mol.straighten_depiction();
