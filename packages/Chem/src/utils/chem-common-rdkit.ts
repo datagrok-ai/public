@@ -91,15 +91,22 @@ export function drawRdKitMoleculeToOffscreenCanvas(
 
 export function drawMoleculeToCanvas(
   x: number, y: number, w: number, h: number,
-  onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null) {
+  onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
+  options = {setNewCoords: true, normalizeDepiction: true, straightenDepiction: true}
+) {
   let mol = null;
   try {
-    const isMol = isMolBlock(molString);
-    mol = isMol ? getRdKitModule().get_mol(molString) : getRdKitModule().get_mol(convertToRDKit(molString)!);
-    if(!isMol)
+    mol = isMolBlock(molString) ? getRdKitModule().get_mol(molString) : getRdKitModule().get_mol(convertToRDKit(molString)!);
+
+    if (options.setNewCoords ?? true)
       mol.set_new_coords(true);
-    mol.normalize_depiction(1);
-    mol.straighten_depiction();
+
+    if (options.normalizeDepiction ?? true)
+      mol.normalize_depiction(1);
+
+    if (options.straightenDepiction ?? true)
+      mol.straighten_depiction();
+
     const scaffoldMol = scaffoldMolString == null ? null :
       (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) : getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
     let substructJson = '{}';
