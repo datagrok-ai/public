@@ -70,10 +70,9 @@ SELECT ag.id,
        ag.antigen,
        ag.antigen_ncbi_id,
        ag.antigen_gene_symbol,
-       count(ab2tr."CLONE") as clones
+       (SELECT count(*) FROM mlb.tree2 as tr2 WHERE tr2.antigen = ag.antigen AND tr2."CLONE" <> 'REPERTOIRE') as clones
 FROM mlb.antigen as ag
          JOIN mlb.antibody2antigen as ab2ag ON ab2ag.antigen = ag.antigen
-         LEFT JOIN mlb.antibody2tree as ab2tr ON ab2tr.v_id = ab2ag.v_id
 GROUP BY ag.id, ag.antigen;
 --end
 
@@ -129,11 +128,9 @@ WHERE ag.antigen = @antigen;
 --name: getTreeByAntigen
 --connection: MolecularLiabilityBrowserData:MLB
 --input: string antigen
-SELECT tr.*
-FROM mlb.tree as tr
-         JOIN mlb.antibody2tree as ab2tr ON ab2tr."CLONE" = tr."CLONE"
-         JOIN mlb.antibody2antigen as ab2ag ON ab2ag."v_id" = ab2tr."v_id"
-WHERE ab2ag.antigen = @antigen;
+SELECT tr2.*
+FROM mlb.tree2 as tr2
+WHERE (tr2.antigen = @antigen) AND (tr2."CLONE" <> 'REPERTOIRE');
 --end
 
 --name: getAnarciChothiaHeavy
@@ -219,8 +216,8 @@ select
     ptm_pred.*
 from
     mlb.ptm_predicted_v2 as ptm_pred
-        JOIN mlb.antibody2antigen as ab2ag ON ab2ag.v_id = ptm_pred.v_id
-        JOIN mlb.antigen as ag ON ag.antigen = ab2ag.antigen
+         JOIN mlb.antibody2antigen as ab2ag ON ab2ag.v_id = ptm_pred.v_id
+         JOIN mlb.antigen as ag ON ag.antigen = ab2ag.antigen
 WHERE ag.antigen = @antigen;
 --end
 
@@ -231,8 +228,8 @@ select
     ptm_obs.*
 from
     mlb.ptm_observed_v2 as ptm_obs
-        JOIN mlb.antibody2antigen as ab2ag ON ab2ag.v_id = ptm_obs.v_id
-        JOIN mlb.antigen as ag ON ag.antigen = ab2ag.antigen
+         JOIN mlb.antibody2antigen as ab2ag ON ab2ag.v_id = ptm_obs.v_id
+         JOIN mlb.antigen as ag ON ag.antigen = ab2ag.antigen
 WHERE ag.antigen = @antigen;
 --end
 
@@ -242,16 +239,16 @@ WHERE ag.antigen = @antigen;
 --input: string vid = "VR000030945"
 SELECT
     (select encode(json_data, 'escape')
-     from db_v2.json_files
-     where v_id = @vid) as "json",
-    (select encode(pdb_data, 'escape')
-     from db_v2.pdb_files
-     where v_id = @vid) as "pdb",
-    (select json
-     from mlb.jsons_new
-     where v_id = @vid) as "real_nums",
-    (select json
-     from db_v2.json_files_observed
-     where v_id = @vid
-     limit 1) as "obs_ptm";
+        from db_v2.json_files
+        where v_id = @vid) as "json",
+       (select encode(pdb_data, 'escape')
+        from db_v2.pdb_files
+        where v_id = @vid) as "pdb",
+       (select json
+        from mlb.jsons_new
+        where v_id = @vid) as "real_nums",
+       (select json
+        from db_v2.json_files_observed
+        where v_id = @vid
+                              limit 1) as "obs_ptm";
 --end

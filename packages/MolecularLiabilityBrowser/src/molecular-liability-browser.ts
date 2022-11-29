@@ -218,9 +218,9 @@ export class MolecularLiabilityBrowser {
     gsGCol.width = 120;
     idGCol.visible = false;
     ncbiGCol.visible = false;
-    clonesGCol.name = 'Cl';
-    clonesGCol.width = 20;
-    agDfGrid.root.style.setProperty('width', '240px');
+    clonesGCol.name = 'Clones';
+    clonesGCol.width = 50;
+    agDfGrid.root.style.setProperty('width', '270px');
     this.antigenPopup = ui.div([agDfGrid.root]);
 
     // Do not push to this.viewSubs to prevent unsubscribe on this.destroyView()
@@ -735,6 +735,7 @@ export class MolecularLiabilityBrowser {
         this.treeBrowser = (await this.treeDf.plot.fromType('MlbTree', {})) as unknown as TreeBrowser;
         this.treeBrowserDn = this.mlbView.dockManager.dock(this.treeBrowser.root, DG.DOCK_TYPE.FILL, this.mlbGridDn, 'Clone');
         //TODO: check the await
+        this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
         await this.treeBrowser.setData(this.treeDf, this.mlbDf);// fires treeDfOnCurrentRowChanged
         //this.mlbView.dockManager.dock(this.treeBrowser, DG.DOCK_TYPE.RIGHT, null, 'Clone', 0.5);
 
@@ -757,8 +758,13 @@ export class MolecularLiabilityBrowser {
 
         this.treeGrid.dataFrame = this.treeDf;
 
+        this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
         //TODO: check the await
         await this.treeBrowser.setData(this.treeDf, this.mlbDf);
+      }
+
+      if (this.treeDf.rowCount == 0 && this.treeInput.value) {
+        this.onTreeChanged('');
       }
 
       // adjust treeGrid columns
@@ -772,9 +778,9 @@ export class MolecularLiabilityBrowser {
       //treeGCol.cellType = 'html';
       treeGCol.width = TREE_GRID_COL_TREE_WIDTH;
 
-      const treeGridFirstColumnWidth: number = wu.count(1).take(4)
+      const treeGridFirstColumnsWidth: number = wu.count(0).take(4)
         .map((colI) => this.treeGrid.columns.byIndex(colI)!.width).reduce((a, b) => a + b);
-      const popupWidth = treeGridFirstColumnWidth + 11;
+      const popupWidth = treeGridFirstColumnsWidth + 11;
       const popupHeight = Math.min(
         Math.floor(this.mlbView!.root.clientHeight * 0.85),
         this.treeDf.rowCount * this.treeGrid.props.rowHeight + this.treeGrid.colHeaderHeight + 11);
@@ -793,8 +799,6 @@ export class MolecularLiabilityBrowser {
       // const newFilterViewDn: DG.DockNode = this.mlbView.dockManager.dock(newFilterView, DG.DOCK_TYPE.LEFT,
       //   this.mlbGridDn, 'Filters', 0.18);
       this.filterView.dataFrame = this.mlbDf;
-
-      this.viewSubs.push(this.treeDf.onCurrentRowChanged.subscribe(this.treeDfOnCurrentRowChanged.bind(this)));
 
       // if (this.tree3Browser === null) {
       //   //let path = _package.webRoot +
@@ -920,7 +924,10 @@ export class MolecularLiabilityBrowser {
     if (this.treeInput!.value != this.treeName)
       this.treeInput!.value = this.treeName;
 
-    this.urlParams!.set('tree', this.treeName);
+    if (this.treeName)
+      this.urlParams!.set('tree', this.treeName);
+    else
+      this.urlParams.delete('tree');
 
     const path = MolecularLiabilityBrowser.getViewPath(this.urlParams, this.baseUri);
     console.debug('MLB: MolecularLiabilityBrowser.onTreeChange() mlbView.path <- ' + `${path}`);

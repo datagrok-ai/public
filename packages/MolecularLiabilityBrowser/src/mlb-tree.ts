@@ -383,9 +383,12 @@ export class TreeBrowser extends DG.JsViewer {
       this._matchMappings();
     }
 
-    this.treeViewer!.root.style.visibility = this.treeDf.rowCount > 0 ? 'inherited' : 'hidden';
-    if (this.treeDf.rowCount > 0)
+    if (this.treeDf.rowCount > 0) {
+      this.treeViewer!.root.style.visibility = 'visible';
       this.treeDf.currentRowIdx = 0;
+    } else {
+      this.treeViewer!.root.style.visibility = 'hidden';
+    }
   }
 
   // Do not handle onTableAttached() because data assigned with setData() method()
