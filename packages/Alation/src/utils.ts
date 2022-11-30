@@ -48,8 +48,5 @@ function updateApiToken(apiToken: string): void {
 
 export function getApiToken(): string {
   const apiToken = localStorage.getItem(constants.API_TOKEN_KEY);
-  if (apiToken == null)
-    throw new Error('AlationTokenError: API Token is undefined');
-
-  return apiToken;
+  return apiToken ?? '';
 }
