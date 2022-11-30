@@ -6,6 +6,8 @@ const TRIPOS_MOLECULE_LINE = '@<TRIPOS>MOLECULE';
 const TRIPOS_ATOM_LINE = '@<TRIPOS>ATOM';
 const TRIPOS_BOND_LINE = '@<TRIPOS>BOND';
 
+const HYDROGEN = 'H';
+
 type Atoms = {
   atomTypes: string[],
   x: number[],
@@ -24,52 +26,153 @@ type Bonds = {
 class TriposParser {
   /** The content of mol2 file  */
   private _str: string;
-  /** Index of the molecule being currently parsed */
-  private _idx: number;
+  /** Index of the molecule being currently parsed, always points to some actual
+   * value*/
+  private _molIdx: number;
+
+  /** Running idx within the current molecule */
+  private _beginIdx: number;
+
+  /** Running idx within the current molecule */
+  private _endIdx: number;
 
   /** Get index of the next molecule block  */
   private getNextMolIdx(): number {
-    return this._str.indexOf(TRIPOS_MOLECULE_LINE, this._idx);
+    const begin = (this._molIdx === 0) ? 0 : this._molIdx + 1;
+    return this._str.indexOf(TRIPOS_MOLECULE_LINE, begin);
   }
 
-  /** Returns 'true' if there is a next Tripos molecule to parse  */
+  /** Returns the idx of the atom block for current molecule, or throws if
+   * none */
+  private getCurrentAtomBlockIdx(): number {
+    const value = this._str.indexOf(TRIPOS_ATOM_LINE, this._molIdx);
+    if (value !== -1)
+      return value;
+    else
+      throw new Error('No next valid atom block in mol2');
+  }
+
+  /** Returns the idx of the bond block for current molecule, or throws if
+   * none */
+  private getCurrentBondBlockIdx(): number {
+    const value = this._str.indexOf(TRIPOS_BOND_LINE, this._molIdx);
+    if (value !== -1)
+      return value;
+    else
+      throw new Error('No next valid bond block in mol2');
+  }
+
+  private getIdxOfNextLine(): number {
+    if (this._str.at(this._beginIdx) !== '\n')
+      return this._str.indexOf('\n', this._beginIdx) + 1;
+    else
+      return this._str.indexOf('\n', this._beginIdx + 1) + 1;
+  }
+
+  /** Returns 'true' if there is a next Tripos molecule to parse */
   public next(): boolean {
     return this.getNextMolIdx() !== -1;
   }
 
   public getNextMolFile(): string {
     const atoms = this.parseAtoms();
-
-
-    this._idx = molEndIdx;
+    const bonds = this.parseBonds();
   }
 
   /** Extract data from TRIPOS atom block  */
   private parseAtoms(): Atoms {
-    // position at the first atom line
-    let begin = this._str.indexOf(TRIPOS_ATOM_LINE, molBeginIdx);
-    begin = this._str.indexOf('\n', begin) + 1;
+    const atomTypesArray: string[] = [];
+    const x: number[] = [];
+    const y: number[] = [];
+    const z: number[] = [];
+    const charge: number[] = [];
 
+    // position at the first atom line
+    this._beginIdx = this.getCurrentAtomBlockIdx();
+    const endOfAtomBlockIdx = this.getCurrentBondBlockIdx();
+    while (this._beginIdx !== endOfAtomBlockIdx) {
+      // jump to next line
+      this._beginIdx = this.getIdxOfNextLine();
+      const atomType = this.parseAtomType();
+      if (atomType !== HYDROGEN) {
+        atomTypesArray.push(atomType);
+        x.push(this.getFloatValue());
+        y.push(this.getFloatValue());
+        z.push(this.getFloatValue());
+        charge.push(this.getFloatValue());
+      }
+    }
+    return {
+      atomTypes: atomTypesArray,
+      x: x,
+      y: y,
+      z: z,
+      charge: charge,
+    };
+  }
+
+  private parseAtomType(): string {
+    this.jumpToNextColumn(); // used for side effect only: shift to atom type
+    this.jumpToNextColumn();
+  }
+
+  /** Get a float value and shift running idx values */
+  private getFloatValue(): number {
+    this.jumpToNextColumn();
+  }
+
+  /** Get a float value and shift running idx values */
+  private getIntValue(): number {
+    this.jumpToNextColumn();
+  }
+
+  /** Jumps to the next column relatively to this._beginIdx  */
+  private jumpToNextColumn(): void {
+    this._beginIdx = this.getNextColumnIdx();
+  }
+
+  /** Gets the idx of the next column relatively to this._beginIdx  */
+  private getNextColumnIdx(): number {
+    let idx = this._beginIdx;
+    // skip non-whitespace, if necessary
+    while (!this.isWhitespace(idx))
+      ++idx;
+    // skip whitespace
+    while (this.isWhitespace(idx))
+      ++idx;
+    return idx;
+  }
+
+  private isWhitespace(idx: number): bool {
+    return this._str.at(idx) === ' ';
   }
 
   // todo: remove as unnecessary?
   /** Get the total number of molecules in a mol2 file */
   public getNumberOfMols(): number {
-    const initIdx = this._idx;
-    this._idx = 0;
+    const initIdx = this._molIdx;
+    this._molIdx = 0;
     let numOfMols = 0;
     while (this.next()) {
       numOfMols++;
-      this._idx = this.getNextMolIdx();
+      this._molIdx = this.getNextMolIdx();
     }
-    this._idx = initIdx;
+    this._molIdx = initIdx;
 
     return numOfMols;
   }
 
   constructor(str: string) {
     this._str = str;
-    this._idx = this.getNextMolIdx();
+
+    this._molIdx = 0;
+    this._molIdx = this.getNextMolIdx();
+    if (!this.next()) // check for existence of molecular data
+      throw new Error('The mol2 file does not contain a molecule');
+
+    // dummy values
+    this._beginIdx = 0;
+    this._endIdx = 0;
   }
 }
 
