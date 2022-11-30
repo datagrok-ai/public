@@ -630,12 +630,9 @@ int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 	// chech existence of inverse matrix
 	if (H.determinant() == static_cast<Float>(0))
 		return METHOD_ERROR;
-
-	// auxiliry matrix
-	Matrix<Float, Dynamic, Dynamic> Wstar = W * H.inverse();
 		
 	// compute regression coefficients
-	b = Wstar * q;
+	b = W * H.inverse() * q;
 
 	// ... also, we take into account a normalizing
 	for (int i = 0; i < columnCount; i++)
