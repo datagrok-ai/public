@@ -64,7 +64,7 @@ if core is not None:
         none_group = group
         r_group += 1
 
-      r_n = none_group.replace('R', '')
+      r_n = none_group.replace(prefix, '')
       fragment_smiles = re.sub(r"\[\d+\*\]", f'[{r_n}*]', fragment_smiles)
 
       fragments[none_group][n] = fragment_smiles
