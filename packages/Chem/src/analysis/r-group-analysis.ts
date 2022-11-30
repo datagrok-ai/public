@@ -50,6 +50,11 @@ export function rGroupAnalysis(col: DG.Column): void {
       visualAnalysisCheck,
     ]))
     .onOK(async () => {
+      const re = new RegExp(`^${columnPrefixInput.value}\\d+$`, 'i');
+      if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
+        grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
+        return;
+      }
       const core = sketcher.getSmiles();
       if (core !== null) {
         try {
