@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {anyObject, pubChemSearchType} from './utils';
 import {identitySearch, similaritySearch, substructureSearch} from './pubchem';
 
-export async function pubChemSearchWidget(molString: string, searchType: pubChemSearchType): Promise<DG.Widget> {
+export async function getSearchWidget(molString: string, searchType: pubChemSearchType): Promise<DG.Widget> {
   const headerHost = ui.divH([]);
   const compsHost = ui.divH([ui.loader()]);
   const widget = new DG.Widget(compsHost);
