@@ -1,16 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import {anyObject, paramsType, pubChemIdType, pubChemSearchType, urlParamsFromObject} from './utils';
-import { delay } from '@datagrok-libraries/utils/src/test';
+import {delay} from '@datagrok-libraries/utils/src/test';
 
 const pubChemBaseURL = 'https://pubchem.ncbi.nlm.nih.gov';
 const pubChemRest = `${pubChemBaseURL}/rest`;
 const pubChemPug = `${pubChemRest}/pug`;
-
-export function renderInfoName(info: anyObject): string {
-  return info['Description'] || info['Name'];
-}
 
 export function renderInfoValue(info: anyObject, refs: anyObject): HTMLElement {
   const infoValue: {[key: string]: any[]} = info['Value'];
@@ -63,7 +58,7 @@ export function renderSection(section: anyObject, refs: anyObject): HTMLDivEleme
 
   const information: any[] = section['Information'];
   if (information) {
-    const table = ui.table(information, (info, _) => [renderInfoName(info), renderInfoValue(info, refs)]);
+    const table = ui.table(information, (inf, _) => [inf['Description'] || inf['Name'], renderInfoValue(inf, refs)]);
     content.append(table);
   }
 
@@ -72,9 +67,8 @@ export function renderSection(section: anyObject, refs: anyObject): HTMLDivEleme
     const acc = ui.accordion(`pubChem/${section['TOCHeading']}`);
     for (const section of sections) {
       const paneName = section['TOCHeading'];
-      const pane = acc.addPane(paneName, () => renderSection(section, refs));
+      acc.addPane(paneName, () => renderSection(section, refs));
       if (section['Description']) {
-        //@ts-ignore: api types are wrong
         ui.tooltip.bind(ui.divText(paneName), () => ui.div(section['Description']));
       }
     }
@@ -162,7 +156,7 @@ export async function _getListById(
     const response = await grok.dapi.fetchProxy(url);
     json = await response.json();
   } while (json.hasOwnProperty('Waiting') && maxRequests > 0);
-  
+
   return json.PropertyTable?.Properties ?? json['PC_Compounds'] ?? null;
 }
 

@@ -1,5 +1,4 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export type pubChemSearchType = 'similarity' | 'substructure' | 'identity';
@@ -12,8 +11,9 @@ export function urlParamsFromObject(obj: {[key: string]: pubChemIdType}): string
 }
 
 export async function getSmiles(molString: string): Promise<string> {
-  if (DG.isMolBlock(molString))
+  if (DG.isMolBlock(molString)) {
     molString = await grok.functions.call('Chem:convertMolNotation',
       {molecule: molString, sourceNotation: 'molblock', targetNotation: 'smiles'});
+  }
   return molString;
 }
