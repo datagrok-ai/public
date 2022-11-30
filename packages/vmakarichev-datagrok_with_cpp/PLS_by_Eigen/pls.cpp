@@ -621,6 +621,9 @@ int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 		q(a) = t.transpose() * y;
 	} // for a	
 
+	// compute Y-scores
+	U = y * q.transpose() / q.squaredNorm();	
+
 	// compute coefficients of regression
 	Matrix<Float, Dynamic, Dynamic> H = P.transpose() * W;
 
@@ -630,10 +633,7 @@ int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 
 	// auxiliry matrix
 	Matrix<Float, Dynamic, Dynamic> Wstar = W * H.inverse();
-
-	// compute Y-scores
-	U = X * Wstar;
-
+		
 	// compute regression coefficients
 	b = Wstar * q;
 
@@ -646,8 +646,7 @@ int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 
 	// Remove the following comments in order to print and verify results
 	//cout << "\nW_star:\n" << Wstar << endl;	
-	//cout << "\nU:\n" << U << endl;
-	//cout << "\nU.tr * U:\n" << U.transpose() * U << endl; // this must be identity matrix	
+	//cout << "\nU:\n" << U << endl;	
 	//cout << "\nb:\n" << b << endl;
 	//cout << "\nq:\n" << q << endl;
 	//cout << "\nD:\n" << D << endl;	
