@@ -183,7 +183,7 @@ export namespace chem {
 
     isEmpty(): boolean {
       const molFile = this.getMolFile();
-      return (molFile == null || molFile == '' || molFile.split('\n')[3].trimStart()[0] === '0');
+      return Sketcher.isEmptyMolfile(molFile);
     }
 
     /** Sets the molecule, supports either SMILES or MOLBLOCK formats */
@@ -282,7 +282,7 @@ export namespace chem {
         canvas.style.width = '100%';
         ui.tooltip.bind(canvas, 'Click to edit');
         const clearButton = this.createClearSketcherButton(canvas);
-        canvasMol(0, 0, width, height, canvas, this.getMolFile()!)
+        canvasMol(0, 0, width, height, canvas, this.getMolFile()!, null, {normalizeDepiction: false, straightenDepiction: false})
           .then((_) => {
             ui.empty(this.extSketcherDiv);
             this.extSketcherDiv.append(canvas);
@@ -308,7 +308,12 @@ export namespace chem {
     };
 
     createClearSketcherButton(canvas: HTMLCanvasElement): HTMLButtonElement {
-      const clearButton = ui.button('Clear', () => this.setMolecule(''));
+      const clearButton = ui.button('Clear', () => {
+        this.setMolecule('');
+        if (!this.sketcher) {
+          this.onChanged.next(null);
+        }
+      });
       ui.tooltip.bind(clearButton, 'Clear sketcher');
       clearButton.style.position = 'absolute';
       clearButton.style.right = '0px';
@@ -409,12 +414,12 @@ export namespace chem {
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.getMolFile()))
           .group('Recent')
-          .items(Sketcher.getRecent().map((m) => ui.tools.click(svgMol(m, 100, 70), () => this.setMolecule(m))), () => { })
+          .items(Sketcher.getRecent().map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })
           .endGroup()
           .group('Favorites')
           .item('Add to Favorites', () => Sketcher.addFavorite(this.getMolFile()))
           .separator()
-          .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 100, 70), () => this.setMolecule(m))), () => { })
+          .items(Sketcher.getFavorites().map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
@@ -454,10 +459,14 @@ export namespace chem {
     }
 
     static addRecent(molecule: string) {
-      if (!Sketcher.getRecent().includes(molecule)) {
+      if (!Sketcher.getRecent().includes(molecule) && !Sketcher.isEmptyMolfile(molecule)) {
         let s = JSON.stringify([...Sketcher.getRecent().slice(-9), molecule]);
         localStorage.setItem(Sketcher.RECENT_KEY, s);
       }
+    }
+
+    static isEmptyMolfile(molFile: string): boolean {
+      return (molFile == null || molFile == '' || molFile.split("\n")[3].trimStart()[0] === '0');
     }
 
     detach() {
@@ -487,6 +496,17 @@ export namespace chem {
           grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
         }
       });
+    }
+
+    drawToCanvas(w: number, h: number, molecule: string): HTMLElement{
+      const imageHost = ui.canvas(w, h);
+      const r = window.devicePixelRatio;
+      imageHost.width = w * r;
+      imageHost.height = h * r;
+      imageHost.style.width = (w).toString() + 'px';
+      imageHost.style.height = (h).toString() + 'px';
+      canvasMol(0, 0, w, h, imageHost, molecule, null, {normalizeDepiction: false, straightenDepiction: false});
+      return imageHost;
     }
   }
 
