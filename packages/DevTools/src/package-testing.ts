@@ -201,8 +201,8 @@ export class TestManager extends DG.ViewBase {
     category.tests.forEach((t) => {
       const testPassed = ui.div();
       const itemDiv = ui.divH([
-        testPassed,
         ui.divText(t.test.name),
+        testPassed,
       ]);
       const item = subnode.item(itemDiv);
       t.resultDiv = testPassed;
@@ -221,6 +221,7 @@ export class TestManager extends DG.ViewBase {
 
   async createTestManagerUI(testFromUrl: ITestFromUrl): Promise<ITestManagerUI> {
     this.tree = ui.tree();
+    this.tree.root.classList.add('test-manager');
     this.tree.onSelectedNodeChanged.subscribe((res) => {
       this.selectedNode = res;
     });
@@ -251,21 +252,21 @@ export class TestManager extends DG.ViewBase {
       });
     }
 
-    const {run, runAll, debug, benchmark} = this.createButtons();
-    const {run: run1, runAll: runAll1, debug: debug1, benchmark: benchmark1} = this.createButtons();
+    const {runAll, run, debug, benchmark} = this.createButtons();
+    const {runAll: runAll1, run: run1, debug: debug1, benchmark: benchmark1} = this.createButtons();
 
-    const ribbonPanelDiv = ui.divH([run1, runAll1, debug1.root, benchmark1.root],
-      {style: {minHeight: '45px', maxHeight: '45px'}});
+    const ribbonPanelDiv = ui.divH([runAll1, run1, debug1.root, benchmark1.root],
+      {style: {minHeight: '50px', maxHeight: '50px', alignItems: 'Center', borderBottom: '1px solid var(--grey-1)', paddingLeft: '5px'}});
     ribbonPanelDiv.classList.add('test');
 
-    return {runButton: run, runAllButton: runAll, testsTree: this.tree,
+    return {runAllButton: runAll, runButton: run, testsTree: this.tree,
       debugButton: debug, benchmarkButton: benchmark, ribbonPanelDiv: ribbonPanelDiv};
   }
 
   createButtons() {
-    const runTestsButton = ui.bigButton('Run', async () => {
+    const runTestsButton = ui.button('Run', async () => {
       this.runTestsForSelectedNode();
-    });
+    }, 'Run selected');
 
     const runAllButton = ui.bigButton('Run All', async () => {
       const nodes = this.tree.items;
@@ -275,10 +276,20 @@ export class TestManager extends DG.ViewBase {
       }
     });
 
-    const debugButton = ui.switchInput('Debug', false, () => {this.debugMode = !this.debugMode;});
-    const benchmarkButton = ui.switchInput('Benchmark', false, () => {this.benchmarkMode = !this.benchmarkMode;});
+    //runAllButton.classList.add('btn-outline');
+    runTestsButton.classList.add('ui-btn-outline');
 
-    return {run: runTestsButton, runAll: runAllButton, debug: debugButton, benchmark: benchmarkButton};
+    const debugButton = ui.boolInput('Debug', false, () => {this.debugMode = !this.debugMode;});
+    debugButton.captionLabel.style.order = '1';
+    debugButton.captionLabel.style.marginLeft = '5px';
+    debugButton.root.style.marginLeft = '10px';
+
+    const benchmarkButton = ui.boolInput('Benchmark', false, () => {this.benchmarkMode = !this.benchmarkMode;});
+    benchmarkButton.captionLabel.style.order = '1';
+    benchmarkButton.captionLabel.style.marginLeft = '5px';
+    benchmarkButton.root.style.marginLeft = '5px';
+
+    return {runAll: runAllButton, run: runTestsButton, debug: debugButton, benchmark: benchmarkButton};
   }
 
   async runTestsForSelectedNode() {
@@ -319,6 +330,7 @@ export class TestManager extends DG.ViewBase {
   testInProgress(resultDiv: HTMLElement, running: boolean) {
     const icon = ui.iconFA('spinner-third');
     icon.classList.add('fa-spin');
+    icon.style.marginLeft = '2px';
     icon.style.marginTop = '0px';
     if (running) {
       resultDiv.innerHTML = '';
@@ -328,11 +340,11 @@ export class TestManager extends DG.ViewBase {
   }
 
   updateIcon(passed: boolean, iconDiv: Element) {
-    const icon = passed ? ui.iconFA('check') : ui.iconFA('ban');
-    icon.style.fontWeight = 'bold';
-    icon.style.paddingRight = '5px';
-    icon.style.marginTop = '0px';
-    icon.style.color = passed ? 'lightgreen' : 'red';
+    const icon = passed ? ui.iconFA('check') : ui.iconFA('times');
+    icon.style.fontWeight = '500';
+    icon.style.paddingLeft = '2px';
+    icon.style.marginTop = '2px';
+    icon.style.color = passed ? 'var(--green-2)' : 'var(--red-3)';
     iconDiv.innerHTML = '';
     iconDiv.append(icon);
   }
@@ -531,7 +543,7 @@ export class TestManager extends DG.ViewBase {
       if (testInfo.rowCount === 1 && !testInfo.col('name').isNone(0)) {
         const time = testInfo.get('time, ms', 0);
         const result = testInfo.get('result', 0);
-        const resColor = testInfo.get('success', 0) ? 'lightgreen' : 'red';
+        const resColor = testInfo.get('success', 0) ? 'var(--green-2)' : 'var(--red-3)';
         info = ui.divV([
           ui.divText(result, {style: {color: resColor, userSelect: 'text'}}),
           ui.divText(`Time, ms: ${time}`),
