@@ -20,7 +20,6 @@ else if (typeof define === 'function' && define['amd'])
 else if (typeof exports === 'object')
   exports["exportEigenPLS"] = exportEigenPLS;
 
-
   var partialLeastSquareRegression = {
     arguments: {
       predictorColumns: {
@@ -94,6 +93,17 @@ else if (typeof exports === 'object')
         numOfRows: {
           ref: 'responseColumn',
           value: 'numOfRows'
+        },
+        numOfColumns: {
+          ref: 'componentsCount',
+          value: 'data'
+        }
+      },
+      predictorLoadings: {
+        type: 'newFloatColumns',
+        numOfRows: {
+          ref: 'predictorColumns',
+          value: 'numOfColumns'
         },
         numOfColumns: {
           ref: 'componentsCount',

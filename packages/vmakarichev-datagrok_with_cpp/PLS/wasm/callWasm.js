@@ -414,13 +414,12 @@ export function callWasm(module, funcName, inputs) {
 
         cppFuncInput.push(args[key].data);
 
-        /*console.log(key + ':');
-        console.log(args[key].data);
-        console.log('\n');*/
     } // for key    
 
     // CALL EXPORTED CPP-FUNCTION
     let callResult = cppFuncWrapper(module, funcName, 'num', cppFuncInput);
+
+    console.log('C++-function call result: ' + callResult);
 
     // store result that is returned by exported cpp-function
     args._callResult = Param.number(callResult);
@@ -431,18 +430,14 @@ export function callWasm(module, funcName, inputs) {
     let finish = new Date().getTime();
 
     console.log(`Time for C/C++-function is ${finish - start} ms.`)
-
-    /*console.log('Regression Coefficients:');
-    console.log(cppFuncInput[4].data.getRawData());
-
-    console.log('Predicted:');
-    console.log(cppFuncInput[3].data.getRawData());*/
-
+ 
     //return Return[output['type']](args[output['source']].data);
 
+    // TODO: provide an adequate Return[...]
     return [args['predictionColumn'].data.data, 
             args['regressionCoefficients'].data.data,
             args['predictorScores'].data.data,
             args['responseScores'].data.data,
+            args['predictorLoadings'].data.data
         ];
   } // callWasm

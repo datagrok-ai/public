@@ -45,6 +45,7 @@ namespace pls {
 	      regressionCoefficientsPtr - coeffcient of linear regression that are computed (their size is eqaul to the number of columns) (b)
 		  predictorScoresPtr - scores of predectors (T)
 		  responceScoresPtr - scores of response (U)
+		  predictorLoadingsPtr - loadings of predictors (P)
 	*/
 	int partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 		const int rowCount,
@@ -54,7 +55,8 @@ namespace pls {
 		Float * predictionDataPtr,
 		Float * regressionCoefficientsPtr,
 		Float * predictorScoresPtr,
-		Float * responceScoresPtr) noexcept;	
+		Float * responceScoresPtr,
+	    Float * predictorLoadingsPtr) noexcept;	
 };
 
 #endif

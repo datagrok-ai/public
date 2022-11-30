@@ -30,10 +30,12 @@ export function pls(df, predict, features, components) {
     [features, predict, components]);    
 
   // CREATING VISUALIZATION
+
+  let start = new Date().getTime();
   
   let dfView = grok.shell.getTableView(df.name);
 
-  // Predicted vs Reference scatter plot
+  // 1. Predicted vs Reference scatter plot
 
   let prediction = callOutput[0];
   prediction.name = predict.name + '(predicted)';
@@ -49,7 +51,7 @@ export function pls(df, predict, features, components) {
       markerType: 'circle'
      }));
 
-  // Regression Coefficients Bar Chart
+  // 2. Regression Coefficients Bar Chart
   let regressionCoefficients = callOutput[1];
   regressionCoefficients.name = 'regression coefficient';
 
@@ -67,17 +69,19 @@ export function pls(df, predict, features, components) {
      value: 'regression coefficient', valueAggrType: 'avg'}));
   
 
+  // 3. Scores Scatter Plot
+
   let scoresColumns = [];
   
   let xScores = callOutput[2];
   for(let i = 0; i < xScores.length; i++) {
-    xScores[i].name = `x${i + 1}.score.t${i+1}`;
+    xScores[i].name = `x.score.t${i+1}`;
     scoresColumns.push(xScores[i]);
   }
 
   let yScores = callOutput[3];
   for(let i = 0; i < yScores.length; i++) {
-    yScores[i].name = `y${i + 1}.score.u${i+1}`;
+    yScores[i].name = `y.score.u${i+1}`;
     scoresColumns.push(yScores[i]);
   }  
 
@@ -87,11 +91,40 @@ export function pls(df, predict, features, components) {
 
   dfView.addViewer(DG.Viewer.scatterPlot(scores, 
     { title: scores.name,
-      x: 'x1.score.t1',
-      y: 'y1.score.u1',      
+      x: xScores[0].name,
+      y: yScores[0].name,      
       markerType: 'circle'
      }));
 
+  // 4. Loading Scatter Plot
+  let loadingCols = [];
+
+  let loadingLabels = [];
+  for(let col of features)
+    loadingLabels.push(col.name);
+
+  loadingCols.push(DG.Column.fromStrings('labels', loadingLabels));
+
+  let xLoadings = callOutput[4];
+  for(let i = 0; i < xLoadings.length; i++) {
+    xLoadings[i].name = `x.loading.p${i+1}`;
+    loadingCols.push(xLoadings[i]);
+  }
+
+  let dfLoadings = DG.DataFrame.fromColumns(loadingCols);
+  dfLoadings.name = 'Loadings';
+  
+  dfView.addViewer(DG.Viewer.scatterPlot(dfLoadings, 
+    { title: dfLoadings.name,
+      x: xLoadings[0].name,
+      y: xLoadings[0].name,      
+      markerType: 'circle',
+      labels: 'labels'
+     }));
+
+  let finish = new Date().getTime();
+
+  console.log(`Time for creating viewers is ${finish - start} ms.`)
   //df.columns.add(prediction);    
 }
 

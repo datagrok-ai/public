@@ -27,7 +27,10 @@ extern "C" {
 		   int predictorScoresColumnsColumnCount,
 		   float * predictionScoresColumns,
 		   int predictionScoresColumnsRowCount,
-		   int predictionScoresColumnsColumnCount);    
+		   int predictionScoresColumnsColumnCount,
+	       float * predictionLoadingsColumns,
+	       int predictionLoadingsColumnsRowCount,
+	       int predictionLoadingsColumnsColumnCount);    
 }
 
 #include "PLS\PLS.h"
@@ -64,11 +67,14 @@ int partialLeastSquareRegressionExtended(float * predictorColumns,
 	   int predictorScoresColumnsColumnCount,
 	   float * predictionScoresColumns,
 	   int predictionScoresColumnsRowCount,
-	   int predictionScoresColumnsColumnCount)
+	   int predictionScoresColumnsColumnCount,
+	   float * predictionLoadingsColumns,
+	   int predictionLoadingsColumnsRowCount,
+	   int predictionLoadingsColumnsColumnCount)
 {
 	return pls::partialLeastSquareExtended(predictorColumns, rowCount, columnCount,
 		responseColumn, componentsCount, predictionColumn, regressionCoefficients,
-		predictorScoresColumns, predictionScoresColumns);
+		predictorScoresColumns, predictionScoresColumns, predictionLoadingsColumns);
 } 
 
 

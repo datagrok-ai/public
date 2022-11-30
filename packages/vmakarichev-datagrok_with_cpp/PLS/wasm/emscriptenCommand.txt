@@ -80,6 +80,17 @@ var partialLeastSquareRegression = {
           ref: 'componentsCount',
           value: 'data'
         }
+      },
+      predictorLoadings: {
+        type: 'newFloatColumns',
+        numOfRows: {
+          ref: 'predictorColumns',
+          value: 'numOfColumns'
+        },
+        numOfColumns: {
+          ref: 'componentsCount',
+          value: 'data'
+        }
       }
     },
     output: {

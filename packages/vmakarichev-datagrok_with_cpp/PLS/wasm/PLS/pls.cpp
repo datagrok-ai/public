@@ -193,6 +193,7 @@ int pls::partialLeastSquare(Float * predictorColumnsDataPtr,
 	  regressionCoefficientsPtr - coeffcient of linear regression that are computed (their size is eqaul to the number of columns) (b)
 	  predictorScoresPtr - scores of predectors (T)
 	  responceScoresPtr - scores of response (U)
+	  predictorLoadingsPtr - loadings of predictors (P)
 */
 int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 	const int rowCount,
@@ -202,7 +203,8 @@ int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 	Float * predictionDataPtr,
 	Float * regressionCoefficientsPtr,
 	Float * predictorScoresPtr,
-	Float * responceScoresPtr) noexcept
+	Float * responceScoresPtr,
+	Float * predictorLoadingsPtr) noexcept
 {
 	// check correctness of arguments
 	if (componentsCount <= 0 || componentsCount > columnCount)
@@ -228,6 +230,11 @@ int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 	for (int i = 0; i < columnCount; i++)
 	{
 		stdDevX(i) = X.col(i).norm() / rowCountSqrt;
+
+        // check deviation
+		if(stdDevX(i) == static_cast<Float>(0))
+		    return UNCORRECT_ARGUMENTS_ERROR;
+
 		X.col(i) = X.col(i) / stdDevX(i);
 	}	
 
@@ -243,6 +250,12 @@ int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 
 	// standard deviation of Y normalizing Y
 	Float stdDevY = sqrt(y.squaredNorm() / rowCount);
+
+	// check deviation
+	if(stdDevY == static_cast<Float>(0))
+	    return UNCORRECT_ARGUMENTS_ERROR;
+
+	// normalizing Y
 	y /= stdDevY;
 	
 	// create a vector, which is associtated with regression coefficients
@@ -251,13 +264,13 @@ int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 	// create a vector, which is associated with prediction data 
 	Map<Vector<Float, Dynamic>> prediction(predictionDataPtr, rowCount);
 
-	// PLS1 matrices
-
 	// weights matrix, W
 	Matrix<Float, Dynamic, Dynamic, ColMajor> W(columnCount, componentsCount);
 
 	// X-loadings matrix, P
-	Matrix<Float, Dynamic, Dynamic, ColMajor> P(columnCount, componentsCount);
+	Map<Matrix<Float, Dynamic, Dynamic, ColMajor>> P(predictorLoadingsPtr, columnCount, componentsCount);
+
+	//Matrix<Float, Dynamic, Dynamic, ColMajor> P(columnCount, componentsCount);
 
 	// X-scores, T
 	Map<Matrix<Float, Dynamic, Dynamic, ColMajor>> T(predictorScoresPtr, rowCount, componentsCount);
@@ -357,7 +370,7 @@ int pls::partialLeastSquareExtended(Float * predictorColumnsDataPtr,
 		b(i) *= stdDevY / stdDevX(i);
 
 	// compute predictions
-	prediction = D * b;
+	prediction = D * b;	
 
 	// Remove the following comments in order to print and verify results
 	//cout << "\nW_star:\n" << Wstar << endl;	
