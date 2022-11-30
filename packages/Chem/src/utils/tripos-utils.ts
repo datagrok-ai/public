@@ -1,6 +1,23 @@
-import * as grok from 'datagrok-api/grok';
+// import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
+// import * as ui from 'datagrok-api/ui';
+
+// todo: import common constants from to-atomic-level
+const V3K_HEADER_FIRST_LINE = '\nDatagrok macromolecule handler\n\n';
+const V3K_HEADER_SECOND_LINE = '  0  0  0  0  0  0            999 V3000\n';
+const V3K_BEGIN_CTAB_BLOCK = 'M  V30 BEGIN CTAB\n';
+const V3K_END_CTAB_BLOCK = 'M  V30 END CTAB\n';
+const V3K_BEGIN_COUNTS_LINE = 'M  V30 COUNTS ';
+const V3K_COUNTS_LINE_ENDING = ' 0 0 0\n';
+const V3K_BEGIN_ATOM_BLOCK = 'M  V30 BEGIN ATOM\n';
+const V3K_END_ATOM_BLOCK = 'M  V30 END ATOM\n';
+const V3K_BEGIN_BOND_BLOCK = 'M  V30 BEGIN BOND\n';
+const V3K_END_BOND_BLOCK = 'M  V30 END BOND\n';
+const V3K_BOND_CONFIG = ' CFG=';
+const V3K_BEGIN_DATA_LINE = 'M  V30 ';
+const V3K_END = 'M  END\n';
+
+// const V3K_CHARGE = 
 
 const TRIPOS_MOLECULE_LINE = '@<TRIPOS>MOLECULE';
 const TRIPOS_ATOM_LINE = '@<TRIPOS>ATOM';
@@ -13,7 +30,8 @@ type Atoms = {
   x: number[],
   y: number[],
   z: number[],
-  charge: number[]
+  charge: number[],
+  initialIdx: number[],
 }
 
 type Bonds = {
@@ -31,10 +49,13 @@ class TriposParser {
   private _molIdx: number;
 
   /** Running idx within the current molecule */
-  private _beginIdx: number;
+  private _beginIdx: number; // todo: rename
 
   /** Running idx within the current molecule */
-  private _endIdx: number;
+  private _endIdx: number; // todo: delete
+
+  /** Set of hydrogen indices  */
+  private _hydrogenIndices: Set<number>;
 
   /** Get index of the next molecule block  */
   private getNextMolIdx(): number {
@@ -70,37 +91,121 @@ class TriposParser {
   }
 
   /** Returns 'true' if there is a next Tripos molecule to parse */
+  // todo: delete as unnecessary
   public next(): boolean {
     return this.getNextMolIdx() !== -1;
   }
 
   public getNextMolFile(): string {
-    const atoms = this.parseAtoms();
-    const bonds = this.parseBonds();
+    const {atomCount, bondCount} = this.parseAtomAndBondCounts();
+    const atoms = this.parseAtoms(atomCount);
+    const bonds = this.parseBonds(bondCount, atoms);
+
+    return this.getMolFile(atoms, bonds);
+  }
+
+  /** Construct molfile from the parsed atom and bond data  */
+  private getMolFile(atoms: Atoms, bonds: Bonds): string {
+    const atomCount = atoms.atomTypes.length;
+    const bondCount = bonds.bondTypes.length;
+
+    const atomType = atoms.atomTypes;
+    const x = atoms.x;
+    const y = atoms.y;
+    const z = atoms.z;
+    const charge = atoms.charge;
+
+    const bondType = bonds.bondTypes;
+    const atomPair = bonds.atomPairs;
+    // const bondKwargs = molGraph.bonds.kwargs;
+    // const bondConfig = molGraph.bonds.bondConfiguration;
+
+    const molfileCountsLine = V3K_BEGIN_COUNTS_LINE + atomCount + ' ' + bondCount + V3K_COUNTS_LINE_ENDING;
+
+    // atom block
+    let molfileAtomBlock = '';
+    for (let i = 0; i < atomCount; ++i) {
+      const atomIdx = i + 1;
+      const coordinate = [x[i].toString(), y[i].toString()];
+
+      const atomLine = V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
+        coordinate[0] + ' ' + coordinate[1] + ' ' + atomKwargs[i];
+      molfileAtomBlock += atomLine;
+    }
+
+    // bond block
+    let molfileBondBlock = '';
+    for (let i = 0; i < bondCount; ++i) {
+      const bondIdx = i + 1;
+      const firstAtom = atomPair[i][0];
+      const secondAtom = atomPair[i][1];
+      const kwargs = bondKwargs.has(i) ? ' ' + bondKwargs.get(i) : '';
+      const bondCfg = bondConfig.has(i) ? ' CFG=' + bondConfig.get(i) : '';
+      const bondLine = V3K_BEGIN_DATA_LINE + bondIdx + ' ' + bondType[i] + ' ' +
+        firstAtom + ' ' + secondAtom + bondCfg + kwargs + '\n';
+      molfileBondBlock += bondLine;
+    }
+
+    const molfileParts = [
+      V3K_HEADER_FIRST_LINE,
+      V3K_HEADER_SECOND_LINE,
+      V3K_BEGIN_CTAB_BLOCK,
+      molfileCountsLine,
+      V3K_BEGIN_ATOM_BLOCK,
+      molfileAtomBlock,
+      V3K_END_ATOM_BLOCK,
+      V3K_BEGIN_BOND_BLOCK,
+      molfileBondBlock,
+      V3K_END_BOND_BLOCK,
+      V3K_END_CTAB_BLOCK,
+      V3K_END,
+    ];
+    const resultingMolfile = molfileParts.join('');
+    // console.log(resultingMolfile);
+
+    return resultingMolfile;
   }
 
   /** Extract data from TRIPOS atom block  */
-  private parseAtoms(): Atoms {
+  private parseAtoms(atomCount: number): Atoms {
     const atomTypesArray: string[] = [];
     const x: number[] = [];
     const y: number[] = [];
     const z: number[] = [];
     const charge: number[] = [];
+    const initialIdx: number[] = [];
 
     // position at the first atom line
     this._beginIdx = this.getCurrentAtomBlockIdx();
-    const endOfAtomBlockIdx = this.getCurrentBondBlockIdx();
-    while (this._beginIdx !== endOfAtomBlockIdx) {
+    if (this._beginIdx === -1)
+      throw new Error('No valid atom block');
+
+    for (let i = 0; i < atomCount; ++i) {
       // jump to next line
       this._beginIdx = this.getIdxOfNextLine();
+
       const atomType = this.parseAtomType();
       if (atomType !== HYDROGEN) {
+        initialIdx.push(i + 1);
+
         atomTypesArray.push(atomType);
+        this.jumpToNextColumn(); // jump to the X coordinates column
+
         x.push(this.getFloatValue());
+        this.jumpToNextColumn(); // jump to the Y coordinates column
+
         y.push(this.getFloatValue());
+        this.jumpToNextColumn(); // jump to the Z coordinates column
+
         z.push(this.getFloatValue());
-        charge.push(this.getFloatValue());
-      }
+        for (let j = 0; j < 2; ++j) // jump to the last column with charge value
+          this.jumpToNextColumn();
+
+        charge.push(Math.round(this.getFloatValue())); // charge values are integer in MDL molfiles
+        // todo: molfile charges are limited to the span from -15 to 15,
+        // condider the corresponding exception
+      } else
+        this._hydrogenIndices.add(i + 1);
     }
     return {
       atomTypes: atomTypesArray,
@@ -108,22 +213,110 @@ class TriposParser {
       y: y,
       z: z,
       charge: charge,
+      initialIdx: initialIdx,
     };
   }
 
+  /** Extract data from TRIPOS bond block  */
+  private parseBonds(bondCount: number, atoms: Atoms): Bonds {
+    const bondTypes: number[] = [];
+    const atomPairs: number[][] = [];
+
+    // position at the first bond line
+    this._beginIdx = this.getCurrentBondBlockIdx();
+    if (this._beginIdx === -1)
+      throw new Error('No valid bond block');
+
+    for (let i = 0; i < bondCount; ++i) {
+      // jump to next line
+      this._beginIdx = this.getIdxOfNextLine();
+
+      // jump to the 2nd column
+      for (let j = 0; j < 2; ++j)
+        this.jumpToNextColumn();
+
+      let pairHasHydrogen = false;
+
+      const pairOfAtoms: number[] = [];
+      for (let j = 0; j < 2; ++j) {
+        const atomIdx = this.getIntValue();
+        if (this._hydrogenIndices.has(atomIdx)) {
+          pairHasHydrogen = true;
+          break; // we don't need atom pairs with hydrogens
+        }
+        pairOfAtoms.push(atomIdx);
+      }
+      
+      if (pairHasHydrogen)
+        continue; // we don't need atom pairs with hydrogens
+      else {
+        atomPairs.push(pairOfAtoms);
+        this.jumpToNextColumn(); // jump to the bond type column
+
+        bondTypes.push(this.getIntValue());
+      }
+    }
+
+    const bonds = {
+      bondTypes: bondTypes,
+      atomPairs: atomPairs,
+    };
+
+    this.renumberBonds(atoms, bonds);
+
+    return bonds;
+  }
+
+  /** Renumber bonds taking into account the ommitted hydrogens  */
+  private renumberBonds(atoms: Atoms, bonds: Bonds) {
+    /** Maps the initial atom indices to the ones after hydrogen elimination */
+    const map = new Map<number, number>();
+    for (let i = 0; i < atoms.initialIdx.length; ++i)
+      map.set(atoms.initialIdx[i], i + 1);
+
+    for (let i = 0; i < bonds.atomPairs.length; ++i) {
+      for (let j = 0; j < 2; ++j)
+        bonds.atomPairs[i][j] = map.get(bonds.atomPairs[i][j])!;
+    }
+  }
+
+  // private atBondLine(): boolean {
+  //   const end = this._str.indexOf('\n', this._beginIdx);
+  //   return this._str.substring(this._beginIdx, end) === TRIPOS_BOND_LINE;
+  // }
+
+  /** Jumps to atom type column and parses it */
   private parseAtomType(): string {
-    this.jumpToNextColumn(); // used for side effect only: shift to atom type
-    this.jumpToNextColumn();
+    // jump to the 2nd column
+    for (let i = 0; i < 2; ++i)
+      this.jumpToNextColumn();
+
+    let end = this._endIdx + 1;
+    while (!this.isWhitespace(end))
+      ++end;
+
+    const atomType = this._str.substring(this._beginIdx, end);
+
+    return atomType;
   }
 
-  /** Get a float value and shift running idx values */
+  /** Get a float value in the current column */
   private getFloatValue(): number {
-    this.jumpToNextColumn();
+    return this.getNumericValue(parseFloat);
   }
 
-  /** Get a float value and shift running idx values */
+  /** Get an int value in the current column */
   private getIntValue(): number {
-    this.jumpToNextColumn();
+    return this.getNumericValue(parseInt);
+  }
+
+  /** Parse a numeric value depending on the functional argument  */
+  private getNumericValue(parserFunction: (str: string) => number): number {
+    let end = this._beginIdx + 1;
+    while (!this.isWhitespace(end))
+      ++end;
+    const value = parserFunction(this._str.substring(this._beginIdx, end));
+    return value;
   }
 
   /** Jumps to the next column relatively to this._beginIdx  */
@@ -143,8 +336,8 @@ class TriposParser {
     return idx;
   }
 
-  private isWhitespace(idx: number): bool {
-    return this._str.at(idx) === ' ';
+  private isWhitespace(idx: number): boolean {
+    return this._str[idx] === ' ';
   }
 
   // todo: remove as unnecessary?
@@ -173,6 +366,7 @@ class TriposParser {
     // dummy values
     this._beginIdx = 0;
     this._endIdx = 0;
+    this._hydrogenIndices = new Set<number>();
   }
 }
 
