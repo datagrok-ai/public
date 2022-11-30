@@ -139,7 +139,7 @@ class BioPackageDetectors extends DG.Package {
       const statsAsChars = this.getStats(categoriesSample, 5,
         this.getSplitterAsChars(SEQ_SAMPLE_LENGTH_LIMIT));
       // Empty statsAsShars.freq alphabet means no strings of enough length presented in the data
-      if (Object.keys(statsAsChars.freq).length === 0) return;
+      if (Object.keys(statsAsChars.freq).length === 0) return null;
 
       const decoy = this.detectAlphabet(statsAsChars.freq, decoyAlphabets, null);
       if (decoy != ALPHABET.UN) return null;
@@ -150,14 +150,13 @@ class BioPackageDetectors extends DG.Package {
       const splitter = separator ? this.getSplitterWithSeparator(separator, SEQ_SAMPLE_LENGTH_LIMIT) :
         this.getSplitterAsFasta(SEQ_SAMPLE_LENGTH_LIMIT);
 
-      col.setTag(DG.TAGS.UNITS, units);
-      if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
-
       if (statsAsChars.sameLength) {
         const stats = this.getStats(categoriesSample, 5, splitter);
         const alphabet = this.detectAlphabet(stats.freq, candidateAlphabets, '-');
         if (alphabet === ALPHABET.UN) return null;
 
+        col.setTag(DG.TAGS.UNITS, units);
+        if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
         col.setTag(UnitsHandler.TAGS.aligned, ALIGNMENT.SEQ_MSA);
         col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
         return DG.SEMTYPE.MACROMOLECULE;
@@ -175,6 +174,8 @@ class BioPackageDetectors extends DG.Package {
 
         // const forbidden = this.checkForbiddenWoSeparator(stats.freq);
         if (separator || alphabet != 'UN') {
+          col.setTag(DG.TAGS.UNITS, units);
+          if (separator) col.setTag(UnitsHandler.TAGS.separator, separator);
           col.setTag(UnitsHandler.TAGS.aligned, aligned);
           col.setTag(UnitsHandler.TAGS.alphabet, alphabet);
           if (alphabet === ALPHABET.UN) {
