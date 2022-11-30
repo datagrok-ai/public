@@ -21,6 +21,7 @@ import {TreeCutAsTreeApp} from './apps/tree-cut-as-tree-app';
 import {TreeForGridFilterApp} from './apps/tree-for-grid-filter-app';
 import {Dendrogram, MyViewer} from './viewers/dendrogram';
 import {DendrogramApp} from './apps/dendrogram-app';
+import { findNewick } from './scripts-api';
 
 
 export const _package = new DG.Package();
@@ -307,3 +308,16 @@ export function generateTreeDialog() {
 export function myViewer(): DG.JsViewer {
   return new MyViewer();
 }
+
+//name: newickRepresentation
+//input: dataframe data
+//input: column col
+//output: string newick
+export async function newickRepresentation(data: DG.DataFrame) {
+  const columns = Array.from(data.columns.numerical);
+  for (let i = 0; i < columns.length; ++i) 
+      if (columns[i].type === DG.TYPE.DATE_TIME) 
+        columns.splice(i, 1);
+  return await findNewick(DG.DataFrame.fromColumns(columns));
+}
+
