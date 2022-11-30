@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getBy, init, smilesToPubChem} from './pubchem';
-import {pubChemSearchWidget} from './widget';
+import {getSearchWidget} from './widget';
+import { getSmiles } from './utils';
 
 export const _package = new DG.Package();
 
@@ -16,6 +17,7 @@ const pubChemPug = `${pubChemRest}/pug`;
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemPanel(molString: string): Promise<DG.Widget> {
+  molString = await getSmiles(molString);
   const pubChemId = await smilesToPubChem(molString);
   return new DG.Widget(ui.wait(async () => await init(pubChemId)));
 }
@@ -25,7 +27,8 @@ export async function pubChemPanel(molString: string): Promise<DG.Widget> {
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemSubstructureSearchPanel(molString: string): Promise<DG.Widget> {
-  return await pubChemSearchWidget(molString, 'substructure');
+  molString = await getSmiles(molString);
+  return await getSearchWidget(molString, 'substructure');
 }
 
 //name: PubChem Similarity Search
@@ -33,7 +36,8 @@ export async function pubChemSubstructureSearchPanel(molString: string): Promise
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemSimilaritySearchPanel(molString: string): Promise<DG.Widget> {
-  return await pubChemSearchWidget(molString, 'similarity');
+  molString = await getSmiles(molString);
+  return await getSearchWidget(molString, 'similarity');
 }
 
 //name: PubChem Identity Search
@@ -41,7 +45,8 @@ export async function pubChemSimilaritySearchPanel(molString: string): Promise<D
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemIdentitySearch(molString: string): Promise<DG.Widget> {
-  return await pubChemSearchWidget(molString, 'identity');
+  molString = await getSmiles(molString);
+  return await getSearchWidget(molString, 'identity');
 }
 
 //name: pubChem

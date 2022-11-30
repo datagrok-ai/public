@@ -1,20 +1,20 @@
 import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 import {inchiKeys, pubChem} from '../package';
-import {pubChemSearchWidget} from '../widget';
+import {getSearchWidget} from '../widget';
 
 category('PubChem API', () => {
   const molString = 'C';
 
   test('Substructure Search', async () => {
-    await pubChemSearchWidget(molString, 'substructure');
+    await getSearchWidget(molString, 'substructure');
   });
 
   test('Similarity Search', async () => {
-    await pubChemSearchWidget(molString, 'similarity');
+    await getSearchWidget(molString, 'similarity');
   });
 
   test('Identity Search', async () => {
-    await pubChemSearchWidget(molString, 'identity');
+    await getSearchWidget(molString, 'identity');
   });
   
   test('pubChem', async () => {
