@@ -60,11 +60,11 @@ export namespace historyUtils {
     for (const input of dfInputs)
       await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
 
-    return await grok.dapi.functions.calls.save(callToSave);
+    return await grok.dapi.functions.calls.allPackageVersions().save(callToSave);
   }
 
   export async function deleteRun(callToDelete: DG.FuncCall) {
-    await grok.dapi.functions.calls.delete(callToDelete);
+    await grok.dapi.functions.calls.allPackageVersions().delete(callToDelete);
   }
 
   /**

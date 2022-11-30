@@ -344,6 +344,7 @@ export class FunctionView extends DG.ViewBase {
         ]))
         .onOK(async () => {
           if (title.length > 0) {
+            funcCall = await historyUtils.loadRun(funcCall.id);
             funcCall.options['title'] = title;
             funcCall.options['annotation'] = annotation;
             await this.addRunToFavorites(funcCall);
@@ -407,6 +408,7 @@ export class FunctionView extends DG.ViewBase {
     const renderFavoriteCards = async (funcCalls: DG.FuncCall[]) => {
       favoriteCards = funcCalls.map((funcCall) => {
         const unstarIcon = ui.iconFA('star', async (ev) => {
+          funcCall = await historyUtils.loadRun(funcCall.id);
           ev.stopPropagation();
           await this.removeRunFromFavorites(funcCall);
           updateHistoryPane();
@@ -455,6 +457,7 @@ export class FunctionView extends DG.ViewBase {
       sharedCards = funcCalls.map((funcCall) => {
         const unshareIcon = ui.iconFA('eye-slash', async (ev) => {
           ev.stopPropagation();
+          funcCall = await historyUtils.loadRun(funcCall.id);
           await this.removeRunFromShared(funcCall);
           updateHistoryPane();
           updateSharedPane();
@@ -690,7 +693,7 @@ export class FunctionView extends DG.ViewBase {
     callToUnfavorite.options['annotation'] = null;
     callToUnfavorite.options['isFavorite'] = false;
     await this.onBeforeRemoveRunFromFavorites(callToUnfavorite);
-    const favoriteSave = await grok.dapi.functions.calls.save(callToUnfavorite);
+    const favoriteSave = await historyUtils.saveRun(callToUnfavorite);
     await this.onAfterRemoveRunFromFavorites(favoriteSave);
     return favoriteSave;
   }
@@ -709,7 +712,7 @@ export class FunctionView extends DG.ViewBase {
   public async addRunToFavorites(callToFavorite: DG.FuncCall): Promise<DG.FuncCall> {
     callToFavorite.options['isFavorite'] = true;
     await this.onBeforeAddingToFavorites(callToFavorite);
-    const savedFavorite = await grok.dapi.functions.calls.save(callToFavorite);
+    const savedFavorite = await grok.dapi.functions.calls.allPackageVersions().save(callToFavorite);
     await this.onAfterAddingToFavorites(savedFavorite);
     return savedFavorite;
   }
@@ -730,7 +733,7 @@ export class FunctionView extends DG.ViewBase {
     callToUnshare.options['annotation'] = null;
     callToUnshare.options['isShared'] = false;
     await this.onBeforeRemoveRunFromFavorites(callToUnshare);
-    const savedShared = await grok.dapi.functions.calls.save(callToUnshare);
+    const savedShared = await grok.dapi.functions.calls.allPackageVersions().save(callToUnshare);
     await this.onAfterRemoveRunFromFavorites(savedShared);
     return savedShared;
   }
@@ -767,7 +770,7 @@ export class FunctionView extends DG.ViewBase {
       await grok.dapi.permissions.grant(df.getTableInfo(), allGroup, false);
     }
 
-    const savedShared = await grok.dapi.functions.calls.save(callToShare);
+    const savedShared = await grok.dapi.functions.calls.allPackageVersions().save(callToShare);
     await this.onAfterAddingToShared(savedShared);
     return savedShared;
   }
@@ -937,7 +940,7 @@ export class FunctionView extends DG.ViewBase {
    * WARNING: FuncCall inputs/outputs fields are not included
    * @param funcId ID of Func which calls we are looking for. Get it using {@link func.id} field
    * @returns Promise on array of FuncCalls corresponding to the passed Func ID
-   * @stability Stable
+   * @stability Deprecated. Script ID changes with every package release, so searching by ID is useless in practice.
  */
   public async pullRuns(funcId: string, filterOptions: FilterOptions = {}, listOptions: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {}): Promise<DG.FuncCall[]> {
     return historyUtils.pullRuns(funcId, filterOptions, listOptions);

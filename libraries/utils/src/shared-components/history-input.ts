@@ -53,6 +53,9 @@ export class HistoryInput {
     // Array of grid columns visible in the filter viever
     private _visibleColumnsForFilter: string[] = []
   ) {
+    this._historyGrid.columns.byName('Pick')!.cellType = 'html';
+    this._historyGrid.columns.byName('Pick')!.width = 30;
+
     this._visibleInput.input.addEventListener('click', () => {
       const _historyDialog = ui.dialog();
 
@@ -91,9 +94,6 @@ export class HistoryInput {
       this._historyGrid.columns.setVisible(['Pick', ...Object.keys(this._visibleColumnsForGrid).map((colName) => colName)]);
       this._historyFilters.setOptions({columnNames: this._visibleColumnsForFilter});
       $(this._historyFilters.root).find('.d4-filter-group-header').hide();
-
-      this._historyGrid.columns.byName('Pick')!.cellType = 'html';
-      this._historyGrid.columns.byName('Pick')!.width = 30;
 
       if (!this._visibleColumnsForFilter.length) $(this._historyFilters.root.parentElement).hide();
 
