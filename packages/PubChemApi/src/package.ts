@@ -4,15 +4,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getBy, init, smilesToPubChem} from './pubchem';
 import {getSearchWidget} from './widget';
-import { getSmiles } from './utils';
+import {getSmiles} from './utils';
 
 export const _package = new DG.Package();
 
 const pubChemBaseURL = 'https://pubchem.ncbi.nlm.nih.gov';
 const pubChemRest = `${pubChemBaseURL}/rest`;
-const pubChemPug = `${pubChemRest}/pug`;
 
-//name: PubChem
+//name: PubChem | Info
 //tags: panel, widgets
 //input: string molString {semType: Molecule}
 //output: widget result
@@ -22,7 +21,7 @@ export async function pubChemPanel(molString: string): Promise<DG.Widget> {
   return new DG.Widget(ui.wait(async () => await init(pubChemId)));
 }
 
-//name: PubChem Substructure Search
+//name: PubChem | Substructure Search
 //tags: panel, widgets
 //input: string molString {semType: Molecule}
 //output: widget result
@@ -31,7 +30,7 @@ export async function pubChemSubstructureSearchPanel(molString: string): Promise
   return await getSearchWidget(molString, 'substructure');
 }
 
-//name: PubChem Similarity Search
+//name: PubChem | Similarity Search
 //tags: panel, widgets
 //input: string molString {semType: Molecule}
 //output: widget result
@@ -40,7 +39,7 @@ export async function pubChemSimilaritySearchPanel(molString: string): Promise<D
   return await getSearchWidget(molString, 'similarity');
 }
 
-//name: PubChem Identity Search
+//name: PubChem | Identity Search
 //tags: panel, widgets
 //input: string molString {semType: Molecule}
 //output: widget result
@@ -71,6 +70,6 @@ export async function pubChem(id: string) {
 export async function inchiKeys(id: string) {
   const s = await getBy('InChIKey', 'cids', id);
   const cids = s['IdentifierList']['CID'][0];
-  var smiles = await pubChem(cids);
+  const smiles = await pubChem(cids);
   return smiles;
 }

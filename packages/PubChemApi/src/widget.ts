@@ -25,13 +25,13 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
   }
 
   if (json == null) {
+    compsHost.firstChild?.remove();
     compsHost.appendChild(ui.divText('No matches'));
     return widget;
   }
 
   if (searchType == 'identity') {
     const props: {value: anyObject, urn: anyObject}[] = json[0]['props'];
-    const tooltips = [];
     const result: anyObject = {};
     const bannedKeys = ['label', 'name', 'implementation', 'datatype'];
 
@@ -57,6 +57,7 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
   const table = DG.DataFrame.fromObjects(json);
 
   if (!table || table.filter.trueCount === 0) {
+    compsHost.firstChild?.remove();
     compsHost.appendChild(ui.divText('No matches'));
     return widget;
   }
@@ -80,8 +81,10 @@ export async function getSearchWidget(molString: string, searchType: pubChemSear
   }, 'Open compounds as table'));
   compsHost.style.overflowY = 'auto';
 
-  if (compsHost.children.length === 0)
+  if (compsHost.children.length === 0) {
+    compsHost.firstChild?.remove();
     compsHost.appendChild(ui.divText('No matches'));
+  }
 
   return widget;
 }

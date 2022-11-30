@@ -16,7 +16,7 @@ category('PubChem API', () => {
   test('Identity Search', async () => {
     await getSearchWidget(molString, 'identity');
   });
-  
+
   test('pubChem', async () => {
     expect(await pubChem('3334'), 'COC(=O)NC1=NC2=C(N1)C=C(C=C2)SC3=CC=CC=C3');
     expect(await pubChem('44219'), 'CC(=O)OC1=CC=CC=C1C(=O)[O-].C(CC[NH3+])CC(C(=O)O)N');
