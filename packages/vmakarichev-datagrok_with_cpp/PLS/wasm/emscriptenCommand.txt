@@ -1,48 +1,103 @@
-em++ -O3 plsExport.cpp PLS\pls.cpp -o eigenPLS.js -s TOTAL_MEMORY=268435456 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME="exportEigenPLS" -s EXPORTED_FUNCTIONS=["_partialLeastSquareRegression","_malloc","_free"] -s EXPORTED_RUNTIME_METHODS=["cwrap","ccall"]
+em++ -O3 plsExport.cpp PLS\pls.cpp -o eigenPLS.js -s TOTAL_MEMORY=268435456 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME="exportEigenPLS" -s EXPORTED_FUNCTIONS=["_partialLeastSquareRegression","_partialLeastSquareRegressionExtended","_malloc","_free"] -s EXPORTED_RUNTIME_METHODS=["cwrap","ccall"]
 
 TO ADD TO JS:
 
 var partialLeastSquareRegression = {
-  arguments: {
-    predictorColumns: {
-      type: 'floatColumns'
-    },
-    responseColumn: {
-      type: 'floatColumn'
-    },
-    componentsCount: {
-      type: 'int'
-    },
-    predictionColumn: {
-      type: 'newFloatColumn',
-      numOfRows: {
-        ref: 'responseColumn',
-        value: 'numOfRows'
+    arguments: {
+      predictorColumns: {
+        type: 'floatColumns'
+      },
+      responseColumn: {
+        type: 'floatColumn'
+      },
+      componentsCount: {
+        type: 'int'
+      },
+      predictionColumn: {
+        type: 'newFloatColumn',
+        numOfRows: {
+          ref: 'responseColumn',
+          value: 'numOfRows'
+        }
+      },
+      regressionCoefficients: {
+        type: 'newFloatColumn',
+        numOfRows: {
+          ref: 'predictorColumns',
+          value: 'numOfColumns'
+        }
       }
     },
-    regressionCoefficients: {
-      type: 'newFloatColumn',
-      numOfRows: {
-        ref: 'predictorColumns',
-        value: 'numOfColumns'
-      }
+    output: {
+      type: 'column',
+      source: 'predictionColumn' 
     }
-  },
-  output: {
-    type: 'column',
-    source: 'predictionColumn' 
-  }
-};
+  }; // partialLeastSquareRegression
+  
+  var partialLeastSquareRegressionExtended = {
+    arguments: {
+      predictorColumns: {
+        type: 'floatColumns'
+      },
+      responseColumn: {
+        type: 'floatColumn'
+      },
+      componentsCount: {
+        type: 'int'
+      },
+      predictionColumn: {
+        type: 'newFloatColumn',
+        numOfRows: {
+          ref: 'responseColumn',
+          value: 'numOfRows'
+        }
+      },
+      regressionCoefficients: {
+        type: 'newFloatColumn',
+        numOfRows: {
+          ref: 'predictorColumns',
+          value: 'numOfColumns'
+        }
+      },
+      predictorScores: {
+        type: 'newFloatColumns',
+        numOfRows: {
+          ref: 'responseColumn',
+          value: 'numOfRows'
+        },
+        numOfColumns: {
+          ref: 'componentsCount',
+          value: 'data'
+        }
+      },
+      responseScores: {
+        type: 'newFloatColumns',
+        numOfRows: {
+          ref: 'responseColumn',
+          value: 'numOfRows'
+        },
+        numOfColumns: {
+          ref: 'componentsCount',
+          value: 'data'
+        }
+      }
+    },
+    output: {
+      type: 'column',
+      source: 'predictionColumn' 
+    }
+  }; //partialLeastSquareRegressionExtended
 
-var EigenPLS = undefined;
-
-async function initEigenPLS() {
-  if (EigenPLS === undefined) {
-    console.log("Wasm not Loaded, Loading");
-    EigenPLS  = await exportEigenPLS();
-     
-    EigenPLS.partialLeastSquareRegression = partialLeastSquareRegression;     
-  } else {
-    console.log("Wasm Loaded, Passing");
+  var EigenPLS = undefined;
+  
+  async function initEigenPLS() {
+    if (EigenPLS === undefined) {
+      console.log("Wasm not Loaded, Loading");
+      EigenPLS  = await exportEigenPLS();
+       
+      EigenPLS.partialLeastSquareRegression = partialLeastSquareRegression;
+      EigenPLS.partialLeastSquareRegressionExtended = partialLeastSquareRegressionExtended;     
+    } else {
+      console.log("Wasm Loaded, Passing");
+    }
   }
-}

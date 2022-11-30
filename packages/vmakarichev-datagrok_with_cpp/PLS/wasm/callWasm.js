@@ -342,7 +342,7 @@ let Param = {
         return new ArgColumns(columns.toList(), 'f32');
     },
 
-    newFloatColums(numOfRows, numOfColumns) {
+    newFloatColumns(numOfRows, numOfColumns) {
         return new ArgNewColumns('f32', numOfRows, numOfColumns);
     },
 
@@ -379,7 +379,7 @@ export function callWasm(module, funcName, inputs) {
     let funcSpecification = module[funcName];
 
     // get argumnets
-    let args = funcSpecification.arguments;
+    let args = funcSpecification.arguments; 
 
     // array of arguments that further are used by cpp-wrapper
     let cppFuncInput = [];
@@ -401,7 +401,7 @@ export function callWasm(module, funcName, inputs) {
                 arg.data = Param[arg.type](inputs[i]);
                 i++;
                 break;
-            case 'newFloatColums':
+            case 'newFloatColumns':
                 let val1 = args[ arg['numOfRows']['ref'] ].data[arg['numOfRows']['value']];
                 let val2 = args[ arg['numOfColumns']['ref'] ].data[arg['numOfColumns']['value']];
                 arg.data = Param[arg.type](val1, val2);
@@ -413,6 +413,10 @@ export function callWasm(module, funcName, inputs) {
             } // switch
 
         cppFuncInput.push(args[key].data);
+
+        /*console.log(key + ':');
+        console.log(args[key].data);
+        console.log('\n');*/
     } // for key    
 
     // CALL EXPORTED CPP-FUNCTION
@@ -436,5 +440,9 @@ export function callWasm(module, funcName, inputs) {
 
     //return Return[output['type']](args[output['source']].data);
 
-    return [args['predictionColumn'].data.data, args['regressionCoefficients'].data.data];
+    return [args['predictionColumn'].data.data, 
+            args['regressionCoefficients'].data.data,
+            args['predictorScores'].data.data,
+            args['responseScores'].data.data,
+        ];
   } // callWasm
