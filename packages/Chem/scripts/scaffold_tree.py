@@ -6,7 +6,6 @@
 #input: string names
 #output: string result
 
-!pip install scaffoldgraph
 import scaffoldgraph as sg
 import networkx as nx
 import json
@@ -57,9 +56,8 @@ def get_hierarchies_list(tree, sorted_scaffolds):
     return result
 
 #function that returns dict for each hierarchy depending on the input data
-def get_hierarchy_dict(hierarchy_num, scaffold_str, child_nodes_list):
+def get_hierarchy_dict(scaffold_str, child_nodes_list):
     hierarchy_dict = {
-        'hierarchy': hierarchy_num, 
         'scaffold': scaffold_str, 
         'child_nodes': child_nodes_list
     }
@@ -72,9 +70,12 @@ def get_json_representation(tree):
     sorted_scaffolds = get_sorted_scaffolds(tree, scaffolds)
     hierarchies = get_hierarchies_list(tree, sorted_scaffolds)
     nodes = list(tree.get_molecule_nodes())
-    json_list.append(get_hierarchy_dict(1, sorted_scaffolds[0], find_nodes(tree, nodes, sorted_scaffolds[0])))
+    json_list.append(get_hierarchy_dict(sorted_scaffolds[0], find_nodes(tree, nodes, sorted_scaffolds[0])))
     for i in range(1, len(sorted_scaffolds)):
-        hierarchy_dict = get_hierarchy_dict(hierarchies[i], sorted_scaffolds[i], find_nodes(tree, nodes, sorted_scaffolds[i]))
+        hierarchy_dict = get_hierarchy_dict(sorted_scaffolds[i], [])
+        molecule_nodes = find_nodes(tree, nodes, sorted_scaffolds[i])
+        for j in range(0, len(molecule_nodes)):
+            hierarchy_dict['child_nodes'].append(get_hierarchy_dict(molecule_nodes[j], []))
         recurs_append_nodes('scaffold', ''.join(tree.get_parent_scaffolds(sorted_scaffolds[i], max_levels=1)), hierarchy_dict, json_list[0])
     return json_list[0]
 
