@@ -661,7 +661,7 @@ export namespace chem {
   export async function canvasMol(
     x: number, y: number, w: number, h: number,
     canvas: Object, molString: string, scaffoldMolString: string | null = null,
-    options = {setNewCoords: true, normalizeDepiction: true, straightenDepiction: true}
+    options = {normalizeDepiction: true, straightenDepiction: true}
   ): Promise<void> {
     await grok.functions.call('Chem:canvasMol', {
       'x': x, 'y': y, 'w': w, 'h': h, 'canvas': canvas,

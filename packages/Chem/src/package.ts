@@ -100,7 +100,7 @@ export function substructureFilter(): SubstructureFilter {
 export function canvasMol(
   x: number, y: number, w: number, h: number, canvas: HTMLCanvasElement,
   molString: string, scaffoldMolString: string | null = null,
-  options = {setNewCoords: true, normalizeDepiction: true, straightenDepiction: true}
+  options = {normalizeDepiction: true, straightenDepiction: true}
 ): void {
   drawMoleculeToCanvas(x, y, w, h, canvas,
     molString, scaffoldMolString == '' ? null : scaffoldMolString,

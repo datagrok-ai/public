@@ -92,13 +92,14 @@ export function drawRdKitMoleculeToOffscreenCanvas(
 export function drawMoleculeToCanvas(
   x: number, y: number, w: number, h: number,
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
-  options = {setNewCoords: true, normalizeDepiction: true, straightenDepiction: true}
+  options = {normalizeDepiction: true, straightenDepiction: true}
 ) {
   let mol = null;
   try {
-    mol = isMolBlock(molString) ? getRdKitModule().get_mol(molString) : getRdKitModule().get_mol(convertToRDKit(molString)!);
+    const isMol: boolean = isMolBlock(molString);
+    mol = isMol ? getRdKitModule().get_mol(molString) : getRdKitModule().get_mol(convertToRDKit(molString)!);
 
-    if (options.setNewCoords ?? true)
+    if (!isMol)
       mol.set_new_coords(true);
 
     if (options.normalizeDepiction ?? true)

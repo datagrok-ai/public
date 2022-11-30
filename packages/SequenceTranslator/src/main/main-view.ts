@@ -102,7 +102,7 @@ export async function mainView(): Promise<HTMLDivElement> {
             await grok.functions.call('Chem:canvasMol', {
               x: 0, y: 0, w: dlgCanvas.width, h: dlgCanvas.height, canvas: dlgCanvas,
               molString: mol, scaffoldMolString: '',
-              options: {setNewCoords: false, normalizeDepiction: false, straightenDepiction: false}
+              options: {normalizeDepiction: false, straightenDepiction: false}
             });
 
             addDiv.appendChild(dlgCanvas);
@@ -123,7 +123,7 @@ export async function mainView(): Promise<HTMLDivElement> {
         await grok.functions.call('Chem:canvasMol', {
           x: 0, y: 0, w: formCanvas.width, h: formCanvas.height, canvas: formCanvas,
           molString: mol, scaffoldMolString: '',
-          options: {setNewCoords: false, normalizeDepiction: false, straightenDepiction: false}
+          options: {normalizeDepiction: false, straightenDepiction: false}
         });
         moleculeSvgDiv.append(formCanvas);
       } else
