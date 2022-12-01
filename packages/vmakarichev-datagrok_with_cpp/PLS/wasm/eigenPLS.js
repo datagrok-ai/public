@@ -112,8 +112,12 @@ else if (typeof exports === 'object')
       }
     },
     output: {
-      type: 'column',
-      source: 'predictionColumn' 
+      type: 'objects',
+      source: ['predictionColumn', 
+               'regressionCoefficients', 
+               'predictorScores',
+               'responseScores',
+               'predictorLoadings'] 
     }
   }; //partialLeastSquareRegressionExtended
 

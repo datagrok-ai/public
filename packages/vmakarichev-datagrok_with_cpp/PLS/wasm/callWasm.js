@@ -430,14 +430,16 @@ export function callWasm(module, funcName, inputs) {
     let finish = new Date().getTime();
 
     console.log(`Time for C/C++-function is ${finish - start} ms.`)
- 
-    //return Return[output['type']](args[output['source']].data);
 
-    // TODO: provide an adequate Return[...]
-    return [args['predictionColumn'].data.data, 
-            args['regressionCoefficients'].data.data,
-            args['predictorScores'].data.data,
-            args['responseScores'].data.data,
-            args['predictorLoadings'].data.data
-        ];
+    // if a single object must be returned
+    if(output['type'] != 'objects')
+      return Return[output['type']](args[output['source']].data);
+
+    let arrayToReturn = [];
+
+    // push data of the required arguments
+    for(let name of output['source'])
+      arrayToReturn.push(args[name].data.data);
+
+    return arrayToReturn;
   } // callWasm
