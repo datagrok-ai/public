@@ -34,19 +34,21 @@ def get_parent(tree, scaffold):
     return ''.join(tree.get_parent_scaffolds(scaffold, max_levels=1))
 
 #function that returns the right order of scaffolds
-def get_sorted_scaffolds(tree, scaffolds):
-    child_scaffolds = [scaffold for scaffold in scaffolds if len(tree.get_child_scaffolds(scaffold, max_levels=1)) == 0]
-    sorted_scaffolds = []
-    for i in range(0, len(child_scaffolds)):
-        result = []
-        result.insert(0, child_scaffolds[i])
-        child = child_scaffolds[i]
-        while len(get_parent(tree, child)) != 0:
-            child = get_parent(tree, child)
-            if child not in sorted_scaffolds:
-                result.insert(0, child)
-        sorted_scaffolds.extend(result)
-    return sorted_scaffolds
+def get_sorted_scaffolds(tree, nodes):
+    result = []
+    last = 0
+    prev_node = nodes[0]
+    result.append(prev_node)
+    while len(nodes) != 1:
+        prev_node = nodes[0]
+        for i in range(1, len(nodes)):
+            if prev_node in list(tree._get_scaffold_hierarchy(nodes[i])):
+                if nodes[i] not in result:
+                    result.append(nodes[i])
+                prev_node = nodes[i]
+                last = i
+        nodes.remove(nodes[last])
+    return result
 
 #function that returns scaffold hierarchies
 def get_hierarchies_list(tree, sorted_scaffolds):
@@ -63,12 +65,21 @@ def get_hierarchy_dict(scaffold_str, child_nodes_list):
     }
     return hierarchy_dict
 
-#function to get the json representation
-def get_json_representation(tree):
+#function that returns first hierarchy scaffolds
+def get_first_hierarchy(tree, scaffolds):
+    first_hierarchy_scaffolds = []
+    for scaffold in scaffolds:
+        if tree.nodes[scaffold]['hierarchy'] == 1:
+            first_hierarchy_scaffolds.append(scaffold)
+    return first_hierarchy_scaffolds
+
+#function that returns the tree for first_hierarchy_scaffolds (if there are multiple mcs)
+def get_tree(tree, scaffold_1):
     json_list = []
-    scaffolds = list(tree.get_scaffold_nodes())
+    scaffolds = []
+    scaffolds.append(scaffold_1)
+    scaffolds.extend(list(tree.get_child_scaffolds(scaffold_1)))
     sorted_scaffolds = get_sorted_scaffolds(tree, scaffolds)
-    hierarchies = get_hierarchies_list(tree, sorted_scaffolds)
     nodes = list(tree.get_molecule_nodes())
     json_list.append(get_hierarchy_dict(sorted_scaffolds[0], find_nodes(tree, nodes, sorted_scaffolds[0])))
     for i in range(1, len(sorted_scaffolds)):
@@ -78,6 +89,15 @@ def get_json_representation(tree):
             hierarchy_dict['child_nodes'].append(get_hierarchy_dict(molecule_nodes[j], []))
         recurs_append_nodes('scaffold', ''.join(tree.get_parent_scaffolds(sorted_scaffolds[i], max_levels=1)), hierarchy_dict, json_list[0])
     return json_list[0]
+
+#function to get the json representation
+def get_json_representation(tree):
+    scaffolds = list(tree.get_scaffold_nodes())
+    first_scaffolds = get_first_hierarchy(tree, scaffolds)
+    json_list = []
+    for scaffold in first_scaffolds:
+        json_list.append(get_tree(tree, scaffold))
+    return json_list
 
 tree = sg.ScaffoldTree.from_dataframe(
     data, smiles_column=smiles, name_column=names, progress=True,
