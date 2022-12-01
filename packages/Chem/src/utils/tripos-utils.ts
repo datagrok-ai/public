@@ -13,11 +13,11 @@ const V3K_BEGIN_ATOM_BLOCK = 'M  V30 BEGIN ATOM\n';
 const V3K_END_ATOM_BLOCK = 'M  V30 END ATOM\n';
 const V3K_BEGIN_BOND_BLOCK = 'M  V30 BEGIN BOND\n';
 const V3K_END_BOND_BLOCK = 'M  V30 END BOND\n';
-const V3K_BOND_CONFIG = ' CFG=';
+// const V3K_BOND_CONFIG = ' CFG=';
 const V3K_BEGIN_DATA_LINE = 'M  V30 ';
 const V3K_END = 'M  END\n';
 
-// const V3K_CHARGE = 
+const V3K_CHARGE = ' CHG=';
 
 const TRIPOS_MOLECULE_LINE = '@<TRIPOS>MOLECULE';
 const TRIPOS_ATOM_LINE = '@<TRIPOS>ATOM';
@@ -46,27 +46,27 @@ class TriposParser {
   private _str: string;
   /** Index of the molecule being currently parsed, always points to some actual
    * value*/
-  private _molIdx: number;
+  private _currentMolIdx: number;
 
   /** Running idx within the current molecule */
-  private _beginIdx: number; // todo: rename
+  private _currentIdx: number; // todo: rename
 
-  /** Running idx within the current molecule */
-  private _endIdx: number; // todo: delete
+  // /** Running idx within the current molecule */
+  // private _endIdx: number; // todo: delete
 
   /** Set of hydrogen indices  */
   private _hydrogenIndices: Set<number>;
 
   /** Get index of the next molecule block  */
   private getNextMolIdx(): number {
-    const begin = (this._molIdx === 0) ? 0 : this._molIdx + 1;
+    const begin = (this._currentIdx === 0) ? 0 : this._currentMolIdx + 1;
     return this._str.indexOf(TRIPOS_MOLECULE_LINE, begin);
   }
 
   /** Returns the idx of the atom block for current molecule, or throws if
    * none */
   private getCurrentAtomBlockIdx(): number {
-    const value = this._str.indexOf(TRIPOS_ATOM_LINE, this._molIdx);
+    const value = this._str.indexOf(TRIPOS_ATOM_LINE, this._currentMolIdx);
     if (value !== -1)
       return value;
     else
@@ -76,7 +76,7 @@ class TriposParser {
   /** Returns the idx of the bond block for current molecule, or throws if
    * none */
   private getCurrentBondBlockIdx(): number {
-    const value = this._str.indexOf(TRIPOS_BOND_LINE, this._molIdx);
+    const value = this._str.indexOf(TRIPOS_BOND_LINE, this._currentMolIdx);
     if (value !== -1)
       return value;
     else
@@ -84,10 +84,10 @@ class TriposParser {
   }
 
   private getIdxOfNextLine(): number {
-    if (this._str.at(this._beginIdx) !== '\n')
-      return this._str.indexOf('\n', this._beginIdx) + 1;
+    if (this._str.at(this._currentIdx) !== '\n')
+      return this._str.indexOf('\n', this._currentIdx) + 1;
     else
-      return this._str.indexOf('\n', this._beginIdx + 1) + 1;
+      return this._str.indexOf('\n', this._currentIdx + 1) + 1;
   }
 
   /** Returns 'true' if there is a next Tripos molecule to parse */
@@ -101,7 +101,28 @@ class TriposParser {
     const atoms = this.parseAtoms(atomCount);
     const bonds = this.parseBonds(bondCount, atoms);
 
-    return this.getMolFile(atoms, bonds);
+    const molfile = this.getMolFile(atoms, bonds);
+
+    this._currentMolIdx = this.getNextMolIdx();
+
+    return molfile;
+  }
+
+  private parseAtomAndBondCounts(): {atomCount: number, bondCount: number} {
+    // position at the molecule line
+    this._currentIdx = this._currentMolIdx;
+    for (let i = 0; i < 2; ++i)
+      this.jumpToNextLine();
+
+    const atomCount = this.parseIntValue();
+    this.jumpToNextColumn();
+    const bondCount = this.parseIntValue();
+
+    return {atomCount: atomCount, bondCount: bondCount};
+  }
+
+  private jumpToNextLine(): void {
+    this._currentIdx = this.getIdxOfNextLine();
   }
 
   /** Construct molfile from the parsed atom and bond data  */
@@ -126,10 +147,13 @@ class TriposParser {
     let molfileAtomBlock = '';
     for (let i = 0; i < atomCount; ++i) {
       const atomIdx = i + 1;
-      const coordinate = [x[i].toString(), y[i].toString()];
+      // const coordinate = [x[i].toString(), y[i].toString(), z[i].toString()];
+      const chargeKwarg = (charge[i] === 0) ? '' :
+        V3K_CHARGE + charge[i].toString();
 
       const atomLine = V3K_BEGIN_DATA_LINE + atomIdx + ' ' + atomType[i] + ' ' +
-        coordinate[0] + ' ' + coordinate[1] + ' ' + atomKwargs[i];
+        x[i].toString() + ' ' + y[i].toString() + ' ' + z[i].toString() +
+        ' 0' + chargeKwarg + '\n';
       molfileAtomBlock += atomLine;
     }
 
@@ -139,10 +163,12 @@ class TriposParser {
       const bondIdx = i + 1;
       const firstAtom = atomPair[i][0];
       const secondAtom = atomPair[i][1];
-      const kwargs = bondKwargs.has(i) ? ' ' + bondKwargs.get(i) : '';
-      const bondCfg = bondConfig.has(i) ? ' CFG=' + bondConfig.get(i) : '';
+      // const kwargs = bondKwargs.has(i) ? ' ' + bondKwargs.get(i) : '';
+      // const bondCfg = bondConfig.has(i) ? ' CFG=' + bondConfig.get(i) : '';
+      // const bondLine = V3K_BEGIN_DATA_LINE + bondIdx + ' ' + bondType[i] + ' ' +
+      //   firstAtom + ' ' + secondAtom + bondCfg + kwargs + '\n';
       const bondLine = V3K_BEGIN_DATA_LINE + bondIdx + ' ' + bondType[i] + ' ' +
-        firstAtom + ' ' + secondAtom + bondCfg + kwargs + '\n';
+        firstAtom + ' ' + secondAtom + '\n';
       molfileBondBlock += bondLine;
     }
 
@@ -176,32 +202,31 @@ class TriposParser {
     const initialIdx: number[] = [];
 
     // position at the first atom line
-    this._beginIdx = this.getCurrentAtomBlockIdx();
-    if (this._beginIdx === -1)
+    this._currentIdx = this.getCurrentAtomBlockIdx();
+    if (this._currentIdx === -1)
       throw new Error('No valid atom block');
 
     for (let i = 0; i < atomCount; ++i) {
-      // jump to next line
-      this._beginIdx = this.getIdxOfNextLine();
+      this.jumpToNextLine();
 
       const atomType = this.parseAtomType();
       if (atomType !== HYDROGEN) {
         initialIdx.push(i + 1);
 
         atomTypesArray.push(atomType);
+
         this.jumpToNextColumn(); // jump to the X coordinates column
+        x.push(this.parseFloatValue());
 
-        x.push(this.getFloatValue());
         this.jumpToNextColumn(); // jump to the Y coordinates column
+        y.push(this.parseFloatValue());
 
-        y.push(this.getFloatValue());
         this.jumpToNextColumn(); // jump to the Z coordinates column
+        z.push(this.parseFloatValue());
 
-        z.push(this.getFloatValue());
-        for (let j = 0; j < 2; ++j) // jump to the last column with charge value
+        for (let j = 0; j < 4; ++j) // jump to the last column with charge value
           this.jumpToNextColumn();
-
-        charge.push(Math.round(this.getFloatValue())); // charge values are integer in MDL molfiles
+        charge.push(Math.round(this.parseFloatValue())); // charge values are integer in MDL molfiles
         // todo: molfile charges are limited to the span from -15 to 15,
         // condider the corresponding exception
       } else
@@ -223,13 +248,12 @@ class TriposParser {
     const atomPairs: number[][] = [];
 
     // position at the first bond line
-    this._beginIdx = this.getCurrentBondBlockIdx();
-    if (this._beginIdx === -1)
+    this._currentIdx = this.getCurrentBondBlockIdx();
+    if (this._currentIdx === -1)
       throw new Error('No valid bond block');
 
     for (let i = 0; i < bondCount; ++i) {
-      // jump to next line
-      this._beginIdx = this.getIdxOfNextLine();
+      this.jumpToNextLine();
 
       // jump to the 2nd column
       for (let j = 0; j < 2; ++j)
@@ -239,21 +263,22 @@ class TriposParser {
 
       const pairOfAtoms: number[] = [];
       for (let j = 0; j < 2; ++j) {
-        const atomIdx = this.getIntValue();
+        const atomIdx = this.parseIntValue();
         if (this._hydrogenIndices.has(atomIdx)) {
           pairHasHydrogen = true;
           break; // we don't need atom pairs with hydrogens
         }
         pairOfAtoms.push(atomIdx);
+        this.jumpToNextColumn();
       }
       
       if (pairHasHydrogen)
         continue; // we don't need atom pairs with hydrogens
       else {
         atomPairs.push(pairOfAtoms);
-        this.jumpToNextColumn(); // jump to the bond type column
 
-        bondTypes.push(this.getIntValue());
+        // no need to jump to this column, already here
+        bondTypes.push(this.parseIntValue());
       }
     }
 
@@ -281,8 +306,8 @@ class TriposParser {
   }
 
   // private atBondLine(): boolean {
-  //   const end = this._str.indexOf('\n', this._beginIdx);
-  //   return this._str.substring(this._beginIdx, end) === TRIPOS_BOND_LINE;
+  //   const end = this._str.indexOf('\n', this._currentIdx);
+  //   return this._str.substring(this._currentIdx, end) === TRIPOS_BOND_LINE;
   // }
 
   /** Jumps to atom type column and parses it */
@@ -291,42 +316,43 @@ class TriposParser {
     for (let i = 0; i < 2; ++i)
       this.jumpToNextColumn();
 
-    let end = this._endIdx + 1;
+    // let end = this._endIdx + 1;
+    let end = this._currentIdx + 1;
     while (!this.isWhitespace(end))
       ++end;
 
-    const atomType = this._str.substring(this._beginIdx, end);
+    const atomType = this._str.substring(this._currentIdx, end);
 
     return atomType;
   }
 
   /** Get a float value in the current column */
-  private getFloatValue(): number {
-    return this.getNumericValue(parseFloat);
+  private parseFloatValue(): number {
+    return this.parseNumericValue(parseFloat);
   }
 
   /** Get an int value in the current column */
-  private getIntValue(): number {
-    return this.getNumericValue(parseInt);
+  private parseIntValue(): number {
+    return this.parseNumericValue(parseInt);
   }
 
   /** Parse a numeric value depending on the functional argument  */
-  private getNumericValue(parserFunction: (str: string) => number): number {
-    let end = this._beginIdx + 1;
+  private parseNumericValue(parserFunction: (str: string) => number): number {
+    let end = this._currentIdx + 1;
     while (!this.isWhitespace(end))
       ++end;
-    const value = parserFunction(this._str.substring(this._beginIdx, end));
+    const value = parserFunction(this._str.substring(this._currentIdx, end));
     return value;
   }
 
-  /** Jumps to the next column relatively to this._beginIdx  */
+  /** Jumps to the next column relatively to this._currentIdx  */
   private jumpToNextColumn(): void {
-    this._beginIdx = this.getNextColumnIdx();
+    this._currentIdx = this.getNextColumnIdx();
   }
 
-  /** Gets the idx of the next column relatively to this._beginIdx  */
+  /** Gets the idx of the next column relatively to this._currentIdx  */
   private getNextColumnIdx(): number {
-    let idx = this._beginIdx;
+    let idx = this._currentIdx;
     // skip non-whitespace, if necessary
     while (!this.isWhitespace(idx))
       ++idx;
@@ -343,14 +369,14 @@ class TriposParser {
   // todo: remove as unnecessary?
   /** Get the total number of molecules in a mol2 file */
   public getNumberOfMols(): number {
-    const initIdx = this._molIdx;
-    this._molIdx = 0;
+    const initIdx = this._currentMolIdx;
+    this._currentMolIdx = 0;
     let numOfMols = 0;
     while (this.next()) {
       numOfMols++;
-      this._molIdx = this.getNextMolIdx();
+      this._currentMolIdx = this.getNextMolIdx();
     }
-    this._molIdx = initIdx;
+    this._currentMolIdx = initIdx;
 
     return numOfMols;
   }
@@ -358,14 +384,12 @@ class TriposParser {
   constructor(str: string) {
     this._str = str;
 
-    this._molIdx = 0;
-    this._molIdx = this.getNextMolIdx();
+    this._currentMolIdx = 0;
+    this._currentMolIdx = this.getNextMolIdx();
     if (!this.next()) // check for existence of molecular data
       throw new Error('The mol2 file does not contain a molecule');
 
-    // dummy values
-    this._beginIdx = 0;
-    this._endIdx = 0;
+    this._currentIdx = 0;
     this._hydrogenIndices = new Set<number>();
   }
 }
