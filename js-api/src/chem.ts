@@ -21,9 +21,16 @@ const DEFAULT_SKETCHER = 'openChemLibSketcher';
 export const WHITE_MOLBLOCK = `
   Datagrok empty molecule
 
-0  0  0  0  0  0  0  0  0  0999 V2000
+  0  0  0  0  0  0  0  0  0  0999 V2000
 M  END
 `;
+export const WHITE_MOLBLOCK_V_3000 = `Datagrok macromolecule handler
+0  0  0  0  0  0            999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 0 0 0 0 0
+M  V30 END CTAB
+M  END
+$$$$`
 
 let extractors: Func[];  // id => molecule
 
@@ -36,6 +43,7 @@ export namespace chem {
 
   export const SMILES = 'smiles';
   export const MOLV2000 = 'molv2000';
+  export const MOLV3000 = 'molV3000';
   export const SMARTS = 'smarts';
 
   export enum SKETCHER_MODE {
@@ -65,6 +73,12 @@ export namespace chem {
     get molFile(): string {
       return this.host!._molfile;
     }
+
+    get molV3000(): string {
+      return this.host!._molfile;
+    }
+
+    set molV3000(s: string) { }
 
     set molFile(s: string) { }
 
@@ -112,6 +126,8 @@ export namespace chem {
     _molfile = WHITE_MOLBLOCK;
     _smarts = '';
     unitsBeforeInit = '';
+    molFileUnits = MOLV2000;
+
 
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
     inplaceSketcherDiv: HTMLDivElement | null = null;
@@ -145,12 +161,18 @@ export namespace chem {
       //   }
       // }
       // return this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : !this._molfile ? returnConvertedMolfile() : this._molfile;
-      return this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : this._molfile;
+      return this.sketcher && this.sketcher._sketcher ?
+        this.molFileUnits === MOLV2000 ? this.sketcher.molFile : this.sketcher.molV3000 : this._molfile;
     }
 
     setMolFile(x: string): void {
+      this.molFileUnits = x.includes('V3000') ? MOLV3000 : MOLV2000;
       this._molfile = x;
-      this.sketcher && this.sketcher._sketcher ? this.sketcher!.molFile = x : this.unitsBeforeInit = MOLV2000;
+      if (this.sketcher && this.sketcher._sketcher) {
+        this.molFileUnits === MOLV2000 ? this.sketcher!.molFile = x : this.sketcher!.molV3000 = x;
+      } else {
+        this.unitsBeforeInit = this.molFileUnits;
+      }
       this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
@@ -242,7 +264,8 @@ export namespace chem {
         this._mode = mode;
       this.root.append(ui.div([ui.divText('')]));
       this.sketcherCreated.subscribe(() => {
-        const molecule = this.unitsBeforeInit === SMILES ? this._smiles : this.unitsBeforeInit === MOLV2000 ? this._molfile : this._smarts;
+        const molecule = this.unitsBeforeInit === SMILES ? this._smiles :
+          (this.unitsBeforeInit === MOLV2000 || this.unitsBeforeInit === MOLV3000) ? this._molfile : this._smarts;
         this.setMolecule(molecule, this.unitsBeforeInit === SMARTS);
       });
       setTimeout(() => this.createSketcher(), 100);
@@ -466,7 +489,10 @@ export namespace chem {
     }
 
     static isEmptyMolfile(molFile: string): boolean {
-      return (molFile == null || molFile == '' || molFile.split("\n")[3].trimStart()[0] === '0');
+      const rowWithAtomsAndNotation = molFile.split("\n")[3];
+      return (molFile == null || molFile == '' ||
+       (rowWithAtomsAndNotation.trimStart()[0] === '0' && rowWithAtomsAndNotation.trimEnd().endsWith('V2000')) ||
+       (rowWithAtomsAndNotation.trimEnd().endsWith('V3000') && molFile.includes('COUNTS 0')));
     }
 
     detach() {
