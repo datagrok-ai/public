@@ -266,7 +266,12 @@ export function saveAsSdf(): void {
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
 export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string): Promise<DG.Viewer> {
+  similarity: number, methodName: string): Promise<DG.Viewer | undefined> {
+
+  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
+    return;
+  }
 
   const axesNames = getEmbeddingColsNames(df);
   const options: { [key: string]: any } = {
@@ -300,7 +305,15 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
 //input: bool plotEmbeddings = true
 export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: string,
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
+
+  if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
+    return;
+  }
+
   const embedColsNames = getEmbeddingColsNames(table);
+
+  // dimensionality reducing algorithm doesn't handle empty values correctly so remove empty values at this step
   const withoutEmptyValues = DG.DataFrame.fromColumns([molecules]).clone();
   const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, molecules);
   const chemSpaceParams = {
@@ -312,10 +325,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 
   const chemSpaceRes = await chemSpace(chemSpaceParams);
   const embeddings = chemSpaceRes.coordinates;
+
+  //inserting empty values back into results
   for (const col of embeddings) {
     const listValues = col.toList();
     emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-    table.columns.add(DG.Column.fromList('double', col.name, listValues));
+    table.columns.add(DG.Column.float(col.name, table.rowCount).init((i)=> listValues[i]));
   }
   if (plotEmbeddings)
     return grok.shell
