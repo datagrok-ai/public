@@ -166,7 +166,7 @@ export namespace chem {
     }
 
     setMolFile(x: string): void {
-      this.molFileUnits = x.includes('V3000') ? MOLV3000 : MOLV2000;
+      this.molFileUnits = x && x.includes('V3000') ? MOLV3000 : MOLV2000;
       this._molfile = x;
       if (this.sketcher && this.sketcher._sketcher) {
         this.molFileUnits === MOLV2000 ? this.sketcher!.molFile = x : this.sketcher!.molV3000 = x;
@@ -489,7 +489,7 @@ export namespace chem {
     }
 
     static isEmptyMolfile(molFile: string): boolean {
-      const rowWithAtomsAndNotation = molFile.split("\n")[3];
+      const rowWithAtomsAndNotation = molFile ? molFile.split("\n")[3] : '';
       return (molFile == null || molFile == '' ||
        (rowWithAtomsAndNotation.trimStart()[0] === '0' && rowWithAtomsAndNotation.trimEnd().endsWith('V2000')) ||
        (rowWithAtomsAndNotation.trimEnd().endsWith('V3000') && molFile.includes('COUNTS 0')));
