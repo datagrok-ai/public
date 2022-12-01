@@ -103,7 +103,7 @@ export function drawMoleculeToCanvas(
       mol.set_new_coords(true);
 
     if (options.normalizeDepiction ?? true)
-      mol.normalize_depiction(1);
+      !isMol ? mol.normalize_depiction(1) : mol.normalize_depiction(0);
 
     if (options.straightenDepiction ?? true)
       mol.straighten_depiction();

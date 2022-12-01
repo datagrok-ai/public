@@ -305,7 +305,7 @@ export namespace chem {
         canvas.style.width = '100%';
         ui.tooltip.bind(canvas, 'Click to edit');
         const clearButton = this.createClearSketcherButton(canvas);
-        canvasMol(0, 0, width, height, canvas, this.getMolFile()!, null, {normalizeDepiction: false, straightenDepiction: false})
+        canvasMol(0, 0, width, height, canvas, this.getMolFile()!, null, {normalizeDepiction: true, straightenDepiction: false})
           .then((_) => {
             ui.empty(this.extSketcherDiv);
             this.extSketcherDiv.append(canvas);
@@ -531,7 +531,7 @@ export namespace chem {
       imageHost.height = h * r;
       imageHost.style.width = (w).toString() + 'px';
       imageHost.style.height = (h).toString() + 'px';
-      canvasMol(0, 0, w, h, imageHost, molecule, null, {normalizeDepiction: false, straightenDepiction: false});
+      canvasMol(0, 0, w, h, imageHost, molecule, null, {normalizeDepiction: true, straightenDepiction: false});
       return imageHost;
     }
   }
