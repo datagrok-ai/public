@@ -58,6 +58,7 @@ export function rGroupAnalysis(col: DG.Column): void {
       const core = sketcher.getSmiles();
       if (core !== null) {
         try {
+          const progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running`);
           const res = await findRGroups(col.name, col.dataFrame, core, columnPrefixInput.value);
           const module = getRdKitModule();
   
@@ -84,6 +85,7 @@ export function rGroupAnalysis(col: DG.Column): void {
               yColumnNames: [res.columns.byIndex(1).name],
             });
           } 
+          progressBar.close();
         } catch (e: any) {
           grok.shell.error(e);
           dlg.close();
