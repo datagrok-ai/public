@@ -104,8 +104,10 @@ export async function similaritySearch(
   idType: string, id: pubChemIdType, params?: paramsType): Promise<anyObject[] | null> {
   params ??= {};
   const listId = await _asyncSearchId('similarity', idType, id, params);
-  const json: anyObject[] | anyObject | null = await _getListById(listId);
+  if (!listId)
+    return null;
 
+  const json: anyObject[] | anyObject | null = await _getListById(listId);
   return Array.isArray(json) ? json : null;
 }
 
@@ -113,8 +115,10 @@ export async function identitySearch(
   idType: string, id: pubChemIdType, params?: anyObject): Promise<anyObject[] | null> {
   params ??= {};
   const listId = await _asyncSearchId('identity', idType, id, params);
-  const json: anyObject[] | anyObject | null = await _getListById(listId, [], {});
+  if (!listId)
+    return null;
 
+  const json: anyObject[] | anyObject | null = await _getListById(listId, [], {});
   return Array.isArray(json) ? json : null;
 }
 
@@ -122,8 +126,10 @@ export async function substructureSearch(
   idType: string, id: pubChemIdType, params?: anyObject): Promise<anyObject[] | null> {
   params ??= {};
   const listId = await _asyncSearchId('substructure', idType, id, params);
-  const json: anyObject[] | anyObject | null = await _getListById(listId);
+  if (!listId)
+    return null;
 
+  const json: anyObject[] | anyObject | null = await _getListById(listId);
   return Array.isArray(json) ? json : null;
 }
 
@@ -161,12 +167,12 @@ export async function _getListById(
 }
 
 export async function _asyncSearchId(
-  searchType: pubChemSearchType, idType: string, id: pubChemIdType, params?: paramsType): Promise<string> {
+  searchType: pubChemSearchType, idType: string, id: pubChemIdType, params?: paramsType): Promise<string | undefined> {
   params ??= {};
   params['MaxRecords'] ??= 20;
   const url =
     `${pubChemPug}/compound/${searchType}/${idType}/${encodeURIComponent(id)}/JSON?${urlParamsFromObject(params)}`;
   const response = await grok.dapi.fetchProxy(url);
   const json: anyObject = await response.json();
-  return json['Waiting']['ListKey'];
+  return json.Waiting?.ListKey;
 }
