@@ -1,9 +1,18 @@
+/* eslint-disable max-len */
 /* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
-import {DateOptions, FilterOptions} from './function-view';
+
+type DateOptions = 'Any time' | 'Today' | 'Yesterday' | 'This week' | 'Last week' | 'This month' | 'Last month' | 'This year' | 'Last year';
+
+type FilterOptions = {
+  text?: string,
+  date?: DateOptions,
+  author?: DG.User,
+  isShared?: boolean,
+};
 
 const getSearchStringByPattern = (datePattern: DateOptions) => {
   switch (datePattern) {

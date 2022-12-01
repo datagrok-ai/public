@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {EXCEL_BLOB_TYPE, FileInput} from './file-input';
 import {HistoryInput} from './history-input';
+import {HistoryPanel} from './history-panel';
 
 export namespace UiUtils {
   export function fileInput(
@@ -20,5 +21,9 @@ export namespace UiUtils {
     _visibleColumnsForFilter: string[] = []
   ) {
     return new HistoryInput(label, _funcName, _stringValueFunc, _visibleColumnsForGrid, _visibleColumnsForFilter);
+  }
+
+  export function historyPanel(objFunc: DG.Func) {
+    return new HistoryPanel(objFunc);
   }
 }

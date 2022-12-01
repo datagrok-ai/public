@@ -8,7 +8,7 @@ import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
 import {historyUtils} from './history-utils';
-import {Subject} from 'rxjs';
+import {UiUtils} from './shared-components/ui-utils';
 
 /**
    * Decorator to pass all thrown errors to grok.shell.error
@@ -31,15 +31,6 @@ export const passErrorToShell = () => {
 };
 
 export const INTERACTIVE_CSS_CLASS = 'cv-interactive';
-
-export type DateOptions = 'Any time' | 'Today' | 'Yesterday' | 'This week' | 'Last week' | 'This month' | 'Last month' | 'This year' | 'Last year';
-
-export type FilterOptions = {
-  text?: string,
-  date?: DateOptions,
-  author?: DG.User,
-  isShared?: boolean,
-};
 
 export const defaultUsersIds = {
   'Test': 'ca1e672e-e3be-40e0-b79b-d2c68e68d380',
@@ -277,358 +268,44 @@ export class FunctionView extends DG.ViewBase {
    * @stability Stable
  */
   public buildHistoryBlock(): HTMLElement {
-    const mainAcc = ui.accordion();
-    mainAcc.root.style.width = '100%';
-    mainAcc.addTitle(ui.span(['History']));
+    const newHistoryBlock = UiUtils.historyPanel(this.func!);
 
-    const filteringOptions: FilterOptions = {};
-    const filteringText = new Subject();
+    newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id)));
+    newHistoryBlock.onRunAddToFavorites.subscribe(async (funcCall) => {
+      await this.addRunToFavorites(funcCall);
 
-    const buildFilterPane = () => ui.wait(async () => {
-      const textInput = ui.stringInput('Search', '', (v: string) => filteringText.next(v));
-      DG.debounce(filteringText.asObservable(), 600).subscribe(() => {
-        filteringOptions.text = textInput.stringValue;
-        updateFavoritesPane();
-        updateSharedPane();
-      });
-      const dateInput = ui.choiceInput('Date started', 'Any time', ['Any time', 'Today', 'Yesterday', 'This week', 'Last week', 'This month', 'Last month', 'This year', 'Last year'], (v: DateOptions) => {
-        filteringOptions.date = v;
-        updateHistoryPane(filteringOptions);
-        updateFavoritesPane();
-        updateSharedPane();
-      });
-
-      const defaultUsers = Object.values(defaultUsersIds);
-      const allUsers = await grok.dapi.users.list();
-      const filteredUsers = allUsers.filter((user) => !defaultUsers.includes(user.id));
-
-      const authorInput = ui.choiceInput<DG.User | string>('Author', 'Anyone', ['Anyone', ...filteredUsers], (v: DG.User | string) => {
-        filteringOptions.author = (v === 'Anyone') ? undefined : v as DG.User;
-        updateSharedPane();
-      });
-      dateInput.addPatternMenu('datetime');
-      const form = ui.divV([
-        textInput,
-        dateInput,
-        authorInput,
-      ], 'ui-form-condensed ui-form');
-      form.style.marginLeft = '0px';
-
-      return form;
+      newHistoryBlock.myRunsFetch.next();
+      newHistoryBlock.favRunsFetch.next();
     });
-    let filterPane = mainAcc.addPane('Filter', buildFilterPane);
-    const updateFilterPane = () => {
-      const isExpanded = filterPane.expanded;
-      mainAcc.removePane(filterPane);
-      filterPane = mainAcc.addPane('Filter', buildFilterPane, isExpanded, favoritesListPane);
-    };
+    newHistoryBlock.onRunAddToShared.subscribe(async (funcCall) => {
+      await this.addRunToShared(funcCall);
 
-    const showAddToFavoritesDialog = (funcCall: DG.FuncCall) => {
-      let title = funcCall.options['title'] ?? '';
-      let annotation = funcCall.options['annotation'] ?? '';
-      const titleInput = ui.stringInput('Title', title, (s: string) => {
-        title = s;
-        if (s.length === 0) {
-          titleInput.setTooltip('Title cannot be empty');
-          setTimeout(() => titleInput.input.classList.add('d4-invalid'), 100);
-        } else {
-          titleInput.setTooltip('');
-          setTimeout(() => titleInput.input.classList.remove('d4-invalid'), 100);
-        }
-      });
-
-      ui.dialog({title: 'Add to favorites'})
-        .add(ui.form([
-          titleInput,
-          ui.stringInput('Annotation', annotation, (s: string) => { annotation = s; }),
-        ]))
-        .onOK(async () => {
-          if (title.length > 0) {
-            funcCall = await historyUtils.loadRun(funcCall.id);
-            funcCall.options['title'] = title;
-            funcCall.options['annotation'] = annotation;
-            await this.addRunToFavorites(funcCall);
-            updateHistoryPane();
-            updateFavoritesPane();
-          } else {
-            grok.shell.warning('Title cannot be empty');
-          }
-        })
-        .show({center: true});
-    };
-
-    const showDeleteRunDialog = (funcCall: DG.FuncCall) => {
-      ui.dialog({title: 'Delete run'})
-        .add(ui.divText('The deleted run is impossible to restore. Are you sure?'))
-        .onOK(async () => {
-          await this.deleteRun(funcCall);
-          updateHistoryPane();
-        })
-        .show({center: true});
-    };
-
-    const showAddToSharedDialog = (funcCall: DG.FuncCall) => {
-      let title = funcCall.options['title'] ?? '';
-      let annotation = funcCall.options['annotation'] ?? '';
-      const titleInput = ui.stringInput('Title', title, (s: string) => {
-        title = s;
-        if (s.length === 0) {
-          titleInput.setTooltip('Title cannot be empty');
-          setTimeout(() => titleInput.input.classList.add('d4-invalid'), 100);
-        } else {
-          titleInput.setTooltip('');
-          setTimeout(() => titleInput.input.classList.remove('d4-invalid'), 100);
-        }
-      });
-
-      ui.dialog({title: 'Add to shared'})
-        .add(ui.form([
-          titleInput,
-          ui.stringInput('Annotation', annotation, (s: string) => { annotation = s; }),
-        ]))
-        .onOK(async () => {
-          if (title.length > 0) {
-            funcCall = await historyUtils.loadRun(funcCall.id);
-            funcCall.options['title'] = title;
-            funcCall.options['annotation'] = annotation;
-            await this.addRunToShared(funcCall);
-            updateHistoryPane();
-            updateFavoritesPane();
-            updateSharedPane();
-          } else {
-            grok.shell.warning('Title cannot be empty');
-          }
-        })
-        .show({center: true});
-    };
-
-    let historyCards = [] as HTMLElement[];
-    let favoriteCards = [] as HTMLElement[];
-    let sharedCards = [] as HTMLElement[];
-    const renderFavoriteCards = async (funcCalls: DG.FuncCall[]) => {
-      favoriteCards = funcCalls.map((funcCall) => {
-        const unstarIcon = ui.iconFA('star', async (ev) => {
-          funcCall = await historyUtils.loadRun(funcCall.id);
-          ev.stopPropagation();
-          await this.removeRunFromFavorites(funcCall);
-          updateHistoryPane();
-          updateFavoritesPane();
-        }, 'Unfavorite the run');
-        unstarIcon.classList.add('fas');
-
-        const shareIcon = ui.iconFA('eye', async (ev) => {
-          ev.stopPropagation();
-          showAddToSharedDialog(funcCall);
-        }, 'Add to shared');
-        shareIcon.classList.add('fal');
-
-        const card = ui.divH([
-          ui.divV([
-            ui.divText(funcCall.options['title'] ?? 'Default title', 'title'),
-            ...(funcCall.options['annotation']) ? [ui.divText(funcCall.options['annotation'], 'description')]: [],
-            ui.divH([ui.render(funcCall.author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
-          ]),
-          ui.divH([
-            shareIcon,
-            ui.iconFA('pen', async (ev) => {
-              ev.stopPropagation();
-              showAddToFavoritesDialog(funcCall);
-            }, 'Edit run metadata'),
-            unstarIcon
-          ], 'cv-funccall-card-icons')
-        ], 'cv-funccall-card');
-
-        card.addEventListener('click', async () => {
-          ui.setUpdateIndicator(this.root, true);
-          this.linkFunccall(await this.loadRun(funcCall.id));
-          card.classList.add('clicked');
-          ui.setUpdateIndicator(this.root, false);
-        });
-        return card;
-      });
-
-      const allCards = [...historyCards, ...favoriteCards, ...sharedCards];
-      allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
-
-      return ui.divV(favoriteCards);
-    };
-
-    const renderSharedCards = async (funcCalls: DG.FuncCall[]) => {
-      sharedCards = funcCalls.map((funcCall) => {
-        const unshareIcon = ui.iconFA('eye-slash', async (ev) => {
-          ev.stopPropagation();
-          funcCall = await historyUtils.loadRun(funcCall.id);
-          await this.removeRunFromShared(funcCall);
-          updateHistoryPane();
-          updateSharedPane();
-        }, 'Hide from shared');
-
-        const card = ui.divH([
-          ui.divV([
-            ui.divText(funcCall.options['title'] ?? 'Default title', 'title'),
-            ...(funcCall.options['annotation']) ? [ui.divText(funcCall.options['annotation'], 'description')]: [],
-            ui.divH([ui.render(funcCall.author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
-          ]),
-          ui.divH([
-            ui.iconFA('link', async (ev) => {
-              ev.stopPropagation();
-              await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?id=${funcCall.id}`);
-            }, 'Copy link to the run'),
-            ...(funcCall.author.id === grok.shell.user.id) ? [
-              ui.iconFA('pen', async (ev) => {
-                ev.stopPropagation();
-                showAddToSharedDialog(funcCall);
-              }, 'Edit run metadata'),
-              unshareIcon]: [],
-          ], 'cv-funccall-card-icons')
-        ], 'cv-funccall-card');
-
-        card.addEventListener('click', async () => {
-          ui.setUpdateIndicator(this.root, true);
-          this.linkFunccall(await this.loadRun(funcCall.id));
-          card.classList.add('clicked');
-          ui.setUpdateIndicator(this.root, false);
-        });
-        return card;
-      });
-
-      const allCards = [...historyCards, ...favoriteCards, ...sharedCards];
-      allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
-
-      return ui.divV(sharedCards);
-    };
-
-    const renderHistoryCards = async (funcCalls: DG.FuncCall[]) => {
-      historyCards = funcCalls.map((funcCall) => {
-        const icon = funcCall.author.picture as HTMLElement;
-        icon.style.width = '25px';
-        icon.style.height = '25px';
-        icon.style.fontSize = '20px';
-        icon.style.marginRight = '3px';
-        icon.style.alignSelf = 'center';
-        const userLabel = ui.label(funcCall.author.friendlyName, 'd4-link-label');
-        ui.bind(funcCall.author, icon);
-
-        const shareIcon = ui.iconFA('eye', async (ev) => {
-          ev.stopPropagation();
-          showAddToSharedDialog(funcCall);
-        }, 'Add to shared');
-        shareIcon.classList.add('fal');
-
-        const unshareIcon = ui.iconFA('eye-slash', async (ev) => {
-          ev.stopPropagation();
-          await this.removeRunFromShared(funcCall);
-          updateHistoryPane();
-          updateSharedPane();
-        }, 'Hide from shared');
-
-        const unstar = ui.iconFA('star', async (ev) => {
-          ev.stopPropagation();
-          await this.removeRunFromFavorites(funcCall);
-          updateHistoryPane();
-          updateFavoritesPane();
-        }, 'Unfavorite the run');
-        unstar.classList.add('fas');
-
-        const card = ui.divH([
-          ui.divH([
-            icon,
-            ui.divV([
-              userLabel,
-              ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})])
-            ]),
-          ]),
-          ui.divH([
-            ...(funcCall.options['isShared']) ? [unshareIcon]: [shareIcon],
-            ...(funcCall.options['isFavorite']) ? [unstar] : [ui.iconFA('star', async (ev) => {
-              ev.stopPropagation();
-              showAddToFavoritesDialog(funcCall);
-            }, 'Add to favorites')],
-            ui.iconFA('trash-alt', async (ev) => {
-              ev.stopPropagation();
-              showDeleteRunDialog(funcCall);
-            }, 'Delete the run'),
-          ], 'cv-funccall-card-icons')
-        ], 'cv-funccall-card');
-
-        card.addEventListener('click', async () => {
-          ui.setUpdateIndicator(this.root, true);
-          this.linkFunccall(await this.loadRun(funcCall.id));
-          card.classList.add('clicked');
-          ui.setUpdateIndicator(this.root, false);
-        });
-
-        return card;
-      });
-
-      const allCards = [...historyCards, ...favoriteCards, ...sharedCards];
-      allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
-
-      return ui.divV(historyCards);
-    };
-
-    const buildSharedList = () => ui.wait(async () => {
-      const historicalRuns = (await historyUtils.pullRunsByName(this.func!.name, [filteringOptions], {order: 'started'}, ['session.user', 'options'])).reverse();
-      const sharedRuns = historicalRuns.filter((run) => run.options['isShared']);
-      if (sharedRuns.length > 0)
-        return ui.wait(() => renderSharedCards(sharedRuns));
-      else
-        return ui.divText('No runs are marked as shared', 'description');
+      newHistoryBlock.myRunsFetch.next();
+      newHistoryBlock.sharedRunsFetch.next();
     });
-    let sharedListPane = mainAcc.addPane('Shared', () => buildSharedList(), true);
-    const updateSharedPane = () => {
-      const isExpanded = sharedListPane.expanded;
-      mainAcc.removePane(sharedListPane);
-      sharedListPane = mainAcc.addPane('Shared', () => buildSharedList(), isExpanded, favoritesListPane);
-    };
 
-    const buildFavoritesList = (filterOptions: FilterOptions = {}) => ui.wait(async () => {
-      const historicalRuns = (await historyUtils.pullRunsByName(this.func!.name, [filterOptions], {order: 'started'}, ['session.user', 'options'])).reverse();
-      const favoriteRuns = historicalRuns.filter((run) => run.options['isFavorite'] && !run.options['isImported']);
-      if (favoriteRuns.length > 0)
-        return ui.wait(() => renderFavoriteCards(favoriteRuns));
-      else
-        return ui.divText('No runs are marked as favorites', 'description');
+    newHistoryBlock.onRunDeleted.subscribe(async (id) => {
+      await this.deleteRun(await historyUtils.loadRun(id));
+      newHistoryBlock.allRunsFetch.next();
     });
-    let favoritesListPane = mainAcc.addPane('My favorites', () => buildFavoritesList({
-      ...filteringOptions,
-      author: grok.shell.user
-    }), true);
-    const updateFavoritesPane = () => {
-      const isExpanded = favoritesListPane.expanded;
-      mainAcc.removePane(favoritesListPane);
-      favoritesListPane = mainAcc.addPane('My favorites', () => buildFavoritesList({
-        ...filteringOptions,
-        author: grok.shell.user
-      }), isExpanded, historyPane);
-    };
 
-    const buildHistoryPane = (filterOptions: FilterOptions = {}) => ui.wait(async () => {
-      const historicalRuns = (await historyUtils.pullRunsByName(this.func!.name, [filterOptions], {order: 'started'}, ['session.user', 'options'])).reverse();
-      if (historicalRuns.length > 0)
-        return ui.wait(() => renderHistoryCards(historicalRuns));
-      else
-        return ui.divText('No runs are found in history', 'description');
+    newHistoryBlock.onRunRemoveFromFavorites.subscribe(async (id) => {
+      await this.removeRunFromFavorites(await historyUtils.loadRun(id));
+      newHistoryBlock.myRunsFetch.next();
+      newHistoryBlock.favRunsFetch.next();
     });
-    let historyPane = mainAcc.addPane('My history', () => buildHistoryPane({
-      ...filteringOptions,
-      author: grok.shell.user
-    }), true);
-    const updateHistoryPane = (filterOptions: FilterOptions = {}) => {
-      const isExpanded = historyPane.expanded;
-      mainAcc.removePane(historyPane);
-      historyPane = mainAcc.addPane('My history', () => buildHistoryPane({
-        ...filterOptions,
-        author: grok.shell.user
-      }), isExpanded);
-    };
 
-    const newHistoryBlock = mainAcc.root;
+    newHistoryBlock.onRunRemoveFromShared.subscribe(async (id) => {
+      await this.removeRunFromShared(await historyUtils.loadRun(id));
+      newHistoryBlock.myRunsFetch.next();
+      newHistoryBlock.sharedRunsFetch.next();
+    });
+
     ui.empty(this.historyRoot);
     this.historyRoot.style.removeProperty('justify-content');
     this.historyRoot.style.width = '100%';
-    this.historyRoot.append(newHistoryBlock);
-    return newHistoryBlock;
+    this.historyRoot.append(newHistoryBlock.root);
+    return newHistoryBlock.root;
   }
 
   /**
@@ -932,18 +609,6 @@ export class FunctionView extends DG.ViewBase {
       (el as HTMLElement).removeEventListener('mousedown', this.interactiveEventListeners[0]);
       (el as HTMLElement).removeEventListener('mouseup', this.interactiveEventListeners[1]);
     });
-  }
-
-  /**
-   * Loads all the function call of this function.
-   * Designed to pull hstorical runs in fast manner and the call {@link loadRun} with specified run ID.
-   * WARNING: FuncCall inputs/outputs fields are not included
-   * @param funcId ID of Func which calls we are looking for. Get it using {@link func.id} field
-   * @returns Promise on array of FuncCalls corresponding to the passed Func ID
-   * @stability Deprecated. Script ID changes with every package release, so searching by ID is useless in practice.
- */
-  public async pullRuns(funcId: string, filterOptions: FilterOptions = {}, listOptions: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {}): Promise<DG.FuncCall[]> {
-    return historyUtils.pullRuns(funcId, filterOptions, listOptions);
   }
 
   /**
