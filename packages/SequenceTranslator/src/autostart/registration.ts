@@ -207,15 +207,6 @@ export function oligoSdFile(table: DG.DataFrame) {
     return newDf = t;
   }
 
-  function updateCalculatedColumns(t: DG.DataFrame, i: number): void {
-    const smValue = saltMass(saltNamesList, molWeightCol, equivalentsCol, i, saltCol);
-    t.getCol(COL_NAMES.SALT_MASS).set(i, smValue, false);
-    const smwValue = saltMolWeigth(saltNamesList, saltCol, molWeightCol, i);
-    t.getCol(COL_NAMES.SALT_MOL_WEIGHT).set(i, smwValue, false);
-    const bmw = batchMolWeight(t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT), t.getCol(COL_NAMES.SALT_MASS), i);
-    t.getCol(COL_NAMES.BATCH_MOL_WEIGHT).set(i, bmw, false);
-  }
-
   const d = ui.div([
     ui.icons.edit(() => {
       d.innerHTML = '';
@@ -223,8 +214,8 @@ export function oligoSdFile(table: DG.DataFrame) {
         table.changeColumnType(COL_NAMES.IDP, DG.COLUMN_TYPE.STRING);
       d.append(
         ui.divH([
-          ui.icons.add(() => addColumns(table), `Add columns: '${GENERATED_COL_NAMES.join(`', '`)}'`),
-          ui.icons.save(() => saveTableAsSdFile(addColumnsPressed ? newDf : table), 'Save SD file'),
+          ui.button('Add columns', () => addColumns(table), `Add columns: '${GENERATED_COL_NAMES.join(`', '`)}'`),
+          ui.bigButton('Save SDF', () => saveTableAsSdFile(addColumnsPressed ? newDf : table), 'Save SD file'),
         ]),
       );
 

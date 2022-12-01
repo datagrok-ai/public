@@ -23,7 +23,6 @@ export async function mainView(): Promise<HTMLDivElement> {
     moleculeSvgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
-    let errorsExist = false;
 
     try {
       sequence = sequence.replace(/\s/g, '');
