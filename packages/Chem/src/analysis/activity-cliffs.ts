@@ -31,7 +31,8 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[]) {
     imageHost.height = canvasHeight * r;
     imageHost.style.width = (canvasWidth).toString() + 'px';
     imageHost.style.height = (canvasHeight).toString() + 'px';
-    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, params.seqCol.get(mol), params.cashedData[params.line.id]);
+    drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, params.seqCol.get(mol), params.cashedData[params.line.id],
+      {normalizeDepiction: false, straightenDepiction: false});
     ui.empty(hosts[index]);
     if (!params.cashedData[params.line.id])
       hosts[index].append(ui.divText('MCS loading...'));
@@ -80,7 +81,7 @@ function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLEl
 export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivElement {
   const propPanel = ui.divV([]);
   const columnNames = ui.divH([
-    ui.divText(params.seqCol.name),
+    ui.divText(params.seqCol.name, {style: {minWigth: `${canvasWidth}px`}}),
     ui.divText(params.activityCol.name),
   ]);
   columnNames.style.fontWeight = 'bold';
