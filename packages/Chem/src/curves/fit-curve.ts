@@ -34,12 +34,14 @@ export class CurveFitter<TArg> implements ICurveFitter<TArg> {
   constructor(curveFunction: (params: number[], args: TArg) => number, 
               data: {observed: number[], args: TArg[]},
               params: number[],
-              errorModel?: 'constant' | 'proportional' //| 'combinational1' | 'combinational2'
+              errorModel: 'constant' | 'proportional' = 'constant'//| 'combinational1' | 'combinational2'
               ) {
 
+    if(data.observed.length == 0 || data.observed.length != data.args.length)
+      throw new Error('invalid data');
+      
     this.data = data;
     this.params = params;
-    errorModel ??= 'constant';
 
     this.cf = curveFunction;
 
@@ -113,7 +115,7 @@ export class CurveFitter<TArg> implements ICurveFitter<TArg> {
   }
 }
 
-export function sigmoid(params: number[], x: number) {
+export function sigmoid(params: number[], x: number): number {
   const A = params[0];
   const B = params[1];
   const C = params[2];
@@ -136,7 +138,7 @@ function objectiveNormalConstant<TArg> (
   let residuesSquares = new Float32Array(data.args.length);
   for(let i = 0; i < data.args.length; i++) {
     const obs = data.observed[i];
-    const pred = targetFunc(params, data.args[i])
+    const pred = targetFunc(params, data.args[i]);
     residuesSquares[i] = Math.pow(obs - pred, 2);
   }
   
@@ -146,7 +148,7 @@ function objectiveNormalConstant<TArg> (
   sigma = Math.sqrt(sigmaSq);
 
   for(let i = 0; i < residuesSquares.length; i++)
-    likelihood += residuesSquares[i]/sigmaSq + Math.log(2*pi*sigmaSq);
+    likelihood += residuesSquares[i]/sigmaSq + Math.log(2 * pi * sigmaSq);
 
   return {value: -likelihood, const: sigma, mult: 0};                                              
 }
