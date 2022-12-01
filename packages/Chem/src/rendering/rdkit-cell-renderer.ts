@@ -112,6 +112,7 @@ M  END
               rdKitScaffoldMol.normalize_depiction(0);
               if (molHasOwnCoords)
                 mol.normalize_depiction(0);
+
               let substructJson;
               try {
                 substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, JSON.stringify({
@@ -137,9 +138,11 @@ M  END
             mol.set_new_coords(molRegenerateCoords);
             molHasOwnCoords = false;
           }
-          if (!scaffoldIsMolBlock || !molHasOwnCoords) {
+          if (!scaffoldIsMolBlock) {
             mol.normalize_depiction(molHasOwnCoords ? 0 : 1);
             mol.straighten_depiction(molHasOwnCoords);
+          } else if (!molHasOwnCoords) {
+            mol.normalize_depiction(0);
           }
         }
         if (!mol!.is_valid()) {
