@@ -44,6 +44,7 @@
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
+    "link-all": "npm link datagrok-api",
     "debug-tutorials": "grok publish",
     "build-debug-tutorials": "webpack && grok publish",
     "release-tutorials": "grok publish --release",
