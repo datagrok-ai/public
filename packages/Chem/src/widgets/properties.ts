@@ -26,7 +26,7 @@ export function getPropertiesMap(smiles: string): {
   LogP: number;
   LogS: number;
   'Polar Surface Area': number;
-  'Number of rotatabe bonds': number;
+  'Number of rotatable bonds': number;
   'Number of stereo centers': number;
   Name: any;
 } {
@@ -43,7 +43,7 @@ export function getPropertiesMap(smiles: string): {
     'LogP': molProps.logP,
     'LogS': molProps.logS,
     'Polar Surface Area': molProps.polarSurfaceArea,
-    'Number of rotatabe bonds': molProps.rotatableBondCount,
+    'Number of rotatable bonds': molProps.rotatableBondCount,
     'Number of stereo centers': molProps.stereoCenterCount,
     'Name': ui.wait(async () => ui.divText(await getIUPACName(smiles))),
   };
