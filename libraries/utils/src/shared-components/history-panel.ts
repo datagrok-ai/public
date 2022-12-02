@@ -110,6 +110,25 @@ export class HistoryPanel {
         ], 'ui-form-condensed ui-form');
         form.style.padding = '0px';
 
+        this.tabs.onTabChanged.subscribe(() => {
+          const currentTabName = this.tabs.currentPane.name;
+          if (currentTabName === 'HISTORY') {
+            textInput.root.style.display = 'none';
+            dateInput.root.style.removeProperty('display');
+            authorInput.root.style.display = 'none';
+          }
+          if (currentTabName === 'FAVORITES') {
+            textInput.root.style.removeProperty('display');
+            dateInput.root.style.removeProperty('display');
+            authorInput.root.style.display = 'none';
+          }
+          if (currentTabName === 'SHARED') {
+            textInput.root.style.removeProperty('display');
+            dateInput.root.style.removeProperty('display');
+            authorInput.root.style.removeProperty('display');
+          }
+        });
+
         return form;
       });
     };
@@ -378,10 +397,8 @@ export class HistoryPanel {
     this.myRunsFilter.subscribe(() => {
       const filteredMyRuns = this.store.myRuns.value.filter((val) => {
         const startedAfter = (this.store.filteringOptions.startedAfter ? val.started > this.store.filteringOptions.startedAfter : true);
-        const titleContainsText = !!val.options['title'] && val.options['title'].includes(this.store.filteringOptions.text);
-        const descContainsText = !!val.options['description'] && val.options['description'].includes(this.store.filteringOptions.text);
 
-        return (titleContainsText || descContainsText) && startedAfter;
+        return startedAfter;
       });
       this.store.filteredMyRuns.next(filteredMyRuns);
     });
@@ -389,8 +406,8 @@ export class HistoryPanel {
     this.favRunsFilter.subscribe(() => {
       const filteredFavRuns = this.store.favoriteRuns.value.filter((val) => {
         const startedAfter = (this.store.filteringOptions.startedAfter ? val.started > this.store.filteringOptions.startedAfter : true);
-        const titleContainsText = !!val.options['title'] && val.options['title'].includes(this.store.filteringOptions.text);
-        const descContainsText = !!val.options['description'] && val.options['description'].includes(this.store.filteringOptions.text);
+        const titleContainsText = (this.store.filteringOptions.text.length && !!val.options['title']) ? val.options['title'].includes(this.store.filteringOptions.text): true;
+        const descContainsText = (this.store.filteringOptions.text.length && !!val.options['description']) ? val.options['description'].includes(this.store.filteringOptions.text): true;
 
         return (titleContainsText || descContainsText) && startedAfter;
       });
@@ -399,10 +416,10 @@ export class HistoryPanel {
 
     this.sharedRunsFilter.subscribe(() => {
       const filteredSharedRuns = this.store.sharedRuns.value.filter((val) => {
-        const startedAfter = (this.store.filteringOptions.startedAfter ? val.started > this.store.filteringOptions.startedAfter : true);
         const isAuthored = this.store.filteringOptions.author ? val.author.id === this.store.filteringOptions.author.id: true;
-        const titleContainsText = !!val.options['title'] && val.options['title'].includes(this.store.filteringOptions.text);
-        const descContainsText = !!val.options['description'] && val.options['description'].includes(this.store.filteringOptions.text);
+        const startedAfter = (this.store.filteringOptions.startedAfter ? val.started > this.store.filteringOptions.startedAfter : true);
+        const titleContainsText = (this.store.filteringOptions.text.length && !!val.options['title']) ? val.options['title'].includes(this.store.filteringOptions.text): true;
+        const descContainsText = (this.store.filteringOptions.text.length && !!val.options['description']) ? val.options['description'].includes(this.store.filteringOptions.text): true;
 
         return (titleContainsText || descContainsText) && startedAfter && isAuthored;
       });
@@ -422,17 +439,17 @@ export class HistoryPanel {
 
     this.myRunsFetch.subscribe(async () => {
       const myRuns = (await historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {order: 'started'}, ['session.user', 'options'])).reverse();
-      this.store.filteredMyRuns.next(myRuns);
+      this.store.myRuns.next(myRuns);
     });
 
     this.favRunsFetch.subscribe(async () => {
       const myRuns = (await historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {order: 'started'}, ['session.user', 'options'])).reverse();
-      this.store.filteredFavoriteRuns.next(myRuns.filter((run) => run.options['isFavorite'] && !run.options['isImported']));
+      this.store.favoriteRuns.next(myRuns.filter((run) => run.options['isFavorite'] && !run.options['isImported']));
     });
 
     this.sharedRunsFetch.subscribe(async () => {
       const sharedRuns = (await historyUtils.pullRunsByName(this.func.name, [], {order: 'started'}, ['session.user', 'options'])).reverse();
-      this.store.filteredSharedRuns.next(sharedRuns.filter((run) => run.options['isShared']));
+      this.store.sharedRuns.next(sharedRuns.filter((run) => run.options['isShared']));
     });
 
     this.allRunsFetch.next();
