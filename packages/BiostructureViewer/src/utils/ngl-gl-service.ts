@@ -64,7 +64,8 @@ export class NglGlService implements bio.NglGlServiceBase {
       this._busy = true;
 
       const hostDiv = ui.div([this.nglDiv]);
-      this.hostDn = grok.shell.tv.dockManager.dock(hostDiv, DG.DOCK_TYPE.RIGHT);
+      this.hostDn = grok.shell.tv.dockManager.dock(hostDiv, DG.DOCK_TYPE.RIGHT,
+        null, 'NglGlService', 0.00);
       console.debug('PTV: NglGlService dock()');
 
       window.setTimeout(async () => { await this._processQueue(); }, 0 /* next event cycle */);
