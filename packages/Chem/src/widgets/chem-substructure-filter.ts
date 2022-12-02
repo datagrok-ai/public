@@ -91,6 +91,7 @@ export class SubstructureFilter extends DG.Filter {
   applyFilter(): void {
     if (this.bitset && !this.isDetached) {
       this.dataFrame?.filter.and(this.bitset);
+      this.dataFrame?.rows.addFilterState(this.saveState());
       this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
     }
   }
