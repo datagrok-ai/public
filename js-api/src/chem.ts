@@ -215,6 +215,8 @@ export namespace chem {
       else if (isMolBlock(molString))
         this.setMolFile(molString);
       else {
+        this._smiles = molString;
+        //setting molFile instead of smiles to draw in coordinates similar to dataframe cell
         const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molString, '{"mergeQueryHs":true}');
         if (!mol.has_coords())
           mol.set_new_coords();
@@ -300,7 +302,7 @@ export namespace chem {
       const height = width / 2;
       if (!(this.isEmpty()) && extSketcherDiv.parentElement) {
         ui.empty(this.extSketcherDiv);
-        let canvas = ui.canvas(width, height);
+        let canvas = this.createCanvas(width, height);
         canvas.style.height = '100%';
         canvas.style.width = '100%';
         ui.tooltip.bind(canvas, 'Click to edit');
@@ -525,13 +527,18 @@ export namespace chem {
     }
 
     drawToCanvas(w: number, h: number, molecule: string): HTMLElement{
+      const imageHost = this.createCanvas(w, h);
+      canvasMol(0, 0, w, h, imageHost, molecule, null, {normalizeDepiction: true, straightenDepiction: false});
+      return imageHost;
+    }
+
+    createCanvas(w: number, h: number): HTMLCanvasElement {
       const imageHost = ui.canvas(w, h);
       const r = window.devicePixelRatio;
       imageHost.width = w * r;
       imageHost.height = h * r;
       imageHost.style.width = (w).toString() + 'px';
       imageHost.style.height = (h).toString() + 'px';
-      canvasMol(0, 0, w, h, imageHost, molecule, null, {normalizeDepiction: true, straightenDepiction: false});
       return imageHost;
     }
   }
