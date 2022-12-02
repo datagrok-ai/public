@@ -55,6 +55,14 @@ export class HistoryInput {
   ) {
     this._historyGrid.columns.byName('Pick')!.cellType = 'html';
     this._historyGrid.columns.byName('Pick')!.width = 30;
+    this._historyGrid.root.style.height = '100%';
+    for (let i = 0; i < this._historyGrid.columns.length; i++) {
+      const col = this._historyGrid.columns.byIndex(i)?.column;
+      if (col && col.type === DG.TYPE.DATE_TIME) {
+        this._historyGrid.columns.byIndex(i)!.format = 'MMM d, yyyy';
+        this._historyGrid.columns.byIndex(i)!.width = 100;
+      }
+    }
 
     this._visibleInput.input.addEventListener('click', () => {
       const _historyDialog = ui.dialog();
@@ -78,6 +86,14 @@ export class HistoryInput {
 
       this._historyGrid.columns.byName('Pick')!.cellType = 'html';
       this._historyGrid.columns.byName('Pick')!.width = 30;
+      this._historyGrid.root.style.height = '100%';
+      for (let i = 0; i < this._historyGrid.columns.length; i++) {
+        const col = this._historyGrid.columns.byIndex(i)?.column;
+        if (col && col.type === DG.TYPE.DATE_TIME) {
+          this._historyGrid.columns.byIndex(i)!.format = 'MMM d, yyyy';
+          this._historyGrid.columns.byIndex(i)!.width = 100;
+        }
+      }
 
       this._historyGrid.onCellPrepare((cell) => {
         if (cell.tableColumn?.name === 'Pick') {
@@ -93,6 +109,7 @@ export class HistoryInput {
 
       this._historyGrid.columns.setVisible(['Pick', ...Object.keys(this._visibleColumnsForGrid).map((colName) => colName)]);
       this._historyFilters.setOptions({columnNames: this._visibleColumnsForFilter});
+      this._historyFilters.root.style.height = '100%';
       $(this._historyFilters.root).find('.d4-filter-group-header').hide();
 
       if (!this._visibleColumnsForFilter.length) $(this._historyFilters.root.parentElement).hide();
@@ -100,7 +117,7 @@ export class HistoryInput {
       _historyDialog.add(
         ui.divH([
           ui.block([this._historyGrid.root]),
-          ui.block([this._historyFilters.root], {style: {'margin-left': '10px', 'width': '225px'}}),
+          ui.block([this._historyFilters.root], {style: {'margin-left': '10px', 'width': '225px', 'height': '100%'}}),
         ])
       );
 

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {BehaviorSubject, Observable, Subject} from 'rxjs';
+import {BehaviorSubject, Subject} from 'rxjs';
 import {defaultUsersIds} from '../function-view';
 import {historyUtils} from '../history-utils';
 
@@ -52,11 +52,24 @@ export class HistoryPanel {
   public favRunsFetch = new Subject<true>();
   public sharedRunsFetch = new Subject<true>();
 
-  mainAcc = ui.accordion();
-  filterPane = this.mainAcc.addPane('Filter', () => ui.div());
-  sharedListPane = this.mainAcc.addPane('Shared', () => ui.div(), true);
-  favoritesListPane = this.mainAcc.addPane('My favorites', () => ui.div(), true);
-  historyPane = this.mainAcc.addPane('My history', () => ui.div(), true);
+  historyTab = ui.div();
+  favTab = ui.div();
+  sharedTab = ui.div();
+  tabs = ui.tabControl({
+    'HISTORY': ui.box(this.historyTab),
+    'FAVORITES': ui.box(this.favTab),
+    'SHARED': ui.box(this.sharedTab),
+  });
+  filterPane = ui.div();
+
+  private _root = ui.divV([
+    ui.panel([
+      ui.h2('History'),
+      this.filterPane,
+    ]),
+    ui.element('div', 'splitbar-horizontal'),
+    this.tabs.root,
+  ], {style: {width: '100%'}});
 
   myCards = [] as HTMLElement[];
   favoriteCards = [] as HTMLElement[];
@@ -82,7 +95,7 @@ export class HistoryPanel {
         });
 
         const defaultUsers = Object.values(defaultUsersIds);
-        const allUsers = await grok.dapi.users.list();
+        const allUsers = await grok.dapi.users.list() as DG.User[];
         const filteredUsers = allUsers.filter((user) => !defaultUsers.includes(user.id));
 
         const authorInput = ui.choiceInput<DG.User | string>('Author', 'Anyone', ['Anyone', ...filteredUsers], (v: DG.User | string) => {
@@ -95,15 +108,15 @@ export class HistoryPanel {
           dateInput,
           authorInput,
         ], 'ui-form-condensed ui-form');
-        form.style.marginLeft = '0px';
+        form.style.padding = '0px';
 
         return form;
       });
     };
 
-    const isExpanded = this.filterPane.expanded;
-    this.mainAcc.removePane(this.filterPane);
-    this.filterPane = this.mainAcc.addPane('Filter', () => buildFilterPane(), isExpanded, this.sharedListPane);
+    const newFilterPane = buildFilterPane();
+    this.filterPane.replaceWith(newFilterPane);
+    this.filterPane = newFilterPane;
   };
 
   showAddToFavoritesDialog(funcCall: DG.FuncCall) {
@@ -184,36 +197,21 @@ export class HistoryPanel {
   };
 
   updateSharedPane(sharedRuns: DG.FuncCall[]) {
-    const isExpanded = this.sharedListPane.expanded;
-    this.mainAcc.removePane(this.sharedListPane);
-    this.sharedListPane = this.mainAcc.addPane('Shared', () => {
-      if (sharedRuns.length > 0)
-        return this.renderSharedCards(sharedRuns);
-      else
-        return ui.divText('No runs are marked as shared', 'description');
-    }, isExpanded, this.favoritesListPane);
+    const newTab = (sharedRuns.length > 0) ? this.renderSharedCards(sharedRuns) : ui.divText('No runs are marked as shared', 'no-elements-label');
+    this.sharedTab.replaceWith(newTab);
+    this.sharedTab = newTab;
   };
 
   updateFavoritesPane(favoriteRuns: DG.FuncCall[]) {
-    const isExpanded = this.favoritesListPane.expanded;
-    this.mainAcc.removePane(this.favoritesListPane);
-    this.favoritesListPane = this.mainAcc.addPane('My favorites', () => {
-      if (favoriteRuns.length > 0)
-        return this.renderFavoriteCards(favoriteRuns);
-      else
-        return ui.divText('No runs are marked as favorites', 'description');
-    }, isExpanded, this.historyPane);
+    const newTab = (favoriteRuns.length > 0) ? this.renderFavoriteCards(favoriteRuns) : ui.divText('No runs are marked as favorites', 'no-elements-label');
+    this.favTab.replaceWith(newTab);
+    this.favTab = newTab;
   };
 
   updateMyPane(myRuns: DG.FuncCall[]) {
-    const isExpanded = this.historyPane.expanded;
-    this.mainAcc.removePane(this.historyPane);
-    this.historyPane = this.mainAcc.addPane('My history', () => {
-      if (myRuns.length > 0)
-        return this.renderHistoryCards(myRuns);
-      else
-        return ui.divText('No runs are found in history', 'description');
-    }, isExpanded);
+    const newTab = (myRuns.length > 0) ? this.renderHistoryCards(myRuns) : ui.divText('No runs are found in history', 'no-elements-label');
+    this.historyTab.replaceWith(newTab);
+    this.historyTab = newTab;
   };
 
   renderFavoriteCards(funcCalls: DG.FuncCall[]) {
@@ -235,7 +233,7 @@ export class HistoryPanel {
           ui.divText(funcCall.options['title'] ?? 'Default title', 'title'),
           ...(funcCall.options['annotation']) ? [ui.divText(funcCall.options['annotation'], 'description')]: [],
           ui.divH([ui.render(funcCall.author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
-        ]),
+        ], 'cv-card-content'),
         ui.divH([
           shareIcon,
           ui.iconFA('pen', async (ev) => {
@@ -271,7 +269,7 @@ export class HistoryPanel {
           ui.divText(funcCall.options['title'] ?? 'Default title', 'title'),
           ...(funcCall.options['annotation']) ? [ui.divText(funcCall.options['annotation'], 'description')]: [],
           ui.divH([ui.render(funcCall.author), ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})], 'date')]),
-        ]),
+        ], 'cv-card-content'),
         ui.divH([
           ui.iconFA('link', async (ev) => {
             ev.stopPropagation();
@@ -334,7 +332,7 @@ export class HistoryPanel {
           ui.divV([
             userLabel,
             ui.span([new Date(funcCall.started.toString()).toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'})])
-          ]),
+          ], 'cv-card-content'),
         ]),
         ui.divH([
           ...(funcCall.options['isShared']) ? [unshareIcon]: [shareIcon],
@@ -366,8 +364,8 @@ export class HistoryPanel {
   constructor(
     private func: DG.Func
   ) {
-    this.mainAcc.root.style.width = '100%';
-    this.mainAcc.addTitle(ui.span(['History']));
+    this.tabs.root.style.width = '100%';
+    this.tabs.header.style.justifyContent = 'space-between';
 
     this.store.myRuns.subscribe((myRuns) => this.store.filteredMyRuns.next(myRuns));
     this.store.favoriteRuns.subscribe((favoriteRuns) => this.store.filteredFavoriteRuns.next(favoriteRuns));
@@ -442,6 +440,6 @@ export class HistoryPanel {
   }
 
   get root() {
-    return this.mainAcc.root;
+    return this._root;
   }
 }
