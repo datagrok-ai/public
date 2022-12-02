@@ -4,6 +4,7 @@
 }
 
 .cv-funccall-card {
+    margin: 2px 1px;
     padding: 5px;
     justify-content: space-between;
 }
@@ -19,6 +20,12 @@
 
 .cv-funccall-card:hover .cv-funccall-card-icons {
     display: flex;
+}
+
+.cv-funccall-card .cv-card-content {
+    height: 40px;
+    justify-content: space-around;
+    margin-left: 5px;
 }
 
 .cv-funccall-card-icons .grok-icon{
