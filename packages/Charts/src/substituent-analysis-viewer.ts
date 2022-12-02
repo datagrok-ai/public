@@ -296,12 +296,12 @@ export class SubstituentAnalysisViewer extends DG.JsViewer {
     const rawData = df.col(colToAnalyzeName)!.getRawData();
     const rowCount = df.rowCount;
     for (let i = 0; i < rowCount; i++) {
+      let otherGroupFound = false;
       for (const group of this.groupByColumns) {
         if (df.get(group, i) !== this.grouppedDf!.get(group, idx!))
-          currentGroup.push(rawData[i]);
-        else
-          otherGroup.push(rawData[i])
+          otherGroupFound = true;
       }
+      otherGroupFound ? otherGroup.push(rawData[i]) : currentGroup.push(rawData[i]);
     };
     const res = tTest(currentGroup, otherGroup);
     return res['p-value'];
