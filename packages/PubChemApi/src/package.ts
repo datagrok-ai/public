@@ -2,23 +2,20 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getBy, init, smilesToPubChem} from './pubchem';
-import {getSearchWidget} from './widget';
-import {getSmiles} from './utils';
+import {getBy, smilesToPubChem} from './pubchem';
+import {getSearchWidget, buildAccordion} from './widget';
+import {pubChemRest} from './tests/const';
 
 export const _package = new DG.Package();
 
-const pubChemBaseURL = 'https://pubchem.ncbi.nlm.nih.gov';
-const pubChemRest = `${pubChemBaseURL}/rest`;
-
+//FIXME: the panel doesn't work with the first mol of the ApprovedDrugs dataset
 //name: PubChem | Info
 //tags: panel, widgets
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemPanel(molString: string): Promise<DG.Widget> {
-  molString = await getSmiles(molString);
   const pubChemId = await smilesToPubChem(molString);
-  return new DG.Widget(ui.wait(async () => await init(pubChemId)));
+  return new DG.Widget(ui.wait(async () => await buildAccordion(pubChemId)));
 }
 
 //name: PubChem | Substructure Search
@@ -26,7 +23,6 @@ export async function pubChemPanel(molString: string): Promise<DG.Widget> {
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemSubstructureSearchPanel(molString: string): Promise<DG.Widget> {
-  molString = await getSmiles(molString);
   return await getSearchWidget(molString, 'substructure');
 }
 
@@ -35,7 +31,6 @@ export async function pubChemSubstructureSearchPanel(molString: string): Promise
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemSimilaritySearchPanel(molString: string): Promise<DG.Widget> {
-  molString = await getSmiles(molString);
   return await getSearchWidget(molString, 'similarity');
 }
 
@@ -44,32 +39,31 @@ export async function pubChemSimilaritySearchPanel(molString: string): Promise<D
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemIdentitySearch(molString: string): Promise<DG.Widget> {
-  molString = await getSmiles(molString);
   return await getSearchWidget(molString, 'identity');
 }
 
-//name: pubChem
+//name: pubChemToSmiles
 //input: string id
 //output: string smiles {semType: Molecule}
 //meta.role: converter
 //meta.inputRegexp: (^[0-9]+$)
 //connection: PubChemApi
-export async function pubChem(id: string) {
+export async function pubChemToSmiles(id: string) {
   const url = `${pubChemRest}/pug/compound/cid/${id}/property/CanonicalSMILES/JSON`;
   const response = await grok.dapi.fetchProxy(url);
   const json = await response.json();
   return json['PropertyTable']['Properties'][0]['CanonicalSMILES'];
 }
 
-//name: inchiKeys
+//name: inchiKeysToSmiles
 //input: string id
 //output: string smiles {semType: Molecule}
 //meta.role: converter
 //meta.inputRegexp: ([A-Z]{14}-[A-Z]{10}-N)
 //connection: PubChemApi
-export async function inchiKeys(id: string) {
+export async function inchiKeysToSmiles(id: string) {
   const s = await getBy('InChIKey', 'cids', id);
   const cids = s['IdentifierList']['CID'][0];
-  const smiles = await pubChem(cids);
+  const smiles = await pubChemToSmiles(cids);
   return smiles;
 }
