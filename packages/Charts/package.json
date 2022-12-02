@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^1.15.5",
+    "@datagrok-libraries/statistics": "^0.1.7",
     "cash-dom": "^8.1.0",
     "datagrok-api": "^1.6.7",
     "echarts": "^5.0.0",
