@@ -19,7 +19,7 @@ import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
 import {Grid} from "./grid";
-import {ScatterPlotViewer, Viewer} from "./viewer";
+import {FilterState, ScatterPlotViewer, Viewer} from "./viewer";
 import {Property, TableInfo} from "./entities";
 import {FormulaLinesHelper} from "./helpers";
 import dayjs from "dayjs";
@@ -1391,10 +1391,17 @@ export class RowList {
     this._applyPredicate(this.table.filter, rowPredicate);
     this.table.filter.fireChanged();
   }
+
   /** Viewers that filter rows should subscribe to DataFrame.onRowsFiltering event.
    * When filtering conditions are changed, viewers should call requestFilter(). */
   requestFilter(): void {
     api.grok_RowList_RequestFilter(this.dart);
+  }
+
+  /** Adds a filter state. This should be done in the onRowsFiltering handler.
+   * This is needed for filter synchronization. */
+  addFilterState(state: FilterState): void {
+    api.grok_RowList_AddFilterState(this.dart, state);
   }
 
   /** @returns {string} */
