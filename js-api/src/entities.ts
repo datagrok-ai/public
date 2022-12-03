@@ -4,6 +4,7 @@ import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
 import {MapProxy} from "./utils";
 import {DataFrame} from "./dataframe";
+import {PackageLogger} from "./logger";
 import * as Module from "module";
 
 declare var grok: any;
@@ -901,6 +902,14 @@ export class Package extends Entity {
   /** Loads package. */
   async load(options?: {file: string}): Promise<Package> {
     return new api.grok_Dapi_Packages_Load(this.dart, options?.file);
+  }
+
+  private _logger?: PackageLogger;
+
+  get logger(): PackageLogger {
+    if (this._logger)
+      return this._logger;
+    return this._logger = new PackageLogger(this);
   }
 
   /** Returns credentials for package. */

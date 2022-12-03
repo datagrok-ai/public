@@ -24,6 +24,7 @@ export {time, timeAsync, Utils, HtmlUtils, LruCache, Paint} from './src/utils';
 export {ObjectHandler, EntityMetaDartProxy} from './ui';
 export * from './src/data';
 export * from './src/helpers';
+export * from './src/logger';
 
 export * from './src/chem';
 export * from './src/ml';
@@ -36,5 +37,6 @@ $(function () {
   (<any>window).wu = wu;
   (<any>window).addEventListener("unhandledrejection", function(e: PromiseRejectionEvent) {
     (<any>window).grok_Unhandled_Error(e.reason);
+    e.stopPropagation();
   });
 });

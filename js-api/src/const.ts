@@ -325,6 +325,14 @@ export const FUNC_TYPES = {
   CONVERTER: 'converter'
 }
 
+export enum LOG_LEVEL {
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error',
+  AUDIT = 'audit',
+  USAGE=  'usage'
+}
 
 ////// Viewers
 /** @enum {VIEWER} */
