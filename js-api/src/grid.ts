@@ -963,7 +963,7 @@ export class GridCellRendererProxy extends GridCellRenderer {
 }
 
 
-export class SemanticValue {
+export class SemanticValue<T = any> {
   private readonly dart: any;
 
   constructor(dart: any) {
@@ -977,8 +977,8 @@ export class SemanticValue {
     return v;
   }
 
-  get value(): any { return api.grok_SemanticValue_Get_Value(this.dart); }
-  set value(x: any) { api.grok_SemanticValue_Set_Value(this.dart, x); }
+  get value(): T { return api.grok_SemanticValue_Get_Value(this.dart); }
+  set value(x: T) { api.grok_SemanticValue_Set_Value(this.dart, x); }
 
   get units(): any { return api.grok_SemanticValue_Get_Units(this.dart); }
   set units(x: any) { api.grok_SemanticValue_Set_Units(this.dart, x); }
