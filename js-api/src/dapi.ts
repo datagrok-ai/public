@@ -28,8 +28,6 @@ import {FuncCall} from "./functions";
 
 let api = <any>window;
 
-type LoggerPutCallback = (logRecord: {message: string, params: object, type: string}) => void;
-
 /**
  * Exposes Datagrok's server-side functionality.
  *
@@ -916,28 +914,5 @@ export class FileSource {
     file = this.setRoot(file);
 
     return api.grok_Dapi_UserFiles_WriteAsText(file, data);
-  }
-}
-
-export class Logger {
-  putCallback?: LoggerPutCallback;
-
-  constructor(putCallback?: LoggerPutCallback) {
-    this.putCallback = putCallback;
-  }
-
-  /** Saves audit record to Datagrok back-end
-   * @param {string} message
-   * @param {object} params
-   * @param {string} type = 'log'
-   * */
-  log(message: string, params: object, type?: string): void {
-    if (type == null)
-      type = 'log';
-    let msg = {message: message, params: params, type: type};
-    if (this.putCallback != null)
-      this.putCallback(msg);
-
-    api.grok_Audit(msg.type, msg.message, toDart(msg.params));
   }
 }
