@@ -22,7 +22,7 @@ import {
   FileInfo, HistoryEntry, ProjectOpenOptions, Func
 } from "./entities";
 import {ViewLayout} from "./views/view";
-import {toDart, toJs} from "./wrappers";
+import {toJs} from "./wrappers";
 import {_propsToDart} from "./utils";
 import {FuncCall} from "./functions";
 
@@ -760,7 +760,7 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
    * @param {DataFrame} dataFrame
    * @returns {Promise<string>} */
   uploadDataFrame(dataFrame: DataFrame): Promise<string> {
-    return api.grok_Dapi_TablesDataSource_UploadDataFrame(dataFrame.dart);
+    return api.grok_Dapi_TablesDataSource_UploadDataFrame(this.dart, dataFrame.dart);
   }
 
   /** Loads a dataframe by id.
@@ -768,7 +768,7 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
    * @param {string} id - dataframe id
    * @returns {Promise<DataFrame>} */
   getTable(id: string): Promise<DataFrame> {
-    return api.grok_Dapi_TablesDataSource_GetTable(id);
+    return api.grok_Dapi_TablesDataSource_GetTable(this.dart, id);
   }
 }
 
