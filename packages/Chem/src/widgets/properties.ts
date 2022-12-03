@@ -3,11 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full';
 import {oclMol} from '../utils/chem-common-ocl';
-
-export function propertiesWidget(smiles: string) {
-  const propertiesMap = getPropertiesMap(smiles);
-  return new DG.Widget(ui.tableFromMap(propertiesMap));
-}
+import {div} from "datagrok-api/ui";
+import $ from 'cash-dom';
 
 async function getIUPACName(smiles: string): Promise<string> {
   const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${smiles}/property/IUPACName/JSON`;
@@ -17,34 +14,52 @@ async function getIUPACName(smiles: string): Promise<string> {
   return (result && result[0].hasOwnProperty('IUPACName')) ? result[0].IUPACName : 'Not found in PubChem';
 }
 
-export function getPropertiesMap(smiles: string): {
-  SMILES: string;
-  Formula: string;
-  MW: number;
-  'Number of HBA': number;
-  'Number of HBD': number;
-  LogP: number;
-  LogS: number;
-  'Polar Surface Area': number;
-  'Number of rotatable bonds': number;
-  'Number of stereo centers': number;
-  Name: any;
-} {
-  const mol = oclMol(smiles);
-  const formula = mol.getMolecularFormula();
-  const molProps = new OCL.MoleculeProperties(mol);
+export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget {
+  let host = div();
+  var mol = oclMol(semValue.value);
 
-  return {
-    'SMILES': smiles,
-    'Formula': formula.formula,
-    'MW': formula.absoluteWeight,
-    'Number of HBA': molProps.acceptorCount,
-    'Number of HBD': molProps.donorCount,
-    'LogP': molProps.logP,
-    'LogS': molProps.logS,
-    'Polar Surface Area': molProps.polarSurfaceArea,
-    'Number of rotatable bonds': molProps.rotatableBondCount,
-    'Number of stereo centers': molProps.stereoCenterCount,
-    'Name': ui.wait(async () => ui.divText(await getIUPACName(smiles))),
+  function prop(name: string, type: DG.ColumnType, extract: (mol: OCL.Molecule) => any) {
+    var addColumnIcon = ui.iconFA('plus', () => {
+      let molCol: DG.Column<string> = semValue.cell.column;
+      semValue.cell.dataFrame.columns
+        .addNew(semValue.cell.dataFrame.columns.getUnusedName(name), type)
+        .init((i) => {
+          try {
+            if (molCol.isNone(i)) return null;
+            const mol = oclMol(molCol.get(i)!);
+            return extract(mol);
+          }
+          catch (_) {
+            return null;
+          }
+        });
+    }, `Calculate ${name} for the whole table`);
+
+    ui.tools.setHoverVisibility(host, [addColumnIcon]);
+    $(addColumnIcon)
+      .css('color', '#2083d5')
+      .css('position', 'absolute')
+      .css('top', '2px')
+      .css('left', '-12px')
+      .css('margin-right', '5px');
+
+    return ui.divH([addColumnIcon, extract(mol)], { style: {'position': 'relative'}});
+  }
+
+  let map = {
+    'SMILES': prop('Smiles', DG.TYPE.STRING, (m) => m.toSmiles()),
+    'Formula': prop('Formula', DG.TYPE.STRING, (m) => m.getMolecularFormula().formula),
+    'MW': prop('MW', DG.TYPE.FLOAT, (m) => m.getMolecularFormula().absoluteWeight),
+    'HBA': prop('HBA', DG.TYPE.INT, (m) => new OCL.MoleculeProperties(m).acceptorCount),
+    'HBD': prop('HBD', DG.TYPE.INT, (m) => new OCL.MoleculeProperties(m).donorCount),
+    'LogP': prop('LogP', DG.TYPE.FLOAT, (m) => new OCL.MoleculeProperties(m).logP),
+    'LogS': prop('LogS', DG.TYPE.FLOAT, (m) => new OCL.MoleculeProperties(m).logS),
+    'PSA': prop('PSA', DG.TYPE.FLOAT, (m) => new OCL.MoleculeProperties(m).polarSurfaceArea),
+    'Rotatable bonds': prop('Rotatable bonds', DG.TYPE.INT, (m) => new OCL.MoleculeProperties(m).rotatableBondCount),
+    'Stereo centers': prop('Stereo centers', DG.TYPE.INT, (m) => new OCL.MoleculeProperties(m).stereoCenterCount),
+    'Name': ui.wait(async () => ui.divText(await getIUPACName(mol.toSmiles()))),
   };
+
+  host.appendChild(ui.tableFromMap(map));
+  return new DG.Widget(host);
 }

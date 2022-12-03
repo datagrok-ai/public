@@ -528,9 +528,9 @@ export function molfile(smiles: string): DG.Widget {
 //name: Properties
 //description: Basic molecule properties
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: semantic_value smiles { semType: Molecule }
 //output: widget result
-export async function properties(smiles: string): Promise<DG.Widget> {
+export async function properties(smiles: DG.SemanticValue): Promise<DG.Widget> {
   return smiles ? propertiesWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
