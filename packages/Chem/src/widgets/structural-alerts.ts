@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 // The file is imported from a WebWorker. Don't use Datagrok imports
 import {getRdKitModule, drawMoleculeToCanvas, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 let alertsDf: DG.DataFrame | null = null;
 const _smartsMap: Map<string, RDMol> = new Map();
@@ -41,6 +42,12 @@ async function loadSADataset(): Promise<void> {
 }
 
 export async function structuralAlertsWidget(smiles: string): Promise<DG.Widget> {
+  const rdKitModule = getRdKitModule();
+  try {
+    smiles = _convertMolNotation(smiles, 'unknown', 'smiles', rdKitModule);
+  } catch (e) {
+    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+  }
   const alerts = await getStructuralAlerts(smiles);
   if (alerts.length === 0)
     return new DG.Widget(ui.divText('No alerts'));

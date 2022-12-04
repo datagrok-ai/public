@@ -15,11 +15,15 @@ import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getDescriptorsSingle} from '../descriptors/descriptors-calculation';
 import {substructureFilter} from '../package';
-import {SemanticValue} from "datagrok-api/dg";
+import {structure2dWidget} from '../widgets/structure2d';
+import {structure3dWidget} from '../widgets/structure3d';
+import * as CONST from './const';
+import { gasteigerChargesWidget } from '../widgets/gasteiger-charges';
 
 
 category('cell panel', async () => {
   const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
+  const molFormats = [CONST.SMILES, CONST.MOL2000, CONST.MOL3000, CONST.SMARTS, CONST.EMPTY];
 
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -28,7 +32,6 @@ category('cell panel', async () => {
     }
   });
 
-  //TODO: Test mol2000, mol3000
   test('drug-likeness', async () => {
     const dl = assessDruglikeness(molStr);
     const expectedDescription = await utils.loadFileAsText('tests/drug-likeness.json');
@@ -36,58 +39,62 @@ category('cell panel', async () => {
     expectFloat(dl[0], 7.210692227408717);
     expect(JSON.stringify(dl[1]), expectedDescription);
 
-    drugLikenessWidget(molStr);
+    for (const mol of molFormats)
+      drugLikenessWidget(mol);
   });
 
-  //TODO: Test mol2000, mol3000
   test('identifiers', async () => {
     const idMap = await getIdMap(molStr);
     const expectedIdMap = await utils.loadFileAsText('tests/identifiers.json');
     expect(JSON.stringify(idMap), expectedIdMap);
-
-    await identifiersWidget(molStr);
+    
+    for (const mol of molFormats)
+      await identifiersWidget(mol);
   });
 
-  //TODO: Test mol2000, mol3000
   test('molfile', async () => {
     const expectedStr = (await utils.loadFileAsText('tests/molfile.sdf')).replaceAll('\r', '').trim();
     const panelElements = getPanelElements(molStr);
     const panelStr = ($(panelElements[2].input).val() as string).replaceAll('\r', '').trim();
     expect(panelStr, expectedStr);
 
-    molfileWidget(molStr);
+    for (const mol of molFormats)
+      molfileWidget(mol);
   });
 
-  //TODO: Test mol2000, mol3000;
   test('properties', async () => {
     //commented out since the return type has changed - see if we still need it
     //const propertiesMap = getPropertiesMap(molStr);
     //const expectedPropertiesMap = await utils.loadFileAsText('tests/properties.json');
     //expect(JSON.stringify(propertiesMap), expectedPropertiesMap);
 
-    propertiesWidget(DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE));
+    for (const mol of molFormats)
+      propertiesWidget(DG.SemanticValue.fromValueType(mol, DG.SEMTYPE.MOLECULE));
   });
 
-  //TODO: Test mol2000, mol3000; Visual test required; Unstable
   test('structural-alerts', async () => {
     const structuralAlerts = await getStructuralAlerts(molStr);
     const expectedStructuralAlerts = [1029, 1229];
     expect(structuralAlerts.length, expectedStructuralAlerts.length);
     for (const expectedSA of expectedStructuralAlerts)
       expect(structuralAlerts.includes(expectedSA), true);
+
+    for (const mol of molFormats)
+      await structuralAlertsWidget(mol);
   });
 
-  //TODO: Test mol2000, mol3000; Check if image is returned; Visual test required
+  //TODO: Check if image is returned; Visual test required
   test('structure-2d', async () => {
-    await grok.functions.call('structure2d', {smiles: molStr});
+    for (const mol of molFormats)
+      structure2dWidget(mol);
   });
 
-  //TODO: Test mol2000, mol3000; Visual test required
+  //TODO: Visual test required
   test('structure-3d', async () => {
-    await grok.functions.call('structure3d', {smiles: molStr});
+    for (const mol of molFormats)
+      await structure3dWidget(mol);
   });
 
-  //TODO: Test mol2000, mol3000
   test('toxicity', async () => {
     const risks = getRisks(molStr);
     const expectedRisks = {
@@ -98,7 +105,8 @@ category('cell panel', async () => {
     };
     expect(JSON.stringify(risks), JSON.stringify(expectedRisks));
 
-    toxicityWidget(molStr);
+    for (const mol of molFormats)
+      toxicityWidget(mol);
   });
 
   //TODO: Test smiles, mol2000, mol3000;
@@ -157,14 +165,17 @@ category('cell panel', async () => {
   //   expect(df.filter.trueCount, 700);
   // });
 
-  //TODO: Test mol2000, mol3000;
   test('gasteiger-partion-charges', async () => {
-    const parameters = {mol: molStr, contours: 10};
-    await grok.functions.call('Chem:GasteigerPartialCharges', parameters);
+    for (const mol of molFormats) {
+      await gasteigerChargesWidget(mol);
+      // const parameters = {mol: mol, contours: 10};
+      // await grok.functions.call('Chem:GasteigerPartialCharges', parameters);
+    }
   });
 
-  //TODO: Test mol2000, mol3000; Compare the calculated values
+  //TODO: Compare the calculated values
   test('chem-descriptors', async () => {
-    getDescriptorsSingle(molStr);
+    for (const mol of molFormats)
+      getDescriptorsSingle(mol);
   });
 });

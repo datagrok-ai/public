@@ -5,6 +5,8 @@ import * as OCL from 'openchemlib/full';
 import {oclMol} from '../utils/chem-common-ocl';
 import {div} from "datagrok-api/ui";
 import $ from 'cash-dom';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
 
 async function getIUPACName(smiles: string): Promise<string> {
   const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${smiles}/property/IUPACName/JSON`;
@@ -15,8 +17,18 @@ async function getIUPACName(smiles: string): Promise<string> {
 }
 
 export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget {
+  const rdKitModule = getRdKitModule();
+  try {
+    semValue.value = _convertMolNotation(semValue.value, 'unknown', 'smiles', rdKitModule);
+  } catch (e) {
+    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+  }
   let host = div();
-  var mol = oclMol(semValue.value);
+  try {
+    var mol = oclMol(semValue.value);
+  } catch {
+    return new DG.Widget(ui.divText('Could not analysze properties'));
+  }
 
   function prop(name: string, type: DG.ColumnType, extract: (mol: OCL.Molecule) => any) {
     var addColumnIcon = ui.iconFA('plus', () => {

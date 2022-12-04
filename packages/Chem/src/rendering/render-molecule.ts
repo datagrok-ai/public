@@ -4,6 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import {isMolBlock} from '../utils/convert-notation-utils';
 import $ from 'cash-dom';
 import {_properties, renderer} from '../package';
+import {RDKitCellRenderer} from './rdkit-cell-renderer';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
 
 /** Renders the molecule and returns div with the canvas inside. */
 export function renderMolecule(
@@ -29,9 +31,13 @@ export function renderMolecule(
   moleculeHost.style.width = (options.width).toString() + 'px';
   moleculeHost.style.height = (options.height).toString() + 'px';
 
-  // @ts-ignore
-  renderer.render(moleculeHost.getContext('2d')!, 0, 0, options.width, options.height,
-    DG.GridCell.fromValue(molStr));
+  const renderFunctions = DG.Func.find({meta: {chemRendererName: options.renderer}});
+  if (renderFunctions.length > 0) {
+    renderFunctions[0].apply().then((rendndererObj) => {
+      rendndererObj.render(moleculeHost.getContext('2d')!, 0, 0, options!.width, options!.height,
+        DG.GridCell.fromValue(molStr));
+    });
+  }
 
   const moreBtn = ui.iconFA(
     'ellipsis-v',
