@@ -473,6 +473,13 @@ export enum USER_STATUS {
   STATUS_GUEST = "guest"
 }
 
+export enum PERMISSION {
+  EDIT = 'Edit',
+  VIEW = 'View',
+  SHARE = 'Share',
+  DELETE = 'Delete',
+}
+
 /**
  * @typedef {string} AggregationType
  * @typedef {string} SyncType
