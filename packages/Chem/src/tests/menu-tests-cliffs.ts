@@ -37,10 +37,16 @@ async function _testActivityCliffsOpen(dfName: string, numberCliffs: number) {
     actCliffsTableView.dataFrame.col('Activity')!,
     80,
     't-SNE');
+  
+  let scatterPlot: DG.Viewer | null = null;  
+  for (const i of actCliffsTableView.viewers) {
+    if (i.type == DG.VIEWER.SCATTER_PLOT) 
+      scatterPlot = i;
+  }
 
-/*   expect(scatterPlot != null, true);
+  expect(scatterPlot != null, true);
 
   const cliffsLink = Array.from(scatterPlot!.root.children).filter((it) => it.className === 'ui-btn ui-btn-ok');
   expect((cliffsLink[0] as HTMLElement).innerText.toLowerCase(), `${numberCliffs} cliffs`);
-  actCliffsTableView.close(); */
+  actCliffsTableView.close();
 }
