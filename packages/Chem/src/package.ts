@@ -664,8 +664,13 @@ export function openChemLibSketcher(): OpenChemLibSketcher {
 //meta.ext: sdf,mol
 //input: list bytes
 //output: list tables
-export function importSdf(bytes: Uint8Array): DG.DataFrame[] {
-  return _importSdf(Uint8Array.from(bytes));
+export function importSdf(bytes: Uint8Array): DG.DataFrame[] | void {
+  try {
+    return _importSdf(Uint8Array.from(bytes));
+  } catch(e:any){
+    grok.shell.warning('file is not supported or malformed');
+    grok.shell.error(e);
+  }
 }
 
 //name: importSmi
@@ -674,8 +679,13 @@ export function importSdf(bytes: Uint8Array): DG.DataFrame[] {
 //meta.ext: smi
 //input: list bytes
 //output: list tables
-export function importSmi(bytes: Uint8Array): DG.DataFrame[] {
-  return _importSmi(Uint8Array.from(bytes));
+export function importSmi(bytes: Uint8Array): DG.DataFrame[] | void {
+  try {
+    return _importSmi(Uint8Array.from(bytes));
+  } catch(e:any){
+    grok.shell.warning('file is not supported or malformed');
+    grok.shell.error(e);
+  }
 }
 
 //name: importMol
@@ -684,9 +694,14 @@ export function importSmi(bytes: Uint8Array): DG.DataFrame[] {
 //meta.ext: mol
 //input: string content
 //output: list tables
-export function importMol(content: string): DG.DataFrame[] {
-  const molCol = DG.Column.string('molecule', 1).init((_) => content);
-  return [DG.DataFrame.fromColumns([molCol])];
+export function importMol(content: string): DG.DataFrame[] | void {
+  try {
+    const molCol = DG.Column.string('molecule', 1).init((_) => content);
+    return [DG.DataFrame.fromColumns([molCol])];
+  } catch(e:any){
+    grok.shell.warning('file is not supported or malformed');
+    grok.shell.error(e);
+  }
 }
 
 //name: oclCellRenderer
