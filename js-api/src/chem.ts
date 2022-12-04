@@ -15,8 +15,6 @@ import $ from 'cash-dom';
 let api = <any>window;
 declare let grok: any;
 
-const STORAGE_NAME = 'sketcher';
-const KEY = 'selected';
 const DEFAULT_SKETCHER = 'openChemLibSketcher';
 export const WHITE_MOLBLOCK = `
   Datagrok empty molecule
@@ -41,6 +39,9 @@ export function isMolBlock(s: string | null) {
 /** Cheminformatics-related routines */
 export namespace chem {
 
+  export let SKETCHER_LOCAL_STORAGE = 'sketcher';
+  export const STORAGE_NAME = 'sketcher';
+  export const KEY = 'selected';
   export const SMILES = 'smiles';
   export const MOLV2000 = 'molv2000';
   export const MOLV3000 = 'molV3000';
@@ -133,15 +134,6 @@ export namespace chem {
     inplaceSketcherDiv: HTMLDivElement | null = null;
 
     getSmiles(): string {
-      // let returnConvertedSmiles = () => { // in case getter is called before sketcher initialized
-      //   if(this._molfile) {
-      //     this._smiles = chem.convert(this._molfile, 'mol', 'smiles');
-      //     return this._smiles;
-      //   } else {
-      //     return this._smarts; //to do - convert from smarts to smiles
-      //   }
-      // }
-      // return this.sketcher && this.sketcher._sketcher ? this.sketcher.smiles : !this._smiles ? returnConvertedSmiles() : this._smiles;
       return this.sketcher && this.sketcher._sketcher ? this.sketcher.smiles : this._smiles;
     }
 
@@ -152,15 +144,6 @@ export namespace chem {
     }
 
     getMolFile(): string {
-      // let returnConvertedMolfile = () => { // in case getter is called before sketcher initialized
-      //   if(this._smiles) {
-      //     this._molfile = chem.convert(this._smiles, 'smiles', 'mol');
-      //     return this._molfile;
-      //   } else {
-      //     return this._smarts; //to do - convert from smarts to molfile
-      //   }
-      // }
-      // return this.sketcher && this.sketcher._sketcher ? this.sketcher.molFile : !this._molfile ? returnConvertedMolfile() : this._molfile;
       return this.sketcher && this.sketcher._sketcher ?
         this.molFileUnits === MOLV2000 ? this.sketcher.molFile : this.sketcher.molV3000 : this._molfile;
     }
@@ -237,18 +220,6 @@ export namespace chem {
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     async setValue(x: string) {
-      if (!extractors) {
-        const waitForExtractors = new Promise(async (resolve, reject) => {
-          this.extractorsCreated.subscribe(async (_: any) => {
-            try {
-              resolve(true);
-            } catch (error) {
-              reject(error);
-            }
-          });
-        });
-        await waitForExtractors;
-      }
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
@@ -257,7 +228,7 @@ export namespace chem {
           .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
           .then((mol) => this.setMolecule(mol));
       else
-        await this.setMolecule(x);
+        this.setMolecule(x);
     }
 
     constructor(mode?: SKETCHER_MODE) {
@@ -268,7 +239,8 @@ export namespace chem {
       this.sketcherCreated.subscribe(() => {
         const molecule = this.unitsBeforeInit === SMILES ? this._smiles :
           (this.unitsBeforeInit === MOLV2000 || this.unitsBeforeInit === MOLV3000) ? this._molfile : this._smarts;
-        this.setMolecule(molecule, this.unitsBeforeInit === SMARTS);
+      if (molecule && molecule !== '' && !Sketcher.isEmptyMolfile(molecule))
+          this.setMolecule(molecule, this.unitsBeforeInit === SMARTS);
       });
       setTimeout(() => this.createSketcher(), 100);
     }
@@ -280,7 +252,7 @@ export namespace chem {
     }
 
     async createSketcher() {
-      const lastSelecttedSketcher = await grok.dapi.userDataStorage.getValue(STORAGE_NAME, KEY, true);
+      const lastSelecttedSketcher = window.localStorage.getItem(SKETCHER_LOCAL_STORAGE);
       this.sketcherFunctions = Func.find({tags: ['moleculeSketcher']});
       this.selectedSketcher = this.sketcherFunctions.find(e => e.name == lastSelecttedSketcher) ?? this.sketcherFunctions.find(e => e.name == DEFAULT_SKETCHER);
       this.setExternalModeForSubstrFilter();
@@ -387,23 +359,12 @@ export namespace chem {
       $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
       if (extractors == null) {
-        const extractorSearchOptions = {
-          meta: {
-            role: FUNC_TYPES.CONVERTER,
-            inputRegexp: null,
-          },
-          returnSemType: SEMTYPE.MOLECULE
-        };
-
-        const load: Promise<any> = api.grok_Func_LoadQueriesScripts();
-        load
-          .then((_) => {
-            extractors = Func.find(extractorSearchOptions);
-            this.extractorsCreated.next(true);
+        grok.dapi.functions.filter('options.role="converter"').list()
+          .then((res: Func[]) => {
+            extractors = res.filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
           })
-          .catch((_) => {
+          .catch((_: any) => {
             extractors = [];
-            this.extractorsCreated.next(true);
           });
       }
 
@@ -450,6 +411,7 @@ export namespace chem {
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
               this.selectedSketcher = this.sketcherFunctions.filter(f => f.friendlyName === friendlyName)[0];
               grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, this.selectedSketcher!.name, true);
+              window.localStorage.setItem(SKETCHER_LOCAL_STORAGE, this.selectedSketcher!.name);
               this.setSketcher(this.getMolFile());
             },
             {isChecked: (item) => item === this.selectedSketcher?.friendlyName, toString: item => item})
@@ -491,7 +453,7 @@ export namespace chem {
     }
 
     static isEmptyMolfile(molFile: string): boolean {
-      const rowWithAtomsAndNotation = molFile ? molFile.split("\n")[3] : '';
+      const rowWithAtomsAndNotation = molFile && molFile.split("\n").length >= 4 ? molFile.split("\n")[3] : '';
       return (molFile == null || molFile == '' ||
        (rowWithAtomsAndNotation.trimStart()[0] === '0' && rowWithAtomsAndNotation.trimEnd().endsWith('V2000')) ||
        (rowWithAtomsAndNotation.trimEnd().endsWith('V3000') && molFile.includes('COUNTS 0')));
