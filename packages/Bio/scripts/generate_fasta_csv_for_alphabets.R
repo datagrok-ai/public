@@ -4,17 +4,12 @@ library(random)
 alphabetDna <- c('A','C','G','T')
 alphabetRna <- c('A','C','G','U')
 alphabetPt <- c('G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
-                'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T',)
+                'K', 'R', 'H', 'C', 'V', 'P', 'W', 'I', 'M', 'T')
 
-toAlphabet <- function(v, a;ph){
+toAlphabet <- function(v, alph){
   paste(sapply(v, function(ci){ alph[ci]; }), collapse = '')
 }
 
-mutateString <- function(s, p){
-
-}
-
-seq <- toAlphabet(sample.int(4, 35, replace=TRUE), alphabet);
 seqPt <- toAlphabet(sample.int(20, 35, replace=TRUE), alphabetPt);
 seqDna <- toAlphabet(sample.int(4, 35, replace=TRUE), alphabetDna);
 seqRna <- toAlphabet(sample.int(4, 35, replace=TRUE), alphabetRna);
@@ -60,8 +55,10 @@ seq_mutate <- function(s, p, alphabet){
   res_s;
 }
 
-fastaDna_df <- data.frame(id = 1:100, sequence = sapply(1:100, function(id){ seq_mutate(seqDna, seq_p1, alphabetDna)}));
-write_csv(fastaDna_df, 'D:/HOME/atanas/Datagrok/projs/public/packages/Bio/files/samples/sample_FASTA_DNA.csv');
+for (n in c(100,1000,10000, 100000, 1000000)){
+  fastaDna_df <- data.frame(id = 1:n, sequence = sapply(1:n, function(id){ seq_mutate(seqDna, seq_p1, alphabetDna)}));
+  write_csv(fastaDna_df, sprintf('../files/data/sample_FASTA_DNA-%d.csv', n));
+}
 
 fastaRna_df <- data.frame(id = 1:100, sequence = sapply(1:100, function(id){ seq_mutate(seqRna, seq_p2, alphabetRna)}));
 write_csv(fastaRna_df, 'D:/HOME/atanas/Datagrok/projs/public/packages/Bio/files/samples/sample_FASTA_RNA.csv');

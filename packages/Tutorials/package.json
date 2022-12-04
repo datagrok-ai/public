@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/tutorials",
   "friendlyName": "Tutorials",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "author": {
     "name": "Diana Onufriienko",
     "email": "donufriienko@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/Tutorials"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.11.1",
+    "@datagrok-libraries/utils": "^1.15.5",
     "cash-dom": "^8.1.0",
     "datagrok-api": "^1.0.0",
     "dayjs": "^1.10.6",
@@ -44,6 +44,7 @@
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
+    "link-all": "npm link datagrok-api",
     "debug-tutorials": "grok publish",
     "build-debug-tutorials": "webpack && grok publish",
     "release-tutorials": "grok publish --release",

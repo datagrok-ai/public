@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/nlp",
   "fullName": "NLP",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": {
     "name": "Diana Onufriienko",
     "email": "donufriienko@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/NLP"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.11.1",
+    "@datagrok-libraries/utils": "^1.15.5",
     "aws-sdk": "^2.762.0",
     "datagrok-api": "^1.0.0",
     "util": "^0.12.3"

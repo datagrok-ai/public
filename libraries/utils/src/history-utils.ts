@@ -1,9 +1,18 @@
+/* eslint-disable max-len */
 /* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
-import {DateOptions, FilterOptions} from './function-view';
+
+type DateOptions = 'Any time' | 'Today' | 'Yesterday' | 'This week' | 'Last week' | 'This month' | 'Last month' | 'This year' | 'Last year';
+
+type FilterOptions = {
+  text?: string,
+  date?: DateOptions,
+  author?: DG.User,
+  isShared?: boolean,
+};
 
 const getSearchStringByPattern = (datePattern: DateOptions) => {
   switch (datePattern) {
@@ -60,11 +69,11 @@ export namespace historyUtils {
     for (const input of dfInputs)
       await grok.dapi.tables.uploadDataFrame(callToSave.inputs[input.name]);
 
-    return await grok.dapi.functions.calls.save(callToSave);
+    return await grok.dapi.functions.calls.allPackageVersions().save(callToSave);
   }
 
   export async function deleteRun(callToDelete: DG.FuncCall) {
-    await grok.dapi.functions.calls.delete(callToDelete);
+    await grok.dapi.functions.calls.allPackageVersions().delete(callToDelete);
   }
 
   /**

@@ -1453,7 +1453,8 @@ for _ in descriptors:
 descriptors_3d = get_3d_descriptors_names()
 descriptors_funcs = _get_descriptors_funcs(_descriptors)
 for n in range(0, length):
-  mol = Chem.MolFromSmiles(smiles[n])
+  mol = Chem.MolFromMolBlock(smiles[n], sanitize = True) if ("M  END" in smiles[n]) else Chem.MolFromSmiles(smiles[n], sanitize = True)
+
   if mol is None:
     continue
   try:

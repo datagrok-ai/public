@@ -7,14 +7,14 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import {importFasta, multipleSequenceAlignmentAny} from '../package';
 import {convertDo} from '../utils/convert';
 import {SEM_TYPES, TAGS} from '../utils/constants';
-import {generateLongSequence, generateManySequences, performanceTest} from './test-sequnces-generators';
+import {generateLongSequence, generateManySequences, performanceTest} from './utils/sequences-generators';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 category('renderers', () => {
   let tvList: DG.TableView[];
   let dfList: DG.DataFrame[];
 
   before(async () => {
-    await grok.functions.call('Bio:initBio');
     tvList = [];
     dfList = [];
   });

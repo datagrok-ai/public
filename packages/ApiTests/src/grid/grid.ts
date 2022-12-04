@@ -1,7 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
+
+export function hasTag(colTags: string[], colTagValue: string): boolean {
+  for (let i = 0; i < colTags.length; i++) {
+    for (let j = 0; j < colTags[i].length; j++) {
+      console.log('TAG Value: ' + colTags[i][j]);
+      if (colTags[i][j] == colTagValue)
+        return true;
+    }
+  }
+  return false;
+}
 
 category('Grid', () => {
   let v: DG.TableView;
@@ -20,7 +31,7 @@ category('Grid', () => {
     const secondCol = grid.columns.byIndex(6);
     if (firstCol?.name != 'race' || secondCol?.name != 'age')
       
-      throw 'grid.setOrder does not work';
+      throw new Error('grid.setOrder does not work');
   });
 
   test('resizeColumn', async () => {
@@ -32,7 +43,7 @@ category('Grid', () => {
     demog.rows.match('sex = M').filter();
     if (demog.filter.trueCount != 605)
       
-      throw 'Filtering error';
+      throw new Error('Filtering error');
   });
 
   test('colorCoding', async () => {
@@ -54,7 +65,7 @@ category('Grid', () => {
     if (!hasTag(raceTags, '.color-coding-categorical') ||
       !hasTag(raceTags, '{"Asian":4278190335,"Black":4286578816,"Caucasian":4278547786,"Other":4293188935}'))
       
-      throw 'Categorical Color Coding error';
+      throw new Error('Categorical Color Coding error');
 
     //numerical HEIGHT column check for Conditional ColorCoding
     const heightTags: string[] = Array.from(demog.col('height')!.tags);
@@ -63,7 +74,7 @@ category('Grid', () => {
       !hasTag(heightTags, '.color-coding-conditional') ||
       !hasTag(heightTags, '{"20-170":"#00FF00","170-190":"#220505"}'))
       
-      throw 'Conditional Color Coding error';
+      throw new Error('Conditional Color Coding error');
 
     //numerical AGE column check for Linear ColorCoding
     const ageTags: string[] = Array.from(demog.col('age')!.tags);
@@ -72,7 +83,7 @@ category('Grid', () => {
       !hasTag(ageTags, '.color-coding-linear') ||
       !hasTag(ageTags, '[4294944000, 4278255360]'))
       
-      throw 'Linear Color Coding error';
+      throw new Error('Linear Color Coding error');
   });
 
   test('columnVisibility', async () => {
@@ -83,13 +94,12 @@ category('Grid', () => {
 
     if (studyColVisible)
       
-      throw 'Hiding a column by adding ~ to the name doesn\'t work';
+      throw new Error('Hiding a column by adding ~ to the name doesn\'t work');
 
     if (diseaseColVisible)
       
-      throw 'Hiding a column by using columns.setVisible doesn\'t work';
+      throw new Error('Hiding a column by using columns.setVisible doesn\'t work');
   });
-
 
   test('columnControlledValues', async () => {
     demog.col('site')!.tags[DG.TAGS.CHOICES] = '["New York", "Buffalo"]';
@@ -102,7 +112,7 @@ category('Grid', () => {
       !hasTag(siteTags, '.auto-choices') ||
       !hasTag(siteTags, 'New York'))
       
-      throw 'Column Controlled Values (Choices) error';
+      throw new Error('Column Controlled Values (Choices) error');
   });
 
   test('GridColumn.renderer', async () => {
@@ -112,15 +122,4 @@ category('Grid', () => {
     for (const col of demog.columns.categorical)
       expect(grid.col(col.name)?.renderer.cellType, DG.TYPE.STRING);
   });
-
-  function hasTag(colTags: string[], colTagValue: string): boolean {
-    for (let i = 0; i < colTags.length; i++) {
-      for (let j = 0; j < colTags[i].length; j++) {
-        console.log('TAG Value: ' + colTags[i][j]);
-        if (colTags[i][j] == colTagValue)
-          return true;
-      }
-    }
-    return false;
-  }
 });

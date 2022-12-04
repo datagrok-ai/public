@@ -41,6 +41,7 @@ category('top menu chem space', async () => {
 });
 
 async function _testChemSpaceReturnsResult(df: DG.DataFrame, algorithm: string) {
+  await grok.data.detectSemanticTypes(df);
   const v = grok.shell.addTableView(df);
   const sp = await chemSpaceTopMenu(df, df.col('smiles')!, algorithm, 'Tanimoto', true);
   expect(sp != null, true);

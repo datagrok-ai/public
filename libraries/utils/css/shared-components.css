@@ -25,3 +25,7 @@
 .cv-drop-area .success {
   color: var(--grey-6);
 }
+
+.no-elements-label {
+  margin: 8px;
+}

@@ -2,7 +2,7 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer} from '../gui-utils';
+import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer,waitForElement} from '../gui-utils';
 import { Viewer } from 'datagrok-api/dg';
 
 category('Viewers: Word Cloud', () => {
@@ -15,12 +15,15 @@ category('Viewers: Word Cloud', () => {
 
   test('wordCloud.visual', async () => {
     let wordCloudIcon = document.getElementsByClassName('svg-word-cloud')[0] as HTMLElement;
-    wordCloudIcon.click(); await delay(1000);
+    wordCloudIcon.click(); 
+    waitForElement('.d4-word-cloud','word cloud viewer not found');
 
     isViewerPresent(Array.from(v.viewers), 'Word cloud');
 
     let protpertiesBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0].getElementsByClassName('grok-icon grok-font-icon-settings')[0] as HTMLElement;
-    protpertiesBtn.click(); await delay(1000);
+    protpertiesBtn.click(); 
+    await waitForElement('.grok-prop-panel', 'word cloud properties not found');
+
     if (document.getElementsByClassName('property-grid-base property-grid-disable-selection').length == 0)
         throw 'Properties table does not open'
 

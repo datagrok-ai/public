@@ -5,7 +5,7 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 import $ from 'cash-dom';
 
 import * as C from '../utils/constants';
-import {getStats, Stats} from '../utils/statistics';
+import {getStats, MaskInfo, Stats} from '../utils/statistics';
 import {PeptidesModel} from '../model';
 
 const allConst = 'All';
@@ -63,8 +63,14 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
 
         aarStr = `${position}: {${aarList.join(', ')}}`;
 
+        //OPTIMIZE: don't create Bitset, use bool[]
         const mask = DG.BitSet.create(rowCount, (i) => aarList.includes(posCol.get(i)));
-        const stats = getStats(activityScaledData, mask);
+        const maskInfo: MaskInfo = {
+          mask: mask.getBuffer(),
+          trueCount: mask.trueCount,
+          falseCount: mask.falseCount,
+        };
+        const stats = getStats(activityScaledData, maskInfo);
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
         const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
@@ -88,11 +94,12 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
       }
 
       otherStr = otherConst;
-      const activityScaledData = activityScaledCol.toList();
+      const activityScaledData = activityScaledCol.getRawData();
       for (const aar of aars) {
         const posList = reversedSelectionObject[aar];
         aarStr = `${aar}: {${posList.join(', ')}}`;
 
+        //OPTIMIZE: don't create Bitset, use bool[]
         const mask = DG.BitSet.create(rowCount, (i) => {
           const currentRow = table.row(i);
           for (const position of posList) {
@@ -101,7 +108,12 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
           }
           return false;
         });
-        const stats = getStats(activityScaledData, mask);
+        const maskInfo: MaskInfo = {
+          mask: mask.getBuffer(),
+          trueCount: mask.trueCount,
+          falseCount: mask.falseCount,
+        };
+        const stats = getStats(activityScaledData, maskInfo);
         const splitCol = DG.Column.fromBitSet(C.COLUMNS_NAMES.SPLIT_COL, mask);
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
         const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
@@ -131,7 +143,12 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         }
 
         const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-        const stats = getStats(activityScaledCol.toList(), table.selection);
+        const maskInfo: MaskInfo = {
+          mask: table.selection.getBuffer(),
+          trueCount: table.selection.trueCount,
+          falseCount: table.selection.falseCount,
+        };
+        const stats = getStats(activityScaledCol.getRawData(), maskInfo);
         const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr);
         $(distributionRoot).addClass('d4-flex-col');
 

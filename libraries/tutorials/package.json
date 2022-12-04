@@ -23,6 +23,7 @@
 	"scripts": {
 		"link": "npm link",
 		"link-api": "npm link datagrok-api",
+		"link-all": "npm link datagrok-api",
 		"build": "tsc",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix"

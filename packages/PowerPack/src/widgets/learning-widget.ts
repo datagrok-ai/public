@@ -34,7 +34,7 @@ export class LearningWidget extends DG.Widget {
       tabs.addPane('TUTORIALS',()=>res._root)
     })
     .catch((error) => {
-      console.log('Opps! Function does not found! \n'+error);
+      console.log('TutorialWidget not found. \n'+error);
     });
     
     this.root.append(tabs.root);

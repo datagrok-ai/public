@@ -1,6 +1,472 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-11-22 Dev build 1.9.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.9.0`
+* [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
+
+## Addressed Issues
+
+* bio lib: Fix properly naming for packages/GUIDE.MD 
+* Bio: Add VdRegionsViewer.positionHeight with default 'Entropy', fix args of exported package functions, fix currentView handling for WebLogo-positions tests 
+* JS UI Test: Predictive modeling (Caret) (WIP)
+* JS UI Test: Chem | To Inchi 
+* JS UI Test: Fingerprints 
+* bio lib: Fixed phylocanvas.gl and deck.gl versions 
+* Issue #1123: RadarViewer. Add tests for the updated functionality WIP 
+* Library gridext: Fixed an issue the the duplicated Grid row header 
+* Packages PowerGrid: Bumped up the version of the dependency library gridext 
+* Bio: cell.renderer #1120: sequence Add property to highlight common 
+* JS UI Test: Groups 
+* Investigate/improve test manager performance 
+* DevTools: updated utills version, bump version 
+* Bio: updated utils library version, bump package version 
+* Chem: updated utils library version, bump package version 
+* ClinicalCase: updated utils library version, package version up 
+* Alation: updated utils lib version and package-test.ts 
+* ApiSamples: updated utils lib version and package-test.ts 
+* ApiTests, Arrow: updated utils lib version and package-test.ts 
+* extended tests with example of datetime column type and join (#1106) 
+* skip package filter test 
+* #1078: revert using virtual columns 
+* DevTools: test-manager \- ability to copy error text from property panel, version up 
+* Peptides: selection state saving fix 
+* PTV: Fixed phylocanvas.gl and deck.gl versions 
+* GIS: selection of rows-points 
+* JS UI Test: Tags 
+* Simplified icon methods 
+* #943 3dscatterplot onload error sometimes 
+* Utils: #466: Observable naming fix & patch version bump 
+* Utils: #466: added file input validators 
+* Utils: #466: fixed input DF uploading 
+* Utils: Validation class added 
+* Utils: minor version bump 
+* Utils: fixed validation error text 
+* Utils: patch version bump 
+* Chem: version up 
+* bio lib: Add interface property NodeType.isLeaf for PhyloTreeViewer, bump version 
+* SequenceTranslator: duplex registration 
+* (Bug) ColorPicker blinks in Chrome (WIP)
+* DevTools: test manager \- fixed progress bar bug, version up 
+* Chem: remove substructure search from panel 
+* achopovsky/#933 to atomic level (#1133) 
+* bio lib: bump version 
+* closes 1110 Viewers: legend cannot be resized again 
+* SequenceTranslator: Axo Labs Pattern enhancement 
+* Bio, Peptides, MolecularLiabilityBrowser: raise version of lib bio in dependencies 
+* closes #1131 MultiColumn Selector: selects only columns filtered by search 
+* (Bug) Nginx: Add additional logging to investigate timeouts 
+* Docs: LE certificates remewal 
+* #1103 layout not saving 
+* (Bug) Grok Connect: the connection visibility 
+* Settings: mark instance as production (WIP)
+* Removed obsolete packages 
+* Alation: enable Open With handling 
+* #943 3dscatterplot fix try 
+* Button alignment for form 
+* Issue #1034: Charts. RadarViewer removing unused options 
+* Issue #1123: RadarViewer. Adding tests for the case when options are changed 
+* Charts: Increase the version 
+* GIS: selection map points/grid rows (update) 
+* #609 aggregation mode for pc plot 
+* Bio: #264 monomer colours by properties 
+* closes #1134 trellis plot viewer icon 
+* Docs: Scenarios for release manual testing (WIP)
+* Peptides build fix 
+* Introduce Viewer Serialization Context for saving layouts and projects 
+* (Bug) JS: DateTimeColumn allows to set string value 
+* (Bug) InfoPanels: Returning map or widget doesn't work 
+* (Bug) Package Entities Naming issues (WIP)
+* Implement Logger (WIP)
+* DevTools: test manager \- fixed tests, moved buttons from ribbon to view 
+* bio lib: Fix getStats for single line single monomer dataset, add test 
+* Issue #976: Add packages check 
+* Issue #976: Check whether elementalAnalysis had been done before in order to avoid error messages 
+* Chem: Increase version 
+* #1047: Bio \- substructure filters (helm filtering performance, modified linear search) 
+* #1118: distribution controls fix 
+* #1118: SAR mode switch fix 
+* #1118: collaborative filtering fix 
+* PhyloTreeViewer: PhylocanvasGL wrapper, injectTreeToGrid 
+* Converted const isPlainObject to function 
+* (Bug) Packages: Debug version duplicates release 
+* Careers section updates 
+* Issue #1052: Molstar: enable mol\* at the platform fixes 
+* GIS: autofocus on grid-row select 
+* Issue #1052: Adding loadStructureFromData 
+* datagrok-tools: version bump 
+* Bio: Add test bio.getStats for one line single monomer dataset, attach ticket link to test setRendererManually 
+* Fixed ORM test 
+* Fixed param name 
+* Bio: #1139 \- refactor library, get all data on loaded libraries 
+* column manager checkwrong columns after reordering 
+* closes #776 Viewer legend is not synchronized with in-viewer filter 
+* Bio: #1139 \- refactoir library, notify of monomers changed 
+* Charts: Surface Plot 
+* update deploy.md 
+* (Bug) TreeViewer: duplicated property "Animation Duration" 
+* SequenceTranslator: Axo Labs Pattern enhancement (WIP) 
+* Bio: substructure filters tests 
+* JS: Icons support for JS Viewers 
+* #943 scrollbars should not appear 
+* closes 932 Vertical scrollbar is not working in Order or Hide Columns menu 
+* Bio: #1139 refactor bio, export of capped monomers 
+* Fixed analyzer warnings 
+* HELM: add library as global 
+* Utils: history utils are extracted into separate namespace 
+* bio lib: Add getMonomerLib():IMonomerLib, fixes WebLogo for empty data 
+* Bio: Bump version for bio lib 5.5.0 
+* Helm: Add getMonomerLibObj package function for IMonomerLib implementation 
+* Fixed ambiguous column names 
+* Package functions: set helpUrl 
+* Onuf/grok 11298 external tutorials (#1116) 
+* Tutorials: update docs 
+* Issue #946: Adding ui for admet 
+* Tutorials: allow defining external tutorials and integrate them into the app 
+* Bio: Script admet-run.py to read ADMET models 
+* Peptides: Use IMonomerLib through bio lib 
+* bio: small fix 
+* Utils: added text filtering on historical runs 
+* Help: Docs: Terraform deploy instructions 
+* Help: Docs: Fix Terraform Template 
+* Help: Docs: Fix lonter errors 
+* GIS: box-selection bug fixed 
+* GIS: drag-box selecting issues fixing 
+* bio lib: Export MonomerWorks change getCappedMonomer(type, name), remove async init() 
+* Peptides: Use bio.MonomerWorks.getCappedMonomer() 
+* Help: Docs: Fix Terraform instruction 
+* Removed debug code 
+* Peptides: lib/bio version fix 
+* (Bug) Grid rollover disappears after applying filters or sort 
+* (Bug) Abnormal behavior when navigating grid by means of upwards arrow 
+* bio lib: Arrange exports, node types 
+* Bio: Fix import DG 
+* Chem: speed up chem space, activity cliffs, similarity search tests 
+* Tutorials: version bump 
+* 1128 Order and hide columns dialog isues part 1 
+* Adding pinned rows to Grid viewer 
+* Bio: modified test datasets for sequence space/activity cliffs 
+* PhyloTreeViewer: Fixes for PhylocanvasGlViewer, fix tree-cut-tests (as leaf lists) 
+* Utils: fixed bug with sharing runs' inputs/outputs 
+* Chem: fix test R-groups 
+* Bio: modified activity cliffs in ml library to be able to show modified lines grid 
+* Tutorials: docs update 
+* Peptides: analysis loading fix 
+* 709 filters sync in different views case 1, 2 
+* ORM: FuncCall visibility should depend on Func visibility (WIP)
+* Packages tests 
+* Fixed syntax error 
+* Fixed analyzer warning 
+* Bump ApiTests version 
+* Bio: UI improvements, version up 
+* add images to provider conneectors 
+* fix image sizes  for added connectoin images 
+* Utils: Ability to skip tests 
+* #1077: settings dialog UI 
+* (Bug) Simplify the chain for ViewerSerializationContext 
+* 1128 order or hide dialog(move top move bottom) 
+* closes 709 filterpanel sync (case with closing filter in different layout) 
+* Bio: ADMET python venv requirements 
+* Charts: version bump 
+* Helm: fixed freezing in substructure filter 
+* Chem: modified Chem space to call dimentionality reduce results from Bio 
+* Bio: sequence space on fingerprints 
+* GIS: detectors sampling of cathegories 
+* GIS: code optimised, some TODO's removed 
+* #709 dont close filters menu, just reset them 
+* Context menu commands: update conditions for JsViewers 
+* Charts: update readme 
+* added viewers test (layout) 
+* #1110 legend cats count incorrect 
+* closes #643 regression lines in log mode, r2 value 
+* Issue #1052: Adding pviz-bundle.min.js file 
+* #1077: Peptides settings 
+* DrugBank: version bump 
+* JS UI Test: Chem Sketcher 
+* Alation: tests fix 
+* #1152, Bio: work wth pdbs 
+* SQLite: version bump 
+* PubChemApi: version bump 
+* #1077: analysis start from top menu 
+* bio lib: NodeType, NodeCuttedType interfaces, fixes imports, PhylocanvasGL service interfaces and types 
+* Bio: Fix test substructureFilters/helm 
+* #1047: sequence activity cliffs using fingerprints 
+* GIS: color coding (linear/conditional). Filtering attempts 
+* #1047: Bio \- sequence activity cliffs using fingerprints 
+* #1047: Chem: added functions used in Bio to calculate activity cliffs 
+* Utils: #466: Historical runs with package isolation 
+* Add vertical alignment 
+* utils lib: Fix expectedObject for float tolerance 
+* PhyloTreeViewer: PhylocanvasGlService, fix for grid scroll events,  skip render tasks by key, PhylocanvasGlViewer open test 
+* #1152 
+* Merged in onuf/1148-color-coding-extended-ui (pull request #282) 
+* #1077: fixed analysis dialog UI 
+* #1077: replaced SAR viewer title with inputs 
+* Wiki: update the color coding section 
+* closes #1156 filter bitset is reset after adding new column 
+* bio lib: Add IPhylocanvasGlViewer .onAfterRender  and onHover, add ITreeHelper 
+* PhyloTreeViewer: Fix treeCutAsTree with tests, add TreeHelper, PhylocanvasGlViewer events onAfterRender and onHover 
+* MLB: main view fix routing, TreeBrowser render clone/tree with PhylocanvasGlService, TreeBrowser prevent recreating WebGL context, TreeBrowser show tooltip with long id, TwinPViewer NoSchemeItem 
+* added bool properties check to viewers test 
+* Added the tree viewer documentation 
+* Helm: Fix ES2021.String 
+* closes #1157 show visible only mode in Order and hide dialog 
+* Wiki: correct a misspelling 
+* Packages: NLP: add test files 
+* gridext: Fix remove tsc products 
+* SequenceTranslator: use sequence types map in registration 
+* Packages: NLP: add test skip reason 
+* bio lib: typings for @phylocanvas/phylocanvas.gl 
+* SequenceTranslator: fix of ribbon panel 
+* SequenceTranslator: helpers 
+* Chem: descriptors dlg fix 
+* SequenceTranslator: download function 
+* SequenceTranslator: registration constants 
+* GIS: filtering optimization, conditional color coding 
+* SequenceTranslator: separation of calculations from registration 
+* Lib/bio & HELM: MonomerWorks fix 
+* help: Add gif for PhylocanvasGlViewer 
+* PhyloTreeViewer: newickToDf set semType for columns node and parent to prevent detectors, add props nodeColumnName and parentColumnName to PhylocanvasGlViewer, sync selection between PhylocanvasGL and nwkDf in PhylocanvasGlViewer 
+* Bio: #264 \- refactoring 
+* JS UI Test: Form Viewer 
+* SequenceTranslator: code clarifications 
+* Grok Connect: CI: Version upgrade in scripts 
+* created missing indexes 
+* SequenceTranslator: minor change 
+* gridext lib: Up datagrok-api dependency version to 1.8.2, bump version 
+* #1155: Chem: substituent analysis in progress 
+* Chem: removed incorrect import from package.ts 
+* #709 #643 minor improvments 
+* PhyloTreeViewer: Fix GridWthTree and TreeHelper.setGridOrder for use leafColName and DataFrame tag '.newickLeafColumn', add tree generator, fix TreeHelper.cutTreeGrid to clean previous cluster marks, up used gridext dependency version 
+* Utils: historical runs API enhancement 
+* Added the SPGI demo dataset 
+* HELM: updated dependency 
+* Bio: #264 \- monomers read and calculated palettte creation 
+* #1125 add methods for getting value color into ColumnColorHelper (#1137) 
+* #1125 add methods for getting value color into ColumnColorHelper 
+* Release of Pinned Rows 
+* JS-API: Exposing pinned rows API 
+* Bio: fix init 
+* bio: version up 
+* Reorder Columns Dialog: improved a tooltip 
+* HomeView: got rid of unused code 
+* Got rid of debug printout 
+* Added missing files 
+* Resolves #1071 Color coding menu and dialog is not properly initialised after re-applying layout 
+* closes #1126 scatterplot packed cats with sparse columns 
+* Issue #1034: RadarViewer fixing problem with indicator 
+* JS UI Test: Leaflet Viewer 
+* Bio: Fix tests for similarity/diversity and activityCliffs, up Chem version in grokDependencies 
+* Library gridext: Added support for pinned rows. 
+* Added AppEvents.isProjectPublishing property 
+* TrellisPlot: code cleanup 
+* Grid: fix #1130: No tooltip on column header if column is too narrow 
+* DataFrameViewer: add onDataFrameChanged event 
+* Library gridext: Bumping up version 
+* #1148 Color coding: Disable the context menu command instead of error message when coloring type is not applicable 
+* Utils: fixed run double-load in ComputationView 
+* fix #1083: Grid: Popup Dialog from hamburger menu stays after the column is deleted 
+* fix #805: Grid: Change column type \- some strange appearance 
+* bio: add capPeptideMonomer 
+* Utils: favourites updated when filter is changed 
+* Utils: fixed order of the runs 
+* bio: bump version to 5.9.5 
+* bio: toAtomicLevel: fix 
+* bio: bump to 5.9.6 
+* bio: fix and raise version to 5.9.7 
+* closes #1161 Transformation Editor: use column selector instead of popup menus 
+* bio: refactor 
+* bio: bump version 
+* add property changed stream to interop 
+* add property changed stream to interop (#1168) 
+* (Bug) Files: Windows shares don't work 
+* Bio: refactor 
+* (Bug) Files: Harmonize credentials editing (WIP)
+* Peptides: monomer tooltips 
+* closes 1167 zoom slider with specific data 
+* OligoBatchCalculator: separate constants 
+* OligoBatchCalculator: user group name and other constants 
+* GIS: synchronysing heat map with filteration 
+* added part about tests skipping 
+* GitHub 1159 Enable Grid column context menu in Pinned columns 
+* Help | Govern | User group: Add a description of the new functionality  
+* Chem: remove molecule without sketcher opening 
+* Charts: substituent analysis viewer in progress 
+* Peptides: import polishing 
+* 1157  Order & hide dialog checkbox replaced woth select 
+* 1161 transformation editor improvemrnts 
+* OligoBatchCalculator: calculations speedup 
+* OligoBatchCalculator: constants in order 
+* bio: monomer library enhances 
+* Bio: using monomer library 
+* Oauth: Bind custom google application 
+* gridext lib: add .gitignore .npmignore, bump version 
+* OligoBatchCalculator: adiitional modification validation start 
+* #1155: Chem: substituent analysis viewer in progress 
+* bio: eror fixed 
+* Fixed null pointer exception 
+* CSS fixes 
+* Helm: bio related refactor 
+* #1155: Chem: substituent analysis \- fixing bugs, 
+* Fixed attirbute exception 
+* #1077: replaced barchart with weblogo 
+* Peptides: settings sliders fix 
+* #1077: include columnds 
+* GitHub 1159 Multiple feature requests for Pin Column sort 
+* JS-API: notify for copyFrom and invert methods 
+* #1166: collaborative filtering fix 
+* Library gridext: Adressing sorting issues in pinned columns 
+* Library gridext: Updating the version of JS-API 
+* Package PowerGrid: Bumping up package version, JS-API, gridext 
+* fix #1173: Significant figures should be rounded properly 
+* Utils: report to audit about failing tests 
+* GIS: new colorcoding type, code optimization 
+* OligoBatchCalculator: validation of changes to additional modifications 
+* Closes #1163: PhyloTreeViewer TreeForGrid renderer (optimized for visible rows) 
+* OligoBatcchCalculator: show NaN if sequence is not valid 
+* Chem: tests 
+* PhyloTreeViewer: Bump version to publish npm 
+* Chem: bump version 
+* Bio: Bump version for dependencies and to publish npm 
+* Oauth setup 
+* #1161 transformation editor improvemrnts 
+* #1157 Order & hide dialog checkbox alignment 
+* Bio: fix manage libraries 
+* closes #1174 Can not select empty value colored data points in scatterplot 
+* #1119: moved out mutation cliffs calculation 
+* add clickhouse connector image 
+* Peptides: fixed multiple analysis starts 
+* GIS: colorcoding with data stored in cells 
+* Help | Visualize | Viewers | TreeViewer: Create documentation 
+* Help | Visualize | Viewers | Radar Chart: Create documentation 
+* closes #1186 Calculated columns dialog is too large in some cases (#1187) 
+* Dkryvchuk/add new col 2 (#1188) 
+* #1128 Order or hide dialog not working correctly in chrome 
+* (Bug) DG.Logger.audit fails with entity params 
+* JS: Introduce ObjectColumn class 
+* Packages: PowerPack: update viewer categories 
+* add to trellis look to js api 
+* Dkryvchuk/look trellisable (#1189) 
+* Packages: Charts: update help URLs 
+* Bio: fix if 0 libraries chosen 
+* Ability to set custom url for app 
+* Chem: test fix 
+* #1117: filtering out unimprotant clusters (naive) 
+* CI: Build dockerfiles for packages in GitHub Actions 
+* (Bug) Grid's Hamburger menu jumps around cursor when resizing columns 
+* Library gridext: Enabled pinned column resize functionality 
+* GIS: detectors optimization, colorcoding issue fixed 
+* (Bug) Parameterized Queries: Parameters with {choices} not working 
+* bio lib: Calculate .alphabetSize tag on demand 
+* Closes #1171 Bio: enhance detectMacromolecule speed 
+* Library gridext: Bumping Up the library's version 
+* Select tooltip columns: ability to reorder columns (WIP)
+* (Bug) Line chart | Overview: Exception if you select a column different from the one selected for display 
+* Package PowerGrid: Bumping Up the package's version 
+* (Bug) Queries: scalar queries do not work 
+* PowerPack: improved error message 
+* (Bug) Chem: molecules are not rendered if you open a file immediately after starting the platform 
+* ML: Missing Values Imputation: only show columns with missing values 
+* JS API: Added SurfacePlot to the list of known viewers 
+* ApiSamples: add SurfacePlot sample 
+* (Bug) Packages: if a package's detector.js is not loaded, the whole semantic type detection system stops working 
+* Packages: deactivate semantic type detector if it throws an error 
+* SequenceTranslator: remove errorExist flag 
+* #1077: Header WebLogo selection rendering 
+* Surface plot: datetime fix 
+* #1077: header WebLogo interactions 
+* #1077: fixed most potent residues viewer title 
+* #1117: rendering mode switch 
+* #1077: monomer-position viewer cell value color fix (WIP) 
+* Chem: refinements 
+* Peptides: settings dialog fix 
+* #1117: columns aggregation 
+* JS UI Test: Project Upload 
+* Remove delays in JS UI Tests  (WIP)
+* Bio: Fix import from lib utils, bump version for dependencies and publish to npm 
+* (Bug) JS: prepare() takes linear time when column is a parameter 
+* Grok Spawner: Docker Swarm support 
+* Various issues with PC-PLOT (WIP)
+* (Bug) Swagger: Incorrect default value parsing 
+* Peptides: stats calculation fix 
+* Peptides: logo monomer ordering fix 
+* Peptides: version 1.4.0 
+* Docs: Create Help pages for every provider 
+* #1155: substituent analysis viewer \- fixing bugs 
+* #1155: substituent analysis \- fixing bugs 
+* (Bug) Charts | Radar viewer: the wrong axis occurs 
+* (Bug) Charts | Radar viewer: doesn’t respond to the column deletion in the grid 
+* (Bug) JS: check permissions method always returns true 
+* JS API Tests: connections: create, edit, delete, share 
+* Summary columns don't show after refreshing the page #930 
+* Issue #534: exposed TableQuery and DbTableQueryBuilder 
+* Issue #534: docs for TableQuery and DbTableQueryBuilder 
+* #534: TableQuery & DbTableQueryBuilder tests WIP 
+* #534: TableQuery & DbTableQueryBuilder tests & fixes WIP 
+* (Bug) Charts | Radar chart: 'Show All Rows' property issue 
+* (Bug) Charts | Radar viewer: toggling 'Show Min' and 'Show Max' issues 
+* RadarViewer: Updating init function 
+* RadarViewer: removing div id 
+* Datagrok Docker fail on errors during build 
+* GIS: filtering bug fixed, filtering optimization, few unit tests added 
+* JS-API: removed duplicate TableQuery class 
+* Meta: added ChemDraw 
+* Jenkins: CI: Add Skipped characteristic to junit tests converter 
+* Jenkins: CI: Upgrade tools in puppeteer image 
+* ST: triplex 
+* ST: reg fixes 
+* (Bug) Charts | Radar viewer: incorrectly displays negative values (WIP)
+* Compute: renamed catalog feature 
+* (Bug) Charts | Radar viewer: the number of axes should be limited 
+* Charts: Added radar-viewer-test to package-test 
+* Resolves #1204 JS API: add Column.meta.format helper 
+* #1204 JS API: add Column.meta.format helper 
+* (Bug) Multiple Issues with Chem functionality in Grid 
+* JS API Tests: TableQuery: create, run (on different query types) (WIP)
+* SequenceTranslator: parse dimer/triplex 
+* Semantic type detectors performance test 
+* SequenceTranslator: registration: icons instead of buttons, set row height 
+* UI Tests fixes 
+* GIS: code optimization, unit tests 
+* SequenceTranslator: refactoring with isOverhang function 
+* SequenceTranslator: move functions used in draw-svg to helpers 
+* bio lib: Add getAlphabet by name, fix NotationConverter.convertHelm, fix UnitsHandler separator property allowing undefined, bump version 
+* #1204 JS API: update Column.meta.format 
+* Lstolbov/biostructure/render (#1205) 
+* Meta: updated chemDraw package version 
+* Closes #1192 Bio: detectMacromolecule benchmark tests 
+* Bio: detectMacromolecule benchmark tests skipReason for FASTA notation tests 
+* Bio: skipReason for Bio.detectorsBenchmark.separatorDnaLong1e6Few50 
+* Fixed tests 
+* (Bug) JS: Functions.eval output skips toJs 
+* (Bug) JS: Fix undefined and null confusion in toJs 
+* JS: Dapi count() method 
+* Skipped tests 
+* add new form class 
+* Bio: Fix splitters and renderers tests, remove force Bio package init 
+* Test: CI: Skip External provider: small stress test 
+* Tests: Skip failing group tests 
+* Fixed categories 
+* (Bug) PowerPack: initTemplates() test does not work 
+* Utils: #466: added About menu item 
+* JKG: Feat: Upgrade components to the latest versions 
+* Heathchecks for basic images 
+* generate python requirements file 
+* Grok Compute: uograde python 
+* Exposed TableQuery and DbTableQueryBuilder methods 
+* Added missing extension 
+* SequenceTranslator: draw-svg: object with Y coordinates 
+* SequenceTranslator: filter instead of counter using for loop 
+* (Bug) Chem: Filters: when there are multiple molecule columns, all filters default to the first one 
+* #709 trying to preserve both state and column name 
+* Utils: #466: getAbout func updated 
+* Docker: CI: KyotoCabinet version based on python 3.8 
+
+
 # 2022-11-08 Dev build 1.8.3
 
 ## Latest Docker Images

@@ -2,7 +2,7 @@ import {after, before, category, delay, expect, test} from '@datagrok-libraries/
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer} from '../gui-utils';
+import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, uploadProject, findViewer, waitForElement} from '../gui-utils';
 import { Viewer } from 'datagrok-api/dg';
 
 category('Viewers: Density plot', () => {
@@ -14,12 +14,15 @@ category('Viewers: Density plot', () => {
   });
   test('densityPlot.visual', async () => {
     let densityPlotIcon = document.getElementsByClassName('svg-density-plot')[0] as HTMLElement;
-    densityPlotIcon.click(); await delay(1000);
+    densityPlotIcon.click(); 
+    await waitForElement('.d4-density-plot', 'density plot not found');
 
     isViewerPresent(Array.from(v.viewers), 'Density plot');
 
     let protpertiesBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0].getElementsByClassName('grok-icon grok-font-icon-settings')[0] as HTMLElement;
-    protpertiesBtn.click(); await delay(1000);
+    protpertiesBtn.click(); 
+    await waitForElement('.grok-prop-panel', 'density plot properties not found');
+    
     if (document.getElementsByClassName('property-grid-base property-grid-disable-selection').length == 0)
         throw 'Properties table does not open'
 

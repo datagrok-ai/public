@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as echarts from 'echarts';
 import {option} from '../radar/constants';
 
@@ -19,7 +20,7 @@ export class RadarViewer extends DG.JsViewer {
   showMin: boolean;
   showMax: boolean;
   showValues: boolean;
-  columnNames: string[] | null;
+  valuesColumnNames: string[];
 
   constructor() {
     super();
@@ -33,8 +34,8 @@ export class RadarViewer extends DG.JsViewer {
     this.showMin = this.bool('showMin', true);
     this.showMax = this.bool('showMax', true);
     this.showValues = this.bool('showValues', true);
-    this.columnNames = this.stringList('columnNames', null);
-  
+    this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST);
+    
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.myChart = echarts.init(chartDiv);
@@ -45,7 +46,9 @@ export class RadarViewer extends DG.JsViewer {
     option.radar.indicator = [];
     const columns = this.getColumns();
     for (const c of columns) {
-      option.radar.indicator.push({name: c.name, max: c.max});
+      let minimalVal = 0;
+      c.min < 0 ? minimalVal = c.min : minimalVal = 0;
+      option.radar.indicator.push({name: c.name, max: c.max, min: minimalVal});
     }
     this.updateMin();
     this.updateMax();
@@ -74,6 +77,10 @@ export class RadarViewer extends DG.JsViewer {
       this.updateRow();
       this.myChart.setOption(option);
     }));
+    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((_) => {
+      this.init();
+      this.myChart.setOption(option);
+    }));
     this.render();
   }
 
@@ -82,25 +89,27 @@ export class RadarViewer extends DG.JsViewer {
     super.onPropertyChanged(property);
     switch (property.name) {
       case 'min':
-        this.updateMin();
+        if (this.showMin === true) {
+          this.updateMin();
+        }
         break;
       case 'max':
-        this.updateMax();
+        if (this.showMax === true) {
+          this.updateMax();
+        }
         break;
       case 'showMin':
         if (this.showMin != true) {
           this.clearData([0]);
         } else {
-          this.clearData([1, 2]);
-          this.init();
+          this.updateMin();
         }
         break;
       case 'showMax':
         if (this.showMax != true) {
           this.clearData([1]);
         } else {
-          this.clearData([0, 2]);
-          this.init();
+          this.updateMax();
         }
         break;
       case 'showCurrentRow':
@@ -108,11 +117,12 @@ export class RadarViewer extends DG.JsViewer {
           this.clearData([0, 1]);
         } else {
           this.clearData([2]);
-          this.init();
+          this.checkConditions();
         }
         break;
       case 'showAllRows':
         if (this.showAllRows === true) {
+          option.legend.show = false;
           this.clearData([0, 1, 2]);
           let data = option.series[2].data; 
           for (let i = 0; i < this.dataFrame.rowCount; i++) {
@@ -122,8 +132,9 @@ export class RadarViewer extends DG.JsViewer {
             });
           }
         } else {
+          option.legend.show = true;
           this.clearData([2]);
-          this.init();
+          this.checkConditions();
         }
         break;
       case 'showTooltip':
@@ -134,12 +145,14 @@ export class RadarViewer extends DG.JsViewer {
         }
         break;
       case 'backgroundMinColor':
-        this.clearData([0, 1, 2]);
-        this.init();
+        if (this.showMin === true) {
+          this.updateMin();
+        }
         break;
       case 'backgroundMaxColor':
-        this.clearData([0, 1, 2]);
-        this.init();
+        if (this.showMax === true) {
+          this.updateMax();
+        }
         break;
       case 'showValues':
         if (this.showValues === false) {
@@ -150,23 +163,33 @@ export class RadarViewer extends DG.JsViewer {
             lineStyle: {
               width: 2,
               type: 'dashed',
+              color: 'rgba(66, 135, 204, 0.8)'
             },
             label: {
               show: false,
             },
             symbolSize: 6,
+            itemStyle: {
+              color: 'rgba(66, 135, 204, 0.8)'
+            },
           });
         } else {
-          this.clearData([0, 1, 2]);
-          this.init();
+          this.checkConditions();
         }
         break;
-      case 'columnNames':
+      case 'valuesColumnNames':
         this.init();
         break;
     }
-
     this.render();
+  }
+
+  checkConditions() {
+    if (this.showMin === true)
+      this.updateMin();
+    if (this.showMax === true) 
+      this.updateMax();
+    this.updateRow();
   }
 
   updateMin() {
@@ -209,8 +232,12 @@ export class RadarViewer extends DG.JsViewer {
       lineStyle: {
         width: 2,
         type: 'dashed',
+        color: 'rgba(66, 135, 204, 0.8)'
       },
       symbolSize: 6,
+      itemStyle: {
+        color: 'rgba(66, 135, 204, 0.8)'
+      },
       label: {
         show: true,
         formatter: function (params: any) {
@@ -228,11 +255,18 @@ export class RadarViewer extends DG.JsViewer {
 
   getColumns() : DG.Column<any>[] {
     let columns: DG.Column<any>[] = [];
-    if (this.columnNames === null) {
-      columns = Array.from(this.dataFrame.columns.numerical);
+    let numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numerical);
+    if (this.valuesColumnNames?.length > 0) {
+      let selectedColumns = this.dataFrame.columns.byNames(this.valuesColumnNames);
+      for (let i = 0; i < selectedColumns.length; ++i) 
+        if (numericalColumns.includes(selectedColumns[i])) 
+          columns.push(selectedColumns[i]);
     } else {
-      columns = this.dataFrame.columns.byNames(this.columnNames);
+      columns = numericalColumns.slice(0, 20);
     }
+    for (let i = 0; i < columns.length; ++i) 
+      if (columns[i].type === DG.TYPE.DATE_TIME) 
+        columns.splice(i, 1);
     return columns;
   }
 

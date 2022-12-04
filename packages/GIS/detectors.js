@@ -29,7 +29,7 @@ class GisPackageDetectors extends DG.Package {
   //description: detect longitude/latitude coordinates
   detectGisCoord(col) {
     //TODO: add pattern like (51° 28′ 38″ N) (? if we need it)
-    if (col.type != DG.COLUMN_TYPE.FLOAT)
+    if (col.type !== DG.COLUMN_TYPE.FLOAT)
       return null;
 
     let estCoeff = 0;
@@ -37,6 +37,8 @@ class GisPackageDetectors extends DG.Package {
     const colName = col.name.toLowerCase();
     //the check below leads to miss defining of coordinates type in case of at least one error in data>>
     // if ((col.stats.min < -180) || (col.stats.max > 180)) return null;
+
+    // const begTime = Date.now();
 
     if ((colName.includes('lon')) || (colName.includes('lng')) || (colName === 'x')) {
       colSemType = SEMTYPEGIS.LONGITUDE;
@@ -48,24 +50,28 @@ class GisPackageDetectors extends DG.Package {
 
     if (colSemType === null)
       return null;
-    //TODO: add sampling here instead of cathegories
-    //DONE: the way above copyed the sampling mechanism
-    const samplesNum = Math.min(col.categories.length, 50);
+
+    const samplesNum = Math.min(col.length, 50);
+    const step = Math.round(col.length / (samplesNum + 1));
     const caseWeight = 80 / (samplesNum + 1);
-    for (let i = 0; i < samplesNum; i++) {
+    const columnArr = col.getRawData();
+    for (let i = 0; i < columnArr.length; i += step) {
       if (colSemType === SEMTYPEGIS.LATIITUDE) {
-        if ((col.categories[i] > -90) && (col.categories[i] < 90))
+        if ((columnArr[i] > -90) && (columnArr[i] < 90))
           estCoeff += caseWeight;
         else
           estCoeff -= caseWeight * 2;
       }
       if (colSemType === SEMTYPEGIS.LONGITUDE) {
-        if ((col.categories[i] > -180) && (col.categories[i] < 180))
+        if ((columnArr[i] > -180) && (columnArr[i] < 180))
           estCoeff += caseWeight;
         else
           estCoeff -= caseWeight * 2;
       }
     }
+
+    // const endTime = Date.now();
+    // console.log('coord detector: ' + (endTime - begTime));
     if (estCoeff > 75)
       return colSemType;
 
@@ -77,10 +83,10 @@ class GisPackageDetectors extends DG.Package {
   //output: string semType
   //description: detector of countries
   detectGisCountry(col) {
-    if (col.type != DG.COLUMN_TYPE.STRING)
+    if (col.type !== DG.COLUMN_TYPE.STRING)
       return null;
     const colName = col.name.toLowerCase();
-    if ((colName.includes('country') || colName.includes('countri')) && col.type === DG.TYPE.STRING) {
+    if ((colName.includes('country') || colName.includes('countri'))) {
       col.semType = SEMTYPEGIS.GISCOUNTRY;
       return col.semType;
     }
@@ -93,31 +99,47 @@ class GisPackageDetectors extends DG.Package {
   //output: string semType
   //description: detector of ZIP codes for different countries
   detectGisZipcode(col) {
-    if ((col.type !== DG.COLUMN_TYPE.STRING)) // && (col.type !== DG.COLUMN_TYPE.INT))
+    if ((col.type !== DG.COLUMN_TYPE.STRING)) // || (col.type !== DG.COLUMN_TYPE.INT))
       return null;
     let estCoeff = 0; //coefficient of estimation [0 - >100] the more value - the more probability
 
-    // if (DG.Detector.sampleCategories(col, (s) => s.includes('M  END'), 1)) {}
-    //US Zipcode format checking
-    // const zipUS1 = /\b\d{5}\b/i;
-    // const zipUS2 = /\b[0-9]{5}-[0-9]{4}\b/i;
-    const zipEU1US1 = /\b\d{4,6}\b/i;
-    const zipUS2BRAZ = /\b\d{5}-\d{3,4}\b/i;
-    const zipJPN = /\b\d{3}-\d{4}\b/i;
+    const zipUS1EU1 = /[\b\d{4,6}\b|\b\d{9}\b]/i;
+    const zipUS1nodash = /\b\d{9}\b/i;
+    const zipUS2BRZ = /\b\d{5}-\d{3,4}\b/i;
+    const zipJPN = /\b\d{3}-\d{3,4}\b/i;
     const zipCAN = /\b[a-z]\d[a-z]\s\d[a-z]\d\b/i;
     //TODO: add checking for zip codes of other countries Great Britain, AZ, AG, GR, SW, Livan, Islands, NL, PL, PT ?
+
     const samplesNum = Math.min(col.categories.length, 30);
     const caseWeight = 75 / (samplesNum + 1);
-    for (let i = 0; i < samplesNum; i++) {
-      //checkштп for incorrect length of column values (<3 or >9) below and for pattern matching
-      if (((col.categories[i].length > 3) && (col.categories[i].length < 10)) &&
-        (col.categories[i].match(zipEU1US1) != null)||
-        (col.categories[i].match(zipUS2BRAZ) != null)||
-        (col.categories[i].match(zipJPN) != null)||
-        (col.categories[i].match(zipCAN) != null))
+    const step = Math.round(col.categories.length / (samplesNum + 1));
+    for (let i = 0; i < col.categories.length; i += step) {
+      //checking for incorrect length of column values (<3 or >10)
+      if ((col.categories[i].length < 3) || (col.categories[i].length > 10)) {
+        estCoeff -= caseWeight * 2;
+        continue;
+      }
+      //check for pattern matching
+      if ((col.categories[i].match(zipJPN) !== null) && (col.categories[i].length < 9))
+        estCoeff += caseWeight;
+      else if ((col.categories[i].match(zipCAN) !== null) && (col.categories[i].length < 8))
+        estCoeff += caseWeight;
+      else if ((col.categories[i].match(zipUS1EU1) !== null) && (col.categories[i].length < 7))
+        estCoeff += caseWeight;
+      else if ((col.categories[i].match(zipUS2BRZ) !== null) && (col.categories[i].length < 11))
+        estCoeff += caseWeight;
+      else if ((col.categories[i].match(zipUS1nodash) !== null) && (col.categories[i].length < 10))
         estCoeff += caseWeight;
       else
         estCoeff -= caseWeight * 2;
+
+      // if ((col.categories[i].match(zipJPN) !== null) ||
+      //   (col.categories[i].match(zipUS1EU1) !== null) ||
+      //   (col.categories[i].match(zipUS2BRZ) !== null) ||
+      //   (col.categories[i].match(zipCAN) !== null))
+      //   estCoeff += caseWeight;
+      // else
+      //   estCoeff -= caseWeight * 2;
     }
     //TODO: should we add checking for "Почтовый индекс"?
     const colName = col.name.toLowerCase();
@@ -135,7 +157,7 @@ class GisPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
-  //description: detector of ZIP codes for different countries
+  //description: detector address
   detectGisAddress(col) {
     if (col.type !== DG.TYPE.STRING)
       return null;
@@ -143,36 +165,27 @@ class GisPackageDetectors extends DG.Package {
     let estCoeff = 0; //coefficient of estimation [0-100] the more value - the more probability
     const colName = col.name.toLowerCase();
 
-    if ((colName.includes('address') || colName.includes('street')) && (col.type === DG.TYPE.STRING))
+    if (colName.includes('address') || colName.includes('street') || colName.includes('location'))
       estCoeff += 40;
-    // console.log('col names estCoeff=' + estCoeff);
 
-    //TODO: put variants of patterns into array and perform check for array elements
+    //TODO: put variants of patterns into array and perform check for array elements (?)
     //Address patterns
-    const Addr1 = /ave/i;
+    const Addr1 = /[str.|street]/i;
     const Addr2 = /[blvd|boulevad]/i;
-    const Addr3 = /[str.|street]/i;
-    // const Addr4 = /street/i;
-    const Addr5 = /square/i;
-    const Addr6 = /[rd.|road]/i;
-    // const Addr7 = /road/i;
-    // const Addr8 = /boulevad/i;
+    const Addr3 = /square/i;
+    const Addr4 = /[rd.|road]/i;
 
     const samplesNum = Math.min(col.categories.length, 50);
-    const caseWeight = 80 / (samplesNum + 1);
+    const caseWeight = 75 / (samplesNum + 1);
     for (let i = 0; i < samplesNum; i++) {
       if (col.categories[i].length < 6) {
         estCoeff -= caseWeight * 2;
         continue;
       }
-      if (col.categories[i].match(Addr1) != null) estCoeff += caseWeight;
-      else if (col.categories[i].match(Addr2) != null) estCoeff += caseWeight;
-      else if (col.categories[i].match(Addr3) != null) estCoeff += caseWeight;
-      // else if (col.categories[i].match(Addr4) != null) estCoeff += caseWeight;
-      else if (col.categories[i].match(Addr5) != null) estCoeff += caseWeight;
-      else if (col.categories[i].match(Addr6) != null) estCoeff += caseWeight;
-      // else if (col.categories[i].match(Addr7) != null) estCoeff += caseWeight;
-      // else if (col.categories[i].match(Addr8) != null) estCoeff += caseWeight;
+      if (col.categories[i].match(Addr1) !== null) estCoeff += caseWeight;
+      else if (col.categories[i].match(Addr2) !== null) estCoeff += caseWeight;
+      else if (col.categories[i].match(Addr3) !== null) estCoeff += caseWeight;
+      else if (col.categories[i].match(Addr4) !== null) estCoeff += caseWeight;
       else estCoeff -= caseWeight * 2;
     }
 

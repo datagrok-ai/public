@@ -1,53 +1,52 @@
 //base import
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as GisTypes from '../src/gis-semtypes';
-import { GisViewer } from './gis-viewer';
+import {GisViewer} from './gis-viewer';
 
-import { Map as OLMap, MapBrowserEvent, View as OLView } from 'ol';
+import {Map as OLMap, MapBrowserEvent, View as OLView} from 'ol';
 import HeatmapLayer from 'ol/layer/Heatmap';
 import BaseLayer from 'ol/layer/Base';
 import Layer from 'ol/layer/Layer';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import WebGLPointsLayer from 'ol/layer/WebGLPoints';
-import TileImage from 'ol/source/TileImage'; //this is the base class for XYZ, BingMaps etc..
+// import TileImage from 'ol/source/TileImage'; //this is the base class for XYZ, BingMaps etc..
 import VectorSource from 'ol/source/Vector';
 import Collection from 'ol/Collection';
 //Projections working itilities
 import * as OLProj from 'ol/proj';
-import { Coordinate } from 'ol/coordinate';
+import {Coordinate} from 'ol/coordinate';
 //geometry drawing funtions
 import Feature, {FeatureLike} from 'ol/Feature';
 import * as OLGeom from 'ol/geom';
-import { Type as OLType } from 'ol/geom/Geometry';
+// import {Type as OLType} from 'ol/geom/Geometry';
 import * as OLStyle from 'ol/style';
 import {LiteralStyle} from 'ol/style/literal';
 //Sources import
 import OSM from 'ol/source/OSM';
 import BingMaps from 'ol/source/BingMaps';
-import { StyleLike } from 'ol/style/Style';
+import {StyleLike} from 'ol/style/Style';
 //import interactions and events
 import * as OLInteractions from 'ol/interaction';
-import * as OLEvents from 'ol/events';
 import * as OLEventsCondition from 'ol/events/condition';
-import { stopPropagation } from 'ol/events/Event';
+// import * as OLEvents from 'ol/events';
+// import {stopPropagation} from 'ol/events/Event';
 
 import LayerRenderer from 'ol/renderer/Layer';
 
 //import processors
-import { GPX, GeoJSON, IGC, KML, TopoJSON } from 'ol/format';
+import {GPX, GeoJSON, IGC, KML, TopoJSON} from 'ol/format';
 import Source from 'ol/source/Source';
-import { Attribution, defaults as defaultControls } from 'ol/control';
+import {defaults as defaultControls} from 'ol/control'; //Attribution include?
 
 //ZIP utilities
-import JSZip, { forEach } from 'jszip';
-import { zoomByDelta } from 'ol/interaction/Interaction';
-import WebGLLayerRenderer from 'ol/renderer/webgl/Layer';
+import JSZip from 'jszip';
+// import {zoomByDelta} from 'ol/interaction/Interaction';
+// import WebGLLayerRenderer from 'ol/renderer/webgl/Layer';
 
-export { Coordinate } from 'ol/coordinate';
+export {Coordinate} from 'ol/coordinate';
 
 type WebGLPts = WebGLPointsLayer<VectorSource<OLGeom.Point>>;
 
@@ -127,6 +126,8 @@ export class OpenLayers {
   olMarkersLayer: VectorLayer<VectorSource> | null;
   olMarkersLayerGL: WebGLPts | null;
   olMarkersSelLayerGL: WebGLPts | null;
+  olHeatmapLayer: HeatmapLayer | null;
+  //vector sources for markers (now we should have just one source for Markers and Heatmap layers)
   olMarkersSource: VectorSource<OLGeom.Point>;
   olMarkersSelSource: VectorSource<OLGeom.Point>;
   olSelectedMarkers: Collection<Feature>; //Feature<OLGeom.Point>[];
@@ -182,6 +183,7 @@ export class OpenLayers {
     this.olMarkersLayer = null;
     this.olMarkersLayerGL = null;
     this.olMarkersSelLayerGL = null;
+    this.olHeatmapLayer = null;
     this.markerGLStyle = {};
     this.markerGLSelStyle = {};
     this.olSelectedMarkers = new Collection<Feature>;
@@ -245,12 +247,6 @@ export class OpenLayers {
 
     this.dragBox.on('boxend', () => {
       this.selectMarkersByGeometry(this.dragBox.getGeometry());
-      // const extent = this.dragBox.getGeometry().getExtent();
-      // const boxFeatures = this.olMarkersSource.getFeaturesInExtent(extent)
-      //   .filter((ft) => ft?.getGeometry()?.intersectsExtent(extent));
-
-      // this.olSelectedMarkers.extend(boxFeatures);
-      // this.updateSelection(this.olSelectedMarkers);
     });
 
     OLG = this;
@@ -263,25 +259,31 @@ export class OpenLayers {
     this.olMarkersLayerGL?.setVisible(this.useWebGLFlag);
     this.olMarkersSelLayerGL?.setVisible(this.useWebGLFlag);
   }
-  get useWebGL(): boolean { return this.useWebGLFlag; }
+  get useWebGL(): boolean {return this.useWebGLFlag;}
 
   set heatmapBlur(val: number) {
     this.heatmapBlurParam = val;
-    if (this.olCurrentLayer instanceof HeatmapLayer)
+    if (this.olHeatmapLayer)
+      this.olHeatmapLayer.setBlur(this.heatmapBlurParam);
+  /* if (this.olCurrentLayer instanceof HeatmapLayer)
       this.olCurrentLayer.setBlur(this.heatmapBlurParam);
     else {
       //TODO: search and apply parameter to the first heatmap layer (if this is needed)
+      //NOTE: this will be usefull in case of multilayers approach - for a now we have just one layer
       // this.olMap.getAllLayers()
     }
+  */
   }
-  get heatmapBlur(): number { return this.heatmapBlurParam; }
+  get heatmapBlur(): number {return this.heatmapBlurParam;}
 
   set heatmapRadius(val: number) {
     this.heatmapRadiusParam = val;
-    if (this.olCurrentLayer instanceof HeatmapLayer)
-      this.olCurrentLayer.setRadius(this.heatmapRadiusParam);
+    if (this.olHeatmapLayer)
+      this.olHeatmapLayer.setRadius(this.heatmapRadiusParam);
+    // if (this.olCurrentLayer instanceof HeatmapLayer)
+    //   this.olCurrentLayer.setRadius(this.heatmapRadiusParam);
   }
-  get heatmapRadius(): number { return this.heatmapRadiusParam; }
+  get heatmapRadius(): number {return this.heatmapRadiusParam;}
 
   selectCondition(lr: Layer<Source, LayerRenderer<any>>) {
     return true; //((lr === this.olMarkersLayer) || (lr === this.olMarkersLayerGL));
@@ -318,6 +320,9 @@ export class OpenLayers {
     }
 
     this.useWebGL = true;
+
+    this.olHeatmapLayer = this.addNewHeatMap('Heatmap');
+    this.olHeatmapLayer.setVisible(false);
 
     //add base event handlers>>
     this.olMap.on('click', this.onMapClick.bind(this));
@@ -363,6 +368,7 @@ export class OpenLayers {
     const extent = geom.getExtent();
     const geomFeatures = this.olMarkersSource.getFeaturesInExtent(extent)
       .filter((ft) => geom.intersectsCoordinate((ft?.getGeometry()?.getCoordinates() as Coordinate)));
+      //in case of using intersectsExtent() we grab all points which contained in a "extent square"
       // .filter((ft) => ft?.getGeometry()?.intersectsExtent(extent));
 
     this.olSelectedMarkers.extend(geomFeatures);
@@ -465,7 +471,8 @@ export class OpenLayers {
       colorValue = colorValue.concat(colorsArray);
       //TODO: remove all code with old color coding above
       //new way of color coding:
-      colorValue = ['get', 'fieldColorCode']; //receive color codes stored from calls
+      // colorValue = ['get', 'fieldColorCode']; //receive color codes stored from calls
+      // colorValue = ['match', true, true, ['get', 'fieldColor'], ['get', 'fieldColor']];
       // alert(colorValue);
     }
     //OLD simple color coding approach>>
@@ -502,6 +509,9 @@ export class OpenLayers {
   updateMarkersGLLayer(recreate: boolean = true) {
     this.markerGLStyle = this.prepareGLStyle();
     this.markerGLSelStyle = this.prepareGLStyle(undefined, this.selectedColor, 0.9, undefined, false);
+
+    // this.olMarkersLayerGL?.updateStyleVariables
+    // this.olMarkersLayerGL?.setProperties({style: this.markerGLStyle});
 
     if (recreate) {
       let previousLayer = this.olMarkersLayerGL;
@@ -742,7 +752,7 @@ export class OpenLayers {
 
   addNewHeatMap(layerName?: string | undefined, options?: Object | undefined): HeatmapLayer {
     const newLayer = new HeatmapLayer({
-      source: new VectorSource({}),
+      source: this.olMarkersSource, //new VectorSource({}), //for now we use the same source for markers and heatmap
       blur: this.heatmapBlur,
       radius: this.heatmapRadius,
       weight: function(feature: Feature): number {
@@ -780,8 +790,8 @@ export class OpenLayers {
       // textAlign: align == 'center',
       // font: '12px Calibri,sans-serif',
       text: txt ? (txt as string) : '',
-      fill: new OLStyle.Fill({ color: '#aa3300' }),
-      stroke: new OLStyle.Stroke({ color: '#aa3300', width: 1 }),
+      fill: new OLStyle.Fill({color: '#aa3300'}),
+      stroke: new OLStyle.Stroke({color: '#aa3300', width: 1}),
       offsetX: 0,
       offsetY: 0,
       placement: 0,
@@ -843,23 +853,72 @@ export class OpenLayers {
         const gisPoint = new GisTypes.GisPoint(coords[0], coords[1], xyz ? coords[2] : 0, ft.getProperties());
         return gisPoint;
       }
-      case 'MultiPolygon':
       case 'Polygon': {
         const gobj = geom as OLGeom.Polygon;
         const coords = gobj.getCoordinates();
-        const areaCoords: Array<GisTypes.gisCoordinate> = [];
-        const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
-        for (let i = 0; i < coords[0].length; i++) {
-          const vertex = coords[0][i]; //TODO: add inner polygons (holes) - now we use just a contour
-          areaCoords.push([vertex[0] as number, vertex[1], xyz ? vertex[2] : 0]);
+        const area: GisTypes.gisPolygons = [];
+        const areaPolygon: GisTypes.gisPolygon = [];
+        const xyz = (gobj.getLayout().toLowerCase === 'xyz');
+        //store polygon coordinates into special array>>
+        for (let p = 0; p < coords.length; p++) {
+          const polygonCoords: GisTypes.gisPolygonCoords = [];
+          for (let i = 0; i < coords[p].length; i++) {
+            const vertex = coords[p][i];
+            const vertCrd: GisTypes.gisCoordinate = [vertex[0] as number, vertex[1], xyz ? vertex[2] : 0];
+            polygonCoords.push(vertCrd);
+          }
+          areaPolygon.push(polygonCoords);
         }
-        const gisArea = new GisTypes.GisArea(areaCoords, ft.getProperties());
+        area.push(areaPolygon);
+        const gisArea = new GisTypes.GisArea(area, ft.getProperties());
         return gisArea;
       }
-      //TODO: add multi polygon
+      case 'MultiPolygon': {
+        const gobj = geom as OLGeom.MultiPolygon;
+        const coords = gobj.getCoordinates();
+        const area: GisTypes.gisPolygons = [];
+        const xyz = (gobj.getLayout().toLowerCase === 'xyz');
+        //store multipolygon coordinates into special array>>
+        for (let a = 0; a < coords.length; a++) {
+          const areaPolygon: GisTypes.gisPolygon = [];
+          for (let p = 0; p < coords[a].length; p++) {
+            const polygonCoords: GisTypes.gisPolygonCoords = [];
+            for (let i = 0; i < coords[a][p].length; i++) {
+              const vertex = coords[a][p][i];
+              const vertCrd: GisTypes.gisCoordinate = [vertex[0] as number, vertex[1], xyz ? vertex[2] : 0];
+              polygonCoords.push(vertCrd);
+            }
+            areaPolygon.push(polygonCoords);
+          }
+          area.push(areaPolygon);
+        }
+        const gisArea = new GisTypes.GisArea(area, ft.getProperties());
+        return gisArea;
+      } //<<multi polygon converter
+      } //case
+    } //if geometry is valid
+    return null;
+  }
+
+  exportLayerToArray(layer: VectorLayer<any>): any[] {
+    const arrPreparedToDF: any[] = [];
+    if (!layer)
+      return arrPreparedToDF;
+
+    const arrFeatures = this.getFeaturesFromLayer(layer);
+    if (arrFeatures) {
+      for (let i = 0; i < arrFeatures.length; i++) {
+        const newObj = arrFeatures[i].getProperties();
+        if (newObj.hasOwnProperty('geometry'))
+          delete newObj.geometry;
+        if (arrFeatures[i].getId())
+          newObj.id_ = arrFeatures[i].getId();
+        newObj.gisObject = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
+
+        arrPreparedToDF.push(newObj);
       }
     }
-    return null;
+    return arrPreparedToDF;
   }
 
   //map base events handlers>>
@@ -943,7 +1002,7 @@ export class OpenLayers {
   clearLayer(layer?: VectorLayer<VectorSource> | WebGLPts | HeatmapLayer | undefined | null) {
     let aLayer: VectorLayer<VectorSource> | WebGLPts | HeatmapLayer | undefined | null;
     aLayer = this.useWebGL ? this.olMarkersLayerGL : this.olMarkersLayer;
-    if ((typeof layer != 'undefined') && (layer))
+    if ((typeof layer !== 'undefined') && (layer))
       aLayer = layer;
     if (aLayer) {
       const src = aLayer.getSource();
@@ -961,7 +1020,7 @@ export class OpenLayers {
     if ((typeof layer != 'undefined') && (layer))
       aLayer = layer;
 
-    const strCol = toStringColor(colorVal, this.markerOpacity);
+    // const strCol = toStringColor(colorVal, this.markerOpacity);
     if (aLayer) {
       const marker = new Feature(new OLGeom.Point(OLProj.fromLonLat(coord)));
       marker.set('fieldSize', sizeVal);
@@ -976,7 +1035,7 @@ export class OpenLayers {
     }
   }
 
-  addPointFt(feature: Feature, layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
+  addPointFeature(feature: Feature, layer?: VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|undefined) {
     //add marker as a predefined feature object
     if (!feature)
       return;
@@ -999,10 +1058,12 @@ export class OpenLayers {
     aLayer = this.useWebGL ? this.olMarkersLayerGL : this.olMarkersLayer;
     if ((typeof layer != 'undefined') && (layer))
       aLayer = layer;
+    // const startTime = Date.now();
     if (aLayer) {
       const src = aLayer.getSource();
       if (src)
         src.addFeatures(arrFeatures);
     }
+    // console.log('GIS addFeaturesBulk: ' + (Date.now() - startTime));
   }
 }

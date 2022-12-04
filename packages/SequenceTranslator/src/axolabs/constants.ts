@@ -1,12 +1,12 @@
-const rnaColor = 'rgb(255,230,153)';
-const invAbasicColor = 'rgb(203,119,211)';
-export const axolabsMap:
+const RNA_COLOR = 'rgb(255,230,153)';
+const INVABASIC_COLOR = 'rgb(203,119,211)';
+export const AXOLABS_MAP:
   {[index: string]: {fullName: string, symbols: [string, string, string, string], color: string}} =
 {
   'RNA': {
     fullName: 'RNA nucleotides',
     symbols: ['A', 'C', 'G', 'U'],
-    color: rnaColor,
+    color: RNA_COLOR,
   },
   'DNA': {
     fullName: 'DNA nucleotides',
@@ -44,24 +44,24 @@ export const axolabsMap:
     color: 'rgb(255,192,0)',
   },
   'A': {
-    fullName: 'Adenine',
+    fullName: 'Adenosine',
     symbols: ['a', 'a', 'a', 'a'],
-    color: rnaColor,
+    color: RNA_COLOR,
   },
   'C': {
-    fullName: 'Cytosine',
+    fullName: 'Cytidine',
     symbols: ['c', 'c', 'c', 'c'],
-    color: rnaColor,
+    color: RNA_COLOR,
   },
   'G': {
-    fullName: 'Guanine',
+    fullName: 'Guanosine',
     symbols: ['g', 'g', 'g', 'g'],
-    color: rnaColor,
+    color: RNA_COLOR,
   },
   'U': {
-    fullName: 'Uracil',
+    fullName: 'Uridine',
     symbols: ['u', 'u', 'u', 'u'],
-    color: rnaColor,
+    color: RNA_COLOR,
   },
   'X-New': {
     fullName: '',
@@ -81,7 +81,7 @@ export const axolabsMap:
   'InvAbasic': {
     fullName: 'Inverted abasic capped',
     symbols: ['(invabasic)', '(invabasic)', '(invabasic)', '(invabasic)'],
-    color: invAbasicColor,
+    color: INVABASIC_COLOR,
   },
   "5\"-vinylps": {
     fullName: '5\'-vinylphosphonate-2\'-OMe-uridine',
@@ -91,7 +91,7 @@ export const axolabsMap:
   'InvAbasic(o)': {
     fullName: 'Inverted abasic capped (overhang)',
     symbols: ['(invabasic)', '(invabasic)', '(invabasic)', '(invabasic)'],
-    color: invAbasicColor,
+    color: INVABASIC_COLOR,
   },
   "2\"-OMe-U(o)": {
     fullName: 'Nucleotide Uridine with 2\'O-Methyl protection (overhang)',

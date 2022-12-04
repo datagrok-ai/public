@@ -179,3 +179,10 @@ export function getMinifiedClassNameMap(): { [index: string]: string[] } {
     return map;
   }, {});
 }
+
+export function hasSupportedType(ent: EntityType, minifiedClassNameMap: {}): boolean {
+  let type = ent.constructor.name;
+  if (!supportedEntityTypes.includes(type) && type in minifiedClassNameMap)
+    type = minifiedClassNameMap[type].find((c) => ent instanceof eval(`DG.${c}`)) ?? type;
+  return supportedEntityTypes.includes(type);
+}

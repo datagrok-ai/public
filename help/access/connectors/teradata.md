@@ -3,8 +3,20 @@
 
 # Teradata
 
-Provides access to [Teradata](https://www.teradata.ru/Products/Software/Database) database using SQL queries via JDBC
-driver .
+Provides access to
+[Teradata](https://www.teradata.ru/Products/Software/Database) database using
+SQL queries via JDBC driver.
+
+## Connection parameters
+
+```json
+{
+    "server": "",
+    "port": "",
+    "db": "",
+    "connString": ""
+}
+```
 
 See also:
 

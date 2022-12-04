@@ -8,7 +8,7 @@ import '../css/styles.css';
 import * as tests from './tests/test-examples';
 import {TestManager} from './package-testing';
 import {functionSignatureEditor} from './function-signature-editor';
-import {addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel} from './dev-panel';
+import {addToJSContextCommand, getMinifiedClassNameMap, hasSupportedType, _renderDevPanel} from './dev-panel';
 import {_testDetectorsDialog, _testDetectorsStandard} from './utils/test-detectors';
 
 export const _package = new DG.Package();
@@ -31,7 +31,7 @@ export function describeCurrentObj(): void {
 
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
-    if (ent == null) return;
+    if (ent == null || !hasSupportedType(ent, minifiedClassNameMap)) return;
     const devPane = acc.getPane('Dev');
     if (!devPane)
       acc.addPane('Dev', () => ui.wait(async () => (await renderDevPanel(ent)).root));

@@ -14,5 +14,5 @@ category('Alation', () => {
       return;
     }
     await grok.functions.call('Alation:Alation');
-  });
+  }, {skipReason: 'Running tests manually'});
 });

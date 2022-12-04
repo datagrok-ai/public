@@ -1,9 +1,11 @@
 import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
-import {toJs} from "./wrappers";
+import {toDart, toJs} from "./wrappers";
 import {FileSource} from "./dapi";
 import {MapProxy} from "./utils";
 import {DataFrame} from "./dataframe";
+import {PackageLogger} from "./logger";
+import * as Module from "module";
 
 declare var grok: any;
 let api = <any>window;
@@ -12,6 +14,9 @@ type PropertyGetter = (a: object) => any;
 type PropertySetter = (a: object, value: any) => void;
 type ValueValidator<T> = (value: T) => string;
 type DataConnectionDBParams = {dataSource: string, server: string, db: string, login?: string, password?: string};
+type FieldPredicate = {field: string, pattern: string};
+type FieldOrder = {field: string, asc?: boolean};
+type GroupAggregation = {aggType: string, colName: string, resultColName?: string, function?: string};
 
 /** @class
  * Base class for system objects stored in the database in a structured manner.
@@ -31,6 +36,7 @@ export class Entity {
   get id(): string { return api.grok_Entity_Get_Id(this.dart); }
   set id(x: string) { api.grok_Entity_Set_Id(this.dart, x); }
 
+  /** Generates new {@link id} for this entity. */
   newId(): void { api.grok_Entity_New_Id(this.dart); }
 
   /** Entity friendly name
@@ -89,9 +95,13 @@ export class User extends Entity {
     super(dart);
   }
 
-  static create(): User {return new User(api.grok_User_From_Id(null)); };
+  /** Creates a new user.
+   * Note that it's just a client object, it won't be saved in the database. */
+  static create(): User { return new User(api.grok_User_From_Id(null)); };
+
   static fromId(id: string): User { return new User(api.grok_User_From_Id(id)); }
 
+  /** Returns current user. */
   static current(): User { return new User(api.grok_User()); }
 
   /** First name */
@@ -143,7 +153,8 @@ export class UserSession extends Entity {
   get id(): string { return api.grok_Entity_Get_Id(this.dart); }
   set id(x: string) { api.grok_Entity_Set_Id(this.dart, x); }
 
-  get type(): string { return api.grok_UserSession_Get_Type(this.dart); }
+  /** */
+  get type(): 'internal' | 'guest' { return api.grok_UserSession_Get_Type(this.dart); }
 
   /** External Token */
   get externalToken(): string { return api.grok_UserSession_Get_ExternalToken(this.dart); }
@@ -361,6 +372,104 @@ export class TableQuery extends DataQuery {
    * @type {string[]} */
   get fields(): string[] { return api.grok_TableQuery_GetFields(this.dart); }
   set fields(fields: string[]) { api.grok_TableQuery_SetFields(this.dart, fields); }
+
+  /** Executes query */
+  async executeTable(): Promise<DataFrame> { return toJs(await api.grok_TableQuery_ExecuteTable(this.dart)); }
+
+  /** Where clauses */
+  get where(): FieldPredicate[] { return toJs(api.grok_TableQuery_GetWhereClausesDB(this.dart)); }
+  set where(wl: FieldPredicate[]) { api.grok_TableQuery_SetWhereClausesDB(this.dart, wl.map(param => toDart(param))); }
+
+  /** Aggregation clauses {queryPartParams} */
+  get aggregations(): GroupAggregation[] { return toJs(api.grok_TableQuery_GetAggregationsDB(this.dart)); }
+  set aggregations(wl: GroupAggregation[]) { api.grok_TableQuery_SetAggregationsDB(this.dart, wl.map(param => toDart(param))); }
+
+  /** Having clauses */
+  get having(): FieldPredicate[] { return toJs(api.grok_TableQuery_GetHavingDB(this.dart)); }
+  set having(wl: FieldPredicate[]) { api.grok_TableQuery_SetHavingDB(this.dart, wl.map(param => toDart(param))); }
+
+  /** Order By clauses */
+  get orderBy(): FieldOrder[] { return toJs(api.grok_TableQuery_GetOrderByDB(this.dart)); }
+  set orderBy(wl: FieldOrder[]) { api.grok_TableQuery_SetOrderByDB(this.dart, wl.map(param => toDart(param))); }
+
+  /** Creates {@link TableQueryBuilder} from table name
+   * @param {string} table - Table name 
+   * @returns {TableQueryBuilder} */
+  static from(table: string): TableQueryBuilder {return toJs(api.grok_TableQuery_From(table)); }
+  
+  /** Creates {@link TableQueryBuilder} from {@link TableInfo}
+   * @param {TableInfo} table - TableInfo object 
+   * @returns {TableQueryBuilder} */
+  static fromTable(table: TableInfo): TableQueryBuilder {return toJs(api.grok_TableQuery_FromTable(table.dart)); }
+}
+
+/** Table query builder that works with database tables */
+export class TableQueryBuilder {
+  dart: any;
+
+  /** @constructs TableQueryBuilder */
+  constructor(dart: any) { this.dart = dart; }
+
+  /** Creates {@link TableQueryBuilder} from table name
+   * @param {string} table - Table name 
+   * @returns {TableQueryBuilder} */
+  static from(table: string): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_From(table)); }
+
+  /** Creates {@link TableQueryBuilder} from {@link TableInfo}
+   * @param {TableInfo} table - TableInfo object 
+   * @returns {TableQueryBuilder} */
+  static fromTable(table: TableInfo): TableQueryBuilder {
+    return toJs(api.grok_TableQueryBuilder_FromTable(table.dart));
+  }
+
+  /** Selects all fields of the table 
+   * @returns {TableQueryBuilder} */
+  selectAll(): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_SelectAll(this.dart)); }
+
+  /** Selects specified fields of the table
+   * @param {string[]} fields - Array of fields to select
+   * @returns {TableQueryBuilder} */
+  select(fields: string[]): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_Select(this.dart, fields)); }
+
+  /** Groups rows that have the same values into summary values
+   * @param {string[]} fields - Array of fields to group by
+   * @returns {TableQueryBuilder} */
+  groupBy(fields: string[]): TableQueryBuilder {
+    return toJs(api.grok_TableQueryBuilder_GroupBy(this.dart, fields));
+  }
+
+  /** Rotates a table-valued expression by turning the unique values from one column in the expression into multiple
+   * columns in the output
+   * @param {string[]} fields - Array of fields to pivot on
+   * @returns {TableQueryBuilder} */
+  pivotOn(fields: string[]): TableQueryBuilder {
+    return toJs(api.grok_TableQueryBuilder_PivotOn(this.dart, fields));
+  }
+
+  /** Adds a where clause to the query
+   * @param {string} field - Field name
+   * @param {string} pattern - Pattern to test field values against
+   * @returns {TableQueryBuilder} */
+  where(field: string, pattern: string): TableQueryBuilder {
+    return toJs(api.grok_TableQueryBuilder_Where(this.dart, field, pattern));
+  }
+
+  /** Sorts results in ascending or descending order
+   * @param {string} field - Field to sort based on
+   * @param {boolean} asc - Sort in ascending order
+   * @returns {TableQueryBuilder} */
+  sortBy(field: string, asc: boolean = true): TableQueryBuilder {
+    return toJs(api.grok_TableQueryBuilder_SortBy(this.dart, field, asc));
+  }
+
+  /** Selects limited number of records
+   * @param {TableQueryBuilder} n - Number of records to select
+   * @returns {TableQueryBuilder} */
+  limit(n: number): TableQueryBuilder { return toJs(api.grok_TableQueryBuilder_Limit(this.dart, n)); }
+
+  /** Builds a query
+   * @returns {TableQuery} */
+  build(): TableQuery { return toJs(api.grok_TableQueryBuilder_Build(this.dart)); }
 }
 
 /** Represents a data job
@@ -746,10 +855,10 @@ export class Package extends Entity {
    */
   init(): Promise<null> { return Promise.resolve(null); }
 
-  private _name: string | undefined;
-  /** Package short name
-   *  @type {string} */
-  get name() {
+  private _name: string = '';
+
+  /** Package short name */
+  get name(): string {
     if (this.dart != null)
       return api.grok_Entity_Get_Name(this.dart);
     else
@@ -763,29 +872,44 @@ export class Package extends Entity {
       this._name = x;
   }
 
-  getModuleName(file: String) {
+  getModuleName(file: string): string {
     if (this.dart != null)
       return api.grok_Package_GetModuleName(this.dart, file);
     else
-      return null;
+      return '';
   }
 
   getIconUrl(): string {
     return api.grok_Package_GetIconUrl(this.dart);
   }
 
-  getModule(file: String) {
+  /** Returns a JavaScript module for this package. */
+  getModule(file: string): any {
     if (this.dart != null)
       return api.grok_Package_GetModule(this.dart, file)();
     else
       return null;
   }
 
-  get meta() { return (this.dart == null) ? null : toJs(api.grok_Package_Get_Meta(this.dart)); }
+  /** Returns metadata associated with the package.
+   * The metadata gets generated when the package is built.
+   * It is a concatenation of JSON files located under the /meta folder.
+   * See example: /packages/PowerPack. */
+  get meta(): {[key: string]: any} {
+    return (this.dart == null) ? null : toJs(api.grok_Package_Get_Meta(this.dart));
+  }
 
   /** Loads package. */
-  async load(options?: {file: String}): Promise<Package> {
+  async load(options?: {file: string}): Promise<Package> {
     return new api.grok_Dapi_Packages_Load(this.dart, options?.file);
+  }
+
+  private _logger?: PackageLogger;
+
+  get logger(): PackageLogger {
+    if (this._logger)
+      return this._logger;
+    return this._logger = new PackageLogger(this);
   }
 
   /** Returns credentials for package. */
@@ -812,6 +936,7 @@ export class Package extends Entity {
     return this._files;
   }
 }
+
 
 export class Dockerfile extends Entity {
   constructor(dart: any) {
@@ -1002,6 +1127,13 @@ export class Property {
   static jsDateTime(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.DATE_TIME, options); }
 
   static fromOptions(options: PropertyOptions): Property { return Property.js(options.name!, options.type! as TYPE, options); }
+
+  /** Registers the attached (dynamic) property for the specified type.
+   * It is editable via the property panel, and gets saved into the view layout as well.
+   * Property getter/setter typically uses Widget's "temp" property for storing the value. */
+  static registerAttachedProperty(typeName: string, property: Property) {
+    api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
+  }
 }
 
 /*

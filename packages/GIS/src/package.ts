@@ -10,6 +10,9 @@ import {OpenLayers} from '../src/gis-openlayer';
 import {useGeographic} from 'ol/proj';
 // import * as cns from '../node_modules/citysdk';
 
+//GIS semantic types import
+import {SEMTYPEGIS} from '../src/gis-semtypes';
+
 const census = require('citysdk');
 
 //ZIP utilities
@@ -446,6 +449,85 @@ export async function gisKMZFileViewer(file: DG.FileInfo): Promise<DG.View> {
   return viewFile;
 }
 
+//name: gisGeoKMLFileHandler
+//tags: file-handler
+//meta.ext: kmz
+//input: string filecontent
+//output: list tables
+export function gisGeoKMLFileHandler(filecontent: string): DG.DataFrame[] {
+  //TODO: detect the kind of file and join KML/KMZ handler
+
+  let dfFromKML: DG.DataFrame | undefined = undefined;
+  const ol = new OpenLayers();
+
+  const kmlData = filecontent;
+  const newLayer = ol.addKMLLayerFromStream(kmlData);
+  const arrFeatures = ol.exportLayerToArray(newLayer);
+
+  if (arrFeatures) {
+    if (arrFeatures.length > 0) {
+      dfFromKML = DG.DataFrame.fromObjects(arrFeatures);
+      if (dfFromKML) {
+        const gisCol = dfFromKML.col('gisObject');
+        if (gisCol)
+          gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
+
+        dfFromKML.name = newLayer.get('layerName');
+        const tv = grok.shell.addTableView(dfFromKML as DG.DataFrame);
+        tv.name = 'dfFromKML.name' + ' (manual)';
+
+        const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromKML)) as GisViewer;
+        if (mapViewer) {
+          (mapViewer as GisViewer).init();
+          (mapViewer as GisViewer).ol.addLayer(newLayer);
+        }
+      }
+    }
+  }
+  if (dfFromKML) return [dfFromKML];
+  return [];
+}
+
+//name: gisGeoKMZFileHandler
+//tags: file-handler
+//meta.ext: kmz
+//input: list bytes
+//output: list tables
+export async function gisGeoKMZFileHandler(filecontent: Uint8Array): Promise<DG.DataFrame[]> {
+  // export function gisGeoKMLFileHandler(filecontent: string): DG.DataFrame[] {
+  //detect the kind of file
+
+  let dfFromKML: DG.DataFrame | undefined = undefined;
+  const ol = new OpenLayers();
+
+  const kmlData = await getKMZData(filecontent);
+  const newLayer = ol.addKMLLayerFromStream(kmlData);
+  const arrFeatures = ol.exportLayerToArray(newLayer);
+
+  if (arrFeatures) {
+    if (arrFeatures.length > 0) {
+      dfFromKML = DG.DataFrame.fromObjects(arrFeatures);
+      if (dfFromKML) {
+        const gisCol = dfFromKML.col('gisObject');
+        if (gisCol)
+          gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
+
+        dfFromKML.name = newLayer.get('layerName');
+        const tv = grok.shell.addTableView(dfFromKML as DG.DataFrame);
+        tv.name = 'dfFromKML.name' + ' (manual)';
+
+        const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromKML)) as GisViewer;
+        if (mapViewer) {
+          (mapViewer as GisViewer).init();
+          (mapViewer as GisViewer).ol.addLayer(newLayer);
+        }
+      }
+    }
+  }
+  if (dfFromKML) return [dfFromKML];
+  return [];
+}
+
 /*
 //_name: gisKMLFileViewer
 //_tags: fileViewer, fileViewer-kml
@@ -483,21 +565,21 @@ export async function gisKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
 function gisGeoJSONFileDetector(strBuf: string): [boolean, boolean] {
   let arrTmp: any[] | null;
   //searching for patterns of GeoJSON data
-  arrTmp = strBuf.match(/['']type['']\s?:\s?[''](?:Multi)?Polygon/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?[''|"](?:Multi)?Polygon/ig);
   let cntTypeGeo = arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['']type['']\s?:\s?\'|\'(?:Multi)?Point/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?\'|\'(?:Multi)?Point/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['']type['']\s?:\s?\'|\'(?:Multi)?LineString/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?\'|\'(?:Multi)?LineString/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['']type['']\s?:\s?['']Feature/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?[''|"]Feature/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
-  arrTmp = strBuf.match(/['']type['']\s?:\s?['']GeometryCollection/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?[''|"]GeometryCollection/ig);
   cntTypeGeo += arrTmp ? arrTmp.length : 0;
   //searching for patterns of TopoJSON data
-  arrTmp = strBuf.match(/['']type['']\s?:\s?['']Topology['']/ig);
+  arrTmp = strBuf.match(/[''|"]type[''|"]\s?:\s?[''|"]Topology[''|"]/ig);
   const cntTypeTopo = arrTmp ? arrTmp.length : 0;
 
-  if (cntTypeGeo == 0) return [false, false];
+  if (cntTypeGeo === 0) return [false, false];
   if (cntTypeTopo > 0) return [true, true];
 
   return [true, false];
@@ -507,7 +589,7 @@ function gisGeoJSONFileDetector(strBuf: string): [boolean, boolean] {
 //tags: fileViewer, fileViewer-geojson, fileViewer-topojson, fileViewer-json
 //input: file file
 //output: view result
-export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View | null> {
+export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View | null | DG.DataFrame> {
   //read file
   const strBuf = await file.readAsString();
   const isGeoTopo = gisGeoJSONFileDetector(strBuf);
@@ -517,6 +599,7 @@ export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View |
     const df = DG.DataFrame.fromJson(strBuf);
     const viewFile = DG.TableView.create(df);
     return viewFile;
+    // return df;
   }
 
   const viewFile = DG.View.create();
@@ -548,7 +631,7 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
   const isGeoTopo = gisGeoJSONFileDetector(filecontent);
   if (isGeoTopo[0] === false) return [DG.DataFrame.fromJson(filecontent)];
 
-  let dfFormJSON = null;
+  let dfFromJSON = null;
   const ol = new OpenLayers();
   // ol.initMap('map-container');
   // useGeographic();
@@ -558,24 +641,46 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
   let newLayer;
   if (isGeoTopo[1] === false) newLayer = ol.addGeoJSONLayerFromStream(filecontent);
   else newLayer = ol.addTopoJSONLayerFromStream(filecontent);
-  const arrFeatures = ol.getFeaturesFromLayer(newLayer);
+  // const arrFeatures = ol.getFeaturesFromLayer(newLayer);
+  const arrFeatures = ol.exportLayerToArray(newLayer);
   if (arrFeatures) {
     if (arrFeatures.length > 0) {
-      const dfFormJSON = DG.DataFrame.fromObjects(arrFeatures);
-      if (dfFormJSON) {
-        dfFormJSON.name = newLayer.get('layerName');
-        const tv = grok.shell.addTableView(dfFormJSON as DG.DataFrame);
-        tv.name = 'dfFormJSON.name' + ' (manual)';
+      dfFromJSON = DG.DataFrame.fromObjects(arrFeatures);
+      if (dfFromJSON) {
+        const gisCol = dfFromJSON.col('gisObject');
+        if (gisCol)
+          gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
+
+        dfFromJSON.name = newLayer.get('layerName');
+        const tv = grok.shell.addTableView(dfFromJSON as DG.DataFrame);
+        tv.name = 'dfFromJSON.name' + ' (manual)';
+
+        const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer;
+        if (mapViewer) {
+          //
+          (mapViewer as GisViewer).init();
+          (mapViewer as GisViewer).ol.addLayer(newLayer);
+        // if (isGeoTopo[1] === false) newLayer = (mapViewer as GisViewer).ol.addGeoJSONLayerFromStream(filecontent);
+        //   else newLayer = (mapViewer as GisViewer).ol.addTopoJSONLayerFromStream(filecontent);
+        }
+
+        // const mapViewer = DG.Viewer.fromType('Map', (dfFromJSON as DG.DataFrame));
         //TODO: fix issue with GisViewer opening for a table with data
-        setTimeout((tv) => {
+        setTimeout((tv, dfFromJSON) => {
           // const v = grok.shell.v;
           const v = tv;
-          if ((v) && (v instanceof DG.TableView)) (v as DG.TableView).addViewer(new GisViewer());
-        }, 500);
+          // if ((v) && (v instanceof DG.TableView)) (v as DG.TableView).addViewer(new GisViewer());
+          if ((v) && (v instanceof DG.TableView)) {
+            // const mapViewer = ((v as DG.TableView).addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer);
+            // if (isGeoTopo[1] === false) newLayer = mapViewer.ol.addGeoJSONLayerFromStream(filecontent);
+            // else newLayer = mapViewer.ol.addTopoJSONLayerFromStream(filecontent);
+          }
+          // (v as DG.TableView).addViewer(DG.Viewer.fromType('Map', (v as DG.TableView).dataFrame));
+        }, 1000, tv, dfFromJSON);
       }
     }
   }
-  if (dfFormJSON) return [dfFormJSON];
+  if (dfFromJSON) return [dfFromJSON];
   return [DG.DataFrame.fromJson(filecontent)];
 }
 

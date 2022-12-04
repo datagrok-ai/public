@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {NglAspect} from './ngl-aspect';
 import {PvizAspect} from './pviz-aspect';
 import {MiscMethods} from './misc';
-import {PdbEntry} from '../pdb-entry';
 
 export class TwinPviewer {
   root: HTMLElement;
@@ -29,10 +28,12 @@ export class TwinPviewer {
   ngl: NglAspect;
   pViz: PvizAspect;
 
-  entry: PdbEntry;
+  entry: string;
   ligandSelection: { [key: string]: any }
 
-  public init(entry: PdbEntry, bsView: DG.TableView, ligandSelection: { [key: string]: boolean }) {
+  chains: any;
+
+  public init(entry: string, bsView: DG.TableView, ligandSelection: { [key: string]: boolean }, chains: any) {
     // ---- SIDEPANEL REMOVAL ----
     const windows = grok.shell.windows;
     windows.showProperties = false;
@@ -40,6 +41,7 @@ export class TwinPviewer {
     windows.showConsole = false;
     this.entry = entry;
     this.ligandSelection = ligandSelection;
+    this.chains = chains;
 
     // ---- INPUTS ----
     const representations = ['cartoon', 'backbone', 'ball+stick', 'licorice', 'hyperball', 'surface'];
@@ -51,9 +53,10 @@ export class TwinPviewer {
     this.nglHost = ui.div([], 'd4-ngl-viewer');
     this.pVizHosts = {};
     this.twinSelections = {};
-    this.entry.entities[0].chains.forEach((chain) => {
-      this.pVizHosts[chain.id] = ui.box();
-      this.twinSelections[chain.id] = {};
+
+    this.chains.forEach((chain: string) => {
+      this.pVizHosts[chain] = ui.box();
+      this.twinSelections[chain] = {};
     });
 
     //@ts-ignore
@@ -68,13 +71,14 @@ export class TwinPviewer {
     this.sequenceNode = bsView.dockManager.dock(this.sequenceTabs, 'down', this.nglNode, 'Sequence', 0.225);
   }
 
-  public async reset(entry: PdbEntry) {
+  public async reset(entry: string) {
+
     this.entry = entry;
     this.twinSelections = {};
     this.pVizHosts = {};
-    entry.entities[0].chains.forEach((chain) => {
-      this.twinSelections[chain.id] = {};
-      this.pVizHosts[chain.id] = ui.box();
+    this.chains.forEach((chain: string) => {
+      this.twinSelections[chain] = {};
+      this.pVizHosts[chain] = ui.box();
     });
 
     const groups: { [_: string]: any } = {};
@@ -96,8 +100,8 @@ export class TwinPviewer {
 
   public async show(bsView: DG.TableView) {
     const reload = async (val: boolean) => {
-      this.entry.entities[0].chains.forEach((chain) => {
-        this.pViz.render(chain.id);
+      this.chains.forEach((chain: string) => {
+        this.pViz.render(chain);
       });
 
       this.ngl.render(val, this.ligandSelection);
@@ -106,14 +110,14 @@ export class TwinPviewer {
 
     await this.ngl.init(
       bsView,
-      this.entry.body,
+      this.entry,
       this.colorScheme,
       this.nglHost,
       this.repChoice,
       this.twinSelections,
       this.ligandSelection,
     );
-    await this.pViz.init(this.entry, this.colorScheme, this.pVizHosts, this.twinSelections);
+    //await this.pViz.init(this.entry, this.colorScheme, this.pVizHosts, this.twinSelections, this.chains);
 
     MiscMethods.setDockSize(bsView, this.nglNode, this.sequenceTabs);
 

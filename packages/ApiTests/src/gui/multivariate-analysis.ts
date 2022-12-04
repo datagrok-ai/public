@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {checkHTMLElement} from '../ui/utils';
 import './gui-utils';
-import {isDialogPresent, isViewerPresent, isExceptionElement, isErrorBallon, setDialogInputValue, returnDialog, isColumnPresent} from './gui-utils';
+import {isDialogPresent, isViewerPresent, isExceptionElement, isErrorBallon, setDialogInputValue, returnDialog, isColumnPresent, waitForElement} from './gui-utils';
 import {Column, ColumnList} from 'datagrok-api/dg';
 
 category('Dialog: Multivariate Analysis', () => {
@@ -17,7 +17,7 @@ category('Dialog: Multivariate Analysis', () => {
 
   test('dialogs.multivariateAnalysis', async () => {
     grok.shell.topMenu.find('Tools').find('Data Science').find('Multivariate Analysis (PLS)...').click();
-    await delay(1000);
+    await waitForElement('.d4-dialog', 'cant find dialog');
     isDialogPresent('Multivariate Analysis (PLS)');
 
     let okButton:HTMLElement | undefined;
@@ -32,30 +32,30 @@ category('Dialog: Multivariate Analysis', () => {
         throw 'OK Button does not have disabled class';
     }
 
-        returnDialog('Multivariate Analysis (PLS)')!.input('Features').input.dispatchEvent(new MouseEvent('click')); await delay(1000);
-        let okButtonInSelectColumns:HTMLElement | undefined;
-        let allButtonInSelectColumns:HTMLElement | undefined;
+    returnDialog('Multivariate Analysis (PLS)')!.input('Features').input.dispatchEvent(new MouseEvent('click')); await delay(1000);
+    let okButtonInSelectColumns:HTMLElement | undefined;
+    let allButtonInSelectColumns:HTMLElement | undefined;
 
-        for (let i=0; i<document.getElementsByClassName('d4-link-label').length; i++) {
-          button = document.getElementsByClassName('d4-link-label')[i] as HTMLElement;
-          if (button.innerText == 'All')
-            allButtonInSelectColumns = button;
-        }
+    for (let i=0; i<document.getElementsByClassName('d4-link-label').length; i++) {
+      button = document.getElementsByClassName('d4-link-label')[i] as HTMLElement;
+      if (button.innerText == 'All')
+        allButtonInSelectColumns = button;
+    }
 
-        for (let i=0; i<document.getElementsByClassName('ui-btn ui-btn-ok').length; i++) {
-          button = document.getElementsByClassName('ui-btn ui-btn-ok')[i] as HTMLElement;
-          if (button.innerText == 'OK')
-            okButtonInSelectColumns = button;
-        }
-        if (allButtonInSelectColumns != undefined) {
-          allButtonInSelectColumns.click(); await delay(500);
-        }
-        if (okButtonInSelectColumns != undefined) {
-          okButtonInSelectColumns.click(); await delay(500);
-        }
-        okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
-        okButton!.click(); await delay(1000);
-  });
+    for (let i=0; i<document.getElementsByClassName('ui-btn ui-btn-ok').length; i++) {
+      button = document.getElementsByClassName('ui-btn ui-btn-ok')[i] as HTMLElement;
+      if (button.innerText == 'OK')
+        okButtonInSelectColumns = button;
+    }
+    if (allButtonInSelectColumns != undefined) {
+      allButtonInSelectColumns.click(); await delay(500);
+    }
+    if (okButtonInSelectColumns != undefined) {
+      okButtonInSelectColumns.click(); await delay(500);
+    }
+    okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
+    okButton!.click(); await delay(1000);
+});
    after(async () => {
         v.close();
         grok.shell.closeAll();

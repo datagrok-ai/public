@@ -259,6 +259,7 @@ export const TAGS = {
   UNITS: 'units',  // see DG.UNITS
 
   FRIENDLY_NAME: 'friendlyName',
+  ALLOW_RENAME: '.allow-rename',
 
   CHEM: {
     SCAFFOLD: 'chem-scaffold'
@@ -324,6 +325,14 @@ export const FUNC_TYPES = {
   CONVERTER: 'converter'
 }
 
+export enum LOG_LEVEL {
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error',
+  AUDIT = 'audit',
+  USAGE=  'usage'
+}
 
 ////// Viewers
 /** @enum {VIEWER} */
@@ -354,7 +363,8 @@ export enum VIEWER {
   TREE_MAP = 'Tree map',
   TRELLIS_PLOT = 'Trellis plot',
   WORD_CLOUD = 'Word cloud',
-  TIMELINES = 'TimelinesViewer'
+  TIMELINES = 'TimelinesViewer',
+  SURFACE_PLOT = 'SurfacePlot'
 }
 
 /** @enum {LINE_CHART_SERIES_TYPE} */

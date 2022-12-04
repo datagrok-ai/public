@@ -21,11 +21,12 @@ import {
   getStats,
   pickUpPalette,
   getPaletteByType,
+  getAlphabet,
   getAlphabetSimilarity,
   ALPHABET,
   NOTATION,
   TAGS,
-  ALIGNMENT
+  ALIGNMENT,
 } from './src/utils/macromolecule';
 import {INewickHelper} from './src/utils/newick-helper';
 import {NotationConverter} from './src/utils/notation-converter';
@@ -47,6 +48,11 @@ import {IVdRegionsViewer} from './src/viewers/vd-regions-viewer';
 import {PositionHeight, PositionInfo, PositionMonomerInfo, WebLogoViewer} from './src/viewers/web-logo-viewer';
 import {MonomerLib} from './src/monomer-works/monomer-lib';
 import {readLibrary} from './src/monomer-works/monomer-utils';
+import {
+  getNglGlService,
+  NglGlServiceBase,
+  NglGlTask
+} from './src/viewers/ngl-gl-viewer';
 
 export {
   ALIGNMENT,
@@ -56,6 +62,7 @@ export {
   NotationConverter,
   SplitterFunc,
   getStats,
+  getAlphabet,
   getAlphabetSimilarity,
   getSplitter,
   splitterAsFasta,
@@ -103,6 +110,10 @@ export {
   INewickHelper,
   ITreeHelper,
   getTreeHelper,
+
+  getNglGlService,
+  NglGlServiceBase,
+  NglGlTask,
 
   //Monomer lib and features
   Monomer,

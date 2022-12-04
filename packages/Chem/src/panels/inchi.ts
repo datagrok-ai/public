@@ -10,9 +10,13 @@ function addDerived(col: DG.Column, description: string, extract: (mol: RDMol) =
   const pi = DG.TaskBarProgressIndicator.create(description);
   const result = new Array(col.length);
   for (let i = 0; i < result.length; i++) {
-    const mol = _rdKitModule.get_mol(col.get(i));
-    result[i] = extract(mol);
-    mol.delete();
+    try{
+      const mol = _rdKitModule.get_mol(col.get(i));
+      result[i] = extract(mol);
+      mol.delete();
+    } catch (e: any) {
+      result[i] = '';
+    }
   }
 
   const name = col.dataFrame.columns.getUnusedName('inchi');

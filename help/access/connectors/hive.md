@@ -3,7 +3,19 @@
 
 # Hive
 
-Provides access to [Apache Hive](https://hive.apache.org/) NoSQL database using SQL queries via JDBC driver .
+Provides access to [Apache Hive](https://hive.apache.org/) NoSQL database using
+SQL queries via HiveSever1 JDBC driver.
+
+## Connection parameters
+
+```json
+{
+    "server": "",
+    "port": "",
+    "db": "",
+    "connString": ""
+}
+```
 
 See also:
 

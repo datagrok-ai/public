@@ -1,12 +1,13 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import {category, expect, test, delay, before, after} from '@datagrok-libraries/utils/src/test';
-import {_testSearchSubstructure, _testSearchSubstructureAllParameters} from './utils';
-import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
-import {testCsv, testSubstructure} from './substructure-search-tests';
-import {getHTMLElementbyInnerText, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, checkHTMLElementbyInnerText, isColumnPresent} from './gui-utils';
-import {_importSdf} from '../open-chem/sdf-importer';
+//import * as ui from 'datagrok-api/ui';
+import {category, expect, test, delay, awaitCheck} from '@datagrok-libraries/utils/src/test';
+//import {_testSearchSubstructure, _testSearchSubstructureAllParameters} from './utils';
+//import {_testFindSimilar, _testGetSimilarities} from './menu-tests-similarity-diversity';
+//import {testCsv, testSubstructure} from './substructure-search-tests';
+import {getHTMLElementbyInnerText, isViewerPresent, isDialogPresent, returnDialog,
+  setDialogInputValue, checkHTMLElementbyInnerText, isColumnPresent} from './gui-utils';
+//import {_importSdf} from '../open-chem/sdf-importer';
 
 category('UI', () => {
   let v: DG.TableView;
@@ -21,43 +22,47 @@ category('UI', () => {
 
     isViewerPresent(Array.from(v.viewers), 'SimilaritySearchViewer');
 
-    let structuresInViewer = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-similaritysearchviewer ui-box')[0].getElementsByClassName('d4-flex-wrap ui-div')[0] as HTMLElement;
+    let structuresInViewer = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-similaritysearchviewer ui-box')[0]
+      .getElementsByClassName('d4-flex-wrap ui-div')[0] as HTMLElement;
     if (structuresInViewer.childElementCount != 10)
-        throw 'molecules number inside the viewer is different than expected'; 
+      throw 'molecules number inside the viewer is different than expected'; 
 
     let similarityViewer:DG.Viewer;
     for (let i:number = 0; i < Array.from(v.viewers).length; i++) {
-        if (Array.from(v.viewers)[i].type == 'SimilaritySearchViewer') {
-            similarityViewer = Array.from(v.viewers)[i];
-            break;
-        }
+      if (Array.from(v.viewers)[i].type == 'SimilaritySearchViewer') {
+        similarityViewer = Array.from(v.viewers)[i];
+        break;
+      }
     }
 
     similarityViewer!.props.distanceMetric = 'Dice';
-    similarityViewer!.props.limit = 5    
+    similarityViewer!.props.limit = 5;    
 
     await delay(1000);
 
-    let similarityLable = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-similaritysearchviewer ui-box')[0].getElementsByClassName('ui-label')[0] as HTMLElement;
+    const similarityLable = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-similaritysearchviewer ui-box')[0]
+      .getElementsByClassName('ui-label')[0] as HTMLElement;
     if (similarityLable.innerText != '0.22')
-        throw 'Expected Similarity Lable for 2nd molecule does not match the "Dice" metric';
+      throw 'Expected Similarity Lable for 2nd molecule does not match the "Dice" metric';
     
-        structuresInViewer = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-similaritysearchviewer ui-box')[0].getElementsByClassName('d4-flex-wrap ui-div')[0] as HTMLElement;
+    structuresInViewer = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-similaritysearchviewer ui-box')[0]
+      .getElementsByClassName('d4-flex-wrap ui-div')[0] as HTMLElement;
     if (structuresInViewer.childElementCount != 5)
-        throw 'molecules number inside Similarity viewer is different than expected after change "Limit" property'; 
+      throw 'molecules number inside Similarity viewer is different than expected after change "Limit" property'; 
 
-    let protpertiesBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0].getElementsByClassName('grok-icon grok-font-icon-settings')[0] as HTMLElement;
+    const protpertiesBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0]
+      .getElementsByClassName('grok-icon grok-font-icon-settings')[0] as HTMLElement;
     protpertiesBtn.click(); await delay(1000);
     if (document.getElementsByClassName('property-grid-base property-grid-disable-selection').length == 0)
-        throw 'Properties table does not open'
+      throw 'Properties table does not open';
 
-    let closeBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0].getElementsByClassName('grok-icon grok-font-icon-close')[0] as HTMLElement;
+    const closeBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0]
+      .getElementsByClassName('grok-icon grok-font-icon-close')[0] as HTMLElement;
     closeBtn.click(); await delay(1000);
 
     for (let i:number = 0; i < Array.from(v.viewers).length; i++) {
-        if (Array.from(v.viewers)[i].type == 'SimilaritySearchViewer') {
-            throw 'SimilaritySearch viewer was not closed'
-        }
+      if (Array.from(v.viewers)[i].type == 'SimilaritySearchViewer') 
+        throw 'SimilaritySearch viewer was not closed';
     }
 
     grok.shell.closeAll(); 
@@ -67,12 +72,12 @@ category('UI', () => {
     v = grok.shell.addTableView(smiles);
     await delay(5000);
 
-    let smilesCol = smiles.columns.byName('smiles');
+    const smilesCol = smiles.columns.byName('smiles');
     grok.shell.o = smilesCol;
 
     await delay(2000);
 
-    let panels = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-accordion-pane-header');
+    const panels = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-accordion-pane-header');
     let actionsPanel:HTMLElement;
     for (let i = 0; i < panels.length; i++ ) {        
       actionsPanel = panels[i] as HTMLElement;
@@ -83,36 +88,36 @@ category('UI', () => {
     
     await delay(1000);
 
-    let actions = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-link-action');
+    const actions = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-link-action');
     let mapIdentifiersAction:HTMLElement;
     for (let i = 0; i < actions.length; i++ ) {        
-        mapIdentifiersAction = actions[i] as HTMLElement;
-        if (mapIdentifiersAction.innerText == 'Chem | Descriptors...')
-            break;
+      mapIdentifiersAction = actions[i] as HTMLElement;
+      if (mapIdentifiersAction.innerText == 'Chem | Descriptors...')
+        break;
     }
     mapIdentifiersAction!.click();
 
     await delay(1000);    
-    isDialogPresent('Descriptors')
+    isDialogPresent('Descriptors');
 
-    let discriptorsGroups = returnDialog('Descriptors')!.root.getElementsByClassName('d4-tree-view-node');
+    const discriptorsGroups = returnDialog('Descriptors')!.root.getElementsByClassName('d4-tree-view-node');
     let lipinskiGroup:HTMLElement | undefined = undefined;
     for (let i = 0; i < discriptorsGroups.length; i++ ) {  
-        lipinskiGroup = discriptorsGroups[i] as HTMLElement;
-        if (lipinskiGroup.innerText == 'Lipinski')
-            break;
+      lipinskiGroup = discriptorsGroups[i] as HTMLElement;
+      if (lipinskiGroup.innerText == 'Lipinski')
+        break;
     }
 
     let lipinskiChekbox:HTMLElement | undefined;
     for (let i = 0; i < lipinskiGroup!.childNodes.length; i++ ) {   
-        lipinskiChekbox = lipinskiGroup!.childNodes[i] as HTMLElement;
-        if (lipinskiChekbox.tagName == 'INPUT')
-            break;
+      lipinskiChekbox = lipinskiGroup!.childNodes[i] as HTMLElement;
+      if (lipinskiChekbox.tagName == 'INPUT')
+        break;
     }
 
     lipinskiChekbox!.click();
 
-    let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
+    const okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButton!.click(); await delay(1000);
 
     isColumnPresent(smiles.columns, 'FractionCSP3');
@@ -135,22 +140,24 @@ category('UI', () => {
 
     await delay(4000);
     if (document.getElementsByClassName('grok-scripting-image-container-info-panel').length != 1) {
-      let gastaigerPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Gasteiger Partial Charges')
+      const gastaigerPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Gasteiger Partial Charges');
       gastaigerPanel!.click(); await delay(4000);
       if (document.getElementsByClassName('grok-scripting-image-container-info-panel').length != 1)
-        throw 'Gasteiger charges script output was not rendered in the panel'
+        throw 'Gasteiger charges script output was not rendered in the panel';
     }
 
-    let pecilIcon = document.getElementsByClassName('grok-icon fal fa-pencil')[0] as HTMLElement;
+    const pecilIcon = document.getElementsByClassName('grok-icon fal fa-pencil')[0] as HTMLElement;
     pecilIcon!.click(); await delay(500);
 
-    let contours = document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-gasteiger_partial_charges')[0].getElementsByClassName('ui-input-editor')[0] as HTMLInputElement;
+    const contours = document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-gasteiger_partial_charges')[0]
+      .getElementsByClassName('ui-input-editor')[0] as HTMLInputElement;
     contours.value = '15';
 
-    let applyBtn = document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-gasteiger_partial_charges')[0].getElementsByClassName('ui-btn ui-btn-ok')[0] as HTMLElement;
+    const applyBtn = document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-gasteiger_partial_charges')[0]
+      .getElementsByClassName('ui-btn ui-btn-ok')[0] as HTMLElement;
     applyBtn!.click(); await delay(2000);
 
-    let gastaigerPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Gasteiger Partial Charges')
+    const gastaigerPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Gasteiger Partial Charges');
     gastaigerPanel!.click(); await delay(500);
 
     grok.shell.closeAll(); 
@@ -166,7 +173,7 @@ category('UI', () => {
 
     await delay(5000);
     if (document.getElementsByClassName('ui-link d4-link-external').length < 1) {
-      let identifiersPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Identifiers')
+      const identifiersPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Identifiers');
       identifiersPanel!.click(); await delay(5000);
       if (document.getElementsByClassName('ui-link d4-link-external').length < 1)
         throw 'no identifiers found'; 
@@ -177,7 +184,7 @@ category('UI', () => {
     checkHTMLElementbyInnerText('ui-link d4-link-external', '24204979');
     checkHTMLElementbyInnerText('ui-link d4-link-external', 'CHEMBL2262434');
     
-    let identifiersPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Identifiers')
+    const identifiersPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Identifiers');
     identifiersPanel!.click(); await delay(500);
     grok.shell.closeAll(); 
   }, {skipReason: '#1183'}); 
@@ -192,13 +199,13 @@ category('UI', () => {
 
     await delay(3000);
     if (document.getElementsByClassName('d4-flex-col ui-div chem-mol-box').length != 1) {
-      let structure2DPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structure 2D')
+      const structure2DPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structure 2D');
       structure2DPanel!.click(); await delay(3000);
       if (document.getElementsByClassName('d4-flex-col ui-div chem-mol-box').length != 1)
-        throw 'canvas with structure was not rendered in the panel' 
+        throw 'canvas with structure was not rendered in the panel'; 
     }
 
-    let structure2DPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structure 2D')
+    const structure2DPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structure 2D');
     structure2DPanel!.click(); await delay(500);
 
     grok.shell.closeAll(); 
@@ -214,13 +221,13 @@ category('UI', () => {
 
     await delay(4000);
     if (document.getElementsByClassName('d4-ngl-viewer ui-div').length != 1) {
-      let structure3DPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structure 3D');
+      const structure3DPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structure 3D');
       structure3DPanel!.click(); await delay(3000);
       if (document.getElementsByClassName('d4-ngl-viewer ui-div').length != 1)
         throw 'canvas with 3D structure was not rendered in the panel'; 
     }
     
-    let structure3DPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structure 3D');
+    const structure3DPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structure 3D');
     structure3DPanel!.click(); await delay(500);
 
     grok.shell.closeAll();
@@ -237,14 +244,14 @@ category('UI', () => {
     await delay(3000);
     if (document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-properties')[0]
       .getElementsByClassName('d4-table d4-item-table d4-info-table').length != 1) {
-      let propertiesPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Properties')
+      const propertiesPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Properties');
       propertiesPanel!.click(); await delay(2000);
       if (document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-properties')[0]
         .getElementsByClassName('d4-table d4-item-table d4-info-table').length != 1)
         throw 'table with properties was not rendered in the panel';
     }
     
-    let propertiesPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Properties')
+    const propertiesPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Properties');
     propertiesPanel!.click(); await delay(500);
 
     grok.shell.closeAll();
@@ -261,14 +268,14 @@ category('UI', () => {
     await delay(3000);
     if (document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-toxicity')[0].
       getElementsByClassName('d4-table d4-item-table d4-info-table').length != 1) {
-      let toxicityPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Toxicity')
+      const toxicityPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Toxicity');
       toxicityPanel!.click(); await delay(2000);
       if (document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-toxicity')[0]
         .getElementsByClassName('d4-table d4-item-table d4-info-table').length != 1)
-      throw 'table with toxicity was not rendered in the panel';
+        throw 'table with toxicity was not rendered in the panel';
     }
 
-    let toxicityPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Toxicity')
+    const toxicityPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Toxicity');
     toxicityPanel!.click(); await delay(500);
 
     grok.shell.closeAll();
@@ -285,14 +292,14 @@ category('UI', () => {
     await delay(3000);
     if (document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-drug_likeness')[0]
       .getElementsByClassName('d4-flex-col ui-div').length != 19) {
-      let drugLikenessPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Drug Likeness')
+      const drugLikenessPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Drug Likeness');
       drugLikenessPanel!.click(); await delay(2000);
       if (document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-drug_likeness')[0]
         .getElementsByClassName('d4-flex-col ui-div').length != 19)
-        throw 'number of displayed canvases with molecules does not match the expected'  ; 
+        throw 'number of displayed canvases with molecules does not match the expected'; 
     }
 
-    let drugLikenessPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Drug Likeness')
+    const drugLikenessPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Drug Likeness');
     drugLikenessPanel!.click(); await delay(500);
 
     grok.shell.closeAll();
@@ -309,14 +316,14 @@ category('UI', () => {
     await delay(3000);
     if (document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-structural_alerts')[0]
       .getElementsByClassName('d4-flex-col ui-div').length != 10) {
-      let structuralAlertsPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structural Alerts')
+      const structuralAlertsPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structural Alerts');
       structuralAlertsPanel!.click(); await delay(2000);
       if (document.getElementsByClassName('d4-accordion-pane-content ui-div d4-pane-structural_alerts')[0]
         .getElementsByClassName('d4-flex-col ui-div').length != 10)
         throw 'number of displayed canvases with alerts does not match the expected'; 
     }
 
-    let structuralAlertsPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structural Alerts')
+    const structuralAlertsPanel = getHTMLElementbyInnerText('d4-accordion-pane-header', 'Structural Alerts');
     structuralAlertsPanel!.click(); await delay(500);
 
     grok.shell.closeAll();
@@ -332,10 +339,10 @@ category('UI', () => {
 
     expect(returnDialog('Mutate')!.input('Smiles').stringValue, 'CN1C(CC(O)C1=O)C1=CN=CC=C1');
 
-    let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
+    const okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
     okButton!.click(); await delay(5000);
 
-    expect(grok.shell.t.name, 'mutations')
+    expect(grok.shell.t.name, 'mutations');
 
     grok.shell.closeAll();
   }, {skipReason: '#1183'});
@@ -345,34 +352,34 @@ category('UI', () => {
     v = grok.shell.addTableView(smiles);
     await delay(3000);
 
-    let smilesCol = smiles.columns.byName('smiles');
+    const smilesCol = smiles.columns.byName('smiles');
     grok.shell.o = smilesCol;
 
     await delay(1000);
 
-    let panels = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-accordion-pane-header');
+    const panels = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-accordion-pane-header');
     let actionsPanel:HTMLElement;
     for (let i = 0; i < panels.length; i++ ) {        
       actionsPanel = panels[i] as HTMLElement;
       if (actionsPanel.innerText == 'Actions')
-          break;
-      }
+        break;
+    }
     actionsPanel!.click(); 
     
     await delay(500);
 
     async function callDialog() {
-      let actions = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-link-action');
+      const actions = document.getElementsByClassName('grok-prop-panel')[0].getElementsByClassName('d4-link-action');
       let mapIdentifiersAction:HTMLElement;
       for (let i = 0; i < actions.length; i++ ) {        
         mapIdentifiersAction = actions[i] as HTMLElement;
         if (mapIdentifiersAction.innerText == 'Chem | Map Identifiers...')
-            break;
-        }
+          break;
+      }
       mapIdentifiersAction!.click();
   
       await delay(500);    
-      isDialogPresent('Chem Map Identifiers')
+      isDialogPresent('Chem Map Identifiers');
     }
 
     await callDialog();
@@ -402,4 +409,22 @@ category('UI', () => {
     v.close();
     grok.shell.closeAll();
   }, {skipReason: '#1183'});
+
+  test('diversity search', async () => {
+    const smiles = grok.data.demo.molecules(100);
+    const v = grok.shell.addTableView(smiles);
+    await awaitCheck(() => document.querySelector('canvas') !== null);
+    grok.shell.topMenu.find('Chem').find('Diversity Search...').click();
+    await awaitCheck(() => document.querySelector('.d4-diversitysearchviewer') !== null); 
+    const dsv = document.querySelector('.d4-diversitysearchviewer') as HTMLElement;
+    await awaitCheck(() => dsv.querySelectorAll('.chem-canvas').length === 10);
+    Array.from(v.viewers)[1].setOptions({
+      fingerprint: 'Pattern',
+      distanceMetric: 'Dice',
+      size: 'normal',
+    });
+    await awaitCheck(() => dsv.querySelectorAll('.chem-canvas').length === 10);
+    v.close();
+    grok.shell.closeTable(smiles);
+  }, {skipReason: 'not enough timeout inside awaitCheck()'});
 });

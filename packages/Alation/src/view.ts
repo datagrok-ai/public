@@ -3,14 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import getUuid from 'uuid-by-string';
 import $ from 'cash-dom';
 
 import * as types from './types';
 import * as constants from './const';
 import * as alationApi from './alation-api';
 import * as utils from './utils';
-import {getBaseURL, getUserGroup} from './package';
+import {getBaseURL} from './package';
 
 let isSettingDescription = false;
 
@@ -31,8 +30,7 @@ export function createTree(
       item.root.addEventListener('dblclick', async () => {
         const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
         try {
-          await connectToDb(queryObject.datasource_id,
-            async (conn: DG.DataConnection) => {await runQuery(conn, queryObject);});
+          await connectToDb(queryObject.datasource_id, async (c: DG.DataConnection) => runQuery(c, queryObject));
         } catch {
           grok.shell.error('Couldn\'t retrieve table');
         }
@@ -63,7 +61,7 @@ export function createTree(
       item.root.addEventListener('dblclick', async () => {
         const progressIndicator = DG.TaskBarProgressIndicator.create('Opening table...');
         try {
-          await connectToDb(tableObject.ds_id, async (conn: DG.DataConnection) => {await getTable(conn, tableObject);});
+          await connectToDb(tableObject.ds_id, async (c: DG.DataConnection) => getTable(c, tableObject));
         } catch {
           grok.shell.error('Couldn\'t retrieve table');
         }
@@ -172,9 +170,6 @@ export async function runQuery(conn: DG.DataConnection, queryObject: types.query
   let query = conn.query(queryObject.title, queryObject.content);
   query = await grok.dapi.queries.save(query);
 
-  const zenoGroup = await grok.dapi.groups.filter(await getUserGroup()).first();
-  await grok.dapi.permissions.grant(query, zenoGroup, true);
-
   const df = await query.executeTable();
   df.name = queryObject.title;
   grok.shell.addTableView(df);
@@ -183,21 +178,18 @@ export async function runQuery(conn: DG.DataConnection, queryObject: types.query
 export async function connectToDb(
   dataSrouceId: number, handler: (conn: DG.DataConnection) => Promise<void>): Promise<void> {
   const dataSource = await alationApi.getDataSourceById(dataSrouceId);
-  const dsId = getUuid(`${dataSource.dbname}_id${dataSource.id}`, 5);
-  let dsConnection: DG.DataConnection | null = null;
+  const connName = dataSource.title || dataSource.qualified_name || dataSource.dbname;
+  const dsConnections = await grok.dapi.connections.filter(connName).list();
 
-  try {
-    dsConnection = await grok.dapi.connections.find(dsId);
-    await handler(dsConnection);
-    return;
-  } catch {
-    console.warn(`Couldn't find connection with id '${dsId}', creating new...`);
+  for (const conn of dsConnections) {
+    if (await grok.dapi.permissions.check(conn, "Edit"))
+      return handler(conn);
   }
-  connectToDbDialog(dataSource, dsId, handler);
+
+  connectToDbDialog(dataSource, handler);
 }
 
-function connectToDbDialog(
-  dataSource: types.dataSource, dsId: string, func: (conn: DG.DataConnection) => Promise<void>) {
+function connectToDbDialog(dataSource: types.dataSource, func: (conn: DG.DataConnection) => Promise<void>) {
   let dbType: string | null = null;
   for (const dsType of constants.DATA_SOURCE_TYPES) {
     if (dataSource.dbtype === dsType.toLowerCase()) {
@@ -219,7 +211,8 @@ function connectToDbDialog(
   const passwordField = ui.stringInput('Password', '');
   $(passwordField.root as HTMLInputElement).children('.ui-input-editor').attr('type', 'password');
 
-  const dialog = ui.dialog(`Connect to ${dataSource.title || dataSource.dbname || dataSource.qualified_name}`)
+  const connectionName = dataSource.title || dataSource.qualified_name || dataSource.dbname;
+  const dialog = ui.dialog(`Connect to ${connectionName}`)
     .add(ui.divV([helpHost, usernameField, passwordField]))
     .onOK(async () => {
       const dcParams = {
@@ -229,12 +222,8 @@ function connectToDbDialog(
         login: usernameField.stringValue,
         password: passwordField.value,
       };
-      let dsConnection = DG.DataConnection.create(dataSource.dbname, dcParams);
-      dsConnection.id = dsId;
+      let dsConnection = DG.DataConnection.create(connectionName, dcParams);
       dsConnection = await grok.dapi.connections.save(dsConnection);
-
-      const userGroup = await grok.dapi.groups.filter(await getUserGroup()).first();
-      await grok.dapi.permissions.grant(dsConnection, userGroup, true);
 
       await func(dsConnection);
     })
@@ -242,7 +231,7 @@ function connectToDbDialog(
   return dialog;
 }
 
-export async function getTable(dsConnection: DG.DataConnection, tableObject: types.table): Promise<DG.TableView> {
+export async function getTable(dsConnection: DG.DataConnection, tableObject: types.table): Promise<void> {
   const query = DG.TableQuery.create(dsConnection);
   query.table = `${tableObject.schema_name}.${tableObject.name}`;
   const columns = await alationApi.getColumns(tableObject.id);
@@ -251,5 +240,4 @@ export async function getTable(dsConnection: DG.DataConnection, tableObject: typ
   df.name = tableObject.name || `Unnamed table id ${tableObject.id}`;
   const tableView = grok.shell.addTableView(df);
   tableView.name = tableObject.title ?? df.name;
-  return tableView;
 }

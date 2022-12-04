@@ -14,7 +14,7 @@ category('Chem: R Groups Analysis', () => {
     v = grok.shell.addTableView(smiles);
   });
 
-  test('rGroupsAnalysis.ui', async () => {    
+  test('rGroupsAnalysis.ui', async () => {
     grok.shell.topMenu.find('Chem').find('R-Groups Analysis......').click(); await delay(2000);
 
     isDialogPresent('R-Groups Analysis');
@@ -34,7 +34,7 @@ category('Chem: R Groups Analysis', () => {
     isColumnPresent(smiles.columns, 'UITestRGroup3');
     isColumnPresent(smiles.columns, 'UITestRGroup4');
 
-    }); 
+    });
   test('rGroupsAnalysis.api', async () => {
     v.resetLayout(); await delay(500);
 
@@ -43,20 +43,20 @@ category('Chem: R Groups Analysis', () => {
           throw 'Table view was not cleared';
       }
 
-    let smilesCol = smiles.col('smiles') as DG.Column;
-    let mcs = await grok.chem.mcs(smilesCol);      
+    let smilesCol: DG.Column = smiles.getCol('smiles');
+    let mcs = await grok.chem.mcs(smiles, smilesCol.name);
     await grok.chem.rGroup(smiles, 'smiles', mcs);
-    
+
     isViewerPresent(Array.from(v.viewers), 'Trellis plot');
     isColumnPresent(smiles.columns, 'R1');
     isColumnPresent(smiles.columns, 'R2');
     isColumnPresent(smiles.columns, 'R3');
     isColumnPresent(smiles.columns, 'R4');
-    
-  });  
 
- 
+  });
+
+
   after(async () => {
     grok.shell.closeAll();
-  }); 
+  });
 });

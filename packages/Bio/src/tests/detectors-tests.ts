@@ -7,6 +7,17 @@ import {after, before, category, test, expect, expectObject} from '@datagrok-lib
 
 import {importFasta} from '../package';
 
+/*
+// snippet to list df columns of semType='Macromolecule' (false positive)
+const df = grok.shell.tableByName('SPGI');
+for (let i = 0; i < df.columns.length; i++) {
+  const col = df.columns.byIndex(i);
+  if (col.semType == 'Macromolecule') {
+  console.log( i + ' - ' + col.name + ' - ' + col.semType);
+  }
+}
+ */
+
 type DfReaderFunc = () => Promise<DG.DataFrame>;
 
 category('detectors', () => {
@@ -121,33 +132,37 @@ MWRSWY-CKHP
     testIdCsv = 'testIdCsv',
     testSmilesCsv = 'testSmilesCsv',
     testSmiles2Csv = 'testSmiles2Csv',
+    testSmilesShort = 'testSmilesShort',
     testCerealCsv = 'testCerealCsv',
     testActivityCliffsCsv = 'testActivityCliffsCsv',
     testSpgi100 = 'testSpgi100',
     testUnichemSources = 'testUnichemSources',
     testDmvOffices = 'testDmvOffices',
     testAlertCollection = 'testAlertCollection',
+    testSpgi = 'testSpgi',
   }
 
   const samples: { [key: string]: string } = {
-    'fastaCsv': 'System:AppData/Bio/samples/sample_FASTA.csv',
-    'fastaFasta': 'System:AppData/Bio/data/sample_FASTA.fasta',
-    'fastaPtCsv': 'System:AppData/Bio/data/sample_FASTA_PT.csv',
-    'msaComplex': 'System:AppData/Bio/samples/sample_MSA.csv',
-    'helmCsv': 'System:AppData/Bio/samples/sample_HELM.csv',
-    'peptidesComplex': 'System:AppData/Bio/tests/peptides_complex_msa.csv',
-    'peptidesSimple': 'System:AppData/Bio/tests/peptides_simple_msa.csv',
-    'testDemogCsv': 'System:AppData/Bio/tests/testDemog.csv',
-    'testHelmCsv': 'System:AppData/Bio/tests/testHelm.csv',
-    'testIdCsv': 'System:AppData/Bio/tests/testId.csv',
-    'testSmilesCsv': 'System:AppData/Bio/tests/testSmiles.csv',
-    'testSmiles2Csv': 'System:AppData/Bio/tests/testSmiles2.csv',
-    'testActivityCliffsCsv': 'System:AppData/Bio/tests/testActivityCliffs.csv', // smiles
-    'testCerealCsv': 'System:AppData/Bio/tests/testCereal.csv',
-    'testSpgi100': 'System:AppData/Bio/tests/testSpgi100.csv',
-    'testUnichemSources': 'System:AppData/Bio/tests/testUnichemSources.csv',
-    'testDmvOffices': 'System:AppData/Bio/tests/testDmvOffices.csv',
-    'testAlertCollection': 'System:AppData/Bio/tests/testAlertCollection.csv',
+    [Samples.fastaFasta]: 'System:AppData/Bio/data/sample_FASTA.fasta',
+    [Samples.fastaPtCsv]: 'System:AppData/Bio/data/sample_FASTA_PT.csv',
+    [Samples.msaComplex]: 'System:AppData/Bio/samples/sample_MSA.csv',
+    [Samples.fastaCsv]: 'System:AppData/Bio/samples/sample_FASTA.csv',
+    [Samples.helmCsv]: 'System:AppData/Bio/samples/sample_HELM.csv',
+    [Samples.peptidesComplex]: 'System:AppData/Bio/tests/peptides_complex_msa.csv',
+    [Samples.peptidesSimple]: 'System:AppData/Bio/tests/peptides_simple_msa.csv',
+    [Samples.testDemogCsv]: 'System:AppData/Bio/tests/testDemog.csv',
+    [Samples.testHelmCsv]: 'System:AppData/Bio/tests/testHelm.csv',
+    [Samples.testIdCsv]: 'System:AppData/Bio/tests/testId.csv',
+    [Samples.testSmilesCsv]: 'System:AppData/Bio/tests/testSmiles.csv',
+    [Samples.testSmiles2Csv]: 'System:AppData/Bio/tests/testSmiles2.csv',
+    [Samples.testSmilesShort]: 'System:AppData/Bio/tests/testSmilesShort.csv',
+    [Samples.testActivityCliffsCsv]: 'System:AppData/Bio/tests/testActivityCliffs.csv', // smiles
+    [Samples.testCerealCsv]: 'System:AppData/Bio/tests/testCereal.csv',
+    [Samples.testSpgi100]: 'System:AppData/Bio/tests/testSpgi100.csv',
+    [Samples.testUnichemSources]: 'System:AppData/Bio/tests/testUnichemSources.csv',
+    [Samples.testDmvOffices]: 'System:AppData/Bio/tests/testDmvOffices.csv',
+    [Samples.testAlertCollection]: 'System:AppData/Bio/tests/testAlertCollection.csv',
+    [Samples.testSpgi]: 'System:AppData/Bio/tests/SPGI-derived.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -332,12 +347,17 @@ MWRSWY-CKHP
     await _testNeg(readSamples(Samples.testSmiles2Csv), 'SMILES');
   });
 
+  test('samplesTestSmilesShortNegativeSmiles', async () => {
+    await _testNeg(readSamples(Samples.testSmilesShort), 'SMILES');
+  });
+
   test('samplesTestActivityCliffsNegativeSmiles', async () => {
     await _testNeg(readSamples(Samples.testActivityCliffsCsv), 'smiles');
   });
 
   test('samplesFastaPtPosSequence', async () => {
-    await _testPos(readSamples(Samples.fastaPtCsv), 'sequence', bio.NOTATION.FASTA, bio.ALIGNMENT.SEQ, bio.ALPHABET.PT, 20, false);
+    await _testPos(readSamples(Samples.fastaPtCsv), 'sequence',
+      bio.NOTATION.FASTA, bio.ALIGNMENT.SEQ, bio.ALPHABET.PT, 20, false);
   });
 
   test('samplesTestCerealNegativeCerealName', async () => {
@@ -373,6 +393,10 @@ MWRSWY-CKHP
 
   test('samplesTestAlertCollectionNegativeSmarts', async () => {
     await _testNeg(readSamples(Samples.testAlertCollection), 'smarts');
+  });
+
+  test('samplesTestSpgiNegativeVals', async () => {
+    await _testNeg(readSamples(Samples.testSpgi), 'vals');
   });
 });
 

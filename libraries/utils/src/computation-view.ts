@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FunctionView} from './function-view';
 import '../css/computation-view.css';
+import dayjs from 'dayjs';
 import {historyUtils} from './history-utils';
 
 /**
@@ -91,6 +92,14 @@ export class ComputationView extends FunctionView {
   */
   reportBug: (() => Promise<void>) | null = null;
 
+  /** Override to customize "about" info obtaining feature.
+    * @stability Experimental
+  */
+  getAbout: (() => Promise<string>) | null = async () => {
+    const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.func?.package.id);
+    return pack ? `${pack.friendlyName} v.${pack.version}.\nLast updated on ${dayjs(pack.updatedOn).format('YYYY MMM D, HH:mm')}`: `No package info was found`;
+  };
+
   /**
    * Looks for {@link reportBug}, {@link getHelp} and {@link exportConfig} members and creates model menus
    * @stability Stable
@@ -138,5 +147,15 @@ export class ComputationView extends FunctionView {
 
     if (this.getHelp)
       ribbonMenu.item('Help', () => this.getHelp!());
+
+    if (this.getAbout) {
+      ribbonMenu.item('About', async () => {
+        const dialog = ui.dialog('Current version');
+        (await this.getAbout!()).split('\n').forEach((line) => dialog.add(ui.label(line)));
+        dialog.onOK(() => {});
+        dialog.getButton('CANCEL').style.display = 'none';
+        dialog.show({center: true});
+      });
+    }
   }
 }

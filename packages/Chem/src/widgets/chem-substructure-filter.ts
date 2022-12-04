@@ -12,6 +12,7 @@ import {Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
 import wu from 'wu';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
+import { chem } from 'datagrok-api/dg';
 
 export class SubstructureFilter extends DG.Filter {
   // @ts-ignore
@@ -28,8 +29,9 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get isFiltering(): boolean {
+    const molFile = this.sketcher?.getMolFile();
     return super.isFiltering &&
-    (!!this.sketcher?.getMolFile() && !(this.sketcher?.getMolFile().split('\n')[3].trimStart()[0] === '0'));
+    (!!molFile && !chem.Sketcher.isEmptyMolfile(molFile));
   }
 
   get isReadyToApplyFilter(): boolean {
@@ -89,6 +91,7 @@ export class SubstructureFilter extends DG.Filter {
   applyFilter(): void {
     if (this.bitset && !this.isDetached) {
       this.dataFrame?.filter.and(this.bitset);
+      this.dataFrame?.rows.addFilterState(this.saveState());
       this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
     }
   }

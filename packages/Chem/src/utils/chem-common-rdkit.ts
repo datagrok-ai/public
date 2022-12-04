@@ -1,6 +1,5 @@
 // This file will be used from Web Workers
 // There should be no imports from Datagrok or OCL
-
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import {convertToRDKit} from '../analysis/r-group-analysis';
 //@ts-ignore
@@ -8,6 +7,7 @@ import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {isMolBlock} from '../utils/convert-notation-utils';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -91,15 +91,25 @@ export function drawRdKitMoleculeToOffscreenCanvas(
 
 export function drawMoleculeToCanvas(
   x: number, y: number, w: number, h: number,
-  onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null) {
+  onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null,
+  options = {normalizeDepiction: true, straightenDepiction: true}
+) {
   let mol = null;
   try {
-    mol = getRdKitModule().get_mol(convertToRDKit(molString)!);
-    mol.set_new_coords(true);
-    mol.normalize_depiction(1);
-    mol.straighten_depiction();
+    const isMol: boolean = isMolBlock(molString);
+    mol = isMol ? getRdKitModule().get_mol(molString) : getRdKitModule().get_mol(convertToRDKit(molString)!);
+
+    if (!isMol)
+      mol.set_new_coords(true);
+
+    if (options.normalizeDepiction ?? true)
+      !isMol ? mol.normalize_depiction(1) : mol.normalize_depiction(0);
+
+    if (options.straightenDepiction ?? true)
+      mol.straighten_depiction();
+
     const scaffoldMol = scaffoldMolString == null ? null :
-      getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!);
+      (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) : getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
     let substructJson = '{}';
     if (scaffoldMol) {
       substructJson = mol.get_substruct_match(scaffoldMol);

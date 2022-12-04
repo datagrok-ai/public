@@ -1,14 +1,13 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 import {Unsubscribable} from 'rxjs';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 
 import {_package} from '../package';
 import {TAGS} from '../utils/tree-helper';
-import {data} from 'datagrok-api/grok';
-import {injectTreeToGridUI} from '../viewers/inject-tree-to-grid';
 import {injectTreeForGridUI} from '../viewers/inject-tree-for-grid';
 
 export class TreeForGridApp {
@@ -19,21 +18,28 @@ export class TreeForGridApp {
   _dataDf: DG.DataFrame;
   _leafCol: DG.Column;
   _newickStr: string;
+  _newickRoot: bio.NodeType;
 
   get dataDf(): DG.DataFrame { return this._dataDf; }
 
   get leafCol(): DG.Column { return this._leafCol; }
 
-  get newickStr(): string { return this._newickStr; }
+  // get newickStr(): string { return this._newickStr; }
+
+  get newickRoot(): bio.NodeType { return this._newickRoot; }
 
   async init(): Promise<void> {
     await this.loadData();
   }
 
   async loadData(): Promise<void> {
-    const csv = await _package.files.readAsText('data/tree-gen-1000000.csv');
-    const newick = await _package.files.readAsText('data/tree-gen-1000000.nwk');
-    const leafColName = 'Leaf';
+    // const csv = await _package.files.readAsText('data/tree-gen-100000.csv');
+    // const newick = await _package.files.readAsText('data/tree-gen-100000.nwk');
+    // const leafColName = 'Leaf';
+
+    const csv = await _package.files.readAsText('data/tree95df.csv');
+    const newick = await _package.files.readAsText('data/tree95.nwk');
+    const leafColName = 'id';
 
     const dataDf = DG.DataFrame.fromCsv(csv);
     dataDf.setTag(TAGS.DF_NEWICK, newick);
@@ -54,6 +60,7 @@ export class TreeForGridApp {
       throw new Error(`Specify leaf column name in DataFrame tag '${TAGS.DF_NEWICK_LEAF_COL_NAME}'.`);
     this._leafCol = dataDf.getCol(leafColName!);
     this._newickStr = newickStr;
+    this._newickRoot = bio.Newick.parse_newick(newickStr);
 
     if (!this.viewed) {
       await this.buildView();
@@ -76,10 +83,20 @@ export class TreeForGridApp {
 
   async buildView() {
     if (!this.tableView) {
-      this.tableView = grok.shell.addTableView(this.dataDf);
+      const dataDf: DG.DataFrame = this.dataDf;
+      dataDf.columns.addNewInt('Cluster').init((rowI) => { return null; });
+
+      const clusterDf: DG.DataFrame = DG.DataFrame.create(0);
+      clusterDf.columns.addNewInt('Cluster');
+      clusterDf.columns.addNewString(this.leafCol.name);
+      clusterDf.columns.addNewInt(`${this.leafCol.name}_Count`);
+
+      this.tableView = grok.shell.addTableView(clusterDf);
+      this.tableView.path = this.tableView.basePath = '/func/PhyloTreeViewer.treeForGridApp';
 
       this.gridN = injectTreeForGridUI(
-        this.tableView.grid, this.newickStr, this.leafCol.name, 250);
+        this.tableView.grid, this.newickRoot, dataDf, clusterDf, this.leafCol.name, 250,
+        {min: 0, max: 20, clusterColName: 'Cluster'});
 
       // const activityCol = this.dataDf.col('Activity');
       // if (activityCol) {

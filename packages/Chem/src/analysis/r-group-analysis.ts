@@ -25,9 +25,14 @@ export function rGroupAnalysis(col: DG.Column): void {
 
   const mcsButton = ui.button('MCS', async () => {
     ui.setUpdateIndicator(sketcher.root, true);
-    const smiles: string = await findMCS(col.name, col.dataFrame);
-    ui.setUpdateIndicator(sketcher.root, false);
-    sketcher.setSmiles(smiles);
+    try {
+      const smiles: string = await findMCS(col.name, col.dataFrame);
+      ui.setUpdateIndicator(sketcher.root, false);
+      sketcher.setSmiles(smiles);
+    } catch (e: any) {
+      grok.shell.error(e);
+      dlg.close();
+    }
   });
   ui.tooltip.bind(mcsButton, 'Most Common Substructure');
   const mcsButtonHost = ui.div([mcsButton]);
@@ -45,33 +50,45 @@ export function rGroupAnalysis(col: DG.Column): void {
       visualAnalysisCheck,
     ]))
     .onOK(async () => {
+      const re = new RegExp(`^${columnPrefixInput.value}\\d+$`, 'i');
+      if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
+        grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');
+        return;
+      }
       const core = sketcher.getSmiles();
       if (core !== null) {
-        const res = await findRGroups(col.name, col.dataFrame, core, columnPrefixInput.value);
-        const module = getRdKitModule();
-
-        for (const resCol of res.columns) {
-          const molsArray = new Array<string>(resCol.length)
-           for(let i = 0; i < resCol.length; i++) {
-            const mol = module.get_mol(resCol.get(i));
-            molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
-            mol.delete();
+        try {
+          const progressBar = DG.TaskBarProgressIndicator.create(`RGroup analysis running`);
+          const res = await findRGroups(col.name, col.dataFrame, core, columnPrefixInput.value);
+          const module = getRdKitModule();
+  
+          for (const resCol of res.columns) {
+            const molsArray = new Array<string>(resCol.length)
+             for(let i = 0; i < resCol.length; i++) {
+              const mol = module.get_mol(resCol.get(i));
+              molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
+              mol.delete();
+            }
+            const rCol = DG.Column.fromStrings(resCol.name, molsArray);
+  
+            rCol.semType = DG.SEMTYPE.MOLECULE;
+            rCol.setTag(DG.TAGS.UNITS, 'molblock');
+            col.dataFrame.columns.add(rCol);
           }
-          const rCol = DG.Column.fromStrings(resCol.name, molsArray);
-
-          rCol.semType = DG.SEMTYPE.MOLECULE;
-          rCol.setTag(DG.TAGS.UNITS, 'molblock')
-          col.dataFrame.columns.add(rCol);
-        }
-        if (res.columns.length == 0)
-          grok.shell.error('None R-Groups were found');
-
-        const view = grok.shell.getTableView(col.dataFrame.name);
-        if (visualAnalysisCheck.value && view) {
-          view.trellisPlot({
-            xColumnNames: [res.columns.byIndex(0).name],
-            yColumnNames: [res.columns.byIndex(1).name],
-          });
+          if (res.columns.length == 0)
+            grok.shell.error('None R-Groups were found');
+  
+          const view = grok.shell.getTableView(col.dataFrame.name);
+          if (visualAnalysisCheck.value && view) {
+            view.trellisPlot({
+              xColumnNames: [res.columns.byIndex(0).name],
+              yColumnNames: [res.columns.byIndex(1).name],
+            });
+          } 
+          progressBar.close();
+        } catch (e: any) {
+          grok.shell.error(e);
+          dlg.close();
         }
       } else
         grok.shell.error('No core was provided');

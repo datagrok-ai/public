@@ -17,6 +17,11 @@ import {PhylocanvasGlService} from './utils/phylocanvas-gl-service';
 import {TreeHelper} from './utils/tree-helper';
 import {generateTree} from './utils/tree-generator';
 import {TreeForGridApp} from './apps/tree-for-grid-app';
+import {TreeCutAsTreeApp} from './apps/tree-cut-as-tree-app';
+import {TreeForGridFilterApp} from './apps/tree-for-grid-filter-app';
+import {Dendrogram, MyViewer} from './viewers/dendrogram';
+import {DendrogramApp} from './apps/dendrogram-app';
+import { findNewick } from './scripts-api';
 
 
 export const _package = new DG.Package();
@@ -28,7 +33,7 @@ export const _package = new DG.Package();
 //output: dataframe df
 export function _newickToDf(newick: string, name: string): DG.DataFrame {
   return newickToDf(newick, name);
-};
+}
 
 let _newickHelper: NewickHelper | null = null;
 
@@ -39,31 +44,6 @@ export function getNewickHelper() {
   if (!_newickHelper)
     _newickHelper = new NewickHelper();
   return _newickHelper;
-}
-
-//name: PhyloTree
-//description: Phylogenetic tree visualization
-//tags: viewer
-//output: viewer result
-export function phyloTreeViewer(): PhyloTreeViewer {
-  return new PhyloTreeViewer();
-}
-
-
-//name: PhylocanvasGL
-//description: Phylogenetic tree visualization
-//tags: viewer
-//output: viewer result
-export function phylocanvasGlViewer(): PhylocanvasGlViewer {
-  return new PhylocanvasGlViewer();
-}
-
-
-//name: GridWithTree
-//tags: viewer
-//output: viewer result
-export function gridWithTreeViewer(): GridWithTreeViewer {
-  return new GridWithTreeViewer();
 }
 
 
@@ -90,8 +70,60 @@ export async function nwkTreeViewer(file: DG.FileInfo) {
   return preview;
 }
 
+// -- Viewers --
 
-//name: PhylocanvasGlViewer
+//name: Dendrogram
+//description: Dendrogram tree visualization
+//tags: viewer
+//output: viewer result
+export function dendrogram(): DG.JsViewer {
+  return new Dendrogram();
+}
+
+//name: PhylocanvasGL
+//description: Phylogenetic tree visualization
+//tags: viewer
+//output: viewer result
+export function phylocanvasGlViewer(): PhylocanvasGlViewer {
+  return new PhylocanvasGlViewer();
+}
+
+//name: PhyloTree
+//description: Phylogenetic tree visualization
+//tags: viewer
+//output: viewer result
+export function phyloTreeViewer(): PhyloTreeViewer {
+  return new PhyloTreeViewer();
+}
+
+// //name: GridWithTree
+// //tags: viewer
+// //output: viewer result
+// export function gridWithTreeViewer(): GridWithTreeViewer {
+//   return new GridWithTreeViewer();
+// }
+
+
+// -- apps for tests --
+
+//name: dendrogramApp
+//description: Test/demo app for Dendrogram
+export async function dendrogramApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open Dendrogram app');
+  try {
+    const app = new DendrogramApp();
+    await app.init();
+  } catch (err: unknown) {
+    const msg: string = 'PhyloTreeViewer dendrogramApp() error: ' +
+      `${err instanceof Error ? err.message : (err as Object).toString()}`;
+    grok.shell.error(msg);
+    console.error(msg);
+  } finally {
+    pi.close();
+  }
+}
+
+//name: phylocanvasGlViewerApp
 //description: Test/demo app for PhylocanvasGlViewer
 export async function phylocanvasGlViewerApp() {
   const pi = DG.TaskBarProgressIndicator.create('open PhylocanvasGlViewer app');
@@ -109,7 +141,7 @@ export async function phylocanvasGlViewerApp() {
 }
 
 //name: TreeToGrid
-//description: Test/demo app for TreeInGrid
+//description: Test/demo app for TreeToGrid (PhylocanvasGL based)
 export async function treeToGridApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('open treeInGrid app');
   try {
@@ -129,11 +161,35 @@ export async function treeToGridApp(): Promise<void> {
 }
 
 //name: TreeForGrid
-//description: Test/demo app for TreeInGrid (custom renderer)
+//description: Test/demo app for TreeForGrid (custom renderer)
 export async function treeForGridApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('open treeForGrid app');
   try {
     const app = new TreeForGridApp();
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: TreeForGridFilter
+//description: Test/demo app for TreeForGridFilter (custom renderer)
+export async function treeForGridFilterApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open treeForGrid large app');
+  try {
+    const app = new TreeForGridFilterApp();
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: TreeCutAsTree
+//description: Test/demo app for TreeCutAsTree
+export async function treeCutAsTreeApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open treeCutAsTree app');
+  try {
+    const app = new TreeCutAsTreeApp();
     await app.init();
   } finally {
     pi.close();
@@ -161,6 +217,8 @@ export async function treeInGridCellApp(): Promise<void> {
   }
 }
 
+// -- File handlers --
+
 //name: importNwk
 //description: Opens Newick file
 //tags: file-handler
@@ -170,11 +228,16 @@ export async function treeInGridCellApp(): Promise<void> {
 export async function importNewick(fileContent: string): Promise<DG.DataFrame[]> {
   const df: DG.DataFrame = newickToDf(fileContent, '');
 
-  const app = new PhylocanvasGlViewerApp();
+  // const app = new PhylocanvasGlViewerApp();
+  // await app.init(df);
+
+  const app = new DendrogramApp();
   await app.init(df);
 
   return [];
 }
+
+// -- Custom helpers --
 
 //name: injectTree
 //description: Opens Newick file
@@ -237,3 +300,24 @@ export function generateTreeDialog() {
     })
     .show();
 }
+
+//name: MyViewer
+//description: MyViewer test
+//tags: viewer
+//output: viewer result
+export function myViewer(): DG.JsViewer {
+  return new MyViewer();
+}
+
+//name: newickRepresentation
+//input: dataframe data
+//input: column col
+//output: string newick
+export async function newickRepresentation(data: DG.DataFrame) {
+  const columns = Array.from(data.columns.numerical);
+  for (let i = 0; i < columns.length; ++i) 
+      if (columns[i].type === DG.TYPE.DATE_TIME) 
+        columns.splice(i, 1);
+  return await findNewick(DG.DataFrame.fromColumns(columns));
+}
+

@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, Subscription} from 'rxjs';
+import Timeout = NodeJS.Timeout;
 
 export const tests: {
   [key: string]: {
@@ -160,7 +161,8 @@ export function after(after: () => Promise<void>): void {
 
 
 export async function runTests(options?: { category?: string, test?: string, testContext?: TestContext }) {
-  const results: { category?: string, name?: string, success: boolean, result: string, ms: number, skipped: boolean }[] = [];
+  const results: { category?: string, name?: string, success: boolean,
+                   result: string, ms: number, skipped: boolean }[] = [];
   const packageName = grok.functions.getCurrentCall()?.func?.package;
   console.log(`Running tests`);
   options ??= {};
@@ -208,16 +210,16 @@ export async function runTests(options?: { category?: string, test?: string, tes
   }
   if (options.testContext.report) {
     const logger = new DG.Logger();
-    const successful = results.filter(r => r.success).length;
-    const skipped = results.filter(r => r.skipped).length;
-    const failed = results.filter(r => !r.success);
+    const successful = results.filter((r) => r.success).length;
+    const skipped = results.filter((r) => r.skipped).length;
+    const failed = results.filter((r) => !r.success);
     const description = 'Package @package tested: @successful successful, @skipped skipped, @failed failed tests';
     const params = {
       successful: successful,
       skipped: skipped,
       failed: failed.length,
       package: packageName
-    }
+    };
     for (const r of failed) Object.assign(params, {[`${r.category} | ${r.name}`]: r.result});
     logger.log(description, params, 'package-tested');
   }
@@ -259,23 +261,17 @@ export async function delay(ms: number) {
 
 export async function awaitCheck(checkHandler: () => boolean): Promise<void> {
   return new Promise((resolve, reject) => {
-    let stop: boolean = false;
     setTimeout(() => {
-      stop = true;
+      clearInterval(interval);
       // eslint-disable-next-line prefer-promise-reject-errors
       reject('Timeout exceeded');
     }, 500);
-
-    function check() {
+    const interval: Timeout = setInterval(() => {
       if (checkHandler()) {
-        stop = false;
+        clearInterval(interval);
         resolve();
       }
-      if (!stop)
-        setTimeout(check, 50);
-    }
-
-    check();
+    }, 50);
   });
 }
 

@@ -33,7 +33,7 @@ category('screening tools benchmarks', () => {
     DG.time('Structural Alerts', () => {
       runStructuralAlertsDetection(sarSmall, ruleSetList, smilesCol, ruleSetCol, ruleIdCol, smartsMap, rdkitModule);
     });
-  });
+  }, {skipReason: '#1193'});
 
   test('elementalAnalysis', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));

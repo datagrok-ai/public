@@ -31,7 +31,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         this._sketcher = ketcher;
         (this._sketcher.editor as any).subscribe("change", async (e: any) => {
           this.host!._smiles = await this._sketcher!.getSmiles();
-          this.host!._molfile = await this._sketcher!.getMolfile();
+          this.host!._molfile = this.host!.molFileUnits === grok.chem.MOLV2000 ?
+            await this._sketcher!.getMolfile('v2000'): await this._sketcher!.getMolfile('v3000');
           this.onChanged.next(null);
         });
         this._sketcher.editor.zoom(0.5);
@@ -71,6 +72,14 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   set molFile(molfile: string) {
+    this.setKetcherMolecule(molfile);
+  }
+
+  get molV3000() {
+    return this._sketcher ? this.host!._molfile : this.host!.getMolFile();
+  }
+
+  set molV3000(molfile: string) {
     this.setKetcherMolecule(molfile);
   }
 
