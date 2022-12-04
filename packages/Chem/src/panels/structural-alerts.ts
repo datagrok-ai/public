@@ -6,6 +6,10 @@ import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export async function checkForStructuralAlerts(col: DG.Column<string>): Promise<void> {
+  if (col.length > 500) {
+    grok.shell.info('Could not check structural alerts: too much data (max. 500 rows)');
+    return;
+  }
   const df = col.dataFrame;
   const alertsDf = await grok.data.loadTable(getRdKitWebRoot() + 'files/alert-collection.csv');
   const ruleSetCol = alertsDf.getCol('rule_set_name');
