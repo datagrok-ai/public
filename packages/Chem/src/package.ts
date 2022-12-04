@@ -74,6 +74,8 @@ export async function initChem(): Promise<void> {
   _properties = await _package.getProperties();
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
+  const lastSelectedSketcher = await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
+  window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher ?? '');
   _renderers = new Map();
 }
 
@@ -265,43 +267,37 @@ export function saveAsSdf(): void {
 //input: column molecules {type:categorical; semType: Molecule}
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
-//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
+//input: string methodName { choices:["UMAP", "t-SNE"] }
 export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string): Promise<DG.Viewer | undefined> {
-
+  similarity: number, methodName: string) {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
   }
-
   const axesNames = getEmbeddingColsNames(df);
-  const options: { [key: string]: any } = {
-    'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
-  };
-  return await getActivityCliffs(
-    df,
-    molecules,
-    null as any,
-    axesNames,
-    'Activity cliffs',
-    activities,
-    similarity,
-    'Tanimoto',
-    methodName,
-    DG.SEMTYPE.MOLECULE,
-    {'units': molecules.tags['units']},
-    chemSpace,
-    getSimilaritiesMarix,
-    createTooltipElement,
-    createPropPanelElement,
-    options[methodName]);
+  if (df.rowCount > 500) {
+    ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
+    Do you want to continue?`))
+      .onOK(async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
+        await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
+          methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
+          createTooltipElement, createPropPanelElement);
+        progressBar.close();
+      })
+      .show();
+  } else {
+    await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
+      methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
+      createTooltipElement, createPropPanelElement);
+  }
 }
 
 //top-menu: Chem | Chemical Space...
 //name: Chem Space
 //input: dataframe table
 //input: column molecules { semType: Molecule }
-//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
+//input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
 export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: string,
