@@ -12,15 +12,19 @@ export async function searchWidget(molString: string, searchType: 'similarity' |
   const panel = ui.divV([headerHost, compsHost]);
 
   let table: DG.DataFrame | null;
-  switch (searchType) {
-  case 'similarity':
-    table = await findSimilar(molString, 20, 0, dbdf);
-    break;
-  case 'substructure':
-    table = await searchSubstructure(molString, dbdf);
-    break;
-  default:
-    throw new Error(`DrugBankSearch: No such search type ${searchType}`);
+  try {
+    switch (searchType) {
+    case 'similarity':
+      table = await findSimilar(molString, 20, 0, dbdf);
+      break;
+    case 'substructure':
+      table = await searchSubstructure(molString, dbdf);
+      break;
+    default:
+      throw new Error(`DrugBankSearch: No such search type ${searchType}`);
+    }
+  } catch (e) {
+    return new DG.Widget(ui.divText('Error occurred during search. Molecule is possible malformed'));
   }
 
   compsHost.firstChild?.remove();
