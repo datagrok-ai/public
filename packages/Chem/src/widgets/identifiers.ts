@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 let unichemSources: DG.DataFrame;
 
@@ -132,7 +133,18 @@ export async function getIdMap(smiles: string): Promise<{[k:string]: any} | null
 }
 
 export async function identifiersWidget(smiles: string): Promise<DG.Widget> {
-  const idMap = await getIdMap(smiles);
+  const rdKitModule = getRdKitModule();
+  try {
+    smiles = _convertMolNotation(smiles, 'unknown', 'smiles', rdKitModule);
+  } catch (e) {
+    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+  }
+  let idMap: {[k: string]: any} | null = null;
+  try {
+    idMap = await getIdMap(smiles);
+  } catch (e) {
+    console.warn(e);
+  }
   if (idMap === null)
     return new DG.Widget(ui.divText('Not found in UniChem'));
   for (const [source, identifier] of Object.entries(idMap))
