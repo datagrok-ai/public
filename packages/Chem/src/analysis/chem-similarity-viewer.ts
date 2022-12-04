@@ -56,7 +56,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   }
 
   async render(computeData = true): Promise<void> {
-    if (!this.beforeRender())
+    if (!this.beforeRender()) 
       return;
     if (this.moleculeColumn) {
       if (!this.gridSelect && this.curIdx != this.dataFrame!.currentRowIdx)
@@ -78,9 +78,25 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       let cnt = 0; let cnt2 = 0;
       panel[cnt++] = this.metricsDiv;
       if (this.molCol && this.idxs && this.scores) {
+        if (this.isEditedFromSketcher) {
+          const label = this.sketchButton;
+          const grid = ui.div([
+            renderMolecule(
+              //@ts-ignore
+              this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
+            label],
+          {style: {margin: '5px'}},
+          );
+          let divClass = 'd4-flex-col';
+          divClass += ' d4-current';
+          grid.style.borderStyle = 'solid';
+          grid.style.borderWidth = 'thin';
+          $(grid).addClass(divClass);
+          grids[cnt2++] = grid;
+        }
         for (let i = 0; i < this.molCol.length; ++i) {
           const idx = this.idxs.get(i);
-          const label = idx === this.targetMoleculeIdx ?
+          const label = idx === this.targetMoleculeIdx && !this.isEditedFromSketcher ?
             this.sketchButton : ui.label(`${this.scores.get(i).toPrecision(2)}`, {style: {paddingTop: '5px'}});
           const grid = ui.div([
             renderMolecule(
@@ -94,7 +110,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             divClass += ' d4-current';
             grid.style.backgroundColor = '#ddffd9';
           }
-          if (idx == this.targetMoleculeIdx) {
+          if (idx == this.targetMoleculeIdx && !this.isEditedFromSketcher) {
             divClass += ' d4-current';
             grid.style.borderStyle = 'solid';
             grid.style.borderWidth = 'thin';
