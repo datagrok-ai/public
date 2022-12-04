@@ -131,9 +131,9 @@ export async function rdKitCellRenderer(): Promise<RDKitCellRenderer> {
 //meta-cell-renderer-sem-type: Molecule
 //output: grid_cell_renderer result
 export async function chemCellRenderer(): Promise<DG.GridCellRenderer> {
-  const renderer = _properties.Renderer ?? 'RDKit';
-  if (!_renderers.has(renderer)) {
-    const renderFunctions = DG.Func.find({meta: {chemRendererName: renderer}});
+  const propertiesRenderer: string = _properties.Renderer ?? 'RDKit';
+  if (!_renderers.has(propertiesRenderer)) {
+    const renderFunctions = DG.Func.find({meta: {chemRendererName: propertiesRenderer}});
     if (renderFunctions.length > 0) {
       const r = await renderFunctions[0].apply();
       _renderers.set(_properties.Renderer, r);
@@ -141,7 +141,7 @@ export async function chemCellRenderer(): Promise<DG.GridCellRenderer> {
     }
   }
 
-  renderer.renderer = renderer ?? renderer.renderer;
+  renderer.renderer = _renderers.get(propertiesRenderer)!;
   return renderer;
 }
 
