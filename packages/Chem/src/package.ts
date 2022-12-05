@@ -572,12 +572,6 @@ export function structure2d(smiles: string): DG.Widget {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function structure3d(smiles: string): Promise<DG.Widget> {
-  if (isMolBlock(smiles)) {
-    const mol = getRdKitModule().get_mol(smiles);
-    smiles = mol.get_smiles();
-    mol?.delete();
-  }
-
   return smiles ? structure3dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
