@@ -167,12 +167,17 @@ async function getChildren(
 }
 
 export async function runQuery(conn: DG.DataConnection, queryObject: types.query): Promise<void> {
-  let query = conn.query(queryObject.title, queryObject.content);
-  query = await grok.dapi.queries.save(query);
+  try {
+    let query = conn.query(queryObject.title, queryObject.content);
+    query = await grok.dapi.queries.save(query);
 
-  const df = await query.executeTable();
-  df.name = queryObject.title;
-  grok.shell.addTableView(df);
+    const df = await query.executeTable();
+    df.name = queryObject.title;
+    grok.shell.addTableView(df);
+  } catch (e) {
+    grok.shell.info('Could not run query. See console');
+    console.error(e);
+  }
 }
 
 export async function connectToDb(
@@ -216,29 +221,40 @@ function connectToDbDialog(dataSource: types.dataSource, func: (conn: DG.DataCon
   const dialog = ui.dialog(`Connect to ${connectionName}`)
     .add(ui.divV([helpHost, usernameField, passwordField]))
     .onOK(async () => {
-      const dcParams = {
-        dataSource: dbType!,
-        server: `${dataSource.host}:${dataSource.port}`,
-        db: dataSource.dbname,
-        login: usernameField.stringValue,
-        password: passwordField.value,
-      };
-      let dsConnection = DG.DataConnection.create(connectionName, dcParams);
-      dsConnection = await grok.dapi.connections.save(dsConnection);
-
-      await func(dsConnection);
+      const progress = DG.TaskBarProgressIndicator.create(`Connecting to ${connectionName}...`);
+      try {
+        const dcParams = {
+          dataSource: dbType!,
+          server: `${dataSource.host}:${dataSource.port}`,
+          db: dataSource.dbname,
+          login: usernameField.stringValue,
+          password: passwordField.value,
+        };
+        let dsConnection = DG.DataConnection.create(connectionName, dcParams);
+        dsConnection = await grok.dapi.connections.save(dsConnection);
+        await func(dsConnection);
+      } catch (e) {
+        grok.shell.info('Could not connect to the data source. See console');
+        console.error(e);
+      }
+      progress.close();
     })
     .show();
   return dialog;
 }
 
 export async function getTable(dsConnection: DG.DataConnection, tableObject: types.table): Promise<void> {
-  const query = DG.TableQuery.create(dsConnection);
-  query.table = `${tableObject.schema_name}.${tableObject.name}`;
-  const columns = await alationApi.getColumns(tableObject.id);
-  query.fields = columns.map((v) => v.name);
-  const df = await query.executeTable();
-  df.name = tableObject.name || `Unnamed table id ${tableObject.id}`;
-  const tableView = grok.shell.addTableView(df);
-  tableView.name = tableObject.title ?? df.name;
+  try {
+    const query = DG.TableQuery.create(dsConnection);
+    query.table = `${tableObject.schema_name}.${tableObject.name}`;
+    const columns = await alationApi.getColumns(tableObject.id);
+    query.fields = columns.map((v) => v.name);
+    const df = await query.executeTable();
+    df.name = tableObject.name || `Unnamed table id ${tableObject.id}`;
+    const tableView = grok.shell.addTableView(df);
+    tableView.name = tableObject.title ?? df.name;
+  } catch (e) {
+    grok.shell.info('Could not retreive table. See console');
+    console.error(e);
+  }
 }
