@@ -203,8 +203,8 @@ export namespace chem {
         const mol = (await grok.functions.call('Chem:getRdKitModule')).get_mol(molString, '{"mergeQueryHs":true}');
         if (!mol.has_coords())
           mol.set_new_coords();
-        mol.normalize_depiction();
-        mol.straighten_depiction();
+        mol.normalize_depiction(1);
+        mol.straighten_depiction(false);
         this._molfile = mol.get_molblock();
         this.setMolFile(this._molfile);
         mol?.delete();
@@ -279,7 +279,7 @@ export namespace chem {
         canvas.style.width = '100%';
         ui.tooltip.bind(canvas, 'Click to edit');
         const clearButton = this.createClearSketcherButton(canvas);
-        canvasMol(0, 0, width, height, canvas, this.getMolFile()!, null, {normalizeDepiction: true, straightenDepiction: false})
+        canvasMol(0, 0, width, height, canvas, this.getMolFile()!, null, {normalizeDepiction: true, straightenDepiction: true})
           .then((_) => {
             ui.empty(this.extSketcherDiv);
             this.extSketcherDiv.append(canvas);
