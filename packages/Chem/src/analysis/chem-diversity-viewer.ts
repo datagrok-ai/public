@@ -42,7 +42,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),
             //@ts-ignore
-            {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
+            {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height, popupMenu: false}),
         ], {style: {margin: '5px'}});
 
         let divClass = 'd4-flex-col';

@@ -65,14 +65,14 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   async render(computeData = true): Promise<void> {
     if (!this.beforeRender()) 
       return;
-    if (this.moleculeColumn) {
-      this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;      
-      if (this.isEmptyValue())
-        return;
+    if (this.moleculeColumn) {      
       if (!this.gridSelect && this.curIdx != this.dataFrame!.currentRowIdx)
         this.isEditedFromSketcher = false;
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
+        this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
+        if (this.isEmptyValue())
+          return;
         const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
           this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
         this.molCol = df.getCol('smiles');
@@ -92,7 +92,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const grid = ui.div([
             renderMolecule(
               //@ts-ignore
-              this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
+              this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height, popupMenu: false}),
             label],
           {style: {margin: '5px'}},
           );
@@ -110,7 +110,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const grid = ui.div([
             renderMolecule(
               //@ts-ignore
-              this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
+              this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height, popupMenu: false}),
             label],
           {style: {margin: '5px'}},
           );
