@@ -348,6 +348,11 @@ export abstract class Filter extends Widget {
     );
   }
 
+  /** Gets called when a previously used filter gets moved in the DOM tree.
+   * Normally, you don't need to do anything, but this might be handy for
+   * the iframe-based filters. */
+  refresh() {}
+
   detach(): void {
     super.detach();
     if (this.isFiltering)
