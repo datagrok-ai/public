@@ -99,6 +99,7 @@ export class SubstructureFilter extends DG.Filter {
   /** Override to save filter state. */
   saveState(): any {
     const state = super.saveState();
+    state.type = 'Chem:substructureFilter';
     state.molBlock = this.sketcher.getMolFile();
     return state;
   }
