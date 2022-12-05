@@ -431,6 +431,11 @@ export function addInchisPanel(col: DG.Column): void {
 //input: bool radarView = false
 //input: bool radarGrid = false
 export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarView: boolean, radarGrid: boolean): void {
+  if (molCol.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.info(`The column ${molCol.name} doesn't contain molecules`);
+    return;
+  }
+   
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
   let columnNames: string[] = [];
 
