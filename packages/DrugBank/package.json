@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/drug-bank",
   "friendlyName": "DrugBank",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
@@ -13,7 +13,7 @@
     "directory": "packages/DrugBank"
   },
   "dependencies": {
-    "datagrok-api": "^1.0.0",
+    "datagrok-api": "=1.9.0",
     "cash-dom": "latest",
     "dayjs": "latest",
     "openchemlib": "latest",
