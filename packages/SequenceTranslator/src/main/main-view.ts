@@ -16,7 +16,7 @@ const defaultInput = 'fAmCmGmAmCpsmU'; // todo: capitalize constants
 const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into constants
 const tooltipSequence = 'Copy sequence';
 
-export async function mainView(): Promise<HTMLDivElement> {
+export async function mainView(onSequenceChanged: (seq: string) => void): Promise<HTMLDivElement> {
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
   async function updateTableAndMolecule(sequence: string, inputFormat: string): Promise<void> {
@@ -145,6 +145,7 @@ export async function mainView(): Promise<HTMLDivElement> {
 
   DG.debounce<string>(onInput, 300).subscribe((sequence) => {
     updateTableAndMolecule(sequence, inputFormatChoiceInput.value!);
+    onSequenceChanged(sequence);
   });
 
   const asoGapmersGrid = DG.Viewer.grid(

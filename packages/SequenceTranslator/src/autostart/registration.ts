@@ -1,10 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
-  siRnaNucleotidesToGcrs} from '../structures-works/converters';
+import {
+  siRnaBioSpringToGcrs, siRnaAxolabsToGcrs, gcrsToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12,
+  siRnaNucleotidesToGcrs
+} from '../structures-works/converters';
 import {weightsObj, SYNTHESIZERS} from '../structures-works/map';
-import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES, CELL_STRUCTURE} from './constants';
+import {SEQUENCE_TYPES, COL_NAMES, GENERATED_COL_NAMES} from './constants';
 import {saltMass, saltMolWeigth, molecularWeight, batchMolWeight} from './calculations';
 import {isValidSequence} from '../structures-works/sequence-codes-tools';
 import {sequenceToMolV3000} from '../structures-works/from-monomers';
@@ -17,22 +19,8 @@ import {ICDS} from './ICDs';
 import {SOURCES} from './sources';
 import {IDPS} from './IDPs';
 
-
-function parseStrandsFromDuplexCell(s: string): {SS: string, AS: string} {
-  const arr = s
-    .slice(CELL_STRUCTURE.DUPLEX.BEFORE_SS.length)
-    .split(CELL_STRUCTURE.DUPLEX.BEFORE_AS);
-  return {SS: arr[0], AS: arr[1]};
-}
-
-function parseStrandsFromTriplexOrDimerCell(s: string): {SS: string, AS1: string, AS2: string} {
-  const arr1 = s
-    .slice(CELL_STRUCTURE.TRIPLEX_OR_DIMER.BEFORE_SS.length)
-    .split(CELL_STRUCTURE.TRIPLEX_OR_DIMER.BEFORE_AS1);
-  const arr2 = arr1[1]
-    .split(CELL_STRUCTURE.TRIPLEX_OR_DIMER.BEFORE_AS2);
-  return {SS: arr1[0], AS1: arr2[0], AS2: arr2[1]};
-}
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {parseStrandsFromDuplexCell, parseStrandsFromTriplexOrDimerCell} from '../utils/parse';
 
 async function saveTableAsSdFile(table: DG.DataFrame) {
   if (GENERATED_COL_NAMES.some((colName) => !table.columns.contains(colName))) {
@@ -80,46 +68,50 @@ export function autostartOligoSdFileSubscription() {
 
       // Should be removed after fixing bug https://github.com/datagrok-ai/public/issues/808
       grok.events.onContextMenu.subscribe((args) => {
-        const seqCol = args.args.context.table.currentCol; // /^[fsACGUacgu]{6,}$/
+        if (!(args.args.context instanceof DG.Grid)) return;
+        const grid: DG.Grid = args.args.context as DG.Grid;
+        const menu: DG.Menu = args.args.menu;
+
+        const seqCol = grid.table.currentCol; // /^[fsACGUacgu]{6,}$/
         if (DG.Detector.sampleCategories(seqCol,
           (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|A|U|G|C){6,}$/.test(s))) {
-          args.args.menu.item('Convert raw nucleotides to GCRS', () => {
-            args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+          menu.item('Convert raw nucleotides to GCRS', () => {
+            grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
               return siRnaNucleotidesToGcrs(seqCol.get(i));
             });
           });
         } else if (DG.Detector.sampleCategories(seqCol,
           (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|s|A|C|G|U|a|c|g|u){6,}$/.test(s))) {
-          args.args.menu.item('Convert Axolabs to GCRS', () => {
-            args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+          menu.item('Convert Axolabs to GCRS', () => {
+            grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
               return siRnaAxolabsToGcrs(seqCol.get(i));
             });
           }); // /^[fmpsACGU]{6,}$/
         } else if (DG.Detector.sampleCategories(seqCol,
-          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
-        DG.Detector.sampleCategories(seqCol, (s) => /^(?=.*moe)(?=.*5mC)(?=.*ps){6,}/.test(s))) {
-          args.args.menu.item('Convert GCRS to raw', () => {
-            args.args.context.table.columns.addNewString(seqCol.name + ' to raw').init((i: number) => {
+            (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
+          DG.Detector.sampleCategories(seqCol, (s) => /^(?=.*moe)(?=.*5mC)(?=.*ps){6,}/.test(s))) {
+          menu.item('Convert GCRS to raw', () => {
+            grid.table.columns.addNewString(seqCol.name + ' to raw').init((i: number) => {
               return gcrsToNucleotides(seqCol.get(i));
             });
           });
-          args.args.menu.item('Convert GCRS to MM12', () => {
-            args.args.context.table.columns.addNewString(seqCol.name + ' to MM12').init((i: number) => {
+          menu.item('Convert GCRS to MM12', () => {
+            grid.table.columns.addNewString(seqCol.name + ' to MM12').init((i: number) => {
               return gcrsToMermade12(seqCol.get(i));
             });
           }); // /^[*56789ATGC]{6,}$/
         } else if (DG.Detector.sampleCategories(seqCol,
           (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|\*|5|6|7|8|9|A|T|G|C){6,}$/.test(s))) {
-          args.args.menu.item('Convert Biospring to GCRS', () => {
-            const seqCol = args.args.context.table.currentCol;
-            args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+          menu.item('Convert Biospring to GCRS', () => {
+            const seqCol = grid.table.currentCol;
+            grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
               return asoGapmersBioSpringToGcrs(seqCol.get(i));
             });
           }); // /^[*1-8]{6,}$/
         } else if (DG.Detector.sampleCategories(seqCol,
           (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|\*|1|2|3|4|5|6|7|8){6,}$/.test(s))) {
-          args.args.menu.item('Convert Biospring to GCRS', () => {
-            args.args.context.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
+          menu.item('Convert Biospring to GCRS', () => {
+            grid.table.columns.addNewString(seqCol.name + ' to GCRS').init((i: number) => {
               return siRnaBioSpringToGcrs(seqCol.get(i));
             });
           });
@@ -154,48 +146,87 @@ export function oligoSdFile(table: DG.DataFrame) {
 
     t = removeEmptyRows(t, sequenceCol);
 
+    function handleError(rowI: number, err: any) {
+      const errStr: string = err.toString();
+      const errMsg: string = `Table row #${rowI + 1}, name: '${t.get('Chemistry Name', rowI)}', ` +
+        `type: ${t.get('Type', rowI)} error: ${errStr}.`;
+      grok.shell.warning(errMsg);
+    }
+
     t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => {
-      return ([SEQUENCE_TYPES.DUPLEX, SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) ?
-        chemistryNameCol.get(i) :
-        sequenceCol.get(i);
+      let res: string = '';
+      try {
+        res = ([SEQUENCE_TYPES.DUPLEX, SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) ?
+          chemistryNameCol.get(i) :
+          sequenceCol.get(i);
+      } catch (err) {
+        handleError(i, err);
+      }
+      return res;
     });
 
     t.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => {
-      if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(typeCol.get(i)))
-        return sequenceCol.get(i);
-      else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
-        const obj = parseStrandsFromDuplexCell(sequenceCol.get(i));
-        return `${chemistryNameCol.get(i)}; duplex of SS: ${obj.SS} and AS: ${obj.AS}`;
-      } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) {
-        const obj = parseStrandsFromTriplexOrDimerCell(sequenceCol.get(i));
-        return `${chemistryNameCol.get(i)}; duplex of SS: ${obj.SS} and AS1: ${obj.AS1} and AS2: ${obj.AS2}`;
+      let res: string = '';
+      try {
+        if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(typeCol.get(i)))
+          res = sequenceCol.get(i);
+        else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
+          const obj = parseStrandsFromDuplexCell(sequenceCol.get(i));
+          res = `${chemistryNameCol.get(i)}; duplex of SS: ${obj.SS} and AS: ${obj.AS}`;
+        } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) {
+          const obj = parseStrandsFromTriplexOrDimerCell(sequenceCol.get(i));
+          res = `${chemistryNameCol.get(i)}; duplex of SS: ${obj.SS} and AS1: ${obj.AS1} and AS2: ${obj.AS2}`;
+        }
+      } catch (err) {
+        handleError(i, err);
       }
+      return res;
     });
 
     t.columns.addNewFloat(COL_NAMES.COMPOUND_MOL_WEIGHT).init((i: number) => {
-      if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(typeCol.get(i))) {
-        return (isValidSequence(sequenceCol.get(i), null).indexOfFirstNotValidChar == -1) ?
-          molecularWeight(sequenceCol.get(i), weightsObj) :
-          DG.FLOAT_NULL;
-      } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
-        const obj = parseStrandsFromDuplexCell(sequenceCol.get(i));
-        return (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstNotValidChar == -1)) ?
-          molecularWeight(obj.SS, weightsObj) + molecularWeight(obj.AS, weightsObj) :
-          DG.FLOAT_NULL;
-      } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) {
-        const obj = parseStrandsFromTriplexOrDimerCell(sequenceCol.get(i));
-        return (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstNotValidChar == -1)) ?
-          molecularWeight(obj.SS, weightsObj) + molecularWeight(obj.AS1, weightsObj) +
-          molecularWeight(obj.AS2, weightsObj) :
-          DG.FLOAT_NULL;
+      let res: number = Number.NaN;
+      try {
+        if ([SEQUENCE_TYPES.SENSE_STRAND, SEQUENCE_TYPES.ANTISENSE_STRAND].includes(typeCol.get(i))) {
+          res = (isValidSequence(sequenceCol.get(i), null).indexOfFirstNotValidChar == -1) ?
+            molecularWeight(sequenceCol.get(i), weightsObj) :
+            DG.FLOAT_NULL;
+        } else if (typeCol.get(i) == SEQUENCE_TYPES.DUPLEX) {
+          const obj = parseStrandsFromDuplexCell(sequenceCol.get(i));
+          res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstNotValidChar == -1)) ?
+            molecularWeight(obj.SS, weightsObj) + molecularWeight(obj.AS, weightsObj) :
+            DG.FLOAT_NULL;
+        } else if ([SEQUENCE_TYPES.DIMER, SEQUENCE_TYPES.TRIPLEX].includes(typeCol.get(i))) {
+          const obj = parseStrandsFromTriplexOrDimerCell(sequenceCol.get(i));
+          res = (Object.values(obj).every((seq) => isValidSequence(seq, null).indexOfFirstNotValidChar == -1)) ?
+            molecularWeight(obj.SS, weightsObj) + molecularWeight(obj.AS1, weightsObj) +
+            molecularWeight(obj.AS2, weightsObj) :
+            DG.FLOAT_NULL;
+        }
+      } catch (err) {
+        handleError(i, err);
       }
+      return res;
     });
 
-    t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) =>
-      saltMass(saltNamesList, molWeightCol, equivalentsCol, i, saltCol));
+    t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
+      let res: number = Number.NaN;
+      try {
+        res = saltMass(saltNamesList, molWeightCol, equivalentsCol, i, saltCol);
+      } catch (err) {
+        handleError(i, err);
+      }
+      return res;
+    });
 
-    t.columns.addNewFloat(COL_NAMES.SALT_MOL_WEIGHT).init((i: number) =>
-      saltMolWeigth(saltNamesList, saltCol, molWeightCol, i));
+    t.columns.addNewFloat(COL_NAMES.SALT_MOL_WEIGHT).init((i: number) => {
+      let res: number = Number.NaN;
+      try {
+        res = saltMolWeigth(saltNamesList, saltCol, molWeightCol, i);
+      } catch (err) {
+        handleError(i, err);
+      }
+      return res;
+    });
 
     const compoundMolWeightCol = t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT);
     const saltMassCol = t.getCol(COL_NAMES.SALT_MASS);
@@ -229,11 +260,15 @@ export function oligoSdFile(table: DG.DataFrame) {
       view.dataFrame.getCol(COL_NAMES.IDP).setTag(DG.TAGS.CHOICES, stringify(idpsDf.columns.byIndex(0).toList()));
 
       grok.events.onContextMenu.subscribe((args) => {
+        if (!(args.args.context instanceof DG.Grid)) return;
+        const grid: DG.Grid = args.args.context as DG.Grid;
+        const menu: DG.Menu = args.args.menu;
+
         if ([COL_NAMES.TYPE, COL_NAMES.OWNER, COL_NAMES.SALT, COL_NAMES.SOURCE, COL_NAMES.ICD, COL_NAMES.IDP]
-          .includes(args.args.context.table.currentCol.name)) {
-          args.args.menu.item('Fill Column With Value', () => {
-            const v = args.args.context.table.currentCell.value;
-            args.args.context.table.currentCell.column.init(v);
+          .includes(grid.table.currentCol.name)) {
+          menu.item('Fill Column With Value', () => {
+            const v = grid.table.currentCell.value;
+            grid.table.currentCell.column.init(v);
             for (let i = 0; i < view.dataFrame.rowCount; i++)
               updateCalculatedColumns(view.dataFrame, i);
           });
