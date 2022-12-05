@@ -761,11 +761,24 @@ export function useAsSubstructureFilter(mol: string): void {
   if (molCol == null)
     throw 'Molecule column not found.';
 
+  let molblock = molToMolblock(mol, getRdKitModule());
+
+  //in case molecule is smiles setting correct coordinates to save molecule orientation in filter
+  if (!isMolBlock(mol)) {
+    const mol = getRdKitModule().get_mol(molblock);
+    if (!mol.has_coords())
+      mol.set_new_coords();
+    mol.normalize_depiction(1);
+    mol.straighten_depiction(false);
+    molblock = mol.get_molblock();
+    mol.delete();
+  };  
+  
   tv.getFiltersGroup({createDefaultFilters: false}).add({
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
     column: molCol.name,
     columnName: molCol.name,
-    molBlock: molToMolblock(mol, getRdKitModule())
+    molBlock: molblock,
   });
 }
 
