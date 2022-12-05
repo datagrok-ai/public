@@ -8,6 +8,7 @@ import '../css/computation-view.css';
 import dayjs from 'dayjs';
 import {historyUtils} from './history-utils';
 
+const url = new URL(grok.shell.startUri);
 /**
  * Base class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md).
  * In most cases, the computation is a simple {@link Func}
@@ -29,9 +30,7 @@ export class ComputationView extends FunctionView {
     * @stability Stable
   */
   constructor(funcName?: string) {
-    const url = new URL(grok.shell.startUri);
     const runId = url.searchParams.get('id');
-
     super();
 
     this.parentCall = grok.functions.getCurrentCall();
@@ -50,6 +49,7 @@ export class ComputationView extends FunctionView {
         await this.onAfterLoadRun(urlRun);
         this.setRunViewReadonly();
         ui.setUpdateIndicator(this.root, false);
+        url.searchParams.delete('id');
       }, 0);
     } else {
       if (funcName) {
