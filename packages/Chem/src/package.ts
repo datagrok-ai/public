@@ -392,7 +392,6 @@ export function rGroupsAnalysisMenu(): void {
 //top-menu: Chem | Substituent Analysis...
 //name: substituentAnalysis
 //input: dataframe table
-//output: viewer result
 export function substituentAnalysisMenu(table: DG.DataFrame): void {
   const packageExists = checkPackage('Charts', '_SubstituentAnalysisViewer');
   if (packageExists) {
