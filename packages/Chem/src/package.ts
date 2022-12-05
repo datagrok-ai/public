@@ -1,49 +1,61 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
+
+import '../css/chem.css';
 import * as chemSearches from './chem-searches';
-import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
+import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
+import {assure} from '@datagrok-libraries/utils/src/test';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
+import {_importSdf} from './open-chem/sdf-importer';
+import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
+import Sketcher = DG.chem.Sketcher;
+import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
+import {scaffoldTreeGeneration} from './scripts-api';
+import {elementsTable} from './constants';
+import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
+
+//widget imports
+import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {drugLikenessWidget} from './widgets/drug-likeness';
+import {gasteigerChargesWidget} from './widgets/gasteiger-charges';
+import {identifiersWidget} from './widgets/identifiers';
 import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
-import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
-import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
+
+//panels imports
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
+import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
+import {checkForStructuralAlerts} from './panels/structural-alerts';
+
+//utils imports
+import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {_rdKitModule} from './utils/chem-common-rdkit';
-import {rGroupAnalysis} from './analysis/r-group-analysis';
-import {identifiersWidget} from './widgets/identifiers';
-import {_convertMolNotation, isMolBlock, MolNotation} from './utils/convert-notation-utils';
-import '../css/chem.css';
-import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
-import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
-import {saveAsSdfDialog} from './utils/sdf-utils';
-import {Fingerprint} from './utils/chem-common';
-import {assure} from '@datagrok-libraries/utils/src/test';
-import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
-import {_importSdf} from './open-chem/sdf-importer';
-import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import Sketcher = DG.chem.Sketcher;
-import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {checkForStructuralAlerts} from './panels/structural-alerts';
-import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
-import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
-import {elementsTable} from './constants';
-import {getSimilaritiesMarix} from './utils/similarity-utils';
+import {_convertMolNotation, isMolBlock} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
-import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
+import {saveAsSdfDialog} from './utils/sdf-utils';
+import {getSimilaritiesMarix} from './utils/similarity-utils';
+
+//analytical imports
+import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
+import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
+import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
+import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
+import {rGroupAnalysis} from './analysis/r-group-analysis';
+
+//file importers
+import {_importTripos} from './file-importers/mol2-importer';
 import {_importSmi} from './file-importers/smi-importer';
-import {scaffoldTreeGeneration} from './scripts-api';
-import { gasteigerChargesWidget } from './widgets/gasteiger-charges';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -692,6 +704,21 @@ export function importSdf(bytes: Uint8Array): DG.DataFrame[] | void {
 export function importSmi(bytes: Uint8Array): DG.DataFrame[] | void {
   try {
     return _importSmi(Uint8Array.from(bytes));
+  } catch(e:any){
+    grok.shell.warning('file is not supported or malformed');
+    grok.shell.error(e);
+  }
+}
+
+//name: importMol2
+//description: Opens smi file
+//tags: file-handler
+//meta.ext: mol2
+//input: list bytes
+//output: list tables
+export function importMol2(bytes: Uint8Array): DG.DataFrame[] | void {
+  try {
+    return _importTripos(Uint8Array.from(bytes));
   } catch(e:any){
     grok.shell.warning('file is not supported or malformed');
     grok.shell.error(e);
