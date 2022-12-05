@@ -36,6 +36,10 @@ export function isMolBlock(s: string | null) {
   return s != null && s.includes('M  END');
 }
 
+interface IStoredMolecule {
+  molfile: string;
+  smiles: string
+}
 
 /** Cheminformatics-related routines */
 export namespace chem {
@@ -401,12 +405,12 @@ export namespace chem {
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.getMolFile()))
           .group('Recent')
-          .items(Sketcher.getRecent().map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })
+          .items(Sketcher.getRecent().map((m) => ui.tools.click(this.drawToCanvas(150, 60, m.molfile), () => this.setMolecule(m.molfile))), () => { })
           .endGroup()
           .group('Favorites')
           .item('Add to Favorites', () => Sketcher.addFavorite(this.getMolFile()))
           .separator()
-          .items(Sketcher.getFavorites().map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })
+          .items(Sketcher.getFavorites().map((m) => ui.tools.click(this.drawToCanvas(150, 60, m.molfile), () => this.setMolecule(m.molfile))), () => { })
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
@@ -433,7 +437,7 @@ export namespace chem {
     static readonly FAVORITES_KEY = 'chem-molecule-favorites';
     static readonly RECENT_KEY = 'chem-molecule-recent';
 
-    static getFavorites(): string[] {
+    static getFavorites(): IStoredMolecule[] {
       return JSON.parse(localStorage.getItem(Sketcher.FAVORITES_KEY) ?? '[]');
     }
 
@@ -442,7 +446,7 @@ export namespace chem {
       Sketcher.checkDuplicatesAndAddToStorage(favorites, molecule, Sketcher.FAVORITES_KEY);
     }
 
-    static getRecent(): string[] {
+    static getRecent(): IStoredMolecule[] {
       return JSON.parse(localStorage.getItem(Sketcher.RECENT_KEY) ?? '[]');
     }
 
@@ -451,21 +455,17 @@ export namespace chem {
       Sketcher.checkDuplicatesAndAddToStorage(recent, molecule, Sketcher.RECENT_KEY);
     }
 
-    static checkDuplicatesAndAddToStorage(storage: string[], molecule: string, localStorageKey: string) {
+    static checkDuplicatesAndAddToStorage(storage: IStoredMolecule[], molecule: string, localStorageKey: string) {
+      let mol: any;
       grok.functions.call('Chem:getRdKitModule').then((rdKit: any) => {
-        function compareTwoMols(rdkitModule: any, molfile1: any, molfile2: any): boolean {
-          const mol1 = rdkitModule.get_mol(molfile1);
-          const mol2 = rdkitModule.get_mol(molfile2);
-          const match1 = mol1.get_substruct_match(mol2);
-          const match2 = mol2.get_substruct_match(mol1);
-          const result = match1 !== '{}' && match2 !== '{}'
-          mol2.delete();
-          return result;
-        }
-        if (!storage.filter(mol => compareTwoMols(rdKit, mol, molecule)).length && !Sketcher.isEmptyMolfile(molecule)) {
-          let s = JSON.stringify([...storage.slice(-9), molecule]);
+        mol = rdKit.get_mol(molecule);
+        const smiles = mol.get_smiles();         
+        if (!storage.filter(mol => mol.smiles === smiles).length && !Sketcher.isEmptyMolfile(molecule)) {
+          let s = JSON.stringify([...storage.slice(-9), {molfile: molecule, smiles: smiles}]);
           localStorage.setItem(localStorageKey, s);
         }
+      }).finally(() => {
+        mol.delete();
       });
     }
 
