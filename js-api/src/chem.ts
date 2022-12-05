@@ -104,6 +104,8 @@ export namespace chem {
     async init(host: Sketcher) {
       this.host = host;
     }
+
+    refresh(): void {}
   }
 
 

@@ -82,6 +82,10 @@ export class SubstructureFilter extends DG.Filter {
       this.sketcher.setMolFile(this.column?.temp['chem-scaffold-filter']);
   }
 
+  refresh() {
+    this.sketcher.sketcher?.refresh();
+  }
+
   detach() {
     super.detach();
     if (this.column?.temp['chem-scaffold-filter'])
