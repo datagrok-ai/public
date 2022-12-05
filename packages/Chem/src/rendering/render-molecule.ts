@@ -11,11 +11,12 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 export function renderMolecule(
   molStr: string,
   options?: {renderer?: 'RDKit' | 'OpenChemLib',
-  width?: number, height?: number}): HTMLElement {
+  width?: number, height?: number, popupMenu?: boolean}): HTMLElement {
   options ??= {};
   options.renderer ??= _properties.Renderer as 'RDKit' | 'OpenChemLib' ?? 'RDKit';
   options.width ??= 200;
   options.height ??= 100;
+  options.popupMenu ??= true;
 
   //let mol: OCL.Molecule | RDMol | null = null;
   let molFile: string;
@@ -39,35 +40,41 @@ export function renderMolecule(
     });
   }
 
-  const moreBtn = ui.iconFA(
-    'ellipsis-v',
-    () => {
-      const menu = DG.Menu.popup();
-      menu.item('Copy SMILES', () => {
-        navigator.clipboard.writeText(smiles);
-        grok.shell.info('SMILES copied to clipboard');
-      });
-      menu.item('Copy Molfile', () => {
-        navigator.clipboard.writeText(molFile);
-        grok.shell.info('Molfile copied to clipboard');
-      });
-      menu.item('Sketch', () => {
-        const sketcher = new DG.chem.Sketcher();
-        isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
-        ui.dialog()
-          .add(sketcher)
-          .show();
-      });
-      menu.item('Explore', () => {
-        grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
-      });
-      menu.show();
-    },
-    'More',
-  );
-  $(moreBtn).addClass('chem-mol-view-icon pep-more-icon');
+  const div = ui.divV([], 'chem-mol-box');
 
-  return ui.divV([moreBtn, moleculeHost], 'chem-mol-box');
+  if (options.popupMenu) {
+    const moreBtn = ui.iconFA(
+      'ellipsis-v',
+      () => {
+        const menu = DG.Menu.popup();
+        menu.item('Copy SMILES', () => {
+          navigator.clipboard.writeText(smiles);
+          grok.shell.info('SMILES copied to clipboard');
+        });
+        menu.item('Copy Molfile', () => {
+          navigator.clipboard.writeText(molFile);
+          grok.shell.info('Molfile copied to clipboard');
+        });
+        menu.item('Sketch', () => {
+          const sketcher = new DG.chem.Sketcher();
+          isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
+          ui.dialog()
+            .add(sketcher)
+            .show();
+        });
+        menu.item('Explore', () => {
+          grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
+        });
+        menu.show();
+      },
+      'More',
+    );
+    $(moreBtn).addClass('chem-mol-view-icon pep-more-icon');
+    div.append(moreBtn);
+  }
+  div.append(moleculeHost);
+
+  return div;
 }
 
 export function _svgDiv(mol: any): HTMLDivElement {
