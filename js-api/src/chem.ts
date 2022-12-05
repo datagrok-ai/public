@@ -437,8 +437,8 @@ export namespace chem {
     }
 
     static addFavorite(molecule: string) {
-      let s = JSON.stringify([...Sketcher.getFavorites().slice(-9), molecule]);
-      localStorage.setItem(Sketcher.FAVORITES_KEY, s);
+      const favorites = Sketcher.getRecent();
+      Sketcher.checkDuplicatesAndAddToStorage(favorites, molecule, Sketcher.FAVORITES_KEY);
     }
 
     static getRecent(): string[] {
@@ -446,10 +446,26 @@ export namespace chem {
     }
 
     static addRecent(molecule: string) {
-      if (!Sketcher.getRecent().includes(molecule) && !Sketcher.isEmptyMolfile(molecule)) {
-        let s = JSON.stringify([...Sketcher.getRecent().slice(-9), molecule]);
-        localStorage.setItem(Sketcher.RECENT_KEY, s);
-      }
+      const recent = Sketcher.getRecent();
+      Sketcher.checkDuplicatesAndAddToStorage(recent, molecule, Sketcher.RECENT_KEY);
+    }
+
+    static checkDuplicatesAndAddToStorage(storage: string[], molecule: string, localStorageKey: string) {
+      grok.functions.call('Chem:getRdKitModule').then((rdKit: any) => {
+        function compareTwoMols(rdkitModule: any, molfile1: any, molfile2: any): boolean {
+          const mol1 = rdkitModule.get_mol(molfile1);
+          const mol2 = rdkitModule.get_mol(molfile2);
+          const match1 = mol1.get_substruct_match(mol2);
+          const match2 = mol2.get_substruct_match(mol1);
+          const result = match1 !== '{}' && match2 !== '{}'
+          mol2.delete();
+          return result;
+        }
+        if (!storage.filter(mol => compareTwoMols(rdKit, mol, molecule)).length && !Sketcher.isEmptyMolfile(molecule)) {
+          let s = JSON.stringify([...storage.slice(-9), molecule]);
+          localStorage.setItem(localStorageKey, s);
+        }
+      });
     }
 
     static isEmptyMolfile(molFile: string): boolean {
