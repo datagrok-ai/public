@@ -179,7 +179,8 @@ export async function connectToDb(
   dataSrouceId: number, handler: (conn: DG.DataConnection) => Promise<void>): Promise<void> {
   const dataSource = await alationApi.getDataSourceById(dataSrouceId);
   const connName = dataSource.title || dataSource.qualified_name || dataSource.dbname;
-  const dsConnections = await grok.dapi.connections.filter(connName).list();
+  const thisUser = await grok.dapi.users.current();
+  const dsConnections = (await grok.dapi.connections.filter(connName).list()).filter((c) => c.author.id == thisUser.id);
 
   for (const conn of dsConnections) {
     if (await grok.dapi.permissions.check(conn, "Edit"))
