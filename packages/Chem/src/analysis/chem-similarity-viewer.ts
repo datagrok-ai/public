@@ -33,13 +33,20 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     this.hotSearch = this.bool('hotSearch', true);
     this.sketchButton = ui.button('Sketch', () => {
       const sketcher = new grok.chem.Sketcher();
+      const savedMolecule = this.targetMolecule;
       sketcher.setMolecule(this.targetMolecule);
       ui.dialog()
         .add(sketcher.root)
         .onOK(() => {
           this.isEditedFromSketcher = true;
-          this.sketchedMolecule = sketcher.getMolFile();
-          this.render();
+          const editedMolecule = sketcher.getMolFile();
+          if (DG.chem.Sketcher.isEmptyMolfile(editedMolecule)) {
+            grok.shell.error(`Empty molecule cannot be used for similarity search`);
+            this.sketchedMolecule = savedMolecule;
+          } else {
+            this.sketchedMolecule = sketcher.getMolFile();         
+            this.render();
+          }
         })
         .show();
     });
@@ -59,11 +66,13 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     if (!this.beforeRender()) 
       return;
     if (this.moleculeColumn) {
+      this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;      
+      if (this.isEmptyValue())
+        return;
       if (!this.gridSelect && this.curIdx != this.dataFrame!.currentRowIdx)
         this.isEditedFromSketcher = false;
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
-        this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
         const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
           this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
         this.molCol = df.getCol('smiles');
@@ -142,6 +151,16 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
     }
+  }
+
+  isEmptyValue(): boolean {
+    if (!this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
+      grok.shell.error(`Empty molecule cannot be used for similarity search`);
+      if (this.root.hasChildNodes())
+        this.root.removeChild(this.root.childNodes[0]);
+      return true;
+    }
+    return false;
   }
 }
 
