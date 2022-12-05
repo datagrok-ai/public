@@ -44,6 +44,7 @@ import './ui/image';
 import './ui/users';
 import './ui/groups';
 import './ui/tags';
+import './ui/sharing';
 import './package/upload';
 //import './viewers/viewers-adding';
 import './viewers/viewers';

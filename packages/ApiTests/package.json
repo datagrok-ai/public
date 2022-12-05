@@ -13,7 +13,7 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.15.5",
+    "@datagrok-libraries/utils": "^1.17.7",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.8.1",
     "dayjs": "latest",
