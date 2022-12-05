@@ -36,6 +36,7 @@ export function isMolBlock(s: string | null) {
   return s != null && s.includes('M  END');
 }
 
+
 /** Cheminformatics-related routines */
 export namespace chem {
 
@@ -499,7 +500,8 @@ export namespace chem {
           callback();
         if (this.syncCurrentObject) {
           const molFile = this.getMolFile();
-          grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
+          if (!Sketcher.isEmptyMolfile(molFile))
+            grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
         }
       });
     }
