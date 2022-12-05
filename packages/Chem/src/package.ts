@@ -851,7 +851,25 @@ export async function callChemDiversitySearch(
 //input: dataframe data
 //output: string result
 export async function scaffoldTree(data: DG.DataFrame) {
-  const smilesColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  const invalid: number[] = new Array<number>();
+  const smiles = molColumn?.getTag(DG.TAGS.UNITS) === 'smiles';
+  const smilesList: string[] = [];
+  for (let rowI = 0; rowI < molColumn!.length; rowI++) {
+    let el: string = molColumn?.get(rowI);
+    if (!smiles) 
+      try {
+        el = convertMolNotation(el, 'molblock', 'smiles');
+      } 
+      catch {
+        invalid.push(rowI);
+      }
+    
+    smilesList[rowI] = el;
+  }
+  const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
+  smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
+  data.columns.add(smilesColumn);
   const scriptRes = await scaffoldTreeGeneration(data, smilesColumn!.name, smilesColumn!.name);
   return scriptRes;
 }
