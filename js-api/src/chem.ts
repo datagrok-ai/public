@@ -458,7 +458,12 @@ export namespace chem {
     static checkDuplicatesAndAddToStorage(storage: IStoredMolecule[], molecule: string, localStorageKey: string) {
       let mol: any;
       grok.functions.call('Chem:getRdKitModule').then((rdKit: any) => {
-        mol = rdKit.get_mol(molecule);
+        try { 
+          mol = rdKit.get_mol(molecule); 
+        }
+        catch (e: any){
+          throw(`Molecule is possibly malformed`);
+        }
         const smiles = mol.get_smiles();         
         if (!storage.filter(mol => mol.smiles === smiles).length && !Sketcher.isEmptyMolfile(molecule)) {
           let s = JSON.stringify([...storage.slice(-9), {molfile: molecule, smiles: smiles}]);
