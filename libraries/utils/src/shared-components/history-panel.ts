@@ -81,6 +81,7 @@ export class HistoryPanel {
         const filteringText = new Subject();
 
         const textInput = ui.stringInput('Search', '', (v: string) => filteringText.next(v));
+        textInput.root.style.display = 'none';
         DG.debounce(filteringText.asObservable(), 600).subscribe(() => {
           this.store.filteringOptions.text = textInput.stringValue;
           this.favRunsFilter.next();
@@ -102,6 +103,8 @@ export class HistoryPanel {
           this.store.filteringOptions.author = (v === 'Anyone') ? undefined : v as DG.User;
           this.sharedRunsFilter.next();
         });
+        authorInput.root.style.display = 'none';
+
         dateInput.addPatternMenu('datetime');
         const form = ui.divV([
           textInput,
