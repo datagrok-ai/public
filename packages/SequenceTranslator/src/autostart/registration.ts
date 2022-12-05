@@ -230,8 +230,15 @@ export function oligoSdFile(table: DG.DataFrame) {
 
     const compoundMolWeightCol = t.getCol(COL_NAMES.COMPOUND_MOL_WEIGHT);
     const saltMassCol = t.getCol(COL_NAMES.SALT_MASS);
-    t.columns.addNewFloat(COL_NAMES.BATCH_MOL_WEIGHT).init((i: number) =>
-      batchMolWeight(compoundMolWeightCol, saltMassCol, i));
+    t.columns.addNewFloat(COL_NAMES.BATCH_MOL_WEIGHT).init((i: number) => {
+      let res: number = Number.NaN;
+      try {
+        res = batchMolWeight(compoundMolWeightCol, saltMassCol, i);
+      } catch (err) {
+        handleError(i, err);
+      }
+      return res;
+    });
 
     grok.shell.getTableView(table.name).grid.columns.setOrder(Object.values(COL_NAMES));
     addColumnsPressed = true;
