@@ -321,7 +321,10 @@ export abstract class Filter extends Widget {
   /** Override to save filter state. */
   saveState(): any {
     console.log('save state');
-    return { columnName: this.columnName };
+    return {
+      column: this.columnName,
+      columnName: this.columnName
+    };
   }
 
   /** Override to load filter state. */
