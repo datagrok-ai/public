@@ -1,0 +1,10 @@
+{
+    "name": "Analyzer",    
+    "folder": "../wasm",
+    "source": ["pcaExport.cpp","PCA/PCA.cpp","plsExport.cpp","PLS/pls.cpp"],    
+    "optimizationMode": "-O3",    
+    "packageFile": "../src/package.js",
+    "packageJsonFile": "../package.json",    
+    "runtimeSystemFile": "../wasm/callWasm.js",
+    "totalMemory": "268435456"
+}
