@@ -1,7 +1,6 @@
 #name: GlomEnvTestInplace
 #environment: channels: [conda-forge], dependencies: [python=3.7, requests, dataclasses, glom, {pip: [requests]}]
 #language: python
-#top-menu: Test | Environment Test (in-place)
 #output: string result
 
 import json, os, base64, uuid, re, requests

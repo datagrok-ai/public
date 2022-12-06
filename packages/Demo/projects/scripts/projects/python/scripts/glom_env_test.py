@@ -1,7 +1,6 @@
 #name: GlomEnvTest
 #environment: glom
 #language: python
-#top-menu: Test | Environment Test
 #output: string result
 
 import json, os, base64, uuid, re, requests
