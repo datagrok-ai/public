@@ -1,4 +1,4 @@
-#name: GlomEnvTest
+#name: GlomEnvTestGlobal
 #environment: Demo:Scripts:glom_global
 #language: python
 #output: string result
