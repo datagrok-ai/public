@@ -22,9 +22,9 @@ import {IDPS} from './IDPs';
 import {sdfAddColumns} from '../utils/sdf-add-columns';
 import {sdfSaveTable} from '../utils/sdf-save-table';
 
-export function sdfHandleErrorUI(df: DG.DataFrame, rowI: number, err: any) {
+export function sdfHandleErrorUI(msgPrefix: string, df: DG.DataFrame, rowI: number, err: any) {
   const errStr: string = err.toString();
-  const errMsg: string = `Table row #${rowI + 1}, name: '${df.get('Chemistry Name', rowI)}', ` +
+  const errMsg: string = msgPrefix + `row #${rowI + 1}, name: '${df.get('Chemistry Name', rowI)}', ` +
     `type: ${df.get('Type', rowI)} error: ${errStr}.`;
   grok.shell.warning(errMsg);
 }
@@ -115,14 +115,14 @@ export function oligoSdFile(table: DG.DataFrame) {
           ui.button('Add columns',
             () => {
               newDf = sdfAddColumns(table, saltNamesList, saltsMolWeightList,
-                (rowI, err) => { sdfHandleErrorUI(table, rowI, err); });
+                (rowI, err) => { sdfHandleErrorUI('Error on ', table, rowI, err); });
               grok.shell.getTableView(newDf.name).grid.columns.setOrder(Object.values(COL_NAMES));
             },
             `Add columns: '${GENERATED_COL_NAMES.join(`', '`)}'`),
           ui.bigButton('Save SDF', () => {
             const df: DG.DataFrame = newDf ?? table;
             sdfSaveTable(df,
-              (rowI, err) => { sdfHandleErrorUI(df, rowI, err); });
+              (rowI, err) => { sdfHandleErrorUI('Skip ', df, rowI, err); });
           }, 'Save SD file'),
         ])
       );
