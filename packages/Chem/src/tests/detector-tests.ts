@@ -39,7 +39,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     let df = await dfFromColWithOneCategory('result', 'NO', 10);
     let col = df.columns.byName('result');
     await grok.data.detectSemanticTypes(df);
-    expect(col.semType, null);
+    expect(col.semType != DG.SEMTYPE.MOLECULE, true);
 
     df = await dfFromColWithOneCategory('smiles', 'NO', 10);
     col = df.columns.byName('smiles');
@@ -50,7 +50,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`;
     df = await dfFromColWithOneCategory('smiles', 'OK', 10);
     col = df.columns.byName('smiles');
     await grok.data.detectSemanticTypes(df);
-    expect(col.semType, null);
+    expect(col.semType != DG.SEMTYPE.MOLECULE, true);
   });
 
   test('detectMolblock', async () => {
