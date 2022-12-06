@@ -9,18 +9,14 @@ module.exports = {
       filename: 'package-test.js',
       library: {type: 'var', name: `${packageName}_test`},
       import: './src/package-test.ts',
-    },
+    }
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.wasm', '.mjs', '.js', '.json'],
+    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
   },
   module: {
     rules: [
-      {
-        test: /\.ts(x?)$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
-      },
+      {test: /\.tsx?$/, loader: 'ts-loader'}
     ],
   },
   devtool: 'inline-source-map',
@@ -30,8 +26,7 @@ module.exports = {
     'datagrok-api/ui': 'ui',
     // 'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
-    'rxjs/operators': 'rxjs.operators',
-    'wu': 'wu',
+    'rxjs/operators': 'rxjs.operators'
   },
   output: {
     filename: '[name].js',
