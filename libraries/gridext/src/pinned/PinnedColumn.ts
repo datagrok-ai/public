@@ -974,13 +974,15 @@ export class PinnedColumn {
       {
         const bitsetSel = dframe.selection;
 
-        let nRowMin = this.m_nRowGridDragging < nRowGrid ? this.m_nRowGridDragging : nRowGrid;
-        let nRowMax = this.m_nRowGridDragging > nRowGrid ? this.m_nRowGridDragging : nRowGrid;
+        let nRowGridMin = this.m_nRowGridDragging < nRowGrid ? this.m_nRowGridDragging : nRowGrid;
+        let nRowGridMax = this.m_nRowGridDragging > nRowGrid ? this.m_nRowGridDragging : nRowGrid;
 
         if(bCtrl) {
-          nRowMin = nRowGrid;
-          nRowMax = nRowGrid;
-          let bCurSel = bitsetSel.get(nRowGrid);
+          nRowGridMin = nRowGrid;
+          nRowGridMax = nRowGrid;
+          const cellGrid = grid.cell("", nRowGridMin);
+          const nRowTable = cellGrid.tableRowIndex;
+          const bCurSel = nRowTable === null ? false : bitsetSel.get(nRowTable);
           bSel = !bCurSel;
         }
         else if(bRangeSel) {
@@ -988,12 +990,15 @@ export class PinnedColumn {
           if(nRowGridActive === null)
             nRowGridActive = 0;
 
-          if(nRowMin == nRowMax) {
-            bitsetSel.setAll(false, true);
+          if(nRowGridMin === nRowGridMax) {
+            bitsetSel.setAll(false, false);
 
-            nRowMin = nRowGridActive < nRowGrid ? nRowGridActive : nRowGrid;
-            nRowMax = nRowGridActive > nRowGrid ? nRowGridActive : nRowGrid;
+            nRowGridMin = nRowGridActive < nRowGrid ? nRowGridActive : nRowGrid;
+            nRowGridMax = nRowGridActive > nRowGrid ? nRowGridActive : nRowGrid;
           }
+        }
+        else {
+          bitsetSel.setAll(false, false);
         }
 
 
@@ -1002,7 +1007,7 @@ export class PinnedColumn {
 
         let cellRH = null;
         let nRowTable = -1;
-        for(let nRow=nRowMin; nRow<=nRowMax; ++nRow) {
+        for(let nRow=nRowGridMin; nRow<=nRowGridMax; ++nRow) {
 
           try {
             cellRH = grid.cell("", nRow);
