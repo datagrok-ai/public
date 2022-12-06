@@ -24,17 +24,17 @@ import {findMutations} from './utils/algorithms';
 export class PeptidesModel {
   static modelName = 'peptidesModel';
 
-  mutationCliffsGridSubject = new rxjs.Subject<DG.Grid>();
-  mostPotentResiduesGridSubject = new rxjs.Subject<DG.Grid>();
-  logoSummaryGridSubject = new rxjs.Subject<DG.Grid>();
+  // mutationCliffsGridSubject = new rxjs.Subject<DG.Grid>();
+  // mostPotentResiduesGridSubject = new rxjs.Subject<DG.Grid>();
+  // logoSummaryGridSubject = new rxjs.Subject<DG.Grid>();
   settingsSubject = new rxjs.Subject();
 
   _isUpdating: boolean = false;
   isBitsetChangedInitialized = false;
   isCellChanging = false;
 
-  mutationCliffsGrid!: DG.Grid;
-  mostPotentResiduesGrid!: DG.Grid;
+  // mutationCliffsGrid!: DG.Grid;
+  // mostPotentResiduesGrid!: DG.Grid;
   // logoSummaryGrid!: DG.Grid;
   // sourceGrid!: DG.Grid;
   df: DG.DataFrame;
@@ -164,17 +164,17 @@ export class PeptidesModel {
     return this._analysisView;
   }
 
-  get onMutationCliffsGridChanged(): rxjs.Observable<DG.Grid> {
-    return this.mutationCliffsGridSubject.asObservable();
-  }
+  // get onMutationCliffsGridChanged(): rxjs.Observable<DG.Grid> {
+  //   return this.mutationCliffsGridSubject.asObservable();
+  // }
 
-  get onMostPotentResiduesGridChanged(): rxjs.Observable<DG.Grid> {
-    return this.mostPotentResiduesGridSubject.asObservable();
-  }
+  // get onMostPotentResiduesGridChanged(): rxjs.Observable<DG.Grid> {
+  //   return this.mostPotentResiduesGridSubject.asObservable();
+  // }
 
-  get onLogoSummaryGridChanged(): rxjs.Observable<DG.Grid> {
-    return this.logoSummaryGridSubject.asObservable();
-  }
+  // get onLogoSummaryGridChanged(): rxjs.Observable<DG.Grid> {
+  //   return this.logoSummaryGridSubject.asObservable();
+  // }
 
   get onSettingsChanged(): rxjs.Observable<unknown> {
     return this.settingsSubject.asObservable();
@@ -317,8 +317,8 @@ export class PeptidesModel {
       this._isUpdating = true;
       this.initializeViewersComponents();
       //FIXME: modify during the initializeViewersComponents stages
-      this.mutationCliffsGridSubject.next(this.mutationCliffsGrid);
-      this.mostPotentResiduesGridSubject.next(this.mostPotentResiduesGrid);
+      // this.mutationCliffsGridSubject.next(this.mutationCliffsGrid);
+      // this.mostPotentResiduesGridSubject.next(this.mostPotentResiduesGrid);
 
       this.fireBitsetChanged();
       this.invalidateGrids();
@@ -341,8 +341,6 @@ export class PeptidesModel {
     this.setCellRenderers();
 
     this.setTooltips();
-
-    this.setInteractionCallback();
 
     this.setBitsetCallback();
 
@@ -610,57 +608,7 @@ export class PeptidesModel {
   }
 
   setCellRenderers(): void {
-    const renderColNames = [...this.splitSeqDf.columns.names(), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
-    const mdCol = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     //decompose into two different renering funcs
-    const renderCell = (args: DG.GridCellRenderArgs): void => {
-      const canvasContext = args.g;
-      const bound = args.bounds;
-
-      canvasContext.save();
-      canvasContext.beginPath();
-      canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
-      canvasContext.clip();
-
-      // Hide row column
-      const cell = args.cell;
-      if (cell.isRowHeader && cell.gridColumn.visible) {
-        cell.gridColumn.visible = false;
-        args.preventDefault();
-        return;
-      }
-
-      const tableColName = cell.tableColumn?.name;
-      const tableRowIndex = cell.tableRowIndex!;
-      if (cell.isTableCell && tableColName && tableRowIndex !== null && renderColNames.indexOf(tableColName) !== -1) {
-        const cellValue: number | null = cell.cell.value;
-
-        if (cellValue && cellValue !== DG.INT_NULL && cellValue !== DG.FLOAT_NULL) {
-          const gridTable = cell.grid.table;
-          const currentPosition: string = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ?
-            tableColName : gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
-          const currentAAR: string = gridTable.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
-
-          if (this.isInvariantMap) {
-            const value: number = this.monomerPositionStatsDf
-              .groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER, C.COLUMNS_NAMES.COUNT])
-              .where(`${C.COLUMNS_NAMES.POSITION} = ${currentPosition} and ${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`)
-              .aggregate().get(C.COLUMNS_NAMES.COUNT, 0);
-            CR.renderInvaraintMapCell(
-              canvasContext, currentAAR, currentPosition, this.invariantMapSelection, value, bound);
-          } else {
-            CR.renderMutationCliffCell(canvasContext, currentAAR, currentPosition, this.monomerPositionStatsDf,
-              mdCol, bound, cellValue, this.mutationCliffsSelection, this.substitutionsInfo,
-              this.settings.isBidirectional);
-          }
-        }
-        args.preventDefault();
-      }
-      canvasContext.restore();
-    };
-    this.mutationCliffsGrid.onCellRender.subscribe(renderCell);
-    this.mostPotentResiduesGrid.onCellRender.subscribe(renderCell);
-
     const sourceGrid = this.analysisView.grid;
     sourceGrid.setOptions({'colHeaderHeight': 130});
     sourceGrid.onCellRender.subscribe((gcArgs) => {
@@ -704,30 +652,6 @@ export class PeptidesModel {
   }
 
   setTooltips(): void {
-    const renderColNames = [...this.splitSeqDf.columns.names(), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
-    const showTooltip = (cell: DG.GridCell, x: number, y: number): boolean => {
-      const tableCol = cell.tableColumn;
-      const tableColName = tableCol?.name;
-      const tableRowIndex = cell.tableRowIndex;
-
-      if (!cell.isRowHeader && !cell.isColHeader && tableCol && tableRowIndex != null) {
-        const table = cell.grid.table;
-        const currentAAR = table.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
-
-        if (tableCol.semType == C.SEM_TYPES.MONOMER)
-          this.showMonomerTooltip(currentAAR, x, y);
-        else if (cell.cell.value && renderColNames.includes(tableColName!)) {
-          const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ? tableColName :
-            table.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
-
-          this.showTooltipAt(currentAAR, currentPosition, x, y);
-        }
-      }
-      return true;
-    };
-
-    this.mutationCliffsGrid.onCellTooltip(showTooltip);
-    this.mostPotentResiduesGrid.onCellTooltip(showTooltip);
     this.analysisView.grid.onCellTooltip((cell, x, y) => {
       const col = cell.tableColumn;
       const cellValue = cell.cell.value;
@@ -802,48 +726,6 @@ export class PeptidesModel {
     return tooltip;
   }
 
-  setInteractionCallback(): void {
-    const mutationCliffsDf = this.mutationCliffsGrid.dataFrame;
-    const mostPotentResiduesDf = this.mostPotentResiduesGrid.dataFrame;
-
-    const chooseAction =
-      (aar: string, position: string, isShiftPressed: boolean, isInvariantMapSelection: boolean = true): void => {
-        isShiftPressed ? this.modifyMonomerPositionSelection(aar, position, isInvariantMapSelection) :
-          this.initMonomerPositionSelection(aar, position, isInvariantMapSelection);
-      };
-
-    this.mutationCliffsGrid.root.addEventListener('click', (ev) => {
-      const gridCell = this.mutationCliffsGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (isGridCellInvalid(gridCell) || gridCell!.tableColumn!.name == C.COLUMNS_NAMES.MONOMER)
-        return;
-
-      const position = gridCell!.tableColumn!.name;
-      const aar = mutationCliffsDf.get(C.COLUMNS_NAMES.MONOMER, gridCell!.tableRowIndex!);
-      chooseAction(aar, position, ev.shiftKey, this.isInvariantMap);
-    });
-
-    this.mostPotentResiduesGrid.root.addEventListener('click', (ev) => {
-      const gridCell = this.mostPotentResiduesGrid.hitTest(ev.offsetX, ev.offsetY);
-      if (isGridCellInvalid(gridCell) || gridCell!.tableColumn!.name != C.COLUMNS_NAMES.MEAN_DIFFERENCE)
-        return;
-
-      const tableRowIdx = gridCell!.tableRowIndex!;
-      const position = mostPotentResiduesDf.get(C.COLUMNS_NAMES.POSITION, tableRowIdx);
-      const aar = mostPotentResiduesDf.get(C.COLUMNS_NAMES.MONOMER, tableRowIdx);
-      chooseAction(aar, position, ev.shiftKey, false);
-    });
-
-    const cellChanged = (table: DG.DataFrame): void => {
-      if (this.isCellChanging)
-        return;
-      this.isCellChanging = true;
-      table.currentRowIdx = -1;
-      this.isCellChanging = false;
-    };
-    this.mutationCliffsGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(mutationCliffsDf));
-    this.mostPotentResiduesGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(mostPotentResiduesDf));
-  }
-
   modifyMonomerPositionSelection(aar: string, position: string, isInvariantMapSelection: boolean): void {
     const tempSelection = isInvariantMapSelection ? this.invariantMapSelection : this.mutationCliffsSelection;
     const tempSelectionAt = tempSelection[position];
@@ -872,8 +754,8 @@ export class PeptidesModel {
   }
 
   invalidateGrids(): void {
-    this.mutationCliffsGrid.invalidate();
-    this.mostPotentResiduesGrid.invalidate();
+    // this.mutationCliffsGrid.invalidate();
+    // this.mostPotentResiduesGrid.invalidate();
     // this.logoSummaryGrid?.invalidate();
     this.analysisView.grid.invalidate();
   }
@@ -955,35 +837,6 @@ export class PeptidesModel {
 
   postProcessGrids(): void {
     const posCols = this.splitSeqDf.columns.names();
-    const mdCol: DG.GridColumn = this.mostPotentResiduesGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
-    mdCol.name = 'Diff';
-
-    for (const grid of [this.mutationCliffsGrid, this.mostPotentResiduesGrid]) {
-      const gridProps = grid.props;
-      gridProps.rowHeight = 20;
-      const girdCols = grid.columns;
-      const colNum = girdCols.length;
-      for (let i = 0; i < colNum; ++i) {
-        const col = girdCols.byIndex(i)!;
-        const colName = col.name;
-        col.width =
-          grid == this.mostPotentResiduesGrid && colName !== 'Diff' && colName !== C.COLUMNS_NAMES.MONOMER ? 50 :
-            gridProps.rowHeight + 10;
-      }
-    }
-
-    const setViewerGridProps = (grid: DG.Grid): void => {
-      const gridProps = grid.props;
-      gridProps.allowEdit = false;
-      gridProps.allowRowSelection = false;
-      gridProps.allowBlockSelection = false;
-      gridProps.allowColSelection = false;
-    };
-
-    setViewerGridProps(this.mutationCliffsGrid);
-    setViewerGridProps(this.mostPotentResiduesGrid);
-    // if (this.df.getTag(C.TAGS.CLUSTERS))
-    //   setViewerGridProps(this.logoSummaryGrid);
 
     const sourceGrid = this.analysisView.grid;
     const sourceGridCols = sourceGrid.columns;
@@ -1052,7 +905,7 @@ export class PeptidesModel {
 
     for (let i = 0; i < sourceGridColsLen; i++) {
       const currentCol = sourceGridCols.byIndex(i)!;
-      if (currentCol.column!.getTag(C.TAGS.VISIBLE) === '0')
+      if (currentCol.column?.getTag(C.TAGS.VISIBLE) === '0')
         currentCol.visible = false;
   
       currentCol.width = isNaN(parseInt(currentCol.name)) ? 50 : 40;
