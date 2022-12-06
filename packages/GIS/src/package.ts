@@ -17,7 +17,7 @@ const census = require('citysdk');
 
 //ZIP utilities
 import JSZip from 'jszip';
-import { DataFrame } from 'datagrok-api/dg';
+import {DataFrame, InputBase} from 'datagrok-api/dg';
 
 //USEFUL
 // contents = fs.readFileSync(detectorsPath, 'utf8');
@@ -37,11 +37,11 @@ async function censusPromise(args: any) {
   });
 }
 
-function uiCensusDialog() {
+function uiCensusDialog(): DG.Dialog {
   const data = grok.data.demo.demog(5);
   const data2 = grok.data.demo.demog(10);
 
-  const ruslutGridStyle = {
+  const reslutGridStyle = {
     'allowEdit': false,
     'showAddNewRowIcon': true,
     'allowColReordering': false,
@@ -81,18 +81,16 @@ function uiCensusDialog() {
 
   const inputGrid = DG.Viewer.grid(data2, inputGridStyle);
 
-  const inputs = null;
-  // const inputs = ui.inputs([
-  //   ui.stringInput('Search', ''),
-  //   ui.stringInput('Location', ''),
-  //   ui.choiceInput('Period', '', ['1990','1991']),
-  //   ui.divText('Dataset', {style: {color: 'var(--grey-4)', marginTop: '5px'}}),
-  //   inputGrid.root,
-  // ], 'ui-form-condensed');
+  const inpSearch: DG.InputBase<string> = ui.stringInput('Search', '');
+  const inpLocation: DG.InputBase<string> = ui.stringInput('Location', '');
+  const choinpPeriod: DG.InputBase<string | null> = ui.choiceInput('Period', '', ['1990', '1991']);
+  const txtDatasets = ui.divText('Dataset', {style: {color: 'var(--grey-4)', marginTop: '5px'}});
+  const arr = [inpSearch, inpLocation, choinpPeriod, txtDatasets, inputGrid.root];
 
+  const inputs = ui.inputs(arr as Iterable<InputBase<any>>, 'ui-form-condensed');
   const title = ui.h2('1990 Population Esimates - 1990-2000 Intercensal Esimates: United States, Nevada');
 
-  const description = ui.p('Monthly Intercensal Esimaates...');
+  const description = ui.p('Monthly Intercensal Esimates...');
   description.style.cssText = `
   overflow: hidden;
   display: -webkit-box;
@@ -106,18 +104,18 @@ function uiCensusDialog() {
     ui.link('None', ()=>{grok.shell.info('Deselect all');}, 'Deselect all', ''),
     ui.divText('N Cheked'),
   ]);
-  // gridControl.children[1].style.margin = '0 10px';
+  (gridControl.children[1] as HTMLElement).style.margin = '0 10px';
   gridControl.style.bottom = '5px';
   gridControl.style.position = 'Absolute';
 
-  const resultGrid = DG.Viewer.grid(data, ruslutGridStyle);
+  const resultGrid = DG.Viewer.grid(data, reslutGridStyle);
   resultGrid.columns.setVisible(['site', 'race']);
 
   const result = ui.splitV([
     ui.divV([
       title,
       description,
-      ui.link('Read more', '#', 'Click to read more about this method'),
+      ui.link('Read more', '#', 'Click to read more about this dataset'),
       gridControl,
     ]),
     ui.box(resultGrid.root),
@@ -132,10 +130,15 @@ function uiCensusDialog() {
     .show({width: 700, height: 500, center: true});
 
 
-  // dlg.root.querySelector('.d4-dialog-contents').classList.remove('ui-panel');
-  // dlg.root.querySelector('.d4-dialog-contents').classList.add('ui-box');
+  dlg.root.querySelector('.d4-dialog-contents')?.classList.remove('ui-panel');
+  dlg.root.querySelector('.d4-dialog-contents')?.classList.add('ui-box');
 
   return dlg;
+}
+
+//name: getCensusInfoTest UI
+export async function getCensusInfoT() {
+  const dlg = uiCensusDialog();
 }
 
 //name: getCensusInfo
@@ -292,7 +295,7 @@ export async function info() {
   grok.shell.info('GIS Package info: ' +_package.webRoot);
 }
 
-//tags: init, autostart
+//tags: init
 export function init() {
   //Register handlers
   DG.ObjectHandler.register(new GisTypes.GisPointHandler());
@@ -449,12 +452,12 @@ export async function gisKMZFileViewer(file: DG.FileInfo): Promise<DG.View> {
   return viewFile;
 }
 
-//name: gisGeoKMLFileHandler
+//name: gisKMLFileHandler
 //tags: file-handler
 //meta.ext: kmz
 //input: string filecontent
 //output: list tables
-export function gisGeoKMLFileHandler(filecontent: string): DG.DataFrame[] {
+export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
   //TODO: detect the kind of file and join KML/KMZ handler
 
   let dfFromKML: DG.DataFrame | undefined = undefined;
@@ -488,13 +491,13 @@ export function gisGeoKMLFileHandler(filecontent: string): DG.DataFrame[] {
   return [];
 }
 
-//name: gisGeoKMZFileHandler
+//name: gisKMZFileHandler
 //tags: file-handler
 //meta.ext: kmz
 //input: list bytes
 //output: list tables
-export async function gisGeoKMZFileHandler(filecontent: Uint8Array): Promise<DG.DataFrame[]> {
-  // export function gisGeoKMLFileHandler(filecontent: string): DG.DataFrame[] {
+export async function gisKMZFileHandler(filecontent: Uint8Array): Promise<DG.DataFrame[]> {
+  // export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
   //detect the kind of file
 
   let dfFromKML: DG.DataFrame | undefined = undefined;
@@ -527,39 +530,6 @@ export async function gisGeoKMZFileHandler(filecontent: Uint8Array): Promise<DG.
   if (dfFromKML) return [dfFromKML];
   return [];
 }
-
-/*
-//_name: gisKMLFileViewer
-//_tags: fileViewer, fileViewer-kml
-//_input: file file
-//_output: view result
-export async function gisKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
-  const viewFile = DG.View.create();
-  //alternative way - with embedding additional div into view window>>
-  // const boxMap = ui.box(null);
-  // boxMap.id = 'map-container'; //boxMap - div that contains map
-  // viewFile.append(boxMap);
-  viewFile.name = 'Preview of: ' + file.name;
-  viewFile.root.id = 'map-cont';
-  viewFile.root.style.padding = '0px';
-
-  const strBuf = await file.readAsString();
-
-  setTimeout(() => {
-    const ol = new OpenLayers();
-    ol.initMap('map-cont');
-    useGeographic();
-    ol.setViewOptions({
-      projection: 'EPSG:4326',
-      // center: OLProj.fromLonLat([34.109565, 45.452962]),
-      // zoom: 7
-    });
-    ol.addKMLLayerFromStream(strBuf);
-  }, 200);
-
-  return viewFile;
-}
-*/
 
 //gisGeoJSONFileDetector
 function gisGeoJSONFileDetector(strBuf: string): [boolean, boolean] {
@@ -655,28 +625,34 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
         const tv = grok.shell.addTableView(dfFromJSON as DG.DataFrame);
         tv.name = 'dfFromJSON.name' + ' (manual)';
 
-        const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer;
-        if (mapViewer) {
-          //
-          (mapViewer as GisViewer).init();
-          (mapViewer as GisViewer).ol.addLayer(newLayer);
-        // if (isGeoTopo[1] === false) newLayer = (mapViewer as GisViewer).ol.addGeoJSONLayerFromStream(filecontent);
-        //   else newLayer = (mapViewer as GisViewer).ol.addTopoJSONLayerFromStream(filecontent);
-        }
+        // const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer;
+        // if (mapViewer) {
+        //   //
+        // (mapViewer as GisViewer).init();
+        //   (mapViewer as GisViewer).ol.addLayer(newLayer);
+        // // if (isGeoTopo[1] === false) newLayer = (mapViewer as GisViewer).ol.addGeoJSONLayerFromStream(filecontent);
+        // //   else newLayer = (mapViewer as GisViewer).ol.addTopoJSONLayerFromStream(filecontent);
+        // }
 
         // const mapViewer = DG.Viewer.fromType('Map', (dfFromJSON as DG.DataFrame));
         //TODO: fix issue with GisViewer opening for a table with data
-        setTimeout((tv, dfFromJSON) => {
+        setTimeout((tv, dfFromJSON, newLayer) => {
           // const v = grok.shell.v;
           const v = tv;
-          // if ((v) && (v instanceof DG.TableView)) (v as DG.TableView).addViewer(new GisViewer());
+          // if ((v) && (v instanceof DG.TableView))
+          //   (v as DG.TableView).addViewer(new GisViewer());
           if ((v) && (v instanceof DG.TableView)) {
-            // const mapViewer = ((v as DG.TableView).addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer);
+            //
+            const mapViewer = ((v as DG.TableView).addViewer('Map') as GisViewer);
+            // const mapViewer = ((v as DG.TableView).addViewer(new GisViewer()) as GisViewer);
+            if (newLayer)
+              mapViewer.ol.addLayer(newLayer);
+          // const mapViewer = ((v as DG.TableView).addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer);
             // if (isGeoTopo[1] === false) newLayer = mapViewer.ol.addGeoJSONLayerFromStream(filecontent);
             // else newLayer = mapViewer.ol.addTopoJSONLayerFromStream(filecontent);
           }
           // (v as DG.TableView).addViewer(DG.Viewer.fromType('Map', (v as DG.TableView).dataFrame));
-        }, 1000, tv, dfFromJSON);
+        }, 4000, tv, dfFromJSON, newLayer);
       }
     }
   }
@@ -696,3 +672,13 @@ function openGISViewer(): void {
   const ol = new OpenLayers();
   ol.initMap('map-container');
 }
+
+// //name: gisAreaWidget
+// //tags: panel, widgets
+// //input: string area {semType: gis-area}
+// //output: widget result
+// //condition:  true
+// export function gisAreaWidget(area: string): DG.Widget {
+//   return new DG.Widget(ui.divText('gis area widget'));
+// }
+
