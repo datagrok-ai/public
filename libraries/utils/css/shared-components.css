@@ -29,3 +29,26 @@
 .no-elements-label {
   margin: 8px;
 }
+
+.arrow-box {
+	position: relative;
+}
+.arrow-box:before {
+	left: -6px;
+	top: 55px;
+	content: "";
+	height: 0;
+	width: 0;
+	position: absolute;
+	pointer-events: none;
+	background-color: white;
+
+	transform-origin: center;
+  transform: rotate(-135deg);
+	box-shadow: -4px 4px 0px 4.5px white, #4d5261 0px 0px 5px;;
+
+	border: 5px solid black;
+	border-color: transparent transparent #FFFFFF #FFFFFF;
+
+	margin-top: -21px;
+}
