@@ -18,8 +18,6 @@ import {substructureFilter} from '../package';
 import {structure2dWidget} from '../widgets/structure2d';
 import {structure3dWidget} from '../widgets/structure3d';
 import * as CONST from './const';
-import { gasteigerChargesWidget } from '../widgets/gasteiger-charges';
-
 
 category('cell panel', async () => {
   const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
@@ -166,11 +164,8 @@ category('cell panel', async () => {
   // });
 
   test('gasteiger-partion-charges', async () => {
-    for (const mol of molFormats) {
-      await gasteigerChargesWidget(mol);
-      // const parameters = {mol: mol, contours: 10};
-      // await grok.functions.call('Chem:GasteigerPartialCharges', parameters);
-    }
+    const parameters = {mol: molStr, contours: 10};
+    await grok.functions.call('Chem:GasteigerPartialCharges', parameters);
   });
 
   //TODO: Compare the calculated values

@@ -1,7 +1,8 @@
-#name: Gasteiger Charges
+#name: Gasteiger Partial Charges
 #description: The Gasteiger partial charges visualization, RDKit based
 #help-url: https://datagrok.ai/help/domains/chem/functions/gasteiger-charges
 #language: python
+#tags: demo, chem, rdkit, panel
 #condition: true
 #input: string mol = "COc1cccc2cc(C(=O)NCCCCN3CCN(c4cccc5nccnc54)CC3)oc21" {semType: Molecule} [Molecule, in SMILES format]
 #input: int contours = 10
