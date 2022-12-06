@@ -36,11 +36,6 @@ export function isMolBlock(s: string | null) {
   return s != null && s.includes('M  END');
 }
 
-interface IStoredMolecule {
-  molfile: string;
-  smiles: string
-}
-
 /** Cheminformatics-related routines */
 export namespace chem {
 
@@ -405,12 +400,12 @@ export namespace chem {
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.getMolFile()))
           .group('Recent')
-          .items(Sketcher.getRecent().map((m) => ui.tools.click(this.drawToCanvas(150, 60, m.molfile), () => this.setMolecule(m.molfile))), () => { })
+          .items(Sketcher.getRecent().map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })
           .endGroup()
           .group('Favorites')
           .item('Add to Favorites', () => Sketcher.addFavorite(this.getMolFile()))
           .separator()
-          .items(Sketcher.getFavorites().map((m) => ui.tools.click(this.drawToCanvas(150, 60, m.molfile), () => this.setMolecule(m.molfile))), () => { })
+          .items(Sketcher.getFavorites().map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
@@ -437,9 +432,8 @@ export namespace chem {
     static readonly FAVORITES_KEY = 'chem-molecule-favorites';
     static readonly RECENT_KEY = 'chem-molecule-recent';
 
-    static getFavorites(): IStoredMolecule[] {
-      const storage = JSON.parse(localStorage.getItem(Sketcher.FAVORITES_KEY) ?? '[]');
-      return storage.filter(((it: any) => typeof it !== "string" && it !== null));
+    static getFavorites(): string[] {
+      return JSON.parse(localStorage.getItem(Sketcher.FAVORITES_KEY) ?? '[]');
     }
 
     static addFavorite(molecule: string) {
@@ -447,9 +441,8 @@ export namespace chem {
       Sketcher.checkDuplicatesAndAddToStorage(favorites, molecule, Sketcher.FAVORITES_KEY);
     }
 
-    static getRecent(): IStoredMolecule[] {
-      const storage = JSON.parse(localStorage.getItem(Sketcher.RECENT_KEY) ?? '[]');
-      return storage.filter(((it: any) => typeof it !== "string"  && it !== null));
+    static getRecent(): string[] {
+      return JSON.parse(localStorage.getItem(Sketcher.RECENT_KEY) ?? '[]');
     }
 
     static addRecent(molecule: string) {
@@ -457,29 +450,34 @@ export namespace chem {
       Sketcher.checkDuplicatesAndAddToStorage(recent, molecule, Sketcher.RECENT_KEY);
     }
 
-    static checkDuplicatesAndAddToStorage(storage: IStoredMolecule[], molecule: string, localStorageKey: string) {
-      let mol: any;
+    static checkDuplicatesAndAddToStorage(storage: string[], molecule: string, localStorageKey: string) {
+      let mol1: any;
+      function moleculesEqual(rdkitModule: any, mol1: any, molfile2: string): boolean {
+        const mol2 = rdkitModule.get_mol(molfile2);
+        const result = mol1.get_smiles() === mol2.get_smiles();
+        mol2.delete();
+        return result;
+      }
       grok.functions.call('Chem:getRdKitModule').then((rdKit: any) => {
         try { 
-          mol = rdKit.get_mol(molecule); 
+          mol1 = rdKit.get_mol(molecule);
         }
         catch (e: any){
           throw(`Molecule is possibly malformed`);
         }
-        const smiles = mol.get_smiles();
         if (!Sketcher.isEmptyMolfile(molecule)) {
-          const duplicateSmilesIndex = storage.findIndex(mol => mol.smiles === smiles);
+          const duplicateSmilesIndex = storage.findIndex(mol => moleculesEqual(rdKit, mol1, mol));
           let s: string;
           if (duplicateSmilesIndex === -1)
-            s = JSON.stringify([{molfile: molecule, smiles: smiles}, ...storage.slice(0, 9)]);
+            s = JSON.stringify([molecule, ...storage.slice(0, 9)]);
           else {
             storage.splice(duplicateSmilesIndex, 1);
-            s = JSON.stringify([{molfile: molecule, smiles: smiles}, ...storage]);
+            s = JSON.stringify([molecule, ...storage]);
           }
           localStorage.setItem(localStorageKey, s);
         }         
       }).finally(() => {
-        mol.delete();
+        mol1.delete();
       });
     }
 
