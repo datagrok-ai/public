@@ -54,16 +54,6 @@ async function initSketcher(sw: Sketcher) {
   const t = new Promise(async (resolve, reject) => {
     sw.sketcherCreated.subscribe(async (_: any) => {
       try {
-        const t1 = new Promise(async (resolve, reject) => {
-          sw.sketcher?.onChanged.subscribe(async (_: any) => {
-            try {
-              resolve(true);
-            } catch (error) {
-              reject(error);
-            }
-          });
-        });
-        await t1;
         resolve(true);
       } catch (error) {
         reject(error);
@@ -88,7 +78,7 @@ async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    await grok.dapi.userDataStorage.postValue('sketcher', 'selected', func.name, true);
+    await window.localStorage.setItem('sketcher', func.name);
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
     if (!s.sketcher)
@@ -121,7 +111,7 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean) {
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    await grok.dapi.userDataStorage.postValue('sketcher', 'selected', func.name, true);
+    await window.localStorage.setItem('sketcher', func.name);
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
     if (!s.sketcher)
@@ -157,7 +147,7 @@ async function testMolV2000(rdkitModule: any, funcs: DG.Func[], input?: boolean)
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    await grok.dapi.userDataStorage.postValue('sketcher', 'selected', func.name, true);
+    await window.localStorage.setItem('sketcher', func.name);
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
     if (!s.sketcher)
@@ -196,7 +186,7 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
   for (const func of funcs) {
     if (func.name === 'chemDrawSketcher')
       continue;
-    await grok.dapi.userDataStorage.postValue('sketcher', 'selected', func.name, true);
+    await window.localStorage.setItem('sketcher', func.name);
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
     if (!s.sketcher)
