@@ -21,7 +21,6 @@ import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {drugLikenessWidget} from './widgets/drug-likeness';
-import {gasteigerChargesWidget} from './widgets/gasteiger-charges';
 import {identifiersWidget} from './widgets/identifiers';
 import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
@@ -596,15 +595,6 @@ export function toxicity(smiles: string): DG.Widget {
 //output: widget result
 export async function identifiers(smiles: string): Promise<DG.Widget> {
   return smiles ? await identifiersWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
-
-//name: Gasteiger Partial Charges
-//tags: demo, chem, rdkit, panel, widgets
-//description: The Gasteiger partial charges visualization, RDKit based
-//input: string molString {semType: Molecule}
-//output: widget result
-export async function gasteigerPartialCharges(molString: string): Promise<DG.Widget> {
-  return gasteigerChargesWidget(molString);
 }
 
 //name: convertMolNotation
