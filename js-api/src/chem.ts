@@ -438,7 +438,8 @@ export namespace chem {
     static readonly RECENT_KEY = 'chem-molecule-recent';
 
     static getFavorites(): IStoredMolecule[] {
-      return JSON.parse(localStorage.getItem(Sketcher.FAVORITES_KEY) ?? '[]');
+      const storage = JSON.parse(localStorage.getItem(Sketcher.FAVORITES_KEY) ?? '[]');
+      return storage.filter(((it: any) => typeof it !== "string" && it !== null));
     }
 
     static addFavorite(molecule: string) {
@@ -447,7 +448,8 @@ export namespace chem {
     }
 
     static getRecent(): IStoredMolecule[] {
-      return JSON.parse(localStorage.getItem(Sketcher.RECENT_KEY) ?? '[]');
+      const storage = JSON.parse(localStorage.getItem(Sketcher.RECENT_KEY) ?? '[]');
+      return storage.filter(((it: any) => typeof it !== "string"  && it !== null));
     }
 
     static addRecent(molecule: string) {
