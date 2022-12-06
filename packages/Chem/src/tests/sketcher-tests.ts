@@ -9,6 +9,49 @@ const exampleSmiles = 'CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3';
 const convertedSmarts = '[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1';
 const exampleInchi = 'InChI=1S/C6H6/c1-2-4-6-5-3-1/h1-6H';
 const exampleInchiSmiles = 'c1ccccc1';
+const exampleMol = `
+Accelrys05311914342D 1   1.00000     0.00000     0
+
+ 18 19  0     0  0            999 V2000
+    2.9291   -5.8667    0.0000 C   0  0  2  0  0  0           0  0  0
+    3.7541   -5.8667    0.0000 C   0  0  2  0  0  0           0  0  0
+    4.0109   -5.0826    0.0000 O   0  0  0  0  0  0           0  0  0
+    3.3416   -4.5958    0.0000 C   0  0  2  0  0  0           0  0  0
+    2.6766   -5.0826    0.0000 C   0  0  0  0  0  0           0  0  0
+    3.3404   -3.7708    0.0000 N   0  0  3  0  0  0           0  0  0
+    4.2383   -6.5347    0.0000 O   0  0  0  0  0  0           0  0  0
+    2.4433   -6.5335    0.0000 N   0  0  0  0  0  0           0  0  0
+    1.6229   -6.4464    0.0000 N   0  3  0  0  0  0           0  0  0
+    5.0589   -6.4494    0.0000 C   0  0  0  0  0  0           0  0  0
+    0.7983   -6.3826    0.0000 N   0  5  0  0  0  0           0  0  0
+    4.0576   -3.3612    0.0000 C   0  0  0  0  0  0           0  0  0
+    4.0583   -2.5398    0.0000 C   0  0  0  0  0  0           0  0  0
+    3.3451   -2.1245    0.0000 C   0  0  0  0  0  0           0  0  0
+    2.6294   -2.5369    0.0000 N   0  0  0  0  0  0           0  0  0
+    2.6270   -3.3645    0.0000 C   0  0  0  0  0  0           0  0  0
+    3.3469   -1.2995    0.0000 O   0  0  0  0  0  0           0  0  0
+    1.9131   -3.7781    0.0000 O   0  0  0  0  0  0           0  0  0
+  8  9  2  0     0  0
+  4  5  1  0     0  0
+  7 10  1  0     0  0
+  5  1  1  0     0  0
+  9 11  2  0     0  0
+  6 12  1  0     0  0
+  1  2  1  0     0  0
+  4  6  1  6     0  0
+  2  7  1  6     0  0
+  2  3  1  0     0  0
+  6 16  1  0     0  0
+ 12 13  2  0     0  0
+ 13 14  1  0     0  0
+ 14 15  1  0     0  0
+ 15 16  1  0     0  0
+  1  8  1  1     0  0
+ 14 17  2  0     0  0
+  3  4  1  0     0  0
+ 16 18  2  0     0  0
+M  CHG  2   9   1  11  -1
+M  END`
 
 category('sketcher testing', () => {
 
@@ -140,8 +183,7 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean) {
 }
 
 async function testMolV2000(rdkitModule: any, funcs: DG.Func[], input?: boolean) {
-  const data = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
-  const molfileV2000 = data.get('molecule', 0);
+  const molfileV2000 = exampleMol;
   const mol = rdkitModule.get_mol(molfileV2000);
 
   for (const func of funcs) {
