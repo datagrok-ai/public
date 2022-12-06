@@ -464,11 +464,18 @@ export namespace chem {
         catch (e: any){
           throw(`Molecule is possibly malformed`);
         }
-        const smiles = mol.get_smiles();         
-        if (!storage.filter(mol => mol.smiles === smiles).length && !Sketcher.isEmptyMolfile(molecule)) {
-          let s = JSON.stringify([...storage.slice(-9), {molfile: molecule, smiles: smiles}]);
+        const smiles = mol.get_smiles();
+        if (!Sketcher.isEmptyMolfile(molecule)) {
+          const duplicateSmilesIndex = storage.findIndex(mol => mol.smiles === smiles);
+          let s: string;
+          if (duplicateSmilesIndex === -1)
+            s = JSON.stringify([{molfile: molecule, smiles: smiles}, ...storage.slice(0, 9)]);
+          else {
+            storage.splice(duplicateSmilesIndex, 1);
+            s = JSON.stringify([{molfile: molecule, smiles: smiles}, ...storage]);
+          }
           localStorage.setItem(localStorageKey, s);
-        }
+        }         
       }).finally(() => {
         mol.delete();
       });
