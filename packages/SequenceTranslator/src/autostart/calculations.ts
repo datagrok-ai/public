@@ -1,21 +1,24 @@
 import * as DG from 'datagrok-api/dg';
+
 import {sortByStringLengthInDescendingOrder} from '../helpers';
 import {MODIFICATIONS} from '../structures-works/map';
 
 export function saltMass(
-  saltNames: string[], molWeightCol: DG.Column, equivalentsCol: DG.Column, i: number, saltCol: DG.Column,
+  saltNames: string[], saltsMolWeightList: number[], equivalentsCol: DG.Column, i: number, saltCol: DG.Column
 ): number {
   const saltRowIndex = saltNames.indexOf(saltCol.get(i));
   return (
-    saltRowIndex == -1 || molWeightCol.get(saltRowIndex) == DG.FLOAT_NULL || equivalentsCol.get(i) == DG.INT_NULL
+    saltRowIndex == -1 || saltsMolWeightList[saltRowIndex] == DG.FLOAT_NULL || equivalentsCol.get(i) == DG.INT_NULL
   ) ?
     DG.FLOAT_NULL :
-    molWeightCol.get(saltRowIndex) * equivalentsCol.get(i);
+    saltsMolWeightList[saltRowIndex] * equivalentsCol.get(i);
 }
 
-export function saltMolWeigth(saltNamesList: string[], saltCol: DG.Column, molWeightCol: DG.Column, i: number): number {
+export function saltMolWeigth(
+  saltNamesList: string[], saltCol: DG.Column, saltsMolWeightList: number[], i: number
+): number {
   const saltRowIndex = saltNamesList.indexOf(saltCol.get(i));
-  return (saltRowIndex == -1) ? DG.FLOAT_NULL : molWeightCol.get(saltRowIndex);
+  return (saltRowIndex == -1) ? DG.FLOAT_NULL : saltsMolWeightList[saltRowIndex];
 }
 
 export function batchMolWeight(compoundMolWeightCol: DG.Column, saltMassCol: DG.Column, i: number): number {
@@ -24,7 +27,7 @@ export function batchMolWeight(compoundMolWeightCol: DG.Column, saltMassCol: DG.
     compoundMolWeightCol.get(i) + saltMassCol.get(i);
 }
 
-export function molecularWeight(sequence: string, weightsObj: {[index: string]: number}): number {
+export function molecularWeight(sequence: string, weightsObj: { [index: string]: number }): number {
   const codes = sortByStringLengthInDescendingOrder(Object.keys(weightsObj)).concat(Object.keys(MODIFICATIONS));
   let weight = 0;
   let i = 0;
