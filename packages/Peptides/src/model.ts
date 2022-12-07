@@ -849,7 +849,6 @@ export class PeptidesModel {
 
   postProcessGrids(): void {
     const posCols = this.splitSeqDf.columns.names();
-
     const sourceGrid = this.analysisView.grid;
     const sourceGridCols = sourceGrid.columns;
     const sourceGridColsLen = sourceGridCols.length;
@@ -869,6 +868,24 @@ export class PeptidesModel {
         tableCol.semType === C.SEM_TYPES.MONOMER ||
         tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED ||
         visibleColumns.includes(tableColName ?? '');
+    }
+
+    const sourceGridProps = sourceGrid.props;
+    sourceGridProps.allowColSelection = false;
+    sourceGridProps.allowEdit = false;
+    setTimeout(() => sourceGridProps.rowHeight = 20, 10);
+    sourceGridProps.allowRowResizing = false;
+    sourceGridProps.showCurrentRowIndicator = false;
+    this.df.temp[C.EMBEDDING_STATUS] = false;
+
+    for (let i = 0; i < sourceGridColsLen; i++) {
+      const currentCol = sourceGridCols.byIndex(i);
+      if (currentCol) {
+        if (currentCol.column?.getTag(C.TAGS.VISIBLE) === '0')
+          currentCol.visible = false;
+    
+        currentCol.width = isNaN(parseInt(currentCol.name)) ? 50 : 40;
+      }
     }
   }
 
@@ -902,28 +919,6 @@ export class PeptidesModel {
     //   return;
 
     this.df.tags[C.PEPTIDES_ANALYSIS] = '1';
-    const sourceGrid = this.analysisView.grid;
-    const sourceGridCols = sourceGrid.columns;
-    const sourceGridProps = sourceGrid.props;
-    const scaledGridCol = sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!;
-    const sourceGridColsLen = sourceGridCols.length;
-    scaledGridCol.name = scaledGridCol.column!.getTag('gridName');
-    scaledGridCol.format = '#.000';
-    sourceGridCols.setOrder([scaledGridCol.name]);
-    sourceGridProps.allowColSelection = false;
-    sourceGridProps.allowEdit = false;
-    sourceGridProps.rowHeight = 20;
-    this.df.temp[C.EMBEDDING_STATUS] = false;
-
-    for (let i = 0; i < sourceGridColsLen; i++) {
-      const currentCol = sourceGridCols.byIndex(i);
-      if (currentCol) {
-        if (currentCol.column?.getTag(C.TAGS.VISIBLE) === '0')
-          currentCol.visible = false;
-    
-        currentCol.width = isNaN(parseInt(currentCol.name)) ? 50 : 40;
-      }
-    }
 
     this.updateDefault();
 
