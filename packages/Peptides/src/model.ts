@@ -136,12 +136,19 @@ export class PeptidesModel {
     const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: set categories ordering the same to share compare indexes instead of strings
     const monomerColumns: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
-    return findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
+    this._substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
+    return this._substitutionsInfo;
+  }
+  set subsitutionsInfo(si: type.SubstitutionsInfo) {
+    this._substitutionsInfo = si;
   }
 
   get clusterStatsDf(): DG.DataFrame {
     this._clusterStatsDf ??= this.calculateClusterStatistics();
     return this._clusterStatsDf;
+  }
+  set clusterStatsDf(df: DG.DataFrame) {
+    this._clusterStatsDf = df;
   }
 
   get cp(): bio.SeqPalette {
@@ -320,7 +327,7 @@ export class PeptidesModel {
       // this.mutationCliffsGridSubject.next(this.mutationCliffsGrid);
       // this.mostPotentResiduesGridSubject.next(this.mostPotentResiduesGrid);
 
-      this.fireBitsetChanged();
+      // this.fireBitsetChanged();
       this.invalidateGrids();
       this._isUpdating = false;
     }
@@ -766,6 +773,7 @@ export class PeptidesModel {
     const selection = this.df.selection;
     const filter = this.df.filter;
     const clusterCol = this.df.col(C.COLUMNS_NAMES.CLUSTERS);
+    const clusterColData = clusterCol?.getRawData();
 
     const changeSelectionBitset = (currentBitset: DG.BitSet): void => {
       const edfSelection = this.edf?.selection;
@@ -792,7 +800,7 @@ export class PeptidesModel {
           if (this.mutationCliffsSelection[position].includes(positionCol.get(i)!))
             return true;
         }
-        if (this.logoSummarySelection.includes(clusterCol?.get(i)!))
+        if (clusterColData && this.logoSummarySelection.includes(clusterColData[i]))
           return true;
         return false;
       };
