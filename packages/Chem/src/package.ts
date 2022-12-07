@@ -834,13 +834,13 @@ export async function callChemDiversitySearch(
 export async function getScaffoldTree(data: DG.DataFrame) {
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
   const invalid: number[] = new Array<number>();
-  const smiles = molColumn?.getTag(DG.TAGS.UNITS) === 'smiles';
+  const smiles = molColumn?.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
   const smilesList: string[] = [];
   for (let rowI = 0; rowI < molColumn!.length; rowI++) {
     let el: string = molColumn?.get(rowI);
     if (!smiles) 
       try {
-        el = convertMolNotation(el, 'molblock', 'smiles');
+        el = convertMolNotation(el, DG.UNITS.Molecule.MOLBLOCK, DG.UNITS.Molecule.SMILES);
       } 
       catch {
         invalid.push(rowI);
