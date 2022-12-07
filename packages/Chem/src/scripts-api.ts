@@ -31,9 +31,9 @@ export async function getDescriptorsPy(
   return await grok.functions.call('Chem:Desc', {smiles, df1, selected, df2});
 }
 
-export async function scaffoldTreeGeneration(
+export async function generateScaffoldTree(
   data: DG.DataFrame, 
   smiles: string, 
   names: string) : Promise<string> {
-    return await grok.functions.call('Chem: ScaffoldTreeGeneration', {data, smiles, names});
+    return await grok.functions.call('Chem: GenerateScaffoldTree', {data, smiles, names});
 }
