@@ -29,7 +29,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
       onInit: (ketcher: Ketcher) => {
         this._sketcher = ketcher;
-        (this._sketcher.editor as any).subscribe("change", async (e: any) => {
+        (this._sketcher.editor as any).subscribe("change", async (_: any) => {
           this.host!._smiles = await this._sketcher!.getSmiles();
           this.host!._molfile = this.host!.molFileUnits === grok.chem.MOLV2000 ?
             await this._sketcher!.getMolfile('v2000'): await this._sketcher!.getMolfile('v3000');
