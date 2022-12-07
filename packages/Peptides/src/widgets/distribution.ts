@@ -15,7 +15,11 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
   const rowCount = activityScaledCol.length;
   const selectionObject = model.mutationCliffsSelection;
-  const clustersObject = model.logoSummarySelection;
+  const clustersRawObject = model.logoSummarySelection;
+  const clustersColCategories = table.getCol(C.COLUMNS_NAMES.CLUSTERS).categories;
+  const clustersProcessedObject = new Array(clustersRawObject.length);
+  for (let i = 0; i < clustersRawObject.length; ++i)
+    clustersProcessedObject[i] = clustersColCategories[clustersRawObject[i]];
   const positions = Object.keys(selectionObject);
   const positionsLen = positions.length;
   let aarStr = allConst;
@@ -137,8 +141,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
             if (aarList.length !== 0)
               aarStr += `${position}: {${aarList.join(', ')}}; `;
           }
-          if (clustersObject.length !== 0)
-            aarStr += `Clusters: ${clustersObject.join(', ')}`;
+          if (clustersProcessedObject.length !== 0)
+            aarStr += `Clusters: ${clustersProcessedObject.join(', ')}`;
           otherStr = otherConst;
         }
 
