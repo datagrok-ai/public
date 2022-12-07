@@ -14,7 +14,7 @@ import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {scaffoldTreeGeneration} from './scripts-api';
+import {generateScaffoldTree} from './scripts-api';
 import {elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
@@ -44,7 +44,6 @@ import {molToMolblock} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {saveAsSdfDialog} from './utils/sdf-utils';
 import {getSimilaritiesMarix} from './utils/similarity-utils';
-import { oclMol } from './utils/chem-common-ocl';
 
 //analytical imports
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
@@ -829,10 +828,10 @@ export async function callChemDiversitySearch(
   return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint);
 }
 
-//name: scaffoldTree
+//name: getScaffoldTree
 //input: dataframe data
 //output: string result
-export async function scaffoldTree(data: DG.DataFrame) {
+export async function getScaffoldTree(data: DG.DataFrame) {
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
   const invalid: number[] = new Array<number>();
   const smiles = molColumn?.getTag(DG.TAGS.UNITS) === 'smiles';
@@ -852,6 +851,6 @@ export async function scaffoldTree(data: DG.DataFrame) {
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
   smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
   data.columns.add(smilesColumn);
-  const scriptRes = await scaffoldTreeGeneration(data, smilesColumn!.name, smilesColumn!.name);
+  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name, smilesColumn!.name);
   return scriptRes;
 }

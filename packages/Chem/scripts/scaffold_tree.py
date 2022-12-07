@@ -1,4 +1,4 @@
-#name: ScaffoldTreeGeneration
+#name: GenerateScaffoldTree
 #description: generation scaffold tree from dataset
 #language: python
 #input: dataframe data [Input data table]
