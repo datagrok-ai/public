@@ -364,6 +364,7 @@ export class GisViewer extends DG.JsViewer {
 
   init() {
     try {
+      console.log('gis-viewer.init()');
       ui.setUpdateIndicator(this.root, true);
 
       this.ol.useWebGL = true; //choose true if we want to use WebGL renderer
