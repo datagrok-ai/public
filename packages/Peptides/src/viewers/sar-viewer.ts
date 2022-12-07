@@ -13,7 +13,7 @@ export class SARViewerBase extends DG.JsViewer {
   _viewerGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
   model!: PeptidesModel;
-  initialized = false;
+  // initialized = false;
   isPropertyChanging: boolean = false;
   _isVertical = false;
   isModeChanging = false;
@@ -48,8 +48,8 @@ export class SARViewerBase extends DG.JsViewer {
   }
 
   render(refreshOnly = false): void {
-    if (!this.initialized)
-      return;
+    // if (!this.initialized)
+    //   return;
     if (!refreshOnly) {
       $(this.root).empty();
       let switchHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
@@ -97,8 +97,8 @@ export class SARViewerBase extends DG.JsViewer {
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
 
-    if (!this.initialized)
-      return;
+    // if (!this.initialized)
+    //   return;
 
     // this.model.updateDefault();
     this.render(true);
@@ -204,7 +204,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     // this.model.updateDefault();
     // this.viewerGrid = this.model.mostPotentResiduesGrid;
 
-    this.initialized = true;
+    // this.initialized = true;
     this.render();
   }
 
