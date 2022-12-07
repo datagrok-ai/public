@@ -7,6 +7,7 @@ import $ from 'cash-dom';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
+import { getRdKitModule } from '../utils/chem-common-rdkit';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   isEditedFromSketcher: boolean = false;
@@ -71,7 +72,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        if (this.isEmptyValue())
+        if (this.isEmptyValue() || this.malformedTargetMolecule())
           return;
         const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
           this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
@@ -80,8 +81,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         this.scores = df.getCol('score');
       } else if (this.gridSelect)
         this.gridSelect = false;
-      if (this.root.hasChildNodes())
-        this.root.removeChild(this.root.childNodes[0]);
+      this.clearResults();
       const panel = [];
       const grids = [];
       let cnt = 0; let cnt2 = 0;
@@ -156,11 +156,29 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   isEmptyValue(): boolean {
     if (!this.targetMolecule || DG.chem.Sketcher.isEmptyMolfile(this.targetMolecule)) {
       grok.shell.error(`Empty molecule cannot be used for similarity search`);
-      if (this.root.hasChildNodes())
-        this.root.removeChild(this.root.childNodes[0]);
+      this.clearResults();
       return true;
     }
     return false;
+  }
+
+  malformedTargetMolecule(): boolean {
+    let mol;
+    try {
+      mol = getRdKitModule().get_mol(this.targetMolecule);
+      return false;
+    } catch (e: any) {
+      grok.shell.error(`Possibly malformed target molecule`);
+      this.clearResults();
+      return true;
+    } finally {
+      if (mol) mol.delete();
+    }
+  }
+
+  clearResults() {
+    if (this.root.hasChildNodes())
+      this.root.removeChild(this.root.childNodes[0]);
   }
 }
 
