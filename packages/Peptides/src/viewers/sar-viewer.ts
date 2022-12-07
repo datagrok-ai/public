@@ -127,7 +127,7 @@ export class MonomerPosition extends SARViewerBase {
     this.viewerGrid.sort([C.COLUMNS_NAMES.MONOMER]);
     this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this.model.splitSeqDf.columns.names()]);
     const monomerCol = this.model.monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
-    CR.setAARRenderer(monomerCol, this.model.alphabet, this.viewerGrid);
+    CR.setAARRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model));
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
@@ -142,6 +142,7 @@ export class MonomerPosition extends SARViewerBase {
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.monomerPositionDf, this.model));
 
     setViewerGridProps(this.viewerGrid, false);
+    setTimeout(() => this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!.width = 60, 10);
   }
 }
 
@@ -185,7 +186,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     const positionCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.POSITION);
 
     // Setting Monomer column renderer
-    CR.setAARRenderer(monomerCol, this.model.alphabet, this.viewerGrid);
+    CR.setAARRenderer(monomerCol, this.model.alphabet);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model));
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
@@ -203,6 +204,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
     mdCol.name = 'Diff';
     setViewerGridProps(this.viewerGrid, true);
+    setTimeout(() => this.viewerGrid.col(C.COLUMNS_NAMES.MONOMER)!.width = 60, 10);
   }
 }
 

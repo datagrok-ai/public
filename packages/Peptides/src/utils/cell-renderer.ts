@@ -11,7 +11,7 @@ function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.
 }
 
 /** A function that sets amino acid residue cell renderer to the specified column */
-export function setAARRenderer(col: DG.Column, alphabet: string, grid: DG.Grid, timeout: number = 500): void {
+export function setAARRenderer(col: DG.Column, alphabet: string): void {
   col.semType = C.SEM_TYPES.MONOMER;
   col.setTag('cell.renderer', C.SEM_TYPES.MONOMER);
   col.tags[C.TAGS.ALPHABET] = alphabet;
