@@ -6,12 +6,12 @@ import { convertMolNotation } from '../package';
 export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, number[]] {
     let elements: Map<string, Int32Array> = new Map();
     const invalid: number[] = new Array<number>();
-    let smiles = molCol.getTag(DG.TAGS.UNITS) === 'smiles';
+    let smiles = molCol.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
     for (let rowI = 0; rowI < molCol.length; rowI++) {
       let el: string = molCol.get(rowI);
       if (smiles) {
         try {
-          el = convertMolNotation(el, 'smiles', 'molblock');
+          el = convertMolNotation(el, DG.UNITS.Molecule.SMILES, DG.UNITS.Molecule.MOLBLOCK);
         } 
         catch {
           invalid.push(rowI);
