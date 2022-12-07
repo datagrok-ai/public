@@ -9,7 +9,7 @@ import * as rxjs from 'rxjs';
 
 import * as C from './utils/constants';
 import * as type from './utils/types';
-import {calculateSelected, extractMonomerInfo, isGridCellInvalid, scaleActivity} from './utils/misc';
+import {calculateSelected, extractMonomerInfo, scaleActivity} from './utils/misc';
 import {MonomerPosition, MostPotentResiduesViewer} from './viewers/sar-viewer';
 import * as CR from './utils/cell-renderer';
 import {mutationCliffsWidget} from './widgets/mutation-cliffs';
@@ -24,9 +24,6 @@ import {findMutations} from './utils/algorithms';
 export class PeptidesModel {
   static modelName = 'peptidesModel';
 
-  // mutationCliffsGridSubject = new rxjs.Subject<DG.Grid>();
-  // mostPotentResiduesGridSubject = new rxjs.Subject<DG.Grid>();
-  // logoSummaryGridSubject = new rxjs.Subject<DG.Grid>();
   settingsSubject: rxjs.Subject<type.PeptidesSettings> = new rxjs.Subject();
   _mutatinCliffsSelectionSubject: rxjs.Subject<undefined> = new rxjs.Subject();
 
@@ -34,10 +31,6 @@ export class PeptidesModel {
   isBitsetChangedInitialized = false;
   isCellChanging = false;
 
-  // mutationCliffsGrid!: DG.Grid;
-  // mostPotentResiduesGrid!: DG.Grid;
-  // logoSummaryGrid!: DG.Grid;
-  // sourceGrid!: DG.Grid;
   df: DG.DataFrame;
   splitCol!: DG.Column<boolean>;
   edf: DG.DataFrame | null = null;
@@ -75,7 +68,6 @@ export class PeptidesModel {
   private constructor(dataFrame: DG.DataFrame) {
     this.df = dataFrame;
     this.initBitset = this.df.filter.clone();
-    // this.cp = bio.pickUpPalette(this.df.getCol(C.COLUMNS_NAMES.MACROMOLECULE));
   }
 
   static getInstance(dataFrame: DG.DataFrame): PeptidesModel {
@@ -172,18 +164,6 @@ export class PeptidesModel {
     return this._analysisView;
   }
 
-  // get onMutationCliffsGridChanged(): rxjs.Observable<DG.Grid> {
-  //   return this.mutationCliffsGridSubject.asObservable();
-  // }
-
-  // get onMostPotentResiduesGridChanged(): rxjs.Observable<DG.Grid> {
-  //   return this.mostPotentResiduesGridSubject.asObservable();
-  // }
-
-  // get onLogoSummaryGridChanged(): rxjs.Observable<DG.Grid> {
-  //   return this.logoSummaryGridSubject.asObservable();
-  // }
-
   get onMutationCliffsSelectionChanged(): rxjs.Observable<undefined> {
     return this._mutatinCliffsSelectionSubject.asObservable();
   }
@@ -215,7 +195,7 @@ export class PeptidesModel {
     this.isInvariantMapTrigger = true;
     this.df.filter.fireChanged();
     this.isInvariantMapTrigger = false;
-    this.invalidateGrids();
+    this.analysisView.grid.invalidate();
   }
 
   get logoSummarySelection(): number[] {
@@ -227,7 +207,7 @@ export class PeptidesModel {
     this._logoSummarySelection = selection;
     this.df.tags[C.TAGS.CLUSTER_SELECTION] = JSON.stringify(selection);
     this.fireBitsetChanged();
-    this.invalidateGrids();
+    this.analysisView.grid.invalidate();
   }
 
   get splitByPos(): boolean {
@@ -278,7 +258,6 @@ export class PeptidesModel {
     for (const [key, value] of Object.entries(s))
       this._settings[key as keyof type.PeptidesSettings] = value as any;
     this.df.setTag('settings', JSON.stringify(this._settings));
-    //TODO: update only needed components
     this.updateDefault();
     this.settingsSubject.next(this.settings);
   }
@@ -325,15 +304,10 @@ export class PeptidesModel {
 
   updateDefault(): void {
     if (!this._isUpdating || !this.isInitialized) {
-      // this.isInitialized = true;
       this._isUpdating = true;
       this.initializeViewersComponents();
-      //FIXME: modify during the initializeViewersComponents stages
-      // this.mutationCliffsGridSubject.next(this.mutationCliffsGrid);
-      // this.mostPotentResiduesGridSubject.next(this.mostPotentResiduesGrid);
 
-      // this.fireBitsetChanged();
-      this.invalidateGrids();
+      this.analysisView.grid.invalidate();
       this._isUpdating = false;
     }
   }
@@ -388,7 +362,6 @@ export class PeptidesModel {
       CR.setAARRenderer(newCol, this.alphabet, this.analysisView.grid);
     }
     this.df.name = name;
-    // this.currentView.name = name;
   }
 
   sortSourceGrid(): void {
@@ -764,13 +737,6 @@ export class PeptidesModel {
       this.mutationCliffsSelection = tempSelection;
   }
 
-  invalidateGrids(): void {
-    // this.mutationCliffsGrid.invalidate();
-    // this.mostPotentResiduesGrid.invalidate();
-    // this.logoSummaryGrid?.invalidate();
-    this.analysisView.grid.invalidate();
-  }
-
   setBitsetCallback(): void {
     if (this.isBitsetChangedInitialized)
       return;
@@ -831,7 +797,6 @@ export class PeptidesModel {
       if (!this.isInvariantMapTrigger)
         this.initBitset = filter.clone();
 
-      // filter.copyFrom(invariantMapBitset.and(this.initBitset), false);
       const temp = invariantMapBitset.and(this.initBitset);
       filter.init((i) => temp.get(i), false);
     });
@@ -864,7 +829,7 @@ export class PeptidesModel {
         gridCol.name = gridColName.substring(1);
 
       const tableColName = tableCol.name;
-      gridCol.visible = 
+      gridCol.visible =
         tableCol.semType === C.SEM_TYPES.MONOMER ||
         tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED ||
         visibleColumns.includes(tableColName ?? '');
@@ -883,7 +848,7 @@ export class PeptidesModel {
       if (currentCol) {
         if (currentCol.column?.getTag(C.TAGS.VISIBLE) === '0')
           currentCol.visible = false;
-    
+
         currentCol.width = isNaN(parseInt(currentCol.name)) ? 50 : 40;
       }
     }
@@ -914,15 +879,12 @@ export class PeptidesModel {
       this.analysisView.setRibbonPanels([[settingsButton]], false);
       this.isRibbonSet = true;
     }
-    // this.sourceGrid = this.analysisView.grid;
-    // if (this.df.tags[C.PEPTIDES_ANALYSIS] === '1')
-    //   return;
 
     this.df.tags[C.PEPTIDES_ANALYSIS] = '1';
 
     this.updateDefault();
 
-    this.invalidateGrids();
+    this.analysisView.grid.invalidate();
   }
 
   async addViewers(): Promise<void> {
@@ -938,7 +900,7 @@ export class PeptidesModel {
 
     dockManager.dock(mostPotentResiduesViewer, DG.DOCK_TYPE.RIGHT, mcNode, mostPotentResiduesViewer.name, 0.3);
   }
-  
+
   async addLogoSummaryTableViewer(): Promise<void> {
     const logoSummary = await this.df.plot.fromType('logo-summary-viewer') as LogoSummary;
     this.analysisView.dockManager.dock(logoSummary, DG.DOCK_TYPE.RIGHT, null, 'Logo Summary Table');

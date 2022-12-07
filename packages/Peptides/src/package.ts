@@ -174,7 +174,6 @@ export function getPeptidesStructure(col: DG.Column): DG.Widget {
 
 function getOrDefine(dataframe?: DG.DataFrame, column?: DG.Column | null): [DG.DataFrame, DG.Column] {
   dataframe ??= grok.shell.t;
-  // column ??= dataframe.columns.bySemType(C.SEM_TYPES.MACROMOLECULE);
   column ??= dataframe.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
   if (column === null)
     throw new Error('Table does not contain aligned sequence columns');
