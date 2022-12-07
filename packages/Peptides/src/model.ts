@@ -112,7 +112,7 @@ export class PeptidesModel {
     this._mostPotentResiduesDf ??= this.createVerticalTable();
     return this._mostPotentResiduesDf;
   }
-  set mostPtentResiduesDf(df: DG.DataFrame) {
+  set mostPotentResiduesDf(df: DG.DataFrame) {
     this._mostPotentResiduesDf = df;
   }
 
@@ -132,7 +132,7 @@ export class PeptidesModel {
     this._substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
     return this._substitutionsInfo;
   }
-  set subsitutionsInfo(si: type.SubstitutionsInfo) {
+  set substitutionsInfo(si: type.SubstitutionsInfo) {
     this._substitutionsInfo = si;
   }
 
@@ -255,10 +255,52 @@ export class PeptidesModel {
     return this._settings;
   }
   set settings(s: type.PeptidesSettings) {
-    for (const [key, value] of Object.entries(s))
+    const newSettingsEntries = Object.entries(s);
+    if (newSettingsEntries.length == 1)
+      return;
+
+    const updateVars: Set<string> = new Set();
+    for (const [key, value] of newSettingsEntries) {
       this._settings[key as keyof type.PeptidesSettings] = value as any;
+      switch (key) {
+        case 'scaling':
+          updateVars.add('activity');
+          updateVars.add('mutationCliffs');
+          updateVars.add('stats');
+          break;
+        case 'columns':
+          updateVars.add('grid');
+          break;
+        case 'maxMutations':
+        case 'minActivityDelta':
+          updateVars.add('mutationCliffs');
+          break;
+      }
+    }
     this.df.setTag('settings', JSON.stringify(this._settings));
-    this.updateDefault();
+    // this.updateDefault();
+    for (const variable of updateVars) {
+      switch (variable) {
+        case 'activity':
+          this.createScaledCol();
+          break;
+        case 'mutationCliffs':
+          const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+          //TODO: set categories ordering the same to share compare indexes instead of strings
+          const monomerColumns: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
+          this.substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
+          break;
+        case 'stats':
+          this.monomerPositionStatsDf = this.calculateMonomerPositionStatistics();
+          this.monomerPositionDf = this.createMonomerPositionDf();
+          this.mostPotentResiduesDf = this.createVerticalTable();
+          this.clusterStatsDf = this.calculateClusterStatistics();
+          break;
+        case 'columns':
+          this.updateGrid();
+          break;
+      }
+    }
 
     //TODO: handle settings change
     this.settingsSubject.next(this.settings);
@@ -307,14 +349,14 @@ export class PeptidesModel {
   updateDefault(): void {
     if (!this._isUpdating || !this.isInitialized) {
       this._isUpdating = true;
-      this.initializeViewersComponents();
+      this.updateGrid();
 
       this.analysisView.grid.invalidate();
       this._isUpdating = false;
     }
   }
 
-  initializeViewersComponents(): void {
+  updateGrid(): void {
     this.joinDataFrames();
 
     this.sortSourceGrid();

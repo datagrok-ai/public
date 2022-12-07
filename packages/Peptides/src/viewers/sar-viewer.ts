@@ -115,6 +115,10 @@ export class MonomerPosition extends SARViewerBase {
 
   onTableAttached(): void {
     super.onTableAttached();
+    this.subs.push(this.model.onSettingsChanged.subscribe(() => {
+      this.createMonomerPositionGrid();
+      this.render();
+    }));
     this.render();
   }
 
@@ -169,6 +173,10 @@ export class MostPotentResiduesViewer extends SARViewerBase {
 
   onTableAttached(): void {
     super.onTableAttached();
+    this.subs.push(this.model.onSettingsChanged.subscribe(() => {
+      this.createMostPotentResiduesGrid();
+      this.render();
+    }));
     this.render();
   }
 
