@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
@@ -30,7 +30,7 @@
     "common/openchemlib-full.js"
   ],
   "dependencies": {
-    "datagrok-api": "^1.8.2",
+    "datagrok-api": "^1.10.2",
     "@datagrok-libraries/chem-meta": "^1.0.1",
     "@datagrok-libraries/ml": "^6.2.2",
     "@datagrok-libraries/utils": "^1.15.5",
