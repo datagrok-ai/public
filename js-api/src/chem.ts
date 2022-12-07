@@ -453,7 +453,12 @@ export namespace chem {
     static checkDuplicatesAndAddToStorage(storage: string[], molecule: string, localStorageKey: string) {
       let mol1: any;
       function moleculesEqual(rdkitModule: any, mol1: any, molfile2: string): boolean {
-        const mol2 = rdkitModule.get_mol(molfile2);
+        let mol2;
+        try {
+          mol2 = rdkitModule.get_mol(molfile2);
+        } catch (e: any) {
+          return false;
+        }
         const result = mol1.get_smiles() === mol2.get_smiles();
         mol2.delete();
         return result;
@@ -477,7 +482,7 @@ export namespace chem {
           localStorage.setItem(localStorageKey, s);
         }         
       }).finally(() => {
-        mol1.delete();
+        if (mol1) mol1.delete();
       });
     }
 
