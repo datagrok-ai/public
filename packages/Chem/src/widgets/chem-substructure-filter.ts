@@ -30,8 +30,7 @@ export class SubstructureFilter extends DG.Filter {
 
   get isFiltering(): boolean {
     const molFile = this.sketcher?.getMolFile();
-    return super.isFiltering &&
-    (!!molFile && !chem.Sketcher.isEmptyMolfile(molFile));
+    return super.isFiltering && (!!molFile && !chem.Sketcher.isEmptyMolfile(molFile));
   }
 
   get isReadyToApplyFilter(): boolean {
@@ -50,13 +49,13 @@ export class SubstructureFilter extends DG.Filter {
   get _debounceTime(): number {
     if (this.column == null)
       return 1000;
-    const sz = this.column.length;
-    const szMin = 500;
-    const szMax = 10000;
+    const length = this.column.length;
+    const minLength = 500;
+    const maxLength = 10000;
     const msecMax = 1000;
-    if (sz < szMin) return 0;
-    if (sz > szMax) return msecMax;
-    return Math.floor(msecMax * ((sz - szMin) / (szMax - szMin)));
+    if (length < minLength) return 0;
+    if (length > maxLength) return msecMax;
+    return Math.floor(msecMax * ((length - minLength) / (maxLength - minLength)));
   }
 
   attach(dataFrame: DG.DataFrame): void {
