@@ -673,6 +673,23 @@ function openGISViewer(): void {
   ol.initMap('map-container');
 }
 
+//name: gisAreaWidget
+//tags: panel, widgets
+//input: string gisArea {semType: gis-area}
+//output: widget result
+//condition: true
+export function gisAreaWidget(gisArea: any): DG.Widget | null {
+  //this is temporary code - should be filled with usefull functionality
+  // if ((!gisArea) || !(gisArea instanceof GisArea)) return null;
+  if ((!gisArea)) return null;
+
+  const strToAdd: string = 'test'; //(gisArea as GisArea).semtype;
+  let widgetStyle: DG.ElementOptions = { };
+  widgetStyle = {style: {'color': '#F55'}};
+
+  return new DG.Widget(ui.divText('gis Area widget ' + strToAdd, widgetStyle));
+}
+
 // //name: gisAreaWidget
 // //tags: panel, widgets
 // //input: string area {semType: gis-area}

@@ -31,13 +31,13 @@ export class GisArea {
   // coordinates: Array<gisCoordinate>;
   coordinates: gisPolygons;
   attributes: gisFeatureProperties = {};
-  maprefference: OpenLayers | null; //TODO: maybe we should refference to superclass (e.g. MapEngine above OpenLayers)
+  // maprefference: OpenLayers | null; //TODO: maybe we should refference to superclass (e.g. MapEngine above OpenLayers)
 
   constructor(coord: gisPolygons, attr?: gisFeatureProperties, parentmap: OpenLayers | null = null) {
     this.coordinates = coord;
     if (attr)
       this.attributes = attr;
-    this.maprefference = parentmap;
+    // this.maprefference = parentmap;
   }
 
   toString() {
@@ -115,23 +115,6 @@ export class GisAreaCanvasRenderer extends DG.CanvasRenderer {
     obj: GisArea, context: any): void {
     drawContourByCoords(g, x, y, w, h, obj.coordinates);
   }
-}
-
-//name: gisAreaWidget
-//tags: panel, widgets
-//input: object gisArea {semType: gis-area}
-//output: widget result
-//condition: true
-export function gisAreaWidget(gisArea: any): DG.Widget | null {
-//this is temporary code - should be filled with usefull functionality
-  // if ((!gisArea) || !(gisArea instanceof GisArea)) return null;
-  if ((!gisArea)) return null;
-
-  const strToAdd: string = 'test'; //(gisArea as GisArea).semtype;
-  let widgetStyle: DG.ElementOptions = { };
-  widgetStyle = {style: {'color': '#F55'}};
-
-  return new DG.Widget(ui.divText('gis Area widget ' + strToAdd, widgetStyle));
 }
 
 //name: gisAreaGridCellRenderer
