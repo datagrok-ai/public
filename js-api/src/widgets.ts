@@ -1391,6 +1391,11 @@ export class TreeViewNode {
     return api.grok_TreeViewNode_Root(this.dart);
   }
 
+  /* Node's parent */
+  get parent(): TreeViewNode {
+    return api.grok_TreeViewNode_Parent(this.dart);
+  }
+
   /** Caption label */
   get captionLabel(): HTMLElement {
     return api.grok_TreeViewNode_CaptionLabel(this.dart);
@@ -1419,6 +1424,11 @@ export class TreeViewNode {
 
   /**  */
   get onSelected(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-current', this.dart); }
+
+  /** Removes the node and its children from the parent */
+  remove(): void {
+    api.grok_TreeViewNode_Remove(this.dart);
+  }
 }
 
 export class TreeViewGroup extends TreeViewNode {
@@ -1471,9 +1481,18 @@ export class TreeViewGroup extends TreeViewNode {
     return api.grok_TreeViewNode_Items(this.dart).map((i: any) => toJs(i));
   }
 
+  /** Gets the node's children */
+  get children(): TreeViewNode[] {
+    return api.grok_TreeViewNode_Children(this.dart).map((i: any) => toJs(i));
+  }
+
   get expanded(): boolean { return api.grok_TreeViewNode_Get_Expanded(this.dart); }
 
   set expanded(isExpanded: boolean) { api.grok_TreeViewNode_Set_Expanded(this.dart, isExpanded); }
+
+  /** Indicates whether check or uncheck is applied to a node only or to all node's children */
+  get autoCheckChildren(): boolean { return api.grok_TreeViewNode_GetAutoCheckChildren(this.dart); }
+  set autoCheckChildren(auto: boolean) { api.grok_TreeViewNode_SetAutoCheckChildren(this.dart, auto); }
 
   /** Adds new group */
   group(text: string | Element, value: object | null = null, expanded: boolean = true): TreeViewGroup {
