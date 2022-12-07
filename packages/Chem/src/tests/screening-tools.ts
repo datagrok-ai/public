@@ -39,7 +39,7 @@ category('screening tools benchmarks', () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
     const col: DG.Column = df.getCol('molecule');
     DG.time('Elemental Analysis', async () => {
-      await elementalAnalysis(df, col, false, false, false);
+      await elementalAnalysis(df, col, false, false);
     });
   })
 });

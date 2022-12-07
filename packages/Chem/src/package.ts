@@ -442,8 +442,7 @@ export function addInchisPanel(col: DG.Column): void {
 //input: column molCol { semType: Molecule }
 //input: bool radarView = false
 //input: bool radarGrid = false
-//input: bool molecularFormula = false
-export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarView: boolean, radarGrid: boolean, molecularFormula: boolean): void {
+export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarView: boolean, radarGrid: boolean): void {
   if (molCol.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.info(`The column ${molCol.name} doesn't contain molecules`);
     return;
@@ -488,12 +487,6 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     } else {
       grok.shell.warning('PowerGrid package is not installed');
     }
-  }
-
-  if (molecularFormula) {
-    const unusedName = table.columns.getUnusedName('molFormula');
-    table.columns.addNewString(unusedName)
-    .init((i) => oclMol(molCol.get(i)).getMolecularFormula().formula);
   }
 }
 
