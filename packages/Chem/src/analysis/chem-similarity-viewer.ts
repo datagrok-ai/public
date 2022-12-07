@@ -92,7 +92,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const grid = ui.div([
             renderMolecule(
               //@ts-ignore
-              this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height, popupMenu: false}),
+              this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
             label],
           {style: {margin: '5px'}},
           );
@@ -110,7 +110,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const grid = ui.div([
             renderMolecule(
               //@ts-ignore
-              this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height, popupMenu: false}),
+              this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
             label],
           {style: {margin: '5px'}},
           );
