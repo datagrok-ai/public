@@ -1,4 +1,4 @@
-import {category, expect, test, before, after} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test, before, after, testEvent, delay} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -234,19 +234,23 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
     if (!s.sketcher)
       await initSketcher(s);
     s.molInput.value = exampleInchi;
-    s.molInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    const t = new Promise((resolve, reject) => {
-      s.sketcher!.onChanged.subscribe(async (_: any) => {
-        try {
-          const resultMol = s.getMolFile();
-          resolve(resultMol);
-        } catch (error) {
-          reject(error);
-        }
-      });
-    });
-    const resMolblock = await t;
-    compareTwoMols(rdkitModule, mol, resMolblock);
+    //s.molInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    // const t = new Promise((resolve, reject) => {
+    //   s.sketcher!.onChanged.subscribe(async (_: any) => {
+    //     try {
+    //       const resultMol = s.getMolFile();
+    //       resolve(resultMol);
+    //     } catch (error) {
+    //       reject(error);
+    //     }
+    //   });
+    // });
+    await delay(5000);
+    await testEvent(s.sketcher!.onChanged,
+                    () => {compareTwoMols(rdkitModule, mol, s.getMolFile())}, 
+                    () => {s.molInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))}, 5000);
+    // const resMolblock = await t;
+    // compareTwoMols(rdkitModule, mol, resMolblock);
     d.close();
   }
   mol?.delete();
