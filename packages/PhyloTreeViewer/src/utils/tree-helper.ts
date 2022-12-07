@@ -101,7 +101,7 @@ export class TreeHelper implements ITreeHelper {
   /** Cuts tree, gets cutted tree of clusters as lists of leafs */
   treeCutAsTree(
     node: NodeType, cutHeight: number, keepShorts?: boolean, currentHeight?: number
-  ): NodeCuttedType | null {
+  ): NodeType | null {
     const nodeBranchHeight = node.branch_length ?? 0;
     const currentHeightV: number = currentHeight ?? 0;
     const keepShortsV: boolean = keepShorts ?? false;
