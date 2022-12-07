@@ -644,16 +644,6 @@ export function diversitySearchTopMenu() {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
 
-//name: inchiToSmiles
-//input: string id
-//output: string smiles {semType: Molecule}
-//meta.role: converter
-//meta.inputRegexp: (InChI\=.+)
-export async function inchiToSmiles(id: string) {
-  const mol = getRdKitModule().get_mol(id);
-  return mol.get_smiles();
-}
-
 //name: Open Chem Sketcher
 //tags: moleculeSketcher
 //output: widget sketcher
