@@ -898,8 +898,8 @@ export class PeptidesModel {
       this.isRibbonSet = true;
     }
     // this.sourceGrid = this.analysisView.grid;
-    if (this.df.tags[C.PEPTIDES_ANALYSIS] === '1')
-      return;
+    // if (this.df.tags[C.PEPTIDES_ANALYSIS] === '1')
+    //   return;
 
     this.df.tags[C.PEPTIDES_ANALYSIS] = '1';
     const sourceGrid = this.analysisView.grid;
@@ -916,11 +916,13 @@ export class PeptidesModel {
     this.df.temp[C.EMBEDDING_STATUS] = false;
 
     for (let i = 0; i < sourceGridColsLen; i++) {
-      const currentCol = sourceGridCols.byIndex(i)!;
-      if (currentCol.column?.getTag(C.TAGS.VISIBLE) === '0')
-        currentCol.visible = false;
-  
-      currentCol.width = isNaN(parseInt(currentCol.name)) ? 50 : 40;
+      const currentCol = sourceGridCols.byIndex(i);
+      if (currentCol) {
+        if (currentCol.column?.getTag(C.TAGS.VISIBLE) === '0')
+          currentCol.visible = false;
+    
+        currentCol.width = isNaN(parseInt(currentCol.name)) ? 50 : 40;
+      }
     }
 
     this.updateDefault();
