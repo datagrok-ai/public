@@ -16,7 +16,6 @@ export class SARViewerBase extends DG.JsViewer {
   // initialized = false;
   isPropertyChanging: boolean = false;
   _isVertical = false;
-  isModeChanging = false;
 
   constructor() {
     super();
@@ -55,24 +54,20 @@ export class SARViewerBase extends DG.JsViewer {
       $(this.root).empty();
       let switchHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
       if (this.name == 'MC') {
-        const mutationCliffsMode = ui.boolInput('', this.isMutationCliffsMode === '1', () => {
-          if (this.isModeChanging)
-            return;
-          this.isModeChanging = true;
-          invariantMapMode.value = !invariantMapMode.value;
+        const mutationCliffsMode = ui.boolInput('', this.isMutationCliffsMode === '1');
+        mutationCliffsMode.root.addEventListener('click', () => {
+          invariantMapMode.value = false;
+          mutationCliffsMode.value = true;
           this.isMutationCliffsMode = '1';
-          this.isModeChanging = false;
           this.model.isInvariantMap = false;
           this.viewerGrid.invalidate();
-        });
+        })
         mutationCliffsMode.addPostfix('Mutation Cliffs');
-        const invariantMapMode = ui.boolInput('', this.isMutationCliffsMode === '0', () => {
-          if (this.isModeChanging)
-            return;
-          this.isModeChanging = true;
-          mutationCliffsMode.value = !mutationCliffsMode.value;
+        const invariantMapMode = ui.boolInput('', this.isMutationCliffsMode === '0');
+        invariantMapMode.root.addEventListener('click', () => {
+          mutationCliffsMode.value = false;
+          invariantMapMode.value = true;
           this.isMutationCliffsMode = '0';
-          this.isModeChanging = false;
           this.model.isInvariantMap = true;
           this.viewerGrid.invalidate();
         });
