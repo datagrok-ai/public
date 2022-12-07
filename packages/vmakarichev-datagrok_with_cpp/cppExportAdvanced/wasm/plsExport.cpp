@@ -32,12 +32,11 @@ extern "C" {
 //input: column_list features
 //input: column predict
 //input: int componentsCount
-//input: column prediction [new(predict.rowCount)]
-//input: column regressionCoefficients [new(features.columnCount)]
-//input: column_list tScores [new(predict.rowCount, componentsCount)]
-//input: column_list uScores [new(predict.rowCount, componentsCount)]
-//input: column_list xLoadings [new(features.columnCount, componentsCount)]
-//output: objects obj [prediction, regressionCoefficients, tScores, uScores, xLoadings]
+//output: column prediction [new(predict.rowCount)]
+//output: column regressionCoefficients [new(features.columnCount)]
+//output: column_list tScores [new(predict.rowCount, componentsCount)]
+//output: column_list uScores [new(predict.rowCount, componentsCount)]
+//output: column_list xLoadings [new(features.columnCount, componentsCount)]
 EMSCRIPTEN_KEEPALIVE
 int partialLeastSquareRegression(float * predictorColumns,
 	   int rowCount,

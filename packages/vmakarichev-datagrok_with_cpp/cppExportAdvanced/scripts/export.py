@@ -26,10 +26,14 @@ class Function:
         self.typeList = typeList
         self.cFuncTypeIndex = 0
         self.output = {}
+        self.paramsWithNewSpecifier = {}
 
         # process each line of annotation
         for line in cFuncAnnotationLines:
             self.processAnnotationLine(line)
+
+        # complete output of specification
+        self.finalizeOutput()      
 
         # final preparation of prototype
         self.prototype = self.prototype.rstrip(', ')
@@ -65,15 +69,15 @@ class Function:
         self.prototype += (name + '(')
         self.annotation.append(line)
 
-    def processInputLine(self, line):
-        """ Process line containing '//input:'.
+    def processOutputLine(self, line):
+        """ Process line containing '//output:'.
         """
         if 'new' in line:
-            self.processInputLineWithNew(line)
+            self.processOutputLineWithNew(line)
         else:
-            self.processInputLineWithoutNew(line)        
+            self.processOutputLineWithoutNew(line)        
 
-    def processInputLineWithoutNew(self, line):
+    def processInputLine(self, line):
         """ Process '//input'-line with arguments that are passed.
         """
         self.annotation.append(line)
@@ -105,8 +109,8 @@ class Function:
             self.arguments[argName] = {'type': 'num'}
             self.cFuncTypeIndex += 1
 
-    def processInputLineWithNew(self, line):
-        """ Process '//input'-line with arguments that are newly created.
+    def processOutputLineWithNew(self, line):
+        """ Process '//output'-line with arguments that are newly created.
         """
          # get type and name part of line
         ignore1, ignore2, rest = line.partition(': ')        
@@ -119,6 +123,9 @@ class Function:
 
         # extract name & specification
         argName, ignore, specification = rest.partition(' ')
+
+        # store argument info in dictionary
+        self.paramsWithNewSpecifier[argName] = argType
 
         # extract the main data
         specification = specification.lstrip('[new(').rstrip(')]')        
@@ -174,7 +181,7 @@ class Function:
             self.arguments[argName] = {'type': 'num'}
             self.cFuncTypeIndex += 1
 
-    def processOutputLine(self, line):
+    def processOutputLineWithoutNew(self, line):
         """ Process '//output'-line.
         """
         ignore1, ignore2, specification = line.partition(':')       
@@ -209,6 +216,28 @@ class Function:
 
         stringToAnnotation, ignore1, ignore2 = line.partition('[')
         self.annotation.append(stringToAnnotation)
+
+    def finalizeOutput(self):
+        """ Complete output part of the function specification.
+        """
+        if len(self.output) == 0:
+            if len(self.paramsWithNewSpecifier) == 0:
+                raise Warning
+            elif len(self.paramsWithNewSpecifier) == 1:
+                argName = list(self.paramsWithNewSpecifier.keys())[0]
+                self.output['type'] = self.paramsWithNewSpecifier[argName]
+                self.output['source'] = argName
+                self.annotation.append(f'//output: {self.output["type"]} {argName}')
+            else:
+                self.output['type'] = 'objects'
+                sourceString = '['
+
+                for name in self.paramsWithNewSpecifier.keys():
+                    sourceString += f"'{name}'" + ', '
+
+                sourceString = sourceString.rstrip(', ')
+                sourceString += ']'
+                self.output['source'] = sourceString
 
     def getSpecification(self):
         return self.specification
@@ -525,6 +554,9 @@ def main(nameOfSettingsFile="module.json"):
 
     except IndexError:
         print("PARSING ERROR: check C/C++-code!")
+
+    except Warning:
+        print("Check annotation of exported C/C++-function!")
 
 
 if __name__ == '__main__':

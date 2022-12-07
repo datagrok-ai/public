@@ -365,6 +365,14 @@ let Return = {
         return number;
     },
 
+    int(number) {
+        return number;
+    },
+
+    double(number) {
+        return number;
+    },
+
     column(argColumn) {
         return argColumn.data;
     }

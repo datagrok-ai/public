@@ -21,7 +21,7 @@ extern "C" {
 //input: dataframe table
 //input: column_list columns
 //input: int componentsCount
-//input: column_list components [new(columns.rowCount, componentsCount)]
+//output: column_list components [new(columns.rowCount, componentsCount)]
 //output: dataframe result [components]
 EMSCRIPTEN_KEEPALIVE
 int principalComponentAnalysis(float * data,
