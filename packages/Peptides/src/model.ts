@@ -259,6 +259,8 @@ export class PeptidesModel {
       this._settings[key as keyof type.PeptidesSettings] = value as any;
     this.df.setTag('settings', JSON.stringify(this._settings));
     this.updateDefault();
+
+    //TODO: handle settings change
     this.settingsSubject.next(this.settings);
   }
 
@@ -359,7 +361,7 @@ export class PeptidesModel {
         cols.remove(colName);
         cols.add(newCol);
       }
-      CR.setAARRenderer(newCol, this.alphabet, this.analysisView.grid);
+      CR.setAARRenderer(newCol, this.alphabet);
     }
     this.df.name = name;
   }
@@ -829,10 +831,11 @@ export class PeptidesModel {
         gridCol.name = gridColName.substring(1);
 
       const tableColName = tableCol.name;
-      gridCol.visible =
-        tableCol.semType === C.SEM_TYPES.MONOMER ||
-        tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED ||
-        visibleColumns.includes(tableColName ?? '');
+      setTimeout(() => {
+        gridCol.visible = posCols.includes(tableColName) || (tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED) ||
+          visibleColumns.includes(tableColName);
+        gridCol.width = 60;
+      }, 10);
     }
 
     const sourceGridProps = sourceGrid.props;
@@ -842,16 +845,6 @@ export class PeptidesModel {
     sourceGridProps.allowRowResizing = false;
     sourceGridProps.showCurrentRowIndicator = false;
     this.df.temp[C.EMBEDDING_STATUS] = false;
-
-    for (let i = 0; i < sourceGridColsLen; i++) {
-      const currentCol = sourceGridCols.byIndex(i);
-      if (currentCol) {
-        if (currentCol.column?.getTag(C.TAGS.VISIBLE) === '0')
-          currentCol.visible = false;
-
-        currentCol.width = isNaN(parseInt(currentCol.name)) ? 50 : 40;
-      }
-    }
   }
 
   getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
