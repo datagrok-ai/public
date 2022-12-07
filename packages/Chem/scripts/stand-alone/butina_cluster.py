@@ -5,7 +5,7 @@
 #sample: chem/smiles_coordinates.csv
 #tags: demo, chem, rdkit
 #input: dataframe data [Input data table]
-#input: column smiles {semType: Molecule} [Molecules, in SMILES format]
+#input: column molecules {semType: Molecule} [Molecules, in SMILES and MolBlock format]
 #output: dataframe clusters [Clusters]
 
 import numpy as np
@@ -24,8 +24,8 @@ def cluster_fingerprints(fingerprints, cutoff=0.2):
 
     return Butina.ClusterData(dists, length, cutoff, isDistData=True)
 
-smiles = data[smiles]
-mols = [Chem.MolFromSmiles(smile) for smile in smiles if smile is not None]
+molecules = data[molecules]
+mols = [Chem.MolFromSmiles(m) if m is not None and "M  END" not in m else Chem.MolFromMolBlock(m) for m in molecules]
 fingerprints = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, 1024) for mol in mols]
 groups = cluster_fingerprints(fingerprints, cutoff=0.4)
 
