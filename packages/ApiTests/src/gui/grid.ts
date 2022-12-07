@@ -48,14 +48,12 @@ category('GUI: Grid', () => {
     const demog = grok.data.demo.demog(1000);
     v = grok.shell.addTableView(demog);
 
-    grok.shell.topMenu.find('Select').find('Random...').click(); await delay(2000);
-
+    grok.shell.topMenu.find('Select').find('Random...').click(); 
     await awaitCheck(() => {return checkDialog('Select Random Rows')});    
   
     const input25 = Array.from(document.querySelectorAll('.d4-link-label'))
     .find((el) => el.textContent === '25%') as HTMLElement;
     input25!.click();
-
     await awaitCheck(() => {return demog.selection.trueCount == 250})
 
     let okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
@@ -105,4 +103,42 @@ category('GUI: Grid', () => {
     v.close();  
   }); 
 
+  test('grid.filters', async () => {
+    let v: DG.TableView;
+    const demog = grok.data.demo.demog(1000);
+    v = grok.shell.addTableView(demog);
+    await awaitCheck(() => {return grok.shell.v == v});
+
+    grok.shell.topMenu.find('Select').find('Random...').click(); 
+    await awaitCheck(() => {return checkDialog('Select Random Rows')});   
+  
+    const input25 = Array.from(document.querySelectorAll('.d4-link-label'))
+    .find((el) => el.textContent === '25%') as HTMLElement;
+    input25!.click();
+    await awaitCheck(() => {return demog.selection.trueCount == 250})
+
+    let okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
+      .find((el) => el.textContent === 'OK') as HTMLElement;
+    okButton.click();
+    await delay(200);
+
+    let actionsSectionOnPP = Array.from(document.getElementsByClassName('grok-prop-panel')[0].querySelectorAll('.d4-accordion-pane-header'))
+    .find((el) => el.textContent === 'Actions') as HTMLElement;
+    if(Array.from(actionsSectionOnPP.classList).find((e) => e == 'expanded') == undefined)
+      actionsSectionOnPP.click();  
+      
+    await awaitCheck(() => {return Array.from(actionsSectionOnPP.classList).find((e) => e == 'expanded') != undefined});  
+
+    let filterLinkAction = Array.from(document.querySelectorAll('.d4-link-action'))
+    .find((el) => el.textContent === 'Filter Rows') as HTMLElement;
+
+    filterLinkAction!.click();
+    await awaitCheck(() => {return demog.filter.trueCount == 250});
+
+    if (demog.filter.trueCount != 250)
+     throw 'Error in filtering'
+
+    v.close();
+    grok.shell.tables.forEach((t) => grok.shell.closeTable(t)); 
+  });
 });
