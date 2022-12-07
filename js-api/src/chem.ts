@@ -437,7 +437,7 @@ export namespace chem {
     }
 
     static addFavorite(molecule: string) {
-      const favorites = Sketcher.getRecent();
+      const favorites = Sketcher.getFavorites();
       Sketcher.checkDuplicatesAndAddToStorage(favorites, molecule, Sketcher.FAVORITES_KEY);
     }
 
