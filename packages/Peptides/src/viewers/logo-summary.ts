@@ -31,12 +31,7 @@ export class LogoSummary extends DG.JsViewer {
       this.createLogoSummaryGrid();
       this.render();
     }));
-    // this.subs.push(this.model.onLogoSummaryGridChanged.subscribe((grid) => {
-    //   this.viewerGrid = grid;
-    //   this.render();
-    // }));
-    // this.model.updateDefault();
-    // this.viewerGrid = this.model.logoSummaryGrid;
+
     this.createLogoSummaryGrid();
     this.initialized = true;
     this.render();

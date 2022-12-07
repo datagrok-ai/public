@@ -15,7 +15,6 @@ export function setAARRenderer(col: DG.Column, alphabet: string, grid: DG.Grid, 
   col.semType = C.SEM_TYPES.MONOMER;
   col.setTag('cell.renderer', C.SEM_TYPES.MONOMER);
   col.tags[C.TAGS.ALPHABET] = alphabet;
-  // setTimeout(() => grid.columns.byName(col.name)!.width = 60, timeout);
 }
 
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,

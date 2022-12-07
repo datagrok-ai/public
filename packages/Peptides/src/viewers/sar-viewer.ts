@@ -6,14 +6,13 @@ import $ from 'cash-dom';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {PeptidesModel} from '../model';
-import { isGridCellInvalid } from '../utils/misc';
+import {isGridCellInvalid} from '../utils/misc';
 
 export class SARViewerBase extends DG.JsViewer {
   tempName!: string;
   _viewerGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
   model!: PeptidesModel;
-  // initialized = false;
   isPropertyChanging: boolean = false;
   _isVertical = false;
 
@@ -48,8 +47,6 @@ export class SARViewerBase extends DG.JsViewer {
   }
 
   render(refreshOnly = false): void {
-    // if (!this.initialized)
-    //   return;
     if (!refreshOnly) {
       $(this.root).empty();
       let switchHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
@@ -61,7 +58,7 @@ export class SARViewerBase extends DG.JsViewer {
           this.isMutationCliffsMode = '1';
           this.model.isInvariantMap = false;
           this.viewerGrid.invalidate();
-        })
+        });
         mutationCliffsMode.addPostfix('Mutation Cliffs');
         const invariantMapMode = ui.boolInput('', this.isMutationCliffsMode === '0');
         invariantMapMode.root.addEventListener('click', () => {
@@ -93,17 +90,11 @@ export class SARViewerBase extends DG.JsViewer {
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);
 
-    // if (!this.initialized)
-    //   return;
-
-    // this.model.updateDefault();
     this.render(true);
   }
 }
 
-/**
- * Structure-activity relationship viewer.
- */
+/** Structure-activity relationship viewer */
 export class MonomerPosition extends SARViewerBase {
   _titleHost = ui.divText('Mutation Cliffs', {id: 'pep-viewer-title'});
   _name = 'MC';
@@ -124,25 +115,10 @@ export class MonomerPosition extends SARViewerBase {
 
   onTableAttached(): void {
     super.onTableAttached();
-
-    // this.subs.push(this.model.onMutationCliffsGridChanged.subscribe((data) => {
-    //   this.viewerGrid = data;
-    //   this.render();
-    // }));
-
-    // this.model.updateDefault();
-    // this.viewerGrid = this.model.mutationCliffsGrid;
-    // this.initialized = true;
     this.render();
   }
 
-  // isInitialized(): DG.Grid {return this.model?.mutationCliffsGrid;}
-
-  //1. debouncing in rxjs; 2. flags?
   onPropertyChanged(property: DG.Property): void {
-    // if (!this.isInitialized())
-    //   return;
-
     super.onPropertyChanged(property);
   }
 
@@ -150,7 +126,8 @@ export class MonomerPosition extends SARViewerBase {
     this.viewerGrid = this.model.monomerPositionDf.plot.grid();
     this.viewerGrid.sort([C.COLUMNS_NAMES.MONOMER]);
     this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this.model.splitSeqDf.columns.names()]);
-    CR.setAARRenderer(this.model.monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER), this.model.alphabet, this.viewerGrid);
+    const monomerCol = this.model.monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    CR.setAARRenderer(monomerCol, this.model.alphabet, this.viewerGrid);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model));
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
@@ -159,7 +136,7 @@ export class MonomerPosition extends SARViewerBase {
         return;
 
       const position = gridCell!.tableColumn!.name;
-      const aar = this.model.monomerPositionDf.get(C.COLUMNS_NAMES.MONOMER, gridCell!.tableRowIndex!);
+      const aar = monomerCol.get(gridCell!.tableRowIndex!);
       chooseAction(aar, position, ev.shiftKey, this.model.isInvariantMap, this.model);
     });
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.monomerPositionDf, this.model));
@@ -168,7 +145,7 @@ export class MonomerPosition extends SARViewerBase {
   }
 }
 
-/** Vertical structure activity relationship viewer. */
+/** Vertical structure activity relationship viewer */
 export class MostPotentResiduesViewer extends SARViewerBase {
   _name = 'MPR';
   _titleHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
@@ -191,25 +168,10 @@ export class MostPotentResiduesViewer extends SARViewerBase {
 
   onTableAttached(): void {
     super.onTableAttached();
-
-    // this.subs.push(this.model.onMostPotentResiduesGridChanged.subscribe((data) => {
-    //   this.viewerGrid = data;
-    //   this.render();
-    // }));
-
-    // this.model.updateDefault();
-    // this.viewerGrid = this.model.mostPotentResiduesGrid;
-
-    // this.initialized = true;
     this.render();
   }
 
-  // isInitialized(): DG.Grid {return this.model?.mostPotentResiduesGrid;}
-
   onPropertyChanged(property: DG.Property): void {
-    // if (!this.isInitialized())
-    //   return;
-
     super.onPropertyChanged(property);
   }
 
@@ -219,9 +181,11 @@ export class MostPotentResiduesViewer extends SARViewerBase {
     const pValGridCol = this.viewerGrid.col(C.COLUMNS_NAMES.P_VALUE)!;
     pValGridCol.format = '#.000';
     pValGridCol.name = 'P-value';
+    const monomerCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    const positionCol = this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.POSITION);
 
     // Setting Monomer column renderer
-    CR.setAARRenderer(this.model.mostPotentResiduesDf.getCol(C.COLUMNS_NAMES.MONOMER), this.model.alphabet, this.viewerGrid);
+    CR.setAARRenderer(monomerCol, this.model.alphabet, this.viewerGrid);
     this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model));
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
@@ -230,8 +194,8 @@ export class MostPotentResiduesViewer extends SARViewerBase {
         return;
 
       const tableRowIdx = gridCell!.tableRowIndex!;
-      const position = this.model.mostPotentResiduesDf.get(C.COLUMNS_NAMES.POSITION, tableRowIdx);
-      const aar = this.model.mostPotentResiduesDf.get(C.COLUMNS_NAMES.MONOMER, tableRowIdx);
+      const position = monomerCol.get(tableRowIdx);
+      const aar = positionCol.get(tableRowIdx);
       chooseAction(aar, position, ev.shiftKey, false, this.model);
       this.viewerGrid.invalidate();
     });
@@ -342,6 +306,6 @@ function setViewerGridProps(grid: DG.Grid, isMostPotentResiduesGrid: boolean): v
     const col = girdCols.byIndex(i)!;
     const colName = col.name;
     col.width = isMostPotentResiduesGrid && colName !== 'Diff' && colName !== C.COLUMNS_NAMES.MONOMER ? 50 :
-        gridProps.rowHeight + 10;
+      gridProps.rowHeight + 10;
   }
 }
