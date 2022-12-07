@@ -28,6 +28,7 @@ export class PeptidesModel {
   // mostPotentResiduesGridSubject = new rxjs.Subject<DG.Grid>();
   // logoSummaryGridSubject = new rxjs.Subject<DG.Grid>();
   settingsSubject: rxjs.Subject<type.PeptidesSettings> = new rxjs.Subject();
+  _mutatinCliffsSelectionSubject: rxjs.Subject<undefined> = new rxjs.Subject();
 
   _isUpdating: boolean = false;
   isBitsetChangedInitialized = false;
@@ -183,6 +184,10 @@ export class PeptidesModel {
   //   return this.logoSummaryGridSubject.asObservable();
   // }
 
+  get onMutationCliffsSelectionChanged(): rxjs.Observable<undefined> {
+    return this._mutatinCliffsSelectionSubject.asObservable();
+  }
+
   get onSettingsChanged(): rxjs.Observable<type.PeptidesSettings> {
     return this.settingsSubject.asObservable();
   }
@@ -196,7 +201,7 @@ export class PeptidesModel {
     this._mutationCliffsSelection = selection;
     this.df.tags[C.TAGS.SELECTION] = JSON.stringify(selection);
     this.fireBitsetChanged();
-    this.invalidateGrids();
+    this._mutatinCliffsSelectionSubject.next();
   }
 
   get invariantMapSelection(): type.PositionToAARList {

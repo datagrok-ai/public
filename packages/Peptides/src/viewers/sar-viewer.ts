@@ -35,6 +35,7 @@ export class SARViewerBase extends DG.JsViewer {
     super.onTableAttached();
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
     this.model = PeptidesModel.getInstance(this.dataFrame);
+    this.subs.push(this.model.onMutationCliffsSelectionChanged.subscribe(() => this.viewerGrid.invalidate()));
     this.helpUrl = '/help/domains/bio/peptides.md';
   }
 
@@ -237,6 +238,7 @@ export class MostPotentResiduesViewer extends SARViewerBase {
       const position = this.model.mostPotentResiduesDf.get(C.COLUMNS_NAMES.POSITION, tableRowIdx);
       const aar = this.model.mostPotentResiduesDf.get(C.COLUMNS_NAMES.MONOMER, tableRowIdx);
       chooseAction(aar, position, ev.shiftKey, false, this.model);
+      this.viewerGrid.invalidate();
     });
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.mostPotentResiduesDf, this.model));
     const mdCol: DG.GridColumn = this.viewerGrid.col(C.COLUMNS_NAMES.MEAN_DIFFERENCE)!;
