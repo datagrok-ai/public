@@ -47,20 +47,12 @@ const molColumnNames = ['1_seq', '2_seq'];
 const nonNormalizedDistances = ['Levenshtein'];
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
-export async function getActivityCliffs(
-  df: DG.DataFrame,
-  seqCol: DG.Column,
-  encodedCol: DG.Column | null,
-  axesNames: string[],
-  scatterTitle: string,
-  activities: DG.Column,
-  similarity: number,
-  similarityMetric: string,
-  methodName: string,
-  semType: string,
-  tags: {[index: string]: string},
+export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, encodedCol: DG.Column | null,
+  axesNames: string[], scatterTitle: string, activities: DG.Column, similarity: number, similarityMetric: string,
+  methodName: string, semType: string, tags: {[index: string]: string},
   seqSpaceFunc: (params: ISequenceSpaceParams) => Promise<ISequenceSpaceResult>,
-  simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[]) => Promise<DG.Column[]>,
+  simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string,
+    simArr: DG.Column[]) => Promise<DG.Column[]>,
   tooltipFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   propertyPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement,
   linesGridFunc?: (df: DG.DataFrame, pairColNames: string[]) => DG.Grid,
@@ -151,7 +143,8 @@ export async function getActivityCliffs(
     }
   }
 
-  const sali: DG.Column = DG.Column.fromList('double', `sali_${axesNames[0].substring(axesNames[0].lastIndexOf('_'))}`, saliCount);
+  const sali: DG.Column = DG.Column.fromList('double',
+    `sali_${axesNames[0].substring(axesNames[0].lastIndexOf('_'))}`, saliCount);
 
   df.columns.add(sali);
   const cliffsColName = addCliffsBooleanCol(df, cliffsMolIds);
@@ -187,7 +180,8 @@ export async function getActivityCliffs(
     linesDfGrid.invalidate();
     if (line) {
       setTimeout(() => {
-        updatePropertyPanel(df, acc, cashedLinesData, line, seqCol, activities, linesRes.linesDf.get('sali', line.id), propertyPanelFunc);
+        updatePropertyPanel(df, acc, cashedLinesData, line, seqCol, activities,
+          linesRes.linesDf.get('sali', line.id), propertyPanelFunc);
         const order = sp.dataFrame.getSortedOrder(view.grid.sortByColumns, view.grid.sortTypes);
         view.grid.scrollToCell(seqCol.name, order.indexOf(sp.dataFrame.currentRowIdx));
       }, 1000);
@@ -235,7 +229,8 @@ export async function getActivityCliffs(
     timer = global.setTimeout(function() {
       const line = checkCursorOnLine(event, canvas, linesRes.lines);
       if (line && df.mouseOverRowIdx === -1) {
-        ui.tooltip.show(tooltipFunc({cashedData: cashedLinesData, line: line, df: df, seqCol: seqCol, activityCol: activities}), event.clientX, event.clientY);
+        ui.tooltip.show(tooltipFunc({cashedData: cashedLinesData, line: line, df: df, seqCol: seqCol,
+          activityCol: activities}), event.clientX, event.clientY);
       }
     }, 500);
   });
@@ -316,18 +311,12 @@ function createPopertyPanel(): DG.Accordion {
   return acc;
 }
 
-function updatePropertyPanel(
-  df: DG.DataFrame,
-  acc: DG.Accordion,
-  cashedData: any,
-  line: ILine,
-  seqCol: DG.Column,
-  activities: DG.Column,
-  sali: number,
-  propPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement) {
+function updatePropertyPanel(df: DG.DataFrame, acc: DG.Accordion, cashedData: any, line: ILine, seqCol: DG.Column,
+  activities: DG.Column, sali: number, propPanelFunc: (params: ITooltipAndPanelParams) => HTMLElement) {
   const panel = acc.getPane('Cliff Details');
   ui.empty(panel.root);
-  const panelElement = propPanelFunc({cashedData: cashedData, line: line, df: df, seqCol: seqCol, activityCol: activities, sali: sali});
+  const panelElement = propPanelFunc({cashedData: cashedData, line: line, df: df, seqCol: seqCol,
+    activityCol: activities, sali: sali});
   panel.root.append(panelElement);
   setTimeout(() => {
     grok.shell.o = acc.root;
@@ -369,8 +358,8 @@ function checkCursorOnLine(event: any, canvas: any, lines: ILine[]): ILine | nul
   return closestLine;
 }
 
-function renderLines(sp: DG.ScatterPlotViewer,
-  xAxis: string, yAxis: string, linesRes: IRenderedLines, saliVals: number[], saliOpacityCoef: number, saliMin: number): ILine [] {
+function renderLines(sp: DG.ScatterPlotViewer, xAxis: string, yAxis: string, linesRes: IRenderedLines,
+  saliVals: number[], saliOpacityCoef: number, saliMin: number): ILine [] {
   const lines = linesRes.lines;
   const canvas = (sp.getInfo() as {[index: string] : any})['canvas'];
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
@@ -393,15 +382,8 @@ function renderLines(sp: DG.ScatterPlotViewer,
   return lines;
 }
 
-function createLines(
-  n1: number[],
-  n2: number[],
-  seq: DG.Column,
-  activities: DG.Column,
-  saliVals: number[],
-  simVals: number[],
-  semType: string,
-  tags: {[index: string]: string}) : IRenderedLines {
+function createLines(n1: number[], n2: number[], seq: DG.Column, activities: DG.Column, saliVals: number[],
+  simVals: number[], semType: string, tags: {[index: string]: string}) : IRenderedLines {
   const lines: ILine[] = new Array(n1.length).fill(null);
   for (let i = 0; i < n1.length; i++) {
     const num1 = n1[i];
@@ -428,14 +410,8 @@ function setTags(col: DG.Column, tags: {[index: string]: string}) {
   });
 }
 
-export async function getSimilaritiesMarix(
-  dim: number,
-  seqCol: DG.Column,
-  dfSeq: DG.DataFrame,
-  simArr: DG.Column[],
-  simFunc: (col: DG.Column, mol: string) => Promise<DG.Column | null>,
-)
-  : Promise<DG.Column[]> {
+export async function getSimilaritiesMatrix( dim: number, seqCol: DG.Column, dfSeq: DG.DataFrame, simArr: DG.Column[],
+  simFunc: (col: DG.Column, mol: string) => Promise<DG.Column | null>): Promise<DG.Column[]> {
   for (let i = 0; i != dim - 1; ++i) {
     const mol = seqCol.get(i);
     dfSeq.rows.removeAt(0, 1, false);
@@ -443,7 +419,6 @@ export async function getSimilaritiesMarix(
   }
   return simArr;
 }
-
 
 export function getSimilaritiesFromDistances(dim: number, distances: Matrix, simArr: DG.Column[])
   : DG.Column[] {
@@ -464,4 +439,3 @@ export function addCliffsBooleanCol(df: DG.DataFrame, ids: Set<number>): string 
   df.columns.addNewBool(newColName).init((i) => ids.has(i));
   return newColName;
 }
-
