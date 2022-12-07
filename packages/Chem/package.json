@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.3.33",
+  "version": "1.4.0",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
