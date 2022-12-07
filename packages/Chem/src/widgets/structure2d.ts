@@ -15,6 +15,6 @@ export function structure2dWidget(smiles: string): DG.Widget {
   const height = 100;
   // const host = ui.canvas(width, height);
   // drawMoleculeToCanvas(0, 0, width, height, host, smiles);
-  const host = renderMolecule(smiles, {renderer: 'RDKit', width: width, height: height, popupMenu: false});
+  const host = renderMolecule(smiles, {renderer: 'RDKit', width: width, height: height});
   return new DG.Widget(host);
 }
