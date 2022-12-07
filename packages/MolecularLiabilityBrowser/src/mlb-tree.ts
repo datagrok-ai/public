@@ -2,17 +2,31 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {TreeAnalyzer, getVId} from './utils/tree-stats';
 import {Subscription, Unsubscribable} from 'rxjs';
 import {PickingInfo} from '@deck.gl/core/typed';
 import {MjolnirPointerEvent} from 'mjolnir.js';
+import {
+  getTreeHelper,
+  IPhylocanvasGlViewer,
+  ITreeHelper,
+  NodeStyleType,
+  NodeType,
+  PhylocanvasTreeNode,
+  Shapes,
+  TreeTypesNames
+} from '@datagrok-libraries/bio';
+
+export function cleanMlbNewick(nwkTxt: string): string {
+  const treeClosePos: number = nwkTxt.substring(0, nwkTxt.length - 2).lastIndexOf(')');
+  const treeTxtClean = nwkTxt.substring(1, treeClosePos + 1) + ';';
+  return treeTxtClean;
+}
 
 export class TreeBrowser extends DG.JsViewer {
   viewed: boolean = false;
-  th: bio.ITreeHelper;
-  newickHelper: bio.INewickHelper | null = null;
+  th!: ITreeHelper;
 
   static treeGridColumnsNameMapping: { [key: string]: { name: string, dType: string } } = {
     totalLeaves: {name: 'Leaves', dType: 'int'},
@@ -25,7 +39,7 @@ export class TreeBrowser extends DG.JsViewer {
   title: string;
 
   treeDiv?: HTMLDivElement;
-  treeViewer?: bio.IPhylocanvasGlViewer;
+  treeViewer?: IPhylocanvasGlViewer;
 
   _treeGrid?: DG.Grid;
   _treeGridSubs: Unsubscribable[] = [];
@@ -48,9 +62,6 @@ export class TreeBrowser extends DG.JsViewer {
   /** Assigns data to viewer, calls destroyView() / buildView(). Use it instead of .dataFrame */
   public async setData(treeDf: DG.DataFrame, mlbDf: DG.DataFrame): Promise<void> {
     console.debug('MLB: TreeBrowser.setData()');
-
-    if (!this.newickHelper)
-      this.newickHelper = await grok.functions.call('PhyloTreeViewer:getNewickHelper') as bio.INewickHelper;
 
     if (this.viewed) {
       await this.destroyView();
@@ -87,7 +98,7 @@ export class TreeBrowser extends DG.JsViewer {
    * @param {number} treeIndex Index of tree containing the node in trees column.
    * @return {PhylocanvasTreeNode} Modified node.
    */
-  private _collectLeavesMapping(node: bio.PhylocanvasTreeNode, treeIndex: number) {
+  private _collectLeavesMapping(node: PhylocanvasTreeNode, treeIndex: number) {
     if (node.isLeaf) {
       // console.debug(`MLB: TreeBrowser._collectLeavesMapping( node: ${node.name}, treeIndex: ${treeIndex} )`);
       const id = node.id;
@@ -283,17 +294,11 @@ export class TreeBrowser extends DG.JsViewer {
     }
   }
 
-  public static cleanMlbNewick(nwkTxt: string): string {
-    const treeClosePos: number = nwkTxt.substring(0, nwkTxt.length - 2).lastIndexOf(')');
-    const treeTxtClean = nwkTxt.substring(1, treeClosePos + 1) + ';';
-    return treeTxtClean;
-  }
-
   private prepareNwkDf(nwkTxt: string, name: string): DG.DataFrame {
     // const nwkDf = await grok.functions.call('PhyloTreeViewer:_newickToDf',
     //   {newick: treeTxtClean, name: ''});
-    const treeTxtClean = TreeBrowser.cleanMlbNewick(nwkTxt);
-    const nwkDf: DG.DataFrame = this.newickHelper!.newickToDf(treeTxtClean, name);
+    const treeTxtClean = cleanMlbNewick(nwkTxt);
+    const nwkDf: DG.DataFrame = this.th.newickToDf(treeTxtClean, name);
     return nwkDf;
   }
 
@@ -315,7 +320,7 @@ export class TreeBrowser extends DG.JsViewer {
     console.debug('MLB: TreeBrowser.buildView() ');
 
     if (!this.th)
-      this.th = await bio.getTreeHelper();
+      this.th = await getTreeHelper();
 
     this.vIdIndex = this._collectMappings();
     const itemsToFind = TreeBrowser._calcFilteredItems(this.mlbDf, this.vIdIndex);
@@ -339,9 +344,9 @@ export class TreeBrowser extends DG.JsViewer {
       });
       this.root.appendChild(this.treeDiv);
 
-      let nwkTxt: string = '((a:1),GERM);'; // side GERM will be removed in prepareNwkDf();
+      const nwkTxt: string = '((a:1),GERM);'; // side GERM will be removed in prepareNwkDf();
       const nwkDf: DG.DataFrame = this.prepareNwkDf(nwkTxt, '');
-      const nodeShape: string = bio.Shapes.Circle;
+      const nodeShape: string = Shapes.Circle;
       this.treeViewer = (await nwkDf.plot.fromType('PhylocanvasGL', {
         interactive: true,
         showLabels: true,
@@ -351,10 +356,10 @@ export class TreeBrowser extends DG.JsViewer {
         treeToCanvasRatio: 0.50,
         fontFamily: 'Roboto',
         fontSize: 13,
-        treeType: bio.TreeTypesNames.Rectangular,
+        treeType: TreeTypesNames.Rectangular,
         // size: this.treeDiv.getBoundingClientRect(),
         // type: TreeTypes.Rectangular,
-      })) as unknown as bio.IPhylocanvasGlViewer;
+      })) as unknown as IPhylocanvasGlViewer;
 
       // this.treeViewer.root.style.backgroundColor = '#FFF0F0';
       this.treeDiv.appendChild(this.treeViewer.root);
@@ -365,7 +370,6 @@ export class TreeBrowser extends DG.JsViewer {
     //this.phyloTreeViewer.selectNode = this.tvSelectNode.bind(this);
     //this.phyloTreeViewer.handleHover = this.tvHandleHover.bind(this);
     this.viewSubs.push(this.treeViewer!.nwkDf.onSelectionChanged.subscribe(() => {
-      let k = 11;
       this.tvSelectNode.bind(this);
     }));
 
@@ -404,9 +408,6 @@ export class TreeBrowser extends DG.JsViewer {
       await this.destroyView();
       this.viewed = false;
     }
-
-    if (this.newickHelper)
-      this.newickHelper = null;
 
     super.detach();
   }
@@ -448,9 +449,9 @@ export class TreeBrowser extends DG.JsViewer {
       //@ts-ignore
       const centre = this.treeViewer.viewer.getCanvasCentrePoint();
 
-      const leafList: bio.NodeType[] = this.th.getLeafList(obj as bio.NodeType);
+      const leafList: NodeType[] = this.th.getLeafList(obj as NodeType);
 
-      let tooltipContent: HTMLElement = ui.table(leafList, (l) => {
+      const tooltipContent: HTMLElement = ui.table(leafList, (l) => {
         //@ts-ignore
         return l.id.split('|').map(
           (idPart: string) => ui.div(idPart, {
@@ -510,22 +511,22 @@ export class TreeBrowser extends DG.JsViewer {
      * @return {any}
      */
     const _modifyNodeStyles = () => {
-      let styles: { [nodeId: string]: { [propName: string]: any } } = {};
+      const styles: { [nodeId: string]: { [propName: string]: any } } = {};
 
       for (const item of treeItems) {
-        let style: bio.NodeStyleType = {};
+        let style: NodeStyleType = {};
 
         const nodeVId = getVId(item);
         if (nodeVId in this.vIdIndex) {
           const color = this.treeAnalyser!.getItemsAsSet().has(item) ? '#0000ff' : '#ff0000';
           style = {
             fillColour: color,
-            shape: bio.Shapes.Circle,
+            shape: Shapes.Circle,
             nodeSize: 5,
           };
         } else {
           style = {
-            shape: bio.Shapes.Circle,
+            shape: Shapes.Circle,
             nodeSize: 3,
           };
         }
