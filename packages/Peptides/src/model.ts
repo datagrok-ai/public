@@ -256,9 +256,6 @@ export class PeptidesModel {
   }
   set settings(s: type.PeptidesSettings) {
     const newSettingsEntries = Object.entries(s);
-    if (newSettingsEntries.length == 1)
-      return;
-
     const updateVars: Set<string> = new Set();
     for (const [key, value] of newSettingsEntries) {
       this._settings[key as keyof type.PeptidesSettings] = value as any;
@@ -296,7 +293,7 @@ export class PeptidesModel {
           this.mostPotentResiduesDf = this.createVerticalTable();
           this.clusterStatsDf = this.calculateClusterStatistics();
           break;
-        case 'columns':
+        case 'grid':
           this.updateGrid();
           break;
       }
@@ -877,7 +874,7 @@ export class PeptidesModel {
         gridCol.visible = posCols.includes(tableColName) || (tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED) ||
           visibleColumns.includes(tableColName);
         gridCol.width = 60;
-      }, 10);
+      }, 600);
     }
 
     const sourceGridProps = sourceGrid.props;
