@@ -91,7 +91,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const label = this.sketchButton;
           const grid = ui.div([
             renderMolecule(
-              //@ts-ignore
               this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
             label],
           {style: {margin: '5px'}},
@@ -109,7 +108,6 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             this.sketchButton : ui.label(`${this.scores.get(i).toPrecision(2)}`, {style: {paddingTop: '5px'}});
           const grid = ui.div([
             renderMolecule(
-              //@ts-ignore
               this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
             label],
           {style: {margin: '5px'}},
