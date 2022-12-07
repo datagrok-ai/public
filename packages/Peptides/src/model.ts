@@ -27,7 +27,7 @@ export class PeptidesModel {
   // mutationCliffsGridSubject = new rxjs.Subject<DG.Grid>();
   // mostPotentResiduesGridSubject = new rxjs.Subject<DG.Grid>();
   // logoSummaryGridSubject = new rxjs.Subject<DG.Grid>();
-  settingsSubject = new rxjs.Subject();
+  settingsSubject: rxjs.Subject<type.PeptidesSettings> = new rxjs.Subject();
 
   _isUpdating: boolean = false;
   isBitsetChangedInitialized = false;
@@ -183,7 +183,7 @@ export class PeptidesModel {
   //   return this.logoSummaryGridSubject.asObservable();
   // }
 
-  get onSettingsChanged(): rxjs.Observable<unknown> {
+  get onSettingsChanged(): rxjs.Observable<type.PeptidesSettings> {
     return this.settingsSubject.asObservable();
   }
 
@@ -275,7 +275,7 @@ export class PeptidesModel {
     this.df.setTag('settings', JSON.stringify(this._settings));
     //TODO: update only needed components
     this.updateDefault();
-    this.settingsSubject.next();
+    this.settingsSubject.next(this.settings);
   }
 
   createMonomerPositionDf(): DG.DataFrame {
@@ -615,7 +615,6 @@ export class PeptidesModel {
   }
 
   setCellRenderers(): void {
-    //decompose into two different renering funcs
     const sourceGrid = this.analysisView.grid;
     sourceGrid.setOptions({'colHeaderHeight': 130});
     sourceGrid.onCellRender.subscribe((gcArgs) => {
