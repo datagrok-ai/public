@@ -51,5 +51,7 @@ The return code should be `0` to indicate a successful deployment.
 
 ## 4. Test
 
-Now go to Datagrok and open `Manage -> Dockerfiles`. You should see the created container in the list. In order to run it, right click on the container and choose the `Run` option.
+Now go to Datagrok and open `Manage -> Dockerfiles`. You should see the created container in the list. In order to run it, right click on the container and choose the `Run` option. Here is how it looks:
+
+![docker-container](./docker.gif)
 
