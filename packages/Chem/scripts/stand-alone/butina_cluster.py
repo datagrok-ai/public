@@ -25,7 +25,11 @@ def cluster_fingerprints(fingerprints, cutoff=0.2):
     return Butina.ClusterData(dists, length, cutoff, isDistData=True)
 
 molecules = data[molecules]
-mols = [Chem.MolFromSmiles(m) if m is not None and "M  END" not in m else Chem.MolFromMolBlock(m) for m in molecules]
+mols = []
+for m in molecules:
+  mol = Chem.MolFromSmiles(m, sanitize = True) if m is not None and "M  END" not in m else Chem.MolFromMolBlock(m, sanitize = True)
+  mols.append(Chem.Mol()) if mol is None else mols.append(mol)
+
 fingerprints = [AllChem.GetMorganFingerprintAsBitVect(mol, 2, 1024) for mol in mols]
 groups = cluster_fingerprints(fingerprints, cutoff=0.4)
 
