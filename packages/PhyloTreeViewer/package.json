@@ -2,7 +2,7 @@
   "name": "@datagrok/phylo-tree-viewer",
   "fullName": "PhyloTreeViewer",
   "friendlyName": "PhyloTreeViewer",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": {
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
@@ -21,7 +21,7 @@
     "@phylocanvas/phylocanvas.gl": "1.44.0",
     "cash-dom": "latest",
     "d3": "^6.7.0",
-    "datagrok-api": "^1.9.1",
+    "datagrok-api": "^1.8.2",
     "deck.gl": "8.8.12",
     "mjolnir.js": "^2.7.0",
     "phylotree": "1.0.20",
