@@ -33,7 +33,6 @@ export async function getDescriptorsPy(
 
 export async function generateScaffoldTree(
   data: DG.DataFrame, 
-  smiles: string, 
-  names: string) : Promise<string> {
-    return await grok.functions.call('Chem: GenerateScaffoldTree', {data, smiles, names});
+  smiles: string) : Promise<string> {
+    return await grok.functions.call('Chem: GenerateScaffoldTree', {data, smiles});
 }
