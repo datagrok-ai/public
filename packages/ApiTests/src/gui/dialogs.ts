@@ -1,4 +1,4 @@
-import {after, before, awaitCheck, category, test, delay} from '@datagrok-libraries/utils/src/test';
+import {after, before, awaitCheck, category, test, delay, expect} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue, checkDialog, checkViewer, isErrorBallon} from './gui-utils';
@@ -360,6 +360,33 @@ category('GUI: Dialogs', () => {
 
     isColumnPresent(demog.columns, 'TestCol1');
     isColumnPresent(demog.columns, 'TestCol2');
+    
+    v.close();
+    grok.shell.tables.forEach((t) => grok.shell.closeTable(t));
+  });
+  
+  test('dialogs.unpivot', async () => {
+    let v: DG.TableView;
+    const demog = grok.data.demo.demog(1000);
+    v = grok.shell.addTableView(demog);
+    await awaitCheck(() => {return grok.shell.v == v});
+    
+    grok.shell.topMenu.find('Data').find('Unpivot...').click(); 
+    await awaitCheck(() => {return checkDialog('Unpivot');});
+
+    let raceInput = Array.from(document.querySelectorAll('td')).find((el) => el.textContent == 'race')!.parentElement!.getElementsByClassName('ui-input-editor')[0] as HTMLInputElement;
+    let sexInput = Array.from(document.querySelectorAll('td')).find((el) => el.textContent == 'sex')!.parentElement!.getElementsByClassName('ui-input-editor')[0] as HTMLInputElement;
+
+    raceInput.value = 'Copy';
+    sexInput.value = 'Merge';
+
+    let okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
+        .find((el) => el.textContent === 'OK') as HTMLElement;
+    okButton.click();
+    await awaitCheck((() => {return grok.shell.v.name == 'result'}), 'result table is not created', 2000)
+
+    expect(grok.shell.t.columns.length, 3);
+    expect(grok.shell.t.rowCount, 1000);
     
     v.close();
     grok.shell.tables.forEach((t) => grok.shell.closeTable(t));
