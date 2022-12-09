@@ -841,6 +841,6 @@ export async function getScaffoldTree(data: DG.DataFrame) {
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
   smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
   data.columns.add(smilesColumn);
-  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name, smilesColumn!.name);
+  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name);
   return scriptRes;
 }
