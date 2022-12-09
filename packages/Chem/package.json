@@ -32,7 +32,7 @@
   "dependencies": {
     "datagrok-api": "^1.10.2",
     "@datagrok-libraries/chem-meta": "^1.0.1",
-    "@datagrok-libraries/ml": "^6.2.2",
+    "@datagrok-libraries/ml": "^6.2.4",
     "@datagrok-libraries/utils": "^1.15.5",
     "cash-dom": "latest",
     "dayjs": "latest",
