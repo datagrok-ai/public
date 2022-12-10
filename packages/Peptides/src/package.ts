@@ -82,10 +82,13 @@ export async function Peptides(): Promise<void> {
 
 //top-menu: Bio | Peptides...
 //name: Bio Peptides
-export async function peptidesDialog(): Promise<DG.Dialog> {
-  const analyzeObject = await analyzePeptidesUI(grok.shell.t);
-  const dialog = ui.dialog('Analyze Peptides').add(analyzeObject.host).onOK(analyzeObject.callback);
-  dialog.show();
+export function peptidesDialog(): DG.Dialog {
+  const analyzeObject = analyzePeptidesUI(grok.shell.t);
+  const dialog = ui.dialog('Analyze Peptides').add(analyzeObject.host).onOK(async () => {
+    const startSuccess = analyzeObject.callback();
+    if (!startSuccess)
+      dialog.show();
+  });
   return dialog.show();
 }
 
@@ -93,9 +96,9 @@ export async function peptidesDialog(): Promise<DG.Dialog> {
 //tags: panel, widgets
 //input: column col {semType: Macromolecule}
 //output: widget result
-export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
+export function peptidesPanel(col: DG.Column): DG.Widget {
   [currentTable, alignedSequenceColumn] = getOrDefine(col.dataFrame, col);
-  const analyzeObject = await analyzePeptidesUI(currentTable, alignedSequenceColumn);
+  const analyzeObject = analyzePeptidesUI(currentTable, alignedSequenceColumn);
   return new DG.Widget(analyzeObject.host);
 }
 
@@ -174,7 +177,7 @@ export function getPeptidesStructure(col: DG.Column): DG.Widget {
 
 function getOrDefine(dataframe?: DG.DataFrame, column?: DG.Column | null): [DG.DataFrame, DG.Column] {
   dataframe ??= grok.shell.t;
-  column ??= dataframe.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
+  column ??= dataframe.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!;
   if (column === null)
     throw new Error('Table does not contain aligned sequence columns');
 

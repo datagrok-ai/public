@@ -203,8 +203,8 @@ export class MostPotentResiduesViewer extends SARViewerBase {
         return;
 
       const tableRowIdx = gridCell!.tableRowIndex!;
-      const position = monomerCol.get(tableRowIdx);
-      const aar = positionCol.get(tableRowIdx);
+      const position = positionCol.get(tableRowIdx);
+      const aar = monomerCol.get(tableRowIdx);
       chooseAction(aar, position, ev.shiftKey, false, this.model);
       this.viewerGrid.invalidate();
     });

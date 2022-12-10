@@ -1,8 +1,6 @@
 export enum COLUMNS_NAMES {
   SPLIT_COL = '~split',
-  ACTIVITY = '~activity',
   ACTIVITY_SCALED = 'activity_scaled',
-  ALIGNED_SEQUENCE = '~aligned_sequence',
   MONOMER = 'AAR',
   POSITION = 'Pos',
   P_VALUE = 'pValue',
@@ -10,7 +8,6 @@ export enum COLUMNS_NAMES {
   COUNT = 'Count',
   RATIO = 'Ratio',
   CLUSTERS = 'clusters',
-  MACROMOLECULE = 'macromolecule',
 }
 
 export enum CATEGORIES {
@@ -29,14 +26,12 @@ export enum TAGS {
   SAR_MODE = 'sarMode',
   CLUSTER_SELECTION = 'clusterSelection',
   VISIBLE = 'visible',
+  SETTINGS = 'settings',
 }
 
 export enum SEM_TYPES {
   MONOMER = 'Monomer',
-  MACROMOLECULE = 'Macromolecule',
   MACROMOLECULE_DIFFERENCE = 'MacromoleculeDifference',
-  ACTIVITY = 'activity',
-  ACTIVITY_SCALED = 'activityScaled',
 }
 
 export const STATS = 'stats';

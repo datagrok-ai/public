@@ -70,7 +70,7 @@ export class LogoSummary extends DG.JsViewer {
     const originalClustersColData = originalClustersCol.getRawData();
     const originalClustersColCategories = originalClustersCol.categories;
     const originalClustersColLength = originalClustersColData.length;
-    const peptideCol: DG.Column<string> = this.dataFrame.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
+    const peptideCol: DG.Column<string> = this.dataFrame.getCol(this.model.settings.sequenceColumnName!);
     const peptideColData = peptideCol.getRawData();
     const peptideColCategories = peptideCol.categories;
     const summaryFilter = summaryTable.filter;

@@ -16,8 +16,8 @@ export function mutationCliffsWidget(table: DG.DataFrame, model: PeptidesModel):
   const substitutionsArray: string[] = [];
   const deltaArray: number[] = [];
   const substitutedToArray: string[] = [];
-  const alignedSeqCol = table.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
-  const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+  const alignedSeqCol = table.getCol(model.settings.sequenceColumnName!);
+  const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const seenIndexes = new Map<number, number[]>();
 
   for (const pos of positions) {

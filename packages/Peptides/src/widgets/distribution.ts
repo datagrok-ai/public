@@ -12,7 +12,7 @@ const allConst = 'All';
 const otherConst = 'Other';
 
 export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel): DG.Widget {
-  const activityScaledCol = table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+  const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const rowCount = activityScaledCol.length;
   const selectionObject = model.mutationCliffsSelection;
   const clustersRawObject = model.logoSummarySelection;
@@ -199,7 +199,7 @@ export function getDistributionAndStats(
 
   const histRoot = table.plot.histogram({
     filteringEnabled: false,
-    valueColumnName: table.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)?.name,
+    valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
     splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
     legendVisibility: 'Never',
     showXAxis: true,

@@ -38,13 +38,11 @@ export function cleanAlignedSequencesColumn(col: DG.Column): Array<string> {
  * @param {boolean} [zoom=false] Whether to fit view.
  * @return {Promise<DG.ScatterPlotViewer>} A viewer.
  */
-export async function createPeptideSimilaritySpaceViewer(
-  table: DG.DataFrame, method: string, measure: string, cyclesCount: number, view?: DG.TableView, col?: DG.Column,
-): Promise<DG.ScatterPlotViewer> {
+export async function createPeptideSimilaritySpaceViewer(table: DG.DataFrame, method: string, measure: string,
+  cyclesCount: number, col: DG.Column, activityColName?: string, view?: DG.TableView): Promise<DG.ScatterPlotViewer> {
   const pi = DG.TaskBarProgressIndicator.create('Creating embedding...');
 
   const axesNames = ['~X', '~Y', '~MW'];
-  col ??= table.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
   const columnData = col.toList().map((v) => AlignedSequenceEncoder.clean(v));
 
   const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(
@@ -80,7 +78,7 @@ export async function createPeptideSimilaritySpaceViewer(
       table.columns.insert(newCol);
   }
 
-  const colorColName = table.columns.bySemType(C.SEM_TYPES.ACTIVITY)?.name ?? '~MW';
+  const colorColName = activityColName ?? '~MW';
   const viewerOptions = {
     x: '~X', y: '~Y', color: colorColName, size: '~MW', title: 'Peptide Space',
     showYSelector: false, showXSelector: false, showColorSelector: false, showSizeSelector: false,
@@ -136,7 +134,7 @@ export class PeptideSimilaritySpaceWidget {
    */
   public async drawViewer(): Promise<DG.Viewer> {
     const viewer = await createPeptideSimilaritySpaceViewer(
-      this.currentDf, this.method, this.metrics, this.cycles, undefined, this.alignedSequencesColumn);
+      this.currentDf, this.method, this.metrics, this.cycles, this.alignedSequencesColumn, undefined);
     viewer.root.style.width = 'auto';
     return viewer;
   }
