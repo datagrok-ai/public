@@ -1304,8 +1304,8 @@ export class ValueMatcher {
  * To maximize performance, get values via [DataFrame.columns], instead.
  */
 export class RowList {
-  private readonly dart: any;
-  private readonly table: any;
+  readonly dart: any;
+  readonly table: DataFrame;
 
   constructor(table: DataFrame, dart: any) {
     /** @member {DataFrame} */
@@ -1390,6 +1390,11 @@ export class RowList {
   filter(rowPredicate: RowPredicate): void {
     this._applyPredicate(this.table.filter, rowPredicate);
     this.table.filter.fireChanged();
+  }
+
+  /** Highlights the corresponding rows. */
+  highlight(indexPredicate: IndexPredicate): void {
+    api.grok_RowList_Highlight(this.dart, indexPredicate);
   }
 
   /** Viewers that filter rows should subscribe to DataFrame.onRowsFiltering event.
@@ -1653,15 +1658,12 @@ export class BitSet {
     return this;
   }
 
-  /** Indexes of all set bits. The result is cached.
-   *  @returns {Int32Array} */
+  /** Indexes of all set bits. The result is cached.  */
   getSelectedIndexes(): Int32Array {
     return api.grok_BitSet_GetSelectedIndexes(this.dart);
   }
 
-  /** Copies the content from the other {BitSet}.
-   * @param {BitSet} b - BitSet to copy from.
-   * @returns {BitSet} */
+  /** Copies the content from the other {BitSet}. */
   copyFrom(b: BitSet, notify: boolean = true): BitSet {
     api.grok_BitSet_CopyFrom(this.dart, b.dart, notify);
     return this;
