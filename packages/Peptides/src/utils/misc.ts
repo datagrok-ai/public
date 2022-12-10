@@ -15,17 +15,14 @@ export function getSeparator(col: DG.Column<string>): string {
 
 export function scaleActivity(activityCol: DG.Column<number>, scaling: string = 'none'): DG.Column<number> {
   let formula = (x: number): number => x;
-  let newColName = 'activity';
   switch (scaling) {
   case 'none':
     break;
   case 'lg':
     formula = (x: number): number => Math.log10(x);
-    newColName = `Log10(${newColName})`;
     break;
   case '-lg':
     formula = (x: number): number => -Math.log10(x);
-    newColName = `-Log10(${newColName})`;
     break;
   default:
     throw new Error(`ScalingError: method \`${scaling}\` is not available.`);
@@ -35,8 +32,6 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: string = 
       const val = activityCol.get(i);
       return val ? formula(val) : val;
     });
-  scaledCol.semType = C.SEM_TYPES.ACTIVITY_SCALED;
-  scaledCol.setTag('gridName', newColName);
 
   return scaledCol;
 }

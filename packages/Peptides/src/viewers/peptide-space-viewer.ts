@@ -62,7 +62,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
       $(this.root).empty();
       const viewerHost = ui.waitBox(async () => {
         // const aligendSeqCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
-        const alignedSeqCol = this.dataFrame.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
+        const alignedSeqCol = this.dataFrame.getCol(this.model.settings.sequenceColumnName!);
         const edf = await computeWeights(this.dataFrame, this.method, this.measure, this.cyclesCount, alignedSeqCol);
         this.dataFrame.temp[C.EMBEDDING_STATUS] = true;
         this.model.edf = edf;
@@ -77,7 +77,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
             this.model.fireBitsetChanged(true);
         });
 
-        const colorCol = this.dataFrame.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+        const colorCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
         edf.columns.add(colorCol);
 
         const viewerOptions = {
@@ -112,14 +112,14 @@ export class PeptideSpaceViewer extends DG.JsViewer {
 
 //Do not accept table, only column
 export async function computeWeights(
-  table: DG.DataFrame, method: string, measure: string, cyclesCount: number, col?: DG.Column,
+  table: DG.DataFrame, method: string, measure: string, cyclesCount: number, col: DG.Column,
 ): Promise<DG.DataFrame | null> {
   const pi = DG.TaskBarProgressIndicator.create('Creating embedding...');
   let edf: DG.DataFrame | null = null;
   try {
     const axesNames = ['~X', '~Y', '~MW'];
     // col ??= table.columns.bySemType(C.SEM_TYPES.MACROMOLECULE)!;
-    col ??= table.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
+    // col ??= table.getCol(this.model.settings.sequenceColumnName!);
     const columnData = col.toList().map((v) => AlignedSequenceEncoder.clean(v));
 
     const reduceDimRes: IReduceDimensionalityResult = await createDimensinalityReducingWorker(

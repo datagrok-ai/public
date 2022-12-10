@@ -145,7 +145,7 @@ export class PeptidesModel {
   }
 
   get cp(): bio.SeqPalette {
-    this._cp ??= bio.pickUpPalette(this.df.getCol(C.COLUMNS_NAMES.MACROMOLECULE));
+    this._cp ??= bio.pickUpPalette(this.df.getCol(this.settings.sequenceColumnName!));
     return this._cp;
   }
   set cp(_cp: bio.SeqPalette) {
@@ -260,42 +260,42 @@ export class PeptidesModel {
     for (const [key, value] of newSettingsEntries) {
       this._settings[key as keyof type.PeptidesSettings] = value as any;
       switch (key) {
-        case 'scaling':
-          updateVars.add('activity');
-          updateVars.add('mutationCliffs');
-          updateVars.add('stats');
-          break;
-        case 'columns':
-          updateVars.add('grid');
-          break;
-        case 'maxMutations':
-        case 'minActivityDelta':
-          updateVars.add('mutationCliffs');
-          break;
+      case 'scaling':
+        updateVars.add('activity');
+        updateVars.add('mutationCliffs');
+        updateVars.add('stats');
+        break;
+      case 'columns':
+        updateVars.add('grid');
+        break;
+      case 'maxMutations':
+      case 'minActivityDelta':
+        updateVars.add('mutationCliffs');
+        break;
       }
     }
     this.df.setTag('settings', JSON.stringify(this._settings));
     // this.updateDefault();
     for (const variable of updateVars) {
       switch (variable) {
-        case 'activity':
-          this.createScaledCol();
-          break;
-        case 'mutationCliffs':
-          const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-          //TODO: set categories ordering the same to share compare indexes instead of strings
-          const monomerColumns: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
-          this.substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
-          break;
-        case 'stats':
-          this.monomerPositionStatsDf = this.calculateMonomerPositionStatistics();
-          this.monomerPositionDf = this.createMonomerPositionDf();
-          this.mostPotentResiduesDf = this.createVerticalTable();
-          this.clusterStatsDf = this.calculateClusterStatistics();
-          break;
-        case 'grid':
-          this.updateGrid();
-          break;
+      case 'activity':
+        this.createScaledCol();
+        break;
+      case 'mutationCliffs':
+        const scaledActivityCol: DG.Column<number> = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+        //TODO: set categories ordering the same to share compare indexes instead of strings
+        const monomerColumns: type.RawColumn[] = this.df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER).map(extractMonomerInfo);
+        this.substitutionsInfo = findMutations(scaledActivityCol.getRawData(), monomerColumns, this.settings);
+        break;
+      case 'stats':
+        this.monomerPositionStatsDf = this.calculateMonomerPositionStatistics();
+        this.monomerPositionDf = this.createMonomerPositionDf();
+        this.mostPotentResiduesDf = this.createVerticalTable();
+        this.clusterStatsDf = this.calculateClusterStatistics();
+        break;
+      case 'grid':
+        this.updateGrid();
+        break;
       }
     }
 
@@ -323,12 +323,8 @@ export class PeptidesModel {
   }
 
   buildSplitSeqDf(): DG.DataFrame {
-    const sequenceCol = this.df.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
+    const sequenceCol = this.df.getCol(this.settings.sequenceColumnName!);
     const splitSeqDf = splitAlignedSequences(sequenceCol);
-    const splitSeqDfColumns = splitSeqDf.columns;
-
-    for (const splitSeqCol of splitSeqDfColumns)
-      splitSeqCol.name = `p${splitSeqCol.name}`;
 
     return splitSeqDf;
   }
@@ -337,8 +333,8 @@ export class PeptidesModel {
     const acc = ui.accordion();
     acc.root.style.width = '100%';
     acc.addTitle(ui.h1(`${this.df.selection.trueCount} selected rows`));
-    acc.addPane('Mutation Cliff pairs', () => mutationCliffsWidget(this.df, this).root, true);
-    acc.addPane('Distribution', () => getDistributionWidget(this.df, this).root, true);
+    acc.addPane('Mutation Cliff pairs', () => mutationCliffsWidget(this.df, this).root);
+    acc.addPane('Distribution', () => getDistributionWidget(this.df, this).root);
 
     return acc;
   }
@@ -427,14 +423,14 @@ export class PeptidesModel {
 
   createScaledCol(): void {
     const sourceGrid = this.analysisView.grid;
-    const scaledCol = scaleActivity(this.df.getCol(C.COLUMNS_NAMES.ACTIVITY), this.settings.scaling);
+    const scaledCol = scaleActivity(this.df.getCol(this.settings.activityColumnName!), this.settings.scaling);
     //TODO: make another func
     this.df.columns.replace(C.COLUMNS_NAMES.ACTIVITY_SCALED, scaledCol);
-    const gridCol = sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-    if (gridCol)
-      gridCol.name = scaledCol.getTag('gridName');
+    // const gridCol = sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    // if (gridCol)
+    //   gridCol.name = scaledCol.getTag('gridName');
 
-    sourceGrid.columns.setOrder([scaledCol.getTag('gridName')]);
+    sourceGrid.columns.setOrder([scaledCol.name]);
   }
 
   calculateMonomerPositionStatistics(): DG.DataFrame {
@@ -705,7 +701,7 @@ export class PeptidesModel {
 
   showTooltipAt(aar: string, position: string, x: number, y: number): HTMLDivElement | null {
     const currentStatsDf = this.monomerPositionStatsDf.rows.match({Pos: position, AAR: aar}).toDataFrame();
-    const activityCol = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+    const activityCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: use bitset instead of splitCol
     const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
     const currentPosCol = this.df.getCol(position);
@@ -729,7 +725,7 @@ export class PeptidesModel {
 
   showTooltipCluster(cluster: number, x: number, y: number): HTMLDivElement | null {
     const currentStatsDf = this.clusterStatsDf.rows.match({clusters: cluster}).toDataFrame();
-    const activityCol = this.df.columns.bySemType(C.SEM_TYPES.ACTIVITY_SCALED)!;
+    const activityCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: use bitset instead of splitCol
     const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
     const currentClusterCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
@@ -849,7 +845,10 @@ export class PeptidesModel {
     this.df.selection.fireChanged();
     this.modifyOrCreateSplitCol();
     this.headerSelectedMonomers = calculateSelected(this.df);
-    grok.shell.o = this.createAccordion().root;
+    const acc = this.createAccordion();
+    grok.shell.o = acc.root;
+    for (const pane of acc.panes)
+      pane.expanded = true;
     this.isPeptideSpaceChangingBitset = false;
   }
 
@@ -859,31 +858,22 @@ export class PeptidesModel {
     const sourceGridCols = sourceGrid.columns;
     const sourceGridColsLen = sourceGridCols.length;
     const visibleColumns = Object.keys(this.settings.columns ?? {});
-    for (let gcIndex = 0; gcIndex < sourceGridColsLen; ++gcIndex) {
-      const gridCol = sourceGridCols.byIndex(gcIndex)!;
-      const tableCol = gridCol.column;
-      if (!tableCol)
-        continue;
-
-      const gridColName = gridCol.name;
-      if (posCols.includes(gridColName))
-        gridCol.name = gridColName.substring(1);
-
-      const tableColName = tableCol.name;
-      setTimeout(() => {
-        gridCol.visible = posCols.includes(tableColName) || (tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED) ||
-          visibleColumns.includes(tableColName);
-        gridCol.width = 60;
-      }, 600);
-    }
-
     const sourceGridProps = sourceGrid.props;
     sourceGridProps.allowColSelection = false;
     sourceGridProps.allowEdit = false;
-    setTimeout(() => sourceGridProps.rowHeight = 20, 10);
     sourceGridProps.allowRowResizing = false;
     sourceGridProps.showCurrentRowIndicator = false;
     this.df.temp[C.EMBEDDING_STATUS] = false;
+    setTimeout(() => {
+      for (let colIdx = 1; colIdx < sourceGridColsLen; ++colIdx) {
+        const gridCol = sourceGridCols.byIndex(colIdx)!;
+        const tableColName = gridCol.column!.name;
+        gridCol.visible = posCols.includes(tableColName) || (tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED) ||
+          visibleColumns.includes(tableColName);
+        gridCol.width = 60;
+      }
+      sourceGridProps.rowHeight = 20;
+    }, 500);
   }
 
   getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
