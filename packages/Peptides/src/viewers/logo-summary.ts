@@ -156,8 +156,8 @@ export class LogoSummary extends DG.JsViewer {
 
     return this.viewerGrid;
   }
-  
-  updateFilter() {
+
+  updateFilter(): void {
     const table = this.viewerGrid.table;
     const memberstCol = table.getCol(C.COLUMNS_NAMES.MEMBERS);
     const membersColData = memberstCol.getRawData();
