@@ -76,7 +76,10 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
 }
 
 export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
-  currentPosition: string, invariantMapSelection: types.PositionToAARList, cellValue: number, bound: DG.Rect): void {
+  currentPosition: string, invariantMapSelection: types.PositionToAARList, cellValue: number, bound: DG.Rect,
+  color: number): void {
+  canvasContext.fillStyle = DG.Color.toHtml(color);
+  canvasContext.fillRect(bound.x, bound.y, bound.width, bound.height);
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
