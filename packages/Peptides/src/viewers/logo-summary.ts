@@ -56,19 +56,20 @@ export class LogoSummary extends DG.JsViewer {
   }
 
   createLogoSummaryGrid(): DG.Grid {
-    let summaryTableBuilder = this.dataFrame.groupBy([C.COLUMNS_NAMES.CLUSTERS]);
+    const clustersColName = this.model.settings.clustersColumnName!;
+    let summaryTableBuilder = this.dataFrame.groupBy([clustersColName]);
     for (const [colName, aggregationFunc] of Object.entries(this.model.settings.columns ?? {}))
       summaryTableBuilder = summaryTableBuilder.add(aggregationFunc as any, colName, `${aggregationFunc}(${colName})`);
 
     const summaryTable = summaryTableBuilder.aggregate();
     const webLogoCol: DG.Column<string> = summaryTable.columns.addNew('WebLogo', DG.COLUMN_TYPE.STRING);
-    const clustersCol: DG.Column<string> = summaryTable.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    const clustersCol: DG.Column<string> = summaryTable.getCol(clustersColName);
     const clustersColData = clustersCol.getRawData();
     const clustersColCategories = clustersCol.categories;
     const summaryTableLength = clustersColData.length;
     const membersCol: DG.Column<number> = summaryTable.columns.addNewInt(C.COLUMNS_NAMES.MEMBERS);
     const tempDfPlotList: DG.DataFramePlotHelper[] = new Array(summaryTableLength);
-    const originalClustersCol = this.dataFrame.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    const originalClustersCol = this.dataFrame.getCol(clustersColName);
     const originalClustersColData = originalClustersCol.getRawData();
     const originalClustersColCategories = originalClustersCol.categories;
     const originalClustersColLength = originalClustersColData.length;
@@ -99,7 +100,7 @@ export class LogoSummary extends DG.JsViewer {
 
     this.viewerGrid = summaryTable.plot.grid();
     this.updateFilter();
-    const gridClustersCol = this.viewerGrid.col(C.COLUMNS_NAMES.CLUSTERS)!;
+    const gridClustersCol = this.viewerGrid.col(clustersColName)!;
     gridClustersCol.name = 'Clusters';
     gridClustersCol.visible = true;
     this.viewerGrid.columns.rowHeader!.visible = false;
@@ -125,7 +126,7 @@ export class LogoSummary extends DG.JsViewer {
     });
     this.viewerGrid.onCellRender.subscribe((gridCellArgs) => {
       const gc = gridCellArgs.cell;
-      if (gc.tableColumn?.name !== C.COLUMNS_NAMES.CLUSTERS || gc.isColHeader)
+      if (gc.tableColumn?.name !== clustersColName || gc.isColHeader)
         return;
       const canvasContext = gridCellArgs.g;
       const bound = gridCellArgs.bounds;
@@ -139,7 +140,7 @@ export class LogoSummary extends DG.JsViewer {
       canvasContext.restore();
     });
     this.viewerGrid.onCellTooltip((cell, x, y) => {
-      if (!cell.isColHeader && cell.tableColumn?.name === C.COLUMNS_NAMES.CLUSTERS)
+      if (!cell.isColHeader && cell.tableColumn?.name === clustersColName)
         this.model.showTooltipCluster(cell.cell.value, x, y);
       return true;
     });

@@ -496,12 +496,12 @@ export class PeptidesModel {
   }
 
   calculateClusterStatistics(): DG.DataFrame {
-    const originalClustersCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    const originalClustersCol = this.df.getCol(this.settings.clustersColumnName!);
     const originalClustersColData = originalClustersCol.getRawData();
     const originalClustersColCategories = originalClustersCol.categories;
 
-    const statsDf = this.df.groupBy([C.COLUMNS_NAMES.CLUSTERS]).aggregate();
-    const clustersCol = statsDf.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    const statsDf = this.df.groupBy([this.settings.clustersColumnName!]).aggregate();
+    const clustersCol = statsDf.getCol(this.settings.clustersColumnName!);
     clustersCol.setCategoryOrder(originalClustersColCategories);
     const clustersColData = clustersCol.getRawData();
 
@@ -728,7 +728,7 @@ export class PeptidesModel {
     const activityCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: use bitset instead of splitCol
     const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
-    const currentClusterCol = this.df.getCol(C.COLUMNS_NAMES.CLUSTERS);
+    const currentClusterCol = this.df.getCol(this.settings.clustersColumnName!);
     splitCol.init((i) => currentClusterCol.get(i) == cluster);
     const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
     const stats: Stats = {
@@ -779,7 +779,7 @@ export class PeptidesModel {
       return;
     const selection = this.df.selection;
     const filter = this.df.filter;
-    const clusterCol = this.df.col(C.COLUMNS_NAMES.CLUSTERS);
+    const clusterCol = this.df.col(this.settings.clustersColumnName!);
     const clusterColData = clusterCol?.getRawData();
 
     const changeSelectionBitset = (currentBitset: DG.BitSet): void => {
@@ -915,7 +915,7 @@ export class PeptidesModel {
 
     const mutationCliffsViewer = await dfPlt.fromType('peptide-sar-viewer') as MonomerPosition;
     const mostPotentResiduesViewer = await dfPlt.fromType('peptide-sar-viewer-vertical') as MostPotentResiduesViewer;
-    if (this.df.getTag(C.TAGS.CLUSTERS))
+    if (this.settings.clustersColumnName)
       await this.addLogoSummaryTableViewer();
 
     const mcNode = dockManager.dock(mutationCliffsViewer, DG.DOCK_TYPE.DOWN, null, mutationCliffsViewer.name);

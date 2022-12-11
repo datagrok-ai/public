@@ -7,7 +7,6 @@ export enum COLUMNS_NAMES {
   MEAN_DIFFERENCE = 'Mean difference',
   COUNT = 'Count',
   RATIO = 'Ratio',
-  CLUSTERS = 'clusters',
   MEMBERS = 'Members',
 }
 
@@ -23,7 +22,6 @@ export enum TAGS {
   SELECTION = 'selection',
   ALPHABET = 'alphabet',
   FILTER = 'filter',
-  CLUSTERS = 'clusters',
   SAR_MODE = 'sarMode',
   CLUSTER_SELECTION = 'clusterSelection',
   VISIBLE = 'visible',

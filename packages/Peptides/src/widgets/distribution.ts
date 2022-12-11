@@ -15,11 +15,15 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
   const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
   const rowCount = activityScaledCol.length;
   const selectionObject = model.mutationCliffsSelection;
-  const clustersRawObject = model.logoSummarySelection;
-  const clustersColCategories = table.getCol(C.COLUMNS_NAMES.CLUSTERS).categories;
-  const clustersProcessedObject = new Array(clustersRawObject.length);
-  for (let i = 0; i < clustersRawObject.length; ++i)
-    clustersProcessedObject[i] = clustersColCategories[clustersRawObject[i]];
+  const clustersColName = model.settings.clustersColumnName;
+  let clustersProcessedObject: string[] = [];
+  if (clustersColName) {
+    const clustersRawObject = model.logoSummarySelection;
+    const clustersColCategories = table.getCol(model.settings.clustersColumnName!).categories;
+    clustersProcessedObject = new Array(clustersRawObject.length);
+    for (let i = 0; i < clustersRawObject.length; ++i)
+      clustersProcessedObject[i] = clustersColCategories[clustersRawObject[i]];
+  }
   const positions = Object.keys(selectionObject);
   const positionsLen = positions.length;
   let aarStr = allConst;
