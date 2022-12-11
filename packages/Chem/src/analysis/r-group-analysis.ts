@@ -24,10 +24,14 @@ export function rGroupAnalysis(col: DG.Column): void {
   const columnPrefixInput = ui.stringInput('Column prefix', 'R');
   const visualAnalysisCheck = ui.boolInput('Visual analysis', true);
 
+  let molColNames = col.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).map((c) => c.name);
+  const columnInput = ui.choiceInput('Molecules', col.name, molColNames);
+
   const mcsButton = ui.button('MCS', async () => {
     ui.setUpdateIndicator(sketcher.root, true);
     try {
-      const smiles: string = await findMCS(col.name, col.dataFrame);
+      let molCol = col.dataFrame.columns.byName(columnInput.value!);
+      const smiles: string = await findMCS(molCol.name, molCol.dataFrame);
       ui.setUpdateIndicator(sketcher.root, false);
       sketcher.setSmiles(smiles);
     } catch (e: any) {
@@ -35,7 +39,7 @@ export function rGroupAnalysis(col: DG.Column): void {
       dlg.close();
     }
   });
-  ui.tooltip.bind(mcsButton, 'Most Common Substructure');
+  ui.tooltip.bind(mcsButton, 'Calculate Most Common Substructure');
   const mcsButtonHost = ui.div([mcsButton]);
   mcsButtonHost.style.display = 'flex';
   mcsButtonHost.style.justifyContent = 'center';
@@ -47,10 +51,12 @@ export function rGroupAnalysis(col: DG.Column): void {
     .add(ui.div([
       sketcher,
       mcsButtonHost,
+      columnInput,
       columnPrefixInput,
       visualAnalysisCheck,
     ]))
     .onOK(async () => {
+      col = col.dataFrame.columns.byName(columnInput.value!);
       const re = new RegExp(`^${columnPrefixInput.value}\\d+$`, 'i');
       if (col.dataFrame.columns.names().filter(((it) => it.match(re))).length) {
         grok.shell.error('Table contains columns named \'R[number]\', please change column prefix');

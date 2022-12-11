@@ -35,8 +35,7 @@ category('GUI: Files', () => {
     .find((el) => el.textContent == 'TEST') as HTMLElement;
     testBtn.click();
 
-    await delay(1000); // not enough timeout inside awaitCheck(). I will remove it after the parameterization of the function
-    await awaitCheck(() => {return document.getElementsByClassName('d4-balloon-content').length > 0}); 
+    await awaitCheck((() => {return document.getElementsByClassName('d4-balloon-content').length > 0}), 'Connection test failed', 1500); 
 
     isErrorBallon('"Test Connection to S3": connected successfully');
     
@@ -44,8 +43,7 @@ category('GUI: Files', () => {
     .find((el) => el.textContent == 'OK') as HTMLElement;
     okBtn.click();
     
-    await delay(1000);
-    await awaitCheck(() => {return Array.from(document.querySelectorAll('.d4-tree-view-group-label')) .find((el) => el.textContent == 'Test Connection to S3') != undefined})
+    await awaitCheck((() => {return Array.from(document.querySelectorAll('.d4-tree-view-group-label')) .find((el) => el.textContent == 'Test Connection to S3') != undefined}), 'test connection not found in tree', 1500);
    
     let testConnection = await grok.dapi.connections.filter('dataSource in ("Dropbox","Files","Git","GitHub","GoogleCloud","S3") and friendlyName="Test Connection to S3"').first();
 

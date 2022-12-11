@@ -13,30 +13,25 @@ export class LogoSummary extends DG.JsViewer {
   viewerGrid!: DG.Grid;
   initialized: boolean = false;
   webLogoMode: string;
-  importanceThreshold: number;
+  membersRatioThreshold: number;
 
   constructor() {
     super();
 
     this.webLogoMode = this.string('webLogoMode', bio.PositionHeight.full,
       {choices: [bio.PositionHeight.full, bio.PositionHeight.Entropy]});
-    this.importanceThreshold = this.float('importanceThreshold', 0.7);
+    this.membersRatioThreshold = this.float('membersRatioThreshold', 0.7, {min: 0.01, max: 1.0});
   }
 
-  async onTableAttached(): Promise<void> {
+  onTableAttached(): void {
     super.onTableAttached();
 
-    this.model = await PeptidesModel.getInstance(this.dataFrame);
+    this.model = PeptidesModel.getInstance(this.dataFrame);
     this.subs.push(this.model.onSettingsChanged.subscribe(() => {
       this.createLogoSummaryGrid();
       this.render();
     }));
-    // this.subs.push(this.model.onLogoSummaryGridChanged.subscribe((grid) => {
-    //   this.viewerGrid = grid;
-    //   this.render();
-    // }));
-    // this.model.updateDefault();
-    // this.viewerGrid = this.model.logoSummaryGrid;
+
     this.createLogoSummaryGrid();
     this.initialized = true;
     this.render();
@@ -53,33 +48,42 @@ export class LogoSummary extends DG.JsViewer {
     }
   }
 
-  onPropertyChanged(): void {
-    this.createLogoSummaryGrid();
+  onPropertyChanged(property: DG.Property): void {
+    super.onPropertyChanged(property);
+    if (property.name == 'membersRatioThreshold')
+      this.updateFilter();
     this.render();
   }
 
   createLogoSummaryGrid(): DG.Grid {
-    let summaryTableBuilder = this.dataFrame.groupBy([C.COLUMNS_NAMES.CLUSTERS]);
+    const clustersColName = this.model.settings.clustersColumnName!;
+    let summaryTableBuilder = this.dataFrame.groupBy([clustersColName]);
     for (const [colName, aggregationFunc] of Object.entries(this.model.settings.columns ?? {}))
       summaryTableBuilder = summaryTableBuilder.add(aggregationFunc as any, colName, `${aggregationFunc}(${colName})`);
 
     const summaryTable = summaryTableBuilder.aggregate();
-    const summaryTableLength = summaryTable.rowCount;
-    const clustersCol: DG.Column<number> = summaryTable.getCol(C.COLUMNS_NAMES.CLUSTERS);
-    const membersCol: DG.Column<number> = summaryTable.columns.addNewInt('Members');
     const webLogoCol: DG.Column<string> = summaryTable.columns.addNew('WebLogo', DG.COLUMN_TYPE.STRING);
-    const tempDfList: DG.DataFrame[] = new Array(summaryTableLength);
-    const originalClustersCol = this.dataFrame.getCol(C.COLUMNS_NAMES.CLUSTERS);
-    const peptideCol: DG.Column<string> = this.dataFrame.getCol(C.COLUMNS_NAMES.MACROMOLECULE);
-
+    const clustersCol: DG.Column<string> = summaryTable.getCol(clustersColName);
+    const clustersColData = clustersCol.getRawData();
+    const clustersColCategories = clustersCol.categories;
+    const summaryTableLength = clustersColData.length;
+    const membersCol: DG.Column<number> = summaryTable.columns.addNewInt(C.COLUMNS_NAMES.MEMBERS);
+    const tempDfPlotList: DG.DataFramePlotHelper[] = new Array(summaryTableLength);
+    const originalClustersCol = this.dataFrame.getCol(clustersColName);
+    const originalClustersColData = originalClustersCol.getRawData();
+    const originalClustersColCategories = originalClustersCol.categories;
+    const originalClustersColLength = originalClustersColData.length;
+    const peptideCol: DG.Column<string> = this.dataFrame.getCol(this.model.settings.sequenceColumnName!);
+    const peptideColData = peptideCol.getRawData();
+    const peptideColCategories = peptideCol.categories;
     for (let index = 0; index < summaryTableLength; ++index) {
       const indexes: number[] = [];
-      for (let j = 0; j < originalClustersCol.length; ++j) {
-        if (originalClustersCol.get(j) === clustersCol.get(index))
+      for (let j = 0; j < originalClustersColLength; ++j) {
+        if (originalClustersColCategories[originalClustersColData[j]] == clustersColCategories[clustersColData[index]])
           indexes.push(j);
       }
       const tCol = DG.Column.string('peptides', indexes.length);
-      tCol.init((i) => peptideCol.get(indexes[i]));
+      tCol.init((i) => peptideColCategories[peptideColData[indexes[i]]]);
 
       for (const tag of peptideCol.tags)
         tCol.setTag(tag[0], tag[1]);
@@ -88,25 +92,22 @@ export class LogoSummary extends DG.JsViewer {
       tCol.setTag(bio.TAGS.alphabetSize, uh.getAlphabetSize().toString());
 
       const dfSlice = DG.DataFrame.fromColumns([tCol]);
-      tempDfList[index] = dfSlice;
+      tempDfPlotList[index] = dfSlice.plot;
       webLogoCol.set(index, index.toString());
-      membersCol.set(index, dfSlice.rowCount);
-      //TODO: user should be able to choose threshold
-      const maxCount = this.model.clusterStatsDf.getCol(C.COLUMNS_NAMES.COUNT).stats.max;
-      if (dfSlice.rowCount <= Math.ceil(maxCount * this.importanceThreshold))
-        summaryTable.filter.set(index, false, false);
+      membersCol.set(index, indexes.length);
     }
     webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
 
     this.viewerGrid = summaryTable.plot.grid();
-    const gridClustersCol = this.viewerGrid.col(C.COLUMNS_NAMES.CLUSTERS)!;
+    this.updateFilter();
+    const gridClustersCol = this.viewerGrid.col(clustersColName)!;
     gridClustersCol.name = 'Clusters';
     gridClustersCol.visible = true;
     this.viewerGrid.columns.rowHeader!.visible = false;
     this.viewerGrid.props.rowHeight = 55;
     this.viewerGrid.onCellPrepare((cell) => {
-      if (cell.isTableCell && cell.tableColumn?.name === 'WebLogo') {
-        tempDfList[parseInt(cell.cell.value)].plot
+      if (cell.isTableCell && cell.tableColumn?.name == 'WebLogo') {
+        tempDfPlotList[parseInt(cell.cell.value)]
           .fromType('WebLogo', {maxHeight: 50, positionHeight: this.webLogoMode})
           .then((viewer) => cell.element = viewer.root);
       }
@@ -116,16 +117,16 @@ export class LogoSummary extends DG.JsViewer {
       if (!cell || !cell.isTableCell)
         return;
 
-      const cluster = clustersCol.get(cell.tableRowIndex!)!;
+      const clusterIdx = clustersColData[cell.tableRowIndex!];
       summaryTable.currentRowIdx = -1;
       if (ev.shiftKey)
-        this.model.modifyClusterSelection(cluster);
+        this.model.modifyClusterSelection(clusterIdx);
       else
-        this.model.initClusterSelection(cluster);
+        this.model.initClusterSelection(clusterIdx);
     });
     this.viewerGrid.onCellRender.subscribe((gridCellArgs) => {
       const gc = gridCellArgs.cell;
-      if (gc.tableColumn?.name !== C.COLUMNS_NAMES.CLUSTERS || gc.isColHeader)
+      if (gc.tableColumn?.name !== clustersColName || gc.isColHeader)
         return;
       const canvasContext = gridCellArgs.g;
       const bound = gridCellArgs.bounds;
@@ -133,12 +134,13 @@ export class LogoSummary extends DG.JsViewer {
       canvasContext.beginPath();
       canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
       canvasContext.clip();
-      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, this.model.logoSummarySelection, bound);
+      const cellRawData = clustersColData[gc.cell.rowIndex];
+      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, cellRawData, this.model.logoSummarySelection, bound);
       gridCellArgs.preventDefault();
       canvasContext.restore();
     });
     this.viewerGrid.onCellTooltip((cell, x, y) => {
-      if (!cell.isColHeader && cell.tableColumn?.name === C.COLUMNS_NAMES.CLUSTERS)
+      if (!cell.isColHeader && cell.tableColumn?.name === clustersColName)
         this.model.showTooltipCluster(cell.cell.value, x, y);
       return true;
     });
@@ -153,5 +155,13 @@ export class LogoSummary extends DG.JsViewer {
     gridProps.allowColSelection = false;
 
     return this.viewerGrid;
+  }
+
+  updateFilter(): void {
+    const table = this.viewerGrid.table;
+    const memberstCol = table.getCol(C.COLUMNS_NAMES.MEMBERS);
+    const membersColData = memberstCol.getRawData();
+    const maxCount = memberstCol.stats.max;
+    table.filter.init((i) => membersColData[i] > Math.ceil(maxCount * this.membersRatioThreshold));
   }
 }
