@@ -2,6 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as type from '../utils/types';
+import * as C from '../utils/constants';
 import {PeptidesModel} from '../model';
 
 import $ from 'cash-dom';
@@ -35,17 +36,21 @@ export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
 
   const inputsRows: HTMLElement[] = [];
   for (const col of model.df.columns.numerical) {
-    const isIncludedInput = ui.boolInput('', typeof (settings.columns ?? {})[col.name] !== 'undefined',
+    const colName = col.name;
+    if (colName == settings.activityColumnName || colName == C.COLUMNS_NAMES.ACTIVITY_SCALED)
+      continue;
+
+    const isIncludedInput = ui.boolInput('', typeof (settings.columns ?? {})[colName] !== 'undefined',
       () => {
         if (isIncludedInput.value)
-          result.columns![col.name] = aggregationInput.stringValue;
+          result.columns![colName] = aggregationInput.stringValue;
         else
-          delete result.columns![col.name];
+          delete result.columns![colName];
       }) as DG.InputBase<boolean>;
-    const aggregationInput = ui.choiceInput('Aggregation', (settings.columns ?? {})[col.name] ?? 'avg',
+    const aggregationInput = ui.choiceInput('Aggregation', (settings.columns ?? {})[colName] ?? 'avg',
       Object.values(DG.STATS), () => {
         if (isIncludedInput.value)
-        result.columns![col.name] = aggregationInput.stringValue;
+        result.columns![colName] = aggregationInput.stringValue;
         else
           delete result.columns![col.name];
       }) as DG.InputBase<string>;
