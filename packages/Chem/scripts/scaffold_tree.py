@@ -3,7 +3,6 @@
 #language: python
 #input: dataframe data [Input data table]
 #input: string smiles 
-#input: string names
 #output: string result
 
 import scaffoldgraph as sg
@@ -102,7 +101,7 @@ def get_json_representation(tree):
     return json_list
 
 tree = sg.ScaffoldTree.from_dataframe(
-    data, smiles_column=smiles, name_column=names, progress=True,
+    data, smiles_column=smiles, name_column=smiles, progress=True,
 )
 
 res = get_json_representation(tree)

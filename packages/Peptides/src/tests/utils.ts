@@ -45,8 +45,8 @@ export async function _testDimensionalityReducer(
 
   const [X, Y] = embcols as Array<Float32Array>;
 
-  expect(X.every((v) => v !== null && v !== NaN), true);
-  expect(Y.every((v) => v !== null && v !== NaN), true);
+  expect(X.every((v) => v !== null && !Number.isNaN(v)), true);
+  expect(Y.every((v) => v !== null && !Number.isNaN(v)), true);
 }
 
 /**
@@ -64,12 +64,12 @@ export async function _testDimensionalityReducer(
 export async function _testPeptideSimilaritySpaceViewer(table: DG.DataFrame, alignedSequencesColumn: DG.Column,
   method: string, measure: string, cyclesCount: number): Promise<void> {
   const viewer = await createPeptideSimilaritySpaceViewer(
-    table, method, measure, cyclesCount, undefined, alignedSequencesColumn);
+    table, method, measure, cyclesCount, alignedSequencesColumn, undefined);
   const df = viewer.dataFrame;
 
   const axesNames = ['~X', '~Y', '~MW'];
   const axes = axesNames.map((v) => df.getCol(v).getRawData() as Float32Array);
 
   for (const ax of axes)
-    expect(ax.every((v) => v !== null && v !== NaN), true);
+    expect(ax.every((v) => v !== null && !Number.isNaN(v)), true);
 }

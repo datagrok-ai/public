@@ -4,13 +4,12 @@
 # Custom viewers
 
 Developers can extend Datagrok with special visual components bound to data, which are called
-[viewers](../../visualize/viewers.md). There are two major alternatives for developing viewers on Datagrok. The first
+[viewers](../../visualize/viewers.md). There are two ways to develop viewers on Datagrok. The first
 one is JavaScript-based development, which lets you create interactive viewers
-via [Datagrok JavaScript API](../js-api.md). The second option would be utilizing visualizations available for popular
+via [Datagrok JavaScript API](../js-api.md). The second option uses visualizations available for popular
 programming languages, such as Python, R, or Julia. This implementation uses
-[scripting](../../compute/scripting.md) internally, so the code runs on the server, which slightly affects
-interactivity. Nonetheless, both options are applicable and support the essential functionality, such as data filtering
-and selection.
+[scripting](../../compute/scripting.md) internally, so the code runs on the server, which makes it less 
+interactive. Both options support data filtering and selection.
 
 Typically, development starts with [package](../develop.md#packages) creation. Packages are convenient units for
 distributing content within the platform. Using them you can extend Datagrok with your widgets, applications, plugins,
@@ -91,11 +90,33 @@ package's [webpack configuration](../develop.md#webpack.config.js). This means t
 bundle file of your package. The platform provides them in its environment, so if you use such a library, it will be
 taken from there.
 
+### Filter, selection, and highlighting
+
+For a viewer to be fully interactive, it has to synchronize with the dataframe's filter, selection, highlighting,
+current and mouse-over rows. The simplest way to do that is to subscribe to dataframe events, and re-render 
+the scene when anything changes.
+
+When a viewer is closed, we no longer want to receive events from the associated dataframe. This is achieved 
+by adding the subscription object to the `subs` field. The `detach` method (that is called automatically when
+the viewer is closed) unsubscribes from them.
+
+```javascript
+  onTableAttached() {
+    this.init();
+
+  // Stream subscriptions
+    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
+  }
+```
+
 ### Properties
 
-First and foremost, let's take a look at how we can define properties of a viewer. They will include all the parameters
-you want users to be able to tweak from the UI in the [property panel](../../datagrok/navigation.md#properties), be it
-data to display, a color scheme, or some numeric values. We need to set a couple of properties for our bar chart:
+Viewer properties include all the parameters you want users to edit via 
+the [property panel](../../datagrok/navigation.md#properties). They get persisted with the viewer layout.
+
+In this case, we want to set a couple of properties for our bar chart:
 
 ```javascript
 import {axisBottom, axisLeft, scaleBand, scaleLinear, select} from 'd3';
@@ -539,7 +560,8 @@ You can find more inspiring examples in our [public repository](https://github.c
 See also:
 
 * [Datagrok JavaScript API](../js-api.md)
-* [JavaScript API Samples](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
+* [JS API Samples: custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
+* [JS API Samples: viewers](https://public.datagrok.ai/js/samples/ui/viewers/create-viewers)
 * [JavaScript development](../develop.md)
 * [Viewers](../../visualize/viewers.md)
 * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)

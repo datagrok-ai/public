@@ -346,7 +346,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   for (const col of embeddings) {
     const listValues = col.toList();
     emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-    table.columns.add(DG.Column.fromList('double', col.name, listValues));
+    table.columns.add(DG.Column.float(col.name, table.rowCount).init((i)=> listValues[i]));
   }
   if (plotEmbeddings) {
     return grok.shell

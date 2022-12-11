@@ -11,11 +11,10 @@ function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.
 }
 
 /** A function that sets amino acid residue cell renderer to the specified column */
-export function setAARRenderer(col: DG.Column, alphabet: string, grid: DG.Grid, timeout: number = 500): void {
+export function setAARRenderer(col: DG.Column, alphabet: string): void {
   col.semType = C.SEM_TYPES.MONOMER;
   col.setTag('cell.renderer', C.SEM_TYPES.MONOMER);
   col.tags[C.TAGS.ALPHABET] = alphabet;
-  // setTimeout(() => grid.columns.byName(col.name)!.width = 60, timeout);
 }
 
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
@@ -77,7 +76,10 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
 }
 
 export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
-  currentPosition: string, invariantMapSelection: types.PositionToAARList, cellValue: number, bound: DG.Rect): void {
+  currentPosition: string, invariantMapSelection: types.PositionToAARList, cellValue: number, bound: DG.Rect,
+  color: number): void {
+  canvasContext.fillStyle = DG.Color.toHtml(color);
+  canvasContext.fillRect(bound.x, bound.y, bound.width, bound.height);
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
@@ -89,7 +91,7 @@ export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, 
     renderCellSelection(canvasContext, bound);
 }
 
-export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: number,
+export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: string, cellRawData: number,
   clusterSelection: number[], bound: DG.Rect): void {
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
@@ -97,7 +99,7 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
   canvasContext.fillStyle = '#000';
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
-  if (clusterSelection.includes(cellValue))
+  if (clusterSelection.includes(cellRawData))
     renderCellSelection(canvasContext, bound);
 }
 

@@ -14,7 +14,6 @@ import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {generateScaffoldTree} from './scripts-api';
 import {elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
@@ -55,6 +54,7 @@ import {rGroupAnalysis} from './analysis/r-group-analysis';
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
 import {_importSmi} from './file-importers/smi-importer';
+import {generateScaffoldTree} from "./scripts-api";
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -743,7 +743,7 @@ export function useAsSubstructureFilter(mol: string): void {
     mol.straighten_depiction(false);
     molblock = mol.get_molblock();
     mol.delete();
-  };  
+  }
   
   tv.getFiltersGroup({createDefaultFilters: false}).add({
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
@@ -821,9 +821,9 @@ export async function callChemDiversitySearch(
 //name: getScaffoldTree
 //input: dataframe data
 //output: string result
-export async function getScaffoldTree(data: DG.DataFrame) {
+export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  const invalid: number[] = new Array<number>();
+  const invalid: number[] = new Array<number>(data.columns.length);
   const smiles = molColumn?.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
   const smilesList: string[] = [];
   for (let rowI = 0; rowI < molColumn!.length; rowI++) {
@@ -833,7 +833,7 @@ export async function getScaffoldTree(data: DG.DataFrame) {
         el = convertMolNotation(el, DG.UNITS.Molecule.MOLBLOCK, DG.UNITS.Molecule.SMILES);
       } 
       catch {
-        invalid.push(rowI);
+        invalid[rowI] = rowI;
       }
     
     smilesList[rowI] = el;
@@ -841,6 +841,6 @@ export async function getScaffoldTree(data: DG.DataFrame) {
   const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
   smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
   data.columns.add(smilesColumn);
-  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name, smilesColumn!.name);
+  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name);
   return scriptRes;
 }
