@@ -7,7 +7,6 @@ import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {PeptidesModel} from '../model';
 import {isGridCellInvalid} from '../utils/misc';
-import { RawData } from '../utils/types';
 
 export class SARViewerBase extends DG.JsViewer {
   tempName!: string;
@@ -263,16 +262,17 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvaria
         const positionCol = model.df.getCol(currentPosition);
         const positionColData = positionCol.getRawData();
         const positionColCategories = positionCol.categories;
-        
+
         const colorColData = colorCol!.getRawData();
-        let colorDataList: number[] = [];
+        const colorDataList: number[] = [];
         for (let i = 0; i < positionColData.length; ++i) {
           if (positionColCategories[positionColData[i]] === currentAAR)
             colorDataList.push(colorColData[i]);
         }
         const cellColorDataCol = DG.Column.fromList('double', '', colorDataList);
+        const colorColStats = colorCol!.stats;
 
-        const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorCol!.stats.min, colorCol!.stats.max);
+        const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorColStats.min, colorColStats.max);
         CR.renderInvaraintMapCell(
           canvasContext, currentAAR, currentPosition, model.invariantMapSelection, value, bound, color);
       } else {

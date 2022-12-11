@@ -38,7 +38,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
         return viewer.root;
       }));
     });
-  } else if (!(col.getTag(bio.TAGS.aligned) == bio.ALIGNMENT.SEQ_MSA) && col.getTag(DG.TAGS.UNITS) !== bio.NOTATION.HELM) {
+  } else if (!(col.getTag(bio.TAGS.aligned) == bio.ALIGNMENT.SEQ_MSA) &&
+             col.getTag(DG.TAGS.UNITS) !== bio.NOTATION.HELM) {
     return {
       host: ui.label('Peptides analysis only works with aligned sequences'),
       callback: async (): Promise<boolean> => false,
