@@ -8,6 +8,7 @@ export enum COLUMNS_NAMES {
   COUNT = 'Count',
   RATIO = 'Ratio',
   CLUSTERS = 'clusters',
+  MEMBERS = 'Members',
 }
 
 export enum CATEGORIES {
