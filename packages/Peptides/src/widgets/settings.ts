@@ -59,7 +59,8 @@ export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
     $(inputsRow).find('div.ui-div').css('display', 'inline-flex');
     inputsRows.push(inputsRow);
   }
-  accordion.addPane('Columns to include', () => ui.divV(inputsRows), false);
+  if (inputsRows.length != 0)
+    accordion.addPane('Columns to include', () => ui.divV(inputsRows), false);
 
   const dialog = ui.dialog('Peptides settings').add(accordion);
   dialog.root.style.width = '400px';
