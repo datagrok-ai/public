@@ -724,7 +724,9 @@ export class PeptidesModel {
   }
 
   showTooltipCluster(cluster: number, x: number, y: number): HTMLDivElement | null {
-    const currentStatsDf = this.clusterStatsDf.rows.match({clusters: cluster}).toDataFrame();
+    const matcher: {[key: string]: number} = {};
+    matcher[this.settings.clustersColumnName!] = cluster;
+    const currentStatsDf = this.clusterStatsDf.rows.match(matcher).toDataFrame();
     const activityCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: use bitset instead of splitCol
     const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
