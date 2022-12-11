@@ -14,6 +14,7 @@ export type ScalingMethods = 'none' | 'lg' | '-lg';
 export type PeptidesSettings = {
   sequenceColumnName?: string,
   activityColumnName?: string,
+  clustersColumnName?: string,
   scaling?: ScalingMethods,
   isBidirectional?: boolean,
   maxMutations?: number,

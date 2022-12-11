@@ -156,17 +156,16 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
       newDfCols.add(col);
 
     newDf.name = 'Peptides analysis';
-    if (clustersColumn) {
-      const clusterCol = newDf.getCol(clustersColumn.name);
-      clusterCol.name = C.COLUMNS_NAMES.CLUSTERS;
-      newDf.columns.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
-      newDf.setTag(C.TAGS.CLUSTERS, C.COLUMNS_NAMES.CLUSTERS);
-    }
     const settings: type.PeptidesSettings = {
       sequenceColumnName: peptidesCol.name,
       activityColumnName: activityColumn.name,
       scaling: scaling,
     };
+    if (clustersColumn) {
+      const clusterCol = newDf.getCol(clustersColumn.name);
+      newDf.columns.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
+      settings.clustersColumnName = clustersColumn.name;
+    }
     newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 
     let monomerType = 'HELM_AA';
