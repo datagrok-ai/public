@@ -7,6 +7,7 @@ import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {PeptidesModel} from '../model';
 import {isGridCellInvalid} from '../utils/misc';
+import { RawData } from '../utils/types';
 
 export class SARViewerBase extends DG.JsViewer {
   tempName!: string;
@@ -99,8 +100,14 @@ export class MonomerPosition extends SARViewerBase {
   _titleHost = ui.divText('Mutation Cliffs', {id: 'pep-viewer-title'});
   _name = 'MC';
   _isVertical = false;
+  colorColumnName: string;
+  aggregation: string;
 
-  constructor() {super();}
+  constructor() {
+    super();
+    this.colorColumnName = this.string('colorColumnName', C.COLUMNS_NAMES.ACTIVITY_SCALED, {category: 'Invariant Map'});
+    this.aggregation = this.string('aggregation', 'avg', {category: 'Invariant Map', choices: Object.values(DG.AGG)});
+  }
 
   get name(): string {return this._name;}
 
@@ -132,7 +139,8 @@ export class MonomerPosition extends SARViewerBase {
     this.viewerGrid.columns.setOrder([C.COLUMNS_NAMES.MONOMER, ...this.model.splitSeqDf.columns.names()]);
     const monomerCol = this.model.monomerPositionDf.getCol(C.COLUMNS_NAMES.MONOMER);
     CR.setAARRenderer(monomerCol, this.model.alphabet);
-    this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model));
+    this.viewerGrid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => renderCell(args, this.model,
+      this.model.isInvariantMap, this.dataFrame.getCol(this.colorColumnName), this.aggregation as DG.AggregationType));
     this.viewerGrid.onCellTooltip((cell: DG.GridCell, x: number, y: number) => showTooltip(cell, x, y, this.model));
     this.viewerGrid.root.addEventListener('click', (ev) => {
       const gridCell = this.viewerGrid.hitTest(ev.offsetX, ev.offsetY);
@@ -216,7 +224,8 @@ export class MostPotentResiduesViewer extends SARViewerBase {
   }
 }
 
-function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel): void {
+function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel, isInvariantMap?: boolean,
+  colorCol?: DG.Column<number>, colorAgg?: DG.AggregationType): void {
   const renderColNames = [...model.splitSeqDf.columns.names(), C.COLUMNS_NAMES.MEAN_DIFFERENCE];
   const mdCol = model.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
   const canvasContext = args.g;
@@ -246,13 +255,26 @@ function renderCell(args: DG.GridCellRenderArgs, model: PeptidesModel): void {
         tableColName : gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
       const currentAAR: string = gridTable.get(C.COLUMNS_NAMES.MONOMER, tableRowIndex);
 
-      if (model.isInvariantMap) {
+      if (isInvariantMap) {
         const value: number = model.monomerPositionStatsDf
           .groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.MONOMER, C.COLUMNS_NAMES.COUNT])
           .where(`${C.COLUMNS_NAMES.POSITION} = ${currentPosition} and ${C.COLUMNS_NAMES.MONOMER} = ${currentAAR}`)
           .aggregate().get(C.COLUMNS_NAMES.COUNT, 0);
+        const positionCol = model.df.getCol(currentPosition);
+        const positionColData = positionCol.getRawData();
+        const positionColCategories = positionCol.categories;
+        
+        const colorColData = colorCol!.getRawData();
+        let colorDataList: number[] = [];
+        for (let i = 0; i < positionColData.length; ++i) {
+          if (positionColCategories[positionColData[i]] === currentAAR)
+            colorDataList.push(colorColData[i]);
+        }
+        const cellColorDataCol = DG.Column.fromList('double', '', colorDataList);
+
+        const color = DG.Color.scaleColor(cellColorDataCol.aggregate(colorAgg!), colorCol!.stats.min, colorCol!.stats.max);
         CR.renderInvaraintMapCell(
-          canvasContext, currentAAR, currentPosition, model.invariantMapSelection, value, bound);
+          canvasContext, currentAAR, currentPosition, model.invariantMapSelection, value, bound, color);
       } else {
         CR.renderMutationCliffCell(canvasContext, currentAAR, currentPosition, model.monomerPositionStatsDf,
           mdCol, bound, cellValue, model.mutationCliffsSelection, model.substitutionsInfo,
