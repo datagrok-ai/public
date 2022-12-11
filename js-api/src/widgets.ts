@@ -851,6 +851,7 @@ export class Menu {
 
 /** Balloon-style visual notifications. */
 export class Balloon {
+
   /** Shows information message (green background) */
   info(s: string): void {
     api.grok_Balloon(s, 'info');
@@ -859,6 +860,11 @@ export class Balloon {
   /** Shows information message (red background) */
   error(s: string): void {
     api.grok_Balloon(s, 'error');
+  }
+
+  /** Closes all balloons currently shown */
+  static closeAll(): void {
+    api.grok_Balloon_CloseAll();
   }
 }
 
