@@ -16,9 +16,9 @@ export interface ITreeHelper {
 
   toNewick(node: NodeType | null): string;
 
-  getLeafList(node: NodeType): NodeType[];
+  getLeafList<TNode extends NodeType>(node: TNode): TNode[];
 
-  getNodeList(node: NodeType): NodeType[];
+  getNodeList<TNode extends NodeType>(node: TNode): TNode[];
 
   treeFilterByLeaves(node: NodeType, leaves: { [name: string]: any }): NodeType | null;
 
@@ -33,7 +33,6 @@ export interface ITreeHelper {
 
   markClusters(tree: NodeCuttedType,
     dataDf: DG.DataFrame, leafColName: string | null, clusterColName: string, na?: any): void;
-
 
   /**
    * @param {string|null} leafColName Column name for leaf name in newick, null - use row index
