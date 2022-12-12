@@ -5,7 +5,7 @@
 
 Map viewer shows geospatial data on a map as either markers, or a heat map.
 
-## Creating
+## Adding
 
 1. Go to **Tables** and expand the **Viewers** panel.
 1. Locate the **Map Viewer** icon and click it.
