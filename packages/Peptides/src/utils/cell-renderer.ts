@@ -131,7 +131,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
     monomerBounds[monomer] = currentBound;
 
     ctx.resetTransform();
-    if (monomer !== '-') {
+    if (monomer !== '-' && monomer !== '') {
       const monomerTxt = bio.monomerToShort(monomer, 5);
       const mTm: TextMetrics = ctx.measureText(monomerTxt);
 

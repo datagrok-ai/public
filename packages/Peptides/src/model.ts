@@ -109,7 +109,7 @@ export class PeptidesModel {
   }
 
   get mostPotentResiduesDf(): DG.DataFrame {
-    this._mostPotentResiduesDf ??= this.createVerticalTable();
+    this._mostPotentResiduesDf ??= this.createMostPotentResiduesDf();
     return this._mostPotentResiduesDf;
   }
   set mostPotentResiduesDf(df: DG.DataFrame) {
@@ -290,7 +290,7 @@ export class PeptidesModel {
       case 'stats':
         this.monomerPositionStatsDf = this.calculateMonomerPositionStatistics();
         this.monomerPositionDf = this.createMonomerPositionDf();
-        this.mostPotentResiduesDf = this.createVerticalTable();
+        this.mostPotentResiduesDf = this.createMostPotentResiduesDf();
         this.clusterStatsDf = this.calculateClusterStatistics();
         break;
       case 'grid':
@@ -308,6 +308,13 @@ export class PeptidesModel {
       .pivot(C.COLUMNS_NAMES.POSITION)
       .add('first', C.COLUMNS_NAMES.MEAN_DIFFERENCE, '')
       .aggregate();
+    const monomerCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    for (let i = 0; i < monomerCol.length; ++i) {
+      if (monomerCol.get(i) == '') {
+        matrixDf.rows.removeAt(i);
+        break;
+      }
+    }
     matrixDf.name = 'SAR';
 
     return matrixDf;
@@ -457,10 +464,10 @@ export class PeptidesModel {
 
     //calculate p-values based on t-test
     const matrixCols = matrixDf.columns;
-    const mdColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE).getRawData();
-    const pValColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE).getRawData();
-    const countColData = matrixCols.addNewInt(C.COLUMNS_NAMES.COUNT).getRawData();
-    const ratioColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.RATIO).getRawData();
+    const mdColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE).init(0).getRawData();
+    const pValColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE).init(0).getRawData();
+    const countColData = matrixCols.addNewInt(C.COLUMNS_NAMES.COUNT).init(0).getRawData();
+    const ratioColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.RATIO).init(0).getRawData();
     const activityColData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
     const sourceDfLen = activityColData.length;
 
@@ -469,10 +476,13 @@ export class PeptidesModel {
       const currentPosRawCol = posRawColumns[positionRawIdx];
       const monomerRawIdx = monomerColData[i];
       const mask: boolean[] = new Array(sourceDfLen);
+      const monomer = monomerColCategories[monomerRawIdx];
+      if (monomer == '')
+        continue;
 
       let trueCount = 0;
       for (let j = 0; j < sourceDfLen; ++j) {
-        mask[j] = currentPosRawCol.cat![currentPosRawCol.rawData[j]] == monomerColCategories[monomerRawIdx];
+        mask[j] = currentPosRawCol.cat![currentPosRawCol.rawData[j]] == monomer;
 
         if (mask[j])
           ++trueCount;
@@ -491,6 +501,7 @@ export class PeptidesModel {
       countColData[i] = stats.count;
       ratioColData[i] = stats.ratio;
     }
+    matrixDf.fireValuesChanged();
 
     return matrixDf as DG.DataFrame;
   }
@@ -540,7 +551,7 @@ export class PeptidesModel {
     return statsDf;
   }
 
-  createVerticalTable(): DG.DataFrame {
+  createMostPotentResiduesDf(): DG.DataFrame {
     // TODO: aquire ALL of the positions
     const columns = [C.COLUMNS_NAMES.MEAN_DIFFERENCE, C.COLUMNS_NAMES.MONOMER, C.COLUMNS_NAMES.POSITION,
       'Count', 'Ratio', C.COLUMNS_NAMES.P_VALUE];
@@ -553,6 +564,7 @@ export class PeptidesModel {
     const posColCategories = sequenceDf.getCol(C.COLUMNS_NAMES.POSITION).categories;
     const mdCol = sequenceDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     const posCol = sequenceDf.getCol(C.COLUMNS_NAMES.POSITION);
+    const monomerCol = sequenceDf.getCol(C.COLUMNS_NAMES.MONOMER);
     const rowCount = sequenceDf.rowCount;
     for (const pos of posColCategories) {
       tempStats = DG.Stats.fromColumn(mdCol, DG.BitSet.create(rowCount, (i) => posCol.get(i) === pos));
@@ -560,7 +572,8 @@ export class PeptidesModel {
         (tempStats.max > Math.abs(tempStats.min) ? tempStats.max : tempStats.min) :
         tempStats.max;
     }
-    sequenceDf = sequenceDf.clone(DG.BitSet.create(rowCount, (i) => mdCol.get(i) === maxAtPos[posCol.get(i)]));
+    sequenceDf = sequenceDf.clone(DG.BitSet.create(rowCount,
+      (i) => monomerCol.get(i) !== '' && maxAtPos[posCol.get(i)] != 0 && mdCol.get(i) === maxAtPos[posCol.get(i)]));
 
     return sequenceDf;
   }
