@@ -113,21 +113,22 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   drawOptions.marginVertical ??= 5;
   drawOptions.marginHorizontal ??= 5;
 
+  const pr = window.devicePixelRatio;
   const totalSpaceBetweenLetters = (statsInfo.orderedIndexes.length - 1) * drawOptions.upperLetterAscent;
-  const barHeight = bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters;
+  const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters) * pr;
   const leftShift = drawOptions.marginHorizontal * 2;
-  const barWidth = bounds.width - leftShift * 2;
-  const xStart = bounds.x + leftShift;
-  const selectionWidth = 4;
-  const xSelection = bounds.x + 3;
-  let currentY = bounds.y + drawOptions.marginVertical;
+  const barWidth = (bounds.width - leftShift * 2) * pr;
+  const xStart = (bounds.x + leftShift) * pr;
+  const selectionWidth = 4 * pr;
+  const xSelection = (bounds.x + 3) * pr;
+  let currentY = (bounds.y + drawOptions.marginVertical) * pr;
 
   const monomerBounds: {[monomer: string]: DG.Rect} = {};
   for (const index of statsInfo.orderedIndexes) {
     const monomer = statsInfo.monomerCol.get(index)!;
     const monomerHeight = barHeight * (statsInfo.countCol.get(index)! / rowCount);
     const selectionHeight = barHeight * ((monomerSelectionStats[monomer] ?? 0) / rowCount);
-    const currentBound = new DG.Rect(xStart, currentY, barWidth, monomerHeight);
+    const currentBound = new DG.Rect(xStart / pr, currentY / pr, barWidth / pr, monomerHeight / pr);
     monomerBounds[monomer] = currentBound;
 
     ctx.resetTransform();
@@ -144,10 +145,12 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
       ctx.textBaseline = 'top';
       ctx.font = drawOptions.fontStyle;
       // Hacks to scale uppercase characters to target rectangle
-      ctx.setTransform(barWidth / mTm.width, 0, 0, monomerHeight / drawOptions.upperLetterHeight, xStart, currentY);
+      const widthTransform = barWidth / mTm.width;
+      const heightTransfrom = monomerHeight / drawOptions.upperLetterHeight;
+      ctx.setTransform(widthTransform, 0, 0, heightTransfrom, xStart, currentY);
       ctx.fillText(monomerTxt, 0, 0);
     }
-    currentY += monomerHeight + drawOptions.upperLetterAscent;
+    currentY += monomerHeight + drawOptions.upperLetterAscent * pr;
   }
 
   return monomerBounds;

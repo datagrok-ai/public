@@ -651,37 +651,39 @@ export class PeptidesModel {
       const col = gcArgs.cell.tableColumn;
 
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
-      ctx.clip();
+      try {
+        // ctx.beginPath();
+        // ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+        // ctx.clip();
+        
+        //TODO: optimize
+        if (gcArgs.cell.isColHeader && col?.semType == C.SEM_TYPES.MONOMER) {
+          const monomerStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MONOMER);
+          const positionStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.POSITION);
+          const rowMask = DG.BitSet.create(this.monomerPositionStatsDf.rowCount,
+            (i) => positionStatsCol.get(i) === col.name);
+          //TODO: precalc on stats creation
+          const sortedStatsOrder = this.monomerPositionStatsDf.getSortedOrder([C.COLUMNS_NAMES.COUNT], [false], rowMask)
+            .sort((a, b) => {
+              if (monomerStatsCol.get(a) === '-' || monomerStatsCol.get(a) === '')
+                return -1;
+              else if (monomerStatsCol.get(b) === '-' || monomerStatsCol.get(b) === '')
+                return +1;
+              return 0;
+            });
+          const statsInfo: type.StatsInfo = {
+            countCol: this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.COUNT),
+            monomerCol: monomerStatsCol,
+            orderedIndexes: sortedStatsOrder,
+          };
 
-      //TODO: optimize
-      if (gcArgs.cell.isColHeader && col?.semType == C.SEM_TYPES.MONOMER) {
-        const monomerStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MONOMER);
-        const positionStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.POSITION);
-        const rowMask = DG.BitSet.create(this.monomerPositionStatsDf.rowCount,
-          (i) => positionStatsCol.get(i) === col.name);
-        //TODO: precalc on stats creation
-        const sortedStatsOrder = this.monomerPositionStatsDf.getSortedOrder([C.COLUMNS_NAMES.COUNT], [false], rowMask)
-          .sort((a, b) => {
-            if (monomerStatsCol.get(a) === '-' || monomerStatsCol.get(a) === '')
-              return -1;
-            else if (monomerStatsCol.get(b) === '-' || monomerStatsCol.get(b) === '')
-              return +1;
-            return 0;
-          });
-        const statsInfo: type.StatsInfo = {
-          countCol: this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.COUNT),
-          monomerCol: monomerStatsCol,
-          orderedIndexes: sortedStatsOrder,
-        };
-
-        this.webLogoBounds[col.name] =
-          CR.drawLogoInBounds(ctx, bounds, statsInfo, this.df.rowCount, this.cp, this.headerSelectedMonomers[col.name]);
-        gcArgs.preventDefault();
+          this.webLogoBounds[col.name] =
+            CR.drawLogoInBounds(ctx, bounds, statsInfo, this.df.rowCount, this.cp, this.headerSelectedMonomers[col.name]);
+          gcArgs.preventDefault();
+        }
+      } finally {
+        ctx.restore();
       }
-
-      ctx.restore();
     });
   }
 
@@ -879,14 +881,14 @@ export class PeptidesModel {
     sourceGridProps.allowRowResizing = false;
     sourceGridProps.showCurrentRowIndicator = false;
     this.df.temp[C.EMBEDDING_STATUS] = false;
+    for (let colIdx = 1; colIdx < sourceGridColsLen; ++colIdx) {
+      const gridCol = sourceGridCols.byIndex(colIdx)!;
+      const tableColName = gridCol.column!.name;
+      gridCol.visible = posCols.includes(tableColName) || (tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED) ||
+        visibleColumns.includes(tableColName);
+      gridCol.width = 60;
+    }
     setTimeout(() => {
-      for (let colIdx = 1; colIdx < sourceGridColsLen; ++colIdx) {
-        const gridCol = sourceGridCols.byIndex(colIdx)!;
-        const tableColName = gridCol.column!.name;
-        gridCol.visible = posCols.includes(tableColName) || (tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED) ||
-          visibleColumns.includes(tableColName);
-        gridCol.width = 60;
-      }
       sourceGridProps.rowHeight = 20;
     }, 500);
   }
