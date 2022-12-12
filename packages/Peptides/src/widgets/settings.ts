@@ -8,7 +8,7 @@ import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 
 //TODO: show sliderInput values
-export function getSettingsDialog(model: PeptidesModel, isColumnsChoiceEnabled: boolean = false): DG.Dialog {
+export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
   const accordion = ui.accordion();
   const settings = model.settings;
   const result: type.PeptidesSettings = {columns: {}};
@@ -34,35 +34,33 @@ export function getSettingsDialog(model: PeptidesModel, isColumnsChoiceEnabled: 
   minActivityDelta.addPostfix((settings.minActivityDelta ?? 0).toString());
   accordion.addPane('Mutation Cliffs', () => ui.inputs([maxMutations, minActivityDelta]), true);
 
-  if (isColumnsChoiceEnabled) {
-    const inputsRows: HTMLElement[] = [];
-    for (const col of model.df.columns.numerical) {
-      const colName = col.name;
-      if (colName == settings.activityColumnName || colName == C.COLUMNS_NAMES.ACTIVITY_SCALED)
-        continue;
+  const inputsRows: HTMLElement[] = [];
+  for (const col of model.df.columns.numerical) {
+    const colName = col.name;
+    if (colName == settings.activityColumnName || colName == C.COLUMNS_NAMES.ACTIVITY_SCALED)
+      continue;
 
-      const isIncludedInput = ui.boolInput('', typeof (settings.columns ?? {})[colName] !== 'undefined',
-        () => {
-          if (isIncludedInput.value)
-            result.columns![colName] = aggregationInput.stringValue;
-          else
-            delete result.columns![colName];
-        }) as DG.InputBase<boolean>;
-      const aggregationInput = ui.choiceInput('Aggregation', (settings.columns ?? {})[colName] ?? 'avg',
-        Object.values(DG.STATS), () => {
-          if (isIncludedInput.value)
+    const isIncludedInput = ui.boolInput('', typeof (settings.columns ?? {})[colName] !== 'undefined',
+      () => {
+        if (isIncludedInput.value)
           result.columns![colName] = aggregationInput.stringValue;
-          else
-            delete result.columns![col.name];
-        }) as DG.InputBase<string>;
-      $(aggregationInput.root).find('label').css('width', 'auto');
-      const inputsRow = ui.inputsRow(col.name, [isIncludedInput, aggregationInput]);
-      $(inputsRow).find('div.ui-div').css('display', 'inline-flex');
-      inputsRows.push(inputsRow);
-    }
-    if (inputsRows.length != 0)
-      accordion.addPane('Columns to include', () => ui.divV(inputsRows), false);
+        else
+          delete result.columns![colName];
+      }) as DG.InputBase<boolean>;
+    const aggregationInput = ui.choiceInput('Aggregation', (settings.columns ?? {})[colName] ?? 'avg',
+      Object.values(DG.STATS), () => {
+        if (isIncludedInput.value)
+        result.columns![colName] = aggregationInput.stringValue;
+        else
+          delete result.columns![col.name];
+      }) as DG.InputBase<string>;
+    $(aggregationInput.root).find('label').css('width', 'auto');
+    const inputsRow = ui.inputsRow(col.name, [isIncludedInput, aggregationInput]);
+    $(inputsRow).find('div.ui-div').css('display', 'inline-flex');
+    inputsRows.push(inputsRow);
   }
+  if (inputsRows.length != 0)
+    accordion.addPane('Columns to include', () => ui.divV(inputsRows), false);
 
   const dialog = ui.dialog('Peptides settings').add(accordion);
   dialog.root.style.width = '400px';
