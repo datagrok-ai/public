@@ -265,9 +265,9 @@ export class PeptidesModel {
         updateVars.add('mutationCliffs');
         updateVars.add('stats');
         break;
-      case 'columns':
-        updateVars.add('grid');
-        break;
+      // case 'columns':
+      //   updateVars.add('grid');
+      //   break;
       case 'maxMutations':
       case 'minActivityDelta':
         updateVars.add('mutationCliffs');
