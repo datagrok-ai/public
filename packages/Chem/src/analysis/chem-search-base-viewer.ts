@@ -53,6 +53,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
       this.moleculeColumnName = this.moleculeColumn?.name!;
       this.getProperty('limit')!.fromOptions({min: 1, max: this.dataFrame.rowCount});
+      if (this.limit > this.dataFrame.rowCount)
+        this.limit = this.dataFrame.rowCount;
     }
     await this.render();
   }
