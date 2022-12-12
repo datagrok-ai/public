@@ -1,8 +1,7 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {waitForHTMLElement} from './utils';
 
 
 async function testTags(obj: any, apiPath: any, error: string) {
@@ -29,12 +28,20 @@ category('UI: Tags', () => {
       .filter('#demo')
       .list()
       .then((projects) => projects.length);
-    await waitForHTMLElement('.grok-items-view-counts', /[0-9]+ \/ [0-9]+/g, 'Error: cannot load Projects!');
+    await awaitCheck(() => {
+      if (document.querySelector('.grok-items-view-counts') !== null)
+        return /[0-9]+ \/ [0-9]+/g.test((document.querySelector('.grok-items-view-counts') as HTMLElement).innerText);
+      return false;
+    }, 'cannot load projects', 3000);
     const search = v.root.querySelector('.ui-input-editor') as HTMLInputElement;
     search.value = '#demo';
     search.dispatchEvent(new Event('input'));
     const regex = new RegExp(`[0-9]+ / ${prapi}`, 'g');
-    await waitForHTMLElement('.grok-items-view-counts', regex, 'Error: Number of projects does not match!');
+    await awaitCheck(() => {
+      if (document.querySelector('.grok-items-view-counts') !== null)
+        return regex.test((document.querySelector('.grok-items-view-counts') as HTMLElement).innerText);
+      return false;
+    }, 'number of projects does not match', 3000);
   });
 
   test('tag.editor', async () => {
