@@ -22,6 +22,27 @@ import {IDPS} from './IDPs';
 import {sdfAddColumns} from '../utils/sdf-add-columns';
 import {sdfSaveTable} from '../utils/sdf-save-table';
 
+const enum SEQ_TYPE {
+  AS = 'AS',
+  SS = 'SS',
+  DUPLEX = 'Duplex',
+  DIMER = 'Dimer',
+}
+
+/** Computable classes of sequence types */
+const enum SEQ_TYPE_CLASS {
+  AS_OR_SS,
+  DUPLEX,
+  DIMER,
+}
+
+/** Style used for a cell with invalid value  */
+const errorStyle = {
+  'background-color': '#ff8080',
+  'width': '100%',
+  'height': '100%',
+};
+
 export function sdfHandleErrorUI(msgPrefix: string, df: DG.DataFrame, rowI: number, err: any) {
   const errStr: string = err.toString();
   const errMsg: string = msgPrefix + `row #${rowI + 1}, name: '${df.get('Chemistry Name', rowI)}', ` +
@@ -29,11 +50,59 @@ export function sdfHandleErrorUI(msgPrefix: string, df: DG.DataFrame, rowI: numb
   grok.shell.warning(errMsg);
 }
 
+// todo: use a dictionary instead?
+function getActualTypeClass(actualType: string): SEQ_TYPE_CLASS {
+  if (actualType === SEQ_TYPE.AS || actualType === SEQ_TYPE.SS)
+    return SEQ_TYPE_CLASS.AS_OR_SS;
+  else if (actualType === SEQ_TYPE.DIMER)
+    return SEQ_TYPE_CLASS.DIMER;
+  else if (actualType === SEQ_TYPE.DUPLEX)
+    return SEQ_TYPE_CLASS.DUPLEX;
+  else
+    throw new Error('Some types in \'Types\' column are invalid ');
+}
+
+function inferTypeClassFromSequence(seq: string): SEQ_TYPE_CLASS {
+  const lines = seq.split('\n');
+  if (lines.length === 1)
+    return SEQ_TYPE_CLASS.AS_OR_SS;
+  else if (lines.length === 2)
+    return SEQ_TYPE_CLASS.DUPLEX;
+  else if (lines.length === 3)
+    return SEQ_TYPE_CLASS.DIMER;
+  else
+    throw new Error('Wrong formatting of sequences in \'Sequence\' column');
+  //todo: throw in the case of wrong formatting
+}
+
+/** Compare type specified in 'Type' column to that computed from 'Sequence' column  */
+function validateType(actualType: string, seq: string): boolean {
+  return getActualTypeClass(actualType) === inferTypeClassFromSequence(seq);
+}
+
+function oligoSdFileGrid(view: DG.TableView): void {
+  const typeColName = 'Type';
+  const seqColName = 'Sequence';
+  const grid = view.grid;
+  const df = view.dataFrame;
+  const typeCol = df.getCol(typeColName);
+  grid.columns.byName(typeColName)!.cellType = 'html';
+  const seqCol = df.getCol(seqColName);
+  grid.onCellPrepare((gridCell: DG.GridCell) => {
+    if (gridCell.isTableCell && gridCell.gridColumn.column!.name === typeColName) {
+      const isValidType = validateType(gridCell.cell.value, seqCol.get(gridCell.tableRow!.idx));
+      gridCell.style.element = ui.div(gridCell.cell.value, isValidType ? {} : {style: errorStyle});
+    }
+  });
+}
+
 export function autostartOligoSdFileSubscription() {
   grok.events.onViewAdded.subscribe((v: any) => {
-    if (v.type == DG.VIEW_TYPE.TABLE_VIEW) {
-      if (v.dataFrame.columns.contains(COL_NAMES.TYPE))
+    if (v.type === DG.VIEW_TYPE.TABLE_VIEW) {
+      if (v.dataFrame.columns.contains(COL_NAMES.TYPE)) {
+        oligoSdFileGrid(v);
         oligoSdFile(v.dataFrame);
+      }
 
       // Should be removed after fixing bug https://github.com/datagrok-ai/public/issues/808
       grok.events.onContextMenu.subscribe((args) => {
