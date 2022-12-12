@@ -31,8 +31,8 @@ export function getStats(data: RawData | number[], maskInfo: MaskInfo): Stats {
   const currentMeanDiff = testResult['Mean difference']!;
   return {
     count: selected.length,
-    pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'],
-    meanDifference: currentMeanDiff,
+    pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'] || 0,
+    meanDifference: currentMeanDiff || 0,
     ratio: selected.length / data.length,
   };
 }
