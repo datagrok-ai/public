@@ -63,7 +63,7 @@ export function linkStrandsV3000(strands: { senseStrands: string[], antiStrands:
 
     if (inverted) {
       const xShiftRight = Math.min(...coordinates.x) - xShift;
-      const yShift = !inverted ? Math.min(...coordinates.y) - 1 : Math.max(...coordinates.y) + 10;
+      const yShift = !inverted ? Math.min(...coordinates.y) - 1 : Math.max(...coordinates.y) + 15;
       for (let j = 0; j < coordinates.x.length; j++)
         coordinates.x[j] -= xShiftRight;
       for (let j = 0; j < coordinates.y.length; j++)
