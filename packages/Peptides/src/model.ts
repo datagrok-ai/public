@@ -109,7 +109,7 @@ export class PeptidesModel {
   }
 
   get mostPotentResiduesDf(): DG.DataFrame {
-    this._mostPotentResiduesDf ??= this.createVerticalTable();
+    this._mostPotentResiduesDf ??= this.createMostPotentResiduesDf();
     return this._mostPotentResiduesDf;
   }
   set mostPotentResiduesDf(df: DG.DataFrame) {
@@ -265,9 +265,9 @@ export class PeptidesModel {
         updateVars.add('mutationCliffs');
         updateVars.add('stats');
         break;
-      case 'columns':
-        updateVars.add('grid');
-        break;
+      // case 'columns':
+      //   updateVars.add('grid');
+      //   break;
       case 'maxMutations':
       case 'minActivityDelta':
         updateVars.add('mutationCliffs');
@@ -290,7 +290,7 @@ export class PeptidesModel {
       case 'stats':
         this.monomerPositionStatsDf = this.calculateMonomerPositionStatistics();
         this.monomerPositionDf = this.createMonomerPositionDf();
-        this.mostPotentResiduesDf = this.createVerticalTable();
+        this.mostPotentResiduesDf = this.createMostPotentResiduesDf();
         this.clusterStatsDf = this.calculateClusterStatistics();
         break;
       case 'grid':
@@ -308,6 +308,13 @@ export class PeptidesModel {
       .pivot(C.COLUMNS_NAMES.POSITION)
       .add('first', C.COLUMNS_NAMES.MEAN_DIFFERENCE, '')
       .aggregate();
+    const monomerCol = matrixDf.getCol(C.COLUMNS_NAMES.MONOMER);
+    for (let i = 0; i < monomerCol.length; ++i) {
+      if (monomerCol.get(i) == '') {
+        matrixDf.rows.removeAt(i);
+        break;
+      }
+    }
     matrixDf.name = 'SAR';
 
     return matrixDf;
@@ -457,10 +464,10 @@ export class PeptidesModel {
 
     //calculate p-values based on t-test
     const matrixCols = matrixDf.columns;
-    const mdColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE).getRawData();
-    const pValColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE).getRawData();
-    const countColData = matrixCols.addNewInt(C.COLUMNS_NAMES.COUNT).getRawData();
-    const ratioColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.RATIO).getRawData();
+    const mdColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE).init(0).getRawData();
+    const pValColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE).init(0).getRawData();
+    const countColData = matrixCols.addNewInt(C.COLUMNS_NAMES.COUNT).init(0).getRawData();
+    const ratioColData = matrixCols.addNewFloat(C.COLUMNS_NAMES.RATIO).init(0).getRawData();
     const activityColData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
     const sourceDfLen = activityColData.length;
 
@@ -469,10 +476,13 @@ export class PeptidesModel {
       const currentPosRawCol = posRawColumns[positionRawIdx];
       const monomerRawIdx = monomerColData[i];
       const mask: boolean[] = new Array(sourceDfLen);
+      const monomer = monomerColCategories[monomerRawIdx];
+      if (monomer == '')
+        continue;
 
       let trueCount = 0;
       for (let j = 0; j < sourceDfLen; ++j) {
-        mask[j] = currentPosRawCol.cat![currentPosRawCol.rawData[j]] == monomerColCategories[monomerRawIdx];
+        mask[j] = currentPosRawCol.cat![currentPosRawCol.rawData[j]] == monomer;
 
         if (mask[j])
           ++trueCount;
@@ -491,6 +501,7 @@ export class PeptidesModel {
       countColData[i] = stats.count;
       ratioColData[i] = stats.ratio;
     }
+    matrixDf.fireValuesChanged();
 
     return matrixDf as DG.DataFrame;
   }
@@ -540,7 +551,7 @@ export class PeptidesModel {
     return statsDf;
   }
 
-  createVerticalTable(): DG.DataFrame {
+  createMostPotentResiduesDf(): DG.DataFrame {
     // TODO: aquire ALL of the positions
     const columns = [C.COLUMNS_NAMES.MEAN_DIFFERENCE, C.COLUMNS_NAMES.MONOMER, C.COLUMNS_NAMES.POSITION,
       'Count', 'Ratio', C.COLUMNS_NAMES.P_VALUE];
@@ -553,6 +564,7 @@ export class PeptidesModel {
     const posColCategories = sequenceDf.getCol(C.COLUMNS_NAMES.POSITION).categories;
     const mdCol = sequenceDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
     const posCol = sequenceDf.getCol(C.COLUMNS_NAMES.POSITION);
+    const monomerCol = sequenceDf.getCol(C.COLUMNS_NAMES.MONOMER);
     const rowCount = sequenceDf.rowCount;
     for (const pos of posColCategories) {
       tempStats = DG.Stats.fromColumn(mdCol, DG.BitSet.create(rowCount, (i) => posCol.get(i) === pos));
@@ -560,7 +572,8 @@ export class PeptidesModel {
         (tempStats.max > Math.abs(tempStats.min) ? tempStats.max : tempStats.min) :
         tempStats.max;
     }
-    sequenceDf = sequenceDf.clone(DG.BitSet.create(rowCount, (i) => mdCol.get(i) === maxAtPos[posCol.get(i)]));
+    sequenceDf = sequenceDf.clone(DG.BitSet.create(rowCount,
+      (i) => monomerCol.get(i) !== '' && maxAtPos[posCol.get(i)] != 0 && mdCol.get(i) === maxAtPos[posCol.get(i)]));
 
     return sequenceDf;
   }
@@ -638,37 +651,39 @@ export class PeptidesModel {
       const col = gcArgs.cell.tableColumn;
 
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
-      ctx.clip();
+      try {
+        // ctx.beginPath();
+        // ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+        // ctx.clip();
+        
+        //TODO: optimize
+        if (gcArgs.cell.isColHeader && col?.semType == C.SEM_TYPES.MONOMER) {
+          const monomerStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MONOMER);
+          const positionStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.POSITION);
+          const rowMask = DG.BitSet.create(this.monomerPositionStatsDf.rowCount,
+            (i) => positionStatsCol.get(i) === col.name);
+          //TODO: precalc on stats creation
+          const sortedStatsOrder = this.monomerPositionStatsDf.getSortedOrder([C.COLUMNS_NAMES.COUNT], [false], rowMask)
+            .sort((a, b) => {
+              if (monomerStatsCol.get(a) === '-' || monomerStatsCol.get(a) === '')
+                return -1;
+              else if (monomerStatsCol.get(b) === '-' || monomerStatsCol.get(b) === '')
+                return +1;
+              return 0;
+            });
+          const statsInfo: type.StatsInfo = {
+            countCol: this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.COUNT),
+            monomerCol: monomerStatsCol,
+            orderedIndexes: sortedStatsOrder,
+          };
 
-      //TODO: optimize
-      if (gcArgs.cell.isColHeader && col?.semType == C.SEM_TYPES.MONOMER) {
-        const monomerStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.MONOMER);
-        const positionStatsCol: DG.Column<string> = this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.POSITION);
-        const rowMask = DG.BitSet.create(this.monomerPositionStatsDf.rowCount,
-          (i) => positionStatsCol.get(i) === col.name);
-        //TODO: precalc on stats creation
-        const sortedStatsOrder = this.monomerPositionStatsDf.getSortedOrder([C.COLUMNS_NAMES.COUNT], [false], rowMask)
-          .sort((a, b) => {
-            if (monomerStatsCol.get(a) === '-' || monomerStatsCol.get(a) === '')
-              return -1;
-            else if (monomerStatsCol.get(b) === '-' || monomerStatsCol.get(b) === '')
-              return +1;
-            return 0;
-          });
-        const statsInfo: type.StatsInfo = {
-          countCol: this.monomerPositionStatsDf.getCol(C.COLUMNS_NAMES.COUNT),
-          monomerCol: monomerStatsCol,
-          orderedIndexes: sortedStatsOrder,
-        };
-
-        this.webLogoBounds[col.name] =
-          CR.drawLogoInBounds(ctx, bounds, statsInfo, this.df.rowCount, this.cp, this.headerSelectedMonomers[col.name]);
-        gcArgs.preventDefault();
+          this.webLogoBounds[col.name] =
+            CR.drawLogoInBounds(ctx, bounds, statsInfo, this.df.rowCount, this.cp, this.headerSelectedMonomers[col.name]);
+          gcArgs.preventDefault();
+        }
+      } finally {
+        ctx.restore();
       }
-
-      ctx.restore();
     });
   }
 
@@ -866,14 +881,14 @@ export class PeptidesModel {
     sourceGridProps.allowRowResizing = false;
     sourceGridProps.showCurrentRowIndicator = false;
     this.df.temp[C.EMBEDDING_STATUS] = false;
+    for (let colIdx = 1; colIdx < sourceGridColsLen; ++colIdx) {
+      const gridCol = sourceGridCols.byIndex(colIdx)!;
+      const tableColName = gridCol.column!.name;
+      gridCol.visible = posCols.includes(tableColName) || (tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED) ||
+        visibleColumns.includes(tableColName);
+      gridCol.width = 60;
+    }
     setTimeout(() => {
-      for (let colIdx = 1; colIdx < sourceGridColsLen; ++colIdx) {
-        const gridCol = sourceGridCols.byIndex(colIdx)!;
-        const tableColName = gridCol.column!.name;
-        gridCol.visible = posCols.includes(tableColName) || (tableColName === C.COLUMNS_NAMES.ACTIVITY_SCALED) ||
-          visibleColumns.includes(tableColName);
-        gridCol.width = 60;
-      }
       sourceGridProps.rowHeight = 20;
     }, 500);
   }
