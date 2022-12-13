@@ -25,7 +25,8 @@ the info panels on the **Context Pane**. For example, you can:
 * **Select the word column** using the `Word` property
 * **Size-code words** using `Size` and `Size Column Aggr Type` properties
 * **Color-code words** using `Color` and `Color Column Aggr Type` properties
-* **Limit the number of words to appear in a cloud** using the **Max Words** setting.
+* **Limit the number of words to appear in a cloud** using the **Max Words**
+  setting.
 
 ## Interactivity
 
