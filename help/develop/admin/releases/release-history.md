@@ -13298,7 +13298,7 @@
 * update titles for "current rows"
 * update "current rows"
 * Wiki: headings harmonization
-* (Bug) Postgres type Numeric converts to int when using PostgresNet
+* (Bug) Postgres type Numeric converts to int when using Postgres
 * Chem: don't attempt to .delete() null-molecules (no-render)
 * Core: custom cell renderers in filters (WIP)
 * Updated beta users list.
@@ -13362,7 +13362,7 @@
 * update "current rows"
 * JS API: Migrate to TypeScript
 * Wiki: headings harmonization
-* (Bug) Postgres type Numeric converts to int when using PostgresNet (WIP)
+* (Bug) Postgres type Numeric converts to int when using Postgres (WIP)
 * Chem: don't attempt to .delete() null-molecules (no-render)
 * Core: custom cell renderers in filters (WIP)
 * Updated beta users list.

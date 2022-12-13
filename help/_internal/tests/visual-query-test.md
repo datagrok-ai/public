@@ -42,7 +42,7 @@ Visual Query allows you to get table with aggregated values by columns from DB t
 
 * Result of [Aggregate rows](../../transform/aggregate-rows.md) same as result of Visual Query from step 7
 
-1. Repeat previous steps for **PostgresNet**, **MySql**, **MS SQL**, **MariaDB**, **ORACLE**
+1. Repeat previous steps for **Postgres**, **MySql**, **MS SQL**, **MariaDB**, **ORACLE**
    providers
 
 1. Click on "Add result to workspace" from dialog menu (v)
@@ -53,7 +53,7 @@ Visual Query allows you to get table with aggregated values by columns from DB t
 
 * Table "*employees*" with all values and columns added to workspace
 
-1. Repeat previous steps for **PostgresNet**, **MySql**, **MS SQL**, **MariaDB**, **ORACLE**
+1. Repeat previous steps for **Postgres**, **MySql**, **MS SQL**, **MariaDB**, **ORACLE**
    providers
 
 See also:

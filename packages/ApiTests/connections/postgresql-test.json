@@ -13,7 +13,7 @@
       "password": "datagrok"
     }
   },
-  "dataSource": "PostgreSQL",
+  "dataSource": "PostgresDart",
   "description": "Northwind test database",
   "tags": ["demo"]
 }

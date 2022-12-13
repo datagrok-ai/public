@@ -1,5 +1,5 @@
 --name: PrevalenceByGenderAgeYearForConditionOccurrenceAchilles
---connection: Demo:test_queries:PostgresNetCDM
+--connection: Demo:test_queries:PostgresCDM
 --input: string conceptId
 SELECT
   c1.concept_id                                                          AS concept_id,

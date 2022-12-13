@@ -1,6 +1,6 @@
 {
   "#type": "DataConnection",
-  "name": "PostgresNetNorthwind",
+  "name": "PostgresNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
     "server": "dev.datagrok.ai",
@@ -13,7 +13,7 @@
       "password": "datagrok"
     }
   },
-  "dataSource": "PostgresNet",
+  "dataSource": "Postgres",
   "description": "Northwind sample database",
   "tags": ["demo"]
 }

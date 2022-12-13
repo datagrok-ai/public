@@ -1,6 +1,6 @@
---name: PostgresNetOrders
+--name: PostgresOrders
 --friendlyName: Orders
---connection: PostgresNetNorthwind
+--connection: PostgresNorthwind
 --input: int employeeId = 5
 --input: string shipVia = "= 3" {pattern: int}
 --input: double freight = 10.0
@@ -20,9 +20,9 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
     AND (requiredDate >= @requiredDate)
 --end
 
---name: PostgresNetProducts
+--name: PostgresProducts
 --friendlyName: Products
---connection: PostgresNetNorthwind
+--connection: PostgresNorthwind
 --input: int ProductID = 7
 select * from Products
 --end

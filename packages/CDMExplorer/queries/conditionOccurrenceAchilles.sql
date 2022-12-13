@@ -1,5 +1,5 @@
 --name: ConditionOccurrenceAchilles
---connection: Demo:test_queries:PostgresNetCDM
+--connection: Demo:test_queries:PostgresCDM
 
   concept_hierarchy.concept_id AS conceptId,
     COALESCE(concept_hierarchy.level4_concept_name, 'NA') || '||' ||
