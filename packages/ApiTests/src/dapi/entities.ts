@@ -51,7 +51,7 @@
 //   before(async () => {
 //     fromTable = DG.TableInfo.fromDataFrame(grok.data.testData('demog', 5000));
 //     from = fromTable.name;
-//     const dcParams = {dataSource: 'PostgresNet', server: 'dev.datagrok.ai:54322', db: 'northwind',
+//     const dcParams = {dataSource: 'Postgres', server: 'dev.datagrok.ai:54322', db: 'northwind',
 //       login: 'datagrok', password: 'datagrok'};
 //     dc = DG.DataConnection.create('test', dcParams);
 //     dc = await grok.dapi.connections.save(dc);

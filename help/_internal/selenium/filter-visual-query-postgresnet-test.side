@@ -1,12 +1,12 @@
 {
   "id": "b390008b-1b39-4405-bcfd-6b03f9f4d568",
   "version": "2.0",
-  "name": "filter-visual-query-postgresnet-test",
+  "name": "filter-visual-query-Postgres-test",
   "url": "https://dev.datagrok.ai/",
   "tests": [
     {
       "id": "1e1a7755-4e26-458c-9783-60348afe35cf",
-      "name": "filter-visual-query-postgresnet-test",
+      "name": "filter-visual-query-Postgres-test",
       "commands": [
         {
           "id": "8ff604b9-81db-4083-8663-4b119b7492f9",
@@ -165,14 +165,14 @@
           "id": "f526b826-10ec-41fc-be9d-decf8d2d604f",
           "comment": "",
           "command": "click",
-          "target": "xpath=//div[@name='tree-expander-PostgresNet']",
+          "target": "xpath=//div[@name='tree-expander-Postgres']",
           "targets": [
             [
               "css=.d4-tree-view-group:nth-child(25) .d4-tree-view-tri",
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-expander-PostgresNet']",
+              "xpath=//div[@name='tree-expander-Postgres']",
               "xpath:attributes"
             ],
             [
@@ -190,14 +190,14 @@
           "id": "191404ee-3315-4be2-aa1a-bc918908f364",
           "comment": "",
           "command": "click",
-          "target": "xpath=//div[@name='tree-expander-PostgresNet---Northwind']",
+          "target": "xpath=//div[@name='tree-expander-Postgres---Northwind']",
           "targets": [
             [
               "css=.d4-tree-view-group:nth-child(25) .d4-tree-view-group:nth-child(2) .d4-tree-view-tri",
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-expander-PostgresNet---northwind']",
+              "xpath=//div[@name='tree-expander-Postgres---northwind']",
               "xpath:attributes"
             ],
             [
@@ -223,14 +223,14 @@
           "id": "a27d3c1c-118d-4080-936d-c0c128e1e1a2",
           "comment": "",
           "command": "click",
-          "target": "xpath=(//div[@name='tree-expander-PostgresNet---Northwind'])[2]",
+          "target": "xpath=(//div[@name='tree-expander-Postgres---Northwind'])[2]",
           "targets": [
             [
               "css=.d4-tree-view-group:nth-child(2) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri",
               "css:finder"
             ],
             [
-              "xpath=(//div[@name='tree-expander-PostgresNet---Northwind'])[2]",
+              "xpath=(//div[@name='tree-expander-Postgres---Northwind'])[2]",
               "xpath:attributes"
             ],
             [
@@ -256,14 +256,14 @@
           "id": "ddb9cc91-34a8-45eb-ae1b-93b8fff479a3",
           "comment": "",
           "command": "click",
-          "target": "xpath=//div[@name='tree-expander-PostgresNet---Northwind---Schemas---public']",
+          "target": "xpath=//div[@name='tree-expander-Postgres---Northwind---Schemas---public']",
           "targets": [
             [
               "css=.d4-tree-view-group-host > .d4-tree-view-group:nth-child(1) .d4-tree-view-group:nth-child(3) .d4-tree-view-tri",
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-expander-PostgresNet---Northwind---Schemas---public']",
+              "xpath=//div[@name='tree-expander-Postgres---Northwind---Schemas---public']",
               "xpath:attributes"
             ],
             [
@@ -289,14 +289,14 @@
           "id": "5bc94d6c-d75a-469b-bf67-a1bb549cb76c",
           "comment": "",
           "command": "click",
-          "target": "xpath=//div[@name='tree-PostgresNet---Northwind---Schemas---public---orders']",
+          "target": "xpath=//div[@name='tree-Postgres---Northwind---Schemas---public---orders']",
           "targets": [
             [
               "css=.d4-tree-view-group:nth-child(3) .d4-tree-view-group:nth-child(8) > .d4-tree-view-node",
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-PostgresNet---Northwind---Schemas---public---orders']",
+              "xpath=//div[@name='tree-Postgres---Northwind---Schemas---public---orders']",
               "xpath:attributes"
             ],
             [
@@ -1074,14 +1074,14 @@
           "id": "cd0ca9c2-e2a3-4f65-b4d0-912032df6c53",
           "comment": "",
           "command": "verifyElementPresent",
-          "target": "xpath=//div[@name='tree-PostgresNet---Northwind---visual-query-filters-test']",
+          "target": "xpath=//div[@name='tree-Postgres---Northwind---visual-query-filters-test']",
           "targets": [
             [
               "css=.d4-tree-view-group:nth-child(2) .d4-tree-view-group:nth-child(13) > .d4-tree-view-node",
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-PostgresNet---Northwind---visual-query-filters-test']",
+              "xpath=//div[@name='tree-Postgres---Northwind---visual-query-filters-test']",
               "xpath:attributes"
             ],
             [
@@ -1099,14 +1099,14 @@
           "id": "5a716513-bb66-4836-9ec2-781cb20ddfc0",
           "comment": "",
           "command": "doubleClick",
-          "target": "xpath=//div[@name='tree-PostgresNet---Northwind---visual-query-filters-test']",
+          "target": "xpath=//div[@name='tree-Postgres---Northwind---visual-query-filters-test']",
           "targets": [
             [
               "css=.d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-group:nth-child(4) > .d4-tree-view-node",
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-PostgresNet---northwind---visual-query-filters-test']",
+              "xpath=//div[@name='tree-Postgres---northwind---visual-query-filters-test']",
               "xpath:attributes"
             ],
             [
@@ -1387,14 +1387,14 @@
           "id": "c266a396-e10f-4e2b-961f-e86a5e9d396c",
           "comment": "",
           "command": "click",
-          "target": "xpath=//div[@name='tree-PostgresNet---Northwind---visual-query-filters-test']",
+          "target": "xpath=//div[@name='tree-Postgres---Northwind---visual-query-filters-test']",
           "targets": [
             [
               "css=.d4-tree-view-node-selected",
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-PostgresNet---Northwind---visual-query-filters-test']",
+              "xpath=//div[@name='tree-Postgres---Northwind---visual-query-filters-test']",
               "xpath:attributes"
             ],
             [
@@ -1525,7 +1525,7 @@
   "suites": [
     {
       "id": "ec967ec6-1191-47c4-9144-a537f982d65b",
-      "name": "filter-visual-query-postgresnet-test",
+      "name": "filter-visual-query-Postgres-test",
       "persistSession": false,
       "parallel": false,
       "timeout": 300,

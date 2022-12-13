@@ -11,7 +11,7 @@
       "password": "aact"
     }
   },
-  "dataSource": "PostgresNet",
+  "dataSource": "Postgres",
   "description": "AACT db",
   "tags": ["demo", "clinicaltrials"]
 }

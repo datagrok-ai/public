@@ -36,7 +36,7 @@
 
 * Table "*employees*" with all values and columns added to workspace
 
-1. Repeat previous steps for **PostgresNet**, **MySql**, **MS SQL**, **MariaDB**, **ORACLE**
+1. Repeat previous steps for **Postgres**, **MySql**, **MS SQL**, **MariaDB**, **ORACLE**
    providers
 
 (*):
