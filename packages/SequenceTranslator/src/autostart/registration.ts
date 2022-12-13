@@ -22,6 +22,13 @@ import {IDPS} from './IDPs';
 import {sdfAddColumns} from '../utils/sdf-add-columns';
 import {sdfSaveTable} from '../utils/sdf-save-table';
 
+const enum PREFIXES {
+  AS = 'AS',
+  SS = 'SS',
+  AS1 = 'AS1',
+  AS2 = 'AS2'
+}
+
 const enum SEQ_TYPE {
   AS = 'AS',
   SS = 'SS',
@@ -29,19 +36,37 @@ const enum SEQ_TYPE {
   DIMER = 'Dimer',
 }
 
-/** Computable classes of sequence types */
-const enum SEQ_TYPE_CLASS {
+/** Computable categories of sequence types */
+const enum SEQ_TYPE_CATEGORY {
   AS_OR_SS,
   DUPLEX,
   DIMER,
 }
 
-/** Style used for a cell with invalid value  */
-const errorStyle = {
-  'background-color': '#ff8080',
+/** Map between types and their categories inferrable from 'Sequence' column */
+const typeCategoryMap = {
+  [SEQ_TYPE.AS]: SEQ_TYPE_CATEGORY.AS_OR_SS,
+  [SEQ_TYPE.SS]: SEQ_TYPE_CATEGORY.AS_OR_SS,
+  [SEQ_TYPE.DIMER]: SEQ_TYPE_CATEGORY.DIMER,
+  [SEQ_TYPE.DUPLEX]: SEQ_TYPE_CATEGORY.DUPLEX,
+};
+
+/** Style used for cells in 'Type' column  */
+const typeColCellStyle = {
+  'display': 'flex',
+  'justify-content': 'center',
+  'align-items': 'center',
+  'text-color': 'var(--grey-5)', // --grey-6 does not match other cells
   'width': '100%',
   'height': '100%',
 };
+
+const pinkBackground = {
+  'background-color': '#ff8080',
+};
+
+/** Style used for a cell with invalid value  */
+const typeColErrorStyle = Object.assign({}, pinkBackground, typeColCellStyle);
 
 export function sdfHandleErrorUI(msgPrefix: string, df: DG.DataFrame, rowI: number, err: any) {
   const errStr: string = err.toString();
@@ -50,34 +75,61 @@ export function sdfHandleErrorUI(msgPrefix: string, df: DG.DataFrame, rowI: numb
   grok.shell.warning(errMsg);
 }
 
-// todo: use a dictionary instead?
-function getActualTypeClass(actualType: string): SEQ_TYPE_CLASS {
-  if (actualType === SEQ_TYPE.AS || actualType === SEQ_TYPE.SS)
-    return SEQ_TYPE_CLASS.AS_OR_SS;
-  else if (actualType === SEQ_TYPE.DIMER)
-    return SEQ_TYPE_CLASS.DIMER;
-  else if (actualType === SEQ_TYPE.DUPLEX)
-    return SEQ_TYPE_CLASS.DUPLEX;
+/** Determine the category of the value specified in 'Types' column  */
+function getActualTypeClass(actualType: string): SEQ_TYPE_CATEGORY {
+  if (Object.keys(typeCategoryMap).includes(actualType))
+    return typeCategoryMap[actualType as SEQ_TYPE];
   else
     throw new Error('Some types in \'Types\' column are invalid ');
 }
 
-function inferTypeClassFromSequence(seq: string): SEQ_TYPE_CLASS {
+function isASorSS(splittedLines: string[][]): boolean {
+  return splittedLines.length === 1 && splittedLines[0].length === 1;
+}
+
+/** Check whether the number of lines and prefixes in the 'Sequence' string
+ * are valid  */
+function verifyPrefixes(splittedLines: string[][], allowedPrefixes: Set<PREFIXES>, allowedLength: number): boolean {
+  const lengthCriterion = splittedLines.length === allowedLength;
+  let prefixCriterion = true;
+  for (const line of splittedLines) {
+    const prefix = line[0];
+    prefixCriterion &&= (allowedPrefixes.has(prefix as PREFIXES));
+  }
+  return lengthCriterion && prefixCriterion;
+}
+
+function isDuplex(splittedLines: string[][]): boolean {
+  const allowedPrefixes = new Set([PREFIXES.SS, PREFIXES.AS]);
+  return verifyPrefixes(splittedLines, allowedPrefixes, 2);
+}
+
+function isDimer(splittedLines: string[][]): boolean {
+  const allowedPrefixes = new Set([PREFIXES.SS, PREFIXES.AS1, PREFIXES.AS2]);
+  return verifyPrefixes(splittedLines, allowedPrefixes, 3);
+}
+
+function inferTypeClassFromSequence(seq: string): SEQ_TYPE_CATEGORY {
   const lines = seq.split('\n');
-  if (lines.length === 1)
-    return SEQ_TYPE_CLASS.AS_OR_SS;
-  else if (lines.length === 2)
-    return SEQ_TYPE_CLASS.DUPLEX;
-  else if (lines.length === 3)
-    return SEQ_TYPE_CLASS.DIMER;
+  const splittedLines = [];
+  for (const line of lines)
+    splittedLines.push(line.split(' '));
+  if (isASorSS(splittedLines))
+    return SEQ_TYPE_CATEGORY.AS_OR_SS;
+  else if (isDuplex(splittedLines))
+    return SEQ_TYPE_CATEGORY.DUPLEX;
+  else if (isDimer(splittedLines))
+    return SEQ_TYPE_CATEGORY.DIMER;
   else
-    throw new Error('Wrong formatting of sequences in \'Sequence\' column');
-  //todo: throw in the case of wrong formatting
+    throw new Error('Some cells in \'Sequence\' column have wrong formatting');
 }
 
 /** Compare type specified in 'Type' column to that computed from 'Sequence' column  */
 function validateType(actualType: string, seq: string): boolean {
-  return getActualTypeClass(actualType) === inferTypeClassFromSequence(seq);
+  if (actualType === '' && seq === '')
+    return true;
+  else
+    return getActualTypeClass(actualType) === inferTypeClassFromSequence(seq);
 }
 
 function oligoSdFileGrid(view: DG.TableView): void {
@@ -90,8 +142,21 @@ function oligoSdFileGrid(view: DG.TableView): void {
   const seqCol = df.getCol(seqColName);
   grid.onCellPrepare((gridCell: DG.GridCell) => {
     if (gridCell.isTableCell && gridCell.gridColumn.column!.name === typeColName) {
-      const isValidType = validateType(gridCell.cell.value, seqCol.get(gridCell.tableRow!.idx));
-      gridCell.style.element = ui.div(gridCell.cell.value, isValidType ? {} : {style: errorStyle});
+      let isValidType = false;
+      let formattingError = false;
+      try {
+        isValidType = validateType(gridCell.cell.value, seqCol.get(gridCell.tableRow!.idx));
+      } catch {
+        formattingError = true;
+      }
+      const el = ui.div(
+        gridCell.cell.value, isValidType ? {style: typeColCellStyle} : {style: typeColErrorStyle}
+      );
+      gridCell.style.element = el;
+      const msg = formattingError ? 'Sequence pattern or Type value has wrong formatting' :
+        'Input in Type column doesn\'t match the Sequence pattern';
+      if (!isValidType)
+        ui.tooltip.bind(el, msg);
     }
   });
 }
@@ -126,7 +191,7 @@ export function autostartOligoSdFileSubscription() {
             });
           }); // /^[fmpsACGU]{6,}$/
         } else if (DG.Detector.sampleCategories(seqCol,
-            (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
+          (s) => /(\(invabasic\)|\(GalNAc-2-JNJ\)|f|m|ps|A|C|G|U){6,}$/.test(s)) ||
           DG.Detector.sampleCategories(seqCol, (s) => /^(?=.*moe)(?=.*5mC)(?=.*ps){6,}/.test(s))) {
           menu.item('Convert GCRS to raw', () => {
             grid.table.columns.addNewString(seqCol.name + ' to raw').init((i: number) => {
