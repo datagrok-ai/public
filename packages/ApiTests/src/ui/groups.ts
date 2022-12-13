@@ -1,8 +1,7 @@
-import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test, awaitCheck} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {waitForHTMLCollection, waitForHTMLElement} from './utils';
 
 
 category('UI: Groups', () => {
@@ -32,7 +31,11 @@ category('UI: Groups', () => {
       .find((el) => el.textContent === 'All');
     if (all === undefined) throw new Error('cannot find All!');
     await all.click();
-    await waitForHTMLElement('.grok-items-view-counts', regex, 'Number of groups does not match!');
+    await awaitCheck(() => {
+      if (document.querySelector('.grok-items-view-counts') !== null)
+        return regex.test((document.querySelector('.grok-items-view-counts') as HTMLElement).innerText);
+      return false;
+    }, 'number of groups does not match', 3000);
   });
 
   test('filters.mine', async () => {
@@ -45,7 +48,11 @@ category('UI: Groups', () => {
       .find((el) => el.textContent === 'Mine');
     if (mine === undefined) throw new Error('cannot find Mine!');
     await mine.click();
-    await waitForHTMLElement('.grok-items-view-counts', regex, 'Number of groups does not match!');
+    await awaitCheck(() => {
+      if (document.querySelector('.grok-items-view-counts') !== null)
+        return regex.test((document.querySelector('.grok-items-view-counts') as HTMLElement).innerText);
+      return false;
+    }, 'number of groups does not match', 3000);
   });
 
   test('actions.createNewGroup', async () => {
@@ -79,16 +86,27 @@ category('UI: Groups', () => {
   });
 
   test('group.panel', async () => {
-    const group = (await waitForHTMLCollection('.grok-gallery-grid'))[0] as HTMLElement;
+    await awaitCheck(() => {
+      if (document.querySelector('.grok-gallery-grid') !== null)
+        return document.querySelector('.grok-gallery-grid')!.children.length !== 0;
+      return false;
+    }, 'cannot load all users', 3000);
+    const group = document.querySelector('.grok-gallery-grid')!.children[0] as HTMLElement;
     grok.shell.windows.showProperties = true;
     group.click();
     const regex = new RegExp('MANAGE', 'g');
-    const groupInfo = await waitForHTMLElement('.grok-entity-prop-panel', regex, 'Error in .grok-entity-prop-panel!'); 
+    await awaitCheck(() => {
+      if (document.querySelector('.grok-entity-prop-panel') !== null)
+        return regex.test((document.querySelector('.grok-entity-prop-panel') as HTMLElement).innerText);
+      return false;
+    }, 'error in .grok-entity-prop-panel', 3000);
+    const groupInfo = document.querySelector('.grok-entity-prop-panel') as HTMLElement;
     const memb = groupInfo.innerText.includes('Members');
     expect(memb, true);
     const manage = document.querySelector('.d4-pane-manage-button') as HTMLElement;
     manage.click();
-    const diag = await waitForHTMLElement('.d4-dialog', /./g, 'Error in .d4-dialog!');
+    await awaitCheck(() => document.querySelector('.d4-dialog') !== null, 'cannot find manage dialog', 3000);
+    const diag = document.querySelector('.d4-dialog') as HTMLElement;
     const cancel = diag.querySelectorAll('[class="ui-btn ui-btn-ok"]')[1] as HTMLElement;
     cancel.click();
   });
