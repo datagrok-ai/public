@@ -5,8 +5,8 @@
 
 Treemap displays hierarchical (tree-structured) data as nested rectangles. The
 branches are rectangles, then tiled with smaller rectangles representing
-sub-branches. Rectangles have areas proportional to a specified dimension of 
-the data using the specified aggregation function (`count` by default).
+sub-branches. Rectangles have areas proportional to a specified dimension of the
+data using the specified aggregation function (`count` by default).
 
 Treemap displays all data simultaneously and shows a part-to-whole relationship
 among many categories. Use a treemap to spot irregularities or patterns.
@@ -28,12 +28,13 @@ You can set the hierarchy and customize a treemap viewer. To do that, click the
 example, you can:
 
 * **Set tree hierarchy**
-  * Choose the desired column using the drop-downs on top of the viewer
-  * Or, edit the `Split by` property (drag-and-drop columns to change their order) 
+  * Choose the desired column using the drop-downs on top of the viewer.
+  * Or, edit the `Split by` property (drag-and-drop columns to change their
+    order).
 * **Select the rows for the treemap display** using the **Row source** dropdown
   list.
-* **Size-code nodes** using `Size` and `Size Aggr Type` properties
-* **Color-code nodes** using `Color` and `Color Aggr Type` properties
+* **Size-code nodes** using `Size` and `Size Aggr Type` properties.
+* **Color-code nodes** using `Color` and `Color Aggr Type` properties.
 
 ## Interactivity
 

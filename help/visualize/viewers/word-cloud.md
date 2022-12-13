@@ -3,7 +3,9 @@
 
 # Word cloud
 
-Word cloud (a tag cloud) shows the frequency of individual words using font size and color. Use it to see the most popular concepts, highlight important textual data points, compare data, etc.
+Word cloud (a tag cloud) shows the frequency of individual words using font size
+and color. Use it to see the most popular concepts, highlight important textual
+data points, compare data, etc.
 
 ![Word Cloud](word-cloud.png "Word Cloud")
 
@@ -12,12 +14,13 @@ Word cloud (a tag cloud) shows the frequency of individual words using font size
 1. Go to **Tables** and expand the **Viewers** panel.
 1. Locate the **Word Cloud** icon and click it.
 
-Initially, the viewer picks up the first string column in the corresponding table and builds a word cloud.
+Initially, the viewer picks up the first string column in the corresponding
+table and builds a word cloud.
 
 ## Settings
 
-To configure a word cloud, click the **Gear** icon on top of the viewer and use the info panels on the **Context Pane**.
-For example, you can:
+To configure a word cloud, click the **Gear** icon on top of the viewer and use
+the info panels on the **Context Pane**. For example, you can:
 
 * **Select the word column** using the `Word` property
 * **Size-code words** using `Size` and `Size Column Aggr Type` properties
@@ -26,7 +29,8 @@ For example, you can:
 
 ## Interactivity
 
-A word cloud viewer doesn’t respond to the row selection and data filtering. You can use it to filter other viewers.
+A word cloud viewer doesn’t respond to the row selection and data filtering. You
+can use it to filter other viewers.
 
 ![Word Cloud](word-cloud.gif)
 
