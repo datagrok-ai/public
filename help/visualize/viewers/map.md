@@ -15,7 +15,8 @@ longitude and latitude values.
 
 ## Settings
 
-To configure a map, click the **Gear** icon on top of the viewer and use the info panels on the **Context Pane**. For example, you can:
+To configure a map, click the **Gear** icon on top of the viewer and use the
+info panels on the **Context Pane**. For example, you can:
 
 * *Color-code* points using the `Color` property
 * *Size-code* points using the `Size` property
