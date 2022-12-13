@@ -43,7 +43,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       let queryMol: RDMol | null = null;
       try {
         if (isMolBlock(queryMolString))
-          queryMol = this.getMol(queryMolString);
+          queryMol = this.getQMol(queryMolString);
         else {
           let createdQMol = false;
           try {
