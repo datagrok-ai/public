@@ -15,6 +15,11 @@ let sketcherId = 0;
 
 export class KetcherSketcher extends grok.chem.SketcherBase {
 
+  _smiles: string = '';
+  _molV2000: string = '';
+  _molV3000: string = '';
+  _smarts: string = '';
+
   constructor() {
     super();
     let structServiceProvider = new StandaloneStructServiceProvider();
@@ -30,9 +35,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       onInit: (ketcher: Ketcher) => {
         this._sketcher = ketcher;
         (this._sketcher.editor as any).subscribe("change", async (_: any) => {
-          this.host!._smiles = await this._sketcher!.getSmiles();
-          this.host!._molfile = this.host!.molFileUnits === grok.chem.MOLV2000 ?
-            await this._sketcher!.getMolfile('v2000'): await this._sketcher!.getMolfile('v3000');
+          this._smiles = await this._sketcher!.getSmiles();
+          this._molV2000 = await this._sketcher!.getMolfile('v2000');
+          this._molV3000 = await this._sketcher!.getMolfile('v3000');
           this.onChanged.next(null);
         });
         this._sketcher.editor.zoom(0.5);
@@ -60,7 +65,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
-    return this._sketcher ? this.host!._smiles : this.host!.getSmiles();
+    return this._smiles;
   }
 
   set smiles(smiles) {
@@ -68,7 +73,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   get molFile() {
-    return this._sketcher ? this.host!._molfile : this.host!.getMolFile();
+    return this._molV2000;
   }
 
   set molFile(molfile: string) {
@@ -76,7 +81,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   get molV3000() {
-    return this._sketcher ? this.host!._molfile : this.host!.getMolFile();
+    return this._molV3000;
   }
 
   set molV3000(molfile: string) {
@@ -84,7 +89,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   async getSmarts(): Promise<string> {
-    return this._sketcher ? await this._sketcher.getSmarts() : await this.host!.getSmarts();
+    return await this._sketcher.getSmarts();
   }
 
   set smarts(smarts: string) {
