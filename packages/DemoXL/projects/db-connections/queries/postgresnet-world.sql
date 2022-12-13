@@ -1,6 +1,6 @@
---name: PostgresNetWorld
+--name: PostgresWorld
 --friendlyName: World
---connection: PostgresNetWorld
+--connection: PostgresWorld
 
 select 
   column_domain_usage.column_name,

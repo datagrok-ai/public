@@ -1,5 +1,5 @@
 --name: GenderEthnicityRace
---connection: Demo:test_queries:PostgresNetCDM
+--connection: Demo:test_queries:PostgresCDM
 SELECT
   ar1.analysis_id AS analysisId,
   c1.concept_id   AS conceptId,

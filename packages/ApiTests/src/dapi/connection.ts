@@ -7,7 +7,7 @@ const GDC = grok.dapi.connections;
 
 category('Dapi: connection', () => {
   const dcParams = {
-    dataSource: 'PostgreSQL', server: 'localhost:5432', db: 'datagrok_dev', login: 'datagrok_dev', password: '123'};
+    dataSource: 'PostgresDart', server: 'localhost:5432', db: 'datagrok_dev', login: 'datagrok_dev', password: '123'};
 
   test('Create, save, delete, share', async () => {
     let dc = DG.DataConnection.create('Local DG Test', dcParams);

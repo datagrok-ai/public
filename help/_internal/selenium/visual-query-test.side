@@ -6075,7 +6075,7 @@
     },
     {
       "id": "5fcc26d5-f451-4f7f-8983-a3d1942fc867",
-      "name": "visual-query-postgresnet",
+      "name": "visual-query-Postgres",
       "commands": [
         {
           "id": "f7e1b5ef-674f-44a1-8b36-12d9370bf9b4",
@@ -6234,14 +6234,14 @@
           "id": "fbb1957e-ec11-43a7-9502-88c4731a51fc",
           "comment": "",
           "command": "click",
-          "target": "xpath=//div[@name='tree-expander-PostgresNet']",
+          "target": "xpath=//div[@name='tree-expander-Postgres']",
           "targets": [
             [
               "css=.d4-tree-view-group:nth-child(25) .d4-tree-view-tri",
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-expander-PostgresNet']",
+              "xpath=//div[@name='tree-expander-Postgres']",
               "xpath:attributes"
             ],
             [
@@ -6259,14 +6259,14 @@
           "id": "2d425978-8277-42f1-96cc-f4c2f9e0810c",
           "comment": "",
           "command": "click",
-          "target": "xpath=//div[@name='tree-expander-PostgresNet---northwind']",
+          "target": "xpath=//div[@name='tree-expander-Postgres---northwind']",
           "targets": [
             [
               "css=.d4-tree-view-group:nth-child(25) .d4-tree-view-group:nth-child(2) .d4-tree-view-tri",
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-expander-PostgresNet---northwind']",
+              "xpath=//div[@name='tree-expander-Postgres---northwind']",
               "xpath:attributes"
             ],
             [
@@ -6292,14 +6292,14 @@
           "id": "0bdb42f2-1a04-4407-a490-37b65aee98b0",
           "comment": "",
           "command": "click",
-          "target": "xpath=(//div[@name='tree-expander-PostgresNet---northwind'])[2]",
+          "target": "xpath=(//div[@name='tree-expander-Postgres---northwind'])[2]",
           "targets": [
             [
               "css=.d4-tree-view-group:nth-child(2) .d4-tree-view-group:nth-child(1) .d4-tree-view-tri",
               "css:finder"
             ],
             [
-              "xpath=(//div[@name='tree-expander-PostgresNet---northwind'])[2]",
+              "xpath=(//div[@name='tree-expander-Postgres---northwind'])[2]",
               "xpath:attributes"
             ],
             [
@@ -6325,14 +6325,14 @@
           "id": "49244bfd-11bd-4a74-bdf7-5b130c8210b3",
           "comment": "",
           "command": "click",
-          "target": "xpath=//div[@name='tree-PostgresNet---northwind---Tables---orders']",
+          "target": "xpath=//div[@name='tree-Postgres---northwind---Tables---orders']",
           "targets": [
             [
               "css=.d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-group:nth-child(8) > .d4-tree-view-node",
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-PostgresNet---northwind---Tables---orders']",
+              "xpath=//div[@name='tree-Postgres---northwind---Tables---orders']",
               "xpath:attributes"
             ],
             [
@@ -6650,7 +6650,7 @@
               "xpath:position"
             ]
           ],
-          "value": "visual-query-postgresnet-by-selenium"
+          "value": "visual-query-Postgres-by-selenium"
         },
         {
           "id": "5dc230ca-0dda-4a15-ac97-99fcd996cc01",
@@ -6738,7 +6738,7 @@
           "id": "083cc31d-89a0-4ae6-b209-885bb13dad42",
           "comment": "",
           "command": "verifyElementPresent",
-          "target": "xpath=//span[@name='span-visual-query-postgresnet-by-selenium']",
+          "target": "xpath=//span[@name='span-visual-query-Postgres-by-selenium']",
           "targets": [
             [
               "css=.d4-ribbon-name > span:nth-child(1)",
@@ -7106,14 +7106,14 @@
           "id": "73fd72d7-b578-4d87-b235-63038b6a3aaf",
           "comment": "",
           "command": "verifyElementPresent",
-          "target": "xpath=//label[@name='label-VisualQueryPostgresnetBySelenium']",
+          "target": "xpath=//label[@name='label-VisualQueryPostgresBySelenium']",
           "targets": [
             [
               "css=.d4-gallery-card",
               "css:finder"
             ],
             [
-              "xpath=//label[@name='label-VisualQueryPostgresnetBySelenium']",
+              "xpath=//label[@name='label-VisualQueryPostgresBySelenium']",
               "xpath:attributes"
             ],
             [
@@ -7125,7 +7125,7 @@
               "xpath:position"
             ],
             [
-              "xpath=//label[contains(.,'visual-query-postgresnet-by-selenium')]",
+              "xpath=//label[contains(.,'visual-query-Postgres-by-selenium')]",
               "xpath:innerText"
             ]
           ],
@@ -7143,7 +7143,7 @@
           "id": "5706e045-cc88-4453-b0af-cb09181a9f09",
           "comment": "",
           "command": "click",
-          "target": "xpath=//label[@name='label-VisualQueryPostgresnetBySelenium']",
+          "target": "xpath=//label[@name='label-VisualQueryPostgresBySelenium']",
           "targets": [],
           "value": ""
         },
@@ -7258,7 +7258,7 @@
           "id": "029ca9f3-0158-46e9-870c-76a95e948b4b",
           "comment": "",
           "command": "verifyElementNotPresent",
-          "target": "xpath=//label[@name='label-VisualQueryPostgresnetBySelenium']",
+          "target": "xpath=//label[@name='label-VisualQueryPostgresBySelenium']",
           "targets": [],
           "value": ""
         },

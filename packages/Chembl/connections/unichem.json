@@ -13,7 +13,7 @@
       "password": "datagrok"
     }
   },
-  "dataSource": "PostgreSQL",
+  "dataSource": "PostgresDart",
   "description": "Unichem DB",
   "tags": ["demo", "chem"]
 }

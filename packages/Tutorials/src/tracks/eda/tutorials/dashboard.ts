@@ -37,7 +37,7 @@ export class DashboardTutorial extends Tutorial {
     const connectionName = 'Coffee_company';
     const queryName = 'Stores in @state';
     const queryHints = [
-      $('div.d4-tree-view-group-label').filter((idx, el) => el.textContent == 'PostgreSQL')[0]!,
+      $('div.d4-tree-view-group-label').filter((idx, el) => el.textContent == 'PostgresDart' || el.textContent == 'PostgreSQL')[0]!,
       // $('div.d4-tree-view-group-label').filter((idx, el) => el.textContent == connectionName)[0]!,
       // $('div.d4-tree-view-group-label').filter((idx, el) => el.textContent == queryName)[0]!,
     ];
