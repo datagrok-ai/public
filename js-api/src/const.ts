@@ -239,6 +239,8 @@ export const TAGS = {
   COLOR_CODING_CONDITIONAL: '.color-coding-conditional',
   COLOR_CODING_CATEGORICAL: '.color-coding-categorical',
   COLOR_CODING_LINEAR: '.color-coding-linear',
+  COLOR_CODING_SCHEME_MAX: '.color-coding-scheme-max',
+  COLOR_CODING_SCHEME_MIN: '.color-coding-scheme-min',
 
   MARKER_CODING: '.marker-coding',
   FORMULA_LINES: '.formula-lines',
