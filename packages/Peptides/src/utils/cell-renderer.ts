@@ -64,6 +64,8 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
     // canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(coef)));
     canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
     canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+    canvasContext.shadowBlur = 5;
+    canvasContext.shadowColor = DG.Color.toHtml(DG.Color.white);
     let substValue = 0;
     substitutionsInfo.get(currentAAR)?.get(currentPosition)?.forEach((idxs) => substValue += idxs.length);
     if (substValue && substValue != 0)
