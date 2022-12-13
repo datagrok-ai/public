@@ -9,6 +9,7 @@ import {chemSpace} from '../analysis/chem-space';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/similarity-utils';
 import {chemSpaceTopMenu} from '../package';
+
 const {jStat} = require('jstat');
 
 category('top menu chem space', async () => {
@@ -86,7 +87,7 @@ async function _testDimensionalityReducer(col: DG.Column, algorithm: string) {
   });
   //  grok.shell.addTableView(similaririesWithDistances);
   const corrCoef = jStat.corrcoeff(similaritiesArray, distancesArray);
-  expect(Math.abs(corrCoef) > -0.6, true);
+  expect(corrCoef <= -0.5, true);
 }
 
 interface IDistanceToPoint {
