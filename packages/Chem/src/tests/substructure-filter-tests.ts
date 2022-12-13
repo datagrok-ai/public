@@ -7,7 +7,7 @@ import {readDataframe} from './utils';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 
-category('substructure filters', async () => {
+/* category('substructure filters', async () => {
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
       chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
@@ -86,5 +86,5 @@ M  END
     }, () => { filter2.sketcher.setMolFile(molfile2) }, 7000);
     sketcherDialogs.forEach((it) => it.close());
   });
-});
+}); */
   

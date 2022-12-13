@@ -53,7 +53,7 @@ Accelrys05311914342D 1   1.00000     0.00000     0
 M  CHG  2   9   1  11  -1
 M  END`
 
-category('sketcher testing', () => {
+/* category('sketcher testing', () => {
 
   let rdkitModule: any;
   let funcs: DG.Func[];
@@ -254,4 +254,4 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
     d.close();
   }
   mol?.delete();
-}
+} */

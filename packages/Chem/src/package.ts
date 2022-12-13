@@ -86,7 +86,7 @@ export async function initChem(): Promise<void> {
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   const lastSelectedSketcher = await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
-  window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher ?? '');
+  if (lastSelectedSketcher) DG.chem.currentSketcher = lastSelectedSketcher;
   _renderers = new Map();
 }
 
@@ -611,7 +611,7 @@ export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
     .add(sketcher)
     .onOK(() => {
       cell.cell.value = unit == 'molblock' ? sketcher.getMolFile() : sketcher.getSmiles();
-      Sketcher.addRecent(sketcher.getMolFile());
+      Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
     .show();
 }
