@@ -473,29 +473,20 @@ export namespace chem {
     static checkDuplicatesAndAddToStorage(storage: string[], molecule: string, localStorageKey: string) {
       let mol1: any;
       function moleculesEqual(rdkitModule: any, mol1: any, molfile2: string): boolean {
-        let mol2;
-        try {
-          mol2 = rdkitModule.get_mol(molfile2); //in case local storage contained malformed molecules wrap in try
-        } catch (e: any) {
-          return false; 
-        }
-        const result = mol1.get_smiles() === mol2.get_smiles();
-        mol2.delete();
+        const mol2 = Sketcher.checkMoleculeValid(rdkitModule, molfile2);  
+        const result = mol2 ? mol1.get_smiles() === mol2.get_smiles() : false;
+        mol2?.delete();
         return result;
       }
       grok.functions.call('Chem:getRdKitModule').then((rdKit: any) => {
-        try { 
-          mol1 = rdKit.get_mol(molecule);
-        }
-        catch (e: any){
-          throw(`Molecule is possibly malformed`);
-        }
+        const mol1 = Sketcher.checkMoleculeValid(rdKit, molecule);
+        if (!mol1) throw(`Molecule is possibly malformed`);;
         if (!Sketcher.isEmptyMolfile(molecule)) {
           const molsWithoutDuplicates = storage.filter((mol) => !moleculesEqual(rdKit, mol1, mol));
           localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...molsWithoutDuplicates.slice(0, 9)]));
         }         
       }).finally(() => {
-        if (mol1) mol1.delete();
+        mol1?.delete();
       });
     }
 
@@ -504,6 +495,17 @@ export namespace chem {
       return (molFile == null || molFile == '' ||
        (rowWithAtomsAndNotation.trimStart()[0] === '0' && rowWithAtomsAndNotation.trimEnd().endsWith('V2000')) ||
        (rowWithAtomsAndNotation.trimEnd().endsWith('V3000') && molFile.includes('COUNTS 0')));
+    }
+
+    static checkMoleculeValid(rdKit: any, molecule: string): any {
+      let mol;
+      try {
+        mol = rdKit.get_mol(molecule);
+      }
+      catch (e: any) {
+        return null;
+      }
+      return mol;
     }
 
     detach() {
