@@ -69,11 +69,11 @@ M  END
   get defaultHeight() {return 100;}
 
   _fetchMolGetOrCreate(molString: string, scaffoldMolString: string,
-    molRegenerateCoords: boolean, details: object = {}): IMolInfo {
+    molRegenerateCoords: boolean, details: object = {}, isQuery: boolean = false): IMolInfo {
     let mol: RDMol | null = null;
     let substruct = {};
     try {
-      mol = this.rdKitModule.get_mol(molString, JSON.stringify(details));
+      mol = isQuery ? this.rdKitModule.get_qmol(molString) : this.rdKitModule.get_mol(molString, JSON.stringify(details));
       if (!mol.is_valid()) {
         mol.delete();
         mol = null;
@@ -107,7 +107,7 @@ M  END
           let molHasOwnCoords = mol.has_coords();
           const scaffoldIsMolBlock = isMolBlock(scaffoldMolString);
           if (scaffoldIsMolBlock) {
-            const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true}).mol;
+            const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false, {mergeQueryHs: true}, true).mol;
             if (rdKitScaffoldMol && rdKitScaffoldMol.is_valid()) {
               rdKitScaffoldMol.normalize_depiction(0);
               if (molHasOwnCoords)
@@ -165,11 +165,11 @@ M  END
   }
 
   _fetchMol(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean,
-    scaffoldRegenerateCoords: boolean, details: object = {}): IMolInfo {
+    scaffoldRegenerateCoords: boolean, details: object = {}, isQuery: boolean = false): IMolInfo {
     const name = molString + ' || ' + scaffoldMolString + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + (Object.keys(details).length ? ' || ' + JSON.stringify(details) : '');
     return this.molCache.getOrCreate(name, (_: any) =>
-      this._fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords, details));
+      this._fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords, details, isQuery));
   }
 
   _rendererGetOrCreate(
