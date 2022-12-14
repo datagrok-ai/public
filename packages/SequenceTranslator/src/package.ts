@@ -75,7 +75,9 @@ export async function sequenceTranslator(): Promise<void> {
 }
 
 //tags: autostart
-autostartOligoSdFileSubscription();
+export async function autostartST() {
+  autostartOligoSdFileSubscription();
+};
 
 //name: oligoSdFileApp
 //description: Test/demo app for oligoSdFile
