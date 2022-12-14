@@ -10,8 +10,9 @@
 * Security
   * [Security overview](security.md)
   * [Authentication](../../govern/authentication.md)
-    and [authorization](../../govern/authorization.md)
-  * [Encryption at rest](#encryption-at-rest) and [encryption in transit](#encryption-in-transit)
+  and [authorization](../../govern/authorization.md)
+  * [Encryption at rest](#encryption-at-rest)
+  and [encryption in transit](#encryption-in-transit)
 
 * Enterprise Readiness
   * [Logging and monitoring](#logging-and-monitoring) (using standard AWS tools)
