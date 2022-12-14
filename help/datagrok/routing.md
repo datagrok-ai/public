@@ -112,9 +112,7 @@ manufacturer:
 
 We can see that the URL changed after the filter was applied. If we now follow this
 URL [https://public.datagrok.ai/apps/Discovery/cars/Honda](https://public.datagrok.ai/apps/Discovery/cars/Honda)
-, we will go back to the filtered table. You can find the source code of this application in
-our [public package repository](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
-and see how it works for yourself.-->
+, we will go back to the filtered table.-->
 
 See also:
 
