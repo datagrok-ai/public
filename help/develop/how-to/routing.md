@@ -128,6 +128,5 @@ function setSelection(tableView: DG.TableView, label: string) {
 
 See also:
 
-* [Discovery package](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
 * [How-to: Build an application](./build-an-app.md)
 * [Routing](../../datagrok/routing.md)
