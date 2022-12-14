@@ -57,7 +57,6 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.host = host;
     let id = `ketcher-${sketcherId++}`;
     this.root.id = id;
-    this.onChanged.next(null);
   }
 
   get supportedExportFormats() {

@@ -448,12 +448,13 @@ export namespace chem {
 
     setSketcherWithExistingMolecule(){
       const getMolecule = async () => {
-        return this._smiles === null ? this._molfile === null ? this._smarts === null ? '' :
+        return this._smiles === null ? this._molfile === null ? this._smarts === null ? null :
           await this.getSmarts() : this.getMolFile() : this.getSmiles();
       }
       getMolecule().then((molecule) => {
-        this.setSketcher(currentSketcher).then((_) => {              
-          this.setMolecule(molecule!, this._smarts !== null);
+        this.setSketcher(currentSketcher).then((_) => {
+          if (molecule)              
+            this.setMolecule(molecule!, this._smarts !== null);
         });
       });
     }
