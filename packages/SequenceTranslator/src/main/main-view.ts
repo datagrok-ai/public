@@ -228,7 +228,7 @@ export async function mainView(onSequenceChanged: (seq: string) => void): Promis
   const topPanel = [
     downloadMolFileIcon,
     copySmilesIcon,
-    switchInput.root,
+    switchInput.root, // todo: remove from top panel
   ];
 
   const v = grok.shell.v;

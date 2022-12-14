@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {autostartOligoSdFileSubscription} from './autostart/registration';
 import {defineAxolabsPattern} from './axolabs/define-pattern';
-import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
+import {saveSenseAntiSenseView} from './structures-works/save-sense-antisense';
 import {mainView} from './main/main-view';
 import {IMonomerLib, MonomerWorks, readLibrary} from '@datagrok-libraries/bio';
 import {OligoSdFileApp} from './apps/oligo-sd-file-app';
@@ -48,7 +48,7 @@ export async function sequenceTranslator(): Promise<void> {
       updatePath();
     }),
     'AXOLABS': defineAxolabsPattern(),
-    'SDF': saveSenseAntiSense(),
+    'SDF': saveSenseAntiSenseView(),
   });
   tc.onTabChanged.subscribe((value) => {
     if (tc.currentPane.name != 'MAIN')
