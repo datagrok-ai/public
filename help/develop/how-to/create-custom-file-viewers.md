@@ -7,10 +7,10 @@ Datagrok provides a way to define custom file viewers that are used by the
 special way. It should take a single argument of type `file`, return a `view`, and have at least two tags: `fileViewer`
 and `fileViewer-<extension>` (specify the extension here). This is it!
 
-The following example defines a file viewer for .mol, .sdf, and .cif files by visualizing them with the NglViewer. This
+The following example defines a file viewer for .mol, .sdf, and .cif files by visualizing them with the NglViewer.
+<!--This
 is real code from
-the ["NglViewer" public package](https://github.com/datagrok-ai/public/blob/master/packages/NglViewer/package.js)
-.
+the ["NglViewer" public package](https://github.com/datagrok-ai/public/blob/master/packages/NglViewer/package.js).-->
 
 ```js
 //tags: fileViewer, fileViewer-mol, fileViewer-sdf, fileViewer-cif

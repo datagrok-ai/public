@@ -85,7 +85,7 @@ passed directly in the URL. For example:
 Opening the above link triggers the `StoresInState` query execution, with the `state` parameter value equal to `NY`.
 Once completed, it will output the resulting table.
 
-## Applications
+<!--## Applications
 
 Remarkably, routing works for [applications](../develop/how-to/build-an-app.md). They are shipped as part of
 a [package](../develop/develop.md) and used by developers as a means to extend the Datagrok platform. An application
@@ -114,7 +114,7 @@ We can see that the URL changed after the filter was applied. If we now follow t
 URL [https://public.datagrok.ai/apps/Discovery/cars/Honda](https://public.datagrok.ai/apps/Discovery/cars/Honda)
 , we will go back to the filtered table. You can find the source code of this application in
 our [public package repository](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
-and see how it works for yourself.
+and see how it works for yourself.-->
 
 See also:
 

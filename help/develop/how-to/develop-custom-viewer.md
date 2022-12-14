@@ -8,7 +8,7 @@ Developers can extend Datagrok with special visual components bound to data, whi
 one is JavaScript-based development, which lets you create interactive viewers
 via [Datagrok JavaScript API](../js-api.md). The second option uses visualizations available for popular
 programming languages, such as Python, R, or Julia. This implementation uses
-[scripting](../../compute/scripting.md) internally, so the code runs on the server, which makes it less 
+[scripting](../../compute/scripting.md) internally, so the code runs on the server, which makes it less
 interactive. Both options support data filtering and selection.
 
 Typically, development starts with [package](../develop.md#packages) creation. Packages are convenient units for
@@ -59,7 +59,7 @@ Now we will start adding new functionality to this template. If you have
 [datagrok-tools](https://www.npmjs.com/package/datagrok-tools) installed and want to follow along, you can obtain the
 starter code with these commands:
 
-```
+```js
 grok create AwesomePackage --js
 grok add viewer AwesomeViewer
 ```
@@ -93,10 +93,10 @@ taken from there.
 ### Filter, selection, and highlighting
 
 For a viewer to be fully interactive, it has to synchronize with the dataframe's filter, selection, highlighting,
-current and mouse-over rows. The simplest way to do that is to subscribe to dataframe events, and re-render 
+current and mouse-over rows. The simplest way to do that is to subscribe to dataframe events, and re-render
 the scene when anything changes.
 
-When a viewer is closed, we no longer want to receive events from the associated dataframe. This is achieved 
+When a viewer is closed, we no longer want to receive events from the associated dataframe. This is achieved
 by adding the subscription object to the `subs` field. The `detach` method (that is called automatically when
 the viewer is closed) unsubscribes from them.
 
@@ -113,7 +113,7 @@ the viewer is closed) unsubscribes from them.
 
 ### Properties
 
-Viewer properties include all the parameters you want users to edit via 
+Viewer properties include all the parameters you want users to edit via
 the [property panel](../../datagrok/navigation.md#properties). They get persisted with the viewer layout.
 
 In this case, we want to set a couple of properties for our bar chart:
@@ -540,8 +540,6 @@ You can find more inspiring examples in our [public repository](https://github.c
       using the [Echarts](https://echarts.apache.org) framework
   * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet): integrates with
       the [Leaflet](https://leafletjs.com/) library to build interactive maps
-  * [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst): uses the [D3](https://d3js.org/)
-      library for a sunburst chart
   * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers): showcases creating JavaScript
       viewers using various visualization libraries
 * Scripting viewers (R, Python, Julia):
