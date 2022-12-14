@@ -13,7 +13,7 @@ Before we start, get familiar with
 Now, let's create a folder `dockerfiles`. You should put there a Dockerfile with
 the commands that are needed to build a docker image and run the container.
 Follow all the best practices for writing dockerfiles in order to make them
-simple, small and efficient.  
+simple, small and efficient.
 
 Example of such
  [Dockerfile](https://github.com/datagrok-ai/public/blob/master/packages/PepSeA/dockerfiles/Dockerfile)

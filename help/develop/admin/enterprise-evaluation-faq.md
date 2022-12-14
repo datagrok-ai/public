@@ -113,5 +113,6 @@ Also, there are multiple advanced options to deploy application:
 
 * [CloudFormation template](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.json)
   to deploy to AWS ECS
-* [Terraform scripts](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/terraform/terraform.tf) to deploy to
+* [Terraform scripts](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/terraform/terraform.tf)
+to deploy to
   AWS ECS
