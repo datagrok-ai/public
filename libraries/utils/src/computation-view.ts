@@ -41,6 +41,7 @@ export class ComputationView extends FunctionView {
     if (runId) {
       setTimeout(async () => {
         await this.init();
+        await this.getPackageUrls();
         const urlRun = await historyUtils.loadRun(runId);
         this.linkFunccall(urlRun);
         this.build();
@@ -57,6 +58,7 @@ export class ComputationView extends FunctionView {
           const funccall = func.prepare({});
           this.linkFunccall(funccall);
           await this.init();
+          await this.getPackageUrls();
           this.build();
         }).finally(() => {
           ui.setUpdateIndicator(this.root, false);
@@ -64,6 +66,7 @@ export class ComputationView extends FunctionView {
       } else {
         setTimeout(async () => {
           await this.init();
+          await this.getPackageUrls();
           this.build();
           this.buildRibbonPanels();
           ui.setUpdateIndicator(this.root, false);
@@ -92,6 +95,11 @@ export class ComputationView extends FunctionView {
   */
   reportBug: (() => Promise<void>) | null = null;
 
+  /** Override to customize feature request feature
+    * @stability Stable
+  */
+  requestFeature: (() => Promise<void>) | null = null;
+
   /** Override to customize "about" info obtaining feature.
     * @stability Experimental
   */
@@ -107,7 +115,7 @@ export class ComputationView extends FunctionView {
   override buildRibbonMenu() {
     super.buildRibbonMenu();
 
-    if (!this.exportConfig && !this.reportBug && !this.getHelp && !this.getMocks && !this.getTemplates) return;
+    if (!this.exportConfig && !this.reportBug && !this.requestFeature && !this.getHelp && !this.getMocks && !this.getTemplates) return;
 
     const ribbonMenu = this.ribbonMenu.group('Model');
 
@@ -145,6 +153,9 @@ export class ComputationView extends FunctionView {
     if (this.reportBug)
       ribbonMenu.item('Report a bug', () => this.reportBug!());
 
+    if (this.requestFeature)
+      ribbonMenu.item('Request a feature', () => this.requestFeature!());
+
     if (this.getHelp)
       ribbonMenu.item('Help', () => this.getHelp!());
 
@@ -157,5 +168,16 @@ export class ComputationView extends FunctionView {
         dialog.show({center: true});
       });
     }
+  }
+
+  private async getPackageUrls() {
+    const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.func?.package.id);
+    const reportBugUrl = (await pack?.getProperties() as any).REPORT_BUG_URL;
+    if (reportBugUrl)
+      this.reportBug = async () => { window.open(reportBugUrl, '_blank'); };
+
+    const reqFeatureUrl = (await pack?.getProperties() as any).REQUEST_FEATURE_URL;
+    if (reqFeatureUrl)
+      this.requestFeature = async () => { window.open(reqFeatureUrl, '_blank'); };
   }
 }
