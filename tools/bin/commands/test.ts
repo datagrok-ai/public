@@ -62,7 +62,7 @@ export function test(args: TestArgs): boolean {
     }
 
     color.info('Starting tests...');
-    exec('npm run test', (err, stdout, stderr) => {
+    exec('npm run test', {cwd: path.dirname(path.dirname(__dirname))}, (err, stdout, stderr) => {
       if (err) throw err;
       else {
         console.log(stdout);

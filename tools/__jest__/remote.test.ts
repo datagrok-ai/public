@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import * as utils from './test-node';
+import * as utils from '../bin/utils/test-utils';
 import puppeteer from 'puppeteer';
 
 const P_START_TIMEOUT: number = 3600000;
@@ -16,7 +16,7 @@ beforeAll(async () => {
 }, P_START_TIMEOUT);
 
 afterAll(async () => {
-  await browser.close();
+  await browser?.close();
 });
 
 expect.extend({

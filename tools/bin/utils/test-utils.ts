@@ -1,9 +1,13 @@
-import * as path from "path";
-import * as os from "os";
-import * as fs from "fs";
-// @ts-ignore
-import * as yaml from 'js-yaml';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import yaml from 'js-yaml';
+import * as utils from '../utils/utils';
 const fetch = require('node-fetch');
+
+
+const grokDir = path.join(os.homedir(), '.grok');
+const confPath = path.join(grokDir, 'config.yaml');
 
 export async function getToken(url: string, key: string) {
   let response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
@@ -20,22 +24,11 @@ export async function getWebUrl(url: string, token: string) {
   return json.settings.webRoot;
 }
 
-const grokDir = path.join(os.homedir(), '.grok');
-const confPath = path.join(grokDir, 'config.yaml');
-
-function mapURL(conf: Config): Indexable {
-  let urls: Indexable = {};
-  for (let server in conf.servers) {
-    urls[conf['servers'][server]['url']] = conf['servers'][server];
-  }
-  return urls;
-}
-
 export function getDevKey(hostKey: string): {url: string, key: string} {
-  let config = yaml.load(fs.readFileSync(confPath, 'utf8')) as any;
+  let config = yaml.load(fs.readFileSync(confPath, 'utf8')) as utils.Config;
   let host = hostKey == '' ? config.default : hostKey;
   host = host.trim();
-  let urls = mapURL(config);
+  let urls = utils.mapURL(config);
   let key = '';
   let url = '';
   try {
@@ -70,7 +63,7 @@ export async function getBrowserPage(puppeteer: any): Promise<{browser: any, pag
   await page.setDefaultNavigationTimeout(0);
   await page.goto(`${url}/oauth/`);
   await page.setCookie({name: 'auth', value: token});
-  await page.evaluate((token: any) => {
+  await page.evaluate((token: string) => {
     window.localStorage.setItem('auth', token);
   }, token);
   await page.goto(url);
@@ -82,16 +75,3 @@ export async function getBrowserPage(puppeteer: any): Promise<{browser: any, pag
   }
   return {browser, page};
 }
-
-
-interface Config {
-  servers: {
-    [alias: string]: {
-      url: string,
-      key: string
-    }
-  },
-  default: string,
-}
-
-interface Indexable { [key: string]: any }
