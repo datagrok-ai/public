@@ -632,7 +632,7 @@ For each dialog, you can set the position by viewport by the X and Y axes.
 ui.dialog('Standard dialog')
   .add(ui.span(['Some content...']))
   .onOK(() => {})
-  .addContextAction('My Action', () => {}))
+  .addContextAction('My Action', () => {})
   .addButton('Optional button')
   .show({x: 300, y: 300});
 ```
