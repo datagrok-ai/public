@@ -173,11 +173,11 @@ export class ComputationView extends FunctionView {
   private async getPackageUrls() {
     const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.func?.package.id);
     const reportBugUrl = (await pack?.getProperties() as any).REPORT_BUG_URL;
-    if (reportBugUrl)
+    if (reportBugUrl && !this.reportBug)
       this.reportBug = async () => { window.open(reportBugUrl, '_blank'); };
 
     const reqFeatureUrl = (await pack?.getProperties() as any).REQUEST_FEATURE_URL;
-    if (reqFeatureUrl)
+    if (reqFeatureUrl && !this.requestFeature)
       this.requestFeature = async () => { window.open(reqFeatureUrl, '_blank'); };
   }
 }
