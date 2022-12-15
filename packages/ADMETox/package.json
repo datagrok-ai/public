@@ -1,0 +1,38 @@
+{
+	"name": "admetox",
+	"beta": true,
+	"friendlyName": "ADMETox",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest",
+		"@datagrok-libraries/utils": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"scripts": {
+		"link-all": "",
+		"debug-admetox": "webpack && grok publish ",
+		"release-admetox": "webpack && grok publish --release",
+		"build-admetox": "webpack",
+		"build": "webpack",
+		"debug-admetox-dev": "grok publish dev --rebuild",
+		"release-admetox-dev": "grok publish dev --rebuild --release",
+		"debug-admetox-local": "grok publish local --rebuild",
+		"release-admetox-local": "grok publish local --rebuild --release",
+		"debug-admetox-local2": "grok publish local2 --rebuild",
+		"release-admetox-local2": "grok publish local2 --rebuild --release"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
+}
