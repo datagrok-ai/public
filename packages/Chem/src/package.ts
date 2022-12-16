@@ -1,48 +1,60 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
+
+import '../css/chem.css';
 import * as chemSearches from './chem-searches';
-import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
+import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
+import {assure} from '@datagrok-libraries/utils/src/test';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
+import {_importSdf} from './open-chem/sdf-importer';
+import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
+import Sketcher = DG.chem.Sketcher;
+import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
+import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
+import {elementsTable} from './constants';
+import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
+
+//widget imports
+import {SubstructureFilter} from './widgets/chem-substructure-filter';
 import {drugLikenessWidget} from './widgets/drug-likeness';
+import {identifiersWidget} from './widgets/identifiers';
 import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
-import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
-import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
+
+//panels imports
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
+import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
+import {checkForStructuralAlerts} from './panels/structural-alerts';
+
+//utils imports
+import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {_rdKitModule} from './utils/chem-common-rdkit';
-import {rGroupAnalysis} from './analysis/r-group-analysis';
-import {identifiersWidget} from './widgets/identifiers';
-import {_convertMolNotation, isMolBlock, MolNotation} from './utils/convert-notation-utils';
-import '../css/chem.css';
-import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
-import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
-import {saveAsSdfDialog} from './utils/sdf-utils';
-import {Fingerprint} from './utils/chem-common';
-import {assure} from '@datagrok-libraries/utils/src/test';
-import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
-import {_importSdf} from './open-chem/sdf-importer';
-import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import Sketcher = DG.chem.Sketcher;
-import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {checkForStructuralAlerts} from './panels/structural-alerts';
-import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
-import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
-import {elementsTable} from './constants';
-import {getSimilaritiesMarix} from './utils/similarity-utils';
+import {_convertMolNotation, isMolBlock} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
-import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
+import {saveAsSdfDialog} from './utils/sdf-utils';
+import {getSimilaritiesMarix} from './utils/similarity-utils';
+
+//analytical imports
+import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
+import {chemDiversitySearch, ChemDiversityViewer} from './analysis/chem-diversity-viewer';
+import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
+import {chemSpace, getEmbeddingColsNames} from './analysis/chem-space';
+import {rGroupAnalysis} from './analysis/r-group-analysis';
+
+//file importers
+import {_importTripos} from './file-importers/mol2-importer';
 import {_importSmi} from './file-importers/smi-importer';
-import {scaffoldTreeGeneration} from './scripts-api';
+import {generateScaffoldTree} from "./scripts-api";
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -73,6 +85,8 @@ export async function initChem(): Promise<void> {
   _properties = await _package.getProperties();
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
+  const lastSelectedSketcher = await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
+  window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher ?? '');
   _renderers = new Map();
 }
 
@@ -264,43 +278,37 @@ export function saveAsSdf(): void {
 //input: column molecules {type:categorical; semType: Molecule}
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
-//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
+//input: string methodName { choices:["UMAP", "t-SNE"] }
 export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, activities: DG.Column,
-  similarity: number, methodName: string): Promise<DG.Viewer | undefined> {
-
+  similarity: number, methodName: string) {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
   }
-
   const axesNames = getEmbeddingColsNames(df);
-  const options: { [key: string]: any } = {
-    'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
-  };
-  return await getActivityCliffs(
-    df,
-    molecules,
-    null as any,
-    axesNames,
-    'Activity cliffs',
-    activities,
-    similarity,
-    'Tanimoto',
-    methodName,
-    DG.SEMTYPE.MOLECULE,
-    {'units': molecules.tags['units']},
-    chemSpace,
-    getSimilaritiesMarix,
-    createTooltipElement,
-    createPropPanelElement,
-    options[methodName]);
+  if (df.rowCount > 500) {
+    ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
+    Do you want to continue?`))
+      .onOK(async () => {
+        const progressBar = DG.TaskBarProgressIndicator.create(`Activity cliffs running...`);
+        await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
+          methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
+          createTooltipElement, createPropPanelElement);
+        progressBar.close();
+      })
+      .show();
+  } else {
+    await getActivityCliffs(df, molecules, null as any, axesNames, 'Activity cliffs', activities, similarity, 'Tanimoto',
+      methodName, DG.SEMTYPE.MOLECULE, {'units': molecules.tags['units']}, chemSpace, getSimilaritiesMarix,
+      createTooltipElement, createPropPanelElement);
+  }
 }
 
 //top-menu: Chem | Chemical Space...
 //name: Chem Space
 //input: dataframe table
 //input: column molecules { semType: Molecule }
-//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
+//input: string methodName { choices:["UMAP", "t-SNE"] }
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
 export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: string,
@@ -395,7 +403,6 @@ export function rGroupsAnalysisMenu(): void {
 //top-menu: Chem | Substituent Analysis...
 //name: substituentAnalysis
 //input: dataframe table
-//output: viewer result
 export function substituentAnalysisMenu(table: DG.DataFrame): void {
   const packageExists = checkPackage('Charts', '_SubstituentAnalysisViewer');
   if (packageExists) {
@@ -435,6 +442,11 @@ export function addInchisPanel(col: DG.Column): void {
 //input: bool radarView = false
 //input: bool radarGrid = false
 export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarView: boolean, radarGrid: boolean): void {
+  if (molCol.semType !== DG.SEMTYPE.MOLECULE) {
+    grok.shell.info(`The column ${molCol.name} doesn't contain molecules`);
+    return;
+  }
+   
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
   let columnNames: string[] = [];
 
@@ -444,13 +456,10 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   for (let elName of elementsTable) {
     const value = elements.get(elName);
     if (value) {
-      if (table.columns.contains(elName)) {
-        break;
-      } else {
-        let column = DG.Column.fromInt32Array(elName, value);
-        table.columns.add(column);
-        columnNames.push(elName);
-      }
+      let column = DG.Column.fromInt32Array(elName, value);
+      column.name = table.columns.getUnusedName(column.name);
+      table.columns.add(column);
+      columnNames.push(column.name);
     }
   }
 
@@ -559,12 +568,6 @@ export function structure2d(smiles: string): DG.Widget {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function structure3d(smiles: string): Promise<DG.Widget> {
-  if (isMolBlock(smiles)) {
-    const mol = getRdKitModule().get_mol(smiles);
-    smiles = mol.get_smiles();
-    mol?.delete();
-  }
-
   return smiles ? structure3dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
@@ -641,16 +644,6 @@ export function diversitySearchTopMenu() {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
 
-//name: inchiToSmiles
-//input: string id
-//output: string smiles {semType: Molecule}
-//meta.role: converter
-//meta.inputRegexp: (InChI\=.+)
-export async function inchiToSmiles(id: string) {
-  const mol = getRdKitModule().get_mol(id);
-  return mol.get_smiles();
-}
-
 //name: Open Chem Sketcher
 //tags: moleculeSketcher
 //output: widget sketcher
@@ -682,6 +675,21 @@ export function importSdf(bytes: Uint8Array): DG.DataFrame[] | void {
 export function importSmi(bytes: Uint8Array): DG.DataFrame[] | void {
   try {
     return _importSmi(Uint8Array.from(bytes));
+  } catch(e:any){
+    grok.shell.warning('file is not supported or malformed');
+    grok.shell.error(e);
+  }
+}
+
+//name: importMol2
+//description: Opens smi file
+//tags: file-handler
+//meta.ext: mol2
+//input: list bytes
+//output: list tables
+export function importMol2(bytes: Uint8Array): DG.DataFrame[] | void {
+  try {
+    return _importTripos(Uint8Array.from(bytes));
   } catch(e:any){
     grok.shell.warning('file is not supported or malformed');
     grok.shell.error(e);
@@ -724,11 +732,24 @@ export function useAsSubstructureFilter(mol: string): void {
   if (molCol == null)
     throw 'Molecule column not found.';
 
+  let molblock = molToMolblock(mol, getRdKitModule());
+
+  //in case molecule is smiles setting correct coordinates to save molecule orientation in filter
+  if (!isMolBlock(mol)) {
+    const mol = getRdKitModule().get_mol(molblock);
+    if (!mol.has_coords())
+      mol.set_new_coords();
+    mol.normalize_depiction(1);
+    mol.straighten_depiction(false);
+    molblock = mol.get_molblock();
+    mol.delete();
+  }
+  
   tv.getFiltersGroup({createDefaultFilters: false}).add({
     type: DG.FILTER_TYPE.SUBSTRUCTURE,
     column: molCol.name,
     columnName: molCol.name,
-    molBlock: molToMolblock(mol, getRdKitModule())
+    molBlock: molblock,
   });
 }
 
@@ -797,11 +818,29 @@ export async function callChemDiversitySearch(
   return await chemDiversitySearch(col, similarityMetric[metricName], limit, fingerprint as Fingerprint);
 }
 
-//name: scaffoldTree
+//name: getScaffoldTree
 //input: dataframe data
 //output: string result
-export async function scaffoldTree(data: DG.DataFrame) {
-  const smilesColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  const scriptRes = await scaffoldTreeGeneration(data, smilesColumn!.name, smilesColumn!.name);
+export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
+  const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  const invalid: number[] = new Array<number>(data.columns.length);
+  const smiles = molColumn?.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
+  const smilesList: string[] = [];
+  for (let rowI = 0; rowI < molColumn!.length; rowI++) {
+    let el: string = molColumn?.get(rowI);
+    if (!smiles) 
+      try {
+        el = convertMolNotation(el, DG.UNITS.Molecule.MOLBLOCK, DG.UNITS.Molecule.SMILES);
+      } 
+      catch {
+        invalid[rowI] = rowI;
+      }
+    
+    smilesList[rowI] = el;
+  }
+  const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
+  smilesColumn.name = data.columns.getUnusedName(smilesColumn.name);
+  data.columns.add(smilesColumn);
+  const scriptRes = await generateScaffoldTree(data, smilesColumn!.name);
   return scriptRes;
 }

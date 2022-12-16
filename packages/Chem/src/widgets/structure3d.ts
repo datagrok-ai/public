@@ -1,9 +1,22 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {smilesTo3DCoordinates} from '../scripts-api';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
-  const sdf = (await smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n');
+  const rdKitModule = getRdKitModule();
+  try {
+    molecule = _convertMolNotation(molecule, 'unknown', 'molblock', rdKitModule);
+  } catch (e) {
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
+  }
+  let sdf: string;
+  try {
+    sdf = (await smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n');
+  } catch (e) {
+    return new DG.Widget(ui.divText('Molecule has no atoms'));
+  }
   const stringBlob = new Blob([sdf], {type: 'text/plain'});
 
   const nglHost = ui.div([], {classes: 'd4-ngl-viewer', id: 'ngl-3d-host'});

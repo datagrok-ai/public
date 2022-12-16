@@ -28,7 +28,6 @@ import {
   TAGS,
   ALIGNMENT,
 } from './src/utils/macromolecule';
-import {INewickHelper} from './src/utils/newick-helper';
 import {NotationConverter} from './src/utils/notation-converter';
 import {splitAlignedSequences} from './src/utils/splitter';
 import {getTreeHelper, ITreeHelper} from './src/utils/tree-helper';
@@ -107,7 +106,6 @@ export {
   Shapes, TreeTypes,
   Utils,
   Newick,
-  INewickHelper,
   ITreeHelper,
   getTreeHelper,
 

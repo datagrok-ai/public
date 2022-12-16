@@ -4,6 +4,7 @@ export interface RDModule {
   get_inchikey_for_inchi(input: string): string;
   version(): string;
   prefer_coordgen(prefer: boolean): void;
+  get_rxn(reactionString: string, options?: string): Reaction;
 }
 
 export interface RDMol {
@@ -70,5 +71,18 @@ export interface SubstructLibrary {
   get_mol(i: number): RDMol;
   get_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number, maxResults?: number): string;
   count_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number): number;
+}
+
+export interface Reaction {
+  d_defaultWidth: number;
+  d_defaultHeight: number;
+
+  is_valid(): boolean;
+  get_svg(width: number, height: number): string;
+  get_svg(): string;
+  get_svg_with_highlights(options?: string): string;
+  draw_to_canvas_with_offset(): string;
+  draw_to_canvas(canvas: HTMLCanvasElement, width: number, height: number): string;
+  draw_to_canvas_with_highlights(): string;
 }
 

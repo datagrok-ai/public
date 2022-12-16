@@ -11,11 +11,10 @@ function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.
 }
 
 /** A function that sets amino acid residue cell renderer to the specified column */
-export function setAARRenderer(col: DG.Column, alphabet: string, grid: DG.Grid, timeout: number = 500): void {
+export function setAARRenderer(col: DG.Column, alphabet: string): void {
   col.semType = C.SEM_TYPES.MONOMER;
   col.setTag('cell.renderer', C.SEM_TYPES.MONOMER);
   col.tags[C.TAGS.ALPHABET] = alphabet;
-  // setTimeout(() => grid.columns.byName(col.name)!.width = 60, timeout);
 }
 
 export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
@@ -62,9 +61,10 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   if (substitutionsInfo.size > 0) {
     canvasContext.textBaseline = 'middle';
     canvasContext.textAlign = 'center';
-    // canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(coef)));
     canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
     canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+    canvasContext.shadowBlur = 5;
+    canvasContext.shadowColor = DG.Color.toHtml(DG.Color.white);
     let substValue = 0;
     substitutionsInfo.get(currentAAR)?.get(currentPosition)?.forEach((idxs) => substValue += idxs.length);
     if (substValue && substValue != 0)
@@ -77,7 +77,10 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
 }
 
 export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, currentAAR: string,
-  currentPosition: string, invariantMapSelection: types.PositionToAARList, cellValue: number, bound: DG.Rect): void {
+  currentPosition: string, invariantMapSelection: types.PositionToAARList, cellValue: number, bound: DG.Rect,
+  color: number): void {
+  canvasContext.fillStyle = DG.Color.toHtml(color);
+  canvasContext.fillRect(bound.x, bound.y, bound.width, bound.height);
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
   canvasContext.textBaseline = 'middle';
@@ -89,7 +92,7 @@ export function renderInvaraintMapCell(canvasContext: CanvasRenderingContext2D, 
     renderCellSelection(canvasContext, bound);
 }
 
-export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: number,
+export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, cellValue: string, cellRawData: number,
   clusterSelection: number[], bound: DG.Rect): void {
   canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
   canvasContext.textAlign = 'center';
@@ -97,7 +100,7 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
   canvasContext.fillStyle = '#000';
   canvasContext.fillText(cellValue.toString(), bound.x + (bound.width / 2), bound.y + (bound.height / 2), bound.width);
 
-  if (clusterSelection.includes(cellValue))
+  if (clusterSelection.includes(cellRawData))
     renderCellSelection(canvasContext, bound);
 }
 
@@ -111,25 +114,26 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   drawOptions.marginVertical ??= 5;
   drawOptions.marginHorizontal ??= 5;
 
+  const pr = window.devicePixelRatio;
   const totalSpaceBetweenLetters = (statsInfo.orderedIndexes.length - 1) * drawOptions.upperLetterAscent;
-  const barHeight = bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters;
+  const barHeight = (bounds.height - 2 * drawOptions.marginVertical - totalSpaceBetweenLetters) * pr;
   const leftShift = drawOptions.marginHorizontal * 2;
-  const barWidth = bounds.width - leftShift * 2;
-  const xStart = bounds.x + leftShift;
-  const selectionWidth = 4;
-  const xSelection = bounds.x + 3;
-  let currentY = bounds.y + drawOptions.marginVertical;
+  const barWidth = (bounds.width - leftShift * 2) * pr;
+  const xStart = (bounds.x + leftShift) * pr;
+  const selectionWidth = 4 * pr;
+  const xSelection = (bounds.x + 3) * pr;
+  let currentY = (bounds.y + drawOptions.marginVertical) * pr;
 
   const monomerBounds: {[monomer: string]: DG.Rect} = {};
   for (const index of statsInfo.orderedIndexes) {
     const monomer = statsInfo.monomerCol.get(index)!;
     const monomerHeight = barHeight * (statsInfo.countCol.get(index)! / rowCount);
     const selectionHeight = barHeight * ((monomerSelectionStats[monomer] ?? 0) / rowCount);
-    const currentBound = new DG.Rect(xStart, currentY, barWidth, monomerHeight);
+    const currentBound = new DG.Rect(xStart / pr, currentY / pr, barWidth / pr, monomerHeight / pr);
     monomerBounds[monomer] = currentBound;
 
     ctx.resetTransform();
-    if (monomer !== '-') {
+    if (monomer !== '-' && monomer !== '') {
       const monomerTxt = bio.monomerToShort(monomer, 5);
       const mTm: TextMetrics = ctx.measureText(monomerTxt);
 
@@ -142,10 +146,12 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
       ctx.textBaseline = 'top';
       ctx.font = drawOptions.fontStyle;
       // Hacks to scale uppercase characters to target rectangle
-      ctx.setTransform(barWidth / mTm.width, 0, 0, monomerHeight / drawOptions.upperLetterHeight, xStart, currentY);
+      const widthTransform = barWidth / mTm.width;
+      const heightTransfrom = monomerHeight / drawOptions.upperLetterHeight;
+      ctx.setTransform(widthTransform, 0, 0, heightTransfrom, xStart, currentY);
       ctx.fillText(monomerTxt, 0, 0);
     }
-    currentY += monomerHeight + drawOptions.upperLetterAscent;
+    currentY += monomerHeight + drawOptions.upperLetterAscent * pr;
   }
 
   return monomerBounds;

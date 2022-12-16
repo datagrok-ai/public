@@ -11,7 +11,7 @@
         "password": "#{PASSWORD}"
       }
     },
-    "dataSource": "PostgreSQL",
+    "dataSource": "PostgresDart",
     "description": "#{DB_NAME} db",
     "tags": ["demo"]
 }

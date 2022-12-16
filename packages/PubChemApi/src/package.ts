@@ -8,15 +8,16 @@ import {pubChemRest} from './tests/const';
 
 export const _package = new DG.Package();
 
-//FIXME: the panel doesn't work with the first mol of the ApprovedDrugs dataset
-//name: PubChem | Info
-//tags: panel, widgets
-//input: string molString {semType: Molecule}
-//output: widget result
+/*
+name: PubChem | Info
+tags: panel, widgets
+input: string molString {semType: Molecule}
+output: widget result
 export async function pubChemPanel(molString: string): Promise<DG.Widget> {
   const pubChemId = await smilesToPubChem(molString);
   return new DG.Widget(ui.wait(async () => await buildAccordion(pubChemId)));
 }
+*/
 
 //name: PubChem | Substructure Search
 //tags: panel, widgets

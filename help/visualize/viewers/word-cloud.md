@@ -3,34 +3,39 @@
 
 # Word cloud
 
-A word cloud is a graphical representation of word frequency. Any other aggregation function can be used as well for
-representing size or color of the particular word. On the example of the demographics dataset, to visualize races by
-indicating size as number of subjects, and color as average age, use the following settings (open up properties by
-pressing F4 or by clicking on the gear icon in the top right corner):
+Word cloud (a tag cloud) shows the frequency of individual words using font size
+and color. Use it to see the most popular concepts, highlight important textual
+data points, compare data, etc.
 
-Properties:
+![Word Cloud](word-cloud.png "Word Cloud")
 
-|           |         |
-|-----------|---------|
-| Word      | RACE    |
-| Size      |         |
-| Size Aggr | #values |
-| Color     | AGE     |
-| Color     | avg     |
+## Adding
 
-General:
+1. Go to **Tables** and expand the **Viewers** panel.
+1. Locate the **Word Cloud** icon and click it.
 
-|             |              |
-|-------------|--------------|
-| Right click | Context menu |
+Initially, the viewer picks up the first string column in the corresponding
+table and builds a word cloud.
 
-![Word Cloud](../../uploads/viewers/word-cloud.png "Word Cloud")
+## Settings
 
-## Videos
+To configure a word cloud, click the **Gear** icon on top of the viewer and use
+the info panels on the **Context Pane**. For example, you can:
 
-[![Word Cloud](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=1972s)
+* **Select the word column** using the `Word` property
+* **Size-code words** using `Size` and `Size Column Aggr Type` properties
+* **Color-code words** using `Color` and `Color Column Aggr Type` properties
+* **Limit the number of words to appear in a cloud** using the **Max Words**
+  setting.
 
-See also:
+## Interactivity
+
+A word cloud viewer doesn’t respond to the row selection and data filtering. You
+can use it to filter other viewers.
+
+![Word Cloud](word-cloud.gif)
+
+## See also
 
 * [Viewers](../viewers.md)
 * [Table View](../../datagrok/table-view.md)

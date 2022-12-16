@@ -5,7 +5,7 @@
     "server": "localhost:5432",
     "db": "datagrok"
   },
-  "dataSource": "PostgreSQL",
+  "dataSource": "PostgresDart",
   "description": "Datagrok service db",
   "tags": ["service"]
 }

@@ -41,7 +41,6 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         const grid = ui.div([
           renderMolecule(
             this.moleculeColumn!.get(this.renderMolIds[i]),
-            //@ts-ignore
             {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
         ], {style: {margin: '5px'}});
 

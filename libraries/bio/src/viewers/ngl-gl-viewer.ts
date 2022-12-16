@@ -54,9 +54,9 @@ export abstract class NglGlServiceBase {
 
 
 export async function getNglGlService(): Promise<NglGlServiceBase> {
-  const funcList = DG.Func.find({package: 'PhyloTreeViewer', name: 'getNglGlService'});
+  const funcList = DG.Func.find({package: 'BiostructureViewer', name: 'getNglGlService'});
   if (funcList.length === 0)
-    throw new Error('Package "PhyloTreeViewer"" must be installed for NglGl services.');
+    throw new Error('Package "BiostructureViewer" must be installed for NglGl services.');
 
   const svc: NglGlServiceBase = (await funcList[0].prepare().call()).getOutputParamValue() as NglGlServiceBase;
   return svc;

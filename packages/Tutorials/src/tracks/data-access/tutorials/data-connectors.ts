@@ -35,7 +35,10 @@ export class DataConnectorsTutorial extends Tutorial {
 
     const dlg = await this.openDialog('Create a connection to PostgreSQL server',
       'Add new connection', $('.d4-tree-view-group')
-        .filter((idx, el) => $(el).find('.d4-tree-view-group-label')[0]?.textContent === 'PostgreSQL')[0],
+        .filter((idx, el) => {
+          let el = $(el).find('.d4-tree-view-group-label')[0];
+          return el?.textContent === 'PostgresDart' || el?.textContent === 'PostgreSQL';
+        })[0],
       'Open the context menu on the PostgreSQL connector and click "Add connection..."');
 
     await this.dlgInputAction(dlg, 'Set "Name" to "Starbucks"','Name', 'Starbucks');

@@ -840,7 +840,8 @@ export class OpenLayers {
     return stylePt;
   }
 
-  static gisObjFromGeometry(ft: FeatureLike): GisTypes.GisPoint | GisTypes.GisArea | null {
+  static gisObjFromGeometry(ft: FeatureLike, mapref: OpenLayers | null = null):
+  GisTypes.GisPoint|GisTypes.GisArea|null {
     if (!ft)
       return null;
     const geom = ft.getGeometry();
@@ -870,7 +871,7 @@ export class OpenLayers {
           areaPolygon.push(polygonCoords);
         }
         area.push(areaPolygon);
-        const gisArea = new GisTypes.GisArea(area, ft.getProperties());
+        const gisArea = new GisTypes.GisArea(area, ft.getProperties(), mapref);
         return gisArea;
       }
       case 'MultiPolygon': {
@@ -892,7 +893,7 @@ export class OpenLayers {
           }
           area.push(areaPolygon);
         }
-        const gisArea = new GisTypes.GisArea(area, ft.getProperties());
+        const gisArea = new GisTypes.GisArea(area, ft.getProperties(), mapref);
         return gisArea;
       } //<<multi polygon converter
       } //case
@@ -913,7 +914,7 @@ export class OpenLayers {
           delete newObj.geometry;
         if (arrFeatures[i].getId())
           newObj.id_ = arrFeatures[i].getId();
-        newObj.gisObject = OpenLayers.gisObjFromGeometry(arrFeatures[i]);
+        newObj.gisObject = OpenLayers.gisObjFromGeometry(arrFeatures[i], this);
 
         arrPreparedToDF.push(newObj);
       }
@@ -937,7 +938,7 @@ export class OpenLayers {
       return;
 
     const ft = arrFeatures[0];
-    const gisObj = OpenLayers.gisObjFromGeometry(ft);
+    const gisObj = OpenLayers.gisObjFromGeometry(ft, this);
     const ftGeom = ft.getGeometry();
     this.currentAreaObject = null;
     if ((ftGeom) && (ftGeom?.getType() != 'Point'))

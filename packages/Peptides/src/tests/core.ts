@@ -29,7 +29,7 @@ category('Core', () => {
     simpleTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned.csv'));
     simpleActivityCol = simpleTable.getCol(simpleActivityColName);
     simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
-    simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
+    simpleAlignedSeqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     simpleAlignedSeqCol.setTag(TAGS.aligned, ALIGNMENT.SEQ_MSA);
@@ -49,7 +49,7 @@ category('Core', () => {
     complexTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned_2.csv'));
     complexActivityCol = complexTable.getCol(complexActivityColName);
     complexAlignedSeqCol = complexTable.getCol('MSA');
-    complexAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
+    complexAlignedSeqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     complexAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.UN);
     complexAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.SEPARATOR);
     complexAlignedSeqCol.setTag(TAGS.aligned, ALIGNMENT.SEQ_MSA);
@@ -71,7 +71,7 @@ category('Core', () => {
     simpleTable = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned.csv'));
     simpleActivityCol = simpleTable.getCol(simpleActivityColName);
     simpleAlignedSeqCol = simpleTable.getCol(alignedSequenceCol);
-    simpleAlignedSeqCol.semType = C.SEM_TYPES.MACROMOLECULE;
+    simpleAlignedSeqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     simpleAlignedSeqCol.setTag(C.TAGS.ALPHABET, ALPHABET.PT);
     simpleAlignedSeqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
     simpleAlignedSeqCol.setTag(TAGS.aligned, ALIGNMENT.SEQ_MSA);

@@ -1,5 +1,5 @@
 --name: BatchModeLf
---connection: PostgresNetNorthwind
+--connection: PostgresNorthwind
 --meta.batchMode: true
 select 1;
 --batch

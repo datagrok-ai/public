@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.33",
+  "version": "3.1.42",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -363,6 +363,12 @@
         },
         "1.3.33": {
           "datagrok-api": "^1.8.2"
+        },
+        "1.4.2": {
+          "datagrok-api": "^1.10.2"
+        },
+        "1.4.3": {
+          "datagrok-api": "^1.10.2"
         }
       },
       "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis",
@@ -489,6 +495,9 @@
         },
         "1.0.14": {
           "datagrok-api": "^1.7.2"
+        },
+        "1.0.16": {
+          "datagrok-api": "^1.8.2"
         }
       },
       "description": "SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform, used to translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
@@ -611,6 +620,9 @@
           "datagrok-api": "^1.0.0"
         },
         "1.1.3": {
+          "datagrok-api": "^1.9.1"
+        },
+        "1.1.4": {
           "datagrok-api": "^1.9.1"
         }
       },
@@ -887,6 +899,9 @@
           "datagrok-api": "^1.6.12"
         },
         "1.4.0": {
+          "datagrok-api": "^1.8.1"
+        },
+        "1.5.4": {
           "datagrok-api": "^1.8.1"
         }
       },
@@ -1885,6 +1900,9 @@
         },
         "1.1.9": {
           "datagrok-api": "^1.8.3"
+        },
+        "1.1.10": {
+          "datagrok-api": "^1.8.3"
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).",
@@ -2217,6 +2235,15 @@
         },
         "1.1.0": {
           "datagrok-api": "^1.9.1"
+        },
+        "1.2.1": {
+          "datagrok-api": "^1.9.1"
+        },
+        "1.2.2": {
+          "datagrok-api": "^1.8.2"
+        },
+        "1.2.3": {
+          "datagrok-api": "^1.8.2"
         }
       },
       "description": "*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees visualization.",

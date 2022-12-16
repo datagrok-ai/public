@@ -62,7 +62,8 @@ export class Test {
   }
 }
 
-export async function testEvent<T>(event: Observable<T>, handler: (args: T) => void, trigger: () => void, ms: number = 0): Promise<string> {
+export async function testEvent<T>(event: Observable<T>,
+  handler: (args: T) => void, trigger: () => void, ms: number = 0): Promise<string> {
   let sub: Subscription;
   return new Promise((resolve, reject) => {
     sub = event.subscribe((args) => {
@@ -259,13 +260,14 @@ export async function delay(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
-export async function awaitCheck(checkHandler: () => boolean): Promise<void> {
+export async function awaitCheck(checkHandler: () => boolean,
+  error: string = 'Timeout exceeded', wait: number = 500): Promise<void> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       clearInterval(interval);
-      // eslint-disable-next-line prefer-promise-reject-errors
-      reject('Timeout exceeded');
-    }, 500);
+      reject(new Error(error));
+    }, wait);
+    // @ts-ignore
     const interval: Timeout = setInterval(() => {
       if (checkHandler()) {
         clearInterval(interval);

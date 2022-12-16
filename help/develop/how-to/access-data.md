@@ -38,7 +38,7 @@ required parameters. Here is an example:
     "server": "$GROK_DB_SERVER",
     "db": "chembl_24"
   },
-  "dataSource": "PostgreSQL",
+  "dataSource": "PostgresDart",
   "description": "CHEMBL db",
   "tags": [
     "demo",
@@ -87,8 +87,8 @@ parameters to be specified:
 | [Neo4j](../../access/connectors/neo4j.md)              | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           | &check; | &check;  |                                                                              |
 | [OData](../../access/connectors/odata.md)              |         |         |         |              |               |         |                   |         |          | [See the list](../../access/connectors/odata.md#connection-parameters)       |
 | [Oracle](../../access/connectors/oracle.md)            | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           | &check; | &check;  |                                                                              |
-| [PostgresNet](../../access/connectors/postgres.md)     | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           | &check; | &check;  |                                                                              |
-| [PostgreSQL](../../access/connectors/postgres.md)      | &check; |         | &check; |              | &check;       | &check; |                   | &check; | &check;  |                                                                              |
+| [Postgres](../../access/connectors/postgres.md)        | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           | &check; | &check;  |                                                                              |
+| [PostgresDart](../../access/connectors/postgres.md)    | &check; |         | &check; |              | &check;       | &check; |                   | &check; | &check;  |                                                                              |
 | [Redshift](../../access/connectors/redshift.md)        | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           | &check; | &check;  |                                                                              |
 | [S3](../../access/connectors/s3.md)                    |         |         |         |              |               |         |                   |         |          | [See the list](../../access/connectors/s3.md#connection-parameters)          |
 | [Snowflake](../../access/connectors/snowflake.md)      | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           | &check; | &check;  |                                                                              |

@@ -21,7 +21,6 @@ export class Files {
   openTables(path: string): Promise<Array<DataFrame>> {
     return new Promise((resolve, reject) => api.grok_Files_OpenTables(path, (t: any) => resolve(t.map(toJs)), (e: any) => reject(e)));
   }
-
 }
 
 /** Provides convenient access to demo datasets. */

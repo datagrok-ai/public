@@ -1,7 +1,6 @@
-#name: GlomEnvTest
+#name: GlomEnvTestGlobal
 #environment: Demo:Scripts:glom_global
 #language: python
-#top-menu: Test | Environment Test
 #output: string result
 
 import requests

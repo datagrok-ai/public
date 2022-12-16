@@ -2,7 +2,7 @@
   "func": {
     "query": "select * from products",
     "connection": {
-      "dataSource": "PostgresNet",
+      "dataSource": "Postgres",
       "credentials": {
         "parameters": {
           "login": "northwind",

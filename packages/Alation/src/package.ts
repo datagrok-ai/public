@@ -87,7 +87,7 @@ async function openTable(obj: types.table): Promise<void> {
     await view.connectToDb(obj.ds_id, async (c: DG.DataConnection) => view.getTable(c, obj));
   } catch (e) {
     grok.shell.error('Couldn\'t retrieve table. See console');
-    console.log(e);
+    console.error(e);
   }
   progressIndicator.close();
 }
@@ -98,7 +98,7 @@ async function runQuery(obj: types.query): Promise<void> {
     await view.connectToDb(obj.datasource_id, async (c: DG.DataConnection) => view.runQuery(c, obj));
   } catch (e) {
     grok.shell.error('Couldn\'t retrieve table. See console');
-    console.log(e);
+    console.error(e);
   }
   progressIndicator.close();
 }

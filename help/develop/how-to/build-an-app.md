@@ -11,7 +11,7 @@ executing database queries, accessing web services, or running
 * [Exploratory data analysis of SDTM clinical data](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase)
 * [Structure-activity relationship analysis for peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)
 * [Enamine molecule browser](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
-* [Chembl browser](https://github.com/datagrok-ai/public/tree/master/packages/ChemblBrowser)
+<!--* [Chembl browser](https://github.com/datagrok-ai/public/tree/master/packages/ChemblBrowser)-->
 
 From the technical perspective, an app is a [function](../../datagrok/functions/function.md)
 that resides in a [package](../develop.md#packages) and is tagged with the `#app` tag. Similarly to the `main` function
@@ -21,7 +21,7 @@ A [Datagrok package](../develop.md#packages) may contain any number of applicati
 tagged as `app`. To get the template for an `app` function, use the following `datagrok-tools` command from your package
 directory:
 
-```
+```js
 grok add app <name>
 ```
 
@@ -43,7 +43,7 @@ other entities in the package, which the applications may be using, such as [con
 
 Consider a simple example of a webpack-based package with just one trivial app in a `src/package.js`:
 
-```
+```js
 import * as grok from 'datagrok-api/grok';
 
 export let _package = new DG.Package();
@@ -102,10 +102,10 @@ through [`splitH`/`splitV`](https://github.com/datagrok-ai/public/blob/master/pa
 internal application [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 demonstrates such an approach.
 
-Another approach is found in a [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
+<!--Another approach is found in a [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
 application. There we reuse a particular kind of view: a table view, and centralize the rest of the UI around it. In
 this application you'd also find some useful techniques one needs in many applications, such as modifying the app's URI
-or hiding the side panels of the Datagrok's main UI.
+or hiding the side panels of the Datagrok's main UI.-->
 
 Read more on creating custom views [here](custom-views.md).
 
@@ -485,14 +485,14 @@ Before reading more about Datagrok functions, let's check the output of the scri
 As in Doom, you may find it by hitting a `~`
 anywhere inside Datagrok. There you can see the script's output, something like that:
 
-```
+```js
 > SimpleTestPython("demog")
   count: 64350
 ```
 
 Stay in this console for a little longer and try executing this script again with the command:
 
-```
+```js
 SimpleTestPython("demog")
 ```
 

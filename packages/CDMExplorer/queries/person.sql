@@ -1,5 +1,5 @@
 --name: person
---connection: Demo:test_queries:PostgresNetCDM
+--connection: Demo:test_queries:PostgresCDM
 select t1.*, t2.concept_name as gender, t3.concept_name as race, t4.concept_name as ethnicity
 from cdm_synthea_1.person t1
 left join cdm_synthea_1.concept t2 on t1.gender_concept_id = t2.concept_id

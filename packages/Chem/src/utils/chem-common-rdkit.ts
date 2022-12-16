@@ -106,7 +106,7 @@ export function drawMoleculeToCanvas(
       !isMol ? mol.normalize_depiction(1) : mol.normalize_depiction(0);
 
     if (options.straightenDepiction ?? true)
-      mol.straighten_depiction();
+      !isMol ? mol.straighten_depiction(false) : mol.straighten_depiction(true); 
 
     const scaffoldMol = scaffoldMolString == null ? null :
       (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) : getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
