@@ -132,7 +132,7 @@ jobs:
         with:
           context: ./connectors
           platforms: ${{ steps.param.outputs.platform_add }}
-          push: ${{ github.ref == 'refs/heads/master' }}
+          push: false
           tags: datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}
           cache-from: type=registry,ref=datagrok/grok_connect:cache
           cache-to: ${{ steps.param.outputs.cache_to }}
