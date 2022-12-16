@@ -100,6 +100,23 @@ jobs:
             BRANCH=${{ steps.param.outputs.branch }}
             COMMIT_PUBLIC=${{ github.sha }}
 
+      - name: Build and push bleeding-edge
+        uses: docker/build-push-action@v3
+        with:
+          context: ./connectors
+          platforms: ${{ steps.param.outputs.platform }}
+          push: ${{ github.ref == 'refs/heads/master' }}
+          tags: "datagrok/grok_connect:bleeding-edge"
+          cache-from: type=registry,ref=datagrok/grok_connect:cache
+          cache-to: ${{ steps.param.outputs.cache_to }}
+          outputs: ${{ steps.param.outputs.dest }}
+          build-args: |
+            BRANCH=${{ steps.param.outputs.branch }}
+            COMMIT_PUBLIC=${{ github.sha }}
+          labels: |
+            BRANCH=${{ steps.param.outputs.branch }}
+            COMMIT_PUBLIC=${{ github.sha }}
+
       - name: Upload Artifact
         if: github.ref != 'refs/heads/master'
         uses: actions/upload-artifact@v2
