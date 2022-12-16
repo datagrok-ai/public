@@ -1,6 +1,6 @@
 name: Grok Connect
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   push:
     paths:
       - 'connectors/**'
@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-20.04
     outputs:
       version: ${{ steps.get_version.outputs.version }}
+      image_exists: ${{ steps.get_version.outputs.image_exists }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -27,18 +28,19 @@ jobs:
         working-directory: ./connectors
         run: |
           current_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=${current_version}" >> $GITHUB_OUTPUT
           token=$(curl -sSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:datagrok/grok_connect:pull" | jq --raw-output .token)
           image_status=$(curl -LIs -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${token}" "https://registry.hub.docker.com/v2/datagrok/grok_connect/manifests/${current_version}")
-          echo '::echo::on'
-          if [[ "${image_status}" == "404" ]] || [[ "${{ github.ref }}" != "refs/heads/master" ]]; then
-            echo "::set-output name=version::${current_version}"
+          echo "${image_status}"
+          if [[ "${image_status}" == "404" ]] ; then
+            echo "image_exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "image_exists=true" >> $GITHUB_OUTPUT
           fi
-          echo '::echo::off'
 
   docker:
     name: Build Docker
     needs: build
-    if: needs.build.outputs.version != ''
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -59,7 +61,7 @@ jobs:
           branch=$(echo ${GITHUB_REF#refs/heads/})
           echo "::set-output name=commit_sha::${commit_sha}"
           echo "::set-output name=branch::${branch}"
-          if [[ ${{ github.ref }} != 'refs/heads/master' ]]; then
+          if [[ ${{ needs.build.outputs.image_exists }} == 'true' ]]; then
             platform='linux/amd64'
             echo "::set-output name=platform::${platform}"
             tar="grok_connect_${{ needs.build.outputs.version }}-$(echo ${platform#linux/})-${commit_sha}-${{ github.run_id }}-${{ github.run_attempt }}.tar"
@@ -105,11 +107,10 @@ jobs:
         with:
           context: ./connectors
           platforms: ${{ steps.param.outputs.platform }}
-          push: ${{ github.ref == 'refs/heads/master' }}
+          push: true
           tags: "datagrok/grok_connect:bleeding-edge"
           cache-from: type=registry,ref=datagrok/grok_connect:cache
           cache-to: ${{ steps.param.outputs.cache_to }}
-          outputs: ${{ steps.param.outputs.dest }}
           build-args: |
             BRANCH=${{ steps.param.outputs.branch }}
             COMMIT_PUBLIC=${{ github.sha }}
