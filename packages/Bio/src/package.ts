@@ -670,18 +670,3 @@ export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter();
 }
 
-//name: debugToAtomicLevel
-export async function debugToAtomicLevel(): Promise<void> {
-  // todo: to be deleted after debugging
-  const path = 'System:AppData/Bio/tests/toAtomicLevelTest.csv';
-  const df = await grok.data.files.openTable(path);
-
-  const macroMolCol = df.col('seq')!;
-  macroMolCol.semType = DG.SEMTYPE.MACROMOLECULE;
-  macroMolCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
-  macroMolCol.setTag(TAGS.aligned, bio.ALIGNMENT.SEQ_MSA);
-  macroMolCol.setTag(TAGS.alphabet, ALPHABET.RNA);
-
-  grok.shell.addTableView(df);
-  toAtomicLevel(df, macroMolCol);
-}
