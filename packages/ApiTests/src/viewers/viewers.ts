@@ -1,24 +1,24 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, expect, test, delay, testViewer} from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test, delay} from '@datagrok-libraries/utils/src/test';
 import {TestViewerForProperties} from './test-viewer-for-properties';
 
 
-category('Viewers: Package Viewers', () => {
-  const viewers = Object.values(DG.VIEWER).filter((v) =>
-    v != DG.VIEWER.TIMELINES &&
-    v != DG.VIEWER.GLOBE &&
-    v != DG.VIEWER.SCATTER_PLOT_3D &&
-    v != DG.VIEWER.GOOGLE_MAP &&
-    v != DG.VIEWER.SHAPE_MAP);
-  //const viewers = DG.Viewer.getViewerTypes().filter((vt) => !vt.toLowerCase().includes('widget'));
-  for (const v of viewers) {
-    test(v, async () => {
-      await testViewer(v);
-    });
-  }
-});
+// category('Viewers: Package Viewers', () => {
+//   const viewers = Object.values(DG.VIEWER).filter((v) =>
+//     v != DG.VIEWER.TIMELINES &&
+//     v != DG.VIEWER.GLOBE &&
+//     v != DG.VIEWER.SCATTER_PLOT_3D &&
+//     v != DG.VIEWER.GOOGLE_MAP &&
+//     v != DG.VIEWER.SHAPE_MAP);
+//   //const viewers = DG.Viewer.getViewerTypes().filter((vt) => !vt.toLowerCase().includes('widget'));
+//   for (const v of viewers) {
+//     test(v, async () => {
+//       await testViewer(v);
+//     });
+//   }
+// });
 
 
 category('Viewers', () => {
