@@ -9,16 +9,15 @@ import {download} from '../utils/helpers';
 
 import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
 import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
-import {extractAtomDataV3000} from '../utils/structures-works/mol-transformations';
 import {getFormat} from './sequence-codes-tools';
 
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+import {drawMolecule} from '../utils/structures-works/draw-molecule';
 
 function getMolfileForImg(
-  as: string, ss: string,
-  useChirality: boolean,
-  invertSS: boolean, invertAS: boolean,
-  as2: string | null = null, invertAS2: boolean | null
+  ss: string, as: string,
+  as2: string | null = null,
+  invertSS: boolean, invertAS: boolean, invertAS2: boolean,
+  useChiral: boolean
 ): string {
   const formatAs = getFormat(as);
   const formatSs = getFormat(ss);
@@ -34,74 +33,12 @@ function getMolfileForImg(
   }
 
   const antiStrands = molAS2 == null ? [molAS] : [molAS, molAS2];
-  const resultingMolfile = linkStrandsV3000({senseStrands: [molSS], antiStrands: antiStrands}, useChirality);
+  const resultingMolfile = linkStrandsV3000({senseStrands: [molSS], antiStrands: antiStrands}, useChiral);
   return resultingMolfile;
 }
 
-async function drawMolecule(
-  moleculeImgDiv: HTMLDivElement,
-  ss: string, as: string, as2: string | null = null,
-  invertSS: boolean, invertAS: boolean, invertAS2: boolean | null,
-  useChirality: boolean
-): Promise<void> {
-  moleculeImgDiv.innerHTML = ''; // clearing childs
-  const formCanvasWidth = 500;
-  const formCanvasHeight = 170;
-  const formCanvas = ui.canvas(
-    formCanvasWidth * window.devicePixelRatio, formCanvasHeight * window.devicePixelRatio);
-  formCanvas.style.width = `${formCanvasWidth}px`;
-  formCanvas.style.height = `${formCanvasHeight}px`;
-
-  formCanvas.addEventListener('click', async () => {
-    try {
-      const mol = getMolfileForImg(as, ss, useChirality, invertSS, invertAS, as2, invertAS2);
-      const addDiv = ui.div([], {style: {overflowX: 'scroll'}});
-
-      // addDiv size required, but now available before dialog show()
-      const coordinates = extractAtomDataV3000(mol);
-      const cw: number = $(window).width() * 0.80; // addDiv.clientWidth
-      const ch: number = $(window).height() * 0.70; // addDiv.clientHeight
-      const molWidth: number = Math.max(...coordinates.x) - Math.min(...coordinates.x);
-      const molHeight: number = Math.max(...coordinates.y) - Math.min(...coordinates.y);
-
-      const wR: number = cw / molWidth;
-      const hR: number = ch / molHeight;
-      const r: number = hR; // Math.max(wR, hR);
-      const dlgCanvasWidth = r * molWidth;
-      const dlgCanvasHeight = r * molHeight;
-
-      const dlgCanvas = ui.canvas(dlgCanvasWidth * window.devicePixelRatio, dlgCanvasHeight * window.devicePixelRatio);
-      dlgCanvas.style.width = `${dlgCanvasWidth}px`;
-      dlgCanvas.style.height = `${dlgCanvasHeight}px`;
-
-      await grok.functions.call('Chem:canvasMol', {
-        x: 0, y: 0, w: dlgCanvas.width, h: dlgCanvas.height, canvas: dlgCanvas,
-        molString: mol, scaffoldMolString: '',
-        options: {normalizeDepiction: false, straightenDepiction: false}
-      });
-
-      addDiv.appendChild(dlgCanvas);
-      ui.dialog('Molecule')
-        .add(addDiv)
-        .showModal(true);
-    } catch (err) {
-      const errStr = errorToConsole(err);
-      console.error(errStr);
-    }
-  });
-  $(formCanvas).on('mouseover', () => $(formCanvas).css('cursor', 'zoom-in'));
-  $(formCanvas).on('mouseout', () => $(formCanvas).css('cursor', 'default'));
-  const mol = getMolfileForImg(as, ss, useChirality, invertSS, invertAS, as2, invertAS2);
-  await grok.functions.call('Chem:canvasMol', {
-    x: 0, y: 0, w: formCanvas.width, h: formCanvas.height, canvas: formCanvas,
-    molString: mol, scaffoldMolString: '',
-    options: {normalizeDepiction: false, straightenDepiction: false}
-  });
-  moleculeImgDiv.append(formCanvas);
-}
-
 export function saveSdf(as: string, ss: string,
-  oneEntity: boolean, useChirality: boolean,
+  oneEntity: boolean, useChiral: boolean,
   invertSS: boolean, invertAS: boolean,
   as2: string | null = null, invertAS2: boolean | null
 ): void {
@@ -121,7 +58,7 @@ export function saveSdf(as: string, ss: string,
   let result: string;
   if (oneEntity) {
     const antiStrands = molAS2 == null ? [molAS] : [molAS, molAS2];
-    result = linkStrandsV3000({senseStrands: [molSS], antiStrands: antiStrands}, useChirality) + '\n$$$$\n';
+    result = linkStrandsV3000({senseStrands: [molSS], antiStrands: antiStrands}, useChiral) + '\n$$$$\n';
   } else {
     result =
     molSS + '\n' +
@@ -147,45 +84,53 @@ export function getSdfTab(): HTMLDivElement {
   const ssInput = ui.textInput('Sense Strand', '', () => { onInput.next(); });
   ssInput.root.style.color = 'red';
   const asInput = ui.textInput('Anti Sense', '', () => { onInput.next(); });
-  const asInput2 = ui.textInput('Anti Sense 2', '', () => { onInput.next(); });
+  const as2Input = ui.textInput('Anti Sense 2', '', () => { onInput.next(); });
   const saveEntity = ui.boolInput('Save as one entity', true);
-  const useChiral = ui.boolInput('Use chiral', true);
+  const useChiralInput = ui.boolInput('Use chiral', true);
 
   const straight = '5 prime -> 3 prime';
   const inverse = '3 prime -> 5 prime';
-  let ssInverse = false;
-  let asInverse = false;
-  const as2Inverse = false;
+  let invertSS = false;
+  let invertAS = false;
+  const invertAS2 = false;
 
-  DG.debounce<string>(onInput, 300).subscribe(() => {
-    drawMolecule(moleculeImgDiv,
-      ssInput.value, asInput.value, asInput2.value, ssInverse, asInverse, as2Inverse, useChiral.value!);
-    // updateMolecule(ssInput.value, asInput.value, asInput2.value);
-    // onSequenceChanged(sequence);
+  DG.debounce<string>(onInput, 300).subscribe(async () => {
+    let molfile = '';
+    try {
+      molfile = getMolfileForImg(
+        ssInput.value, asInput.value, as2Input.value, invertSS, invertAS, invertAS2, useChiralInput.value!
+      );
+    } finally {
+      if (molfile !== '') {
+        const canvasWidth = 500;
+        const canvasHeight = 170;
+        await drawMolecule(canvasWidth, canvasHeight, moleculeImgDiv, molfile);
+      }
+    }
   });
 
   const ssDirection = ui.choiceInput('SS direction', straight, [straight, inverse]);
-  ssDirection.onChanged(() => { ssInverse = ssDirection.value == inverse; });
+  ssDirection.onChanged(() => { invertSS = ssDirection.value == inverse; });
 
   const asDirection = ui.choiceInput('AS direction', straight, [straight, inverse]);
-  asDirection.onChanged(() => { asInverse = asDirection.value == inverse; });
+  asDirection.onChanged(() => { invertAS = asDirection.value == inverse; });
 
   const as2Direction = ui.choiceInput('AS 2 direction', straight, [straight, inverse]);
-  as2Direction.onChanged(() => { asInverse = asDirection.value == inverse; });
+  as2Direction.onChanged(() => { invertAS = asDirection.value == inverse; });
 
   const saveButton = ui.buttonsInput([
     ui.bigButton('Save SDF', () =>
       saveSdf(
         asInput.value, ssInput.value, saveEntity.value!,
-        useChiral.value!, ssInverse, asInverse, asInput2.value, as2Inverse)
+        useChiralInput.value!, invertSS, invertAS, as2Input.value, invertAS2)
     )
   ]);
   //@ts-ignore
   // the above line is recommended by Dmitry because saveButton has wrong return
   // type
-  const form1 = ui.form([ssInput, asInput, asInput2, saveButton]);
+  const form1 = ui.form([ssInput, asInput, as2Input, saveButton]);
   form1.className = 'ui-form ui-form-wide';
-  const form2 = ui.form([ssDirection, asDirection, as2Direction, saveEntity, useChiral]);
+  const form2 = ui.form([ssDirection, asDirection, as2Direction, saveEntity, useChiralInput]);
   form2.className = 'ui-form ui-form-wide';
 
   const body = ui.divV([ui.divH([ui.block([form1]), form2]), moleculeImgDiv]);
