@@ -16,7 +16,6 @@ import {sequenceToSmiles, sequenceToMolV3000} from '../utils/structures-works/fr
 import {drawMolecule} from '../utils/structures-works/draw-molecule';
 
 import {download} from '../utils/helpers';
-// import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 const defaultInput = 'fAmCmGmAmCpsmU'; // todo: capitalize constants
 const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into constants
@@ -72,7 +71,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
           inputSequenceField.value.replace(/\s/g, ''), false, true,
           output.synthesizer![0]
         );
-        await drawMolecule(formCanvasWidth, formCanvasHeight, moleculeImgDiv, molfile);
+        await drawMolecule(moleculeImgDiv, formCanvasWidth, formCanvasHeight, molfile);
       } else {
         moleculeImgDiv.innerHTML = '';
       }
