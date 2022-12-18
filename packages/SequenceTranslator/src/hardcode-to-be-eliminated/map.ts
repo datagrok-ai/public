@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {getAllCodesOfSynthesizer} from './sequence-codes-tools';
-import {differenceOfTwoArrays} from '../helpers';
+import {getAllCodesOfSynthesizer} from '../sdf-tab/sequence-codes-tools';
+import {differenceOfTwoArrays} from '../utils/helpers';
 
 export const DELIMITER = ';';
 export const NUCLEOTIDES = ['A', 'G', 'C', 'U', 'T'];

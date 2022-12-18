@@ -5,14 +5,16 @@ import * as rxjs from 'rxjs';
 
 import $ from 'cash-dom';
 
-import {download} from '../helpers';
-import {sequenceToMolV3000} from '../structures-works/from-monomers';
-import {linkStrandsV3000} from '../structures-works/mol-transformations';
-import {extractAtomDataV3000} from '../structures-works/mol-transformations';
-import {getFormat} from '../structures-works/sequence-codes-tools';
+import {download} from '../utils/helpers';
+
+import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
+import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
+import {extractAtomDataV3000} from '../utils/structures-works/mol-transformations';
+import {getFormat} from './sequence-codes-tools';
+
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
-function getMolfileForSvg(
+function getMolfileForImg(
   as: string, ss: string,
   useChirality: boolean,
   invertSS: boolean, invertAS: boolean,
@@ -41,7 +43,7 @@ async function drawMolecule(
   ss: string, as: string, as2: string | null = null,
   invertSS: boolean, invertAS: boolean, invertAS2: boolean | null,
   useChirality: boolean
-) {
+): Promise<void> {
   moleculeImgDiv.innerHTML = ''; // clearing childs
   const formCanvasWidth = 500;
   const formCanvasHeight = 170;
@@ -52,7 +54,7 @@ async function drawMolecule(
 
   formCanvas.addEventListener('click', async () => {
     try {
-      const mol = getMolfileForSvg(as, ss, useChirality, invertSS, invertAS, as2, invertAS2);
+      const mol = getMolfileForImg(as, ss, useChirality, invertSS, invertAS, as2, invertAS2);
       const addDiv = ui.div([], {style: {overflowX: 'scroll'}});
 
       // addDiv size required, but now available before dialog show()
@@ -89,7 +91,7 @@ async function drawMolecule(
   });
   $(formCanvas).on('mouseover', () => $(formCanvas).css('cursor', 'zoom-in'));
   $(formCanvas).on('mouseout', () => $(formCanvas).css('cursor', 'default'));
-  const mol = getMolfileForSvg(as, ss, useChirality, invertSS, invertAS, as2, invertAS2);
+  const mol = getMolfileForImg(as, ss, useChirality, invertSS, invertAS, as2, invertAS2);
   await grok.functions.call('Chem:canvasMol', {
     x: 0, y: 0, w: formCanvas.width, h: formCanvas.height, canvas: formCanvas,
     molString: mol, scaffoldMolString: '',
@@ -101,7 +103,8 @@ async function drawMolecule(
 export function saveSdf(as: string, ss: string,
   oneEntity: boolean, useChirality: boolean,
   invertSS: boolean, invertAS: boolean,
-  as2: string | null = null, invertAS2: boolean | null) {
+  as2: string | null = null, invertAS2: boolean | null
+): void {
   const formatAs = getFormat(as);
   const formatSs = getFormat(ss);
   let formatAs2: string | null = null;
@@ -134,7 +137,7 @@ export function saveSdf(as: string, ss: string,
   download(ss.replace(/\s/g, '') + '.sdf', encodeURIComponent(result));
 }
 
-export function saveSenseAntiSenseView(): HTMLDivElement {
+export function getSdfTab(): HTMLDivElement {
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
   const moleculeImgDiv = ui.block([]);

@@ -1,5 +1,5 @@
-import {AXOLABS_MAP} from './constants';
-import {NUCLEOTIDES} from '../structures-works/map';
+import {AXOLABS_MAP} from '../hardcode-to-be-eliminated/constants';
+import {NUCLEOTIDES} from '../hardcode-to-be-eliminated/map';
 
 export function isOverhang(modification: string): boolean {
   return modification.slice(-3) == '(o)';

@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 
 export function sortByStringLengthInDescendingOrder(array: string[]): string[] {
-  return array.sort(function(a, b) {return b.length - a.length;});
+  return array.sort(function(a, b) { return b.length - a.length; });
 }
-  
+
 export function stringify(items: string[]): string {
   return '["' + items.join('", "') + '"]';
 }
@@ -17,7 +17,7 @@ export function download(name: string, href: string): void {
 
 export function removeEmptyRows(t: DG.DataFrame, colToCheck: DG.Column): DG.DataFrame {
   for (let i = t.rowCount - 1; i > -1; i--) {
-    if (colToCheck.getString(i) == '')
+    if (colToCheck.getString(i) === '')
       t.rows.removeAt(i, 1, false);
   }
   return t;

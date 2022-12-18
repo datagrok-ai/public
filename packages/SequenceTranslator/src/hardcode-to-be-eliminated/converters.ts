@@ -1,7 +1,7 @@
 import {lcmsToGcrs, MODIFICATIONS} from './map';
 import * as DG from 'datagrok-api/dg';
 import {DELIMITER} from './map';
-import {sortByStringLengthInDescendingOrder} from '../helpers';
+import {sortByStringLengthInDescendingOrder} from '../utils/helpers';
 //name: gcrsToLcms
 //input: string nucleotides {semType: GCRS}
 //output: string result {semType: LCMS}

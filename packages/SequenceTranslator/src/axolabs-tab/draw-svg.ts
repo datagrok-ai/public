@@ -1,4 +1,4 @@
-import {NUCLEOTIDES} from '../structures-works/map';
+import {NUCLEOTIDES} from '../hardcode-to-be-eliminated/map';
 import {isOverhang, svg, textWidth, countOverhangsOnTheRightEdge, baseColor, textInsideCircle,
   fontColorVisibleOnBackground, isOneDigitNumber} from './helpers';
 

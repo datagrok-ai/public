@@ -1,30 +1,23 @@
 export function getNucleotidesMol(codes: string[]) {
   const molBlocks: string[] = [];
 
-  // for (let i = 0; i < smilesCodes.length - 1; i++) {
-  //   smilesCodes[i] == 'OP(=O)(O)O' ? molBlocks.push(PHOSHATE) :
-  //     smilesCodes[i] == 'OP(=O)(S)O' ? molBlocks.push(THIOPHOSHATE) :
-  //       smilesCodes[i] == 'O[C@@H]1C[C@@H]O[C@H]1CO' ? molBlocks.push(rotateNucleotidesV3000(INVABASIC)) :
-  //         smilesCodes[i] == 'OCC(O)CNC(=O)CCCC(=O)NC(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' ? molBlocks.push(GALNAC) :
-  //           smilesCodes[i] == 'C(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)NC(=O)CCCC(=O)NCC(O)CO' ? molBlocks.push(GALNACPRIME) :
-  //         molBlocks.push(rotateNucleotidesV3000(smilesCodes[i]));
-  // }
-
   for (let i = 0; i < codes.length - 1; i++) {
     if (codes[i].includes('MODIFICATION')) {
-      if (i == 0)
+      if (i === 0)
         molBlocks.push(reflect(codes[i]));
       else
         molBlocks.push(codes[i]);
-    }
-    else
+    } else {
       molBlocks.push(rotateNucleotidesV3000(codes[i]));
+    }
   }
 
   return linkV3000(molBlocks);
 }
 
-export function linkStrandsV3000(strands: { senseStrands: string[], antiStrands: string[] }, useChirality: boolean = true) {
+export function linkStrandsV3000(
+  strands: { senseStrands: string[], antiStrands: string[] }, useChirality: boolean = true
+): string {
   let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
   macroMolBlock += '  0  0  0  0  0  0            999 V3000\n';
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
@@ -40,21 +33,18 @@ export function linkStrandsV3000(strands: { senseStrands: string[], antiStrands:
   //   molBlocks[1] = invertNucleotidesV3000(molBlocks[1]);
 
   if (strands.antiStrands.length > 0) {
-    for (let i = 0; i < strands.antiStrands.length; i++) {
+    for (let i = 0; i < strands.antiStrands.length; i++)
       strands.antiStrands[i] = invertNucleotidesV3000(strands.antiStrands[i]);
-    }
   }
 
   let inverted = false;
-  let molBlocks = strands.senseStrands.concat(strands.antiStrands);
+  const molBlocks = strands.senseStrands.concat(strands.antiStrands);
 
   for (let i = 0; i < molBlocks.length; i++) {
-
-    if (i >= strands.senseStrands.length && inverted == false) {
+    if (i >= strands.senseStrands.length && inverted === false) {
       inverted = true;
       xShift = 0;
     }
-
 
     molBlocks[i] = molBlocks[i].replaceAll('(-\nM  V30 ', '(')
       .replaceAll('-\nM  V30 ', '').replaceAll(' )', ')');
@@ -76,7 +66,7 @@ export function linkStrandsV3000(strands: { senseStrands: string[], antiStrands:
     let indexEnd = indexAtoms;
 
     for (let j = 0; j < numbers.natom; j++) {
-      // if (coordinates.atomIndex[j] != 1 || i == 0 || twoChains) {
+      // if (coordinates.atomIndex[j] !== 1 || i === 0 || twoChains) {
       //rewrite atom number
       index = molBlocks[i].indexOf('V30', index) + 4;
       indexEnd = molBlocks[i].indexOf(' ', index);
@@ -138,7 +128,7 @@ export function linkStrandsV3000(strands: { senseStrands: string[], antiStrands:
 
     let indexCollection = molBlocks[i].indexOf('M  V30 MDLV30/STEABS ATOMS=('); // V3000 index for collections
 
-    while (indexCollection != -1) {
+    while (indexCollection !== -1) {
       indexCollection += 28;
       const collectionEnd = molBlocks[i].indexOf(')', indexCollection);
       const collectionEntries = molBlocks[i].substring(indexCollection, collectionEnd).split(' ').slice(1);
@@ -157,25 +147,16 @@ export function linkStrandsV3000(strands: { senseStrands: string[], antiStrands:
   const entries = 4;
   const collNumber = Math.ceil(collection.length / entries);
 
-  //if (oclRender) {
-  // collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length;
-
-  // for (let j = 0; j < collection.length; j++)
-  //   collectionBlock += ' ' + collection[j];
-
-  // collectionBlock += ')\n';
-  //} else {
   collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length + ' -\n';
   for (let i = 0; i < collNumber; i++) {
     collectionBlock += 'M  V30 ';
-    const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1) * entries : entries;
+    const entriesCurrent = i + 1 === collNumber ? collection.length - (collNumber - 1) * entries : entries;
     for (let j = 0; j < entriesCurrent; j++) {
-      collectionBlock += (j + 1 == entriesCurrent) ?
-        (i == collNumber - 1 ? collection[entries * i + j] + ')\n' : collection[entries * i + j] + ' -\n') :
+      collectionBlock += (j + 1 === entriesCurrent) ?
+        (i === collNumber - 1 ? collection[entries * i + j] + ')\n' : collection[entries * i + j] + ' -\n') :
         collection[entries * i + j] + ' ';
     }
   }
-  //}
 
   //generate file
   true ? natom : natom++;
@@ -190,8 +171,9 @@ export function linkStrandsV3000(strands: { senseStrands: string[], antiStrands:
     macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
     macroMolBlock += collectionBlock;
     macroMolBlock += 'M  V30 END COLLECTION\n';
-  } else
+  } else {
     macroMolBlock = macroMolBlock.replace(/ CFG=\d/g, ' ');
+  }
 
   macroMolBlock += 'M  V30 END CTAB\n';
   macroMolBlock += 'M  END';
@@ -199,7 +181,7 @@ export function linkStrandsV3000(strands: { senseStrands: string[], antiStrands:
   return macroMolBlock;
 }
 
-export function linkV3000(molBlocks: string[], useChirality: boolean = true) {
+export function linkV3000(molBlocks: string[], useChirality: boolean = true): string {
   let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
   macroMolBlock += '  0  0  0  0  0  0            999 V3000\n';
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
@@ -212,7 +194,7 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true) {
   let xShift = 0;
 
   for (let i = 0; i < molBlocks.length; i++) {
-    const isBoundary = molBlocks[i].includes('MODIFICATION') && i == 0;
+    const isBoundary = molBlocks[i].includes('MODIFICATION') && i === 0;
     let specLength = 0;
     if (isBoundary) {
       const coordinates = extractAtomDataV3000(molBlocks[i]);
@@ -231,16 +213,16 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true) {
     let indexEnd = indexAtoms;
 
     for (let j = 0; j < numbers.natom; j++) {
-      if (coordinates.atomIndex[j] != 1 || i == 0) {
+      if (coordinates.atomIndex[j] !== 1 || i === 0) {
         //rewrite atom number
         index = molBlocks[i].indexOf('V30', index) + 4;
         indexEnd = molBlocks[i].indexOf(' ', index);
         let atomNumber = 0;
         if (isBoundary) {
           atomNumber = parseInt(molBlocks[i].substring(index, indexEnd))
-          if (atomNumber == 1)
+          if (atomNumber === 1)
             atomNumber = specLength;
-          else if (atomNumber == specLength)
+          else if (atomNumber === specLength)
             atomNumber = 1;
           atomNumber += natom;
         } else {
@@ -294,9 +276,9 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true) {
       let atomNumber = 0;
       if (isBoundary) {
         atomNumber = parseInt(molBlocks[i].substring(index, indexEnd))
-        if (atomNumber == 1)
+        if (atomNumber === 1)
           atomNumber = specLength;
-        else if (atomNumber == specLength)
+        else if (atomNumber === specLength)
           atomNumber = 1;
         atomNumber += natom;
       } else {
@@ -309,9 +291,9 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true) {
       atomNumber = 0;
       if (isBoundary) {
         atomNumber = parseInt(molBlocks[i].substring(index, indexEnd))
-        if (atomNumber == 1)
+        if (atomNumber === 1)
           atomNumber = specLength;
-        else if (atomNumber == specLength)
+        else if (atomNumber === specLength)
           atomNumber = 1;
         atomNumber += natom;
       } else {
@@ -327,7 +309,7 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true) {
 
     let indexCollection = molBlocks[i].indexOf('M  V30 MDLV30/STEABS ATOMS=('); // V3000 index for collections
 
-    while (indexCollection != -1) {
+    while (indexCollection !== -1) {
       indexCollection += 28;
       const collectionEnd = molBlocks[i].indexOf(')', indexCollection);
       const collectionEntries = molBlocks[i].substring(indexCollection, collectionEnd).split(' ').slice(1);
@@ -360,10 +342,10 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true) {
   collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length + ' -\n';
   for (let i = 0; i < collNumber; i++) {
     collectionBlock += 'M  V30 ';
-    const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1) * entries : entries;
+    const entriesCurrent = i + 1 === collNumber ? collection.length - (collNumber - 1) * entries : entries;
     for (let j = 0; j < entriesCurrent; j++) {
-      collectionBlock += (j + 1 == entriesCurrent) ?
-        (i == collNumber - 1 ? collection[entries * i + j] + ')\n' : collection[entries * i + j] + ' -\n') :
+      collectionBlock += (j + 1 === entriesCurrent) ?
+        (i === collNumber - 1 ? collection[entries * i + j] + ')\n' : collection[entries * i + j] + ' -\n') :
         collection[entries * i + j] + ' ';
     }
   }
@@ -391,7 +373,7 @@ export function linkV3000(molBlocks: string[], useChirality: boolean = true) {
   return macroMolBlock;
 }
 
-function rotateNucleotidesV3000(molecule: string) {
+function rotateNucleotidesV3000(molecule: string): string {
   // @ts-ignore
   let molBlock = molecule.includes('M  END') ? molecule : OCL.Molecule.fromSmiles(molecule).toMolfileV3();
   const coordinates = extractAtomDataV3000(molBlock);
@@ -414,9 +396,9 @@ function rotateNucleotidesV3000(molecule: string) {
   }
 
   let angle = 0;
-  if (coordinates.x[indexFivePrime] == 0)
+  if (coordinates.x[indexFivePrime] === 0)
     angle = coordinates.y[indexFivePrime] > coordinates.y[indexThreePrime] ? Math.PI / 2 : 3 * Math.PI / 2;
-  else if (coordinates.y[indexFivePrime] == 0)
+  else if (coordinates.y[indexFivePrime] === 0)
     angle = coordinates.x[indexFivePrime] > coordinates.x[indexThreePrime] ? Math.PI : 0;
   else {
     const derivative = coordinates.y[indexFivePrime] / coordinates.x[indexFivePrime];
@@ -460,7 +442,7 @@ function rotateNucleotidesV3000(molecule: string) {
   return molBlock;
 }
 
-function reflect(molecule: string) {
+function reflect(molecule: string): string {
   // @ts-ignore
   let molBlock = molecule.includes('M  END') ? molecule : OCL.Molecule.fromSmiles(molecule).toMolfileV3();
   const coordinates = extractAtomDataV3000(molBlock);
