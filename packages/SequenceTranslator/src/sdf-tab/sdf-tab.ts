@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import $ from 'cash-dom';
 
@@ -71,13 +72,22 @@ export function saveSdf(as: string, ss: string,
       `> <Sequence>\nAnti Sense 2\n$$$$\n`;
     }
   }
-  download(ss.replace(/\s/g, '') + '.sdf', encodeURIComponent(result));
+
+  // construct date-time in the form yyyy-mm-dd_hh-mm-ss
+  const date = new Date();
+  function pad(x: number): string {
+    return (x >= 10) ? x.toString() : '0' + x.toString();
+  }
+  const dateString: string = date.getFullYear() + '-' + pad(date.getMonth() + 1) +
+                      '-' + pad(date.getDate()) + '_' + pad(date.getHours()) + '-' +
+                      pad(date.getMinutes()) + '-' + pad(date.getSeconds());
+
+  download(`SequenceTranslator-${dateString}.sdf`, encodeURIComponent(result));
 }
 
+/** UI of the SDF tab on the application's view */
 export function getSdfTab(): HTMLDivElement {
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
-
-  const moleculeImgDiv = ui.block([]);
 
   // inputs
   const inputColHeader = ui.h1('Sequences');
@@ -88,35 +98,39 @@ export function getSdfTab(): HTMLDivElement {
   const saveEntity = ui.boolInput('Save as one entity', true);
   const useChiralInput = ui.boolInput('Use chiral', true);
 
+  // default values
   const straight = '5 prime -> 3 prime';
   const inverse = '3 prime -> 5 prime';
   let invertSS = false;
   let invertAS = false;
   const invertAS2 = false;
 
+  // choice inputs
+  const ssDirection = ui.choiceInput('SS direction', straight, [straight, inverse]);
+  ssDirection.onChanged(() => { invertSS = ssDirection.value == inverse; });
+  const asDirection = ui.choiceInput('AS direction', straight, [straight, inverse]);
+  asDirection.onChanged(() => { invertAS = asDirection.value == inverse; });
+  const as2Direction = ui.choiceInput('AS 2 direction', straight, [straight, inverse]);
+  as2Direction.onChanged(() => { invertAS = asDirection.value == inverse; });
+
+  // molecule image
+  const moleculeImgDiv = ui.block([]);
   DG.debounce<string>(onInput, 300).subscribe(async () => {
     let molfile = '';
     try {
       molfile = getMolfileForImg(
         ssInput.value, asInput.value, as2Input.value, invertSS, invertAS, invertAS2, useChiralInput.value!
       );
-    } finally {
-      if (molfile !== '') {
-        const canvasWidth = 500;
-        const canvasHeight = 170;
-        await drawMolecule(canvasWidth, canvasHeight, moleculeImgDiv, molfile);
-      }
+    } catch (err) {
+      const errStr = errorToConsole(err);
+      console.error(errStr);
     }
+    // todo: calculate relative numbers
+    const canvasWidth = 500;
+    const canvasHeight = 170;
+    // todo: remove div with image if molfile empty
+    await drawMolecule(moleculeImgDiv, canvasWidth, canvasHeight, molfile);
   });
-
-  const ssDirection = ui.choiceInput('SS direction', straight, [straight, inverse]);
-  ssDirection.onChanged(() => { invertSS = ssDirection.value == inverse; });
-
-  const asDirection = ui.choiceInput('AS direction', straight, [straight, inverse]);
-  asDirection.onChanged(() => { invertAS = asDirection.value == inverse; });
-
-  const as2Direction = ui.choiceInput('AS 2 direction', straight, [straight, inverse]);
-  as2Direction.onChanged(() => { invertAS = asDirection.value == inverse; });
 
   const saveButton = ui.buttonsInput([
     ui.bigButton('Save SDF', () =>
@@ -128,7 +142,7 @@ export function getSdfTab(): HTMLDivElement {
   //@ts-ignore
   // the above line is recommended by Dmitry because saveButton has wrong return
   // type
-  const form1 = ui.form([ssInput, asInput, as2Input, saveButton]);
+  const form1 = ui.form([inputColHeader, ssInput, asInput, as2Input, saveButton]);
   form1.className = 'ui-form ui-form-wide';
   const form2 = ui.form([ssDirection, asDirection, as2Direction, saveEntity, useChiralInput]);
   form2.className = 'ui-form ui-form-wide';
