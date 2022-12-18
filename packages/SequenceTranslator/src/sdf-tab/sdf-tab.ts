@@ -25,15 +25,23 @@ function getMolfileForImg(
   let formatAs2: string | null = null;
   let molAS2: string | null = null;
 
-  const molSS = sequenceToMolV3000(ss, invertSS, false, formatSs!);
-  const molAS = sequenceToMolV3000(as, invertAS, false, formatAs!);
+  let molSS = '';
+  let molAS = '';
+  try {
+    // a workaround to get the SS depicted in case AS is empty
+    molSS = sequenceToMolV3000(ss, invertSS, false, formatSs!);
+    molAS = sequenceToMolV3000(as, invertAS, false, formatAs!);
+  } catch (err) {
+    const errStr = errorToConsole(err);
+    console.error(errStr);
+  }
 
-  if (as2 != null && as2 != '') {
+  if (as2 !== null && as2 !== '') {
     formatAs2 = getFormat(as2!);
     molAS2 = sequenceToMolV3000(as2, invertAS2!, false, formatAs2!);
   }
 
-  const antiStrands = molAS2 == null ? [molAS] : [molAS, molAS2];
+  const antiStrands = molAS2 === null ? [molAS] : [molAS, molAS2];
   const resultingMolfile = linkStrandsV3000({senseStrands: [molSS], antiStrands: antiStrands}, useChiral);
   return resultingMolfile;
 }
@@ -51,14 +59,14 @@ export function saveSdf(as: string, ss: string,
   const molSS = sequenceToMolV3000(ss, invertSS, false, formatSs!);
   const molAS = sequenceToMolV3000(as, invertAS, false, formatAs!);
 
-  if (as2 != null && as2 != '') {
+  if (as2 !== null && as2 !== '') {
     formatAs2 = getFormat(as2!);
     molAS2 = sequenceToMolV3000(as2, invertAS2!, false, formatAs2!);
   }
 
   let result: string;
   if (oneEntity) {
-    const antiStrands = molAS2 == null ? [molAS] : [molAS, molAS2];
+    const antiStrands = molAS2 === null ? [molAS] : [molAS, molAS2];
     result = linkStrandsV3000({senseStrands: [molSS], antiStrands: antiStrands}, useChiral) + '\n$$$$\n';
   } else {
     result =
@@ -107,11 +115,11 @@ export function getSdfTab(): HTMLDivElement {
 
   // choice inputs
   const ssDirection = ui.choiceInput('SS direction', straight, [straight, inverse]);
-  ssDirection.onChanged(() => { invertSS = ssDirection.value == inverse; });
+  ssDirection.onChanged(() => { invertSS = ssDirection.value === inverse; });
   const asDirection = ui.choiceInput('AS direction', straight, [straight, inverse]);
-  asDirection.onChanged(() => { invertAS = asDirection.value == inverse; });
+  asDirection.onChanged(() => { invertAS = asDirection.value === inverse; });
   const as2Direction = ui.choiceInput('AS 2 direction', straight, [straight, inverse]);
-  as2Direction.onChanged(() => { invertAS = asDirection.value == inverse; });
+  as2Direction.onChanged(() => { invertAS = asDirection.value === inverse; });
 
   // molecule image
   const moleculeImgDiv = ui.block([]);
