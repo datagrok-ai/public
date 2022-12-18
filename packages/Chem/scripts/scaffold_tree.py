@@ -94,7 +94,7 @@ def get_tree(tree, scaffold_1):
                     orphans.insert(0, hierarchy_dict)
                 else:
                     recurs_append_nodes('scaffold', get_parent(tree, sorted_scaffolds[i]), 'child_nodes', hierarchy_dict, orphans[0])
-                recurs_append_nodes('scaffold', prev_scaffold, 'orphan_nodes', orphans, json_list[0])
+                recurs_append_nodes('scaffold', prev_scaffold, 'orphan_nodes', orphans[0], json_list[0])
     return json_list[0]
 
 #function to get the json representation
