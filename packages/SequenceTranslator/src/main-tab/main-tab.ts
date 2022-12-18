@@ -3,20 +3,26 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import {convertSequence, undefinedInputSequence, isValidSequence} from '../structures-works/sequence-codes-tools';
-import {map} from '../structures-works/map';
-import {MODIFICATIONS} from '../structures-works/const';
-import {sequenceToSmiles, sequenceToMolV3000} from '../structures-works/from-monomers';
 import $ from 'cash-dom';
-import {download} from '../helpers';
-import {extractAtomDataV3000} from '../structures-works/mol-transformations';
+
+import {convertSequence, undefinedInputSequence, isValidSequence} from '../sdf-tab/sequence-codes-tools';
+
+// todo: elminate completely
+import {map} from '../hardcode-to-be-eliminated/map';
+import {MODIFICATIONS} from '../hardcode-to-be-eliminated/const';
+
+// todo: unify with lib bio monomers works
+import {sequenceToSmiles, sequenceToMolV3000} from '../utils/structures-works/from-monomers';
+import {extractAtomDataV3000} from '../utils/structures-works/mol-transformations';
+
+import {download} from '../utils/helpers';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 const defaultInput = 'fAmCmGmAmCpsmU'; // todo: capitalize constants
 const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into constants
 const tooltipSequence = 'Copy sequence';
 
-export async function mainView(onSequenceChanged: (seq: string) => void): Promise<HTMLDivElement> {
+export async function getMainTab(onSequenceChanged: (seq: string) => void): Promise<HTMLDivElement> {
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
   async function updateTableAndMolecule(sequence: string, inputFormat: string): Promise<void> {
