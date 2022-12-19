@@ -714,13 +714,30 @@ export class PeptidesModel {
     ui.tooltip.show(ui.divV(tooltipElements), x, y);
   }
 
+  //TODO: move out to viewer code
   showTooltipAt(aar: string, position: string, x: number, y: number): HTMLDivElement | null {
     const currentStatsDf = this.monomerPositionStatsDf.rows.match({Pos: position, AAR: aar}).toDataFrame();
     const activityCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: use bitset instead of splitCol
     const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
     const currentPosCol = this.df.getCol(position);
-    splitCol.init((i) => currentPosCol.get(i) == aar);
+    const indexes: number[] = [];
+    splitCol.init((i) => {
+      const sameMonomer = currentPosCol.get(i) == aar;
+      if (sameMonomer)
+        indexes.push(i);
+
+      return sameMonomer;
+    });
+    const colResults: {[colName: string]: number} = {};
+    for (const [col, agg] of Object.entries(this.settings.columns ?? {})) {
+      const currentCol = this.df.getCol(col);
+      const currentColData = currentCol.getRawData();
+      const tempCol = DG.Column.float('', indexes.length);
+      tempCol.init((i) => currentColData[indexes[i]]);
+      colResults[`${agg}(${col})`] = tempCol.stats[agg as keyof DG.Stats] as number;
+    }
+
     const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
     const stats: Stats = {
       count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
@@ -731,11 +748,11 @@ export class PeptidesModel {
     if (!stats.count)
       return null;
 
-    const tooltip = getDistributionAndStats(distributionTable, stats, `${position} : ${aar}`, 'Other', true);
+    const distroStatsElem = getDistributionAndStats(distributionTable, stats, `${position} : ${aar}`, 'Other', true);
 
-    ui.tooltip.show(tooltip, x, y);
+    ui.tooltip.show(ui.divV([distroStatsElem, ui.tableFromMap(colResults)]), x, y);
 
-    return tooltip;
+    return distroStatsElem;
   }
 
   showTooltipCluster(cluster: number, x: number, y: number): HTMLDivElement | null {
