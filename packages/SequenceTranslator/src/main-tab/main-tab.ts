@@ -3,24 +3,29 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
-import {convertSequence, undefinedInputSequence, isValidSequence} from '../structures-works/sequence-codes-tools';
-import {map} from '../structures-works/map';
-import {MODIFICATIONS} from '../structures-works/const';
-import {sequenceToSmiles, sequenceToMolV3000} from '../structures-works/from-monomers';
 import $ from 'cash-dom';
-import {download} from '../helpers';
-import {extractAtomDataV3000} from '../structures-works/mol-transformations';
-import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
+
+import {convertSequence, undefinedInputSequence, isValidSequence} from '../sdf-tab/sequence-codes-tools';
+
+// todo: elminate completely
+import {map} from '../hardcode-to-be-eliminated/map';
+import {MODIFICATIONS} from '../hardcode-to-be-eliminated/const';
+
+// todo: unify with lib bio monomers works
+import {sequenceToSmiles, sequenceToMolV3000} from '../utils/structures-works/from-monomers';
+import {drawMolecule} from '../utils/structures-works/draw-molecule';
+
+import {download} from '../utils/helpers';
 
 const defaultInput = 'fAmCmGmAmCpsmU'; // todo: capitalize constants
 const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into constants
 const tooltipSequence = 'Copy sequence';
 
-export async function mainView(onSequenceChanged: (seq: string) => void): Promise<HTMLDivElement> {
+export async function getMainTab(onSequenceChanged: (seq: string) => void): Promise<HTMLDivElement> {
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
   async function updateTableAndMolecule(sequence: string, inputFormat: string): Promise<void> {
-    moleculeSvgDiv.innerHTML = '';
+    moleculeImgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
 
@@ -56,77 +61,20 @@ export async function mainView(onSequenceChanged: (seq: string) => void): Promis
         ui.div([
           DG.HtmlTable.create(tableRows, (item: { key: string; value: string; }) =>
             [item.key, item.value], ['Code', 'Sequence']).root,
-        ]),
+        ])
       );
 
-      if (outputSequenceObj.type != undefinedInputSequence && outputSequenceObj.Error != undefinedInputSequence) {
+      if (outputSequenceObj.type !== undefinedInputSequence && outputSequenceObj.Error !== undefinedInputSequence) {
         const formCanvasWidth = 500;
         const formCanvasHeight = 170;
-        const formCanvas = ui.canvas(
-          formCanvasWidth * window.devicePixelRatio, formCanvasHeight * window.devicePixelRatio);
-        formCanvas.style.width = `${formCanvasWidth}px`;
-        formCanvas.style.height = `${formCanvasHeight}px`;
-
-        formCanvas.addEventListener('click', async () => {
-          try {
-            const mol = sequenceToMolV3000(
-              inputSequenceField.value.replace(/\s/g, ''), false, true,
-              output.synthesizer![0],
-            );
-            console.log(mol);
-
-            const addDiv = ui.div([], {style: {overflowX: 'scroll'}});
-
-            // addDiv size required, but now available before dialog show()
-            const coordinates = extractAtomDataV3000(mol);
-            const cw: number = $(window).width() * 0.80; // addDiv.clientWidth
-            const ch: number = $(window).height() * 0.70; // addDiv.clientHeight
-            const molWidth: number = Math.max(...coordinates.x) - Math.min(...coordinates.x);
-            const molHeight: number = Math.max(...coordinates.y) - Math.min(...coordinates.y);
-
-            const wR: number = cw / molWidth;
-            const hR: number = ch / molHeight;
-            const r: number = hR; // Math.max(wR, hR);
-            const dlgCanvasWidth = r * molWidth;
-            const dlgCanvasHeight = r * molHeight;
-
-            const dlgCanvas = ui.canvas(dlgCanvasWidth * window.devicePixelRatio, dlgCanvasHeight * window.devicePixelRatio);
-            dlgCanvas.style.width = `${dlgCanvasWidth}px`;
-            dlgCanvas.style.height = `${dlgCanvasHeight}px`;
-
-            // // @ts-ignore
-            // OCL.StructureView.drawMolecule(dlgCanvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
-            // await grok.chem.canvasMol(0, 0, dlgCanvas.width, dlgCanvas.height, dlgCanvas, mol, null,
-            //   {setNewCoords: false, normalizeDepiction: false, straightenDepiction: false});
-            await grok.functions.call('Chem:canvasMol', {
-              x: 0, y: 0, w: dlgCanvas.width, h: dlgCanvas.height, canvas: dlgCanvas,
-              molString: mol, scaffoldMolString: '',
-              options: {normalizeDepiction: false, straightenDepiction: false}
-            });
-
-            addDiv.appendChild(dlgCanvas);
-            ui.dialog('Molecule: ' + inputSequenceField.value)
-              .add(addDiv)
-              .showModal(true);
-          } catch (err) {
-            const errStr = errorToConsole(err);
-            console.error(errStr);
-          }
-        });
-        $(formCanvas).on('mouseover', () => $(formCanvas).css('cursor', 'zoom-in'));
-        $(formCanvas).on('mouseout', () => $(formCanvas).css('cursor', 'default'));
-        const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true,
-          output.synthesizer![0]);
-        // // @ts-ignore
-        // OCL.StructureView.drawMolecule(formCanvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
-        await grok.functions.call('Chem:canvasMol', {
-          x: 0, y: 0, w: formCanvas.width, h: formCanvas.height, canvas: formCanvas,
-          molString: mol, scaffoldMolString: '',
-          options: {normalizeDepiction: false, straightenDepiction: false}
-        });
-        moleculeSvgDiv.append(formCanvas);
-      } else
-        moleculeSvgDiv.innerHTML = '';
+        const molfile = sequenceToMolV3000(
+          inputSequenceField.value.replace(/\s/g, ''), false, true,
+          output.synthesizer![0]
+        );
+        await drawMolecule(moleculeImgDiv, formCanvasWidth, formCanvasHeight, molfile);
+      } else {
+        moleculeImgDiv.innerHTML = '';
+      }
     } finally {
       pi.close();
     }
@@ -136,7 +84,7 @@ export async function mainView(onSequenceChanged: (seq: string) => void): Promis
   inputFormatChoiceInput.onInput((format: string) => {
     updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''), format);
   });
-  const moleculeSvgDiv = ui.block([]);
+  const moleculeImgDiv = ui.block([]);
   const outputTableDiv = ui.div([]);
   const inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => {
     // Send event to DG.debounce()
@@ -228,7 +176,7 @@ export async function mainView(onSequenceChanged: (seq: string) => void): Promis
   const topPanel = [
     downloadMolFileIcon,
     copySmilesIcon,
-    switchInput.root,
+    switchInput.root, // todo: remove from top panel
   ];
 
   const v = grok.shell.v;
@@ -253,7 +201,7 @@ export async function mainView(onSequenceChanged: (seq: string) => void): Promis
             ui.h1('Output'),
             outputTableDiv,
           ]),
-          moleculeSvgDiv,
+          moleculeImgDiv,
         ], 'sequence'),
       ]),
       codesTablesDiv,

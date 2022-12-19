@@ -1,12 +1,15 @@
-
-import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, DELIMITER, gcrsCodesWithoutSmiles, NUCLEOTIDES} from './map';
-import {sortByStringLengthInDescendingOrder} from '../helpers';
-import {asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
+import {
+  map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, DELIMITER, gcrsCodesWithoutSmiles, NUCLEOTIDES
+} from '../hardcode-to-be-eliminated/map';
+import {sortByStringLengthInDescendingOrder} from '../utils/helpers';
+import {
+  asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, gcrsToMermade12, siRnaNucleotideToBioSpringSenseStrand,
   siRnaNucleotideToAxolabsSenseStrand, siRnaNucleotidesToGcrs, siRnaBioSpringToNucleotides,
   siRnaBioSpringToAxolabs, siRnaBioSpringToGcrs, siRnaAxolabsToNucleotides,
   siRnaAxolabsToBioSpring, siRnaAxolabsToGcrs, siRnaGcrsToNucleotides,
-  siRnaGcrsToBioSpring, siRnaGcrsToAxolabs, gcrsToNucleotides, gcrsToLcms} from './converters';
+  siRnaGcrsToBioSpring, siRnaGcrsToAxolabs, gcrsToNucleotides, gcrsToLcms
+} from '../hardcode-to-be-eliminated/converters';
 
 const noTranslationTableAvailable = 'No translation table available';
 export const undefinedInputSequence = 'Type of input sequence is undefined';

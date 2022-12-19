@@ -1,12 +1,12 @@
 // import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS, DELIMITER} from './map';
-import {map, SYNTHESIZERS, TECHNOLOGIES, DELIMITER} from './map';
-import {isValidSequence} from './sequence-codes-tools';
+import {map, SYNTHESIZERS, TECHNOLOGIES, DELIMITER} from '../../hardcode-to-be-eliminated/map';
+import {isValidSequence} from '../../sdf-tab/sequence-codes-tools';
 import {sortByStringLengthInDescendingOrder} from '../helpers';
-import {getMonomerWorks} from '../package';
+import {getMonomerWorks} from '../../package';
 import {getNucleotidesMol} from './mol-transformations';
 
-import {standardPhosphateLinkSmiles, MODIFICATIONS} from './const';
-import {getMonomerLib} from '../package';
+import {standardPhosphateLinkSmiles, MODIFICATIONS} from '../../hardcode-to-be-eliminated/const';
+import {getMonomerLib} from '../../package';
 // todo: remove
 // const NAME = 'name';
 const CODES = 'codes';
@@ -15,7 +15,7 @@ const MOL = 'molfile';
 
 export function sequenceToMolV3000(
   sequence: string, inverted: boolean = false, oclRender: boolean = false,
-  format: string,
+  format: string
 ): string {
   const monomerNameFromCode = getCodeToNameMap(sequence, format);
   let codes = sortByStringLengthInDescendingOrder(Object.keys(monomerNameFromCode));
@@ -38,25 +38,24 @@ export function sequenceToMolV3000(
       includesStandardLinkAlready.includes(codesList[i]) ||
       (i < codesList.length - 1 && links.includes(codesList[i + 1]))
     ) {
-      let aa = monomerNameFromCode[codesList[i]];
-      if(aa !== undefined)
+      const aa = monomerNameFromCode[codesList[i]];
+      if (aa !== undefined)
         monomers.push(aa);
       else
         monomers.push(codesList[i]);
-    }
-    else {
-      let aa = monomerNameFromCode[codesList[i]];
-      if(aa !== undefined)
-      monomers.push(aa);
-    else
-      monomers.push(codesList[i]);
+    } else {
+      const aa = monomerNameFromCode[codesList[i]];
+      if (aa !== undefined)
+        monomers.push(aa);
+      else
+        monomers.push(codesList[i]);
       monomers.push('p linkage');
     }
   }
 
   const lib = getMonomerLib();
   const mols: string [] = [];
-  for(let i = 0; i < monomers.length; i++) {
+  for (let i = 0; i < monomers.length; i++) {
     const mnmr = lib?.getMonomer('RNA', monomers[i]);
     mols.push(mnmr?.molfile!);
   }
