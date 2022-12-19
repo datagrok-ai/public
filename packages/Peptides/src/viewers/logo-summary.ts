@@ -6,6 +6,7 @@ import {PeptidesModel} from '../model';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import * as bio from '@datagrok-libraries/bio';
+import { Stats } from '../utils/statistics';
 
 export class LogoSummary extends DG.JsViewer {
   _titleHost = ui.divText('Logo Summary Table', {id: 'pep-viewer-title'});
@@ -62,13 +63,16 @@ export class LogoSummary extends DG.JsViewer {
       summaryTableBuilder = summaryTableBuilder.add(aggregationFunc as any, colName, `${aggregationFunc}(${colName})`);
 
     const summaryTable = summaryTableBuilder.aggregate();
-    const webLogoCol: DG.Column<string> = summaryTable.columns.addNew('WebLogo', DG.COLUMN_TYPE.STRING);
+    const summaryTableCols = summaryTable.columns;
+    const webLogoCol: DG.Column<string> = summaryTableCols.addNewString('WebLogo');
+    // const webLogoColData = webLogoCol.getRawData();
     const clustersCol: DG.Column<string> = summaryTable.getCol(clustersColName);
     const clustersColData = clustersCol.getRawData();
     const clustersColCategories = clustersCol.categories;
     const summaryTableLength = clustersColData.length;
-    const membersCol: DG.Column<number> = summaryTable.columns.addNewInt(C.COLUMNS_NAMES.MEMBERS);
-    const tempDfPlotList: DG.DataFramePlotHelper[] = new Array(summaryTableLength);
+    const membersColData = summaryTableCols.addNewInt(C.COLUMNS_NAMES.MEMBERS).getRawData();
+    const tempWebLogoDfPlotList: DG.DataFramePlotHelper[] = new Array(summaryTableLength);
+    const tempDistributionDfPlotList: DG.DataFramePlotHelper[] = new Array(summaryTableLength);
     const originalClustersCol = this.dataFrame.getCol(clustersColName);
     const originalClustersColData = originalClustersCol.getRawData();
     const originalClustersColCategories = originalClustersCol.categories;
@@ -76,10 +80,17 @@ export class LogoSummary extends DG.JsViewer {
     const peptideCol: DG.Column<string> = this.dataFrame.getCol(this.model.settings.sequenceColumnName!);
     const peptideColData = peptideCol.getRawData();
     const peptideColCategories = peptideCol.categories;
+    const meanDifferenceColData = summaryTableCols.addNewFloat('Mean difference').getRawData();
+    const pValColData = summaryTableCols.addNewFloat('P-Value').getRawData();
+    const ratioColData = summaryTableCols.addNewFloat('Ratio').getRawData();
+    const distributionCol = summaryTableCols.addNewString('Distribution');
+    // const distributionColData = distributionCol.getRawData();
+
     for (let index = 0; index < summaryTableLength; ++index) {
       const indexes: number[] = [];
+      const currentCluster = clustersColCategories[clustersColData[index]];
       for (let j = 0; j < originalClustersColLength; ++j) {
-        if (originalClustersColCategories[originalClustersColData[j]] == clustersColCategories[clustersColData[index]])
+        if (originalClustersColCategories[originalClustersColData[j]] == currentCluster)
           indexes.push(j);
       }
       const tCol = DG.Column.string('peptides', indexes.length);
@@ -91,12 +102,35 @@ export class LogoSummary extends DG.JsViewer {
       const uh = new bio.UnitsHandler(tCol);
       tCol.setTag(bio.TAGS.alphabetSize, uh.getAlphabetSize().toString());
 
+      // Get Stats
+      const matcher: {[key: string]: number | string} = {};
+      matcher[this.model.settings.clustersColumnName!] = currentCluster;
+      const currentStatsDf = this.model.clusterStatsDf.rows.match(matcher).toDataFrame();
+      const activityCol = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+      //TODO: use bitset instead of splitCol
+      const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
+      const currentClusterCol = this.dataFrame.getCol(this.model.settings.clustersColumnName!);
+      splitCol.init((i) => currentClusterCol.get(i) == currentCluster);
+      const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
+      const stats: Stats = {
+        count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
+        ratio: currentStatsDf.get(C.COLUMNS_NAMES.RATIO, 0),
+        pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
+        meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
+      };
+
       const dfSlice = DG.DataFrame.fromColumns([tCol]);
-      tempDfPlotList[index] = dfSlice.plot;
-      webLogoCol.set(index, index.toString());
-      membersCol.set(index, indexes.length);
+      tempWebLogoDfPlotList[index] = dfSlice.plot;
+      tempDistributionDfPlotList[index] = distributionTable.plot;
+      // webLogoColData[index] = index;
+      // distributionColData[index] = index;
+      membersColData[index] = indexes.length;
+      meanDifferenceColData[index] = stats.meanDifference;
+      pValColData[index] = stats.pValue;
+      ratioColData[index] = stats.ratio;
     }
     webLogoCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
+    distributionCol.setTag(DG.TAGS.CELL_RENDERER, 'html');
 
     this.viewerGrid = summaryTable.plot.grid();
     this.updateFilter();
@@ -106,10 +140,31 @@ export class LogoSummary extends DG.JsViewer {
     this.viewerGrid.columns.rowHeader!.visible = false;
     this.viewerGrid.props.rowHeight = 55;
     this.viewerGrid.onCellPrepare((cell) => {
-      if (cell.isTableCell && cell.tableColumn?.name == 'WebLogo') {
-        tempDfPlotList[parseInt(cell.cell.value)]
-          .fromType('WebLogo', {maxHeight: 50, positionHeight: this.webLogoMode})
+      const currentRowIdx = cell.tableRowIndex;
+      if (!cell.isTableCell || currentRowIdx == null || currentRowIdx == -1)
+        return;
+
+      if (cell.tableColumn?.name == 'WebLogo') {
+        tempWebLogoDfPlotList[currentRowIdx]
+          .fromType('WebLogo', {maxHeight: cell.grid.props.rowHeight - 5, positionHeight: this.webLogoMode})
           .then((viewer) => cell.element = viewer.root);
+      } else if (cell.tableColumn?.name == 'Distribution') {
+        const viewerRoot = tempDistributionDfPlotList[currentRowIdx].histogram({
+          filteringEnabled: false,
+          valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
+          splitColumnName: C.COLUMNS_NAMES.SPLIT_COL,
+          legendVisibility: 'Never',
+          showXAxis: true,
+          showColumnSelector: false,
+          showRangeSlider: false,
+          showBinSelector: false,
+          backColor: '#fffff',
+        }).root;
+
+        viewerRoot.style.width = 'auto';
+        const height = (cell.grid.props.rowHeight - 5) / 2 * 3;
+        viewerRoot.style.height = `${height}px`;
+        cell.element = viewerRoot;
       }
     });
     this.viewerGrid.root.addEventListener('click', (ev) => {
