@@ -71,7 +71,9 @@ def get_tree(tree, scaffold_1):
     json_list = []
     scaffolds = []
     orphans = []
+    orphans_counter = 0
     first = True
+    prev_scaffold = ''
     scaffolds.append(scaffold_1)
     scaffolds.extend(list(tree.get_child_scaffolds(scaffold_1)))
     sorted_scaffolds = get_sorted_scaffolds(tree, scaffolds)
@@ -87,6 +89,7 @@ def get_tree(tree, scaffold_1):
             try:
                 recurs_append_nodes('scaffold', get_parent(tree, sorted_scaffolds[i]), 'child_nodes', hierarchy_dict, json_list[0])
             except IndexError:
+                orphans_counter += 1
                 if first is True:
                     prev_scaffold = sorted_scaffolds[i - 1] 
                 first = False
@@ -94,7 +97,8 @@ def get_tree(tree, scaffold_1):
                     orphans.insert(0, hierarchy_dict)
                 else:
                     recurs_append_nodes('scaffold', get_parent(tree, sorted_scaffolds[i]), 'child_nodes', hierarchy_dict, orphans[0])
-                recurs_append_nodes('scaffold', prev_scaffold, 'orphan_nodes', orphans[0], json_list[0])
+    if prev_scaffold != '':
+        recurs_append_nodes('scaffold', prev_scaffold, 'orphan_nodes', orphans, json_list[0]) 
     return json_list[0]
 
 #function to get the json representation
