@@ -165,9 +165,9 @@ export async function viewersGallery() {
             for (let i in viewers) {
                 if (filter_value.indexOf(viewers[i].name) != -1 && viewers[i].name.toLowerCase().includes(value.toLowerCase())) {
                     if (viewers[i].recommend)
-                        recommend.append(render(viewers[i], table, i))
+                        recommend.append(render(viewers[i], table, Number(i)+1))
                     else
-                        cards.append(render(viewers[i], table, i));
+                        cards.append(render(viewers[i], table, Number(i)+1));
                 }
             }
         }
@@ -175,9 +175,9 @@ export async function viewersGallery() {
             for (let i in viewers) {
                 if (filter_value.indexOf(viewers[i].name) != -1) {
                     if (viewers[i].recommend)
-                        recommend.append(render(viewers[i], table, i))
+                        recommend.append(render(viewers[i], table, Number(i)+1))
                     else
-                        cards.append(render(viewers[i], table, i));
+                        cards.append(render(viewers[i], table, Number(i)+1));
                 }
             }
         }
@@ -328,9 +328,9 @@ export async function viewersGallery() {
 
     for (let i in viewers) {
         if (viewers[i].recommend)
-            recommend.append(render(viewers[i], table, i))
+            recommend.append(render(viewers[i], table, Number(i)+1))
         else {
-            cards.append(render(viewers[i], table, i));
+            cards.append(render(viewers[i], table, Number(i)+1));
         }
     }
 
@@ -382,9 +382,9 @@ function clearRoot(root: HTMLDivElement[]) {
     }
 }
 
-function render(viewer: any, table: DG.DataFrame, index:string) {
+function render(viewer: any, table: DG.DataFrame, index:number) {
     let root = ui.div([]);
-    root.setAttribute('tabindex', index);
+    root.setAttribute('tabindex', String(index));
     let icon = ui.iconFA('');
     icon.className = 'grok-icon svg-icon ' + viewer.icon;
     let label = ui.div([viewer.name], 'card-label');
