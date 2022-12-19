@@ -36,3 +36,7 @@ export async function generateScaffoldTree(
   smiles: string) : Promise<string> {
     return await grok.functions.call('Chem: GenerateScaffoldTree', {data, smiles});
 }
+
+export async function setupScaffold() : Promise<void> {
+  return await grok.functions.call('Chem:SetupScaffold');
+}
