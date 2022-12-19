@@ -16,7 +16,9 @@ int main()
 
 	//testNewtonSolver1D();
 
-	testNewtonSolverND();
+	//testNewtonSolverND();
+
+	testBDF();
 
 	cin.get();
 

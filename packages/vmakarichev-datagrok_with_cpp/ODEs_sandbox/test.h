@@ -22,5 +22,8 @@ void testNewtonSolver1D();
 // test of solver of the equation F(x) = 0 using Newton's method: multi-dimensional case
 void testNewtonSolverND();
 
+// test of BDF: one step computation
+void testBDF();
+
 #endif // !TEST_H
 
