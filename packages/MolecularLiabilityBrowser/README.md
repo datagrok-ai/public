@@ -20,7 +20,7 @@ strings in `connections/*.json`. Leave only meta attibutes in `connections/<con_
 {
     "name": "MLB",
     "#type": "DataConnection",
-    "dataSource": "PostgreSQL",
+    "dataSource": "PostgresDart",
     "description": "Molecular Liability Browser data",
     "tags": ["demo"]
 }

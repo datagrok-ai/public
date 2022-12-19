@@ -2663,10 +2663,10 @@
           "id": "5b589f81-b9bf-40b4-aafe-2537214b6db6",
           "comment": "",
           "command": "click",
-          "target": "css=div[name=\"tree-expander-PostgresNet\"]",
+          "target": "css=div[name=\"tree-expander-Postgres\"]",
           "targets": [
             [
-              "css=div[name=\"tree-expander-PostgresNet\"]",
+              "css=div[name=\"tree-expander-Postgres\"]",
               "css"
             ],
             [
@@ -2674,7 +2674,7 @@
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-expander-PostgresNet']",
+              "xpath=//div[@name='tree-expander-Postgres']",
               "xpath:attributes"
             ],
             [
@@ -2692,10 +2692,10 @@
           "id": "f9edf045-2937-40f7-b803-23d89b24f76d",
           "comment": "",
           "command": "click",
-          "target": "css=div[name=\"tree-expander-PostgresNet---northwind\"]",
+          "target": "css=div[name=\"tree-expander-Postgres---northwind\"]",
           "targets": [
             [
-              "css=div[name=\"tree-expander-PostgresNet---northwind\"]",
+              "css=div[name=\"tree-expander-Postgres---northwind\"]",
               "css"
             ],
             [
@@ -2703,7 +2703,7 @@
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-expander-PostgresNet---northwind']",
+              "xpath=//div[@name='tree-expander-Postgres---northwind']",
               "xpath:attributes"
             ],
             [
@@ -2729,14 +2729,14 @@
           "id": "9fd98de5-5aaf-4a1f-b4bf-eed292e02db3",
           "comment": "",
           "command": "click",
-          "target": "xpath=(//div[@name='tree-expander-PostgresNet---northwind'])[2]",
+          "target": "xpath=(//div[@name='tree-expander-Postgres---northwind'])[2]",
           "targets": [
             [
               "css=.d4-tree-view-group:nth-child(24) .d4-tree-view-group .d4-tree-view-group:nth-child(1) .d4-tree-view-tri",
               "css:finder"
             ],
             [
-              "xpath=(//div[@name='tree-expander-PostgresNet---northwind'])[2]",
+              "xpath=(//div[@name='tree-expander-Postgres---northwind'])[2]",
               "xpath:attributes"
             ],
             [
@@ -2762,10 +2762,10 @@
           "id": "6cc9fca2-c4eb-476e-ad94-1bc53f813ac3",
           "comment": "",
           "command": "click",
-          "target": "css=div[name=\"tree-PostgresNet---northwind---Tables---products\"]",
+          "target": "css=div[name=\"tree-Postgres---northwind---Tables---products\"]",
           "targets": [
             [
-              "css=div[name=\"tree-PostgresNet---northwind---Tables---products\"]",
+              "css=div[name=\"tree-Postgres---northwind---Tables---products\"]",
               "css"
             ],
             [
@@ -2773,7 +2773,7 @@
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-PostgresNet---northwind---Tables---products']",
+              "xpath=//div[@name='tree-Postgres---northwind---Tables---products']",
               "xpath:attributes"
             ],
             [
@@ -2845,10 +2845,10 @@
           "id": "f619c39e-1d0e-4f02-9b00-6249742292f8",
           "comment": "",
           "command": "click",
-          "target": "css=div[name=\"tree-expander-PostgresNet---northwind---Tables---products\"]",
+          "target": "css=div[name=\"tree-expander-Postgres---northwind---Tables---products\"]",
           "targets": [
             [
-              "css=div[name=\"tree-expander-PostgresNet---northwind---Tables---products\"]",
+              "css=div[name=\"tree-expander-Postgres---northwind---Tables---products\"]",
               "css"
             ],
             [
@@ -2856,7 +2856,7 @@
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-expander-PostgresNet---northwind---Tables---products']",
+              "xpath=//div[@name='tree-expander-Postgres---northwind---Tables---products']",
               "xpath:attributes"
             ],
             [
@@ -2882,10 +2882,10 @@
           "id": "36129343-3963-4f92-8d52-a06c7facf2f1",
           "comment": "",
           "command": "click",
-          "target": "css=div[name=\"tree-PostgresNet---northwind---Tables---products---productid\"]",
+          "target": "css=div[name=\"tree-Postgres---northwind---Tables---products---productid\"]",
           "targets": [
             [
-              "css=div[name=\"tree-PostgresNet---northwind---Tables---products---productid\"]",
+              "css=div[name=\"tree-Postgres---northwind---Tables---products---productid\"]",
               "css"
             ],
             [
@@ -2893,7 +2893,7 @@
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-PostgresNet---northwind---Tables---products---productid']",
+              "xpath=//div[@name='tree-Postgres---northwind---Tables---products---productid']",
               "xpath:attributes"
             ],
             [
@@ -3028,10 +3028,10 @@
           "id": "c67fee09-073d-42b6-9b86-5b951fae4e63",
           "comment": "",
           "command": "click",
-          "target": "css=div[name=\"tree-PostgresNet---northwind---Tables---products---productname\"]",
+          "target": "css=div[name=\"tree-Postgres---northwind---Tables---products---productname\"]",
           "targets": [
             [
-              "css=div[name=\"tree-PostgresNet---northwind---Tables---products---productname\"]",
+              "css=div[name=\"tree-Postgres---northwind---Tables---products---productname\"]",
               "css"
             ],
             [
@@ -3039,7 +3039,7 @@
               "css:finder"
             ],
             [
-              "xpath=//div[@name='tree-PostgresNet---northwind---Tables---products---productname']",
+              "xpath=//div[@name='tree-Postgres---northwind---Tables---products---productname']",
               "xpath:attributes"
             ],
             [

@@ -123,6 +123,7 @@ export class LogoSummary extends DG.JsViewer {
         this.model.modifyClusterSelection(clusterIdx);
       else
         this.model.initClusterSelection(clusterIdx);
+      this.viewerGrid.invalidate();
     });
     this.viewerGrid.onCellRender.subscribe((gridCellArgs) => {
       const gc = gridCellArgs.cell;

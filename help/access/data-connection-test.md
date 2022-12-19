@@ -11,7 +11,7 @@
 
 1. Open *"Data Sources"* view
 
-1. Open *Add new connection* dialog from context menu for "PostgreSQL" source
+1. Open *Add new connection* dialog from context menu for "PostgresDart" source
 
 * *Add new connection* dialog is open
 * Required fields are highlighted in red

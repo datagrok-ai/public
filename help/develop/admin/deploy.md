@@ -45,7 +45,7 @@ our [deployment script](https://github.com/datagrok-ai/public/blob/master/help/d
 1. Download script from
    repository: [deploy.sh](https://raw.githubusercontent.com/datagrok-ai/public/master/help/develop/admin/deploy/deploy.sh)
 2. For AWS deployment, check that you have
-   all [required permissions](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/iam.list)
+   all [required permissions](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/iam.list)
    on AWS account
 3. Run the script. It will ask questions and deploy a datagrok stand based on your answers. The supported deployment
    platform:
