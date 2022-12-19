@@ -14,6 +14,7 @@ import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
+import {scaffoldTreeGeneration, setupScaffold} from './scripts-api';
 import {elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
@@ -843,4 +844,9 @@ export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
   data.columns.add(smilesColumn);
   const scriptRes = await generateScaffoldTree(data, smilesColumn!.name);
   return scriptRes;
+}
+
+//name: installScaffoldGraph
+export async function installScaffoldGraph() : Promise<void> {
+  await setupScaffold();
 }
