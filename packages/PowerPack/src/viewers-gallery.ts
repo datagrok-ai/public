@@ -454,8 +454,6 @@ function render(viewer: any, table: DG.DataFrame, index:string) {
     });
 
     root.addEventListener('keydown', function(event){
-        console.log(event);
-        console.log(event.key);
         if (event.key === "Enter") {
             event.preventDefault();
             root.click();
