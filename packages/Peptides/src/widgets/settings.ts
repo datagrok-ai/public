@@ -26,10 +26,10 @@ export function getSettingsDialog(model: PeptidesModel): DG.Dialog {
   });
   maxMutations.addPostfix((settings.maxMutations ?? 1).toString());
   const minActivityDelta = ui.sliderInput('Min activity delta', settings.minActivityDelta ?? 0, 0, 100, () => {
-    const val = Math.round(minActivityDelta.value!);
-    result.minActivityDelta = val;
+    const val = minActivityDelta.value!.toFixed(3);
+    result.minActivityDelta = parseFloat(val);
     $(minActivityDelta.root).find('label.ui-input-description').remove();
-    minActivityDelta.addPostfix(val.toString());
+    minActivityDelta.addPostfix(val);
   });
   minActivityDelta.addPostfix((settings.minActivityDelta ?? 0).toString());
   accordion.addPane('Mutation Cliffs', () => ui.inputs([maxMutations, minActivityDelta]), true);

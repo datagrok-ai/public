@@ -20,7 +20,7 @@ category('GUI: Files', () => {
     
     setDialogInputValue('New file share', 'Data Source', 'S3');
 
-    await delay(500); 
+    await delay(300); 
     
     setDialogInputValue('New file share', 'Name', 'Test Connection to S3');
     setDialogInputValue('New file share', 'Region', 'us-east-2');

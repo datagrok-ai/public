@@ -124,7 +124,7 @@ extensions.
 
 [//]: # ([Natural Language Processing]: https://github.com/datagrok-ai/public/tree/master/packages/NLP)
 
-[Cell renderers]:https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit-api.ts
+[Cell renderers]:https://github.com/datagrok-ai/public/blob/master/libraries/chem-meta/src/rdkit-api.ts
 
 [viewers]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
 

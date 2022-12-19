@@ -149,6 +149,7 @@ export class MonomerPosition extends SARViewerBase {
       const position = gridCell!.tableColumn!.name;
       const aar = monomerCol.get(gridCell!.tableRowIndex!);
       chooseAction(aar, position, ev.shiftKey, this.model.isInvariantMap, this.model);
+      this.viewerGrid.invalidate();
     });
     this.viewerGrid.onCurrentCellChanged.subscribe((_gc) => cellChanged(this.model.monomerPositionDf, this.model));
 

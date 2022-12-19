@@ -284,3 +284,37 @@ export function isDialogPresent(dialogTitle: string): boolean {
   }
   return false;
 }
+
+export async function testViewer(v: string): Promise<void> {
+  const df = grok.data.demo.demog(100);
+  const tv = grok.shell.addTableView(df);
+  const viewerName = `[name=viewer-${v.replace(/\s+/g, '-')} i]`;
+  const selector = `${viewerName} canvas,${viewerName} svg,${viewerName} img,${viewerName} input,${viewerName} h1`;
+  const res = [];
+  try {
+    const viewer = tv.addViewer(v);
+    await awaitCheck(() => document.querySelector(selector) !== null,
+      'cannot load viewer', 3000);
+    res.push(Array.from(tv.viewers).length);
+    Array.from(df.row(0).cells).forEach((c) => c.value = null);
+    df.rows.select((row) => row.idx > 2 && row.idx < 20);
+    //df.rows.filter((row) => row.get('age') > 42);
+    const props = viewer.getOptions(true).look;
+    const newProps: Record<string, boolean> = {};
+    Object.keys(props).filter((k) => typeof props[k] === 'boolean').forEach((k) => newProps[k] = !props[k]);
+    viewer.setOptions(newProps);
+    await delay(250);
+    const layout = tv.saveLayout();
+    tv.resetLayout();
+    res.push(Array.from(tv.viewers).length);
+    tv.loadLayout(layout);
+    await awaitCheck(() => document.querySelector(selector) !== null,
+      'cannot load viewer from layout', 3000);
+    await delay(250);
+    res.push(Array.from(tv.viewers).length);
+    expectArray(res, [2, 1, 2]);
+  } finally {
+    tv.close();
+    grok.shell.closeTable(df);
+  }
+}
