@@ -14,7 +14,7 @@ import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {scaffoldTreeGeneration, setupScaffold} from './scripts-api';
+import {setupScaffold} from './scripts-api';
 import {elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
@@ -44,6 +44,7 @@ import {molToMolblock} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {saveAsSdfDialog} from './utils/sdf-utils';
 import {getSimilaritiesMarix} from './utils/similarity-utils';
+import { ScaffoldTreeViewer } from "./widgets/scaffold-tree";
 
 //analytical imports
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
@@ -93,6 +94,14 @@ export async function initChem(): Promise<void> {
 
 //tags: autostart
 export async function initChemAutostart(): Promise<void> { }
+
+//name: Scaffold Tree Viewer
+//tags: viewer
+//meta.trellisable: true
+//output: viewer result
+export function scaffoldTreeViewer() : ScaffoldTreeViewer {
+    return new ScaffoldTreeViewer();
+}
 
 //name: SubstructureFilter
 //description: RDKit-based substructure filter
@@ -482,7 +491,7 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
     const packageExists = checkPackage('PowerGrid', 'radarCellRenderer');
     if (packageExists) {
       let gc = view.grid.columns.add({gridColumnName: 'elementsRadar', cellType: 'radar'});
-      gc.settings = {columnNames: columnNames}
+      gc.settings = {columnNames: Array.from(elements.keys())};
       gc.width = 300;
     } else {
       grok.shell.warning('PowerGrid package is not installed');
@@ -826,7 +835,7 @@ export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
   const invalid: number[] = new Array<number>(data.columns.length);
   const smiles = molColumn?.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
-  const smilesList: string[] = [];
+  const smilesList: string[] = new Array<string>(data.columns.length);
   for (let rowI = 0; rowI < molColumn!.length; rowI++) {
     let el: string = molColumn?.get(rowI);
     if (!smiles) 
