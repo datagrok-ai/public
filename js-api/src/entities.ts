@@ -14,6 +14,8 @@ type PropertyGetter = (a: object) => any;
 type PropertySetter = (a: object, value: any) => void;
 type ValueValidator<T> = (value: T) => string;
 type DataConnectionDBParams = {dataSource: string, server: string, db: string, login?: string, password?: string};
+type DataConnectionParams = {server: string, db: string, port: number, schema: string, indexFiles: boolean,
+  cacheResults: boolean, cacheInvalidateSchedule: boolean};
 type FieldPredicate = {field: string, pattern: string};
 type FieldOrder = {field: string, asc?: boolean};
 type GroupAggregation = {aggType: string, colName: string, resultColName?: string, function?: string};
@@ -494,7 +496,7 @@ export class DataConnection extends Entity {
   }
 
   /** Collection of parameters: server, database, endpoint, etc. */
-  get parameters(): object { return api.grok_DataConnection_Parameters(this.dart); }
+  get parameters(): DataConnectionParams { return api.grok_DataConnection_Parameters(this.dart); }
 
   /** Tests the connection, returns "ok" on success or an error message on error
    * @returns {Promise<string>}*/
