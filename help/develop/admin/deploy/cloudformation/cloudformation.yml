@@ -48,11 +48,40 @@ Parameters:
     - 'false'
     Description: Datagrok provides demo databases with demo data for the full experience.
       Do you want to install it?
+<<<<<<< HEAD
+=======
+  LaunchType:
+    Type: String
+    Default: 'FARGATE'
+    AllowedValues:
+      - 'EC2'
+      - 'FARGATE'
+    Description: Amazon instance type for deployment
+  Ec2KeyPairName:
+    Type: String
+    Default: 'keyname'
+    Description: Name of keypair when EC2 laumch is used
+  Ec2PublicKey:
+    Type: String
+    Default: ''
+    Description: public key to EC2 instance when EC2 laumch is used
+  Ec2InstanceType:
+    Type: String
+    Default: 'm1.small'
+    Description: AWS Instance type 
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
 Conditions:
   CreateDemoDataCondition:
     Fn::Equals:
     - Ref: CreateDemoData
     - 'true'
+<<<<<<< HEAD
+=======
+  CreateEc2InstanceCondition:
+    Fn::Equals:
+    - Ref: LaunchType
+    - 'EC2'  
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
 Resources:
   DatagrokVPC:
     Properties:
@@ -633,7 +662,11 @@ Resources:
       DeploymentController:
         Type: ECS
       DesiredCount: 1
+<<<<<<< HEAD
       LaunchType: FARGATE
+=======
+      LaunchType: !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       LoadBalancers:
       - ContainerName: grok_compute
         ContainerPort: 5005
@@ -822,7 +855,11 @@ Resources:
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
+<<<<<<< HEAD
       - FARGATE
+=======
+      - !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
     Type: AWS::ECS::TaskDefinition
   GrokComputeTaskExecutionRole:
     Properties:
@@ -860,7 +897,11 @@ Resources:
       DeploymentController:
         Type: ECS
       DesiredCount: 1
+<<<<<<< HEAD
       LaunchType: FARGATE
+=======
+      LaunchType: !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       LoadBalancers:
       - ContainerName: h2o
         ContainerPort: 5005
@@ -1123,7 +1164,11 @@ Resources:
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
+<<<<<<< HEAD
       - FARGATE
+=======
+      - !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
     Type: AWS::ECS::TaskDefinition
   H2oTaskExecutionRole:
     Properties:
@@ -1164,7 +1209,11 @@ Resources:
       DeploymentController:
         Type: ECS
       DesiredCount: 1
+<<<<<<< HEAD
       LaunchType: FARGATE
+=======
+      LaunchType: !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       LoadBalancers:
       - ContainerName: jupyter_kernel_gateway
         ContainerPort: 5005
@@ -1370,7 +1419,11 @@ Resources:
       Memory: '4096'
       NetworkMode: awsvpc
       RequiresCompatibilities:
+<<<<<<< HEAD
       - FARGATE
+=======
+      - !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       EphemeralStorage:
         SizeInGiB: 50
     Type: AWS::ECS::TaskDefinition
@@ -1413,7 +1466,11 @@ Resources:
       DeploymentController:
         Type: ECS
       DesiredCount: 1
+<<<<<<< HEAD
       LaunchType: FARGATE
+=======
+      LaunchType: !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       LoadBalancers:
       - ContainerName: jupyter_notebook
         ContainerPort: 5005
@@ -1619,7 +1676,11 @@ Resources:
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
+<<<<<<< HEAD
       - FARGATE
+=======
+      - !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
     Type: AWS::ECS::TaskDefinition
   JupyterNotebookTaskExecutionRole:
     Properties:
@@ -1857,7 +1918,11 @@ Resources:
       DeploymentController:
         Type: ECS
       DesiredCount: 1
+<<<<<<< HEAD
       LaunchType: FARGATE
+=======
+      LaunchType: !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       LoadBalancers:
       - ContainerName: datagrok
         ContainerPort: 8080
@@ -2276,7 +2341,11 @@ Resources:
       Memory: '8192'
       NetworkMode: awsvpc
       RequiresCompatibilities:
+<<<<<<< HEAD
       - FARGATE
+=======
+      - !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       TaskRoleArn:
         Ref: DatagrokTaskRole
     Type: AWS::ECS::TaskDefinition
@@ -2507,7 +2576,11 @@ Resources:
       DeploymentController:
         Type: ECS
       DesiredCount: 1
+<<<<<<< HEAD
       LaunchType: FARGATE
+=======
+      LaunchType: !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -2595,7 +2668,11 @@ Resources:
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
+<<<<<<< HEAD
       - FARGATE
+=======
+      - !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       EphemeralStorage:
         SizeInGiB: 55
     Type: AWS::ECS::TaskDefinition
@@ -2632,7 +2709,11 @@ Resources:
       DeploymentController:
         Type: ECS
       DesiredCount: 1
+<<<<<<< HEAD
       LaunchType: FARGATE
+=======
+      LaunchType: !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -2720,7 +2801,11 @@ Resources:
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
+<<<<<<< HEAD
       - FARGATE
+=======
+      - !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
     Type: AWS::ECS::TaskDefinition
     Condition: CreateDemoDataCondition
   NorthwindTaskExecutionRole:
@@ -2755,7 +2840,11 @@ Resources:
       DeploymentController:
         Type: ECS
       DesiredCount: 1
+<<<<<<< HEAD
       LaunchType: FARGATE
+=======
+      LaunchType: !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -2843,7 +2932,11 @@ Resources:
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
+<<<<<<< HEAD
       - FARGATE
+=======
+      - !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
     Type: AWS::ECS::TaskDefinition
     Condition: CreateDemoDataCondition
   StarbucksTaskExecutionRole:
@@ -2878,7 +2971,11 @@ Resources:
       DeploymentController:
         Type: ECS
       DesiredCount: 1
+<<<<<<< HEAD
       LaunchType: FARGATE
+=======
+      LaunchType: !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -2966,7 +3063,11 @@ Resources:
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
+<<<<<<< HEAD
       - FARGATE
+=======
+      - !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       EphemeralStorage:
         SizeInGiB: 40
     Type: AWS::ECS::TaskDefinition
@@ -3003,7 +3104,11 @@ Resources:
       DeploymentController:
         Type: ECS
       DesiredCount: 1
+<<<<<<< HEAD
       LaunchType: FARGATE
+=======
+      LaunchType: !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -3091,7 +3196,11 @@ Resources:
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
+<<<<<<< HEAD
       - FARGATE
+=======
+      - !Ref LaunchType
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
     Type: AWS::ECS::TaskDefinition
     Condition: CreateDemoDataCondition
   WorldTaskExecutionRole:
@@ -3114,3 +3223,68 @@ Resources:
         Value: world
     Type: AWS::IAM::Role
     Condition: CreateDemoDataCondition
+<<<<<<< HEAD
+=======
+#============
+  ImportKeyPairEc2:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Ref Ec2KeyPairName
+      PublicKeyMaterial: !Ref Ec2PublicKey
+    Condition: CreateEc2InstanceCondition
+  Ec2AimPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: Ec2Policy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'ec2:DescribeTags'
+              - 'ecs:DiscoverPollEndpoint'
+            Resource: '*'
+          - Effect: Allow
+            Action: 
+              - 'ecs:Poll'
+              - 'ecs:StartTelemetrySession'
+              - 'ecs:UpdateContainerInstancesState'
+              - 'ecs:RegisterContainerInstance'
+              - 'ecs:Submit*'
+              - 'ecs:DeregisterContainerInstance'
+            Resource: 
+              - !GetAtt CvmCluster.Arn
+              - !GetAtt DatagrokCluster.Arn
+              - "arn:aws:ecs:!Ref "AWS::Region":!Ref "AWS::AccountId":container-instance/!Ref DatagrokCluster/*"
+              - "arn:aws:ecs:!Ref "AWS::Region":!Ref "AWS::AccountId":container-instance/!Ref CvmCluster/*"    
+  Ec2AimRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: 
+              - 'sts:AssumeRole'
+            Sid: ''
+            Principal:
+              Service: 
+                - 'ec2.amazonaws.com'
+      ManagedPolicyArns:
+        - !GetAtt Ec2AimPolicy.Arn
+        - !GetAtt DatagrokECSPolicy.Arn
+  Ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - "!Ref Ec2AimRole"
+      InstanceProfileName: 'ec2profile'
+    Condition: CreateEc2InstanceCondition
+  Ec2InstanceDatagrok:
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      ImageId: ???
+      InstanceType: !Ref Ec2InstanceType
+    Condition: CreateEc2InstanceCondition
+>>>>>>> 52209b14e (add EC2 cloudformation deploy)
