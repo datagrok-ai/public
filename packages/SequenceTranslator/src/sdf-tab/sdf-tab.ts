@@ -98,28 +98,65 @@ export function getSdfTab(): HTMLDivElement {
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
   // inputs
-  const inputColHeader = ui.h1('Sequences');
-  const ssInput = ui.textInput('Sense Strand', '', () => { onInput.next(); });
-  ssInput.root.style.color = 'red';
-  const asInput = ui.textInput('Anti Sense', '', () => { onInput.next(); });
-  const as2Input = ui.textInput('Anti Sense 2', '', () => { onInput.next(); });
+  const ssInput = ui.textInput('', '', () => { onInput.next(); });
+  const asInput = ui.textInput('', '', () => { onInput.next(); });
+  const as2Input = ui.textInput('', '', () => { onInput.next(); });
   const saveEntity = ui.boolInput('Save as one entity', true);
   const useChiralInput = ui.boolInput('Use chiral', true);
 
   // default values
-  const straight = '5 prime -> 3 prime';
-  const inverse = '3 prime -> 5 prime';
+  const straight = '5′ → 3′';
+  const inverse = '3′ → 5′';
   let invertSS = false;
   let invertAS = false;
   const invertAS2 = false;
 
   // choice inputs
-  const ssDirection = ui.choiceInput('SS direction', straight, [straight, inverse]);
+  const ssDirection = ui.choiceInput('', straight, [straight, inverse]);
   ssDirection.onChanged(() => { invertSS = ssDirection.value === inverse; });
-  const asDirection = ui.choiceInput('AS direction', straight, [straight, inverse]);
+  const asDirection = ui.choiceInput('', straight, [straight, inverse]);
   asDirection.onChanged(() => { invertAS = asDirection.value === inverse; });
-  const as2Direction = ui.choiceInput('AS 2 direction', straight, [straight, inverse]);
+  const as2Direction = ui.choiceInput('', straight, [straight, inverse]);
   as2Direction.onChanged(() => { invertAS = asDirection.value === inverse; });
+
+  // labels
+  const ssLabel = ui.label('Sense');
+  const asLabel = ui.label('Anti Sense');
+  const as2Label = ui.label('Anti Sense 2');
+
+  // table layout
+  const tableLayout = ui.table(
+    ['ss', 'as1', 'as2'], (row, index) => {
+      switch (row) {
+      case 'ss':
+        return [ssLabel, ssInput.root, ssDirection.root];
+      case 'as1':
+        return [asLabel, asInput.root, asDirection.root];
+      case 'as2':
+        return [as2Label, as2Input.root, as2Direction.root];
+      }
+    }, ['', 'Sequence', 'Direction']
+  );
+  tableLayout.style.paddingTop = '20px';
+
+  // table element styling
+  for (const item of [ssLabel, asLabel, as2Label]) {
+    item.parentElement!.style.minWidth = '95px';
+    item.parentElement!.style.textAlign = 'right';
+    item.parentElement!.style.verticalAlign = 'top';
+  }
+
+  for (const item of [ssDirection.root, asDirection.root, as2Direction.root])
+    item.parentElement!.style.minWidth = '95px';
+
+  for (const item of [ssInput, asInput, as2Input]) {
+    item.root.parentElement!.style.width = '100%';
+    const textArea = item.root.children[1];
+    //@ts-ignore
+    textArea.style.width = '100%';
+    //@ts-ignore
+    textArea.style.resize = 'none';
+  }
 
   // molecule image
   const moleculeImgDiv = ui.block([]);
@@ -135,10 +172,11 @@ export function getSdfTab(): HTMLDivElement {
     }
     // todo: calculate relative numbers
     const canvasWidth = 500;
-    const canvasHeight = 170;
+    const canvasHeight = 100;
     // todo: remove div with image if molfile empty
     await drawMolecule(moleculeImgDiv, canvasWidth, canvasHeight, molfile);
   });
+  moleculeImgDiv.style.marginLeft = '200px';
 
   const saveButton = ui.buttonsInput([
     ui.bigButton('Save SDF', () =>
@@ -147,17 +185,13 @@ export function getSdfTab(): HTMLDivElement {
         useChiralInput.value!, invertSS, invertAS, as2Input.value, invertAS2)
     )
   ]);
-  //@ts-ignore
-  // the above line is recommended by Dmitry because saveButton has wrong return
-  // type
-  const form1 = ui.form([inputColHeader, ssInput, asInput, as2Input, saveButton]);
-  form1.className = 'ui-form ui-form-wide';
-  const form2 = ui.form([ssDirection, asDirection, as2Direction, saveEntity, useChiralInput]);
-  form2.className = 'ui-form ui-form-wide';
+  saveButton.style.paddingLeft = '20px';
 
-  const body = ui.divV([ui.divH([ui.block([form1]), form2]), moleculeImgDiv]);
-  $(form1).find('textarea').css('flex-grow', '1');
-  $(form1).find('label').css('max-width', '140px');
+  const lineBelowTable = ui.divH([saveEntity.root, useChiralInput.root, saveButton]);
+  lineBelowTable.style.padding = '30px';
+  lineBelowTable.style.paddingRight = '150px';
+  lineBelowTable.style.justifyContent = 'flex-end';
+  const body = ui.divV([tableLayout, lineBelowTable, moleculeImgDiv]);
 
   return body;
 }
