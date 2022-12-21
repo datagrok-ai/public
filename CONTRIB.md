@@ -97,6 +97,8 @@ Some general recommendations on writing high-performance JavaScript code:
 
 * [Writing Fast, Memory-Efficient JavaScript](https://www.smashingmagazine.com/2012/11/writing-fast-memory-efficient-javascript/)
 * [JavaScript Performance](https://developer.mozilla.org/en-US/docs/Learn/Performance/javascript_performance)
+* [Chrome DevTools Documentation](https://developer.chrome.com/docs/devtools/)
+* [Web development best practices](https://web.dev/fast/)
 
 Below, we will discuss some performance-related topics important to building solutions with Datagrok. However, nothing
 beats common sense, benchmarks, and eventually developing an intuition of how fast or slow a particular method would
