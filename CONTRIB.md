@@ -141,6 +141,8 @@ array is needed, or [wu.count](https://fitzgen.github.io/wu.js/#count) if you on
 * **Recalculating too often**. In case of applications reacting to the streams 
   of events, consider using event debouncing to allow multiple events to
   be fired, and then recalculating only once after that.
+* **Using DataFrame's API for number crunching**. For maximum performance, consider
+  working with raw data instead.
 * **Inefficiently using memory**. For number crunching, one of the most important
   things that influences the performance is cache locality. Try to arrange data
   (usually in raw memory buffers) in such a way that your algorithm would access
