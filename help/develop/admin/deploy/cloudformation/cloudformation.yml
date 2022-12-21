@@ -3287,4 +3287,8 @@ Resources:
       ImageId: ???
       InstanceType: !Ref Ec2InstanceType
     Condition: CreateEc2InstanceCondition
+<<<<<<< HEAD
 >>>>>>> 52209b14e (add EC2 cloudformation deploy)
+=======
+    
+>>>>>>> 7d577fe72 (change branch name)
