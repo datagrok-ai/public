@@ -83,16 +83,11 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
       if (!cols[i].isNone(row)) {
         const color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.fromHtml('#8080ff');
         g.setFillStyle(DG.Color.toRgb(color));
-        const bb_ = b.getLeftPart(cols.length, i);
-        let bb;
-        if (settings.globalScale) {
-          const scaled = (cols[i].get(row) - gmin) / (gmax - gmin);
-          bb = bb_.getBottomScaled(scaled > minH ? scaled : minH)
-            .inflateRel(0.9, 1);
-        } else {
-          bb = bb_.getBottomScaled(cols[i]?.scale(row) > minH ? cols[i]?.scale(row) : minH)
-            .inflateRel(0.9, 1);
-        }
+        const scaled = settings.globalScale ? (cols[i].get(row) - gmin) / (gmax - gmin) : cols[i].scale(row);
+        const bb = b
+          .getLeftPart(cols.length, i)
+          .getBottomScaled(scaled > minH ? scaled : minH)
+          .inflateRel(0.9, 1);
         g.fillRect(bb.left, bb.top, bb.width, bb.height);
       }
     }
