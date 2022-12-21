@@ -3284,11 +3284,71 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       IamInstanceProfile: !Ref Ec2InstanceProfile
-      ImageId: ???
+      ImageId: ami-0f972b3903f44791c
       InstanceType: !Ref Ec2InstanceType
+      KeyName: !Ref ImportKeyPairEc2
+      UserData:
+        Fn::Base64: 
+          !Sub |
+            #!/bin/bash
+            # shellcheck disable=SC2154
+            echo "ECS_CLUSTER=!Ref DatagrokCluster" >>/etc/ecs/ecs.config
+      AvailabilityZone: !GetAZs AWS::Region
+      NetworkInterfaces:  
+        - AssociatePublicIpAddress: false
+      SubnetId: 
+        - !Ref DatagrokPrivateSubnet1
+        - !Ref DatagrokPrivateSubnet2
+      SecurityGroupIds: 
+        - !GetAtt DatagrokALBSecurityGroup.GroupId
+      DisableApiTermination: false
+      SourceDestCheck: true
+      InstanceInitiatedShutdownBehavior: 'stop'
+      Monitoring: false 
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      EbsOptimized: true
+      BlockDeviceMappings:
+        - Encrypted: true
+          VolumeType: 'gp3'
+          VolumeSize: '50'
     Condition: CreateEc2InstanceCondition
+<<<<<<< HEAD
 <<<<<<< HEAD
 >>>>>>> 52209b14e (add EC2 cloudformation deploy)
 =======
     
 >>>>>>> 7d577fe72 (change branch name)
+=======
+  Ec2InstanceCvm:
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      ImageId: ami-0f972b3903f44791c
+      InstanceType: !Ref Ec2InstanceType
+      KeyName: !Ref ImportKeyPairEc2
+      UserData:
+        Fn::Base64: 
+          !Sub |
+            #!/bin/bash
+            # shellcheck disable=SC2154
+            echo "ECS_CLUSTER=!Ref CvmCluster" >>/etc/ecs/ecs.config
+      AvailabilityZone: !GetAZs AWS::Region
+      NetworkInterfaces:  
+        - AssociatePublicIpAddress: false
+      SubnetId: 
+        - !Ref DatagrokPrivateSubnet1
+        - !Ref DatagrokPrivateSubnet2
+      SecurityGroupIds: 
+        - !GetAtt CvmSecurityGroup.GroupId
+      DisableApiTermination: false
+      SourceDestCheck: true
+      InstanceInitiatedShutdownBehavior: 'stop'
+      Monitoring: false 
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      EbsOptimized: true
+      BlockDeviceMappings:
+        - Encrypted: true
+          VolumeType: 'gp3'
+          VolumeSize: '50'
+    Condition: CreateEc2InstanceCondition  
+>>>>>>> 1ebc1fbb2 (add ec2 instances)
