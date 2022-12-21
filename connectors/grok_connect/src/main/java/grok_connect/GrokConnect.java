@@ -321,7 +321,7 @@ public class GrokConnect {
         response.status(Status.SERVER_ERROR_INTERNAL.getCode());
     }
 
-    private static Map<String, String> printError(Throwable ex) {
+    public static Map<String, String> printError(Throwable ex) {
         String errorMessage = ex.toString();
         StringWriter stackTrace = new StringWriter();
         ex.printStackTrace(new PrintWriter(stackTrace));
