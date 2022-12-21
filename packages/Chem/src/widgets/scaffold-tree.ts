@@ -13,22 +13,32 @@ import {getScaffoldTree, installScaffoldGraph} from "../package";
 
 let renderer : RDKitCellRenderer | null= null;
 
+function debugParent(node: TreeViewNode) : void {
+  let count = 0;
+  let parent = node.parent;
+  for (; parent !== null && parent !== undefined && count < 100; parent = parent.parent, ++count) {
+    console.log('DEBUG NODE PARENTS: ' + count + " " + parent.constructor.name + " " + ((parent.value as any).value !== undefined ? (parent.value as any).value.smiles : "NA"));
+  }
+}
+
+
 function enableNodeExtendArrow(group: TreeViewGroup, enable: boolean): void {
   const c = group.root.getElementsByClassName('d4-tree-view-tri');
   if (c.length > 0)
     (c[0] as HTMLElement).style.visibility = enable ? 'visible' : 'hidden';
 }
 
-
 function buildOrphans(rootGroup: TreeViewGroup) {
-  if (rootGroup.parent !== null && rootGroup.children.length > 0) {
+  if (rootGroup.parent !== null && rootGroup.children.length > 0) { //folder groups don't have children, will skip
 
-    const bitsetThis = (rootGroup.value as any).bitset;
+    const v = rootGroup.value as any;
+    v.bitset_orphans = null;
+    const bitsetThis = v.bitset;
 
     let bitsetParent = null;
-    if(rootGroup.parent.value === null) {
+    if(!rootGroup.parent || !rootGroup.parent.value) {
       bitsetParent = DG.BitSet.create(bitsetThis.length);
-      bitsetParent.setAll(true, false);
+      bitsetParent = bitsetParent.or(bitsetThis, false);
     } else bitsetParent =  (rootGroup.parent.value as any).bitset;
 
     let bitsetOrphans = DG.BitSet.create(bitsetThis.length);
@@ -46,25 +56,11 @@ function buildOrphans(rootGroup: TreeViewGroup) {
       bitsetOrphans = bitsetOrphans.xor(bitsetMask, false);
     }
     if (bitsetOrphans.trueCount > 0)
-      (rootGroup.value as any).bitset_orphans = bitsetOrphans;
+      v.bitset_orphans = bitsetOrphans;
   }
 
   for (let n = 0; n < rootGroup.children.length; ++n) {
     buildOrphans(rootGroup.children[n] as TreeViewGroup);
-  }
-}
-
-function appendOrphanFolders(thisViewer: ScaffoldTreeViewer, rootGroup: TreeViewGroup) {
-  if (rootGroup.parent !== null) {
-    const bitsetOrphans = (rootGroup.value as any).bitset_orphans;
-    if (bitsetOrphans !== undefined && bitsetOrphans.trueCount > 0) {
-      const group = thisViewer.createOrphansGroup(rootGroup);
-      (group.value as any).bitset = bitsetOrphans;
-    }
-  }
-
-  for (let n = 0; n < rootGroup.children.length; ++n) {
-    appendOrphanFolders(thisViewer, rootGroup.children[n] as TreeViewGroup);
   }
 }
 
@@ -78,25 +74,25 @@ function fillVisibleNodes(rootGroup: TreeViewGroup, visibleNodes: Array<TreeView
   }
 }
 
-function updateNodeHits(group : TreeViewNode, text : string) : void {
+function updateNodeHitsLabel(group : TreeViewNode, text : string) : void {
   const labelDiv = (group.value as any).labelDiv;
   labelDiv!.innerHTML = text;
 }
 
-async function updateAllNodesContent(thisViewer: ScaffoldTreeViewer) {
+async function updateAllNodesHits(thisViewer: ScaffoldTreeViewer) {
   const items = thisViewer.tree.items;
   if (items.length > 0) {
-    await updateNodesContentImpl(thisViewer, items, 0, items.length - 1);
+    await updateNodesHitsImpl(thisViewer, items, 0, items.length - 1);
     console.log('All Hits are calculated');
     buildOrphans( thisViewer.tree);
     console.log('Orphans are calculated');
-    appendOrphanFolders(thisViewer, thisViewer.tree);
+    thisViewer.appendOrphanFolders(thisViewer.tree);
     thisViewer.updateSizes();
     console.log('Orphans are appended');
   }
 }
 
-async function updateVisibleNodesContent(thisViewer: ScaffoldTreeViewer) {
+async function updateVisibleNodesHits(thisViewer: ScaffoldTreeViewer) {
   const visibleNodes : Array<TreeViewGroup> = [];
   fillVisibleNodes(thisViewer.tree, visibleNodes);
 
@@ -105,15 +101,17 @@ async function updateVisibleNodesContent(thisViewer: ScaffoldTreeViewer) {
   if (end >= visibleNodes.length)
     end = visibleNodes.length - 1;
 
-  updateNodesContentImpl(thisViewer, visibleNodes, start, end);
+  updateNodesHitsImpl(thisViewer, visibleNodes, start, end);
 }
 
-async function updateNodesContentImpl(thisViewer: ScaffoldTreeViewer, visibleNodes : Array<TreeViewNode>, start: number, end: number) {
+async function updateNodesHitsImpl(thisViewer: ScaffoldTreeViewer, visibleNodes : Array<TreeViewNode>, start: number, end: number) {
   let group : TreeViewNode | null = null;
   //console.log('scroll ' + start + ' ' + +end + ' total ' + visibleNodes.length);
+  let v = null;
   for (let n = start; n <= end; ++n) {
     group = visibleNodes[n];
-    if ((group.value as any).init || (group.value as any).orphans)
+    v = group.value as any;
+    if (v.init || v.orphans)
       continue;
 
     // @ts-ignore
@@ -123,10 +121,10 @@ async function updateNodesContentImpl(thisViewer: ScaffoldTreeViewer, visibleNod
     // @ts-ignore
     renderer.render(canvas.getContext('2d'), 0, 0, Math.floor(canvas.width / r), Math.floor(canvas.height / r), DG.GridCell.fromValue((group.value as any).smiles));
     */
-    const bitset = thisViewer.molColumn === null ? null : await chemSubstructureSearchLibrary(thisViewer.molColumn,  (group.value as any).smiles, '');
-    (group.value as any).bitset = bitset;
-    (group.value as any).init = true;
-    updateNodeHits(group, bitset!.trueCount.toString());
+    const bitset = thisViewer.molColumn === null ? null : await chemSubstructureSearchLibrary(thisViewer.molColumn,  v.smiles, '');
+    v.bitset = bitset;
+    v.init = true;
+    updateNodeHitsLabel(group, bitset!.trueCount.toString());
   }
 }
 
@@ -297,13 +295,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         return thisViewer.createGroup(molStr, rootGroup, false, countNodes);
       });
 
-      await updateVisibleNodesContent(this); //first visible N nodes
+      await updateVisibleNodesHits(this); //first visible N nodes
       ui.setUpdateIndicator(this.root, false);
       progressBar.update(100, 'Finished Building Scaffold Tree');
 
       this.updateSizes();
       this.updateUI();
-      updateAllNodesContent(this);
+      updateAllNodesHits(this); //this will run asynchronously
     }
   }
 
@@ -317,8 +315,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
+    //debugParent(group);
+
     const thisViewer = this;
     this.wrapper = SketcherDialogWrapper.create("Edit Scaffold...", "Save", group, async(molStrSketcher: string, node: TreeViewGroup, valid: boolean) => {
+
       while (node.captionLabel.firstChild) {
         node.captionLabel.removeChild(node.captionLabel.firstChild);
       }
@@ -331,6 +332,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       iconRoot!.style.visibility = 'visible';
 
       node.value = {smiles: molStrSketcher, bitset: bitset};
+
+      //orphans
+      const parent = !node.parent ? node : node.parent as TreeViewGroup;
+      buildOrphans(parent);
+      thisViewer.appendOrphanFolders(parent);
+
       thisViewer.wrapper?.close();
       thisViewer.wrapper = null;
       thisViewer.updateFilters();
@@ -384,12 +391,23 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
     const thisViewer = this;
-    this.wrapper = SketcherDialogWrapper.create("Add New Scaffold...", "Add", group, (molStrSketcher: string, parent: TreeViewGroup, valid: boolean) => {
+    this.wrapper = SketcherDialogWrapper.create("Add New Scaffold...", "Add", group,async  (molStrSketcher: string, parent: TreeViewGroup, valid: boolean) => {
+      debugParent(parent);
       const child = thisViewer.createGroup(molStrSketcher, parent);
-      if (child !== null)
+      if (child !== null) {
         enableNodeExtendArrow(child, false);
+        enableNodeExtendArrow(parent, true);
+        const v = child.value as any;
+        const bitset = thisViewer.molColumn === null ? null : await chemSubstructureSearchLibrary(thisViewer.molColumn, v.smiles, '');
+        v.bitset = bitset;
+        v.init = true;
+        updateNodeHitsLabel(child, bitset!.trueCount.toString());
+      }
 
-      enableNodeExtendArrow(parent, true);
+      //orphans
+      buildOrphans(parent);
+      thisViewer.appendOrphanFolders(parent);
+
       thisViewer.updateSizes();
       thisViewer.updateUI();
       thisViewer.updateFilters();
@@ -554,19 +572,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     mol.delete();
 
     const bitset =  DG.BitSet.create(this.molColumn.length);//await chemSubstructureSearchLibrary(this.molColumn, molStr, '');
-    const ratio = bitset.trueCount / bitset.length;
+    //const ratio = bitset.trueCount / bitset.length;
     //if (ratio !== 0 &&  bitset.trueCount === 1)//ratio < 0.05)
      // return null;
-
-
     const molHost = renderMolecule(molStr, CELL_WIDTH, CELL_HEIGHT, skipDraw);
-    const group = rootGroup.group(molHost, {smiles: molStr, bitset: bitset});
+    const group = rootGroup.group(molHost, {smiles: molStr, bitset: bitset, bitset_orphans : null});
     this.addIcons(molHost, bitset.trueCount.toString(), group);
 
     // Highlighting
     // molHost.onmouseenter = () => this.dataFrame.rows.match(bitset).highlight();
     // molHost.onmouseleave = () => this.dataFrame.rows.match('false').highlight();
-
     group.enableCheckBox(false);
     group.autoCheckChildren = false;
     const thisViewer = this;
@@ -603,6 +618,26 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     return group;
   }
 
+   appendOrphanFolders(rootGroup: TreeViewGroup) {
+   // console.log(rootGroup.constructor.name);
+
+    if (rootGroup.parent) {
+      for (let n = 0; n < rootGroup.children.length; ++n) {
+        if ((rootGroup.children[n].value as any).orphans)
+          rootGroup.children[n].remove();
+      }
+
+      const bitsetOrphans = (rootGroup.value as any).bitset_orphans;
+      if (bitsetOrphans !== null && bitsetOrphans !== undefined && bitsetOrphans.trueCount > 0) {
+        const group = this.createOrphansGroup(rootGroup);
+        (group.value as any).bitset = bitsetOrphans;
+      }
+    }
+    for (let n = 0; n < rootGroup.children.length; ++n) {
+      this.appendOrphanFolders(rootGroup.children[n] as TreeViewGroup);
+    }
+  }
+
 
   onPropertyChanged(p: DG.Property): void {
     if (p.name === 'MoleculeColumn') {
@@ -636,10 +671,10 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     const thisViewer = this;
     this.tree.root.onscroll = async (e) => {
-      await updateVisibleNodesContent(thisViewer);
+      await updateVisibleNodesHits(thisViewer);
     }
 
-    this.tree.onChildNodeExpandedChanged.subscribe((group: TreeViewGroup) => updateVisibleNodesContent(thisViewer));
+    this.tree.onChildNodeExpandedChanged.subscribe((group: TreeViewGroup) => updateVisibleNodesHits(thisViewer));
 
     this.tree.onNodeContextMenu.subscribe((args: any) => {
       const menu: DG.Menu = args.args.menu;
