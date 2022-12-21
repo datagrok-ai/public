@@ -46,14 +46,15 @@ import './ui/groups';
 import './ui/tags';
 import './ui/sharing';
 import './package/upload';
-//import './viewers/viewers-adding';
 import './viewers/viewers';
-//import './gui/chem-sketcher';
 import './grid/grid';
 import './grid/color-coding';
 import './connections/queries-test';
 import './connections/get-all-top100';
 import './scripts/scripts-params';
+import './gui/dialogs';
+import './gui/files';
+import './gui/grid';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
