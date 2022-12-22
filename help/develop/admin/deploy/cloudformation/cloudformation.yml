@@ -2989,7 +2989,7 @@ Resources:
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
-      - !Ref LaunchType
+      - FARGATE
       EphemeralStorage:
         SizeInGiB: 40
     Type: AWS::ECS::TaskDefinition
