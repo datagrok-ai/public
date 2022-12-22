@@ -12,16 +12,6 @@ import {chemSubstructureSearchLibrary} from "../chem-searches";
 import {getScaffoldTree, installScaffoldGraph} from "../package";
 
 let renderer : RDKitCellRenderer | null= null;
-
-function debugParent(node: TreeViewNode) : void {
-  let count = 0;
-  let parent = node.parent;
-  for (; parent !== null && parent !== undefined && count < 100; parent = parent.parent, ++count) {
-    console.log('DEBUG NODE PARENTS: ' + count + " " + parent.constructor.name + " " + ((parent.value as any).value !== undefined ? (parent.value as any).value.smiles : "NA"));
-  }
-}
-
-
 function enableNodeExtendArrow(group: TreeViewGroup, enable: boolean): void {
   const c = group.root.getElementsByClassName('d4-tree-view-tri');
   if (c.length > 0)
@@ -318,7 +308,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     //debugParent(group);
 
     const thisViewer = this;
-    this.wrapper = SketcherDialogWrapper.create("Edit Scaffold...", "Save", group, async(molStrSketcher: string, node: TreeViewGroup, valid: boolean) => {
+    this.wrapper = SketcherDialogWrapper.create("Edit Scaffold...", "Save", group, async (molStrSketcher: string, node: TreeViewGroup, valid: boolean) => {
 
       while (node.captionLabel.firstChild) {
         node.captionLabel.removeChild(node.captionLabel.firstChild);
@@ -334,12 +324,13 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       node.value = {smiles: molStrSketcher, bitset: bitset};
 
       //orphans
-      const parent = !node.parent ? node : node.parent as TreeViewGroup;
-      buildOrphans(parent);
-      thisViewer.appendOrphanFolders(parent);
+      buildOrphans(thisViewer.tree);
+      thisViewer.appendOrphanFolders(thisViewer.tree);
 
       thisViewer.wrapper?.close();
       thisViewer.wrapper = null;
+      thisViewer.updateSizes();
+      thisViewer.updateUI();
       thisViewer.updateFilters();
       thisViewer.dirtyFlag = true;
       thisViewer.TreeEncodeUpdateInProgress = true;
@@ -392,7 +383,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
     const thisViewer = this;
     this.wrapper = SketcherDialogWrapper.create("Add New Scaffold...", "Add", group,async  (molStrSketcher: string, parent: TreeViewGroup, valid: boolean) => {
-      debugParent(parent);
       const child = thisViewer.createGroup(molStrSketcher, parent);
       if (child !== null) {
         enableNodeExtendArrow(child, false);
@@ -405,8 +395,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       }
 
       //orphans
-      buildOrphans(parent);
-      thisViewer.appendOrphanFolders(parent);
+      buildOrphans(thisViewer.tree);
+      thisViewer.appendOrphanFolders(thisViewer.tree);
 
       thisViewer.updateSizes();
       thisViewer.updateUI();
@@ -684,7 +674,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         .item("Edit...", () => this.openEditSketcher(node))
         .item("Remove", () => {
           node.remove();
+          //orphans
+          buildOrphans(thisViewer.tree);
+          thisViewer.appendOrphanFolders(thisViewer.tree);
           thisViewer.updateUI();
+          thisViewer.updateSizes();
           thisViewer.clearFilters();
           thisViewer.TreeEncodeUpdateInProgress = true;
           thisViewer.TreeEncode = JSON.stringify(ScaffoldTreeViewer.serializeTrees(thisViewer.tree));
