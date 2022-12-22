@@ -3114,7 +3114,7 @@ Resources:
       Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
-      - !Ref LaunchType
+      - FARGATE
     Type: AWS::ECS::TaskDefinition
     Condition: CreateDemoDataCondition
   WorldTaskExecutionRole:
