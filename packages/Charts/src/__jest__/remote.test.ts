@@ -19,6 +19,23 @@ afterAll(async () => {
   await browser.close();
 });
 
+expect.extend({
+  checkOutput(received, expected, context) {
+    if (received === expected) {
+      return {
+        message: () => context,
+        pass: true
+      };
+    } else {
+      return {
+        message: () => context,
+        pass: false
+      };
+    }
+  }
+});
+
+
 it('TEST', async () => {
   const targetPackage: string = process.env.targetPackage ?? 'Charts';
   console.log(`Testing ${targetPackage} package`);
