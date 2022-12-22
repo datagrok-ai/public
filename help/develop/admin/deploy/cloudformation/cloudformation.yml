@@ -65,7 +65,7 @@ Parameters:
     Description: public key to EC2 instance when EC2 laumch is used
   Ec2InstanceType:
     Type: String
-    Default: 'm1.small'
+    Default: 't3.medium'
     Description: AWS Instance type 
 Conditions:
   CreateDemoDataCondition:
@@ -3167,8 +3167,8 @@ Resources:
             Resource: 
               - !GetAtt CvmCluster.Arn
               - !GetAtt DatagrokCluster.Arn
-              - "arn:aws:ecs:!Ref "AWS::Region":!Ref "AWS::AccountId":container-instance/!Ref DatagrokCluster/*"
-              - "arn:aws:ecs:!Ref "AWS::Region":!Ref "AWS::AccountId":container-instance/!Ref CvmCluster/*"    
+              - "arn:aws:ecs:!Ref AWS::Region:!Ref AWS::AccountId:container-instance/!Ref DatagrokCluster/*"
+              - "arn:aws:ecs:!Ref AWS::Region:!Ref AWS::AccountId:container-instance/!Ref CvmCluster/*"    
   Ec2AimRole:
     Type: AWS::IAM::Role
     Properties:
@@ -3183,8 +3183,8 @@ Resources:
               Service: 
                 - 'ec2.amazonaws.com'
       ManagedPolicyArns:
-        - !GetAtt Ec2AimPolicy.Arn
-        - !GetAtt DatagrokECSPolicy.Arn
+        - arn:aws:iam::aws:policy/!Ref Ec2Policy
+        - arn:aws:iam::aws:policy/!Ref DatagrokECSPolicy
   Ec2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
