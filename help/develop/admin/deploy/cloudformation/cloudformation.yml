@@ -62,7 +62,7 @@ Parameters:
   Ec2PublicKey:
     Type: String
     Default: ''
-    Description: public key to EC2 instance when EC2 laumch is used
+    Description: Public key to EC2 instance when EC2 launch is used
   Ec2InstanceType:
     Type: String
     Default: 't3.medium'
