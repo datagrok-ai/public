@@ -164,7 +164,8 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     };
     if (clustersColumn) {
       const clusterCol = newDf.getCol(clustersColumn.name);
-      newDf.columns.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
+      if (clusterCol.type != DG.COLUMN_TYPE.STRING)
+        newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
       settings.clustersColumnName = clustersColumn.name;
     }
     newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
