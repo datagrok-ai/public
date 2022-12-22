@@ -90,6 +90,8 @@ class UMAPReducer extends Reducer {
     this.distanceFn = options.distanceFn!;
     this.vectors = [];
     options.distanceFn = this._encodedDistance.bind(this);
+    if (this.data.length < 15)
+      options.nNeighbors = this.data.length - 1;
     this.reducer = new umj.UMAP(options);
   }
 
