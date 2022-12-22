@@ -181,7 +181,7 @@ jobs:
         if: ${{ matrix.test == 'true' }}
         timeout-minutes: 5
         run: |
-          until curl -s http://localhost:8080/api/admin/health | grep -e '"status":"Running"'
+          while curl -s http://localhost:8080/api/admin/health | grep -e 'ApiError'
           do
             sleep 1
           done
