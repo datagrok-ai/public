@@ -138,13 +138,16 @@ namespace ode {
 	{
 		// matrix that contains solution: i-th column contains solution (a vector) at the point times[i]
 		Map<Matrix<ArgType, Dynamic, Dynamic, RowMajor>> Y(solution, dimCount, timesCount);
+				
+		// vector for storing solution at the previos time 
+		VecType yPrev(dimCount);
 
 		// solution at the initial point: copying bytes apporach
-		std::memcpy(solution, yInitial, sizeof(ArgType) * dimCount);
-		
-		// initializing 
-		VecType yPrev = Y.col(0);
+		std::memcpy(yPrev.data(), yInitial, sizeof(ArgType) * dimCount);
 
+		// store solution at the initial point
+		Y.col(0) = yPrev;
+		
 		// solution at the rest of points
 		for (unsigned i = 1; i < timesCount; i++)
 		{

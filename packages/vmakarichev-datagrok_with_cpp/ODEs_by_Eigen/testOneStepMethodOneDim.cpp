@@ -50,15 +50,15 @@ double exactSolution(double t)
 //	return exp(2.0 * t) + 1.0;
 //}
 
-double f(double t, double & y)
-{
-	return 10.0 * y - 2.0;
-}
-
-double exactSolution(double t)
-{
-	return exp(10.0 * t) + 0.2;
-}
+//double f(double t, double & y)
+//{
+//	return 10.0 * y - 2.0;
+//}
+//
+//double exactSolution(double t)
+//{
+//	return exp(10.0 * t) + 0.2;
+//}
 
 //double f(double t, double & y)
 //{
@@ -69,6 +69,18 @@ double exactSolution(double t)
 //{
 //	return exp(-10.0 * t) - 0.2;
 //}
+
+// STIFF EXAMPLE: Steve Chapra and Raymond P. Canale. Numerical Methods for Engineers, 2021 (page 767).
+
+double f(double t, double & y)
+{
+	return -1000.0 * y + 3000.0 - 2000.0 * exp(-t);
+}
+
+double exactSolution(double t)
+{
+	return 3 - 0.998 * exp(-1000.0 * t) - 2.002 * exp(-t);
+}
 
 // test of one-step method: one-dimensional case
 void testOneStepMethodOneDim()
@@ -92,11 +104,11 @@ void testOneStepMethodOneDim()
 		cout << "  i = " << i << "   t = " << t << "   y = " << y << endl;
 	}*/
 
-	double h = 0.01;	
-	const int N = 101;
+	double h = 0.0005;	
+	const int N = 10000001;
 
-	double times[N];
-	double solution[N];
+	double * times= new double [N];
+	double * solution = new double [N];
 
 	times[0] = 0.0;
 	double yInitial = exactSolution(times[0]);
@@ -115,5 +127,8 @@ void testOneStepMethodOneDim()
 		<< setw(18) << fabs(solution[i] - exactSolution(times[i]))
 		<< setw(18) << fabs((solution[i] - exactSolution(times[i])) / exactSolution(times[i]))
 		<< endl;
+
+	delete[] times;
+	delete[] solution;
 
 } // testRK4oneDim

@@ -11,5 +11,11 @@ void testOneStepMethodOneDim();
 // test of one-step method: multi-dimensional case
 void testOneStepMethodMultiDim();
 
+// analysis of solving stiff problem: one-dimensional case
+void analyzeStiffProblemOneDim();
+
+// analysis of solving stiff problem: multi-dimensional case
+void analyzeStiffProblemMultiDim();
+
 #endif // !TESTS_H
 

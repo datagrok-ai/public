@@ -8,7 +8,11 @@ int main()
 {
 	//testOneStepMethodOneDim();
 
-	testOneStepMethodMultiDim();
+	//testOneStepMethodMultiDim();
+
+	//analyzeStiffProblemOneDim();
+
+	analyzeStiffProblemMultiDim();
 
 	cin.get();
 	return 0;
