@@ -59,6 +59,7 @@ import {_importSmi} from './file-importers/smi-importer';
 import {generateScaffoldTree} from "./scripts-api";
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
+const DEFAULT_SKETCHER = 'openChemLibSketcher';
 
 /**
  * Usage:
@@ -87,8 +88,13 @@ export async function initChem(): Promise<void> {
   _properties = await _package.getProperties();
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
-  const lastSelectedSketcher = await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
-  window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher ?? '');
+  const lastSelectedSketcher = _properties.Sketcher ?? await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
+  if (DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name == lastSelectedSketcher) || !lastSelectedSketcher)
+    window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher);
+  else {
+    grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
+    window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, DEFAULT_SKETCHER);
+  }
   _renderers = new Map();
 }
 
