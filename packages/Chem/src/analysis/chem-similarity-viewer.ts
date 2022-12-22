@@ -2,12 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as chemSearches from '../chem-searches';
-import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import $ from 'cash-dom';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
-import { getRdKitModule } from '../utils/chem-common-rdkit';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   isEditedFromSketcher: boolean = false;
