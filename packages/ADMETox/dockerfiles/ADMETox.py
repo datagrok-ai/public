@@ -102,17 +102,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import MACCSkeys
 from pychem import pychem
-from pychem.pychem import Chem
-from pychem import constitution
-from pychem import topology
-from pychem import connectivity as con
-from pychem import kappa
-from pychem import estate
-from pychem import basak
-from pychem import moran, geary
-from pychem import molproperty as mp
-from pychem import charge
-from pychem import moe
+from pychem.pychem import PyChem2d
 
 """Dictionary that defines number of bits for each model or list of needed descriptors"""
 dict_bits_desc = {
@@ -183,52 +173,11 @@ def calculate_descriptors(smile):
     :param smile: input smile
     :return: dict with calculated descriptors (key=descriptor name, value=calculated descriptor value)
     """
-    res_dict = {}
-    mol = Chem.MolFromSmiles(smile)
-    res_dict['MolWeight'] = constitution.CalculateMolWeight(mol)
-    res_dict['HeavyAtomNumber'] = constitution.CalculateHeavyAtomNumber(mol)
-    res_dict['Path2'] = constitution.CalculatePath2(mol)
-    res_dict['Constitutional'] = constitution.GetConstitutional(mol)
-    res_dict['Balaban'] = topology.CalculateBalaban(mol)
-    res_dict['MZagreb1'] = topology.CalculateMZagreb1(mol)
-    res_dict['Harary'] = topology.CalculateHarary(mol)
-    res_dict['Topology'] = topology.GetTopology(mol)
-    res_dict['Chi2'] = con.CalculateChi2(mol)
-    res_dict['MeanRandic'] = con.CalculateMeanRandic(mol)
-    res_dict['Connectivity'] = con.GetConnectivity(mol)
-    res_dict['Kappa1'] = kappa.CalculateKappa1(mol)
-    res_dict['Kappa2'] = kappa.CalculateKappa2(mol)
-    res_dict['GetKappa'] = kappa.GetKappa(mol)
-    drug = pychem.PyChem2d()
+    alldes = {}
+    drug = PyChem2d()
     drug.ReadMolFromSmile(smile)
-    res_dict['Bcut'] = drug.GetBcut()
-    res_dict['HeavyAtomEstate'] = estate.CalculateHeavyAtomEState(mol)
-    res_dict['MaxEstate'] = estate.CalculateMaxEState(mol)
-    res_dict['HalogenEstate'] = estate.CalculateHalogenEState(mol)
-    res_dict['GetEstate'] = estate.GetEstate(mol)
-    res_dict['BasakCIC1'] = basak.CalculateBasakCIC1(mol)
-    res_dict['BasakSIC1'] = basak.CalculateBasakSIC1(mol)
-    res_dict['BasakSIC3'] = basak.CalculateBasakSIC3(mol)
-    res_dict['GetBasak'] = basak.Getbasak(mol)
-    res_dict['MoranAutoVolume'] = moran.CalculateMoranAutoVolume(mol)
-    res_dict['GeatyAutoMass'] = geary.CalculateGearyAutoMass(mol)
-    res_dict['MoranAuto'] = moran.GetMoranAuto(mol)
-    res_dict['logP'] = mp.CalculateMolLogP(mol)
-    res_dict['MR'] = mp.CalculateMolMR(mol)
-    res_dict['TPSA'] = mp.CalculateTPSA(mol)
-    res_dict['MolProperty'] = mp.GetMolecularProperty(mol)
-    res_dict['DipoleIndex'] = charge.CalculateLocalDipoleIndex(mol)
-    res_dict['SquareCharge'] = charge.CalculateAllSumSquareCharge(mol)
-    res_dict['GetCharge'] = charge.GetCharge(mol)
-    res_dict['moeTPSA'] = moe.CalculateTPSA(mol)
-    res_dict['PEOEVSA'] = moe.CalculatePEOEVSA(mol)
-    res_dict['GetMoe'] = moe.GetMOE(mol)
-    for k, v in res_dict.items():
-        if type(v) == dict:
-            for k1, v1 in v.items():
-                res_dict[k1] = v1
-            del res_dict[k]
-    return res_dict
+    alldes.update(drug.GetAllDescriptor())
+    return alldes
 
 def get_descriptor_vector(smiles, desc_names):
     """Calculate descriptor vectors for some excretion, toxicity and distribution models
@@ -239,11 +188,8 @@ def get_descriptor_vector(smiles, desc_names):
     """
     desc_vector = []
     for smile in smiles:
-        desc_vector_smile = []
         desc_dict = calculate_descriptors(smile)
-        for name in desc_names:
-            if name in desc_dict.keys():
-                desc_vector_smile.append(desc_dict[name])
+        desc_vector_smile = [desc_dict[name] for name in desc_names]
         desc_vector.append(desc_vector_smile)
     return desc_vector
 
@@ -283,13 +229,9 @@ def handle_uploaded_file(f, models):
     :param models: list of models to be used for calculation
     :return: zip(predict_label, predict_proba)
     """
-    smiles = []
-    encoded_smiles = []
+    smiles = [list(row.values()) for row in f]
+    encoded_smiles = [smile[0].encode('utf8') for smile in smiles]
     result = []
-    for row in f:
-        smiles.append(list(row.values()))
-    for smile in smiles:
-        encoded_smiles.append(smile[0].encode('utf8'))
     current_path = os.path.split(os.path.realpath(__file__))[0]
     for model in models.split(","):
         cf = sklearn.externals.joblib.load(current_path + '/' + model)
@@ -303,7 +245,7 @@ def handle_uploaded_file(f, models):
         result.append(zip(y_predict_label, y_predict_proba))
     return result
 
-from django.conf.urls import url, include
+from django.conf.urls import url, include 
 from django.contrib import admin
 from rest_framework import routers
 
