@@ -58,7 +58,7 @@ Parameters:
   Ec2KeyPairName:
     Type: String
     Default: 'keyname'
-    Description: Name of keypair when EC2 laumch is used
+    Description: Name of keypair when EC2 launch is used
   Ec2PublicKey:
     Type: String
     Default: ''
