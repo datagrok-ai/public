@@ -3266,5 +3266,5 @@ Resources:
         BlockDeviceMappings:
           - Encrypted: true
             VolumeType: 'gp3'
-            VolumeSize: '50'
+            VolumeSize: '100'
     Condition: CreateEc2InstanceCondition
