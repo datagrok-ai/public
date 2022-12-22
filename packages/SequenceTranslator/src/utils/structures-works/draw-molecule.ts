@@ -71,7 +71,8 @@ export async function drawMolecule(
     canvas.style.width = `${canvasWidth}px`;
     canvas.style.height = `${canvasHeight}px`;
     canvas.style.borderStyle = 'solid';
-    canvas.style.borderColor = 'blue';
+    canvas.style.borderColor = 'var(--blue-1)';
+    canvas.style.borderWidth = 'thin';
     drawMolfileOnCanvas(canvas);
 
     // Dialog with zoomed-in molecule
