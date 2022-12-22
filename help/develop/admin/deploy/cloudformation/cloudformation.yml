@@ -61,7 +61,7 @@ Parameters:
     Description: Name of keypair when EC2 launch is used
   Ec2PublicKey:
     Type: String
-    Default: ''
+    Default: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDmmfAGuTHuaVsdgxdn/kXPrPWd8rlNlEjaYfF/w/1Qz3eRkO9xYAZKDfrUW/694f3XxoDh0kgv4+/1JXSmwCJcUuc/r2eFcaxKLzAT2dwqEhV0cWsH5AxTWpbMy9Le6FCPo87IDZN6onXdZ6HnjfQkMyj1TgFbQOgCNH3qc5yQhUC5Zy2uSkCjIO1N1UiCq/ZoUbCXExwrnLav6JemPNrcErg3G/ECkE8yKG7PJEkbndJTRoxXXkMZneRWTm65i4svKS9mDmZGQtlB9uqaHlWN+nCE9XJLu9nkzRJIHE9R2S+NNSU9kjxeVWKNDqwlSKO6xliNUSSZKYo4RMbD1ByEBCejBRulY0h07nvnMNU/sFz0QD10YKUjXac28DKpOjmO3UCuHu/fxmyH2J74n44zq3aOdqq0gl8QQfy8yfA7yI2GlRvJRd01tUmnt9rtVimmBcnk8+4JByGLZPU7g02fBgIXup5peYKgL/US12B8JJ4gQ/S3/FhXEBlV0pJjFiU= ksumag@ksumag-X751SJ'
     Description: Public key to EC2 instance when EC2 launch is used
   DatagrokEc2InstanceType:
     Type: String
@@ -80,6 +80,10 @@ Conditions:
     Fn::Equals:
     - Ref: LaunchType
     - 'EC2'
+  CreateFargateInstanceCondition:
+    Fn::Equals:
+    - Ref: LaunchType
+    - 'FARGATE'
 Resources:
   DatagrokVPC:
     Properties:
@@ -1233,6 +1237,70 @@ Resources:
       TaskDefinition:
         Ref: JupyterKernelGatewayTaskDefinition
     Type: AWS::ECS::Service
+    Condition: CreateEc2InstanceCondition
+  JupyterKernelGatewayFargateService:
+    DependsOn:
+    - CvmTCP80Listener
+    - CvmTCP443Listener
+    - CvmTCP8090IntListener
+    - JupyterKernelGatewayTCP5005ListenerRule
+    - JupyterKernelGatewayTCP5005IntListenerRule
+    - JupyterKernelGatewayTCP8888ListenerRule
+    - JupyterKernelGatewayTCP8888IntListenerRule
+    Properties:
+      Cluster:
+        Fn::GetAtt:
+        - CvmCluster
+        - Arn
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+      DeploymentController:
+        Type: ECS
+      DesiredCount: 1
+      LaunchType: !Ref LaunchType
+      LoadBalancers:
+      - ContainerName: jupyter_kernel_gateway
+        ContainerPort: 5005
+        TargetGroupArn:
+          Ref: JupyterKernelGatewayTCP5005TargetGroup
+      - ContainerName: jupyter_kernel_gateway
+        ContainerPort: 8888
+        TargetGroupArn:
+          Ref: JupyterKernelGatewayTCP8888TargetGroup
+      - ContainerName: jupyter_kernel_gateway
+        ContainerPort: 5005
+        TargetGroupArn:
+          Ref: JupyterKernelGatewayTCP5005IntTargetGroup
+      - ContainerName: jupyter_kernel_gateway
+        ContainerPort: 8888
+        TargetGroupArn:
+          Ref: JupyterKernelGatewayTCP8888IntTargetGroup
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+          - Ref: CvmSecurityGroup
+          Subnets:
+          - Ref: DatagrokPrivateSubnet1
+          - Ref: DatagrokPrivateSubnet2
+      PlatformVersion: 1.4.0
+      PropagateTags: SERVICE
+      SchedulingStrategy: REPLICA
+      ServiceRegistries:
+      - RegistryArn:
+          Fn::GetAtt:
+          - JupyterKernelGatewayServiceDiscoveryEntry
+          - Arn
+      Tags:
+      - Key: datagrok.component
+        Value: cvm
+      - Key: datagrok.service
+        Value: jupyter_kernel_gateway
+      TaskDefinition:
+        Ref: JupyterKernelGatewayFargateTaskDefinition
+    Type: AWS::ECS::Service
+    Condition: CreateFargateInstanceCondition
   JupyterKernelGatewayServiceDiscoveryEntry:
     Properties:
       Description: Datagrok CVM "jupyter_kernel_gateway" service discovery entry in
@@ -1398,9 +1466,70 @@ Resources:
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - !Ref LaunchType
+    Type: AWS::ECS::TaskDefinition
+    Condition: CreateEc2InstanceCondition
+  JupyterKernelGatewayFargateTaskDefinition:
+    Properties:
+      ContainerDefinitions:
+      - Command:
+        - Fn::Sub: "${AWS::Region}.compute.internal"
+        - datagrok.internal
+        - datagrok.local
+        Essential: false
+        Image: docker/ecs-searchdomain-sidecar:1.0
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: cvm
+        Name: JupyterKernelGateway_ResolvConf_InitContainer
+      - DependsOn:
+        - Condition: SUCCESS
+          ContainerName: JupyterKernelGateway_ResolvConf_InitContainer
+        Essential: true
+        Image:
+          Fn::Sub:
+          - docker.io/datagrok/jupyter_kernel_gateway:${Version}
+          - Version:
+              Ref: JupyterKernelGatewayVersion
+        RepositoryCredentials:
+          CredentialsParameter:
+            Ref: ArnDockerHubCredential
+        LinuxParameters: {}
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: cvm
+        MemoryReservation: 300
+        Name: jupyter_kernel_gateway
+        PortMappings:
+        - ContainerPort: 5005
+          HostPort: 5005
+          Protocol: tcp
+        - ContainerPort: 8888
+          HostPort: 8888
+          Protocol: tcp
+      Cpu: '2048'
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - JupyterKernelGatewayTaskExecutionRole
+        - Arn
+      Family: datagrok-cvm-jupyter_kernel_gateway
+      Memory: '4096'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+      - !Ref LaunchType
       EphemeralStorage:
         SizeInGiB: 50
     Type: AWS::ECS::TaskDefinition
+    Condition: CreateFargateInstanceCondition
   JupyterKernelGatewayTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -3149,9 +3278,9 @@ Resources:
       PublicKeyMaterial: !Ref Ec2PublicKey
     Condition: CreateEc2InstanceCondition
   Ec2AimPolicy:
-    Type: AWS::IAM::Policy
+    Type: AWS::IAM::ManagedPolicy
     Properties:
-      PolicyName: Ec2Policy
+      ManagedPolicyName: Ec2Policy
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -3171,8 +3300,8 @@ Resources:
             Resource: 
               - !GetAtt CvmCluster.Arn
               - !GetAtt DatagrokCluster.Arn
-              - "arn:aws:ecs:!Ref AWS::Region:!Ref AWS::AccountId:container-instance/!Ref DatagrokCluster/*"
-              - "arn:aws:ecs:!Ref AWS::Region:!Ref AWS::AccountId:container-instance/!Ref CvmCluster/*"    
+              - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/!Ref DatagrokCluster/*"
+              - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/!Ref CvmCluster/*"    
   Ec2AimRole:
     Type: AWS::IAM::Role
     Properties:
@@ -3187,13 +3316,13 @@ Resources:
               Service: 
                 - 'ec2.amazonaws.com'
       ManagedPolicyArns:
-        - !Ref Ec2Policy
+        - !Ref Ec2AimPolicy
         - !Ref DatagrokECSPolicy
   Ec2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
-        - "!Ref Ec2AimRole"
+        - !Ref Ec2AimRole
       InstanceProfileName: 'ec2profile'
     Condition: CreateEc2InstanceCondition
   Ec2InstanceDatagrok:
