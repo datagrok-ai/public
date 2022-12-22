@@ -3183,8 +3183,8 @@ Resources:
               Service: 
                 - 'ec2.amazonaws.com'
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/!Ref Ec2Policy
-        - arn:aws:iam::aws:policy/!Ref DatagrokECSPolicy
+        - !Ref Ec2Policy
+        - !Ref DatagrokECSPolicy
   Ec2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
