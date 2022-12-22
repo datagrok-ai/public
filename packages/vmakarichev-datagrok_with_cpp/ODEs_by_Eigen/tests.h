@@ -5,11 +5,11 @@
 #ifndef TESTS_H
 #define TESTS_H
 
-// test of Runge-Kutta method of the order 4: one-dimensional case
-void testRK4oneDim();
+// test of one-step method: one-dimensional case
+void testOneStepMethodOneDim();
 
-// test of Runge-Kutta method of the order 4: multi-dimensional case
-void testRK4multiDim();
+// test of one-step method: multi-dimensional case
+void testOneStepMethodMultiDim();
 
 #endif // !TESTS_H
 

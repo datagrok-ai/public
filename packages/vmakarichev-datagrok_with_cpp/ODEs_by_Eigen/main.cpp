@@ -6,9 +6,9 @@ using namespace std;
 
 int main()
 {
-	//testRK4oneDim();
+	//testOneStepMethodOneDim();
 
-	testRK4multiDim();
+	testOneStepMethodMultiDim();
 
 	cin.get();
 	return 0;
