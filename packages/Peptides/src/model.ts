@@ -35,7 +35,7 @@ export class PeptidesModel {
   splitCol!: DG.Column<boolean>;
   edf: DG.DataFrame | null = null;
   _monomerPositionStatsDf?: DG.DataFrame;
-  _clusterStatsDf?: DG.DataFrame;
+  _clusterStats?: Stats[];
   _mutationCliffsSelection!: type.PositionToAARList;
   _invariantMapSelection!: type.PositionToAARList;
   _logoSummarySelection!: number[];
@@ -136,12 +136,12 @@ export class PeptidesModel {
     this._substitutionsInfo = si;
   }
 
-  get clusterStatsDf(): DG.DataFrame {
-    this._clusterStatsDf ??= this.calculateClusterStatistics();
-    return this._clusterStatsDf;
+  get clusterStats(): Stats[] {
+    this._clusterStats ??= this.calculateClusterStatistics();
+    return this._clusterStats;
   }
-  set clusterStatsDf(df: DG.DataFrame) {
-    this._clusterStatsDf = df;
+  set clusterStats(clusterStats: Stats[]) {
+    this._clusterStats = clusterStats;
   }
 
   get cp(): bio.SeqPalette {
@@ -291,7 +291,7 @@ export class PeptidesModel {
         this.monomerPositionStatsDf = this.calculateMonomerPositionStatistics();
         this.monomerPositionDf = this.createMonomerPositionDf();
         this.mostPotentResiduesDf = this.createMostPotentResiduesDf();
-        this.clusterStatsDf = this.calculateClusterStatistics();
+        this.clusterStats = this.calculateClusterStatistics();
         break;
       case 'grid':
         this.updateGrid();
@@ -506,26 +506,18 @@ export class PeptidesModel {
     return matrixDf as DG.DataFrame;
   }
 
-  calculateClusterStatistics(): DG.DataFrame {
+  calculateClusterStatistics(): Stats[] {
     const originalClustersCol = this.df.getCol(this.settings.clustersColumnName!);
     const originalClustersColData = originalClustersCol.getRawData();
     const originalClustersColCategories = originalClustersCol.categories;
 
-    const statsDf = this.df.groupBy([this.settings.clustersColumnName!]).aggregate();
-    const clustersCol = statsDf.getCol(this.settings.clustersColumnName!);
-    clustersCol.setCategoryOrder(originalClustersColCategories);
-    const clustersColData = clustersCol.getRawData();
-
-    const statsDfCols = statsDf.columns;
-    const mdColData = statsDfCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE).getRawData();
-    const pValColData = statsDfCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE).getRawData();
-    const countColData = statsDfCols.addNewInt(C.COLUMNS_NAMES.COUNT).getRawData();
-    const ratioColData = statsDfCols.addNewFloat(C.COLUMNS_NAMES.RATIO).getRawData();
     const activityColData: type.RawData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
     const activityColLen = activityColData.length;
 
-    for (let rowIdx = 0; rowIdx < clustersColData.length; ++rowIdx) {
-      const clusterIdx = clustersColData[rowIdx];
+    const resultStats: Stats[] = new Array(originalClustersColCategories.length);
+
+    for (let clusterIdx = 0; clusterIdx < originalClustersColCategories.length; ++clusterIdx) {
+      // const clusterIdx = clustersColData[rowIdx];
       const mask = new Array(activityColLen);
       let trueCount = 0;
       for (let maskIdx = 0; maskIdx < activityColLen; ++maskIdx) {
@@ -542,13 +534,10 @@ export class PeptidesModel {
       };
 
       const stats = getStats(activityColData, maskInfo);
-
-      mdColData[rowIdx] = stats.meanDifference;
-      pValColData[rowIdx] = stats.pValue;
-      countColData[rowIdx] = stats.count;
-      ratioColData[rowIdx] = stats.ratio;
+      resultStats[clusterIdx] = stats;
     }
-    return statsDf;
+
+    return resultStats;
   }
 
   createMostPotentResiduesDf(): DG.DataFrame {
@@ -756,21 +745,14 @@ export class PeptidesModel {
   }
 
   showTooltipCluster(cluster: number, x: number, y: number): HTMLDivElement | null {
-    const matcher: {[key: string]: number} = {};
-    matcher[this.settings.clustersColumnName!] = cluster;
-    const currentStatsDf = this.clusterStatsDf.rows.match(matcher).toDataFrame();
+    const stats = this.clusterStats[cluster];
     const activityCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     //TODO: use bitset instead of splitCol
     const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
     const currentClusterCol = this.df.getCol(this.settings.clustersColumnName!);
     splitCol.init((i) => currentClusterCol.get(i) == cluster);
     const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
-    const stats: Stats = {
-      count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
-      ratio: currentStatsDf.get(C.COLUMNS_NAMES.RATIO, 0),
-      pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
-      meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
-    };
+ 
     if (!stats.count)
       return null;
 
