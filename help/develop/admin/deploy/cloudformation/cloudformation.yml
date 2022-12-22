@@ -62,11 +62,20 @@ Parameters:
   Ec2PublicKey:
     Type: String
     Default: ''
+<<<<<<< HEAD
     Description: Public key to EC2 instance when EC2 launch is used
   Ec2InstanceType:
+=======
+    Description: public key to EC2 instance when EC2 launch is used
+  DatagrokEc2InstanceType:
+>>>>>>> 88d4cd25c (fix resolved conversation)
     Type: String
     Default: 't3.medium'
-    Description: AWS Instance type 
+    Description: AWS Instance type for Datagrok EC2 instance
+  CvmEc2InstanceType:
+    Type: String
+    Default: 't3.xlarge'
+    Description: AWS Instance type for Datagrok EC2 instance    
 Conditions:
   CreateDemoDataCondition:
     Fn::Equals:
@@ -3198,7 +3207,7 @@ Resources:
       LaunchTemplateData:
         IamInstanceProfile: !GetAtt Ec2InstanceProfile.Arn
         ImageId: ami-0f972b3903f44791c
-        InstanceType: !Ref Ec2InstanceType
+        InstanceType: !Ref DatagrokEc2InstanceType
         KeyName: !Ref ImportKeyPairEc2
         UserData:
           Fn::Base64: 
@@ -3236,7 +3245,7 @@ Resources:
       LaunchTemplateData:
         IamInstanceProfile: !GetAtt Ec2InstanceProfile.Arn
         ImageId: ami-0f972b3903f44791c
-        InstanceType: !Ref Ec2InstanceType
+        InstanceType: !Ref CvmEc2InstanceType
         KeyName: !Ref ImportKeyPairEc2
         UserData:
           Fn::Base64: 
