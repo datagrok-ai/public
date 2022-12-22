@@ -2,9 +2,6 @@ import * as fl from 'fastest-levenshtein';
 import {jaroWinkler} from 'jaro-winkler-typescript';
 import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
 import {
-  tanimotoDistance,
-} from '@datagrok-libraries/utils/src/similarity-metrics';
-import {
   asymmetricDistance,
   braunBlanquetDistance,
   cosineDistance,
@@ -16,10 +13,7 @@ import {
   rogotGoldbergDistance,
   russelDistance,
   sokalDistance,
-
-
-
-
+  tanimotoDistance,
 } from './distance-metrics-methods';
 
 import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/vector-operations';
