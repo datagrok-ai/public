@@ -62,13 +62,8 @@ Parameters:
   Ec2PublicKey:
     Type: String
     Default: ''
-<<<<<<< HEAD
     Description: Public key to EC2 instance when EC2 launch is used
-  Ec2InstanceType:
-=======
-    Description: public key to EC2 instance when EC2 launch is used
   DatagrokEc2InstanceType:
->>>>>>> 88d4cd25c (fix resolved conversation)
     Type: String
     Default: 't3.medium'
     Description: AWS Instance type for Datagrok EC2 instance
