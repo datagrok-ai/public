@@ -32,7 +32,7 @@ category('top menu chem space', async () => {
   });
   test('TSNE', async () => {
     await _testDimensionalityReducer(smallDf.col('smiles')!, 't-SNE');
-  });
+  }, {skipReason: '#1384'});
   test('UMAP', async () => {
     await _testDimensionalityReducer(smallDf.col('smiles')!, 'UMAP');
   });
