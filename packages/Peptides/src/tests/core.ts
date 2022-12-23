@@ -144,8 +144,11 @@ category('Core', () => {
     sequenceCol.setTag(DG.TAGS.UNITS, bio.NOTATION.HELM);
 
     for (let i = 0; i < 5; ++i) {
-      DG.timeAsync('Analysis start',
-        async () => await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, 'none'));
+      await DG.timeAsync('Analysis start', async () => {
+        const model = await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, 'none');
+        if (model)
+          grok.shell.closeTable(model.df);
+      });
     }
   }, {skipReason: 'Benchmark'});
 });
