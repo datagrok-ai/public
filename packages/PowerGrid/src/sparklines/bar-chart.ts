@@ -40,10 +40,13 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   };
   if ((activeColumn > cols.length) || (activeColumn < 0))
     return answer;
-
+  const gmin = Math.min(...cols.map((c: DG.Column) => c.min));
+  const gmax = Math.max(...cols.map((c: DG.Column) => c.max));
+  const scaled = settings.globalScale ? (cols[activeColumn]?.get(row) - gmin) / (gmax - gmin) :
+    cols[activeColumn]?.scale(row);
   const bb = b
     .getLeftPart(cols.length, activeColumn)
-    .getBottomScaled(cols[activeColumn]?.scale(row) > minH ? cols[activeColumn]?.scale(row) : minH)
+    .getBottomScaled(scaled > minH ? scaled : minH)
     .inflateRel(0.9, 1);
   answer.isHit = (e.offsetY >= bb.top);
   return answer;
@@ -83,7 +86,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
       if (!cols[i].isNone(row)) {
         const color = settings.colorCode ? DG.Color.getCategoricalColor(i) : DG.Color.fromHtml('#8080ff');
         g.setFillStyle(DG.Color.toRgb(color));
-        const scaled = settings.globalScale ? (cols[i].get(row) - gmin) / (gmax - gmin) : cols[i].scale(row);
+        const scaled = settings.globalScale ? (cols[i]?.get(row) - gmin) / (gmax - gmin) : cols[i]?.scale(row);
         const bb = b
           .getLeftPart(cols.length, i)
           .getBottomScaled(scaled > minH ? scaled : minH)
