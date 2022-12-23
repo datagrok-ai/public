@@ -100,6 +100,7 @@ export function saveSdf(as: string, ss: string,
 export function getSdfTab(): HTMLDivElement {
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
+  // label names
   const ssInputLabel = 'Sense Strand';
   const asInputLabel = 'Anti Sense';
   const as2InputLabel = 'Anti Sense 2';
@@ -111,21 +112,21 @@ export function getSdfTab(): HTMLDivElement {
   const inputColumnName = '';
   const directionColumnName = '';
 
-  // inputs
-  const ssInput = ui.textInput('', '', () => { onInput.next();
-    // hack
-  });
-  const asInput = ui.textInput('', '', () => { onInput.next(); });
-  const as2Input = ui.textInput('', '', () => { onInput.next(); });
-  const saveEntity = ui.boolInput('Save as one entity', true);
-  const useChiralInput = ui.boolInput('Use chiral', true);
-
-  // default values
+  // default input values
   const straight = '5′ → 3′';
   const inverse = '3′ → 5′';
   let invertSS = false;
   let invertAS = false;
   const invertAS2 = false;
+
+  // text inputs
+  const ssInput = ui.textInput('', '', () => { onInput.next(); });
+  const asInput = ui.textInput('', '', () => { onInput.next(); });
+  const as2Input = ui.textInput('', '', () => { onInput.next(); });
+
+  // bool inputs
+  const saveEntity = ui.boolInput('Save as one entity', true);
+  const useChiralInput = ui.boolInput('Use chiral', true);
 
   // choice inputs
   const ssDirection = ui.choiceInput(ssDirectionLabel, straight, [straight, inverse]);
@@ -154,19 +155,16 @@ export function getSdfTab(): HTMLDivElement {
     }, ['', inputColumnName, directionColumnName]
   );
 
-  // todo: port as much css as possible to external files
-  // tableLayout.style.backgroundColor = 'var(--grey-1)';
-  // tableLayout.style.borderBottom = 'solid';
-  // tableLayout.style.borderBottomColor = 'var(--steel-5)';
-
-  // table element styling
+  // text input label style
   for (const item of [ssLabel, asLabel, as2Label]) {
     const parentTd = item.parentElement!;
     parentTd.style.minWidth = '95px';
     parentTd.style.textAlign = 'right';
     parentTd.style.verticalAlign = 'top';
+    parentTd.style.paddingTop = '3px';
   }
 
+  // choice input label style
   for (const item of [ssDirection.root, asDirection.root, as2Direction.root]) {
     const parentTd = item.parentElement!;
     parentTd.style.minWidth = '100px';
@@ -175,6 +173,7 @@ export function getSdfTab(): HTMLDivElement {
     parentTd.style.float = 'right';
   }
 
+  // text area style
   for (const item of [ssInput, asInput, as2Input]) {
     item.root.parentElement!.style.width = '100%';
     const textArea = item.root.children[1];
@@ -182,15 +181,9 @@ export function getSdfTab(): HTMLDivElement {
     textArea.style.width = '100%';
     //@ts-ignore
     textArea.style.resize = 'none';
-    //@ts-ignore
-    //textArea.style.borderStyle = 'solid'; // for an unknown reason, borders disappear on input
-    ////@ts-ignore
-    //textArea.style.backgroundColor = 'pink';
-    ////@ts-ignore
-    //textArea.style.borderWidth = 'thin';
   }
 
-  // molecule image
+  // molecule image container
   const moleculeImgDiv = ui.block([]);
 
   DG.debounce<string>(onInput, 300).subscribe(async () => {
@@ -208,13 +201,10 @@ export function getSdfTab(): HTMLDivElement {
     const canvasHeight = 150;
     // todo: remove div with image if molfile empty
     await drawMolecule(moleculeImgDiv, canvasWidth, canvasHeight, molfile);
-    // moleculeImgDiv.style.borderStyle = 'solid';
-    // moleculeImgDiv.style.borderColor = 'var(--blue-1)';
-    // moleculeImgDiv.style.borderWidth = 'thin';
     // @ts-ignore
     moleculeImgDiv.children[0].style.float = 'right';
   });
-  moleculeImgDiv.style.marginRight = '20px';
+  moleculeImgDiv.style.marginRight = '30px';
   moleculeImgDiv.style.float = 'right';
 
   const saveButton = ui.buttonsInput([
@@ -225,18 +215,18 @@ export function getSdfTab(): HTMLDivElement {
     )
   ]);
 
-  // const lineBelowTable = ui.divH([saveEntity.root, useChiralInput.root, saveButton]);
   const boolInputsAndButtonArray = [saveEntity.root, useChiralInput.root, saveButton];
   const boolInputsAndButton = ui.divV(boolInputsAndButtonArray);
   for (const item of boolInputsAndButtonArray) {
     item.style.justifyContent = 'right';
     item.style.marginBottom = '10px';
   }
-  // boolInputsAndButton.style.backgroundColor = 'var(--green-1)';
-  const bottom = ui.divH([boolInputsAndButton, moleculeImgDiv]);
-  bottom.style.flexDirection = 'row-reverse';
-  bottom.style.paddingTop = '20px';
-  const body = ui.divV([tableLayout, bottom]);
+
+  const bottomDiv = ui.divH([boolInputsAndButton, moleculeImgDiv]);
+  bottomDiv.style.flexDirection = 'row-reverse';
+  bottomDiv.style.paddingTop = '20px';
+
+  const body = ui.divV([tableLayout, bottomDiv]);
   body.style.paddingRight = '20px';
 
   return body;
