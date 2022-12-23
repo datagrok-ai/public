@@ -104,7 +104,7 @@ category('Core', () => {
     await grok.dapi.projects.delete(sp);
   });
 
-  test('Cluster stats - Benchmark 5k', async () => {
+  test('Cluster stats - Benchmark HELM 5k', async () => {
     const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k_2.d42'))[0];
     const activityCol = df.getCol('Activity');
     const scaledActivityCol = scaleActivity(activityCol, 'none');
@@ -119,7 +119,7 @@ category('Core', () => {
     
   }, {skipReason: 'Benchmark'});
 
-  test('Monomer Position stats - Benchmark 5k', async () => {
+  test('Monomer Position stats - Benchmark HELM 5k', async () => {
     const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
     const activityCol = df.getCol('Activity');
     const scaledActivityCol = scaleActivity(activityCol, 'none');
@@ -132,5 +132,20 @@ category('Core', () => {
     for (let i = 0; i < 5; ++i)
       DG.time('Monomer position stats', () => model?.calculateMonomerPositionStatistics());
     
+  }, {skipReason: 'Benchmark'});
+
+  test('Analysis start - Benchmark HELM 5k', async () => {
+    const df = (await _package.files.readBinaryDataFrames('tests/aligned_5k.d42'))[0];
+    const activityCol = df.getCol('Activity');
+    const scaledActivityCol = scaleActivity(activityCol, 'none');
+    const clustersCol = df.getCol('Cluster');
+    const sequenceCol = df.getCol('HELM');
+    sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    sequenceCol.setTag(DG.TAGS.UNITS, bio.NOTATION.HELM);
+
+    for (let i = 0; i < 5; ++i) {
+      DG.timeAsync('Analysis start',
+        async () => await startAnalysis(activityCol, sequenceCol, clustersCol, df, scaledActivityCol, 'none'));
+    }
   }, {skipReason: 'Benchmark'});
 });
