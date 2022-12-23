@@ -438,8 +438,9 @@ export function substituentAnalysisMenu(table: DG.DataFrame): void {
 //friendly-name: Chem | Find MCS
 //tags: panel, chem
 //input: column col {semType: Molecule}
-export function addMcsPanel(col: DG.Column): void {
-  addMcs(col);
+//output: string mcs
+export async function addMcsPanel(col: DG.Column): Promise<string> {
+  return await addMcs(col);
 }
 
 //name: Chem | To InchI
