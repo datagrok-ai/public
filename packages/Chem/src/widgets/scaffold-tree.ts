@@ -5,13 +5,16 @@ import $ from "cash-dom";
 import {_rdKitModule} from '../utils/chem-common-rdkit';
 import {isMolBlock} from "../utils/convert-notation-utils";
 import {chem} from "datagrok-api/grok";
-import {TreeViewGroup, TreeViewNode} from "datagrok-api/dg";
+import {toJs, TreeViewGroup, TreeViewNode} from "datagrok-api/dg";
 import Sketcher = chem.Sketcher;
 import {RDKitCellRenderer} from "../rendering/rdkit-cell-renderer";
 import {chemSubstructureSearchLibrary} from "../chem-searches";
 import {getScaffoldTree, installScaffoldGraph} from "../package";
 
 let renderer : RDKitCellRenderer | null= null;
+const CELL_HEIGHT = 120;
+const CELL_WIDTH = 200;
+
 function enableNodeExtendArrow(group: TreeViewGroup, enable: boolean): void {
   const c = group.root.getElementsByClassName('d4-tree-view-tri');
   if (c.length > 0)
@@ -123,7 +126,46 @@ async function _initWorkers(molColumn: DG.Column) : Promise<DG.BitSet> {
   return await chemSubstructureSearchLibrary(molColumn, molStr, '');
 }
 
+let offscreen : OffscreenCanvas | null = null;
+let gOffscreen : OffscreenCanvasRenderingContext2D | null = null;
+
 function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false): HTMLDivElement {
+
+  if (renderer === null)
+    renderer = new RDKitCellRenderer(_rdKitModule);
+
+  if(offscreen === null) {
+    offscreen = new OffscreenCanvas(CELL_WIDTH, CELL_HEIGHT);
+    gOffscreen = offscreen.getContext('2d');
+  }
+  const r = window.devicePixelRatio;
+  const g = gOffscreen;
+  if (skipDraw) {
+    g!.font = "18px Roboto, Roboto Local";
+    const text = 'Loading...';
+    let tm = g!.measureText(text);
+    const fontHeight = Math.abs(tm.actualBoundingBoxAscent) + tm.actualBoundingBoxDescent
+    const lineWidth = tm.width;
+    g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
+  } else {// @ts-ignore
+
+   renderer.render(g, 0, 0, width/r, height/r, DG.GridCell.fromValue(molStr));
+  }
+
+  const bitmap : ImageBitmap = offscreen.transferToImageBitmap();
+  const moleculeHost = ui.canvas(width, height);
+  $(moleculeHost).addClass('chem-canvas');
+
+  moleculeHost.width = width;
+  moleculeHost.height = height;
+  moleculeHost.style.width = (width / r).toString() + 'px';
+  moleculeHost.style.height= (height / r).toString() + 'px';
+  moleculeHost.getContext('2d')!.drawImage(bitmap, 0,0,CELL_WIDTH,CELL_HEIGHT);
+
+  return ui.divH([moleculeHost], 'chem-mol-box');
+}
+
+function renderMoleculeOld(molStr: string, width: number, height: number, skipDraw: boolean = false): HTMLDivElement {
   const moleculeHost = ui.canvas(width, height);
   $(moleculeHost).addClass('chem-canvas');
   const r = window.devicePixelRatio;
@@ -155,8 +197,7 @@ function getFlagIcon(group: TreeViewGroup) : HTMLElement | null {
  return c.length === 0 ? null : c[0] as HTMLElement;
 }
 
-const CELL_HEIGHT = 120;
-const CELL_WIDTH = 200;
+
 const GENERATE_ERROR_MSG = 'Generating tree failed...Please check the dataset';
 const NO_MOL_COL_ERROR_MSG = 'There is no molecule column available';
 
@@ -176,6 +217,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   dirtyFlag: boolean = false;
 
   workersInit: boolean = false;
+
+  progressBar: DG.TaskBarProgressIndicator | null = null;
 
   MoleculeColumn: string;
   TreeEncode: string;
@@ -227,24 +270,34 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.clear();
 
     ui.setUpdateIndicator(this.root, true);
-    const progressBar = DG.TaskBarProgressIndicator.create('Generating Scaffold Tree...');
+    this.progressBar = DG.TaskBarProgressIndicator.create('Generating Scaffold Tree...');
 
-    try {
-      await installScaffoldGraph();
-    } catch (e) {
-      console.error(e);
-      ui.setUpdateIndicator(this.root, false);
-      progressBar.update(100, 'Installation of ScaffoldGraph failed');
-      this.message = GENERATE_ERROR_MSG;
-      //new Balloon().error('Could not generate scaffold tree');
-      return;
+    this.progressBar.update(0, 'Installing ScaffoldGraph package..: 0% completed');
+
+    const SCAFFOLD_GRAPH_INSTALLED = 'SCAFFOLD_GRAPH_INSTALLED';
+    const installed = await grok.dapi.userDataStorage.getValue(SCAFFOLD_GRAPH_INSTALLED, SCAFFOLD_GRAPH_INSTALLED, false);
+    console.log('ScaffoldGraph Installed: ' + installed);
+    if (installed !== 'true') {
+      try {
+        await installScaffoldGraph();
+        await grok.dapi.userDataStorage.postValue(SCAFFOLD_GRAPH_INSTALLED, SCAFFOLD_GRAPH_INSTALLED, 'true', false);
+      } catch (e) {
+        console.error(e);
+        ui.setUpdateIndicator(this.root, false);
+        this.progressBar.update(100, 'Installation of ScaffoldGraph package failed');
+        this.message = 'Installation of ScaffoldGraph package failed';
+        //new Balloon().error('Could not generate scaffold tree');
+        return;
+      }
     }
 
+    this.progressBar.update(20, 'Initializing Structure Search..: 20% completed');
     if (!this.workersInit) {
       await _initWorkers(this.molColumn);
       this.workersInit = true;
     }
 
+    this.progressBar.update(30, 'Generating Scaffold Tree..: 30% completed');
     const maxMolCount = 750;
     let length = this.molColumn.length;
     let step = 1;
@@ -269,16 +322,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     } catch (e) {
       console.error(e);
       ui.setUpdateIndicator(this.root, false);
-      progressBar.update(50, 'Building Scaffold Tree Failed');
+      this.progressBar.update(50, 'Building Scaffold Tree Failed');
       this.message = GENERATE_ERROR_MSG;
       //new Balloon().error('Could not generate scaffold tree');
       return;
     }
-    //progressBar.update(50, 'Initializing Scaffold Tree..: 80% completed');
+
 
     if (jsonStr !== null) {
       const json = JSON.parse(jsonStr);
       console.log(json);
+
+      this.progressBar.update(50, 'Initializing Scaffold Tree..: 50% completed');
 
       const thisViewer = this;
       ScaffoldTreeViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup, countNodes: number) => {
@@ -287,12 +342,15 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
       await updateVisibleNodesHits(this); //first visible N nodes
       ui.setUpdateIndicator(this.root, false);
-      progressBar.update(100, 'Finished Building Scaffold Tree');
+      this.progressBar.update(100, 'Finished Building Scaffold Tree');
 
       this.updateSizes();
       this.updateUI();
       updateAllNodesHits(this); //this will run asynchronously
     }
+
+    this.progressBar.close();
+    this.progressBar = null;
   }
 
   get molColumn(): DG.Column | null {
@@ -305,10 +363,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
 
-    //debugParent(group);
-
     const thisViewer = this;
-    this.wrapper = SketcherDialogWrapper.create("Edit Scaffold...", "Save", group, async (molStrSketcher: string, node: TreeViewGroup, valid: boolean) => {
+    this.wrapper = SketcherDialogWrapper.create("Edit Scaffold...", "Save", group, async (molStrSketcher: string, node: TreeViewGroup, errorMsg: string) => {
 
       while (node.captionLabel.firstChild) {
         node.captionLabel.removeChild(node.captionLabel.firstChild);
@@ -318,15 +374,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.addIcons(molHost, bitset!.trueCount.toString(), group);
       node.captionLabel.appendChild(molHost);
       const iconRoot = getFlagIcon(node);
-      iconRoot!.style.cssText = iconRoot!.style.cssText += ('color: ' + (valid ? 'lightgreen !important' : 'hotpink !important'));
-      iconRoot!.style.visibility = 'visible';
+      const valid = errorMsg === null;
+      const color = valid ? 'lightgreen !important' : 'hotpink !important';
 
+      iconRoot!.style.cssText = iconRoot!.style.cssText += ('color: ' + color);
+      iconRoot!.style.visibility = 'visible';
+      if (!valid)
+        iconRoot!.setAttribute('tooltip', errorMsg);
       node.value = {smiles: molStrSketcher, bitset: bitset};
 
       //orphans
       buildOrphans(thisViewer.tree);
       thisViewer.appendOrphanFolders(thisViewer.tree);
-
       thisViewer.wrapper?.close();
       thisViewer.wrapper = null;
       thisViewer.updateSizes();
@@ -342,19 +401,19 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         return true;
 
       let success = true;
-      if (node.parent.value !== null) {
-        const smilesParent = (node.parent.value as any).smiles;
+      if (toJs(node.parent).value !== null) {
+        const smilesParent = (toJs(node.parent).value as any).smiles;
         success = ScaffoldTreeViewer.validateNodes(smilesSketcher, smilesParent);
         if (!success)
-          return false;
+          return SketcherDialogWrapper.validationMessage(false, true);
       }
       const children = node.items;
       for (let n = 0; n < children.length; ++n) {
         success = ScaffoldTreeViewer.validateNodes((children[n].value as any).smiles, smilesSketcher);
         if (!success)
-          return false;
+          return SketcherDialogWrapper.validationMessage(false, false);
       }
-      return true;
+      return null;
     }, () => {
       if (thisViewer.wrapper != null) {
         thisViewer.clearFilters();
@@ -382,7 +441,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       return;
     }
     const thisViewer = this;
-    this.wrapper = SketcherDialogWrapper.create("Add New Scaffold...", "Add", group,async  (molStrSketcher: string, parent: TreeViewGroup, valid: boolean) => {
+    this.wrapper = SketcherDialogWrapper.create("Add New Scaffold...", "Add", group,async  (molStrSketcher: string, parent: TreeViewGroup, errorMsg: string) => {
       const child = thisViewer.createGroup(molStrSketcher, parent);
       if (child !== null) {
         enableNodeExtendArrow(child, false);
@@ -408,7 +467,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       thisViewer.TreeEncode = JSON.stringify(ScaffoldTreeViewer.serializeTrees(thisViewer.tree));
       thisViewer.TreeEncodeUpdateInProgress = false;
     }, (smilesSketcher: string) => {
-      return ScaffoldTreeViewer.validateNodes(smilesSketcher, molStr);
+      const success = ScaffoldTreeViewer.validateNodes(smilesSketcher, molStr);
+      return success ? null : SketcherDialogWrapper.validationMessage(false, true);
     }, () => {
       if (thisViewer.wrapper != null) {
         thisViewer.clearFilters();
@@ -537,6 +597,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     flagIcon.style.visibility = 'hidden';
     flagIcon.classList.remove('fal');
     flagIcon.classList.add('fas', 'icon-fill');
+    flagIcon.onmouseenter = (e) => {
+      const c = document.getElementsByClassName('d4-tooltip');
+      if(c.length > 0) {
+        const text = flagIcon.getAttribute('tooltip');
+        if (text !== null && text !== undefined)
+          c[0].setAttribute('data', text);
+      }
+    }
 
     let labelDiv = null;
     const iconsInfo = ui.divH([labelDiv = ui.divText(label), flagIcon]);
@@ -583,15 +651,18 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     return group;
   }
 
-  createOrphansGroup(rootGroup: TreeViewGroup) {
-    const divHost = ui.iconFA('folder');
-    divHost.style.fontSize = '66px';
-    divHost.style.width = '200px';
-    divHost.style.height = '120px';
-    divHost.style.top = '33px'; //0.5 from the height
-    divHost.style.cssText += 'color: #50a9c573 !important';
-    divHost.classList.remove('fal');
-    divHost.classList.add('fas', 'icon-fill');
+  createOrphansGroup(rootGroup: TreeViewGroup, label: string) : DG.TreeViewGroup {
+    const divFolder = ui.iconFA('folder');
+    divFolder.style.fontSize = '66px';
+    divFolder.style.width = '200px';
+    divFolder.style.height = '120px';
+    divFolder.style.top = '33px'; //0.5 from the height
+    divFolder.style.cssText += 'color: #50a9c573 !important';
+    divFolder.classList.remove('fal');
+    divFolder.classList.add('fas', 'icon-fill');
+
+    const labelDiv = ui.divText(label);
+    const divHost =  ui.divH([divFolder, labelDiv]);
 
     const group = rootGroup.group(divHost, {orphans: true});
     if (group.children.length === 0)
@@ -604,6 +675,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (!thisViewer.checkBoxesUpdateInProgress && node.value !== null)
         thisViewer.updateFilters();
     });
+
+    (group.value as any).labelDiv = labelDiv;
 
     return group;
   }
@@ -619,7 +692,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
       const bitsetOrphans = (rootGroup.value as any).bitset_orphans;
       if (bitsetOrphans !== null && bitsetOrphans !== undefined && bitsetOrphans.trueCount > 0) {
-        const group = this.createOrphansGroup(rootGroup);
+        const group = this.createOrphansGroup(rootGroup, bitsetOrphans.trueCount.toString());
         (group.value as any).bitset = bitsetOrphans;
       }
     }
@@ -673,6 +746,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         .item("Add New...", () => thisViewer.openAddSketcher(node))
         .item("Edit...", () => this.openEditSketcher(node))
         .item("Remove", () => {
+
+          if (thisViewer.wrapper !== null && thisViewer.wrapper.node === node ) {
+            thisViewer.wrapper.close();
+            thisViewer.wrapper = null;
+          }
+
           node.remove();
           //orphans
           buildOrphans(thisViewer.tree);
@@ -683,7 +762,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           thisViewer.TreeEncodeUpdateInProgress = true;
           thisViewer.TreeEncode = JSON.stringify(ScaffoldTreeViewer.serializeTrees(thisViewer.tree));
           thisViewer.TreeEncodeUpdateInProgress = false;
-        })
+        });
     });
 
     this.tree.onSelectedNodeChanged.subscribe(async(node: DG.TreeViewNode) => {
@@ -716,10 +795,20 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           }
         }
       }
+
     });
     this.subs.push(dataFrame.onRowsFiltering.subscribe(() => {
       if (thisViewer.bitset != null)
         dataFrame.filter.and(thisViewer.bitset);
+    }));
+
+    this.subs.push(grok.events.onTooltipShown.subscribe((args) => {
+      const tooltip = args.args.element;
+      const text = tooltip.getAttribute('data');
+      tooltip.removeAttribute('data');
+      if (text !== null && text !== undefined) {
+        tooltip.innerHTML = text;
+      }
     }));
 
     this.render();
@@ -730,6 +819,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.wrapper.close()
       this.wrapper = null;
     }
+
+    if (this.progressBar !== null) {
+      this.progressBar.close();
+      this.progressBar = null;
+    }
+
     this.clearFilters();
     super.detach();
   }
@@ -824,17 +919,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.updateUI();
   }
 
-  /*
-    static findOkButton(dialogRoot: HTMLElement, name: string): HTMLElement | null {
-      const buttons = dialogRoot.getElementsByClassName('ui-btn ui-btn-ok');
-      for (let n = 0; n < buttons.length; ++n) {
-        let spans = buttons[n].getElementsByTagName("span");
-        if (spans.length > 0 && spans[0].innerHTML == name)
-          return buttons[n] as HTMLElement;
-      }
-      return null;
-    }*/
-
   static validateNodes(childSmiles: string, parentSmiles: string): boolean {
     const parentMol = _rdKitModule.get_mol(parentSmiles);
     const parentCld = _rdKitModule.get_mol(childSmiles);
@@ -844,7 +928,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     parentCld.delete();
     return match.length > 2;
   }
-
 
   static serializeTrees(treeRoot: TreeViewGroup): any {
     const json: Array<any> = [];
@@ -932,20 +1015,20 @@ class SketcherDialogWrapper {
     this.isMolBlock ? this.sketcher.setMolFile(molStr) : this.sketcher.setSmiles(molStr);
 
     const molStrTmp = thisWrapper.sketcher.getMolFile();
-    let valid = validate(molStrTmp, thisWrapper.node);
+    let errorMsg = validate(molStrTmp, thisWrapper.node);
+    let valid = errorMsg === null;//validate(molStrTmp, thisWrapper.node);
     validLabel.style.color = SketcherDialogWrapper.validationColor(valid);
-    validLabel.innerText = SketcherDialogWrapper.validationMessage(valid, true);
+    validLabel.innerText = errorMsg ?? '';
 
     this.sketcher.onChanged.subscribe(() => {
-      const molStr = thisWrapper.sketcher.getMolFile();//thisWrapper.isMolBlock ? thisWrapper.sketcher.getMolFile() : thisWrapper.sketcher.getSmiles();
-      valid = validate(molStr, thisWrapper.node);
+      const molStr = thisWrapper.sketcher.getMolFile();
+      errorMsg = validate(molStr, thisWrapper.node);
+      valid = errorMsg === null;//validate(molStr, thisWrapper.node);
       validLabel.style.color = SketcherDialogWrapper.validationColor(valid);
-      validLabel.innerText = SketcherDialogWrapper.validationMessage(valid, true);
+      validLabel.innerText = errorMsg ?? '';
 
       if (onStrucChanged !== null)
         onStrucChanged(molStr, thisWrapper.sketcher.getMolFile());
-      //const btnOk : HTMLElement | null = thisWrapper.dialog === null ? null : ScaffoldTreeViewer.findOkButton(thisWrapper.dialog.root, actionName);
-      //(btnOk as any).disabled = !success;
     });
 
     this.dialog.add(this.sketcher);
@@ -954,8 +1037,8 @@ class SketcherDialogWrapper {
       thisWrapper.isMolBlock ? thisWrapper.sketcher.setMolFile(molStr) : thisWrapper.sketcher.setSmiles(molStr);
     });
     this.dialog.addButton(actionName, () => {
-      const molStr = thisWrapper.sketcher.getMolFile();//thisWrapper.isMolBlock ? thisWrapper.sketcher.getMolFile() : thisWrapper.sketcher.getSmiles();
-      action(molStr, thisWrapper.node, valid);
+      const molStr = thisWrapper.sketcher.getMolFile();
+      action(molStr, thisWrapper.node, errorMsg);
     });
 
     if (onCancel != null)
