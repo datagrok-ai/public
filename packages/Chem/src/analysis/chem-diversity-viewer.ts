@@ -1,7 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {similarityMetric, getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';

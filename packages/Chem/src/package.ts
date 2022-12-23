@@ -16,7 +16,7 @@ import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/sr
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import {setupScaffold} from './scripts-api';
 import {elementsTable} from './constants';
-import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';

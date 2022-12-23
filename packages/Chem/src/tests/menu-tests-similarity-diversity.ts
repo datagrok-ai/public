@@ -1,19 +1,22 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import {category, expect, expectFloat, test, delay, before} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {Fingerprint} from '../utils/chem-common';
 import {createTableView, readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 
-import {_testSearchSubstructure,
+import {
+  _testSearchSubstructure,
   _testSearchSubstructureAllParameters,
   _testSearchSubstructureSARSmall,
-  loadFileAsText} from './utils';
+  loadFileAsText,
+} from './utils';
 import {findSimilar, getSimilarities} from '../package';
 import {chemDiversitySearch} from '../analysis/chem-diversity-viewer';
-import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metrics';
-import { chemSimilaritySearch } from '../analysis/chem-similarity-viewer';
+import {chemSimilaritySearch} from '../analysis/chem-similarity-viewer';
+import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 const testSimilarityResults = {
   'Tanimoto/Morgan': [

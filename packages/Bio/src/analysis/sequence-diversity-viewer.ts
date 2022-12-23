@@ -1,14 +1,15 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {similarityMetric, getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
 import $ from 'cash-dom';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {updateDivInnerHTML} from '../utils/ui-utils';
-import { Subject } from 'rxjs';
+import {Subject} from 'rxjs';
 
 export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
   renderMolIds: number[] | null = null;
