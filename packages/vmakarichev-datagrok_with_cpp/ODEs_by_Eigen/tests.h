@@ -17,5 +17,8 @@ void analyzeStiffProblemOneDim();
 // analysis of solving stiff problem: multi-dimensional case
 void analyzeStiffProblemMultiDim();
 
+// test ode23s solver
+void testODE23sSolver();
+
 #endif // !TESTS_H
 

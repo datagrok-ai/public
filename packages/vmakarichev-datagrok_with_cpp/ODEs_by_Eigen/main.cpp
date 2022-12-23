@@ -14,6 +14,8 @@ int main()
 
 	analyzeStiffProblemMultiDim();
 
+	//testODE23sSolver();
+
 	cin.get();
 	return 0;
 }

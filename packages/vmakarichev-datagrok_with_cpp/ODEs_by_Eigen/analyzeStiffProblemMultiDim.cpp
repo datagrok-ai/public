@@ -5,6 +5,7 @@
 #include<iostream>
 #include<iomanip>
 #include<ctime>
+#include<fstream>
 using namespace std;
 
 #include "../../../Eigen/Eigen/Dense"
@@ -38,14 +39,14 @@ VectorXd exactSolut(double t, unsigned dim)
 // analysis of solving stiff problem: one-dimensional case
 void analyzeStiffProblemMultiDim()
 {
-	cout << "Analysis of solver for stiff problem: one-dimensional case.\n";
+	cout << "Analysis of solver for stiff problem: multi-dimensional case.\n";
 
 	unsigned dim = 2;
 
-	double h = 0.0002;
+	double h = 0.0005;
 
 	double t0 = 0.0;
-	double t1 = 10000.0;
+	double t1 = 100.0;
 
 	unsigned N = static_cast<unsigned>((t1 - t0) / h) + 1;
 
@@ -70,7 +71,7 @@ void analyzeStiffProblemMultiDim()
 
 	time_t start = time(0);
 
-	int resCode = oneStepSolver(w, times, N, yInitial.data(), dim, getNextPointRK5, solution);
+	int resCode = oneStepSolver(w, times, N, yInitial.data(), dim, getNextPointRK4, solution);
 
 	time_t finish = time(0);
 
@@ -89,11 +90,14 @@ void analyzeStiffProblemMultiDim()
 	double mae = fabs(solution[0] - yInitial(0));
 	mae = fmax(mae, fabs(solution[N] - yInitial(1)));
 
+	ofstream file("RK4.csv", ios::out);
+
 	for (unsigned i = 1; i < N; i++)
 	{
 		yInitial = exactSolut(times[i], dim);
 		mae = fmax(mae, fabs(solution[i] - yInitial(0)));
 		mae = fmax(mae, fabs(solution[i + N] - yInitial(1)));
+		file << mae << "\n";
 	}
 
 	cout << "\nMaximum absolute error: " << mae << endl;
