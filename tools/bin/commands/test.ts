@@ -43,8 +43,9 @@ export function test(args: TestArgs): boolean {
   }
 
   const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
-  const fullName = packageData.friendlyName || packageData.fullName;
+  let fullName = packageData.friendlyName || packageData.fullName;
   if (fullName) {
+    fullName = utils.kebabToCamelCase(fullName);
     process.env.TARGET_PACKAGE = fullName;
     console.log('Environment variable `TARGET_PACKAGE` is set to', process.env.TARGET_PACKAGE);
   } else {
@@ -52,22 +53,32 @@ export function test(args: TestArgs): boolean {
     return false;
   }
 
-  color.info(`Publishing package "${process.env.TARGET_PACKAGE}" to ${process.env.HOST}...`);
-  exec(`grok publish ${process.platform === 'win32' ? '%HOST%' : '${HOST}'}`, (err, stdout, stderr) => {
+  color.info(`Building package...`);
+  exec('npm run build', (err, stdout, stderr) => {
     if (err)
       throw err;
     else {
       console.log(stdout);
-      color.error(stderr);
+      color.warn(stderr);
     }
 
-    color.info('Starting tests...');
-    exec('npm run test', (err, stdout, stderr) => {
-      if (err) throw err;
+    color.info(`Publishing package "${process.env.TARGET_PACKAGE}" to ${process.env.HOST}...`);
+    exec(`grok publish ${process.platform === 'win32' ? '%HOST%' : '${HOST}'}`, (err, stdout, stderr) => {
+      if (err)
+        throw err;
       else {
         console.log(stdout);
-        console.log(stderr);
+        color.warn(stderr);
       }
+
+      color.info('Starting tests...');
+      exec('npm run test', {cwd: path.dirname(path.dirname(__dirname))}, (err, stdout, stderr) => {
+        if (err) throw err;
+        else {
+          console.log(stdout);
+          console.log(stderr);
+        }
+      });
     });
   });
 
