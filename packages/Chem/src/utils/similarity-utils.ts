@@ -1,7 +1,8 @@
-import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarity-metrics';
+import * as DG from 'datagrok-api/dg';
+
+import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import * as chemSearches from '../chem-searches';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
-import * as DG from 'datagrok-api/dg';
 
 export async function getSimilaritiesMarix(dim: number, smiles: DG.Column, dfSmiles: DG.DataFrame, colName: string, simArr: DG.Column[])
   : Promise<DG.Column[]> {

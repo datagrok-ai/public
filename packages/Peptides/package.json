@@ -13,9 +13,9 @@
   },
   "dependencies": {
     "@datagrok-libraries/bio": "^5.9.15",
-    "@datagrok-libraries/ml": "^2.0.1",
+    "@datagrok-libraries/ml": "^6.3.3",
     "@datagrok-libraries/statistics": "^0.1.6",
-    "@datagrok-libraries/utils": "^1.16.1",
+    "@datagrok-libraries/utils": "^1.19.0",
     "cash-dom": "latest",
     "datagrok-api": "^1.6.0",
     "file-loader": "^6.2.0",

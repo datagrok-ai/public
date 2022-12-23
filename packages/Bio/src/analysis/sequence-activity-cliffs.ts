@@ -4,13 +4,13 @@ import * as DG from 'datagrok-api/dg';
 import * as bio from '@datagrok-libraries/bio';
 
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {AvailableMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {TAGS} from '../utils/constants';
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
 import * as C from '../utils/constants';
-import { GridColumn } from 'datagrok-api/dg';
-import { invalidateMols, MONOMERIC_COL_TAGS } from '../substructure-search/substructure-search';
+import {GridColumn} from 'datagrok-api/dg';
+import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 
 export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
   const stringArray = col.toList();
