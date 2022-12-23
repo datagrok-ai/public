@@ -42,16 +42,23 @@ it('TEST', async () => {
   let r = await page.evaluate((targetPackage):Promise<object> => {
     return new Promise<object>((resolve, reject) => {
       (<any>window).grok.functions.eval(targetPackage + ':test()').then((df: any) => {
+        let failed = false;
+        let skipReport = '';
+        let passReport = '';
+        let failReport = '';
+
+        if (df == null) {
+          failed = true;
+          failReport = 'Fail reason: No package tests found';
+          resolve({failReport, skipReport, passReport, failed});
+        }
+
         const cStatus = df.columns.byName('success');
         const cSkipped = df.columns.byName('skipped');
         const cMessage = df.columns.byName('result');
         const cCat = df.columns.byName('category');
         const cName = df.columns.byName('name');
         const cTime = df.columns.byName('ms');
-        let failed = false;
-        let skipReport = '';
-        let passReport = '';
-        let failReport = '';
         for (let i = 0; i < df.rowCount; i++) {
           if (cStatus.get(i)) {
             if (cSkipped.get(i)) {
