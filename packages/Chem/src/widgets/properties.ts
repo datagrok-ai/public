@@ -7,6 +7,7 @@ import {div} from "datagrok-api/ui";
 import $ from 'cash-dom';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
+import { MOL_FORMAT } from '../constants';
 
 async function getIUPACName(smiles: string): Promise<string> {
   const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${smiles}/property/IUPACName/JSON`;
@@ -19,7 +20,7 @@ async function getIUPACName(smiles: string): Promise<string> {
 export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget {
   const rdKitModule = getRdKitModule();
   try {
-    semValue.value = _convertMolNotation(semValue.value, 'unknown', 'smiles', rdKitModule);
+    semValue.value = _convertMolNotation(semValue.value, 'unknown', MOL_FORMAT.SMILES, rdKitModule);
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
