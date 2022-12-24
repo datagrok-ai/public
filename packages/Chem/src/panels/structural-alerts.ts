@@ -62,6 +62,7 @@ export function runStructuralAlertsDetection(df: DG.DataFrame, ruleSetList: stri
       }
     }
     skipRuleSetList.length = 0;
+    mol.delete();
   }
 
   return df;
