@@ -75,9 +75,14 @@ export function rGroupAnalysis(col: DG.Column): void {
         for (const resCol of res.columns) {
           const molsArray = new Array<string>(resCol.length);
           for (let i = 0; i < resCol.length; i++) {
-            const mol = module.get_mol(resCol.get(i));
-            molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
-            mol.delete();
+            const molStr = resCol.get(i);
+            try {
+              const mol = module.get_mol(molStr);
+              molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
+              mol.delete();
+            } catch (e) {
+              console.warn(`RGroupAnalysisWarning: skipping invalid molecule '${molStr}' at index ${i}`);
+            }
           }
           const rCol = DG.Column.fromStrings(resCol.name, molsArray);
   
