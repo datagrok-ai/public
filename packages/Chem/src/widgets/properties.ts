@@ -21,13 +21,13 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
   try {
     semValue.value = _convertMolNotation(semValue.value, 'unknown', 'smiles', rdKitModule);
   } catch (e) {
-    return new DG.Widget(ui.divText('Molecule is possible malformed'));
+    return new DG.Widget(ui.divText('Molecule is possibly malformed'));
   }
   let host = div();
   try {
     var mol = oclMol(semValue.value);
   } catch {
-    return new DG.Widget(ui.divText('Could not analysze properties'));
+    return new DG.Widget(ui.divText('Could not analyze properties'));
   }
 
   function prop(name: string, type: DG.ColumnType, extract: (mol: OCL.Molecule) => any) {
