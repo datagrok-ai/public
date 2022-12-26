@@ -32,5 +32,9 @@
     "build": "tsc",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix"
-  }
+  },
+  "sources": [
+		"common/html2canvas.min.js",
+		"common/exceljs.min.js"
+	]
 }

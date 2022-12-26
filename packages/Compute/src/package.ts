@@ -10,7 +10,7 @@ import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-v
 //import {ModelsWidget} from './models-widget'
 import {delay} from "@datagrok-libraries/utils/src/test";
 import {ComputationView} from "@datagrok-libraries/utils/src/computation-view";
-import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
+import {DefaultFunctionView} from "@datagrok-libraries/utils/src/default-function-view";
 import './css/model-card.css';
 
 let initCompleted: boolean = false;
@@ -44,7 +44,7 @@ export function ComputationViewEditor(call: DG.FuncCall) {
 //input: funccall call
 //output: view result
 export function FunctionViewEditor(call: DG.FuncCall) {
-  return new FunctionView(call);
+  return new DefaultFunctionView(call);
 }
 
 

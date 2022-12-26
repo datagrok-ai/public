@@ -108,6 +108,8 @@ export class ComputationView extends FunctionView {
     return pack ? `${pack.friendlyName} v.${pack.version}.\nLast updated on ${dayjs(pack.updatedOn).format('YYYY MMM D, HH:mm')}`: `No package info was found`;
   };
 
+  public buildIO(): HTMLElement { return ui.div(); }
+
   /**
    * Looks for {@link reportBug}, {@link getHelp} and {@link exportConfig} members and creates model menus
    * @stability Stable
