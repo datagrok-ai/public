@@ -3,7 +3,7 @@
   "name": "CassandraMovieLens",
   "friendlyName": "MovieLens",
   "parameters": {
-    "server": "dev.datagrok.ai",
+    "server": "db.datagrok.ai",
     "port": 29042,
     "db": "movielens"
   },
