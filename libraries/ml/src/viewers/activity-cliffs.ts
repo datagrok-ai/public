@@ -423,11 +423,11 @@ export async function getSimilaritiesMatrix( dim: number, seqCol: DG.Column, dfS
 export function getSimilaritiesFromDistances(dim: number, distances: Matrix, simArr: DG.Column[])
   : DG.Column[] {
   for (let i = 0; i < dim - 1; ++i) {
-    const similarityArr = new Array(dim - i - 1).fill(0);
+    const similarityArr = new Float32Array(dim - i - 1).fill(0);
     for (let j = i + 1; j < dim; ++j) {
       similarityArr[j - i - 1] = getSimilarityFromDistance(distances[i][j]);
     }
-    simArr[i] = DG.Column.fromFloat32Array('similarity', Float32Array.from(similarityArr));
+    simArr[i] = DG.Column.fromFloat32Array('similarity', similarityArr);
   }
   return simArr;
 }
