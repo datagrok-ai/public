@@ -3564,8 +3564,8 @@ Resources:
             Resource: 
               - !GetAtt CvmCluster.Arn
               - !GetAtt DatagrokCluster.Arn
-              - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/!Ref DatagrokCluster/*"
-              - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/!Ref CvmCluster/*"    
+              - !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${DatagrokCluster}/*
+              - !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${CvmCluster}/*    
   Ec2AimRole:
     Type: AWS::IAM::Role
     Properties:
@@ -3598,13 +3598,16 @@ Resources:
         ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
         InstanceType: !Ref DatagrokEc2InstanceType
         KeyName: !Ref ImportKeyPairEc2
-        UserData:
-          Fn::Base64: 
-            !Sub |
-              #!/bin/bash
-              # shellcheck disable=SC2154
-              export CLUSTER=!Ref DatagrokCluster
-              echo "ECS_CLUSTER=$CLUSTER" >> /etc/ecs/ecs.config
+        UserData: !Base64
+            'Fn::Join': 
+              - ''
+              - - |
+                  #!/bin/bash
+                  # shellcheck disable=SC2154
+                - echo ECS_CLUSTER=
+                - !Ref DatagrokCluster
+                - |2 
+                   >> /etc/ecs/ecs.config
 #        AvailabilityZone:
 #          Fn::Select:
 #          - 0
@@ -3644,13 +3647,16 @@ Resources:
         ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
         InstanceType: !Ref CvmEc2InstanceType
         KeyName: !Ref ImportKeyPairEc2
-        UserData:
-          Fn::Base64: 
-            !Sub |
-              #!/bin/bash
-              # shellcheck disable=SC2154
-              export export CLUSTER=!Ref CvmCluster
-              echo "ECS_CLUSTER=$CLUSTER" >> /etc/ecs/ecs.config
+        UserData: !Base64
+            'Fn::Join':
+              - ''
+              - - |
+                  #!/bin/bash
+                  # shellcheck disable=SC2154
+                - echo ECS_CLUSTER=
+                - !Ref CvmCluster
+                - |2 
+                   >> /etc/ecs/ecs.config
 #        AvailabilityZone:
 #          Fn::Select:
 #          - 0
@@ -3691,13 +3697,16 @@ Resources:
         LaunchTemplate:
           LaunchTemplateId: !Ref Ec2InstanceCvm
           Version: !GetAtt Ec2InstanceCvm.DefaultVersionNumber
-        UserData:
-          Fn::Base64: 
-            !Sub |
-              #!/bin/bash
-              # shellcheck disable=SC2154
-              export export CLUSTER=!Ref CvmCluster
-              echo "ECS_CLUSTER=$CLUSTER" >> /etc/ecs/ecs.config
+        UserData: !Base64
+            'Fn::Join': 
+              - ''
+              - - |
+                  #!/bin/bash
+                  # shellcheck disable=SC2154
+                - echo ECS_CLUSTER=
+                - !Ref CvmCluster
+                - |2 
+                   >> /etc/ecs/ecs.config
         NetworkInterfaces:  
           - AssociatePublicIpAddress: false
             DeviceIndex: '0'
@@ -3725,13 +3734,16 @@ Resources:
         LaunchTemplate:
           LaunchTemplateId: !Ref Ec2InstanceDatagrok
           Version: !GetAtt Ec2InstanceDatagrok.DefaultVersionNumber
-        UserData:
-          Fn::Base64: 
-            !Sub |
-              #!/bin/bash
-              # shellcheck disable=SC2154
-              export CLUSTER=!Ref DatagrokCluster
-              echo "ECS_CLUSTER=$CLUSTER" >> /etc/ecs/ecs.config
+        UserData: !Base64
+            'Fn::Join': 
+              - ''
+              - - |
+                  #!/bin/bash
+                  # shellcheck disable=SC2154
+                - echo ECS_CLUSTER=
+                - !Ref DatagrokCluster
+                - |2 
+                   >> /etc/ecs/ecs.config
         NetworkInterfaces:  
           - AssociatePublicIpAddress: false
             DeviceIndex: '0'
