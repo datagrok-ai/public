@@ -3,7 +3,7 @@ import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 import './tests/timelines-test';
 import './tests/tree-viewer-test';
 import './tests/radar-viewer-test';
-import './tests/viewers';
+// import './tests/viewers';
 
 export const _package = new DG.Package();
 export {tests};
