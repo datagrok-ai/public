@@ -1,4 +1,4 @@
-// Bitwise AND, OR, XOR, and AND_NOT opetations
+// Bitwise AND, OR, XOR, and AND_NOT operations
 
 let bs1 = DG.BitSet.fromString('11100');
 let bs2 = DG.BitSet.fromString('00111');
