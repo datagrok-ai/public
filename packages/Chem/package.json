@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.4.8",
+  "version": "1.4.9",
   "author": {
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
@@ -28,10 +28,10 @@
       "name": "Sketcher",
       "propertyType": "string",
       "choices": [
-        "openChemLibSketcher",
-        "ketcherSketcher",
-        "marvinSketcher",
-        "chemDrawSketcher"
+        "OpenChemLib",
+        "Ketcher",
+        "Marvin",
+        "ChemDraw"
       ],
       "defaultValue": "",
       "nullable": true
