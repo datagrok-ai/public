@@ -67,15 +67,18 @@ Parameters:
   ArnDatagrokCertificate:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
+    Default: arn:aws:acm:us-east-1:766822877060:certificate/11a416c1-c8f3-4e30-997d-5bf142b274d8
     Description: AWS ACM certificate ARN for Datagrok ALB. Required parameter.
   ArnCvmCertificate:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
+    Default: arn:aws:acm:us-east-1:766822877060:certificate/11a416c1-c8f3-4e30-997d-5bf142b274d8
     Description: AWS ACM certificate ARN for CVM ALB. Required parameter.
   ArnDockerHubCredential:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
     Description: AWS Secret Manager ARN for Docker Hub secret. Required parameter.
+    Default: arn:aws:secretsmanager:us-east-1:766822877060:secret:dockerhub-TCgq3D
   CreateDemoData:
     Type: String
     Default: 'true'
@@ -2681,19 +2684,19 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: datagrok
-        MemoryReservation: 2048
+        MemoryReservation: 1024
         Name: datagrok
         PortMappings:
         - ContainerPort: 8080
           HostPort: 8080
           Protocol: tcp
-      Cpu: '4096'
+      Cpu: '2048'
       ExecutionRoleArn:
         Fn::GetAtt:
         - DatagrokTaskExecutionRole
         - Arn
       Family: datagrok
-      Memory: '8192'
+      Memory: '2048'
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - !Ref LaunchType
