@@ -11,14 +11,13 @@ Uploading the project to the server in order to be able to share it and store da
 
 Read the table from the top, do not skip any steps until it is intentional, and you know what you are doing.
 
-| Step No. | Action                                          | Expected result           | Description               |
-|:--------:|:------------------------------------------------|:--------------------------|:--------------------------|
-|    0     | Open the table in Datagrok                      | The example popup appears | Can do it from anywhere: files, queries, local storage, etc. |
-|    0     | Click on “Share” section on Sidebar             | The example popup appears | This is an example action |
-|    0     | Click “Upload” button near “Scratchpad” project | The example popup appears | This is an example action |
-|    0     | Enter a name for the new project                | The example popup appears | This is an example action |
-|    0     | Enter description for the new project           | The example popup appears | This is an example action |
-|    0     | Turn on the “Presentation mode” switch          | The example popup appears | This is an example action |
-|    0     | Click “OK” | The example popup appears          | This is an example action |
-|    0     | Click “OK” in “Share dialog”                    | The example popup appears | This is an example action |
-|    
+| Step No. | Action                                          | Expected result                                    | Description                                        |
+|:--------:|:------------------------------------------------|:---------------------------------------------------|:---------------------------------------------------|
+|    1     | Add the table in Datagrok                       | Dataset opened in Datagrok                         | from anywhere: files, queries, local storage, etc. |
+|    2     | Click on "Share" section on Sidebar             | Share section is shown on Toolbox                  |                                                    |
+|    3     | Click "Upload" button near "Scratchpad" project | "Upload" dialog is opened                          |                                                    |
+|    4     | Enter a name for the new project                |                                                    | e.g. test_project                                  |
+|    5     | Enter description for the new project           |                                                    | e.g. test_description                              |
+|    6     | Turn on the "“"Presentation mode" switch        |                                                    |                                                    |
+|    7     | Click “OK”                                      | "Upload" dialog is closed. "Sharing" dialog opened |                                                    |
+|    8     | Click “OK” in “Share dialog”                    | Project has been uploaded to the server            |                                                    |
