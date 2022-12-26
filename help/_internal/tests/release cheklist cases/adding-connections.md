@@ -10,6 +10,7 @@ Data connection is used for accessing data in a particular data source. Connecti
 ## Scenario
 
 Read the table from the top, do not skip any steps until it is intentional, and you know what you are doing.
+This scenario needs to be reproduced for different DBs (Oracle, MariaDB, MySQL, MS SQL)
 
 | Step No. | Action                                                            | Expected result                                      | Description                         |
 |:--------:|:------------------------------------------------------------------|:-----------------------------------------------------|:------------------------------------|
@@ -21,8 +22,7 @@ Read the table from the top, do not skip any steps until it is intentional, and 
 |    6     | Click on "Test" button                                            | Balloon with a message about a successful connection |                                     |
 |    7     | Click OK button                                                   | Data connection has been created                     |                                     |
 
-*
-Server = db.datagrok.ai:54322
+/* Server = db.datagrok.ai:54322
 DB = northwind
 login = datagrok
 password = datagrok
