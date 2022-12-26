@@ -17,7 +17,7 @@ export const undefinedInputSequence = 'Type of input sequence is undefined';
 export function getFormat(sequence: string): string | null {
   const possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence);
 
-  if (possibleSynthesizers.length == 0)
+  if (possibleSynthesizers.length === 0)
     return null;
 
   let outputIndex = 0;
@@ -27,9 +27,9 @@ export function getFormat(sequence: string): string | null {
   possibleSynthesizers.forEach((synthesizer) => {
     const codes = getAllCodesOfSynthesizer(synthesizer);
     while (outputIndex < sequence.length) {
-      const matchedCode = codes.find((c) => c == sequence.slice(outputIndex, outputIndex + c.length));
+      const matchedCode = codes.find((c) => c === sequence.slice(outputIndex, outputIndex + c.length));
 
-      if (matchedCode == null)
+      if (matchedCode === null)
         break;
 
       if ( // for mistake pattern 'rAA'
@@ -50,13 +50,13 @@ export function getFormat(sequence: string): string | null {
     }
   });
 
-  const indexOfFirstNotValidChar = (outputIndex == sequence.length) ? -1 : outputIndex;
-  if (indexOfFirstNotValidChar != -1)
+  const indexOfFirstNotValidChar = (outputIndex === sequence.length) ? -1 : outputIndex;
+  if (indexOfFirstNotValidChar !== -1)
     return possibleSynthesizers[0];
 
   const possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, possibleSynthesizers[0]);
 
-  if (possibleTechnologies.length == 0)
+  if (possibleTechnologies.length === 0)
     return null;
 
   outputIndex = 0;
@@ -64,9 +64,9 @@ export function getFormat(sequence: string): string | null {
   possibleTechnologies.forEach((technology: string) => {
     const codes = Object.keys(map[possibleSynthesizers[0]][technology]);
     while (outputIndex < sequence.length) {
-      const matchedCode = codes.find((c) => c == sequence.slice(outputIndex, outputIndex + c.length));
+      const matchedCode = codes.find((c) => c === sequence.slice(outputIndex, outputIndex + c.length));
 
-      if (matchedCode == null)
+      if (matchedCode === null)
         break;
 
       if ( // for mistake pattern 'rAA'
@@ -96,7 +96,7 @@ export function isValidSequence(sequence: string, format: string | null): {
   synthesizer: string[] | null,
   // technology: string[] | null
 } {
-  const possibleSynthesizers = format == null ?
+  const possibleSynthesizers = format === null ?
     getListOfPossibleSynthesizersByFirstMatchedCode(sequence) :
     [format];
 
@@ -111,8 +111,8 @@ export function isValidSequence(sequence: string, format: string | null): {
   //       grok.shell.warning('Input sequence is expected to be in format ' + possibleSynthesizers[0]);
   //     })
   //     .show();
-  // } else if (possibleSynthesizers.length == 0)
-  if (possibleSynthesizers.length == 0)
+  // } else if (possibleSynthesizers.length === 0)
+  if (possibleSynthesizers.length === 0)
     return {indexOfFirstNotValidChar: 0, synthesizer: null};//, technology: null};
 
   const outputIndices = Array(possibleSynthesizers.length).fill(0);
@@ -121,9 +121,9 @@ export function isValidSequence(sequence: string, format: string | null): {
   possibleSynthesizers.forEach(function(synthesizer, i) {
     const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer));
     while (outputIndices[i] < sequence.length) {
-      const matchedCode = codes.find((c) => c == sequence.slice(outputIndices[i], outputIndices[i] + c.length));
+      const matchedCode = codes.find((c) => c === sequence.slice(outputIndices[i], outputIndices[i] + c.length));
 
-      if (matchedCode == null)
+      if (matchedCode === null)
         break;
 
       if ( // for mistake pattern 'rAA'
@@ -146,8 +146,8 @@ export function isValidSequence(sequence: string, format: string | null): {
 
   const outputIndex = Math.max(...outputIndices);
   const synthesizer = possibleSynthesizers[outputIndices.indexOf(outputIndex)];
-  const indexOfFirstNotValidChar = (outputIndex == sequence.length) ? -1 : outputIndex;
-  if (indexOfFirstNotValidChar != -1) {
+  const indexOfFirstNotValidChar = (outputIndex === sequence.length) ? -1 : outputIndex;
+  if (indexOfFirstNotValidChar !== -1) {
     return {
       indexOfFirstNotValidChar: indexOfFirstNotValidChar,
       synthesizer: [synthesizer],
@@ -169,8 +169,8 @@ export function isValidSequence(sequence: string, format: string | null): {
   //       grok.shell.warning('Input sequence is expected to be in format ' + possibleTechnologies[0]);
   //     })
   //     .show();
-  // } else if (possibleTechnologies.length == 0)
-  // if (possibleTechnologies.length == 0)
+  // } else if (possibleTechnologies.length === 0)
+  // if (possibleTechnologies.length === 0)
   //   return {indexOfFirstNotValidChar: 0, synthesizer: [possibleSynthesizers[3]], technology: null};
 
   // outputIndex = 0;
@@ -178,9 +178,9 @@ export function isValidSequence(sequence: string, format: string | null): {
   // possibleTechnologies.forEach((technology: string) => {
   //   const codes = Object.keys(map[possibleSynthesizers[0]][technology]);
   //   while (outputIndex < sequence.length) {
-  //     const matchedCode = codes.find((c) => c == sequence.slice(outputIndex, outputIndex + c.length));
+  //     const matchedCode = codes.find((c) => c === sequence.slice(outputIndex, outputIndex + c.length));
 
-  //     if (matchedCode == null)
+  //     if (matchedCode === null)
   //       break;
 
   //     if ( // for mistake pattern 'rAA'
@@ -219,19 +219,19 @@ function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): stri
   let synthesizers: string[] = [];
   Object.keys(map).forEach((synthesizer: string) => {
     let codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer));
-    if (synthesizer == 'Janssen GCRS Codes')
+    if (synthesizer === 'Janssen GCRS Codes')
       codes = codes.concat(gcrsCodesWithoutSmiles);
     //TODO: get first non-dropdown code when there are two modifications
     let start = 0;
     for (let i = 0; i < sequence.length; i++) {
-      if (sequence[i] == ')' && i != sequence.length - 1) {
+      if (sequence[i] === ')' && i !== sequence.length - 1) {
         start = i + 1;
         break;
       }
     }
-    if (gcrsCodesWithoutSmiles.some((s: string) => s == sequence.slice(start, start + s.length)))
+    if (gcrsCodesWithoutSmiles.some((s: string) => s === sequence.slice(start, start + s.length)))
       synthesizers = ['Janssen GCRS Codes'];
-    if (codes.some((s: string) => s == sequence.slice(start, start + s.length)))
+    if (codes.some((s: string) => s === sequence.slice(start, start + s.length)))
       synthesizers.push(synthesizer);
   });
   return synthesizers;
@@ -241,15 +241,15 @@ function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synth
   const technologies: string[] = [];
   Object.keys(map[synthesizer]).forEach((technology: string) => {
     const codes = Object.keys(map[synthesizer][technology]).concat(Object.keys(MODIFICATIONS));
-    if (codes.some((s) => s == sequence.slice(0, s.length)))
+    if (codes.some((s) => s === sequence.slice(0, s.length)))
       technologies.push(technology);
   });
   return technologies;
 }
 
 export function convertSequence(sequence: string, output: {
-  indexOfFirstNotValidChar: number, synthesizer: string[] | null}) {//, technology: string[] | null}) {
-  if (output.indexOfFirstNotValidChar != -1) {
+  indexOfFirstNotValidChar: number, synthesizer: string[] | null}) {
+  if (output.indexOfFirstNotValidChar !== -1) {
     return {
       // type: '',
       indexOfFirstNotValidChar: JSON.stringify(output),

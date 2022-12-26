@@ -1,13 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as rxjs from 'rxjs';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
-// import $ from 'cash-dom';
+import * as rxjs from 'rxjs';
 
 import {download} from '../utils/helpers';
-
 import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
 import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
 import {getFormat} from './sequence-codes-tools';
@@ -46,17 +44,14 @@ function getLinkedMolfile(
     const as2Mol = getMolfileForStrand(as2.strand, as2.invert);
 
     // select only the non-empty anti-strands
-    const antiStrands = ((asMol, as2Mol) => {
-      const antiStrandsArray = [asMol, as2Mol];
-      return antiStrandsArray.filter((item) => item !== '');
-    })(asMol, as2Mol);
-
+    const antiStrands = [asMol, as2Mol].filter((item) => item !== '');
     const resultingMolfile = linkStrandsV3000({senseStrands: [ssMol], antiStrands: antiStrands}, useChiral);
+
     return resultingMolfile;
   }
 }
 
-/** Saves sdf in case ss and as (and optionally as2) strands entered */
+/** Save sdf in case ss and as (and optionally as2) strands entered */
 export function saveSdf(
   ss: StrandData, as: StrandData, as2: StrandData, useChiral: boolean,
   oneEntity: boolean
