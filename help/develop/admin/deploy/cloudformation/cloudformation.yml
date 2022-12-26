@@ -3603,7 +3603,8 @@ Resources:
             !Sub |
               #!/bin/bash
               # shellcheck disable=SC2154
-              echo "ECS_CLUSTER=!Ref DatagrokCluster" >> /etc/ecs/ecs.config
+              export CLUSTER=!Ref DatagrokCluster
+              echo "ECS_CLUSTER=$CLUSTER" >> /etc/ecs/ecs.config
 #        AvailabilityZone:
 #          Fn::Select:
 #          - 0
@@ -3648,7 +3649,8 @@ Resources:
             !Sub |
               #!/bin/bash
               # shellcheck disable=SC2154
-              echo "ECS_CLUSTER=!Ref CvmCluster" >> /etc/ecs/ecs.config
+              export export CLUSTER=!Ref CvmCluster
+              echo "ECS_CLUSTER=$CLUSTER" >> /etc/ecs/ecs.config
 #        AvailabilityZone:
 #          Fn::Select:
 #          - 0
@@ -3694,7 +3696,8 @@ Resources:
             !Sub |
               #!/bin/bash
               # shellcheck disable=SC2154
-              echo "ECS_CLUSTER=!Ref CvmCluster" >> /etc/ecs/ecs.config
+              export export CLUSTER=!Ref CvmCluster
+              echo "ECS_CLUSTER=$CLUSTER" >> /etc/ecs/ecs.config
         NetworkInterfaces:  
           - AssociatePublicIpAddress: false
             DeviceIndex: '0'
@@ -3727,7 +3730,8 @@ Resources:
             !Sub |
               #!/bin/bash
               # shellcheck disable=SC2154
-              echo "ECS_CLUSTER=!Ref DatagrokCluster" >> /etc/ecs/ecs.config
+              export CLUSTER=!Ref DatagrokCluster
+              echo "ECS_CLUSTER=$CLUSTER" >> /etc/ecs/ecs.config
         NetworkInterfaces:  
           - AssociatePublicIpAddress: false
             DeviceIndex: '0'
