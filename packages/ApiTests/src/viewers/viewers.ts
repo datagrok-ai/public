@@ -6,12 +6,13 @@ import {TestViewerForProperties} from './test-viewer-for-properties';
 
 
 category('Viewers: Core Viewers', () => {
+  const df = grok.data.demo.demog(100);
   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID);
   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
   const coreViewers = regViewers.filter((x) => !JsViewers.includes(x));
   for (const v of coreViewers) {
     test(v, async () => {
-      await testViewer(v);
+      await testViewer(v, df.clone());
     });
   }
 });
