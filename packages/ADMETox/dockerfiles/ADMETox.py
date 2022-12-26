@@ -34,9 +34,24 @@ SETTINGS['INSTALLED_APPS'] = (
     'django.contrib.messages',
     # 'django.contrib.staticfiles',
     'django.contrib.admin',
-    'corsheaders',
-    'rest_framework'
+    'rest_framework',
+    'corsheaders'
 )
+
+SETTINGS['MIDDLEWARE'] = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+SETTINGS['CORS_ORIGIN_WHITELIST'] = [
+'http://localhost:8080'
+]
 
 if not settings.configured:
     settings.configure(**SETTINGS)
@@ -231,19 +246,25 @@ def handle_uploaded_file(f, models):
     """
     smiles = [list(row.values()) for row in f]
     encoded_smiles = [smile[0].encode('utf8') for smile in smiles]
-    result = []
     current_path = os.path.split(os.path.realpath(__file__))[0]
-    for model in models.split(","):
-        cf = sklearn.externals.joblib.load(current_path + '/' + model)
+    models_res = models.split(",")
+    result = np.zeros((len(encoded_smiles),0), float)
+    for j in range(len(models_res)):
+        cf = sklearn.externals.joblib.load(current_path + '/' + models_res[j])
         fingerprint_content = lambda bits: getMACCS(encoded_smiles) if bits == 167 \
                               else (getECFP(encoded_smiles, 1, 2048) if bits == 2048 \
                               else (getECFP(encoded_smiles, 2, 1024) if bits == 1024 \
                               else get_descriptor_vector(encoded_smiles, bits)))
-        des_list = np.array(fingerprint_content(dict_bits_desc[str(model)[:-4]]))
+        des_list = np.array(fingerprint_content(dict_bits_desc[str(models_res[j])[:-4]]))
         y_predict_label = cf.predict(des_list)
         y_predict_proba = cf.predict_proba(des_list)
-        result.append(zip(y_predict_label, y_predict_proba))
-    return result
+        predicts = []
+        for i in range(len(encoded_smiles)):
+            predict = y_predict_proba[i]
+            predicts.append(predict[y_predict_label[i]])
+        result = np.concatenate([ result, np.array(predicts).reshape(len(encoded_smiles),1)], axis=1)
+    res_df = pd.DataFrame(result, columns=models_res)
+    return res_df.to_csv()
 
 from django.conf.urls import url, include 
 from django.contrib import admin
