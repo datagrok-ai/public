@@ -117,3 +117,8 @@
   -webkit-text-stroke-width: 1px;
   -webkit-text-stroke-color: #784d24;
 }
+
+.d4-update-shadow {
+  background-color: white;
+  opacity: 1.0;
+}

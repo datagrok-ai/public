@@ -101,12 +101,12 @@ export async function initChem(): Promise<void> {
 //tags: autostart
 export async function initChemAutostart(): Promise<void> { }
 
-//name: Scaffold Tree Viewer
+//name: Scaffold Tree
 //tags: viewer
 //meta.trellisable: true
 //output: viewer result
 export function scaffoldTreeViewer() : ScaffoldTreeViewer {
-    return new ScaffoldTreeViewer();
+ return new ScaffoldTreeViewer();
 }
 
 //name: SubstructureFilter
