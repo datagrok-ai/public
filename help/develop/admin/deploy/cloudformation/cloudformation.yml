@@ -2601,15 +2601,24 @@ Resources:
           Action: "*"
           Effect: Deny
           Resource:
-          - Fn::GetAtt:
-            - DatagrokS3
-            - Arn
-          - Fn::Sub:
-            - "${bucket}/*"
-            - bucket:
-                Fn::GetAtt:
-                - DatagrokS3
-                - Arn
+            - !Sub !GetAtt DatagrokS3.Arn/*
+            - !Sub arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com
+            - !Sub arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com/*
+            - !Sub arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}
+            - !Sub arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}/*
+            - !Sub arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket
+            - !Sub arn:aws:s3:::prod-${AWS::Region}-starport-layer-bucket/*
+            - !Sub arn:aws:s3:::docker-images-prod
+            - !Sub arn:aws:s3:::docker-images-prod/*
+ #         - Fn::GetAtt:
+ #           - DatagrokS3
+ #           - Arn
+ #         - Fn::Sub:
+ #           - "${bucket}/*"
+ #           - bucket:
+ #               Fn::GetAtt:
+ #               - DatagrokS3
+ #               - Arn
           Condition:
             Bool:
               aws:SecureTransport: false
