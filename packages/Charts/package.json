@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/charts",
   "fullName": "Charts",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "author": {
     "name": "Diana Onufriienko",
@@ -13,7 +13,7 @@
     "directory": "packages/Charts"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.15.5",
+    "@datagrok-libraries/utils": "^1.19.1",
     "@datagrok-libraries/statistics": "^0.1.7",
     "cash-dom": "^8.1.0",
     "datagrok-api": "^1.6.7",
