@@ -7,7 +7,7 @@ import {findMCS} from '../scripts-api';
  * @export
  * @param {DG.Column} col column with smiles.
  */
-export async function addMcs(col: DG.Column): Promise<string> {
+export async function getMcs(col: DG.Column): Promise<string> {
   if (col.length >= 100000) {
     grok.shell.error('Number of sructures exceeeds 100000');
   }

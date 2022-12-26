@@ -31,7 +31,7 @@ import {toxicityWidget} from './widgets/toxicity';
 
 //panels imports
 import {addInchiKeys, addInchis} from './panels/inchi';
-import {addMcs} from './panels/find-mcs';
+import {getMcs} from './panels/find-mcs';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
 
@@ -440,7 +440,7 @@ export function substituentAnalysisMenu(table: DG.DataFrame): void {
 //input: column col {semType: Molecule}
 //output: string mcs
 export async function addMcsPanel(col: DG.Column): Promise<string> {
-  return await addMcs(col);
+  return await getMcs(col);
 }
 
 //name: Chem | To InchI
