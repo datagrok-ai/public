@@ -22,91 +22,31 @@ import grok_connect.providers.JdbcDataProvider;
 
 @WebSocket
 public class QueryHandler {
-    
+
+    QueryType qt;
+
+    public QueryHandler(QueryType qt) {
+        this.qt = qt;
+    }
+
     @OnWebSocketConnect
-    public void connected(Session session) {
-        System.out.print("connented socket");
+    public void connected(Session session) throws IOException {
+        SessionManager.add(session, qt);
     }
 
     @OnWebSocketClose
     public void closed(Session session, int statusCode, String reason) {
-        
+        SessionManager.delete(session);
     }
 
     @OnWebSocketMessage
     public void message(Session session, String message) throws Throwable {
-        System.out.print(message);
+        SessionManager.onMessage(session, message);
+    }
 
-        Logger logger = Logger.getLogger(GrokConnect.class.getName());
-        logger.setLevel(Level.INFO);
-
-        ProviderManager providerManager = new ProviderManager(logger);
-
-        BufferAccessor buffer;
-
-        FuncCall call = null;
-        if (SettingsManager.getInstance().settings != null) {
-            try {
-                Gson gson = new GsonBuilder()
-                    .registerTypeAdapter(Property.class, new PropertyAdapter())
-                    .create();
-                call = gson.fromJson(message, FuncCall.class);
-                call.log = "";
-                call.setParamValues();
-                call.afterDeserialization();
-                System.out.println(call.func.query);
- 
-                System.out.println("sending first df");
-                session.getRemote().sendString("sending first df");
-
-                DateTime startTime = DateTime.now();
-                JdbcDataProvider provider = providerManager.getByName(call.func.connection.dataSource);
-
-                QueryManager qm = new QueryManager(call, provider);
-
-                qm.getResultSet();
-
-                qm.initScheme();
-                DataFrame dataFrame = qm.getSubDF(10);
-                while (dataFrame != null && dataFrame.rowCount != 0) {
-                    
-                    // DataFrame dataFrame = provider.execute(call);
-                    double execTime = (DateTime.now().getMillis() - startTime.getMillis()) / 1000.0;
-                    
-                    System.out.println("rows: ");
-                    System.out.println(dataFrame.rowCount);
-
-                    session.getRemote().sendBytes(ByteBuffer.wrap(dataFrame.toByteArray()));
-
-                    dataFrame = qm.getSubDF(10);
-                }
-
-                session.close();
-                // buffer = new BufferAccessor(result.blob);
-                // buffer.bufPos = result.blob.length;
-
-            } catch (Throwable ex) {
-                if (ex instanceof OutOfMemoryError)
-                    GrokConnect.needToReboot = true;
-                else {
-                    System.out.println(ex.getMessage());
-                    throw ex;
-                }
-            }
-            finally {
-                session.close();
-                // if (call != null)
-                    // result.log += call.log;
-            }
-        }
-        else {
-            // result.errorMessage = NoSettingsException.class.getName();
-            System.out.println(NoSettingsException.class.getName());
-            session.getRemote().sendString(NoSettingsException.class.getName());
-            session.close();
-            // buffer = new BufferAccessor();
-        }
-
+    @OnWebSocketError
+    public void error(Session session, Throwable error) throws Throwable {
+        SessionManager.onError(session, error);
     }
 
 }

@@ -277,22 +277,18 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryBuffer.append("?");
     }
 
-    public ResultSet getResultSet(FuncCall queryRun) throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection) throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
 
-        Connection connection = null;
         try {
-            // Remove header lines
-            DataQuery dataQuery = queryRun.func;
-            String query = dataQuery.query;
-            connection = getConnection(dataQuery.connection);
+            String query = queryRun.func.query;
+            
             String commentStart = descriptor.commentStart;
 
             ResultSet resultSet = null;
 
-            // 
 
             if (!(queryRun.func.options != null
                     && queryRun.func.options.containsKey("batchMode")
@@ -313,10 +309,10 @@ public abstract class JdbcDataProvider extends DataProvider {
                 throw new QueryCancelledByUser();
             else throw e;
         }
-        finally {
-            if (connection != null)
-                connection.close();
-        }
+        // finally {
+        //     if (connection != null)
+        //         connection.close();
+        // }
     }
 
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, List<Column> columns,
@@ -580,7 +576,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         try {
             DateTime queryExecutionStart = DateTime.now();
 
-            ResultSet resultSet = getResultSet(queryRun);
+            connection = getConnection(queryRun.func.connection);
+            ResultSet resultSet = getResultSet(queryRun, connection);
 
             DateTime columnAssignmentStart = DateTime.now();
 

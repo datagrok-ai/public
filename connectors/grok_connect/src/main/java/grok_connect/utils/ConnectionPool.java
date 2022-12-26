@@ -59,9 +59,11 @@ public class ConnectionPool {
             throw new GrokConnectException("Connection parameters are null");
 
         String key = url + properties + driverClassName;
-        if (!connectionPool.containsKey(key))
-            connectionPool.put(key, new HikariDataSourceInformation(url, properties, driverClassName));
-        return connectionPool.get(key).hikariDataSource.getConnection();
+        synchronized(this) {
+            if (!connectionPool.containsKey(key))
+                connectionPool.put(key, new HikariDataSourceInformation(url, properties, driverClassName));
+            return connectionPool.get(key).hikariDataSource.getConnection();
+        }
     }
 
     public Map<String, Connection> nativeConnectionsConnectionPool = Collections.synchronizedMap(new HashMap<>());

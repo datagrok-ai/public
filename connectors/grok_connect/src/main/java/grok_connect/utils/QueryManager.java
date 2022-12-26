@@ -1,6 +1,7 @@
 package grok_connect.utils;
 
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -16,7 +17,7 @@ public class QueryManager {
 
     ResultSet resultSet;
     FuncCall query;
-
+    Connection connection;
 
     public QueryManager(FuncCall query, JdbcDataProvider provider) {
         this.query = query;
@@ -24,7 +25,8 @@ public class QueryManager {
     }
 
     public void getResultSet() throws ClassNotFoundException, GrokConnectException, QueryCancelledByUser, SQLException {
-        resultSet = provider.getResultSet(query);
+        connection = provider.getConnection(query.func.connection);
+        resultSet = provider.getResultSet(query, connection);
         System.out.println("resultset got");
     }
 
@@ -41,6 +43,10 @@ public class QueryManager {
         }
 
         return provider.getResultSetSubDf(query, resultSet, columns, schemeInfo.supportedType, schemeInfo.initColumn, maxIterations);
+    }
+
+    public void closeConnection() {
+        
     }
     
 

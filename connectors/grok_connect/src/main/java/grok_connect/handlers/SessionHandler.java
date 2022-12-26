@@ -1,6 +1,8 @@
 package grok_connect.handlers;
 
 import org.eclipse.jetty.websocket.api.Session;
+import org.joda.time.DateTime;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -10,11 +12,9 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import grok_connect.GrokConnect;
-import grok_connect.utils.NoSettingsException;
-import grok_connect.utils.QueryChunkNotSent;
-import grok_connect.utils.QueryManager;
-import grok_connect.utils.QueryType;
-import grok_connect.utils.SettingsManager;
+import grok_connect.connectors_info.FuncCall;
+import grok_connect.providers.JdbcDataProvider;
+import grok_connect.utils.*;
 import serialization.DataFrame;
 
 public class SessionHandler {
@@ -37,24 +37,38 @@ public class SessionHandler {
     static String endMessage = "the end";
     static String sizeRecievedMessage = "DATAFRAME PART SIZE RECEIVED";
 
+    private static ProviderManager providerManager = new ProviderManager(Logger.getLogger(GrokConnect.class.getName()));
+
     SessionHandler(Session session, QueryType queryType) {
         this.session = session;
         this.queryType = queryType;
+    }
+
+    public void onError(Throwable err) throws Throwable {
+        session.getRemote().sendString(socketErrorMessage(err));
+        session.close();
+        qm.closeConnection();
     }
 
     public void onMessage(String message) throws Throwable {
         if (SettingsManager.getInstance().settings != null) {
             try {
                 if (message.startsWith("QUERY")) {
-                    System.out.print("query");
-                    if (queryMessages++ > 0 ) {
-                        System.out.println("ALERT SECOND QUERY TO SAME SOCKET WTF??" + queryMessages);
-                        System.out.println(queryMessages);
-                    }
                     message = message.substring(6);
+                    Gson gson = new GsonBuilder()
+                        .registerTypeAdapter(Property.class, new PropertyAdapter())
+                        .create();
+                    System.out.print("query");
+                    FuncCall call = gson.fromJson(message, FuncCall.class);
+                    call.log = "";
+                    call.setParamValues();
+                    call.afterDeserialization();
+                    System.out.println(call.func.query);
 
-                    Logger logger = Logger.getLogger(GrokConnect.class.getName());
-                    qm = new QueryManager(message, queryType);
+                    DateTime startTime = DateTime.now();
+                    JdbcDataProvider provider = providerManager.getByName(call.func.connection.dataSource);
+
+                    qm = new QueryManager(call, provider);
                     qm.getResultSet();
                     qm.initScheme();
 
@@ -92,6 +106,7 @@ public class SessionHandler {
                     System.out.println("df empty, end");
                     session.getRemote().sendString(endMessage);
                     session.close();
+                    qm.closeConnection();
                 }
 
             } catch (Throwable ex) {
@@ -99,6 +114,7 @@ public class SessionHandler {
                     GrokConnect.needToReboot = true;
                 session.getRemote().sendString(socketErrorMessage(ex));
                 session.close();
+                qm.closeConnection();
             }
 
         }
