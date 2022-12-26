@@ -1,41 +1,5 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Mappings: 
-  RegionMap: 
-    us-east-1:
-      HVM64: ami-0e72545e0a1a5c759
-    us-east-2:
-      HVM64: ami-0360083982fcb66ad
-    us-west-1:
-      HVM64: ami-001f81b37439d0e4a
-    us-west-2:
-      HVM64: ami-06dafa1b661caec7e
-    ap-northeast-1:
-      HVM64: ami-0374741421f827827
-    ap-northeast-2:
-      HVM64: ami-088777ecf30673312
-    ap-northeast-3:
-      HVM64: ami-09501c9961ca54ebc
-    ap-south-1:
-      HVM64: ami-072b20c3cda798d4b
-    ap-southeast-1:
-      HVM64: ami-0e9b17c2a5411ea2f
-    ap-southeast-2:
-      HVM64: ami-039894e835f6017fd
-    ca-central-1:
-      HVM64: ami-0c18e42761be11bbd
-    eu-central-1:
-      HVM64: ami-07383d4bda8b9c72b
-    eu-north-1:
-      HVM64: ami-07e8680b9268427e5
-    eu-west-1:
-      HVM64: ami-00ce328eb1ed0570d
-    eu-west-2:
-      HVM64: ami-0a7fe1d4be64d0d0f
-    eu-west-3:
-      HVM64: ami-096a7bcc827c5e536
-    sa-east-1:
-      HVM64: ami-0862195240614edc1
 Parameters:
   DatagrokVersion:
     Type: String
@@ -3594,8 +3558,8 @@ Resources:
     Properties:
       LaunchTemplateData:
         IamInstanceProfile:
-           Name: !Ref Ec2InstanceProfile
-        ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
+           Arn: !GetAtt Ec2InstanceProfile.Arn
+        ImageId: ami-0a6b2839d44d781b2
         InstanceType: !Ref DatagrokEc2InstanceType
         KeyName: !Ref ImportKeyPairEc2
         UserData:
@@ -3603,7 +3567,7 @@ Resources:
             !Sub |
               #!/bin/bash
               # shellcheck disable=SC2154
-              echo "ECS_CLUSTER=!Ref DatagrokCluster" >> /etc/ecs/ecs.config
+              echo "ECS_CLUSTER=!Ref DatagrokCluster" >>/etc/ecs/ecs.config
 #        AvailabilityZone:
 #          Fn::Select:
 #          - 0
@@ -3611,10 +3575,9 @@ Resources:
 #              Ref: AWS::Region
         NetworkInterfaces:  
           - AssociatePublicIpAddress: false
-            DeviceIndex: '0'
             SubnetId: !GetAtt DatagrokPrivateSubnet1.SubnetId
-#        SecurityGroupIds: 
-#          - !Ref DatagrokALBSecurityGroup
+        SecurityGroupIds: 
+          - !GetAtt DatagrokALBSecurityGroup.GroupId
         DisableApiTermination: false
         DisableApiStop: false
         MetadataOptions:
@@ -3628,8 +3591,7 @@ Resources:
           Enabled: false
         EbsOptimized: true
         BlockDeviceMappings:
-          - DeviceName: "/dev/sdb"
-            Ebs:
+          - Ebs:
               Encrypted: true
               VolumeType: gp3
               VolumeSize: 50
@@ -3639,8 +3601,8 @@ Resources:
     Properties:
       LaunchTemplateData:
         IamInstanceProfile: 
-          Name: !Ref Ec2InstanceProfile
-        ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
+          Arn: !GetAtt Ec2InstanceProfile.Arn
+        ImageId: ami-0a6b2839d44d781b2
         InstanceType: !Ref CvmEc2InstanceType
         KeyName: !Ref ImportKeyPairEc2
         UserData:
@@ -3648,7 +3610,7 @@ Resources:
             !Sub |
               #!/bin/bash
               # shellcheck disable=SC2154
-              echo "ECS_CLUSTER=!Ref CvmCluster" >> /etc/ecs/ecs.config
+              echo "ECS_CLUSTER=!Ref CvmCluster" >>/etc/ecs/ecs.config
 #        AvailabilityZone:
 #          Fn::Select:
 #          - 0
@@ -3656,10 +3618,9 @@ Resources:
 #              Ref: AWS::Region
         NetworkInterfaces:  
           - AssociatePublicIpAddress: false
-            DeviceIndex: '0'
             SubnetId: !GetAtt DatagrokPrivateSubnet1.SubnetId
-#        SecurityGroupIds: 
-#          - !Ref CvmSecurityGroup
+        SecurityGroupIds: 
+          - !GetAtt CvmSecurityGroup.GroupId
         DisableApiTermination: false
         DisableApiStop: false
         MetadataOptions:
@@ -3673,8 +3634,7 @@ Resources:
           Enabled: false 
         EbsOptimized: true
         BlockDeviceMappings:
-          - DeviceName: "/dev/sdb"
-            Ebs:
+          - Ebs:
               Encrypted: true
               VolumeType: gp3
               VolumeSize: 100
@@ -3683,7 +3643,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
         IamInstanceProfile: !Ref Ec2InstanceProfile
-        ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
+        ImageId: ami-0a6b2839d44d781b2
         InstanceType: !Ref CvmEc2InstanceType
         KeyName: !Ref ImportKeyPairEc2
         LaunchTemplate:
@@ -3694,13 +3654,13 @@ Resources:
             !Sub |
               #!/bin/bash
               # shellcheck disable=SC2154
-              echo "ECS_CLUSTER=!Ref CvmCluster" >> /etc/ecs/ecs.config
+              echo "ECS_CLUSTER=!Ref CvmCluster" >>/etc/ecs/ecs.config
         NetworkInterfaces:  
           - AssociatePublicIpAddress: false
             DeviceIndex: '0'
             SubnetId: !GetAtt DatagrokPrivateSubnet1.SubnetId
-#        SecurityGroupIds: 
-#          - !Ref CvmSecurityGroup
+        SecurityGroupIds: 
+          - !GetAtt CvmSecurityGroup.GroupId
         DisableApiTermination: false
         InstanceInitiatedShutdownBehavior: 'stop'
         Monitoring: false 
@@ -3716,7 +3676,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
         IamInstanceProfile: !Ref Ec2InstanceProfile
-        ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
+        ImageId: ami-0a6b2839d44d781b2
         InstanceType: !Ref DatagrokEc2InstanceType
         KeyName: !Ref ImportKeyPairEc2
         LaunchTemplate:
@@ -3727,13 +3687,13 @@ Resources:
             !Sub |
               #!/bin/bash
               # shellcheck disable=SC2154
-              echo "ECS_CLUSTER=!Ref DatagrokCluster" >> /etc/ecs/ecs.config
+              echo "ECS_CLUSTER=!Ref DatagrokCluster" >>/etc/ecs/ecs.config
         NetworkInterfaces:  
           - AssociatePublicIpAddress: false
             DeviceIndex: '0'
             SubnetId: !GetAtt DatagrokPrivateSubnet1.SubnetId
-#        SecurityGroupIds: 
-#          - !Ref DatagrokALBSecurityGroup
+        SecurityGroupIds: 
+          - !GetAtt DatagrokALBSecurityGroup.GroupId
         DisableApiTermination: false
         InstanceInitiatedShutdownBehavior: 'stop'
         Monitoring: false 
