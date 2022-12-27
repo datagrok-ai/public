@@ -759,9 +759,11 @@ Resources:
       LaunchType: !Ref LaunchType
       LoadBalancers:
       - ContainerName: grok_compute
+        ContainerPort: 5005
         TargetGroupArn:
           Ref: GrokComputeTCP5005TargetGroup
       - ContainerName: grok_compute
+        ContainerPort: 5005
         TargetGroupArn:
           Ref: GrokComputeTCP5005IntTargetGroup
       NetworkConfiguration:
@@ -1112,15 +1114,19 @@ Resources:
       LaunchType: !Ref LaunchType
       LoadBalancers:
       - ContainerName: h2o
+        ContainerPort: 5005
         TargetGroupArn:
           Ref: H2oTCP5005TargetGroup
       - ContainerName: h2o
+        ContainerPort: 54321
         TargetGroupArn:
           Ref: H2oTCP54321TargetGroup
       - ContainerName: h2o
+        ContainerPort: 5005
         TargetGroupArn:
           Ref: H2oTCP5005IntTargetGroup
       - ContainerName: h2o
+        ContainerPort: 54321
         TargetGroupArn:
           Ref: H2oTCP54321IntTargetGroup
       NetworkConfiguration:
@@ -1488,15 +1494,19 @@ Resources:
       LaunchType: !Ref LaunchType
       LoadBalancers:
       - ContainerName: jupyter_kernel_gateway
+        ContainerPort: 5005
         TargetGroupArn:
           Ref: JupyterKernelGatewayTCP5005TargetGroup
       - ContainerName: jupyter_kernel_gateway
+        ContainerPort: 8888
         TargetGroupArn:
           Ref: JupyterKernelGatewayTCP8888TargetGroup
       - ContainerName: jupyter_kernel_gateway
+        ContainerPort: 5005
         TargetGroupArn:
           Ref: JupyterKernelGatewayTCP5005IntTargetGroup
       - ContainerName: jupyter_kernel_gateway
+        ContainerPort: 8888
         TargetGroupArn:
           Ref: JupyterKernelGatewayTCP8888IntTargetGroup
       NetworkConfiguration:
@@ -1935,15 +1945,19 @@ Resources:
       LaunchType: !Ref LaunchType
       LoadBalancers:
       - ContainerName: jupyter_notebook
+        ContainerPort: 5005
         TargetGroupArn:
           Ref: JupyterNotebookTCP5005TargetGroup
       - ContainerName: jupyter_notebook
+        ContainerPort: 8889
         TargetGroupArn:
           Ref: JupyterNotebookTCP8889TargetGroup
       - ContainerName: jupyter_notebook
+        ContainerPort: 5005
         TargetGroupArn:
           Ref: JupyterNotebookTCP5005IntTargetGroup
       - ContainerName: jupyter_notebook
+        ContainerPort: 8889
         TargetGroupArn:
           Ref: JupyterNotebookTCP8889IntTargetGroup
       NetworkConfiguration:
@@ -2504,9 +2518,11 @@ Resources:
       LaunchType: !Ref LaunchType
       LoadBalancers:
       - ContainerName: datagrok
+        ContainerPort: 8080
         TargetGroupArn:
           Ref: DatagrokTCP8080TargetGroup
       - ContainerName: datagrok
+        ContainerPort: 8080
         TargetGroupArn:
           Ref: DatagrokTCP8080IntTargetGroup
       NetworkConfiguration:
