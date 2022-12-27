@@ -766,21 +766,8 @@ Resources:
         ContainerPort: 5005
         TargetGroupArn:
           Ref: GrokComputeTCP5005IntTargetGroup
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-          - Ref: CvmSecurityGroup
-          Subnets:
-          - Ref: DatagrokPrivateSubnet1
-          - Ref: DatagrokPrivateSubnet2
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
-      ServiceRegistries:
-      - RegistryArn:
-          Fn::GetAtt:
-          - GrokComputeServiceDiscoveryEntry
-          - Arn
       Tags:
       - Key: Name
         Value: CVM Grok Compute Service
@@ -1129,21 +1116,8 @@ Resources:
         ContainerPort: 54321
         TargetGroupArn:
           Ref: H2oTCP54321IntTargetGroup
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-          - Ref: CvmSecurityGroup
-          Subnets:
-          - Ref: DatagrokPrivateSubnet1
-          - Ref: DatagrokPrivateSubnet2
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
-      ServiceRegistries:
-      - RegistryArn:
-          Fn::GetAtt:
-          - H2oServiceDiscoveryEntry
-          - Arn
       Tags:
       - Key: datagrok.component
         Value: cvm
@@ -1509,21 +1483,8 @@ Resources:
         ContainerPort: 8888
         TargetGroupArn:
           Ref: JupyterKernelGatewayTCP8888IntTargetGroup
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-          - Ref: CvmSecurityGroup
-          Subnets:
-          - Ref: DatagrokPrivateSubnet1
-          - Ref: DatagrokPrivateSubnet2
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
-      ServiceRegistries:
-      - RegistryArn:
-          Fn::GetAtt:
-          - JupyterKernelGatewayServiceDiscoveryEntry
-          - Arn
       Tags:
       - Key: datagrok.component
         Value: cvm
@@ -1960,21 +1921,8 @@ Resources:
         ContainerPort: 8889
         TargetGroupArn:
           Ref: JupyterNotebookTCP8889IntTargetGroup
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-          - Ref: CvmSecurityGroup
-          Subnets:
-          - Ref: DatagrokPrivateSubnet1
-          - Ref: DatagrokPrivateSubnet2
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
-      ServiceRegistries:
-      - RegistryArn:
-          Fn::GetAtt:
-          - JupyterNotebookServiceDiscoveryEntry
-          - Arn
       Tags:
       - Key: datagrok.component
         Value: cvm
@@ -2525,21 +2473,8 @@ Resources:
         ContainerPort: 8080
         TargetGroupArn:
           Ref: DatagrokTCP8080IntTargetGroup
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          SecurityGroups:
-          - Ref: DatagrokSecurityGroup
-          Subnets:
-          - Ref: DatagrokPrivateSubnet1
-          - Ref: DatagrokPrivateSubnet2
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
-      ServiceRegistries:
-      - RegistryArn:
-          Fn::GetAtt:
-          - DatagrokServiceDiscoveryEntry
-          - Arn
       Tags:
       - Key: datagrok.component
         Value: datagrok
