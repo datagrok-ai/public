@@ -757,6 +757,8 @@ Resources:
         Type: ECS
       DesiredCount: 1
       LaunchType: !Ref LaunchType
+      SecurityGroupIds: 
+        - Ref: CvmSecurityGroup
       LoadBalancers:
       - ContainerName: grok_compute
         ContainerPort: 5005
@@ -1099,6 +1101,8 @@ Resources:
         Type: ECS
       DesiredCount: 1
       LaunchType: !Ref LaunchType
+      SecurityGroupIds: 
+        - Ref: CvmSecurityGroup
       LoadBalancers:
       - ContainerName: h2o
         ContainerPort: 5005
@@ -1466,6 +1470,8 @@ Resources:
         Type: ECS
       DesiredCount: 1
       LaunchType: !Ref LaunchType
+      SecurityGroupIds: 
+        - Ref: CvmSecurityGroup
       LoadBalancers:
       - ContainerName: jupyter_kernel_gateway
         ContainerPort: 5005
@@ -1904,6 +1910,8 @@ Resources:
         Type: ECS
       DesiredCount: 1
       LaunchType: !Ref LaunchType
+      SecurityGroupIds: 
+        - Ref: CvmSecurityGroup
       LoadBalancers:
       - ContainerName: jupyter_notebook
         ContainerPort: 5005
@@ -2474,6 +2482,8 @@ Resources:
         TargetGroupArn:
           Ref: DatagrokTCP8080IntTargetGroup
       PropagateTags: SERVICE
+      SecurityGroupIds: 
+        - Ref: DatagrokSecurityGroup
       SchedulingStrategy: REPLICA
       Tags:
       - Key: datagrok.component
