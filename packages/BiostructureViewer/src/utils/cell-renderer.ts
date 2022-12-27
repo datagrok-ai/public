@@ -2,11 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import * as bio from '@datagrok-libraries/bio';
 import {TwinProteinView} from '../viewers/twin-p-cells';
 import {initViewer, byData} from '../viewers/molstar-viewer';
 import {Rect, TableView} from 'datagrok-api/dg';
 import {getNglGlService} from '../package';
+import {NglGlTask} from '@datagrok-libraries/bio';
 
 const PDB_RENDERER_IMAGE_CACHE_KEY = 'PdbRendererImageCache';
 
@@ -94,7 +94,7 @@ export class PdbRenderer extends DG.GridCellRenderer {
         //imageCache[rowIdx] = null;
         //gridCell.tableColumn.temp.set(PDB_RENDERER_IMAGE_CACHE_KEY, imageCache);
 
-        let task: bio.NglGlTask = {
+        const task: NglGlTask = {
           name: gridCell.cell.rowIndex.toString(),
           backColor: gridCell.grid.props.backColor,
           props: {
