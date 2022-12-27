@@ -404,8 +404,9 @@ export class OpenLayers {
 
   parseColorCondition(condStr: string): (any)[] {
     const resArr: (any)[] = [];
-    let numbersRes = condStr.replace(/\s/g, '').match(/(\d*\.\d*|\d*)/ig);
-    let symbolsRes = condStr.replace(/\s/g, '').match(/\D*/ig);
+    let numbersRes = 0; //condStr.replace(/\s/g, '').match(/(\d*\.\d*|\d*)/ig);
+    let symbolsRes = 0;//condStr.replace(/\s/g, '').match(/\D*/ig);
+    /*
     if (!numbersRes || !symbolsRes)
       return resArr;
 
@@ -427,7 +428,7 @@ export class OpenLayers {
       resArr.push(parseFloat(numbersRes[0]));
       resArr.push(parseFloat(numbersRes[numbersRes.length-1]));
     }
-
+    */
     return resArr;
   }
 

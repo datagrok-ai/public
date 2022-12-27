@@ -335,12 +335,13 @@ export class GisViewer extends DG.JsViewer {
     body.style.maxWidth = '100%';
     body.style.maxHeight = '100%';
 
-    this.viewerContainer = ui.splitV(
+    this.viewerContainer = body;/*ui.splitV(
       [this.panelTop,
         ui.splitH([this.panelLeft, body], null, true),
-        this.panelBottom]);
+        this.panelBottom]);*/
 
     this.root.appendChild(this.viewerContainer);
+    
 
     //setup context menu
     this.onContextMenu.subscribe((menu) => {
