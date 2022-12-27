@@ -739,13 +739,14 @@ Resources:
     Type: AWS::ECS::Service
     Condition: CreateFargateInstanceCondition
   GrokComputeServiceEc2:
-    DependsOn:
-    - CvmTCP80Listener
-    - CvmTCP443Listener
-    - CvmTCP8090IntListener
-    - GrokComputeTCP5005ListenerRule
-    - GrokComputeTCP5005IntListenerRule
+#    DependsOn:
+#    - CvmTCP80Listener
+#    - CvmTCP443Listener
+#    - CvmTCP8090IntListener
+#    - GrokComputeTCP5005ListenerRule
+#    - GrokComputeTCP5005IntListenerRule
     Properties:
+      EnableExecuteCommand: true
       Cluster:
         Fn::GetAtt:
         - CvmCluster
@@ -1082,12 +1083,13 @@ Resources:
     Type: AWS::ECS::Service
     Condition: CreateFargateInstanceCondition
   H2oServiceEc2:
-    DependsOn:
-    - H2oTCP5005Listener
-    - H2oTCP5005IntListener
-    - H2oTCP54321Listener
-    - H2oTCP54321IntListener
+#    DependsOn:
+#   - H2oTCP5005Listener
+#    - H2oTCP5005IntListener
+#    - H2oTCP54321Listener
+#    - H2oTCP54321IntListener
     Properties:
+      EnableExecuteCommand: true
       Cluster:
         Fn::GetAtt:
         - CvmCluster
@@ -1446,15 +1448,16 @@ Resources:
         Value: h2o
     Type: AWS::IAM::Role
   JupyterKernelGatewayServiceEc2:
-    DependsOn:
-    - CvmTCP80Listener
-    - CvmTCP443Listener
-    - CvmTCP8090IntListener
-    - JupyterKernelGatewayTCP5005ListenerRule
-    - JupyterKernelGatewayTCP5005IntListenerRule
-    - JupyterKernelGatewayTCP8888ListenerRule
-    - JupyterKernelGatewayTCP8888IntListenerRule
+#    DependsOn:
+#    - CvmTCP80Listener
+#    - CvmTCP443Listener
+#    - CvmTCP8090IntListener
+#    - JupyterKernelGatewayTCP5005ListenerRule
+#    - JupyterKernelGatewayTCP5005IntListenerRule
+#    - JupyterKernelGatewayTCP8888ListenerRule
+#    - JupyterKernelGatewayTCP8888IntListenerRule
     Properties:
+      EnableExecuteCommand: true
       Cluster:
         Fn::GetAtt:
         - CvmCluster
@@ -1884,15 +1887,16 @@ Resources:
     Type: AWS::ECS::Service
     Condition: CreateFargateInstanceCondition
   JupyterNotebookServiceEc2:
-    DependsOn:
-    - CvmTCP80Listener
-    - CvmTCP443Listener
-    - CvmTCP8090IntListener
-    - JupyterNotebookTCP5005ListenerRule
-    - JupyterNotebookTCP5005IntListenerRule
-    - JupyterNotebookTCP8889ListenerRule
-    - JupyterNotebookTCP8889IntListenerRule
+#    DependsOn:
+#    - CvmTCP80Listener
+#    - CvmTCP443Listener
+#    - CvmTCP8090IntListener
+#    - JupyterNotebookTCP5005ListenerRule
+#    - JupyterNotebookTCP5005IntListenerRule
+#    - JupyterNotebookTCP8889ListenerRule
+#    - JupyterNotebookTCP8889IntListenerRule
     Properties:
+      EnableExecuteCommand: true
       Cluster:
         Fn::GetAtt:
         - CvmCluster
@@ -2393,12 +2397,12 @@ Resources:
         Value: enabled
     Type: AWS::ECS::Cluster
   DatagrokServiceFargate:
-    DependsOn:
-    - DatagrokTCP80Listener
-    - DatagrokTCP443Listener
-    - DatagrokTCP8080IntListener
-    - DatagrokS3
-    - DatagrokDB
+#    DependsOn:
+#   - DatagrokTCP80Listener
+#    - DatagrokTCP443Listener
+#    - DatagrokTCP8080IntListener
+#    - DatagrokS3
+#    - DatagrokDB
     Properties:
       Cluster:
         Fn::GetAtt:
@@ -2446,13 +2450,14 @@ Resources:
     Type: AWS::ECS::Service
     Condition: CreateFargateInstanceCondition
   DatagrokServiceEc2:
-    DependsOn:
-    - DatagrokTCP80Listener
-    - DatagrokTCP443Listener
-    - DatagrokTCP8080IntListener
-    - DatagrokS3
-    - DatagrokDB
+ #   DependsOn:
+ #   - DatagrokTCP80Listener
+ #  - DatagrokTCP443Listener
+ #   - DatagrokTCP8080IntListener
+ #   - DatagrokS3
+ #   - DatagrokDB
     Properties:
+      EnableExecuteCommand: true
       Cluster:
         Fn::GetAtt:
         - DatagrokCluster
