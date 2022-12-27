@@ -10,6 +10,8 @@ on:
     paths:
       - 'packages/**'
 
+concurrency: packages-${{ github.ref }}
+
 jobs:
   matrix:
     name: Check changes
@@ -131,6 +133,8 @@ jobs:
       - name: Run datagrok stand
         id: datagrok-image
         if: ${{ matrix.test == 'true' }}
+        env:
+          DATAGROK_VERSION: 'bleeding-edge'
         run: |
           commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
@@ -141,9 +145,9 @@ jobs:
           fi
 
           docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" ${profiles} up -d
-          docker_sha=$(docker images --quiet datagrok/datagrok:latest)
+          docker_sha=$(docker images --quiet datagrok/datagrok:bleeding-edge)
           echo "docker_sha=$docker_sha" >> $GITHUB_OUTPUT
-          echo "::notice title=${{ matrix.package }}::datagrok/datagrok:latest SHA=$docker_sha docker version was used for tests"
+          echo "::notice title=${{ matrix.package }}::datagrok/datagrok:bleeding-edge SHA=$docker_sha docker version was used for tests"
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
@@ -177,7 +181,7 @@ jobs:
         if: ${{ matrix.test == 'true' }}
         timeout-minutes: 5
         run: |
-          until curl -s http://localhost:8080/api/admin/health | grep -e '"status":"Running"'
+          while curl -s http://localhost:8080/api/admin/health | grep -e 'ApiError'
           do
             sleep 1
           done
@@ -212,7 +216,7 @@ jobs:
         id: test-package
         run: npm run test -- --verbose=false
         env:
-          JEST_HTML_REPORTER_PAGE_TITLE: "${{ matrix.package }} Test Report. Datagrok version datagrok/datagrok:latest SHA=${{ steps.datagrok-image.outputs.docker_sha }}. Commit ${{ steps.datagrok-image.outputs.commit_sha }}."
+          JEST_HTML_REPORTER_PAGE_TITLE: "${{ matrix.package }} Test Report. Datagrok version datagrok/datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}. Commit ${{ steps.datagrok-image.outputs.commit_sha }}."
           JEST_HTML_REPORTER_OUTPUT_PATH: "./test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html"
           JEST_HTML_REPORTER_INCLUDE_FAILURE_MSG: true
           JEST_HTML_REPORTER_INCLUDE_CONSOLE_LOG: true
@@ -221,7 +225,7 @@ jobs:
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
-          echo "::error title=${{ matrix.package }}: failed tests with datagrok:latest SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html report for results"
+          echo "::error title=${{ matrix.package }}: failed tests with datagrok:bleeding-edge SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html report for results"
           echo "status=error" >> $GITHUB_OUTPUT
 
       - name: Upload Artifact

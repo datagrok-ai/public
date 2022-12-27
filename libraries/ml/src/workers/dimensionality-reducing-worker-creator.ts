@@ -18,7 +18,7 @@ export interface IReduceDimensionalityResult {
 export function createDimensinalityReducingWorker(dataMetric: ValidTypes, method: string,
       options?: any): Promise<IReduceDimensionalityResult> {
 
-  return new Promise(function(resolve) {
+  return new Promise(function(resolve, reject) {
     const worker = new Worker(new URL('./dimensionality-reducer', import.meta.url));
     worker.postMessage({
       columnData: dataMetric.data,
@@ -26,8 +26,11 @@ export function createDimensinalityReducingWorker(dataMetric: ValidTypes, method
       measure: dataMetric.metric,
       options: options,
     });
-    worker.onmessage = ({data: {distance, embedding}}) => {
-     resolve({distance: distance, embedding: embedding});
+    worker.onmessage = ({data: {error, distance, embedding}}) => {
+      if (error)
+        reject(error);
+      else
+        resolve({distance: distance, embedding: embedding});
     };
   });
 }

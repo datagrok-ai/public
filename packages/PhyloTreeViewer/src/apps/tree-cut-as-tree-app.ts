@@ -1,7 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {Unsubscribable} from 'rxjs';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
@@ -10,6 +9,7 @@ import {_package} from '../package';
 import {TAGS} from '../utils/tree-helper';
 import {data} from 'datagrok-api/grok';
 import {injectTreeForGridUI} from '../viewers/inject-tree-for-grid';
+import {NodeType, parseNewick} from '@datagrok-libraries/bio';
 
 export class TreeCutAsTreeApp {
   private viewed: boolean = false;
@@ -19,7 +19,7 @@ export class TreeCutAsTreeApp {
   _dataDf: DG.DataFrame;
   _leafCol: DG.Column;
   _newickStr: string;
-  _newickRoot: bio.NodeType;
+  _newickRoot: NodeType;
 
   get dataDf(): DG.DataFrame { return this._dataDf; }
 
@@ -27,7 +27,7 @@ export class TreeCutAsTreeApp {
 
   // get newickStr(): string { return this._newickStr; }
 
-  get newickRoot(): bio.NodeType { return this._newickRoot; }
+  get newickRoot(): NodeType { return this._newickRoot; }
 
   async init(): Promise<void> {
     await this.loadData();
@@ -57,7 +57,7 @@ export class TreeCutAsTreeApp {
       throw new Error(`Specify leaf column name in DataFrame tag '${TAGS.DF_NEWICK_LEAF_COL_NAME}'.`);
     this._leafCol = dataDf.getCol(leafColName!);
     this._newickStr = newickStr;
-    this._newickRoot = bio.Newick.parse_newick(newickStr);
+    this._newickRoot = parseNewick(newickStr);
 
     if (!this.viewed) {
       await this.buildView();
@@ -75,7 +75,6 @@ export class TreeCutAsTreeApp {
       this.tableView.close();
       this.tableView = null;
     }
-
   }
 
   async buildView() {
@@ -83,7 +82,7 @@ export class TreeCutAsTreeApp {
       this.tableView = grok.shell.addTableView(this.dataDf);
       this.tableView.path = this.tableView.basePath = 'func/PhyloTreeViewer.treeForGridApp';
 
-      this.dataDf.columns.addNewInt('Cluster').init((rowI)=> { return null;})
+      this.dataDf.columns.addNewInt('Cluster').init((rowI) => { return null; });
       // this.gridN = injectTreeForGridUI(
       //   this.tableView.grid, this.newickRoot, this.leafCol.name, 250,
       //   {min: 0, max: 20, clusterColName: 'Cluster'});

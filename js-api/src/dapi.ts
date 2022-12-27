@@ -893,7 +893,7 @@ export class FileSource {
    * @returns {Promise<DataFrame[]>} */
   async readBinaryDataFrames(file: FileInfo | string): Promise<DataFrame[]> {
     file = this.setRoot(file);
-    return api.grok_Dapi_UserFiles_ReadBinaryDataFrames(this.setRoot(file));
+    return api.grok_Dapi_UserFiles_ReadBinaryDataFrames(file);
   }
 
   /** Writes a file.

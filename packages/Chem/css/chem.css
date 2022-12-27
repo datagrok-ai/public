@@ -74,3 +74,51 @@
   position: absolute;
   top: 10px;
 }
+
+.d4-scaffold-tree-viewer .grok-icon {
+  color: var(--blue-1) !important;
+  font-size: large;
+  margin: 1px;
+}
+
+.d4-scaffold-tree-viewer .grok-icon:hover {
+  color: var(--blue-2) !important;
+  cursor: pointer;
+}
+
+.chem-scaffold-tree-generate-hint {
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  font-size: 16px;
+  width: 100% !important;
+  height: 30px !important;
+}
+
+.chem-scaffold-tree-generate-message-hint {
+  color : #4d5261;
+  text-align: center;
+  position: absolute;
+  top: 45%;
+  font-size: 12px;
+  width: 100% !important;
+  height: 30px !important;
+  visibility: hidden;
+}
+
+
+.d4-scaffold-tree-viewer .d4-tree-view-group-host .d4-tree-view-group-host {
+  margin-left: 30px;
+}
+
+.icon-fill {
+  color: lightgreen !important;
+  margin-left: 5px;
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: #784d24;
+}
+
+.d4-update-shadow {
+  background-color: white;
+  opacity: 1.0;
+}

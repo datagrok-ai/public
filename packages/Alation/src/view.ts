@@ -197,10 +197,14 @@ export async function connectToDb(
 
 function connectToDbDialog(dataSource: types.dataSource, func: (conn: DG.DataConnection) => Promise<void>) {
   let dbType: string | null = null;
-  for (const dsType of constants.DATA_SOURCE_TYPES) {
-    if (dataSource.dbtype === dsType.toLowerCase()) {
-      dbType = dsType;
-      break;
+  if (dataSource.dbtype == 'customdb')
+    dbType = 'Denodo';
+  else {
+    for (const dsType of constants.DATA_SOURCE_TYPES) {
+      if (dataSource.dbtype === dsType.toLowerCase()) {
+        dbType = dsType;
+        break;
+      }
     }
   }
 

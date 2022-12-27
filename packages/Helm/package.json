@@ -9,7 +9,7 @@
   "description": "",
   "dependencies": {
     "@datagrok-libraries/utils": "^1.15.5",
-    "@datagrok-libraries/bio": "^5.9.14",
+    "@datagrok-libraries/bio": "^5.15.1",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.7.2",
     "dayjs": "^1.10.6",

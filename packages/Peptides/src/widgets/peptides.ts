@@ -8,7 +8,7 @@ import * as type from '../utils/types';
 import {PeptidesModel} from '../model';
 import $ from 'cash-dom';
 import {scaleActivity} from '../utils/misc';
-import * as bio from '@datagrok-libraries/bio';
+import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio';
 
 /** Peptide analysis widget.
  *
@@ -16,7 +16,7 @@ import * as bio from '@datagrok-libraries/bio';
  * @param {DG.Column} col Aligned sequence column
  * @return {Promise<DG.Widget>} Widget containing peptide analysis */
 export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
-{host: HTMLElement, callback: () => Promise<boolean>} {
+  { host: HTMLElement, callback: () => Promise<boolean> } {
   const logoHost = ui.div();
   // logoHost.style.alignContent = 'center';
   let seqColInput: DG.InputBase | null = null;
@@ -38,8 +38,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
         return viewer.root;
       }));
     });
-  } else if (!(col.getTag(bio.TAGS.aligned) == bio.ALIGNMENT.SEQ_MSA) &&
-             col.getTag(DG.TAGS.UNITS) !== bio.NOTATION.HELM) {
+  } else if (!(col.getTag(bioTAGS.aligned) == ALIGNMENT.SEQ_MSA) &&
+    col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
     return {
       host: ui.label('Peptides analysis only works with aligned sequences'),
       callback: async (): Promise<boolean> => false,
@@ -65,7 +65,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>):
   let scaledCol: DG.Column<number>;
 
   const defaultActivityColumn: DG.Column<number> | null =
-    df.col('activity') || df.col('IC50') || DG.Utils.firstOrNull(df.columns.numerical); ;
+    df.col('activity') || df.col('IC50') || DG.Utils.firstOrNull(df.columns.numerical);
+  ;
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
   const activityScalingMethod = ui.choiceInput(
@@ -164,13 +165,14 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     };
     if (clustersColumn) {
       const clusterCol = newDf.getCol(clustersColumn.name);
-      newDf.columns.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
+      if (clusterCol.type != DG.COLUMN_TYPE.STRING)
+        newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
       settings.clustersColumnName = clustersColumn.name;
     }
     newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 
     let monomerType = 'HELM_AA';
-    if (peptidesCol.getTag(DG.TAGS.UNITS) == bio.NOTATION.HELM) {
+    if (peptidesCol.getTag(DG.TAGS.UNITS) == NOTATION.HELM) {
       const sampleSeq = peptidesCol.get(0)!;
       monomerType = sampleSeq.startsWith('PEPTIDE') ? 'HELM_AA' : 'HELM_BASE';
     } else {

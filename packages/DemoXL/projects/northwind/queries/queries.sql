@@ -1,35 +1,35 @@
 --name: states
+--connection: PostgresDartNorthwind
 select distinct stateabbr from usstates order by stateabbr
 --end
 
 
 --name: countries
+--connection: PostgresDartNorthwind
 select distinct country from customers order by country
 --end
 
 
 --name: products
---input: string ProductName = 'Tofu' 
---meta.testExpectedRows: 1
+--connection: PostgresDartNorthwind
 select * from products
 --end
 
 
 --name: employees
---input: string Country = 'UK'
---meta.testExpectedRows: 4
+--connection: PostgresDartNorthwind
 select * from employees
 --end
 
 
 --name: customers
---input: int PostalCode = '05021'
---meta.testExpectedRows: 1
+--connection: PostgresDartNorthwind
 select * from customers
 --end
 
 
 --name: order details by @quantity, @productName, @country
+--connection: PostgresDartNorthwind
 --input: int quantity = '40'
 --input: string productName = 'Manjimup Dried Apples'
 --input: string country { choices: northwind:countries }
@@ -57,6 +57,7 @@ where
 
 
 --name: customers in @country
+--connection: PostgresDartNorthwind
 --input: string country
 select * from customers where country = @country
 --end

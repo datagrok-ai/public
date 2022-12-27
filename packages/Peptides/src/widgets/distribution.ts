@@ -45,15 +45,8 @@ export function getDistributionWidget(table: DG.DataFrame, model: PeptidesModel)
         for (const aar of aarList) {
           aarStr = `${position} : ${aar}`;
           const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, rowCount).init((i) => posCol.get(i) == aar);
-
           const distributionTable = DG.DataFrame.fromColumns([activityScaledCol, splitCol]);
-          const currentStatsDf = model.monomerPositionStatsDf.rows.match({Pos: position, AAR: aar}).toDataFrame();
-          const stats: Stats = {
-            count: currentStatsDf.get(C.COLUMNS_NAMES.COUNT, 0),
-            ratio: currentStatsDf.get(C.COLUMNS_NAMES.RATIO, 0),
-            pValue: currentStatsDf.get(C.COLUMNS_NAMES.P_VALUE, 0),
-            meanDifference: currentStatsDf.get(C.COLUMNS_NAMES.MEAN_DIFFERENCE, 0),
-          };
+          const stats = model.monomerPositionStats[position][aar];
           const distributionRoot = getDistributionAndStats(distributionTable, stats, aarStr, otherStr, true);
           $(distributionRoot).addClass('d4-flex-col');
 

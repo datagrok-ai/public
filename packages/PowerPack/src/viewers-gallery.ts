@@ -165,9 +165,9 @@ export async function viewersGallery() {
             for (let i in viewers) {
                 if (filter_value.indexOf(viewers[i].name) != -1 && viewers[i].name.toLowerCase().includes(value.toLowerCase())) {
                     if (viewers[i].recommend)
-                        recommend.append(render(viewers[i], table))
+                        recommend.append(render(viewers[i], table, Number(i)+1))
                     else
-                        cards.append(render(viewers[i], table));
+                        cards.append(render(viewers[i], table, Number(i)+1));
                 }
             }
         }
@@ -175,13 +175,12 @@ export async function viewersGallery() {
             for (let i in viewers) {
                 if (filter_value.indexOf(viewers[i].name) != -1) {
                     if (viewers[i].recommend)
-                        recommend.append(render(viewers[i], table))
+                        recommend.append(render(viewers[i], table, Number(i)+1))
                     else
-                        cards.append(render(viewers[i], table));
+                        cards.append(render(viewers[i], table, Number(i)+1));
                 }
             }
         }
-        console.log($(recommend).children());
         if ($(recommend).children().length == 0) {
             $(recommend).css('min-height', '0px');
             $(showMore).hide();
@@ -191,6 +190,7 @@ export async function viewersGallery() {
         }
         $('.vg-selection-text').html('Selected: ' + $('.viewer-gallery').find('.fa-minus').length);
     });
+    search.input.setAttribute('tabindex','-1');
 
     //@ts-ignore
     let filters_type = ui.multiChoiceInput('', [''], ['Viewer', 'Widget'], (value) => {
@@ -320,14 +320,17 @@ export async function viewersGallery() {
     dlgFooter.hide();
 
     if (grok.shell.v.type == 'TableView') {
-        dlg.showModal(true)
+        dlg.showModal(true);
+        setTimeout(function(){
+            $(search.input).trigger('focus');
+        }, 200);
     }
 
     for (let i in viewers) {
         if (viewers[i].recommend)
-            recommend.append(render(viewers[i], table))
+            recommend.append(render(viewers[i], table, Number(i)+1))
         else {
-            cards.append(render(viewers[i], table));
+            cards.append(render(viewers[i], table, Number(i)+1));
         }
     }
 
@@ -379,8 +382,9 @@ function clearRoot(root: HTMLDivElement[]) {
     }
 }
 
-function render(viewer: any, table: DG.DataFrame) {
-    let root = ui.div([])
+function render(viewer: any, table: DG.DataFrame, index:number) {
+    let root = ui.div([]);
+    root.setAttribute('tabindex', String(index));
     let icon = ui.iconFA('');
     icon.className = 'grok-icon svg-icon ' + viewer.icon;
     let label = ui.div([viewer.name], 'card-label');
@@ -446,6 +450,13 @@ function render(viewer: any, table: DG.DataFrame) {
         if (root.classList.contains('disabled') != true) {
             dockViewers(viewer.name, table, view);
             dlg.close();
+        }
+    });
+
+    root.addEventListener('keydown', function(event){
+        if (event.key === "Enter") {
+            event.preventDefault();
+            root.click();
         }
     });
 
