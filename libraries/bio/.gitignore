@@ -6,3 +6,6 @@ dist/
 src/**/*.js
 src/**/*.d.ts
 src/**/*.d.ts.map
+/index.d.ts
+/index.d.ts.map
+/index.js
