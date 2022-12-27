@@ -7,11 +7,10 @@ import {isMolBlock} from "../utils/convert-notation-utils";
 import {chem} from "datagrok-api/grok";
 import {toJs, TreeViewGroup, TreeViewNode} from "datagrok-api/dg";
 import Sketcher = chem.Sketcher;
-import {RDKitCellRenderer} from "../rendering/rdkit-cell-renderer";
 import {chemSubstructureSearchLibrary} from "../chem-searches";
 import {getScaffoldTree, installScaffoldGraph} from "../package";
+import {drawRdKitMoleculeToOffscreenCanvas} from "../utils/chem-common-rdkit";
 
-let renderer : RDKitCellRenderer | null= null;
 const CELL_HEIGHT = 120;
 const CELL_WIDTH = 200;
 
@@ -162,15 +161,11 @@ let offscreen : OffscreenCanvas | null = null;
 let gOffscreen : OffscreenCanvasRenderingContext2D | null = null;
 
 function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false): HTMLDivElement {
-
-  if (renderer === null)
-    renderer = new RDKitCellRenderer(_rdKitModule);
-
   if(offscreen === null) {
     offscreen = new OffscreenCanvas(CELL_WIDTH, CELL_HEIGHT);
     gOffscreen = offscreen.getContext('2d');
   }
-  const r = window.devicePixelRatio;
+
   const g = gOffscreen;
   g!.imageSmoothingEnabled = true;
   g!.imageSmoothingQuality = "high";
@@ -181,10 +176,10 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     const fontHeight = Math.abs(tm.actualBoundingBoxAscent) + tm.actualBoundingBoxDescent
     const lineWidth = tm.width;
     g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
-  } else {// @ts-ignore
-     renderer.render(g, 0, 0, width/r, height/r, DG.GridCell.fromValue(molStr));
-    //gOffscreen?.fillStyle = 'green';
-    //gOffscreen?.fillRect(0,0, CELL_WIDTH, CELL_HEIGHT);
+  } else {
+    const mol = _rdKitModule.get_mol(molStr);
+    drawRdKitMoleculeToOffscreenCanvas(mol, CELL_WIDTH, CELL_HEIGHT, offscreen, null);
+    mol.delete();
   }
 
   const bitmap : ImageBitmap = offscreen.transferToImageBitmap();
@@ -204,6 +199,7 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
   const moleculeHost = ui.canvas(width, height);
   $(moleculeHost).addClass('chem-canvas');
 
+  const r = window.devicePixelRatio;
   moleculeHost.width = width;
   moleculeHost.height = height;
   moleculeHost.style.width = (width / r).toString() + 'px';
@@ -213,38 +209,11 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
   return ui.divH([moleculeHost], 'chem-mol-box');
 }
 
-function renderMoleculeOld(molStr: string, width: number, height: number, skipDraw: boolean = false): HTMLDivElement {
-  const moleculeHost = ui.canvas(width, height);
-  $(moleculeHost).addClass('chem-canvas');
-  const r = window.devicePixelRatio;
-  moleculeHost.width = width;
-  moleculeHost.height = height;
-  moleculeHost.style.width = (width / r).toString() + 'px';
-  moleculeHost.style.height= (height / r).toString() + 'px';
-  if (renderer === null)
-    renderer = new RDKitCellRenderer(_rdKitModule);
-
-  if (skipDraw) {
-    const g = moleculeHost.getContext('2d');
-    g!.font = "18px Roboto, Roboto Local";
-    const text = 'Loading...';
-    let tm = g!.measureText(text);
-    const fontHeight = Math.abs(tm.actualBoundingBoxAscent) + tm.actualBoundingBoxDescent
-    const lineWidth = tm.width;
-    g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
-  } else // @ts-ignore
-   renderer.render(moleculeHost.getContext('2d')!, 0, 0, Math.floor(width / r), Math.floor(height / r), DG.GridCell.fromValue(molStr));
-
-  return ui.divH([moleculeHost], 'chem-mol-box');
-}
-
-
 function getFlagIcon(group: TreeViewGroup) : HTMLElement | null {
   const molHost: HTMLElement = group.captionLabel;
   const c = molHost.getElementsByClassName('icon-fill');
  return c.length === 0 ? null : c[0] as HTMLElement;
 }
-
 
 const GENERATE_ERROR_MSG = 'Generating tree failed...Please check the dataset';
 const NO_MOL_COL_ERROR_MSG = 'There is no molecule column available';
@@ -292,11 +261,34 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       category: 'Data',
       userEditable: this.molColumns.length > 0
     });
-    this.hitsThresh = this.float('hitsThresh', 0, {min: 0, max: 0.5});
+    this.hitsThresh = this.float('hitsThresh', 0, {min: 0, max: 0.2});
     this.hitsThresh = 0;
     this.TreeEncode = this.string('TreeEncode', '[]', {category: 'Data', userEditable: false});
 
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
+/*
+    const offscreenTest = new OffscreenCanvas(CELL_WIDTH, CELL_HEIGHT);
+    const gOffscreenTest = offscreenTest.getContext('2d');
+    if (renderer == null)
+      renderer = renderer = new RDKitCellRenderer(_rdKitModule);
+
+    const r = window.devicePixelRatio;
+
+    const nTineStart = new Date().getTime();
+    for (let n = 0; n < this.molColumns[this.molColumnIdx].length; ++n) {
+
+      const molStr = this.molColumns[this.molColumnIdx].get(n);
+      //console.log(n + ' ' +molStr);
+      // @ts-ignore
+      //renderer.render(gOffscreenTest, 0, 0, CELL_WIDTH / r, CELL_HEIGHT / r, DG.GridCell.fromValue(molStr));
+      const mol = _rdKitModule.get_mol(molStr);
+      drawRdKitMoleculeToOffscreenCanvas(mol, CELL_WIDTH / r, CELL_HEIGHT / r, offscreenTest, null);
+      mol.delete();
+    }
+
+    const nTineEnd = new Date().getTime();
+    console.log('Spent on molecules: ' + (nTineEnd - nTineStart))
+*/
   }
 
   get treeRoot() {
@@ -382,7 +374,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.setUpdateIndicator(this.root, false);
       this.progressBar.update(50, 'Build failed');
       this.progressBar.close();
-      this.message = 'Tree build failed...Please ensure the availability of the ScaffoldGraph plugin';
+      this.message = 'Tree build failed...Please ensure that ScaffoldGraph plugin is installed';
       //this.root.style.visibility = 'visible';
       //new Balloon().error('Could not generate scaffold tree');
       return;
