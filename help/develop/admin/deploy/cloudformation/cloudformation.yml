@@ -108,7 +108,7 @@ Parameters:
     Description: AWS Instance type for Datagrok EC2 instance
   CvmEc2InstanceType:
     Type: String
-    Default: 't3.xlarge'
+    Default: 'a1.4xlarge'
     Description: AWS Instance type for Datagrok EC2 instance    
 Conditions:
   CreateDemoDataCondition:
