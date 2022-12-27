@@ -3887,10 +3887,10 @@ Resources:
                 - !Ref DatagrokCluster
                 - |2 
                    >> /etc/ecs/ecs.config
-        NetworkInterfaces:  
-          - AssociatePublicIpAddress: false
-            DeviceIndex: '0'
-            SubnetId: !GetAtt DatagrokPrivateSubnet1.SubnetId
+#        NetworkInterfaces:  
+#          - AssociatePublicIpAddress: false
+#            DeviceIndex: '0'
+#            SubnetId: !GetAtt DatagrokPrivateSubnet1.SubnetId
         DisableApiTermination: false
         DisableApiStop: false
         MetadataOptions:
@@ -3929,10 +3929,10 @@ Resources:
                 - !Ref CvmCluster
                 - |2 
                    >> /etc/ecs/ecs.config
-        NetworkInterfaces:  
-          - AssociatePublicIpAddress: false
-            DeviceIndex: '0'
-            SubnetId: !GetAtt DatagrokPrivateSubnet1.SubnetId
+#        NetworkInterfaces:  
+#          - AssociatePublicIpAddress: false
+#            DeviceIndex: '0'
+#            SubnetId: !GetAtt DatagrokPrivateSubnet1.SubnetId
         DisableApiTermination: false
         DisableApiStop: false
         MetadataOptions:
@@ -3972,10 +3972,10 @@ Resources:
                 - !Ref CvmCluster
                 - |2 
                    >> /etc/ecs/ecs.config
-        NetworkInterfaces:  
-          - AssociatePublicIpAddress: false
-            DeviceIndex: '0'
-            SubnetId: !GetAtt DatagrokPrivateSubnet1.SubnetId
+#        NetworkInterfaces:  
+#          - AssociatePublicIpAddress: false
+#            DeviceIndex: '0'
+        SubnetId: !Ref DatagrokPrivateSubnet1
         DisableApiTermination: false
         InstanceInitiatedShutdownBehavior: 'stop'
         Monitoring: false 
@@ -4009,10 +4009,10 @@ Resources:
                 - !Ref DatagrokCluster
                 - |2 
                    >> /etc/ecs/ecs.config
-        NetworkInterfaces:  
-          - AssociatePublicIpAddress: false
-            DeviceIndex: '0'
-            SubnetId: !GetAtt DatagrokPrivateSubnet1.SubnetId
+#        NetworkInterfaces:  
+#          - AssociatePublicIpAddress: false
+#            DeviceIndex: '0'
+        SubnetId: !Ref DatagrokPrivateSubnet1
         SecurityGroupIds: 
         - !GetAtt DatagrokSecurityGroup.GroupId
         DisableApiTermination: false
