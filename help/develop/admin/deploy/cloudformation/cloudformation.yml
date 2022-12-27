@@ -746,7 +746,6 @@ Resources:
       - GrokComputeTCP5005ListenerRule
       - GrokComputeTCP5005IntListenerRule
     Properties:
-      EnableExecuteCommand: true
       Cluster:
         Fn::GetAtt:
         - CvmCluster
@@ -1089,7 +1088,6 @@ Resources:
       - H2oTCP54321Listener
       - H2oTCP54321IntListener
     Properties:
-      EnableExecuteCommand: true
       Cluster:
         Fn::GetAtt:
         - CvmCluster
@@ -1457,7 +1455,6 @@ Resources:
       - JupyterKernelGatewayTCP8888ListenerRule
       - JupyterKernelGatewayTCP8888IntListenerRule
     Properties:
-      EnableExecuteCommand: true
       Cluster:
         Fn::GetAtt:
         - CvmCluster
@@ -1896,7 +1893,6 @@ Resources:
       - JupyterNotebookTCP8889ListenerRule
       - JupyterNotebookTCP8889IntListenerRule
     Properties:
-      EnableExecuteCommand: true
       Cluster:
         Fn::GetAtt:
         - CvmCluster
@@ -2457,7 +2453,6 @@ Resources:
       - DatagrokS3
       - DatagrokDB
     Properties:
-      EnableExecuteCommand: true
       Cluster:
         Fn::GetAtt:
         - DatagrokCluster
