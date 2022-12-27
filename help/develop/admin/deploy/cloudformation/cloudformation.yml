@@ -739,12 +739,12 @@ Resources:
     Type: AWS::ECS::Service
     Condition: CreateFargateInstanceCondition
   GrokComputeServiceEc2:
-#    DependsOn:
-#    - CvmTCP80Listener
-#    - CvmTCP443Listener
-#    - CvmTCP8090IntListener
-#    - GrokComputeTCP5005ListenerRule
-#    - GrokComputeTCP5005IntListenerRule
+    DependsOn:
+      - CvmTCP80Listener
+      - CvmTCP443Listener
+      - CvmTCP8090IntListener
+      - GrokComputeTCP5005ListenerRule
+      - GrokComputeTCP5005IntListenerRule
     Properties:
       EnableExecuteCommand: true
       Cluster:
