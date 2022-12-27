@@ -758,7 +758,7 @@ Resources:
       DesiredCount: 1
       LaunchType: !Ref LaunchType
       SecurityGroupIds: 
-        - Ref: CvmSecurityGroup
+        - !GetAtt CvmSecurityGroup.GroupId
       LoadBalancers:
       - ContainerName: grok_compute
         ContainerPort: 5005
@@ -1102,7 +1102,7 @@ Resources:
       DesiredCount: 1
       LaunchType: !Ref LaunchType
       SecurityGroupIds: 
-        - Ref: CvmSecurityGroup
+        - !GetAtt CvmSecurityGroup.GroupId
       LoadBalancers:
       - ContainerName: h2o
         ContainerPort: 5005
@@ -1471,7 +1471,7 @@ Resources:
       DesiredCount: 1
       LaunchType: !Ref LaunchType
       SecurityGroupIds: 
-        - Ref: CvmSecurityGroup
+        - !GetAtt CvmSecurityGroup.GroupId
       LoadBalancers:
       - ContainerName: jupyter_kernel_gateway
         ContainerPort: 5005
@@ -1911,7 +1911,7 @@ Resources:
       DesiredCount: 1
       LaunchType: !Ref LaunchType
       SecurityGroupIds: 
-        - Ref: CvmSecurityGroup
+        - !GetAtt CvmSecurityGroup.GroupId
       LoadBalancers:
       - ContainerName: jupyter_notebook
         ContainerPort: 5005
@@ -2483,7 +2483,7 @@ Resources:
           Ref: DatagrokTCP8080IntTargetGroup
       PropagateTags: SERVICE
       SecurityGroupIds: 
-        - Ref: DatagrokSecurityGroup
+        - !GetAtt DatagrokSecurityGroup.GroupId
       SchedulingStrategy: REPLICA
       Tags:
       - Key: datagrok.component
