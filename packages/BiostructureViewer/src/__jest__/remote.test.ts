@@ -10,7 +10,7 @@ let browser: puppeteer.Browser;
 let page: puppeteer.Page;
 
 beforeAll(async () => {
-  let out = await utils.getBrowserPage(puppeteer);
+  const out = await utils.getBrowserPage(puppeteer);
   browser = out.browser;
   page = out.page;
 }, P_START_TIMEOUT);
@@ -36,7 +36,7 @@ expect.extend({
 });
 
 it('TEST', async () => {
-  const targetPackage:string = process.env.TARGET_PACKAGE ?? 'BiostructureViewer';
+  const targetPackage: string = process.env.TARGET_PACKAGE ?? 'MolecularLiabilityBrowser';
   console.log(`Testing ${targetPackage} package`);
 
   let r = await page.evaluate((targetPackage):Promise<object> => {
