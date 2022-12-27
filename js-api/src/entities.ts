@@ -490,13 +490,15 @@ export class DataJob extends Func {
  * {@link https://datagrok.ai/help/access/data-connection}
  * */
 export class DataConnection extends Entity {
+  parameters: any;
   /** @constructs DataConnection */
   constructor(dart: any) {
     super(dart);
+    this.parameters = new MapProxy(api.grok_DataConnection_Get_Parameters(this.dart), 'parameters');
   }
 
   /** Collection of parameters: server, database, endpoint, etc. */
-  get parameters(): DataConnectionParams { return api.grok_DataConnection_Parameters(this.dart); }
+  // get parameters(): DataConnectionParams { return api.grok_DataConnection_Parameters(this.dart); }
 
   /** Tests the connection, returns "ok" on success or an error message on error
    * @returns {Promise<string>}*/
