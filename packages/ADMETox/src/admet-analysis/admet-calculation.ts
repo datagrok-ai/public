@@ -25,11 +25,9 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     selected = await getSelected();
     const queryParams = selected.join(',');
-    const pi = DG.TaskBarProgressIndicator.create('Evaluating predictions');
-    let csvString = await accessServer(`http://localhost:1111/smiles/df_upload/?models=${queryParams}`, DG.DataFrame.fromColumns([smilesCol]).toCsv());
-    csvString = csvString.replaceAll('"', '');
-    let table = DG.DataFrame.fromCsv(csvString);
-    table.rows.removeAt(table.rowCount - 1);
+    const pi = DG.TaskBarProgressIndicator.create('Evaluating predictions...');
+    const csvString = await accessServer(`http://localhost:1111/smiles/df_upload/?models=${queryParams}`, DG.DataFrame.fromColumns([smilesCol]).toCsv());
+    const table = processCsv(csvString);
     addResultColumns(table, viewTable);
     pi.close();
   });
@@ -37,18 +35,30 @@ export async function addPredictions(smilesCol: DG.Column, viewTable: DG.DataFra
 
 function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
   if (table.columns.length > 0) {
-    const modelNames: string[] = [];
-    const prevColNames = table.columns.names();
-    for (let i = 0; i < prevColNames.length; ++i) {
-      modelNames[i] = table.get(prevColNames[i], 0);
-    }
-    table.rows.removeAt(0);
-    for (let i = 0; i < prevColNames.length; ++i) {
-      const column: DG.Column = table.columns.byName(prevColNames[i]);
-      column.name = viewTable.columns.getUnusedName(modelNames[i]);
+    const models: string[] = table.columns.names()
+    for (let i = 0; i < models.length; ++i) {
+      const column: DG.Column = table.columns.byName(models[i]);
+      column.name = viewTable.columns.getUnusedName(models[i]);
       viewTable.columns.add(column);
     }
   }
+}
+
+function processCsv(csvString: string): DG.DataFrame {
+  csvString = csvString.replaceAll('"', '');
+  let table = DG.DataFrame.fromCsv(csvString);
+  table.rows.removeAt(table.rowCount - 1);
+  const modelNames: string[] = [];
+  const prevColNames = table.columns.names();
+  for (let i = 0; i < prevColNames.length; ++i) {
+    modelNames[i] = table.get(prevColNames[i], 0);
+  }
+  table.rows.removeAt(0);
+  for (let i = 0; i < prevColNames.length; ++i) {
+    const column: DG.Column = table.columns.byName(prevColNames[i]);
+    column.name = column.dataFrame.columns.getUnusedName(modelNames[i]);
+  }
+  return table;
 }
 
 export function getModelsSingle(smiles: string): DG.Widget {
@@ -57,6 +67,7 @@ export function getModelsSingle(smiles: string): DG.Widget {
   const selectButton = ui.bigButton('SELECT', async () => {
     openModelsDialog(await getSelected(), async (selected: any) => {
       await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
+      update();    
     });
   });
   selectButton.style.marginTop = '20px';
@@ -71,7 +82,12 @@ export function getModelsSingle(smiles: string): DG.Widget {
         ${smiles}`
       ).then((csvString: any) => {
         removeChildren(result);
-        result.appendChild(ui.divText(csvString));
+        const table = processCsv(csvString);
+        const map: { [_: string]: any } = {};
+        for (const model of selected)
+          map[model] = table.col(model)?.get(0);
+
+        result.appendChild(ui.tableFromMap(map));
       });
     });
   };
