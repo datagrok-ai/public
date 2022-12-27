@@ -2,7 +2,7 @@ import {Aminoacids, AminoacidsPalettes} from './src/aminoacids';
 import {MonomerWorks} from './src/monomer-works/monomer-works';
 import {Nucleotides, NucleotidesPalettes} from './src/nucleotides';
 import {SeqPalette, SeqPaletteBase} from './src/seq-palettes';
-import {IMonomerLib, Monomer, NodeType, isLeaf, NodeCuttedType} from './src/types';
+import {isLeaf} from './src/types';
 import {UnknownSeqPalette, UnknownSeqPalettes} from './src/unknown';
 import {DrawStyle, printLeftOrCentered} from './src/utils/cell-renderer';
 import {FastaFileHandler} from './src/utils/fasta-handler';
@@ -51,6 +51,13 @@ export {
 } from './src/utils/macromolecule';
 
 export {
+  IMonomerLib,
+  Monomer,
+  NodeType,
+  NodeCuttedType
+} from './src/types';
+
+export {
   NotationConverter,
   splitAlignedSequences,
   SeqPalette,
@@ -73,7 +80,7 @@ export {
   VdRegion,
   IVdRegionsViewer,
 
-  NodeType, isLeaf, NodeCuttedType,
+  isLeaf,
   PhylocanvasTreeNode,
   // treeTraversal,
   NodeStyleType, StylesType,
@@ -97,8 +104,6 @@ export {
   NglGlTask,
 
   //Monomer lib and features
-  Monomer,
-  IMonomerLib,
   MonomerWorks,
   MonomerLib,
   readLibrary
