@@ -929,7 +929,7 @@ Resources:
         Name: grok_compute
         PortMappings:
         - ContainerPort: 5005
-          HostPort: 5005
+          HostPort: 0
           Protocol: tcp
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -1350,10 +1350,10 @@ Resources:
         Name: h2o
         PortMappings:
         - ContainerPort: 5005
-          HostPort: 5005
+          HostPort: 0
           Protocol: tcp
         - ContainerPort: 54321
-          HostPort: 54321
+          HostPort: 0
           Protocol: tcp
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -1723,10 +1723,10 @@ Resources:
         Name: jupyter_kernel_gateway
         PortMappings:
         - ContainerPort: 5005
-          HostPort: 5005
+          HostPort: 0
           Protocol: tcp
         - ContainerPort: 8888
-          HostPort: 8888
+          HostPort: 0
           Protocol: tcp
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -2098,10 +2098,10 @@ Resources:
         Name: jupyter_notebook
         PortMappings:
         - ContainerPort: 5005
-          HostPort: 5005
+          HostPort: 0
           Protocol: tcp
         - ContainerPort: 8889
-          HostPort: 8889
+          HostPort: 0
           Protocol: tcp
       ExecutionRoleArn:
         Fn::GetAtt:
@@ -2873,7 +2873,7 @@ Resources:
         Name: datagrok
         PortMappings:
         - ContainerPort: 8080
-          HostPort: 8080
+          HostPort: 0
           Protocol: tcp
       ExecutionRoleArn:
         Fn::GetAtt:
