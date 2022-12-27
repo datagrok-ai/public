@@ -1,22 +1,20 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
+
 import {_package} from '../package';
-import {NglGlTask} from '@datagrok-libraries/bio';
-
-//import {Observable, Subject} from 'rxjs';
+import {NglGlServiceBase, NglGlTask} from '@datagrok-libraries/bio';
 
 
-export class NglGlService implements bio.NglGlServiceBase {
+export class NglGlService implements NglGlServiceBase {
   readonly nglDiv: HTMLDivElement;
   private readonly ngl: any;
 
   hostDn?: DG.DockNode;
 
   //private renderQueue: Subject<bio.NglGlRenderTask>;
-  private readonly _queue: { key?: keyof any, task: bio.NglGlTask }[];
-  private readonly _queueDict: { [key: keyof any]: bio.NglGlTask };
+  private readonly _queue: { key?: keyof any, task: NglGlTask }[];
+  private readonly _queueDict: { [key: keyof any]: NglGlTask };
 
   constructor() {
     const r = window.devicePixelRatio;
@@ -46,7 +44,7 @@ export class NglGlService implements bio.NglGlServiceBase {
   /* The flag allows _processQueue() on add item to the queue */
   private _busy: boolean = false;
 
-  render(task: bio.NglGlTask, key?: keyof any): void {
+  render(task: NglGlTask, key?: keyof any): void {
     //console.debug('BSV: NglGlService.render() start ' + `name: ${name}`);
 
     if (key !== undefined) {
@@ -68,6 +66,7 @@ export class NglGlService implements bio.NglGlServiceBase {
         null, 'NglGlService', 0.00);
       console.debug('PTV: NglGlService dock()');
 
+      // TODO: Use requestAnimationFrame()
       window.setTimeout(async () => { await this._processQueue(); }, 0 /* next event cycle */);
     }
     //console.debug('BSV: NglGlService.render() end ' + `name: ${name}`);
@@ -79,8 +78,10 @@ export class NglGlService implements bio.NglGlServiceBase {
 
     const r = window.devicePixelRatio;
 
+    // TODO: Convert string to Blob once converting PDB string column to Blob
     const stringBlob = new Blob([task.props.pdb], {type: 'text/plain'});
 
+    // TODO: Use canvas size switching 0/1 px to required
     this.nglDiv.style.width = `${Math.floor(task.props.width) / r}px`;
     this.nglDiv.style.height = `${Math.floor(task.props.height) / r}px`;
 
@@ -113,6 +114,8 @@ export class NglGlService implements bio.NglGlServiceBase {
     console.debug('PTV: NglGlService onAfterRenderHandler() ' + `key = ${JSON.stringify(this.key)}`);
     let taskCompleted: boolean = false;
 
+    //TODO: Use canvas size switching 0/1 px to required to detect rendering completed
+    //TODO: HTMLCanvas.toBlob()
     if (this.emptyPaintingSize === undefined) {
       this.emptyPaintingSize = this.ngl.viewer.renderer.domElement.toDataURL('image/png').length;
       let k = 11;
