@@ -1,7 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {similarityMetric, getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
@@ -23,11 +24,12 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   async render(computeData = true): Promise<void> {
     if (!this.beforeRender())
       return;
-    if (this.dataFrame) {
+    if (this.dataFrame && this.moleculeColumn) {
+      const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
       if (computeData) {
         this.renderMolIds =
           await chemDiversitySearch(
-            this.moleculeColumn!, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint);
+            this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint);
       }
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
@@ -75,6 +77,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
 
       panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
+      progressBar.close();
     }
   }
 }

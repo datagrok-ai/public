@@ -407,6 +407,7 @@ export async function gisBatchGeocoding(address: string): Promise<string> {
 //description: GIS map viewer
 //tags: viewer
 //meta.icon: icons/package.png
+//meta.toolbox: true
 //output: viewer result
 export function gisViewer(): GisViewer {
   // setTimeout(() => {grok.shell.windows.showProperties = true;}, 500);

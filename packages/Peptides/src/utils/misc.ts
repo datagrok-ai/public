@@ -36,6 +36,7 @@ export function scaleActivity(activityCol: DG.Column<number>, scaling: string = 
   return scaledCol;
 }
 
+//TODO: optimize
 export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats {
   const monomerColumns: DG.Column<string>[] = df.columns.bySemTypeAll(C.SEM_TYPES.MONOMER);
   const selectedObj: type.MonomerSelectionStats = {};

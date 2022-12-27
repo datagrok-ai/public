@@ -1,9 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {after, before, category, test, expect, expectObject, delay} from '@datagrok-libraries/utils/src/test';
+import {
+  ALPHABET,
+  NOTATION,
+  PositionInfo,
+  PositionMonomerInfo,
+  TAGS as bioTAGS,
+  WebLogoViewer
+} from '@datagrok-libraries/bio';
 
 category('WebLogo-positions', () => {
   let tvList: DG.TableView[];
@@ -25,7 +32,7 @@ ATC-G-TTGC--
   });
 
   after(async () => {
-    dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df);});
+    dfList.forEach((df: DG.DataFrame) => { grok.shell.closeTable(df); });
     tvList.forEach((tv: DG.TableView) => tv.close());
     grok.shell.v = currentView;
   });
@@ -36,31 +43,31 @@ ATC-G-TTGC--
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
-    seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
-    seqCol.setTag(bio.TAGS.aligned, 'SEQ.MSA');
+    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.setTag(bioTAGS.alphabet, ALPHABET.DNA);
+    seqCol.setTag(bioTAGS.aligned, 'SEQ.MSA');
 
-    const wlViewer: bio.WebLogoViewer = (await df.plot.fromType('WebLogo')) as bio.WebLogoViewer;
+    const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo')) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
     tvList.push(tv);
     dfList.push(df);
 
-    const positions: bio.PositionInfo[] = wlViewer['positions'];
+    const positions: PositionInfo[] = wlViewer['positions'];
 
-    const resAllDf1: bio.PositionInfo[] = [
-      new bio.PositionInfo('1', {'A': new bio.PositionMonomerInfo(2), '-': new bio.PositionMonomerInfo(3)}),
-      new bio.PositionInfo('2', {'T': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('3', {'C': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('4', {'-': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('5', {'G': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('6', {'-': new bio.PositionMonomerInfo(3), 'C': new bio.PositionMonomerInfo(2)}),
-      new bio.PositionInfo('7', {'T': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('8', {'T': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('9', {'G': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('10', {'C': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('11', {'-': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('12', {'-': new bio.PositionMonomerInfo(5)}),
+    const resAllDf1: PositionInfo[] = [
+      new PositionInfo('1', {'A': new PositionMonomerInfo(2), '-': new PositionMonomerInfo(3)}),
+      new PositionInfo('2', {'T': new PositionMonomerInfo(5)}),
+      new PositionInfo('3', {'C': new PositionMonomerInfo(5)}),
+      new PositionInfo('4', {'-': new PositionMonomerInfo(5)}),
+      new PositionInfo('5', {'G': new PositionMonomerInfo(5)}),
+      new PositionInfo('6', {'-': new PositionMonomerInfo(3), 'C': new PositionMonomerInfo(2)}),
+      new PositionInfo('7', {'T': new PositionMonomerInfo(5)}),
+      new PositionInfo('8', {'T': new PositionMonomerInfo(5)}),
+      new PositionInfo('9', {'G': new PositionMonomerInfo(5)}),
+      new PositionInfo('10', {'C': new PositionMonomerInfo(5)}),
+      new PositionInfo('11', {'-': new PositionMonomerInfo(5)}),
+      new PositionInfo('12', {'-': new PositionMonomerInfo(5)}),
     ];
 
     expect(positions.length, resAllDf1.length);
@@ -73,8 +80,8 @@ ATC-G-TTGC--
     }
   });
 
-  test('positions with shrinkEmptyTail option true (filterd)', async () => {
-    let csvDf2 = `seq 
+  test('positions with shrinkEmptyTail option true (filtered)', async () => {
+    const csvDf2 = `seq 
 -TC-G-TTGC--
 -TC-GCTTGC--
 -T--C-GT-
@@ -86,33 +93,33 @@ ATC-G-TTGC--
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
-    seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
-    seqCol.setTag(bio.TAGS.aligned, 'SEQ');
+    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.setTag(bioTAGS.alphabet, ALPHABET.DNA);
+    seqCol.setTag(bioTAGS.aligned, 'SEQ');
 
     df.filter.init((i) => {
       return i > 2;
     });
     df.filter.fireChanged();
-    const wlViewer: bio.WebLogoViewer = (await df.plot.fromType('WebLogo',
-      {'shrinkEmptyTail': true})) as bio.WebLogoViewer;
+    const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo',
+      {'shrinkEmptyTail': true})) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
     tvList.push(tv);
     dfList.push(df);
 
-    const positions: bio.PositionInfo[] = wlViewer['positions'];
+    const positions: PositionInfo[] = wlViewer['positions'];
 
-    const resAllDf1: bio.PositionInfo[] = [
-      new bio.PositionInfo('1', {'-': new bio.PositionMonomerInfo(3)}),
-      new bio.PositionInfo('2', {'T': new bio.PositionMonomerInfo(3)}),
-      new bio.PositionInfo('3', {'-': new bio.PositionMonomerInfo(3)}),
-      new bio.PositionInfo('4', {'-': new bio.PositionMonomerInfo(3)}),
-      new bio.PositionInfo('5', {'C': new bio.PositionMonomerInfo(3)}),
-      new bio.PositionInfo('6', {'-': new bio.PositionMonomerInfo(2), 'C': new bio.PositionMonomerInfo(1)}),
-      new bio.PositionInfo('7', {'G': new bio.PositionMonomerInfo(3)}),
-      new bio.PositionInfo('8', {'T': new bio.PositionMonomerInfo(3)}),
-      new bio.PositionInfo('9', {'-': new bio.PositionMonomerInfo(3)}),
+    const resAllDf1: PositionInfo[] = [
+      new PositionInfo('1', {'-': new PositionMonomerInfo(3)}),
+      new PositionInfo('2', {'T': new PositionMonomerInfo(3)}),
+      new PositionInfo('3', {'-': new PositionMonomerInfo(3)}),
+      new PositionInfo('4', {'-': new PositionMonomerInfo(3)}),
+      new PositionInfo('5', {'C': new PositionMonomerInfo(3)}),
+      new PositionInfo('6', {'-': new PositionMonomerInfo(2), 'C': new PositionMonomerInfo(1)}),
+      new PositionInfo('7', {'G': new PositionMonomerInfo(3)}),
+      new PositionInfo('8', {'T': new PositionMonomerInfo(3)}),
+      new PositionInfo('9', {'-': new PositionMonomerInfo(3)}),
     ];
 
     expect(positions.length, resAllDf1.length);
@@ -131,29 +138,29 @@ ATC-G-TTGC--
 
     const seqCol: DG.Column = df.getCol('seq');
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    seqCol.setTag(DG.TAGS.UNITS, bio.NOTATION.FASTA);
-    seqCol.setTag(bio.TAGS.alphabet, bio.ALPHABET.DNA);
-    seqCol.setTag(bio.TAGS.aligned, 'SEQ.MSA');
+    seqCol.setTag(DG.TAGS.UNITS, NOTATION.FASTA);
+    seqCol.setTag(bioTAGS.alphabet, ALPHABET.DNA);
+    seqCol.setTag(bioTAGS.aligned, 'SEQ.MSA');
 
-    const wlViewer: bio.WebLogoViewer = (await df.plot.fromType('WebLogo',
-      {'skipEmptyPositions': true})) as bio.WebLogoViewer;
+    const wlViewer: WebLogoViewer = (await df.plot.fromType('WebLogo',
+      {'skipEmptyPositions': true})) as WebLogoViewer;
     tv.dockManager.dock(wlViewer.root, DG.DOCK_TYPE.DOWN);
 
     tvList.push(tv);
     dfList.push(df);
 
-    const positions: bio.PositionInfo[] = wlViewer['positions'];
+    const positions: PositionInfo[] = wlViewer['positions'];
 
-    const resAllDf1: bio.PositionInfo[] = [
-      new bio.PositionInfo('1', {'A': new bio.PositionMonomerInfo(2), '-': new bio.PositionMonomerInfo(3)}),
-      new bio.PositionInfo('2', {'T': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('3', {'C': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('5', {'G': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('6', {'-': new bio.PositionMonomerInfo(3), 'C': new bio.PositionMonomerInfo(2)}),
-      new bio.PositionInfo('7', {'T': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('8', {'T': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('9', {'G': new bio.PositionMonomerInfo(5)}),
-      new bio.PositionInfo('10', {'C': new bio.PositionMonomerInfo(5)})
+    const resAllDf1: PositionInfo[] = [
+      new PositionInfo('1', {'A': new PositionMonomerInfo(2), '-': new PositionMonomerInfo(3)}),
+      new PositionInfo('2', {'T': new PositionMonomerInfo(5)}),
+      new PositionInfo('3', {'C': new PositionMonomerInfo(5)}),
+      new PositionInfo('5', {'G': new PositionMonomerInfo(5)}),
+      new PositionInfo('6', {'-': new PositionMonomerInfo(3), 'C': new PositionMonomerInfo(2)}),
+      new PositionInfo('7', {'T': new PositionMonomerInfo(5)}),
+      new PositionInfo('8', {'T': new PositionMonomerInfo(5)}),
+      new PositionInfo('9', {'G': new PositionMonomerInfo(5)}),
+      new PositionInfo('10', {'C': new PositionMonomerInfo(5)})
     ];
 
     expect(positions.length, resAllDf1.length);

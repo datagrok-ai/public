@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
@@ -9,6 +8,7 @@ import * as C from '../utils/constants';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
+import {getSplitter} from '@datagrok-libraries/bio';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   hotSearch: boolean;
@@ -84,7 +84,7 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const molDifferences: { [key: number]: HTMLCanvasElement } = {};
     const units = resDf.col('sequence')!.getTag(DG.TAGS.UNITS);
     const separator = resDf.col('sequence')!.getTag(C.TAGS.SEPARATOR);
-    const splitter = bio.getSplitter(units, separator);
+    const splitter = getSplitter(units, separator);
     const subParts1 = splitter(this.moleculeColumn!.get(this.targetMoleculeIdx));
     const subParts2 = splitter(resDf.get('sequence', resDf.currentRowIdx));
     const canvas = createDifferenceCanvas(subParts1, subParts2, units, molDifferences);

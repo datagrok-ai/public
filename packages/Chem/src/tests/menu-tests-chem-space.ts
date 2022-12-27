@@ -1,6 +1,7 @@
-import {before, after, expect, category, test} from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
+import {before, after, expect, category, test} from '@datagrok-libraries/utils/src/test';
 
 import {_package} from '../package-test';
 import {readDataframe} from './utils';
@@ -9,6 +10,7 @@ import {chemSpace} from '../analysis/chem-space';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getSimilaritiesMarix, getSimilaritiesMarixFromDistances} from '../utils/similarity-utils';
 import {chemSpaceTopMenu} from '../package';
+import {ISequenceSpaceParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 
 const {jStat} = require('jstat');
 
@@ -32,7 +34,7 @@ category('top menu chem space', async () => {
   });
   test('TSNE', async () => {
     await _testDimensionalityReducer(smallDf.col('smiles')!, 't-SNE');
-  });
+  }, {skipReason: '#1384'});
   test('UMAP', async () => {
     await _testDimensionalityReducer(smallDf.col('smiles')!, 'UMAP');
   });
@@ -50,7 +52,7 @@ async function _testChemSpaceReturnsResult(df: DG.DataFrame, algorithm: string) 
 }
 
 async function _testDimensionalityReducer(col: DG.Column, algorithm: string) {
-  const chemSpaceParams = {
+  const chemSpaceParams: ISequenceSpaceParams = {
     seqCol: col,
     methodName: algorithm,
     similarityMetric: 'Tanimoto',

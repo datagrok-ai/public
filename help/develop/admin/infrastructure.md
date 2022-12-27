@@ -32,7 +32,9 @@ or on a regular machine.
 There are different requirements for every application. In general:
 
 * Datagrok components require 2 vCPU and 4 GB RAM.
+  * For the active usage of Datagrok we would recommend: 4 vCPU and 8 GB RAM
 * Compute components require 4 vCPU and 8 GB RAM.
+  * For the active usage of Datagrok we would recommend: 8 vCPU and 32 GB RAM
 
 ## Deployment
 

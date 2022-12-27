@@ -46,7 +46,7 @@ category('GUI: Grid', () => {
     finally {
       v.close();
       grok.shell.tables.forEach((t) => grok.shell.closeTable(t));
-    }
+    }    
   });
 
   test('grid.deleteRows', async () => {

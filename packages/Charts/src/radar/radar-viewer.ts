@@ -206,6 +206,7 @@ export class RadarViewer extends DG.JsViewer {
       },
       symbolSize: 0,
     }
+    option.color[0] =  DG.Color.toHtml(this.backgroundMinColor);
   }
 
   updateMax() {
@@ -222,6 +223,7 @@ export class RadarViewer extends DG.JsViewer {
       },
       symbolSize: 0,
     }
+    option.color[1] =  DG.Color.toHtml(this.backgroundMaxColor);
   }
 
   updateRow() {

@@ -1,6 +1,197 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-12-22 Dev build 1.11.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.11.0`
+* [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
+
+## Addressed Issues
+
+* #1236 Color coding: ability to invert colors for linear color coding 
+* Elemental analysis: minor fixes (columns hadn't been added if dataset already had the columns with such names) 
+* Environments: Remove top-menu from demo scripts 
+* #1282 Chem: fixed molecule size when drawing on canvas 
+* SequenceTranslator: Handle errors for rows with error while Save SDF 
+* Environments: Small demo script fix 
+* ST: Fix error message, bump version 
+* Implement Logger 
+* #1289: Chem \- place recent molecules on top of the list, saving the most recent coordinates 
+* Utils: fixed HistoryInput CSS 
+* Environments: Test for inline environments 
+* closes #1253 Formula lines not parrallel in log axes 
+* Chem: fixed sketcher tests 
+* Chem: #1293 short smiles detector fix 
+* Elemental analysis: provided an opportunity to add column with molecular formula 
+* Created index on name and namespace 
+* Fixed #1281: revert gasteiger charges panel to script-based 
+* #1297: temporary disable Info panel 
+* #1261: Chem \- clear sketcher button style fix 
+* Fixed package notification 
+* Chem: filtering incorrect recent/favorite molecules 
+* Chem: returned saving recent/favorites as molfiles 
+* closes #1292 Line chart is showing less data than expected if table is filtered 
+* dpetrov/GITGUB-1231: Fixed canvas resize handler by taking into account the element's offset 
+* ApiTests version update 
+* Adding auto check children for TreeView nodes 
+* Package JS-API: Added JS API for TreeViewNode 
+* GIS: gis-area handler improvement 
+* GIS: geocoding update 
+* Chem: fixed bug in addFavorite 
+* Chem: returned popup menu to similarity/diversity, structure 2d 
+* #1236 Color coding: ability to invert colors for linear color coding (WIP) 
+* Chem: handle cases when previous local storage included malformed molecules 
+* #1300: handling malformed target molecules in similarity search 
+* Remove delays in JS UI Tests  (WIP)
+* Color settings, fix the view styles 
+* Fixed #1304: rendering only 3 symbols of monomer 
+* bio lib: Move newickToDf to ITreeHelper api and extend args, remove INewickHelper 
+* #1221 PhyloTreeViewer: Extend newickToDf args, move it to TreeHelper, remove NewickHelper, bump version 
+* Elemental analysis: removing option that adds a column with molecular formulas 
+* ScaffoldTree: changing function names 
+* Chem: activity cliffs \- remove duplicate code 
+* Librarise/ml: activity cliffs \- code cleaning 
+* Butina Cluster: make the algorithm work on the molblock input data 
+* Chem: similarity/diversity search \- remove ts-ignore 
+* Chem: rGRoupAnalysis: check conditions at function start 
+* Minor code cleanup 
+* Chem: minor code cleanup 
+* Preventing changing of the current object by expanding a property panel () 
+* Chem: constants for units 
+* Chem: bump version 
+* #1221 MLB: show all trees / clones of current antigen with NetworkDiagram viewer 
+* bio lib: bump version to publish 
+* PhyloTreeViewer: Bump version to publish 
+* Chem: inchi sketcher bug fix 
+* closes #1279 axes limits, zooming issues 
+* Chem: fixed substructure filters test (for Ketcher) 
+* Set new 1.10.2 version 
+* PhyloTreeViewer: Downgrade datagrok-api dependency to 1.8.2, bump version to publish 
+* Butina Cluster: Handling NoneTypes that may occur if invalid data is present in dataset 
+* Chem: fixing substructure filters tests 
+* Adding a document with the instructions on how to run docker container on the datagrok instance 
+* Adding gif for docker_container doc 
+* Adding gif to the docker_containers.md 
+* Closes #1321: Chem: R-Group Analysis: unable to choose a column when there are two columns with molecules 
+* Libraries/chem-meta: added Reaction class to rdkit api 
+* Bio: updated ml dependency 
+* Chem: updated ml dependency 
+* ScaffoldTree: removing one parameter from the script 
+* ScaffoldTree: minor fixes 
+* Closes #1329: JS API: ability to highlight rows 
+* #1252 Color coding: min/max properties for continuous color schemes 
+* Peptides: settings subject type 
+* Peptides: selection rendering fix 
+* Peptides: fixed barchart not rendering on project load 
+* Peptides: fixed grid row height 
+* #1077: SAR viewer switch input interaction fix 
+* Peptides: code cleanup 
+* Peptides: visible columns fix 
+* Peptides: fixed settings not triggering changes 
+* Peptides: fixed settings not updating columns 
+* Peptides: stability enhancement 
+* #1119: refactoring WIP 
+* #1119: made viewers more standalone 
+* #1119: using raw data for clusters df creation 
+* #1119: fixed subtitution info redundant calculations 
+* Peptides: fixed monomer-position viewer not rendering 
+* Peptides: don't add columns pane if no columns present 
+* #1043: Invariant Map color coding 
+* #1117: Logo Summary Table enhancements 
+* Peptides: removed constant clusters column name 
+* Peptides: cluster tooltip fix 
+* Peptides: removed activity columns from 'Columns to include' 
+* Wiki: JS API: Custom viewers: documented filter, selection, and highlighting 
+* Ddt: unit tests: moved to folders, deleted obsolete 
+* Ddt: unit tests: func benchmarks 
+* Ddt: unit tests: minor fix 
+* Func: lazy initialization of the aux property 
+* Fixed a bug in the Balloon.error 
+* JS API: Added Balloon.closeAll() 
+* Functions: minor optimizations 
+* Help: Map Viewer \- WIP 
+* Help: Tree Map 
+* Help: Word cloud 
+* Help: Heatmap 
+* fix UI tests (awaitCheck) 
+* #1236, #1252 
+* #1330: temporary disable include columns feature 
+* Peptides: fixed missing value statistics calculation 
+* Avoid saving functions when called from socket 
+* Fixed analyzer warning 
+* Fixed #1332: devicePixelRation for WebLogo header cell renderer 
+* #1230 add as value does not work when tags are saved in df 
+* closes #1237 Scatter plot tooltip 
+* Peptides: release version 1.5.0 
+* #1330: enable column choice for Logo Summary table 
+* Peptides: release version 1.5.1 
+* #1310: Chem \- fixed similarity/diversity limit 
+* ST: highlight cells with invalid Type upon registration, initial version 
+* bio lib: Add generic parameter TNode for getLeafList and getNodeList 
+* Help | Visualize | Viewers | Heatmap: Edit documentation (WIP)
+* PhyloTreeViewer: TreeHelper add generic param TNode for getLeafList and getNodeList according to ITreeHelper 
+* recloses #1209 Viewer legend is not synchronised with in-viewer filter in a specific case 
+* Datlas: WIP: Debug make configuration script for startup 
+* ST: minor fixes 
+* Datlas: Feat: Print debug messages for make configuration script on startup 
+* Range sliders hover area incorrect when legend is added 
+* Chem: Fix test top menu chem space/UMAP logic 
+* (Bug) Color coding: All does not work for boolean columns 
+* Jenkins: CI: Set UID and GID for jenkins user in puppeteer container 
+* #1236 Scatter plot support 
+* Rename PostgreSQL to dev and hide, rename PostgresNet to Postgres 
+* #1236 Update the invert icon 
+* JS API: add the special tags for continuous color schemes 
+* #1077: added shadow to Mutation Cliff cell renderer value 
+* Peptides: fixed selection not showing immediately 
+* #1236 Add the 'Scheme' label 
+* Update the generated files 
+* Fixes #1237 Scatter plot tooltip data values 
+* Chem: #1325 fix queries alignement (#1347) 
+* Fixed links 
+* Fixed links and trailing spaces 
+* ST: autostart fix 
+* DB: Test: HealthCheck start period 
+* #1236 Update the editor layout 
+* (Bug) First package publication on fresh database fails 
+* SequenceTranslator: Fix package-lock.json for @luma.gl verson 8.5.17 
+* #1345 Formula lines issues 
+* Chem: remove fix#1325 
+* GIS: nominatim docker file added 
+* Help: minor fix 
+* Utils: added feature request item to ComputationView 
+* Utils: feature request method override 
+* MSSQL: Test: Healthcheck start period 
+* MySQL: Build: microdnf instead of apt-get 
+* Oracle: Build: user to install 
+* (Bug) Manage: Users: current object does not change if you make a few consecutive clicks 
+* #1338: using float for activity delta 
+* (Bug) d4: Fix TreeMap test 
+* DSTK: Test: Skip tests until we figure out the new infrastructure 
+* Datagrok: Build: New version of Grok Connect 
+* Docker: Build: Use short commit IDs in image tag 
+* Datagrok: Build: Nginx proxy to 127.0.0.1 
+* Xamgle: Docs: Fix Help links 
+* Xample: Docs: Fix Help links 
+* Datagrok: CI: Olena Ahadzhanian in beta_users.csv 
+* Fixed possible null pointer exception 
+* Datlas: Test: Ignore Setup instructutions for chem tests 
+* Datlas: Test: Test File Connections on demo data path 
+* Datlas: Test: Add localFileSystemAccess option to connctors settings 
+* Datlas: Test: Increase timeout for inline scripts tests 
+* (Bug) Color Coding: When changing the linear color scheme, the null values get colored 
+* Grid: ability to apply color-coding to text instead of background 
+* Revert some changes to the color coding 
+* closes #1348 Minimised scatter plot issues 
+* Public submodule update 
+* (Bug) Scatterplot: error when setting equal min and max axis ranges 
+* Fixed deleteFile method 
+* Fixed readBinaryDataFrame method 
+
+
 # 2022-11-22 Dev build 1.9.0
 
 ## Latest Docker Images

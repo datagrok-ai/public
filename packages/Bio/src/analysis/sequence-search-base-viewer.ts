@@ -1,7 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/utils/src/similarity-metrics';
+
+import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import * as C from '../utils/constants';
 
 export class SequenceSearchBaseViewer extends DG.JsViewer {

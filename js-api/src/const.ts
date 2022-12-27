@@ -181,6 +181,7 @@ export const SEMTYPE = {
   IP_ADDRESS: 'IP Address',
   MOLECULE: 'Molecule',
   MACROMOLECULE: 'Macromolecule',
+  NEWICK: 'Newick',
   HELM: 'HELM',
   SUBSTRUCTURE: 'Substructure',
   MONEY: 'Money',

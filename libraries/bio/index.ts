@@ -1,33 +1,11 @@
-//@ts-ignore
-import {PhylocanvasTreeNode, Newick, Utils, Shapes, TreeTypes} from '@phylocanvas/phylocanvas.gl';
-//@ts-ignore
-import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
-
 import {Aminoacids, AminoacidsPalettes} from './src/aminoacids';
 import {MonomerWorks} from './src/monomer-works/monomer-works';
 import {Nucleotides, NucleotidesPalettes} from './src/nucleotides';
 import {SeqPalette, SeqPaletteBase} from './src/seq-palettes';
-import {IMonomerLib, Monomer, NodeType, isLeaf, NodeCuttedType} from './src/types';
+import {isLeaf} from './src/types';
 import {UnknownSeqPalette, UnknownSeqPalettes} from './src/unknown';
 import {DrawStyle, printLeftOrCentered} from './src/utils/cell-renderer';
 import {FastaFileHandler} from './src/utils/fasta-handler';
-import {
-  getSplitter,
-  splitterAsFasta,
-  getSplitterForColumn,
-  SplitterFunc,
-  monomerToShort,
-  splitterAsHelm,
-  getStats,
-  pickUpPalette,
-  getPaletteByType,
-  getAlphabet,
-  getAlphabetSimilarity,
-  ALPHABET,
-  NOTATION,
-  TAGS,
-  ALIGNMENT,
-} from './src/utils/macromolecule';
 import {NotationConverter} from './src/utils/notation-converter';
 import {splitAlignedSequences} from './src/utils/splitter';
 import {getTreeHelper, ITreeHelper} from './src/utils/tree-helper';
@@ -52,22 +30,35 @@ import {
   NglGlServiceBase,
   NglGlTask
 } from './src/viewers/ngl-gl-viewer';
+import {parseNewick, PhylocanvasTreeNode, Shapes, TreeTypes} from './src/phylocanvas';
 
 export {
   ALIGNMENT,
   ALPHABET,
   NOTATION,
   TAGS,
-  NotationConverter,
-  SplitterFunc,
-  getStats,
-  getAlphabet,
-  getAlphabetSimilarity,
   getSplitter,
   splitterAsFasta,
-  splitterAsHelm,
   getSplitterForColumn,
+  SplitterFunc,
   monomerToShort,
+  splitterAsHelm,
+  getStats,
+  pickUpPalette,
+  getPaletteByType,
+  getAlphabet,
+  getAlphabetSimilarity
+} from './src/utils/macromolecule';
+
+export {
+  IMonomerLib,
+  Monomer,
+  NodeType,
+  NodeCuttedType
+} from './src/types';
+
+export {
+  NotationConverter,
   splitAlignedSequences,
   SeqPalette,
   SeqPaletteBase,
@@ -77,8 +68,6 @@ export {
   NucleotidesPalettes,
   UnknownSeqPalettes,
   UnknownSeqPalette,
-  pickUpPalette,
-  getPaletteByType,
   PositionHeight,
   PositionInfo,
   PositionMonomerInfo,
@@ -91,8 +80,9 @@ export {
   VdRegion,
   IVdRegionsViewer,
 
-  NodeType, isLeaf, NodeCuttedType,
+  isLeaf,
   PhylocanvasTreeNode,
+  // treeTraversal,
   NodeStyleType, StylesType,
 
   IPhylocanvasGlViewer,
@@ -102,10 +92,10 @@ export {
   PhylocanvasGlTask,
   getPhylocanvasGlService,
 
-  PhylocanvasGL,
   Shapes, TreeTypes,
-  Utils,
-  Newick,
+  parseNewick,
+  // Utils,
+  // Newick,
   ITreeHelper,
   getTreeHelper,
 
@@ -114,8 +104,6 @@ export {
   NglGlTask,
 
   //Monomer lib and features
-  Monomer,
-  IMonomerLib,
   MonomerWorks,
   MonomerLib,
   readLibrary

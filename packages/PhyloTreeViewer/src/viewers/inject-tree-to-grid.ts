@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {filter, map} from 'rxjs/operators';
 import {interval, Unsubscribable} from 'rxjs';
@@ -9,6 +8,8 @@ import {interval, Unsubscribable} from 'rxjs';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import $ from 'cash-dom';
 import {TreeHelper} from '../utils/tree-helper';
+import {ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
+import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
 
 // const getBranchScaleOld = PhylocanvasGL.prototype.getBranchScale;
 // PhylocanvasGL.prototype.getBranchScale = function(...args) {
@@ -23,7 +24,7 @@ export function injectTreeToGridUI(
   grid: DG.Grid, newickStr: string, leafColName: string, neighborWidth: number = 100,
   cut?: { min: number, max: number, clusterColName: string }
 ): GridNeighbor {
-  const th: bio.ITreeHelper = new TreeHelper();
+  const th: ITreeHelper = new TreeHelper();
   const subs: Unsubscribable[] = [];
   //const _grid = grid;
   const treeN = attachDivToGrid(grid, neighborWidth);
@@ -40,10 +41,10 @@ export function injectTreeToGridUI(
   pcDiv.style.position = 'absolute';
   pcDiv.style.left = `${leftMargin}px`;
 
-  const newickRoot: bio.NodeType = bio.Newick.parse_newick(newickStr);
-  const [viewedRoot, warnings]: [bio.NodeType, string[]] = th.setGridOrder(newickRoot, grid, leafColName);
+  const newickRoot: NodeType = parseNewick(newickStr);
+  const [viewedRoot, warnings]: [NodeType, string[]] = th.setGridOrder(newickRoot, grid, leafColName);
 
-  const pcViewer = new bio.PhylocanvasGL(pcDiv, {
+  const pcViewer = new PhylocanvasGL(pcDiv, {
     interactive: false,
     alignLabels: true,
     padding: 1, // required for top most joint

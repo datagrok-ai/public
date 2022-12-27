@@ -6,7 +6,8 @@ import {
   Coordinates,
   Vector,
   Vectors,
-  Matrix} from '@datagrok-libraries/utils/src/type-declarations';
+  Matrix,
+} from '@datagrok-libraries/utils/src/type-declarations';
 import {
   calcDistanceMatrix,
   transposeMatrix,
@@ -15,6 +16,7 @@ import {
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
 import {Measure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './typed-metrics';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {UMAPParameters} from 'umap-js';
 
 /** Abstract dimensionality reducer */
 abstract class Reducer {
@@ -26,7 +28,7 @@ abstract class Reducer {
 
   /** Embeds the data given into the two-dimensional space.
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable. */
-  abstract transform(): { [key: string] : Matrix };
+  abstract transform(): { [key: string]: Matrix };
 }
 
 /** t-SNE dimensionality reduction. */
@@ -51,7 +53,7 @@ class TSNEReducer extends Reducer {
    * Embeds the data given into the two-dimensional space using t-SNE method.
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): { [key: string] : Matrix } {
+  public transform(): { [key: string]: Matrix } {
     const distance = calcDistanceMatrix(this.data, this.distanceFn);
     this.reducer.initDataDist(distance);
 
@@ -61,6 +63,8 @@ class TSNEReducer extends Reducer {
     return {distance: distance, embedding: this.reducer.getSolution()};
   }
 }
+
+export type UmapOptions = Options & UMAPParameters;
 
 /**
  * Implements UMAP dimensionality reduction.
@@ -78,14 +82,16 @@ class UMAPReducer extends Reducer {
    * @param {Options} options Options to pass to the constructor.
    * @memberof UMAPReducer
    */
-  constructor(options: Options) {
+  constructor(options: UmapOptions) {
     super(options);
 
     assert('distanceFn' in options);
 
-    this.distanceFn = options.distanceFn;
+    this.distanceFn = options.distanceFn!;
     this.vectors = [];
     options.distanceFn = this._encodedDistance.bind(this);
+    if (this.data.length < 15)
+      options.nNeighbors = this.data.length - 1;
     this.reducer = new umj.UMAP(options);
   }
 
@@ -118,7 +124,7 @@ class UMAPReducer extends Reducer {
    * Embeds the data given into the two-dimensional space using UMAP method.
    * @return {any} Cartesian coordinate of this embedding.
    */
-  public transform(): { [key: string] : Matrix } {
+  public transform(): { [key: string]: Matrix } {
     this._encode();
 
     const embedding = this.reducer.fit(this.vectors);
@@ -154,7 +160,7 @@ class SPEReducer extends Reducer {
    * Embeds the data given into the two-dimensional space using the original SPE method.
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): { [key: string] : Matrix } {
+  public transform(): { [key: string]: Matrix } {
     const emb = this.reducer.embed(this.data);
     return {distance: this.reducer.distance, embedding: emb};
   }
@@ -183,7 +189,7 @@ class PSPEReducer extends Reducer {
    * Embeds the data given into the two-dimensional space using the modified SPE method.
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): { [key: string] : Matrix } {
+  public transform(): { [key: string]: Matrix } {
     const emb = this.reducer.embed(this.data);
     return {distance: this.reducer.distance, embedding: emb};
   }
@@ -212,7 +218,7 @@ class OriginalSPEReducer extends Reducer {
    * Embeds the data given into the two-dimensional space using the original SPE method.
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): { [key: string] : Matrix } {
+  public transform(): { [key: string]: Matrix } {
     const emb = this.reducer.embed(this.data);
     return {distance: this.reducer.distance, embedding: emb};
   }
@@ -285,7 +291,7 @@ export class DimensionalityReducer {
    * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    * @memberof DimensionalityReducer
    */
-  public transform(transpose: boolean = false): { [key: string] : Matrix } {
+  public transform(transpose: boolean = false): { [key: string]: Matrix } {
     if (this.reducer == undefined) {
       throw new Error('Reducer was not defined.');
     }
