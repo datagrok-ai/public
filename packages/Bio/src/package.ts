@@ -353,7 +353,6 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
       .tableView(table.name)
       .scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Sequence space'});
   }
-  ;
 
   /*   const encodedCol = encodeMonomers(macroMolecule);
   if (!encodedCol)
