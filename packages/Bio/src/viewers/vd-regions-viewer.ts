@@ -1,9 +1,10 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
-const vrt = bio.VdRegionType;
+import {IVdRegionsViewer, PositionHeight, VdRegion, VdRegionType, WebLogoViewer} from '@datagrok-libraries/bio';
+
+const vrt = VdRegionType;
 
 // Positions of regions for numbering schemes
 // http://www.bioinf.org.uk/abs/info.html
@@ -34,7 +35,7 @@ const vrt = bio.VdRegionType;
 /** Viewer with tabs based on description of chain regions.
  *  Used to define regions of an immunoglobulin LC.
  */
-export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer {
+export class VdRegionsViewer extends DG.JsViewer implements IVdRegionsViewer {
   // private regionsDf: DG.DataFrame;
   private regionsFg: DG.FilterGroup | null = null;
   // private regionsTV: DG.TableView;
@@ -43,7 +44,7 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
   private isOpened: boolean = false;
   private panelNode: DG.DockNode | null = null;
 
-  public regions: bio.VdRegion[] = [];
+  public regions: VdRegion[] = [];
   public regionTypes: string[];
   public chains: string[];
   public sequenceColumnNamePostfix: string;
@@ -58,7 +59,7 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
   }
 
   // TODO: .onTableAttached is not calling on dataFrame set, onPropertyChanged  also not calling
-  public async setDf(value: DG.DataFrame, regions: bio.VdRegion[]) {
+  public async setDf(value: DG.DataFrame, regions: VdRegion[]) {
     console.debug('VdRegionsViewer.setDf()');
     await this.destroyView();
     this.regions = regions;
@@ -78,8 +79,8 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
 
     this.skipEmptyPositions = this.bool('skipEmptyPositions', false);
     this.positionWidth = this.float('positionWidth', 16);
-    this.positionHeight = this.string('positionHeight', bio.PositionHeight.Entropy,
-      {choices: Object.keys(bio.PositionHeight)});
+    this.positionHeight = this.string('positionHeight', PositionHeight.Entropy,
+      {choices: Object.keys(PositionHeight)});
   }
 
   public async init() {
@@ -180,7 +181,7 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
   //#region -- View --
   private host: HTMLElement | null = null;
   private mainLayout: HTMLTableElement | null = null;
-  private logos: { [chain: string]: bio.WebLogoViewer }[] = [];
+  private logos: { [chain: string]: WebLogoViewer }[] = [];
 
   private async destroyView(): Promise<void> {
     // TODO: Unsubscribe from and remove all view elements
@@ -200,16 +201,16 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
     const colNames: { [chain: string]: string } = Object.assign({},
       ...this.chains.map((chain) => ({[chain]: `${chain} ${this.sequenceColumnNamePostfix}`})));
 
-    const regionsFiltered: bio.VdRegion[] = this.regions.filter((r: bio.VdRegion) => this.regionTypes.includes(r.type));
+    const regionsFiltered: VdRegion[] = this.regions.filter((r: VdRegion) => this.regionTypes.includes(r.type));
 
     const orderList: number[] = Array.from(new Set(regionsFiltered.map((r) => r.order))).sort();
 
     this.logos = [];
 
     for (let orderI = 0; orderI < orderList.length; orderI++) {
-      const regionChains: { [chain: string]: bio.WebLogoViewer } = {};
+      const regionChains: { [chain: string]: WebLogoViewer } = {};
       for (const chain of this.chains) {
-        const region: bio.VdRegion | undefined = regionsFiltered
+        const region: VdRegion | undefined = regionsFiltered
           .find((r) => r.order == orderList[orderI] && r.chain == chain);
         regionChains[chain] = (await this.dataFrame.plot.fromType('WebLogo', {
           sequenceColumnName: colNames[chain],
@@ -219,7 +220,7 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
           skipEmptyPositions: this.skipEmptyPositions,
           positionWidth: this.positionWidth,
           positionHeight: this.positionHeight,
-        })) as unknown as bio.WebLogoViewer;
+        })) as unknown as WebLogoViewer;
       }
       // WebLogo creation fires onRootSizeChanged event even before control being added to this.logos
       this.logos[orderI] = regionChains;
@@ -244,7 +245,7 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
           })] : []),
           // List with controls for regions
           ...[...Array(orderList.length).keys()].map((orderI) => {
-            const wl: bio.WebLogoViewer = this.logos[orderI][chain];
+            const wl: WebLogoViewer = this.logos[orderI][chain];
             wl.root.style.height = '100%';
 
             const resDiv = ui.div([wl.root]/*`${chain} ${regionsFiltered[rI]}`*/, {
@@ -261,7 +262,7 @@ export class VdRegionsViewer extends DG.JsViewer implements bio.IVdRegionsViewer
       },
       ['', ...[...Array(orderList.length).keys()].map(
         (orderI: number) => regionsFiltered.find(
-          (r: bio.VdRegion) => r.order == orderList[orderI] && r.chain == this.chains[0]
+          (r: VdRegion) => r.order == orderList[orderI] && r.chain == this.chains[0]
         )!.name || 'Name')]
     );
     this.mainLayout.className = 'mlb-vd-regions-viewer-table2';

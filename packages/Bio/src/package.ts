@@ -43,7 +43,7 @@ import {getMonomericMols} from './calculations/monomerLevelMols';
 import {delay} from '@datagrok-libraries/utils/src/test';
 import {from, Observable, Subject} from 'rxjs';
 import {
-  TAGS as bio_TAGS,
+  TAGS as bioTAGS,
   Monomer, IMonomerLib, MonomerWorks, MonomerLib, readLibrary,
   SeqPalette, UnitsHandler, WebLogoViewer, getStats, splitterAsHelm
 } from '@datagrok-libraries/bio';
@@ -70,13 +70,13 @@ export class SeqPaletteCustom implements SeqPalette {
 //tags: init
 export async function initBio() {
   await loadLibraries();
-  let monomers: string[] = [];
-  let logPs: number[] = [];
+  const monomers: string[] = [];
+  const logPs: number[] = [];
   const module = await grok.functions.call('Chem:getRdKitModule');
 
 
   const series = monomerLib!.getMonomerMolsByType('PEPTIDE')!;
-  Object.keys(series).forEach(symbol => {
+  Object.keys(series).forEach((symbol) => {
     monomers.push(symbol);
     const block = series[symbol].replaceAll('#R', 'O ');
     const mol = module.get_mol(block);
@@ -88,10 +88,9 @@ export async function initBio() {
   const sum = logPs.reduce((a, b) => a + b, 0);
   const avg = (sum / logPs.length) || 0;
 
-  let palette: { [monomer: string]: string } = {};
-  for (let i = 0; i < monomers.length; i++) {
+  const palette: { [monomer: string]: string } = {};
+  for (let i = 0; i < monomers.length; i++)
     palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
-  }
 
   hydrophobPalette = new SeqPaletteCustom(palette);
 }
@@ -99,7 +98,7 @@ export async function initBio() {
 async function loadLibraries() {
   //TODO handle if files are in place
 
-  let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
+  const uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
   if (uploadedLibraries.length == 0 && monomerLib == null)
     monomerLib = new MonomerLib({});
   for (let i = 0; i < uploadedLibraries.length; ++i)
@@ -111,9 +110,8 @@ async function loadLibraries() {
 export async function monomerManager(value: string) {
   if (monomerLib == null)
     monomerLib = await readLibrary(LIB_PATH, value);
-  else {
+  else
     monomerLib!.update(await readLibrary(LIB_PATH, value));
-  }
 }
 
 //name: getBioLib
@@ -137,20 +135,21 @@ export async function manageFiles() {
 //output: widget result
 export async function libraryPanel(seqColumn: DG.Column): Promise<DG.Widget> {
   //@ts-ignore
-  let filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
-  let divInputs: HTMLDivElement = ui.div();
-  let librariesList: string[] = (await _package.files.list(`${LIBS_PATH}`, false, '')).map(it => it.fileName);
-  let uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
+  const filesButton: HTMLButtonElement = ui.button('Manage', manageFiles);
+  const divInputs: HTMLDivElement = ui.div();
+  const librariesList: string[] = (await _package.files.list(`${LIBS_PATH}`, false, ''))
+    .map((it) => it.fileName);
+  const uploadedLibraries: string[] = Object.values(await grok.dapi.userDataStorage.get(STORAGE_NAME, true));
   for (let i = 0; i < uploadedLibraries.length; ++i) {
-    let libraryName: string = uploadedLibraries[i];
+    const libraryName: string = uploadedLibraries[i];
     divInputs.append(ui.boolInput(libraryName, true, async () => {
       grok.dapi.userDataStorage.remove(STORAGE_NAME, libraryName, true);
       await loadLibraries();
     }).root);
   }
-  let unusedLibraries: string[] = librariesList.filter(x => !uploadedLibraries.includes(x));
+  const unusedLibraries: string[] = librariesList.filter((x) => !uploadedLibraries.includes(x));
   for (let i = 0; i < unusedLibraries.length; ++i) {
-    let libraryName: string = unusedLibraries[i];
+    const libraryName: string = unusedLibraries[i];
     divInputs.append(ui.boolInput(libraryName, false, () => {
       monomerManager(libraryName);
       grok.dapi.userDataStorage.postValue(STORAGE_NAME, libraryName, libraryName, true);
@@ -292,9 +291,9 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
   };
   const tags = {
     'units': macroMolecule.getTag(DG.TAGS.UNITS),
-    'aligned': macroMolecule.getTag(bio_TAGS.aligned),
-    'separator': macroMolecule.getTag(bio_TAGS.separator),
-    'alphabet': macroMolecule.getTag(bio_TAGS.alphabet),
+    'aligned': macroMolecule.getTag(bioTAGS.aligned),
+    'separator': macroMolecule.getTag(bioTAGS.separator),
+    'alphabet': macroMolecule.getTag(bioTAGS.alphabet),
   };
   const sp = await getActivityCliffs(
     df,
@@ -326,7 +325,8 @@ export async function activityCliffs(df: DG.DataFrame, macroMolecule: DG.Column,
 //input: bool plotEmbeddings = true
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: DG.Column, methodName: string,
   similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean): Promise<DG.Viewer | undefined> {
-  //delay is required for initial function dialog to close before starting invalidating of molfiles. Otherwise dialog is freezing
+  // Delay is required for initial function dialog to close before starting invalidating of molfiles.
+  // Otherwise, dialog is freezing
   await delay(10);
   if (!checkInputColumnUi(macroMolecule, 'Sequence space'))
     return;
@@ -346,7 +346,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, macroMolecule: D
   for (const col of embeddings) {
     const listValues = col.toList();
     emptyValsIdxs.forEach((ind: number) => listValues.splice(ind, 0, null));
-    table.columns.add(DG.Column.float(col.name, table.rowCount).init((i)=> listValues[i]));
+    table.columns.add(DG.Column.float(col.name, table.rowCount).init((i) => listValues[i]));
   }
   if (plotEmbeddings) {
     return grok.shell
@@ -405,7 +405,9 @@ export async function toAtomicLevel(df: DG.DataFrame, macroMolecule: DG.Column):
 //input: dataframe table
 //input: column sequence { semType: Macromolecule, units: ['fasta'], alphabet: ['DNA', 'RNA', 'PT'] }
 //output: column result
-export async function multipleSequenceAlignmentAny(table: DG.DataFrame, sequence: DG.Column): Promise<DG.Column | null> {
+export async function multipleSequenceAlignmentAny(
+  table: DG.DataFrame, sequence: DG.Column
+): Promise<DG.Column | null> {
   const func: DG.Func = DG.Func.find({package: 'Bio', name: 'multipleSequenceAlignmentAny'})[0];
 
   if (!checkInputColumnUi(sequence, 'MSA', ['fasta'], ['DNA', 'RNA', 'PT']))
