@@ -108,7 +108,7 @@ Parameters:
     Description: AWS Instance type for Datagrok EC2 instance
   CvmEc2InstanceType:
     Type: String
-    Default: 'a1.4xlarge'
+    Default: 't3.xlarge'
     Description: AWS Instance type for Datagrok EC2 instance    
 Conditions:
   CreateDemoDataCondition:
@@ -759,11 +759,9 @@ Resources:
       LaunchType: !Ref LaunchType
       LoadBalancers:
       - ContainerName: grok_compute
-        ContainerPort: 5005
         TargetGroupArn:
           Ref: GrokComputeTCP5005TargetGroup
       - ContainerName: grok_compute
-        ContainerPort: 5005
         TargetGroupArn:
           Ref: GrokComputeTCP5005IntTargetGroup
       NetworkConfiguration:
@@ -787,7 +785,7 @@ Resources:
       - Key: datagrok.component
         Value: datagrok
       TaskDefinition:
-        Ref: GrokComputeTaskDefinition
+        Ref: GrokComputeTaskDefinitionEc2
     Type: AWS::ECS::Service
     Condition: CreateEc2InstanceCondition
   GrokComputeServiceDiscoveryEntry:
@@ -851,7 +849,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/grok_compute/info"
@@ -874,7 +876,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/grok_compute/info"
@@ -888,6 +894,65 @@ Resources:
       - Key: stickiness.lb_cookie.duration_seconds
         Value: 86400
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  GrokComputeTaskDefinitionEc2:
+    Properties:
+      ContainerDefinitions:
+      - Command:
+        - Fn::Sub: "${AWS::Region}.compute.internal"
+        - datagrok.internal
+        - datagrok.local
+        Essential: false
+        Image: docker/ecs-searchdomain-sidecar:1.0
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: cvm
+        Name: GrokCompute_ResolvConf_InitContainer
+      - DependsOn:
+        - Condition: SUCCESS
+          ContainerName: GrokCompute_ResolvConf_InitContainer
+        Environment:
+        - Name: GROK_COMPUTE_NUM_CORES
+          Value: '2'
+        Essential: true
+        Image:
+          Fn::Sub:
+          - docker.io/datagrok/grok_compute:${Version}
+          - Version:
+              Ref: GrokComputeVersion
+        RepositoryCredentials:
+          CredentialsParameter:
+            Ref: ArnDockerHubCredential
+        LinuxParameters: {}
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: cvm
+        MemoryReservation: 200
+        Name: grok_compute
+        PortMappings:
+        - ContainerPort: 5005
+          HostPort: 5005
+          Protocol: tcp
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - GrokComputeTaskExecutionRole
+        - Arn
+      Family: datagrok-cvm-grok_compute
+      Memory: '2048'
+      NetworkMode: bridge
+      RequiresCompatibilities:
+      - !Ref LaunchType
+    Type: AWS::ECS::TaskDefinition
+    Condition: CreateEc2InstanceCondition
   GrokComputeTaskDefinition:
     Properties:
       ContainerDefinitions:
@@ -947,6 +1012,7 @@ Resources:
       RequiresCompatibilities:
       - !Ref LaunchType
     Type: AWS::ECS::TaskDefinition
+    Condition: CreateFargateInstanceCondition
   GrokComputeTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1046,19 +1112,15 @@ Resources:
       LaunchType: !Ref LaunchType
       LoadBalancers:
       - ContainerName: h2o
-        ContainerPort: 5005
         TargetGroupArn:
           Ref: H2oTCP5005TargetGroup
       - ContainerName: h2o
-        ContainerPort: 54321
         TargetGroupArn:
           Ref: H2oTCP54321TargetGroup
       - ContainerName: h2o
-        ContainerPort: 5005
         TargetGroupArn:
           Ref: H2oTCP5005IntTargetGroup
       - ContainerName: h2o
-        ContainerPort: 54321
         TargetGroupArn:
           Ref: H2oTCP54321IntTargetGroup
       NetworkConfiguration:
@@ -1082,7 +1144,7 @@ Resources:
       - Key: datagrok.service
         Value: h2o
       TaskDefinition:
-        Ref: H2oTaskDefinition
+        Ref: H2oTaskDefinitionEc2
     Type: AWS::ECS::Service
     Condition: CreateEc2InstanceCondition
   H2oServiceDiscoveryEntry:
@@ -1137,7 +1199,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/helper/info"
@@ -1160,7 +1226,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/helper/info"
@@ -1212,7 +1282,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/3/About"
@@ -1235,7 +1309,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/3/About"
@@ -1249,6 +1327,65 @@ Resources:
       - Key: stickiness.lb_cookie.duration_seconds
         Value: '86400'
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  H2oTaskDefinitionEc2:
+    Properties:
+      ContainerDefinitions:
+      - Command:
+        - Fn::Sub: "${AWS::Region}.compute.internal"
+        - datagrok.internal
+        - datagrok.local
+        Essential: false
+        Image: docker/ecs-searchdomain-sidecar:1.0
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: cvm
+        Name: H2o_ResolvConf_InitContainer
+      - DependsOn:
+        - Condition: SUCCESS
+          ContainerName: H2o_ResolvConf_InitContainer
+        Essential: true
+        Image:
+          Fn::Sub:
+          - docker.io/datagrok/h2o:${Version}
+          - Version:
+              Ref: H2oVersion
+        RepositoryCredentials:
+          CredentialsParameter:
+            Ref: ArnDockerHubCredential
+        LinuxParameters: {}
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: cvm
+        MemoryReservation: 300
+        Name: h2o
+        PortMappings:
+        - ContainerPort: 5005
+          HostPort: 5005
+          Protocol: tcp
+        - ContainerPort: 54321
+          HostPort: 54321
+          Protocol: tcp
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - H2oTaskExecutionRole
+        - Arn
+      Family: datagrok-cvm-h2o
+      NetworkMode: bridge
+      Memory: '2048'
+      RequiresCompatibilities:
+      - !Ref LaunchType
+    Type: AWS::ECS::TaskDefinition
+    Condition: CreateEc2InstanceCondition
   H2oTaskDefinition:
     Properties:
       ContainerDefinitions:
@@ -1308,6 +1445,7 @@ Resources:
       RequiresCompatibilities:
       - !Ref LaunchType
     Type: AWS::ECS::TaskDefinition
+    Condition: CreateFargateInstanceCondition
   H2oTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1350,19 +1488,15 @@ Resources:
       LaunchType: !Ref LaunchType
       LoadBalancers:
       - ContainerName: jupyter_kernel_gateway
-        ContainerPort: 5005
         TargetGroupArn:
           Ref: JupyterKernelGatewayTCP5005TargetGroup
       - ContainerName: jupyter_kernel_gateway
-        ContainerPort: 8888
         TargetGroupArn:
           Ref: JupyterKernelGatewayTCP8888TargetGroup
       - ContainerName: jupyter_kernel_gateway
-        ContainerPort: 5005
         TargetGroupArn:
           Ref: JupyterKernelGatewayTCP5005IntTargetGroup
       - ContainerName: jupyter_kernel_gateway
-        ContainerPort: 8888
         TargetGroupArn:
           Ref: JupyterKernelGatewayTCP8888IntTargetGroup
       NetworkConfiguration:
@@ -1476,7 +1610,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/jupyter/helper/info"
@@ -1499,7 +1637,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/jupyter/helper/info"
@@ -1522,7 +1664,11 @@ Resources:
       Tags:
       - Key: com.docker.compose.project
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/jupyter/api/swagger.yaml"
@@ -1545,7 +1691,11 @@ Resources:
       Tags:
       - Key: com.docker.compose.project
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/jupyter/api/swagger.yaml"
@@ -1607,14 +1757,13 @@ Resources:
         - ContainerPort: 8888
           HostPort: 8888
           Protocol: tcp
-      Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
         - JupyterKernelGatewayTaskExecutionRole
         - Arn
       Family: datagrok-cvm-jupyter_kernel_gateway
       Memory: '4096'
-      NetworkMode: awsvpc
+      NetworkMode: bridge
       RequiresCompatibilities:
       - !Ref LaunchType
     Type: AWS::ECS::TaskDefinition
@@ -1786,19 +1935,15 @@ Resources:
       LaunchType: !Ref LaunchType
       LoadBalancers:
       - ContainerName: jupyter_notebook
-        ContainerPort: 5005
         TargetGroupArn:
           Ref: JupyterNotebookTCP5005TargetGroup
       - ContainerName: jupyter_notebook
-        ContainerPort: 8889
         TargetGroupArn:
           Ref: JupyterNotebookTCP8889TargetGroup
       - ContainerName: jupyter_notebook
-        ContainerPort: 5005
         TargetGroupArn:
           Ref: JupyterNotebookTCP5005IntTargetGroup
       - ContainerName: jupyter_notebook
-        ContainerPort: 8889
         TargetGroupArn:
           Ref: JupyterNotebookTCP8889IntTargetGroup
       NetworkConfiguration:
@@ -1822,7 +1967,7 @@ Resources:
       - Key: datagrok.service
         Value: jupyter_notebook
       TaskDefinition:
-        Ref: JupyterNotebookTaskDefinition
+        Ref: JupyterNotebookTaskDefinitionEc2
     Type: AWS::ECS::Service
     Condition: CreateEc2InstanceCondition
   JupyterNotebookServiceDiscoveryEntry:
@@ -1849,7 +1994,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/notebook/helper/info"
@@ -1872,7 +2021,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/notebook/helper/info"
@@ -1895,7 +2048,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/notebook/api"
@@ -1918,7 +2075,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: cvm
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckPath: "/notebook/api"
@@ -1932,6 +2093,65 @@ Resources:
       - Key: stickiness.lb_cookie.duration_seconds
         Value: 86400
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  JupyterNotebookTaskDefinitionEc2:
+    Properties:
+      ContainerDefinitions:
+      - Command:
+        - Fn::Sub: "${AWS::Region}.compute.internal"
+        - datagrok.internal
+        - datagrok.local
+        Essential: false
+        Image: docker/ecs-searchdomain-sidecar:1.0
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: cvm
+        Name: JupyterNotebook_ResolvConf_InitContainer
+      - DependsOn:
+        - Condition: SUCCESS
+          ContainerName: JupyterNotebook_ResolvConf_InitContainer
+        Essential: true
+        Image:
+          Fn::Sub:
+          - docker.io/datagrok/jupyter_notebook:${Version}
+          - Version:
+              Ref: JupyterNotebookVersion
+        RepositoryCredentials:
+          CredentialsParameter:
+            Ref: ArnDockerHubCredential
+        LinuxParameters: {}
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: cvm
+        MemoryReservation: 200
+        Name: jupyter_notebook
+        PortMappings:
+        - ContainerPort: 5005
+          HostPort: 5005
+          Protocol: tcp
+        - ContainerPort: 8889
+          HostPort: 8889
+          Protocol: tcp
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - JupyterNotebookTaskExecutionRole
+        - Arn
+      Family: datagrok-cvm-jupyter_notebook
+      Memory: '2048'
+      NetworkMode: bridge
+      RequiresCompatibilities:
+      - !Ref LaunchType
+    Type: AWS::ECS::TaskDefinition
+    Condition: CreateEc2InstanceCondition
   JupyterNotebookTaskDefinition:
     Properties:
       ContainerDefinitions:
@@ -1991,6 +2211,7 @@ Resources:
       RequiresCompatibilities:
       - !Ref LaunchType
     Type: AWS::ECS::TaskDefinition
+    Condition: CreateFargateInstanceCondition
   JupyterNotebookTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -2283,11 +2504,9 @@ Resources:
       LaunchType: !Ref LaunchType
       LoadBalancers:
       - ContainerName: datagrok
-        ContainerPort: 8080
         TargetGroupArn:
           Ref: DatagrokTCP8080TargetGroup
       - ContainerName: datagrok
-        ContainerPort: 8080
         TargetGroupArn:
           Ref: DatagrokTCP8080IntTargetGroup
       NetworkConfiguration:
@@ -2311,7 +2530,7 @@ Resources:
       - Key: datagrok.service
         Value: datagrok
       TaskDefinition:
-        Ref: DatagrokTaskDefinition
+        Ref: DatagrokTaskDefinitionEc2
     Type: AWS::ECS::Service
     Condition: CreateEc2InstanceCondition
   DatagrokServiceDiscoveryEntry:
@@ -2366,7 +2585,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: datagrok
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckIntervalSeconds: 60
@@ -2384,7 +2607,11 @@ Resources:
       Tags:
       - Key: datagrok.component
         Value: datagrok
-      TargetType: ip
+      TargetType:
+            'Fn::If':
+              - CreateEc2InstanceCondition
+              - 'instance'
+              - 'ip'
       VpcId:
         Ref: DatagrokVPC
       HealthCheckIntervalSeconds: 60
@@ -2621,6 +2848,95 @@ Resources:
           Condition:
             Bool:
               aws:SecureTransport: false
+  DatagrokTaskDefinitionEc2:
+    Properties:
+      ContainerDefinitions:
+      - Command:
+        - Fn::Sub: "${AWS::Region}.compute.internal"
+        - datagrok.internal
+        - datagrok.local
+        Essential: false
+        Image: docker/ecs-searchdomain-sidecar:1.0
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: cvm
+        Name: Datagrok_ResolvConf_InitContainer
+      - DependsOn:
+        - Condition: SUCCESS
+          ContainerName: Datagrok_ResolvConf_InitContainer
+        Environment:
+        - Name: GROK_MODE
+          Value: auto
+        - Name: GROK_PARAMETERS
+          Value:
+            Fn::Sub:
+            - '{ "amazonStorageRegion": "${region}", "amazonStorageBucket": "${bucket}",
+              "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
+              "dbLogin": "datagrok", "dbPassword": "${dbPassword}", "dbAdminLogin":
+              "superuser", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": false,
+              "deployDemo": false, "deployTestDemo": false, "adminPassword": "admin"
+              }'
+            - region:
+                Ref: AWS::Region
+              bucket:
+                Ref: DatagrokS3
+              dbServer:
+                Fn::GetAtt:
+                - DatagrokDB
+                - Endpoint.Address
+              dbPort:
+                Fn::GetAtt:
+                - DatagrokDB
+                - Endpoint.Port
+              dbPassword:
+                Fn::GetAtt:
+                - DatagrokDbPassword
+                - RandomString
+              dbAdminPassword:
+                Fn::GetAtt:
+                - DatagrokDbAdminPassword
+                - RandomString
+        Essential: true
+        Image:
+          Fn::Sub:
+          - docker.io/datagrok/datagrok:${Version}
+          - Version:
+              Ref: DatagrokVersion
+        RepositoryCredentials:
+          CredentialsParameter:
+            Ref: ArnDockerHubCredential
+        LinuxParameters: {}
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Ref: LogGroup
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: datagrok
+        Name: datagrok
+        PortMappings:
+        - ContainerPort: 8080
+          HostPort: 8080
+          Protocol: tcp
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - DatagrokTaskExecutionRole
+        - Arn
+      Family: datagrok
+      Memory: '2048'
+      NetworkMode: bridge
+      RequiresCompatibilities:
+      - !Ref LaunchType
+      TaskRoleArn:
+        Ref: DatagrokTaskRole
+    Type: AWS::ECS::TaskDefinition
+    Condition: CreateEc2InstanceCondition
   DatagrokTaskDefinition:
     Properties:
       ContainerDefinitions:
@@ -2711,6 +3027,7 @@ Resources:
       TaskRoleArn:
         Ref: DatagrokTaskRole
     Type: AWS::ECS::TaskDefinition
+    Condition: CreateFargateInstanceCondition
   DatagrokTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
