@@ -1,5 +1,5 @@
 {
-  "name": "biostructureviewer",
+  "name": "@datagrok/biostructure-viewer",
   "friendlyName": "BiostructureViewer",
   "author": {
     "name": "Leonid Stolbov",
