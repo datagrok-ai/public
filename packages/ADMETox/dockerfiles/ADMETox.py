@@ -250,12 +250,12 @@ def handle_uploaded_file(f, models):
     models_res = models.split(",")
     result = np.zeros((len(encoded_smiles),0), float)
     for j in range(len(models_res)):
-        cf = sklearn.externals.joblib.load(current_path + '/' + models_res[j])
+        cf = sklearn.externals.joblib.load(current_path + '/' + models_res[j] + '.pkl')
         fingerprint_content = lambda bits: getMACCS(encoded_smiles) if bits == 167 \
                               else (getECFP(encoded_smiles, 1, 2048) if bits == 2048 \
                               else (getECFP(encoded_smiles, 2, 1024) if bits == 1024 \
                               else get_descriptor_vector(encoded_smiles, bits)))
-        des_list = np.array(fingerprint_content(dict_bits_desc[str(models_res[j])[:-4]]))
+        des_list = np.array(fingerprint_content(dict_bits_desc[models_res[j]]))
         y_predict_label = cf.predict(des_list)
         y_predict_proba = cf.predict_proba(des_list)
         predicts = []
@@ -264,7 +264,7 @@ def handle_uploaded_file(f, models):
             predicts.append(predict[y_predict_label[i]])
         result = np.concatenate([ result, np.array(predicts).reshape(len(encoded_smiles),1)], axis=1)
     res_df = pd.DataFrame(result, columns=models_res)
-    return res_df.to_csv()
+    return res_df.to_csv(index=False)
 
 from django.conf.urls import url, include 
 from django.contrib import admin
