@@ -2,8 +2,8 @@ import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
 import * as types from './types';
-import * as bio from '@datagrok-libraries/bio';
-import { PositionStats, SummaryStats, MonomerPositionStats } from '../model';
+import {PositionStats, SummaryStats, MonomerPositionStats} from '../model';
+import {monomerToShort, SeqPalette} from '@datagrok-libraries/bio';
 
 function renderCellSelection(canvasContext: CanvasRenderingContext2D, bound: DG.Rect): void {
   canvasContext.strokeStyle = '#000';
@@ -105,8 +105,8 @@ export function renderLogoSummaryCell(canvasContext: CanvasRenderingContext2D, c
 
 
 export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect, stats: PositionStats,
-  sortedOrder: string[], rowCount: number, cp: bio.SeqPalette, monomerSelectionStats: {[monomer: string]: number} = {},
-  drawOptions: types.DrawOptions = {}): {[monomer: string]: DG.Rect} {
+  sortedOrder: string[], rowCount: number, cp: SeqPalette, monomerSelectionStats: { [monomer: string]: number } = {},
+  drawOptions: types.DrawOptions = {}): { [monomer: string]: DG.Rect } {
   drawOptions.fontStyle ??= '16px Roboto, Roboto Local, sans-serif';
   drawOptions.upperLetterHeight ??= 12.2;
   drawOptions.upperLetterAscent ??= 0.25;
@@ -123,7 +123,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
   const xSelection = (bounds.x + 3) * pr;
   let currentY = (bounds.y + drawOptions.marginVertical) * pr;
 
-  const monomerBounds: {[monomer: string]: DG.Rect} = {};
+  const monomerBounds: { [monomer: string]: DG.Rect } = {};
   for (const monomer of sortedOrder) {
     const monomerHeight = barHeight * (stats[monomer].count / rowCount);
     const selectionHeight = barHeight * ((monomerSelectionStats[monomer] ?? 0) / rowCount);
@@ -132,7 +132,7 @@ export function drawLogoInBounds(ctx: CanvasRenderingContext2D, bounds: DG.Rect,
 
     ctx.resetTransform();
     if (monomer !== '-' && monomer !== '') {
-      const monomerTxt = bio.monomerToShort(monomer, 5);
+      const monomerTxt = monomerToShort(monomer, 5);
       const mTm: TextMetrics = ctx.measureText(monomerTxt);
 
       // Filling selection

@@ -5,8 +5,8 @@ import $ from 'cash-dom';
 import {PeptidesModel} from '../model';
 import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
-import * as bio from '@datagrok-libraries/bio';
-import { Stats } from '../utils/statistics';
+import {Stats} from '../utils/statistics';
+import {PositionHeight, UnitsHandler, TAGS as bioTAGS} from '@datagrok-libraries/bio';
 
 export class LogoSummary extends DG.JsViewer {
   _titleHost = ui.divText('Logo Summary Table', {id: 'pep-viewer-title'});
@@ -19,8 +19,8 @@ export class LogoSummary extends DG.JsViewer {
   constructor() {
     super();
 
-    this.webLogoMode = this.string('webLogoMode', bio.PositionHeight.full,
-      {choices: [bio.PositionHeight.full, bio.PositionHeight.Entropy]});
+    this.webLogoMode = this.string('webLogoMode', PositionHeight.full,
+      {choices: [PositionHeight.full, PositionHeight.Entropy]});
     this.membersRatioThreshold = this.float('membersRatioThreshold', 0.7, {min: 0.01, max: 1.0});
   }
 
@@ -100,8 +100,8 @@ export class LogoSummary extends DG.JsViewer {
       for (const tag of peptideColTags)
         tCol.setTag(tag[0], tag[1]);
 
-      const uh = new bio.UnitsHandler(tCol);
-      tCol.setTag(bio.TAGS.alphabetSize, uh.getAlphabetSize().toString());
+      const uh = new UnitsHandler(tCol);
+      tCol.setTag(bioTAGS.alphabetSize, uh.getAlphabetSize().toString());
 
       //TODO: use bitset instead of splitCol
       const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
