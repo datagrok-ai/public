@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import * as bio from '@datagrok-libraries/bio';
 
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {TreeHelper} from '../utils/tree-helper';
@@ -10,16 +9,16 @@ import {attachDivToGrid} from './inject-tree-to-grid';
 import {
   GridTreeRendererBase,
 } from './grid-tree-renderer';
-import {NodeCuttedType} from '@datagrok-libraries/bio';
+import {ITreeHelper, NodeCuttedType, NodeType} from '@datagrok-libraries/bio';
 import {markupNode, MarkupNodeType} from './tree-renderers/markup';
 import {LeafRangeGridTreeRenderer} from './tree-renderers/grid-tree-renderer';
 
 
 export function injectTreeForGridUI2(
-  grid: DG.Grid, newickRoot: bio.NodeType, dataDf: DG.DataFrame, clusterDf: DG.DataFrame, leafColName: string, neighborWidth: number = 100,
-  cut?: { min: number, max: number, clusterColName: string }
+  grid: DG.Grid, newickRoot: NodeType, dataDf: DG.DataFrame, clusterDf: DG.DataFrame, leafColName: string,
+  neighborWidth: number = 100, cut?: { min: number, max: number, clusterColName: string }
 ): GridNeighbor {
-  const th: bio.ITreeHelper = new TreeHelper();
+  const th: ITreeHelper = new TreeHelper();
 
   const treeN = attachDivToGrid(grid, neighborWidth);
   const treeRoot = treeN.root!;

@@ -29,8 +29,7 @@ export function getFormat(sequence: string): string | null {
     while (outputIndex < sequence.length) {
       const matchedCode = codes.find((c) => c === sequence.slice(outputIndex, outputIndex + c.length));
 
-      if (matchedCode === null)
-        break;
+      if (!matchedCode) break;
 
       if ( // for mistake pattern 'rAA'
         outputIndex > 1 &&
@@ -83,7 +82,7 @@ export function getFormat(sequence: string): string | null {
         break;
       }
 
-      outputIndex += matchedCode.length;
+      outputIndex += matchedCode!.length;
     }
   });
 
@@ -123,8 +122,7 @@ export function isValidSequence(sequence: string, format: string | null): {
     while (outputIndices[i] < sequence.length) {
       const matchedCode = codes.find((c) => c === sequence.slice(outputIndices[i], outputIndices[i] + c.length));
 
-      if (matchedCode === null)
-        break;
+      if (!matchedCode) break;
 
       if ( // for mistake pattern 'rAA'
         outputIndices[i] > 1 &&
@@ -248,7 +246,8 @@ function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synth
 }
 
 export function convertSequence(sequence: string, output: {
-  indexOfFirstNotValidChar: number, synthesizer: string[] | null}) {
+  indexOfFirstNotValidChar: number, synthesizer: string[] | null
+}) {
   if (output.indexOfFirstNotValidChar !== -1) {
     return {
       // type: '',
@@ -256,7 +255,7 @@ export function convertSequence(sequence: string, output: {
       Error: undefinedInputSequence,
     };
   }
-  if (output.synthesizer!.includes(SYNTHESIZERS.RAW_NUCLEOTIDES)) {//&& output.technology!.includes(TECHNOLOGIES.DNA)) {
+  if (output.synthesizer!.includes(SYNTHESIZERS.RAW_NUCLEOTIDES) /*&& output.technology!.includes(TECHNOLOGIES.DNA)*/) {
     return {
       type: SYNTHESIZERS.RAW_NUCLEOTIDES, // + ' ' + TECHNOLOGIES.DNA,
       Nucleotides: sequence,

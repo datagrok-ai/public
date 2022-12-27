@@ -21,7 +21,7 @@
     "css/molstar.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.7.0",
+    "@datagrok-libraries/bio": "^5.15.1",
     "@datagrok-libraries/utils": "^1.15.5",
     "cash-dom": "latest",
     "datagrok-api": "^1.0.0",

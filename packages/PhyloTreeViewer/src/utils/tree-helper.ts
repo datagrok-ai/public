@@ -3,8 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {isLeaf, ITreeHelper, NodeCuttedType, NodeType, PhylocanvasGL} from '@datagrok-libraries/bio';
+import {isLeaf, ITreeHelper, NodeCuttedType, NodeType} from '@datagrok-libraries/bio';
 import {newickToDf as _newickToDf} from './index';
+import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
 
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };

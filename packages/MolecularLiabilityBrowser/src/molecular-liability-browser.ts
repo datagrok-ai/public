@@ -32,9 +32,9 @@ import {
   getTreeHelper,
   ITreeHelper,
   IVdRegionsViewer,
-  Newick,
   NodeType,
   NOTATION,
+  parseNewick,
   PhylocanvasGlServiceBase,
   Shapes,
   TAGS as bioTAGS,
@@ -1204,7 +1204,7 @@ export class MolecularLiabilityBrowser {
         const gCtx: CanvasRenderingContext2D = args.g;
 
         const nwkStr: string = cleanMlbNewick(gCell.cell.value);
-        const nwkRoot: NodeType = Newick.parse_newick(nwkStr);
+        const nwkRoot: NodeType = parseNewick(nwkStr);
 
         const nodeShape: string = Shapes.Circle;
         this.phylocanvasGlSvc!.render({
