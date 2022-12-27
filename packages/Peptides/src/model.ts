@@ -18,8 +18,8 @@ import {getStats, Stats} from './utils/statistics';
 import {LogoSummary} from './viewers/logo-summary';
 import {getSettingsDialog} from './widgets/settings';
 import {getMonomerWorks} from './package';
-import * as bio from '@datagrok-libraries/bio';
 import {findMutations} from './utils/algorithms';
+import {IMonomerLib, MonomerWorks, pickUpPalette, SeqPalette, TAGS as bioTAGS} from '@datagrok-libraries/bio';
 
 export type SummaryStats = {
   minCount: number, maxCount: number,
@@ -56,13 +56,13 @@ export class PeptidesModel {
   isChangingEdfBitset = false;
 
   monomerMap: { [key: string]: { molfile: string, fullName: string } } = {};
-  monomerLib: bio.IMonomerLib | null = null; // To get monomers from lib(s)
-  monomerWorks: bio.MonomerWorks | null = null; // To get processed monomers
+  monomerLib: IMonomerLib | null = null; // To get monomers from lib(s)
+  monomerWorks: MonomerWorks | null = null; // To get processed monomers
 
   _settings!: type.PeptidesSettings;
   isRibbonSet = false;
 
-  _cp?: bio.SeqPalette;
+  _cp?: SeqPalette;
   initBitset: DG.BitSet;
   isInvariantMapTrigger: boolean = false;
   headerSelectedMonomers: type.MonomerSelectionStats = {};
@@ -128,7 +128,7 @@ export class PeptidesModel {
   get alphabet(): string {
     const col = this.settings.sequenceColumnName ? this.df.getCol(this.settings.sequenceColumnName) :
       this.df.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!;
-    return col.getTag(bio.TAGS.alphabet);
+    return col.getTag(bioTAGS.alphabet);
   }
 
   get substitutionsInfo(): type.SubstitutionsInfo {
@@ -153,11 +153,11 @@ export class PeptidesModel {
     this._clusterStats = clusterStats;
   }
 
-  get cp(): bio.SeqPalette {
-    this._cp ??= bio.pickUpPalette(this.df.getCol(this.settings.sequenceColumnName!));
+  get cp(): SeqPalette {
+    this._cp ??= pickUpPalette(this.df.getCol(this.settings.sequenceColumnName!));
     return this._cp;
   }
-  set cp(_cp: bio.SeqPalette) {
+  set cp(_cp: SeqPalette) {
     this._cp = _cp;
   }
 
@@ -492,7 +492,7 @@ export class PeptidesModel {
       monomerPositionObject[posCol.name] = currentPositionObject;
       this.getSummaryStats(monomerPositionObject.general, null, currentPositionObject.general);
     }
-    return monomerPositionObject
+    return monomerPositionObject;
   }
 
   getSummaryStats(generalObj: SummaryStats, stats: Stats | null = null, summaryStats: SummaryStats | null = null): void {
@@ -513,7 +513,7 @@ export class PeptidesModel {
     generalObj.maxMeanDifference ??= possibleMaxMeanDifference;
     if (generalObj.maxMeanDifference < possibleMaxMeanDifference)
       generalObj.maxMeanDifference = possibleMaxMeanDifference;
-    
+
     const possibleMinMeanDifference = stats?.meanDifference ?? summaryStats!.minMeanDifference;
     generalObj.minMeanDifference ??= possibleMinMeanDifference;
     if (generalObj.minMeanDifference > possibleMinMeanDifference)
@@ -576,12 +576,12 @@ export class PeptidesModel {
 
   createMostPotentResiduesDf(): DG.DataFrame {
     const monomerPositionStatsEntries = Object.entries(this.monomerPositionStats) as [string, PositionStats][];
-    const mprDf = DG.DataFrame.create(monomerPositionStatsEntries.length - 1);  // Subtract 'general' entry from mp-stats
+    const mprDf = DG.DataFrame.create(monomerPositionStatsEntries.length - 1); // Subtract 'general' entry from mp-stats
     const mprDfCols = mprDf.columns;
     const posCol = mprDfCols.addNewString(C.COLUMNS_NAMES.POSITION);
     const monomerCol = mprDfCols.addNewString(C.COLUMNS_NAMES.MONOMER);
     const mdCol = mprDfCols.addNewFloat(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
-    const pValCol = mprDfCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE)
+    const pValCol = mprDfCols.addNewFloat(C.COLUMNS_NAMES.P_VALUE);
     const countCol = mprDfCols.addNewInt(C.COLUMNS_NAMES.COUNT);
     const ratioCol = mprDfCols.addNewFloat(C.COLUMNS_NAMES.RATIO);
 
@@ -595,7 +595,7 @@ export class PeptidesModel {
         const key = v[0];
         if (key == 'general')
           return false;
-        
+
         return (v[1] as Stats).pValue == generalPositionStats.minPValue;
       }) as [string, Stats][];
 
@@ -693,7 +693,7 @@ export class PeptidesModel {
         ctx.beginPath();
         ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
         ctx.clip();
-        
+
         //TODO: optimize
         if (gcArgs.cell.isColHeader && col?.semType == C.SEM_TYPES.MONOMER) {
           const stats = this.monomerPositionStats[col.name];
@@ -704,7 +704,7 @@ export class PeptidesModel {
             else if (b == '' || b == '-')
               return +1;
             return 0;
-          }).filter(v => v != 'general');
+          }).filter((v) => v != 'general');
 
           this.webLogoBounds[col.name] =
             CR.drawLogoInBounds(ctx, bounds, stats, sortedStatsOrder, this.df.rowCount, this.cp, this.headerSelectedMonomers[col.name]);
@@ -786,7 +786,7 @@ export class PeptidesModel {
     const currentClusterCol = this.df.getCol(this.settings.clustersColumnName!);
     splitCol.init((i) => currentClusterCol.get(i) == cluster);
     const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
- 
+
     if (!stats.count)
       return null;
 

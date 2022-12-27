@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
-import { category, test, expect, expectArray, expectObject } from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, expectArray, expectObject} from '@datagrok-libraries/utils/src/test';
 import {TreeHelper} from '../utils/tree-helper';
+import {ITreeHelper, NodeCuttedType, NodeType} from '@datagrok-libraries/bio';
 
 /*
 R code to plot picture explaining tests
@@ -23,8 +23,9 @@ abline(v=2.6,  col='brown');
 abline(v=3.0,  col='gray');
 
 */
+
 category('treeCut', () => {
-  const th: bio.ITreeHelper = new TreeHelper();
+  const th: ITreeHelper = new TreeHelper();
 
   const enum Tests {
     cut1 = 'cut1',
@@ -32,7 +33,7 @@ category('treeCut', () => {
 
   const data: {
     [test: string]:
-      { tree: bio.NodeType, tgt: { cutLevel: number, leafNameList: string[][], tree?: bio.NodeType | null }[] }
+      { tree: NodeType, tgt: { cutLevel: number, leafNameList: string[][], tree?: NodeType | null }[] }
   } = {
     [Tests.cut1]: {
       tree: {
@@ -74,7 +75,7 @@ category('treeCut', () => {
       tgt: [
         {
           cutLevel: 0.05,
-          leafNameList: [['l1', 'l2', 'l3', 'l4', 'l5', 'l6'],],
+          leafNameList: [['l1', 'l2', 'l3', 'l4', 'l5', 'l6']],
           tree:
             {
               name: 'root',
@@ -119,7 +120,7 @@ category('treeCut', () => {
                 }
               ],
               cuttedLeafNameList: ['l1', 'l2', 'l3', 'l4', 'l5', 'l6'],
-            } as bio.NodeCuttedType,
+            } as NodeCuttedType,
         },
         {
           cutLevel: 1.2,
@@ -137,7 +138,7 @@ category('treeCut', () => {
                     children: [],
                     cuttedChildren: [{name: 'l1.cutted', branch_length: 0.9, children: []}],
                     cuttedLeafNameList: ['l1'],
-                  } as bio.NodeCuttedType,
+                  } as NodeCuttedType,
                   {
                     name: 'node-l2-l3',
                     branch_length: 0.1,
@@ -151,7 +152,7 @@ category('treeCut', () => {
                       ],
                     }],
                     cuttedLeafNameList: ['l2', 'l3']
-                  } as bio.NodeCuttedType
+                  } as NodeCuttedType
                 ],
               },
               {
@@ -174,7 +175,7 @@ category('treeCut', () => {
                   ]
                 }],
                 cuttedLeafNameList: ['l4', 'l5', 'l6'],
-              } as bio.NodeCuttedType
+              } as NodeCuttedType
             ],
           }
         },
@@ -202,8 +203,8 @@ category('treeCut', () => {
                     'branch_length': 0.1,
                     'children': []
                   }],
-                  cuttedLeafNameList: ['l3',],
-                } as bio.NodeCuttedType,],
+                  cuttedLeafNameList: ['l3'],
+                } as NodeCuttedType],
               }],
             }, {
               name: 'node-l4-l5-l6',
@@ -222,8 +223,8 @@ category('treeCut', () => {
                       'children': []
                     }
                   ],
-                  cuttedLeafNameList: ['l5',],
-                } as bio.NodeCuttedType,],
+                  cuttedLeafNameList: ['l5'],
+                } as NodeCuttedType],
               }],
             }],
           }
@@ -285,8 +286,8 @@ category('treeCut', () => {
     _testTreeCutAsLeafs(v.tree, v.tgt[7].cutLevel, v.tgt[7].leafNameList);
   });
 
-  function _testTreeCutAsLeafs(tree: bio.NodeType, cutHeight: number, tgtLeafNameList: string[][]) {
-    const resClusterList: bio.NodeType[] = th.treeCutAsLeaves(tree, cutHeight);
+  function _testTreeCutAsLeafs(tree: NodeType, cutHeight: number, tgtLeafNameList: string[][]) {
+    const resClusterList: NodeType[] = th.treeCutAsLeaves(tree, cutHeight);
     const resLeafNameList = resClusterList
       .map((clusterRootNode) => th.getLeafList(clusterRootNode).map((l) => l.name));
     expectArray(resLeafNameList, tgtLeafNameList);
@@ -309,8 +310,8 @@ category('treeCut', () => {
     _testTreeCutAsTree(v.tree, v.tgt[5].cutLevel, v.tgt[5].tree!);
   });
 
-  function _testTreeCutAsTree(tree: bio.NodeType, cutHeight: number, tgtTree: bio.NodeType) {
-    const resTree: bio.NodeType | null = th.treeCutAsTree(tree, cutHeight);
+  function _testTreeCutAsTree(tree: NodeType, cutHeight: number, tgtTree: NodeType) {
+    const resTree: NodeType | null = th.treeCutAsTree(tree, cutHeight);
     //const newickStr = th.toNewick(resTree);
 
     expectObject(resTree!, tgtTree);

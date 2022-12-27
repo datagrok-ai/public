@@ -1,16 +1,16 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import * as bio from '@datagrok-libraries/bio';
 
 import wu from 'wu';
+import {splitterAsFasta, SplitterFunc, UnitsHandler} from '@datagrok-libraries/bio';
 
 const FASTA_LINE_WIDTH = 60;
 
 /** Shows dialog to select id columns list and seq column, builds and downloads FASTA content */
 export function saveAsFastaUI() {
   // Use grid for column order adjusted by user
-  let grid: DG.Grid = grok.shell.tv.grid;
+  const grid: DG.Grid = grok.shell.tv.grid;
 
   const idGColList: DG.GridColumn[] = wu.count(0).take(grid.columns.length)
     .map((colI: number) => grid.columns.byIndex(colI)!)
@@ -27,7 +27,7 @@ export function saveAsFastaUI() {
     .filter((gc: DG.GridColumn) => {
       const col: DG.Column | null = gc.column;
       if (col && col.semType === DG.SEMTYPE.MACROMOLECULE) {
-        const uh = new bio.UnitsHandler(col);
+        const uh = new UnitsHandler(col);
         return uh.isFasta();
       }
       return false;
@@ -39,7 +39,7 @@ export function saveAsFastaUI() {
 
   const lineWidthInput = ui.intInput('FASTA line width', FASTA_LINE_WIDTH);
 
-  ui.dialog({title: 'Save as FASTA',})
+  ui.dialog({title: 'Save as FASTA'})
     .add(ui.inputs([
       idGColListInput,
       seqColInput,
@@ -57,7 +57,7 @@ export function saveAsFastaUI() {
 
       const resFastaTxt: string = saveAsFastaDo(valueIdColList, valueSeqCol!, valueLineWidth);
 
-      const aEl: HTMLAnchorElement = document.createElement('a',);
+      const aEl: HTMLAnchorElement = document.createElement('a');
       aEl.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(resFastaTxt)}`);
       aEl.setAttribute('download', `${grid.dataFrame.name}.fasta`);
       aEl.click();
@@ -69,7 +69,7 @@ export function saveAsFastaUI() {
 export function saveAsFastaDo(
   idColList: DG.Column[], seqCol: DG.Column, lineWidth: number = FASTA_LINE_WIDTH, lineSeparator: string = '\n'
 ): string {
-  const splitter: bio.SplitterFunc = bio.splitterAsFasta;
+  const splitter: SplitterFunc = splitterAsFasta;
 
   const fastaLines: string[] = [];
 
@@ -91,7 +91,7 @@ export function saveAsFastaDo(
 }
 
 /* split sequence for monomers to prevent wrapping monomer partially */
-export function wrapSequence(seq: string, splitter: bio.SplitterFunc, lineWidth: number = FASTA_LINE_WIDTH): string[] {
+export function wrapSequence(seq: string, splitter: SplitterFunc, lineWidth: number = FASTA_LINE_WIDTH): string[] {
   const seqMonomerList = splitter(seq);
   let seqPos: number = 0;
   const seqLength: number = seqMonomerList.length;

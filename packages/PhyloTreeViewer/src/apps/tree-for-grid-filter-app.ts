@@ -1,7 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as bio from '@datagrok-libraries/bio';
 
 import {Unsubscribable} from 'rxjs';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
@@ -10,9 +9,10 @@ import {_package} from '../package';
 import {TAGS, TreeHelper} from '../utils/tree-helper';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
 import {generateTree} from '../utils/tree-generator';
+import {ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
 
 export class TreeForGridFilterApp {
-  private th: bio.ITreeHelper;
+  private th: ITreeHelper;
 
   private viewed: boolean = false;
   private tableView: DG.TableView | null;
@@ -21,7 +21,7 @@ export class TreeForGridFilterApp {
   _dataDf: DG.DataFrame;
   _leafCol: DG.Column;
   _newickStr: string;
-  _newickRoot: bio.NodeType;
+  _newickRoot: NodeType;
 
   get dataDf(): DG.DataFrame { return this._dataDf; }
 
@@ -29,7 +29,7 @@ export class TreeForGridFilterApp {
 
   // get newickStr(): string { return this._newickStr; }
 
-  get newickRoot(): bio.NodeType { return this._newickRoot; }
+  get newickRoot(): NodeType { return this._newickRoot; }
 
   async init(): Promise<void> {
     this.th = new TreeHelper();
@@ -71,7 +71,7 @@ export class TreeForGridFilterApp {
       throw new Error(`Specify leaf column name in DataFrame tag '${TAGS.DF_NEWICK_LEAF_COL_NAME}'.`);
     this._leafCol = dataDf.getCol(leafColName!);
     this._newickStr = newickStr;
-    this._newickRoot = bio.Newick.parse_newick(newickStr);
+    this._newickRoot = parseNewick(newickStr);
 
     if (!this.viewed) {
       await this.buildView();
@@ -89,7 +89,6 @@ export class TreeForGridFilterApp {
       this.tableView.close();
       this.tableView = null;
     }
-
   }
 
   async buildView() {
