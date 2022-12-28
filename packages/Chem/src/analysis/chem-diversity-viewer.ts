@@ -25,7 +25,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
     if (!this.beforeRender())
       return;
     if (this.dataFrame && this.moleculeColumn) {
-      const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
+      const progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
       if (computeData) {
         const rowsWithoutEmptyValues = rowsWithoutEmptyValuesCount(this.moleculeColumn);
         if (this.limit > rowsWithoutEmptyValues)
