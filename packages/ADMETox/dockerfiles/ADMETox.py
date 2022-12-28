@@ -260,15 +260,16 @@ def handle_uploaded_file(f, models):
     smiles = [list(row.values()) for row in f]
     encoded_smiles = [smile[0].encode('utf8') for smile in smiles]
     current_path = os.path.split(os.path.realpath(__file__))[0]
-    models_res = models.split(",")
+    models_res = [model.encode('utf8') for model in models.split(",")]
     result = np.zeros((len(encoded_smiles), 0), float)
     for j in range(len(models_res)):
-        cf = sklearn.externals.joblib.load(current_path + '/' + models_res[j] + '.pkl')
+        res = [key for key in dict_bits_desc.keys() if models_res[j] in key]
+        cf = sklearn.externals.joblib.load(current_path + '/' + res[0] + '.pkl')
         fingerprint_content = lambda bits: getMACCS(encoded_smiles) if bits == 167 \
             else (getECFP(encoded_smiles, 1, 2048) if bits == 2048 \
                       else (getECFP(encoded_smiles, 2, 1024) if bits == 1024 \
-                                else getMACCS(encoded_smiles)))
-        des_list = np.array(fingerprint_content(dict_bits_desc[models_res[j]]))
+                                else get_descriptor_vector(encoded_smiles, bits)))
+        des_list = np.array(fingerprint_content(dict_bits_desc[res[0]]))
         y_predict_label = cf.predict(des_list)
         y_predict_proba = cf.predict_proba(des_list)
         predicts = []
