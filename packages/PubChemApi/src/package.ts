@@ -24,7 +24,7 @@ export async function pubChemPanel(molString: string): Promise<DG.Widget> {
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemSubstructureSearchPanel(molString: string): Promise<DG.Widget> {
-  return await getSearchWidget(molString, 'substructure');
+  return molString ? await getSearchWidget(molString, 'substructure') : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: PubChem | Similarity Search
@@ -32,7 +32,7 @@ export async function pubChemSubstructureSearchPanel(molString: string): Promise
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemSimilaritySearchPanel(molString: string): Promise<DG.Widget> {
-  return await getSearchWidget(molString, 'similarity');
+  return molString ? await getSearchWidget(molString, 'similarity') : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: PubChem | Identity Search
@@ -40,7 +40,7 @@ export async function pubChemSimilaritySearchPanel(molString: string): Promise<D
 //input: string molString {semType: Molecule}
 //output: widget result
 export async function pubChemIdentitySearch(molString: string): Promise<DG.Widget> {
-  return await getSearchWidget(molString, 'identity');
+  return molString ? await getSearchWidget(molString, 'identity') : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: pubChemToSmiles
