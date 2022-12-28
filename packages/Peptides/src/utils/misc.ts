@@ -55,10 +55,10 @@ export function calculateSelected(df: DG.DataFrame): type.MonomerSelectionStats 
   return selectedObj;
 }
 
-export function isGridCellInvalid(gc: DG.GridCell | null): boolean {
-  return !gc || !gc.cell.value || !gc.tableColumn || gc.tableRowIndex == null || gc.tableRowIndex == -1 ||
-    gc.cell.value == DG.INT_NULL || gc.cell.value == DG.FLOAT_NULL;
-}
+// export function isGridCellInvalid(gc: DG.GridCell | null): boolean {
+//   return !gc || !gc.cell.value || !gc.tableColumn || gc.tableRowIndex == null || gc.tableRowIndex == -1 ||
+//     gc.cell.value == DG.INT_NULL || gc.cell.value == DG.FLOAT_NULL;
+// }
 
 export function extractMonomerInfo(col: DG.Column<string>): type.RawColumn {
   return {
