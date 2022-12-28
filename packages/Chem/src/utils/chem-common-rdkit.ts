@@ -82,12 +82,16 @@ export function drawRdKitMoleculeToOffscreenCanvas(
     },
     backgroundColour: [1, 1, 1, 1],
   };
+
+  const g = offscreenCanvas.getContext('2d');
+  g!.fillStyle = 'white';
+  g?.fillRect(0,0, w, h);
+
   if (substruct)
     Object.assign(opts, substruct);
   rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
   // we need the offscreen canvas first to not let the molecule scaffold skew on a real canvas
 }
-
 
 export function drawMoleculeToCanvas(
   x: number, y: number, w: number, h: number,
