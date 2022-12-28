@@ -83,7 +83,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
     backgroundColour: [1, 1, 1, 1],
   };
 
-  const g = offscreenCanvas.getContext('2d');
+  const g = offscreenCanvas.getContext('2d', {willReadFrequently : true});
   g!.fillStyle = 'white';
   g?.fillRect(0,0, w, h);
 
