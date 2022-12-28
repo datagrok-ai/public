@@ -13,7 +13,7 @@
     "directory": "packages/Charts"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.19.1",
+    "@datagrok-libraries/utils": "^1.19.2",
     "@datagrok-libraries/statistics": "^0.1.7",
     "cash-dom": "^8.1.0",
     "datagrok-api": "^1.6.7",
