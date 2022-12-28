@@ -12,7 +12,7 @@ export function info() {
   grok.shell.info(_package.webRoot);
 }
 
-//name: ADME/T Calculators
+//name: ADME/Tox
 //tags: panel, chem, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
@@ -20,7 +20,7 @@ export function admetWidget(smiles: string): DG.Widget<any> {
   return getModelsSingle(smiles);
 }
 
-//name: ADMETox | ADMETox Calculators
+//name: ADME/Tox...
 //input: column col {semType: Molecule}
 export async function admetoxCalculators(col: DG.Column) {
   let table = col.dataFrame;
