@@ -53,25 +53,20 @@ M  END
   molCache: DG.LruCache<String, IMolInfo> = new DG.LruCache<String, IMolInfo>();
   rendersCache: DG.LruCache<String, ImageData> = new DG.LruCache<String, ImageData>();
   canvasReused: OffscreenCanvas;
-  canvasContext: OffscreenCanvasRenderingContext2D | null;
 
   constructor(rdKitModule: RDModule) {
     super();
     this.rdKitModule = rdKitModule;
     this.canvasCounter = 0;
-    this.canvasReused = new OffscreenCanvas(2500, 1000);
-    this.canvasContext = this.canvasReused.getContext('2d', {willReadFrequently : true});
-
+    this.canvasReused = new OffscreenCanvas(this.defaultWidth, this.defaultHeight);
     this.molCache.onItemEvicted = function(obj: {[_ : string]: any}) {
       obj.mol?.delete();
     };
   }
 
   ensureCanvasSize(w: number, h: number) : OffscreenCanvas {
-    if (this.canvasReused.width < w || this.canvasReused.height < h) {
-      this.canvasReused = new OffscreenCanvas(Math.max(2500, w), Math.max(1000, h));
-      this.canvasContext = this.canvasReused.getContext('2d', {willReadFrequently : true});
-    }
+    if (this.canvasReused.width < w || this.canvasReused.height < h)
+      this.canvasReused = new OffscreenCanvas(Math.max(this.defaultWidth, w), Math.max(this.defaultHeight, h));
     return this.canvasReused;
   }
 
@@ -191,11 +186,11 @@ M  END
     const rdKitMol = fetchMolObj.mol;
     const substruct = fetchMolObj.substruct;
 
-    //const canvas = new OffscreenCanvas(width, height);
-    const ctx = this.canvasContext!;//canvas.getContext('2d', {willReadFrequently : true})!;
+    const canvas = this.ensureCanvasSize(width, height);//new OffscreenCanvas(width, height);
+    const ctx = canvas.getContext('2d', {willReadFrequently : true})!;
     this.canvasCounter++;
     if (rdKitMol != null)
-      drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, this.ensureCanvasSize(width, height), highlightScaffold ? substruct : null);
+      drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, canvas, highlightScaffold ? substruct : null);
     else {
       // draw a crossed rectangle
       ctx.lineWidth = 1;
