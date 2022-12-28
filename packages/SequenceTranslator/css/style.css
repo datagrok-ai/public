@@ -1,18 +1,59 @@
-.inputSequence textarea {
+/* Naming convention: class names should begin with tab name: main, axo, sdf */
+
+.main-input-sequence textarea {
   resize: none;
   min-height: 70px;
   width: 100%;
   font-family: monospace;
 }
 
-.inputSequence .input-base {
-  margin: '0';
+.main-input-sequence .input-base {
+  margin: 0;
 }
 
-.inputSequence select {
+.main-input-sequence select {
   width: 100%;
 }
 
-.sequence .children {
-  padding: '5px 0';
+.main-sequence .children {
+  padding: 5px 0;
+}
+
+.sdf-body {
+  padding-right: 20px;
+}
+
+.sdf-input-form {
+  text-align: right;
+  vertical-align: top;
+}
+
+.sdf-text-input-label {
+  min-width: 95px;
+  padding-top: 3px;
+}
+
+.sdf-choice-input-label {
+  min-width: 100px;
+  float: right;
+}
+
+.sdf-textarea {
+  width: 100%;
+  resize: none;
+}
+
+.sdf-mol-img {
+  margin-right: 30px;
+  float: right;
+}
+
+.sdf-bool-button-block {
+  justify-content: right;
+  margin-bottom: 10px;
+}
+
+.sdf-bottom {
+  flex-direction: row-reverse;
+  padding-top: 20px;
 }
