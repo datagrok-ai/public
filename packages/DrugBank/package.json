@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/drug-bank",
   "friendlyName": "DrugBank",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "author": {
     "name": "Volodymyr Dyma",
     "email": "vdyma@datagrok.ai"
@@ -37,6 +37,9 @@
     "js-yaml": "^4.1.0",
     "@types/node-fetch": "^2.6.2",
     "node-fetch": "^2.6.7"
+  },
+  "grokDependencies": {
+    "@datagrok/chem": "latest"
   },
   "scripts": {
     "install-dependencies": "npm install",
