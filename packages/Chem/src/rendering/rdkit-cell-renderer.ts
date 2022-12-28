@@ -53,12 +53,14 @@ M  END
   molCache: DG.LruCache<String, IMolInfo> = new DG.LruCache<String, IMolInfo>();
   rendersCache: DG.LruCache<String, ImageData> = new DG.LruCache<String, ImageData>();
   canvasReused: OffscreenCanvas;
+  canvasContext: OffscreenCanvasRenderingContext2D | null;
 
   constructor(rdKitModule: RDModule) {
     super();
     this.rdKitModule = rdKitModule;
     this.canvasCounter = 0;
     this.canvasReused = new OffscreenCanvas(this.defaultWidth, this.defaultHeight);
+    this.canvasContext = this.canvasReused.getContext('2d', {willReadFrequently : true});
 
     this.molCache.onItemEvicted = function(obj: {[_ : string]: any}) {
       obj.mol?.delete();
@@ -66,9 +68,10 @@ M  END
   }
 
   ensureCanvasSize(w: number, h: number) : OffscreenCanvas {
-    if (this.canvasReused.width < w || this.canvasReused.height < h)
+    if (this.canvasReused.width < w || this.canvasReused.height < h) {
       this.canvasReused = new OffscreenCanvas(Math.max(this.defaultWidth, w), Math.max(this.defaultHeight, h));
-
+      this.canvasContext = this.canvasReused.getContext('2d', {willReadFrequently : true});
+    }
     return this.canvasReused;
   }
 
@@ -181,7 +184,7 @@ M  END
       this._fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords, details));
   }
 
-  _rendererGetOrCreate(canvas: OffscreenCanvas,
+  _rendererGetOrCreate(
     width: number, height: number, molString: string, scaffoldMolString: string,
     highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): ImageData {
     const fetchMolObj = this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
@@ -189,10 +192,10 @@ M  END
     const substruct = fetchMolObj.substruct;
 
     //const canvas = new OffscreenCanvas(width, height);
-    const ctx = canvas.getContext('2d', {willReadFrequently : true})!;
+    const ctx = this.canvasContext!;//canvas.getContext('2d', {willReadFrequently : true})!;
     this.canvasCounter++;
     if (rdKitMol != null)
-      drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, canvas, highlightScaffold ? substruct : null);
+      drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, this.ensureCanvasSize(width, height), highlightScaffold ? substruct : null);
     else {
       // draw a crossed rectangle
       ctx.lineWidth = 1;
@@ -217,7 +220,7 @@ M  END
       molString + ' || ' + scaffoldMolString + ' || ' + highlightScaffold + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords;
 
-    return this.rendersCache.getOrCreate(name, (_: any) => this._rendererGetOrCreate(this.ensureCanvasSize(width, height), width, height,
+    return this.rendersCache.getOrCreate(name, (_: any) => this._rendererGetOrCreate(width, height,
       molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords));
   }
 
@@ -235,7 +238,7 @@ M  END
       highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
 
     if (vertical) {
-      const ctx = onscreenCanvas.getContext('2d')!;
+      const ctx = onscreenCanvas.getContext('2d', {willReadFrequently : true})!;
       ctx.save();
       const scl = ctx.getTransform();
       ctx.resetTransform();
@@ -248,7 +251,7 @@ M  END
       ctx.restore();
     } else {
       //const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);
-      onscreenCanvas.getContext('2d')!.putImageData(imageData, x, y);
+      onscreenCanvas.getContext('2d', {willReadFrequently : true})!.putImageData(imageData, x, y);
     }
   }
 
