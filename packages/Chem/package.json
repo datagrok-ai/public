@@ -45,7 +45,7 @@
     "datagrok-api": "^1.10.2",
     "@datagrok-libraries/chem-meta": "^1.0.1",
     "@datagrok-libraries/ml": "^6.3.3",
-    "@datagrok-libraries/utils": "^1.19.2",
+    "@datagrok-libraries/utils": "^1.19.3",
     "cash-dom": "latest",
     "dayjs": "latest",
     "file-loader": "latest",
