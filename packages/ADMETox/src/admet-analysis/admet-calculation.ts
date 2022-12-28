@@ -107,6 +107,7 @@ function openModelsDialog(selected: any, onOK: any): void {
 
   const groups: { [_: string]: any } = {};
   const items: DG.TreeViewNode[] = [];
+  const selectedModels: { [_: string]: string } = {};
 
   const checkAll = (val: boolean) => {
     for (const g of Object.values(groups))
@@ -141,17 +142,43 @@ function openModelsDialog(selected: any, onOK: any): void {
 
       item.checkBox!.onchange = (_e) => {
         countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
+        if (item.checked) 
+          selectedModels[item.text] = groupName;
       };
     }
 
     checkAll(false);
   }
 
-  ui.dialog('Chem Admet')
+  const saveInputHistory = (): any => {
+    let resultHistory: { [_: string]: any } = {};
+    const modelNames = Object.keys(selectedModels);
+    for (const modelName of modelNames) 
+      resultHistory[modelName] = selectedModels[modelName];
+    return resultHistory;
+  }
+
+  const loadInputHistory = (history: any): void => {
+    checkAll(false);
+    const keys: string[] = Object.keys(history);
+    for (const key of keys) {
+      groups[history[key]].items.filter(function (i: any) {
+        if (i.text === key) {
+          i.checked = true;
+        }
+      })
+    }
+  }
+
+  ui.dialog('ADME/Tox')
     .add(ui.divH([selectAll, selectNone, countLabel]))
     .add(tree.root)
     .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name'])))
-    .show();
+    .show()
+    .history(
+      () => saveInputHistory(),
+      (x) => loadInputHistory(x) 
+    );
 }
 
 async function getSelected() : Promise<any> {
@@ -165,4 +192,3 @@ function removeChildren(node: any): void {
   while (node.firstChild)
     node.removeChild(node.firstChild);
 }
-
