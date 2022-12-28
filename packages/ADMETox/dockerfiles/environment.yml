@@ -11,9 +11,9 @@ dependencies:
   - pytz
   - cycler=0.10.0
   - backports.functools_lru_cache
-  - kiwisolver=1.0.0 
+  - kiwisolver=1.0.0
   - scipy=0.17.1
-  - Django=1.11.29
+  - Django=1.11.25
   - djangorestframework=3.9.4
   - djangorestframework-csv=2.1.1
   - django-cors-headers=3.0.2
