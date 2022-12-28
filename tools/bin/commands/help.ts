@@ -9,6 +9,8 @@ Commands:
     check     Check package content (function signatures, etc.)
     config    Create and manage config files
     create    Create a package
+    link      Link \`datagrok-api\` and libraries for local development
+    unlink    Revert \`grok link\`
     publish   Upload a package
     test      Run package tests
 
@@ -120,6 +122,18 @@ See instructions:
 https://datagrok.ai/help/develop/how-to/test-packages#local-testing
 `;
 
+const HELP_LINK = `
+Usage: grok link
+
+Link \`datagrok-api\` and libraries for local development
+`;
+
+const HELP_UNLINK = `
+Usage: grok unlink
+
+Revert \`grok link\`
+`;
+
 const HELP_MIGRATE = `
 Usage: grok migrate
 
@@ -133,6 +147,8 @@ export const help = {
   check: HELP_CHECK,
   config: HELP_CONFIG,
   create: HELP_CREATE,
+  link: HELP_LINK,
+  unlink: HELP_UNLINK,
   publish: HELP_PUBLISH,
   test: HELP_TEST,
   help: HELP
