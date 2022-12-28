@@ -59,7 +59,7 @@ M  END
     super();
     this.rdKitModule = rdKitModule;
     this.canvasCounter = 0;
-    this.canvasReused = new OffscreenCanvas(this.defaultWidth, this.defaultHeight);
+    this.canvasReused = new OffscreenCanvas(2500, 1000);
     this.canvasContext = this.canvasReused.getContext('2d', {willReadFrequently : true});
 
     this.molCache.onItemEvicted = function(obj: {[_ : string]: any}) {
@@ -69,7 +69,7 @@ M  END
 
   ensureCanvasSize(w: number, h: number) : OffscreenCanvas {
     if (this.canvasReused.width < w || this.canvasReused.height < h) {
-      this.canvasReused = new OffscreenCanvas(Math.max(this.defaultWidth, w), Math.max(this.defaultHeight, h));
+      this.canvasReused = new OffscreenCanvas(Math.max(2500, w), Math.max(1000, h));
       this.canvasContext = this.canvasReused.getContext('2d', {willReadFrequently : true});
     }
     return this.canvasReused;
