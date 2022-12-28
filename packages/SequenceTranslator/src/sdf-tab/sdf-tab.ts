@@ -1,15 +1,17 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+// import '../../css/style.css';
+
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import * as rxjs from 'rxjs';
+// import $ from 'cash-dom';
 
 import {download} from '../utils/helpers';
 import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
 import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
 import {getFormat} from './sequence-codes-tools';
-
 import {drawMolecule} from '../utils/structures-works/draw-molecule';
 
 /** Data associated with strands */
@@ -151,35 +153,23 @@ export function getSdfTab(): HTMLDivElement {
   );
 
   // text input label style
-  for (const item of [ssLabel, asLabel, as2Label]) {
-    const parentTd = item.parentElement!;
-    parentTd.style.minWidth = '95px';
-    parentTd.style.textAlign = 'right';
-    parentTd.style.verticalAlign = 'top';
-    parentTd.style.paddingTop = '3px';
-  }
+  for (const item of [ssLabel, asLabel, as2Label])
+    item.parentElement!.classList.add('sdf-input-form', 'sdf-text-input-label');
 
   // choice input label style
-  for (const item of [ssDirection.root, asDirection.root, as2Direction.root]) {
-    const parentTd = item.parentElement!;
-    parentTd.style.minWidth = '100px';
-    parentTd.style.textAlign = 'right';
-    parentTd.style.verticalAlign = 'top';
-    parentTd.style.float = 'right';
-  }
+  for (const item of [ssDirection.root, asDirection.root, as2Direction.root])
+    item.parentElement!.classList.add('sdf-input-form', 'sdf-choice-input-label');
 
-  // text area style
   for (const item of [ssInput, asInput, as2Input]) {
+    // text area's parent td
     item.root.parentElement!.style.width = '100%';
-    const textArea = item.root.children[1];
-    //@ts-ignore
-    textArea.style.width = '100%';
-    //@ts-ignore
-    textArea.style.resize = 'none';
+    // text area style
+    $(item.root).find('textarea').addClass('sdf-textarea');
   }
 
   // molecule image container
   const moleculeImgDiv = ui.block([]);
+  $(moleculeImgDiv).addClass('sdf-mol-img');
 
   DG.debounce<string>(onInput, 300).subscribe(async () => {
     let molfile = '';
@@ -196,13 +186,10 @@ export function getSdfTab(): HTMLDivElement {
     // todo: calculate relative numbers
     const canvasWidth = 650;
     const canvasHeight = 150;
-    // todo: remove div with image if molfile empty
     await drawMolecule(moleculeImgDiv, canvasWidth, canvasHeight, molfile);
-    // @ts-ignore
-    moleculeImgDiv.children[0].style.float = 'right';
+    // should the canvas be returned from the above function?
+    $(moleculeImgDiv).find('canvas').css('float', 'inherit');
   });
-  moleculeImgDiv.style.marginRight = '30px';
-  moleculeImgDiv.style.float = 'right';
 
   const saveButton = ui.buttonsInput([
     ui.bigButton('Save SDF', () =>
@@ -218,17 +205,14 @@ export function getSdfTab(): HTMLDivElement {
 
   const boolInputsAndButtonArray = [saveEntity.root, useChiralInput.root, saveButton];
   const boolInputsAndButton = ui.divV(boolInputsAndButtonArray);
-  for (const item of boolInputsAndButtonArray) {
-    item.style.justifyContent = 'right';
-    item.style.marginBottom = '10px';
-  }
+  for (const item of boolInputsAndButtonArray)
+    $(item).addClass('sdf-bool-button-block');
 
   const bottomDiv = ui.divH([boolInputsAndButton, moleculeImgDiv]);
-  bottomDiv.style.flexDirection = 'row-reverse';
-  bottomDiv.style.paddingTop = '20px';
+  $(bottomDiv).addClass('sdf-bottom');
 
   const body = ui.divV([tableLayout, bottomDiv]);
-  body.style.paddingRight = '20px';
+  $(body).addClass('sdf-body');
 
   return body;
 }
