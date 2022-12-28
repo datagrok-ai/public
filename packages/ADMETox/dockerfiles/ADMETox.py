@@ -50,7 +50,8 @@ SETTINGS['MIDDLEWARE'] = [
 ]
 
 SETTINGS['CORS_ORIGIN_WHITELIST'] = [
-'http://localhost:8080'
+'http://localhost:8080',
+'https://dev.datagrok.ai'
 ]
 
 if not settings.configured:
@@ -116,8 +117,8 @@ import rdkit
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import MACCSkeys
-from pychem import pychem
-from pychem.pychem import PyChem2d
+#from pychem import pychem
+#from pychem.pychem import PyChem2d
 
 """Dictionary that defines number of bits for each model or list of needed descriptors"""
 dict_bits_desc = {
@@ -182,31 +183,31 @@ dict_bits_desc = {
                  'AWeight', 'QCss', 'EstateVSA9', 'Hy', 'S16', 'IC0', 'S30']
 }
 
-def calculate_descriptors(smile):
-    """Calculate descriptors for the input smile
+#def calculate_descriptors(smile):
+    #"""Calculate descriptors for the input smile
 
-    :param smile: input smile
-    :return: dict with calculated descriptors (key=descriptor name, value=calculated descriptor value)
-    """
-    alldes = {}
-    drug = PyChem2d()
-    drug.ReadMolFromSmile(smile)
-    alldes.update(drug.GetAllDescriptor())
-    return alldes
+    #:param smile: input smile
+    #:return: dict with calculated descriptors (key=descriptor name, value=calculated descriptor value)
+    #"""
+    #alldes = {}
+    #drug = PyChem2d()
+    #drug.ReadMolFromSmile(smile)
+    #alldes.update(drug.GetAllDescriptor())
+    #return alldes
 
-def get_descriptor_vector(smiles, desc_names):
-    """Calculate descriptor vectors for some excretion, toxicity and distribution models
+#def get_descriptor_vector(smiles, desc_names):
+    #"""Calculate descriptor vectors for some excretion, toxicity and distribution models
 
-    :param smiles: list of smiles
-    :param desc_names: list of descriptor names that need to be calculated
-    :return: list with calculated descriptors for each smile
-    """
-    desc_vector = []
-    for smile in smiles:
-        desc_dict = calculate_descriptors(smile)
-        desc_vector_smile = [desc_dict[name] for name in desc_names]
-        desc_vector.append(desc_vector_smile)
-    return desc_vector
+    #:param smiles: list of smiles
+    #:param desc_names: list of descriptor names that need to be calculated
+    #:return: list with calculated descriptors for each smile
+    #"""
+    #desc_vector = []
+    #for smile in smiles:
+        #desc_dict = calculate_descriptors(smile)
+        #desc_vector_smile = [desc_dict[name] for name in desc_names]
+        #desc_vector.append(desc_vector_smile)
+    #return desc_vector
 
 def getMACCS(smiles):
     """Calculate MACCS fingerprints for the list of smiles
@@ -254,7 +255,7 @@ def handle_uploaded_file(f, models):
         fingerprint_content = lambda bits: getMACCS(encoded_smiles) if bits == 167 \
                               else (getECFP(encoded_smiles, 1, 2048) if bits == 2048 \
                               else (getECFP(encoded_smiles, 2, 1024) if bits == 1024 \
-                              else get_descriptor_vector(encoded_smiles, bits)))
+                              else getMACCS(encoded_smiles)))
         des_list = np.array(fingerprint_content(dict_bits_desc[models_res[j]]))
         y_predict_label = cf.predict(des_list)
         y_predict_proba = cf.predict_proba(des_list)

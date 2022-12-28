@@ -1,0 +1,25 @@
+name: myenv
+channels:
+  - conda-forge
+dependencies:
+  - python=2.7
+  - rdkit
+  - numpy=1.16.5
+  - numpydoc=0.9.1
+  - setuptools
+  - pyparsing
+  - pytz
+  - cycler=0.10.0
+  - backports.functools_lru_cache
+  - kiwisolver=1.0.0 
+  - scipy=0.17.1
+  - Django=1.11.29
+  - djangorestframework=3.9.4
+  - djangorestframework-csv=2.1.1
+  - django-cors-headers=3.0.2
+  - six>=1.4.1
+  - unicodecsv
+  - joblib=0.14.1
+  - pandas=0.24.2
+  - scikit-image=0.14.2
+  - scikit-learn=0.17.1
