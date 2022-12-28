@@ -20,5 +20,14 @@ void analyzeStiffProblemMultiDim();
 // test ode23s solver
 void testODE23sSolver();
 
+// try ode32s solver on the jnj system
+void tryODE32sOnJNJ();
+
+// test of ode32s solver in generalized solver: multi-dimensional case
+void testODE32sInGeneralSolver();
+
+// test of ode32s solver in generalized solver: multi-dimensional case, jnj problem
+void testODE32sInGeneralSolverJNJ();
+
 #endif // !TESTS_H
 

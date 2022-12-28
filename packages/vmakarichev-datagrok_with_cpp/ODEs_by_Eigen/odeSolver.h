@@ -22,7 +22,7 @@ using namespace Eigen;
 
 namespace ode {
 
-	enum ResultCode {NO_ERRORS = 0, UNKNOWN_PROBLEM };
+	enum ResultCode {NO_ERRORS = 0, UNKNOWN_PROBLEM };	
 
 	/* One step of the Runge-Kutta method of the order 3 for the problem dy/dt = f(t,y), y(t0) = y0.
 	   Returns value of y(t + h) computed using fourth-order R.-K. method.
@@ -154,6 +154,89 @@ namespace ode {
 			yPrev = getNextPoint(f, times[i - 1], yPrev, times[i] - times[i - 1]);
 			Y.col(i) = yPrev;
 		}
+
+		return NO_ERRORS;
+	}
+
+
+
+
+	/*  One-step ODE implicit solver of the problem dy/dt = f(t, y), y( t0 ) = y0: multi-dimensional case.
+		Returns NO_ERRORS in the case of success computations.
+		  f - right part of the ODE solved;
+		  T - vector of derivatives df/dt, computed approximately;
+		  J - matrix of derivatives df/dy, computed approximately;
+		  times - array of times;
+		  timesCount - length of the array times;
+		  yInitial - initial value of the function y, i.e. y0 = y( times[0] );		  
+		  solution - array that contains solution.
+
+		REMARK 1. Solution of the current multi-dimension problem is a vector function y = y(t).
+				  Note that y(t) is a column vector for each t. Currently, solution is a matrix Y.
+				  Each column of Y contains solution at the specific point t,	i.e. i-th column of Y is y( times[i] ).
+				  For the purpose of the further use in DATAGROK, the array "solution" is a concatanation of the matrix Y rows.
+
+		REMARK 2. Here, Rosenbrock method is applied. It can be found in the following papers:
+		          [1] https://doi.org/10.1137/S1064827594276424
+				  [2] https://doi.org/10.1016/S0898-1221(00)00175-9
+
+	*/
+	template<typename ArgType, typename VecType, typename MatType>
+	int oneStepSolver(VecType(*f)(ArgType, VecType&),
+		VecType(*T)(ArgType, VecType&, ArgType),
+		MatType(*J)(ArgType, VecType&, ArgType),
+		ArgType* times, unsigned timesCount,
+		ArgType* yInitial, unsigned dimCount,		
+		ArgType* solution)
+	{
+		// Value of h / eps, where h - step of ODEs solver, eps - step for computing derivatives
+		const ArgType H_TO_EPS_RATIO = 0.1; 
+
+		// matrix that contains solution: i-th column contains solution (a vector) at the point times[i]
+		Map<Matrix<ArgType, Dynamic, Dynamic, RowMajor>> Y(solution, dimCount, timesCount);
+
+		// vector for storing solution at the current time 
+		VecType y(dimCount);
+
+		// solution at the initial point: copying bytes apporach
+		std::memcpy(y.data(), yInitial, sizeof(ArgType) * dimCount);
+
+		// store solution at the initial point
+		Y.col(0) = y;
+
+		// Quantities used in Rosenbrock method (see papers for more details)
+		ArgType d = static_cast<ArgType>(1.0 - sqrt(2.0) / 2.0);
+		MatType I = MatType::Identity(dimCount, dimCount);
+		MatType W(dimCount, dimCount);
+		MatType invW(dimCount, dimCount);
+		VecType f0(dimCount);
+		VecType k1(dimCount);
+		VecType f1(dimCount);
+		VecType k2(dimCount);
+		VecType yDer(dimCount);		
+
+		// solution at the rest of points
+		for (unsigned i = 1; i < timesCount; i++)
+		{
+			ArgType h = times[i] - times[i - 1];
+			ArgType eps = h * H_TO_EPS_RATIO;
+			ArgType t = times[i - 1];
+						
+			f0 = h * f(t, y);			
+			W = I - h * d * J(t, y, eps); 
+			invW = W.inverse();
+			k1 = invW * (f0 + h * d * T(t, y, eps));
+			yDer = y + 0.5 * h * k1;
+			f1 = f(t + 0.5 * h, yDer);
+			k2 = invW * (f1 - k1) + k1;
+			yDer = y;
+			y += k2 * h;
+			Y.col(i) = y;
+
+			//cout << "\n t = " << times[i] << ",  y = " << y.transpose() << endl;
+			//cout << "\n t = " << times[i] << ",  y = " << Y.col(i).transpose() << endl;
+
+		} // for
 
 		return NO_ERRORS;
 	}

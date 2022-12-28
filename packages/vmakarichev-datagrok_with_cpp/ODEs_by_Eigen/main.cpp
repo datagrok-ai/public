@@ -12,9 +12,15 @@ int main()
 
 	//analyzeStiffProblemOneDim();
 
-	analyzeStiffProblemMultiDim();
+	//analyzeStiffProblemMultiDim();
 
 	//testODE23sSolver();
+
+	//tryODE32sOnJNJ();
+
+	//testODE32sInGeneralSolver();
+
+	testODE32sInGeneralSolverJNJ();
 
 	cin.get();
 	return 0;
