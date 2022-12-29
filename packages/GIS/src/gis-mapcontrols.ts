@@ -46,13 +46,13 @@ export class PanelLayersControl extends Control {
     // const df = grok.data.demo.demog(6);
     // const df = DG.DataFrame.fromColumns([true, true]);
     const df = DG.DataFrame.fromCsv(
-      `vis, name, del, exp, layerid
+      `vis, name, exp, del, layerid
       true, Map, false, false, 0
       true, Map, false, false, 0
       `);
     // const layersGrid = DG.Viewer.grid(this.dfLayersList, layersGridStyle);
     const layersGrid = DG.Viewer.grid(df, layersGridStyle);
-    layersGrid.autoSize(200, 170);
+    layersGrid.autoSize(200, 300, 200, 100, true);
     // layersGrid.root.style.visibility = 'hidden';
     layersGrid.root.style.borderWidth = '2px';
     layersGrid.root.style.borderColor = 'rgb(100, 100, 100)';

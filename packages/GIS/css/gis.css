@@ -30,4 +30,7 @@
   right: 8px;   
   width: 200px; 
   box-shadow: 1px 1px 6px var(--grey-5);
+  min-height: 100px;
+  max-height: 300px;
+  overflow: hidden;
 }
