@@ -36,9 +36,8 @@ export class PanelLayersControl extends Control {
       'showRowHeader': false,
       'showColumnTooltip': false,
       'showColumnGridlines': false,
-      'topLevelDefaultMenu': true,
       'showColumnLabels': false,
-
+      'topLevelDefaultMenu': true,
       'allowDynamicMenus': false,
       'showContextMenu': false,
     };
@@ -53,6 +52,7 @@ export class PanelLayersControl extends Control {
     // const layersGrid = DG.Viewer.grid(this.dfLayersList, layersGridStyle);
     const layersGrid = DG.Viewer.grid(df, layersGridStyle);
     layersGrid.autoSize(200, 300, 200, 100, true);
+    layersGrid.columns.setOrder(['vis', 'name', 'exp', 'del']);
     // layersGrid.root.style.visibility = 'hidden';
     layersGrid.root.style.borderWidth = '2px';
     layersGrid.root.style.borderColor = 'rgb(100, 100, 100)';
