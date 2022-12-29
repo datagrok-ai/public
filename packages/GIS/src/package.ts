@@ -406,7 +406,7 @@ export async function gisBatchGeocoding(address: string): Promise<string> {
 //name: Map
 //description: GIS map viewer
 //tags: viewer
-//meta.icon: icons/package.png
+//meta.icon: icons/icon.svg
 //meta.toolbox: true
 //output: viewer result
 export function gisViewer(): GisViewer {
