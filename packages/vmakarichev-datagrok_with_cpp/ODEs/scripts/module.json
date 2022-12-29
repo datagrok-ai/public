@@ -1,7 +1,7 @@
 {
     "name": "ODEsolver",    
     "folder": "../wasm",
-    "source": ["exportSolver.cpp","solver.cpp","wrapper.cpp"],    
+    "source": ["stiffExample.cpp","jnjExample.cpp"],    
     "optimizationMode": "-O3",    
     "packageFile": "../src/package.js",
     "packageJsonFile": "../package.json",    
