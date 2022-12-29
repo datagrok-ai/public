@@ -356,7 +356,7 @@ export class GisViewer extends DG.JsViewer {
         });
       }
       menu.item('Reset view', async () => {
-        await this.render(true, true);
+        await this.render(true, false);
       });
     });
 
