@@ -42,24 +42,17 @@ export class PanelLayersControl extends Control {
       'showContextMenu': false,
     };
 
-    // const df = grok.data.demo.demog(6);
-    // const df = DG.DataFrame.fromColumns([true, true]);
     const df = DG.DataFrame.fromCsv(
       `vis, name, exp, del, layerid
       true, Map, false, false, 0
-      true, Map, false, false, 0
       `);
-    // const layersGrid = DG.Viewer.grid(this.dfLayersList, layersGridStyle);
     const layersGrid = DG.Viewer.grid(df, layersGridStyle);
     layersGrid.autoSize(200, 300, 200, 100, true);
     layersGrid.columns.setOrder(['vis', 'name', 'exp', 'del']);
-    // layersGrid.root.style.visibility = 'hidden';
     layersGrid.root.style.borderWidth = '2px';
     layersGrid.root.style.borderColor = 'rgb(100, 100, 100)';
 
-    // const element = ui.box(layersGrid.root);
     const element = ui.div(layersGrid.root);
-    // const element = ui.div();
     element.className = 'panel-layers ol-unselectable ol-control';
 
     super({
@@ -70,19 +63,70 @@ export class PanelLayersControl extends Control {
     this.ol = parent;
     this.layersGrid = layersGrid;
     this.layersPanel = element;
-    // this.element.style.visibility = 'hidden';
-    this.setVisibility(false);
     this.refreshDF(DG.DataFrame.fromColumns([]));
+
     //<<PanelLayersControl constructor
+  }
+
+  cellPrepareFn(gc: DG.GridCell) {
+    if (gc.isTableCell && gc.gridColumn.name === 'del') {
+      const btnDel = ui.button(ui.iconFA(gc.cell.value ? 'trash-alt' : ''), () => {
+        if (gc.tableRowIndex) {
+          const col = gc.grid.table.columns.byName('layerid');
+          if (col) {
+            const layerId = col.get(gc.tableRowIndex);
+            if (layerId)
+              this.ol.removeLayerById(layerId);
+            this.updateLayersList();
+          }
+        }
+      }, 'Delete layer');
+      btnDel.style.width = '18px';
+      btnDel.style.height = '18px';
+      gc.style.element = btnDel;
+    } //setup delete button
+
+    if (gc.isTableCell && gc.gridColumn.name === 'exp') {
+      const btnExp = ui.button(ui.iconFA(gc.cell.value ? 'arrow-to-bottom' : ''), () => {
+        if (gc.tableRowIndex) {
+          const col = gc.grid.table.columns.byName('layerid');
+          if (col) {
+            const layerId = col.get(gc.tableRowIndex);
+            // if (layerId)
+            //   this.ol.removeLayerById(layerId);
+            this.updateLayersList();
+          }
+        }
+      }, 'Export layer data to table');
+      btnExp.style.width = '18px';
+      btnExp.style.height = '18px';
+      gc.style.element = btnExp;
+    } //setup export button
+  }
+
+  cellVisibleClick(gc: DG.GridCell) {
+    if (gc.tableRowIndex) {
+      const col = gc.grid.table.columns.byName('layerid');
+      if (col) {
+        const layerId = col.get(gc.tableRowIndex);
+        if (!layerId)
+          return;
+        const layer = this.ol.getLayerById(layerId);
+        if (!layer)
+          return;
+        // const isVisible = layer.getVisible();
+        // layer.setVisible(!isVisible);
+        layer.setVisible(gc.cell.value);
+        this.updateLayersList();
+      }
+    }
   }
 
   setupGridControls() {
     this.layersGrid.setOptions({'rowHeight': 24});
-    // this.layersGrid.rows
     let col = this.layersGrid.columns.byName('vis');
     if (col) {
       col.width = 19;
-      // col.cellType = 'html';
       col.editable = true;
     }
     col = this.layersGrid.columns.byName('del');
@@ -104,36 +148,8 @@ export class PanelLayersControl extends Control {
       col.editable = false;
     }
 
-    this.layersGrid.onCellPrepare(function(gc) {
-      //
-
-      if (gc.isTableCell && gc.gridColumn.name === 'del') {
-        const btnDel = ui.button(ui.iconFA('trash-alt'), () => {
-          if (gc.tableRowIndex) {
-            const col = gc.grid.table.columns.byName('layerid');
-            if (col) {
-              const layerId = col.get(gc.tableRowIndex);
-              grok.shell.info('Delete: ' + layerId);
-            }
-            // if (layerId)
-            //   this.ol.removeLayerById(layerId);
-            // this.updateLayersList();
-          }
-        }, 'Delete layer');
-        btnDel.style.width = '18px';
-        btnDel.style.height = '18px';
-        gc.style.element = btnDel;
-      } //setup delete button
-
-      if (gc.isTableCell && gc.gridColumn.name === 'exp') {
-        const btnExp = ui.button(ui.iconFA(gc.cell.value ? 'arrow-to-bottom' : ''), () => {
-          grok.shell.info('Export')
-        }, 'Export layer data to table');
-        btnExp.style.width = '18px';
-        btnExp.style.height = '18px';
-        gc.style.element = btnExp;
-      } //setup export button
-    });
+    this.layersGrid.onCellPrepare(this.cellPrepareFn.bind(this));
+    this.layersGrid.onCurrentCellChanged.subscribe(this.cellVisibleClick.bind(this));
   }
 
   updateLayersList() {
@@ -188,3 +204,5 @@ export class BtnLayersControl extends Control {
       this.parentOnClickHandler();
   }
 }
+
+lPanel: PanelLayersControl;
