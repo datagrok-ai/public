@@ -1,23 +1,9 @@
-// import {NodeType} from '@phylocanvas/phylocanvas.gl';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
 import {Observable} from 'rxjs';
 
-
-/* Interface for hierarchical data structure returned by Newick.parse_newick */
-export interface NodeType {
-  name: string;
-  branch_length?: number;
-  children?: NodeType[];
-}
-
-export function isLeaf(node: NodeType) {
-  return !node.children || node.children.length == 0;
-}
-
-export interface NodeCuttedType extends NodeType {
-  cuttedLeafNameList: string[];
-  cuttedChildren?: NodeType[];
-}
 
 export type Monomer = {
   symbol: string,

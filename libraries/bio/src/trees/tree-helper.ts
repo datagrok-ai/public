@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {NodeCuttedType, NodeType} from '../types';
+import {NodeCuttedType, NodeType} from './index';
 
 
 export interface ITreeHelper {
@@ -45,10 +45,13 @@ export interface ITreeHelper {
    */
   cutTreeToGrid(node: NodeType, cutHeight: number, dataDf: DG.DataFrame,
     leafColName: string, clusterColName: string, na?: any): void;
+
+  /** Generate tree structures with {@link size} nodes number (counting internal).*/
+  generateTree(size: number): NodeType;
 }
 
 export async function getTreeHelper(): Promise<ITreeHelper> {
-  const funcList = DG.Func.find({package: 'PhyloTreeViewer', name: 'getTreeHelper'});
+  const funcList = DG.Func.find({package: 'Dendrogram', name: 'getTreeHelper'});
   if (funcList.length === 0)
     throw new Error('Package "PhyloTreeViewer"" must be installed for TreeHelper.');
 
