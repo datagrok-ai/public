@@ -45,13 +45,18 @@ their choice.
   parse multiple values as separate filter categories. The most common
   separators are `\n`, `,`, `;`.
 
-To set the column tag value:
+To set the column tag value via the UI:
 
 1. Right-click the column’s header and select **Column Properties** from the
    context menu. A **Structure** dialog opens.
 1. In the dialog, use the **Plus** icon to add a new tag.
 1. Enter the tag name and value.
 1. Click **OK** to save changes.
+
+To set the column tag value programmatically:
+```javascript
+column.tags['.structure-filter-type'] = 'Categorical';
+```
 
 ## Drag-and-drop
 
