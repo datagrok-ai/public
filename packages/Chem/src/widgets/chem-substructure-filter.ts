@@ -6,6 +6,7 @@
 
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {chemSubstructureSearchLibrary} from '../chem-searches';
 import {initRdKitService} from '../utils/chem-common-rdkit';
 import {Subscription} from 'rxjs';
@@ -44,6 +45,7 @@ export class SubstructureFilter extends DG.Filter {
     this.calculating = false;
     this.root.appendChild(this.sketcher.root);
     this.root.appendChild(this.loader);
+    this.subs.push(grok.events.onResetFilterRequest.subscribe((_) => { this.sketcher.setMolFile(DG.WHITE_MOLBLOCK); }));
   }
 
   get _debounceTime(): number {
