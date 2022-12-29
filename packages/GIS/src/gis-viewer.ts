@@ -677,10 +677,6 @@ export class GisViewer extends DG.JsViewer {
   }
 
   async render(fit: boolean = false, reloadData: boolean = true): Promise<void> {
-    //
-    if (this.latitudeColumnName == null || this.longitudeColumnName == null)
-      return;
-
     // ui.setUpdateIndicator(this.root, true);
     // let progressBar: DG.TaskBarProgressIndicator | null = null;
     try {
@@ -761,8 +757,13 @@ export class GisViewer extends DG.JsViewer {
     lat = this.dataFrame.col(this.latitudeColumnName)?.getRawData();
     lon = this.dataFrame.col(this.longitudeColumnName)?.getRawData();
 
-    if ((!lat) || (!lon))
+    // clear the features full array
+    if ((!lat) || (!lon)) {
+      this.featuresFull.length = 0;
+      this.features.length = 0;
       return;
+    }
+
 
     //TODO: change it to filling array of objects with all table data (if we need it of course?)
     let colValue: DG.Column | null = null;
