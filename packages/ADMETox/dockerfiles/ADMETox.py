@@ -50,8 +50,8 @@ SETTINGS['MIDDLEWARE'] = [
 ]
 
 SETTINGS['CORS_ORIGIN_WHITELIST'] = [
-'http://localhost:8080',
-'https://dev.datagrok.ai'
+    'http://localhost:8080',
+    'https://dev.datagrok.ai'
 ]
 
 if not settings.configured:
@@ -62,12 +62,16 @@ django.setup()
 from django.db import models
 from django.contrib import admin
 
+
 class Smiles(models.Model):
     smiles = models.TextField()
     numerical_data = models.TextField()
+
     class Meta:
         app_label = this
+
     __module__ = this
+
 
 try:
     admin.site.register(Smiles)
@@ -78,10 +82,12 @@ admin.autodiscover()
 
 from rest_framework import serializers
 
-class SmilesSerializer (serializers.ModelSerializer):
+
+class SmilesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Smiles
         fields = ('smiles', 'numerical_data')
+
 
 from django.core.urlresolvers import reverse
 from rest_framework import viewsets, status
@@ -90,6 +96,7 @@ from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework_csv.parsers import CSVParser
 from rest_framework_csv.renderers import CSVRenderer
+
 
 class SmilesViewSet(viewsets.ModelViewSet):
     queryset = Smiles.objects.all()
@@ -108,6 +115,7 @@ class SmilesViewSet(viewsets.ModelViewSet):
     def df_upload(self, request, *args, **kwargs):
         return Response(handle_uploaded_file(request.data, request.query_params.get('models')))
 
+
 import sklearn.externals.joblib
 import numpy as np
 import pandas as pd
@@ -117,8 +125,9 @@ import rdkit
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import MACCSkeys
-#from pychem import pychem
-#from pychem.pychem import PyChem2d
+
+# from pychem import pychem
+# from pychem.pychem import PyChem2d
 
 """Dictionary that defines number of bits for each model or list of needed descriptors"""
 dict_bits_desc = {
@@ -141,73 +150,74 @@ dict_bits_desc = {
     "CYP2D6-Inhibitor": 1024,
     "CYP2D6-Substrate": 1024,
     "Clearance/Clearance": ['nsulph', 'VSAEstate8', 'QNmin', 'IDET', 'ndb', 'slogPVSA2', 'MATSv5', 'S32', 'QCss',
-                 'bcutm4', 'S9', 'bcutp8', 'Tnc', 'nsb', 'Geto', 'bcutp11', 'S7', 'MATSm2', 'GMTIV',
-                 'nhet', 'MATSe5', 'CIC0', 'bcutp3', 'Gravto', 'EstateVSA9', 'MATSe3', 'MATSe5', 'UI',
-                 'S53', 'J', 'bcute1', 'MRVSA9', 'PEOEVSA0', 'MATSv2', 'IDE', 'AWeight', 'IC0', 'S16',
-                 'bcutp1', 'PEOEVSA12'],
+                            'bcutm4', 'S9', 'bcutp8', 'Tnc', 'nsb', 'Geto', 'bcutp11', 'S7', 'MATSm2', 'GMTIV',
+                            'nhet', 'MATSe5', 'CIC0', 'bcutp3', 'Gravto', 'EstateVSA9', 'MATSe3', 'MATSe5', 'UI',
+                            'S53', 'J', 'bcute1', 'MRVSA9', 'PEOEVSA0', 'MATSv2', 'IDE', 'AWeight', 'IC0', 'S16',
+                            'bcutp1', 'PEOEVSA12'],
     "T/T": ['MATSv5', 'Gravto', 'Chiv3c', 'PEOEVSA7', 'knotp', 'bcutp3', 'bcutm9', 'EstateVSA3',
-                'MATSp1', 'bcutp11', 'VSAEstate7', 'IC0', 'UI', 'Geto', 'QOmin', 'CIC0', 'dchi3',
-                'MATSp4', 'bcutm4', 'Hatov', 'MATSe4', 'CIC6', 'Chiv4', 'EstateVSA9', 'MATSv2', 'nring',
-                'bcute1', 'VSAEstate8', 'MRVSA9', 'PEOEVSA6', 'SIC1', 'bcutp8', 'MATSp6', 'QCss', 'J',
-                'IDE', 'CIC2', 'Hy', 'MRVSA6', 'naro', 'SPP', 'EstateVSA7', 'bcutv10', 'S12', 'LogP2',
-                'bcutp2', 'CIC3', 'S17', 'LogP', 'bcutp1'],
+            'MATSp1', 'bcutp11', 'VSAEstate7', 'IC0', 'UI', 'Geto', 'QOmin', 'CIC0', 'dchi3',
+            'MATSp4', 'bcutm4', 'Hatov', 'MATSe4', 'CIC6', 'Chiv4', 'EstateVSA9', 'MATSv2', 'nring',
+            'bcute1', 'VSAEstate8', 'MRVSA9', 'PEOEVSA6', 'SIC1', 'bcutp8', 'MATSp6', 'QCss', 'J',
+            'IDE', 'CIC2', 'Hy', 'MRVSA6', 'naro', 'SPP', 'EstateVSA7', 'bcutv10', 'S12', 'LogP2',
+            'bcutp2', 'CIC3', 'S17', 'LogP', 'bcutp1'],
     "hERG": ['ndb', 'nsb', 'ncarb', 'nsulph', 'naro', 'ndonr', 'nhev', 'naccr', 'nta', 'nring',
-                   'PC6', 'GMTIV', 'AW', 'Geto', 'BertzCT', 'J', 'MZM2', 'phi', 'kappa2', 'MATSv1',
-                   'MATSv5', 'MATSe4', 'MATSe5', 'MATSe6', 'TPSA', 'Hy', 'LogP', 'LogP2', 'UI', 'QOss',
-                   'SPP', 'LDI', 'Qass', 'QOmin', 'QNmax', 'Qmin', 'Mnc', 'EstateVSA7', 'EstateVSA0',
-                   'EstateVSA3', 'PEOEVSA0', 'PEOEVSA6', 'MRVSA5', 'MRVSA4', 'MRVSA3', 'MRVSA6',
-                   'slogPVSA1'],
+             'PC6', 'GMTIV', 'AW', 'Geto', 'BertzCT', 'J', 'MZM2', 'phi', 'kappa2', 'MATSv1',
+             'MATSv5', 'MATSe4', 'MATSe5', 'MATSe6', 'TPSA', 'Hy', 'LogP', 'LogP2', 'UI', 'QOss',
+             'SPP', 'LDI', 'Qass', 'QOmin', 'QNmax', 'Qmin', 'Mnc', 'EstateVSA7', 'EstateVSA0',
+             'EstateVSA3', 'PEOEVSA0', 'PEOEVSA6', 'MRVSA5', 'MRVSA4', 'MRVSA3', 'MRVSA6',
+             'slogPVSA1'],
     "H-HT": ['ndb', 'nsb', 'nnitro', 'naro', 'ndonr', 'nhet', 'nhev', 'nring', 'PC6', 'GMTIV',
-                  'Geto', 'IDE', 'Arto', 'Hatov', 'BertzCT', 'Getov', 'J', 'MZM2', 'MZM1', 'phi',
-                  'kappa3', 'kappa2', 'kappam3', 'MATSp4', 'MATSp6', 'MATSv3', 'MATSv2', 'MATSv5',
-                  'MATSv7', 'MATSv6', 'MATSm4', 'MATSm5', 'MATSm6', 'MATSm2', 'MATSm3', 'MATSe4',
-                  'MATSe5', 'MATSe6', 'MATSe1', 'MATSe2', 'MATSe3', 'MATSp3', 'MATSp2', 'TPSA', 'LogP',
-                  'LogP2', 'UI', 'QNmin', 'QOss', 'QHss', 'SPP', 'LDI', 'Qass', 'QCmax', 'QOmax', 'Tpc',
-                  'QOmin', 'QCss', 'QHmax', 'Rnc', 'Rpc', 'Qmin', 'Mnc', 'EstateVSA9', 'EstateVSA4',
-                  'EstateVSA5', 'EstateVSA6', 'EstateVSA7', 'EstateVSA0', 'EstateVSA1', 'EstateVSA2',
-                  'EstateVSA3', 'PEOEVSA11', 'PEOEVSA2', 'PEOEVSA1', 'PEOEVSA7', 'PEOEVSA6', 'PEOEVSA5',
-                  'MRVSA5', 'MRVSA4', 'PEOEVSA9', 'PEOEVSA8', 'MRVSA3', 'MRVSA2', 'MRVSA9', 'MRVSA6',
-                  'slogPVSA2', 'slogPVSA4', 'slogPVSA5'],
+             'Geto', 'IDE', 'Arto', 'Hatov', 'BertzCT', 'Getov', 'J', 'MZM2', 'MZM1', 'phi',
+             'kappa3', 'kappa2', 'kappam3', 'MATSp4', 'MATSp6', 'MATSv3', 'MATSv2', 'MATSv5',
+             'MATSv7', 'MATSv6', 'MATSm4', 'MATSm5', 'MATSm6', 'MATSm2', 'MATSm3', 'MATSe4',
+             'MATSe5', 'MATSe6', 'MATSe1', 'MATSe2', 'MATSe3', 'MATSp3', 'MATSp2', 'TPSA', 'LogP',
+             'LogP2', 'UI', 'QNmin', 'QOss', 'QHss', 'SPP', 'LDI', 'Qass', 'QCmax', 'QOmax', 'Tpc',
+             'QOmin', 'QCss', 'QHmax', 'Rnc', 'Rpc', 'Qmin', 'Mnc', 'EstateVSA9', 'EstateVSA4',
+             'EstateVSA5', 'EstateVSA6', 'EstateVSA7', 'EstateVSA0', 'EstateVSA1', 'EstateVSA2',
+             'EstateVSA3', 'PEOEVSA11', 'PEOEVSA2', 'PEOEVSA1', 'PEOEVSA7', 'PEOEVSA6', 'PEOEVSA5',
+             'MRVSA5', 'MRVSA4', 'PEOEVSA9', 'PEOEVSA8', 'MRVSA3', 'MRVSA2', 'MRVSA9', 'MRVSA6',
+             'slogPVSA2', 'slogPVSA4', 'slogPVSA5'],
     "LD50": ['ATSm1', 'ATSm2', 'ATSm3', 'ATSm4', 'ATSm6', 'AWeight', 'Chi4c', 'Chiv3', 'Chiv4',
-                 'Chiv4c', 'Chiv4pc', 'DS', 'Gravto', 'IC0', 'IC1', 'MRVSA9', 'QCmax', 'QNss', 'QOmin',
-                 'Qmax', 'S46', 'Smax45', 'Smin', 'Smin45', 'VSAEstate7', 'Weight', 'bcutm1', 'bcutm2',
-                 'bcutp1', 'nhet', 'nphos', 'slogPVSA11'],
+             'Chiv4c', 'Chiv4pc', 'DS', 'Gravto', 'IC0', 'IC1', 'MRVSA9', 'QCmax', 'QNss', 'QOmin',
+             'Qmax', 'S46', 'Smax45', 'Smin', 'Smin45', 'VSAEstate7', 'Weight', 'bcutm1', 'bcutm2',
+             'bcutp1', 'nhet', 'nphos', 'slogPVSA11'],
     "PPB": ['ncarb', 'naro', 'GMTIV', 'AW', 'Geto', 'Arto', 'BertzCT', 'J', 'kappam3', 'MATSv1',
-                  'MATSe1', 'Hy', 'LogP', 'LogP2', 'UI', 'QHss', 'LDI', 'QNss', 'Rpc', 'Mnc', 'PEOEVSA10',
-                  'PEOEVSA0', 'PEOEVSA6', 'PEOEVSA5', 'PEOEVSA4', 'slogPVSA10', 'MRVSA6', 'slogPVSA0',
-                  'slogPVSA1', 'slogPVSA5'],
+            'MATSe1', 'Hy', 'LogP', 'LogP2', 'UI', 'QHss', 'LDI', 'QNss', 'Rpc', 'Mnc', 'PEOEVSA10',
+            'PEOEVSA0', 'PEOEVSA6', 'PEOEVSA5', 'PEOEVSA4', 'slogPVSA10', 'MRVSA6', 'slogPVSA0',
+            'slogPVSA1', 'slogPVSA5'],
     "VD/VD": ['GMTIV', 'UI', 'MATSe1', 'MATSp1', 'Chiv4', 'MATSm2', 'S12', 'dchi3', 'IDE', 'PEOEVSA7',
-                 'bcutp1', 'bcutm9', 'SIC1', 'MRVSA6', 'IC1', 'QNmax', 'CIC0', 'PEOEVSA6', 'MATSe4',
-                 'VSAEstate8', 'Geto', 'EstateVSA3', 'MRVSA5', 'LogP2', 'Tnc', 'S7', 'SPP', 'QOmin',
-                 'EstateVSA7', 'LogP', 'QNmin', 'MRVSA9', 'S19', 'MATSv2', 'nsulph', 'S17', 'S9', 'ndb',
-                 'AWeight', 'QCss', 'EstateVSA9', 'Hy', 'S16', 'IC0', 'S30']
+              'bcutp1', 'bcutm9', 'SIC1', 'MRVSA6', 'IC1', 'QNmax', 'CIC0', 'PEOEVSA6', 'MATSe4',
+              'VSAEstate8', 'Geto', 'EstateVSA3', 'MRVSA5', 'LogP2', 'Tnc', 'S7', 'SPP', 'QOmin',
+              'EstateVSA7', 'LogP', 'QNmin', 'MRVSA9', 'S19', 'MATSv2', 'nsulph', 'S17', 'S9', 'ndb',
+              'AWeight', 'QCss', 'EstateVSA9', 'Hy', 'S16', 'IC0', 'S30']
 }
 
-#def calculate_descriptors(smile):
-    #"""Calculate descriptors for the input smile
 
-    #:param smile: input smile
-    #:return: dict with calculated descriptors (key=descriptor name, value=calculated descriptor value)
-    #"""
-    #alldes = {}
-    #drug = PyChem2d()
-    #drug.ReadMolFromSmile(smile)
-    #alldes.update(drug.GetAllDescriptor())
-    #return alldes
+# def calculate_descriptors(smile):
+# """Calculate descriptors for the input smile
 
-#def get_descriptor_vector(smiles, desc_names):
-    #"""Calculate descriptor vectors for some excretion, toxicity and distribution models
+#:param smile: input smile
+#:return: dict with calculated descriptors (key=descriptor name, value=calculated descriptor value)
+# """
+# alldes = {}
+# drug = PyChem2d()
+# drug.ReadMolFromSmile(smile)
+# alldes.update(drug.GetAllDescriptor())
+# return alldes
 
-    #:param smiles: list of smiles
-    #:param desc_names: list of descriptor names that need to be calculated
-    #:return: list with calculated descriptors for each smile
-    #"""
-    #desc_vector = []
-    #for smile in smiles:
-        #desc_dict = calculate_descriptors(smile)
-        #desc_vector_smile = [desc_dict[name] for name in desc_names]
-        #desc_vector.append(desc_vector_smile)
-    #return desc_vector
+# def get_descriptor_vector(smiles, desc_names):
+# """Calculate descriptor vectors for some excretion, toxicity and distribution models
+
+#:param smiles: list of smiles
+#:param desc_names: list of descriptor names that need to be calculated
+#:return: list with calculated descriptors for each smile
+# """
+# desc_vector = []
+# for smile in smiles:
+# desc_dict = calculate_descriptors(smile)
+# desc_vector_smile = [desc_dict[name] for name in desc_names]
+# desc_vector.append(desc_vector_smile)
+# return desc_vector
 
 def getMACCS(smiles):
     """Calculate MACCS fingerprints for the list of smiles
@@ -222,6 +232,7 @@ def getMACCS(smiles):
         bs2 = ','.join(fpM.ToBitString())
         result.append(bs2.split(','))
     return result
+
 
 def getECFP(smiles, radius, nBits):
     """Calculate ECFP fingerprints depending on the radius and size of the bitset
@@ -238,6 +249,7 @@ def getECFP(smiles, radius, nBits):
         result.append(fpECFP)
     return result
 
+
 def handle_uploaded_file(f, models):
     """Calculate ADMET properties
 
@@ -249,13 +261,13 @@ def handle_uploaded_file(f, models):
     encoded_smiles = [smile[0].encode('utf8') for smile in smiles]
     current_path = os.path.split(os.path.realpath(__file__))[0]
     models_res = models.split(",")
-    result = np.zeros((len(encoded_smiles),0), float)
+    result = np.zeros((len(encoded_smiles), 0), float)
     for j in range(len(models_res)):
         cf = sklearn.externals.joblib.load(current_path + '/' + models_res[j] + '.pkl')
         fingerprint_content = lambda bits: getMACCS(encoded_smiles) if bits == 167 \
-                              else (getECFP(encoded_smiles, 1, 2048) if bits == 2048 \
-                              else (getECFP(encoded_smiles, 2, 1024) if bits == 1024 \
-                              else getMACCS(encoded_smiles)))
+            else (getECFP(encoded_smiles, 1, 2048) if bits == 2048 \
+                      else (getECFP(encoded_smiles, 2, 1024) if bits == 1024 \
+                                else getMACCS(encoded_smiles)))
         des_list = np.array(fingerprint_content(dict_bits_desc[models_res[j]]))
         y_predict_label = cf.predict(des_list)
         y_predict_proba = cf.predict_proba(des_list)
@@ -263,11 +275,12 @@ def handle_uploaded_file(f, models):
         for i in range(len(encoded_smiles)):
             predict = y_predict_proba[i]
             predicts.append(predict[y_predict_label[i]])
-        result = np.concatenate([ result, np.array(predicts).reshape(len(encoded_smiles),1)], axis=1)
+        result = np.concatenate([result, np.array(predicts).reshape(len(encoded_smiles), 1)], axis=1)
     res_df = pd.DataFrame(result, columns=models_res)
     return res_df.to_csv(index=False)
 
-from django.conf.urls import url, include 
+
+from django.conf.urls import url, include
 from django.contrib import admin
 from rest_framework import routers
 
@@ -284,4 +297,5 @@ urlpatterns = [
 if __name__ == "__main__":
     # make this script runnable like a normal `manage.py` command line script.
     from django.core import management
+
     management.execute_from_command_line()
