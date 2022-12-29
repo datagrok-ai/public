@@ -701,8 +701,8 @@ export class OpenLayers {
       const objLayer = {
         vis: vsb,
         name: layerName,
-        del: true,
         exp: exp,
+        del: true,
         layerid: layerId,
       };
 
