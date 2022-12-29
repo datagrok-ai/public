@@ -84,9 +84,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
   };
 
   const g = offscreenCanvas.getContext('2d', {willReadFrequently : true});
-  g!.fillStyle = 'white';
-  g?.fillRect(0,0, w, h);
-
+  g?.clearRect(0,0, w, h);
   if (substruct)
     Object.assign(opts, substruct);
   rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
