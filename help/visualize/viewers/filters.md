@@ -34,14 +34,15 @@ their choice.
 
 ## Column tags
 
-* **For molecular columns**, use the **.structure-filter-type** column tag to
+* For **molecular columns**, use the **.structure-filter-type** column tag to
   define filter type:
   * Set **.structure-filter-type** to `Sketch` to use Sketcher for filtering
     molecular columns.
   * Set **.structure-filter-type** to `Categorical` to use molecular column
     values as categories in the filter group.
 
-* **For multi-value columns**, use the **.multi-value-separator** column tag to
+* For [**multi-value columns**](https://community.datagrok.ai/t/visualization-related-updates/521/12?u=skalkin),
+ use the **.multi-value-separator** column tag to
   parse multiple values as separate filter categories. The most common
   separators are `\n`, `,`, `;`.
 
