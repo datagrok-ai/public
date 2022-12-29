@@ -341,7 +341,6 @@ export class GisViewer extends DG.JsViewer {
         this.panelBottom]);*/
 
     this.root.appendChild(this.viewerContainer);
-    
 
     //setup context menu
     this.onContextMenu.subscribe((menu) => {
@@ -356,6 +355,9 @@ export class GisViewer extends DG.JsViewer {
           this.switchUI(this.isShortUI);
         });
       }
+      menu.item('Reset view', async () => {
+        await this.render(true, true);
+      });
     });
 
     return this.viewerContainer;
