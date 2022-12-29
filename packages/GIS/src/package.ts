@@ -646,6 +646,9 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
             //
             const mapViewer = ((v as DG.TableView).addViewer('Map') as GisViewer);
             // const mapViewer = ((v as DG.TableView).addViewer(new GisViewer()) as GisViewer);
+            if (!mapViewer.initialized)
+              mapViewer.init();
+
             if (newLayer)
               mapViewer.ol.addLayer(newLayer);
           // const mapViewer = ((v as DG.TableView).addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer);
@@ -653,7 +656,7 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
             // else newLayer = mapViewer.ol.addTopoJSONLayerFromStream(filecontent);
           }
           // (v as DG.TableView).addViewer(DG.Viewer.fromType('Map', (v as DG.TableView).dataFrame));
-        }, 4000, tv, dfFromJSON, newLayer);
+        }, 1000, tv, dfFromJSON, newLayer);
       }
     }
   }

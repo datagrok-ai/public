@@ -42,8 +42,13 @@ import {Control, defaults as defaultControls} from 'ol/control';
 
 import {PanelLayersControl, BtnLayersControl} from './gis-mapcontrols';
 
+//for test func
+import TileWMS from 'ol/source/TileWMS';
+import ImageLayer from 'ol/layer/Image';
+
 //ZIP utilities
 import JSZip from 'jszip';
+import TileImage from 'ol/source/TileImage';
 
 export {Coordinate} from 'ol/coordinate';
 
@@ -196,7 +201,6 @@ export class OpenLayers {
     //controls
     this.btnLayersControl = new BtnLayersControl(null);
     this.panelLayersList = new PanelLayersControl(this, null);
-    this.panelLayersList.setVisibility(false);
 
 
     this.styleVectorLayer = new OLStyle.Style({
@@ -299,14 +303,41 @@ export class OpenLayers {
 
   testFunc(): void {
     const Tl = new TileLayer({
-      source: new XYZ({
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-        // url: 'https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=809f4d16303ce4ae52da96eea0fadc6a',
+      source: new TileImage({ //new XYZ({
+        // url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+        url: 'https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=809f4d16303ce4ae52da96eea0fadc6a',
         // url: 'https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer',
+        // url: 'https://ndmc-001.unl.edu:8080/cgi-bin/mapserv.exe?map=/ms4w/apps/usdm/service/usdm_20221213_wms.map&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=usdm20221213&WIDTH=640&HEIGHT=480&crs=EPSG:3857&styles=default&format=image/png&bbox=-18367715.9809,1689200.13961,-6679169.4476,15538711.0963'
       }),
     });
     Tl.set('layerName', 'TestLayer');
     this.addLayer(Tl);
+
+    const Tl2 = new TileLayer({
+      // source: new TileWMS({
+      //   url: 'https://ahocevar.com/geoserver/wms',
+      //   params: {'LAYERS': 'ne:ne'},
+      //   serverType: 'geoserver',
+      //   crossOrigin: 'anonymous',
+      // }),
+
+      // source: new TileWMS({
+      //   url: 'https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r-t.cgi',
+      //   params: {'LAYERS': 'nexrad-n0r-wmst'},
+      //   // params: {'LAYERS': 'uscounties'},
+      //   serverType: 'geoserver',
+      //   crossOrigin: 'anonymous',
+
+      source: new TileWMS({
+        url: 'https://ahocevar.com/geoserver/wms',
+        params: {'LAYERS': 'topp:states'}, // , 'TILED': true},
+        serverType: 'geoserver',
+        // Countries have transparency, so do not fade tiles:
+        transition: 0,
+      }),
+    });
+    Tl2.set('layerName', 'WMSTestLayer');
+    this.addLayer(Tl2);
 
     return;
   }
@@ -358,6 +389,8 @@ export class OpenLayers {
     this.olMap.addInteraction(this.dragAndDropInteraction); //add dragNdrop ability
 
     this.setBtnLayersClickCallback(this.onLayersListBtnClick.bind(this));
+    this.panelLayersList.setVisibility(false);
+//    this.onLayersListBtnClick();
     //<<end of InitMap function
   }
 
@@ -659,8 +692,6 @@ export class OpenLayers {
       const layerName = arrLayers[i].get('layerName');
       const layerId = arrLayers[i].get('layerId');
       const src = arrLayers[i].getSource();
-      // arrLayers[i].sourceTy
-      // const cln = arrLayers[i].getClassName();
       let exp = false;
       if (src instanceof VectorSource)
         exp = true;
@@ -669,9 +700,9 @@ export class OpenLayers {
 
       const objLayer = {
         vis: vsb,
+        name: layerName,
         del: true,
         exp: exp,
-        name: layerName,
         layerid: layerId,
       };
 
@@ -680,7 +711,6 @@ export class OpenLayers {
 
     if (this.panelLayersList)
       this.panelLayersList.refreshDF(DG.DataFrame.fromObjects(arrLayersObj));
-      // this.panelLayersList.dfLayersList = DG.DataFrame.fromObjects(arrLayersObj);
 
     return arrLayersObj;
   }
@@ -1070,13 +1100,12 @@ export class OpenLayers {
     this.onRefreshCallback = f;
   }
   setBtnLayersClickCallback(f: Function) {
-    // this.onBtnLayersClickCallback = f;
     this.btnLayersControl.parentOnClickHandler = f;
   }
 
   onLayersListBtnClick() {
     if (this.panelLayersList)
-      this.panelLayersList.setVisibility(this.btnLayersControl.btnIsOn);
+      this.panelLayersList.setVisibility(this.btnLayersControl.isOn);
   }
 
   //map elements management functions>>
