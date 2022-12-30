@@ -604,15 +604,12 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
 
   let dfFromJSON = null;
   const ol = new OpenLayers();
-  // ol.initMap('map-container');
-  // useGeographic();
-  // ol.setViewOptions({
-  //   projection: 'EPSG:4326',
-  // });
   let newLayer;
   if (isGeoTopo[1] === false) newLayer = ol.addGeoJSONLayerFromStream(filecontent);
   else newLayer = ol.addTopoJSONLayerFromStream(filecontent);
   // const arrFeatures = ol.getFeaturesFromLayer(newLayer);
+
+  //create the dataframe
   const arrFeatures = ol.exportLayerToArray(newLayer);
   if (arrFeatures) {
     if (arrFeatures.length > 0) {
@@ -623,40 +620,21 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
           gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
 
         dfFromJSON.name = newLayer.get('layerName');
-        const tv = grok.shell.addTableView(dfFromJSON as DG.DataFrame);
-        tv.name = 'dfFromJSON.name' + ' (manual)';
+        const tableView = grok.shell.addTableView(dfFromJSON as DG.DataFrame);
+        tableView.name = 'dfFromJSON.name' + ' (manual)';
 
-        // const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer;
-        // if (mapViewer) {
-        //   //
-        // (mapViewer as GisViewer).init();
-        //   (mapViewer as GisViewer).ol.addLayer(newLayer);
-        // // if (isGeoTopo[1] === false) newLayer = (mapViewer as GisViewer).ol.addGeoJSONLayerFromStream(filecontent);
-        // //   else newLayer = (mapViewer as GisViewer).ol.addTopoJSONLayerFromStream(filecontent);
-        // }
+        //show the map viewer
+        setTimeout((tableView: DG.TableView) => {
+          const v = tableView;
+          if (v) {
+            const mapViewer = v.addViewer(new GisViewer()) as GisViewer;
+            //initialize the map
+            mapViewer.ol.initMap('map-container');
 
-        // const mapViewer = DG.Viewer.fromType('Map', (dfFromJSON as DG.DataFrame));
-        //TODO: fix issue with GisViewer opening for a table with data
-        setTimeout((tv, dfFromJSON, newLayer) => {
-          // const v = grok.shell.v;
-          const v = tv;
-          // if ((v) && (v instanceof DG.TableView))
-          //   (v as DG.TableView).addViewer(new GisViewer());
-          if ((v) && (v instanceof DG.TableView)) {
-            //
-            const mapViewer = ((v as DG.TableView).addViewer('Map') as GisViewer);
-            // const mapViewer = ((v as DG.TableView).addViewer(new GisViewer()) as GisViewer);
-            if (!mapViewer.initialized)
-              mapViewer.init();
-
-            if (newLayer)
-              mapViewer.ol.addLayer(newLayer);
-          // const mapViewer = ((v as DG.TableView).addViewer(DG.Viewer.fromType('Map', dfFromJSON)) as GisViewer);
-            // if (isGeoTopo[1] === false) newLayer = mapViewer.ol.addGeoJSONLayerFromStream(filecontent);
-            // else newLayer = mapViewer.ol.addTopoJSONLayerFromStream(filecontent);
+            if (isGeoTopo[1] === false) mapViewer.ol.addGeoJSONLayerFromStream(filecontent);
+            else mapViewer.ol.addTopoJSONLayerFromStream(filecontent);
           }
-          // (v as DG.TableView).addViewer(DG.Viewer.fromType('Map', (v as DG.TableView).dataFrame));
-        }, 1000, tv, dfFromJSON, newLayer);
+        }, 1000, tableView);
       }
     }
   }
