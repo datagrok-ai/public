@@ -452,22 +452,10 @@ export namespace chem {
     }
 
     static checkDuplicatesAndAddToStorage(storage: string[], molecule: string, localStorageKey: string) {
-      let mol1: any;
-      function moleculesEqual(rdkitModule: any, mol1: any, molfile2: string): boolean {
-        const mol2 = Sketcher.checkMoleculeValid(rdkitModule, molfile2);  
-        const result = mol2 ? mol1.get_smiles() === mol2.get_smiles() : false;
-        mol2?.delete();
-        return result;
-      }
-      grok.functions.call('Chem:getRdKitModule').then((rdKit: any) => {
-        const mol1 = Sketcher.checkMoleculeValid(rdKit, molecule);
-        if (!mol1) throw(`Molecule is possibly malformed`);;
-        if (!Sketcher.isEmptyMolfile(molecule)) {
-          const molsWithoutDuplicates = storage.filter((mol) => !moleculesEqual(rdKit, mol1, mol));
-          localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...molsWithoutDuplicates.slice(0, 9)]));
+      grok.functions.call('Chem:filterMoleculeDuplicates', {molecules: storage, molecule: molecule}).then((array: any) => {
+        if (array?.length) {
+          localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...array.slice(0, 9)]));
         }         
-      }).finally(() => {
-        mol1?.delete();
       });
     }
 
@@ -478,17 +466,6 @@ export namespace chem {
        (rowWithAtomsAndNotation.trimEnd().endsWith('V3000') && molFile.includes('COUNTS 0')));
     }
 
-    static checkMoleculeValid(rdKit: any, molecule: string): any {
-      let mol;
-      try {
-        mol = rdKit.get_mol(molecule);
-      }
-      catch (e: any) {
-        mol?.delete();
-        return null;
-      }
-      return mol;
-    }
 
     detach() {
       this.changedSub?.unsubscribe();

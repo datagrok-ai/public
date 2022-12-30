@@ -128,3 +128,22 @@ export function drawMoleculeToCanvas(
     mol?.delete();
   }
 }
+
+export function moleculesEqual(mol1: any, molfile2: string): boolean {
+  const mol2 = checkMoleculeValid(molfile2);
+  const result = mol2 ? mol1.get_smiles() === mol2.get_smiles() : false;
+  mol2?.delete();
+  return result;
+}
+
+export function checkMoleculeValid(molecule: string): any {
+  let mol;
+  try {
+    mol = getRdKitModule().get_mol(molecule);
+  }
+  catch (e: any) {
+    mol?.delete();
+    return null;
+  }
+  return mol;
+}

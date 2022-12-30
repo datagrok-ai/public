@@ -38,7 +38,7 @@ import {checkForStructuralAlerts} from './panels/structural-alerts';
 //utils imports
 import {Fingerprint} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {_rdKitModule} from './utils/chem-common-rdkit';
+import {checkMoleculeValid, moleculesEqual, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation, isMolBlock} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
@@ -883,4 +883,19 @@ export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
 //name: installScaffoldGraph
 export async function installScaffoldGraph() : Promise<void> {
   await setupScaffold();
+}
+
+//name: filterMoleculeDuplicates
+//input: list molecules
+//input: string molecule
+//output: list result
+export function filterMoleculeDuplicates(molecules: string[], molecule: string): string[] {
+  const mol1 = checkMoleculeValid(molecule);
+  if (!mol1) throw (`Molecule is possibly malformed`);
+  if (!Sketcher.isEmptyMolfile(molecule)) {
+    const filteredMolecules = molecules.filter((smiles) => !moleculesEqual(mol1, smiles));
+    mol1.delete();
+    return filteredMolecules;
+  }
+  return [];
 }
