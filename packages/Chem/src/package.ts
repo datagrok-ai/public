@@ -630,11 +630,22 @@ export function convertMolNotation(molecule: string, sourceNotation: string, tar
 export async function editMoleculeCell(cell: DG.GridCell): Promise<void> {
   const sketcher = new Sketcher();
   const unit = cell.cell.column.tags[DG.TAGS.UNITS];
-  sketcher.setMolecule(cell.cell.value);
+  let molecule = cell.cell.value;
+  if (unit === DG.chem.SMILES) {
+    //convert to molFile to draw in coordinates similar to dataframe cell
+    const mol = getRdKitModule().get_mol(cell.cell.value, '{"mergeQueryHs":true}');
+    if (!mol.has_coords())
+      mol.set_new_coords();
+    mol.normalize_depiction(1);
+    mol.straighten_depiction(false);
+    molecule = mol.get_molblock();
+    mol?.delete();
+  }
+  sketcher.setMolecule(molecule);
   ui.dialog()
     .add(sketcher)
     .onOK(() => {
-      cell.cell.value = unit == 'molblock' ? sketcher.getMolFile() : sketcher.getSmiles();
+      cell.cell.value = unit == DG.chem.SMILES ? sketcher.getSmiles() : sketcher.getMolFile();
       Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
     })
     .show();

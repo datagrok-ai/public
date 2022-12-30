@@ -1,0 +1,12 @@
+.sketch-link {
+    border: 1px solid #dbdcdf;
+    aspect-ratio: 4/1;
+    display: flex;
+    justify-content: center;
+    align-items: center
+  }
+
+.sketcher-standard-size {
+  min-width: 500px;
+  min-height: 400px;
+}
