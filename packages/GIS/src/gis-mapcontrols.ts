@@ -71,7 +71,7 @@ export class PanelLayersControl extends Control {
   cellPrepareFn(gc: DG.GridCell) {
     if (gc.isTableCell && gc.gridColumn.name === 'del') {
       const btnDel = ui.button(ui.iconFA(gc.cell.value ? 'trash-alt' : ''), () => {
-        if (gc.tableRowIndex) {
+        if (gc.tableRowIndex !== null) {
           const col = gc.grid.table.columns.byName('layerid');
           if (col) {
             const layerId = col.get(gc.tableRowIndex);
@@ -88,7 +88,7 @@ export class PanelLayersControl extends Control {
 
     if (gc.isTableCell && gc.gridColumn.name === 'exp') {
       const btnExp = ui.button(ui.iconFA(gc.cell.value ? 'arrow-to-bottom' : ''), () => {
-        if (gc.tableRowIndex) {
+        if (gc.tableRowIndex !== null) {
           const col = gc.grid.table.columns.byName('layerid');
           if (col) {
             const layerId = col.get(gc.tableRowIndex);
@@ -105,7 +105,7 @@ export class PanelLayersControl extends Control {
   }
 
   cellVisibleClick(gc: DG.GridCell) {
-    if (gc.tableRowIndex) {
+    if (gc.tableRowIndex !== null) {
       const col = gc.grid.table.columns.byName('layerid');
       if (col) {
         const layerId = col.get(gc.tableRowIndex);
@@ -114,8 +114,7 @@ export class PanelLayersControl extends Control {
         const layer = this.ol.getLayerById(layerId);
         if (!layer)
           return;
-        // const isVisible = layer.getVisible();
-        // layer.setVisible(!isVisible);
+
         layer.setVisible(gc.cell.value);
         this.updateLayersList();
       }

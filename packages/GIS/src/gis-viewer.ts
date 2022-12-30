@@ -356,18 +356,15 @@ export class GisViewer extends DG.JsViewer {
   }
 
   init() {
+    const loadingDiv = ui.div('Loading...');
     try {
-      console.log('gis-viewer.init()');
-
-      this.ol.useWebGL = true; //choose true if we want to use WebGL renderer
-
-      const loadingDiv = ui.div('Loading...');
       loadingDiv.style.position = 'absolute';
       loadingDiv.style.left = '50%';
       loadingDiv.style.top = '50%';
 
       this.root.append(loadingDiv);
 
+      this.ol.useWebGL = true; //choose true if we want to use WebGL renderer
       this.initUi();
       this.ol.initMap('map-container');
 
@@ -390,7 +387,7 @@ export class GisViewer extends DG.JsViewer {
       grok.shell.error(e.toString());
     } finally {
       setTimeout(() => {
-        const loadingDiv = this.root.firstElementChild as HTMLElement;
+        // const loadingDiv = this.root.firstElementChild as HTMLElement;
         //loadingDiv.style.visibility = 'hidden';
         this.root.removeChild(loadingDiv);
 
