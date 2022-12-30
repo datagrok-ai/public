@@ -12,8 +12,6 @@ import {useGeographic} from 'ol/proj';
 //GIS semantic types import
 import {SEMTYPEGIS} from '../src/gis-semtypes';
 
-const census = require('citysdk');
-
 //ZIP utilities
 import JSZip from 'jszip';
 import {DataFrame, InputBase} from 'datagrok-api/dg';
@@ -21,20 +19,7 @@ import {DataFrame, InputBase} from 'datagrok-api/dg';
 //USEFUL
 // contents = fs.readFileSync(detectorsPath, 'utf8');
 
-
 export const _package = new DG.Package();
-
-//census SDK async wrapper function
-async function censusPromise(args: any) {
-  return new Promise(function(resolve, reject) {
-    census(args, function(err: any, json: any) {
-      if (!err)
-        resolve(json);
-      else
-        reject(err);
-    });
-  });
-}
 
 function uiCensusDialog(): DG.Dialog {
   const data = grok.data.demo.demog(5);
