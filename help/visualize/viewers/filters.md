@@ -55,6 +55,7 @@ To set the column tag value via the UI:
 1. Click **OK** to save changes.
 
 To set the column tag value programmatically:
+
 ```javascript
 column.tags['.structure-filter-type'] = 'Categorical';
 ```
