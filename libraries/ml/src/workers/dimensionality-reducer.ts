@@ -10,7 +10,7 @@ import {KnownMetrics} from '../typed-metrics';
  * @param {any} options Options to pass to algorithm.
  * @return {any} Embedding (and distance matrix where applicable).
  */
-function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, options?: any) {
+function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, options?: any): {distance?: any, embedding?: any} {
   const reducer = new DimensionalityReducer(
     columnData,
     method,
@@ -21,9 +21,15 @@ function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetric
 }
 
 self.onmessage = ({data: {columnData, method, measure, options}}) => {
-  const embedding = onMessage(columnData, method, measure, options);
+  let data: {error?: any, distance?: any, embedding?: any};
+  try{
+    data = onMessage(columnData, method, measure, options);
+  } catch (e: any) {
+    data = {error: e};
+  }
   self.postMessage({
-    distance: embedding.distance,
-    embedding: embedding.embedding,
+    error: data.error,
+    distance: data.distance,
+    embedding: data.embedding,
   });
 };

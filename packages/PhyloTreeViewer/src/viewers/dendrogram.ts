@@ -2,7 +2,6 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import * as bio from '@datagrok-libraries/bio';
 import wu from 'wu';
 
 import * as rxjs from 'rxjs';
@@ -13,6 +12,7 @@ import {markupNode, MarkupNodeType} from './tree-renderers/markup';
 import {LeafRangeGridTreeRenderer} from './tree-renderers/grid-tree-renderer';
 import {CanvasTreeRenderer} from './tree-renderers/canvas-tree-renderer';
 import {TreeRendererBase} from './tree-renderers/tree-renderer-base';
+import {parseNewick} from '@datagrok-libraries/bio';
 
 enum PROPS_CATS {
   APPEARANCE = 'Appearance',
@@ -111,7 +111,7 @@ export class Dendrogram extends DG.JsViewer {
   public set newick(value: string) {
     this._newick = value;
     if (this.renderer) {
-      const treeRoot = bio.Newick.parse_newick(this._newick);
+      const treeRoot = parseNewick(this._newick);
       markupNode(treeRoot);
       this.renderer!.treeRoot = treeRoot;
     }
@@ -189,7 +189,7 @@ export class Dendrogram extends DG.JsViewer {
     });
     this.root.appendChild(this.treeDiv);
 
-    const treeRoot: MarkupNodeType = bio.Newick.parse_newick(this.newick);
+    const treeRoot: MarkupNodeType = parseNewick(this.newick);
     markupNode(treeRoot);
     const totalLength: number = treeRoot.subtreeLength!;
     this.renderer = new CanvasTreeRenderer(treeRoot, totalLength, this.treeDiv);

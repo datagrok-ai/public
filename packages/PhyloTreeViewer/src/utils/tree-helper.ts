@@ -3,8 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {isLeaf, ITreeHelper, NodeCuttedType, NodeType, PhylocanvasGL} from '@datagrok-libraries/bio';
+import {isLeaf, ITreeHelper, NodeCuttedType, NodeType} from '@datagrok-libraries/bio';
 import {newickToDf as _newickToDf} from './index';
+import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
 
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };
@@ -27,7 +28,7 @@ export class TreeHelper implements ITreeHelper {
       if (isLeaf) {
         return ([] as string[]).concat(
           node.name,
-          node.branch_length ? `:${node.branch_length}` : [],
+          node.branch_length ? `:${node.branch_length}` : []
         ).join('');
       } else {
         const childrenText = node.children!.map((childNode) => toNewickInt(childNode)).join(',');
@@ -42,23 +43,24 @@ export class TreeHelper implements ITreeHelper {
     return !node ? ';' : `${toNewickInt(node)};`;
   }
 
-  getLeafList(node: NodeType): NodeType[] {
+  getLeafList<TNode extends NodeType>(node: TNode): TNode[] {
     if (node == null) return [];
 
     if (isLeaf(node)) {
       return [node]; // node is a leaf
     } else {
-      return ([] as NodeType[]).concat(
-        ...(node.children ?? []).map((child) => this.getLeafList(child)));
+      return ([] as TNode[]).concat(
+        ...(node.children ?? []).map((child) => this.getLeafList(child as TNode)));
     }
   }
 
-  getNodeList(node: NodeType): NodeType[] {
+  getNodeList<TNode extends NodeType>(node: TNode): TNode[] {
     if (isLeaf(node)) {
       return [node]; // node is a leaf
     } else {
-      const childNodeListList = node.children!.map((child) => this.getNodeList(child));
-      return ([] as NodeType[]).concat(
+      const childNodeListList: TNode[][] = node.children!
+        .map((child) => { return this.getNodeList(child as TNode); });
+      return ([] as TNode[]).concat(
         [node],
         ...childNodeListList);
     }

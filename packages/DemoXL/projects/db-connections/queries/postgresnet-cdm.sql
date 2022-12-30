@@ -1,6 +1,6 @@
---name: PostgresNetCDMTest
+--name: PostgresCDMTest
 --friendlyName: CDM
---connection: PostgresNetCDM
+--connection: PostgresCDM
 
 select 
   location.city,

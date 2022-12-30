@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
-import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {getSimilarityFromDistance} from '../distance-metrics-methods';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 
 export interface ILine {
@@ -151,7 +151,7 @@ export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, en
 
   const view = grok.shell.getTableView(df.name);
   view.grid.columns.byName(cliffsColName)!.visible = false;
-  const sp = view.addViewer(DG.Viewer.scatterPlot(df, {
+  const sp = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
     xColumnName: axesNames[0],
     yColumnName: axesNames[1],
     size: sali.name,
@@ -163,7 +163,7 @@ export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, en
     markerMinSize: 5,
     markerMaxSize: 25,
     title: scatterTitle,
-  })) as DG.ScatterPlotViewer;
+  }) as DG.ScatterPlotViewer;
 
   const canvas = (sp.getInfo() as any)['canvas'];
   const linesRes = createLines(n1, n2, seqCol, activities, saliVals, simVals, semType, tags);
@@ -213,8 +213,19 @@ export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, en
   });
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
-    grok.shell.dockManager.dock(linesDfGrid.root, 'down', null, 'Activity cliffs', 0.2);
+    view.dockManager.dock(linesDfGrid.root, 'down', null, 'Activity cliffs', 0.2);
   });
+
+  const viewerClosedSub = grok.events.onViewerClosed.subscribe((v) => {
+    //@ts-ignore
+    if(v.args.viewer === sp) {
+      view.dockManager.close(linesDfGrid.root);
+      viewerClosedSub.unsubscribe();
+      view.subs = view.subs.filter((sub) => sub !== viewerClosedSub);
+    }  
+  })
+  view.subs.push(viewerClosedSub);
+
   editSpLinkStyle(listCliffsLink, sp, 10);
 
   const filterCliffsButton = ui.switchInput(`Show only cliffs`, false);
@@ -423,11 +434,11 @@ export async function getSimilaritiesMatrix( dim: number, seqCol: DG.Column, dfS
 export function getSimilaritiesFromDistances(dim: number, distances: Matrix, simArr: DG.Column[])
   : DG.Column[] {
   for (let i = 0; i < dim - 1; ++i) {
-    const similarityArr = new Array(dim - i - 1).fill(0);
+    const similarityArr = new Float32Array(dim - i - 1).fill(0);
     for (let j = i + 1; j < dim; ++j) {
       similarityArr[j - i - 1] = getSimilarityFromDistance(distances[i][j]);
     }
-    simArr[i] = DG.Column.fromFloat32Array('similarity', Float32Array.from(similarityArr));
+    simArr[i] = DG.Column.fromFloat32Array('similarity', similarityArr);
   }
   return simArr;
 }

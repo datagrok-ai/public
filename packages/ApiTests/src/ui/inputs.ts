@@ -21,7 +21,7 @@ category('UI: Inputs', () => {
       'switchInput': ui.switchInput('', true),
       'choiceInput': ui.choiceInput('', '1', ['1', '2', '3']),
       'multiChoiceInput': ui.multiChoiceInput('', [], []),
-      'dateInput': ui.dateInput('', dayjs('2001-01-01')),
+//      'dateInput': ui.dateInput('', dayjs('2001-01-01')),
       'textInput': ui.textInput('', ''),
       'searchInput': ui.searchInput('', ''),
       'columnInput': ui.columnInput('', t, t.col('age')),

@@ -14,8 +14,9 @@ import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
+import {setupScaffold} from './scripts-api';
 import {elementsTable} from './constants';
-import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 //widget imports
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
@@ -30,7 +31,7 @@ import {toxicityWidget} from './widgets/toxicity';
 
 //panels imports
 import {addInchiKeys, addInchis} from './panels/inchi';
-import {addMcs} from './panels/find-mcs';
+import {getMcs} from './panels/find-mcs';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
 
@@ -43,6 +44,7 @@ import {molToMolblock} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {saveAsSdfDialog} from './utils/sdf-utils';
 import {getSimilaritiesMarix} from './utils/similarity-utils';
+import { ScaffoldTreeViewer } from "./widgets/scaffold-tree";
 
 //analytical imports
 import {createPropPanelElement, createTooltipElement} from './analysis/activity-cliffs';
@@ -57,6 +59,13 @@ import {_importSmi} from './file-importers/smi-importer';
 import {generateScaffoldTree} from "./scripts-api";
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
+const DEFAULT_SKETCHER = 'openChemLibSketcher';
+const SKETCHER_FUNCTIONS_ALIASES: {[key: string]: string} = {
+  OpenChemLib: 'openChemLibSketcher',
+  Ketcher: 'ketcherSketcher',
+  Marvin: 'marvinSketcher',
+  ChemDraw: 'chemDrawSketcher'
+}
 
 /**
  * Usage:
@@ -85,13 +94,27 @@ export async function initChem(): Promise<void> {
   _properties = await _package.getProperties();
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
-  const lastSelectedSketcher = await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
-  if (lastSelectedSketcher) DG.chem.currentSketcher = lastSelectedSketcher;
+  const lastSelectedSketcher = _properties.Sketcher ? SKETCHER_FUNCTIONS_ALIASES[_properties.Sketcher]:
+      await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
+  if (DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name == lastSelectedSketcher) || !lastSelectedSketcher)
+    window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher);
+  else {
+    grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
+    window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, DEFAULT_SKETCHER);
+  }
   _renderers = new Map();
 }
 
 //tags: autostart
 export async function initChemAutostart(): Promise<void> { }
+
+//name: Scaffold Tree
+//tags: viewer
+//meta.trellisable: true
+//output: viewer result
+export function scaffoldTreeViewer() : ScaffoldTreeViewer {
+ return new ScaffoldTreeViewer();
+}
 
 //name: SubstructureFilter
 //description: RDKit-based substructure filter
@@ -422,8 +445,9 @@ export function substituentAnalysisMenu(table: DG.DataFrame): void {
 //friendly-name: Chem | Find MCS
 //tags: panel, chem
 //input: column col {semType: Molecule}
-export function addMcsPanel(col: DG.Column): void {
-  addMcs(col);
+//output: string mcs
+export async function addMcsPanel(col: DG.Column): Promise<string> {
+  return await getMcs(col);
 }
 
 //name: Chem | To InchI
@@ -512,7 +536,7 @@ export function molColumnPropertyPanel(molColumn: DG.Column): DG.Widget {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function descriptorsWidget(smiles: string): DG.Widget {
-  return getDescriptorsSingle(smiles);
+  return smiles ? getDescriptorsSingle(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Drug Likeness
@@ -825,7 +849,7 @@ export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
   const molColumn = data.columns.bySemType(DG.SEMTYPE.MOLECULE);
   const invalid: number[] = new Array<number>(data.columns.length);
   const smiles = molColumn?.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
-  const smilesList: string[] = [];
+  const smilesList: string[] = new Array<string>(data.columns.length);
   for (let rowI = 0; rowI < molColumn!.length; rowI++) {
     let el: string = molColumn?.get(rowI);
     if (!smiles) 
@@ -843,4 +867,9 @@ export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
   data.columns.add(smilesColumn);
   const scriptRes = await generateScaffoldTree(data, smilesColumn!.name);
   return scriptRes;
+}
+
+//name: installScaffoldGraph
+export async function installScaffoldGraph() : Promise<void> {
+  await setupScaffold();
 }

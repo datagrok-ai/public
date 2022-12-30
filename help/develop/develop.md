@@ -53,7 +53,7 @@ In addition to that, it might contain the following folders:
 * `scripts`: a collection of [scripts](../compute/scripting.md) used for computations.
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
   , [DemoScripts]
-  , [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute)
+  <!--, [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute)-->
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
   Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
   , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
@@ -62,11 +62,11 @@ In addition to that, it might contain the following folders:
   Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl)
   , [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 * `css`: CSS files for custom styling.
-  Examples: [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)
-  , [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
+  Example: [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)
+  <!--, [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)-->
 * `files` and `tables`: data for demonstration and testing.
-  Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
-  , [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)
+  Example: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
+  <!--, [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)-->
 * `layouts`: `json` files with table view [layouts](how-to/layouts.md)
 * `schemas`: `yaml` files with property schemas
 * `jobs`: [data jobs](../access/data-job.md)
@@ -304,7 +304,7 @@ or `grok publish --help` to get help on this particular command.
 
 In addition, you can pass another server either as URL or server alias from the `config.yaml` file:
 
-```
+```js
 grok publish dev
 grok publish https://dev.datagrok.ai/api --key <dev-key>
 ```
@@ -341,7 +341,7 @@ platform will build a package on the server side, if you call `grok publish` wit
 Package publication is compatible with automation tools. You can pass your server URL and developer key explicitly
 without configuring:
 
-```
+```js
 grok publish <url> -k <dev-key>
 ```
 

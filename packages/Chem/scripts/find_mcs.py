@@ -17,7 +17,10 @@ length = len(molecules)
 mols = np_none(length)
 idx_err = []
 for n in range(0, length):
-  mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
+  try:
+  	mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
+  except:
+    mol = None
   if mol is None:
     idx_err.append(n)
     continue

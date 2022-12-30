@@ -25,6 +25,7 @@
     ],
     "no-unused-vars": "warn",
     "require-jsdoc": "off",
+    "valid-jsdoc": "warn",
     "spaced-comment": "off",
     "linebreak-style": "off",
     "curly": [
@@ -39,19 +40,13 @@
         "allowSingleLine": true
       }
     ],
-    "block-spacing": [
-      2,
-      "always"
-    ],
-    "comma-dangle": [
-      "error",
-      {
+    "block-spacing": [2, "always"],
+    "comma-dangle": ["error", {
         "arrays": "only-multiline",
         "functions": "never",
         "objects": "only-multiline",
         "imports": "only-multiline"
-      }
-    ],
+      }],
     "guard-for-in": "off",
     "prefer-spread": "warn"
   }

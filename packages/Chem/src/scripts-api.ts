@@ -19,7 +19,7 @@ export async function smilesTo3DCoordinates(molecule: string): Promise<string> {
   return await grok.functions.call('Chem:SmilesTo3DCoordinates', {molecule});
 }
 
-export async function getDescriptorsTree(): Promise<any> {
+export async function getDescriptorsTree(): Promise<{[key: string]: any}> {
   return JSON.parse((await grok.functions.call('Chem:DescTree')).replaceAll('\\"', '\'').replaceAll('\\', ''));
 }
 
@@ -35,4 +35,8 @@ export async function generateScaffoldTree(
   data: DG.DataFrame, 
   smiles: string) : Promise<string> {
     return await grok.functions.call('Chem: GenerateScaffoldTree', {data, smiles});
+}
+
+export async function setupScaffold() : Promise<void> {
+  return await grok.functions.call('Chem:SetupScaffold');
 }

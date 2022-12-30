@@ -5,8 +5,9 @@ import { convertMolNotation } from '../package';
 /** Gets map of chem elements to list with counts of atoms in rows */
 export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, number[]] {
     let elements: Map<string, Int32Array> = new Map();
-    const invalid: number[] = new Array<number>();
+    const invalid: number[] = new Array<number>(molCol.length);
     let smiles = molCol.getTag(DG.TAGS.UNITS) === DG.UNITS.Molecule.SMILES;
+    let v3Kmolblock = molCol.get(0).includes('V3000');
     for (let rowI = 0; rowI < molCol.length; rowI++) {
       let el: string = molCol.get(rowI);
       if (smiles) {
@@ -14,7 +15,15 @@ export function getAtomsColumn(molCol: DG.Column): [Map<string, Int32Array>, num
           el = convertMolNotation(el, DG.UNITS.Molecule.SMILES, DG.UNITS.Molecule.MOLBLOCK);
         } 
         catch {
-          invalid.push(rowI);
+          invalid[rowI] = rowI;
+        }
+      }
+      if (v3Kmolblock) {
+        try {
+          el = convertMolNotation(el, DG.UNITS.Molecule.V3K_MOLBLOCK, DG.UNITS.Molecule.MOLBLOCK);
+        }
+        catch {
+          invalid[rowI] = rowI;
         }
       }
       let curPos = 0;

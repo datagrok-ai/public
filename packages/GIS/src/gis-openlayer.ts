@@ -1,6 +1,7 @@
 //base import
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import * as GisTypes from '../src/gis-semtypes';
 import {GisViewer} from './gis-viewer';
@@ -13,38 +14,41 @@ import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import WebGLPointsLayer from 'ol/layer/WebGLPoints';
 // import TileImage from 'ol/source/TileImage'; //this is the base class for XYZ, BingMaps etc..
+import LayerRenderer from 'ol/renderer/Layer';
+//Sources import
+import OSM from 'ol/source/OSM';
+import BingMaps from 'ol/source/BingMaps';
 import VectorSource from 'ol/source/Vector';
-import Collection from 'ol/Collection';
+import XYZ from 'ol/source/XYZ';
+import {StyleLike} from 'ol/style/Style';
 //Projections working itilities
 import * as OLProj from 'ol/proj';
 import {Coordinate} from 'ol/coordinate';
 //geometry drawing funtions
 import Feature, {FeatureLike} from 'ol/Feature';
+import Collection from 'ol/Collection';
 import * as OLGeom from 'ol/geom';
-// import {Type as OLType} from 'ol/geom/Geometry';
 import * as OLStyle from 'ol/style';
 import {LiteralStyle} from 'ol/style/literal';
-//Sources import
-import OSM from 'ol/source/OSM';
-import BingMaps from 'ol/source/BingMaps';
-import {StyleLike} from 'ol/style/Style';
 //import interactions and events
 import * as OLInteractions from 'ol/interaction';
 import * as OLEventsCondition from 'ol/events/condition';
 // import * as OLEvents from 'ol/events';
-// import {stopPropagation} from 'ol/events/Event';
-
-import LayerRenderer from 'ol/renderer/Layer';
 
 //import processors
 import {GPX, GeoJSON, IGC, KML, TopoJSON} from 'ol/format';
 import Source from 'ol/source/Source';
-import {defaults as defaultControls} from 'ol/control'; //Attribution include?
+import {Control, defaults as defaultControls} from 'ol/control';
+
+import {PanelLayersControl, BtnLayersControl} from './gis-mapcontrols';
+
+//for test func
+import TileWMS from 'ol/source/TileWMS';
+import ImageLayer from 'ol/layer/Image';
 
 //ZIP utilities
 import JSZip from 'jszip';
-// import {zoomByDelta} from 'ol/interaction/Interaction';
-// import WebGLLayerRenderer from 'ol/renderer/webgl/Layer';
+import TileImage from 'ol/source/TileImage';
 
 export {Coordinate} from 'ol/coordinate';
 
@@ -88,10 +92,8 @@ async function getKMLData(buffer: any): Promise<string> {
 }
 
 export class KMZ extends KML {
-  // eslint-disable-next-line camelcase
-  constructor(opt_options: any) {
-    // eslint-disable-next-line camelcase
-    const options = opt_options || {};
+  constructor(opt: any) {
+    const options = opt || {};
     // options.iconUrlFunction = getKMLImage;
     super(options);
   }
@@ -118,6 +120,7 @@ function onPrerenderMarkers() {
   renderTime = Date.now();
 }
 
+
 export class OpenLayers {
   olMap: OLMap;
   olCurrentView: OLView;
@@ -140,6 +143,10 @@ export class OpenLayers {
   dragAndDropInteraction: OLInteractions.DragAndDrop;
   selectInteraction: OLInteractions.Select;
   dragBox: OLInteractions.DragBox;
+
+  //map controls
+  btnLayersControl: BtnLayersControl;
+  panelLayersList: PanelLayersControl;
 
   //styles>>
   styleVectorLayer: OLStyle.Style;
@@ -190,6 +197,11 @@ export class OpenLayers {
 
     this.olMarkersSource = new VectorSource<OLGeom.Point>();
     this.olMarkersSelSource = new VectorSource<OLGeom.Point>();
+
+    //controls
+    this.btnLayersControl = new BtnLayersControl(null);
+    this.panelLayersList = new PanelLayersControl(this, null);
+
 
     this.styleVectorLayer = new OLStyle.Style({
       fill: new OLStyle.Fill({
@@ -285,8 +297,49 @@ export class OpenLayers {
   }
   get heatmapRadius(): number {return this.heatmapRadiusParam;}
 
-  selectCondition(lr: Layer<Source, LayerRenderer<any>>) {
+  selectCondition(lr: Layer<Source, LayerRenderer<any>>): boolean {
     return true; //((lr === this.olMarkersLayer) || (lr === this.olMarkersLayerGL));
+  }
+
+  testFunc(): void {
+    const Tl = new TileLayer({
+      source: new TileImage({ //new XYZ({
+        // url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+        url: 'https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=809f4d16303ce4ae52da96eea0fadc6a',
+        // url: 'https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer',
+        // url: 'https://ndmc-001.unl.edu:8080/cgi-bin/mapserv.exe?map=/ms4w/apps/usdm/service/usdm_20221213_wms.map&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=usdm20221213&WIDTH=640&HEIGHT=480&crs=EPSG:3857&styles=default&format=image/png&bbox=-18367715.9809,1689200.13961,-6679169.4476,15538711.0963'
+      }),
+    });
+    Tl.set('layerName', 'TestLayer');
+    this.addLayer(Tl);
+
+    const Tl2 = new TileLayer({
+      // source: new TileWMS({
+      //   url: 'https://ahocevar.com/geoserver/wms',
+      //   params: {'LAYERS': 'ne:ne'},
+      //   serverType: 'geoserver',
+      //   crossOrigin: 'anonymous',
+      // }),
+
+      // source: new TileWMS({
+      //   url: 'https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r-t.cgi',
+      //   params: {'LAYERS': 'nexrad-n0r-wmst'},
+      //   // params: {'LAYERS': 'uscounties'},
+      //   serverType: 'geoserver',
+      //   crossOrigin: 'anonymous',
+
+      source: new TileWMS({
+        url: 'https://ahocevar.com/geoserver/wms',
+        params: {'LAYERS': 'topp:states'}, // , 'TILED': true},
+        serverType: 'geoserver',
+        // Countries have transparency, so do not fade tiles:
+        transition: 0,
+      }),
+    });
+    Tl2.set('layerName', 'WMSTestLayer');
+    this.addLayer(Tl2);
+
+    return;
   }
 
   initMap(targetName: string) {
@@ -295,7 +348,9 @@ export class OpenLayers {
 
     this.olMap = new OLMap({
       target: targetName,
-      controls: defaultControls({attribution: false, rotate: false}),
+      controls: defaultControls({attribution: false, rotate: false}).extend([
+        this.btnLayersControl,
+        this.panelLayersList]),
       view: new OLView({
         projection: 'EPSG:3857', // projection: 'EPSG:4326',
         center: OLProj.fromLonLat([-77.01072, 38.91333]),
@@ -333,6 +388,9 @@ export class OpenLayers {
     this.olMap.addInteraction(this.dragBox); //add box selection interaction
     this.olMap.addInteraction(this.dragAndDropInteraction); //add dragNdrop ability
 
+    this.setBtnLayersClickCallback(this.onLayersListBtnClick.bind(this));
+    this.panelLayersList.setVisibility(false);
+//    this.onLayersListBtnClick();
     //<<end of InitMap function
   }
 
@@ -379,8 +437,9 @@ export class OpenLayers {
 
   parseColorCondition(condStr: string): (any)[] {
     const resArr: (any)[] = [];
-    let numbersRes = condStr.replace(/\s/g, '').match(/(\d*\.\d*|\d*)/ig);
-    let symbolsRes = condStr.replace(/\s/g, '').match(/\D*/ig);
+    let numbersRes = 0; //condStr.replace(/\s/g, '').match(/(\d*\.\d*|\d*)/ig);
+    let symbolsRes = 0;//condStr.replace(/\s/g, '').match(/\D*/ig);
+    /*
     if (!numbersRes || !symbolsRes)
       return resArr;
 
@@ -402,7 +461,7 @@ export class OpenLayers {
       resArr.push(parseFloat(numbersRes[0]));
       resArr.push(parseFloat(numbersRes[numbersRes.length-1]));
     }
-
+    */
     return resArr;
   }
 
@@ -561,7 +620,7 @@ export class OpenLayers {
     OLG.addNewVectorLayer(event.file.name, null,
       function(feature) {
         const color = feature.get('COLOR') || '#ffeeee';
-        OLG.styleVectorLayer.getFill().setColor(color); // rgba()
+        OLG.styleVectorLayer.getFill().setColor(color);
         return OLG.styleVectorLayer;
       },
       sourceVector, true);
@@ -623,6 +682,37 @@ export class OpenLayers {
 
   getLayersList(): BaseLayer[] {
     return this.olMap.getAllLayers();
+  }
+
+  updateLayersList(): any[] {
+    const arrLayers = this.olMap.getAllLayers();
+    const arrLayersObj = [];
+
+    for (let i = 0; i < arrLayers.length; i++) {
+      const layerName = arrLayers[i].get('layerName');
+      const layerId = arrLayers[i].get('layerId');
+      const src = arrLayers[i].getSource();
+      let exp = false;
+      if (src instanceof VectorSource)
+        exp = true;
+
+      const vsb = arrLayers[i].getVisible();
+
+      const objLayer = {
+        vis: vsb,
+        name: layerName,
+        exp: exp,
+        del: true,
+        layerid: layerId,
+      };
+
+      arrLayersObj.push(objLayer);
+    }
+
+    if (this.panelLayersList)
+      this.panelLayersList.refreshDF(DG.DataFrame.fromObjects(arrLayersObj));
+
+    return arrLayersObj;
   }
 
   getLayerByName(lrName: string): VectorLayer<VectorSource>|WebGLPts|HeatmapLayer|null {
@@ -687,6 +777,8 @@ export class OpenLayers {
     this.olCurrentLayer = layerToAdd;
     if (this.onRefreshCallback)
       this.onRefreshCallback();
+
+    this.updateLayersList();
   }
 
   // addNewTileLayer(layerToAdd: BaseLayer) //TODO: add (if we will need it)
@@ -851,7 +943,10 @@ export class OpenLayers {
         const gobj = geom as OLGeom.Point;
         const coords = gobj.getCoordinates();
         const xyz = ((gobj.getLayout() == 'XYZ') || (gobj.getLayout() == 'xyz'));
-        const gisPoint = new GisTypes.GisPoint(coords[0], coords[1], xyz ? coords[2] : 0, ft.getProperties());
+        const objProps = ft.getProperties();
+        if (objProps.hasOwnProperty('geometry'))
+          delete objProps.geometry;
+        const gisPoint = new GisTypes.GisPoint(coords[0], coords[1], xyz ? coords[2] : 0, objProps);
         return gisPoint;
       }
       case 'Polygon': {
@@ -871,7 +966,10 @@ export class OpenLayers {
           areaPolygon.push(polygonCoords);
         }
         area.push(areaPolygon);
-        const gisArea = new GisTypes.GisArea(area, ft.getProperties(), mapref);
+        const objProps = ft.getProperties();
+        if (objProps.hasOwnProperty('geometry'))
+          delete objProps.geometry;
+        const gisArea = new GisTypes.GisArea(area, objProps, mapref);
         return gisArea;
       }
       case 'MultiPolygon': {
@@ -893,7 +991,10 @@ export class OpenLayers {
           }
           area.push(areaPolygon);
         }
-        const gisArea = new GisTypes.GisArea(area, ft.getProperties(), mapref);
+        const objProps = ft.getProperties();
+        if (objProps.hasOwnProperty('geometry'))
+          delete objProps.geometry;
+        const gisArea = new GisTypes.GisArea(area, objProps, mapref);
         return gisArea;
       } //<<multi polygon converter
       } //case
@@ -944,7 +1045,7 @@ export class OpenLayers {
     if ((ftGeom) && (ftGeom?.getType() != 'Point'))
       this.currentAreaObject = ft as Feature;
     if (gisObj) {
-      // here we can invoke properties panel for our selected object (comment it if don't need)
+      // here we can invoke properties panel for our selected object (comment: it if don't need)
       setTimeout(() => {
         // grok.shell.o = DG.SemanticValue.fromValueType(gisObj, gisObj.semtype);
         grok.shell.o = gisObj;
@@ -952,7 +1053,7 @@ export class OpenLayers {
       }, 50);
     }
 
-    // evt.stopPropagation(); //stopImmediatePropagation();
+    //USEFUL: evt.stopPropagation(); //stopImmediatePropagation();
     if (this.onClickCallback)
       this.onClickCallback(res);
   }
@@ -997,6 +1098,14 @@ export class OpenLayers {
   }
   setMapRefreshCallback(f: Function) {
     this.onRefreshCallback = f;
+  }
+  setBtnLayersClickCallback(f: Function) {
+    this.btnLayersControl.parentOnClickHandler = f;
+  }
+
+  onLayersListBtnClick() {
+    if (this.panelLayersList)
+      this.panelLayersList.setVisibility(this.btnLayersControl.isOn);
   }
 
   //map elements management functions>>

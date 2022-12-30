@@ -34,7 +34,7 @@ category('TreeViewer', () => {
       layout: 'orthogonal',
       orient: 'LR',
       expandAndCollapse: true,
-      initialTreeDepth: 2,
+      initialTreeDepth: 3,
       edgeShape: 'curve',
       symbol: 'emptyCircle',
       symbolSize: 7,

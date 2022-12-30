@@ -1,4 +1,4 @@
---name: CassandraMovieLensTest
+--name: Movies
 --connection: CassandraMovieLens
 
 select * from movies 

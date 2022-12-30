@@ -2,7 +2,7 @@
 #description: generation scaffold tree from dataset
 #language: python
 #input: dataframe data [Input data table]
-#input: string smiles 
+#input: string smiles
 #output: string result
 
 import scaffoldgraph as sg
@@ -10,21 +10,21 @@ import networkx as nx
 import json
 
 #function that recursively adds child_nodes to hierarchies depending on the prev_scaffold value
-def recurs_append_nodes(key, value, node, obj):
-    if key in obj: 
+def recurs_append_nodes(key, value, option, node, obj):
+    if key in obj:
         if obj[key] == value:
-            obj['child_nodes'].insert(0, node)
+            obj[option].insert(0, node)
             return obj
     for k, v in obj.items():
-        if type(v) == list:
-            result = recurs_append_nodes(key, value, node, v[0])
+        if type(v) == list and k == option:
+            result = recurs_append_nodes(key, value, option, node, v[0])
 
 # function that returns nodes of each scaffold
 def find_nodes(tree, nodes, scaffold):
     scaffold_nodes = []
     for i in range(len(nodes)):
         predecessors = list(nx.bfs_tree(tree, nodes[i], reverse=True))
-        if predecessors[1] == scaffold:
+        if len(predecessors) > 1 and predecessors[1] == scaffold:
             scaffold_nodes.append(nodes[i])
     return scaffold_nodes
 
@@ -57,10 +57,11 @@ def get_hierarchies_list(tree, sorted_scaffolds):
     return result
 
 #function that returns dict for each hierarchy depending on the input data
-def get_hierarchy_dict(scaffold_str, child_nodes_list):
+def get_hierarchy_dict(scaffold_str, child_nodes_list, orphan_nodes_list):
     hierarchy_dict = {
-        'scaffold': scaffold_str, 
-        'child_nodes': child_nodes_list
+        'scaffold': scaffold_str,
+        'child_nodes': child_nodes_list,
+        'orphan_nodes': orphan_nodes_list
     }
     return hierarchy_dict
 
@@ -76,19 +77,35 @@ def get_first_hierarchy(tree, scaffolds):
 def get_tree(tree, scaffold_1):
     json_list = []
     scaffolds = []
+    orphans = []
+    orphans_counter = 0
+    first = True
+    prev_scaffold = ''
     scaffolds.append(scaffold_1)
     scaffolds.extend(list(tree.get_child_scaffolds(scaffold_1)))
     sorted_scaffolds = get_sorted_scaffolds(tree, scaffolds)
     nodes = list(tree.get_molecule_nodes())
     for i in range(0, len(sorted_scaffolds)):
-        hierarchy_dict = get_hierarchy_dict(sorted_scaffolds[i], [])
+        hierarchy_dict = get_hierarchy_dict(sorted_scaffolds[i], [], [])
         molecule_nodes = find_nodes(tree, nodes, sorted_scaffolds[i])
         for j in range(0, len(molecule_nodes)):
-            hierarchy_dict['child_nodes'].append(get_hierarchy_dict(molecule_nodes[j], []))
+            hierarchy_dict['child_nodes'].append(get_hierarchy_dict(molecule_nodes[j], [], []))
         if tree.nodes[sorted_scaffolds[i]]['hierarchy'] == 1:
             json_list.append(hierarchy_dict)
         else:
-            recurs_append_nodes('scaffold', ''.join(tree.get_parent_scaffolds(sorted_scaffolds[i], max_levels=1)), hierarchy_dict, json_list[0])
+            try:
+                recurs_append_nodes('scaffold', get_parent(tree, sorted_scaffolds[i]), 'child_nodes', hierarchy_dict, json_list[0])
+            except IndexError:
+                orphans_counter += 1
+                if first is True:
+                    prev_scaffold = sorted_scaffolds[i - 1]
+                first = False
+                if get_parent(tree, sorted_scaffolds[i]) == '':
+                    orphans.insert(0, hierarchy_dict)
+                else:
+                    recurs_append_nodes('scaffold', get_parent(tree, sorted_scaffolds[i]), 'child_nodes', hierarchy_dict, orphans[0])
+    if prev_scaffold != '':
+        recurs_append_nodes('scaffold', prev_scaffold, 'orphan_nodes', orphans, json_list[0])
     return json_list[0]
 
 #function to get the json representation

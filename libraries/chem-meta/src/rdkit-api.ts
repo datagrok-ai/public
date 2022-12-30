@@ -45,7 +45,7 @@ export interface RDMol {
 
   get_stereo_tags(): string;
   get_aromatic_form(): string;
-  get_kekule_from(): string;
+  get_kekule_form(): string;
   get_new_coords(useCoordGen?: boolean): string;
   set_new_coords(useCoordGen?: boolean): boolean;
   remove_hs(): string;

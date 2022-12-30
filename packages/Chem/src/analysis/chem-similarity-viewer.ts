@@ -2,12 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as chemSearches from '../chem-searches';
-import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import $ from 'cash-dom';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
-import { getRdKitModule } from '../utils/chem-common-rdkit';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   isEditedFromSketcher: boolean = false;
@@ -64,16 +64,19 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   }
 
   async render(computeData = true): Promise<void> {
-    if (!this.beforeRender()) 
+    if (!this.beforeRender())
       return;
     if (this.moleculeColumn) {      
+      const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
       if (!this.gridSelect && this.curIdx != this.dataFrame!.currentRowIdx)
         this.isEditedFromSketcher = false;
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        if (this.isEmptyValue() || this.malformedTargetMolecule())
+        if (this.isEmptyValue() || this.checkMalformedTargetMolecule()) {
+          progressBar.close();
           return;
+        }
         const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
           this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
         this.molCol = df.getCol('smiles');
@@ -148,6 +151,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       }
       panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
+      progressBar.close();
     }
   }
 
@@ -160,7 +164,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     return false;
   }
 
-  malformedTargetMolecule(): boolean {
+  checkMalformedTargetMolecule(): boolean {
     let mol;
     try {
       mol = getRdKitModule().get_mol(this.targetMolecule);
