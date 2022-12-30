@@ -28,6 +28,8 @@ info panels on the **Context Pane**. For example, you can:
 * Shows selected rows in orange
 * Synchronizes current record upon clicking on the point
 
+![Map viewer](./map-viewer.gif)
+
 ## Controls
 
 |Action              |        Control                |
