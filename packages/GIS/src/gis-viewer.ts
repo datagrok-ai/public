@@ -396,7 +396,7 @@ export class GisViewer extends DG.JsViewer {
 
         grok.shell.o = this;
         grok.shell.windows.showProperties = true;
-      }, 200);
+      }, 100);
     }
   }
 
