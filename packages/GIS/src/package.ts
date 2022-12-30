@@ -8,7 +8,6 @@ import * as GisTypes from '../src/gis-semtypes';
 //OpenLayers functionality import
 import {OpenLayers} from '../src/gis-openlayer';
 import {useGeographic} from 'ol/proj';
-// import * as cns from '../node_modules/citysdk';
 
 //GIS semantic types import
 import {SEMTYPEGIS} from '../src/gis-semtypes';
@@ -129,7 +128,6 @@ function uiCensusDialog(): DG.Dialog {
     .add(root)
     .show({width: 700, height: 500, center: true});
 
-
   dlg.root.querySelector('.d4-dialog-contents')?.classList.remove('ui-panel');
   dlg.root.querySelector('.d4-dialog-contents')?.classList.add('ui-box');
 
@@ -154,7 +152,8 @@ export async function getCensusInfo() {
 
   //TODO: put fetch into separate function
   //TODO: save fetch result into buffer to prevent frequent uploading
-  if (!censusRes) return 'Fetch error';
+  if (!censusRes)
+    return 'Fetch error';
   const catalogCensus = censusRes.dataset;
   for (let i = 0; i < catalogCensus.length; i++) {
     if (catalogCensus[i].c_vintage) {
@@ -169,8 +168,11 @@ export async function getCensusInfo() {
   const gridVintages = DG.Viewer.grid(dfVintages, {'min-width': '70px', 'border': '1px green'});
   gridVintages.autoSize(68, 300);
   const col1 = gridVintages.columns.byName('Vintage');
-  if (col1) col1.width = 55;
-  if (gridVintages.columns.rowHeader) gridVintages.columns.rowHeader.visible = false;
+  if (col1)
+    col1.width = 55;
+  if (gridVintages.columns.rowHeader)
+    gridVintages.columns.rowHeader.visible = false;
+
   const dfDatasets = DG.DataFrame.create(0);
   const gridDatasets = DG.Viewer.grid(dfDatasets, {'min-width': '100%', 'border': 'solid 1px red'});
   gridDatasets.autoSize(400, 300, 400, 300);
@@ -185,12 +187,15 @@ export async function getCensusInfo() {
       const datasets = mapVintages.get(cellVal);
       if (datasets) {
         const df = DG.DataFrame.fromObjects(datasets);
-        if (df) gridDatasets.dataFrame = df;
+        if (df)
+          gridDatasets.dataFrame = df;
         gridDatasets.autoSize(400, 300, 400, 300);
         gridDatasets.columns.setVisible(['title']);
-        if (gridDatasets.columns.rowHeader) gridDatasets.columns.rowHeader.visible = false;
+        if (gridDatasets.columns.rowHeader)
+          gridDatasets.columns.rowHeader.visible = false;
         const col1 = gridDatasets.columns.byName('title');
-        if (col1) col1.name = 'Dataset name';
+        if (col1)
+          col1.name = 'Dataset name';
       }
     }
   }); //<<vintage selection handler
@@ -198,7 +203,8 @@ export async function getCensusInfo() {
   //Dataset selection handler>>
   gridDatasets.onCurrentCellChanged.subscribe(async (ev) => {
     const descr = ev.cell.dataFrame.get('description', ev.cell.rowIndex);
-    if (infoDataset && descr) infoDataset.innerText = descr;
+    if (infoDataset && descr)
+      infoDataset.innerText = descr;
     //get list of variables for dataset
     const urlVariables = ev.cell.dataFrame.get('c_variablesLink', ev.cell.rowIndex);
     const variables = await(await grok.dapi.fetchProxy(urlVariables)).json();
@@ -269,16 +275,14 @@ export async function getCensusInfo() {
           }
         }
       }
-      // url = url + varList + '&for=county:*&in=state:02';
+      // url = url + varList + '&for=county:*&in=state:02';  //as an example
       url = url + varList + '&for=state:*';
-      url = url + '&key=2647d704d8734665d5c417dae1546887c2c90513';
+      url = url + '&key=2647d704d8734665d5c417dae1546887c2c90513'; //TODO: we need to hide key in credentials
       try {
         censusRes = await(await grok.dapi.fetchProxy(url)).text();
-        if (censusRes.toLowerCase().includes('error')) throw new Error(censusRes);
-        // alert(censusRes);
-        // const jsonData = JSON.parse(censusRes);
-        // const df = DataFrame.fromJson(JSON.stringify(censusRes));
-        // const df = DataFrame.fromJson(jsonData);
+        if (censusRes.toLowerCase().includes('error'))
+          throw new Error(censusRes);
+
         const df = DataFrame.fromCsv(censusRes);
         grok.shell.addTableView(df);
       } catch (e) {
@@ -286,7 +290,6 @@ export async function getCensusInfo() {
       }
     })
     .show({x: 200, y: 80, width: 850, height: 500}); //showModal()
-
 //<<end of getCensusInfo function
 }
 
@@ -307,25 +310,13 @@ export function init() {
 //input: string address
 //output: string result
 export async function gisGeocoding(address: string): Promise<string> {
-// export async function gisGeocoding(address?: string, x?: number, y?: number): Promise<string> {
   let url = 'https://geocoding.geo.census.gov/geocoder/';
   let fetchResult = null;
   // eslint-disable-next-line max-len
   url += `locations/onelineaddress?address=${address}&vintage=Census2020_Current&benchmark=Public_AR_Current&format=json`;
   fetchResult = await (await grok.dapi.fetchProxy(url)).json();
-  // if ((address) && (address != '')) {
-  //   // eslint-disable-next-line max-len
-  //   url += `locations/onelineaddress?address=${address}&vintage=Census2020_Current&benchmark=Public_AR_Current&format=json`;
-  //   fetchResult = await (await grok.dapi.fetchProxy(url)).json();
-  // } else if ((x) && (y)) {
-  //   url += `geographies/coordinates?x=${x}&y=${y}&vintage=Census2020_Current&benchmark=Public_AR_Current&format=json`;
-  //   fetchResult = await (await grok.dapi.fetchProxy(url)).json();
-  // }
 
   if (!fetchResult) return 'Fetch error';
-  alert(JSON.stringify(fetchResult));
-  // const df = DG.DataFrame.fromJson(fetchResult.addressMatches);
-  // const viewFile = DG.TableView.create(df);
   const resStr = JSON.stringify(fetchResult);
 
   return resStr;
@@ -342,10 +333,9 @@ export async function gisReverseGeocoding(x: number, y: number): Promise<string>
   url += `geographies/coordinates?x=${x}&y=${y}&vintage=Census2020_Current&benchmark=Public_AR_Current&format=json`;
   fetchResult = await (await grok.dapi.fetchProxy(url)).json();
 
-  if (!fetchResult) return 'Fetch error';
-  alert(JSON.stringify(fetchResult));
-  // const df = DG.DataFrame.fromJson(fetchResult);
-  // const viewFile = DG.TableView.create(df);
+  if (!fetchResult)
+    return 'Fetch error';
+
   const resStr = JSON.stringify(fetchResult);
 
   return resStr;
@@ -363,44 +353,10 @@ export async function gisBatchGeocoding(address: string): Promise<string> {
   url += `&addressFile=1,4600 Silver Hill Road,Washington,DC,20233`;
   fetchResult = await (await grok.dapi.fetchProxy(url)).text();
 
-  if (!fetchResult) return 'Fetch error';
-  alert((fetchResult));
-  // const df = DG.DataFrame.fromJson(fetchresult);
-  // const viewFile = DG.TableView.create(df);
-  // const resStr = JSON.stringify(fetchResult);
+  if (!fetchResult)
+    return 'Fetch error';
 
-  // census(
-  //   {
-  //     statsKey: '2647d704d8734665d5c417dae1546887c2c90513', //TODO: hide credentials
-  //     vintage: '2017',
-  //     geoHierarchy: {
-  //       state: {
-  //         lat: 38.8482,
-  //         lng: -76.9312,
-  //       },
-  //       county: '*',
-  //     },
-  //     sourcePath: [
-  //       'acs',
-  //       'acs5',
-  //     ],
-  //     // values: [
-  //     //   'B00001_001E',
-  //     // ],
-  //     geoResolution: '20m',
-  //   },
-  //   (err: any, res: any) => {
-  //     if (!err)
-  //       alert(err);
-  //     else
-  //       console.log(res);
-  //   }
-  // );
-
-  // const df = DG.DataFrame.fromJson(fetchresult);
-  // const viewFile = DG.TableView.create(df);
-
-  return '';
+  return fetchResult;
 }
 
 //name: Map
@@ -600,14 +556,16 @@ export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View |
 export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
   //detect the kind of json file
   const isGeoTopo = gisGeoJSONFileDetector(filecontent);
-  if (isGeoTopo[0] === false) return [DG.DataFrame.fromJson(filecontent)];
+  if (isGeoTopo[0] === false) //if this a simple JSON - just return DF with JSON content
+    return [DG.DataFrame.fromJson(filecontent)];
 
   let dfFromJSON = null;
   const ol = new OpenLayers();
-  let newLayer;
-  if (isGeoTopo[1] === false) newLayer = ol.addGeoJSONLayerFromStream(filecontent);
-  else newLayer = ol.addTopoJSONLayerFromStream(filecontent);
-  // const arrFeatures = ol.getFeaturesFromLayer(newLayer);
+  let newLayer = null;
+  if (isGeoTopo[1] === false)
+    newLayer = ol.addGeoJSONLayerFromStream(filecontent);
+  else
+    newLayer = ol.addTopoJSONLayerFromStream(filecontent);
 
   //create the dataframe
   const arrFeatures = ol.exportLayerToArray(newLayer);
@@ -621,7 +579,7 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
 
         dfFromJSON.name = newLayer.get('layerName');
         const tableView = grok.shell.addTableView(dfFromJSON as DG.DataFrame);
-        tableView.name = 'dfFromJSON.name' + ' (manual)';
+        tableView.name = 'dfFromJSON.name'; //TODO: add file name here instead of this hardcode
 
         //show the map viewer
         setTimeout((tableView: DG.TableView) => {
@@ -631,14 +589,18 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
             //initialize the map
             mapViewer.ol.initMap('map-container');
 
-            if (isGeoTopo[1] === false) mapViewer.ol.addGeoJSONLayerFromStream(filecontent);
-            else mapViewer.ol.addTopoJSONLayerFromStream(filecontent);
+            if (isGeoTopo[1] === false)
+              mapViewer.ol.addGeoJSONLayerFromStream(filecontent);
+            else
+              mapViewer.ol.addTopoJSONLayerFromStream(filecontent);
           }
         }, 1000, tableView);
       }
     }
   }
-  if (dfFromJSON) return [dfFromJSON];
+  if (dfFromJSON)
+    return [dfFromJSON];
+
   return [DG.DataFrame.fromJson(filecontent)];
 }
 
@@ -672,12 +634,4 @@ export function gisAreaWidget(gisArea: any): DG.Widget | null {
   return new DG.Widget(ui.divText('gis Area widget ' + strToAdd, widgetStyle));
 }
 
-// //name: gisAreaWidget
-// //tags: panel, widgets
-// //input: string area {semType: gis-area}
-// //output: widget result
-// //condition:  true
-// export function gisAreaWidget(area: string): DG.Widget {
-//   return new DG.Widget(ui.divText('gis area widget'));
-// }
 

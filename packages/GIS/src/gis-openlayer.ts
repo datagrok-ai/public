@@ -130,10 +130,10 @@ export class OpenLayers {
   olMarkersLayerGL: WebGLPts | null;
   olMarkersSelLayerGL: WebGLPts | null;
   olHeatmapLayer: HeatmapLayer | null;
-  //vector sources for markers (now we should have just one source for Markers and Heatmap layers)
+  //vector sources for markers (now we have just one source for Markers and Heatmap layers)
   olMarkersSource: VectorSource<OLGeom.Point>;
   olMarkersSelSource: VectorSource<OLGeom.Point>;
-  olSelectedMarkers: Collection<Feature>; //Feature<OLGeom.Point>[];
+  olSelectedMarkers: Collection<Feature>;
 
   currentAreaObject: Feature | null = null;
 
@@ -148,14 +148,15 @@ export class OpenLayers {
   btnLayersControl: BtnLayersControl;
   panelLayersList: PanelLayersControl;
 
-  //styles>>
-  styleVectorLayer: OLStyle.Style;
-  styleVectorSelLayer: OLStyle.Style;
   //map event handlers
   onSelectCallback: Function | null = null;
   onClickCallback: Function | null = null;
   onPointermoveCallback: Function | null = null;
   onRefreshCallback: Function | null = null;
+
+  //styles>>
+  styleVectorLayer: OLStyle.Style;
+  styleVectorSelLayer: OLStyle.Style;
 
   markerGLStyle: LiteralStyle;
   markerGLSelStyle: LiteralStyle;
@@ -202,14 +203,11 @@ export class OpenLayers {
     this.btnLayersControl = new BtnLayersControl(null);
     this.panelLayersList = new PanelLayersControl(this, null);
 
-
     this.styleVectorLayer = new OLStyle.Style({
       fill: new OLStyle.Fill({
         color: '#eeeeee',
-        // color: 'rgba(155, 155, 55, 0.5)',
       }),
       stroke: new OLStyle.Stroke({
-        // color: 'rgba(250, 250, 0, 1)',
         color: 'rgba(200, 0, 0, 1)',
         width: 1,
       }),
@@ -217,7 +215,6 @@ export class OpenLayers {
     this.styleVectorSelLayer = new OLStyle.Style({
       fill: new OLStyle.Fill({
         color: 'rgba(200, 50, 50, 0.5)',
-        // color: '#eeeeee',
       }),
       stroke: new OLStyle.Stroke({
         color: 'rgba(255, 0, 0, 1)',
@@ -262,7 +259,7 @@ export class OpenLayers {
     });
 
     OLG = this;
-    //end of constructor
+    //<<end of constructor
   }
 
   set useWebGL(v: boolean) {
@@ -277,14 +274,8 @@ export class OpenLayers {
     this.heatmapBlurParam = val;
     if (this.olHeatmapLayer)
       this.olHeatmapLayer.setBlur(this.heatmapBlurParam);
-  /* if (this.olCurrentLayer instanceof HeatmapLayer)
-      this.olCurrentLayer.setBlur(this.heatmapBlurParam);
-    else {
-      //TODO: search and apply parameter to the first heatmap layer (if this is needed)
-      //NOTE: this will be usefull in case of multilayers approach - for a now we have just one layer
-      // this.olMap.getAllLayers()
-    }
-  */
+    //TODO: search and apply parameter to the first heatmap layer (if this is needed)
+    //NOTE: this will be usefull in case of multilayers approach - for a now we have just one layer
   }
   get heatmapBlur(): number {return this.heatmapBlurParam;}
 
@@ -292,12 +283,12 @@ export class OpenLayers {
     this.heatmapRadiusParam = val;
     if (this.olHeatmapLayer)
       this.olHeatmapLayer.setRadius(this.heatmapRadiusParam);
-    // if (this.olCurrentLayer instanceof HeatmapLayer)
-    //   this.olCurrentLayer.setRadius(this.heatmapRadiusParam);
   }
   get heatmapRadius(): number {return this.heatmapRadiusParam;}
 
   selectCondition(lr: Layer<Source, LayerRenderer<any>>): boolean {
+    //here we can detect whether we want to select object on the map
+    //for example (commented below) we can choose just objects from layer: olMarkersLayerGL
     return true; //((lr === this.olMarkersLayer) || (lr === this.olMarkersLayerGL));
   }
 
@@ -360,7 +351,7 @@ export class OpenLayers {
     });
 
     //add layers>>
-    // this.addNewBingLayer('Bing sat');  //TODO: if we want to add sattelite leyer we have to manage it properly
+    this.addNewBingLayer('Bing sat'); //TODO: if we want to add sattelite layer we have to manage it properly
     this.olBaseLayer = this.addNewOSMLayer('BaseLayer');
 
     //prepare markersGLLayer
@@ -826,7 +817,7 @@ export class OpenLayers {
     this.addLayer(newLayer);
     return newLayer;
   }
-  //adds Open Street Maps layer
+  //adds Open Street Maps layer - this is our base layer
   addNewOSMLayer(layerName?: string | undefined, options?: Object | undefined): BaseLayer {
     const newLayer = new TileLayer({
       visible: true,
@@ -835,21 +826,22 @@ export class OpenLayers {
 
     if (layerName)
       newLayer.set('layerName', layerName);
-    else newLayer.set('layerName', 'OpenStreet');
+    else
+      newLayer.set('layerName', 'OpenStreet');
     if (options)
       newLayer.setProperties(options);
     this.addLayer(newLayer);
+
     return newLayer;
   }
 
   addNewHeatMap(layerName?: string | undefined, options?: Object | undefined): HeatmapLayer {
     const newLayer = new HeatmapLayer({
-      source: this.olMarkersSource, //new VectorSource({}), //for now we use the same source for markers and heatmap
+      source: this.olMarkersSource, //new VectorSource({}), //<-for now we use the same source for markers and heatmap
       blur: this.heatmapBlur,
       radius: this.heatmapRadius,
       weight: function(feature: Feature): number {
         let val = feature.get('fieldSize');
-        // if (val === undefined) val = feature.get('fieldLabel');
         if (typeof(val) !== 'number')
           val = 1;
         return val;
@@ -875,7 +867,8 @@ export class OpenLayers {
     return arrFeatures;
   }
 
-  // createTextStyle(feature: FeatureLike, resolution: number): Style {
+  //this function prepare text prop's - for further label placing on the map
+  //we don't use it at the moment
   createTextStyle(txt: any, resolution?: number): OLStyle.Text {
     console.log('createTextStyle: ' + txt);
     return new OLStyle.Text({
@@ -908,7 +901,7 @@ export class OpenLayers {
         image: new OLStyle.Circle({
           radius: size ? size : OLG.markerDefaultSize,
           fill: new OLStyle.Fill({
-            color: clr ? clr : `rgba(255, 0, 255, ${this.markerOpacity})`, // ${this.markerOpacity})`,
+            color: clr ? clr : `rgba(255, 0, 255, ${this.markerOpacity})`,
           }),
           stroke: new OLStyle.Stroke({
             color: 'rgba(255, 0, 0, 1)',
