@@ -390,7 +390,7 @@ export class OpenLayers {
 
     this.setBtnLayersClickCallback(this.onLayersListBtnClick.bind(this));
     this.panelLayersList.setVisibility(false);
-//    this.onLayersListBtnClick();
+    //this.onLayersListBtnClick();
     //<<end of InitMap function
   }
 
