@@ -10,6 +10,8 @@ category('Viewers: Core Viewers', () => {
   const regViewers = Object.values(DG.VIEWER).filter((v) => v != DG.VIEWER.GRID);
   const JsViewers = DG.Func.find({tags: ['viewer']}).map((f) => f.friendlyName);
   const coreViewers = regViewers.filter((x) => !JsViewers.includes(x));
+  //@ts-ignore
+  coreViewers.push('Leaflet', 'distributionProfiler');
   for (const v of coreViewers) {
     test(v, async () => {
       await testViewer(v, df.clone());

@@ -746,7 +746,7 @@ export class PeptidesModel {
   //TODO: move out to viewer code
   showTooltipAt(aar: string, position: string, x: number, y: number): HTMLDivElement | null {
     const stats = this.monomerPositionStats[position][aar];
-    if (!stats.count)
+    if (!stats?.count)
       return null;
 
     const activityCol = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);

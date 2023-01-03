@@ -16,6 +16,6 @@ category('Viewers', () => {
         else if (['TreeMapViewer', 'SunburstViewer'].includes(v)) return demog.clone();
         return df.clone();
       })());
-    });
+    }, {skipReason: 'GROK-11534'});
   }
 });

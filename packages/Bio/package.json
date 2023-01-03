@@ -5,7 +5,7 @@
     "name": "Leonid Stolbov",
     "email": "lstolbov@datagrok.ai"
   },
-  "version": "2.1.11",
+  "version": "2.1.12",
   "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
   "repository": {
     "type": "git",
@@ -14,12 +14,12 @@
   },
   "dependencies": {
     "@biowasm/aioli": "^3.1.0",
-    "@datagrok-libraries/bio": "^5.15.1",
+    "@datagrok-libraries/bio": "^5.16.0",
     "@datagrok-libraries/chem-meta": "^1.0.1",
     "@datagrok-libraries/ml": "^6.3.3",
-    "@datagrok-libraries/utils": "^1.19.0",
+    "@datagrok-libraries/utils": "^1.19.4",
     "cash-dom": "^8.0.0",
-    "datagrok-api": "^1.8.2",
+    "datagrok-api": "^1.11.1",
     "dayjs": "^1.11.4",
     "openchemlib": "6.0.1",
     "rxjs": "^6.5.5",
@@ -44,6 +44,7 @@
     "ts-loader": "^9.2.5",
     "typescript": "^4.2.3",
     "webpack": "^5.64.1",
+    "webpack-bundle-analyzer": "latest",
     "webpack-cli": "^4.6.0"
   },
   "grokDependencies": {
@@ -70,7 +71,8 @@
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "test": "jest",
     "test-local": "set HOST=localhost && jest",
-    "build-bio-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build && npm --prefix ./../../libraries/bio run build && npm run build"
+    "build-bio-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/ml run build && npm run build && npm --prefix ./../../libraries/bio run build && npm run build",
+    "analyze": "webpack --profile --json > ./stats.json && npx webpack-bundle-analyzer ./stats.json"
   },
   "canEdit": [
     "Developers"

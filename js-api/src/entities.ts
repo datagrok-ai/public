@@ -321,11 +321,11 @@ export class Project extends Entity {
   }
 
   removeLink(entity: Entity): void {
-    api.grok_Project_AddRelation(this.dart, entity.dart);
+    api.grok_Project_RemoveRelation(this.dart, entity.dart);
   }
 
   removeChild(entity: Entity): void {
-    api.grok_Project_AddRelation(this.dart, entity.dart);
+    api.grok_Project_RemoveRelation(this.dart, entity.dart);
   }
 
 }

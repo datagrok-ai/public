@@ -16,6 +16,7 @@ export class ScriptingTutorial extends Tutorial {
   }
   get steps() { return 11; }
 
+  demoTable: string = '';
   helpUrl: string = 'https://datagrok.ai/help/compute/scripting';
 
   protected async _run() {
@@ -41,8 +42,8 @@ export class ScriptingTutorial extends Tutorial {
     const sampleScriptName = 'Template';
     const sampleScriptOutput = 510;
 
-    await this.action('Open a sample table for the script', grok.events.onViewAdded.pipe(
-      filter((v) => v.type === DG.VIEW_TYPE.TABLE_VIEW && (<DG.TableView>v).table?.name === sampleDfName)),
+    await this.action('Open a sample table for the script', grok.events.onTableAdded.pipe(
+      filter((data) => data.args.dataFrame.name === sampleDfName)),
       $('div.d4-ribbon-item').has('i.grok-icon.fa-asterisk')[0],
       'In front of you is a valid script. The commented out section on top defines script parameters. ' +
       'This simple script calculates the number of cells in a dataframe. The <i class="grok-icon fal fa-asterisk"></i> ' +

@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.53",
+  "version": "3.1.55",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -231,6 +231,9 @@
           "datagrok-api": "^1.0.0"
         },
         "1.1.7": {
+          "datagrok-api": "^1.0.0"
+        },
+        "1.1.8": {
           "datagrok-api": "^1.0.0"
         }
       },
@@ -1313,6 +1316,9 @@
         },
         "1.0.2": {
           "datagrok-api": "^1.6.0"
+        },
+        "1.0.4": {
+          "datagrok-api": "^1.11.1"
         }
       },
       "description": "Chem package extensiions. Features for similarity and substructure search in ChEMBL using API",
