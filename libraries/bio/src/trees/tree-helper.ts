@@ -20,7 +20,15 @@ export interface ITreeHelper {
 
   getNodeList<TNode extends NodeType>(node: TNode): TNode[];
 
-  treeFilterByLeaves(node: NodeType, leaves: { [name: string]: any }): NodeType | null;
+  /** Filters tree by leaves (by set).
+   * An internal node will be eliminated only if all its subs (children/leaves) are filtered out by {link @leaves}.
+   */
+  filterTreeByLeaves(node: NodeType, leaves: { [name: string]: any }): NodeType | null;
+
+  /** Collects nodes by leaves (by set).
+   * Node will be returned only if all its subs (children/leaves) are present in {@link leaves}.
+   */
+  getNodesByLeaves<TNode extends NodeType>(node: TNode, leaves: { [name: string]: any }): TNode[];
 
   treeCutAsLeaves(node: NodeType, cutHeight: number, currentHeight?: number): NodeType[];
 
