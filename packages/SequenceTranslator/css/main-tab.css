@@ -1,0 +1,19 @@
+/* Naming convention: class names should begin with st and tab name (main, axo, sdf) to avoid naming collitions */
+.st-main-input-sequence textarea {
+  resize: none;
+  min-height: 70px;
+  width: 100%;
+  font-family: monospace;
+}
+
+.st-main-input-sequence .input-base {
+  margin: 0;
+}
+
+.st-main-input-sequence select {
+  width: 100%;
+}
+
+.st-main-sequence .st-main-children {
+  padding: 5px 0;
+}
