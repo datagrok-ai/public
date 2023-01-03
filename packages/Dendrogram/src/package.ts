@@ -126,7 +126,7 @@ export async function treeForGridApp(): Promise<void> {
   }
 }
 
-//name: TreeForGridFilter
+//name: treeForGridFilterApp
 //description: Test/demo app for TreeForGridFilter (custom renderer)
 export async function treeForGridFilterApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('open treeForGrid large app');

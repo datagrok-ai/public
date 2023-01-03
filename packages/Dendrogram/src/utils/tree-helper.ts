@@ -14,6 +14,7 @@ export const enum TAGS {
   DF_NEWICK_LEAF_COL_NAME = '.newickLeafColumn',
 }
 
+/** Implements ITreeHelper from bio lib */
 export class TreeHelper implements ITreeHelper {
   newickToDf(
     newick: string, dfName?: string, nodePrefix?: string, skipEmptyParentRoot?: boolean
@@ -149,7 +150,7 @@ export class TreeHelper implements ITreeHelper {
     return res;
   }
 
-  treeFilterByLeaves(node: NodeType, leaves: { [name: string]: any }): NodeType | null {
+  filterTreeByLeaves(node: NodeType, leaves: { [name: string]: any }): NodeType | null {
     // copy node because phylocanvas.gl changes data structure completely
     const resNode = Object.assign({}, node); // shallow copy
 
@@ -157,12 +158,28 @@ export class TreeHelper implements ITreeHelper {
       return resNode.name in leaves ? resNode : null;
     } else {
       resNode.children = node.children!
-        .map((child) => this.treeFilterByLeaves(child, leaves))
+        .map((child) => this.filterTreeByLeaves(child, leaves))
         .filter((child) => child != null) as NodeType[];
 
       return resNode.children.length > 0 ? resNode : null;
     }
   }
+
+  /***/
+  getNodesByLeaves<TNode extends NodeType>(node: TNode, leaves: { [name: string]: any }): TNode[] {
+    if (isLeaf(node)) {
+      return node.name in leaves ? [node] : [];
+    } else {
+      const children: TNode[] = node.children as TNode[] ?? [];
+      const childrenRes: TNode[] = children.map((child) => {
+        return this.getNodesByLeaves(child, leaves);
+      }).flat();
+
+      return (childrenRes.length == children.length &&
+        children.every((child, i) => child == childrenRes[i])) ? [node] : childrenRes;
+    }
+  }
+
 
   /** Cuts tree, gets list of clusters as lists of leafs */
   treeCutAsLeaves(
@@ -277,7 +294,7 @@ export class TreeHelper implements ITreeHelper {
 
     // TODO: Fire filter event (?)
 
-    const resTree: NodeType = this.treeFilterByLeaves(tree, dataNodeDict)!;
+    const resTree: NodeType = this.filterTreeByLeaves(tree, dataNodeDict)!;
     const resTreeLeafList = this.getLeafList(resTree);
 
     const order: number[] = new Array<number>(resTreeLeafList.length); // rowCount filtered for leaves

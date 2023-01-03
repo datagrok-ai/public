@@ -104,7 +104,7 @@ export function injectTreeForGridUI2(
     });
   }
 
-  function alignGridWithTree() {
+  function alignGridWithTree(): void {
     const [viewedRoot] = th.setGridOrder(newickRoot, grid, leafColName);
     markupNode(viewedRoot);
     const source = viewedRoot ? {type: 'biojs', data: viewedRoot} :
@@ -142,16 +142,22 @@ export function injectTreeForGridUI2(
       const oldCurrentRowIdx: number = grid.dataFrame.currentRowIdx;
       // only one current becomes first of sub leaves
       const currentLeaf: NodeType | null = renderer.current ? th.getLeafList(renderer.current.node)[0] : null;
-      let newCurrentRowIdx: number;
-      if (!currentLeaf) {
-        newCurrentRowIdx = -1;
-      } else {
-        const rowCount = grid.dataFrame.rowCount;
-        const leafCol: DG.Column | null = !!leafColName ? grid.dataFrame.getCol(leafColName) : null;
-        newCurrentRowIdx = wu.count(0).take(rowCount)
-          .find((rowI: number) => !!leafCol ? leafCol.get(rowI) : `${rowI}` == currentLeaf.name) ?? -1;
+      let newCurrentRowIdx: number = -1;
+      if (currentLeaf) {
+        if (leafColName) {
+          const leafCol: DG.Column = grid.dataFrame.getCol(leafColName);
+          const rowCount = grid.dataFrame.rowCount;
+          for (let rowI: number = 0; rowI < rowCount; rowI++) {
+            const rowLeafName: string = leafCol.get(rowI);
+            if (rowLeafName == currentLeaf.name) {
+              newCurrentRowIdx = rowI;
+              break;
+            }
+          }
+        } else {
+          newCurrentRowIdx = parseInt(currentLeaf.name);
+        }
       }
-
       if (newCurrentRowIdx != oldCurrentRowIdx) {
         grid.dataFrame.currentRowIdx = newCurrentRowIdx;
         grid.invalidate(); // fixing stall current on changed currentRowIdx to -1
@@ -166,20 +172,25 @@ export function injectTreeForGridUI2(
       const oldMouseOverRowIdx: number = grid.dataFrame.mouseOverRowIdx;
       // only one mouseOver becomes first of sub leaves
       const mouseOverLeaf: NodeType | null = renderer.mouseOver ? th.getLeafList(renderer.mouseOver.node)[0] : null;
-      let newMouseOverRowIdx: number;
-      if (!mouseOverLeaf) {
-        newMouseOverRowIdx = -1;
-      } else {
-        const rowCount = grid.dataFrame.rowCount;
-        const leafCol: DG.Column | null = !!leafColName ? grid.dataFrame.getCol(leafColName) : null;
-        // const nodeName: string | null = renderer.mouseOver ? renderer.mouseOver.node.name : null;
-
-        newMouseOverRowIdx = wu.count(0).take(rowCount)
-          .find((rowI: number) => !!leafCol ? leafCol.get(rowI) : `${rowI}` == mouseOverLeaf.name) ?? -1;
+      let newMouseOverRowIdx: number = -1;
+      if (mouseOverLeaf) {
+        if (leafColName) {
+          const leafCol: DG.Column = grid.dataFrame.getCol(leafColName);
+          const rowCount = grid.dataFrame.rowCount;
+          for (let rowI = 0; rowI < rowCount; rowI++) {
+            const rowLeafName: string = leafCol.get(rowI);
+            if (rowLeafName == mouseOverLeaf.name) {
+              newMouseOverRowIdx = rowI;
+              break;
+            }
+          }
+        } else {
+          newMouseOverRowIdx = parseInt(mouseOverLeaf.name);
+        }
       }
-
-      if (newMouseOverRowIdx != oldMouseOverRowIdx)
+      if (newMouseOverRowIdx != oldMouseOverRowIdx) {
         grid.dataFrame.mouseOverRowIdx = newMouseOverRowIdx;
+      }
     });
   }
 
@@ -187,12 +198,17 @@ export function injectTreeForGridUI2(
     window.setTimeout(() => {
       if (!renderer || !placer) return;
 
+      /* Here we get selected rows from dataFrame (leaves only).
+       * Some of selected nodes can be in subtree of renderer.selections nodes.
+       * We need to merge nodes to form selections object.
+       * Nodes subs can be selected or deselected.
+       */
+
       const oldSelection: DG.BitSet = grid.dataFrame.selection.clone();
       if (renderer.selections.length == 0) {
         grid.dataFrame.selection.init((rowI) => { return false; }, false);
       } else {
         const leafCol: DG.Column | null = !!leafColName ? grid.dataFrame.getCol(leafColName) : null;
-        const th = new TreeHelper();
         const nodeNameSet = new Set(
           renderer.selectedNodes
             .map((sn) => th.getNodeList(sn).map((n) => n.name))
@@ -261,8 +277,6 @@ export function injectTreeForGridUI2(
   function dataFrameOnSelectionChanged(value: any) {
     if (!renderer || !placer) return;
 
-    const th: TreeHelper = new TreeHelper();
-
     const leafList: MarkupNodeType[] = th.getLeafList(renderer.treeRoot);
     const leafDict: { [name: string]: MarkupNodeType } = {};
     for (const node of leafList) {
@@ -279,14 +293,18 @@ export function injectTreeForGridUI2(
       rowDict[leafName] = rowI;
     }
 
-    const selections: RectangleTreeHoverType<MarkupNodeType>[] = [];
-    const selectedIndexes = grid.dataFrame.selection.getSelectedIndexes();
-    for (const selRowI of selectedIndexes) {
-      const leafName: string = leafCol ? leafCol.get(selRowI) : selRowI;
-      const node: MarkupNodeType = leafDict[leafName];
-
-      selections.push({node: node, nodeHeight: placer.getNodeHeight(renderer.treeRoot, node)!});
+    const selLeafNames: { [name: string]: number } = {};
+    const selIndexes = grid.dataFrame.selection.getSelectedIndexes();
+    for (const selRowI of selIndexes) {
+      const leafName: string = leafCol ? leafCol.get(selRowI) : `${selRowI}`;
+      selLeafNames[leafName] = selRowI;
     }
+    const selNodeList: MarkupNodeType[] = th.getNodesByLeaves<MarkupNodeType>(renderer.treeRoot, selLeafNames);
+
+    const selections: RectangleTreeHoverType<MarkupNodeType>[] = [];
+    for (const selNode of selNodeList)
+      selections.push({node: selNode, nodeHeight: placer.getNodeHeight(renderer.treeRoot, selNode)!});
+
     renderer.selections = selections;
   }
 
