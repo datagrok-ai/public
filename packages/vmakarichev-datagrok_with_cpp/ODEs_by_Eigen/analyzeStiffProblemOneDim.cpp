@@ -55,7 +55,7 @@ void analyzeStiffProblemOneDim()
 
 	time_t start = time(0);
 
-	int resCode = oneStepSolver(g, times, N, yInitial, getNextPointRK5, solution);
+	int resCode = fixedStepSolver(g, times, N, yInitial, getNextPointRK5, solution);
 
 	time_t finish = time(0);
 

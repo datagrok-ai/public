@@ -131,7 +131,7 @@ void testOneStepMethodMultiDim()
 		times[i] = times[i - 1] + h;
 
 	cout << "Solving ODE result code: ";
-	cout << oneStepSolver(f, times, N, yInitial.data(), DIM, getNextPointRK5, solution) << endl;
+	cout << fixedStepSolver(f, times, N, yInitial.data(), DIM, getNextPointRK5, solution) << endl;
 
 	cout << "\n   Time         y1(approx)         y2(approx)         y1(exact)         y2(exact)      Error(absolute)\n";
 	for (int i = 0; i < N; i++)

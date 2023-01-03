@@ -89,7 +89,7 @@ void testODE32sInGeneralSolver()
 	cout << "\nSolving system of equations...\n";
 
 	cout << "\nResult code: "
-		<< oneStepSolver(F, T, J, times, n, y.data(), d, solution)
+		<< fixedStepSolver(F, T, J, times, n, y.data(), d, solution)
 		//<< oneStepSolver(F, times, n, y.data(), d, getNextPointRK4, solution)
 		<< endl;
 

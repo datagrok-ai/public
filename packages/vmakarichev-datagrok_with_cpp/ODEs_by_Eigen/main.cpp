@@ -20,7 +20,17 @@ int main()
 
 	//testODE32sInGeneralSolver();
 
-	testODE32sInGeneralSolverJNJ();
+	//testODE32sInGeneralSolverJNJ();
+
+	//testOfStiffExampleDemo();
+
+	//testOfStiffExampleRKDemo();
+
+	//compareVectorToArray();
+
+	//tryAdaptiveStepRKCKmethod();
+
+	testAdaptiveStepRKCK();
 
 	cin.get();
 	return 0;

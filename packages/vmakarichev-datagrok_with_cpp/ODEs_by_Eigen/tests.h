@@ -29,5 +29,20 @@ void testODE32sInGeneralSolver();
 // test of ode32s solver in generalized solver: multi-dimensional case, jnj problem
 void testODE32sInGeneralSolverJNJ();
 
+// test of stiff example demo
+void testOfStiffExampleDemo();
+
+// test of stiff example demo by R.-K.
+void testOfStiffExampleRKDemo();
+
+// vector vs pointer array
+void compareVectorToArray();
+
+// try adaptive step Runge-Kutta (Cash-Karp) method 
+void tryAdaptiveStepRKCKmethod();
+
+// test adaptive step Runge-Kutta (Cash-Karp) method: generalized approach
+void testAdaptiveStepRKCK();
+
 #endif // !TESTS_H
 

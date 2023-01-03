@@ -117,7 +117,7 @@ void testOneStepMethodOneDim()
 		times[i] = times[i - 1] + h;
 
 	cout << "Solving ODE result code: "
-		<< oneStepSolver(f, times, N, yInitial, getNextPointRK4, solution)  << endl;
+		<< fixedStepSolver(f, times, N, yInitial, getNextPointRK4, solution)  << endl;
 
 	cout << "\n   Time   Solution(approx)   Solution(exact)   Error(absolute)   Error(relative)\n";
 	for (int i = 0; i < N; i++)

@@ -7,6 +7,9 @@
 #include<fstream>
 using namespace std;
 
+#include <chrono>
+using namespace std::chrono;
+
 #include "../../../Eigen/Eigen/Dense"
 using namespace Eigen;
 
@@ -17,16 +20,15 @@ using namespace ode;
 
 namespace testODE32sGSjnj
 {
-	VectorXd F(double t, VectorXd& y)
+	VectorXd F(double _time, VectorXd& y)
 	{
 		VectorXd res(y.size());
 
-		// original problem is removed!
-
-	
+		// JNJ formulas are removed!
 		return res;
 	}
 
+	
 	MatrixXd J(double t, VectorXd& y, double eps)
 	{
 		MatrixXd res(y.size(), y.size());
@@ -52,11 +54,10 @@ namespace testODE32sGSjnj
 		return (F(t + eps, y) - F(t, y)) / eps;
 	}
 
+
 	VectorXd exactSolution(double t, unsigned dim)
 	{
-		VectorXd res(dim);
-
-		// original problem is removed!
+	// JNJ formulas are removed!
 
 		return res;
 	}
@@ -68,10 +69,16 @@ void testODE32sInGeneralSolverJNJ()
 	using namespace testODE32sGSjnj;
 
 	double t0 = 0.0;
-	double t1 = 1e+3;
-	double h = 1e-4;
+	double t1 = 100.0;
+		//1e+3;
+	double h =
+		0.00005;
+		//1e-5;
+		//0.0002;
+	    // 1e-4;
 	unsigned n = static_cast<unsigned>((t1 - t0) / h) + 1;
-	unsigned d = 7;
+	unsigned d = 13;
+	           // = 7;
 
 	cout << "Test of ODE32s solver in the generalized form.\n";
 
@@ -93,10 +100,19 @@ void testODE32sInGeneralSolverJNJ()
 
 	cout << "\nSolving system of equations...\n";
 
+	//auto start = time(0);
+	auto start = high_resolution_clock::now();
+
 	cout << "\nResult code: "
-		<< oneStepSolver(F, T, J, times, n, y.data(), d, solution)
+		<< fixedStepSolver(F, T, J, times, n, y.data(), d, solution)
 		//<< oneStepSolver(F, times, n, y.data(), d, getNextPointRK4, solution)
 		<< endl;
+
+	//auto finish = time(0);
+	auto finish = high_resolution_clock::now();
+	auto duration = duration_cast<microseconds>(finish - start);
+
+	cout << "\nTime is " << 1e-6 * duration.count() << " sec.\n";
 
 	double mad = 0.0;
 
@@ -108,6 +124,10 @@ void testODE32sInGeneralSolverJNJ()
 	
 	for (unsigned i = 1; i < n - 1; i++)
 	{
+		// skip the point t = 120, since it's a discontinuity
+		if ((times[i + 1] > 120) && (times[i - 1] < 120))
+			continue;
+
 		for (unsigned j = 0; j < d; j++)
 			y(j) = solution[i + j * n];
 
@@ -121,7 +141,9 @@ void testODE32sInGeneralSolverJNJ()
 
 		left = (yNext - yPrev) / (times[i + 1] - times[i - 1]);		
 
-		mad = fmax(mad, (left - right).cwiseAbs().maxCoeff());
+		mad = fmax(mad, (left - right).cwiseAbs().maxCoeff());		
+
+		//cout << "\n  iter no. " << i << "  " << (left - right).cwiseAbs().maxCoeff() << endl;
 	}
 
 	cout << "\nMAX ERROR: " << mad << endl;

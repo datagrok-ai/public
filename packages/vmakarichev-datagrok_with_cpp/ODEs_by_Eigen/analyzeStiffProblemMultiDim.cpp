@@ -71,7 +71,7 @@ void analyzeStiffProblemMultiDim()
 
 	time_t start = time(0);
 
-	int resCode = oneStepSolver(w, times, N, yInitial.data(), dim, getNextPointRK4, solution);
+	int resCode = fixedStepSolver(w, times, N, yInitial.data(), dim, getNextPointRK4, solution);
 
 	time_t finish = time(0);
 

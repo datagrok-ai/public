@@ -158,7 +158,7 @@ namespace jnj {
 	{
 		VectorXd res(y.size());
 
-		// original problem is removed!
+		// JNJ formulas are removed!
 		return res;
 	}
 
@@ -190,8 +190,7 @@ namespace jnj {
 	VectorXd exactSolution(double t, unsigned dim)
 	{
 		VectorXd res(dim);	
-
-		// original problem is removed!
+// JNJ formulas are removed!
 
 		return res;
 	}
