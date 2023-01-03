@@ -29,7 +29,7 @@ function runStockBroker() {
     return v;
   };
   let upDown = () => Math.random() > 0.5 ? '▲' : '▼';
-  let getValues = (symbol, time) => [symbol, time.$D, next(symbol), Math.round(Math.random() * 10000), upDown()];
+  let getValues = (symbol, time) => [symbol, dayjs(time).toDate().toLocaleString('en-US'), next(symbol), Math.round(Math.random() * 10000), upDown()];
 
   let addTick = function (time) {
     for (let symbol in tickers)

@@ -6,10 +6,8 @@ import {Unsubscribable} from 'rxjs';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 
 import {_package} from '../package';
-import {TAGS} from '../utils/tree-helper';
-import {data} from 'datagrok-api/grok';
-import {injectTreeForGridUI} from '../viewers/inject-tree-for-grid';
 import {NodeType, parseNewick} from '@datagrok-libraries/bio';
+import {TAGS as treeTAGS} from '@datagrok-libraries/bio/src/trees';
 
 export class TreeCutAsTreeApp {
   private viewed: boolean = false;
@@ -39,8 +37,8 @@ export class TreeCutAsTreeApp {
     const leafColName = 'Leaf';
 
     const dataDf = DG.DataFrame.fromCsv(csv);
-    dataDf.setTag(TAGS.DF_NEWICK, newick);
-    dataDf.setTag(TAGS.DF_NEWICK_LEAF_COL_NAME, leafColName);
+    dataDf.setTag(treeTAGS.NEWICK, newick);
+    dataDf.setTag(treeTAGS.NEWICK_LEAF_COL_NAME, leafColName);
 
     await this.setData(dataDf, newick);
   }
@@ -52,9 +50,9 @@ export class TreeCutAsTreeApp {
     }
 
     this._dataDf = dataDf;
-    const leafColName = dataDf.getTag(TAGS.DF_NEWICK_LEAF_COL_NAME);
+    const leafColName = dataDf.getTag(treeTAGS.NEWICK_LEAF_COL_NAME);
     if (!leafColName)
-      throw new Error(`Specify leaf column name in DataFrame tag '${TAGS.DF_NEWICK_LEAF_COL_NAME}'.`);
+      throw new Error(`Specify leaf column name in DataFrame tag '${treeTAGS.NEWICK_LEAF_COL_NAME}'.`);
     this._leafCol = dataDf.getCol(leafColName!);
     this._newickStr = newickStr;
     this._newickRoot = parseNewick(newickStr);

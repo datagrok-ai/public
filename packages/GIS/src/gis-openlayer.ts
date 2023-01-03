@@ -42,8 +42,13 @@ import {Control, defaults as defaultControls} from 'ol/control';
 
 import {PanelLayersControl, BtnLayersControl} from './gis-mapcontrols';
 
+//for test func
+import TileWMS from 'ol/source/TileWMS';
+import ImageLayer from 'ol/layer/Image';
+
 //ZIP utilities
 import JSZip from 'jszip';
+import TileImage from 'ol/source/TileImage';
 
 export {Coordinate} from 'ol/coordinate';
 
@@ -125,10 +130,10 @@ export class OpenLayers {
   olMarkersLayerGL: WebGLPts | null;
   olMarkersSelLayerGL: WebGLPts | null;
   olHeatmapLayer: HeatmapLayer | null;
-  //vector sources for markers (now we should have just one source for Markers and Heatmap layers)
+  //vector sources for markers (now we have just one source for Markers and Heatmap layers)
   olMarkersSource: VectorSource<OLGeom.Point>;
   olMarkersSelSource: VectorSource<OLGeom.Point>;
-  olSelectedMarkers: Collection<Feature>; //Feature<OLGeom.Point>[];
+  olSelectedMarkers: Collection<Feature>;
 
   currentAreaObject: Feature | null = null;
 
@@ -143,14 +148,15 @@ export class OpenLayers {
   btnLayersControl: BtnLayersControl;
   panelLayersList: PanelLayersControl;
 
-  //styles>>
-  styleVectorLayer: OLStyle.Style;
-  styleVectorSelLayer: OLStyle.Style;
   //map event handlers
   onSelectCallback: Function | null = null;
   onClickCallback: Function | null = null;
   onPointermoveCallback: Function | null = null;
   onRefreshCallback: Function | null = null;
+
+  //styles>>
+  styleVectorLayer: OLStyle.Style;
+  styleVectorSelLayer: OLStyle.Style;
 
   markerGLStyle: LiteralStyle;
   markerGLSelStyle: LiteralStyle;
@@ -196,16 +202,12 @@ export class OpenLayers {
     //controls
     this.btnLayersControl = new BtnLayersControl(null);
     this.panelLayersList = new PanelLayersControl(this, null);
-    this.panelLayersList.setVisibility(false);
-
 
     this.styleVectorLayer = new OLStyle.Style({
       fill: new OLStyle.Fill({
         color: '#eeeeee',
-        // color: 'rgba(155, 155, 55, 0.5)',
       }),
       stroke: new OLStyle.Stroke({
-        // color: 'rgba(250, 250, 0, 1)',
         color: 'rgba(200, 0, 0, 1)',
         width: 1,
       }),
@@ -213,7 +215,6 @@ export class OpenLayers {
     this.styleVectorSelLayer = new OLStyle.Style({
       fill: new OLStyle.Fill({
         color: 'rgba(200, 50, 50, 0.5)',
-        // color: '#eeeeee',
       }),
       stroke: new OLStyle.Stroke({
         color: 'rgba(255, 0, 0, 1)',
@@ -258,7 +259,7 @@ export class OpenLayers {
     });
 
     OLG = this;
-    //end of constructor
+    //<<end of constructor
   }
 
   set useWebGL(v: boolean) {
@@ -273,14 +274,8 @@ export class OpenLayers {
     this.heatmapBlurParam = val;
     if (this.olHeatmapLayer)
       this.olHeatmapLayer.setBlur(this.heatmapBlurParam);
-  /* if (this.olCurrentLayer instanceof HeatmapLayer)
-      this.olCurrentLayer.setBlur(this.heatmapBlurParam);
-    else {
-      //TODO: search and apply parameter to the first heatmap layer (if this is needed)
-      //NOTE: this will be usefull in case of multilayers approach - for a now we have just one layer
-      // this.olMap.getAllLayers()
-    }
-  */
+    //TODO: search and apply parameter to the first heatmap layer (if this is needed)
+    //NOTE: this will be usefull in case of multilayers approach - for a now we have just one layer
   }
   get heatmapBlur(): number {return this.heatmapBlurParam;}
 
@@ -288,25 +283,52 @@ export class OpenLayers {
     this.heatmapRadiusParam = val;
     if (this.olHeatmapLayer)
       this.olHeatmapLayer.setRadius(this.heatmapRadiusParam);
-    // if (this.olCurrentLayer instanceof HeatmapLayer)
-    //   this.olCurrentLayer.setRadius(this.heatmapRadiusParam);
   }
   get heatmapRadius(): number {return this.heatmapRadiusParam;}
 
   selectCondition(lr: Layer<Source, LayerRenderer<any>>): boolean {
+    //here we can detect whether we want to select object on the map
+    //for example (commented below) we can choose just objects from layer: olMarkersLayerGL
     return true; //((lr === this.olMarkersLayer) || (lr === this.olMarkersLayerGL));
   }
 
   testFunc(): void {
     const Tl = new TileLayer({
-      source: new XYZ({
-        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-        // url: 'https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=809f4d16303ce4ae52da96eea0fadc6a',
+      source: new TileImage({ //new XYZ({
+        // url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+        url: 'https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=809f4d16303ce4ae52da96eea0fadc6a',
         // url: 'https://sampleserver1.arcgisonline.com/ArcGIS/rest/services/Specialty/ESRI_StateCityHighway_USA/MapServer',
+        // url: 'https://ndmc-001.unl.edu:8080/cgi-bin/mapserv.exe?map=/ms4w/apps/usdm/service/usdm_20221213_wms.map&SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=usdm20221213&WIDTH=640&HEIGHT=480&crs=EPSG:3857&styles=default&format=image/png&bbox=-18367715.9809,1689200.13961,-6679169.4476,15538711.0963'
       }),
     });
     Tl.set('layerName', 'TestLayer');
     this.addLayer(Tl);
+
+    const Tl2 = new TileLayer({
+      // source: new TileWMS({
+      //   url: 'https://ahocevar.com/geoserver/wms',
+      //   params: {'LAYERS': 'ne:ne'},
+      //   serverType: 'geoserver',
+      //   crossOrigin: 'anonymous',
+      // }),
+
+      // source: new TileWMS({
+      //   url: 'https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r-t.cgi',
+      //   params: {'LAYERS': 'nexrad-n0r-wmst'},
+      //   // params: {'LAYERS': 'uscounties'},
+      //   serverType: 'geoserver',
+      //   crossOrigin: 'anonymous',
+
+      source: new TileWMS({
+        url: 'https://ahocevar.com/geoserver/wms',
+        params: {'LAYERS': 'topp:states'}, // , 'TILED': true},
+        serverType: 'geoserver',
+        // Countries have transparency, so do not fade tiles:
+        transition: 0,
+      }),
+    });
+    Tl2.set('layerName', 'WMSTestLayer');
+    this.addLayer(Tl2);
 
     return;
   }
@@ -329,7 +351,7 @@ export class OpenLayers {
     });
 
     //add layers>>
-    // this.addNewBingLayer('Bing sat');  //TODO: if we want to add sattelite leyer we have to manage it properly
+    this.addNewBingLayer('Bing sat'); //TODO: if we want to add sattelite layer we have to manage it properly
     this.olBaseLayer = this.addNewOSMLayer('BaseLayer');
 
     //prepare markersGLLayer
@@ -358,6 +380,8 @@ export class OpenLayers {
     this.olMap.addInteraction(this.dragAndDropInteraction); //add dragNdrop ability
 
     this.setBtnLayersClickCallback(this.onLayersListBtnClick.bind(this));
+    this.panelLayersList.setVisibility(false);
+    //this.onLayersListBtnClick();
     //<<end of InitMap function
   }
 
@@ -404,8 +428,9 @@ export class OpenLayers {
 
   parseColorCondition(condStr: string): (any)[] {
     const resArr: (any)[] = [];
-    let numbersRes = condStr.replace(/\s/g, '').match(/(\d*\.\d*|\d*)/ig);
-    let symbolsRes = condStr.replace(/\s/g, '').match(/\D*/ig);
+    let numbersRes = 0; //condStr.replace(/\s/g, '').match(/(\d*\.\d*|\d*)/ig);
+    let symbolsRes = 0;//condStr.replace(/\s/g, '').match(/\D*/ig);
+    /*
     if (!numbersRes || !symbolsRes)
       return resArr;
 
@@ -427,7 +452,7 @@ export class OpenLayers {
       resArr.push(parseFloat(numbersRes[0]));
       resArr.push(parseFloat(numbersRes[numbersRes.length-1]));
     }
-
+    */
     return resArr;
   }
 
@@ -658,8 +683,6 @@ export class OpenLayers {
       const layerName = arrLayers[i].get('layerName');
       const layerId = arrLayers[i].get('layerId');
       const src = arrLayers[i].getSource();
-      // arrLayers[i].sourceTy
-      // const cln = arrLayers[i].getClassName();
       let exp = false;
       if (src instanceof VectorSource)
         exp = true;
@@ -668,9 +691,9 @@ export class OpenLayers {
 
       const objLayer = {
         vis: vsb,
-        del: true,
-        exp: exp,
         name: layerName,
+        exp: exp,
+        del: true,
         layerid: layerId,
       };
 
@@ -679,7 +702,6 @@ export class OpenLayers {
 
     if (this.panelLayersList)
       this.panelLayersList.refreshDF(DG.DataFrame.fromObjects(arrLayersObj));
-      // this.panelLayersList.dfLayersList = DG.DataFrame.fromObjects(arrLayersObj);
 
     return arrLayersObj;
   }
@@ -795,7 +817,7 @@ export class OpenLayers {
     this.addLayer(newLayer);
     return newLayer;
   }
-  //adds Open Street Maps layer
+  //adds Open Street Maps layer - this is our base layer
   addNewOSMLayer(layerName?: string | undefined, options?: Object | undefined): BaseLayer {
     const newLayer = new TileLayer({
       visible: true,
@@ -804,21 +826,22 @@ export class OpenLayers {
 
     if (layerName)
       newLayer.set('layerName', layerName);
-    else newLayer.set('layerName', 'OpenStreet');
+    else
+      newLayer.set('layerName', 'OpenStreet');
     if (options)
       newLayer.setProperties(options);
     this.addLayer(newLayer);
+
     return newLayer;
   }
 
   addNewHeatMap(layerName?: string | undefined, options?: Object | undefined): HeatmapLayer {
     const newLayer = new HeatmapLayer({
-      source: this.olMarkersSource, //new VectorSource({}), //for now we use the same source for markers and heatmap
+      source: this.olMarkersSource, //new VectorSource({}), //<-for now we use the same source for markers and heatmap
       blur: this.heatmapBlur,
       radius: this.heatmapRadius,
       weight: function(feature: Feature): number {
         let val = feature.get('fieldSize');
-        // if (val === undefined) val = feature.get('fieldLabel');
         if (typeof(val) !== 'number')
           val = 1;
         return val;
@@ -844,7 +867,8 @@ export class OpenLayers {
     return arrFeatures;
   }
 
-  // createTextStyle(feature: FeatureLike, resolution: number): Style {
+  //this function prepare text prop's - for further label placing on the map
+  //we don't use it at the moment
   createTextStyle(txt: any, resolution?: number): OLStyle.Text {
     console.log('createTextStyle: ' + txt);
     return new OLStyle.Text({
@@ -877,7 +901,7 @@ export class OpenLayers {
         image: new OLStyle.Circle({
           radius: size ? size : OLG.markerDefaultSize,
           fill: new OLStyle.Fill({
-            color: clr ? clr : `rgba(255, 0, 255, ${this.markerOpacity})`, // ${this.markerOpacity})`,
+            color: clr ? clr : `rgba(255, 0, 255, ${this.markerOpacity})`,
           }),
           stroke: new OLStyle.Stroke({
             color: 'rgba(255, 0, 0, 1)',
@@ -1069,13 +1093,12 @@ export class OpenLayers {
     this.onRefreshCallback = f;
   }
   setBtnLayersClickCallback(f: Function) {
-    // this.onBtnLayersClickCallback = f;
     this.btnLayersControl.parentOnClickHandler = f;
   }
 
   onLayersListBtnClick() {
     if (this.panelLayersList)
-      this.panelLayersList.setVisibility(this.btnLayersControl.btnIsOn);
+      this.panelLayersList.setVisibility(this.btnLayersControl.isOn);
   }
 
   //map elements management functions>>

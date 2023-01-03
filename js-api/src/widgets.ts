@@ -118,6 +118,8 @@ export class ObjectPropertyBag {
 /** Base class for controls that have a visual root and a set of properties. */
 export class Widget<TSettings = any> {
 
+  public get type(): string { return 'Unknown'; }
+
   /** Contains auxiliary information */
   public temp: any;
 
@@ -150,6 +152,16 @@ export class Widget<TSettings = any> {
     this.getProperties = this.getProperties.bind(this);
 
     this.temp = {};
+  }
+
+  /** Returns all currently active widgets. */
+  static getAll(): Widget[] {
+    return api.grok_Widget_GetAll();
+  }
+
+  /** Finds existing widget from its visual root. */
+  static find(root: Element): Widget | null {
+    return api.grok_Widget_FromRoot(root);
   }
 
   toDart() {
@@ -237,7 +249,7 @@ export class Widget<TSettings = any> {
     return p.defaultValue;
   }
 
-  /** @returns {Widget} */
+  /** Creates a new widget from the root element. */
   static fromRoot(root: HTMLElement): Widget {
     return new Widget(root);
   }
@@ -366,6 +378,10 @@ export class DartWidget extends Widget {
     super(api.grok_Widget_Get_Root(dart));
     this.dart = dart;
     this.temp = new MapProxy(api.grok_Widget_Get_Temp(this.dart));
+  }
+
+  get type(): string {
+    return api.grok_Widget_Get_Type(this.dart);
   }
 
   get root(): HTMLElement {

@@ -2,13 +2,12 @@ import {Aminoacids, AminoacidsPalettes} from './src/aminoacids';
 import {MonomerWorks} from './src/monomer-works/monomer-works';
 import {Nucleotides, NucleotidesPalettes} from './src/nucleotides';
 import {SeqPalette, SeqPaletteBase} from './src/seq-palettes';
-import {isLeaf} from './src/types';
 import {UnknownSeqPalette, UnknownSeqPalettes} from './src/unknown';
 import {DrawStyle, printLeftOrCentered} from './src/utils/cell-renderer';
 import {FastaFileHandler} from './src/utils/fasta-handler';
 import {NotationConverter} from './src/utils/notation-converter';
 import {splitAlignedSequences} from './src/utils/splitter';
-import {getTreeHelper, ITreeHelper} from './src/utils/tree-helper';
+import {getTreeHelper, ITreeHelper} from './src/trees/tree-helper';
 import {UnitsHandler} from './src/utils/units-handler';
 import {VdRegion, VdRegionType} from './src/vd-regions';
 import {
@@ -30,7 +29,8 @@ import {
   NglGlServiceBase,
   NglGlTask
 } from './src/viewers/ngl-gl-viewer';
-import {parseNewick, PhylocanvasTreeNode, Shapes, TreeTypes} from './src/phylocanvas';
+import {parseNewick, PhylocanvasTreeNode} from './src/trees/phylocanvas';
+import {isLeaf} from './src/trees';
 
 export {
   ALIGNMENT,
@@ -52,10 +52,18 @@ export {
 
 export {
   IMonomerLib,
-  Monomer,
+  Monomer
+} from './src/types';
+
+export {
   NodeType,
   NodeCuttedType
-} from './src/types';
+} from './src/trees';
+
+export {
+  Shapes,
+  TreeTypes
+} from './src/trees/phylocanvas';
 
 export {
   NotationConverter,
@@ -92,7 +100,6 @@ export {
   PhylocanvasGlTask,
   getPhylocanvasGlService,
 
-  Shapes, TreeTypes,
   parseNewick,
   // Utils,
   // Newick,
