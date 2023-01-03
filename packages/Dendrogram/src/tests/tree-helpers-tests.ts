@@ -49,6 +49,57 @@ category('treeHelpers', () => {
     expect(treeDf.rowCount, size);
   });
 
+  test('getNodesByLeaves0', async () => {
+    const newick: string = await _package.files.readAsText('data/tree95.nwk');
+    const df: DG.DataFrame = await _package.files.readCsv('data/tree95df.csv');
+    await _testGetNodesByLeaves(newick, df, {}, []);
+  });
+
+  test('getNodesByLeaves1', async () => {
+    const newick: string = await _package.files.readAsText('data/tree95.nwk');
+    const df: DG.DataFrame = await _package.files.readCsv('data/tree95df.csv');
+    await _testGetNodesByLeaves(newick, df,
+      {'leaf6': null, 'leaf7': null, 'leaf8': null},
+      ['node-l6-l7-l8']);
+  });
+
+  test('getNodesByLeaves2', async () => {
+    const newick: string = await _package.files.readAsText('data/tree95.nwk');
+    const df: DG.DataFrame = await _package.files.readCsv('data/tree95df.csv');
+    await _testGetNodesByLeaves(newick, df,
+      {
+        'leaf6': null, 'leaf7': null,
+        'leaf10': null, 'leaf11': null
+      },
+      ['node-l6-l7', 'node-l9-l10-l11']);
+  });
+
+  test('getNodesByLeaves3', async () => {
+    const newick: string = await _package.files.readAsText('data/tree95.nwk');
+    const df: DG.DataFrame = await _package.files.readCsv('data/tree95df.csv');
+    await _testGetNodesByLeaves(newick, df,
+      {
+        'leaf6': null, 'leaf7': null, 'leaf8': null,
+        'leaf10': null, 'leaf11': null
+      },
+      ['node-l6-l7-l8-l9-l10-l11']);
+  });
+
+  function _testGetNodesByLeaves(
+    newick: string, df: DG.DataFrame, leaves: { [name: string]: any }, tgtNameList: string[]
+  ) {
+    const th: ITreeHelper = new TreeHelper();
+    const treeRootNwk: NodeType = parseNewick(newick);
+    const dfLeaves: { [name: string]: any } = {};
+    const dfRowCount: number = df.rowCount;
+    for (let rowI = 0; rowI < dfRowCount; rowI++)
+      dfLeaves[df.get('id', rowI)] = rowI;
+    const treeRoot: NodeType = th.filterTreeByLeaves(treeRootNwk, dfLeaves)!;
+    const resList: NodeType[] = th.getNodesByLeaves(treeRoot, leaves);
+    const tgtList: NodeType[] = th.getNodeList(treeRoot).filter((n) => tgtNameList.includes(n.name));
+    expectArray(resList, tgtList);
+  }
+
   function _testGetLeafList(nwk: string, tgtLeafNameList: string[]) {
     const th: ITreeHelper = new TreeHelper();
     const root: NodeType = parseNewick(nwk);

@@ -7,7 +7,7 @@ import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {TAGS, TreeHelper} from '../utils/tree-helper';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
 import {ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
-import { _package } from '../package';
+import {_package} from '../package';
 
 export class TreeForGridFilterApp {
   private th!: ITreeHelper;

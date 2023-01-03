@@ -43,6 +43,8 @@ export class TreeForGridApp {
     const dataDf = DG.DataFrame.fromCsv(csv);
     dataDf.setTag(TAGS.DF_NEWICK, newick);
     dataDf.setTag(TAGS.DF_NEWICK_LEAF_COL_NAME, leafColName);
+    // For debug purposes numbering rows with index
+    dataDf.columns.addNewVirtual('[index]', (rowI: number) => { return rowI; }, DG.TYPE.INT);
 
     await this.setData(dataDf, newick);
   }
