@@ -7,8 +7,7 @@ import {interval, Unsubscribable} from 'rxjs';
 
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import $ from 'cash-dom';
-import {TreeHelper} from '../utils/tree-helper';
-import {ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
+import {getTreeHelper, ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
 import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
 
 // const getBranchScaleOld = PhylocanvasGL.prototype.getBranchScale;
@@ -20,11 +19,11 @@ import {PhylocanvasGL} from '@phylocanvas/phylocanvas.gl';
  * @param {string} leafColName Column name of grid.dataFrame to use as leaf name/key
  *                                 undefined - use row index as leaf name/key
  */
-export function injectTreeToGridUI(
+export async function injectTreeToGridUI(
   grid: DG.Grid, newickStr: string, leafColName: string, neighborWidth: number = 100,
   cut?: { min: number, max: number, clusterColName: string }
-): GridNeighbor {
-  const th: ITreeHelper = new TreeHelper();
+): Promise<GridNeighbor> {
+  const th: ITreeHelper = await getTreeHelper();
   const subs: Unsubscribable[] = [];
   //const _grid = grid;
   const treeN = attachDivToGrid(grid, neighborWidth);
