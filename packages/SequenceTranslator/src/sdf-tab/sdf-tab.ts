@@ -1,12 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-// import '../../css/style.css';
+
+import '../../css/sdf-tab.css';
 
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 import * as rxjs from 'rxjs';
-// import $ from 'cash-dom';
+import $ from 'cash-dom';
 
 import {download} from '../utils/helpers';
 import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
@@ -97,18 +98,6 @@ export function saveSdf(
 export function getSdfTab(): HTMLDivElement {
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
-  // label names
-  const ssInputLabel = 'Sense Strand';
-  const asInputLabel = 'Anti Sense';
-  const as2InputLabel = 'Anti Sense 2';
-  const ssDirectionLabel = 'SS direction';
-  const asDirectionLabel = 'AS direction';
-  const as2DirectionLabel = 'AS2 direction';
-  // const inputColumnName = 'Sequences';
-  // const directionColumnName = 'Direction';
-  const inputColumnName = '';
-  const directionColumnName = '';
-
   // default input values
   const straight = '5′ → 3′';
   const inverse = '3′ → 5′';
@@ -126,17 +115,17 @@ export function getSdfTab(): HTMLDivElement {
   const useChiralInput = ui.boolInput('Use chiral', true);
 
   // choice inputs
-  const ssDirection = ui.choiceInput(ssDirectionLabel, straight, [straight, inverse]);
+  const ssDirection = ui.choiceInput('SS direction', straight, [straight, inverse]);
   ssDirection.onChanged(() => { invertSS = ssDirection.value === inverse; });
-  const asDirection = ui.choiceInput(asDirectionLabel, straight, [straight, inverse]);
+  const asDirection = ui.choiceInput('AS direction', straight, [straight, inverse]);
   asDirection.onChanged(() => { invertAS = asDirection.value === inverse; });
-  const as2Direction = ui.choiceInput(as2DirectionLabel, straight, [straight, inverse]);
+  const as2Direction = ui.choiceInput('AS2 direction', straight, [straight, inverse]);
   as2Direction.onChanged(() => { invertAS = asDirection.value === inverse; });
 
   // labels
-  const ssLabel = ui.label(ssInputLabel);
-  const asLabel = ui.label(asInputLabel);
-  const as2Label = ui.label(as2InputLabel);
+  const ssLabel = ui.label('Sense Strand');
+  const asLabel = ui.label('Anti Sense');
+  const as2Label = ui.label('Anti Sense 2');
 
   // table layout
   const tableLayout = ui.table(
@@ -149,12 +138,14 @@ export function getSdfTab(): HTMLDivElement {
       case 'as2':
         return [as2Label, as2Input.root, as2Direction.root];
       }
-    }, ['', inputColumnName, directionColumnName]
+    }, ['', '', '']
   );
 
   // text input label style
-  for (const item of [ssLabel, asLabel, as2Label])
+  for (const item of [ssLabel, asLabel, as2Label]) {
     item.parentElement!.classList.add('sdf-input-form', 'sdf-text-input-label');
+    $(item.parentElement!).css('padding-top', '3px'); // otherwise overridden
+  }
 
   // choice input label style
   for (const item of [ssDirection.root, asDirection.root, as2Direction.root])
@@ -162,9 +153,7 @@ export function getSdfTab(): HTMLDivElement {
 
   for (const item of [ssInput, asInput, as2Input]) {
     // text area's parent td
-    item.root.parentElement!.style.width = '100%';
-    // text area style
-    $(item.root).find('textarea').addClass('sdf-textarea');
+    item.root.parentElement!.classList.add('sdf-text-input-td');
   }
 
   // molecule image container
