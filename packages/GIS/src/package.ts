@@ -372,20 +372,19 @@ async function getKMZData(buffer: any): Promise<string> {
 export async function gisKMZFileViewer(file: DG.FileInfo): Promise<DG.View> {
   const viewFile = DG.View.create();
   viewFile.name = 'Preview of: ' + file.name;
-  viewFile.root.id = 'map-cont'; //boxMap - div that contains map
+  viewFile.root.id = 'map-container'; //boxMap - div that contains map
   viewFile.root.style.padding = '0px';
 
   let kmlData = '';
   if ((file.extension).toLowerCase() === 'kmz') {
     const strBuf = await file.readAsBytes();
     kmlData = await getKMZData(strBuf);
-  }
-  else if ((file.extension).toLowerCase() === 'kml')
+  } else if ((file.extension).toLowerCase() === 'kml')
     kmlData = await file.readAsString();
 
   setTimeout(() => {
     const ol = new OpenLayers();
-    ol.initMap('map-cont');
+    ol.initMap('map-container');
     useGeographic();
     ol.addKMLLayerFromStream(kmlData);
     ol.setViewOptions({projection: 'EPSG:3857'});
@@ -396,7 +395,7 @@ export async function gisKMZFileViewer(file: DG.FileInfo): Promise<DG.View> {
 
 //name: gisKMLFileHandler
 //tags: file-handler
-//meta.ext: kmz
+//meta.ext: kml
 //input: string filecontent
 //output: list tables
 export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
@@ -418,14 +417,17 @@ export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
           gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
 
         dfFromKML.name = newLayer.get('layerName');
-        const tv = grok.shell.addTableView(dfFromKML as DG.DataFrame);
-        tv.name = 'dfFromKML.name' + ' (manual)';
 
-        const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromKML)) as GisViewer;
-        if (mapViewer) {
-          (mapViewer as GisViewer).init();
-          (mapViewer as GisViewer).ol.addLayer(newLayer);
-        }
+        const tableView = grok.shell.addTableView(dfFromKML as DG.DataFrame);
+        tableView.name = 'dfFromKML.name' + ' (manual)';
+
+        setTimeout((tableView: DG.TableView, kmlData: string) => {
+          const v = tableView;
+          const mapViewer = v.addViewer(new GisViewer()) as GisViewer;
+
+          mapViewer.ol.initMap('map-container');
+          mapViewer.ol.addKMLLayerFromStream(kmlData);
+        }, 1000, tableView, kmlData); //should use it because we need visible and active View for map initializing
       }
     }
   }
@@ -436,12 +438,11 @@ export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
 //name: gisKMZFileHandler
 //tags: file-handler
 //meta.ext: kmz
-//input: list bytes
+//input: list filecontent
 //output: list tables
 export async function gisKMZFileHandler(filecontent: Uint8Array): Promise<DG.DataFrame[]> {
   // export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
   //detect the kind of file
-
   let dfFromKML: DG.DataFrame | undefined = undefined;
   const ol = new OpenLayers();
 
@@ -458,14 +459,17 @@ export async function gisKMZFileHandler(filecontent: Uint8Array): Promise<DG.Dat
           gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
 
         dfFromKML.name = newLayer.get('layerName');
-        const tv = grok.shell.addTableView(dfFromKML as DG.DataFrame);
-        tv.name = 'dfFromKML.name' + ' (manual)';
 
-        const mapViewer = tv.addViewer(DG.Viewer.fromType('Map', dfFromKML)) as GisViewer;
-        if (mapViewer) {
-          (mapViewer as GisViewer).init();
-          (mapViewer as GisViewer).ol.addLayer(newLayer);
-        }
+        const tableView = grok.shell.addTableView(dfFromKML as DG.DataFrame);
+        tableView.name = 'dfFromKML.name' + ' (manual)';
+
+        setTimeout((tableView: DG.TableView, kmlData: string) => {
+          const v = tableView;
+          const mapViewer = v.addViewer(new GisViewer()) as GisViewer;
+
+          mapViewer.ol.initMap('map-container');
+          mapViewer.ol.addKMLLayerFromStream(kmlData);
+        }, 1000, tableView, kmlData); //should use it because we need visible and active View for map initializing
       }
     }
   }
@@ -516,12 +520,12 @@ export async function gisGeoJSONFileViewer(file: DG.FileInfo): Promise<DG.View |
 
   const viewFile = DG.View.create();
   viewFile.name = 'Preview of: ' + file.name;
-  viewFile.root.id = 'map-cont';
+  viewFile.root.id = 'map-container';
   viewFile.root.style.padding = '0px';
 
   setTimeout(() => {
     const ol = new OpenLayers();
-    ol.initMap('map-cont');
+    ol.initMap('map-container');
     useGeographic();
     ol.setViewOptions({
       projection: 'EPSG:4326',
