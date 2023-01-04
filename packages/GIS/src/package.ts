@@ -131,6 +131,7 @@ async function fetchCensus() {
     censusRes = await (await grok.dapi.fetchProxy(url)).json();
   } catch (e: any) {
     grok.shell.error(`Census fetch error: ${e.message}`);
+    censusRes = '';
   } finally {
     return censusRes;
   }
