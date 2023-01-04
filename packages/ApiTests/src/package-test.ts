@@ -56,6 +56,7 @@ import './scripts/scripts-params';
 import './gui/dialogs';
 import './gui/files';
 import './gui/grid';
+import './gui/project-upload';
 
 import {runTests, tests, TestContext} from '@datagrok-libraries/utils/src/test';
 export const _package = new DG.Package();
