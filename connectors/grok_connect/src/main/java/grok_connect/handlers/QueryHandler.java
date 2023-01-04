@@ -23,15 +23,9 @@ import grok_connect.providers.JdbcDataProvider;
 @WebSocket
 public class QueryHandler {
 
-    QueryType qt;
-
-    public QueryHandler(QueryType qt) {
-        this.qt = qt;
-    }
-
     @OnWebSocketConnect
     public void connected(Session session) throws IOException {
-        SessionManager.add(session, qt);
+        SessionManager.add(session);
     }
 
     @OnWebSocketClose

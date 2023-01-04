@@ -55,7 +55,77 @@ public class GrokConnect {
     }
 
     private static void connectorsModule() {
-        webSocket("/query", new QueryHandler(QueryType.query));
+        webSocket("/query_socket", new QueryHandler());
+        // webSocket("/query_table", new QueryHandler(QueryType.tableQuery));
+
+        post("/query", (request, response) -> {
+            logMemory();
+
+            BufferAccessor buffer;
+            DataQueryRunResult result = new DataQueryRunResult();
+            result.log = "";
+
+            FuncCall call = null;
+            if (SettingsManager.getInstance().settings != null) {
+                try {
+                    call = gson.fromJson(request.body(), FuncCall.class);
+                    call.log = "";
+                    call.setParamValues();
+                    call.afterDeserialization();
+                    System.out.println(call.func.query);
+                    DateTime startTime = DateTime.now();
+                    DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
+                    DataFrame dataFrame = provider.execute(call);
+                    double execTime = (DateTime.now().getMillis() - startTime.getMillis()) / 1000.0;
+
+                    result.blob = dataFrame.toByteArray();
+                    result.blobLength = result.blob.length;
+                    result.timeStamp = startTime.toString("yyyy-MM-dd hh:mm:ss");
+                    result.execTime = execTime;
+                    result.columns = dataFrame.columns.size();
+                    result.rows = dataFrame.rowCount;
+                    // TODO Write to result log there
+
+                    String logString = String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
+                            result.timeStamp,
+                            result.execTime,
+                            result.columns,
+                            result.rows,
+                            result.blobLength);
+
+                    if (call.debugQuery) {
+                        result.log += logMemory();
+                        result.log += logString;
+                    }
+                    logger.info(logString);
+
+                    buffer = new BufferAccessor(result.blob);
+                    buffer.bufPos = result.blob.length;
+
+                } catch (Throwable ex) {
+                    buffer = packException(result,ex);
+                    if (ex instanceof OutOfMemoryError)
+                        needToReboot = true;
+                }
+                finally {
+                    if (call != null)
+                        result.log += call.log;
+                }
+            }
+            else {
+                result.errorMessage = NoSettingsException.class.getName();
+                buffer = new BufferAccessor();
+            }
+
+            try {
+                buffer.insertStringHeader(gson.toJson(result));
+                buildResponse(response, buffer.toUint8List());
+            } catch (Throwable ex) {
+                buildExceptionResponse(response, printError(ex));
+            }
+
+            return response;
+        });
 
         post("/test", (request, response) -> {
             if (SettingsManager.getInstance().settings == null)
@@ -67,21 +137,21 @@ public class GrokConnect {
             return provider.testConnection(connection);
         });
 
-        post("/query_table", (request, response) -> {
-            logMemory();
-            try {
-                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-                TableQuery query = gson.fromJson((String)connection.parameters.get("queryTable"), TableQuery.class);
-                DataProvider provider = providerManager.getByName(connection.dataSource);
-                DataFrame result = provider.queryTable(connection, query);
-                buildResponse(response, result.toByteArray());
-            } catch (Throwable ex) {
-                buildExceptionResponse(response, printError(ex));
-            }
+        // post("/query_table", (request, response) -> {
+        //     logMemory();
+        //     try {
+        //         DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+        //         TableQuery query = gson.fromJson((String)connection.parameters.get("queryTable"), TableQuery.class);
+        //         DataProvider provider = providerManager.getByName(connection.dataSource);
+        //         DataFrame result = provider.queryTable(connection, query);
+        //         buildResponse(response, result.toByteArray());
+        //     } catch (Throwable ex) {
+        //         buildExceptionResponse(response, printError(ex));
+        //     }
 
-            logMemory();
-            return response;
-        });
+        //     logMemory();
+        //     return response;
+        // });
 
         post("/query_table_sql", (request, response) -> {
             logMemory();

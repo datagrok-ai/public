@@ -5,14 +5,12 @@ import java.util.HashMap;
 
 import org.eclipse.jetty.websocket.api.Session;
 
-import grok_connect.utils.QueryType;
-
 public class SessionManager {
     static HashMap<Session, SessionHandler> sessions = new HashMap<Session, SessionHandler>();
 
-    static void add(Session s, QueryType qt) throws IOException {
+    static void add(Session s) throws IOException {
         
-        sessions.put(s, new SessionHandler(s, qt));
+        sessions.put(s, new SessionHandler(s));
         s.getRemote().sendString("CONNECTED");
     }
 
