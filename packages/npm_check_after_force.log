@@ -1,0 +1,610 @@
+/home/ksumag/Datagrok/public_repo/public/packages/PdfViewer
+
+up to date, audited 1 package in 47ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/CustomML
+
+up to date, audited 253 packages in 4s
+
+48 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/DevTools
+
+up to date, audited 761 packages in 2s
+
+72 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/CLI
+
+up to date, audited 1 package in 47ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/BiostructureViewer
+
+up to date, audited 914 packages in 7s
+
+94 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Peptides
+
+up to date, audited 808 packages in 2s
+
+78 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/SQLite
+
+up to date, audited 848 packages in 1s
+
+65 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/PhyloTreeViewer
+
+added 31 packages, removed 29 packages, changed 62 packages, and audited 1120 packages in 41s
+
+62 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+jquery  <=3.4.1
+Severity: moderate
+Cross-Site Scripting (XSS) in jquery - https://github.com/advisories/GHSA-rmxg-73gg-4p98
+XSS in jQuery as used in Drupal, Backdrop CMS, and other products - https://github.com/advisories/GHSA-6c3j-c64m-qhgq
+Potential XSS vulnerability in jQuery - https://github.com/advisories/GHSA-gxr4-xjj5-5px2
+Potential XSS vulnerability in jQuery - https://github.com/advisories/GHSA-jpcq-cgw6-v4j6
+fix available via `npm audit fix --force`
+Will install phylotree@1.1.0, which is a breaking change
+node_modules/jquery
+  phylotree  <=0.1.10
+  Depends on vulnerable versions of jquery
+  node_modules/phylotree
+
+minimist  <=1.2.5
+Severity: critical
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-xvch-5gv4-984h
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-vh95-rmgr-6w4m
+No fix available
+node_modules/minimist
+  detect-indent  0.2.0
+  Depends on vulnerable versions of minimist
+  node_modules/detect-indent
+    dts-bundle  >=0.2.0
+    Depends on vulnerable versions of detect-indent
+    node_modules/dts-bundle
+      @datagrok-libraries/gridext  *
+      Depends on vulnerable versions of dts-bundle
+      node_modules/@datagrok-libraries/gridext
+
+6 vulnerabilities (5 moderate, 1 critical)
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+/home/ksumag/Datagrok/public_repo/public/packages/Helm
+
+up to date, audited 747 packages in 1s
+
+63 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Arrow
+
+up to date, audited 886 packages in 1s
+
+73 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Pedometer
+
+up to date, audited 1 package in 47ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/MultiForm
+
+up to date, audited 1 package in 48ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/DSP
+
+up to date, audited 18 packages in 1s
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Swaggers
+
+up to date, audited 1 package in 47ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Ketcher
+
+up to date, audited 1124 packages in 5s
+
+154 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Viewers
+
+up to date, audited 473 packages in 4s
+
+60 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+d3-color  <3.1.0
+Severity: high
+d3-color vulnerable to ReDoS - https://github.com/advisories/GHSA-36jr-mh4h-2g58
+No fix available
+node_modules/circos/node_modules/d3-color
+node_modules/d3-color
+node_modules/d3-scale-chromatic/node_modules/d3-color
+  d3  4.0.0-alpha.1 - 6.7.0
+  Depends on vulnerable versions of d3-brush
+  Depends on vulnerable versions of d3-color
+  Depends on vulnerable versions of d3-interpolate
+  Depends on vulnerable versions of d3-scale
+  Depends on vulnerable versions of d3-scale
+  Depends on vulnerable versions of d3-scale-chromatic
+  Depends on vulnerable versions of d3-transition
+  Depends on vulnerable versions of d3-zoom
+  node_modules/circos/node_modules/d3
+  node_modules/d3
+    circos  *
+    Depends on vulnerable versions of d3
+    node_modules/circos
+  d3-interpolate  0.1.3 - 2.0.1
+  Depends on vulnerable versions of d3-color
+  node_modules/circos/node_modules/d3-interpolate
+  node_modules/d3-interpolate
+  node_modules/d3-scale-chromatic/node_modules/d3-interpolate
+    d3-brush  0.1.0 - 2.1.0
+    Depends on vulnerable versions of d3-interpolate
+    Depends on vulnerable versions of d3-transition
+    node_modules/circos/node_modules/d3-brush
+    node_modules/d3-brush
+    d3-scale  0.1.3 - 3.3.0
+    Depends on vulnerable versions of d3-color
+    Depends on vulnerable versions of d3-interpolate
+    node_modules/circos/node_modules/d3-scale
+    node_modules/d3-scale
+    d3-scale-chromatic  0.1.0 - 2.0.0
+    Depends on vulnerable versions of d3-color
+    Depends on vulnerable versions of d3-interpolate
+    node_modules/d3-scale-chromatic
+    node_modules/d3/node_modules/d3-scale-chromatic
+    d3-transition  0.0.7 - 2.0.0
+    Depends on vulnerable versions of d3-color
+    Depends on vulnerable versions of d3-interpolate
+    node_modules/circos/node_modules/d3-transition
+    node_modules/d3-transition
+    d3-zoom  0.0.2 - 2.0.0
+    Depends on vulnerable versions of d3-interpolate
+    Depends on vulnerable versions of d3-transition
+    node_modules/circos/node_modules/d3-zoom
+    node_modules/d3-zoom
+
+9 high severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+Some issues need review, and may require choosing
+a different dependency.
+/home/ksumag/Datagrok/public_repo/public/packages/Dendrogram
+
+up to date, audited 797 packages in 2s
+
+63 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+minimist  <=1.2.5
+Severity: critical
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-xvch-5gv4-984h
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-vh95-rmgr-6w4m
+No fix available
+node_modules/detect-indent/node_modules/minimist
+  detect-indent  0.2.0
+  Depends on vulnerable versions of minimist
+  node_modules/detect-indent
+    dts-bundle  >=0.2.0
+    Depends on vulnerable versions of detect-indent
+    node_modules/dts-bundle
+      @datagrok-libraries/gridext  *
+      Depends on vulnerable versions of dts-bundle
+      node_modules/@datagrok-libraries/gridext
+
+4 vulnerabilities (3 moderate, 1 critical)
+
+Some issues need review, and may require choosing
+a different dependency.
+/home/ksumag/Datagrok/public_repo/public/packages/PepSeA
+
+up to date, audited 333 packages in 1s
+
+51 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/NglViewer
+
+up to date, audited 762 packages in 1s
+
+76 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Charts
+
+up to date, audited 765 packages in 1s
+
+67 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/ClinicalCase
+
+up to date, audited 763 packages in 1s
+
+68 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/ApiTests
+
+up to date, audited 802 packages in 2s
+
+68 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Compute
+
+up to date, audited 347 packages in 1s
+
+47 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/ChemblAPI
+
+up to date, audited 766 packages in 1s
+
+74 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/OligoBatchCalculator
+
+up to date, audited 755 packages in 1s
+
+71 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Orbit
+
+up to date, audited 249 packages in 3s
+
+23 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/VDJtools
+
+up to date, audited 19 packages in 790ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/SimPKPD
+
+up to date, audited 766 packages in 6s
+
+73 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/PowerGrid
+
+up to date, audited 264 packages in 1s
+
+41 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+minimist  <=1.2.5
+Severity: critical
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-xvch-5gv4-984h
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-vh95-rmgr-6w4m
+No fix available
+node_modules/minimist
+  detect-indent  0.2.0
+  Depends on vulnerable versions of minimist
+  node_modules/detect-indent
+    dts-bundle  >=0.2.0
+    Depends on vulnerable versions of detect-indent
+    node_modules/dts-bundle
+      @datagrok-libraries/gridext  *
+      Depends on vulnerable versions of dts-bundle
+      node_modules/@datagrok-libraries/gridext
+
+4 vulnerabilities (3 moderate, 1 critical)
+
+Some issues need review, and may require choosing
+a different dependency.
+/home/ksumag/Datagrok/public_repo/public/packages/SequenceTranslator
+
+up to date, audited 1196 packages in 2s
+
+69 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Tutorials
+
+up to date, audited 758 packages in 1s
+
+65 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Sequence
+
+up to date, audited 1 package in 51ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Alation
+
+up to date, audited 741 packages in 4s
+
+74 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/MultiPlot
+
+up to date, audited 283 packages in 943ms
+
+41 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/MolecularLiabilityBrowserData
+
+up to date, audited 326 packages in 5s
+
+41 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/ApiSamples
+
+up to date, audited 796 packages in 1s
+
+75 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/DemoXL
+
+up to date, audited 343 packages in 1s
+
+51 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Demo
+
+up to date, audited 209 packages in 1s
+
+17 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/HitTriage
+
+up to date, audited 246 packages in 936ms
+
+48 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/BioSignals
+
+added 45 packages, removed 331 packages, changed 48 packages, and audited 267 packages in 5s
+
+48 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/UsageAnalysis
+
+up to date, audited 766 packages in 5s
+
+70 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Widgets
+
+up to date, audited 259 packages in 1s
+
+44 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Notebooks
+
+added 109 packages, removed 386 packages, changed 142 packages, and audited 499 packages in 43s
+
+90 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/PowerPack
+
+up to date, audited 801 packages in 1s
+
+76 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/TensorFlow.js
+
+up to date, audited 307 packages in 1s
+
+49 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/GIS
+
+up to date, audited 358 packages in 1s
+
+43 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Chem
+
+up to date, audited 931 packages in 2s
+
+80 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/DrugBank
+
+up to date, audited 843 packages in 2s
+
+64 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/ChaRPy
+
+added 46 packages, removed 342 packages, changed 86 packages, and audited 395 packages in 8s
+
+57 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Chembl
+
+up to date, audited 764 packages in 1s
+
+76 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Bio
+
+up to date, audited 961 packages in 2s
+
+63 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Leaflet
+
+up to date, audited 17 packages in 1s
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/GridExtDemo
+
+added 1 package, removed 9 packages, changed 3 packages, and audited 241 packages in 2s
+
+47 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+minimatch  <=3.0.4
+Severity: high
+Regular Expression Denial of Service in minimatch - https://github.com/advisories/GHSA-hxm2-r34f-qmc5
+minimatch ReDoS vulnerability - https://github.com/advisories/GHSA-f8q6-p94x-37v3
+fix available via `npm audit fix --force`
+Will install dts-bundle@0.7.3, which is a breaking change
+node_modules/glob/node_modules/minimatch
+  glob  3.0.0 - 5.0.14
+  Depends on vulnerable versions of minimatch
+  node_modules/glob
+    dts-bundle  <=0.3.0
+    Depends on vulnerable versions of glob
+    node_modules/dts-bundle
+
+3 high severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+/home/ksumag/Datagrok/public_repo/public/packages/NLP
+
+up to date, audited 775 packages in 2s
+
+82 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Meta
+
+up to date, audited 319 packages in 983ms
+
+46 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/CDMExplorer
+
+up to date, audited 254 packages in 987ms
+
+50 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/MolecularLiabilityBrowser
+
+up to date, audited 1058 packages in 2s
+
+74 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/PubChemApi
+
+up to date, audited 842 packages in 2s
+
+64 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Chemspace
+
+up to date, audited 1 package in 47ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Tika
+
+up to date, audited 1 package in 48ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/EnamineStore
+
+up to date, audited 1 package in 46ms
+
+found 0 vulnerabilities

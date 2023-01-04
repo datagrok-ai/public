@@ -1,0 +1,1005 @@
+/home/ksumag/Datagrok/public_repo/public/packages/PdfViewer
+
+up to date, audited 1 package in 48ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/CustomML
+
+up to date, audited 253 packages in 1s
+
+48 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/DevTools
+
+up to date, audited 761 packages in 1s
+
+72 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/CLI
+
+up to date, audited 1 package in 45ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/BiostructureViewer
+
+up to date, audited 914 packages in 3s
+
+94 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Peptides
+
+up to date, audited 808 packages in 1s
+
+78 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/SQLite
+
+up to date, audited 848 packages in 6s
+
+65 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/PhyloTreeViewer
+
+up to date, audited 1118 packages in 25s
+
+63 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+d3-color  <3.1.0
+Severity: high
+d3-color vulnerable to ReDoS - https://github.com/advisories/GHSA-36jr-mh4h-2g58
+fix available via `npm audit fix --force`
+Will install d3@7.8.0, which is a breaking change
+node_modules/d3-color
+  @deck.gl/carto  8.4.0-alpha.1 - 8.8.17 || >=8.9.0-alpha.2
+  Depends on vulnerable versions of d3-color
+  Depends on vulnerable versions of d3-scale
+  node_modules/@deck.gl/carto
+    deck.gl  8.7.0-alpha.1 - 8.8.17 || >=8.9.0-alpha.2
+    Depends on vulnerable versions of @deck.gl/carto
+    node_modules/deck.gl
+  d3  4.0.0-alpha.1 - 6.7.0
+  Depends on vulnerable versions of d3-brush
+  Depends on vulnerable versions of d3-color
+  Depends on vulnerable versions of d3-interpolate
+  Depends on vulnerable versions of d3-scale
+  Depends on vulnerable versions of d3-scale-chromatic
+  Depends on vulnerable versions of d3-transition
+  Depends on vulnerable versions of d3-zoom
+  node_modules/d3
+    phylotree  >=0.2.0-alpha
+    Depends on vulnerable versions of d3
+    node_modules/phylotree
+  d3-interpolate  0.1.3 - 2.0.1
+  Depends on vulnerable versions of d3-color
+  node_modules/d3-interpolate
+    d3-brush  0.1.0 - 2.1.0
+    Depends on vulnerable versions of d3-interpolate
+    Depends on vulnerable versions of d3-transition
+    node_modules/d3-brush
+    d3-scale  0.1.5 - 3.3.0
+    Depends on vulnerable versions of d3-interpolate
+    node_modules/d3-scale
+    d3-scale-chromatic  0.1.0 - 2.0.0
+    Depends on vulnerable versions of d3-color
+    Depends on vulnerable versions of d3-interpolate
+    node_modules/d3-scale-chromatic
+    d3-transition  0.0.7 - 2.0.0
+    Depends on vulnerable versions of d3-color
+    Depends on vulnerable versions of d3-interpolate
+    node_modules/d3-transition
+    d3-zoom  0.0.2 - 2.0.0
+    Depends on vulnerable versions of d3-interpolate
+    Depends on vulnerable versions of d3-transition
+    node_modules/d3-zoom
+
+minimist  <=1.2.5
+Severity: critical
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-xvch-5gv4-984h
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-vh95-rmgr-6w4m
+No fix available
+node_modules/minimist
+  detect-indent  0.2.0
+  Depends on vulnerable versions of minimist
+  node_modules/detect-indent
+    dts-bundle  >=0.2.0
+    Depends on vulnerable versions of detect-indent
+    node_modules/dts-bundle
+      @datagrok-libraries/gridext  *
+      Depends on vulnerable versions of dts-bundle
+      node_modules/@datagrok-libraries/gridext
+
+15 vulnerabilities (3 moderate, 11 high, 1 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+/home/ksumag/Datagrok/public_repo/public/packages/Helm
+
+up to date, audited 747 packages in 1s
+
+63 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Arrow
+
+up to date, audited 886 packages in 2s
+
+73 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Pedometer
+
+up to date, audited 1 package in 50ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/MultiForm
+
+up to date, audited 1 package in 50ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/DSP
+
+up to date, audited 18 packages in 657ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Swaggers
+
+up to date, audited 1 package in 52ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Ketcher
+
+up to date, audited 1124 packages in 2s
+
+154 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Viewers
+
+up to date, audited 473 packages in 4s
+
+60 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+d3-color  <3.1.0
+Severity: high
+d3-color vulnerable to ReDoS - https://github.com/advisories/GHSA-36jr-mh4h-2g58
+No fix available
+node_modules/circos/node_modules/d3-color
+node_modules/d3-color
+node_modules/d3-scale-chromatic/node_modules/d3-color
+  d3  4.0.0-alpha.1 - 6.7.0
+  Depends on vulnerable versions of d3-brush
+  Depends on vulnerable versions of d3-color
+  Depends on vulnerable versions of d3-interpolate
+  Depends on vulnerable versions of d3-scale
+  Depends on vulnerable versions of d3-scale
+  Depends on vulnerable versions of d3-scale-chromatic
+  Depends on vulnerable versions of d3-transition
+  Depends on vulnerable versions of d3-zoom
+  node_modules/circos/node_modules/d3
+  node_modules/d3
+    circos  *
+    Depends on vulnerable versions of d3
+    node_modules/circos
+  d3-interpolate  0.1.3 - 2.0.1
+  Depends on vulnerable versions of d3-color
+  node_modules/circos/node_modules/d3-interpolate
+  node_modules/d3-interpolate
+  node_modules/d3-scale-chromatic/node_modules/d3-interpolate
+    d3-brush  0.1.0 - 2.1.0
+    Depends on vulnerable versions of d3-interpolate
+    Depends on vulnerable versions of d3-transition
+    node_modules/circos/node_modules/d3-brush
+    node_modules/d3-brush
+    d3-scale  0.1.3 - 3.3.0
+    Depends on vulnerable versions of d3-color
+    Depends on vulnerable versions of d3-interpolate
+    node_modules/circos/node_modules/d3-scale
+    node_modules/d3-scale
+    d3-scale-chromatic  0.1.0 - 2.0.0
+    Depends on vulnerable versions of d3-color
+    Depends on vulnerable versions of d3-interpolate
+    node_modules/d3-scale-chromatic
+    node_modules/d3/node_modules/d3-scale-chromatic
+    d3-transition  0.0.7 - 2.0.0
+    Depends on vulnerable versions of d3-color
+    Depends on vulnerable versions of d3-interpolate
+    node_modules/circos/node_modules/d3-transition
+    node_modules/d3-transition
+    d3-zoom  0.0.2 - 2.0.0
+    Depends on vulnerable versions of d3-interpolate
+    Depends on vulnerable versions of d3-transition
+    node_modules/circos/node_modules/d3-zoom
+    node_modules/d3-zoom
+
+9 high severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+Some issues need review, and may require choosing
+a different dependency.
+/home/ksumag/Datagrok/public_repo/public/packages/Dendrogram
+
+up to date, audited 797 packages in 2s
+
+63 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+minimist  <=1.2.5
+Severity: critical
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-xvch-5gv4-984h
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-vh95-rmgr-6w4m
+No fix available
+node_modules/detect-indent/node_modules/minimist
+  detect-indent  0.2.0
+  Depends on vulnerable versions of minimist
+  node_modules/detect-indent
+    dts-bundle  >=0.2.0
+    Depends on vulnerable versions of detect-indent
+    node_modules/dts-bundle
+      @datagrok-libraries/gridext  *
+      Depends on vulnerable versions of dts-bundle
+      node_modules/@datagrok-libraries/gridext
+
+4 vulnerabilities (3 moderate, 1 critical)
+
+Some issues need review, and may require choosing
+a different dependency.
+/home/ksumag/Datagrok/public_repo/public/packages/PepSeA
+
+up to date, audited 333 packages in 919ms
+
+51 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/NglViewer
+
+up to date, audited 762 packages in 2s
+
+76 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Charts
+
+up to date, audited 765 packages in 5s
+
+67 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/ClinicalCase
+
+up to date, audited 763 packages in 2s
+
+68 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/ApiTests
+
+up to date, audited 802 packages in 2s
+
+68 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Compute
+
+up to date, audited 347 packages in 5s
+
+47 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/ChemblAPI
+
+up to date, audited 766 packages in 2s
+
+74 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/OligoBatchCalculator
+
+up to date, audited 755 packages in 1s
+
+71 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Orbit
+
+up to date, audited 249 packages in 6s
+
+23 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/VDJtools
+
+up to date, audited 19 packages in 1s
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/SimPKPD
+
+up to date, audited 766 packages in 1s
+
+73 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/PowerGrid
+
+up to date, audited 264 packages in 1s
+
+41 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+minimist  <=1.2.5
+Severity: critical
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-xvch-5gv4-984h
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-vh95-rmgr-6w4m
+No fix available
+node_modules/minimist
+  detect-indent  0.2.0
+  Depends on vulnerable versions of minimist
+  node_modules/detect-indent
+    dts-bundle  >=0.2.0
+    Depends on vulnerable versions of detect-indent
+    node_modules/dts-bundle
+      @datagrok-libraries/gridext  *
+      Depends on vulnerable versions of dts-bundle
+      node_modules/@datagrok-libraries/gridext
+
+4 vulnerabilities (3 moderate, 1 critical)
+
+Some issues need review, and may require choosing
+a different dependency.
+/home/ksumag/Datagrok/public_repo/public/packages/SequenceTranslator
+
+up to date, audited 1196 packages in 2s
+
+69 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Tutorials
+
+up to date, audited 758 packages in 1s
+
+65 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Sequence
+
+up to date, audited 1 package in 45ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Alation
+
+up to date, audited 741 packages in 1s
+
+74 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/MultiPlot
+
+up to date, audited 283 packages in 917ms
+
+41 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/MolecularLiabilityBrowserData
+
+up to date, audited 326 packages in 2s
+
+41 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/ApiSamples
+
+up to date, audited 796 packages in 2s
+
+75 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/DemoXL
+
+up to date, audited 343 packages in 6s
+
+51 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Demo
+
+up to date, audited 209 packages in 1s
+
+17 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/HitTriage
+
+up to date, audited 246 packages in 966ms
+
+48 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/BioSignals
+
+up to date, audited 553 packages in 2s
+
+40 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+glob-parent  <5.1.2
+Severity: high
+glob-parent before 5.1.2 vulnerable to Regular Expression Denial of Service in enclosure regex - https://github.com/advisories/GHSA-ww39-953v-wcq6
+fix available via `npm audit fix --force`
+Will install webpack@5.75.0, which is a breaking change
+node_modules/watchpack-chokidar2/node_modules/glob-parent
+  chokidar  1.0.0-rc1 - 2.1.8
+  Depends on vulnerable versions of glob-parent
+  node_modules/watchpack-chokidar2/node_modules/chokidar
+    watchpack-chokidar2  *
+    Depends on vulnerable versions of chokidar
+    node_modules/watchpack-chokidar2
+      watchpack  1.7.2 - 1.7.5
+      Depends on vulnerable versions of watchpack-chokidar2
+      node_modules/watchpack
+        webpack  1.12.3 - 5.0.0-rc.6
+        Depends on vulnerable versions of loader-utils
+        Depends on vulnerable versions of terser-webpack-plugin
+        Depends on vulnerable versions of watchpack
+        node_modules/webpack
+          terser-webpack-plugin  <=2.2.1
+          Depends on vulnerable versions of webpack
+          node_modules/terser-webpack-plugin
+          webpack-cli  <=0.0.8-development || 1.3.0 - 4.0.0-rc.1
+          Depends on vulnerable versions of loader-utils
+          Depends on vulnerable versions of webpack
+          node_modules/webpack-cli
+
+json5  <2.2.2
+Severity: high
+Prototype Pollution in JSON5 via Parse Method - https://github.com/advisories/GHSA-9c47-m6qq-7p4h
+fix available via `npm audit fix --force`
+Will install webpack@5.75.0, which is a breaking change
+node_modules/json5
+  loader-utils  <=1.4.2
+  Depends on vulnerable versions of json5
+  node_modules/loader-utils
+
+9 high severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+/home/ksumag/Datagrok/public_repo/public/packages/UsageAnalysis
+
+up to date, audited 766 packages in 2s
+
+70 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Widgets
+
+up to date, audited 259 packages in 1s
+
+44 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Notebooks
+
+up to date, audited 776 packages in 18s
+
+59 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+codemirror  <5.58.2
+Severity: moderate
+Regular expression denial of service in codemirror - https://github.com/advisories/GHSA-4gw3-8f77-f72c
+fix available via `npm audit fix --force`
+Will install @jupyterlab/codemirror@3.5.2, which is a breaking change
+node_modules/codemirror
+  @jupyterlab/codemirror  0.11.0 - 3.0.8 || 3.1.0-alpha.0 - 3.1.0-rc.2
+  Depends on vulnerable versions of @jupyterlab/apputils
+  Depends on vulnerable versions of @jupyterlab/codeeditor
+  Depends on vulnerable versions of @jupyterlab/coreutils
+  Depends on vulnerable versions of @jupyterlab/statusbar
+  Depends on vulnerable versions of codemirror
+  node_modules/@jupyterlab/codemirror
+    @jupyterlab/cells  <=2.3.1
+    Depends on vulnerable versions of @jupyterlab/apputils
+    Depends on vulnerable versions of @jupyterlab/attachments
+    Depends on vulnerable versions of @jupyterlab/codeeditor
+    Depends on vulnerable versions of @jupyterlab/codemirror
+    Depends on vulnerable versions of @jupyterlab/coreutils
+    Depends on vulnerable versions of @jupyterlab/filebrowser
+    Depends on vulnerable versions of @jupyterlab/outputarea
+    Depends on vulnerable versions of @jupyterlab/rendermime
+    Depends on vulnerable versions of @jupyterlab/services
+    Depends on vulnerable versions of @jupyterlab/ui-components
+    node_modules/@jupyterlab/cells
+    @jupyterlab/docregistry  <=2.3.1
+    Depends on vulnerable versions of @jupyterlab/apputils
+    Depends on vulnerable versions of @jupyterlab/codeeditor
+    Depends on vulnerable versions of @jupyterlab/codemirror
+    Depends on vulnerable versions of @jupyterlab/coreutils
+    Depends on vulnerable versions of @jupyterlab/rendermime
+    Depends on vulnerable versions of @jupyterlab/services
+    Depends on vulnerable versions of @jupyterlab/ui-components
+    node_modules/@jupyterlab/docregistry
+      @jupyterlab/fileeditor  <=2.3.1
+      Depends on vulnerable versions of @jupyterlab/apputils
+      Depends on vulnerable versions of @jupyterlab/codeeditor
+      Depends on vulnerable versions of @jupyterlab/docregistry
+      Depends on vulnerable versions of @jupyterlab/statusbar
+      Depends on vulnerable versions of @jupyterlab/ui-components
+      node_modules/@jupyterlab/fileeditor
+    @jupyterlab/documentsearch  <=3.0.10 || 3.1.0-alpha.0 - 3.1.0-rc.2
+    Depends on vulnerable versions of @jupyterlab/apputils
+    Depends on vulnerable versions of @jupyterlab/cells
+    Depends on vulnerable versions of @jupyterlab/codeeditor
+    Depends on vulnerable versions of @jupyterlab/codemirror
+    Depends on vulnerable versions of @jupyterlab/fileeditor
+    Depends on vulnerable versions of @jupyterlab/notebook
+    Depends on vulnerable versions of @jupyterlab/ui-components
+    Depends on vulnerable versions of codemirror
+    node_modules/@jupyterlab/documentsearch
+    @jupyterlab/rendermime  <=3.4.1 || 3.6.0-alpha.0 - 4.0.0-alpha.4
+    Depends on vulnerable versions of @jupyterlab/apputils
+    Depends on vulnerable versions of @jupyterlab/codemirror
+    Depends on vulnerable versions of @jupyterlab/coreutils
+    Depends on vulnerable versions of @jupyterlab/services
+    Depends on vulnerable versions of marked
+    node_modules/@jupyterlab/rendermime
+      @jupyterlab/application  0.7.0 - 2.3.1
+      Depends on vulnerable versions of @jupyterlab/apputils
+      Depends on vulnerable versions of @jupyterlab/coreutils
+      Depends on vulnerable versions of @jupyterlab/docregistry
+      Depends on vulnerable versions of @jupyterlab/rendermime
+      Depends on vulnerable versions of @jupyterlab/services
+      Depends on vulnerable versions of @jupyterlab/ui-components
+      node_modules/@jupyterlab/application
+        @jupyterlab/theme-light-extension  0.8.0 - 2.3.1
+        Depends on vulnerable versions of @jupyterlab/application
+        Depends on vulnerable versions of @jupyterlab/apputils
+        node_modules/@jupyterlab/theme-light-extension
+      @jupyterlab/attachments  <=2.3.1
+      Depends on vulnerable versions of @jupyterlab/rendermime
+      node_modules/@jupyterlab/attachments
+      @jupyterlab/notebook  <=2.3.2
+      Depends on vulnerable versions of @jupyterlab/apputils
+      Depends on vulnerable versions of @jupyterlab/cells
+      Depends on vulnerable versions of @jupyterlab/codeeditor
+      Depends on vulnerable versions of @jupyterlab/coreutils
+      Depends on vulnerable versions of @jupyterlab/docregistry
+      Depends on vulnerable versions of @jupyterlab/rendermime
+      Depends on vulnerable versions of @jupyterlab/services
+      Depends on vulnerable versions of @jupyterlab/statusbar
+      Depends on vulnerable versions of @jupyterlab/ui-components
+      node_modules/@jupyterlab/notebook
+      @jupyterlab/outputarea  <=2.3.1
+      Depends on vulnerable versions of @jupyterlab/apputils
+      Depends on vulnerable versions of @jupyterlab/rendermime
+      Depends on vulnerable versions of @jupyterlab/services
+      node_modules/@jupyterlab/outputarea
+
+glob-parent  <5.1.2
+Severity: high
+glob-parent before 5.1.2 vulnerable to Regular Expression Denial of Service in enclosure regex - https://github.com/advisories/GHSA-ww39-953v-wcq6
+fix available via `npm audit fix --force`
+Will install webpack@5.75.0, which is a breaking change
+node_modules/watchpack-chokidar2/node_modules/glob-parent
+  chokidar  1.0.0-rc1 - 2.1.8
+  Depends on vulnerable versions of glob-parent
+  node_modules/watchpack-chokidar2/node_modules/chokidar
+    watchpack-chokidar2  *
+    Depends on vulnerable versions of chokidar
+    node_modules/watchpack-chokidar2
+      watchpack  1.7.2 - 1.7.5
+      Depends on vulnerable versions of watchpack-chokidar2
+      node_modules/watchpack
+        webpack  1.12.3 - 5.0.0-rc.6
+        Depends on vulnerable versions of loader-utils
+        Depends on vulnerable versions of terser-webpack-plugin
+        Depends on vulnerable versions of watchpack
+        node_modules/webpack
+          css-loader  0.6.0 - 3.6.0
+          Depends on vulnerable versions of loader-utils
+          Depends on vulnerable versions of webpack
+          node_modules/css-loader
+          file-loader  0.5.0 - 5.1.0
+          Depends on vulnerable versions of loader-utils
+          Depends on vulnerable versions of webpack
+          node_modules/file-loader
+          node_modules/svg-url-loader/node_modules/file-loader
+            svg-url-loader  <=4.0.0
+            Depends on vulnerable versions of file-loader
+            Depends on vulnerable versions of loader-utils
+            node_modules/svg-url-loader
+          mini-css-extract-plugin  <=0.12.0
+          Depends on vulnerable versions of loader-utils
+          Depends on vulnerable versions of webpack
+          node_modules/mini-css-extract-plugin
+          style-loader  0.8.2 - 1.1.3
+          Depends on vulnerable versions of loader-utils
+          Depends on vulnerable versions of webpack
+          node_modules/style-loader
+          terser-webpack-plugin  <=2.2.1
+          Depends on vulnerable versions of webpack
+          node_modules/terser-webpack-plugin
+          webpack-cli  <=0.0.8-development || 1.3.0 - 4.0.0-rc.1
+          Depends on vulnerable versions of loader-utils
+          Depends on vulnerable versions of webpack
+          node_modules/webpack-cli
+
+json5  <2.2.2
+Severity: high
+Prototype Pollution in JSON5 via Parse Method - https://github.com/advisories/GHSA-9c47-m6qq-7p4h
+fix available via `npm audit fix --force`
+Will install svg-url-loader@8.0.0, which is a breaking change
+node_modules/loader-utils/node_modules/json5
+node_modules/svg-url-loader/node_modules/json5
+  loader-utils  <=1.4.2
+  Depends on vulnerable versions of json5
+  node_modules/loader-utils
+  node_modules/svg-url-loader/node_modules/loader-utils
+    url-loader  0.5.1 - 3.0.0
+    Depends on vulnerable versions of loader-utils
+    node_modules/url-loader
+
+
+marked  <=4.0.9
+Severity: high
+Inefficient Regular Expression Complexity in marked - https://github.com/advisories/GHSA-5v2h-r2cx-5xgj
+Inefficient Regular Expression Complexity in marked - https://github.com/advisories/GHSA-rrrm-qjm4-v8hf
+fix available via `npm audit fix --force`
+Will install @jupyterlab/rendermime@3.5.2, which is a breaking change
+node_modules/marked
+
+merge  <2.1.1
+Severity: high
+Prototype Pollution in merge - https://github.com/advisories/GHSA-7wpw-2hjm-89gp
+fix available via `npm audit fix --force`
+Will install watch@0.13.0, which is a breaking change
+node_modules/merge
+  exec-sh  <=0.3.1
+  Depends on vulnerable versions of merge
+  node_modules/exec-sh
+    watch  >=0.14.0
+    Depends on vulnerable versions of exec-sh
+    node_modules/watch
+
+sanitize-html  <=2.3.1
+Severity: moderate
+Improper Input Validation in sanitize-html - https://github.com/advisories/GHSA-rjqq-98f6-6j3r
+Improper Input Validation in sanitize-html - https://github.com/advisories/GHSA-mjxr-4v3x-q3m4
+fix available via `npm audit fix --force`
+Will install @jupyterlab/apputils@3.5.2, which is a breaking change
+node_modules/sanitize-html
+  @jupyterlab/apputils  <=3.0.7 || 3.1.0-alpha.0 - 3.1.0-rc.2
+  Depends on vulnerable versions of @jupyterlab/coreutils
+  Depends on vulnerable versions of @jupyterlab/services
+  Depends on vulnerable versions of @jupyterlab/ui-components
+  Depends on vulnerable versions of sanitize-html
+  node_modules/@jupyterlab/apputils
+    @jupyterlab/completer  <=2.3.1
+    Depends on vulnerable versions of @jupyterlab/apputils
+    Depends on vulnerable versions of @jupyterlab/codeeditor
+    Depends on vulnerable versions of @jupyterlab/coreutils
+    Depends on vulnerable versions of @jupyterlab/services
+    Depends on vulnerable versions of @jupyterlab/ui-components
+    node_modules/@jupyterlab/completer
+    @jupyterlab/docmanager  <=2.3.1
+    Depends on vulnerable versions of @jupyterlab/apputils
+    Depends on vulnerable versions of @jupyterlab/coreutils
+    Depends on vulnerable versions of @jupyterlab/docregistry
+    Depends on vulnerable versions of @jupyterlab/services
+    Depends on vulnerable versions of @jupyterlab/statusbar
+    node_modules/@jupyterlab/docmanager
+    @jupyterlab/filebrowser  <=2.3.1
+    Depends on vulnerable versions of @jupyterlab/apputils
+    Depends on vulnerable versions of @jupyterlab/coreutils
+    Depends on vulnerable versions of @jupyterlab/docmanager
+    Depends on vulnerable versions of @jupyterlab/docregistry
+    Depends on vulnerable versions of @jupyterlab/services
+    Depends on vulnerable versions of @jupyterlab/statusbar
+    Depends on vulnerable versions of @jupyterlab/ui-components
+    node_modules/@jupyterlab/filebrowser
+    @jupyterlab/statusbar  <=2.3.1
+    Depends on vulnerable versions of @jupyterlab/apputils
+    Depends on vulnerable versions of @jupyterlab/codeeditor
+    Depends on vulnerable versions of @jupyterlab/coreutils
+    Depends on vulnerable versions of @jupyterlab/services
+    Depends on vulnerable versions of @jupyterlab/ui-components
+    node_modules/@jupyterlab/statusbar
+
+url-parse  <=1.5.8
+Severity: critical
+Incorrect hostname / protocol due to unstripped leading control characters. - https://github.com/advisories/GHSA-jf5r-8hm2-f872
+Authorization Bypass Through User-Controlled Key in url-parse - https://github.com/advisories/GHSA-hgjh-723h-mx2j
+Authorization bypass in url-parse - https://github.com/advisories/GHSA-rqff-837h-mm52
+Open redirect in url-parse - https://github.com/advisories/GHSA-hh27-ffr2-f2jc
+Incorrect returned href via an '@' sign but no user info and hostname - https://github.com/advisories/GHSA-8v38-pw62-9cw2
+Path traversal in url-parse - https://github.com/advisories/GHSA-9m6j-fcg5-2442
+fix available via `npm audit fix --force`
+Will install @jupyterlab/coreutils@5.5.2, which is a breaking change
+node_modules/url-parse
+  @jupyterlab/coreutils  0.11.0 - 5.0.5 || 5.1.0-alpha.0 - 5.1.0-rc.2
+  Depends on vulnerable versions of url-parse
+  node_modules/@jupyterlab/coreutils
+    @jupyterlab/codeeditor  0.11.0 - 2.3.1
+    Depends on vulnerable versions of @jupyterlab/coreutils
+    Depends on vulnerable versions of @jupyterlab/ui-components
+    node_modules/@jupyterlab/codeeditor
+    @jupyterlab/services  0.50.0 - 5.3.1
+    Depends on vulnerable versions of @jupyterlab/coreutils
+    node_modules/@jupyterlab/application/node_modules/@jupyterlab/services
+    node_modules/@jupyterlab/apputils/node_modules/@jupyterlab/services
+    node_modules/@jupyterlab/cells/node_modules/@jupyterlab/services
+    node_modules/@jupyterlab/completer/node_modules/@jupyterlab/services
+    node_modules/@jupyterlab/docmanager/node_modules/@jupyterlab/services
+    node_modules/@jupyterlab/docregistry/node_modules/@jupyterlab/services
+    node_modules/@jupyterlab/filebrowser/node_modules/@jupyterlab/services
+    node_modules/@jupyterlab/notebook/node_modules/@jupyterlab/services
+    node_modules/@jupyterlab/outputarea/node_modules/@jupyterlab/services
+    node_modules/@jupyterlab/rendermime/node_modules/@jupyterlab/services
+    node_modules/@jupyterlab/services
+    node_modules/@jupyterlab/statusbar/node_modules/@jupyterlab/services
+    @jupyterlab/ui-components  1.1.0-alpha.0 - 2.3.1
+    Depends on vulnerable versions of @jupyterlab/coreutils
+    node_modules/@jupyterlab/ui-components
+
+42 vulnerabilities (13 moderate, 26 high, 3 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+/home/ksumag/Datagrok/public_repo/public/packages/PowerPack
+
+up to date, audited 801 packages in 5s
+
+76 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/TensorFlow.js
+
+up to date, audited 307 packages in 1s
+
+49 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/GIS
+
+up to date, audited 358 packages in 1s
+
+43 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Chem
+
+up to date, audited 931 packages in 6s
+
+80 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/DrugBank
+
+up to date, audited 843 packages in 2s
+
+64 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/ChaRPy
+
+up to date, audited 691 packages in 4s
+
+53 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+glob-parent  <5.1.2
+Severity: high
+glob-parent before 5.1.2 vulnerable to Regular Expression Denial of Service in enclosure regex - https://github.com/advisories/GHSA-ww39-953v-wcq6
+fix available via `npm audit fix --force`
+Will install webpack@5.75.0, which is a breaking change
+node_modules/glob-parent
+  chokidar  1.0.0-rc1 - 2.1.8
+  Depends on vulnerable versions of glob-parent
+  node_modules/chokidar
+    @babel/cli  <=7.11.6
+    Depends on vulnerable versions of chokidar
+    node_modules/@babel/cli
+    watchpack-chokidar2  *
+    Depends on vulnerable versions of chokidar
+    node_modules/watchpack-chokidar2
+      watchpack  1.7.2 - 1.7.5
+      Depends on vulnerable versions of watchpack-chokidar2
+      node_modules/watchpack
+        webpack  1.12.3 - 5.0.0-rc.6
+        Depends on vulnerable versions of loader-utils
+        Depends on vulnerable versions of terser-webpack-plugin
+        Depends on vulnerable versions of watchpack
+        node_modules/webpack
+          terser-webpack-plugin  <=2.2.1
+          Depends on vulnerable versions of webpack
+          node_modules/terser-webpack-plugin
+          webpack-cli  <=0.0.8-development || 1.3.0 - 4.0.0-rc.1
+          Depends on vulnerable versions of loader-utils
+          Depends on vulnerable versions of webpack
+          node_modules/webpack-cli
+
+json5  <2.2.2
+Severity: high
+Prototype Pollution in JSON5 via Parse Method - https://github.com/advisories/GHSA-9c47-m6qq-7p4h
+fix available via `npm audit fix --force`
+Will install webpack@5.75.0, which is a breaking change
+node_modules/json5
+node_modules/loader-utils/node_modules/json5
+  @babel/core  <=7.1.5
+  Depends on vulnerable versions of json5
+  node_modules/@babel/core
+  loader-utils  <=1.4.2
+  Depends on vulnerable versions of json5
+  node_modules/loader-utils
+
+11 high severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+/home/ksumag/Datagrok/public_repo/public/packages/Chembl
+
+up to date, audited 764 packages in 4s
+
+76 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Bio
+
+up to date, audited 961 packages in 2s
+
+63 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Leaflet
+
+up to date, audited 17 packages in 712ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/GridExtDemo
+
+up to date, audited 249 packages in 6s
+
+47 packages are looking for funding
+  run `npm fund` for details
+
+# npm audit report
+
+minimist  <=1.2.5
+Severity: critical
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-xvch-5gv4-984h
+Prototype Pollution in minimist - https://github.com/advisories/GHSA-vh95-rmgr-6w4m
+fix available via `npm audit fix --force`
+Will install dts-bundle@0.1.1, which is a breaking change
+node_modules/minimist
+  detect-indent  0.2.0
+  Depends on vulnerable versions of minimist
+  node_modules/detect-indent
+    dts-bundle  >=0.2.0
+    Depends on vulnerable versions of detect-indent
+    node_modules/dts-bundle
+
+3 vulnerabilities (2 moderate, 1 critical)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+/home/ksumag/Datagrok/public_repo/public/packages/NLP
+
+up to date, audited 775 packages in 2s
+
+82 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Meta
+
+up to date, audited 319 packages in 1s
+
+46 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/CDMExplorer
+
+up to date, audited 254 packages in 5s
+
+50 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/MolecularLiabilityBrowser
+
+up to date, audited 1058 packages in 2s
+
+74 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/PubChemApi
+
+up to date, audited 842 packages in 1s
+
+64 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Chemspace
+
+up to date, audited 1 package in 46ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/Tika
+
+up to date, audited 1 package in 47ms
+
+found 0 vulnerabilities
+/home/ksumag/Datagrok/public_repo/public/packages/EnamineStore
+
+up to date, audited 1 package in 51ms
+
+found 0 vulnerabilities
