@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {IMonomerLib, MonomerWorks, readLibrary} from '@datagrok-libraries/bio';
+
 import {autostartOligoSdFileSubscription} from './autostart/registration';
 import {OligoSdFileApp} from './apps/oligo-sd-file-app';
 
@@ -10,19 +12,14 @@ import {getMainTab} from './main-tab/main-tab';
 import {getAxolabsTab} from './axolabs-tab/axolabs-tab';
 import {getSdfTab} from './sdf-tab/sdf-tab';
 
+import {LIB_PATH, DEFAULT_LIB_FILENAME} from './utils/const';
 const MAIN = 'MAIN';
 const AXOLABS = 'AXOLABS';
 const SDF = 'SDF';
-
 const SEQUENCE_TRANSLATOR = 'Sequence Translator';
 const DEFAULT_SEQUENCE = 'fAmCmGmAmCpsmU';
-const DEFAULT_LIB_FILENAME = 'helmLib.json';
-
-import {IMonomerLib, MonomerWorks, readLibrary} from '@datagrok-libraries/bio';
 
 export const _package = new DG.Package();
-
-const LIB_PATH = 'System:AppData/SequenceTranslator';
 
 let monomerLib: IMonomerLib | null = null;
 export let monomerWorks: MonomerWorks | null = null;
@@ -86,7 +83,6 @@ export async function sequenceTranslator(): Promise<void> {
   }
 
   view.append(tabControl);
-  // console.debug('SequenceTranslator: app sequenceTranslator() ' + `view.path='${view.path}', view.basePath='${view.basePath}'.`);
 }
 
 //tags: autostart

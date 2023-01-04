@@ -6,6 +6,7 @@ import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 
 import {convertSequence, undefinedInputSequence, isValidSequence} from '../sdf-tab/sequence-codes-tools';
+import {viewMonomerLib} from '../utils/monomer-lib-viewer';
 
 // todo: elminate completely
 import {map} from '../hardcode-to-be-eliminated/map';
@@ -169,13 +170,16 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
 
   const copySmilesIcon = ui.iconFA('copy', () => {
     navigator.clipboard.writeText(
-      sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''), false, inputFormatChoiceInput.value!),
+      sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''), false, inputFormatChoiceInput.value!)
     ).then(() => grok.shell.info(sequenceWasCopied));
   }, 'Copy SMILES');
+
+  const viewMonomerLibIcon = ui.iconFA('book', viewMonomerLib, 'View monomer library');
 
   const topPanel = [
     downloadMolFileIcon,
     copySmilesIcon,
+    viewMonomerLibIcon,
     switchInput.root, // todo: remove from top panel
   ];
 
