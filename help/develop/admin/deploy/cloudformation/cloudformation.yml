@@ -990,7 +990,7 @@ Resources:
         - ContainerPort: 5005
           HostPort: 5005
           Protocol: tcp
-      Cpu: '512'
+      Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
         - GrokComputeTaskExecutionRole
