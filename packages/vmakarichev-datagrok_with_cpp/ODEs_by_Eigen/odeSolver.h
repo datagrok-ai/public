@@ -17,6 +17,7 @@
 #define ODE_SOLVER_H
 
 #include <cstring>
+#include <vector>
 
 #include "../../../Eigen/Eigen/Dense"
 using namespace Eigen;
@@ -349,7 +350,7 @@ namespace ode {
 		  solutions - data structure for storing numerical solutions, i.e. y(t).
 	*/
 	template<typename ArgType, typename VecType, class ArgStruct, class VecStruct>
-	int adaptiveStepSolver(VecType(*f)(ArgType, VecType&),
+	int RKCKsolver(VecType(*f)(ArgType, VecType&),
 		ArgType t0, ArgType t1, ArgType hInitial, VecType & y0, ArgType tol, 
 		ArgStruct & times, VecStruct & solutions)
 	{
@@ -367,7 +368,7 @@ namespace ode {
 		ArgType t = t0;
 		ArgType h = hInitial;
 		ArgType hNext = 0.0;
-		VecType y = exact(t0, dim);
+		VecType y = y0;
 		VecType dydt(dim);
 		VecType yScale(dim);
 		bool flag = true;
@@ -403,6 +404,81 @@ namespace ode {
 
 		return NO_ERRORS;
 	} // adaptiveStepSolver
+
+	template<typename OperatingType, typename DataType, class ArgStruct, class VecStruct>
+	int linearInterpolation(OperatingType t0, OperatingType t1, OperatingType h, 
+		DataType * dataFrame, int rowCount, int colCount,
+		ArgStruct & times, VecStruct & solutions)
+	{
+		auto tIter = times.begin();
+		auto yIter = solutions.begin();
+
+		OperatingType tLeft = 0.0;
+		OperatingType tRight = 0.0;
+		OperatingType cLeft = 0.0;
+		OperatingType cRight = 0.0;
+		OperatingType fLeft = 0.0;
+		OperatingType fRight = 0.0;
+
+		int index = 0;
+
+		for (OperatingType t = t0; t < t1; t += h)
+		{	
+			while (t > *(tIter + 1)) {
+				++tIter;
+				++yIter;
+			}
+
+			tLeft = *tIter;
+			tRight = *(tIter + 1);
+
+			cLeft = (tRight - t) / (tRight - tLeft);
+			cRight = 1.0 - cLeft;
+
+			dataFrame[index] = static_cast<DataType>(t);			
+
+			for (int j = 1; j < colCount; j++)
+			{				
+				fLeft = (*yIter)(j - 1);
+				fRight = (*(yIter + 1))(j - 1);
+
+				dataFrame[index + j * rowCount] = static_cast<DataType>(cLeft * fLeft + cRight * fRight);					
+			}		
+
+			index++;
+		}
+		return NO_ERRORS;
+	} // linearInterpolation
+
+	template<typename DataType, typename ArgType, typename VecType>
+	int solveODE(VecType(*f)(ArgType, VecType&), 
+		DataType t0, DataType t1, DataType h, DataType * y0, DataType tol,
+		DataType * dataFrame, int rowCount, int colCount)
+	{
+		int dim = colCount - 1;
+
+		ArgType _t0 = static_cast<ArgType>(t0);
+		ArgType _t1 = static_cast<ArgType>(t1);
+		ArgType _hInitial = static_cast<ArgType>(h);
+		ArgType _tol = static_cast<ArgType>(tol);
+
+		VecType yInitial(dim);
+
+		for (int i = 0; i < dim; i++)
+			yInitial(i) = y0[i];
+
+		std::vector<ArgType> times;
+		std::vector<VecType> solutions;
+
+		int resultCode = RKCKsolver(f, _t0, _t1, _hInitial, yInitial, _tol, times, solutions);
+		if (resultCode != NO_ERRORS)
+			return resultCode;
+
+		resultCode = linearInterpolation(_t0, _t1, _hInitial, dataFrame, rowCount, colCount, times, solutions);
+
+		return resultCode;
+	} // solve
+
 
 }; // ode
 
