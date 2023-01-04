@@ -29,6 +29,7 @@ import './dapi/user-data-storage';
 import './dapi/users';
 import './dapi/benchmarks';
 import './shell/ml';
+import './shell/settings';
 import './ui/divs';
 import './ui/buttons';
 import './widgets/files-widget';
