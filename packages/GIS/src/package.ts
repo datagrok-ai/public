@@ -195,8 +195,8 @@ export async function getCensusInfo() {
     const variables = await(await grok.dapi.fetchProxy(urlVariables)).json();
     if (variables) {
       const varList = [];
-      for (let v in variables['variables']) {
-        let varObj = variables['variables'][v];
+      for (const v in variables['variables']) {
+        const varObj = variables['variables'][v];
         varObj.varname = v;
         varObj.use = false;
         varList.push(varObj);
@@ -365,11 +365,11 @@ async function getKMZData(buffer: any): Promise<string> {
   return kmlData;
 }
 
-//name: gisKMZFileViewer
+//name: gisKMZAndKMLFileViewer
 //tags: fileViewer, fileViewer-kmz, fileViewer-kml
 //input: file file
 //output: view result
-export async function gisKMZFileViewer(file: DG.FileInfo): Promise<DG.View> {
+export async function gisKMZAndKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
   const viewFile = DG.View.create();
   viewFile.name = 'Preview of: ' + file.name;
   viewFile.root.id = 'map-container'; //boxMap - div that contains map
