@@ -2,8 +2,8 @@
 
 ## Requirements
 
-1. Node version [12.22.x](https://nodejs.org/dist/v12.22.7/)
-2. Npm version 8.x.x: `npm install -g npm@8.x.x`
+1. Node version [18.12.x](https://nodejs.org/dist/v18.12.0/)
+2. Npm version 9.x.x: `npm install -g npm@9.x.x`
 3. Latest `typescript`.
 
 We are only using pure JavaScript in the packages not yet converted to TypeScript, such as
