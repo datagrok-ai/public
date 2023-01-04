@@ -12,8 +12,8 @@ category('Dapi: connection', () => {
   test('Create, save, delete, share', async () => {
     let dc = DG.DataConnection.create('Local DG Test', dcParams);
     dc = await GDC.save(dc);
-    expect(dc.parameters['schema'], null);
-    expect(dc.parameters['db'], dcParams.db);
+    expect((dc.parameters as any)['schema'], null);
+    expect((dc.parameters as any)['db'], dcParams.db);
     expect(dc.friendlyName, 'Local DG Test');
     expect((await GDC.find(dc.id)).id, dc.id);
     await GDC.delete(dc);
