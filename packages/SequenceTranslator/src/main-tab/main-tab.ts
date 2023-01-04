@@ -186,7 +186,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
   const v = grok.shell.v;
   const tabControl = grok.shell.sidebar;
   tabControl.onTabChanged.subscribe((_) => {
-    v.setRibbonPanels([(tabControl.currentPane.name == 'MAIN') ? topPanel : []]);
+    v.setRibbonPanels([(tabControl.currentPane.name === 'MAIN') ? topPanel : []]);
   });
   v.setRibbonPanels([topPanel]);
 
