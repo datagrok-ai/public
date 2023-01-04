@@ -140,7 +140,7 @@ export class Events {
 
   get onCurrentProjectChanged(): rxjs.Observable<any> { return __obs('grok-current-project-changed'); }
 
-  get onProjectUploaded(): rxjs.Observable<any> { return __obs('grok-project-uploaded'); }
+  get onProjectUploaded(): rxjs.Observable<any> { return __obs('grok-project-saved'); }
 
   get onProjectSaved(): rxjs.Observable<any> { return __obs('grok-project-saved'); }
 
