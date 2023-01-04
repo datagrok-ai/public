@@ -75,9 +75,12 @@ jobs:
                   MATRIX_PUBLISH_JSON+=", \"install_tools\": \"true\""
                 fi
               fi
-
-              MATRIX_PUBLISH_JSON+="}"
             fi
+
+            if [ ! -z "$(ls -A ${DIR}/dockerfiles)" ]; then
+              MATRIX_PUBLISH_JSON+=", \"docker\": \"true\""
+            fi
+            MATRIX_PUBLISH_JSON+="}"
           done
 
           MATRIX_PUBLISH_JSON="${MATRIX_PUBLISH_JSON//\}\{/\}, \{}"
@@ -232,31 +235,8 @@ jobs:
           path: packages/${{ matrix.package }}/test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
           retention-days: 7
 
-      - name: Check dockerfiles directory existence
-        id: check_directory
-        uses: andstor/file-existence-action@v2
-        with:
-          files: "packages/${{ matrix.package }}/dockerfiles"
-
-      - name: Check if dockerfies directory is not empty
-        id: check_empty_dir
-        run: |
-          if [ -z "$(ls -A  packages/${{ matrix.package }}/dockerfiles)" ]; then
-            echo "dir_empty=true" >> $GITHUB_OUTPUT
-          else
-            echo "dir_empty=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Check if the dockerfiles directory has changes
-        if: matrix.publish != 'true'
-        id: directory_changes_checker
-        uses: georgeneto/directory-changes-checker@v1
-        with:
-          repo-token: ${{secrets.GITHUB_TOKEN}}
-          directory: "packages/${{ matrix.package }}/dockerfiles"
-
       - name: Get docker image version
-        if: steps.check_directory.outputs.files_exists == 'true' && steps.check_empty_dir.outputs.dir_empty == 'false' && (matrix.publish == 'true' || steps.directory_changes_checker.output.hasChanges == 'true')
+        if: ${{ matrix.docker == 'true' }}
         id: docker_name_ver
         working-directory: packages/${{ matrix.package }}
         run: |
@@ -268,7 +248,7 @@ jobs:
           echo "package_name=$(jq -r .name package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
 
       - name: Build package Docker image
-        if: steps.check_directory.outputs.files_exists == 'true' && steps.check_empty_dir.outputs.dir_empty == 'false' && (matrix.publish == 'true' || steps.directory_changes_checker.output.hasChanges == 'true')
+        if: ${{ matrix.docker == 'true' }}
         id: build-docker
         uses: docker/build-push-action@v3
         with:
@@ -291,11 +271,11 @@ jobs:
           image: "datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}"
 
       - name: Login to DockerHub
+        if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
 
       - name: Build and push package Docker image
         if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
