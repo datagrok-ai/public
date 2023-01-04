@@ -393,18 +393,13 @@ export async function gisKMZAndKMLFileViewer(file: DG.FileInfo): Promise<DG.View
   return viewFile;
 }
 
-//name: gisKMLFileHandler
-//tags: file-handler
-//meta.ext: kml
-//input: string filecontent
-//output: list tables
-export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
-  //TODO: detect the kind of file and join KML/KMZ handler
-
+async function handleKMLOrKMZFile(filecontent: string | Uint8Array, isKmz: boolean): Promise<DG.DataFrame[]> {
   let dfFromKML: DG.DataFrame | undefined = undefined;
   const ol = new OpenLayers();
 
-  const kmlData = filecontent;
+  let kmlData = '';
+  if (isKmz) kmlData = await getKMZData(filecontent);
+  else kmlData = filecontent as string;
   const newLayer = ol.addKMLLayerFromStream(kmlData);
   const arrFeatures = ol.exportLayerToArray(newLayer);
 
@@ -435,46 +430,22 @@ export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
   return [];
 }
 
+//name: gisKMLFileHandler
+//tags: file-handler
+//meta.ext: kml
+//input: string filecontent
+//output: list tables
+export async function gisKMLFileHandler(filecontent: string): Promise<DG.DataFrame[]> {
+  return handleKMLOrKMZFile(filecontent, false);
+}
+
 //name: gisKMZFileHandler
 //tags: file-handler
 //meta.ext: kmz
 //input: list filecontent
 //output: list tables
 export async function gisKMZFileHandler(filecontent: Uint8Array): Promise<DG.DataFrame[]> {
-  // export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
-  //detect the kind of file
-  let dfFromKML: DG.DataFrame | undefined = undefined;
-  const ol = new OpenLayers();
-
-  const kmlData = await getKMZData(filecontent);
-  const newLayer = ol.addKMLLayerFromStream(kmlData);
-  const arrFeatures = ol.exportLayerToArray(newLayer);
-
-  if (arrFeatures) {
-    if (arrFeatures.length > 0) {
-      dfFromKML = DG.DataFrame.fromObjects(arrFeatures);
-      if (dfFromKML) {
-        const gisCol = dfFromKML.col('gisObject');
-        if (gisCol)
-          gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
-
-        dfFromKML.name = newLayer.get('layerName');
-
-        const tableView = grok.shell.addTableView(dfFromKML);
-        tableView.name = 'dfFromKML.name' + ' (manual)';
-
-        setTimeout((tableView: DG.TableView, kmlData: string) => {
-          const v = tableView;
-          const mapViewer = v.addViewer(new GisViewer()) as GisViewer;
-
-          mapViewer.ol.initMap('map-container');
-          mapViewer.ol.addKMLLayerFromStream(kmlData);
-        }, 1000, tableView, kmlData); //should use it because we need visible and active View for map initializing
-      }
-    }
-  }
-  if (dfFromKML) return [dfFromKML];
-  return [];
+  return handleKMLOrKMZFile(filecontent, true);
 }
 
 //gisGeoJSONFileDetector
