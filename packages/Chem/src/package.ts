@@ -746,12 +746,13 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
 //name: Use as filter
 //description: Adds this structure as a substructure filter
 //meta.action: Use as filter
-//input: string mol { semType: Molecule }
-export function useAsSubstructureFilter(mol: string): void {
+//input: semantic_value value { semType: Molecule }
+export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   const tv = grok.shell.tv;
   if (tv == null)
     throw 'Requires an open table view.';
 
+  const mol = value.value;
   const molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (molCol == null)
     throw 'Molecule column not found.';
