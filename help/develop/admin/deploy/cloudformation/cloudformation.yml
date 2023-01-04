@@ -772,7 +772,7 @@ Resources:
       - Key: Name
         Value: CVM Grok Compute Service
       - Key: datagrok.component
-        Value: datagrok
+        Value: cvm
       TaskDefinition:
         Ref: GrokComputeTaskDefinitionEc2
     Type: AWS::ECS::Service
