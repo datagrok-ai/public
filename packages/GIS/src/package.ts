@@ -124,6 +124,18 @@ export async function getCensusInfoT() {
   const dlg = uiCensusDialog();
 }
 
+async function fetchCensus() {
+  const url = 'https://api.census.gov/data/';
+  let censusRes: any = null;
+  try {
+    censusRes = await (await grok.dapi.fetchProxy(url)).json();
+  } catch (e: any) {
+    grok.shell.error(`Census fetch error: ${e.message}`);
+  } finally {
+    return censusRes;
+  }
+}
+
 //name: getCensusInfo
 export async function getCensusInfo() {
   let htmlStyle: DG.ElementOptions = { };
@@ -131,11 +143,8 @@ export async function getCensusInfo() {
   const mapVintages = new Map<string, any[]>();
   let infoDataset: HTMLElement | null = null;
 
-  //TODO: add try-catch block for fetch
-  const url = 'https://api.census.gov/data/';
-  censusRes = await (await grok.dapi.fetchProxy(url)).json();
+  censusRes = await fetchCensus();
 
-  //TODO: put fetch into separate function
   //TODO: save fetch result into buffer to prevent frequent uploading
   if (!censusRes)
     return 'Fetch error';
