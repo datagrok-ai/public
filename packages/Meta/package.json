@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "3.1.56",
+  "version": "3.1.57",
   "description": "Meta information for @datagrok scope",
   "author": {
     "name": "Alexander Paramonov",
@@ -2135,9 +2135,12 @@
         },
         "1.0.1": {
           "datagrok-api": "^1.5.0"
+        },
+        "1.0.2": {
+          "datagrok-api": "^1.11.1"
         }
       },
-      "description": "",
+      "description": "Arrow is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides us with the opportunity to work with parquet and feather file formats.",
       "repository": {
         "type": "git",
         "url": "https://github.com/datagrok-ai/public.git",
@@ -2194,6 +2197,9 @@
         },
         "2.1.0": {
           "datagrok-api": "^1.7.2"
+        },
+        "2.1.1": {
+          "datagrok-api": "^1.11.1"
         }
       },
       "description": "",
