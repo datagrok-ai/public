@@ -138,7 +138,6 @@ export async function treeForGridFilterApp(): Promise<void> {
   }
 }
 
-
 //name:hierarchicalClusteringApp
 //description: Test/demo app for hierarchical clustering (inject tree to grid)
 export async function hierarchicalClusteringApp(): Promise<void> {
@@ -156,6 +155,23 @@ export async function hierarchicalClusteringApp(): Promise<void> {
   }
 }
 
+// -- File handlers --
+
+//name: importNwk
+//description: Opens Newick file
+//tags: file-handler
+//meta.ext: nwk, newick
+//input: string fileContent
+//output: list tables
+export async function importNewick(fileContent: string): Promise<DG.DataFrame[]> {
+  const th: ITreeHelper = new TreeHelper();
+  const df: DG.DataFrame = th.newickToDf(fileContent, '');
+
+  const app = new DendrogramApp();
+  await app.init(df);
+
+  return [];
+}
 
 // -- Top menu --
 

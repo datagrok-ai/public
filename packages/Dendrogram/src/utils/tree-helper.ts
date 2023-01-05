@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {isLeaf, ITreeHelper, NodeCuttedType, NodeType, parseNewick} from '@datagrok-libraries/bio';
+import {DistanceMatrix, isLeaf, ITreeHelper, NodeCuttedType, NodeType, parseNewick} from '@datagrok-libraries/bio';
+import {deepStrictEqual} from 'assert';
 
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };
@@ -440,6 +441,26 @@ export class TreeHelper implements ITreeHelper {
     }
 
     return root;
+  }
+
+  async hierarchicalClustering(data: DG.DataFrame, distance: string, linkage: string): Promise<NodeType> {
+    const newickStr: string = await grok.functions.call(
+      'Dendrogram:hierarchicalClusteringScript',
+      {data: data, distance_name: distance, linkage_name: linkage});
+    const treeRoot: NodeType = parseNewick(newickStr);
+    if (!treeRoot.branch_length) treeRoot.branch_length = 0;
+    return treeRoot;
+  }
+
+  async hierarchicalClusteringByDistance(distance: DistanceMatrix, linkage: string): Promise<NodeType> {
+    const distanceCol: DG.Column = DG.Column.fromFloat32Array('distance', distance.data);
+    const dataDf: DG.DataFrame = DG.DataFrame.fromColumns([distanceCol]);
+    const newickStr: string = await grok.functions.call(
+      'Dendrogram:hierarchicalClusteringByDistanceScript',
+      {data: dataDf, size: distance.size, linkage_name: linkage});
+    const treeRoot: NodeType = parseNewick(newickStr);
+    if (!treeRoot.branch_length) treeRoot.branch_length = 0;
+    return treeRoot;
   }
 }
 
