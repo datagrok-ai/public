@@ -158,7 +158,6 @@ function getCodeToNameMap(sequence: string, format: string) {
     for (const technology of Object.keys(map[format])) {
       for (const code of Object.keys(map[format][technology]))
         obj[code] = map[format][technology][code][NAME]!;
-      // obj[code] = map[format][technology][code].SMILES;
     }
   }
   obj[DELIMITER] = '';

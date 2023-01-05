@@ -59,7 +59,11 @@ export function saveSdf(
   ss: StrandData, as: StrandData, as2: StrandData, useChiral: boolean,
   oneEntity: boolean
 ): void {
-  if (ss.strand === '' && (as.strand !== '' && as2.strand !== '')) {
+  const nonEmptyStrands = [ss.strand, as.strand, as2.strand].filter((item) => item !== '');
+  if (
+    nonEmptyStrands.length === 0 ||
+    nonEmptyStrands.length === 1 && ss.strand === ''
+  ) {
     grok.shell.warning('Enter SS and AS/AS2 to save SDF');
   } else {
     let result: string;
@@ -112,7 +116,10 @@ export function getSdfTab(): HTMLDivElement {
 
   // bool inputs
   const saveEntity = ui.boolInput('Save as one entity', true);
+  ui.tooltip.bind(saveEntity.root, 'Save SDF with all strands in one molfile');
   const useChiralInput = ui.boolInput('Use chiral', true);
+  // todo: compose tooltip message:
+  // ui.tooltip.bind(useChiralInput.root, '');
 
   // choice inputs
   const ssDirection = ui.choiceInput('SS direction', straight, [straight, inverse]);

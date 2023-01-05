@@ -36,6 +36,8 @@ export function getMonomerLib() {
 //tags: app
 export async function sequenceTranslator(): Promise<void> {
   monomerLib = await readLibrary(LIB_PATH, DEFAULT_LIB_FILENAME);
+  const pathParts: string[] = window.location.pathname.split('/');
+  // here the value is '' and ''
 
   if (monomerWorks === null)
     monomerWorks = new MonomerWorks(monomerLib);
@@ -62,6 +64,9 @@ export async function sequenceTranslator(): Promise<void> {
     [SDF]: getSdfTab(),
   });
 
+  const sdfPane = tabControl.getPane(SDF);
+  ui.tooltip.bind(sdfPane.header, 'Get atomic-level structure for SS + AS/AS2 and save SDF');
+
   tabControl.onTabChanged.subscribe(() => {
     if (tabControl.currentPane.name !== MAIN)
       urlParams.delete('seq');
@@ -73,12 +78,11 @@ export async function sequenceTranslator(): Promise<void> {
   function updatePath() {
     const urlParamsTxt: string = Object.entries(urlParams)
       .map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
-    view.path = '/apps/SequenceTranslator/SequenceTranslator' + `/${tabControl.currentPane.name}/?${urlParamsTxt}`;
+    view.path = '/apps/SequenceTranslator' + `/${tabControl.currentPane.name}/?${urlParamsTxt}`;
   }
 
-  const pathParts: string[] = window.location.pathname.split('/');
-  if (pathParts.length >= 5) {
-    const tabName: string = pathParts[5];
+  if (pathParts.length >= 4) {
+    const tabName: string = pathParts[3];
     tabControl.currentPane = tabControl.getPane(tabName);
   }
 
@@ -93,8 +97,6 @@ export async function autostartST() {
 //name: oligoSdFileApp
 //description: Test/demo app for oligoSdFile
 export async function oligoSdFileApp() {
-  // console.debug('SequenceTranslator: package.ts oligoSdFileApp()');
-
   const pi = DG.TaskBarProgressIndicator.create('open oligoSdFile app');
   try {
     grok.shell.windows.showProperties = false;
