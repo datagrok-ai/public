@@ -1,11 +1,12 @@
-#name: hierarchicalClusteringScript
-#description: Returns the newick representation of the tree for given dataset
+#name: hierarchicalClusteringByDistanceScript
+#description: Returns the newick representation of the tree for given distance matrix
 #language: python
-#input: dataframe data [Input data table]
-#input: string distance_name = 'euclidean' {choices: ['euclidean', 'manhattan']} [Distance metric]
-#input: string linkage_name = 'ward' {choices: ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']} [Linkage metric]
+#input: dataframe data [Input distance matrix condensed]
+#input: double size [Input size (obs number)]
+#input: string linkage_name = 'ward' {choices: ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']} [Linkage]
 #output: string newick
 
+import sys
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist, pdist
@@ -24,9 +25,8 @@ def get_newick(node, parent_dist, leaf_names, newick='') -> str:
         newick = "(%s" % (newick)
         return newick
 
-column_array = data[data.columns].to_numpy()
-dist_list = pdist(column_array, distance_name)
-link_matrix = linkage(dist_list, linkage_name)
-leaf_names = list(range(0, len(data.index)))
+one_dimension = np.array(data.loc[:, 'distance'])
+link_matrix = linkage(one_dimension, linkage_name)
+leaf_names = list(range(0, size))
 tree = to_tree(link_matrix, False)
 newick = get_newick(tree, tree.dist, leaf_names)
