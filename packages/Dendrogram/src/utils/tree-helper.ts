@@ -3,8 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {DistanceMatrix, isLeaf, ITreeHelper, NodeCuttedType, NodeType, parseNewick} from '@datagrok-libraries/bio';
-import {deepStrictEqual} from 'assert';
+import {
+  DistanceMatrix,
+  isLeaf,
+  ITreeHelper,
+  NodeCuttedType,
+  NodeType,
+  parseNewick,
+} from '@datagrok-libraries/bio';
 
 type TreeLeafDict = { [nodeName: string]: NodeType };
 type DataNodeDict = { [nodeName: string]: number };
@@ -236,7 +242,7 @@ export class TreeHelper implements ITreeHelper {
 
   /** Sets grid's row order and returns tree (root node) of nodes presented in data */
   setGridOrder(
-    tree: NodeType, grid: DG.Grid, leafColName: string | null,
+    tree: NodeType, grid: DG.Grid, leafColName?: string,
     removeMissingDataRows: boolean = false
   ): [NodeType, string[]] {
     console.debug('Dendrogram.setGridOrder() start');
@@ -359,9 +365,7 @@ export class TreeHelper implements ITreeHelper {
     let k = 11;
   }
 
-  buildClusters(
-    tree: NodeCuttedType, clusterDf: DG.DataFrame, clusterColName: string, leafColName: string | null
-  ) {
+  buildClusters(tree: NodeCuttedType, clusterDf: DG.DataFrame, clusterColName: string, leafColName?: string): void {
     for (let clusterRowI = clusterDf.rowCount - 1; clusterRowI >= 0; clusterRowI--)
       clusterDf.rows.removeAt(clusterRowI);
 
