@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {NodeCuttedType, NodeType} from './index';
-
+import {DistanceMatrix} from './distance-matrix';
 
 export interface ITreeHelper {
   /** Generates data frame with row per node, parent relation, distance, annotation
@@ -37,7 +37,7 @@ export interface ITreeHelper {
   /** Reorder the grid's rows according to the leaves' order in the tree.
    * @param {string|null} leafColName Column name for leaf name in newick, null - use row index
    */
-  setGridOrder(tree: NodeType, grid: DG.Grid, leafColName: string | null): [NodeType, string[]];
+  setGridOrder(tree: NodeType, grid: DG.Grid, leafColName?: string): [NodeType, string[]];
 
   markClusters(tree: NodeCuttedType,
     dataDf: DG.DataFrame, leafColName: string | null, clusterColName: string, na?: any): void;
@@ -45,8 +45,7 @@ export interface ITreeHelper {
   /**
    * @param {string|null} leafColName Column name for leaf name in newick, null - use row index
    */
-  buildClusters(tree: NodeCuttedType,
-    clusterDf: DG.DataFrame, clusterColName: string, leafColName: string | null): void;
+  buildClusters(tree: NodeCuttedType, clusterDf: DG.DataFrame, clusterColName: string, leafColName?: string): void;
 
   /** Modifies the tree ({@link node}) cutting at {@link cutHeight} creating extra nodes.
    * @param {string|null} leafColName Column name for leaf name in newick, null - use row index
@@ -56,6 +55,10 @@ export interface ITreeHelper {
 
   /** Generate tree structures with {@link size} nodes number (counting internal).*/
   generateTree(size: number): NodeType;
+
+  hierarchicalClustering(df: DG.DataFrame, distance: string, linkage: string): Promise<NodeType>;
+
+  hierarchicalClusteringByDistance(distance: DistanceMatrix, linkage: string): Promise<NodeType>;
 }
 
 export async function getTreeHelper(): Promise<ITreeHelper> {
