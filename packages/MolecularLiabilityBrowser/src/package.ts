@@ -69,7 +69,7 @@ export async function initMlb() {
   const pi = DG.TaskBarProgressIndicator.create('init MLB package');
   try {
     _mlbQueries = await getMlbQueries();
-  } catch (err: unknown) {
+  } catch (err: any) {
     const msg: string = 'MolecularLiabilityBrowser package init error: ' +
       `${err instanceof Error ? err.message : (err as Object).toString()}`;
     grok.shell.error(msg);
@@ -119,7 +119,7 @@ async function initDataLoader(): Promise<void> {
           // ptmFilter() function cannot be async and cannot await for any promise from init()
           await dl.init(_startInit);
         }
-      } catch (err: unknown) {
+      } catch (err: any) {
         dl = null;
         throw err;
       }
