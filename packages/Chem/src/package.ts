@@ -743,15 +743,42 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
   return new OCLCellRenderer();
 }
 
+//name: Sort by similarity
+//description: Sorts a molecular column by similarity
+//meta.action: Sort by similarity
+//input: semantic_value value { semType: Molecule }
+export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
+  const molCol = value.cell.column;
+  const tableRowIdx = value.cell.rowIndex;
+  const dframe = molCol.dataFrame;
+  const smiles = molCol.get(tableRowIdx);
+
+  const grid = value.viewer as DG.Grid;
+  ui.setUpdateIndicator(grid.root, true);
+  const progressBar = DG.TaskBarProgressIndicator.create('Sorting Structures...');
+  progressBar.update(0, 'Installing ScaffoldGraph..: 0% completed');
+  const fingerprints : DG.DataFrame = await callChemSimilaritySearch(dframe, molCol, smiles, 'Tanimoto', 1000000, 0.0, Fingerprint.Morgan);
+  ui.setUpdateIndicator(grid.root, false);
+  progressBar.update(100, 'Sort completed');
+  progressBar.close();
+
+  const idxCol = fingerprints.columns.byName('indexes');
+  grid.sort([], []);
+  grid.setRowOrder(idxCol.toList());
+  grid.props.pinnedRows = [tableRowIdx];
+  grid.scrollToPixels(0,0); //to address the bug in the core
+}
+
 //name: Use as filter
 //description: Adds this structure as a substructure filter
 //meta.action: Use as filter
-//input: string mol { semType: Molecule }
-export function useAsSubstructureFilter(mol: string): void {
+//input: semantic_value value { semType: Molecule }
+export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   const tv = grok.shell.tv;
   if (tv == null)
     throw 'Requires an open table view.';
 
+  const mol = value.value;
   const molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (molCol == null)
     throw 'Molecule column not found.';

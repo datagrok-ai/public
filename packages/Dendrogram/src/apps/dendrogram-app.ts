@@ -81,7 +81,7 @@ export class DendrogramApp {
       // filter for leafs only, to align tree with grid
 
       this.tv = grok.shell.addTableView(this.treeDf, DG.DOCK_TYPE.FILL);
-      this.tv.path = this.tv.basePath = `/func/Dendrogram.${this._funcName}`;
+      this.tv.path = this.tv.basePath = `/func/${_package.name}.${this._funcName}`;
     }
 
     if (!this.treeViewer) {
