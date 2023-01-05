@@ -1,6 +1,6 @@
 /* eslint-disable block-spacing */
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
+//import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -31,7 +31,7 @@ export class GisArea {
   // coordinates: Array<gisCoordinate>;
   coordinates: gisPolygons;
   attributes: gisFeatureProperties = {};
-  // maprefference: OpenLayers | null; //TODO: maybe we should refference to superclass (e.g. MapEngine above OpenLayers)
+  // mapreference: OpenLayers | null; //TODO: maybe we should reference to superclass (e.g. MapEngine above OpenLayers)
 
   constructor(coord: gisPolygons, attr?: gisFeatureProperties, parentmap: OpenLayers | null = null) {
     this.coordinates = coord;
