@@ -112,9 +112,10 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--host]
+[--host] [--csv]
 
 --host       Host alias as in the config file
+--csv        Save the test report in a CSV file
 
 Run package tests
 
