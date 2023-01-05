@@ -36,6 +36,7 @@ const enum RELEVANT_FIELD {
 
 export async function viewMonomerLib(): Promise<void> {
   const table = await parseMonomerLib(LIB_PATH, DEFAULT_LIB_FILENAME);
+  table.name = 'Monomer Lib Viewer';
   grok.shell.addTableView(table);
 }
 
@@ -47,10 +48,6 @@ async function parseMonomerLib(path: string, fileName: string): Promise<DG.DataF
   for (let i = 0; i < objList.length; i++)
     formattedObjectsList[i] = formatMonomerObject(objList[i]);
   const df = DG.DataFrame.fromObjects(formattedObjectsList)!;
-  // for (const key of Object.keys(EXTENDED_SYNTHESIZERS))
-  //   console.log('synth:', key);
-  // for (const key of Object.keys(EXTENDED_TECHNOLOGIES))
-  //   console.log('tech:', key);
   return df;
 }
 

@@ -5,27 +5,27 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 
-import {convertSequence, undefinedInputSequence, isValidSequence} from '../sdf-tab/sequence-codes-tools';
-import {viewMonomerLib} from '../utils/monomer-lib-viewer';
-
 // todo: elminate completely
 import {map} from '../hardcode-to-be-eliminated/map';
 import {MODIFICATIONS} from '../hardcode-to-be-eliminated/const';
 
 // todo: unify with lib bio monomers works
 import {sequenceToSmiles, sequenceToMolV3000} from '../utils/structures-works/from-monomers';
-import {drawMolecule} from '../utils/structures-works/draw-molecule';
 
+import {convertSequence, undefinedInputSequence, isValidSequence} from '../sdf-tab/sequence-codes-tools';
+import {viewMonomerLib} from '../utils/monomer-lib-viewer';
+import {drawMolecule} from '../utils/structures-works/draw-molecule';
 import {download} from '../utils/helpers';
 
-const defaultInput = 'fAmCmGmAmCpsmU'; // todo: capitalize constants
-const sequenceWasCopied = 'Copied'; // todo: wrap hardcoded literals into constants
-const tooltipSequence = 'Copy sequence';
+const DEFAULT_INPUT = 'fAmCmGmAmCpsmU';
+const SEQUENCE_COPIED_MSG = 'Copied';
+const SEQ_TOOLTIP_MSG = 'Copy sequence';
 
+/** Produce HTML div for the 'main' tab */
 export async function getMainTab(onSequenceChanged: (seq: string) => void): Promise<HTMLDivElement> {
   const onInput: rxjs.Subject<string> = new rxjs.Subject<string>();
 
-  async function updateTableAndMolecule(sequence: string, inputFormat: string): Promise<void> {
+  async function updateTableAndMolecule(sequence: string): Promise<void> {
     moleculeImgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
@@ -54,7 +54,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
               ),
             ]) : //@ts-ignore
             ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key])
-              .then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, ''),
+              .then(() => grok.shell.info(SEQUENCE_COPIED_MSG)), SEQ_TOOLTIP_MSG, ''),
         });
       }
 
@@ -82,18 +82,18 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
   }
 
   const inputFormatChoiceInput = ui.choiceInput('Input format: ', 'Janssen GCRS Codes', Object.keys(map));
-  inputFormatChoiceInput.onInput((format: string) => {
-    updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''), format);
+  inputFormatChoiceInput.onInput(() => {
+    updateTableAndMolecule(inputSequenceField.value.replace(/\s/g, ''));
   });
   const moleculeImgDiv = ui.block([]);
   const outputTableDiv = ui.div([]);
-  const inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => {
+  const inputSequenceField = ui.textInput('', DEFAULT_INPUT, (sequence: string) => {
     // Send event to DG.debounce()
     onInput.next(sequence);
   });
 
   DG.debounce<string>(onInput, 300).subscribe((sequence) => {
-    updateTableAndMolecule(sequence, inputFormatChoiceInput.value!);
+    updateTableAndMolecule(sequence);
     onSequenceChanged(sequence);
   });
 
@@ -135,7 +135,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
       DG.Column.fromStrings('Name', Object.keys(MODIFICATIONS)),
     ])!, {showRowHeader: false, showCellTooltip: false, allowEdit: false},
   );
-  updateTableAndMolecule(defaultInput, inputFormatChoiceInput.value!);
+  updateTableAndMolecule(DEFAULT_INPUT);
 
   const codesTablesDiv = ui.splitV([
     ui.box(ui.h2('ASO Gapmers'), {style: {maxHeight: '40px'}}),
@@ -171,7 +171,7 @@ export async function getMainTab(onSequenceChanged: (seq: string) => void): Prom
   const copySmilesIcon = ui.iconFA('copy', () => {
     navigator.clipboard.writeText(
       sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''), false, inputFormatChoiceInput.value!)
-    ).then(() => grok.shell.info(sequenceWasCopied));
+    ).then(() => grok.shell.info(SEQUENCE_COPIED_MSG));
   }, 'Copy SMILES');
 
   const viewMonomerLibIcon = ui.iconFA('book', viewMonomerLib, 'View monomer library');
