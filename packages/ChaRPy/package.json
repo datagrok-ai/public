@@ -21,7 +21,7 @@
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "@babel/cli": "7.1.2",
-    "@babel/core": "7.1.2",
+    "@babel/core": "7.20.12",
     "@babel/polyfill": "7.0.0",
     "@babel/preset-env": "7.1.0",
     "babel-loader": "^8.1.0",
