@@ -20,17 +20,11 @@ category('GridWithTree', viewsTests((ctx: { dfList: DG.DataFrame[], vList: DG.Vi
     const dataDf: DG.DataFrame = DG.DataFrame.fromCsv(csv);
     const newickRoot: NodeType = parseNewick(newickStr);
 
-    const clusterDf: DG.DataFrame = DG.DataFrame.create(0);
-    clusterDf.columns.addNewInt('Cluster');
-    clusterDf.columns.addNewString(leafColName);
-    clusterDf.columns.addNewInt(`${leafColName}_Count`);
-
-
     const tv: DG.TableView = grok.shell.addTableView(dataDf);
     ctx.dfList.push(dataDf);
     ctx.vList.push(tv);
     const neighborWidth = 250;
 
-    injectTreeForGridUI2(tv.grid, newickRoot, dataDf, clusterDf, leafColName, neighborWidth);
+    injectTreeForGridUI2(tv.grid, newickRoot, leafColName, neighborWidth);
   });
 }));
