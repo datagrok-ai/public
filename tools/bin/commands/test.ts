@@ -48,7 +48,7 @@ export function test(args: TestArgs): boolean {
   const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
   let fullName = packageData.friendlyName || packageData.fullName;
   if (fullName) {
-    fullName = utils.kebabToCamelCase(fullName);
+    fullName = utils.friendlyNameToName(utils.kebabToCamelCase(fullName));
     process.env.TARGET_PACKAGE = fullName;
     console.log('Environment variable `TARGET_PACKAGE` is set to', process.env.TARGET_PACKAGE);
   } else {
