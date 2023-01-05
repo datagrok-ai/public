@@ -18,6 +18,8 @@
 
 #include <cstring>
 #include <vector>
+//#include <list>
+//#include <deque>
 
 #include "../../../Eigen/Eigen/Dense"
 using namespace Eigen;
@@ -296,8 +298,8 @@ namespace ode {
 		// initialization
 		ArgType h = hTry;
 		unsigned dim = y.size();
-		VectorXd yTemp(dim);
-		VectorXd yErr(dim);
+		VecType yTemp(dim);
+		VecType yErr(dim);
 
 		// computation of solution (y), time (t) and next step (hNext)
 		while (true)
@@ -405,13 +407,31 @@ namespace ode {
 		return NO_ERRORS;
 	} // adaptiveStepSolver
 
+	/*  Linear interpolant.
+	    Provides linear interpolation of ODE's solution stored in structures times & solutions, i.e. {t} and {y(t)}, 
+		into dataframe. Values are obtained on the segment [t0, t1] with the step h.
+		  t0 - initial point;
+		  t1 - end point;
+		  h - step;
+		  dataFrame - the dataframe computed;
+		  rowCount - number of rows;
+		  colCount - number of columns;
+		  times - structure that contains values of the independent variable t, i.e. {t};
+		  solutions - structure that contains values of y(t).
+	*/
 	template<typename OperatingType, typename DataType, class ArgStruct, class VecStruct>
 	int linearInterpolation(OperatingType t0, OperatingType t1, OperatingType h, 
 		DataType * dataFrame, int rowCount, int colCount,
 		ArgStruct & times, VecStruct & solutions)
 	{
+		// routine values
 		auto tIter = times.begin();
 		auto yIter = solutions.begin();
+
+		auto tIterNext = times.begin();
+		auto yIterNext = solutions.begin();
+		++tIterNext;
+		++yIterNext;
 
 		OperatingType tLeft = 0.0;
 		OperatingType tRight = 0.0;
@@ -422,58 +442,92 @@ namespace ode {
 
 		int index = 0;
 
+		// the classic linear interpolation method
 		for (OperatingType t = t0; t < t1; t += h)
-		{	
-			while (t > *(tIter + 1)) {
+		{
+			while (t > *tIterNext) {
 				++tIter;
 				++yIter;
+				++tIterNext;
+				++yIterNext;
 			}
 
 			tLeft = *tIter;
-			tRight = *(tIter + 1);
+			tRight = *tIterNext;
 
 			cLeft = (tRight - t) / (tRight - tLeft);
 			cRight = 1.0 - cLeft;
 
-			dataFrame[index] = static_cast<DataType>(t);			
+			dataFrame[index] = static_cast<DataType>(t);
 
 			for (int j = 1; j < colCount; j++)
-			{				
+			{
 				fLeft = (*yIter)(j - 1);
-				fRight = (*(yIter + 1))(j - 1);
+				fRight = (*yIterNext)(j - 1);
 
-				dataFrame[index + j * rowCount] = static_cast<DataType>(cLeft * fLeft + cRight * fRight);					
-			}		
+				dataFrame[index + j * rowCount] = static_cast<DataType>(cLeft * fLeft + cRight * fRight);
+			}
 
 			index++;
 		}
 		return NO_ERRORS;
 	} // linearInterpolation
 
+	/*  Solver of the initial ODE problem dy/dt = f(t,y), y(t0) = y0.
+	    Solves the problem on the segment [t0, t1] and linearly interpolated with the step h results are stored in the dataframe.
+		  f - right part of the equation;
+		  t0 - initial point;
+		  t1 - end point;
+		  h - step;
+		  y0 - initial value of the solution, i.e. y(t0);
+		  tol - overall tolerance level;
+		  dataframe - array that contains values of (t, y(t));
+		  rowCount - number of rows;
+		  colCount - number of columns.
+
+		REMARK. Solution is a vector-function y(t) = (y_1(t), ..., y_n(t)), where n = colCount - 1.
+		        The array dataframe has the following structure:
+		           dataframe[0, ..., rowCount - 1] contains times, i.e. values {t0, t0 + h, t0 + 2h, ... , t1};
+				   dataframe[rowCount, ..., 2 * rowCount - 1] contains values of {y_1(t0), y_1(t0 + h), ..., y_1(t1)};
+				   dataframe[2 * rowCount, ..., 3 * rowCount - 1] contains values of {y_2(t0), y_2(t0 + h), ..., y_2(t1)};
+				   . . .
+				   dataframe[n * rowCount, ..., (n + 1) * rowCount - 1] contains values of {y_n(t0), y_n(t0 + h), ..., y_n(t1)};
+	*/
 	template<typename DataType, typename ArgType, typename VecType>
 	int solveODE(VecType(*f)(ArgType, VecType&), 
 		DataType t0, DataType t1, DataType h, DataType * y0, DataType tol,
 		DataType * dataFrame, int rowCount, int colCount)
 	{
+		// dimension of solution
 		int dim = colCount - 1;
 
+		// operating variables
 		ArgType _t0 = static_cast<ArgType>(t0);
 		ArgType _t1 = static_cast<ArgType>(t1);
 		ArgType _hInitial = static_cast<ArgType>(h);
 		ArgType _tol = static_cast<ArgType>(tol);
 
+		// vector - initial value of y, i.e. y0
 		VecType yInitial(dim);
-
 		for (int i = 0; i < dim; i++)
 			yInitial(i) = y0[i];
 
+		// structures for {t} and {y(t)}: applying vector provides higher performance than list and deque
 		std::vector<ArgType> times;
 		std::vector<VecType> solutions;
 
+		/*std::list<ArgType> times;
+		std::list<VecType> solutions;*/
+
+		/*std::deque<ArgType> times;
+		std::deque<VecType> solutions;*/
+
+		// solve ODE: times and solutions are obtained
 		int resultCode = RKCKsolver(f, _t0, _t1, _hInitial, yInitial, _tol, times, solutions);
 		if (resultCode != NO_ERRORS)
 			return resultCode;
 
+		// interpolation of results
 		resultCode = linearInterpolation(_t0, _t1, _hInitial, dataFrame, rowCount, colCount, times, solutions);
 
 		return resultCode;
