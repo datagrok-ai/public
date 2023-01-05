@@ -28,8 +28,11 @@ import {_package} from './package';
 import {
   ALIGNMENT,
   ALPHABET,
+  DistanceMatrix,
   getPhylocanvasGlService,
   getTreeHelper,
+  IDendrogramService,
+  getDendrogramService,
   ITreeHelper,
   IVdRegionsViewer,
   NodeType,
@@ -40,6 +43,8 @@ import {
   TAGS as bioTAGS,
   VdRegion
 } from '@datagrok-libraries/bio';
+import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 type FilterDesc = { type: string, column?: string, label?: string, [p: string]: any };
 
@@ -51,6 +56,7 @@ export class MolecularLiabilityBrowser {
   dataLoader: DataLoader;
   phylocanvasGlSvc: PhylocanvasGlServiceBase | null = null;
   th: ITreeHelper;
+  dendrogramSvc: IDendrogramService;
 
   // uriParser: HTMLAnchorElement;
   baseUri: string = '/apps/MolecularLiabilityBrowser/MolecularLiabilityBrowser/';
@@ -85,6 +91,7 @@ export class MolecularLiabilityBrowser {
   mlbView: DG.TableView | null = null;
   mlbGrid: DG.Grid;
   mlbGridDn: DG.DockNode;
+  mlbGridTreeNeighbor: GridNeighbor | null;
   filterHost: HTMLElement;
   filterHostDn: DG.DockNode;
   filterView: DG.FilterGroup | null = null;
@@ -117,7 +124,7 @@ export class MolecularLiabilityBrowser {
   async init(urlParams: URLSearchParams) {
     try {
       this.phylocanvasGlSvc = await getPhylocanvasGlService();
-      this.th = await getTreeHelper();
+      [this.th, this.dendrogramSvc] = await Promise.all([getTreeHelper(), getDendrogramService()]);
 
       //remove
       this.urlParams = urlParams;
@@ -183,11 +190,10 @@ export class MolecularLiabilityBrowser {
       await this.setViewTwinPViewer();
       t2 = Date.now();
       console.debug(`MLB: TwinP set, ${((t2 - t1) / 1000).toString()} s`);
-    } catch (err: unknown) {
-      if (err instanceof Error)
-        console.error(err);
-      else
-        console.error((err as Object).toString());
+    } catch (err: any) {
+      const errStr = errorToConsole(err);
+      console.error(errStr);
+      throw err;
     } finally {
       grok.events.onViewRemoved.subscribe((v) => {
         if (v.type === DG.VIEW_TYPE.TABLE_VIEW && (v as DG.TableView).dataFrame.id === this.mlbDf.id)
@@ -728,6 +734,10 @@ export class MolecularLiabilityBrowser {
     //    this.mlbView.dataFrame = null;
 
     // this.mlbView.dockManager.rootNode.removeChild(this.filterViewDn);
+    if (this.mlbGridTreeNeighbor) {
+      this.mlbGridTreeNeighbor.close();
+      this.mlbGridTreeNeighbor = null;
+    }
 
     if (this.filterView !== null && this.filterViewDn != null) {
       try {
@@ -768,6 +778,7 @@ export class MolecularLiabilityBrowser {
         this.mlbDf.name = 'Molecular Liability Browser'; // crutch for window/tab name support
         this.mlbView = grok.shell.addTableView(this.mlbDf);
         this.mlbGrid = this.mlbView.grid;
+        this.mlbGrid.setOptions({showAddNewRowIcon: false, addNewRowOnLastRowEdit: false});
 
         this.mlbGridDn = this.mlbView.dockManager.findNode(this.mlbGrid.root);
         this.filterHost = ui.box();
@@ -837,6 +848,8 @@ export class MolecularLiabilityBrowser {
         await this.treeBrowser.setData(this.treeDf, this.mlbDf);
       }
 
+      this.mlbGridTreeNeighbor = await this.buildViewMlbGridTree();
+
       if (this.treeDf.rowCount == 0 && this.treeInput.value)
         this.onTreeChanged('');
 
@@ -893,8 +906,10 @@ export class MolecularLiabilityBrowser {
 
       this.viewSubs.push(this.mlbDf.onCurrentRowChanged.subscribe(this.onMLBGridCurrentRowChanged.bind(this)));
       this.viewSubs.push(this.treeNodesDf.onSelectionChanged.subscribe(this.onTreeNodesDfSelectionChanged.bind(this)));
-    } catch (err: unknown) {
-      console.error(err instanceof Error ? err.message : (err as Object).toString());
+    } catch (err: any) {
+      const errStr = errorToConsole(err);
+      console.error(errStr);
+      throw errStr;
     } finally {
       console.debug('MLB: MolecularLiabilityBrowser.buildView() end, ' +
         `${((Date.now() - _startInit) / 1000).toString()} s`);
@@ -924,11 +939,38 @@ export class MolecularLiabilityBrowser {
 
     //adjust column in treeGrid
 
-
     this.updateViewTreeBrowser();
 
     console.debug('MLB: MolecularLiabilityBrowser.updateView() end,' +
       `${((Date.now() - _startInit) / 1000).toString()} s`);
+  }
+
+  async buildViewMlbGridTree(): Promise<GridNeighbor> {
+    const chainList: string[] = ['Heavy', 'Light'];
+
+    const rowCount: number = this.mlbDf.rowCount;
+    const seqList: string[] = wu.count(0).take(rowCount).map((rowI) => {
+      const resSeq: string = chainList
+        .map((chain) => {
+          const chainSeqColName: string = `${chain} chain sequence`;
+          const chainSeqCol: DG.Column = this.mlbDf.getCol(chainSeqColName);
+          const chainSeq: string = chainSeqCol.get(rowI);
+          return chainSeq;
+        })
+        .reduce((a, b) => { return a + b; }, '');
+      return resSeq;
+    }).toArray();
+
+    const distance: DistanceMatrix = DistanceMatrix.calc(seqList, (aSeq: string, bSeq: string) => {
+      if (aSeq.length != bSeq.length) throw new Error('Arguments aSeq and bSeq must be of the same length.');
+      let distanceAcc: number = 0;
+      for (let pos = 0; pos < aSeq.length; pos++)
+        distanceAcc += aSeq[pos] != bSeq[pos] ? 1 : 0;
+      return distanceAcc / aSeq.length;
+    });
+    const treeRoot: NodeType = await this.th.hierarchicalClusteringByDistance(distance, 'ward');
+    return this.dendrogramSvc.injectTreeForGrid(
+      this.mlbGrid, treeRoot, undefined, 300, undefined);
   }
 
   updateViewTreeBrowser() {
@@ -1077,11 +1119,10 @@ export class MolecularLiabilityBrowser {
 
       const t3 = Date.now();
       console.debug(`MLB: MolecularLiabilityBrowser.loadData() prepare ET, ${((t3 - t2) / 1000).toString()} s`);
-    } catch (err: unknown) {
-      if (err instanceof Error)
-        console.error(err);
-      else
-        console.error((err as Object).toString());
+    } catch (err: any) {
+      const errStr = errorToConsole(err);
+      console.error(errStr);
+      throw err;
     } finally {
       pi.close();
     }
