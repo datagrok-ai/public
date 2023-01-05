@@ -124,6 +124,19 @@ export async function getCensusInfoT() {
   const dlg = uiCensusDialog();
 }
 
+async function fetchCensus() {
+  const url = 'https://api.census.gov/data/';
+  let censusRes: any = null;
+  try {
+    censusRes = await (await grok.dapi.fetchProxy(url)).json();
+  } catch (e: any) {
+    grok.shell.error(`Census fetch error: ${e.message}`);
+    censusRes = '';
+  } finally {
+    return censusRes;
+  }
+}
+
 //name: getCensusInfo
 export async function getCensusInfo() {
   let htmlStyle: DG.ElementOptions = { };
@@ -131,11 +144,8 @@ export async function getCensusInfo() {
   const mapVintages = new Map<string, any[]>();
   let infoDataset: HTMLElement | null = null;
 
-  //TODO: add try-catch block for fetch
-  const url = 'https://api.census.gov/data/';
-  censusRes = await (await grok.dapi.fetchProxy(url)).json();
+  censusRes = await fetchCensus();
 
-  //TODO: put fetch into separate function
   //TODO: save fetch result into buffer to prevent frequent uploading
   if (!censusRes)
     return 'Fetch error';
@@ -195,8 +205,8 @@ export async function getCensusInfo() {
     const variables = await(await grok.dapi.fetchProxy(urlVariables)).json();
     if (variables) {
       const varList = [];
-      for (let v in variables['variables']) {
-        let varObj = variables['variables'][v];
+      for (const v in variables['variables']) {
+        const varObj = variables['variables'][v];
         varObj.varname = v;
         varObj.use = false;
         varList.push(varObj);
@@ -357,7 +367,7 @@ export function gisViewer(): GisViewer {
 
 async function getKMZData(buffer: any): Promise<string> {
   const zip = new JSZip();
-  let kmlData: string = '';
+  let kmlData = '';
   await zip.loadAsync(buffer);
   const kmlFile = zip.file(/.kml$/i)[0];
   if (kmlFile)
@@ -365,11 +375,11 @@ async function getKMZData(buffer: any): Promise<string> {
   return kmlData;
 }
 
-//name: gisKMZFileViewer
+//name: gisKMZAndKMLFileViewer
 //tags: fileViewer, fileViewer-kmz, fileViewer-kml
 //input: file file
 //output: view result
-export async function gisKMZFileViewer(file: DG.FileInfo): Promise<DG.View> {
+export async function gisKMZAndKMLFileViewer(file: DG.FileInfo): Promise<DG.View> {
   const viewFile = DG.View.create();
   viewFile.name = 'Preview of: ' + file.name;
   viewFile.root.id = 'map-container'; //boxMap - div that contains map
@@ -393,18 +403,13 @@ export async function gisKMZFileViewer(file: DG.FileInfo): Promise<DG.View> {
   return viewFile;
 }
 
-//name: gisKMLFileHandler
-//tags: file-handler
-//meta.ext: kml
-//input: string filecontent
-//output: list tables
-export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
-  //TODO: detect the kind of file and join KML/KMZ handler
-
+async function handleKMLOrKMZFile(filecontent: string | Uint8Array, isKmz: boolean): Promise<DG.DataFrame[]> {
   let dfFromKML: DG.DataFrame | undefined = undefined;
   const ol = new OpenLayers();
 
-  const kmlData = filecontent;
+  let kmlData = '';
+  if (isKmz) kmlData = await getKMZData(filecontent);
+  else kmlData = filecontent as string;
   const newLayer = ol.addKMLLayerFromStream(kmlData);
   const arrFeatures = ol.exportLayerToArray(newLayer);
 
@@ -418,7 +423,7 @@ export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
 
         dfFromKML.name = newLayer.get('layerName');
 
-        const tableView = grok.shell.addTableView(dfFromKML as DG.DataFrame);
+        const tableView = grok.shell.addTableView(dfFromKML);
         tableView.name = 'dfFromKML.name' + ' (manual)';
 
         setTimeout((tableView: DG.TableView, kmlData: string) => {
@@ -435,46 +440,22 @@ export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
   return [];
 }
 
+//name: gisKMLFileHandler
+//tags: file-handler
+//meta.ext: kml
+//input: string filecontent
+//output: list tables
+export async function gisKMLFileHandler(filecontent: string): Promise<DG.DataFrame[]> {
+  return handleKMLOrKMZFile(filecontent, false);
+}
+
 //name: gisKMZFileHandler
 //tags: file-handler
 //meta.ext: kmz
 //input: list filecontent
 //output: list tables
 export async function gisKMZFileHandler(filecontent: Uint8Array): Promise<DG.DataFrame[]> {
-  // export function gisKMLFileHandler(filecontent: string): DG.DataFrame[] {
-  //detect the kind of file
-  let dfFromKML: DG.DataFrame | undefined = undefined;
-  const ol = new OpenLayers();
-
-  const kmlData = await getKMZData(filecontent);
-  const newLayer = ol.addKMLLayerFromStream(kmlData);
-  const arrFeatures = ol.exportLayerToArray(newLayer);
-
-  if (arrFeatures) {
-    if (arrFeatures.length > 0) {
-      dfFromKML = DG.DataFrame.fromObjects(arrFeatures);
-      if (dfFromKML) {
-        const gisCol = dfFromKML.col('gisObject');
-        if (gisCol)
-          gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
-
-        dfFromKML.name = newLayer.get('layerName');
-
-        const tableView = grok.shell.addTableView(dfFromKML as DG.DataFrame);
-        tableView.name = 'dfFromKML.name' + ' (manual)';
-
-        setTimeout((tableView: DG.TableView, kmlData: string) => {
-          const v = tableView;
-          const mapViewer = v.addViewer(new GisViewer()) as GisViewer;
-
-          mapViewer.ol.initMap('map-container');
-          mapViewer.ol.addKMLLayerFromStream(kmlData);
-        }, 1000, tableView, kmlData); //should use it because we need visible and active View for map initializing
-      }
-    }
-  }
-  if (dfFromKML) return [dfFromKML];
-  return [];
+  return handleKMLOrKMZFile(filecontent, true);
 }
 
 //gisGeoJSONFileDetector
@@ -548,7 +529,7 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
   if (isGeoTopo[0] === false) //if this a simple JSON - just return DF with JSON content
     return [DG.DataFrame.fromJson(filecontent)];
 
-  let dfFromJSON = null;
+  let dfFromJSON: DG.DataFrame | undefined = undefined;
   const ol = new OpenLayers();
   let newLayer = null;
   if (isGeoTopo[1] === false)
@@ -567,7 +548,7 @@ export function gisGeoJSONFileHandler(filecontent: string): DG.DataFrame[] {
           gisCol.semType = SEMTYPEGIS.GISAREA; //SEMTYPEGIS.GISOBJECT;
 
         dfFromJSON.name = newLayer.get('layerName');
-        const tableView = grok.shell.addTableView(dfFromJSON as DG.DataFrame);
+        const tableView = grok.shell.addTableView(dfFromJSON);
         tableView.name = 'dfFromJSON.name'; //TODO: add file name here instead of this hardcode
 
         //show the map viewer

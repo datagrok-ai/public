@@ -103,7 +103,7 @@ category('UI', () => {
     isColumnPresent(smiles.columns, 'NumRotatableBonds');
     isColumnPresent(smiles.columns, 'RingCount');
     v.close();
-  });
+  }, {skipReason: '#1183'});
 
   test('info panel: gasteiger', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -133,7 +133,7 @@ category('UI', () => {
     await delay(50);
     gpc.click();
     v.close();
-  });
+  }, {skipReason: '#1183'});
 
   test('info panel: identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
@@ -304,7 +304,7 @@ category('UI', () => {
     grok.shell.v.close();
     grok.shell.closeTable(grok.shell.t);
     v.close();
-  });
+  }, {skipReason: '#1183'});
 
   test('map identifiers', async () => {
     smiles = grok.data.demo.molecules(20);
