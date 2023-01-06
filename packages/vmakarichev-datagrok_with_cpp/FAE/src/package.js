@@ -18,17 +18,36 @@ export async function init() {
 }
 
 //name: solveFAE
-//input: double t0 = 0
-//input: double t1 = 10
-//input: double step = 0.01
-//output: dataframe df 
-export function solveFAE(t0, t1, step) {
-  let timesCount = Math.trunc((t1 - t0) / step) + 1;
+//input: double t0 =  {units: minutes; caption: Initial time}
+//input: double t1 =  {units: minutes; caption: Final time}
+//input: double h =  {units: minutes; caption: Time step}
+//input: double FFox =  {caption: FFox(initial)}
+//input: double KKox =  {caption: KKox(initial)}
+//input: double FFred =  {caption: FFred(initial)}
+//input: double KKred =  {caption: KKred(initial)}
+//input: double Ffree =  {caption: Ffree(initial)}
+//input: double Kfree =  {caption: Kfree(initial)}
+//input: double FKred =  {caption: FKred(initial)}
+//input: double FKox =  {caption: FKox(initial)}
+//input: double MEAthiol =  {caption: MEAthiol(initial)}
+//input: double CO2 =  {caption: CO2(initial)}
+//input: double yO2P = {caption: yO2P(initial)
+//input: double Cystamine = {caption: Cystamine(initial)}
+//input: double VL =  {caption: VL(initial)}
+//output: dataframe solution {caption: Figure 1; viewer: Line Chart(x: "t, time (minutes)")}
+export function solveFAE(t0, t1, h, FFox, KKox, FFred, KKred, Ffree, 
+  Kfree, FKred, FKox, MEAthiol, CO2, yO2P, Cystamine, VL) {
+
+  let timesCount = Math.trunc((t1 - t0) / h) + 1;
   let varsCount = 14;
-  let df = callWasm(ODEsolver, 'solveFAE', [t0, t1, step, timesCount, varsCount]);
+
+  let df = callWasm(ODEsolver, 'solveFAE', 
+    [t0, t1, h, FFox, KKox, FFred, KKred, Ffree, Kfree, FKred, 
+     FKox, MEAthiol, CO2, yO2P, Cystamine, VL, 
+     timesCount, varsCount]);
 
   let cols = df.columns; 
-  cols.byIndex(0).name = 't';
+  cols.byIndex(0).name = 't, time (minutes)';
   cols.byIndex(1).name = 'FFox(t)';
   cols.byIndex(2).name = 'KKox(t)'; 
   cols.byIndex(3).name = 'FFred(t)';
@@ -42,9 +61,7 @@ export function solveFAE(t0, t1, step) {
   cols.byIndex(11).name = 'yO2P(t)';
   cols.byIndex(12).name = 'Cystamine(t)';
   cols.byIndex(13).name = 'VL(t)';
-  df.name = `FAE,${t0}, ${t1},step=${step}`;
-
+  df.name = `FAE,${t0}, ${t1},step=${h}`;
+   
   return df;
-} // solveFAE
-
-
+}  // solveFAE

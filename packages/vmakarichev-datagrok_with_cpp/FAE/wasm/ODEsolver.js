@@ -32,6 +32,45 @@ var solveFAE = {
     h: {
       type: 'num'
     },
+    FFox: {
+      type: 'num'
+    },
+    KKox: {
+      type: 'num'
+    },
+    FFred: {
+      type: 'num'
+    },
+    KKred: {
+      type: 'num'
+    },
+    Ffree: {
+      type: 'num'
+    },
+    Kfree: {
+      type: 'num'
+    },
+    FKred: {
+      type: 'num'
+    },
+    FKox: {
+      type: 'num'
+    },
+    MEAthiol_t: {
+      type: 'num'
+    },
+    CO2: {
+      type: 'num'
+    },
+    yO2P: {
+      type: 'num'
+    },
+    Cystamine: {
+      type: 'num'
+    },
+    VL: {
+      type: 'num'
+    },
     timesCount: {
       type: 'num'
     },
