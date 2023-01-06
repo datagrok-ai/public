@@ -4,7 +4,7 @@
     "default",
     "geo"
   ],
-  "name": "Coffee Company",
+  "name": "Demo Coffee Company",
   "description": "Coffeehouse chain with addresses and sales (US location)",
   "tables": [
     {
