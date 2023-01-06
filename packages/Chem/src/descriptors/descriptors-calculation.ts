@@ -1,10 +1,13 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {getDescriptorsTree, getDescriptorsPy} from '../scripts-api';
+//import {getDescriptorsTree, getDescriptorsPy} from '../scripts-api';
+import { getDescriptorsPy } from '../scripts-api';
 import {isMolBlock} from 'datagrok-api/dg';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
+import { descriptors } from './const';
+import { groupBy } from 'rxjs/operators';
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
@@ -128,58 +131,88 @@ export function getDescriptorsApp(): void {
 //description: Open descriptors selection dialog
 function openDescriptorsDialog(selected: any, onOK: any): void {
   //grok.chem.descriptorsTree().then((descriptors: { [_: string]: any }) => {
-  getDescriptorsTree().then((descriptors: { [_: string]: any }) => {
-    const tree = ui.tree();
-    tree.root.style.maxHeight = '400px';
+  const tree = ui.tree();
+  tree.root.style.maxHeight = '400px';
 
-    const groups: { [_: string]: any } = {};
-    const items: DG.TreeViewNode[] = [];
+  const groups: { [_: string]: any } = {};
+  const items: DG.TreeViewNode[] = [];
+  const selectedDescriptors: { [_: string]: string } = {};
 
-    const checkAll = (val: boolean) => {
-      for (const g of Object.values(groups))
-        g.checked = val;
-      for (const i of items)
-        i.checked = val;
+  const checkAll = (val: boolean) => {
+    for (const g of Object.values(groups))
+      g.checked = val;
+    for (const i of items)
+      i.checked = val;
+  };
+
+  const selectAll = ui.label('All', {classes: 'd4-link-label', onClick: () => checkAll(true)});
+  selectAll.style.marginLeft = '6px';
+  selectAll.style.marginRight = '12px';
+  const selectNone = ui.label('None', {classes: 'd4-link-label', onClick: () => checkAll(false)});
+
+  const countLabel = ui.label('0 checked');
+  countLabel.style.marginLeft = '24px';
+  countLabel.style.display = 'inline-flex';
+
+  const keys = Object.keys(descriptors);
+  for (const groupName of keys) {
+    const group = tree.group(groupName, null, false);
+    group.enableCheckBox();
+    groups[groupName] = group;
+
+    group.checkBox!.onchange = (_e) => {
+      countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
     };
 
-    const selectAll = ui.label('All', {classes: 'd4-link-label', onClick: () => checkAll(true)});
-    selectAll.style.marginLeft = '6px';
-    selectAll.style.marginRight = '12px';
-    const selectNone = ui.label('None', {classes: 'd4-link-label', onClick: () => checkAll(false)});
+    console.log(groups);
 
-    const countLabel = ui.label('0 checked');
-    countLabel.style.marginLeft = '24px';
-    countLabel.style.display = 'inline-flex';
+    for (const descriptor of descriptors[groupName]['descriptors']) {
+      const item = group.item(descriptor['name'], descriptor);
+      item.enableCheckBox(selected.includes(descriptor['name']));
+      items.push(item);
 
-    const keys = Object.keys(descriptors);
-    for (const groupName of keys) {
-      const group = tree.group(groupName, null, false);
-      group.enableCheckBox();
-      groups[groupName] = group;
-
-      group.checkBox!.onchange = (_e) => {
+      item.checkBox!.onchange = (_e) => {
         countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
+        if (item.checked) {
+          selectedDescriptors[item.text] = groupName;
+        }
       };
-
-      for (const descriptor of descriptors[groupName]['descriptors']) {
-        const item = group.item(descriptor['name'], descriptor);
-        item.enableCheckBox(selected.includes(descriptor['name']));
-        items.push(item);
-
-        item.checkBox!.onchange = (_e) => {
-          countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
-        };
-      }
-
-      checkAll(false);
     }
 
-    ui.dialog('Chem Descriptors')
-      .add(ui.divH([selectAll, selectNone, countLabel]))
-      .add(tree.root)
-      .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name'])))
-      .show();
-  });
+    checkAll(false);
+  }
+
+  const saveInputHistory = (): any => {
+    console.log(selectedDescriptors);
+    let resultHistory: { [_: string]: any } = {};
+    const descriptorNames = Object.keys(selectedDescriptors);
+    for (const descriptorName of descriptorNames) 
+      resultHistory[descriptorName] = selectedDescriptors[descriptorName];
+    return resultHistory;
+  }
+
+  const loadInputHistory = (history: any): void => {
+    checkAll(false);
+    const keys: string[] = Object.keys(history);
+    for (const key of keys) {
+      groups[history[key]].items.filter(function (i: any) {
+        if (i.text === key) 
+          i.checked = true;
+      })
+      groups[history[key]].checked = true;
+    }
+    countLabel.textContent = `${keys.length} checked`;
+  }
+
+  ui.dialog('Chem Descriptors')
+    .add(ui.divH([selectAll, selectNone, countLabel]))
+    .add(tree.root)
+    .onOK(() => onOK(items.filter((i) => i.checked).map((i: any) => i.value['name'])))
+    .show()
+    .history(
+      () => saveInputHistory(),
+      (x) => loadInputHistory(x) 
+    );
 }
 
 //description: Get selected descriptors
@@ -189,7 +222,7 @@ async function getSelected() : Promise<any> {
   if (selected.length === 0) {
     //selected =
     //  (await grok.chem.descriptorsTree() as any)['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
-    selected = (await getDescriptorsTree() as any)['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
+    selected = descriptors['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
   }
   return selected;
@@ -206,7 +239,7 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
   if (table.columns.length > 0) {
     const descriptors: string[] = table.columns.names();
 
-    for (let i = 1; i < descriptors.length; i++) {
+    for (let i = 0; i < descriptors.length; i++) {
       const column: DG.Column = table.columns.byName(descriptors[i]);
       column.name = viewTable.columns.getUnusedName(column.name);
       viewTable.columns.add(column);

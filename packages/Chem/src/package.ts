@@ -33,6 +33,7 @@ import {addInchiKeys, addInchis} from './panels/inchi';
 import {getMcs} from './panels/find-mcs';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {checkForStructuralAlerts} from './panels/structural-alerts';
+import { addDescriptors } from './descriptors/descriptors-calculation';
 
 //utils imports
 import {Fingerprint} from './utils/chem-common';
@@ -901,4 +902,11 @@ export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
 //name: installScaffoldGraph
 export async function installScaffoldGraph() : Promise<void> {
   await setupScaffold();
+}
+
+//name: Chem | Descriptors...
+//input: column col {semType: Molecule}
+export async function admetoxCalculators(col: DG.Column) {
+  let table = col.dataFrame;
+  return await addDescriptors(col, table);
 }
