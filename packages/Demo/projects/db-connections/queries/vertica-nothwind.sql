@@ -1,4 +1,4 @@
---name: VerticaVMartProd
+--name: user sessions
 --friendlyName: VMart
 --connection: VerticaVMart
 

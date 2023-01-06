@@ -1,4 +1,4 @@
---name: PostgresCDMTest
+--name: cities and states
 --friendlyName: CDM
 --connection: PostgresCDM
 
