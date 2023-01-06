@@ -774,7 +774,7 @@ Resources:
       - Key: datagrok.component
         Value: cvm
       TaskDefinition:
-        Ref: GrokComputeTaskDefinitionEc2
+        Ref: GrokComputeTaskDefinition
     Type: AWS::ECS::Service
     Condition: CreateEc2InstanceCondition
   GrokComputeServiceDiscoveryEntry:
@@ -883,7 +883,7 @@ Resources:
       - Key: stickiness.lb_cookie.duration_seconds
         Value: 86400
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  GrokComputeTaskDefinitionEc2:
+  GrokComputeTaskDefinition:
     Properties:
       ContainerDefinitions:
       - Command:
@@ -937,71 +937,14 @@ Resources:
         - Arn
       Family: datagrok-cvm-grok_compute
       Memory: '2048'
-      NetworkMode: bridge
+      NetworkMode:
+              'Fn::If':
+                - CreateEc2InstanceCondition
+                - bridge
+                - awsvpc
       RequiresCompatibilities:
       - !Ref LaunchType
     Type: AWS::ECS::TaskDefinition
-    Condition: CreateEc2InstanceCondition
-  GrokComputeTaskDefinition:
-    Properties:
-      ContainerDefinitions:
-      - Command:
-        - Fn::Sub: "${AWS::Region}.compute.internal"
-        - datagrok.internal
-        - datagrok.local
-        Essential: false
-        Image: docker/ecs-searchdomain-sidecar:1.0
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: LogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: cvm
-        Name: GrokCompute_ResolvConf_InitContainer
-      - DependsOn:
-        - Condition: SUCCESS
-          ContainerName: GrokCompute_ResolvConf_InitContainer
-        Environment:
-        - Name: GROK_COMPUTE_NUM_CORES
-          Value: '2'
-        Essential: true
-        Image:
-          Fn::Sub:
-          - docker.io/datagrok/grok_compute:${Version}
-          - Version:
-              Ref: GrokComputeVersion
-        RepositoryCredentials:
-          CredentialsParameter:
-            Ref: ArnDockerHubCredential
-        LinuxParameters: {}
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: LogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: cvm
-        MemoryReservation: 200
-        Name: grok_compute
-        PortMappings:
-        - ContainerPort: 5005
-          HostPort: 5005
-          Protocol: tcp
-      Cpu: '1024'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-        - GrokComputeTaskExecutionRole
-        - Arn
-      Family: datagrok-cvm-grok_compute
-      Memory: '2048'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-      - !Ref LaunchType
-    Type: AWS::ECS::TaskDefinition
-    Condition: CreateFargateInstanceCondition
   GrokComputeTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1124,7 +1067,7 @@ Resources:
       - Key: datagrok.service
         Value: h2o
       TaskDefinition:
-        Ref: H2oTaskDefinitionEc2
+        Ref: H2oTaskDefinition
     Type: AWS::ECS::Service
     Condition: CreateEc2InstanceCondition
   H2oServiceDiscoveryEntry:
@@ -1307,65 +1250,6 @@ Resources:
       - Key: stickiness.lb_cookie.duration_seconds
         Value: '86400'
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  H2oTaskDefinitionEc2:
-    Properties:
-      ContainerDefinitions:
-      - Command:
-        - Fn::Sub: "${AWS::Region}.compute.internal"
-        - datagrok.internal
-        - datagrok.local
-        Essential: false
-        Image: docker/ecs-searchdomain-sidecar:1.0
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: LogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: cvm
-        Name: H2o_ResolvConf_InitContainer
-      - DependsOn:
-        - Condition: SUCCESS
-          ContainerName: H2o_ResolvConf_InitContainer
-        Essential: true
-        Image:
-          Fn::Sub:
-          - docker.io/datagrok/h2o:${Version}
-          - Version:
-              Ref: H2oVersion
-        RepositoryCredentials:
-          CredentialsParameter:
-            Ref: ArnDockerHubCredential
-        LinuxParameters: {}
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: LogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: cvm
-        MemoryReservation: 300
-        Name: h2o
-        PortMappings:
-        - ContainerPort: 5005
-          HostPort: 0
-          Protocol: tcp
-        - ContainerPort: 54321
-          HostPort: 0
-          Protocol: tcp
-      ExecutionRoleArn:
-        Fn::GetAtt:
-        - H2oTaskExecutionRole
-        - Arn
-      Family: datagrok-cvm-h2o
-      NetworkMode: bridge
-      Memory: '2048'
-      RequiresCompatibilities:
-      - !Ref LaunchType
-    Type: AWS::ECS::TaskDefinition
-    Condition: CreateEc2InstanceCondition
   H2oTaskDefinition:
     Properties:
       ContainerDefinitions:
@@ -1409,23 +1293,25 @@ Resources:
         Name: h2o
         PortMappings:
         - ContainerPort: 5005
-          HostPort: 5005
+          HostPort: 0
           Protocol: tcp
         - ContainerPort: 54321
-          HostPort: 54321
+          HostPort: 0
           Protocol: tcp
-      Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
         - H2oTaskExecutionRole
         - Arn
       Family: datagrok-cvm-h2o
+      NetworkMode:
+              'Fn::If':
+                - CreateEc2InstanceCondition
+                - bridge
+                - awsvpc
       Memory: '2048'
-      NetworkMode: awsvpc
       RequiresCompatibilities:
       - !Ref LaunchType
     Type: AWS::ECS::TaskDefinition
-    Condition: CreateFargateInstanceCondition
   H2oTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1554,7 +1440,7 @@ Resources:
       - Key: datagrok.service
         Value: jupyter_kernel_gateway
       TaskDefinition:
-        Ref: JupyterKernelGatewayFargateTaskDefinition
+        Ref: JupyterKernelGatewayTaskDefinition
     Type: AWS::ECS::Service
     Condition: CreateFargateInstanceCondition
   JupyterKernelGatewayServiceDiscoveryEntry:
@@ -1734,73 +1620,14 @@ Resources:
         - Arn
       Family: datagrok-cvm-jupyter_kernel_gateway
       Memory: '4096'
-      NetworkMode: bridge
+      NetworkMode:
+              'Fn::If':
+                - CreateEc2InstanceCondition
+                - bridge
+                - awsvpc
       RequiresCompatibilities:
       - !Ref LaunchType
     Type: AWS::ECS::TaskDefinition
-    Condition: CreateEc2InstanceCondition
-  JupyterKernelGatewayFargateTaskDefinition:
-    Properties:
-      ContainerDefinitions:
-      - Command:
-        - Fn::Sub: "${AWS::Region}.compute.internal"
-        - datagrok.internal
-        - datagrok.local
-        Essential: false
-        Image: docker/ecs-searchdomain-sidecar:1.0
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: LogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: cvm
-        Name: JupyterKernelGateway_ResolvConf_InitContainer
-      - DependsOn:
-        - Condition: SUCCESS
-          ContainerName: JupyterKernelGateway_ResolvConf_InitContainer
-        Essential: true
-        Image:
-          Fn::Sub:
-          - docker.io/datagrok/jupyter_kernel_gateway:${Version}
-          - Version:
-              Ref: JupyterKernelGatewayVersion
-        RepositoryCredentials:
-          CredentialsParameter:
-            Ref: ArnDockerHubCredential
-        LinuxParameters: {}
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: LogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: cvm
-        MemoryReservation: 300
-        Name: jupyter_kernel_gateway
-        PortMappings:
-        - ContainerPort: 5005
-          HostPort: 5005
-          Protocol: tcp
-        - ContainerPort: 8888
-          HostPort: 8888
-          Protocol: tcp
-      Cpu: '2048'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-        - JupyterKernelGatewayTaskExecutionRole
-        - Arn
-      Family: datagrok-cvm-jupyter_kernel_gateway
-      Memory: '4096'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-      - !Ref LaunchType
-      EphemeralStorage:
-        SizeInGiB: 50
-    Type: AWS::ECS::TaskDefinition
-    Condition: CreateFargateInstanceCondition
   JupyterKernelGatewayTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -1929,7 +1756,7 @@ Resources:
       - Key: datagrok.service
         Value: jupyter_notebook
       TaskDefinition:
-        Ref: JupyterNotebookTaskDefinitionEc2
+        Ref: JupyterNotebookTaskDefinition
     Type: AWS::ECS::Service
     Condition: CreateEc2InstanceCondition
   JupyterNotebookServiceDiscoveryEntry:
@@ -2055,65 +1882,6 @@ Resources:
       - Key: stickiness.lb_cookie.duration_seconds
         Value: 86400
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  JupyterNotebookTaskDefinitionEc2:
-    Properties:
-      ContainerDefinitions:
-      - Command:
-        - Fn::Sub: "${AWS::Region}.compute.internal"
-        - datagrok.internal
-        - datagrok.local
-        Essential: false
-        Image: docker/ecs-searchdomain-sidecar:1.0
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: LogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: cvm
-        Name: JupyterNotebook_ResolvConf_InitContainer
-      - DependsOn:
-        - Condition: SUCCESS
-          ContainerName: JupyterNotebook_ResolvConf_InitContainer
-        Essential: true
-        Image:
-          Fn::Sub:
-          - docker.io/datagrok/jupyter_notebook:${Version}
-          - Version:
-              Ref: JupyterNotebookVersion
-        RepositoryCredentials:
-          CredentialsParameter:
-            Ref: ArnDockerHubCredential
-        LinuxParameters: {}
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: LogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: cvm
-        MemoryReservation: 200
-        Name: jupyter_notebook
-        PortMappings:
-        - ContainerPort: 5005
-          HostPort: 0
-          Protocol: tcp
-        - ContainerPort: 8889
-          HostPort: 0
-          Protocol: tcp
-      ExecutionRoleArn:
-        Fn::GetAtt:
-        - JupyterNotebookTaskExecutionRole
-        - Arn
-      Family: datagrok-cvm-jupyter_notebook
-      Memory: '2048'
-      NetworkMode: bridge
-      RequiresCompatibilities:
-      - !Ref LaunchType
-    Type: AWS::ECS::TaskDefinition
-    Condition: CreateEc2InstanceCondition
   JupyterNotebookTaskDefinition:
     Properties:
       ContainerDefinitions:
@@ -2157,23 +1925,25 @@ Resources:
         Name: jupyter_notebook
         PortMappings:
         - ContainerPort: 5005
-          HostPort: 5005
+          HostPort: 0
           Protocol: tcp
         - ContainerPort: 8889
-          HostPort: 8889
+          HostPort: 0
           Protocol: tcp
-      Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
         - JupyterNotebookTaskExecutionRole
         - Arn
       Family: datagrok-cvm-jupyter_notebook
       Memory: '2048'
-      NetworkMode: awsvpc
+      NetworkMode:
+              'Fn::If':
+                - CreateEc2InstanceCondition
+                - bridge
+                - awsvpc
       RequiresCompatibilities:
       - !Ref LaunchType
     Type: AWS::ECS::TaskDefinition
-    Condition: CreateFargateInstanceCondition
   JupyterNotebookTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -2481,7 +2251,7 @@ Resources:
       - Key: datagrok.service
         Value: datagrok
       TaskDefinition:
-        Ref: DatagrokTaskDefinitionEc2
+        Ref: DatagrokTaskDefinition
     Type: AWS::ECS::Service
     Condition: CreateEc2InstanceCondition
   DatagrokServiceDiscoveryEntry:
@@ -2799,7 +2569,7 @@ Resources:
           Condition:
             Bool:
               aws:SecureTransport: false
-  DatagrokTaskDefinitionEc2:
+  DatagrokTaskDefinition:
     Properties:
       ContainerDefinitions:
       - Command:
@@ -2881,104 +2651,16 @@ Resources:
         - Arn
       Family: datagrok
       Memory: '2048'
-      NetworkMode: bridge
+      NetworkMode:
+              'Fn::If':
+                - CreateEc2InstanceCondition
+                - bridge
+                - awsvpc
       RequiresCompatibilities:
       - !Ref LaunchType
       TaskRoleArn:
         Ref: DatagrokTaskRole
     Type: AWS::ECS::TaskDefinition
-    Condition: CreateEc2InstanceCondition
-  DatagrokTaskDefinition:
-    Properties:
-      ContainerDefinitions:
-      - Command:
-        - Fn::Sub: "${AWS::Region}.compute.internal"
-        - datagrok.internal
-        - datagrok.local
-        Essential: false
-        Image: docker/ecs-searchdomain-sidecar:1.0
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: LogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: cvm
-        Name: Datagrok_ResolvConf_InitContainer
-      - DependsOn:
-        - Condition: SUCCESS
-          ContainerName: Datagrok_ResolvConf_InitContainer
-        Environment:
-        - Name: GROK_MODE
-          Value: auto
-        - Name: GROK_PARAMETERS
-          Value:
-            Fn::Sub:
-            - '{ "amazonStorageRegion": "${region}", "amazonStorageBucket": "${bucket}",
-              "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
-              "dbLogin": "datagrok", "dbPassword": "${dbPassword}", "dbAdminLogin":
-              "superuser", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": false,
-              "deployDemo": false, "deployTestDemo": false, "adminPassword": "admin"
-              }'
-            - region:
-                Ref: AWS::Region
-              bucket:
-                Ref: DatagrokS3
-              dbServer:
-                Fn::GetAtt:
-                - DatagrokDB
-                - Endpoint.Address
-              dbPort:
-                Fn::GetAtt:
-                - DatagrokDB
-                - Endpoint.Port
-              dbPassword:
-                Fn::GetAtt:
-                - DatagrokDbPassword
-                - RandomString
-              dbAdminPassword:
-                Fn::GetAtt:
-                - DatagrokDbAdminPassword
-                - RandomString
-        Essential: true
-        Image:
-          Fn::Sub:
-          - docker.io/datagrok/datagrok:${Version}
-          - Version:
-              Ref: DatagrokVersion
-        RepositoryCredentials:
-          CredentialsParameter:
-            Ref: ArnDockerHubCredential
-        LinuxParameters: {}
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group:
-              Ref: LogGroup
-            awslogs-region:
-              Ref: AWS::Region
-            awslogs-stream-prefix: datagrok
-        MemoryReservation: 1024
-        Name: datagrok
-        PortMappings:
-        - ContainerPort: 8080
-          HostPort: 8080
-          Protocol: tcp
-      Cpu: '2048'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-        - DatagrokTaskExecutionRole
-        - Arn
-      Family: datagrok
-      Memory: '2048'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-      - !Ref LaunchType
-      TaskRoleArn:
-        Ref: DatagrokTaskRole
-    Type: AWS::ECS::TaskDefinition
-    Condition: CreateFargateInstanceCondition
   DatagrokTaskExecutionRole:
     Properties:
       AssumeRolePolicyDocument:
