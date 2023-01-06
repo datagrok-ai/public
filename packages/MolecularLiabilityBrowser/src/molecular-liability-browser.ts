@@ -1060,8 +1060,8 @@ export class MolecularLiabilityBrowser {
 
   onTreeChanged(treeName: string): void {
     this.treeName = treeName;
-    if (this.treeInput!.value != this.treeName)
-      this.treeInput!.value = this.treeName;
+    if (this.treeInput && this.treeInput.value != this.treeName)
+      this.treeInput.value = this.treeName;
 
     if (this.treeName)
       this.urlParams!.set('tree', this.treeName);
