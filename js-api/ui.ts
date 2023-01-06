@@ -1362,10 +1362,11 @@ export namespace labels {
 
 /** Visual hints attached to an element. They can be used to introduce a new app to users. */
 export namespace hints {
+
+  /** Adds a hint indication to the provided element and returns it. */
   export function addHint(el: HTMLElement): HTMLElement {
     el.classList.add('ui-hint-target');
-    const hintIndicator = element('div');
-    hintIndicator.classList = 'ui-hint-blob';
+    const hintIndicator = div([], 'ui-hint-blob');
     el.append(hintIndicator);
 
     const width = el ? el.clientWidth : 0;
@@ -1375,7 +1376,8 @@ export namespace hints {
     const indicatorNode = hintIndicator.getBoundingClientRect();
 
     const hintPosition = $(el).css('position') ?? 'static';
-    const setDefaultStyles = () => {
+
+    function setDefaultStyles() {
       $(hintIndicator).css('position', 'absolute');
       $(hintIndicator).css('left', '0');
       $(hintIndicator).css('top', '0');
@@ -1402,6 +1404,7 @@ export namespace hints {
     return el;
   }
 
+  /** Removes the hint indication from the provided element and returns it. */
   export function remove(el: HTMLElement): HTMLElement {
     $(el).find('div.ui-hint-blob')[0]?.remove();
     el.classList.remove('ui-hint-target');
