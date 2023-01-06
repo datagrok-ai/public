@@ -11,7 +11,6 @@
 
 ## Addressed Issues
 
-*  add node version 16.19.0 
 * Save table linking to project 
 * #1412 column selector dialog position in prop panel 
 * closes #1344 Legend for continuous colorColumn 
