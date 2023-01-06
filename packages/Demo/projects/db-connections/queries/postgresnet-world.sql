@@ -1,4 +1,4 @@
---name: PostgresWorld
+--name: domain usage
 --friendlyName: World
 --connection: PostgresWorld
 
