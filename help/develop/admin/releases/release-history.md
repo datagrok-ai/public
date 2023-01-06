@@ -1,6 +1,40 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2023-01-06 Dev build 1.11.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.11.2`
+* [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
+
+## Addressed Issues
+
+*  add node version 16.19.0 
+* Save table linking to project 
+* #1412 column selector dialog position in prop panel 
+* closes #1344 Legend for continuous colorColumn 
+* Scatter plot coloured by numerical or date column: some data is missing after re-applying saved layout #1411 Workaround 
+* Fixed connections leakage 
+* Merge 
+* Fixed shapes test 
+* Datlas: Test: Fix paths to tests in test.all.dart 
+* Revert "closes #1344 Legend for continuous colorColumn" 
+
+
+# 2022-12-23 Dev build 1.11.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.11.1`
+* [Docker-Compose](https://datagrok.ai/help/develop/admin/docker-compose)
+
+## Addressed Issues
+
+
+
 # 2022-12-22 Dev build 1.11.0
 
 ## Latest Docker Images
