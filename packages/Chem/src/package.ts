@@ -61,12 +61,12 @@ import {generateScaffoldTree} from "./scripts-api";
 import {setupScaffold} from './scripts-api';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
-const DEFAULT_SKETCHER = 'openChemLibSketcher';
+const DEFAULT_SKETCHER = 'Open Chem Sketcher';
 const SKETCHER_FUNCTIONS_ALIASES: {[key: string]: string} = {
-  OpenChemLib: 'openChemLibSketcher',
-  Ketcher: 'ketcherSketcher',
-  Marvin: 'marvinSketcher',
-  ChemDraw: 'chemDrawSketcher'
+  OpenChemLib: 'Open Chem Sketcher',
+  Ketcher: 'Ketcher',
+  Marvin: 'Marvin JS',
+  ChemDraw: 'Chem Draw'
 }
 
 /**
@@ -98,7 +98,7 @@ export async function initChem(): Promise<void> {
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   const lastSelectedSketcher = _properties.Sketcher ? SKETCHER_FUNCTIONS_ALIASES[_properties.Sketcher]:
       await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
-  if (DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name == lastSelectedSketcher) || !lastSelectedSketcher)
+  if (DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name === lastSelectedSketcher || e.friendlyName === lastSelectedSketcher) || !lastSelectedSketcher)
     window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher);
   else {
     grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);

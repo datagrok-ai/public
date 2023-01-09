@@ -407,7 +407,7 @@ export namespace chem {
       this.host.classList.remove('extended-width'); //need to remove class to reset width
       ui.setUpdateIndicator(this.host, true);
       this.changedSub?.unsubscribe();
-      const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherName) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
+      const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherName || e.name === sketcherName) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
       this.sketcher = await sketcherFunc!.apply();
       this.host.classList.add('sketcher-standard-size');
       this.host.appendChild(this.sketcher!.root);
