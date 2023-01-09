@@ -127,6 +127,30 @@ export function getSdfTab(): HTMLDivElement {
     }
   );
 
+  // highlight malformed inputs, also see
+  // https://codersblock.com/blog/highlight-text-inside-a-textarea/#the-plan
+  [ssInput, asInput, as2Input].forEach(
+    (inputBase) => {
+      const highlights = ui.div([]);
+      $(highlights).addClass('sdf-highlights');
+      // highlights.innerHTML = '<mark> Some marked text </mark>';
+      const backdrop = ui.div([highlights]);
+      $(backdrop).addClass('sdf-backdrop');
+      inputBase.root.appendChild(backdrop);
+      inputBase.onInput(() => { // dummy handler for malformed inputs
+        const inputValue = inputBase.value;
+        const cutoff = 5;
+        if (inputValue.length >= cutoff) {
+          const transparentText = inputBase.value.slice(0, cutoff);
+          const highlightedText = inputBase.value.slice(cutoff);
+          highlights.innerHTML = transparentText + '<mark>' + highlightedText + '</mark>';
+          const mark = highlights.getElementsByTagName('mark').item(0);
+          ui.tooltip.bind(mark!, 'This part of the input is malformed');
+        }
+      });
+    }
+  );
+
   // bool inputs
   const saveEntity = ui.boolInput('Save as one entity', true);
   ui.tooltip.bind(saveEntity.root, 'Save SDF with all strands in one molfile');
