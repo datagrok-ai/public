@@ -925,7 +925,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
-        MemoryReservation: 200
+        MemoryReservation: 1024
         Name: grok_compute
         PortMappings:
         - ContainerPort: 5005
@@ -936,7 +936,6 @@ Resources:
         - GrokComputeTaskExecutionRole
         - Arn
       Family: datagrok-cvm-grok_compute
-      Memory: '2048'
       NetworkMode: bridge
       RequiresCompatibilities:
       - !Ref LaunchType
@@ -984,7 +983,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
-        MemoryReservation: 200
+        MemoryReservation: 1024
         Name: grok_compute
         PortMappings:
         - ContainerPort: 5005
@@ -1346,7 +1345,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
-        MemoryReservation: 300
+        MemoryReservation: 1024
         Name: h2o
         PortMappings:
         - ContainerPort: 5005
@@ -1361,7 +1360,6 @@ Resources:
         - Arn
       Family: datagrok-cvm-h2o
       NetworkMode: bridge
-      Memory: '2048'
       RequiresCompatibilities:
       - !Ref LaunchType
     Type: AWS::ECS::TaskDefinition
@@ -1405,7 +1403,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
-        MemoryReservation: 300
+        MemoryReservation: 1024
         Name: h2o
         PortMappings:
         - ContainerPort: 5005
@@ -1414,7 +1412,7 @@ Resources:
         - ContainerPort: 54321
           HostPort: 54321
           Protocol: tcp
-      Cpu: '1024'
+      Cpu: '512'
       ExecutionRoleArn:
         Fn::GetAtt:
         - H2oTaskExecutionRole
@@ -1719,7 +1717,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
-        MemoryReservation: 300
+        MemoryReservation: 2048
         Name: jupyter_kernel_gateway
         PortMappings:
         - ContainerPort: 5005
@@ -1733,7 +1731,6 @@ Resources:
         - JupyterKernelGatewayTaskExecutionRole
         - Arn
       Family: datagrok-cvm-jupyter_kernel_gateway
-      Memory: '4096'
       NetworkMode: bridge
       RequiresCompatibilities:
       - !Ref LaunchType
@@ -1778,7 +1775,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
-        MemoryReservation: 300
+        MemoryReservation: 2048
         Name: jupyter_kernel_gateway
         PortMappings:
         - ContainerPort: 5005
@@ -1787,13 +1784,13 @@ Resources:
         - ContainerPort: 8888
           HostPort: 8888
           Protocol: tcp
-      Cpu: '2048'
+      Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
         - JupyterKernelGatewayTaskExecutionRole
         - Arn
       Family: datagrok-cvm-jupyter_kernel_gateway
-      Memory: '4096'
+      Memory: '3072'
       NetworkMode: awsvpc
       RequiresCompatibilities:
       - !Ref LaunchType
@@ -2094,7 +2091,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
-        MemoryReservation: 200
+        MemoryReservation: 1024
         Name: jupyter_notebook
         PortMappings:
         - ContainerPort: 5005
@@ -2108,7 +2105,6 @@ Resources:
         - JupyterNotebookTaskExecutionRole
         - Arn
       Family: datagrok-cvm-jupyter_notebook
-      Memory: '2048'
       NetworkMode: bridge
       RequiresCompatibilities:
       - !Ref LaunchType
@@ -2153,7 +2149,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
-        MemoryReservation: 200
+        MemoryReservation: 1024
         Name: jupyter_notebook
         PortMappings:
         - ContainerPort: 5005
@@ -2162,7 +2158,7 @@ Resources:
         - ContainerPort: 8889
           HostPort: 8889
           Protocol: tcp
-      Cpu: '1024'
+      Cpu: '512'
       ExecutionRoleArn:
         Fn::GetAtt:
         - JupyterNotebookTaskExecutionRole
@@ -2870,6 +2866,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: datagrok
+        MemoryReservation: 1024
         Name: datagrok
         PortMappings:
         - ContainerPort: 8080
@@ -2880,7 +2877,6 @@ Resources:
         - DatagrokTaskExecutionRole
         - Arn
       Family: datagrok
-      Memory: '2048'
       NetworkMode: bridge
       RequiresCompatibilities:
       - !Ref LaunchType
@@ -2965,7 +2961,7 @@ Resources:
         - ContainerPort: 8080
           HostPort: 8080
           Protocol: tcp
-      Cpu: '2048'
+      Cpu: '1024'
       ExecutionRoleArn:
         Fn::GetAtt:
         - DatagrokTaskExecutionRole
