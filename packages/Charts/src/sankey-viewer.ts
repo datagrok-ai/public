@@ -37,6 +37,13 @@ export class SankeyViewer extends EChartViewer {
           toCol.get(i) === params.data.name;
       }, params.event.event);
     });
+
+    this.chart.on('click', { dataType: 'edge' }, (params: any) => {
+      this.dataFrame.selection.handleClick((i) => {
+        return fromCol.get(i) === params.data.source &&
+          toCol.get(i) === params.data.target;
+      }, params.event.event);
+    });
   }
 
   onTableAttached() {
