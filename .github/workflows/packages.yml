@@ -247,6 +247,13 @@ jobs:
           echo "image_ver=$image_ver" >> $GITHUB_OUTPUT
           echo "package_name=$(jq -r .name package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
 
+      - name: Set up QEMU
+        if: ${{ matrix.docker == 'true' }}
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        if: ${{ matrix.docker == 'true' }}
+        uses: docker/setup-buildx-action@v2
+
       - name: Build package Docker image
         if: ${{ matrix.docker == 'true' }}
         id: build-docker
@@ -255,6 +262,7 @@ jobs:
           context: packages/${{ matrix.package }}/dockerfiles
           load: true
           tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
+          shm-size: 4g
 
       - name: Publish to npm
         run: npm publish --access public
@@ -284,6 +292,7 @@ jobs:
           context: packages/${{ matrix.package }}/dockerfiles
           push: true
           tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
+          shm-size: 4g
 
       - name: Get package information
         id: info
