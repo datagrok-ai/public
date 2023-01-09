@@ -451,9 +451,7 @@ export namespace chem {
 
     static checkDuplicatesAndAddToStorage(storage: string[], molecule: string, localStorageKey: string) {
       grok.functions.call('Chem:filterMoleculeDuplicates', {molecules: storage, molecule: molecule}).then((array: any) => {
-        if (array?.length) {
-          localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...array.slice(0, 9)]));
-        }         
+          localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...array.slice(0, 9)]));      
       });
     }
 
