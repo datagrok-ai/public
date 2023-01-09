@@ -275,8 +275,6 @@ export namespace chem {
   
         let sketchLink = ui.divText('Click to edit', 'sketch-link');
         ui.tooltip.bind(sketchLink, 'Click to edit');
-        sketchLink.style.paddingLeft = '0px';
-        sketchLink.style.marginLeft = '0px';
         this._updateExtSketcherInnerHTML(sketchLink);
       });
     };
@@ -388,14 +386,14 @@ export namespace chem {
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
             grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
             currentSketcher = friendlyName;
-            this.setSketcherWithExistingMolecule();
+            this.setSketcher();
           },
             { isChecked: (item) => item === this.selectedSketcher?.friendlyName, toString: item => item })
           .show();
       });
       $(optionsIcon).addClass('d4-input-options');
       molInputDiv.append(ui.div([this.molInput, optionsIcon], 'grok-sketcher-input'));
-      this.setSketcherWithExistingMolecule();
+      this.setSketcher();
 
       this.inplaceSketcherDiv = ui.div([
         molInputDiv,
@@ -404,7 +402,7 @@ export namespace chem {
       return this.inplaceSketcherDiv;
     }
 
-    async setSketcher(sketcherName: string) {
+    async setBaseSketcher(sketcherName: string) {
       ui.empty(this.host);
       ui.setUpdateIndicator(this.host, true);
       this.changedSub?.unsubscribe();
@@ -426,13 +424,13 @@ export namespace chem {
       });
     }
 
-    setSketcherWithExistingMolecule(): void {
+    setSketcher(): void {
       const getMolecule = async () => {
         return this._smiles === null ? this._molfile === null ? this._smarts === null ? this.getMolFile() :
           await this.getSmarts() : this.getMolFile() : this.getSmiles();
-      }
+      };
       getMolecule().then((molecule) => {
-        this.setSketcher(currentSketcher).then((_) => {
+        this.setBaseSketcher(currentSketcher).then((_) => {
           if (molecule)              
             this.setMolecule(molecule!, this._smarts !== null);
         });

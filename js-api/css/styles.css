@@ -3,7 +3,9 @@
     aspect-ratio: 4/1;
     display: flex;
     justify-content: center;
-    align-items: center
+    align-items: center;
+    padding-left: 0px;
+    margin-left: 0px;
   }
 
 .sketcher-standard-size {
