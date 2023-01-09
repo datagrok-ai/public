@@ -388,7 +388,7 @@ export namespace chem {
             currentSketcher = friendlyName;
             this.setSketcher();
           },
-            { isChecked: (item) => item === this.selectedSketcher?.friendlyName, toString: item => item })
+            { isChecked: (item) => item === currentSketcher, toString: item => item })
           .show();
       });
       $(optionsIcon).addClass('d4-input-options');
