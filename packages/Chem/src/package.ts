@@ -14,7 +14,6 @@ import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {setupScaffold} from './scripts-api';
 import {elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
@@ -56,7 +55,10 @@ import {rGroupAnalysis} from './analysis/r-group-analysis';
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
 import {_importSmi} from './file-importers/smi-importer';
+
+//script api
 import {generateScaffoldTree} from "./scripts-api";
+import {setupScaffold} from './scripts-api';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const DEFAULT_SKETCHER = 'openChemLibSketcher';
@@ -580,19 +582,19 @@ export async function structuralAlerts(smiles: string): Promise<DG.Widget> {
 //name: Structure 2D
 //description: 2D molecule representation
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: string molecule { semType: Molecule }
 //output: widget result
-export function structure2d(smiles: string): DG.Widget {
-  return smiles ? structure2dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+export function structure2d(molecule: string): DG.Widget {
+  return molecule ? structure2dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
 }
 
 //name: Structure 3D
 //description: 3D molecule representation
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: string molecule { semType: Molecule }
 //output: widget result
-export async function structure3d(smiles: string): Promise<DG.Widget> {
-  return smiles ? structure3dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+export async function structure3d(molecule: string): Promise<DG.Widget> {
+  return molecule ? structure3dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
 }
 
 //name: Toxicity
@@ -754,15 +756,42 @@ export async function oclCellRenderer(): Promise<OCLCellRenderer> {
   return new OCLCellRenderer();
 }
 
+//name: Sort by similarity
+//description: Sorts a molecular column by similarity
+//meta.action: Sort by similarity
+//input: semantic_value value { semType: Molecule }
+export async function sortBySimilarity(value: DG.SemanticValue): Promise<void> {
+  const molCol = value.cell.column;
+  const tableRowIdx = value.cell.rowIndex;
+  const dframe = molCol.dataFrame;
+  const smiles = molCol.get(tableRowIdx);
+
+  const grid = value.viewer as DG.Grid;
+  ui.setUpdateIndicator(grid.root, true);
+  const progressBar = DG.TaskBarProgressIndicator.create('Sorting Structures...');
+  progressBar.update(0, 'Installing ScaffoldGraph..: 0% completed');
+  const fingerprints : DG.DataFrame = await callChemSimilaritySearch(dframe, molCol, smiles, 'Tanimoto', 1000000, 0.0, Fingerprint.Morgan);
+  ui.setUpdateIndicator(grid.root, false);
+  progressBar.update(100, 'Sort completed');
+  progressBar.close();
+
+  const idxCol = fingerprints.columns.byName('indexes');
+  grid.sort([], []);
+  grid.setRowOrder(idxCol.toList());
+  grid.props.pinnedRows = [tableRowIdx];
+  grid.scrollToPixels(0,0); //to address the bug in the core
+}
+
 //name: Use as filter
 //description: Adds this structure as a substructure filter
 //meta.action: Use as filter
-//input: string mol { semType: Molecule }
-export function useAsSubstructureFilter(mol: string): void {
+//input: semantic_value value { semType: Molecule }
+export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   const tv = grok.shell.tv;
   if (tv == null)
     throw 'Requires an open table view.';
 
+  const mol = value.value;
   const molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (molCol == null)
     throw 'Molecule column not found.';

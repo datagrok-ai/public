@@ -11,26 +11,16 @@ import * as DG from 'datagrok-api/dg';
 import {SEMTYPEGIS} from '../src/gis-semtypes';
 
 //OpenLayers functionality import
-import {OLCallbackParam} from '../src/gis-openlayer';
-import {OpenLayers} from '../src/gis-openlayer';
-import {Coordinate} from '../src/gis-openlayer';
+import {OLCallbackParam, OpenLayers, Coordinate, toStringColor} from '../src/gis-openlayer';
 import VectorLayer from 'ol/layer/Vector';
 import * as OLProj from 'ol/proj';
 import Feature from 'ol/Feature';
-import {Circle, Point} from 'ol/geom';
+//import {Circle} from 'ol/geom';
+import {Point} from 'ol/geom';
 // import { numberSafeCompareFunction } from 'ol/array';
 
 //release mode flag: set to true to hide all experimental UI features
 const releaseMode = false;
-
-function toStringColor(num : number, opacity?: number) : string {
-  num >>>= 0;
-  const b = num & 0xFF;
-  const g = (num & 0xFF00) >>> 8;
-  const r = (num & 0xFF0000) >>> 16;
-  const a = opacity ? opacity : 1;
-  return 'rgba(' + [r, g, b, a].join(',') + ')';
-}
 
 export class GisViewer extends DG.JsViewer {
   currentLayer: string;
@@ -356,11 +346,15 @@ export class GisViewer extends DG.JsViewer {
   }
 
   init() {
+    const loadingDiv = ui.div('Loading...');
     try {
-      console.log('gis-viewer.init()');
+      loadingDiv.style.position = 'absolute';
+      loadingDiv.style.left = '50%';
+      loadingDiv.style.top = '50%';
+
+      this.root.append(loadingDiv);
 
       this.ol.useWebGL = true; //choose true if we want to use WebGL renderer
-
       this.initUi();
       this.ol.initMap('map-container');
 
@@ -381,13 +375,15 @@ export class GisViewer extends DG.JsViewer {
     } catch (e: any) {
       this.initialized = false;
       grok.shell.error(e.toString());
-      this.root.appendChild(
-        ui.divV([ui.div('Error loading GIS map! /n '), ui.div(e.toString())]));
     } finally {
       setTimeout(() => {
+        // const loadingDiv = this.root.firstElementChild as HTMLElement;
+        //loadingDiv.style.visibility = 'hidden';
+        this.root.removeChild(loadingDiv);
+
         grok.shell.o = this;
         grok.shell.windows.showProperties = true;
-      }, 200);
+      }, 100);
     }
   }
 

@@ -1,7 +1,7 @@
 //base import
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
+//import * as ui from 'datagrok-api/ui';
 
 import * as GisTypes from '../src/gis-semtypes';
 import {GisViewer} from './gis-viewer';
@@ -19,7 +19,7 @@ import LayerRenderer from 'ol/renderer/Layer';
 import OSM from 'ol/source/OSM';
 import BingMaps from 'ol/source/BingMaps';
 import VectorSource from 'ol/source/Vector';
-import XYZ from 'ol/source/XYZ';
+//import XYZ from 'ol/source/XYZ';
 import {StyleLike} from 'ol/style/Style';
 //Projections working itilities
 import * as OLProj from 'ol/proj';
@@ -38,13 +38,14 @@ import * as OLEventsCondition from 'ol/events/condition';
 //import processors
 import {GPX, GeoJSON, IGC, KML, TopoJSON} from 'ol/format';
 import Source from 'ol/source/Source';
-import {Control, defaults as defaultControls} from 'ol/control';
+//import {Control} from 'ol/control';
+import {defaults as defaultControls} from 'ol/control';
 
 import {PanelLayersControl, BtnLayersControl} from './gis-mapcontrols';
 
 //for test func
 import TileWMS from 'ol/source/TileWMS';
-import ImageLayer from 'ol/layer/Image';
+//import ImageLayer from 'ol/layer/Image';
 
 //ZIP utilities
 import JSZip from 'jszip';
@@ -65,7 +66,7 @@ let OLG: OpenLayers; //TODO: remove this terrible stuff!
 let renderTime: number = 0; //temporary code for benchmarking
 
 
-function toStringColor(num : number, opacity?: number) : string {
+export function toStringColor(num : number, opacity?: number) : string {
   num >>>= 0;
   const b = num & 0xFF;
   const g = (num & 0xFF00) >>> 8;
@@ -81,9 +82,9 @@ function rgbToHex(color: string): string {
 }
 
 // Define a KMZ format class by subclassing ol/format/KML
-async function getKMLData(buffer: any): Promise<string> {
+export async function getKMZData(buffer: any): Promise<string> {
   const zip = new JSZip();
-  let kmlData: string = '';
+  let kmlData = '';
   await zip.loadAsync(buffer);
   const kmlFile = zip.file(/.kml$/i)[0];
   if (kmlFile)
@@ -101,11 +102,11 @@ export class KMZ extends KML {
     return 'arraybuffer'; // @typedef {'arraybuffer' | 'json' | 'text' | 'xml'} Type
   }
   readFeature(source: any, options: any) {
-    const kmlData = getKMLData(source);
+    const kmlData = getKMZData(source);
     return super.readFeature(kmlData, options);
   }
   readFeatures(source: any, options: any) {
-    const kmlData = getKMLData(source);
+    const kmlData = getKMZData(source);
     return super.readFeatures(kmlData, options);
   }
 }
@@ -130,10 +131,10 @@ export class OpenLayers {
   olMarkersLayerGL: WebGLPts | null;
   olMarkersSelLayerGL: WebGLPts | null;
   olHeatmapLayer: HeatmapLayer | null;
-  //vector sources for markers (now we should have just one source for Markers and Heatmap layers)
+  //vector sources for markers (now we have just one source for Markers and Heatmap layers)
   olMarkersSource: VectorSource<OLGeom.Point>;
   olMarkersSelSource: VectorSource<OLGeom.Point>;
-  olSelectedMarkers: Collection<Feature>; //Feature<OLGeom.Point>[];
+  olSelectedMarkers: Collection<Feature>;
 
   currentAreaObject: Feature | null = null;
 
@@ -148,14 +149,15 @@ export class OpenLayers {
   btnLayersControl: BtnLayersControl;
   panelLayersList: PanelLayersControl;
 
-  //styles>>
-  styleVectorLayer: OLStyle.Style;
-  styleVectorSelLayer: OLStyle.Style;
   //map event handlers
   onSelectCallback: Function | null = null;
   onClickCallback: Function | null = null;
   onPointermoveCallback: Function | null = null;
   onRefreshCallback: Function | null = null;
+
+  //styles>>
+  styleVectorLayer: OLStyle.Style;
+  styleVectorSelLayer: OLStyle.Style;
 
   markerGLStyle: LiteralStyle;
   markerGLSelStyle: LiteralStyle;
@@ -202,14 +204,11 @@ export class OpenLayers {
     this.btnLayersControl = new BtnLayersControl(null);
     this.panelLayersList = new PanelLayersControl(this, null);
 
-
     this.styleVectorLayer = new OLStyle.Style({
       fill: new OLStyle.Fill({
         color: '#eeeeee',
-        // color: 'rgba(155, 155, 55, 0.5)',
       }),
       stroke: new OLStyle.Stroke({
-        // color: 'rgba(250, 250, 0, 1)',
         color: 'rgba(200, 0, 0, 1)',
         width: 1,
       }),
@@ -217,7 +216,6 @@ export class OpenLayers {
     this.styleVectorSelLayer = new OLStyle.Style({
       fill: new OLStyle.Fill({
         color: 'rgba(200, 50, 50, 0.5)',
-        // color: '#eeeeee',
       }),
       stroke: new OLStyle.Stroke({
         color: 'rgba(255, 0, 0, 1)',
@@ -262,7 +260,7 @@ export class OpenLayers {
     });
 
     OLG = this;
-    //end of constructor
+    //<<end of constructor
   }
 
   set useWebGL(v: boolean) {
@@ -277,14 +275,8 @@ export class OpenLayers {
     this.heatmapBlurParam = val;
     if (this.olHeatmapLayer)
       this.olHeatmapLayer.setBlur(this.heatmapBlurParam);
-  /* if (this.olCurrentLayer instanceof HeatmapLayer)
-      this.olCurrentLayer.setBlur(this.heatmapBlurParam);
-    else {
-      //TODO: search and apply parameter to the first heatmap layer (if this is needed)
-      //NOTE: this will be usefull in case of multilayers approach - for a now we have just one layer
-      // this.olMap.getAllLayers()
-    }
-  */
+    //TODO: search and apply parameter to the first heatmap layer (if this is needed)
+    //NOTE: this will be usefull in case of multilayers approach - for a now we have just one layer
   }
   get heatmapBlur(): number {return this.heatmapBlurParam;}
 
@@ -292,12 +284,12 @@ export class OpenLayers {
     this.heatmapRadiusParam = val;
     if (this.olHeatmapLayer)
       this.olHeatmapLayer.setRadius(this.heatmapRadiusParam);
-    // if (this.olCurrentLayer instanceof HeatmapLayer)
-    //   this.olCurrentLayer.setRadius(this.heatmapRadiusParam);
   }
   get heatmapRadius(): number {return this.heatmapRadiusParam;}
 
   selectCondition(lr: Layer<Source, LayerRenderer<any>>): boolean {
+    //here we can detect whether we want to select object on the map
+    //for example (commented below) we can choose just objects from layer: olMarkersLayerGL
     return true; //((lr === this.olMarkersLayer) || (lr === this.olMarkersLayerGL));
   }
 
@@ -360,7 +352,7 @@ export class OpenLayers {
     });
 
     //add layers>>
-    // this.addNewBingLayer('Bing sat');  //TODO: if we want to add sattelite leyer we have to manage it properly
+    this.addNewBingLayer('Bing sat'); //TODO: if we want to add sattelite layer we have to manage it properly
     this.olBaseLayer = this.addNewOSMLayer('BaseLayer');
 
     //prepare markersGLLayer
@@ -390,7 +382,7 @@ export class OpenLayers {
 
     this.setBtnLayersClickCallback(this.onLayersListBtnClick.bind(this));
     this.panelLayersList.setVisibility(false);
-//    this.onLayersListBtnClick();
+    //this.onLayersListBtnClick();
     //<<end of InitMap function
   }
 
@@ -826,7 +818,7 @@ export class OpenLayers {
     this.addLayer(newLayer);
     return newLayer;
   }
-  //adds Open Street Maps layer
+  //adds Open Street Maps layer - this is our base layer
   addNewOSMLayer(layerName?: string | undefined, options?: Object | undefined): BaseLayer {
     const newLayer = new TileLayer({
       visible: true,
@@ -835,21 +827,22 @@ export class OpenLayers {
 
     if (layerName)
       newLayer.set('layerName', layerName);
-    else newLayer.set('layerName', 'OpenStreet');
+    else
+      newLayer.set('layerName', 'OpenStreet');
     if (options)
       newLayer.setProperties(options);
     this.addLayer(newLayer);
+
     return newLayer;
   }
 
   addNewHeatMap(layerName?: string | undefined, options?: Object | undefined): HeatmapLayer {
     const newLayer = new HeatmapLayer({
-      source: this.olMarkersSource, //new VectorSource({}), //for now we use the same source for markers and heatmap
+      source: this.olMarkersSource, //new VectorSource({}), //<-for now we use the same source for markers and heatmap
       blur: this.heatmapBlur,
       radius: this.heatmapRadius,
       weight: function(feature: Feature): number {
         let val = feature.get('fieldSize');
-        // if (val === undefined) val = feature.get('fieldLabel');
         if (typeof(val) !== 'number')
           val = 1;
         return val;
@@ -875,7 +868,8 @@ export class OpenLayers {
     return arrFeatures;
   }
 
-  // createTextStyle(feature: FeatureLike, resolution: number): Style {
+  //this function prepare text prop's - for further label placing on the map
+  //we don't use it at the moment
   createTextStyle(txt: any, resolution?: number): OLStyle.Text {
     console.log('createTextStyle: ' + txt);
     return new OLStyle.Text({
@@ -908,7 +902,7 @@ export class OpenLayers {
         image: new OLStyle.Circle({
           radius: size ? size : OLG.markerDefaultSize,
           fill: new OLStyle.Fill({
-            color: clr ? clr : `rgba(255, 0, 255, ${this.markerOpacity})`, // ${this.markerOpacity})`,
+            color: clr ? clr : `rgba(255, 0, 255, ${this.markerOpacity})`,
           }),
           stroke: new OLStyle.Stroke({
             color: 'rgba(255, 0, 0, 1)',

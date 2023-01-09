@@ -28,6 +28,22 @@ info panels on the **Context Pane**. For example, you can:
 * Shows selected rows in orange
 * Synchronizes current record upon clicking on the point
 
+![Map viewer](./map-viewer.gif)
+
+## Custom file viewers
+
+Сustom file viewers give user the opportunity to view files of various geographic extensions.
+To see it, open the file manager, hover your mouse over the file and click on it, as shown below.
+
+![Custom file viewer](./map-custom-file-viewer.gif)
+
+The system provides interaction with files of the following extensions:
+
+* .geojson
+* .topojson
+* .kmz
+* .kml
+
 ## Controls
 
 |Action              |        Control                |

@@ -18,6 +18,7 @@ import {MlbDatabase} from './mlb-database';
 import {channel} from 'diagnostics_channel';
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {packageName} from '../package';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 export class DataLoaderDb extends DataLoader {
   static _files = class {
@@ -161,9 +162,9 @@ export class DataLoaderDb extends DataLoader {
       const obsPtmValue: ObsPtmType = obsPtmTxt ? JSON.parse(obsPtmTxt)['ptm_observed'] : null;
 
       return [jsonValue, pdbValue, realNumsValue, obsPtmValue];
-    } catch (err: unknown) {
-      const errMsg: string = err instanceof Error ? err.message : (err as Object).toString();
-      console.error(`MLB: query get3D('${vid}' error: ${errMsg}`);
+    } catch (err: any) {
+      const errStr = errorToConsole(err);
+      console.error(`MLB: query get3D('${vid}' error: ${errStr}`);
       throw err;
     }
   }

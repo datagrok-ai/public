@@ -1,10 +1,10 @@
 //Base import
-import * as grok from 'datagrok-api/grok';
+//import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
+//import $ from 'cash-dom';
 import {OpenLayers} from '../src/gis-openlayer';
-import {Control, defaults as defaultControls} from 'ol/control'; //Attribution include?
+import {Control} from 'ol/control'; //Attribution include?
 
 
 export class PanelLayersControl extends Control {
@@ -71,7 +71,7 @@ export class PanelLayersControl extends Control {
   cellPrepareFn(gc: DG.GridCell) {
     if (gc.isTableCell && gc.gridColumn.name === 'del') {
       const btnDel = ui.button(ui.iconFA(gc.cell.value ? 'trash-alt' : ''), () => {
-        if (gc.tableRowIndex) {
+        if (gc.tableRowIndex !== null) {
           const col = gc.grid.table.columns.byName('layerid');
           if (col) {
             const layerId = col.get(gc.tableRowIndex);
@@ -88,7 +88,7 @@ export class PanelLayersControl extends Control {
 
     if (gc.isTableCell && gc.gridColumn.name === 'exp') {
       const btnExp = ui.button(ui.iconFA(gc.cell.value ? 'arrow-to-bottom' : ''), () => {
-        if (gc.tableRowIndex) {
+        if (gc.tableRowIndex !== null) {
           const col = gc.grid.table.columns.byName('layerid');
           if (col) {
             const layerId = col.get(gc.tableRowIndex);
@@ -105,7 +105,7 @@ export class PanelLayersControl extends Control {
   }
 
   cellVisibleClick(gc: DG.GridCell) {
-    if (gc.tableRowIndex) {
+    if (gc.tableRowIndex !== null) {
       const col = gc.grid.table.columns.byName('layerid');
       if (col) {
         const layerId = col.get(gc.tableRowIndex);
@@ -114,8 +114,7 @@ export class PanelLayersControl extends Control {
         const layer = this.ol.getLayerById(layerId);
         if (!layer)
           return;
-        // const isVisible = layer.getVisible();
-        // layer.setVisible(!isVisible);
+
         layer.setVisible(gc.cell.value);
         this.updateLayersList();
       }
@@ -205,4 +204,4 @@ export class BtnLayersControl extends Control {
   }
 }
 
-lPanel: PanelLayersControl;
+//lPanel: PanelLayersControl;
