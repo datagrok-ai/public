@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "Neo4jNorthwind",
+  "friendlyName": "Northwind",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "db": "northwind",
+    "port": 27687
+  },
+  "credentials": {
+    "parameters": {
+      "login": "neo4j",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Neo4j",
+  "description": "Northwind sample database",
+  "tags": [
+    "demo"
+  ]
+}

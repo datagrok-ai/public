@@ -1,0 +1,21 @@
+{
+  "#type": "DataConnection",
+  "name": "VerticaVMart",
+  "friendlyName": "VMart",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 25433,
+    "db": "datagrok"
+  },
+  "credentials": {
+    "parameters": {
+      "login": "datagrok",
+      "password": "Datagrok!"
+    }
+  },
+  "dataSource": "Vertica",
+  "description": "VMart example database",
+  "tags": [
+    "demo"
+  ]
+}
