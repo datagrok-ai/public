@@ -67,18 +67,18 @@ Parameters:
   ArnDatagrokCertificate:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
-    Default: ''
+    Default: ' '
     Description: AWS ACM certificate ARN for Datagrok ALB. Required parameter.
   ArnCvmCertificate:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
-    Default: ''
+    Default: ' '
     Description: AWS ACM certificate ARN for CVM ALB. Required parameter.
   ArnDockerHubCredential:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
     Description: AWS Secret Manager ARN for Docker Hub secret. Required parameter.
-    Default: ''
+    Default: ' '
   CreateDemoData:
     Type: String
     Default: 'true'
@@ -96,11 +96,11 @@ Parameters:
     Description: Amazon instance type for deployment
   Ec2KeyPairName:
     Type: String
-    Default: ''
+    Default: ' '
     Description: Name of keypair when EC2 launch is used
   Ec2PublicKey:
     Type: String
-    Default: ''
+    Default: ' '
     Description: Public key to EC2 instance when EC2 launch is used
   DatagrokEc2InstanceType:
     Type: String
@@ -900,6 +900,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
+        MemoryReservation: 100
         Name: GrokCompute_ResolvConf_InitContainer
       - DependsOn:
         - Condition: SUCCESS
@@ -958,6 +959,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
+        MemoryReservation: 100
         Name: GrokCompute_ResolvConf_InitContainer
       - DependsOn:
         - Condition: SUCCESS
@@ -1323,6 +1325,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
+        MemoryReservation: 100
         Name: H2o_ResolvConf_InitContainer
       - DependsOn:
         - Condition: SUCCESS
@@ -1381,6 +1384,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
+        MemoryReservation: 100
         Name: H2o_ResolvConf_InitContainer
       - DependsOn:
         - Condition: SUCCESS
@@ -1695,6 +1699,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
+        MemoryReservation: 100
         Name: JupyterKernelGateway_ResolvConf_InitContainer
       - DependsOn:
         - Condition: SUCCESS
@@ -1753,6 +1758,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
+        MemoryReservation: 100
         Name: JupyterKernelGateway_ResolvConf_InitContainer
       - DependsOn:
         - Condition: SUCCESS
@@ -2069,6 +2075,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
+        MemoryReservation: 100
         Name: JupyterNotebook_ResolvConf_InitContainer
       - DependsOn:
         - Condition: SUCCESS
@@ -2127,6 +2134,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
+        MemoryReservation: 100
         Name: JupyterNotebook_ResolvConf_InitContainer
       - DependsOn:
         - Condition: SUCCESS
@@ -2812,6 +2820,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
+        MemoryReservation: 100
         Name: Datagrok_ResolvConf_InitContainer
       - DependsOn:
         - Condition: SUCCESS
@@ -2901,6 +2910,7 @@ Resources:
             awslogs-region:
               Ref: AWS::Region
             awslogs-stream-prefix: cvm
+        MemoryReservation: 100
         Name: Datagrok_ResolvConf_InitContainer
       - DependsOn:
         - Condition: SUCCESS
