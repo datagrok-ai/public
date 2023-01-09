@@ -9,10 +9,7 @@ export class SankeyViewer extends EChartViewer {
     this.initCommonProperties();
 
     this.option = {
-      tooltip: {
-        trigger: 'item',
-        triggerOn: 'mousemove',
-      },
+      tooltip: {},
       series: [
         {
           type: 'sankey',
