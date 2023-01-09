@@ -114,7 +114,7 @@ export function getSdfTab(): HTMLDivElement {
   const asInput = ui.textInput('', '', () => { onInput.next(); });
   const as2Input = ui.textInput('', '', () => { onInput.next(); });
 
-  // resizeable text areas
+  // auto resizeable text areas
   [ssInput, asInput, as2Input].forEach(
     (inputBase) => {
       inputBase.onInput(
