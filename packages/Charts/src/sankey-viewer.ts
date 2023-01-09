@@ -30,6 +30,23 @@ export class SankeyViewer extends EChartViewer {
     this.onPropertyChanged(null, false);
   }
 
+  initChartEventListeners() {
+    const fromCol = this.dataFrame.getCol('source');
+    const toCol = this.dataFrame.getCol('target');
+
+    this.chart.on('click', { dataType: 'node' }, (params: any) => {
+      this.dataFrame.selection.handleClick((i) => {
+        return fromCol.get(i) === params.data.name ||
+          toCol.get(i) === params.data.name;
+      }, params.event.event);
+    });
+  }
+
+  onTableAttached() {
+    super.onTableAttached();
+    this.initChartEventListeners();
+  }
+
   render() {
     const fromCol = this.dataFrame.getCol('source');
     const toCol = this.dataFrame.getCol('target');
