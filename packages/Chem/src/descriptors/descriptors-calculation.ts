@@ -1,13 +1,11 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-//import {getDescriptorsTree, getDescriptorsPy} from '../scripts-api';
 import { getDescriptorsPy } from '../scripts-api';
 import {isMolBlock} from 'datagrok-api/dg';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import { descriptors } from './const';
-import { groupBy } from 'rxjs/operators';
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
@@ -17,7 +15,7 @@ export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFra
   openDescriptorsDialog(await getSelected(), async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     selected = await getSelected();
-    const pi = DG.TaskBarProgressIndicator.create('Calculating descriptors');
+    const pi = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
     const table = await getDescriptorsPy(
       smilesCol.name, DG.DataFrame.fromColumns([smilesCol]), 'selected',
       DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
@@ -130,7 +128,6 @@ export function getDescriptorsApp(): void {
 
 //description: Open descriptors selection dialog
 function openDescriptorsDialog(selected: any, onOK: any): void {
-  //grok.chem.descriptorsTree().then((descriptors: { [_: string]: any }) => {
   const tree = ui.tree();
   tree.root.style.maxHeight = '400px';
 
@@ -162,9 +159,13 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
 
     group.checkBox!.onchange = (_e) => {
       countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
+      if (group.checked) 
+        selectedDescriptors[group.text] = group.text;
+      group.items.filter((i) => {
+        if (i.checked) 
+          selectedDescriptors[i.text] = group.text;
+      })
     };
-
-    console.log(groups);
 
     for (const descriptor of descriptors[groupName]['descriptors']) {
       const item = group.item(descriptor['name'], descriptor);
@@ -173,9 +174,8 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
 
       item.checkBox!.onchange = (_e) => {
         countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
-        if (item.checked) {
+        if (item.checked) 
           selectedDescriptors[item.text] = groupName;
-        }
       };
     }
 
@@ -183,7 +183,6 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
   }
 
   const saveInputHistory = (): any => {
-    console.log(selectedDescriptors);
     let resultHistory: { [_: string]: any } = {};
     const descriptorNames = Object.keys(selectedDescriptors);
     for (const descriptorName of descriptorNames) 
@@ -199,7 +198,8 @@ function openDescriptorsDialog(selected: any, onOK: any): void {
         if (i.text === key) 
           i.checked = true;
       })
-      groups[history[key]].checked = true;
+      if (key === history[key])
+        groups[history[key]].checked = true;
     }
     countLabel.textContent = `${keys.length} checked`;
   }
