@@ -284,7 +284,6 @@ Chart types:
 * Statistics
 * Correlation plot
 * Map
-* Google Map
 * Form designer
 * Web viewer
 * Markup Viewer

@@ -21,9 +21,9 @@ category('Grid: MultiValuesColumn', () => {
     });
 
     test('grid.multiValuesColumn', async () => {
-      const languageTags:string[] = Array.from(table.col('Languages')!.tags);
+      const languageTags: string[] = Array.from(table.col('Languages')!.tags);
 
-      if (languageTags[0][0] != '.multi-value-separator')
+      if (languageTags[0][0] != DG.TAGS.MULTI_VALUE_SEPARATOR)
         throw 'multi-value-separator not assigned to column';
     });
 
