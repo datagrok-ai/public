@@ -26,6 +26,7 @@
 .sdf-text-input-td textarea {
   width: 100%;
   resize: none;
+  height: 22px; /* Fine tuned value to avoid "jumping" of the textarea upon autoresize */
 }
 
 .sdf-mol-img {
