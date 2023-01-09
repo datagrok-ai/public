@@ -114,6 +114,19 @@ export function getSdfTab(): HTMLDivElement {
   const asInput = ui.textInput('', '', () => { onInput.next(); });
   const as2Input = ui.textInput('', '', () => { onInput.next(); });
 
+  // resizeable text areas
+  [ssInput, asInput, as2Input].forEach(
+    (inputBase) => {
+      inputBase.onInput(
+        () => {
+          const textArea = inputBase.root.getElementsByTagName('textarea').item(0);
+          $(textArea).css('height', 0);
+          $(textArea).css('height', (textArea!.scrollHeight) + 'px');
+        }
+      );
+    }
+  );
+
   // bool inputs
   const saveEntity = ui.boolInput('Save as one entity', true);
   ui.tooltip.bind(saveEntity.root, 'Save SDF with all strands in one molfile');
