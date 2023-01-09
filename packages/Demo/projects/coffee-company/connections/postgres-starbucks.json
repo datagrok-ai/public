@@ -1,0 +1,19 @@
+{
+  "#type": "DataConnection",
+  "name": "PostgresStarbucks",
+  "friendlyName": "Starbucks",
+  "parameters": {
+    "server": "db.datagrok.ai",
+    "port": 54324,
+    "db": "starbucks"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "datagrok",
+      "password": "datagrok"
+    }
+  },
+  "dataSource": "Postgres",
+  "description": "Coffee company sample database",
+  "tags": ["demo"]
+}

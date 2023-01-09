@@ -96,7 +96,7 @@
     "@datagrok/bio": "2.1.7",
     "@datagrok/dendrogram": "0.1.2",
     "@datagrok/phylo-tree-viewer": "1.2.3",
-    "@datagrok/molecular-liability-browser-data": "^2.0.0"
+    "@datagrok/molecular-liability-browser-data": "^2.0.1"
   },
   "canEdit": [
     "Developers"
