@@ -99,10 +99,10 @@ export async function initChem(): Promise<void> {
   const lastSelectedSketcher = _properties.Sketcher ? SKETCHER_FUNCTIONS_ALIASES[_properties.Sketcher]:
       await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
   if (DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name === lastSelectedSketcher || e.friendlyName === lastSelectedSketcher) || !lastSelectedSketcher)
-    window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher);
+    DG.chem.currentSketcher = lastSelectedSketcher;
   else {
     grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
-    window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, DEFAULT_SKETCHER);
+    DG.chem.currentSketcher = DEFAULT_SKETCHER;
   }
   _renderers = new Map();
 }
