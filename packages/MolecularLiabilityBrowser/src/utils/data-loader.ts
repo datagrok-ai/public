@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {VdRegion} from '@datagrok-libraries/bio/src/vd-regions';
 import {_package, packageName} from '../package';
 import {MlbDatabase} from './mlb-database';
+import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 
 export type DataQueryDict = { [name: string]: DG.DataQuery };
 
@@ -211,9 +212,10 @@ export function catchToLog<T>(prefix: string, func: () => T): T {
 
       return res;
     }
-  } catch (ex: any) {
-    console.error(prefix + ', ' + ex.toString());
-    throw (ex);
+  } catch (err: any) {
+    const errStr = errorToConsole(err);
+    console.error(prefix + ', ' + errStr);
+    throw (err);
   }
 }
 

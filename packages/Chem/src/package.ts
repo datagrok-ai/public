@@ -14,7 +14,6 @@ import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
 import Sketcher = DG.chem.Sketcher;
 import {getActivityCliffs, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
-import {setupScaffold} from './scripts-api';
 import {elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
@@ -56,7 +55,10 @@ import {rGroupAnalysis} from './analysis/r-group-analysis';
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
 import {_importSmi} from './file-importers/smi-importer';
+
+//script api
 import {generateScaffoldTree} from "./scripts-api";
+import {setupScaffold} from './scripts-api';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const DEFAULT_SKETCHER = 'openChemLibSketcher';
@@ -580,19 +582,19 @@ export async function structuralAlerts(smiles: string): Promise<DG.Widget> {
 //name: Structure 2D
 //description: 2D molecule representation
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: string molecule { semType: Molecule }
 //output: widget result
-export function structure2d(smiles: string): DG.Widget {
-  return smiles ? structure2dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+export function structure2d(molecule: string): DG.Widget {
+  return molecule ? structure2dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
 }
 
 //name: Structure 3D
 //description: 3D molecule representation
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: string molecule { semType: Molecule }
 //output: widget result
-export async function structure3d(smiles: string): Promise<DG.Widget> {
-  return smiles ? structure3dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+export async function structure3d(molecule: string): Promise<DG.Widget> {
+  return molecule ? structure3dWidget(molecule) : new DG.Widget(ui.divText('Molecule is empty'));
 }
 
 //name: Toxicity

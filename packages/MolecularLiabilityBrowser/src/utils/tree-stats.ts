@@ -99,7 +99,7 @@ export class TreeAnalyzer {
     let stats = _nullStats;
 
     if (TreeAnalyzer.newickRegEx.test(nwk.trim())) {
-      const tree = parseNewick(nwk);
+      const tree = parseNewick(nwk) as PhylocanvasTreeNode;
 
       this._isect.reset();
       this._traverseTree(tree);

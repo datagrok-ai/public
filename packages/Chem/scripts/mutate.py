@@ -4,7 +4,7 @@
 #language: python
 #tags: demo, chem, rdkit
 #top-menu: Chem | Mutate...
-#input: string smiles = "CN1C(CC(O)C1=O)C1=CN=CC=C1" {semType: Molecule}
+#input: string molecule = "CN1C(CC(O)C1=O)C1=CN=CC=C1" {semType: Molecule}
 #input: int steps = 1 [Number of mutation steps]
 #input: bool randomize = true [Randomize mutations]
 #input: int maxRandomResults = 100 [Maximum random results to calculate]
@@ -150,8 +150,8 @@ def remove_bonds(mol):
     return mols
 
 
-def get_all_mutations(smiles, steps=1):
-    mol = Chem.MolFromSmiles(smiles)
+def get_all_mutations(molecule, steps=1):
+    mol = Chem.MolFromMolBlock(molecule, sanitize = True) if ("M  END" in molecule) else Chem.MolFromSmiles(molecule, sanitize = True)
     mutations = []
     if mol is not None:
         Chem.SanitizeMol(mol, sanitizeOps=Chem.rdmolops.SANITIZE_KEKULIZE)
@@ -165,12 +165,12 @@ def get_all_mutations(smiles, steps=1):
                 for mol in step_mutations:
                     Chem.SanitizeMol(mol, sanitizeOps=Chem.rdmolops.SANITIZE_KEKULIZE)
             mutations.extend(step_mutations)
-        mutations = [Chem.MolToSmiles(smiles) for smiles in mutations]
+        mutations = [Chem.MolToSmiles(molecule) for molecule in mutations]
     return list(set(mutations))
 
 
-def get_random_mutations(smiles, steps=1, max_random_results=100):
-    mol = Chem.MolFromSmiles(smiles)
+def get_random_mutations(molecule, steps=1, max_random_results=100):
+    mol = Chem.MolFromMolBlock(molecule, sanitize = True) if ("M  END" in molecule) else Chem.MolFromSmiles(molecule, sanitize = True)
     mutations = []
     if mol is not None:
         Chem.SanitizeMol(mol, sanitizeOps=Chem.rdmolops.SANITIZE_KEKULIZE)
@@ -201,13 +201,15 @@ def get_random_mutations(smiles, steps=1, max_random_results=100):
                         _mol = random.choice(mols)
             Chem.SanitizeMol(_mol, sanitizeOps=Chem.rdmolops.SANITIZE_KEKULIZE)
             mutations.append(_mol)
-    return [Chem.MolToSmiles(smiles) for smiles in mutations]
+    return [Chem.MolToSmiles(molecule) for molecule in mutations]
 
+if len(molecule) < 3:
+    molecule = "CCC"
 
 if randomize:
-    mutations = get_random_mutations(smiles, steps=steps, max_random_results=maxRandomResults)
+    mutations = get_random_mutations(molecule, steps=steps, max_random_results=maxRandomResults)
 else:
-    mutations = get_all_mutations(smiles, steps=steps)
+    mutations = get_all_mutations(molecule, steps=steps)
 
 # Convert to Pandas DataFrame
 mutations = pd.DataFrame(mutations, columns=['mutations'])

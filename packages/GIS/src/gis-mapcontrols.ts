@@ -1,10 +1,10 @@
 //Base import
-import * as grok from 'datagrok-api/grok';
+//import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
+//import $ from 'cash-dom';
 import {OpenLayers} from '../src/gis-openlayer';
-import {Control, defaults as defaultControls} from 'ol/control'; //Attribution include?
+import {Control} from 'ol/control'; //Attribution include?
 
 
 export class PanelLayersControl extends Control {
@@ -204,4 +204,4 @@ export class BtnLayersControl extends Control {
   }
 }
 
-lPanel: PanelLayersControl;
+//lPanel: PanelLayersControl;

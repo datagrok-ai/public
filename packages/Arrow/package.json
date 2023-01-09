@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/arrow",
   "friendlyName": "Arrow",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
@@ -13,10 +13,10 @@
     "directory": "packages/Arrow"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^1.15.5",
+    "@datagrok-libraries/utils": "^1.19.1",
     "apache-arrow": "^8.0.0",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.5.0",
+    "datagrok-api": "^1.11.1",
     "dayjs": "^1.10.6",
     "file-loader": "^6.2.0",
     "parquet-wasm": "^0.3.1"
