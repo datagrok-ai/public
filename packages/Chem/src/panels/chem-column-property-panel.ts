@@ -49,11 +49,11 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   regenerateCoordsCheckbox.setTooltip('Force regeneration of coordinates even for MOLBLOCKS');
 
   const moleculeFilteringChoice = ui.choiceInput('Filter type',
-    col.tags['.structure-filter-type'] ?? StructureFilterType.Sketch,
+    col.tags[DG.TAGS.STRUCTURE_FILTER_TYPE] ?? StructureFilterType.Sketch,
     [StructureFilterType.Sketch, StructureFilterType.Categorical],
     (s: string) => {
-      col.tags['.structure-filter-type'] = s;
-      col.tags['.ignore-custom-filter'] = (s == StructureFilterType.Categorical).toString();
+      col.tags[DG.TAGS.STRUCTURE_FILTER_TYPE] = s;
+      col.tags[DG.TAGS.IGNORE_CUSTOM_FILTER] = (s == StructureFilterType.Categorical).toString();
     },
   );
   moleculeFilteringChoice.setTooltip('Sketch a molecule, or use them as categories in a filter');
