@@ -29,8 +29,13 @@ import {
   NglGlServiceBase,
   NglGlTask
 } from './src/viewers/ngl-gl-viewer';
+
 import {parseNewick, PhylocanvasTreeNode} from './src/trees/phylocanvas';
 import {isLeaf} from './src/trees';
+
+export {
+  DistanceMatrix
+} from './src/trees/distance-matrix';
 
 export {
   ALIGNMENT,
@@ -59,6 +64,17 @@ export {
   NodeType,
   NodeCuttedType
 } from './src/trees';
+
+export {
+  ITreeHelper,
+  getTreeHelper
+} from './src/trees/tree-helper';
+
+export {
+  TreeCutOptions,
+  IDendrogramService,
+  getDendrogramService
+} from './src/trees/dendrogram';
 
 export {
   Shapes,
@@ -103,8 +119,6 @@ export {
   parseNewick,
   // Utils,
   // Newick,
-  ITreeHelper,
-  getTreeHelper,
 
   getNglGlService,
   NglGlServiceBase,

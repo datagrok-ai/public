@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {TreeHelper} from '../../src/utils/tree-helper';
 import {GridTreeRendererBase} from './tree-renderers/grid-tree-renderer-base';
-import {ITreeHelper, NodeCuttedType, NodeType} from '@datagrok-libraries/bio';
+import {ITreeHelper, NodeCuttedType, NodeType, TreeCutOptions} from '@datagrok-libraries/bio';
 import {LeafRangeGridTreeRenderer} from '../../src/viewers/tree-renderers/grid-tree-renderer';
 import {markupNode, MarkupNodeType} from './tree-renderers/markup';
 import {attachDivToGrid} from '../utils';
@@ -26,8 +26,7 @@ import {Unsubscribable} from 'rxjs';
 import {render} from 'datagrok-api/ui';
 
 export function injectTreeForGridUI2(
-  grid: DG.Grid, newickRoot: NodeType, dataDf: DG.DataFrame, clusterDf: DG.DataFrame, leafColName: string | null,
-  neighborWidth: number = 100, cut?: { min: number, max: number, clusterColName: string }
+  grid: DG.Grid, newickRoot: NodeType, leafColName?: string, neighborWidth: number = 100, cut?: TreeCutOptions
 ): GridNeighbor {
   const th: ITreeHelper = new TreeHelper();
 
@@ -96,8 +95,8 @@ export function injectTreeForGridUI2(
 
       const newickRootCopy = JSON.parse(JSON.stringify(newickRoot));
       const newickRootCutted = th.treeCutAsTree(newickRootCopy, cutSlider!.value!);
-      th.markClusters(newickRootCutted as NodeCuttedType, dataDf, leafColName, cut.clusterColName);
-      th.buildClusters(newickRootCutted as NodeCuttedType, clusterDf, cut.clusterColName, leafColName);
+      th.markClusters(newickRootCutted as NodeCuttedType, cut.dataDf, leafColName ?? null, cut.clusterColName);
+      th.buildClusters(newickRootCutted as NodeCuttedType, cut.clusterDf, cut.clusterColName, leafColName);
 
       markupNode(newickRootCutted!);
       renderer.treeRoot = newickRootCutted as MarkupNodeType;

@@ -56,7 +56,7 @@ export async function hierarchicalClusteringUI(
   // empty clusterDf to stub injectTreeForGridUI2
   const clusterDf = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'cluster', [])]);
-  injectTreeForGridUI2(tv.grid, newickRoot, df, clusterDf, null, 300);
+  injectTreeForGridUI2(tv.grid, newickRoot, undefined, 300);
 }
 
 export function hierarchicalClusteringFilterDfForNulls(df: DG.DataFrame, colNameSet: Set<string>): DG.DataFrame {
