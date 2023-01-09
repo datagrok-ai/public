@@ -108,7 +108,7 @@ export namespace chem {
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
-    host: HTMLDivElement = ui.box(null, 'grok-sketcher sketcher-standard-size');
+    host: HTMLDivElement = ui.box(null, 'grok-sketcher');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
@@ -404,10 +404,12 @@ export namespace chem {
 
     async setBaseSketcher(sketcherName: string) {
       ui.empty(this.host);
+      this.host.classList.remove('extended-width'); //need to remove class to reset width
       ui.setUpdateIndicator(this.host, true);
       this.changedSub?.unsubscribe();
       const sketcherFunc = this.sketcherFunctions.find(e => e.friendlyName == sketcherName) ?? this.sketcherFunctions.find(e => e.friendlyName == DEFAULT_SKETCHER);
       this.sketcher = await sketcherFunc!.apply();
+      this.host.classList.add('sketcher-standard-size');
       this.host.appendChild(this.sketcher!.root);
       await ui.tools.waitForElementInDom(this.root);
       await this.sketcher!.init(this);

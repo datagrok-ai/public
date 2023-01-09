@@ -12,3 +12,8 @@
   min-width: 500px;
   min-height: 400px;
 }
+
+.extended-width {
+  min-width: 800px;
+  min-height: 400px;
+}
