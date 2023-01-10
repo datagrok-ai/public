@@ -4,7 +4,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FunctionView} from './function-view';
-import '../css/computation-view.css';
 import dayjs from 'dayjs';
 import {historyUtils} from './history-utils';
 

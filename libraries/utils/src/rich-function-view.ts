@@ -322,7 +322,7 @@ export class RichFunctionView extends FunctionView {
         const prop = val.property;
         if (prop.propertyType.toString() === FILE_INPUT_TYPE) {
           const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => this.funcCall!.inputs[prop.name] = file);
-          return t;
+          inputs.append(t.root);
         } else {
           const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
             ui.tableInput(prop.name, null, grok.shell.tables):

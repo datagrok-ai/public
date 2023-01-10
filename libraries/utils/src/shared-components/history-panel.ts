@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {defaultUsersIds} from '../function-view';
 import {historyUtils} from '../history-utils';
+import '../../css/history-panel.css';
 
 export class HistoryPanel {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
