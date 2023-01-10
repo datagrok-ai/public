@@ -14,7 +14,7 @@ Dataframe stores data as list of columns. Constructing, modifying and efficientl
 both [`DG.Column`][101] and [`DG.DataFrame`][100] classes. Event handling, visual aspects of working with dataframes,
 fast column selection, handy construction methods and row-based access are provided in
 [`DG.DataFrame`][100]. Instances of [`DG.ColumnList`][099], [`DG.RowList`][098],
-[`DG.Row`](https://datagrok.ai/js-api/classes/dg.Row) and [`DG.Cell`](https://datagrok.ai/js-api/classes/dg.cell) are
+[`DG.Row`](https://datagrok.ai/js-api/classes/dg.Row) and [`DG.Cell`](https://datagrok.ai/js-api/classes/dg.Cell) are
 used as related properties or functions return values of `DG.Column` and `DG.DataFrame`.
 
 ## Dataframe design
