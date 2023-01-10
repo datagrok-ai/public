@@ -102,15 +102,7 @@ a private key and a public key.
         4. `CreateDemoData`: Datagrok provides demo databases with demo data for the full experience. Choose `true` to
            create demo databases near Datagrok.
 
-        5. `Ec2KeyPairName`: Spesial name in AWS for [key pair](#prerequisites).
-        You can change default value in template or use `ParameterKey=Ec2KeyPairName,ParameterValue=name` in launch
-        via [AWS CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html).
-
-        6. `Ec2PublicKey`: Public key content, `id_rsa.pub` by default.
-        You can change default value in template or use `ParameterKey=Ec2PublicKey,ParameterValue=your_public_key`
-        in launch via [AWS CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html).
-
-        7. All other parameters are for Datagrok Docker images tags. The default value is `latest`.
+        5. All other parameters are for Datagrok Docker images tags. The default value is `latest`.
             1. [DatagrokVersion](https://hub.docker.com/r/datagrok/datagrok)
             2. [GrokComputeVersion](https://hub.docker.com/r/datagrok/grok_connect)
             3. [H2oVersion](https://hub.docker.com/r/datagrok/h2o)
@@ -140,6 +132,14 @@ a private key and a public key.
 ## Cost reduction stand
 
 AWS stack uses `FARGATE` instances for deployment by default. To reduce
-infrastructure cost you can use ```ParameterKey=LaunchType,ParameterValue=EC2``` launch template parameters or change
-[LaunchType](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.yml#L92)
-parameter default value to `EC2`
+infrastructure cost you had to specify next parameters:
+1. `LaunchType`: Use `ParameterKey=LaunchType,ParameterValue=EC2` when
+launch template via [AWS CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html).
+
+2. `Ec2KeyPairName`: Special name in AWS for [key pair](#prerequisites).
+    Use `ParameterKey=Ec2KeyPairName,ParameterValue=name` when launch
+    template via [AWS CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html).
+
+3. `Ec2PublicKey`: Public key content, `id_rsa.pub` by default.
+    Use `ParameterKey=Ec2PublicKey,ParameterValue=your_public_key`
+    when launch template via [AWS CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html).
