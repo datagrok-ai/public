@@ -49,11 +49,11 @@ A simplest JavaScript package consists of the following files:
 In addition to that, it might contain the following folders:
 
 * `environments`: [environment configurations](../compute/scripting.md#environments)
-  for [scripts](../compute/scripting.md). Examples: [DemoScripts]
+  for [scripts](../compute/scripting.md). 
+  Examples: [DemoScripts]
 * `scripts`: a collection of [scripts](../compute/scripting.md) used for computations.
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
   , [DemoScripts]
-  <!--, [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute)-->
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
   Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
   , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
@@ -450,4 +450,4 @@ See also:
 * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
 * [How Developers Use API Documentation: An Observation Study](https://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
 
-[DemoScripts]: https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/
+[DemoScripts]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts
