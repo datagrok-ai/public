@@ -56,7 +56,7 @@ var solveFAE = {
     FKox: {
       type: 'num'
     },
-    MEAthiol_t: {
+    MEAthiol: {
       type: 'num'
     },
     CO2: {

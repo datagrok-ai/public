@@ -1,5 +1,9 @@
 // fae.cpp
 
+#include<cmath>
+using std::pow;
+using std::sqrt;
+
 #include <emscripten.h>
 
 extern "C" {
@@ -24,13 +28,17 @@ namespace fae
 
     // dimension of solution
 	const int DIM = 13; 
-    
+  
+	// Version 3
 	VectorXd f(double _time, VectorXd & y) noexcept
 	{
 		VectorXd res(y.size());		
-// original formulas are removed
+
+		// ORIGINAL EXPRESSIONS ARE REMOVED!
+
 		return res;
 	} // f
+ 
 
 }; //fae
 

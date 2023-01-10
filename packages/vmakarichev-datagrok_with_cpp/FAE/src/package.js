@@ -19,7 +19,7 @@ export async function init() {
 
 //name: solveFAE
 //input: double t0 =  {units: minutes; caption: Initial time}
-//input: double t1 =  {units: minutes; caption: Final time}
+//input: double t1 = {units: minutes; caption: Final time}
 //input: double h =  {units: minutes; caption: Time step}
 //input: double FFox =  {caption: FFox(initial)}
 //input: double KKox =  {caption: KKox(initial)}
@@ -31,13 +31,14 @@ export async function init() {
 //input: double FKox =  {caption: FKox(initial)}
 //input: double MEAthiol =  {caption: MEAthiol(initial)}
 //input: double CO2 =  {caption: CO2(initial)}
-//input: double yO2P = {caption: yO2P(initial)
-//input: double Cystamine = {caption: Cystamine(initial)}
+//input: double yO2P =  {caption: yO2P(initial)
+//input: double Cystamine =  {caption: Cystamine(initial)}
 //input: double VL =  {caption: VL(initial)}
-//output: dataframe solution {caption: Figure 1; viewer: Line Chart(x: "t, time (minutes)")}
+//output: dataframe solution {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", yGlobalScale: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
+//editor: Compute:RichFunctionViewEditor
 export function solveFAE(t0, t1, h, FFox, KKox, FFred, KKred, Ffree, 
   Kfree, FKred, FKox, MEAthiol, CO2, yO2P, Cystamine, VL) {
-
+    
   let timesCount = Math.trunc((t1 - t0) / h) + 1;
   let varsCount = 14;
 

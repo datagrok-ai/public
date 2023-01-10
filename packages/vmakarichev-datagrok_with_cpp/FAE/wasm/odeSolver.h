@@ -285,6 +285,9 @@ namespace ode {
 		std::vector<ArgType> times;
 		std::vector<VecType> solutions;
 
+		times.reserve(rowCount);
+		solutions.reserve(rowCount);
+
 		// solve ODE: times and solutions are obtained
 		int resultCode = RKCKsolver(f, _t0, _t1, _hInitial, yInitial, _tol, times, solutions);
 		if (resultCode != NO_ERRORS)
