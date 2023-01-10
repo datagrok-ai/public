@@ -362,18 +362,18 @@ Dataframes may be obtained through the JavaSript or TypeScript code in various w
 
 A variety of in-place construction methods are available:
 
-* Construct from array of explicitly created columns, all same length: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-arrays)
-* Specify number of rows in a dataframe at creation and later adding columns with this number of items: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-columns)
-* Create from a string containing a CSV: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-csv-format)
-* Create from a string containing a JSON: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-json)
-* Create from JavaScript objects: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-objects)
-* Create from JavaScript typed arrays: [link](
-  https://public.datagrok.ai/js/samples/data-frame/construction/create-from-typed-arrays)
+* Construct from array of explicitly created columns, all same length:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-arrays)
+* Specify number of rows in a dataframe at creation and later adding columns with this number of items:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-columns)
+* Create from a string containing a CSV:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-csv-format)
+* Create from a string containing a JSON:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-json)
+* Create from JavaScript objects:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-objects)
+* Create from JavaScript typed arrays:
+[link](https://public.datagrok.ai/js/samples/data-frame/construction/create-from-typed-arrays)
 
 #### Load a demo dataset
 
