@@ -7,7 +7,8 @@ import ExcelJS from 'exceljs';
 import html2canvas from 'html2canvas';
 import wu from 'wu';
 import $ from 'cash-dom';
-import {BehaviorSubject, Subject, Subscription} from 'rxjs';
+import {Subject} from 'rxjs';
+import {UiUtils} from './shared-components/ui-utils';
 
 const viewerTypesMapping: {[key: string]: string} = {
   ['barchart']: DG.VIEWER.BAR_CHART,
@@ -39,7 +40,9 @@ const viewerTypesMapping: {[key: string]: string} = {
   ['wordcloud']: DG.VIEWER.WORD_CLOUD,
 };
 
-export class DefaultFunctionView extends FunctionView {
+const FILE_INPUT_TYPE = 'file';
+
+export class RichFunctionView extends FunctionView {
   // emitted when after a new FuncCall is linked
   private funcCallReplaced = new Subject<true>();
 
@@ -91,20 +94,29 @@ export class DefaultFunctionView extends FunctionView {
     this.buildRibbonPanels();
   }
 
+  public override onAfterRun(runFunc: DG.FuncCall): Promise<void> {
+    this.tabsElem.root.style.removeProperty('display');
+    this.tabsElem.panes.forEach((tab) => {
+      tab.header.style.removeProperty('display');
+    });
+
+    return Promise.resolve();
+  }
+
   public buildIO(): HTMLElement {
     const inputBlock = this.buildInputBlock();
     const outputBlock = this.buildOutputBlock();
     outputBlock.style.height = '100%';
     outputBlock.style.width = '100%';
-    outputBlock.style.display = 'none';
+    if (!!this.tabsElem.getPane('Input')) {
+      this.tabsElem.panes.forEach((tab) => {
+        if (tab.name !== 'Input') tab.header.style.display = 'none';
+      });
+    } else {
+      this.tabsElem.root.style.display = 'none';
+    }
 
     const out = ui.splitH([inputBlock, ui.panel([outputBlock])], null, true);
-
-    this.funcCallReplaced.subscribe(() => {
-      wu(this.funcCall!.outputParams.values() as DG.FuncCallParam[]).forEach((outputParam) => outputParam.onChanged.subscribe(() => {
-        outputBlock.style.removeProperty('display');
-      }));
-    });
 
     inputBlock.parentElement!.style.maxWidth = '450px';
 
@@ -159,16 +171,42 @@ export class DefaultFunctionView extends FunctionView {
 
         const dfSectionTitle: string = dfProp.options['caption'] ?? dfProp.name;
 
-        return ui.divV([
-          ui.h2(dfSectionTitle),
-          ui.divH(viewers.map((viewer, viewerIndex) => {
+        if (tabLabel !== 'Input') {
+          return ui.divV([
+            ui.h2(dfSectionTitle),
+            ui.divH(viewers.map((viewer, viewerIndex) => {
+              if (parsedDfProps[dfIndex][viewerIndex]['block'] === '25') return ui.block25([viewer.root]);
+              if (parsedDfProps[dfIndex][viewerIndex]['block'] === '50') return ui.block50([viewer.root]);
+              if (parsedDfProps[dfIndex][viewerIndex]['block'] === '75') return ui.block75([viewer.root]);
+
+              return viewer.root;
+            }))
+          ]);
+        } else {
+          const label = ui.span(['Select a dataframe to review it']);
+          const inputSection = ui.divH(viewers.map((viewer, viewerIndex) => {
             if (parsedDfProps[dfIndex][viewerIndex]['block'] === '25') return ui.block25([viewer.root]);
             if (parsedDfProps[dfIndex][viewerIndex]['block'] === '50') return ui.block50([viewer.root]);
             if (parsedDfProps[dfIndex][viewerIndex]['block'] === '75') return ui.block75([viewer.root]);
 
             return viewer.root;
-          }))
-        ]);
+          }), {style: {display: 'none'}});
+
+          this.funcCallReplaced.subscribe(() => {
+            const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
+
+            currentParam.onChanged.subscribe(() => {
+              label.style.display = 'none';
+              inputSection.style.removeProperty('display');
+            });
+          });
+
+          return ui.divV([
+            ui.h2(dfSectionTitle),
+            inputSection,
+            label
+          ]);
+        }
       });
 
 
@@ -209,6 +247,11 @@ export class DefaultFunctionView extends FunctionView {
 
     wu(this.funcCall!.inputParams.values() as DG.FuncCallParam[]).forEach((inp) => {
       this.funcCall!.setParamValue(inp.name, loadedRun.inputs[inp.name]);
+    });
+
+    this.tabsElem.root.style.removeProperty('display');
+    this.tabsElem.panes.forEach((tab) => {
+      if (tab.name !== 'Input') tab.header.style.removeProperty('none');
     });
   }
 
@@ -268,31 +311,37 @@ export class DefaultFunctionView extends FunctionView {
   }
 
   private renderRunSection(call: DG.FuncCall): HTMLElement {
-    return ui.wait(async () => {
-      const runButton = ui.bigButton('Run', async () => {
-        await this.run();
-      });
-      const editor = ui.div();
-      const inputs: DG.InputBase[] = await call.buildEditor(editor);
-
-      this.funcCallReplaced.subscribe(() => {
-        let i = 0;
-        wu(this.funcCall!.inputParams.values() as DG.FuncCallParam[]).forEach((inputParam) => {
-          const correspondingInput = inputs[i];
-
-          inputParam.onChanged.subscribe(() => {
-            correspondingInput.value = inputParam.value;
-          });
-
-          i++;
-        });
-      });
-
-      editor.classList.add('ui-form');
-      const buttons = ui.divH([runButton], {style: {'justify-content': 'flex-end'}});
-      editor.appendChild(buttons);
-      return editor;
+    const runButton = ui.bigButton('Run', async () => {
+      await this.run();
     });
+
+    const inputs = ui.divV([], 'ui-form');
+    wu(this.funcCall!.inputParams.values() as DG.FuncCallParam[])
+      .filter((val) => !!val)
+      .forEach((val) => {
+        const prop = val.property;
+        if (prop.propertyType.toString() === FILE_INPUT_TYPE) {
+          const t = UiUtils.fileInput(prop.caption ?? prop.name, null, (file: File) => this.funcCall!.inputs[prop.name] = file);
+          return t;
+        } else {
+          const t = prop.propertyType === DG.TYPE.DATA_FRAME ?
+            ui.tableInput(prop.name, null, grok.shell.tables):
+            ui.input.forProperty(prop);
+
+            t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
+            if (prop.options['units']) t.addPostfix(prop.options['units']);
+
+            this.funcCallReplaced.subscribe(() => {
+              t.value = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
+            });
+            t.onChanged(() => this.funcCall!.inputs[val.name] = t.value);
+            inputs.append(t.root);
+        }
+      });
+
+    const buttons = ui.divH([runButton], {style: {'justify-content': 'flex-end'}});
+
+    return ui.divV([inputs, buttons]);
   }
 
   protected defaultExport = async (format: string) => {
@@ -354,37 +403,54 @@ export class DefaultFunctionView extends FunctionView {
     }
 
     const tabControl = this.tabsElem;
-    if (tabControl) {
-      for (const tabLabel of this.tabsLabels) {
-        tabControl.currentPane = tabControl.getPane(tabLabel);
-        await new Promise((r) => setTimeout(r, 100));
-        if (tabLabel === 'Input') {
-          for (const inputParam of inputParams.filter((inputParam) => inputParam.property.propertyType === DG.TYPE.DATA_FRAME)) {
-            const nonGridViewers = this.dfToViewerMapping[inputParam.name].filter((viewer) => viewer.type !== DG.VIEWER.GRID);
+    for (const tabLabel of this.tabsLabels) {
+      tabControl.currentPane = tabControl.getPane(tabLabel);
+      await new Promise((r) => setTimeout(r, 100));
+      if (tabLabel === 'Input') {
+        for (const inputParam of inputParams.filter((inputParam) => inputParam.property.propertyType === DG.TYPE.DATA_FRAME)) {
+          const nonGridViewers = this.dfToViewerMapping[inputParam.name].filter((viewer) => viewer.type !== DG.VIEWER.GRID);
 
-            const dfInput = dfInputs.find((input) => input.name === inputParam.name);
-            const visibleTitle = dfInput!.options.caption || inputParam.name;
-            const currentDf = (lastCall.inputs[dfInput!.name] as DG.DataFrame);
+          const dfInput = dfInputs.find((input) => input.name === inputParam.name);
+          const visibleTitle = dfInput!.options.caption || inputParam.name;
+          const currentDf = (lastCall.inputs[dfInput!.name] as DG.DataFrame);
 
-            for (const [index, viewer] of nonGridViewers.entries()) {
-              await plotToSheet(
-                exportWorkbook,
-                exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT)),
-                viewer.root,
+          for (const [index, viewer] of nonGridViewers.entries()) {
+            await plotToSheet(
+              exportWorkbook,
+              exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT)),
+              viewer.root,
+              currentDf.columns.length + 2,
+              (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0
+            );
+          };
+        }
+      } else {
+        for (const outputParam of outputParams.filter((outputParam) => outputParam.property.propertyType === DG.TYPE.DATA_FRAME && outputParam.property.category === tabLabel)) {
+          const nonGridViewers = this.dfToViewerMapping[outputParam.name].filter((viewer) => viewer.type !== DG.VIEWER.GRID);
+
+          const dfOutput = dfOutputs.find((input) => input.name === outputParam.name)!;
+          const visibleTitle = dfOutput.options.caption || outputParam.name;
+          const currentDf = (lastCall.outputs[dfOutput.name] as DG.DataFrame);
+
+          for (const [index, viewer] of nonGridViewers.entries()) {
+            if (viewer.type === DG.VIEWER.STATISTICS) {
+              const length = currentDf.columns.length;
+              const stats = DG.DataFrame.fromColumns([
+                DG.Column.string('Name', length).init((i: number) => currentDf.columns.byIndex(i).name),
+                DG.Column.int('Values', length).init((i: number) => currentDf.columns.byIndex(i).stats.valueCount),
+                DG.Column.int('Nulls', length).init((i: number) => currentDf.columns.byIndex(i).stats.missingValueCount),
+                DG.Column.float('Min', length).init((i: number) => currentDf.columns.byIndex(i).stats.min),
+                DG.Column.float('Max', length).init((i: number) => currentDf.columns.byIndex(i).stats.max),
+                DG.Column.float('Avg', length).init((i: number) => currentDf.columns.byIndex(i).stats.avg),
+                DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
+              ]);
+              dfToSheet(
+                exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT)),
+                stats,
                 currentDf.columns.length + 2,
                 (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0
               );
-            };
-          }
-        } else {
-          for (const outputParam of outputParams.filter((outputParam) => outputParam.property.propertyType === DG.TYPE.DATA_FRAME && outputParam.property.category === tabLabel)) {
-            const nonGridViewers = this.dfToViewerMapping[outputParam.name].filter((viewer) => viewer.type !== DG.VIEWER.GRID);
-
-            const dfOutput = dfOutputs.find((input) => input.name === outputParam.name);
-            const visibleTitle = dfOutput!.options.caption || outputParam.name;
-            const currentDf = (lastCall.outputs[dfOutput!.name] as DG.DataFrame);
-
-            for (const [index, viewer] of nonGridViewers.entries()) {
+            } else {
               await plotToSheet(
                 exportWorkbook,
                 exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT)),
@@ -393,10 +459,10 @@ export class DefaultFunctionView extends FunctionView {
                 (index > 0) ? Math.ceil(nonGridViewers[index-1].root.clientHeight / 20) + 1 : 0
               );
             }
-          };
-        }
-      };
-    }
+          }
+        };
+      }
+    };
     const buffer = await exportWorkbook.xlsx.writeBuffer();
 
     return new Blob([buffer], {type: BLOB_TYPE});
@@ -426,17 +492,17 @@ const scalarsToSheet = (sheet: ExcelJS.Worksheet, scalars: { caption: string, va
   sheet.getColumn(3).width = Math.max(...scalars.map((scalar) => scalar.units.toString().length), 'Units'.length) * 1.2;
 };
 
-const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame) => {
-  sheet.addRow(df.columns.names()).font = {bold: true};
-  for (let i = 0; i < df.rowCount; i++)
-    sheet.addRow([...df.row(i).cells].map((cell: DG.Cell) => cell.value));
-
-  for (let i = 0; i < df.columns.length; i++) {
-    sheet.getColumn(i + 1).width =
-      Math.max(
-        ...df.columns.byIndex(i).categories.map((category) => category.toString().length),
-        df.columns.byIndex(i).name.length
-      ) * 1.2;
+const dfToSheet = (sheet: ExcelJS.Worksheet, df: DG.DataFrame, column: number = 0, row: number = 0) => {
+  for (let i= 0; i < df.columns.names().length; i++) {
+    sheet.getCell(1 + row, 1 + i + column).value = df.columns.byIndex(i).name;
+    sheet.getColumn(1 + i + column).width = Math.max(
+      ...df.columns.byIndex(i).categories.map((category) => category.toString().length),
+      df.columns.byIndex(i).name.length
+    ) * 1.2;
+  }
+  for (let dfColumn = 0; dfColumn < df.columns.length; dfColumn++) {
+    for (let i = 0; i < df.rowCount; i++)
+      sheet.getCell(i + 2 + row, 1 + column+dfColumn).value = df.columns.byIndex(dfColumn).get(i);
   }
 };
 

@@ -17,7 +17,7 @@
 #output: dataframe tempOnTime5 { viewer: Line chart(block: 50, x: "Time (hours)", y: "Temperature (°C)", showSplitSelector: false) | Line chart(block: 50, x: "Time (hours)", y: "Temperature (°C)", showSplitSelector: false); category: Cooling rate 3 }
 #output: double IC3 {caption: Culture temp.; units: °C; category: Cooling rate 3}
 #output: double IC4 {caption: Culture temp.; units: °C; category: Cooling rate 3}
-#editor: Compute:FunctionViewEditor
+#editor: Compute:ComputationViewEditor
 
 tt = S1:S2
 Sol = S1:2:(S2*2)
