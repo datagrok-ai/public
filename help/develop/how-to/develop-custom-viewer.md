@@ -568,4 +568,4 @@ See also:
 * [Viewers](../../visualize/viewers.md)
 * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)
 
-[DemoScripts]: https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/
+[DemoScripts]: https://github.com/datagrok-ai/public/tree/master/packages/Demo/scripts
