@@ -56,8 +56,8 @@ More information about Datagrok design and components:
 ## Deploy Datagrok components
 
 1. Download CloudFormation
-   Template in [YAML](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.yml) or [JSON](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.json) format as you prefer.
-
+   Template in [YAML](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.yml) or
+   [JSON](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.json) format as you prefer.
 
 2. Create CloudFormation stack
    using [AWS Console](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html)
@@ -110,4 +110,8 @@ More information about Datagrok design and components:
   * CVM Url: `https://<CVM_DNS>`
 
 ## Cost reduction stand
-AWS stack uses `FARGATE` instances for deployment by default. To reduce infrastructure cost you can use ```ParameterKey=LaunchType,ParameterValue=EC2``` launch template parameters or change [LaunchType](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.yml#L92) parameter default value to `EC2`
+
+AWS stack uses `FARGATE` instances for deployment by default. To reduce
+infrastructure cost you can use ```ParameterKey=LaunchType,ParameterValue=EC2``` launch template parameters or change
+[LaunchType](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.yml#L92)
+parameter default value to `EC2`
