@@ -16,7 +16,7 @@
 #output: double O3 {caption: Temp 3.; units: °C; category: CoolingRate3 }
 #output: double O4 {caption: Temp 4.; units: °C; category: CoolingRate3 }
 #output: double O5 {caption: Temp 5.; units: °C; category: CoolingRate3 }
-#editor: Compute:ComputationViewEditor
+#editor: Compute:RichFunctionViewEditor
 
 tt = S1:S2
 Sol = S1:2:(S2*2)
