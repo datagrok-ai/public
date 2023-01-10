@@ -13,7 +13,7 @@ export type TreeCutOptions = {
 export interface IDendrogramService {
   /** Inject Dendrogram tree to {@see grid}. Requires Dendrogram package. */
   injectTreeForGrid(
-    grid: DG.Grid, treeRoot: NodeType, leafColName?: string, neighborWidth?: number, cut?: TreeCutOptions
+    grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth?: number, cut?: TreeCutOptions
   ): GridNeighbor;
 }
 
