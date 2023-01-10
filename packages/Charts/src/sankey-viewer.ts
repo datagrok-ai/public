@@ -5,14 +5,14 @@ import { TreeUtils } from './utils/tree-utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 export class SankeyViewer extends EChartViewer {
-  sourceColumn: DG.Column;
-  targetColumn: DG.Column;
+  graphSourceColumn: DG.Column;
+  graphTargetColumn: DG.Column;
 
   constructor() {
     super();
 
-    this.sourceColumn = DG.Column.fromList('string', 'source', []);
-    this.targetColumn = DG.Column.fromList('string', 'target', []);
+    this.graphSourceColumn = DG.Column.fromList('string', 'source', []);
+    this.graphTargetColumn = DG.Column.fromList('string', 'target', []);
 
     this.initCommonProperties();
 
@@ -36,34 +36,37 @@ export class SankeyViewer extends EChartViewer {
   }
 
   initChartEventListeners() {
+    const dataFrameSourceColumn = this.dataFrame.getCol('source');
+    const dataFrameTargetColumn = this.dataFrame.getCol('target');
+
     this.chart.on('click', { dataType: 'node' }, (params: any) => {
       this.dataFrame.selection.handleClick((i) => {
-        return this.sourceColumn.get(i) === params.data.name ||
-          this.targetColumn.get(i) === params.data.name;
+        return dataFrameSourceColumn.get(i) === params.data.name ||
+          dataFrameTargetColumn.get(i) === params.data.name;
       }, params.event.event);
     });
 
     this.chart.on('click', { dataType: 'edge' }, (params: any) => {
       this.dataFrame.selection.handleClick((i) => {
-        return this.sourceColumn.get(i) === params.data.source &&
-          this.targetColumn.get(i) === params.data.target;
+        return dataFrameSourceColumn.get(i) === params.data.source &&
+          dataFrameTargetColumn.get(i) === params.data.target;
       }, params.event.event);
     });
 
     this.dataFrame.onRowsFiltering.subscribe((_) => {
-      this.refreshFilteredRows();
+      this.refreshColumnsOnFilter();
     });
   }
 
   onTableAttached() {
-    this.sourceColumn = this.dataFrame.getCol('source');
-    this.targetColumn = this.dataFrame.getCol('target');
+    this.graphSourceColumn = this.dataFrame.getCol('source');
+    this.graphTargetColumn = this.dataFrame.getCol('target');
 
     super.onTableAttached();
     this.initChartEventListeners();
   }
 
-  refreshFilteredRows() {
+  refreshColumnsOnFilter() {
     const dataframeSourceColumn = this.dataFrame.getCol('source');
     const dataframeTargetColumn = this.dataFrame.getCol('target');
     const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
@@ -76,13 +79,13 @@ export class SankeyViewer extends EChartViewer {
       targetList[i] = dataframeTargetColumn.get(filteredIndexList[i]);
     }
 
-    this.sourceColumn = DG.Column.fromList('string', 'source', sourceList);
-    this.targetColumn = DG.Column.fromList('string', 'target', targetList);
+    this.graphSourceColumn = DG.Column.fromList('string', 'source', sourceList);
+    this.graphTargetColumn = DG.Column.fromList('string', 'target', targetList);
   }
 
   render() {
     const nodes = [];
-    for (const name of new Set(this.sourceColumn.categories.concat(this.targetColumn.categories)))
+    for (const name of new Set(this.graphSourceColumn.categories.concat(this.graphTargetColumn.categories)))
       nodes.push({name: name});
 
     this.option.series[0].data = nodes;
