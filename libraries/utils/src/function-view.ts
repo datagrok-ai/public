@@ -46,7 +46,6 @@ export const defaultGroupsIds = {
 };
 
 export abstract class FunctionView extends DG.ViewBase {
-  protected readonly context: DG.Context;
   protected _funcCall?: DG.FuncCall;
   protected _lastCall?: DG.FuncCall;
   protected _type: string = 'function';
@@ -54,7 +53,6 @@ export abstract class FunctionView extends DG.ViewBase {
   constructor(funcCall?: DG.FuncCall) {
     super();
     this.box = true;
-    this.context = DG.Context.cloneDefault();
 
     if (!funcCall) return;
     this.name = funcCall.func.friendlyName;

@@ -2,7 +2,12 @@
   position: relative;
 }
 
+.ui-form .cv-drop-area .icon {
+	padding-top: 10px;
+}
+
 .ui-form-condensed .cv-drop-area .icon {
+	padding-top: 0px;
   position: absolute;
   top: 35px;
   right: 10px;
