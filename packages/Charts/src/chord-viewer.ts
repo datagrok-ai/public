@@ -1,11 +1,18 @@
 import * as DG from 'datagrok-api/dg';
+
 import { EChartViewer } from './echart-viewer';
 import { TreeUtils } from './utils/tree-utils';
 
 
 export class ChordViewer extends EChartViewer {
+  chartSourceColumn: DG.Column;
+  chartTargetColumn: DG.Column;
+
   constructor() {
     super();
+
+    this.chartSourceColumn = DG.Column.fromList('string', 'source', []);
+    this.chartTargetColumn = DG.Column.fromList('string', 'target', []);
 
     this.top = this.string('top', '50px');
     this.left = this.string('left', '100px');
@@ -41,41 +48,63 @@ export class ChordViewer extends EChartViewer {
   }
 
   initChartEventListeners() {
-    const fromCol = this.dataFrame.getCol('source');
-    const toCol = this.dataFrame.getCol('target');
+    const dataFrameSourceColumn = this.dataFrame.getCol('source');
+    const dataFrameTargetColumn = this.dataFrame.getCol('target');
 
     this.chart.on('click', { dataType: 'node' }, (params: any) => {
       this.dataFrame.selection.handleClick((i) => {
-        return fromCol.get(i) === params.data.name ||
-          toCol.get(i) === params.data.name;
+        return dataFrameSourceColumn.get(i) === params.data.name ||
+        dataFrameTargetColumn.get(i) === params.data.name;
       }, params.event.event);
     });
 
     this.chart.on('click', { dataType: 'edge' }, (params: any) => {
       this.dataFrame.selection.handleClick((i) => {
-        return fromCol.get(i) === params.data.source &&
-          toCol.get(i) === params.data.target;
+        return dataFrameSourceColumn.get(i) === params.data.source &&
+        dataFrameTargetColumn.get(i) === params.data.target;
       }, params.event.event);
+    });
+
+    this.dataFrame.onRowsFiltering.subscribe((_) => {
+      this.refreshColumnsOnFilter();
     });
   }
 
   onTableAttached() {
+    this.chartSourceColumn = this.dataFrame.getCol('source');
+    this.chartTargetColumn = this.dataFrame.getCol('target');
+
     super.onTableAttached();
     this.initChartEventListeners();
   }
 
+  refreshColumnsOnFilter() {
+    const dataframeSourceColumn = this.dataFrame.getCol('source');
+    const dataframeTargetColumn = this.dataFrame.getCol('target');
+    const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
+
+    const sourceList: Array<string> = new Array<string>(filteredIndexList.length);
+    const targetList: Array<string> = new Array<string>(filteredIndexList.length);
+
+    for (let i = 0; i < filteredIndexList.length; i++) {
+      sourceList[i] = dataframeSourceColumn.get(filteredIndexList[i]);
+      targetList[i] = dataframeTargetColumn.get(filteredIndexList[i]);
+    }
+
+    this.chartSourceColumn = DG.Column.fromList('string', 'source', sourceList);
+    this.chartTargetColumn = DG.Column.fromList('string', 'target', targetList);
+  }
+
   render() {
-    const fromCol = this.dataFrame.getCol('source');
-    const toCol = this.dataFrame.getCol('target');
     const nodes = [];
 
-    const categories = Array.from(new Set(fromCol.categories.concat(toCol.categories)));
+    const categories = Array.from(new Set(this.chartSourceColumn.categories.concat(this.chartTargetColumn.categories)));
     const map: { [key: string]: any } = {};
     categories.forEach((cat, ind) => map[cat] = {id: ind, value: 0});
-    const rowCount = this.dataFrame.rowCount;
+    const rowCount = this.chartSourceColumn.length;
     for (let i = 0; i < rowCount; i++) {
-      map[fromCol.get(i)]['value']++;
-      map[toCol.get(i)]['value']++;
+      map[this.chartSourceColumn.get(i)]['value']++;
+      map[this.chartTargetColumn.get(i)]['value']++;
     }
 
     const min = 1; const max = rowCount * 2;
