@@ -5,14 +5,14 @@ import { TreeUtils } from './utils/tree-utils';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
 export class SankeyViewer extends EChartViewer {
-  graphSourceColumn: DG.Column;
-  graphTargetColumn: DG.Column;
+  chartSourceColumn: DG.Column;
+  chartTargetColumn: DG.Column;
 
   constructor() {
     super();
 
-    this.graphSourceColumn = DG.Column.fromList('string', 'source', []);
-    this.graphTargetColumn = DG.Column.fromList('string', 'target', []);
+    this.chartSourceColumn = DG.Column.fromList('string', 'source', []);
+    this.chartTargetColumn = DG.Column.fromList('string', 'target', []);
 
     this.initCommonProperties();
 
@@ -59,8 +59,8 @@ export class SankeyViewer extends EChartViewer {
   }
 
   onTableAttached() {
-    this.graphSourceColumn = this.dataFrame.getCol('source');
-    this.graphTargetColumn = this.dataFrame.getCol('target');
+    this.chartSourceColumn = this.dataFrame.getCol('source');
+    this.chartTargetColumn = this.dataFrame.getCol('target');
 
     super.onTableAttached();
     this.initChartEventListeners();
@@ -79,13 +79,13 @@ export class SankeyViewer extends EChartViewer {
       targetList[i] = dataframeTargetColumn.get(filteredIndexList[i]);
     }
 
-    this.graphSourceColumn = DG.Column.fromList('string', 'source', sourceList);
-    this.graphTargetColumn = DG.Column.fromList('string', 'target', targetList);
+    this.chartSourceColumn = DG.Column.fromList('string', 'source', sourceList);
+    this.chartTargetColumn = DG.Column.fromList('string', 'target', targetList);
   }
 
   render() {
     const nodes = [];
-    for (const name of new Set(this.graphSourceColumn.categories.concat(this.graphTargetColumn.categories)))
+    for (const name of new Set(this.chartSourceColumn.categories.concat(this.chartTargetColumn.categories)))
       nodes.push({name: name});
 
     this.option.series[0].data = nodes;
