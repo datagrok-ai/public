@@ -89,20 +89,20 @@
         "ArnDatagrokCertificate": {
             "Type": "String",
             "AllowedPattern": "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?",
-            "Default": "arn:aws:acm:us-east-1:766822877060:certificate/11a416c1-c8f3-4e30-997d-5bf142b274d8",
+            "Default": "",
             "Description": "AWS ACM certificate ARN for Datagrok ALB. Required parameter."
         },
         "ArnCvmCertificate": {
             "Type": "String",
             "AllowedPattern": "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?",
-            "Default": "arn:aws:acm:us-east-1:766822877060:certificate/11a416c1-c8f3-4e30-997d-5bf142b274d8",
+            "Default": "",
             "Description": "AWS ACM certificate ARN for CVM ALB. Required parameter."
         },
         "ArnDockerHubCredential": {
             "Type": "String",
             "AllowedPattern": "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?",
             "Description": "AWS Secret Manager ARN for Docker Hub secret. Required parameter.",
-            "Default": "arn:aws:secretsmanager:us-east-1:766822877060:secret:dockerhub-TCgq3D"
+            "Default": ""
         },
         "CreateDemoData": {
             "Type": "String",
@@ -124,7 +124,7 @@
         },
         "Ec2PublicKey": {
             "Type": "String",
-            "Default": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDmmfAGuTHuaVsdgxdn/kXPrPWd8rlNlEjaYfF/w/1Qz3eRkO9xYAZKDfrUW/694f3XxoDh0kgv4+/1JXSmwCJcUuc/r2eFcaxKLzAT2dwqEhV0cWsH5AxTWpbMy9Le6FCPo87IDZN6onXdZ6HnjfQkMyj1TgFbQOgCNH3qc5yQhUC5Zy2uSkCjIO1N1UiCq/ZoUbCXExwrnLav6JemPNrcErg3G/ECkE8yKG7PJEkbndJTRoxXXkMZneRWTm65i4svKS9mDmZGQtlB9uqaHlWN+nCE9XJLu9nkzRJIHE9R2S+NNSU9kjxeVWKNDqwlSKO6xliNUSSZKYo4RMbD1ByEBCejBRulY0h07nvnMNU/sFz0QD10YKUjXac28DKpOjmO3UCuHu/fxmyH2J74n44zq3aOdqq0gl8QQfy8yfA7yI2GlRvJRd01tUmnt9rtVimmBcnk8+4JByGLZPU7g02fBgIXup5peYKgL/US12B8JJ4gQ/S3/FhXEBlV0pJjFiU= ksumag@ksumag-X751SJ",
+            "Default": "",
             "Description": "Public key to EC2 instance when EC2 launch is used"
         },
         "DatagrokEc2InstanceType": {
