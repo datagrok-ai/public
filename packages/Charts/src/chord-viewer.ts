@@ -5,14 +5,12 @@ import { TreeUtils } from './utils/tree-utils';
 
 
 export class ChordViewer extends EChartViewer {
-  chartSourceColumn: DG.Column;
-  chartTargetColumn: DG.Column;
+  chartSourceColumnValues: string[] = [];
+  chartTargetColumnValues: string[] = [];
+  chartValueColumnValues: number[] = [];
 
   constructor() {
     super();
-
-    this.chartSourceColumn = DG.Column.fromList('string', 'source', []);
-    this.chartTargetColumn = DG.Column.fromList('string', 'target', []);
 
     this.top = this.string('top', '50px');
     this.left = this.string('left', '100px');
@@ -71,40 +69,45 @@ export class ChordViewer extends EChartViewer {
   }
 
   onTableAttached() {
-    this.chartSourceColumn = this.dataFrame.getCol('source');
-    this.chartTargetColumn = this.dataFrame.getCol('target');
+    this.chartSourceColumnValues = this.dataFrame.getCol('source').toList();
+    this.chartTargetColumnValues = this.dataFrame.getCol('target').toList();
+    this.chartValueColumnValues = this.dataFrame.getCol('value').toList();
 
     super.onTableAttached();
     this.initChartEventListeners();
   }
 
   refreshColumnsOnFilter() {
-    const dataframeSourceColumn = this.dataFrame.getCol('source');
-    const dataframeTargetColumn = this.dataFrame.getCol('target');
+    const dataFrameSourceColumn = this.dataFrame.getCol('source');
+    const dataFrameTargetColumn = this.dataFrame.getCol('target');
+    const dataFrameValueColumn = this.dataFrame.getCol('value');
     const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
 
     const sourceList: Array<string> = new Array<string>(filteredIndexList.length);
     const targetList: Array<string> = new Array<string>(filteredIndexList.length);
+    const valueList: Array<number> = new Array<number>(filteredIndexList.length);
 
     for (let i = 0; i < filteredIndexList.length; i++) {
-      sourceList[i] = dataframeSourceColumn.get(filteredIndexList[i]);
-      targetList[i] = dataframeTargetColumn.get(filteredIndexList[i]);
+      sourceList[i] = dataFrameSourceColumn.get(filteredIndexList[i]);
+      targetList[i] = dataFrameTargetColumn.get(filteredIndexList[i]);
+      valueList[i] = dataFrameValueColumn.get(filteredIndexList[i]);
     }
 
-    this.chartSourceColumn = DG.Column.fromList('string', 'source', sourceList);
-    this.chartTargetColumn = DG.Column.fromList('string', 'target', targetList);
+    this.chartSourceColumnValues = sourceList;
+    this.chartTargetColumnValues = targetList;
+    this.chartValueColumnValues = valueList;
   }
 
   render() {
     const nodes = [];
 
-    const categories = Array.from(new Set(this.chartSourceColumn.categories.concat(this.chartTargetColumn.categories)));
+    const categories = Array.from(new Set(this.chartSourceColumnValues.concat(this.chartTargetColumnValues)));
     const map: { [key: string]: any } = {};
     categories.forEach((cat, ind) => map[cat] = {id: ind, value: 0});
-    const rowCount = this.chartSourceColumn.length;
+    const rowCount = this.chartSourceColumnValues.length;
     for (let i = 0; i < rowCount; i++) {
-      map[this.chartSourceColumn.get(i)]['value']++;
-      map[this.chartTargetColumn.get(i)]['value']++;
+      map[this.chartSourceColumnValues[i]]['value']++;
+      map[this.chartTargetColumnValues[i]]['value']++;
     }
 
     const min = 1; const max = rowCount * 2;
@@ -124,7 +127,9 @@ export class ChordViewer extends EChartViewer {
     };
 
     this.option.series[0].data = nodes;
-    this.option.series[0].links = TreeUtils.mapRowsToObjects(this.dataFrame, ['source', 'target', 'value']);
+    this.option.series[0].links = TreeUtils.mapRowsToObjects(
+      [this.chartSourceColumnValues, this.chartTargetColumnValues, this.chartValueColumnValues],
+      ['source', 'target', 'value']);
 
     this.chart.setOption(this.option);
   }
