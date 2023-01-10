@@ -316,6 +316,10 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
     return;
   }
+  if (activities.type !== DG.TYPE.INT && activities.type !== DG.TYPE.BIG_INT && activities.type !== DG.TYPE.FLOAT) {
+    grok.shell.error(`Column ${activities.name} is not numeric`);
+    return;
+  }
   const axesNames = getEmbeddingColsNames(df);
   if (df.rowCount > 500) {
     ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
