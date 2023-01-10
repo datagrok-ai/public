@@ -14,7 +14,7 @@ This scenario needs to be reproduced for different DBs (Oracle, MariaDB, MySQL, 
 
 | Step No. | Action                                                                             | Expected result                                          | Description              |
 |:--------:|:-----------------------------------------------------------------------------------|:---------------------------------------------------------|--------------------------|
-|    1     | Open context menu for query created in [adding query test case](./adding-query.md) | "Databases" view is open                                 |                          |
+|    1     | Open context menu for query created in [adding query test case](./release-cheklist-cases/adding-query.md) | "Databases" view is open                                 |                          |
 |    2     | Click on "Edit…" from context menu | Query View is open                            | Query view is open                                       |                          |
 |    3     | Change name to "new_test_query"                                                    |                                                          |                          |
 |    4     | Change the query text                                                              |                                                          | to: select * from orders |
