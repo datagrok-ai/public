@@ -67,7 +67,7 @@ Parameters:
   ArnDatagrokCertificate:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
-    Default: ' '
+    Default: ''
     Description: AWS ACM certificate ARN for Datagrok ALB. Required parameter.
   ArnCvmCertificate:
     Type: String
