@@ -23,24 +23,27 @@ export class SequenceTranslatorUI {
     windows.showToolbox = false;
     windows.showHelp = false;
 
-    const mainTab = new MainTabUI(
-      (seq) => {
-        mainTab.inputSequence = seq;
-        urlParams = new URLSearchParams();
-        urlParams.set('seq', mainSeq);
-        this.updatePath();
-      });
+    // const mainTab = new MainTabUI(
+    //   (seq) => {
+    //     mainTab.inputSequence = seq;
+    //     urlParams = new URLSearchParams();
+    //     urlParams.set('seq', mainSeq);
+    //     this.updatePath();
+    //   });
 
     this._tabs = new TabLayout(
+      new MainTabUI((seq) => {}), new AxolabsTabUI, new SdfTabUI
     );
 
     this._tabs.onTabChanged.subscribe(() => {
-      if (this._tabs.currentTab !== MAIN_TAB)
-        urlParams.delete('seq');
-      else
-        urlParams.set('seq', this.inputSequence);
-      this.updatePath();
+      // if (this._tabs.currentTab !== MAIN_TAB)
+      //   urlParams.delete('seq');
+      // else
+      //   urlParams.set('seq', this.inputSequence);
+      // this.updatePath();
     });
+
+    this._view.append(this._tabs.control);
   }
 
   /** The master view containing app's main interface elements */
@@ -71,7 +74,7 @@ class TabLayout {
 
   private readonly _control: DG.TabControl;
   // todo: port to main tab object
-  private inputSequence: string;
+  // private inputSequence: string;
 
   get control(): DG.TabControl { return this._control; }
 
@@ -81,7 +84,7 @@ class TabLayout {
 }
 
 class URLRouter {
-  constructor(search: string) {
+  constructor() {
     this._pathParts = window.location.pathname.split('/');
     this._searchParams = new URLSearchParams(window.location.search);
   }
