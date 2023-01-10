@@ -67,18 +67,18 @@ Parameters:
   ArnDatagrokCertificate:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
-    Default: ''
+    Default: 'arn:aws:acm:us-east-1:766822877060:certificate/11a416c1-c8f3-4e30-997d-5bf142b274d8'
     Description: AWS ACM certificate ARN for Datagrok ALB. Required parameter.
   ArnCvmCertificate:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
-    Default: ''
+    Default: 'arn:aws:acm:us-east-1:766822877060:certificate/11a416c1-c8f3-4e30-997d-5bf142b274d8'
     Description: AWS ACM certificate ARN for CVM ALB. Required parameter.
   ArnDockerHubCredential:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
     Description: AWS Secret Manager ARN for Docker Hub secret. Required parameter.
-    Default: ''
+    Default: 'arn:aws:secretsmanager:us-east-1:766822877060:secret:dockerhub-TCgq3D'
   CreateDemoData:
     Type: String
     Default: 'true'
@@ -94,13 +94,9 @@ Parameters:
       - 'EC2'
       - 'FARGATE'
     Description: Amazon instance type for deployment
-  Ec2KeyPairName:
-    Type: String
-    Default: ''
-    Description: Name of keypair when EC2 launch is used
   Ec2PublicKey:
     Type: String
-    Default: ''
+    Default: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDmmfAGuTHuaVsdgxdn/kXPrPWd8rlNlEjaYfF/w/1Qz3eRkO9xYAZKDfrUW/694f3XxoDh0kgv4+/1JXSmwCJcUuc/r2eFcaxKLzAT2dwqEhV0cWsH5AxTWpbMy9Le6FCPo87IDZN6onXdZ6HnjfQkMyj1TgFbQOgCNH3qc5yQhUC5Zy2uSkCjIO1N1UiCq/ZoUbCXExwrnLav6JemPNrcErg3G/ECkE8yKG7PJEkbndJTRoxXXkMZneRWTm65i4svKS9mDmZGQtlB9uqaHlWN+nCE9XJLu9nkzRJIHE9R2S+NNSU9kjxeVWKNDqwlSKO6xliNUSSZKYo4RMbD1ByEBCejBRulY0h07nvnMNU/sFz0QD10YKUjXac28DKpOjmO3UCuHu/fxmyH2J74n44zq3aOdqq0gl8QQfy8yfA7yI2GlRvJRd01tUmnt9rtVimmBcnk8+4JByGLZPU7g02fBgIXup5peYKgL/US12B8JJ4gQ/S3/FhXEBlV0pJjFiU= ksumag@ksumag-X751SJ'
     Description: Public key to EC2 instance when EC2 launch is used
   DatagrokEc2InstanceType:
     Type: String
@@ -3823,7 +3819,15 @@ Resources:
   ImportKeyPairEc2:
     Type: AWS::EC2::KeyPair
     Properties:
-      KeyName: !Ref Ec2KeyPairName
+      KeyName: 
+        Fn::Sub:
+        - "${AWS::StackName}-datagrok-s3-${uuid}"
+        - uuid:
+            Fn::Select:
+            - 2
+            - Fn::Split:
+              - "/"
+              - Ref: AWS::StackId
       PublicKeyMaterial: !Ref Ec2PublicKey
     Condition: CreateEc2InstanceCondition
   Ec2AimPolicy:
