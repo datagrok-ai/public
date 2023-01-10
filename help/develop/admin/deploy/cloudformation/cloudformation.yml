@@ -96,7 +96,7 @@ Parameters:
     Description: Amazon instance type for deployment
   Ec2KeyPairName:
     Type: String
-    Default: ' '
+    Default: ''
     Description: Name of keypair when EC2 launch is used
   Ec2PublicKey:
     Type: String
