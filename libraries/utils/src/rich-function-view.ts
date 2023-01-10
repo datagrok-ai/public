@@ -141,14 +141,13 @@ export class RichFunctionView extends FunctionView {
   public buildOutputBlock(): HTMLElement {
     const outputBlock = ui.box();
 
-    const parsedDfProps = this.dfParams.map((dfProp) => JSON.parse(dfProp.options['viewer']));
-
     this.tabsLabels.forEach((tabLabel) => {
       const tabDfProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType === DG.TYPE.DATA_FRAME);
       const tabScalarProps = this.categoryToParamMap[tabLabel].filter((p) => p.propertyType !== DG.TYPE.DATA_FRAME);
+      const parsedTabDfProps = tabDfProps.map((dfProp) => JSON.parse(dfProp.options['viewer']));
 
       const dfSections = tabDfProps.map((dfProp, dfIndex) => {
-        const viewers: DG.Viewer[] = parsedDfProps[dfIndex].map((viewerDesc: {[key: string]: string}) => {
+        const viewers: DG.Viewer[] = parsedTabDfProps[dfIndex].map((viewerDesc: {[key: string]: string}) => {
           const initialValue = this.funcCall?.outputs[dfProp.name]?.value ?? this.funcCall!.inputParams[dfProp.name]?.value ?? DG.DataFrame.fromCsv(``);
 
           const viewer = DG.Viewer.fromType(viewerTypesMapping[viewerDesc['type']], initialValue);
@@ -175,22 +174,24 @@ export class RichFunctionView extends FunctionView {
           return ui.divV([
             ui.h2(dfSectionTitle),
             ui.divH(viewers.map((viewer, viewerIndex) => {
-              if (parsedDfProps[dfIndex][viewerIndex]['block'] === '25') return ui.block25([viewer.root]);
-              if (parsedDfProps[dfIndex][viewerIndex]['block'] === '50') return ui.block50([viewer.root]);
-              if (parsedDfProps[dfIndex][viewerIndex]['block'] === '75') return ui.block75([viewer.root]);
+              if (parsedTabDfProps[dfIndex][viewerIndex]['block'] === '25') return ui.block25([viewer.root]);
+              if (parsedTabDfProps[dfIndex][viewerIndex]['block'] === '50') return ui.block50([viewer.root]);
+              if (parsedTabDfProps[dfIndex][viewerIndex]['block'] === '75') return ui.block75([viewer.root]);
+              if (parsedTabDfProps[dfIndex][viewerIndex]['block'] === '100') return ui.block([viewer.root]);
 
               return viewer.root;
-            }))
+            }), {style: {'flex-wrap': 'wrap'}})
           ]);
         } else {
           const label = ui.span(['Select a dataframe to review it']);
           const inputSection = ui.divH(viewers.map((viewer, viewerIndex) => {
-            if (parsedDfProps[dfIndex][viewerIndex]['block'] === '25') return ui.block25([viewer.root]);
-            if (parsedDfProps[dfIndex][viewerIndex]['block'] === '50') return ui.block50([viewer.root]);
-            if (parsedDfProps[dfIndex][viewerIndex]['block'] === '75') return ui.block75([viewer.root]);
+            if (parsedTabDfProps[dfIndex][viewerIndex]['block'] === '25') return ui.block25([viewer.root]);
+            if (parsedTabDfProps[dfIndex][viewerIndex]['block'] === '50') return ui.block50([viewer.root]);
+            if (parsedTabDfProps[dfIndex][viewerIndex]['block'] === '75') return ui.block75([viewer.root]);
+            if (parsedTabDfProps[dfIndex][viewerIndex]['block'] === '100') return ui.block([viewer.root]);
 
             return viewer.root;
-          }), {style: {display: 'none'}});
+          }), {style: {'display': 'none', 'flex-wrap': 'wrap'}});
 
           this.funcCallReplaced.subscribe(() => {
             const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
