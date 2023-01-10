@@ -3,7 +3,7 @@
 //language: javascript
 //input: file uploadedFile
 //output: dataframe df { viewer: Grid(); }
-//editor: Compute:ComputationViewEditor
+//editor: Compute:RichFunctionViewEditor
 
 const wb = new ExcelJS.Workbook();
 await wb.xlsx.load(await uploadedFile.arrayBuffer());
