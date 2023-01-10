@@ -49,7 +49,7 @@ A simplest JavaScript package consists of the following files:
 In addition to that, it might contain the following folders:
 
 * `environments`: [environment configurations](../compute/scripting.md#environments)
-  for [scripts](../compute/scripting.md). 
+  for [scripts](../compute/scripting.md).
   Examples: [DemoScripts]
 * `scripts`: a collection of [scripts](../compute/scripting.md) used for computations.
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
