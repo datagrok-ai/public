@@ -56,8 +56,11 @@ More information about Datagrok design and components:
 ## Deploy Datagrok components
 
 1. Download CloudFormation
-   Template in [YAML](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.yml) or
-   [JSON](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.json) format as you prefer.
+   Template in
+   [YAML](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.yml)
+   or
+   [JSON](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.json)
+   format as you prefer.
 
 2. Create CloudFormation stack
    using [AWS Console](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html)
