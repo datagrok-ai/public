@@ -78,7 +78,7 @@ Parameters:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
     Description: AWS Secret Manager ARN for Docker Hub secret. Required parameter.
-    Default: ' '
+    Default: ''
   CreateDemoData:
     Type: String
     Default: 'true'
