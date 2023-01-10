@@ -54,7 +54,7 @@ More information about Datagrok design and components:
            this: `arn:aws:acm:<region>:<account_id>:certificate/<certificate_id>`.
 
 5. Create RSA key pair. To get access to the instances that will be created, you need to have SSH key pair:
-a private key and a public key.  
+a private key and a public key.
    * If you have linux-based OS or MacOS type in terminal `ssh-keygen` and hit **Enter**.
    You’ll be asked to enter a passphrase. Hit **Enter** to skip this step.
    It will create `id_rsa` and `id_rsa.pub` files in `~/.ssh` directory.
@@ -69,8 +69,6 @@ a private key and a public key.
    In the command prompt, type `ssh-keygen` and hit **Enter**.
    You’ll be asked to enter a passphrase. Hit **Enter** to skip this step.
    By default, the system will save the keys to `C:\Users\your_username/.ssh/id_rsa`. Also you can use existing key pair.
-
-
 
 ## Deploy Datagrok components
 
@@ -103,7 +101,7 @@ a private key and a public key.
 
         4. `CreateDemoData`: Datagrok provides demo databases with demo data for the full experience. Choose `true` to
            create demo databases near Datagrok.
-         
+
         5. `Ec2KeyPairName`: Spesial name in AWS for [key pair](#prerequisites).
         You can change default value in template or use `ParameterKey=Ec2KeyPairName,ParameterValue=name` in launch
         via [AWS CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html).
@@ -111,7 +109,7 @@ a private key and a public key.
         6. `Ec2PublicKey`: Public key content, `id_rsa.pub` by default.
         You can change default value in template or use `ParameterKey=Ec2PublicKey,ParameterValue=your_public_key`
         in launch via [AWS CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html).
-        
+
         7. All other parameters are for Datagrok Docker images tags. The default value is `latest`.
             1. [DatagrokVersion](https://hub.docker.com/r/datagrok/datagrok)
             2. [GrokComputeVersion](https://hub.docker.com/r/datagrok/grok_connect)
