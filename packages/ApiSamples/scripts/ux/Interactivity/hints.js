@@ -15,7 +15,7 @@ $(addNCIcon).on('click', () => {
 grok.events.onDialogShown.pipe(
   rxjs.operators.first(),
   rxjs.operators.filter((dlg) => dlg.title === 'Add New Column'))
-  .subscribe(async (dlg) => {
+  .subscribe((dlg) => {
     const input = dlg.inputs[0].root;
     ui.hints.addHint(input);
     setTimeout(() => ui.hints.remove(input), 4000);
