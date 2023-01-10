@@ -100,7 +100,7 @@ Parameters:
     Description: Name of keypair when EC2 launch is used
   Ec2PublicKey:
     Type: String
-    Default: ' '
+    Default: ''
     Description: Public key to EC2 instance when EC2 launch is used
   DatagrokEc2InstanceType:
     Type: String
