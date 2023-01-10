@@ -72,7 +72,7 @@ Parameters:
   ArnCvmCertificate:
     Type: String
     AllowedPattern: "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?"
-    Default: ' '
+    Default: ''
     Description: AWS ACM certificate ARN for CVM ALB. Required parameter.
   ArnDockerHubCredential:
     Type: String
