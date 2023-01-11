@@ -105,18 +105,27 @@ export class RichFunctionView extends FunctionView {
 
   public buildIO(): HTMLElement {
     const inputBlock = this.buildInputBlock();
+
+    ui.tools.handleResize(inputBlock, (width) => {
+      if (width < 350)
+        $(inputBlock.firstChild!).addClass('ui-form-condensed');
+      else
+        $(inputBlock.firstChild!).removeClass('ui-form-condensed');
+    });
+
     const outputBlock = this.buildOutputBlock();
     outputBlock.style.height = '100%';
     outputBlock.style.width = '100%';
+    this.tabsElem.root.style.display = 'none';
+
     if (!!this.tabsElem.getPane('Input')) {
       this.tabsElem.panes.forEach((tab) => {
-        if (tab.name !== 'Input') tab.header.style.display = 'none';
+        tab.header.style.display = 'none';
       });
-    } else {
-      this.tabsElem.root.style.display = 'none';
     }
 
     const out = ui.splitH([inputBlock, ui.panel([outputBlock])], null, true);
+    out.style.padding = '0 12px';
 
     inputBlock.parentElement!.style.maxWidth = '450px';
 
@@ -125,13 +134,6 @@ export class RichFunctionView extends FunctionView {
 
   public buildInputBlock(): HTMLElement {
     const formDiv = this.renderRunSection(this.funcCall!);
-
-    ui.tools.handleResize(formDiv, (width) => {
-      if (width < 350)
-        $(formDiv.firstChild).addClass('ui-form-condensed');
-      else
-        $(formDiv.firstChild).removeClass('ui-form-condensed');
-    });
 
     return formDiv;
   }
@@ -183,7 +185,6 @@ export class RichFunctionView extends FunctionView {
             }), {style: {'flex-wrap': 'wrap'}})
           ]);
         } else {
-          const label = ui.span(['Select a dataframe to review it']);
           const inputSection = ui.divH(viewers.map((viewer, viewerIndex) => {
             if (parsedTabDfProps[dfIndex][viewerIndex]['block'] === '25') return ui.block25([viewer.root]);
             if (parsedTabDfProps[dfIndex][viewerIndex]['block'] === '50') return ui.block50([viewer.root]);
@@ -191,21 +192,19 @@ export class RichFunctionView extends FunctionView {
             if (parsedTabDfProps[dfIndex][viewerIndex]['block'] === '100') return ui.block([viewer.root]);
 
             return viewer.root;
-          }), {style: {'display': 'none', 'flex-wrap': 'wrap'}});
+          }), {style: {'flex-wrap': 'wrap'}});
 
           this.funcCallReplaced.subscribe(() => {
             const currentParam: DG.FuncCallParam = this.funcCall!.outputParams[dfProp.name] ?? this.funcCall!.inputParams[dfProp.name];
 
             currentParam.onChanged.subscribe(() => {
-              label.style.display = 'none';
-              inputSection.style.removeProperty('display');
+              this.tabsElem.root.style.removeProperty('display');
             });
           });
 
           return ui.divV([
             ui.h2(dfSectionTitle),
-            inputSection,
-            label
+            inputSection
           ]);
         }
       });
@@ -252,7 +251,7 @@ export class RichFunctionView extends FunctionView {
 
     this.tabsElem.root.style.removeProperty('display');
     this.tabsElem.panes.forEach((tab) => {
-      if (tab.name !== 'Input') tab.header.style.removeProperty('none');
+      tab.header.style.removeProperty('display');
     });
   }
 
@@ -313,7 +312,14 @@ export class RichFunctionView extends FunctionView {
 
   private renderRunSection(call: DG.FuncCall): HTMLElement {
     const runButton = ui.bigButton('Run', async () => {
-      await this.run();
+      runButton.disabled = true;
+      try {
+        await this.run();
+      } catch (e: any) {
+        grok.shell.error(e);
+      } finally {
+        runButton.disabled = false;
+      }
     });
 
     const inputs = ui.divV([], 'ui-form');
@@ -333,23 +339,32 @@ export class RichFunctionView extends FunctionView {
             ui.tableInput(prop.name, null, grok.shell.tables):
             ui.input.forProperty(prop);
 
-            t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
-            if (prop.options['units']) t.addPostfix(prop.options['units']);
+          t.captionLabel.firstChild!.replaceWith(ui.span([prop.caption ?? prop.name]));
+          if (prop.options['units']) t.addPostfix(prop.options['units']);
 
-            this.funcCallReplaced.subscribe(() => {
-              t.value = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
-            });
-            t.onChanged(() => this.funcCall!.inputs[val.name] = t.value);
-            if (prop.category !== prevCategory)
-              inputs.append(ui.h2(prop.category));
-            inputs.append(t.root);
+          this.funcCallReplaced.subscribe(() => {
+            t.value = this.funcCall!.inputs[val.name] ?? prop.defaultValue ?? null;
+          });
+          t.onChanged(() => {
+            this.funcCall!.inputs[val.name] = t.value;
+            if (t.value === null) setTimeout(() => t.input.classList.add('d4-invalid'), 100); else t.input.classList.remove('d4-invalid'); ;
+
+            const isValid = (wu(this.funcCall!.inputs.values()).every((v) => v !== null));
+            runButton.disabled = isValid ? false : true;
+          });
+          if (prop.category !== prevCategory)
+            inputs.append(ui.h2(prop.category));
+
+          if (t.value === null) runButton.disabled = true;
+          inputs.append(t.root);
         }
         prevCategory = prop.category;
       });
+    const buttons = ui.buttonsInput([runButton]);
+    inputs.append(buttons);
+    inputs.classList.remove('ui-panel');
 
-    const buttons = ui.divH([runButton], {style: {'justify-content': 'flex-end'}});
-
-    return ui.divV([inputs, buttons]);
+    return ui.div([inputs]);
   }
 
   protected defaultExport = async (format: string) => {
