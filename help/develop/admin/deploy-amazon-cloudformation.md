@@ -85,8 +85,8 @@ More information about Datagrok design and components:
       5. `LaunchType`: It is an optional argument. The default value is `FARGATE`. It will suit best in most cases. Also,
          the template supports the `EC2` launch type, which will use EC2 instances and reduce the price of the stand.
          More information about EC2 launch type is described [below](#optional-cost-reduction-stand).
-      6. `Ec2PublicKey`: It is an optional argument. It is only required for `EC2` `LaunchType`. By default, you can skip 
-         it. More information about EC2 launch type is described [below](#optional-cost-reduction-stand).
+      6. `Ec2PublicKey`: It is an optional argument. It is only required for `EC2` `LaunchType`. By default, you can
+         skip it. More information about EC2 launch type is described [below](#optional-cost-reduction-stand).
       7. All other parameters are for Datagrok Docker image tags. The default value is `latest`.
          1. [DatagrokVersion](https://hub.docker.com/r/datagrok/datagrok)
          2. [GrokComputeVersion](https://hub.docker.com/r/datagrok/grok_connect)
