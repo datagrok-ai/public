@@ -46,21 +46,20 @@ export function test(args: TestArgs): boolean {
   }
 
   const packageData = JSON.parse(fs.readFileSync(path.join(curDir, 'package.json'), { encoding: 'utf-8' }));
-  let fullName = packageData.friendlyName || packageData.fullName;
-  if (fullName) {
-    fullName = utils.friendlyNameToName(utils.kebabToCamelCase(fullName));
-    process.env.TARGET_PACKAGE = fullName;
+  if (packageData.name) {
+    process.env.TARGET_PACKAGE = utils.kebabToCamelCase(utils.removeScope(packageData.name));
     console.log('Environment variable `TARGET_PACKAGE` is set to', process.env.TARGET_PACKAGE);
   } else {
-    color.error('Invalid full package name. Set `friendlyName` or `fullName` field in `package.json`');
+    color.error('Invalid package name. Set the `name` field in `package.json`');
     return false;
   }
 
   color.info(`Building package...`);
   exec('npm run build', (err, stdout, stderr) => {
-    if (err)
+    if (err) {
+      console.log(stdout);
       throw err;
-    else {
+    } else {
       console.log(stdout);
       color.warn(stderr);
     }

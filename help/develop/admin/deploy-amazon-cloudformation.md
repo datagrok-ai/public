@@ -56,8 +56,11 @@ More information about Datagrok design and components:
 ## Deploy Datagrok components
 
 1. Download CloudFormation
-   Template: [link](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.json)
-   .
+   Template in
+   [YAML](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.yml)
+   or
+   [JSON](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.json)
+   format as you prefer.
 
 2. Create CloudFormation stack
    using [AWS Console](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html)
@@ -108,3 +111,33 @@ More information about Datagrok design and components:
   * CVM URL Client: `https://<CVM_DNS>`
 * Dev:
   * CVM Url: `https://<CVM_DNS>`
+
+## Optional: Cost reduction stand
+
+This part is optional.
+AWS stack uses `FARGATE` instances for deployment by default. To reduce
+infrastructure cost you can use EC2 instances. To do it you should do next steps:
+
+1. Create RSA key pair. To get access to the instances that will be created, you need to have SSH key pair:
+a private key and a public key.
+   * If you have linux-based OS or MacOS type in terminal `ssh-keygen` and hit **Enter**.
+   You’ll be asked to enter a passphrase. Hit **Enter** to skip this step.
+   It will create `id_rsa` and `id_rsa.pub` files in `~/.ssh` directory.
+   * If you have Windows open the Settings panel, then click Apps.
+   Under the *Apps and Features* heading, click **Optional Features**.
+   Scroll down the list to see if **OpenSSH Client** is listed.
+   If it’s not, click the plus-sign next to **Add a feature**.
+   Scroll through the list to find and select **OpenSSH Client**. Finally, click **Install**.
+   Press the **Windows key**, type **cmd**, under *Best Match*, right-click **Command Prompt**.
+   Click **Run as Administrator**.
+   If prompted, click **Yes** in the *Do you want to allow this app to make changes to your device?* pop-up.
+   In the command prompt, type `ssh-keygen` and hit **Enter**.
+   You’ll be asked to enter a passphrase. Hit **Enter** to skip this step.
+   By default, the system will save the keys to `C:\Users\your_username/.ssh/id_rsa`. Also you can use existing key pair.
+
+2. Change `LaunchType` parameter: Use `ParameterKey=LaunchType,ParameterValue=EC2` when
+launch template via [AWS CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html).
+
+3. Change `Ec2PublicKey` parameter. Copy your public key content into clipboard.
+    Use `ParameterKey=Ec2PublicKey,ParameterValue=paste_here_copied_public_key_content`
+    when launch template via [AWS CLI](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html).

@@ -6,6 +6,7 @@ import {BehaviorSubject, EMPTY, Observable, Subject, from} from 'rxjs';
 import {catchError, finalize, shareReplay, switchMap, tap, takeUntil} from 'rxjs/operators';
 import $ from 'cash-dom';
 import {historyUtils} from '../history-utils';
+import '../../css/history-input.css';
 
 class DatabaseService {
   static getHistoryRuns(funcName: string): Observable<DG.FuncCall[]> {

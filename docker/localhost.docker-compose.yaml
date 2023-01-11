@@ -48,7 +48,7 @@ services:
     profiles: ["all", "grok_spawner"]
 
   grok_connect:
-    image: datagrok/grok_connect:latest
+    image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-latest}
     networks:
       datagrok:
         aliases:

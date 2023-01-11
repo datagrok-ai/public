@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {defaultUsersIds} from '../function-view';
 import {historyUtils} from '../history-utils';
+import '../../css/history-panel.css';
 
 export class HistoryPanel {
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
@@ -32,7 +33,7 @@ export class HistoryPanel {
       author?: DG.User,
       startedAfter?: dayjs.Dayjs,
     },
-    allRuns: new Subject<DG.FuncCall[]>,
+    allRuns: new Subject<DG.FuncCall[]>(),
 
     myRuns: new BehaviorSubject<DG.FuncCall[]>([]),
     favoriteRuns: new BehaviorSubject<DG.FuncCall[]>([]),
@@ -69,7 +70,7 @@ export class HistoryPanel {
     ]),
     ui.element('div', 'splitbar-horizontal'),
     this.tabs.root,
-  ], {style: {width: '100%'}});
+  ], {style: {width: '100%', height: '100%'}});
 
   myCards = [] as HTMLElement[];
   favoriteCards = [] as HTMLElement[];
@@ -380,13 +381,14 @@ export class HistoryPanel {
     const allCards = [...this.myCards, ...this.favoriteCards, ...this.sharedCards];
     allCards.forEach((card) => card.addEventListener('click', () => allCards.forEach((c) => c.classList.remove('clicked'))));
 
-    return ui.divV(this.myCards);
+    return ui.divV(this.myCards, {style: {height: '100%'}});
   };
 
   constructor(
     private func: DG.Func
   ) {
     this.tabs.root.style.width = '100%';
+    this.tabs.root.style.height = '100%';
     this.tabs.header.style.justifyContent = 'space-between';
 
     this.store.myRuns.subscribe((myRuns) => this.store.filteredMyRuns.next(myRuns));
