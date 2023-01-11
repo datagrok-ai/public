@@ -17,23 +17,25 @@ export async function init() {
   await initODEsolver();
 }
 
+//!!! INITIAL VALUES ARE DELETED!
+
 //name: solveFAE
-//input: double t0 =  {units: minutes; caption: Initial time}
-//input: double t1 = {units: minutes; caption: Final time}
-//input: double h =  {units: minutes; caption: Time step}
-//input: double FFox =  {caption: FFox(initial)}
-//input: double KKox =  {caption: KKox(initial)}
-//input: double FFred =  {caption: FFred(initial)}
-//input: double KKred =  {caption: KKred(initial)}
-//input: double Ffree =  {caption: Ffree(initial)}
-//input: double Kfree =  {caption: Kfree(initial)}
-//input: double FKred =  {caption: FKred(initial)}
-//input: double FKox =  {caption: FKox(initial)}
-//input: double MEAthiol =  {caption: MEAthiol(initial)}
-//input: double CO2 =  {caption: CO2(initial)}
-//input: double yO2P =  {caption: yO2P(initial)
-//input: double Cystamine =  {caption: Cystamine(initial)}
-//input: double VL =  {caption: VL(initial)}
+//input: double t0 =  {units: minutes; caption: initial; category: Time}
+//input: double t1 =  {units: minutes; caption: final; category: Time}
+//input: double h =  {units: minutes; caption: step; category: Time}
+//input: double FFox =  {caption: FFox; category: Initial values}
+//input: double KKox =  {caption: KKox; category: Initial values}
+//input: double FFred =  {caption: FFred; category: Initial values}
+//input: double KKred =  {caption: KKred; category: Initial values}
+//input: double Ffree =  {caption: Ffree; category: Initial values}
+//input: double Kfree =  {caption: Kfree; category: Initial values}
+//input: double FKred =  {caption: FKred; category: Initial values}
+//input: double FKox =  {caption: FKox; category: Initial values}
+//input: double MEAthiol =  {caption: MEAthiol; category: Initial values}
+//input: double CO2 =  {caption: CO2; category: Initial values}
+//input: double yO2P =  {caption: yO2P; category: Initial values}
+//input: double Cystamine =  {caption: Cystamine; category: Initial values}
+//input: double VL =  {caption: VL; category: Initial values}
 //output: dataframe solution {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", yGlobalScale: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
 //editor: Compute:RichFunctionViewEditor
 export function solveFAE(t0, t1, h, FFox, KKox, FFred, KKred, Ffree, 

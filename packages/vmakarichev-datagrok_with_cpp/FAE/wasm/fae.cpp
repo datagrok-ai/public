@@ -3,6 +3,7 @@
 #include<cmath>
 using std::pow;
 using std::sqrt;
+using std::abs;
 
 #include <emscripten.h>
 
@@ -28,14 +29,14 @@ namespace fae
 
     // dimension of solution
 	const int DIM = 13; 
-  
+    
 	// Version 3
 	VectorXd f(double _time, VectorXd & y) noexcept
 	{
 		VectorXd res(y.size());		
 
-		// ORIGINAL EXPRESSIONS ARE REMOVED!
-
+        // FORMULAS ARE REMOVED!
+		
 		return res;
 	} // f
  

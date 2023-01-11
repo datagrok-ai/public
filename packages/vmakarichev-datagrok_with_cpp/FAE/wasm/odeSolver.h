@@ -212,15 +212,27 @@ namespace ode {
 		DataType * dataFrame, int rowCount, int colCount,
 		ArgStruct & times, VecStruct & solutions) noexcept
 	{
-		int index = 0;
+		// Copying solution at the point t0
+		dataFrame[0] = static_cast<DataType>(times[0]);
 
+		for (int j = 1; j < colCount; j++)
+			dataFrame[j * rowCount] = static_cast<DataType>(solutions[0](j - 1));
+
+		int structIndexLimit = times.size() - 1;
+		int rowLimit = rowCount - 1;
+
+		// Copying solution at the point t1
+		dataFrame[rowLimit] = static_cast<DataType>(times[structIndexLimit]);
+
+		for (int j = 1; j < colCount; j++)
+			dataFrame[rowLimit + j * rowCount] = static_cast<DataType>(solutions[structIndexLimit](j - 1));
+				
 		int m = 1;
 
-		/*OperatingType cLeft = 0.0;
-		OperatingType cRight = 0.0;*/
+		OperatingType t = t0 + h;		
 
-		// the classic linear interpolation method
-		for (OperatingType t = t0; t < t1; t += h)
+		// the classic linear interpolation method: data is computed for the rest of points		
+		for(int i = 1; i < rowLimit; i++)
 		{
 			while (t > times[m])
 				m++;
@@ -228,17 +240,18 @@ namespace ode {
 			OperatingType cLeft = (times[m] - t) / (times[m] - times[m - 1]);
 			OperatingType cRight = 1.0 - cLeft;
 
-			dataFrame[index] = static_cast<DataType>(t);
+			dataFrame[i] = static_cast<DataType>(t);
 
 			for (int j = 1; j < colCount; j++)
 			{
-				dataFrame[index + j * rowCount] 
-				   = static_cast<DataType>(	cRight * solutions[m](j - 1) 
-				      + cLeft * solutions[m - 1](j - 1) );
+				dataFrame[i + j * rowCount]
+					= static_cast<DataType>(cRight * solutions[m](j - 1)
+						+ cLeft * solutions[m - 1](j - 1));
 			}
 
-			index++;
-		}
+			t += h;
+		} // for i
+
 		return NO_ERRORS;		
 	} // linearInterpolation
 
