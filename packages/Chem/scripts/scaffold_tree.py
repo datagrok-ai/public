@@ -49,7 +49,6 @@ def get_sorted_scaffolds(tree, nodes):
                 prev_node = nodes[i]
                 last = i
         nodes.remove(nodes[last])
-    print(result)
     return result
 
 #function that returns scaffold hierarchies
@@ -57,7 +56,6 @@ def get_hierarchies_list(tree, sorted_scaffolds):
     result = []
     for scaffold in sorted_scaffolds:
         result.append(scaffold[1]['hierarchy'])
-    print(result)
     return result
 
 #function that returns mols
@@ -68,7 +66,6 @@ def get_mols(sorted_scaffolds):
         for i in range(len(scaffolds)):
             if scaffolds[i][0] == scaffold:
                 result.append(scaffolds[i][1]['realmolecule'])
-    print(result)
     return result
     
 
@@ -88,7 +85,6 @@ def get_first_hierarchy(tree, scaffolds):
     for scaffold in scaffolds:
         if scaffold[1]['hierarchy'] == 1:
             first_hierarchy_scaffolds.append(scaffold)
-    print(first_hierarchy_scaffolds)
     return first_hierarchy_scaffolds
 
 
@@ -97,7 +93,6 @@ def get_tree(tree, scaffold_1):
     json_list = []
     scaffolds = []
     scaffolds.append(scaffold_1)
-    print(list(tree.get_child_scaffolds(scaffold_1)))
     scaffolds.extend(list(tree.get_child_scaffolds(scaffold_1)))
     sorted_scaffolds = get_sorted_scaffolds(tree, scaffolds)
     sorted_scaffolds_mols = get_mols(sorted_scaffolds)
@@ -124,7 +119,6 @@ def get_json_representation(tree):
     first_scaffolds = get_first_hierarchy(tree, scaffolds)
     json_list = []
     for scaffold in first_scaffolds:
-        print('scaffold: ' + str(scaffold[0]))
         json_list.append(get_tree(tree, scaffold[0]))
     return json_list
   
