@@ -11,6 +11,6 @@ def install(package):
 
 modules = !pip list
 counter = itertools.count(0)
-[(next(counter), module) for module in modules if 'ScaffoldGraph' in module]
+[(next(counter), module) for module in modules if 'ScaffoldGraphDG' in module]
 if str(counter) != 'count(1)':
-  install('scaffoldgraph')
+  install('scaffoldgraphdg')
