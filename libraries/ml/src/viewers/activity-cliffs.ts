@@ -5,6 +5,7 @@ import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {getSimilarityFromDistance} from '../distance-metrics-methods';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
 import { Subject } from 'rxjs';
+import { BitSet } from 'datagrok-api/dg';
 
 export interface ILine {
   id: number;
@@ -70,6 +71,7 @@ export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, en
   const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, dimensionalityReduceCol);
 
   let zoom = false;
+  let ignoreSelectionChange = false;
 
   const {distance, coordinates} = await seqSpaceFunc({
     seqCol: withoutEmptyValues.col(dimensionalityReduceCol.name)!,
@@ -176,12 +178,12 @@ export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, en
   let acc: DG.Accordion;
 
   linesRes.linesDf.onCurrentCellChanged.subscribe(() => {
+    zoom = true;
     const currentMolIdx = linesRes.linesDf.currentCol && linesRes.linesDf.currentCol.name === '2_seq' ? 1 : 0;
     const line = linesRes.linesDf.currentRowIdx !== -1 ? linesRes.lines[linesRes.linesDf.currentRowIdx] : null;
     sp.dataFrame.currentRowIdx = line ? line.mols[currentMolIdx] : -1;
-    sp.dataFrame.selection.set(0, !linesRes.lines[0].selected);
-    sp.dataFrame.selection.set(0, linesRes.lines[0].selected);
-    linesDfGrid.invalidate();
+    sp.dataFrame.filter.set(0, !linesRes.lines[0].selected); //calling filter to force scatter plot re-rendering
+    sp.dataFrame.filter.set(0, linesRes.lines[0].selected);
     if (line) {
       setTimeout(() => {
         updatePropertyPanel(df, acc, cashedLinesData, line, seqCol, activities,
@@ -193,28 +195,47 @@ export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, en
   });
 
   linesRes.linesDf.onSelectionChanged.subscribe((_: any) => {
-    if (linesRes.linesDf.mouseOverRowIdx !== -1) {
-      const line = linesRes.lines[linesRes.linesDf.mouseOverRowIdx];
-      line.selected = !line.selected;
-      if (!line.selected) {
-        df.selection.setAll(false);
+    if (linesRes.linesDf.selection.anyTrue === false) { //case when selection is reset by pushing Esc
+      linesRes.lines.forEach((l) => { l.selected = false; });
+    } else {
+      if (linesRes.linesDf.mouseOverRowIdx !== -1) {
+        const line = linesRes.lines[linesRes.linesDf.mouseOverRowIdx];
+        line.selected = !line.selected;
       }
     }
-    linesRes.lines.forEach((l) => {
-      if (l.selected) {
-        l.mols.forEach((m) => df.selection.set(m, true));
-      }
-    });
-    linesDfGrid.invalidate();
+
+    setTimeout(() => {
+      const selection = DG.BitSet.create(df.rowCount);
+      linesRes.lines.forEach((l) => {
+        if (l.selected) {
+          l.mols.forEach((m) => {
+            selection.set(m, l.selected, true);
+          });
+        }
+      });
+      df.selection.copyFrom(selection);
+      view.grid.invalidate();
+    }, 300); //timeout is required because of resetting selection by clicking on scatter plot. First selection is reset and after it is set again using by this method
+
   });
+
+  df.onSelectionChanged.subscribe((e: any) => {
+    if (ignoreSelectionChange) {
+      ignoreSelectionChange = false;
+    } else {
+      if (df.selection.anyTrue === false && typeof e === 'number') { //catching event when df selection is reset by pushing Esc
+        linesRes.lines.forEach((l) => {l.selected = false; });
+        linesDfGrid.dataFrame.selection.setAll(false, false);
+        linesDfGrid.invalidate();
+      } 
+    }
+  })
+
 
   const linesDfGrid = linesGridFunc ?
     linesGridFunc(linesRes.linesDf, molColumnNames).sort(['sali'], [false]) :
     linesRes.linesDf.plot.grid().sort(['sali'], [false]);
 
-  linesDfGrid.onCellClick.subscribe(() => {
-    zoom = true;
-  });
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
     view.dockManager.dock(linesDfGrid.root, 'down', null, 'Activity cliffs', 0.2);
@@ -271,27 +292,18 @@ export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, en
   });
 
   canvas.addEventListener('mousedown', function(event: MouseEvent) {
+    ignoreSelectionChange = true; //clicking on a scatter plot leads to selection reset. Variable is required to prevent from resetting (is used in df.onSelectionChanged.subscribe)
     const line = checkCursorOnLine(event, canvas, linesRes.lines);
     if (line && df.mouseOverRowIdx === -1) {
       if (event.ctrlKey) {
         line.selected = !line.selected;
         linesRes.linesDf.selection.set(line.id, line.selected);
-
-        if (!line.selected) {
-          df.selection.setAll(false);
-        }
-
-        linesRes.lines.forEach((l) => {
-          if (l.selected) {
-            l.mols.forEach((m) => df.selection.set(m, true));
-          }
-        });
       } else {
         if (linesRes.linesDf.currentRowIdx !== line.id) {
           linesRes.linesDf.currentRowIdx = line.id;
           df.currentRowIdx = line.mols[0];
-          df.selection.set(0, !linesRes.lines[0].selected);
-          df.selection.set(0, linesRes.lines[0].selected);
+          df.filter.set(0, !linesRes.lines[0].selected); //calling filter to force scatter plot re-rendering
+          df.filter.set(0, linesRes.lines[0].selected);
         }
       }
       const order = linesRes.linesDf.getSortedOrder(linesDfGrid.sortByColumns, linesDfGrid.sortTypes);
