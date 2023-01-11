@@ -27,19 +27,19 @@ export class TreeViewer extends EChartViewer {
 
     this.initCommonProperties();
     this.animation = this.bool('animation', true);
-    this.layout = <layoutType>this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'] });
-    this.orient = <orientation>this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'] });
+    this.layout = <layoutType> this.string('layout', 'orthogonal', { choices: ['orthogonal', 'radial'] });
+    this.orient = <orientation> this.string('orient', 'LR', { choices: ['LR', 'RL', 'TB', 'BT'] });
     this.expandAndCollapse = this.bool('expandAndCollapse', true);
     this.initialTreeDepth = this.int('initialTreeDepth', 3, { min: -1, max: 5 });
-    this.edgeShape = <edgeShape>this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'] });
-    this.symbol = <symbolType>this.string('symbol', 'emptyCircle', { choices: [
+    this.edgeShape = <edgeShape> this.string('edgeShape', 'curve', { choices: ['curve', 'polyline'] });
+    this.symbol = <symbolType> this.string('symbol', 'emptyCircle', { choices: [
       'circle', 'emptyCircle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow', 'none',
     ] });
     this.symbolSize = this.int('symbolSize', 7);
     this.sizeColumnName = this.string('sizeColumnName');
-    this.sizeAggrType = <DG.AggregationType>this.string('sizeAggrType', DG.AGG.AVG, { choices: this.aggregations });
+    this.sizeAggrType = <DG.AggregationType> this.string('sizeAggrType', DG.AGG.AVG, { choices: this.aggregations });
     this.colorColumnName = this.string('colorColumnName');
-    this.colorAggrType = <DG.AggregationType>this.string('colorAggrType', DG.AGG.AVG, { choices: this.aggregations });
+    this.colorAggrType = <DG.AggregationType> this.string('colorAggrType', DG.AGG.AVG, { choices: this.aggregations });
     this.hierarchyColumnNames = this.addProperty('hierarchyColumnNames', DG.TYPE.COLUMN_LIST);
 
     this.option = {
@@ -103,9 +103,9 @@ export class TreeViewer extends EChartViewer {
     const categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
       col1.categories.length - col2.categories.length);
 
-    if (categoricalColumns.length < 1) {
+    if (categoricalColumns.length < 1)
       return;
-    }
+
 
     if (this.hierarchyColumnNames == null || this.hierarchyColumnNames.length === 0)
       this.hierarchyColumnNames = categoricalColumns.slice(0, 3).map((col) => col.name);
@@ -124,16 +124,16 @@ export class TreeViewer extends EChartViewer {
       data.itemStyle.color = data.itemStyle.color === this.selectionColor ? this.selectionColor : nodeColor;
       if (data.children)
         data.children.forEach((child) => setItemStyle(child));
-    }
+    };
     setItemStyle(data);
   }
 
   getSeriesData() {
     const aggregations = [];
     if (this.sizeColumnName)
-      aggregations.push({ type: <DG.AggregationType>this.sizeAggrType, columnName: this.sizeColumnName, propertyName: 'size' });
+      aggregations.push({ type: <DG.AggregationType> this.sizeAggrType, columnName: this.sizeColumnName, propertyName: 'size' });
     if (this.colorColumnName)
-      aggregations.push({ type: <DG.AggregationType>this.colorAggrType, columnName: this.colorColumnName, propertyName: 'color' });
+      aggregations.push({ type: <DG.AggregationType> this.colorAggrType, columnName: this.colorColumnName, propertyName: 'color' });
 
     return [TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter, null, aggregations)];
   }
@@ -146,8 +146,8 @@ export class TreeViewer extends EChartViewer {
 
     this.option.series[0]['symbolSize'] = this.sizeColumnName ?
       (value: number, params: {[key: string]: any}) => utils.data.mapToRange(
-      params.data.size, this.option.series[0].data[0]['size-meta']['min'],
-      this.option.series[0].data[0]['size-meta']['max'], ...this.symbolSizeRange) : this.symbolSize;
+        params.data.size, this.option.series[0].data[0]['size-meta']['min'],
+        this.option.series[0].data[0]['size-meta']['max'], ...this.symbolSizeRange) : this.symbolSize;
     if (this.colorColumnName)
       this.colorCodeTree(this.option.series[0].data[0]);
 

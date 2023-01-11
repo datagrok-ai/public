@@ -98,11 +98,17 @@ export async function initChem(): Promise<void> {
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   const lastSelectedSketcher = _properties.Sketcher ? SKETCHER_FUNCTIONS_ALIASES[_properties.Sketcher]:
       await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true);
-  if (DG.Func.find({tags: ['moleculeSketcher']}).find(e => e.name == lastSelectedSketcher) || !lastSelectedSketcher)
+  const sketcherFucntions = DG.Func.find({tags: ['moleculeSketcher']});
+  if (sketcherFucntions.find(e => e.name == lastSelectedSketcher) || !lastSelectedSketcher)
     window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, lastSelectedSketcher);
   else {
-    grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
-    window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, DEFAULT_SKETCHER);
+    const funcByFriendlyName = sketcherFucntions.find(e => e.friendlyName == lastSelectedSketcher);
+    if (funcByFriendlyName) {
+      window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, funcByFriendlyName.name);
+    } else {
+      grok.shell.warning(`Package with ${lastSelectedSketcher} function is not installed. Switching to ${DEFAULT_SKETCHER}.`);
+      window.localStorage.setItem(DG.chem.SKETCHER_LOCAL_STORAGE, DEFAULT_SKETCHER);
+    }
   }
   _renderers = new Map();
 }
@@ -308,6 +314,10 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   similarity: number, methodName: string) {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
+    return;
+  }
+  if (activities.type !== DG.TYPE.INT && activities.type !== DG.TYPE.BIG_INT && activities.type !== DG.TYPE.FLOAT) {
+    grok.shell.error(`Column ${activities.name} is not numeric`);
     return;
   }
   const axesNames = getEmbeddingColsNames(df);

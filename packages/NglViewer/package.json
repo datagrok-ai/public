@@ -21,9 +21,9 @@
     "lint-fix": "eslint src --ext .ts --fix",
     "link-api": "npm link datagrok-api",
     "build": "webpack",
-    "test": "jest",
-    "test-dev": "set HOST=dev && jest",
-    "test-local": "set HOST=localhost && jest"
+    "test": "grok test",
+    "test-dev": "grok test --host dev",
+    "test-local": "grok test --host localhost"
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^1.15.5",
@@ -34,7 +34,6 @@
     "typescript": "latest"
   },
   "devDependencies": {
-    "@types/jest": "^27.0.0",
     "@types/js-yaml": "^4.0.5",
     "@types/node-fetch": "^2.6.2",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
@@ -42,13 +41,10 @@
     "css-loader": "latest",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
-    "jest": "^27.0.0",
-    "jest-html-reporter": "^3.5.0",
     "js-yaml": "^4.1.0",
     "node-fetch": "^2.6.7",
     "puppeteer": "^13.7.0",
     "style-loader": "latest",
-    "ts-jest": "^27.0.0",
     "webpack": "latest",
     "webpack-cli": "latest"
   },
