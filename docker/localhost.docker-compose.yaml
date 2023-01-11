@@ -53,6 +53,8 @@ services:
       datagrok:
         aliases:
           - grok_connect
+    ports:
+      - "${GROK_CONNECT_PORT:-1234}:1234/tcp"
     restart: unless-stopped
     profiles: ["all", "grok_connect"]
 
