@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {getSimilarityFromDistance} from '../distance-metrics-methods';
 import {removeEmptyStringRows} from '@datagrok-libraries/utils/src/dataframe-utils';
+import { Subject } from 'rxjs';
 
 export interface ILine {
   id: number;
@@ -40,11 +41,12 @@ export interface ITooltipAndPanelParams {
   sali?: number
 }
 
-let zoom = false;
 
 const molColumnNames = ['1_seq', '2_seq'];
 
 const nonNormalizedDistances = ['Levenshtein'];
+
+const filterCliffsSubj = new Subject<string>();
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
 export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, encodedCol: DG.Column | null,
@@ -66,6 +68,8 @@ export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, en
   const withoutEmptyValues = DG.DataFrame.fromColumns([dimensionalityReduceCol]).clone();
   //@ts-ignore
   const emptyValsIdxs = removeEmptyStringRows(withoutEmptyValues, dimensionalityReduceCol);
+
+  let zoom = false;
 
   const {distance, coordinates} = await seqSpaceFunc({
     seqCol: withoutEmptyValues.col(dimensionalityReduceCol.name)!,
@@ -230,8 +234,28 @@ export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, en
 
   const filterCliffsButton = ui.switchInput(`Show only cliffs`, false);
   filterCliffsButton.onChanged(()=> {
-    filterCliffsButton.value ? df.rows.filter((row) => row[cliffsColName] === true) : df.filter.setAll(true);
+    if (filterCliffsButton.value) {
+      sp.dataFrame.setTag('filterCliffs', cliffsColName);
+      df.filter.init((rowInd) => df.get(cliffsColName, rowInd) === true, true);
+      filterCliffsSubj.next(cliffsColName);
+    } else {
+      if (sp.dataFrame.getTag('filterCliffs') === cliffsColName) {
+        sp.dataFrame.setTag('filterCliffs', '');
+        df.filter.setAll(true, true);
+        filterCliffsSubj.next('');
+      }
+    }
   });
+
+  filterCliffsSubj.subscribe((s: string) => {
+    if (s !== '') {
+      if (s !== cliffsColName)
+        filterCliffsButton.enabled = false;
+    } else {
+      filterCliffsButton.enabled = true;
+    }
+  })
+
   editSpLinkStyle(filterCliffsButton.root, sp, 30);
 
   let timer: NodeJS.Timeout;
@@ -297,7 +321,11 @@ export async function getActivityCliffs( df: DG.DataFrame, seqCol: DG.Column, en
         }, 300);
         zoom = false;
       }
-      filterCliffsButton.value ? df.rows.filter((row) => row[cliffsColName] === true) : df.filter.setAll(true);
+      if (filterCliffsButton.value)
+        df.filter.init((rowInd) => df.get(cliffsColName, rowInd) === true, false)
+      else
+        if (filterCliffsButton.enabled === true)
+          df.filter.setAll(true, false)
     });
 
   sp.addProperty('similarityLimit', 'double', optSimilarityLimit);

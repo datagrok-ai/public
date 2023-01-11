@@ -246,7 +246,6 @@ export const TAGS = {
   MARKER_CODING: '.marker-coding',
   FORMULA_LINES: '.formula-lines',
 
-  MULTI_VALUE_SEPARATOR: '.multi-value-separator',
   /** When a dataframe is loaded from a CSV, the maximum number of significant digits
    in the fractional part for each numeric column is determined  */
   SOURCE_PRECISION: '.source-precision',
@@ -255,7 +254,11 @@ export const TAGS = {
   FORMULA: 'formula',
   SEMTYPE: 'quality',
 
+  /** Separator used to parse a cell value into multiple values for filter categories. */
+  MULTI_VALUE_SEPARATOR: '.multi-value-separator',
+  /** Boolean flag to control custom filters visibility. */
   IGNORE_CUSTOM_FILTER: '.ignore-custom-filter',
+  /** Filter type for molecular columns: "Sketch" | "Categorical". See [DG.STRUCTURE_FILTER_TYPE] */
   STRUCTURE_FILTER_TYPE: '.structure-filter-type',
 
   CELL_RENDERER: 'cell.renderer',
@@ -393,6 +396,12 @@ export enum SIMILARITY_METRIC {
   BRAUN_BLANQUET = 'braun-blanquet'
 }
 
+/** @enum {STRUCTURE_FILTER_TYPE} */
+export enum STRUCTURE_FILTER_TYPE {
+  Sketch = 'Sketch',
+  Categorical = 'Categorical'
+}
+
 /** @enum {DEMO_DATASET} */
 export enum DEMO_DATASET {
   WELLS = 'wells',
@@ -522,6 +531,7 @@ export type ViewerPropertyType = string;
 export type Type = `${TYPE}`;
 export type SemType = string;
 export type SimilarityMetric = `${SIMILARITY_METRIC}`;
+export type StructureFilterType = `${STRUCTURE_FILTER_TYPE}`;
 export type ColorType = number;
 export type ColorCodingType = `${COLOR_CODING_TYPE}`;
 export type MarkerCodingType = `${MARKER_TYPE}`;
