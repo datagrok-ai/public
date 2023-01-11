@@ -790,8 +790,8 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   if (tv == null)
     throw 'Requires an open table view.';
 
+  const molCol = value.cell.column;
   const mol = value.value;
-  const molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (molCol == null)
     throw 'Molecule column not found.';
 
