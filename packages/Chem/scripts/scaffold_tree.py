@@ -1,6 +1,7 @@
 #name: GenerateScaffoldTree
 #description: generation scaffold tree from dataset
 #language: python
+#environment: channels: [conda-forge], dependencies: [python=3.8, rdkit, {pip: [ScaffoldGraphDG, networkx]}]
 #input: dataframe data [Input data table]
 #input: string smiles 
 #output: string result
