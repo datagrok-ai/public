@@ -90,6 +90,7 @@ export async function sequenceTranslator(): Promise<void> {
   // view.append(tabControl);
   
   const v = new SequenceTranslatorUI();
+  v.addView();
 }
 
 //tags: autostart

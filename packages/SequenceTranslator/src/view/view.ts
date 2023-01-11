@@ -14,8 +14,9 @@ export class SequenceTranslatorUI {
   constructor() {
     this._router = new URLRouter();
 
-    this._view = grok.shell.newView('Sequence Translator', []);
+    this._view = DG.View.create();
     this._view.box = true;
+    this._view.name = 'Sequence Translator';
 
     // todo: should this code be here?
     const windows = grok.shell.windows;
@@ -46,9 +47,9 @@ export class SequenceTranslatorUI {
     this._view.append(this._tabs.control);
   }
 
-  /** The master view containing app's main interface elements */
+  /** Master view containing app's main interface elements */
   private readonly _view: DG.View;
-  /** Tabs control of the master view */
+  /** Control for 3 tabs: Main, Axolabs, SDF */
   private readonly _tabs: TabLayout;
   private readonly _router: URLRouter;
 
@@ -57,6 +58,8 @@ export class SequenceTranslatorUI {
   private updatePath() {
     this._view.path = this._router.urlParamsString;
   }
+
+  public addView(): void { grok.shell.addView(this._view); }
 };
 
 class TabLayout {
