@@ -18,8 +18,9 @@
 
 #include <cstring>
 #include <vector>
-//#include <list>
-//#include <deque>
+#include <list>
+#include <deque>
+#include <iostream>
 
 #include "../../../Eigen/Eigen/Dense"
 using namespace Eigen;
@@ -250,13 +251,23 @@ namespace ode {
 		VecType& y, VecType& dydt, ArgType t, ArgType h, VecType& yOut, VecType& yErr )
 	{
 		// implementation of R.-K. Cash-Karp method (see [2] for more details)
+
+		//TODO: move method constants to separate file
+		//cout << "\ny = " << y.transpose() << endl;
 		VecType ytemp = y + 0.2 * h * dydt;
+		//cout << "\nytemp = " << ytemp.transpose() << endl;
 		VecType k2 = f(t + 0.2 * h, ytemp);
+		//cout << "\nk2 = " << k2.transpose() << endl;
 		ytemp = y + h * (0.075 * dydt + 0.225 * k2);
+		//cout << "\nytemp = " << ytemp.transpose() << endl;
 		VecType k3 = f(t + 0.3 * h, ytemp);
+		//cout << "\nk3 = " << k3.transpose() << endl;
 		ytemp = y + h * (0.3 * dydt - 0.9 * k2 + 1.2 * k3);
+		//cout << "\nytemp = " << ytemp.transpose() << endl;
 		VecType k4 = f(t + 0.6 * h, ytemp);
+		//cout << "\nk4 = " << k4.transpose() << endl;
 		ytemp = y + h * (-0.2037037037037037 * dydt + 2.5 * k2 - 2.592592592592593 * k3 + 1.296296296296296 * k4);
+		//cout << "\nytemp = " << ytemp.transpose() << endl;
 		VecType k5 = f(t + 0.6 * h, ytemp);
 		ytemp = y + h * (0.0294958043981481 * dydt + 0.341796875 * k2 + 0.0415943287037037 * k3
 			+ 0.4003454137731481 * k4 + 0.061767578125 * k5);
@@ -265,6 +276,8 @@ namespace ode {
 			+ 0.21043771043771045 * k4 + 0.2891022021456804 * k6);
 		yErr = h * (-0.004293774801587311 * dydt + 0.018668586093857853 * k3 - 0.034155026830808066 * k4
 			- 0.019321986607142856 * k5 + 0.03910220214568039 * k6);
+
+		//cin.get();
 
 		return NO_ERRORS;
 	} // RKCK
@@ -424,7 +437,48 @@ namespace ode {
 		DataType * dataFrame, int rowCount, int colCount,
 		ArgStruct & times, VecStruct & solutions)
 	{
-		// routine values
+		// Copying solution at the point t0
+		dataFrame[0] = static_cast<DataType>(times[0]);
+
+		for (int j = 1; j < colCount; j++)
+			dataFrame[j * rowCount] = static_cast<DataType>(solutions[0](j - 1));
+
+		int structIndexLimit = times.size() - 1;
+		int rowLimit = rowCount - 1;
+
+		// Copying solution at the point t1
+		dataFrame[rowLimit] = static_cast<DataType>(times[structIndexLimit]);
+
+		for (int j = 1; j < colCount; j++)
+			dataFrame[rowLimit + j * rowCount] = static_cast<DataType>(solutions[structIndexLimit](j - 1));
+				
+		int m = 1;
+
+		OperatingType t = t0 + h;		
+
+		// the classic linear interpolation method: data is computed for the rest of points		
+		for(int i = 1; i < rowLimit; i++)
+		{
+			while (t > times[m])
+				m++;
+
+			OperatingType cLeft = (times[m] - t) / (times[m] - times[m - 1]);
+			OperatingType cRight = 1.0 - cLeft;
+
+			dataFrame[i] = static_cast<DataType>(t);
+
+			for (int j = 1; j < colCount; j++)
+			{
+				dataFrame[i + j * rowCount]
+					= static_cast<DataType>(cRight * solutions[m](j - 1)
+						+ cLeft * solutions[m - 1](j - 1));
+			}
+
+			t += h;
+		} // for i
+
+		return NO_ERRORS;
+		/*// routine values
 		auto tIter = times.begin();
 		auto yIter = solutions.begin();
 
@@ -470,7 +524,7 @@ namespace ode {
 
 			index++;
 		}
-		return NO_ERRORS;
+		return NO_ERRORS;*/
 	} // linearInterpolation
 
 	/*  Solver of the initial ODE problem dy/dt = f(t,y), y(t0) = y0.
@@ -515,7 +569,7 @@ namespace ode {
 		// structures for {t} and {y(t)}: applying vector provides higher performance than list and deque
 		std::vector<ArgType> times;
 		std::vector<VecType> solutions;
-
+		
 		/*std::list<ArgType> times;
 		std::list<VecType> solutions;*/
 
@@ -526,6 +580,8 @@ namespace ode {
 		int resultCode = RKCKsolver(f, _t0, _t1, _hInitial, yInitial, _tol, times, solutions);
 		if (resultCode != NO_ERRORS)
 			return resultCode;
+
+		//std::cout << "\nNumber of times: " << times.size() << "\n";
 
 		// interpolation of results
 		resultCode = linearInterpolation(_t0, _t1, _hInitial, dataFrame, rowCount, colCount, times, solutions);
