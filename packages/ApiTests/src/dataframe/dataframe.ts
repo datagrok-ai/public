@@ -321,5 +321,7 @@ Tesla, Model S,  ,          1.6,    120000`);
   test('emptyDataFrameToCsv', async () => {
     const df: DG.DataFrame = DG.DataFrame.fromColumns([]);
     const csv: string = df.toCsv();
+
+    expect(csv, '');
   });
 });
