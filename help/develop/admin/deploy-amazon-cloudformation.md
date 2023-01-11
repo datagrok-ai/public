@@ -109,17 +109,22 @@ More information about Datagrok design and components:
 1. Go to the web browser to `DATAGROK_DNS`, login to Datagrok using username `admin` and password `admin`.
 2. Edit settings in the Datagrok (Tools | Settings...). Remember to click Apply to save new settings.
 
-* Scripting:
-  * CVM URL Client: `https://<CVM_DNS>`
-* Dev:
-  * CVM Url: `https://<CVM_DNS>`
+   * Scripting:
+     * Api Url: `https://<DATAGROK_DNS>`
+     * Cvm Url: `https://<CVM_DNS>`
+     * H2o Url: `https://<CVM_DNS>:54321`
+     * Cvm Url Client: `https://<CVM_DNS>`
+   * Admin:
+     * Web Root: `https://<DATAGROK_DNS>`
+     * Api Root: `https://<DATAGROK_DNS>/api`
+
+3. Reload the page and re-login. Now you are good to go.
 
 ## Optional: Cost reduction stand
 
 AWS stack uses `FARGATE` instances for deployment by default. To reduce
 infrastructure costs, you can use EC2 instances. To do so, follow the instructions above with additions below in
-the [prerequisites](#ec2-prerequisites) and [parameters](#ec2-parameters)
-during [deployment of the Datagrok components](#deploy-datagrok-components)
+the [prerequisites](#ec2-prerequisites) and [parameters](#ec2-parameters).
 
 ### EC2 Prerequisites
 
@@ -146,9 +151,9 @@ during [deployment of the Datagrok components](#deploy-datagrok-components)
 2. Copy the content of the public part of the key pair: `id_rsa.pub`. It will be placed in the EC2 instances
    using the `Ec2PublicKey` parameter to access machines.
 
-## EC2 Parameters
+### EC2 Parameters
 
 1. Change the `LaunchType` parameter to `EC2`.
 
-2. Change the `Ec2PublicKey` parameter. Paste your public key content from [EC2 prerequisites](#ec2-prerequisites) to
-   the parameter.
+2. Paste your public key content from [EC2 prerequisites](#ec2-prerequisites) to
+   the parameter `Ec2PublicKey`.
