@@ -57,7 +57,7 @@ To set the column tag value via the UI:
 To set the column tag value programmatically:
 
 ```javascript
-column.tags['.structure-filter-type'] = 'Categorical';
+column.tags[DG.TAGS.STRUCTURE_FILTER_TYPE] = 'Categorical';
 ```
 
 ## Drag-and-drop

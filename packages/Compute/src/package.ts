@@ -9,12 +9,23 @@ import wu from 'wu';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 //import {ModelsWidget} from './models-widget'
 import {delay} from "@datagrok-libraries/utils/src/test";
-import {ComputationView} from "@datagrok-libraries/utils/src/computation-view";
-import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
+import {RichFunctionView} from "@datagrok-libraries/utils/src/rich-function-view";
 import './css/model-card.css';
+import { ImportScriptGeneratorApp } from './import-script-generator/view';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
+
+//name: Import script generator
+//description: Creates and registers a new script based on the input config
+//tags: higher-order function, app
+//meta.icon: icons/flux.png
+export function importScriptGenerator(){
+  const app = new ImportScriptGeneratorApp();
+  app.name = 'Import Script Gen'
+  grok.shell.addView(app);
+  app.root.classList.remove('ui-panel');
+}
 
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
@@ -24,27 +35,12 @@ export function OutliersSelection() {
   return new OutliersSelectionViewer();
 }
 
-//name: ComputationView
-//tags: model-editor, editor
+//name: RichFunctionViewEditor
+//tags: editor
 //input: funccall call
 //output: view result
-export function ComputationViewEditor(call: DG.FuncCall) {
-  let v = new ComputationView();
-  v.linkFunccall(call);
-  v.parentCall = call;
-  v.name = call.func.friendlyName;
-  v.parentView = grok.functions.getCurrentCall().parentCall.aux['view']; // modelCatalog view
-  console.log('comp view editor called')
-  //todo: parse url, set parameters to call
-  return v;
-}
-
-//name: FunctionView
-//tags: model-editor, editor
-//input: funccall call
-//output: view result
-export function FunctionViewEditor(call: DG.FuncCall) {
-  return new FunctionView(call);
+export function RichFunctionViewEditor(call: DG.FuncCall) {
+  return new RichFunctionView(call);
 }
 
 

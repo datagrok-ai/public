@@ -12,6 +12,7 @@ interface ITestManagerUI {
   runAllButton: HTMLButtonElement;
   debugButton: DG.InputBase<boolean>;
   benchmarkButton: DG.InputBase<boolean>;
+  runSkippedButton: DG.InputBase<boolean>;
   ribbonPanelDiv: HTMLDivElement;
 }
 
@@ -70,6 +71,7 @@ export class TestManager extends DG.ViewBase {
   nodeDict: { [id: string]: any } = {};
   debugMode = false;
   benchmarkMode = false;
+  runSkippedMode = false;
   tree: DG.TreeViewGroup;
   autoTestsCatName = 'Auto Tests';
   ribbonPanelDiv = undefined;
@@ -252,15 +254,17 @@ export class TestManager extends DG.ViewBase {
       });
     }
 
-    const {runAll, run, debug, benchmark} = this.createButtons();
-    const {runAll: runAll1, run: run1, debug: debug1, benchmark: benchmark1} = this.createButtons();
+    const {runAll, run, debug, benchmark, runSkipped} = this.createButtons();
+    const {runAll: runAll1, run: run1, debug: debug1,
+      benchmark: benchmark1, runSkipped: runSkipped1} = this.createButtons();
 
-    const ribbonPanelDiv = ui.divH([runAll1, run1, debug1.root, benchmark1.root],
-      {style: {minHeight: '50px', maxHeight: '50px', alignItems: 'Center', borderBottom: '1px solid var(--grey-1)', paddingLeft: '5px'}});
+    const ribbonPanelDiv = ui.divH([runAll1, run1, debug1.root, benchmark1.root, runSkipped1.root],
+      {style: {minHeight: '50px', maxHeight: '50px', alignItems: 'Center',
+        borderBottom: '1px solid var(--grey-1)', paddingLeft: '5px'}});
     ribbonPanelDiv.classList.add('test');
 
     return {runAllButton: runAll, runButton: run, testsTree: this.tree,
-      debugButton: debug, benchmarkButton: benchmark, ribbonPanelDiv: ribbonPanelDiv};
+      debugButton: debug, benchmarkButton: benchmark, runSkippedButton: runSkipped, ribbonPanelDiv: ribbonPanelDiv};
   }
 
   createButtons() {
@@ -289,7 +293,13 @@ export class TestManager extends DG.ViewBase {
     benchmarkButton.captionLabel.style.marginLeft = '5px';
     benchmarkButton.root.style.marginLeft = '5px';
 
-    return {runAll: runAllButton, run: runTestsButton, debug: debugButton, benchmark: benchmarkButton};
+    const runSkippedButton = ui.boolInput('Run skipped', false, () => {this.runSkippedMode = !this.runSkippedMode;});
+    runSkippedButton.captionLabel.style.order = '1';
+    runSkippedButton.captionLabel.style.marginLeft = '5px';
+    runSkippedButton.root.style.marginLeft = '5px';
+
+    return {runAll: runAllButton, run: runTestsButton, debug: debugButton,
+      benchmark: benchmarkButton, runSkipped: runSkippedButton};
   }
 
   async runTestsForSelectedNode() {
@@ -350,6 +360,12 @@ export class TestManager extends DG.ViewBase {
   }
 
   async runTest(t: IPackageTest): Promise<boolean> {
+    let runSkipped = false;
+    const skipReason = t.test.options?.skipReason;
+    if (this.runSkippedMode && skipReason) {
+      t.test.options.skipReason = undefined;
+      runSkipped = true;
+    }
     if (this.debugMode)
       debugger;
     this.testInProgress(t.resultDiv, true);
@@ -370,6 +386,7 @@ export class TestManager extends DG.ViewBase {
       res.columns.addNewString('funcTest').init((i) => '');
       testSucceeded = res.get('success', 0);
     }
+    if (runSkipped) t.test.options.skipReason = skipReason;
     const time = Date.now() - start;
     if (!this.testsResultsDf) {
       this.testsResultsDf = res;
