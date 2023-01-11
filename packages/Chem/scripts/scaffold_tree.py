@@ -56,7 +56,7 @@ def get_sorted_scaffolds(tree, nodes):
 def get_hierarchies_list(tree, sorted_scaffolds):
     result = []
     for scaffold in sorted_scaffolds:
-        result.append(scaffold[1]['hierarchy'])
+        result.append(tree.nodes[scaffold]['hierarchy'])
     return result
 
 #function that returns mols
@@ -88,6 +88,16 @@ def get_first_hierarchy(tree, scaffolds):
             first_hierarchy_scaffolds.append(scaffold)
     return first_hierarchy_scaffolds
 
+#function that returns the parent
+def parent_lookup(scaffold, sorted_scaffolds, hierarchies):
+    indx = sorted_scaffolds.index(scaffold)
+    hierarchy = hierarchies[indx]
+    parent = ''
+    for i, e in reversed(list(enumerate(hierarchies[:indx+1]))):
+        if e == hierarchy - 1:
+            parent = sorted_scaffolds[i]
+            break
+    return parent
 
 #function that returns the tree for first_hierarchy_scaffolds (if there are multiple mcs)
 def get_tree(tree, scaffold_1):
@@ -98,20 +108,17 @@ def get_tree(tree, scaffold_1):
     sorted_scaffolds = get_sorted_scaffolds(tree, scaffolds)
     sorted_scaffolds_mols = get_mols(sorted_scaffolds)
     nodes = list(tree.get_molecule_nodes())
+    hierarchies = get_hierarchies_list(tree, sorted_scaffolds)
     for i in range(0, len(sorted_scaffolds)):
-        try:
-            molbl = MolToMolBlock(sorted_scaffolds_mols[i], kekulize=False)
-        except:
-            molbl = MolToMolBlock(sorted_scaffolds_mols[i])
+        hierarchy_dict = get_hierarchy_dict(str(MolToMolBlock(sorted_scaffolds_mols[i], kekulize=False)), sorted_scaffolds[i], [])
+        molecule_nodes = find_nodes(tree, nodes, sorted_scaffolds[i])
+        for j in range(0, len(molecule_nodes)):
+            hierarchy_dict['child_nodes'].append(get_hierarchy_dict(MolToMolBlock(MolFromSmiles(molecule_nodes[j])), molecule_nodes[j], []))
+        if tree.nodes[sorted_scaffolds[i]]['hierarchy'] == 1:
+            json_list.append(hierarchy_dict)
         else:
-            hierarchy_dict = get_hierarchy_dict(str(molbl), sorted_scaffolds[i], [])
-            molecule_nodes = find_nodes(tree, nodes, sorted_scaffolds[i])
-            for j in range(0, len(molecule_nodes)):
-                hierarchy_dict['child_nodes'].append(get_hierarchy_dict(MolToMolBlock(MolFromSmiles(molecule_nodes[j])), molecule_nodes[j], []))
-            if tree.nodes[sorted_scaffolds[i]]['hierarchy'] == 1:
-                json_list.append(hierarchy_dict)
-            else:
-                recurs_append_nodes('smiles', ''.join(tree.get_parent_scaffolds(sorted_scaffolds[i], max_levels=1)), hierarchy_dict, json_list[0])
+            parent = parent_lookup(sorted_scaffolds[i], sorted_scaffolds, hierarchies)
+            recurs_append_nodes('smiles', parent, hierarchy_dict, json_list[0])
     return json_list[0]
 
 #function to get the json representation
@@ -122,7 +129,7 @@ def get_json_representation(tree):
     for scaffold in first_scaffolds:
         json_list.append(get_tree(tree, scaffold[0]))
     return json_list
-  
+
 tree = sg.ScaffoldTree.from_dataframe(
     data, smiles_column=smiles, name_column=smiles, progress=True,
 )
