@@ -38,6 +38,8 @@ const getSearchStringByPattern = (datePattern: DateOptions) => {
 };
 
 export namespace historyUtils {
+  const scriptsCache = {} as Record<string, DG.Script>;
+
   export async function loadRun(funcCallId: string) {
     const pulledRun = await grok.dapi.functions.calls.allPackageVersions()
       .include('inputs, outputs, session.user').find(funcCallId);
@@ -144,7 +146,10 @@ export namespace historyUtils {
         .list(listOptions);
 
     for (const pulledRun of result) {
-      const script = await grok.dapi.functions.allPackageVersions().find(pulledRun.func.id);
+      const id = pulledRun.func.id;
+      const script = scriptsCache[id] ?? await grok.dapi.functions.allPackageVersions().find(id);
+
+      if (!scriptsCache[id]) scriptsCache[id] = script;
       pulledRun.func = script;
     }
 
