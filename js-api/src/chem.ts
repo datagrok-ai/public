@@ -59,7 +59,6 @@ export namespace chem {
   /** A common interface that all sketchers should implement */
   export abstract class SketcherBase extends Widget {
 
-    _sketcher: any;
     onChanged: Subject<any> = new Subject<any>();
     host?: Sketcher;
 
@@ -88,6 +87,7 @@ export namespace chem {
 
     abstract set smarts(s: string);
 
+    abstract get isInitialized(): boolean;
 
     get supportedExportFormats(): string[] {
       return [];
@@ -135,7 +135,7 @@ export namespace chem {
         grok.shell.warning(`Smarts cannot be converted to smiles`);
         return this._smarts!;
       }
-      return this.sketcher?._sketcher ? this.sketcher.smiles : this._smiles === null ?
+      return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
         this._molfile !== null ? convert(this._molfile, MOL, SMILES) :
         this._smarts !== null ? smilesFromSmartsWarning() : '' : this._smiles;
     }
@@ -144,13 +144,13 @@ export namespace chem {
       this._smiles = x;
       this._molfile = null;
       this._smarts = null;
-      if (this.sketcher?._sketcher)
+      if (this.sketcher?.isInitialized)
         this.sketcher!.smiles = x;
       this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
     getMolFile(): string {
-      if (this.sketcher?._sketcher) {
+      if (this.sketcher?.isInitialized) {
         return this.molFileUnits === MOLV2000 ? this.sketcher.molFile : this.sketcher.molV3000;
       } else {
         if (this._molfile === null) {
@@ -166,14 +166,14 @@ export namespace chem {
       this._molfile = x;
       this._smiles = null;
       this._smarts = null;
-      if (this.sketcher?._sketcher) {
+      if (this.sketcher?.isInitialized) {
         this.molFileUnits === MOLV2000 ? this.sketcher!.molFile = x : this.sketcher!.molV3000 = x;
       }
       this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
     async getSmarts(): Promise<string | null> {
-      return this.sketcher?._sketcher ? await this.sketcher.getSmarts() : !this._smarts === undefined ?
+      return this.sketcher?.isInitialized ? await this.sketcher.getSmarts() : !this._smarts === undefined ?
         this._smiles !== null ? convert(this._smiles, SMILES, SMARTS) :
         this._molfile !== null ? convert(this._molfile, MOL, SMARTS) : '' : this._smarts;
     }
@@ -182,7 +182,7 @@ export namespace chem {
       this._smarts = x;
       this._molfile = null;
       this._smiles = null;
-      if (this.sketcher?._sketcher)
+      if (this.sketcher?.isInitialized)
         this.sketcher!.smarts = x;
       this.updateExtSketcherContent(this.extSketcherDiv);
     }

@@ -19,6 +19,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   _molV2000: string = '';
   _molV3000: string = '';
   _smarts: string = '';
+  _sketcher: Ketcher | null = null;
 
   constructor() {
     super();
@@ -88,11 +89,15 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   async getSmarts(): Promise<string> {
-    return await this._sketcher.getSmarts();
+    return this._sketcher ? await this._sketcher.getSmarts() : this._smarts;
   }
 
   set smarts(smarts: string) {
     this.setKetcherMolecule(smarts);
+  }
+
+  get isInitialized() {
+    return this._sketcher !== null;
   }
 
   setKetcherMolecule(molecule: string) {

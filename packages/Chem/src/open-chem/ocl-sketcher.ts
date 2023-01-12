@@ -6,6 +6,9 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 let sketcherId = 0;
 
 export class OpenChemLibSketcher extends grok.chem.SketcherBase {
+
+  _sketcher: OCL.StructureEditor | null = null;
+
   constructor() {
     super();
   }
@@ -25,27 +28,27 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   }
 
   get smiles() {
-    return this._sketcher.getSmiles();
+    return this._sketcher ? this._sketcher.getSmiles() : '';
   }
 
   set smiles(s) {
-    this._sketcher.setSmiles(s);
+    this._sketcher?.setSmiles(s);
   }
 
   get molFile() {
-      return this._sketcher.getMolFile();
+      return this._sketcher ? this._sketcher.getMolFile() : '';
   }
 
   set molFile(s) {
-    this._sketcher.setMolFile(s);
+    this._sketcher?.setMolFile(s);
   }
 
   get molV3000() {
-      return this._sketcher.getMolFileV3();
+      return this._sketcher ? this._sketcher.getMolFileV3() : '';
   }
 
   set molV3000(s) {
-    this._sketcher.setMolFile(s);
+    this._sketcher?.setMolFile(s);
   }
 
   async getSmarts(): Promise<string> {
@@ -57,6 +60,10 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
 
   set smarts(s: string) {
     this.convertAndSetSmarts(s);
+  }
+
+  get isInitialized() {
+    return this._sketcher !== null;
   }
 
   detach(): void {
