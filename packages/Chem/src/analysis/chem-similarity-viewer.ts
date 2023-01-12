@@ -12,6 +12,7 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   isEditedFromSketcher: boolean = false;
   hotSearch: boolean;
+  showMoleculeProps: boolean;
   sketchButton: HTMLButtonElement;
   sketchedMolecule: string = '';
   curIdx: number = 0;
@@ -21,6 +22,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   cutoff: number;
   gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
+  propColumnsNames: string[] = [];
 
   get targetMolecule(): string {
     return this.isEditedFromSketcher ?
@@ -31,6 +33,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   constructor() {
     super('similarity');
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
+    this.showMoleculeProps = this.bool('showMoleculeProps', true);
     this.hotSearch = this.bool('hotSearch', true);
     this.sketchButton = ui.button('Sketch', () => {
       const sketcher = new grok.chem.Sketcher();
@@ -54,6 +57,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     this.sketchButton.id = 'reference';
     this.sketchButton.style.width = '40px';
     this.sketchButton.style.height = '10px';
+    this.sketchButton.style.marginLeft = '15px';
     this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
   }
 
@@ -66,7 +70,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   async render(computeData = true): Promise<void> {
     if (!this.beforeRender())
       return;
-    if (this.moleculeColumn) {      
+    if (this.moleculeColumn) {
+      this.propColumnsNames = this.getPropsColumnsNames();      
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
       if (!this.gridSelect && this.curIdx != this.dataFrame!.currentRowIdx)
         this.isEditedFromSketcher = false;
@@ -92,10 +97,12 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       if (this.molCol && this.idxs && this.scores) {
         if (this.isEditedFromSketcher) {
           const label = this.sketchButton;
+          const molProps = this.showMoleculeProps ? this.createMoleculePropertiesDiv(this.targetMoleculeIdx) : ui.div();
           const grid = ui.div([
             renderMolecule(
               this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-            label],
+            label,
+            molProps],
           {style: {margin: '5px'}},
           );
           let divClass = 'd4-flex-col';
@@ -107,12 +114,15 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         }
         for (let i = 0; i < this.molCol.length; ++i) {
           const idx = this.idxs.get(i);
+          const similarity = this.scores.get(i).toPrecision(2);
           const label = idx === this.targetMoleculeIdx && !this.isEditedFromSketcher ?
-            this.sketchButton : ui.label(`${this.scores.get(i).toPrecision(2)}`, {style: {paddingTop: '5px'}});
+            this.sketchButton : this.showMoleculeProps ? ui.div() : ui.label(`${similarity}`, {style: {paddingTop: '5px'}});
+          const molProps = this.showMoleculeProps ? this.createMoleculePropertiesDiv(this.targetMoleculeIdx, similarity) : ui.div();
           const grid = ui.div([
             renderMolecule(
               this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
-            label],
+            label,
+            molProps],
           {style: {margin: '5px'}},
           );
           let divClass = 'd4-flex-col';
@@ -176,6 +186,28 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     } finally {
       if (mol) mol.delete();
     }
+  }
+
+  createMoleculePropertiesDiv(idx: number, similarity?: number): HTMLDivElement{
+    const propsDict: {[key: string]: any} = {};
+    if (similarity)
+      propsDict['similarity'] = similarity;
+    for (const col of this.propColumnsNames) {
+        propsDict[col] = this.moleculeColumn!.dataFrame.get(col, idx);
+    }
+    return ui.div(ui.tableFromMap(propsDict));
+  }
+
+  getPropsColumnsNames(): string[] {
+    let fingerprintTag = '';
+    for (let t of this.moleculeColumn!.tags.keys()) {
+      if (t.endsWith('.Column')) {
+        fingerprintTag = t;
+        break;
+      }
+    }
+    return this.moleculeColumn!.dataFrame.columns.names()
+      .filter((name) => name !== this.moleculeColumn!.getTag(fingerprintTag) && name !== this.moleculeColumn!.name);
   }
 
   clearResults() {
