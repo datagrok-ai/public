@@ -142,8 +142,10 @@ class TriposParser {
   private parseAtomAndBondCounts(): {atomCount: number, bondCount: number} {
     // position at the molecule line
    // this._currentIdx = this._currentMolIdx;
-    for (let i = 0; i < 2; ++i)
-      this.jumpToNextLine();
+    for (let i = 0; i < 2; ++i) {
+      if (this._str.at(this._currentIdx) !== '\n') // incorporates empty lines
+        this.jumpToNextLine();
+    }
 
     if (this._str.at(this._currentIdx) === ' ')
       this.jumpToNextColumn(); // in case the atom number is padded with whitespace
@@ -288,8 +290,8 @@ class TriposParser {
     for (let i = 0; i < bondCount; ++i) {
       this.jumpToNextLine();
 
-      // jump to the 2nd column
-      for (let j = 0; j < 2; ++j)
+      const colsToSkip = this.isWhitespace(this._currentIdx) ? 2 : 1;
+      for (let j = 0; j < colsToSkip; ++j)
         this.jumpToNextColumn();
 
       let pairHasHydrogen = false;
@@ -351,7 +353,8 @@ class TriposParser {
    * immedately after the element name, in this case, discards the number */
   private parseAtomType(): string {
     // jump to the 2nd column
-    for (let i = 0; i < 2; ++i)
+    const colsToSkip = this.isWhitespace(this._currentIdx) ? 2 : 1;
+    for (let i = 0; i < colsToSkip; ++i)
       this.jumpToNextColumn();
 
     // let end = this._endIdx + 1;
@@ -402,8 +405,9 @@ class TriposParser {
     return idx;
   }
 
+  /** Check if a character is whitespace including '\t'  */
   private isWhitespace(idx: number): boolean {
-    return this._str[idx] === ' ';
+    return /\s/.test(this._str.at(idx)!);
   }
 
   // todo: remove as unnecessary?
