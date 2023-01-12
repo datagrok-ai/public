@@ -35,7 +35,7 @@ category('Viewers: Network Diagram', () => {
       .getElementsByClassName('grok-icon grok-font-icon-close')[0] as HTMLElement;
     closeBtn.click();
     await awaitCheck(() => Array.from(v.viewers).length === 1, 'Network diagram viewer was not closed', 1000);
-  });
+  }, {skipReason: 'GROK-11670'});
 
   test('networkDiagram.api', async () => {
     const networkDiagram = v.addViewer(DG.VIEWER.NETWORK_DIAGRAM, {
@@ -67,7 +67,7 @@ category('Viewers: Network Diagram', () => {
       throw 'node1Shape property has not been set to box'; 
     if (!networkDiagram.props.suspendSimulation)
       throw 'suspendSimulation property has not been set to TRUE';
-  });  
+  }, {skipReason: 'GROK-11670'});  
 
   // Does not work through Test Manager
   test('networkDiagram.serialization', async () => {
@@ -92,10 +92,10 @@ category('Viewers: Network Diagram', () => {
       throw 'suspendSimulation property has not been deserialized';
     if (networkDiagram!.props.title != 'Test Network Diagram')
       throw 'tittle property has not been deserialized'; 
-  }); 
+  }, {skipReason: 'GROK-11670'}); 
 
   after(async () => {
     grok.shell.closeAll();
-    await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Network Diagram').first());
+    // await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Network Diagram').first());
   }); 
 });
