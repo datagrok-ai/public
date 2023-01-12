@@ -168,8 +168,6 @@ export class HistoryPanel {
           funcCall.options['annotation'] = annotation;
 
           this.onRunAddToFavorites.next(funcCall);
-          this.myRunsFetch.next();
-          this.favRunsFetch.next();
         } else {
           grok.shell.warning('Title cannot be empty');
         }
@@ -182,7 +180,6 @@ export class HistoryPanel {
       .add(ui.divText('The deleted run is impossible to restore. Are you sure?'))
       .onOK(async () => {
         this.onRunDeleted.next(funcCall.id);
-        this.myRunsFetch.next();
       })
       .show({center: true});
   };
