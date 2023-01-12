@@ -311,7 +311,11 @@ class TriposParser {
         atomPairs.push(pairOfAtoms);
 
         // no need to jump to this column, already here
-        bondTypes.push(this.parseIntValue());
+        if (this._str.substring(this._currentIdx, this._currentIdx + 2) === 'ar') {
+          // aromatic bonds in mol2
+          bondTypes.push(4);
+        } else
+          bondTypes.push(this.parseIntValue());
       }
     }
 
