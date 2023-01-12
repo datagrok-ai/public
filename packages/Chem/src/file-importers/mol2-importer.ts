@@ -145,6 +145,8 @@ class TriposParser {
     for (let i = 0; i < 2; ++i)
       this.jumpToNextLine();
 
+    if (this._str.at(this._currentIdx) === ' ')
+      this.jumpToNextColumn(); // in case the atom number is padded with whitespace
     const atomCount = this.parseIntValue();
     this.jumpToNextColumn();
     const bondCount = this.parseIntValue();
@@ -341,7 +343,8 @@ class TriposParser {
   //   return this._str.substring(this._currentIdx, end) === TRIPOS_BOND_LINE;
   // }
 
-  /** Jumps to atom type column and parses it */
+  /** Jumps to atom type column and parses it. Some mol2 files contain numbers
+   * immedately after the element name, in this case, discards the number */
   private parseAtomType(): string {
     // jump to the 2nd column
     for (let i = 0; i < 2; ++i)
@@ -352,7 +355,9 @@ class TriposParser {
     while (!this.isWhitespace(end))
       ++end;
 
-    const atomType = this._str.substring(this._currentIdx, end);
+    let atomType = this._str.substring(this._currentIdx, end);
+    // in case atom type column has values like C1 or F11, strip numbers
+    atomType = atomType.replace(/[0-9]/g, '');
 
     return atomType;
   }
