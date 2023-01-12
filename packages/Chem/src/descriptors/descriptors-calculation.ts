@@ -15,12 +15,19 @@ export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFra
   openDescriptorsDialog(await getSelected(), async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     selected = await getSelected();
-    const pi = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
-    const table = await getDescriptorsPy(
+    let table: any;
+    const pi = DG.TaskBarProgressIndicator.create();
+    pi.update(0, 'Calculating descriptors..: 0% completed');
+    await getDescriptorsPy(
       smilesCol.name, DG.DataFrame.fromColumns([smilesCol]), 'selected',
       DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
-    );
+    ).then((res) => {
+      table = res;
+      pi.update(70, 'Calculating descriptors..: 70% completed');
+    });
+    pi.update(90, 'Adding results..: 90% completed');
     addResultColumns(table, viewTable);
+    pi.update(100, 'Descriptors are calculated');
     pi.close();
   });
 }
