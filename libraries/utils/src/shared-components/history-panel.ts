@@ -111,7 +111,7 @@ export class HistoryPanel {
           textInput,
           dateInput,
           authorInput,
-        ], 'ui-form-condensed ui-form');
+        ], 'ui-form ui-form-wide ui-form-left');
         form.style.padding = '0px';
 
         this.tabs.onTabChanged.subscribe(() => {
@@ -389,7 +389,6 @@ export class HistoryPanel {
   ) {
     this.tabs.root.style.width = '100%';
     this.tabs.root.style.height = '100%';
-    this.tabs.header.style.justifyContent = 'space-between';
 
     this.store.myRuns.subscribe((myRuns) => this.store.filteredMyRuns.next(myRuns));
     this.store.favoriteRuns.subscribe((favoriteRuns) => this.store.filteredFavoriteRuns.next(favoriteRuns));
