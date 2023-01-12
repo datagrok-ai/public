@@ -58,8 +58,8 @@ export class NglAspect {
     this.stage.viewer.render = function() {
       //@ts-ignore
       originalRender.bind(this.stage.viewer)();
-      console.log('ABABABABABABABABABABAB');
-      console.debug('JSON stage: ' + JSON.stringify(this.stage, getCircularReplacer()));
+      console.debug('ABABABABABABABABABABAB');
+      // console.debug('JSON stage: ' + JSON.stringify(this.stage, getCircularReplacer()));
     }
       .bind(this);
 
