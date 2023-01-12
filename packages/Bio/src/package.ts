@@ -47,6 +47,7 @@ import {
   Monomer, IMonomerLib, MonomerWorks, MonomerLib, readLibrary,
   SeqPalette, UnitsHandler, WebLogoViewer, getStats, splitterAsHelm
 } from '@datagrok-libraries/bio';
+import { pepseaDialog } from './utils/pepsea';
 
 const STORAGE_NAME = 'Libraries';
 const LIB_PATH = 'System:AppData/Bio/libraries';
@@ -665,4 +666,11 @@ export function saveAsFasta() {
 //meta.semType: Macromolecule
 export function bioSubstructureFilter(): BioSubstructureFilter {
   return new BioSubstructureFilter();
+}
+
+//name: PepSeA MSA...
+//top-menu: Bio | PepSeA MSA...
+//description: Perform Multiple sequence alignment using PepSeA
+export function pepseaMSA(): void {
+  pepseaDialog();
 }

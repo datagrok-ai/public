@@ -3,13 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export const _package = new DG.Package();
-
-//name: info
-export function info() {
-  grok.shell.info(_package.webRoot);
-}
-
 const methods = ['mafft --auto', 'mafft', 'linsi', 'ginsi', 'einsi', 'fftns', 'fftnsi', 'nwns', 'nwnsi'];
 type PepseaRepsonse = {
   Alignment: {
@@ -19,8 +12,7 @@ type PepseaRepsonse = {
 };
 type PepseaBodyUnit = {ID: string, HELM: string};
 
-//top-menu: Bio | PepSeA MSA...
-export function pepseaMSA(): void {
+export function pepseaDialog(): void {
   const table = grok.shell.t;
   const colInput = ui.columnInput('Sequences', table, table.columns.bySemType('Macromolecule'),
     (col: DG.Column<string>) => {
@@ -80,7 +72,7 @@ async function perfromPepseaMSA(col: DG.Column<string>, method: string, gapOpen:
       (bodies[clusterId] ??= []).push({ID: rowIndex.toString(), HELM: helmSeq});
   }
 
-  const dockerfileId = (await grok.dapi.dockerfiles.filter('pepsea').first()).id;
+  const dockerfileId = (await grok.dapi.dockerfiles.filter('bio').first()).id;
   const alignedSequencesCol = DG.Column.string('Aligned', peptideCount);
 
   for (const body of bodies) { // getting aligned sequences for each cluster
