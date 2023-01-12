@@ -119,6 +119,7 @@ export async function initChemAutostart(): Promise<void> { }
 //name: Scaffold Tree
 //tags: viewer
 //meta.trellisable: true
+//meta.icon: files/icons/scaffold-tree-icon.svg
 //output: viewer result
 export function scaffoldTreeViewer() : ScaffoldTreeViewer {
  return new ScaffoldTreeViewer();
