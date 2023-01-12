@@ -86,7 +86,8 @@ var solveFAE = {
       numOfColumns: {
         ref: 'varsCount',
         value: 'data'
-      }
+      },
+      names: ['t, time (minutes)', 'FFox(t)', 'KKox(t)', 'FFred(t)', 'KKred(t)', 'Ffree(t)', 'Kfree(t)', 'FKred(t)', 'FKox(t)', 'MEAthiol(t)', 'CO2(t)', 'yO2P(t)', 'Cystamine(t)', 'VL(t)']
     }
   },
   output: {

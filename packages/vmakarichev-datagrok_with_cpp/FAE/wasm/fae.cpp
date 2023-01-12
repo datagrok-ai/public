@@ -29,13 +29,13 @@ namespace fae
 
     // dimension of solution
 	const int DIM = 13; 
-    
+ 
 	// Version 3
 	VectorXd f(double _time, VectorXd & y) noexcept
 	{
 		VectorXd res(y.size());		
 
-        // FORMULAS ARE REMOVED!
+		// ORIGINAL FORMULAS ARE REMOVED!
 		
 		return res;
 	} // f
@@ -62,7 +62,7 @@ namespace fae
 //input: double VL
 //input: int timesCount
 //input: int varsCount
-//output: column_list result [new(timesCount, varsCount)]
+//output: column_list result [new(timesCount, varsCount); 't, time (minutes)'; 'FFox(t)'; 'KKox(t)'; 'FFred(t)'; 'KKred(t)'; 'Ffree(t)'; 'Kfree(t)'; 'FKred(t)'; 'FKox(t)'; 'MEAthiol(t)'; 'CO2(t)'; 'yO2P(t)'; 'Cystamine(t)'; 'VL(t)']
 //output: dataframe solution [result]
 EMSCRIPTEN_KEEPALIVE
 int solveFAE(float t0, float t1, float h, 

@@ -240,11 +240,12 @@ class ArgColumns extends Arg {
 // an array of new columns: new columns are created
 class ArgNewColumns extends ArgColumns {
 
-    constructor(targetType, numOfRows, numOfColumns) {
+    constructor(targetType, numOfRows, numOfColumns, names) {
         super([[]], targetType, true);  
         this.data = [];        
         this.numOfColumns = numOfColumns;
         this.numOfRows = numOfRows;
+        this.names = names;
     }
 
     putDataToBuffer(module) { }
@@ -258,6 +259,7 @@ class ArgNewColumns extends ArgColumns {
             let numOfBytes = typeMap[type].BYTES_PER_ELEMENT;                       
             let columnCreator = typeToColumnCreatorMap[type];
             let buf = this.buf;
+            let names = this.names;
 
             for(let i = 0; i < numOfCols; i++) {
                 let arr = new typeMap[type](numOfRows);
@@ -265,7 +267,8 @@ class ArgNewColumns extends ArgColumns {
                 for(let j = 0; j < numOfRows; j++)
                     arr[j] = heap[buf / numOfBytes + j + i * numOfRows];
                 
-                this.data.push(columnCreator((i + 1).toString(), arr));
+                //this.data.push(columnCreator((i + 1).toString(), arr));
+                this.data.push(columnCreator(names[i], arr));
             }
 
             // create columns: here, may be a problem when numOfRows = 5            
@@ -342,8 +345,8 @@ let Param = {
         return new ArgColumns(columns.toList(), 'f32');
     },
 
-    newFloatColumns(numOfRows, numOfColumns) {
-        return new ArgNewColumns('f32', numOfRows, numOfColumns);
+    newFloatColumns(numOfRows, numOfColumns, names) {
+        return new ArgNewColumns('f32', numOfRows, numOfColumns, names);
     },
 
     int(number) {
@@ -412,8 +415,8 @@ export function callWasm(module, funcName, inputs) {
                 break;
             case 'newFloatColumns':
                 let val1 = args[ arg['numOfRows']['ref'] ].data[arg['numOfRows']['value']];
-                let val2 = args[ arg['numOfColumns']['ref'] ].data[arg['numOfColumns']['value']];
-                arg.data = Param[arg.type](val1, val2);
+                let val2 = args[ arg['numOfColumns']['ref'] ].data[arg['numOfColumns']['value']];                
+                arg.data = Param[arg.type](val1, val2, arg.names);
                 break;
             case 'newFloatColumn':
                 let val = args[ arg['numOfRows']['ref'] ].data[arg['numOfRows']['value']];

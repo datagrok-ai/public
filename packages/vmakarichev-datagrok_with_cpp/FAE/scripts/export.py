@@ -1,4 +1,4 @@
-""" export.py  December 06, 2022.   
+""" export.py  January 12, 2023.   
     This script exports C/C++-functions to Datagrok package. 
 """
 
@@ -128,7 +128,7 @@ class Function:
         self.paramsWithNewSpecifier[argName] = argType
 
         # extract the main data
-        specification = specification.lstrip('[new(').rstrip(')]')        
+        specification = specification.lstrip('[new(').rstrip(']')        
     
         currentType = self.typeList[self.cFuncTypeIndex]
         
@@ -150,9 +150,9 @@ class Function:
 
         elif argType == 'column_list':
             
-            first, ignore, last = specification.partition(',')
+            first, ignore, rest = specification.partition(',')
             first = first.strip()
-            last = last.strip()          
+            rest = rest.strip()          
 
             self.arguments[argName] = {'type': 'new' + currentType.capitalize() + 'Columns'}
 
@@ -167,13 +167,20 @@ class Function:
 
             self.arguments[argName]['numOfRows'] = {'ref': ref, 'value': sizesMap[value]}
 
-            if '.' not in last:
-                ref = last
+            colCountStr, ignore, namesStr = rest.partition(')')
+            colCountStr = colCountStr.strip()
+
+            if '.' not in colCountStr:
+                ref = colCountStr
                 value = 'data'
             else:
-                ref, ignore, value = last.partition('.')
+                ref, ignore, value = colCountStr.partition('.')                        
 
             self.arguments[argName]['numOfColumns'] = {'ref': ref, 'value': sizesMap[value]}
+
+            namesStr = namesStr.strip(';').strip().replace(';', ',')           
+
+            self.arguments[argName]['names'] = namesStr
 
             self.cFuncTypeIndex += 3
 
@@ -415,11 +422,8 @@ def completeJsWasmfile(settings, functionsData):
                         if attribute == 'type':
                             put(f"      {attribute}: '{arguments[arg][attribute]}'")
 
-                            if attrCommasCount > 0:
-                                put(',')
-                                attrCommasCount -= 1
-
-                            put('\n')
+                        elif attribute == 'names':
+                            put(f'      {attribute}: [{arguments[arg][attribute]}]')                           
 
                         else:
                             put(f'      {attribute}: ' + '{\n')
@@ -429,11 +433,11 @@ def completeJsWasmfile(settings, functionsData):
                             put('        value: ' + f"'{value}'\n")
                             put('      }')
 
-                            if attrCommasCount > 0:
-                                put(',')
-                                attrCommasCount -= 1
+                        if attrCommasCount > 0:
+                            put(',')
+                            attrCommasCount -= 1
                                 
-                            put('\n')
+                        put('\n')
 
                     put('    }')
 
@@ -526,7 +530,7 @@ def main(nameOfSettingsFile="module.json"):
         functionsData = getFunctionsFromListOfFiles(settings)
     
         # write functions descriptors to json-file
-        #saveFunctionsDataToFile(functionsData, 'func.json')
+        saveFunctionsDataToFile(functionsData, 'func.json')
 
         # 3) get command for Emscripten tool
         command = getCommand(settings, functionsData)  
