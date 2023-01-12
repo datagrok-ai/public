@@ -100,9 +100,9 @@ category('Viewers: 3D Scatter Plot', () => {
       throw 'Size column has not been deserialized';
     if (scatterPlot3D!.props.colorColumnName != 'sex')
       throw 'Color column has not been deserialized'; 
-  }); 
+  }, {skipReason: 'GROK-11670'}); 
   after(async () => {
     grok.shell.closeAll();
-    await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with 3 D Scatter Plot').first());
+    // await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with 3 D Scatter Plot').first());
   }); 
 });
