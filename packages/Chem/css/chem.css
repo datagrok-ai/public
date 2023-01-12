@@ -122,3 +122,22 @@
   background-color: white;
   opacity: 1.0;
 }
+
+.similarity-prop-label {
+  width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--grey-4)
+}
+
+.similarity-prop-value {
+  padding-left: 10px;
+  max-width: 200px; 
+  overflow-wrap: break-word;
+  color: var(--grey-5);
+}
+
+.similarity-prop-item {
+  padding-top: 10px
+}

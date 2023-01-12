@@ -12,7 +12,6 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   isEditedFromSketcher: boolean = false;
   hotSearch: boolean;
-  showMoleculeProps: boolean;
   sketchButton: HTMLButtonElement;
   sketchedMolecule: string = '';
   curIdx: number = 0;
@@ -22,7 +21,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   cutoff: number;
   gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
-  propColumnsNames: string[] = [];
+  moleculeProperties: string[];
 
   get targetMolecule(): string {
     return this.isEditedFromSketcher ?
@@ -33,7 +32,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   constructor() {
     super('similarity');
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
-    this.showMoleculeProps = this.bool('showMoleculeProps', true);
+    this.moleculeProperties = this.columnList('moleculeProperties', []);
     this.hotSearch = this.bool('hotSearch', true);
     this.sketchButton = ui.button('Sketch', () => {
       const sketcher = new grok.chem.Sketcher();
@@ -70,8 +69,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   async render(computeData = true): Promise<void> {
     if (!this.beforeRender())
       return;
-    if (this.moleculeColumn) {
-      this.propColumnsNames = this.getPropsColumnsNames();      
+    if (this.moleculeColumn) {   
       const progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
       if (!this.gridSelect && this.curIdx != this.dataFrame!.currentRowIdx)
         this.isEditedFromSketcher = false;
@@ -97,7 +95,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       if (this.molCol && this.idxs && this.scores) {
         if (this.isEditedFromSketcher) {
           const label = this.sketchButton;
-          const molProps = this.showMoleculeProps ? this.createMoleculePropertiesDiv(this.targetMoleculeIdx) : ui.div();
+          const molProps = this.createMoleculePropertiesDiv(this.targetMoleculeIdx);
           const grid = ui.div([
             renderMolecule(
               this.targetMolecule, {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
@@ -116,8 +114,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
           const idx = this.idxs.get(i);
           const similarity = this.scores.get(i).toPrecision(2);
           const label = idx === this.targetMoleculeIdx && !this.isEditedFromSketcher ?
-            this.sketchButton : this.showMoleculeProps ? ui.div() : ui.label(`${similarity}`, {style: {paddingTop: '5px'}});
-          const molProps = this.showMoleculeProps ? this.createMoleculePropertiesDiv(this.targetMoleculeIdx, similarity) : ui.div();
+            this.sketchButton : ui.div();
+          const molProps = this.createMoleculePropertiesDiv(this.targetMoleculeIdx, similarity);
           const grid = ui.div([
             renderMolecule(
               this.molCol?.get(i), {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
@@ -192,10 +190,20 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     const propsDict: {[key: string]: any} = {};
     if (similarity)
       propsDict['similarity'] = similarity;
-    for (const col of this.propColumnsNames) {
+    for (const col of this.moleculeProperties) {
         propsDict[col] = this.moleculeColumn!.dataFrame.get(col, idx);
     }
-    return ui.div(ui.tableFromMap(propsDict));
+    const div = ui.divV([]);
+    for (const key of Object.keys(propsDict)) {
+      const label = ui.divText(`${key}`, 'similarity-prop-label');
+      ui.tooltip.bind(label, key);
+      const item = ui.divH([
+        label,
+        ui.divText(`${propsDict[key]}`, 'similarity-prop-value')
+      ], 'similarity-prop-item')
+      div.append(item);
+    }
+    return div; 
   }
 
   getPropsColumnsNames(): string[] {
