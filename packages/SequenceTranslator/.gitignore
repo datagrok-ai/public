@@ -4,4 +4,4 @@ dist/
 .vscode/
 test-report.html
 
-src/hardcode-to-be-eliminated/
+src/hardcode-to-be-eliminated
