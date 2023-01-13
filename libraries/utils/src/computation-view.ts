@@ -40,9 +40,9 @@ export class ComputationView extends FunctionView {
     if (runId) {
       setTimeout(async () => {
         await this.init();
-        await this.getPackageUrls();
         const urlRun = await historyUtils.loadRun(runId);
         this.linkFunccall(urlRun);
+        await this.getPackageUrls();
         this.build();
         await this.onBeforeLoadRun();
         this.linkFunccall(urlRun);
@@ -172,7 +172,8 @@ export class ComputationView extends FunctionView {
   }
 
   private async getPackageUrls() {
-    const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.func?.package.id);
+    const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.parentCall?.func.package.id);
+
     const reportBugUrl = (await pack?.getProperties() as any).REPORT_BUG_URL;
     if (reportBugUrl && !this.reportBug)
       this.reportBug = async () => { window.open(reportBugUrl, '_blank'); };
