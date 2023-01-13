@@ -56,9 +56,13 @@ export function addView(view: DG.ViewBase): DG.ViewBase {
   return view;
 }
 
+// eslint-disable-next-line no-unused-vars
 enum NODE_TYPE {
+  // eslint-disable-next-line no-unused-vars
   PACKAGE = 'Package',
+  // eslint-disable-next-line no-unused-vars
   CATEGORY = 'Category',
+  // eslint-disable-next-line no-unused-vars
   TEST = 'TEST'
 }
 
@@ -71,7 +75,7 @@ export class TestManager extends DG.ViewBase {
   nodeDict: { [id: string]: any } = {};
   debugMode = false;
   benchmarkMode = false;
-  runSkippedMode = false;
+  runSkippedMode = true;
   tree: DG.TreeViewGroup;
   autoTestsCatName = 'Auto Tests';
   ribbonPanelDiv = undefined;
@@ -220,7 +224,6 @@ export class TestManager extends DG.ViewBase {
     return category.totalTests;
   }
 
-
   async createTestManagerUI(testFromUrl: ITestFromUrl): Promise<ITestManagerUI> {
     this.tree = ui.tree();
     this.tree.root.classList.add('test-manager');
@@ -293,7 +296,7 @@ export class TestManager extends DG.ViewBase {
     benchmarkButton.captionLabel.style.marginLeft = '5px';
     benchmarkButton.root.style.marginLeft = '5px';
 
-    const runSkippedButton = ui.boolInput('Run skipped', false, () => {this.runSkippedMode = !this.runSkippedMode;});
+    const runSkippedButton = ui.boolInput('Run skipped', true, () => {this.runSkippedMode = !this.runSkippedMode;});
     runSkippedButton.captionLabel.style.order = '1';
     runSkippedButton.captionLabel.style.marginLeft = '5px';
     runSkippedButton.root.style.marginLeft = '5px';
@@ -332,9 +335,8 @@ export class TestManager extends DG.ViewBase {
     this.nodeDict[Object.keys(this.nodeDict).length] = {tests: tests, nodeType: nodeType};
   }
 
-
-  updateTestResultsIcon(resultDiv: HTMLElement, success?: boolean) {
-    success === undefined ? resultDiv.innerHTML = '' : this.updateIcon(success, resultDiv);
+  updateTestResultsIcon(resultDiv: HTMLElement, success?: boolean, skipped?: boolean) {
+    success === undefined ? resultDiv.innerHTML = '' : this.updateIcon(success, resultDiv, skipped);
   }
 
   testInProgress(resultDiv: HTMLElement, running: boolean) {
@@ -349,12 +351,15 @@ export class TestManager extends DG.ViewBase {
       resultDiv.innerHTML = '';
   }
 
-  updateIcon(passed: boolean, iconDiv: Element) {
-    const icon = passed ? ui.iconFA('check') : ui.iconFA('times');
+  updateIcon(passed: boolean, iconDiv: Element, skipped: boolean) {
+    let icon: HTMLElement;
+    if (skipped) icon = ui.iconFA('forward');
+    else icon = passed ? ui.iconFA('check') : ui.iconFA('times');
     icon.style.fontWeight = '500';
     icon.style.paddingLeft = '2px';
     icon.style.marginTop = '2px';
-    icon.style.color = passed ? 'var(--green-2)' : 'var(--red-3)';
+    if (skipped) icon.style.color = 'var(--orange-2)';
+    else icon.style.color = passed ? 'var(--green-2)' : 'var(--red-3)';
     iconDiv.innerHTML = '';
     iconDiv.append(icon);
   }
@@ -401,7 +406,7 @@ export class TestManager extends DG.ViewBase {
       this.removeTestRow(t.packageName, t.test.category, t.test.name);
       this.testsResultsDf = this.testsResultsDf.append(res);
     }
-    this.updateTestResultsIcon(t.resultDiv, testSucceeded);
+    this.updateTestResultsIcon(t.resultDiv, testSucceeded, skipReason && !runSkipped);
     return testSucceeded;
   }
 
@@ -546,7 +551,6 @@ export class TestManager extends DG.ViewBase {
     ]);
   }
 
-
   getTestsInfoGrid(condition: string, nodeType: NODE_TYPE, isTooltip?: boolean) {
     let info = ui.divText('No tests have been run');
     if (this.testsResultsDf) {
@@ -562,7 +566,8 @@ export class TestManager extends DG.ViewBase {
         const result = testInfo.get('result', 0);
         const resColor = testInfo.get('success', 0) ? 'var(--green-2)' : 'var(--red-3)';
         info = ui.divV([
-          ui.divText(result, {style: {color: resColor, userSelect: 'text'}}),
+          ui.divText(result,
+            {style: {color: testInfo.get('skipped', 0) ? 'var(--orange-2)' : resColor, userSelect: 'text'}}),
           ui.divText(`Time, ms: ${time}`),
         ]);
         if (cat === this.autoTestsCatName)

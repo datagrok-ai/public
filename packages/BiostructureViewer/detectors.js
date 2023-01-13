@@ -5,13 +5,16 @@
  * The class name is comprised of <PackageName> and the `PackageDetectors` suffix.
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
-class BiostructureviewerPackageDetectors extends DG.Package {
+class BiostructureViewerPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
   detectPDB(col) {
-    if (DG.Detector.sampleCategories(col, (s) => s.includes('COMPND') && s.includes('ATOM') && s.includes('END'), 1))
+    if (DG.Detector.sampleCategories(col,
+      (s) => s.includes('COMPND') && s.includes('ATOM') && s.includes('END'), 1)
+    ) {
       return 'xray';
+    }
 
     return null;
   }

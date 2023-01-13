@@ -119,6 +119,7 @@ export async function initChemAutostart(): Promise<void> { }
 //name: Scaffold Tree
 //tags: viewer
 //meta.trellisable: true
+//meta.icon: files/icons/scaffold-tree-icon.svg
 //output: viewer result
 export function scaffoldTreeViewer() : ScaffoldTreeViewer {
  return new ScaffoldTreeViewer();
@@ -790,8 +791,8 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   if (tv == null)
     throw 'Requires an open table view.';
 
+  const molCol = value.cell.column;
   const mol = value.value;
-  const molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (molCol == null)
     throw 'Molecule column not found.';
 
