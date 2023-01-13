@@ -163,9 +163,11 @@ export class TestManager extends DG.ViewBase {
           }
         });
         let testsNumInPack = 0;
-        Object.keys(packageTestsFinal).forEach((cat) => {
-          testsNumInPack += this.addCategoryRecursive(packageNode, packageTestsFinal[cat], testFromUrl);
-        });
+        Object.keys(packageTestsFinal)
+          .sort((a, b) => a.localeCompare(b))
+          .forEach((cat) => {
+            testsNumInPack += this.addCategoryRecursive(packageNode, packageTestsFinal[cat], testFromUrl);
+          });
         const selectedPackage = this.packagesTests.filter((pt) => pt.name === f.package.name)[0];
         selectedPackage.categories = packageTestsFinal;
         selectedPackage.totalTests = testsNumInPack;
@@ -198,7 +200,7 @@ export class TestManager extends DG.ViewBase {
     if (testFromUrl && testFromUrl.catName === category.fullName)
       this.selectedNode = subnode;
 
-    const subcats = Object.keys(category.subcategories);
+    const subcats = Object.keys(category.subcategories).sort((a, b) => a.localeCompare(b));
     if (subcats.length > 0) {
       subcats.forEach((subcat) => {
         category.totalTests += this.addCategoryRecursive(subnode, category.subcategories[subcat], testFromUrl);
@@ -431,8 +433,9 @@ export class TestManager extends DG.ViewBase {
       this.testInProgress(packageTests.resultDiv, true);
       await this.collectPackageTests(node as DG.TreeViewGroup, tests);
       const cats = packageTests.categories;
+      const catsValuesSorted = Object.keys(cats).sort((a, b) => a.localeCompare(b)).map((cat) => cats[cat]);
       let completedTestsNum = 0;
-      for (const cat of Object.values(cats)) {
+      for (const cat of catsValuesSorted) {
         this.testInProgress(packageTests.resultDiv, true);
         const res = await this.runTestsRecursive(cat, progressBar,
           packageTests.totalTests, completedTestsNum, tests.package.name);
@@ -478,7 +481,7 @@ export class TestManager extends DG.ViewBase {
     progressInfo: string): Promise<any> {
     let testsSucceded = true;
     this.testInProgress(category.resultDiv, true);
-    const subcats = Object.keys(category.subcategories);
+    const subcats = Object.keys(category.subcategories).sort((a, b) => a.localeCompare(b));
     if (subcats.length > 0) {
       for (const subcat of subcats) {
         this.testInProgress(category.subcategories[subcat].resultDiv, true);
