@@ -187,6 +187,7 @@ export class SankeyViewer extends DG.JsViewer {
       .attr('y', (d) => (d.y1 + d.y0) / 2)
       .attr('dy', '0.35em')
       .attr('text-anchor', (d) => d.x0 < width / 2 ? 'start' : 'end')
+      .attr('class', (d) => (d.name).split(' ').join('_'))
       .text((d) => d.name);
 
     function dragmove(event, d) {
@@ -197,7 +198,11 @@ export class SankeyViewer extends DG.JsViewer {
       d.x1 += event.dx;
       d.y0 += event.dy;
       d.y1 += event.dy;
+
       rect.attr('transform', `translate(${d.x0 - rectX}, ${d.y0 - rectY})`);
+      nodeGroup.select(`text.${d.name.split(' ').join('_')}`)
+        .attr('transform', `translate(${d.x0 - rectX}, ${d.y0 - rectY})`);
+
       generator.update(graph);
       links.attr('d', sankeyLinkHorizontal());
     };
