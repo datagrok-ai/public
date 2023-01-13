@@ -13,19 +13,34 @@ export class HistoryPanel {
   public onRunChosen = new Subject<string>();
 
   // Emitted when FuncCall is added to favorites
-  public onRunAddToFavorites = new Subject<DG.FuncCall>();
+  public beforeRunAddToFavorites = new Subject<DG.FuncCall>();
 
   // Emitted when FuncCall is added to shared
-  public onRunAddToShared = new Subject<DG.FuncCall>();
+  public beforeRunAddToShared = new Subject<DG.FuncCall>();
 
   // Emitted when FuncCall is removed from favorites
-  public onRunRemoveFromFavorites = new Subject<string>();
+  public beforeRunRemoveFromFavorites = new Subject<string>();
 
   // Emitted when FuncCall is removed from shared
-  public onRunRemoveFromShared = new Subject<string>();
+  public beforeRunRemoveFromShared = new Subject<string>();
 
   // Emitted when FuncCall is deleted
-  public onRunDeleted = new Subject<string>();
+  public beforeRunDeleted = new Subject<string>();
+
+  // Emitted when FuncCall is added to favorites
+  public afterRunAddToFavorites = new Subject<DG.FuncCall>();
+
+  // Emitted when FuncCall is added to shared
+  public afterRunAddToShared = new Subject<DG.FuncCall>();
+
+  // Emitted when FuncCall is removed from favorites
+  public afterRunRemoveFromFavorites = new Subject<string>();
+
+  // Emitted when FuncCall is removed from shared
+  public afterRunRemoveFromShared = new Subject<string>();
+
+  // Emitted when FuncCall is deleted
+  public afterRunDeleted = new Subject<string>();
 
   private store = {
     filteringOptions: {text: ''} as {
@@ -163,11 +178,10 @@ export class HistoryPanel {
       ]))
       .onOK(async () => {
         if (title.length > 0) {
-          funcCall = await historyUtils.loadRun(funcCall.id);
+          funcCall = await historyUtils.loadRun(funcCall.id, true);
           funcCall.options['title'] = title;
           funcCall.options['annotation'] = annotation;
-
-          this.onRunAddToFavorites.next(funcCall);
+          this.beforeRunAddToFavorites.next(funcCall);
         } else {
           grok.shell.warning('Title cannot be empty');
         }
@@ -179,7 +193,7 @@ export class HistoryPanel {
     ui.dialog({title: 'Delete run'})
       .add(ui.divText('The deleted run is impossible to restore. Are you sure?'))
       .onOK(async () => {
-        this.onRunDeleted.next(funcCall.id);
+        this.beforeRunDeleted.next(funcCall.id);
       })
       .show({center: true});
   };
@@ -208,7 +222,7 @@ export class HistoryPanel {
           funcCall = await historyUtils.loadRun(funcCall.id);
           funcCall.options['title'] = title;
           funcCall.options['annotation'] = annotation;
-          this.onRunAddToShared.next(funcCall);
+          this.beforeRunAddToShared.next(funcCall);
         } else {
           grok.shell.warning('Title cannot be empty');
         }
@@ -238,7 +252,7 @@ export class HistoryPanel {
     this.favoriteCards = funcCalls.map((funcCall) => {
       const unstarIcon = ui.iconFA('star', async (ev) => {
         ev.stopPropagation();
-        this.onRunRemoveFromFavorites.next(funcCall.id);
+        this.beforeRunRemoveFromFavorites.next(funcCall.id);
       }, 'Unfavorite the run');
       unstarIcon.classList.add('fas');
 
@@ -281,7 +295,7 @@ export class HistoryPanel {
     this.sharedCards = funcCalls.map((funcCall) => {
       const unshareIcon = ui.iconFA('eye-slash', async (ev) => {
         ev.stopPropagation();
-        this.onRunRemoveFromShared.next(funcCall.id);
+        this.beforeRunRemoveFromShared.next(funcCall.id);
       }, 'Hide from shared');
 
       const card = ui.divH([
@@ -337,12 +351,12 @@ export class HistoryPanel {
 
       const unshareIcon = ui.iconFA('eye-slash', async (ev) => {
         ev.stopPropagation();
-        this.onRunRemoveFromShared.next(funcCall.id);
+        this.beforeRunRemoveFromShared.next(funcCall.id);
       }, 'Hide from shared');
 
       const unstar = ui.iconFA('star', async (ev) => {
         ev.stopPropagation();
-        this.onRunRemoveFromFavorites.next(funcCall.id);
+        this.beforeRunRemoveFromFavorites.next(funcCall.id);
       }, 'Unfavorite the run');
       unstar.classList.add('fas');
 
@@ -439,18 +453,70 @@ export class HistoryPanel {
     });
 
     this.myRunsFetch.subscribe(async () => {
+      ui.setUpdateIndicator(this.tabs.root, true);
       const myRuns = (await historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {order: 'started'}, ['session.user', 'options'])).reverse();
       this.store.myRuns.next(myRuns);
+      ui.setUpdateIndicator(this.tabs.root, false);
     });
 
     this.favRunsFetch.subscribe(async () => {
+      ui.setUpdateIndicator(this.tabs.root, true);
       const myRuns = (await historyUtils.pullRunsByName(this.func.name, [{author: grok.shell.user}], {order: 'started'}, ['session.user', 'options'])).reverse();
       this.store.favoriteRuns.next(myRuns.filter((run) => run.options['isFavorite'] && !run.options['isImported']));
+      ui.setUpdateIndicator(this.tabs.root, false);
     });
 
     this.sharedRunsFetch.subscribe(async () => {
       const sharedRuns = (await historyUtils.pullRunsByName(this.func.name, [], {order: 'started'}, ['session.user', 'options'])).reverse();
       this.store.sharedRuns.next(sharedRuns.filter((run) => run.options['isShared']));
+      ui.setUpdateIndicator(this.tabs.root, false);
+    });
+
+
+    this.afterRunAddToFavorites.subscribe((added) => {
+      const editedRun = this.store.myRuns.value.find((call) => call.id === added.id);
+      editedRun!.options['isFavorite'] = true;
+      editedRun!.options['title'] = added.options['title'];
+      editedRun!.options['description'] = added.options['description'];
+      this.store.myRuns.next(this.store.myRuns.value);
+
+      this.store.favoriteRuns.next([...this.store.favoriteRuns.value, editedRun!]);
+    });
+
+    this.afterRunAddToShared.subscribe((added) => {
+      const editedRun = this.store.myRuns.value.find((call) => call.id === added.id);
+      editedRun!.options['isShared'] = true;
+      editedRun!.options['title'] = added.options['title'];
+      editedRun!.options['description'] = added.options['description'];
+      this.store.myRuns.next(this.store.myRuns.value);
+
+      this.store.sharedRuns.next([...this.store.sharedRuns.value, editedRun!]);
+    });
+
+    this.afterRunRemoveFromFavorites.subscribe((id) => {
+      this.store.favoriteRuns.next(this.store.favoriteRuns.value.filter((call) => call.id !== id));
+
+      const editedRun = this.store.myRuns.value.find((call) => call.id === id);
+      editedRun!.options['title'] = null;
+      editedRun!.options['description'] = null;
+      editedRun!.options['isFavorite'] = false;
+      this.store.myRuns.next(this.store.myRuns.value);
+    });
+
+    this.afterRunRemoveFromShared.subscribe((id) => {
+      this.store.sharedRuns.next(this.store.sharedRuns.value.filter((call) => call.id !== id));
+
+      const editedRun = this.store.myRuns.value.find((call) => call.id === id);
+      editedRun!.options['title'] = null;
+      editedRun!.options['description'] = null;
+      editedRun!.options['isShared'] = false;
+      this.store.myRuns.next(this.store.myRuns.value);
+    });
+
+    this.afterRunDeleted.subscribe((id) => {
+      this.store.myRuns.next(this.store.myRuns.value.filter((call) => call.id !== id));
+      this.store.favoriteRuns.next(this.store.favoriteRuns.value.filter((call) => call.id !== id));
+      this.store.sharedRuns.next(this.store.sharedRuns.value.filter((call) => call.id !== id));
     });
 
     this.allRunsFetch.next();
