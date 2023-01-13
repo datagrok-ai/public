@@ -205,34 +205,34 @@ export abstract class FunctionView extends DG.ViewBase {
     const newHistoryBlock = UiUtils.historyPanel(this.func!);
 
     newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id)));
-    newHistoryBlock.onRunAddToFavorites.subscribe(async (funcCall) => {
-      await this.addRunToFavorites(funcCall);
 
-      newHistoryBlock.myRunsFetch.next();
-      newHistoryBlock.favRunsFetch.next();
+    newHistoryBlock.beforeRunAddToFavorites.subscribe(async (funcCall) => {
+      funcCall = await this.addRunToFavorites(funcCall);
+
+      newHistoryBlock.afterRunAddToFavorites.next(funcCall);
     });
-    newHistoryBlock.onRunAddToShared.subscribe(async (funcCall) => {
-      await this.addRunToShared(funcCall);
+    newHistoryBlock.beforeRunAddToShared.subscribe(async (funcCall) => {
+      funcCall = await this.addRunToShared(funcCall);
 
-      newHistoryBlock.myRunsFetch.next();
-      newHistoryBlock.sharedRunsFetch.next();
-    });
-
-    newHistoryBlock.onRunDeleted.subscribe(async (id) => {
-      await this.deleteRun(await historyUtils.loadRun(id));
-      newHistoryBlock.allRunsFetch.next();
+      newHistoryBlock.afterRunAddToShared.next(funcCall);
     });
 
-    newHistoryBlock.onRunRemoveFromFavorites.subscribe(async (id) => {
-      await this.removeRunFromFavorites(await historyUtils.loadRun(id));
-      newHistoryBlock.myRunsFetch.next();
-      newHistoryBlock.favRunsFetch.next();
+    newHistoryBlock.beforeRunDeleted.subscribe(async (id) => {
+      await this.deleteRun(await historyUtils.loadRun(id, true));
+
+      newHistoryBlock.afterRunDeleted.next(id);
     });
 
-    newHistoryBlock.onRunRemoveFromShared.subscribe(async (id) => {
-      await this.removeRunFromShared(await historyUtils.loadRun(id));
-      newHistoryBlock.myRunsFetch.next();
-      newHistoryBlock.sharedRunsFetch.next();
+    newHistoryBlock.beforeRunRemoveFromFavorites.subscribe(async (id) => {
+      await this.removeRunFromFavorites(await historyUtils.loadRun(id, true));
+
+      newHistoryBlock.afterRunRemoveFromFavorites.next(id);
+    });
+
+    newHistoryBlock.beforeRunRemoveFromShared.subscribe(async (id) => {
+      await this.removeRunFromShared(await historyUtils.loadRun(id, true));
+
+      newHistoryBlock.afterRunRemoveFromShared.next(id);
     });
 
     ui.empty(this.historyRoot);
@@ -304,7 +304,7 @@ export abstract class FunctionView extends DG.ViewBase {
     callToUnfavorite.options['annotation'] = null;
     callToUnfavorite.options['isFavorite'] = false;
     await this.onBeforeRemoveRunFromFavorites(callToUnfavorite);
-    const favoriteSave = await historyUtils.saveRun(callToUnfavorite);
+    const favoriteSave = await grok.dapi.functions.calls.allPackageVersions().save(callToUnfavorite);
     await this.onAfterRemoveRunFromFavorites(favoriteSave);
     return favoriteSave;
   }
