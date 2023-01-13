@@ -136,7 +136,6 @@ export class TreeUtils {
     if (aggregations.length > 0)
       aggregateParentNodes();
 
-    console.log(JSON.stringify(data));
     markSelectedNodes(data);
 
     return data;

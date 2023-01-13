@@ -49,7 +49,7 @@ export class SankeyViewer extends EChartViewer {
       }, params.event.event);
     });
 
-    this.dataFrame.onRowsFiltering.subscribe((_) => {
+    this.dataFrame.onRowsFiltered.subscribe((_) => {
       this.refreshColumnsOnFilter();
     });
   }

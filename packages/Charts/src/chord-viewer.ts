@@ -59,11 +59,11 @@ export class ChordViewer extends EChartViewer {
     this.chart.on('click', { dataType: 'edge' }, (params: any) => {
       this.dataFrame.selection.handleClick((i) => {
         return dataFrameSourceColumn.get(i) === params.data.source &&
-        dataFrameTargetColumn.get(i) === params.data.target;
+          dataFrameTargetColumn.get(i) === params.data.target;
       }, params.event.event);
     });
 
-    this.dataFrame.onRowsFiltering.subscribe((_) => {
+    this.dataFrame.onRowsFiltered.subscribe((_) => {
       this.refreshColumnsOnFilter();
     });
   }
