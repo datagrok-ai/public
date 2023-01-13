@@ -71,6 +71,11 @@ export {
 } from './src/trees/tree-helper';
 
 export {
+  IPdbHelper,
+  getPdbHelper
+} from './src/pdb/pdb-helper';
+
+export {
   TreeCutOptions,
   IDendrogramService,
   getDendrogramService
