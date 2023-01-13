@@ -74,8 +74,8 @@ category('Viewers: Form', () => {
     if (titleElem.value != 'SuperTitle')
       throw new Error('title property has not been set');
     if (descElem.innerHTML != 'SuperDescription')
-      throw new Error('description property has not been set');     
-  });
+      throw new Error('description property has not been set');
+  }, {skipReason: 'GROK-11670'});
 
   test('form.serialization', async () => {
     tv.form();

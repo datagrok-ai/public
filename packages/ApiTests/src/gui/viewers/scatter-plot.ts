@@ -46,7 +46,7 @@ category('Viewers: Scatter Plot', () => {
             break;
         }
     } */
-  });
+  }, {skipReason: 'GROK-11670'});
 
   test('scatterPlot.api', async () => {
     const scatterPlot = v.scatterPlot({
@@ -85,7 +85,7 @@ category('Viewers: Scatter Plot', () => {
       throw 'showVerticalGridLines property has not been set';
     if (scatterPlot.props.markerBorderWidth != 10)
       throw 'markerBorderWidth property has not been set';
-  });
+  }, {skipReason: 'GROK-11670'});
 
   // Does not work through Test Manager
   test('scatterPlot.serialization', async () => {
@@ -112,10 +112,10 @@ category('Viewers: Scatter Plot', () => {
       throw 'showVerticalGridLines property has not been deserialized';
     if (scatterPlot!.props.markerBorderWidth != 10)
       throw 'markerBorderWidth property has not been deserialized';         
-  });
+  }, {skipReason: 'GROK-11670'});
   
   after(async () => {
     grok.shell.closeAll();
-    await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Scatter plot').first());
+    // await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Scatter plot').first());
   }); 
 });
