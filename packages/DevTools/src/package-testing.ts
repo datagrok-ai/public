@@ -469,7 +469,8 @@ export class TestManager extends DG.ViewBase {
 
     grok.shell.closeAll();
     setTimeout(() => {
-      grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType);
+      grok.shell.o = this.getTestsInfoPanel(node, tests, nodeType,
+        grok.shell.lastError.length ? grok.shell.lastError : '');
     }, 30);
   }
 
@@ -522,12 +523,12 @@ export class TestManager extends DG.ViewBase {
     }
   }
 
-  getTestsInfoPanel(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE) {
+  getTestsInfoPanel(node: DG.TreeViewGroup | DG.TreeViewNode, tests: any, nodeType: NODE_TYPE, unhandled?: string) {
     const acc = ui.accordion();
     const accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
-    const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType);
+    const grid = this.getTestsInfoGrid(this.resultsGridFilterCondition(tests, nodeType), nodeType, false, unhandled);
     acc.addPane('Details', () => ui.div(this.testDetails(node, tests, nodeType)), true);
     acc.addPane('Results', () => ui.div(grid), true);
     return acc.root;
@@ -554,7 +555,7 @@ export class TestManager extends DG.ViewBase {
     ]);
   }
 
-  getTestsInfoGrid(condition: string, nodeType: NODE_TYPE, isTooltip?: boolean) {
+  getTestsInfoGrid(condition: string, nodeType: NODE_TYPE, isTooltip?: boolean, unhandled?: string) {
     let info = ui.divText('No tests have been run');
     if (this.testsResultsDf) {
       const testInfo = this.testsResultsDf
@@ -568,11 +569,16 @@ export class TestManager extends DG.ViewBase {
         const time = testInfo.get('time, ms', 0);
         const result = testInfo.get('result', 0);
         const resColor = testInfo.get('success', 0) ? 'var(--green-2)' : 'var(--red-3)';
-        info = ui.divV([
+        const infoMain = [
           ui.divText(result,
             {style: {color: testInfo.get('skipped', 0) ? 'var(--orange-2)' : resColor, userSelect: 'text'}}),
           ui.divText(`Time, ms: ${time}`),
-        ]);
+        ];
+        if (unhandled) {
+          infoMain.unshift(ui.divText(`Test caused an Unhandled exception: ${unhandled}`,
+            {style: {color: 'var(--red-3)', userSelect: 'text'}}));
+        }
+        info = ui.divV(infoMain);
         if (cat === this.autoTestsCatName)
           info.append(`Function: ${testInfo.get('funcTest', 0)}`);
         if (nodeType !== NODE_TYPE.TEST)
@@ -581,12 +587,17 @@ export class TestManager extends DG.ViewBase {
           info.append(ui.divText(`Category: ${cat}`));
       } else {
         if (!isTooltip) {
-          info = ui.divV([
+          const infoMain = [
             ui.button('Add to workspace', () => {
               grok.shell.addTableView(testInfo);
             }),
             testInfo.plot.grid().root,
-          ]);
+          ];
+          if (unhandled) {
+            infoMain.unshift(ui.divText(`One of the tests caused an Unhandled exception: ${unhandled}`,
+              {style: {color: 'var(--red-3)', userSelect: 'text'}}));
+          }
+          info = ui.divV(infoMain);
         } else
           return null;
       }
