@@ -47,7 +47,6 @@ export class ComputationView extends FunctionView {
         await this.onBeforeLoadRun();
         this.linkFunccall(urlRun);
         await this.onAfterLoadRun(urlRun);
-        this.setRunViewReadonly();
         ui.setUpdateIndicator(this.root, false);
         url.searchParams.delete('id');
       }, 0);
