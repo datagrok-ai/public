@@ -130,10 +130,15 @@ export class TreeViewer extends EChartViewer {
 
   getSeriesData() {
     const aggregations = [];
-    if (this.sizeColumnName)
-      aggregations.push({ type: <DG.AggregationType> this.sizeAggrType, columnName: this.sizeColumnName, propertyName: 'size' });
-    if (this.colorColumnName)
-      aggregations.push({ type: <DG.AggregationType> this.colorAggrType, columnName: this.colorColumnName, propertyName: 'color' });
+
+    if (this.sizeColumnName) {
+      aggregations.push({ type: <DG.AggregationType> this.sizeAggrType,
+        columnName: this.sizeColumnName, propertyName: 'size' });
+    }
+    if (this.colorColumnName) {
+      aggregations.push({ type: <DG.AggregationType> this.colorAggrType,
+        columnName: this.colorColumnName, propertyName: 'color' });
+    }
 
     return [TreeUtils.toTree(this.dataFrame, this.hierarchyColumnNames, this.dataFrame.filter, null, aggregations)];
   }
