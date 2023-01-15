@@ -104,3 +104,16 @@ export function _SurfacePlot() {
 export function _SubstituentAnalysisViewer() {
   return new SubstituentAnalysisViewer();
 }
+
+//name: radarViewerDemo
+//meta.demoPath: Viewers | Radar
+export function _radarViewerDemo() {
+  radarViewerDemo();
+}
+
+//name: radarViewerDemo
+//meta.demoPath: Viewers | Timelines
+export function _timelinesViewerDemo() {
+  let tv = grok.shell.addTableView(grok.data.demo.demog());
+  tv.addViewer(DG.VIEWER.TIMELINES);
+}

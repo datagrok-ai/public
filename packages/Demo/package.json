@@ -15,6 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/utils": "^1.11.1",
     "datagrok-api": "^1.0.0",
+    "rxjs": "^6.5.5",
     "ts-loader": "latest",
     "typescript": "latest"
   },
@@ -27,6 +28,7 @@
     "webpack-cli": "latest"
   },
   "scripts": {
+    "link-api": "npm link datagrok-api",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
     "debug-demo": "grok publish",

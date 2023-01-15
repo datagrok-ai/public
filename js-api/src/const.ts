@@ -125,6 +125,11 @@ export enum TYPE {
   NOTEBOOK = 'Notebook'
 }
 
+/** Commonly used options on the function level */
+export enum FUNC_OPTIONS {
+  DEMO_PATH = 'demoPath',    // Demo path, such as 'Viewers | Radar'
+}
+
 // export type FILTER_TYPE =
 //   'histogram' | 'categorical' | 'multi-value' | 'bool-columns' |
 //   'free-text' | 'column-free-text' | 'Chem:substructureFilter';
@@ -370,6 +375,7 @@ export enum VIEWER {
   TRELLIS_PLOT = 'Trellis plot',
   WORD_CLOUD = 'Word cloud',
   TIMELINES = 'TimelinesViewer',
+  RADAR_VIEWER = 'RadarViewer',
   SURFACE_PLOT = 'SurfacePlot'
 }
 
