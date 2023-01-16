@@ -12,7 +12,7 @@ import $ from 'cash-dom';
 import {download} from '../utils/helpers';
 import {sequenceToMolV3000} from '../utils/structures-works/from-monomers';
 import {linkStrandsV3000} from '../utils/structures-works/mol-transformations';
-import {getFormat} from './sequence-codes-tools';
+import {isValidSequence} from './sequence-codes-tools';
 import {drawMolecule} from '../utils/structures-works/draw-molecule';
 
 /** Data associated with strands */
@@ -23,7 +23,10 @@ type StrandData = {
 
 /** Get a molfile for a single strand */
 function getMolfileForStrand(strand: string, invert: boolean): string {
-  const format = getFormat(strand);
+  if (strand === '')
+    return '';
+  const validationOutput = isValidSequence(strand, null);
+  const format = validationOutput.synthesizer![0];
   let molfile = '';
   try {
     molfile = sequenceToMolV3000(strand, invert, false, format!);
@@ -137,16 +140,17 @@ export function getSdfTab(): HTMLDivElement {
       const backdrop = ui.div([highlights]);
       $(backdrop).addClass('sdf-backdrop');
       inputBase.root.appendChild(backdrop);
-      inputBase.onInput(() => { // dummy handler for malformed inputs
-        const inputValue = inputBase.value;
-        const cutoff = 5;
-        if (inputValue.length >= cutoff) {
-          const transparentText = inputBase.value.slice(0, cutoff);
-          const highlightedText = inputBase.value.slice(cutoff);
-          highlights.innerHTML = transparentText + '<mark>' + highlightedText + '</mark>';
-          const mark = highlights.getElementsByTagName('mark').item(0);
-          ui.tooltip.bind(mark!, 'This part of the input is malformed');
-        }
+      inputBase.onInput(() => {
+        // // dummy handler for malformed inputs
+        // const inputValue = inputBase.value;
+        // const cutoff = 5;
+        // if (inputValue.length >= cutoff) {
+        //   const transparentText = inputBase.value.slice(0, cutoff);
+        //   const highlightedText = inputBase.value.slice(cutoff);
+        //   highlights.innerHTML = transparentText + '<mark>' + highlightedText + '</mark>';
+        //   const mark = highlights.getElementsByTagName('mark').item(0);
+        //   ui.tooltip.bind(mark!, 'This part of the input is malformed');
+        // }
       });
     }
   );
