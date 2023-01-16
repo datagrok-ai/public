@@ -21,6 +21,7 @@ export abstract class Tutorial extends DG.Widget {
     return this._t;
   }
 
+  imageUrl: string = '';
   nextLink: HTMLAnchorElement = ui.link('next',
     '',
     'Go to the next tutorial', {
