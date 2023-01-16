@@ -43,7 +43,6 @@ function filterNodesIter(rootGroup: TreeViewGroup, recordCount : number, hitsThr
   }
 }
 
-
 function isNodeFiltered(node: TreeViewNode) {
   return node.root.style.display === 'none';
 }
@@ -100,19 +99,25 @@ function updateNodeHitsLabel(group : TreeViewNode, text : string) : void {
   labelDiv!.innerHTML = text;
 }
 
-async function updateAllNodesHits(thisViewer: ScaffoldTreeViewer) {
+async function updateAllNodesHits(thisViewer: ScaffoldTreeViewer, onDone : Function | null = null) {
   const items = thisViewer.tree.items;
   if (items.length > 0) {
+    const nStart = new Date().getTime();
     await updateNodesHitsImpl(thisViewer, items, 0, items.length - 1);
-    console.log('All Hits are calculated');
+    const nEnd = new Date().getTime();
+    console.log('All Hits are calculated spending ' + Math.floor((nEnd - nStart)/1000) + ' sec.');
 
     //buildOrphans(thisViewer.tree);
     //console.log('Orphans are calculated');
     //thisViewer.clearOrphanFolders(thisViewer.tree);
     //thisViewer.appendOrphanFolders(thisViewer.tree);
-    thisViewer.filterTree(thisViewer.hitsThresh);
+    thisViewer.filterTree(thisViewer.threshold);
     thisViewer.updateSizes();
     console.log('Orphans are appended');
+
+    if(onDone !== null) {
+      onDone();
+    }
   }
 }
 
@@ -160,10 +165,49 @@ async function _initWorkers(molColumn: DG.Column) : Promise<DG.BitSet> {
 let offscreen : OffscreenCanvas | null = null;
 let gOffscreen : OffscreenCanvasRenderingContext2D | null = null;
 
+function processUnits(molPBlok : string) {
+  let curPos = 0;
+  curPos = molPBlok.indexOf('\n', curPos) + 1;
+  curPos = molPBlok.indexOf('\n', curPos) + 1;
+  curPos = molPBlok.indexOf('\n', curPos) + 1;
+  const atomCount = parseInt(molPBlok.substring(curPos, curPos + 3));
+  const bondCount = parseInt(molPBlok.substring(curPos + 3, curPos + 6));
+  curPos = molPBlok.indexOf('\n', curPos) + 1;
+
+  //32 33 34 N O S -> 55-57
+  const arom_atoms = new Array();
+  for (let idx_atom=0; idx_atom < atomCount; ++idx_atom) {
+    let idxElem = curPos + 31;
+    let str = molPBlok.substring(idxElem, idxElem + 3);
+    if (str === "N  " || str === "O  " || str === 'S  '){
+      let idxMark = curPos + 55;
+      let strTmp = molPBlok.substring(idxMark +1, idxMark + 2);
+      let numTmp = parseInt(strTmp);
+      if (numTmp === 1) {
+        if (str === "O  " || str === 'S  ') {
+          arom_atoms.unshift({elem: str, atom_index: idx_atom + 1})
+        } else arom_atoms.push({elem: str, atom_index: idx_atom + 1})
+      }
+    }
+    curPos = molPBlok.indexOf('\n', curPos) + 1;
+  }
+
+  let curPosAdd = curPos;
+  for(let idx_bond =0; idx_bond < bondCount; ++idx_bond) {
+    let s = "";
+    if ((s = molPBlok.substring(curPosAdd + 8, curPosAdd + 9)) === '4') {
+      let endStr = molPBlok.substring(curPosAdd + 9);
+      molPBlok = molPBlok.substring(0, curPosAdd + 6) + "  6" + endStr;
+    }
+    curPosAdd = molPBlok.indexOf('\n', curPosAdd) + 1;
+  }
+  return molPBlok;
+}
+
 function renderMolecule(molStr: string, width: number, height: number, skipDraw: boolean = false): HTMLDivElement {
   if(offscreen === null) {
     offscreen = new OffscreenCanvas(CELL_WIDTH, CELL_HEIGHT);
-    gOffscreen = offscreen.getContext('2d');
+    gOffscreen = offscreen.getContext('2d', {willReadFrequently : true});
   }
 
   const g = gOffscreen;
@@ -177,9 +221,24 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     const lineWidth = tm.width;
     g!.fillText(text, Math.floor((width - lineWidth) / 2), Math.floor((height - fontHeight) / 2));
   } else {
-    const mol = _rdKitModule.get_mol(molStr);
-    drawRdKitMoleculeToOffscreenCanvas(mol, CELL_WIDTH, CELL_HEIGHT, offscreen, null);
-    mol.delete();
+    let mol = null;
+    try {
+      mol = _rdKitModule.get_mol(molStr);
+      drawRdKitMoleculeToOffscreenCanvas(mol, CELL_WIDTH, CELL_HEIGHT, offscreen, null);
+      mol.delete();
+    }
+    catch(e) {
+      console.error("Mol ERROR");
+      molStr = processUnits(molStr);
+
+      try { mol = _rdKitModule.get_qmol(molStr);
+        drawRdKitMoleculeToOffscreenCanvas(mol, CELL_WIDTH, CELL_HEIGHT, offscreen, null);
+        mol.delete();
+      }
+      catch(e) {
+        console.error("Mol ERROR ERROR");
+      }
+    }
   }
 
   const bitmap : ImageBitmap = offscreen.transferToImageBitmap();
@@ -194,8 +253,6 @@ function renderMolecule(molStr: string, width: number, height: number, skipDraw:
     reader.readAsDataURL(blob);
     reader.onload = () => moleculeHost.src = reader.result as string
  });*/
-
-
   const moleculeHost = ui.canvas(width, height);
   $(moleculeHost).addClass('chem-canvas');
 
@@ -225,7 +282,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   molColumns: Array<DG.Column> = [];
   molColumnIdx: number = -1;
 
-  hitsThresh: number;
+  threshold: number;
 
   checkBoxesUpdateInProgress: boolean = false;
   TreeEncodeUpdateInProgress: boolean = false;
@@ -261,34 +318,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       category: 'Data',
       userEditable: this.molColumns.length > 0
     });
-    this.hitsThresh = this.float('hitsThresh', 0, {min: 0, max: 0.2});
-    this.hitsThresh = 0;
+    this.threshold = this.float('threshold', 0, {min: 0, max: 0.2});
+    this.threshold = 0;
     this.TreeEncode = this.string('TreeEncode', '[]', {category: 'Data', userEditable: false});
 
     this.helpUrl = '/help/visualize/viewers/scaffold-tree.md';
-/*
-    const offscreenTest = new OffscreenCanvas(CELL_WIDTH, CELL_HEIGHT);
-    const gOffscreenTest = offscreenTest.getContext('2d');
-    if (renderer == null)
-      renderer = renderer = new RDKitCellRenderer(_rdKitModule);
-
-    const r = window.devicePixelRatio;
-
-    const nTineStart = new Date().getTime();
-    for (let n = 0; n < this.molColumns[this.molColumnIdx].length; ++n) {
-
-      const molStr = this.molColumns[this.molColumnIdx].get(n);
-      //console.log(n + ' ' +molStr);
-      // @ts-ignore
-      //renderer.render(gOffscreenTest, 0, 0, CELL_WIDTH / r, CELL_HEIGHT / r, DG.GridCell.fromValue(molStr));
-      const mol = _rdKitModule.get_mol(molStr);
-      drawRdKitMoleculeToOffscreenCanvas(mol, CELL_WIDTH / r, CELL_HEIGHT / r, offscreenTest, null);
-      mol.delete();
-    }
-
-    const nTineEnd = new Date().getTime();
-    console.log('Spent on molecules: ' + (nTineEnd - nTineStart))
-*/
   }
 
   get treeRoot() {
@@ -319,29 +353,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     //this.root.style.visibility = 'hidden';
     ui.setUpdateIndicator(this.root, true);
     this.progressBar = DG.TaskBarProgressIndicator.create('Generating Scaffold Tree...');
-
     this.progressBar.update(0, 'Installing ScaffoldGraph..: 0% completed');
-
-    const SCAFFOLD_GRAPH_INSTALLED = 'SCAFFOLD_GRAPH_INSTALLED';
-    const installed = await grok.dapi.userDataStorage.getValue(SCAFFOLD_GRAPH_INSTALLED, SCAFFOLD_GRAPH_INSTALLED, false);
-    console.log('ScaffoldGraph Installed: ' + installed);
-    if (installed !== 'true') {
-      try {
-        //await installScaffoldGraph();
-        await grok.dapi.userDataStorage.postValue(SCAFFOLD_GRAPH_INSTALLED, SCAFFOLD_GRAPH_INSTALLED, 'true', false);
-      } catch (e) {
-        console.error(e);
-        ui.setUpdateIndicator(this.root, false);
-        this.progressBar.update(100, 'Installation failed');
-        this.progressBar.close();
-        this.message = 'Installation of ScaffoldGraph package failed';
-        //this.root.style.visibility = 'visible';
-        //new Balloon().error('Could not generate scaffold tree');
-        return;
-      }
-    }
-
-    this.progressBar.update(20, 'Initializing search..: 20% completed');
     if (!this.workersInit) {
       await _initWorkers(this.molColumn);
       this.workersInit = true;
@@ -374,12 +386,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.setUpdateIndicator(this.root, false);
       this.progressBar.update(50, 'Build failed');
       this.progressBar.close();
-      this.message = 'Tree build failed...Please ensure that ScaffoldGraph plugin is installed';
-      //this.root.style.visibility = 'visible';
-      //new Balloon().error('Could not generate scaffold tree');
+      this.message = 'Tree build failed...Please ensure that python package ScaffoldGraph is installed';
       return;
     }
-
 
     if (jsonStr !== null) {
       const json = JSON.parse(jsonStr);
@@ -398,7 +407,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
       this.updateSizes();
       this.updateUI();
-      updateAllNodesHits(this); //this will run asynchronously
+
+      if(this.tree.children.length > 1) {
+        for (let n = 0; n < this.tree.children.length; ++n) {
+          (this.tree.children[n] as TreeViewGroup).expanded = false;
+        }
+      }
+
+      updateAllNodesHits(this, () => thisViewer.filterTree(thisViewer.threshold)); //this will run asynchronously
     }
     //this.root.style.visibility = 'visible';
     this.progressBar.close();
@@ -430,7 +446,11 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       const color = valid ? 'lightgreen !important' : 'hotpink !important';
 
       iconRoot!.style.cssText = iconRoot!.style.cssText += ('color: ' + color);
-      iconRoot!.style.visibility = 'visible';
+
+      const autocreated = (node.value as any).autocreated;
+      if (autocreated !== undefined && autocreated)
+        iconRoot!.style.visibility = 'visible';
+
       if (!valid)
         iconRoot!.setAttribute('tooltip', errorMsg);
       node.value = {smiles: molStrSketcher, bitset: bitset};
@@ -439,7 +459,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       //buildOrphans(thisViewer.tree);
       //thisViewer.clearOrphanFolders(thisViewer.tree);
       //thisViewer.appendOrphanFolders(thisViewer.tree);
-      thisViewer.filterTree(thisViewer.hitsThresh);
+      thisViewer.filterTree(thisViewer.threshold);
       thisViewer.wrapper?.close();
       thisViewer.wrapper = null;
       thisViewer.updateSizes();
@@ -512,7 +532,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       //buildOrphans(thisViewer.tree);
       //thisViewer.clearOrphanFolders(thisViewer.tree);
       //thisViewer.appendOrphanFolders(thisViewer.tree);
-      thisViewer.filterTree(thisViewer.hitsThresh);
+      thisViewer.filterTree(thisViewer.threshold);
       thisViewer.updateSizes();
       thisViewer.updateUI();
       thisViewer.updateFilters();
@@ -677,13 +697,16 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
 
-  private createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false, index: number = -1) {
+  private createGroup(molStr: string, rootGroup: TreeViewGroup, skipDraw: boolean = false, index: number = -1) : TreeViewGroup | null {
     if (this.molColumn === null)
       return null;
 
-    const mol = _rdKitModule.get_mol(molStr);
-    molStr = mol.get_molblock();
-    mol.delete();
+    //molStr = '179\n     RDKit          2D\n\n 18 20  0  0  0  0  0  0  0  0999 V2000\n   -1.6852   -2.4718    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.3515   -3.9342    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.5242   -4.8694    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.0000   -4.5850    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.3515   -3.9342    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n    1.6852   -2.4718    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    3.1476   -2.1380    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    4.1679   -3.2376    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.6303   -2.9038    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    6.0724   -1.4704    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.0522   -0.3709    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    3.5898   -0.7046    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\n  2  3  2  0\n  2  4  1  0\n  4  5  1  0\n  5  6  2  0\n  6  7  1  0\n  7  8  4  0\n  8  9  4  0\n  9 10  4  0\n 10 11  4  0\n 11 12  4  0\n  6 13  1  0\n 13 14  1  0\n 14 15  1  0\n 15 16  1  0\n 16 17  1  0\n 17 18  1  0\n 12  1  1  0\n 12  7  4  0\n 18 13  1  0\nM  END\n'
+    //console.log('createGroup: ' + molStr);
+
+    //my changes const mol = _rdKitModule.get_mol(molStr);
+    //molStr = mol.get_molblock();
+    //mol.delete();
 
     const bitset =  DG.BitSet.create(this.molColumn.length);//await chemSubstructureSearchLibrary(this.molColumn, molStr, '');
     //const ratio = bitset.trueCount / bitset.length;
@@ -769,7 +792,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
   }
 
-  filterTree(hitsThresh: number) {
+  filterTree(hitsThresh: number) : void {
     this.clearOrphanFolders(this.tree);
     filterNodesIter(this.tree, this.molColumn!.length, hitsThresh);
     buildOrphans(this.tree);
@@ -795,13 +818,17 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         return;
 
       const json = JSON.parse(this.TreeEncode);
-      ScaffoldTreeViewer.deserializeTrees(json, this.tree, () => {
-        (molStr: string, rootGroup: TreeViewGroup) => {
-          return this.createGroup(molStr, rootGroup);
-        }
+      const thisViewer = this;
+      ScaffoldTreeViewer.deserializeTrees(json, this.tree, (molStr: string, rootGroup: TreeViewGroup) => {
+        return thisViewer.createGroup(molStr, rootGroup);
       });
-    } else if (p.name === 'hitsThresh')
-      this.filterTree(this.hitsThresh);
+
+      this.updateSizes();
+      this.updateUI();
+      updateAllNodesHits(this, () => thisViewer.filterTree(this.threshold)); // async
+
+    } else if (p.name === 'threshold')
+      this.filterTree(this.threshold);
   }
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
@@ -814,7 +841,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.tree.onNodeContextMenu.subscribe((args: any) => {
       const menu: DG.Menu = args.args.menu;
       const node: TreeViewGroup = args.args.item;
-      const orphans = (node.value as any).orphans;
+      const orphans = node.value === null || (node.value as any).orphans;
       if (orphans)
         return;
 
@@ -830,7 +857,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
           node.remove();
           //orphans
-          thisViewer.filterTree(thisViewer.hitsThresh);
+          thisViewer.filterTree(thisViewer.threshold);
           //buildOrphans(thisViewer.tree);
           //thisViewer.clearOrphanFolders(thisViewer.tree);
           //thisViewer.appendOrphanFolders(thisViewer.tree);
@@ -873,12 +900,34 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
           }
         }
       }
-
     });
+
+    this.tree.onNodeMouseEnter.subscribe(async(node: DG.TreeViewNode) => {
+      if (node.value === null)
+        return;
+
+      const bitset = (node.value as any).bitset;
+      const rows : DG.RowList= dataFrame.rows;
+      rows.highlight((idx: number) => bitset.get(idx));
+    });
+
+    this.tree.onNodeMouseLeave.subscribe(async(node: DG.TreeViewNode) => {
+      if (node.value === null)
+        return;
+
+      const bitset = (node.value as any).bitset;
+      dataFrame.mouseOverRowIdx = -1;
+    });
+
     this.subs.push(dataFrame.onRowsFiltering.subscribe(() => {
       if (thisViewer.bitset != null)
         dataFrame.filter.and(thisViewer.bitset);
     }));
+
+    this.subs.push(dataFrame.onMouseOverRowGroupChanged.subscribe(() => {
+      //console.log('Mouse Over Group');
+    }));
+
 
     this.subs.push(grok.events.onTooltipShown.subscribe((args) => {
       const tooltip = args.args.element;
@@ -890,6 +939,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }));
 
     this.render();
+
+    this.generateTree();
   }
 
   detach(): void {
@@ -979,11 +1030,33 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     iconClearFilter.style.visibility = "hidden";
     this.root.appendChild(iconClearFilter);
 
+    /*
+    const iconOpenFile = ui.iconFA('folder-open', () => {
+      //thisViewer.clearFilters();
+      const a = ui.dialog({title: 'Open tree'})
+        //@ts-ignore
+        .add(ui.fileBrowser({path: 'System:AppData/Bio/libraries'}).root)
+        .addButton('OK', () => a.close())
+        .show();
+    }, "Open saved tree");
+
+    iconOpenFile.style.color = "red";
+    iconOpenFile.style.textAlign = "left";
+    iconOpenFile.style.position = "absolute";
+    iconOpenFile.style.marginLeft = "120px";
+    iconOpenFile.style.fontSize = "17px";
+    //iconOpenFile.style.visibility = "hidden";
+    this.root.appendChild(iconOpenFile);
+   */
+
+
+
     this.tree.root.style.position = "absolute";
     this.tree.root.style.top = "25px";
     this.tree.root.style.width = '100%';
     this.tree.root.style.height = '100%';
     this.root.appendChild(this.tree.root);
+
 
     this._message = ui.divText('', 'chem-scaffold-tree-generate-message-hint');
     this.root.appendChild(this._message);
@@ -1027,7 +1100,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     return jsonNode;
   }
 
-
   static deserializeTrees(json: any, treeRoot: TreeViewGroup, createGroup: Function) : number {
     let countNodes = 0;
     for (let n = 0; n < json.length; ++n) {
@@ -1052,6 +1124,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     if (json.child_nodes === undefined)
       json.child_nodes = [];
 
+    (group.value as any).autocreated = true;
+
     //console.log('child_nodes: ' + json.child_nodes.length);
     for (let n = 0; n < json.child_nodes.length; ++n) {
       //console.log('processing child: ' + n);
@@ -1059,7 +1133,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     }
 
     ++countNodes;
-
     if (group.children.length === 0)
       enableNodeExtendArrow(group, false);
 
