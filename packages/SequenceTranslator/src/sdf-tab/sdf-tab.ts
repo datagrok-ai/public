@@ -21,6 +21,8 @@ type StrandData = {
   invert: boolean
 }
 
+const debugHighlight = false;
+
 /** Get a molfile for a single strand */
 function getMolfileForStrand(strand: string, invert: boolean): string {
   if (strand === '')
@@ -110,7 +112,7 @@ export function getSdfTab(): HTMLDivElement {
   const inverse = '3′ → 5′';
   let invertSS = false;
   let invertAS = false;
-  const invertAS2 = false;
+  let invertAS2 = false;
 
   // text inputs
   const ssInput = ui.textInput('', '', () => { onInput.next(); });
@@ -141,16 +143,18 @@ export function getSdfTab(): HTMLDivElement {
       $(backdrop).addClass('sdf-backdrop');
       inputBase.root.appendChild(backdrop);
       inputBase.onInput(() => {
-        // // dummy handler for malformed inputs
-        // const inputValue = inputBase.value;
-        // const cutoff = 5;
-        // if (inputValue.length >= cutoff) {
-        //   const transparentText = inputBase.value.slice(0, cutoff);
-        //   const highlightedText = inputBase.value.slice(cutoff);
-        //   highlights.innerHTML = transparentText + '<mark>' + highlightedText + '</mark>';
-        //   const mark = highlights.getElementsByTagName('mark').item(0);
-        //   ui.tooltip.bind(mark!, 'This part of the input is malformed');
-        // }
+        if (debugHighlight) {
+          // dummy handler for malformed inputs
+          const inputValue = inputBase.value;
+          const cutoff = 5;
+          if (inputValue.length >= cutoff) {
+            const transparentText = inputBase.value.slice(0, cutoff);
+            const highlightedText = inputBase.value.slice(cutoff);
+            highlights.innerHTML = transparentText + '<mark>' + highlightedText + '</mark>';
+            const mark = highlights.getElementsByTagName('mark').item(0);
+            ui.tooltip.bind(mark!, 'This part of the input is malformed');
+          }
+        }
       });
     }
   );
@@ -177,7 +181,7 @@ export function getSdfTab(): HTMLDivElement {
 
   const as2Direction = ui.choiceInput('AS2 direction', straight, [straight, inverse]);
   as2Direction.onChanged(() => {
-    invertAS = asDirection.value === inverse;
+    invertAS2 = as2Direction.value === inverse;
     onInput.next();
   });
 
