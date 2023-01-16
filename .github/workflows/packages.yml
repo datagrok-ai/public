@@ -277,7 +277,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.param.outputs.tar }}
-          path:   /tmp/${{ steps.docker_name_ver.outputs.package_name }}-${{ steps.docker_name_ver.outputs.image_ver }}-${{ github.run_id }}-${{ github.run_attempt }}.tar
+          path: /tmp/${{ steps.docker_name_ver.outputs.package_name }}-${{ steps.docker_name_ver.outputs.image_ver }}-${{ github.run_id }}-${{ github.run_attempt }}.tar
           retention-days: 7
 
       - name: Login to DockerHub
