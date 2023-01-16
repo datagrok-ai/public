@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
-import { Tutorial } from '../../../tutorial';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import wu from 'wu';
 
 

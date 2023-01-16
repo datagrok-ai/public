@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
-import { Tutorial } from '../../../tutorial';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 
 
 export class DashboardTutorial extends Tutorial {

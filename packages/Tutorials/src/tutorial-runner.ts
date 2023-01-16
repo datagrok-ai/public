@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { _package } from './package';
-import { Track } from './track';
-import { Tutorial } from './tutorial';
+import { Track } from '@datagrok-libraries/tutorials/src/track';
+import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 
 
 export class TutorialRunner {
