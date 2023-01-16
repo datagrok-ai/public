@@ -10,6 +10,7 @@ import {Ketcher} from "ketcher-core";
 import "ketcher-react/dist/index.css";
 import "./editor.css";
 import { chem } from "datagrok-api/grok";
+import { KETCHER_MOLV2000, KETCHER_MOLV3000 } from "./constants";
 
 let sketcherId = 0;
 
@@ -37,8 +38,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         this._sketcher = ketcher;
         (this._sketcher.editor as any).subscribe("change", async (_: any) => {
           this._smiles = await this._sketcher!.getSmiles();
-          this._molV2000 = await this._sketcher!.getMolfile('v2000');
-          this._molV3000 = await this._sketcher!.getMolfile('v3000');
+          this._molV2000 = await this._sketcher!.getMolfile(KETCHER_MOLV2000);
+          this._molV3000 = await this._sketcher!.getMolfile(KETCHER_MOLV3000);
           this.onChanged.next(null);
         });
         this._sketcher.editor.zoom(0.5);

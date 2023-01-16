@@ -44,10 +44,9 @@ export namespace chem {
   export const STORAGE_NAME = 'sketcher';
   export const KEY = 'selected';
   export const SMILES = 'smiles';
-  export const MOLV2000 = 'molv2000';
-  export const MOLV3000 = 'molV3000';
+  export const MOLV3000 = 'v3Kmolblock';
   export const SMARTS = 'smarts';
-  export const MOL = 'mol';
+  export const MOLBLOCK = 'molblock';
 
   export enum SKETCHER_MODE {
     INPLACE = 'Inplace',
@@ -124,7 +123,7 @@ export namespace chem {
     _smiles: string | null = null;
     _molfile: string | null = null;
     _smarts: string | null = null;
-    molFileUnits = MOLV2000;
+    molFileUnits = MOLBLOCK;
 
 
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
@@ -136,7 +135,7 @@ export namespace chem {
         return this._smarts!;
       }
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
-        this._molfile !== null ? convert(this._molfile, MOL, SMILES) :
+        this._molfile !== null ? convert(this._molfile, MOLBLOCK, SMILES) :
         this._smarts !== null ? smilesFromSmartsWarning() : '' : this._smiles;
     }
 
@@ -151,23 +150,23 @@ export namespace chem {
 
     getMolFile(): string {
       if (this.sketcher?.isInitialized) {
-        return this.molFileUnits === MOLV2000 ? this.sketcher.molFile : this.sketcher.molV3000;
+        return this.molFileUnits === MOLBLOCK ? this.sketcher.molFile : this.sketcher.molV3000;
       } else {
         if (this._molfile === null) {
-          return this._smiles !== null ? convert(this._smiles, SMILES, MOL) :
-            this._smarts !== null ? convert(this._smarts, SMARTS, MOL) : '';
+          return this._smiles !== null ? convert(this._smiles, SMILES, MOLBLOCK) :
+            this._smarts !== null ? convert(this._smarts, SMARTS, MOLBLOCK) : '';
         } else
           return this._molfile;
       }
     }
 
     setMolFile(x: string): void {
-      this.molFileUnits = x && x.includes('V3000') ? MOLV3000 : MOLV2000;
+      this.molFileUnits = x && x.includes('V3000') ? MOLV3000 : MOLBLOCK;
       this._molfile = x;
       this._smiles = null;
       this._smarts = null;
       if (this.sketcher?.isInitialized) {
-        this.molFileUnits === MOLV2000 ? this.sketcher!.molFile = x : this.sketcher!.molV3000 = x;
+        this.molFileUnits === MOLBLOCK ? this.sketcher!.molFile = x : this.sketcher!.molV3000 = x;
       }
       this.updateExtSketcherContent(this.extSketcherDiv);
     }
@@ -175,7 +174,7 @@ export namespace chem {
     async getSmarts(): Promise<string | null> {
       return this.sketcher?.isInitialized ? await this.sketcher.getSmarts() : !this._smarts === undefined ?
         this._smiles !== null ? convert(this._smiles, SMILES, SMARTS) :
-        this._molfile !== null ? convert(this._molfile, MOL, SMARTS) : '' : this._smarts;
+        this._molfile !== null ? convert(this._molfile, MOLBLOCK, SMARTS) : '' : this._smarts;
     }
 
     setSmarts(x: string): void {
@@ -452,9 +451,9 @@ export namespace chem {
     }
 
     static checkDuplicatesAndAddToStorage(storage: string[], molecule: string, localStorageKey: string) {
-      grok.functions.call('Chem:filterMoleculeDuplicates', {molecules: storage, molecule: molecule}).then((array: any) => {
-          localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...array.slice(0, 9)]));      
-      });
+      grok.functions
+        .call('Chem:filterMoleculeDuplicates', { molecules: storage, molecule: molecule })
+        .then((array: any) => localStorage.setItem(localStorageKey, JSON.stringify([molecule, ...array.slice(0, 9)])));
     }
 
     static isEmptyMolfile(molFile: string): boolean {
