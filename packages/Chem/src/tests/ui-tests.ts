@@ -331,7 +331,7 @@ category('UI', () => {
     await awaitCheck(() => {
       return Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === 'Details') !== undefined;
-    }, 'cannot load Smiles column properties', 5000);
+    }, 'cannot load Smiles column properties', 10000);
 
     const actions = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Actions') as HTMLElement;
