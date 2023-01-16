@@ -259,6 +259,12 @@ export class PeptidesModel {
     return this.logoSummarySelection.length === 0;
   }
 
+  get customClusters(): Iterable<DG.Column<boolean>> {
+    const query: {[key: string]: string} = {};
+    query[C.TAGS.CUSTOM_CLUSTER] = '1';
+    return this.df.columns.byTags(query);
+  }
+
   get settings(): type.PeptidesSettings {
     this._settings ??= JSON.parse(this.df.getTag('settings') ?? '{}');
     return this._settings;
@@ -545,17 +551,24 @@ export class PeptidesModel {
     const originalClustersColData = originalClustersCol.getRawData();
     const originalClustersColCategories = originalClustersCol.categories;
 
+    const customClustersColumnsList = wu(this.customClusters).toArray();
+
     const activityColData: type.RawData = this.df.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).getRawData();
     const activityColLen = activityColData.length;
 
-    const resultStats: Stats[] = new Array(originalClustersColCategories.length);
+    const resultStats: Stats[] = new Array(originalClustersColCategories.length + customClustersColumnsList.length);
 
-    for (let clusterIdx = 0; clusterIdx < originalClustersColCategories.length; ++clusterIdx) {
-      // const clusterIdx = clustersColData[rowIdx];
+    for (let clusterIdx = 0; clusterIdx < resultStats.length; ++clusterIdx) {
+      const customClusterIdx = clusterIdx - originalClustersColCategories.length;
+      const customClusterColData = customClustersColumnsList[customClusterIdx]?.toList();
+      const isAcitvityIdxValid = customClusterIdx < 0 ?
+        (i: number) => clusterIdx == originalClustersColData[i] :
+        (i: number) => customClusterColData[i];
+
       const mask = new Array(activityColLen);
       let trueCount = 0;
       for (let maskIdx = 0; maskIdx < activityColLen; ++maskIdx) {
-        mask[maskIdx] = clusterIdx == originalClustersColData[maskIdx];
+        mask[maskIdx] = isAcitvityIdxValid(maskIdx);
 
         if (mask[maskIdx])
           ++trueCount;
@@ -976,5 +989,11 @@ export class PeptidesModel {
   async addLogoSummaryTableViewer(): Promise<void> {
     const logoSummary = await this.df.plot.fromType('logo-summary-viewer') as LogoSummary;
     this.analysisView.dockManager.dock(logoSummary, DG.DOCK_TYPE.RIGHT, null, 'Logo Summary Table');
+  }
+
+  addNewCluster(clusterName: string): void {
+    const newClusterCol = DG.Column.fromBitSet(clusterName, this.df.selection);
+    newClusterCol.setTag(C.TAGS.CUSTOM_CLUSTER, '1');
+    this.df.columns.add(newClusterCol);
   }
 }
