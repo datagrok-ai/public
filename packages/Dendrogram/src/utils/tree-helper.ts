@@ -121,8 +121,8 @@ export class TreeHelper implements ITreeHelper {
     return !node ? ';' : `${toNewickInt(node)};`;
   }
 
-  getLeafList<TNode extends NodeType>(node: TNode): TNode[] {
-    if (node == null) return [];
+  getLeafList<TNode extends NodeType>(node: TNode | null): TNode[] {
+    if (!node) return [];
 
     if (isLeaf(node)) {
       return [node]; // node is a leaf
@@ -132,7 +132,9 @@ export class TreeHelper implements ITreeHelper {
     }
   }
 
-  getNodeList<TNode extends NodeType>(node: TNode): TNode[] {
+  getNodeList<TNode extends NodeType>(node: TNode | null): TNode[] {
+    if (!node) return [];
+
     if (isLeaf(node)) {
       return [node]; // node is a leaf
     } else {
@@ -157,8 +159,9 @@ export class TreeHelper implements ITreeHelper {
     return res;
   }
 
-  filterTreeByLeaves(node: NodeType, leaves: { [name: string]: any }): NodeType | null {
+  filterTreeByLeaves(node: NodeType | null, leaves: { [name: string]: any }): NodeType | null {
     // copy node because phylocanvas.gl changes data structure completely
+    if (!node) return null;
     const resNode = Object.assign({}, node); // shallow copy
 
     if (isLeaf(resNode)) {
@@ -173,7 +176,9 @@ export class TreeHelper implements ITreeHelper {
   }
 
   /***/
-  getNodesByLeaves<TNode extends NodeType>(node: TNode, leaves: { [name: string]: any }): TNode[] {
+  getNodesByLeaves<TNode extends NodeType>(node: TNode | null, leaves: { [name: string]: any }): TNode[] {
+    if (!node) return [];
+
     if (isLeaf(node)) {
       return node.name in leaves ? [node] : [];
     } else {
@@ -242,7 +247,7 @@ export class TreeHelper implements ITreeHelper {
 
   /** Sets grid's row order and returns tree (root node) of nodes presented in data */
   setGridOrder(
-    tree: NodeType, grid: DG.Grid, leafColName?: string,
+    tree: NodeType | null, grid: DG.Grid, leafColName?: string,
     removeMissingDataRows: boolean = false
   ): [NodeType, string[]] {
     console.debug('Dendrogram.setGridOrder() start');
@@ -307,12 +312,10 @@ export class TreeHelper implements ITreeHelper {
     const order: number[] = new Array<number>(resTreeLeafList.length); // rowCount filtered for leaves
     for (let leafI = 0; leafI < resTreeLeafList.length; ++leafI) {
       const leafNodeName = resTreeLeafList[leafI].name;
-      if (leafNodeName in dataNodeDict) {
+      if (leafNodeName in dataNodeDict)
         order[leafI] = dataNodeDict[leafNodeName];
-      } else {
+      else
         missedDataNodeList.push(leafNodeName);
-        // TODO: consider to add empty row with leaf name
-      }
     }
 
     grid.setRowOrder(order);
@@ -360,9 +363,7 @@ export class TreeHelper implements ITreeHelper {
         const dataRowI = dataNodeDict[leafName];
         clusterCol.set(dataRowI, clusterI, false);
       }
-      let k = 9;
     }
-    let k = 11;
   }
 
   buildClusters(tree: NodeCuttedType, clusterDf: DG.DataFrame, clusterColName: string, leafColName?: string): void {

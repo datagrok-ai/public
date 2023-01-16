@@ -6,11 +6,12 @@ import * as DG from 'datagrok-api/dg';
 import {Dendrogram, MyViewer} from './viewers/dendrogram';
 import {TreeHelper} from './utils/tree-helper';
 import {DendrogramApp} from './apps/dendrogram-app';
-import {HierarchicalClusteringApp} from './apps/hierarchical-clustering-app';
 import {IDendrogramService, ITreeHelper, NodeType, TreeCutOptions} from '@datagrok-libraries/bio';
+import {HierarchicalClusteringApp} from './apps/hierarchical-clustering-app';
 import {hierarchicalClusteringUI} from './utils/hierarchical-clustering';
-import {TreeForGridFilterApp} from './apps/tree-for-grid-filter-app';
 import {TreeForGridApp} from './apps/tree-for-grid-app';
+import {TreeForGridFilterApp} from './apps/tree-for-grid-filter-app';
+import {TreeForGridCutApp} from './apps/tree-for-grid-cut-app';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {injectTreeForGridUI2} from './viewers/inject-tree-for-grid2';
 import {DendrogramService} from './utils/dendrogram-service';
@@ -153,6 +154,18 @@ export async function treeForGridFilterApp(): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('open treeForGrid large app');
   try {
     const app = new TreeForGridFilterApp();
+    await app.init();
+  } finally {
+    pi.close();
+  }
+}
+
+//name: treeForGridCutApp
+//description: Test/demo app for TreeForGridCutApp (custom renderer, cutting slider)
+export async function treeForGridCutApp(): Promise<void> {
+  const pi = DG.TaskBarProgressIndicator.create('open treeForGridCut large app');
+  try {
+    const app = new TreeForGridCutApp();
     await app.init();
   } finally {
     pi.close();

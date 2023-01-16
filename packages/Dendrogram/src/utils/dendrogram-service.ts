@@ -9,7 +9,7 @@ import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
 
 export class DendrogramService implements IDendrogramService {
   injectTreeForGrid(
-    grid: DG.Grid, treeRoot: NodeType, leafColName?: string, neighborWidth?: number, cut?: TreeCutOptions
+    grid: DG.Grid, treeRoot: NodeType | null, leafColName?: string, neighborWidth?: number, cut?: TreeCutOptions
   ): GridNeighbor {
     const neighborWidthVal = neighborWidth ?? 100;
     return injectTreeForGridUI2(grid, treeRoot, leafColName, neighborWidthVal, cut);
