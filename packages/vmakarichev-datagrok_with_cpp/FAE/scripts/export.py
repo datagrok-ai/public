@@ -85,8 +85,11 @@ class Function:
         # get type and name part of line
         ignore1, ignore2, rest = line.partition(': ')        
 
-        # get type and name of the argument
-        argType, ignore, argName = rest.partition(' ')
+        # get type of the argument
+        argType, ignore, rest = rest.partition(' ')
+
+        # get name of the argument
+        argName, ignore, rest = rest.partition(' ')
 
         self.prototype += argName + ', '
 
@@ -193,13 +196,13 @@ class Function:
         """
         ignore1, ignore2, specification = line.partition(':')       
 
-        outputType, ignore, outputSource = specification.strip().partition(' ')
+        outputType, ignore, rest = specification.strip().partition(' ')
 
         outputType = outputType.strip()
 
-        ignore1, ignore2, outputSource = outputSource.partition(' ')
+        ignore1, ignore2, rest = rest.partition(' ')
 
-        outputSource = outputSource.strip().strip('[]')
+        outputSource, ignore1, rest = rest.strip().strip('[').partition(']')
         
         if outputType == 'objects':
             self.output['type'] = outputType
@@ -222,7 +225,7 @@ class Function:
             self.output['source'] = f'{outputSource}'
 
         stringToAnnotation, ignore1, ignore2 = line.partition('[')
-        self.annotation.append(stringToAnnotation)
+        self.annotation.append(stringToAnnotation + rest.strip())
 
     def finalizeOutput(self):
         """ Complete output part of the function specification.
@@ -506,7 +509,7 @@ def addExportedFunctionsToPackageFile(settings, functionsData):
                     put(line + '\n')
 
                 # put package function code
-                put(f'export function {prototype} ' + '{\n')
+                put(f'export async function {prototype} ' + '{\n')
                 put(f"  return callWasm({settings['name']}, '{funcName}', {callArgs});\n")
                 put('}\n\n')
 
@@ -530,7 +533,7 @@ def main(nameOfSettingsFile="module.json"):
         functionsData = getFunctionsFromListOfFiles(settings)
     
         # write functions descriptors to json-file
-        saveFunctionsDataToFile(functionsData, 'func.json')
+        #saveFunctionsDataToFile(functionsData, 'func.json')
 
         # 3) get command for Emscripten tool
         command = getCommand(settings, functionsData)  

@@ -29,14 +29,14 @@ namespace fae
 
     // dimension of solution
 	const int DIM = 13; 
- 
+   
 	// Version 3
 	VectorXd f(double _time, VectorXd & y) noexcept
 	{
-		VectorXd res(y.size());		
+		VectorXd res(y.size());
 
-		// ORIGINAL FORMULAS ARE REMOVED!
-		
+		// ORIGINAL EXPRESSIONS ARE REMOVED!
+
 		return res;
 	} // f
  
@@ -44,26 +44,27 @@ namespace fae
 }; //fae
 
 //name: solveFAE
-//input: double t0
-//input: double t1
-//input: double h
-//input: double FFox
-//input: double KKox
-//input: double FFred
-//input: double KKred
-//input: double Ffree
-//input: double Kfree
-//input: double FKred
-//input: double FKox
-//input: double MEAthiol
-//input: double CO2
-//input: double yO2P
-//input: double Cystamine
-//input: double VL
+//input: double t0 = 0 {units: minutes; caption: initial; category: Time}
+//input: double t1 = 1000 {units: minutes; caption: final; category: Time}
+//input: double h = 0.01 {units: minutes; caption: step; category: Time}
+//input: double FFox = 0.268 {caption: FFox; category: Initial values}
+//input: double KKox = 0.268 {caption: KKox; category: Initial values}
+//input: double FFred = 0.0 {caption: FFred; category: Initial values}
+//input: double KKred = 0.0 {caption: KKred; category: Initial values}
+//input: double Ffree = 0.0 {caption: Ffree; category: Initial values}
+//input: double Kfree = 0.0 {caption: Kfree; category: Initial values}
+//input: double FKred = 0.0 {caption: FKred; category: Initial values}
+//input: double FKox = 0.0 {caption: FKox; category: Initial values}
+//input: double MEAthiol = 34.0 {caption: MEAthiol; category: Initial values}
+//input: double CO2 = 0.22 {caption: CO2; category: Initial values}
+//input: double yO2P = 0.209 {caption: yO2P; category: Initial values}
+//input: double Cystamine = 0.0 {caption: Cystamine; category: Initial values}
+//input: double VL = 6.6 {caption: VL; category: Initial values}
 //input: int timesCount
 //input: int varsCount
 //output: column_list result [new(timesCount, varsCount); 't, time (minutes)'; 'FFox(t)'; 'KKox(t)'; 'FFred(t)'; 'KKred(t)'; 'Ffree(t)'; 'Kfree(t)'; 'FKred(t)'; 'FKox(t)'; 'MEAthiol(t)'; 'CO2(t)'; 'yO2P(t)'; 'Cystamine(t)'; 'VL(t)']
-//output: dataframe solution [result]
+//output: dataframe solution [result] {caption: Solution; viewer: Line chart(x: "t, time (minutes)", sharex: "true", multiAxis: "true", yGlobalScale: "true", multiAxisLegendPosition: "RightCenter") | Grid(block: 100) }
+//editor: Compute:RichFunctionViewEditor
 EMSCRIPTEN_KEEPALIVE
 int solveFAE(float t0, float t1, float h, 
   float FFox, float KKox, float FFred, float KKred,

@@ -309,11 +309,13 @@ function cppFuncWrapper(module, cFuncName, returnType, args)
 
         let extendedTypeOfReturn = (returnType == 'num') ? 'number' : null;   
         
-        // call exported function
+        /*// call exported function
         if(extendedTypeOfReturn)
             result = module.ccall(cFuncName, extendedTypeOfReturn, types, params);
         else
-            result = module.ccall(cFuncName, extendedTypeOfReturn, types, params);
+            result = module.ccall(cFuncName, extendedTypeOfReturn, types, params);*/
+
+        result = module.ccall(cFuncName, extendedTypeOfReturn, types, params);
                     
         // update and get data from buffers if required
         for(let arg of args)
@@ -382,7 +384,7 @@ let Return = {
 };
 
 // The main tool that combines all together
-export function callWasm(module, funcName, inputs) {
+export async function callWasm(module, funcName, inputs) {
 
     let start = new Date().getTime();
 
