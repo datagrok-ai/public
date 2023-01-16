@@ -6,6 +6,7 @@ import grok_connect.utils.*;
 
 public class DbCredentials
 {
+    public static final String ACCESS_SERVER = "accessServer";
     public static final String SERVER = "server";
     public static final String DB = "db";
     public static final String SCHEMA = "schema";

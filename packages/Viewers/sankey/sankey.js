@@ -1,4 +1,6 @@
+import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+
 import {drag} from 'd3-drag';
 import {scaleOrdinal} from 'd3-scale';
 import {select} from 'd3-selection';
@@ -58,24 +60,34 @@ export class SankeyViewer extends DG.JsViewer {
   }
 
   prepareData() {
-    this.sourceCol = this.dataFrame.getCol(this.sourceColumnName);
-    this.targetCol = this.dataFrame.getCol(this.targetColumnName);
-    this.valueCol = this.dataFrame.getCol(this.valueColumnName);
-    const sourceCats = this.sourceCol.categories;
-    const targetCats = this.targetCol.categories;
-    const nodes = Array.from(new Set(sourceCats.concat(targetCats)))
+    const dataFrameSourceColumn = this.dataFrame.getCol(this.sourceColumnName);
+    const dataFrameTargetColumn = this.dataFrame.getCol(this.targetColumnName);
+    const dataFrameValueColumn = this.dataFrame.getCol(this.valueColumnName);
+    const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
+
+    const sourceList = new Array(filteredIndexList.length);
+    const targetList = new Array(filteredIndexList.length);
+    const valueList = new Array(filteredIndexList.length);
+
+    for (let i = 0; i < filteredIndexList.length; i++) {
+      sourceList[i] = dataFrameSourceColumn.get(filteredIndexList[i]);
+      targetList[i] = dataFrameTargetColumn.get(filteredIndexList[i]);
+      valueList[i] = dataFrameValueColumn.get(filteredIndexList[i]);
+    }
+
+    this.sourceCol = DG.Column.fromList('string', this.sourceColumnName, sourceList);
+    this.targetCol = DG.Column.fromList('string', this.targetColumnName, targetList);
+
+    const nodes = Array.from(new Set(sourceList.concat(targetList)))
       .map((node, index) => ({node: index, name: node}));
 
     const links = [];
-    const rowCount = this.dataFrame.rowCount;
-    const source = this.sourceCol.getRawData();
-    const target = this.targetCol.getRawData();
-    const value = this.valueCol.getRawData();
+    const rowCount = filteredIndexList.length;
     for (let i = 0; i < rowCount; i++) {
       links.push({
-        source: nodes.findIndex((node) => node.name === sourceCats[source[i]]),
-        target: nodes.findIndex((node) => node.name === targetCats[target[i]]),
-        value: value[i],
+        source: nodes.findIndex((node) => node.name === sourceList[i]),
+        target: nodes.findIndex((node) => node.name === targetList[i]),
+        value: valueList[i],
       });
     }
 
@@ -98,6 +110,8 @@ export class SankeyViewer extends DG.JsViewer {
   }
 
   render() {
+    this.prepareData();
+
     $(this.root).empty();
     const width = this.root.parentElement.clientWidth - this.margin.left - this.margin.right;
     const height = this.root.parentElement.clientHeight - this.margin.top - this.margin.bottom;
@@ -115,6 +129,9 @@ export class SankeyViewer extends DG.JsViewer {
       .attr('transform', `translate(${this.margin.left}, ${this.margin.top})`);
 
     const nodeGroup = svg.append('g').attr('class', 'node');
+
+    const dataFrameSourceColumn = this.dataFrame.getCol('source');
+    const dataFrameTargetColumn = this.dataFrame.getCol('target');
 
     const nodes = nodeGroup
       .selectAll('rect')
@@ -136,8 +153,8 @@ export class SankeyViewer extends DG.JsViewer {
       .on('click', (event, d) => {
         if (event.defaultPrevented) return; // dragging
         this.dataFrame.selection.handleClick((i) => {
-          return this.sourceCol.get(i) === d.name ||
-            this.targetCol.get(i) === d.name;
+          return dataFrameSourceColumn.get(i) === d.name ||
+            dataFrameTargetColumn.get(i) === d.name;
         }, event);
       });
 
@@ -157,8 +174,8 @@ export class SankeyViewer extends DG.JsViewer {
       .on('mouseout', () => ui.tooltip.hide())
       .on('click', (event, d) => {
         this.dataFrame.selection.handleClick((i) => {
-          return this.sourceCol.get(i) === d.source.name &&
-            this.targetCol.get(i) === d.target.name;
+          return dataFrameSourceColumn.get(i) === d.source.name &&
+            dataFrameTargetColumn.get(i) === d.target.name;
         }, event);
       });
 
@@ -170,6 +187,7 @@ export class SankeyViewer extends DG.JsViewer {
       .attr('y', (d) => (d.y1 + d.y0) / 2)
       .attr('dy', '0.35em')
       .attr('text-anchor', (d) => d.x0 < width / 2 ? 'start' : 'end')
+      .attr('class', (d) => (d.name).split(' ').join('_'))
       .text((d) => d.name);
 
     function dragmove(event, d) {
@@ -180,7 +198,11 @@ export class SankeyViewer extends DG.JsViewer {
       d.x1 += event.dx;
       d.y0 += event.dy;
       d.y1 += event.dy;
+
       rect.attr('transform', `translate(${d.x0 - rectX}, ${d.y0 - rectY})`);
+      nodeGroup.select(`text.${d.name.split(' ').join('_')}`)
+        .attr('transform', `translate(${d.x0 - rectX}, ${d.y0 - rectY})`);
+
       generator.update(graph);
       links.attr('d', sankeyLinkHorizontal());
     };

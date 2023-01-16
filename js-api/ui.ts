@@ -726,8 +726,8 @@ export function floatInput(name: string, value: number | null, onValueChanged: F
   return new InputBase(api.grok_FloatInput(name, value), onValueChanged);
 }
 
-export function dateInput(name: string, value: dayjs.Dayjs, onValueChanged: Function | null = null): DateInput {
-  return new DateInput(api.grok_DateInput(name, value.valueOf()), onValueChanged);
+export function dateInput(name: string, value: dayjs.Dayjs | null, onValueChanged: Function | null = null): DateInput {
+  return new DateInput(api.grok_DateInput(name, value?.valueOf()), onValueChanged);
 }
 
 export function boolInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase<boolean | null> {

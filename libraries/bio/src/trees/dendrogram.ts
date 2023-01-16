@@ -5,8 +5,12 @@ import * as DG from 'datagrok-api/dg';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 import {NodeType} from '.';
 
+/**
+ * min - undefined for root at 0
+ * max - undefined for total length of the tree
+ */
 export type TreeCutOptions = {
-  min: number, max: number, dataDf: DG.DataFrame,
+  min?: number, max?: number, dataDf: DG.DataFrame,
   clusterDf: DG.DataFrame, clusterColName: string,
 }
 

@@ -1055,15 +1055,18 @@ export abstract class JsInputBase<T = any> extends InputBase<T> {
 }
 
 
-export class DateInput extends InputBase<dayjs.Dayjs> {
+export class DateInput extends InputBase<dayjs.Dayjs | null> {
   dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
   }
 
-  get value(): dayjs.Dayjs { return dayjs(api.grok_DateInput_Get_Value(this.dart)); }
-  set value(x: dayjs.Dayjs) { toDart(api.grok_DateInput_Set_Value(this.dart, x.valueOf())); }
+  get value(): dayjs.Dayjs | null { 
+    const date = api.grok_DateInput_Get_Value(this.dart);
+    return date == null ? date : dayjs(date);
+  }
+  set value(x: dayjs.Dayjs | null) { toDart(api.grok_DateInput_Set_Value(this.dart, x?.valueOf())); }
 }
 
 export class ProgressIndicator {

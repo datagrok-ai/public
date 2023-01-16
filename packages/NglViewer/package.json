@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/ngl-viewer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
   "author": {
     "name": "Leonid Stolbov",
@@ -23,7 +23,9 @@
     "build": "webpack",
     "test": "grok test",
     "test-dev": "grok test --host dev",
-    "test-local": "grok test --host localhost"
+    "test-local": "grok test --host localhost",
+    "debug-local": "grok publish local --release",
+    "release-local": "grok publish local --release"
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^1.15.5",
@@ -48,7 +50,11 @@
     "webpack": "latest",
     "webpack-cli": "latest"
   },
-  "canEdit": [ "Developers" ],
-  "canView": [ "All users" ],
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
   "category": "Bioinformatics"
 }

@@ -1,15 +1,18 @@
+import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {Unsubscribable} from 'rxjs';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 
-import {_package} from '../package';
-import {TAGS} from '../utils/tree-helper';
+import {TAGS, TreeHelper} from '../utils/tree-helper';
 import {injectTreeForGridUI2} from '../viewers/inject-tree-for-grid2';
-import {NodeType, parseNewick, TreeCutOptions} from '@datagrok-libraries/bio';
+import {ITreeHelper, NodeType, parseNewick} from '@datagrok-libraries/bio';
+import {_package} from '../package';
+import {markupNode} from '../viewers/tree-renderers/markup';
 
-export class TreeForGridApp {
+export class TreeForGridCutApp {
+  private th!: ITreeHelper;
+
   private viewed: boolean = false;
   private tableView: DG.TableView | null = null;
   gridN: GridNeighbor | null = null;
@@ -23,28 +26,30 @@ export class TreeForGridApp {
 
   get leafCol(): DG.Column { return this._leafCol; }
 
-  // get newickStr(): string { return this._newickStr; }
-
   get newickRoot(): NodeType { return this._newickRoot; }
 
   async init(): Promise<void> {
+    this.th = new TreeHelper();
     await this.loadData();
   }
 
   async loadData(): Promise<void> {
-    // const csv = await _package.files.readAsText('data/tree-gen-100000.csv');
-    // const newick = await _package.files.readAsText('data/tree-gen-100000.nwk');
     // const leafColName = 'Leaf';
+    //
+    // const leafList = this.th.getLeafList(tree);
+    // const leafCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.STRING, leafColName,
+    //   leafList.map((n) => n.name));
+    // const activityCol: DG.Column = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Activity',
+    //   leafList.map((n) => Math.random()));
+    // const dataDf = DG.DataFrame.fromColumns([leafCol, activityCol]);
 
     const csv = await _package.files.readAsText('data/tree95df.csv');
     const newick = await _package.files.readAsText('data/tree95.nwk');
     const leafColName = 'id';
-
     const dataDf = DG.DataFrame.fromCsv(csv);
+
     dataDf.setTag(TAGS.DF_NEWICK, newick);
     dataDf.setTag(TAGS.DF_NEWICK_LEAF_COL_NAME, leafColName);
-    // For debug purposes numbering rows with index
-    dataDf.columns.addNewVirtual('[index]', (rowI: number) => { return rowI; }, DG.TYPE.INT);
 
     await this.setData(dataDf, newick);
   }
@@ -86,22 +91,21 @@ export class TreeForGridApp {
       const dataDf: DG.DataFrame = this.dataDf;
       dataDf.columns.addNewInt('Cluster').init((rowI) => { return null; });
 
+      markupNode(this.newickRoot);
+      // const totalLength: number = this.newickRoot;
+
       const clusterColName: string = 'Cluster';
       const clusterDf: DG.DataFrame = DG.DataFrame.create(0);
       clusterDf.columns.addNewInt(clusterColName);
       clusterDf.columns.addNewString(this.leafCol.name);
       clusterDf.columns.addNewInt(`${this.leafCol.name}_Count`);
 
-      this.tableView = grok.shell.addTableView(dataDf);
-      this.tableView.path = this.tableView.basePath = `/func/${_package.name}.treeForGridApp`;
+      this.tableView = grok.shell.addTableView(clusterDf);
+      this.tableView.path = this.tableView.basePath = `/func/${_package.name}.treeForGridCutApp`;
 
-      const cutOpts: TreeCutOptions = {
-        clusterColName: clusterColName,
-        dataDf: dataDf, clusterDf: clusterDf
-      };
       this.gridN = injectTreeForGridUI2(
-        this.tableView.grid, this.newickRoot, this.leafCol.name, 250
-        /* cutOpts */);
+        this.tableView.grid, this.newickRoot, this.leafCol.name, 300,
+        {dataDf, clusterDf, clusterColName});
 
       // const activityCol = this.dataDf.col('Activity');
       // if (activityCol) {

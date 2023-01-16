@@ -89,3 +89,8 @@ export function runWithTimeout(timeout: number, f: () => any): Promise<any> {
     resolve(resolveValue);
   });
 }
+
+export function exitWithCode(code: number): void {
+  console.log(`Exiting with code ${code}`);
+  process.exit(code);
+}
