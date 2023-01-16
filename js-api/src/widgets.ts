@@ -767,6 +767,17 @@ export interface IMenuItemsOptions<T = any> {
 
   /** Gets invoked when the mouse enters the item */
   onMouseEnter?: (item: T) => void;
+
+  /** Identifies a group of items where only one can be checked at a time. */
+  radioGroup?: string;
+}
+
+export interface IMenuItemOptions {
+  /** Identifies a group of items where only one can be checked at a time. */
+  radioGroup?: string;
+
+  /** For items preceded by checkboxes, indicates if the item is checked. */
+  check?: boolean;
 }
 
 
@@ -834,13 +845,14 @@ export class Menu {
   }
 
   /** Adds a menu group with the specified text and handler. */
-  item(text: string, onClick: () => void, order: number | null = null): Menu {
-    return toJs(api.grok_Menu_Item(this.dart, text, onClick, order));
+  item(text: string, onClick: () => void, order: number | null = null, options: IMenuItemOptions | null = null): Menu {
+    return toJs(api.grok_Menu_Item(this.dart, text, onClick, order, options));
   }
 
   /** For each item in items, adds a menu group with the specified text and handler. */
   items<T = any>(items: T[], onClick: (item: T) => void, options: IMenuItemsOptions<T> | null = null): Menu {
-    return toJs(api.grok_Menu_Items(this.dart, items, onClick, options?.isValid, options?.isChecked, options?.toString, options?.getTooltip, options?.onMouseEnter));
+    return toJs(api.grok_Menu_Items(this.dart, items, onClick, options?.isValid, options?.isChecked,
+      options?.toString, options?.getTooltip, options?.onMouseEnter, options?.radioGroup));
   }
 
   /** Adds a separator line.
@@ -1043,15 +1055,18 @@ export abstract class JsInputBase<T = any> extends InputBase<T> {
 }
 
 
-export class DateInput extends InputBase<dayjs.Dayjs> {
+export class DateInput extends InputBase<dayjs.Dayjs | null> {
   dart: any;
 
   constructor(dart: any, onChanged: any = null) {
     super(dart, onChanged);
   }
 
-  get value(): dayjs.Dayjs { return dayjs(api.grok_DateInput_Get_Value(this.dart)); }
-  set value(x: dayjs.Dayjs) { toDart(api.grok_DateInput_Set_Value(this.dart, x.valueOf())); }
+  get value(): dayjs.Dayjs | null { 
+    const date = api.grok_DateInput_Get_Value(this.dart);
+    return date == null ? date : dayjs(date);
+  }
+  set value(x: dayjs.Dayjs | null) { toDart(api.grok_DateInput_Set_Value(this.dart, x?.valueOf())); }
 }
 
 export class ProgressIndicator {

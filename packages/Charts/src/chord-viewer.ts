@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
+
 import { EChartViewer } from './echart-viewer';
 import { TreeUtils } from './utils/tree-utils';
-
 
 export class ChordViewer extends EChartViewer {
   constructor() {
@@ -40,18 +40,52 @@ export class ChordViewer extends EChartViewer {
     this.onPropertyChanged(null, false);
   }
 
-  render() {
-    const fromCol = this.dataFrame.getCol('source');
-    const toCol = this.dataFrame.getCol('target');
+  initChartEventListeners() {
+    const dataFrameSourceColumn = this.dataFrame.getCol('source');
+    const dataFrameTargetColumn = this.dataFrame.getCol('target');
+
+    this.chart.on('click', { dataType: 'node' }, (params: any) => {
+      this.dataFrame.selection.handleClick((i) => {
+        return dataFrameSourceColumn.get(i) === params.data.name ||
+        dataFrameTargetColumn.get(i) === params.data.name;
+      }, params.event.event);
+    });
+
+    this.chart.on('click', { dataType: 'edge' }, (params: any) => {
+      this.dataFrame.selection.handleClick((i) => {
+        return dataFrameSourceColumn.get(i) === params.data.source &&
+          dataFrameTargetColumn.get(i) === params.data.target;
+      }, params.event.event);
+    });
+  }
+
+  onTableAttached() {
+    super.onTableAttached();
+    this.initChartEventListeners();
+  }
+
+  getNodes() {
     const nodes = [];
 
-    const categories = Array.from(new Set(fromCol.categories.concat(toCol.categories)));
+    const dataFrameSourceColumn = this.dataFrame.getCol('source');
+    const dataFrameTargetColumn = this.dataFrame.getCol('target');
+    const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
+
+    const sourceList: Array<string> = new Array<string>(filteredIndexList.length);
+    const targetList: Array<string> = new Array<string>(filteredIndexList.length);
+
+    for (let i = 0; i < filteredIndexList.length; i++) {
+      sourceList[i] = dataFrameSourceColumn.get(filteredIndexList[i]);
+      targetList[i] = dataFrameTargetColumn.get(filteredIndexList[i]);
+    }
+
+    const categories = Array.from(new Set(sourceList.concat(targetList)));
     const map: { [key: string]: any } = {};
     categories.forEach((cat, ind) => map[cat] = {id: ind, value: 0});
-    const rowCount = this.dataFrame.rowCount;
+    const rowCount = filteredIndexList.length;
     for (let i = 0; i < rowCount; i++) {
-      map[fromCol.get(i)]['value']++;
-      map[toCol.get(i)]['value']++;
+      map[sourceList[i]]['value']++;
+      map[targetList[i]]['value']++;
     }
 
     const min = 1; const max = rowCount * 2;
@@ -70,7 +104,11 @@ export class ChordViewer extends EChartViewer {
       });
     };
 
-    this.option.series[0].data = nodes;
+    return nodes;
+  }
+
+  render() {
+    this.option.series[0].data = this.getNodes();
     this.option.series[0].links = TreeUtils.mapRowsToObjects(this.dataFrame, ['source', 'target', 'value']);
 
     this.chart.setOption(this.option);

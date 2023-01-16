@@ -86,8 +86,9 @@ export class TreeForGridApp {
       const dataDf: DG.DataFrame = this.dataDf;
       dataDf.columns.addNewInt('Cluster').init((rowI) => { return null; });
 
+      const clusterColName: string = 'Cluster';
       const clusterDf: DG.DataFrame = DG.DataFrame.create(0);
-      clusterDf.columns.addNewInt('Cluster');
+      clusterDf.columns.addNewInt(clusterColName);
       clusterDf.columns.addNewString(this.leafCol.name);
       clusterDf.columns.addNewInt(`${this.leafCol.name}_Count`);
 
@@ -95,7 +96,7 @@ export class TreeForGridApp {
       this.tableView.path = this.tableView.basePath = `/func/${_package.name}.treeForGridApp`;
 
       const cutOpts: TreeCutOptions = {
-        min: 0, max: 20, clusterColName: 'Cluster',
+        clusterColName: clusterColName,
         dataDf: dataDf, clusterDf: clusterDf
       };
       this.gridN = injectTreeForGridUI2(

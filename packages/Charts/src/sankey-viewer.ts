@@ -9,10 +9,7 @@ export class SankeyViewer extends EChartViewer {
     this.initCommonProperties();
 
     this.option = {
-      tooltip: {
-        trigger: 'item',
-        triggerOn: 'mousemove',
-      },
+      tooltip: {},
       series: [
         {
           type: 'sankey',
@@ -30,14 +27,53 @@ export class SankeyViewer extends EChartViewer {
     this.onPropertyChanged(null, false);
   }
 
-  render() {
-    const fromCol = this.dataFrame.getCol('source');
-    const toCol = this.dataFrame.getCol('target');
+  initChartEventListeners() {
+    const dataFrameSourceColumn = this.dataFrame.getCol('source');
+    const dataFrameTargetColumn = this.dataFrame.getCol('target');
+
+    this.chart.on('click', { dataType: 'node' }, (params: any) => {
+      this.dataFrame.selection.handleClick((i) => {
+        return dataFrameSourceColumn.get(i) === params.data.name ||
+          dataFrameTargetColumn.get(i) === params.data.name;
+      }, params.event.event);
+    });
+
+    this.chart.on('click', { dataType: 'edge' }, (params: any) => {
+      this.dataFrame.selection.handleClick((i) => {
+        return dataFrameSourceColumn.get(i) === params.data.source &&
+          dataFrameTargetColumn.get(i) === params.data.target;
+      }, params.event.event);
+    });
+  }
+
+  onTableAttached() {
+    super.onTableAttached();
+    this.initChartEventListeners();
+  }
+
+  getNodes() {
     const nodes = [];
-    for (const name of new Set(fromCol.categories.concat(toCol.categories)))
+
+    const dataFrameSourceColumn = this.dataFrame.getCol('source');
+    const dataFrameTargetColumn = this.dataFrame.getCol('target');
+    const filteredIndexList = this.dataFrame.filter.getSelectedIndexes();
+
+    const sourceList: Array<string> = new Array<string>(filteredIndexList.length);
+    const targetList: Array<string> = new Array<string>(filteredIndexList.length);
+
+    for (let i = 0; i < filteredIndexList.length; i++) {
+      sourceList[i] = dataFrameSourceColumn.get(filteredIndexList[i]);
+      targetList[i] = dataFrameTargetColumn.get(filteredIndexList[i]);
+    }
+
+    for (const name of new Set(sourceList.concat(targetList)))
       nodes.push({name: name});
 
-    this.option.series[0].data = nodes;
+    return nodes;
+  }
+
+  render() {
+    this.option.series[0].data = this.getNodes();
     this.option.series[0].links = TreeUtils.mapRowsToObjects(this.dataFrame, ['source', 'target', 'value']);
 
     this.chart.setOption(this.option);

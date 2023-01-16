@@ -14964,13 +14964,13 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 
 ### New scripting demos
 
-* [image classification](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/python/scripts/image_classification.py)
-* [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/python/scripts/cell_imaging_segmentation.py)
+* [image classification](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/python/image_classification.py)
+* [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/python/cell_imaging_segmentation.py)
 
 ### File metadata extractors
 
 * [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika)
-* [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/python/scripts/exif.py)
+* [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/Demo/scripts/python/exif.py)
 
 ### First class support of command-line Interface tools for Linux in scripting:
 

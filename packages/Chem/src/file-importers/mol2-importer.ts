@@ -142,9 +142,13 @@ class TriposParser {
   private parseAtomAndBondCounts(): {atomCount: number, bondCount: number} {
     // position at the molecule line
    // this._currentIdx = this._currentMolIdx;
-    for (let i = 0; i < 2; ++i)
-      this.jumpToNextLine();
+    for (let i = 0; i < 2; ++i) {
+      if (this._str.at(this._currentIdx) !== '\n') // incorporates empty lines
+        this.jumpToNextLine();
+    }
 
+    if (this._str.at(this._currentIdx) === ' ')
+      this.jumpToNextColumn(); // in case the atom number is padded with whitespace
     const atomCount = this.parseIntValue();
     this.jumpToNextColumn();
     const bondCount = this.parseIntValue();
@@ -286,8 +290,8 @@ class TriposParser {
     for (let i = 0; i < bondCount; ++i) {
       this.jumpToNextLine();
 
-      // jump to the 2nd column
-      for (let j = 0; j < 2; ++j)
+      const colsToSkip = this.isWhitespace(this._currentIdx) ? 2 : 1;
+      for (let j = 0; j < colsToSkip; ++j)
         this.jumpToNextColumn();
 
       let pairHasHydrogen = false;
@@ -309,7 +313,11 @@ class TriposParser {
         atomPairs.push(pairOfAtoms);
 
         // no need to jump to this column, already here
-        bondTypes.push(this.parseIntValue());
+        if (this._str.substring(this._currentIdx, this._currentIdx + 2) === 'ar') {
+          // aromatic bonds in mol2
+          bondTypes.push(4);
+        } else
+          bondTypes.push(this.parseIntValue());
       }
     }
 
@@ -341,10 +349,12 @@ class TriposParser {
   //   return this._str.substring(this._currentIdx, end) === TRIPOS_BOND_LINE;
   // }
 
-  /** Jumps to atom type column and parses it */
+  /** Jumps to atom type column and parses it. Some mol2 files contain numbers
+   * immedately after the element name, in this case, discards the number */
   private parseAtomType(): string {
     // jump to the 2nd column
-    for (let i = 0; i < 2; ++i)
+    const colsToSkip = this.isWhitespace(this._currentIdx) ? 2 : 1;
+    for (let i = 0; i < colsToSkip; ++i)
       this.jumpToNextColumn();
 
     // let end = this._endIdx + 1;
@@ -352,7 +362,9 @@ class TriposParser {
     while (!this.isWhitespace(end))
       ++end;
 
-    const atomType = this._str.substring(this._currentIdx, end);
+    let atomType = this._str.substring(this._currentIdx, end);
+    // in case atom type column has values like C1 or F11, strip numbers
+    atomType = atomType.replace(/[0-9]/g, '');
 
     return atomType;
   }
@@ -393,8 +405,9 @@ class TriposParser {
     return idx;
   }
 
+  /** Check if a character is whitespace including '\t'  */
   private isWhitespace(idx: number): boolean {
-    return this._str[idx] === ' ';
+    return /\s/.test(this._str.at(idx)!);
   }
 
   // todo: remove as unnecessary?

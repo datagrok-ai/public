@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
+
 import * as echarts from 'echarts';
-import {option} from '../radar/constants';
+import {option} from './constants';
 
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
@@ -24,8 +24,10 @@ export class RadarViewer extends DG.JsViewer {
 
   constructor() {
     super();
-    this.min = <MinimalIndicator>this.string('min', '5', { choices: ['1', '5', '10', '25'], description: 'Minimum percentile value (indicated as dark blue area)' });
-    this.max = <MaximumIndicator>this.string('max', '95', { choices: ['75', '90', '95', '99'], description: 'Maximum percentile value (indicated as light blue area)' });
+    this.min = <MinimalIndicator> this.string('min', '5', { choices: ['1', '5', '10', '25'],
+      description: 'Minimum percentile value (indicated as dark blue area)' });
+    this.max = <MaximumIndicator> this.string('max', '95', { choices: ['75', '90', '95', '99'],
+      description: 'Maximum percentile value (indicated as light blue area)' });
     this.showCurrentRow = this.bool('showCurrentRow', false);
     this.showTooltip = this.bool('showTooltip', true);
     this.showAllRows = this.bool('showAllRows', false);
@@ -35,7 +37,7 @@ export class RadarViewer extends DG.JsViewer {
     this.showMax = this.bool('showMax', true);
     this.showValues = this.bool('showValues', true);
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST);
-    
+
     const chartDiv = ui.div([], { style: { position: 'absolute', left: '0', right: '0', top: '0', bottom: '0'}} );
     this.root.appendChild(chartDiv);
     this.myChart = echarts.init(chartDiv);
@@ -57,11 +59,11 @@ export class RadarViewer extends DG.JsViewer {
     this.myChart.on('mouseover', function(params) {
       if (params.componentType === 'series') {
         if (params.seriesIndex === 2) {
-          let divs: HTMLElement[] = [];
-          for (let i = 0; i < columns.length; ++i) {
+          const divs: HTMLElement[] = [];
+          for (let i = 0; i < columns.length; ++i)
             divs[i] = ui.divText(`${columns[i].name} : ${params.data.value[i]}`);
-          } 
-          ui.tooltip.show(ui.div(divs), params.event.event.x,  params.event.event.y);
+
+          ui.tooltip.show(ui.div(divs), params.event.event.x, params.event.event.y);
         }
       }
     });
@@ -88,98 +90,98 @@ export class RadarViewer extends DG.JsViewer {
     const columns = this.getColumns();
     super.onPropertyChanged(property);
     switch (property.name) {
-      case 'min':
-        if (this.showMin === true) {
-          this.updateMin();
-        }
-        break;
-      case 'max':
-        if (this.showMax === true) {
-          this.updateMax();
-        }
-        break;
-      case 'showMin':
-        if (this.showMin != true) {
-          this.clearData([0]);
-        } else {
-          this.updateMin();
-        }
-        break;
-      case 'showMax':
-        if (this.showMax != true) {
-          this.clearData([1]);
-        } else {
-          this.updateMax();
-        }
-        break;
-      case 'showCurrentRow':
-        if (this.showCurrentRow === true) {
-          this.clearData([0, 1]);
-        } else {
-          this.clearData([2]);
-          this.checkConditions();
-        }
-        break;
-      case 'showAllRows':
-        if (this.showAllRows === true) {
-          option.legend.show = false;
-          this.clearData([0, 1, 2]);
-          let data = option.series[2].data; 
-          for (let i = 0; i < this.dataFrame.rowCount; i++) {
-            data.push({
-              name: `row ${i}`,
-              value: columns.map((c) => c.get(i)),
-            });
-          }
-        } else {
-          option.legend.show = true;
-          this.clearData([2]);
-          this.checkConditions();
-        }
-        break;
-      case 'showTooltip':
-        if (this.showTooltip === false) {
-          option['silent'] = true;
-        } else {
-          option['silent'] = false;
-        }
-        break;
-      case 'backgroundMinColor':
-        if (this.showMin === true) {
-          this.updateMin();
-        }
-        break;
-      case 'backgroundMaxColor':
-        if (this.showMax === true) {
-          this.updateMax();
-        }
-        break;
-      case 'showValues':
-        if (this.showValues === false) {
-          option.series[2].data = [];
-          option.series[2].data.push({
-            value: columns.map((c) => c.get(this.dataFrame.currentRowIdx)),
-            name: `row ${this.dataFrame.currentRowIdx + 1}`,
-            lineStyle: {
-              width: 2,
-              type: 'dashed',
-              color: 'rgba(66, 135, 204, 0.8)'
-            },
-            label: {
-              show: false,
-            },
-            symbolSize: 6,
-            itemStyle: {
-              color: 'rgba(66, 135, 204, 0.8)'
-            },
+    case 'min':
+      if (this.showMin === true)
+        this.updateMin();
+
+      break;
+    case 'max':
+      if (this.showMax === true)
+        this.updateMax();
+
+      break;
+    case 'showMin':
+      if (this.showMin != true)
+        this.clearData([0]);
+      else
+        this.updateMin();
+
+      break;
+    case 'showMax':
+      if (this.showMax != true)
+        this.clearData([1]);
+      else
+        this.updateMax();
+
+      break;
+    case 'showCurrentRow':
+      if (this.showCurrentRow === true)
+        this.clearData([0, 1]);
+      else {
+        this.clearData([2]);
+        this.checkConditions();
+      }
+      break;
+    case 'showAllRows':
+      if (this.showAllRows === true) {
+        option.legend.show = false;
+        this.clearData([0, 1, 2]);
+        const data = option.series[2].data;
+        for (let i = 0; i < this.dataFrame.rowCount; i++) {
+          data.push({
+            name: `row ${i}`,
+            value: columns.map((c) => c.get(i)),
           });
-        } else {
-          this.checkConditions();
         }
-        break;
-      case 'valuesColumnNames':
-        this.init();
-        break;
+      } else {
+        option.legend.show = true;
+        this.clearData([2]);
+        this.checkConditions();
+      }
+      break;
+    case 'showTooltip':
+      if (this.showTooltip === false)
+        option['silent'] = true;
+      else
+        option['silent'] = false;
+
+      break;
+    case 'backgroundMinColor':
+      if (this.showMin === true)
+        this.updateMin();
+
+      break;
+    case 'backgroundMaxColor':
+      if (this.showMax === true)
+        this.updateMax();
+
+      break;
+    case 'showValues':
+      if (this.showValues === false) {
+        option.series[2].data = [];
+        option.series[2].data.push({
+          value: columns.map((c) => c.get(this.dataFrame.currentRowIdx)),
+          name: `row ${this.dataFrame.currentRowIdx + 1}`,
+          lineStyle: {
+            width: 2,
+            type: 'dashed',
+            color: 'rgba(66, 135, 204, 0.8)',
+          },
+          label: {
+            show: false,
+          },
+          symbolSize: 6,
+          itemStyle: {
+            color: 'rgba(66, 135, 204, 0.8)',
+          },
+        });
+      } else
+        this.checkConditions();
+
+      break;
+    case 'valuesColumnNames':
+      this.init();
+      break;
     }
     this.render();
   }
@@ -187,7 +189,7 @@ export class RadarViewer extends DG.JsViewer {
   checkConditions() {
     if (this.showMin === true)
       this.updateMin();
-    if (this.showMax === true) 
+    if (this.showMax === true)
       this.updateMax();
     this.updateRow();
   }
@@ -199,14 +201,14 @@ export class RadarViewer extends DG.JsViewer {
       name: `${this.getOptions(true).look.min}th percentile`,
       areaStyle: {
         color: DG.Color.toHtml(this.backgroundMinColor),
-        opacity: 0.4
+        opacity: 0.4,
       },
       lineStyle: {
-        opacity: 0
+        opacity: 0,
       },
       symbolSize: 0,
-    }
-    option.color[0] =  DG.Color.toHtml(this.backgroundMinColor);
+    };
+    option.color[0] = DG.Color.toHtml(this.backgroundMinColor);
   }
 
   updateMax() {
@@ -216,14 +218,14 @@ export class RadarViewer extends DG.JsViewer {
       name: `${this.getOptions(true).look.max}th percentile`,
       areaStyle: {
         color: DG.Color.toHtml(this.backgroundMaxColor),
-        opacity: 0.4
+        opacity: 0.4,
       },
       lineStyle: {
-        opacity: 0
+        opacity: 0,
       },
       symbolSize: 0,
-    }
-    option.color[1] =  DG.Color.toHtml(this.backgroundMaxColor);
+    };
+    option.color[1] = DG.Color.toHtml(this.backgroundMaxColor);
   }
 
   updateRow() {
@@ -234,41 +236,42 @@ export class RadarViewer extends DG.JsViewer {
       lineStyle: {
         width: 2,
         type: 'dashed',
-        color: 'rgba(66, 135, 204, 0.8)'
+        color: 'rgba(66, 135, 204, 0.8)',
       },
       symbolSize: 6,
       itemStyle: {
-        color: 'rgba(66, 135, 204, 0.8)'
+        color: 'rgba(66, 135, 204, 0.8)',
       },
       label: {
         show: true,
-        formatter: function (params: any) {
+        formatter: function(params: any) {
           return params.value as string;
-        }
-      }
+        },
+      },
     };
   }
 
   clearData(indexes: number[]) {
-    for (let i = 0; i < indexes.length; ++i) {
+    for (let i = 0; i < indexes.length; ++i)
       option.series[indexes[i]].data = [];
-    }
   }
 
   getColumns() : DG.Column<any>[] {
     let columns: DG.Column<any>[] = [];
-    let numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numerical);
+    const numericalColumns: DG.Column<any>[] = Array.from(this.dataFrame.columns.numerical);
     if (this.valuesColumnNames?.length > 0) {
-      let selectedColumns = this.dataFrame.columns.byNames(this.valuesColumnNames);
-      for (let i = 0; i < selectedColumns.length; ++i) 
-        if (numericalColumns.includes(selectedColumns[i])) 
+      const selectedColumns = this.dataFrame.columns.byNames(this.valuesColumnNames);
+      for (let i = 0; i < selectedColumns.length; ++i) {
+        if (numericalColumns.includes(selectedColumns[i]))
           columns.push(selectedColumns[i]);
-    } else {
+      }
+    } else
       columns = numericalColumns.slice(0, 20);
-    }
-    for (let i = 0; i < columns.length; ++i) 
-      if (columns[i].type === DG.TYPE.DATE_TIME) 
+
+    for (let i = 0; i < columns.length; ++i) {
+      if (columns[i].type === DG.TYPE.DATE_TIME)
         columns.splice(i, 1);
+    }
     return columns;
   }
 
@@ -278,10 +281,10 @@ export class RadarViewer extends DG.JsViewer {
 
   /* Going to be replaced with perc in stats */
   getQuantile(columns: DG.Column<any>[], percent: number) {
-    let result = [];
+    const result = [];
     for (const c of columns) {
-      let idx = Math.floor(percent * c.length);
-      let sortedIndexes = Array.from(c.getSortedOrder());
+      const idx = Math.floor(percent * c.length);
+      const sortedIndexes = Array.from(c.getSortedOrder());
       result.push(c.get(sortedIndexes[idx]));
     }
     return result;

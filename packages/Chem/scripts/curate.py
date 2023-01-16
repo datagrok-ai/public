@@ -41,9 +41,15 @@ if tautomerization:
     enumerator = rdMolStandardize.TautomerEnumerator()
 
 for n in range(0, length):
+
+    if molecules[n] == "" or molecules[n] != molecules[n]:
+        standardized[n] = ""
+        continue
+
     mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
 
     if mol is None or mol.GetNumAtoms() == 0:
+        standardized[n] = ""
         continue
     if tautomerization:
         mol = enumerator.Canonicalize(mol)
@@ -61,5 +67,3 @@ for n in range(0, length):
     standardized[n] = Chem.MolToSmiles(mol, kekuleSmiles = kekulization)
 
 curated = pd.DataFrame(standardized, columns = ['curated_molecule'])
-
-

@@ -113,6 +113,7 @@ export async function initChemAutostart(): Promise<void> { }
 //name: Scaffold Tree
 //tags: viewer
 //meta.trellisable: true
+//meta.icon: files/icons/scaffold-tree-icon.svg
 //output: viewer result
 export function scaffoldTreeViewer() : ScaffoldTreeViewer {
  return new ScaffoldTreeViewer();
@@ -308,6 +309,10 @@ export async function activityCliffs(df: DG.DataFrame, molecules: DG.Column, act
   similarity: number, methodName: string) {
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
+    return;
+  }
+  if (activities.type !== DG.TYPE.INT && activities.type !== DG.TYPE.BIG_INT && activities.type !== DG.TYPE.FLOAT) {
+    grok.shell.error(`Column ${activities.name} is not numeric`);
     return;
   }
   const axesNames = getEmbeddingColsNames(df);
@@ -791,8 +796,8 @@ export function useAsSubstructureFilter(value: DG.SemanticValue): void {
   if (tv == null)
     throw 'Requires an open table view.';
 
+  const molCol = value.cell.column;
   const mol = value.value;
-  const molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (molCol == null)
     throw 'Molecule column not found.';
 

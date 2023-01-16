@@ -75,13 +75,13 @@
   top: 10px;
 }
 
-.d4-scaffold-tree-viewer .grok-icon {
+.d4-scaffold-tree .grok-icon {
   color: var(--blue-1) !important;
   font-size: large;
   margin: 1px;
 }
 
-.d4-scaffold-tree-viewer .grok-icon:hover {
+.d4-scaffold-tree .grok-icon:hover {
   color: var(--blue-2) !important;
   cursor: pointer;
 }

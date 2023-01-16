@@ -386,8 +386,11 @@ export namespace chem {
             grok.dapi.userDataStorage.postValue(STORAGE_NAME, KEY, friendlyName, true);
             currentSketcher = friendlyName;
             this.setSketcher();
-          },
-            { isChecked: (item) => item === currentSketcher, toString: item => item })
+            },
+            {
+              isChecked: (item) => item === this.selectedSketcher?.friendlyName, toString: item => item,
+              radioGroup: 'sketcher type'
+            })
           .show();
       });
       $(optionsIcon).addClass('d4-input-options');

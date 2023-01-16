@@ -4,7 +4,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FunctionView} from './function-view';
-import '../css/computation-view.css';
 import dayjs from 'dayjs';
 import {historyUtils} from './history-utils';
 
@@ -41,14 +40,13 @@ export class ComputationView extends FunctionView {
     if (runId) {
       setTimeout(async () => {
         await this.init();
-        await this.getPackageUrls();
         const urlRun = await historyUtils.loadRun(runId);
         this.linkFunccall(urlRun);
+        await this.getPackageUrls();
         this.build();
         await this.onBeforeLoadRun();
         this.linkFunccall(urlRun);
         await this.onAfterLoadRun(urlRun);
-        this.setRunViewReadonly();
         ui.setUpdateIndicator(this.root, false);
         url.searchParams.delete('id');
       }, 0);
@@ -107,6 +105,8 @@ export class ComputationView extends FunctionView {
     const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.func?.package.id);
     return pack ? `${pack.friendlyName} v.${pack.version}.\nLast updated on ${dayjs(pack.updatedOn).format('YYYY MMM D, HH:mm')}`: `No package info was found`;
   };
+
+  public buildIO(): HTMLElement { return ui.div(); }
 
   /**
    * Looks for {@link reportBug}, {@link getHelp} and {@link exportConfig} members and creates model menus
@@ -171,7 +171,8 @@ export class ComputationView extends FunctionView {
   }
 
   private async getPackageUrls() {
-    const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.func?.package.id);
+    const pack = (await grok.dapi.packages.list()).find((pack) => pack.id === this.parentCall?.func.package.id);
+
     const reportBugUrl = (await pack?.getProperties() as any).REPORT_BUG_URL;
     if (reportBugUrl && !this.reportBug)
       this.reportBug = async () => { window.open(reportBugUrl, '_blank'); };

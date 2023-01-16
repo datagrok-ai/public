@@ -726,8 +726,8 @@ export function floatInput(name: string, value: number | null, onValueChanged: F
   return new InputBase(api.grok_FloatInput(name, value), onValueChanged);
 }
 
-export function dateInput(name: string, value: dayjs.Dayjs, onValueChanged: Function | null = null): DateInput {
-  return new DateInput(api.grok_DateInput(name, value.valueOf()), onValueChanged);
+export function dateInput(name: string, value: dayjs.Dayjs | null, onValueChanged: Function | null = null): DateInput {
+  return new DateInput(api.grok_DateInput(name, value?.valueOf()), onValueChanged);
 }
 
 export function boolInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase<boolean | null> {
@@ -1369,6 +1369,13 @@ export namespace hints {
     const hintIndicator = div([], 'ui-hint-blob');
     el.append(hintIndicator);
 
+    const closeIcon = iconFA('times', () => {
+      remove(el);
+      // fire an event?
+    }, 'Remove hints');
+    closeIcon.classList.add('ui-hint-close-btn');
+    el.append(closeIcon);
+
     const width = el ? el.clientWidth : 0;
     const height = el ? el.clientHeight : 0;
 
@@ -1395,6 +1402,7 @@ export namespace hints {
       sticky: setDefaultStyles,
     };
 
+    //@ts-ignore
     positions[hintPosition]();
 
     if ($(el).hasClass('d4-ribbon-item')){
@@ -1407,6 +1415,7 @@ export namespace hints {
   /** Removes the hint indication from the provided element and returns it. */
   export function remove(el: HTMLElement): HTMLElement {
     $(el).find('div.ui-hint-blob')[0]?.remove();
+    $(el).find('i.fa-times')[0]?.remove();
     el.classList.remove('ui-hint-target');
     return el;
   }
