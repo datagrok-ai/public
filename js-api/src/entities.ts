@@ -171,11 +171,12 @@ export class UserSession extends Entity {
  * */
 export class Func extends Entity {
   public aux: any;
-  public options: any;
+  public options: { [key: string]: string; };
 
   constructor(dart: any) {
     super(dart);
     this.aux = new MapProxy(api.grok_Func_Get_Aux(this.dart));
+    // @ts-ignore
     this.options = new MapProxy(api.grok_Func_Get_Options(this.dart));
   }
 

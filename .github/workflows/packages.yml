@@ -140,7 +140,9 @@ jobs:
           echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
 
           profiles='--profile datagrok --profile db --profile grok_spawner'
-          if [[ "${{ matrix.package }}" == "Chem" ]]; then
+          if [[ "${{ matrix.package }}" == "Chem" ]] || \
+             [[ "${{ matrix.package }}" == "SimPKPD" ]] || \
+             [[ "${{ matrix.package }}" == "Dendrogram" ]]; then
             profiles+=' --profile cvm'
           fi
 

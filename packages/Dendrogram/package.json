@@ -5,10 +5,10 @@
     "name": "Aleksandr Tanas",
     "email": "atanas@datagrok.ai"
   },
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Dendrogram is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform",
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.16.2",
+    "@datagrok-libraries/bio": "^5.16.5",
     "@datagrok-libraries/gridext": "^1.3.22",
     "@datagrok-libraries/utils": "^1.19.4",
     "cash-dom": "latest",

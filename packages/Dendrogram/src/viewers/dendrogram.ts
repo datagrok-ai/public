@@ -230,7 +230,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     super.detach();
   }
 
-  override onPropertyChanged(property: DG.Property | null) {
+  override onPropertyChanged(property: DG.Property | null): void {
     super.onPropertyChanged(property);
 
     if (!property) {
@@ -372,7 +372,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     this.root.appendChild(this.treeDiv);
 
     const treeRoot: MarkupNodeType = parseNewick(this.treeNewick!) as MarkupNodeType;
-    markupNode(treeRoot);
+    if (treeRoot) markupNode(treeRoot);
     const totalLength: number = treeRoot.subtreeLength!;
     this.mainStylerOnTooltipShowSub = this.mainStyler.onTooltipShow.subscribe(this.stylerOnTooltipShow.bind(this));
     this._placer = new RectangleTreePlacer<MarkupNodeType>(
@@ -674,7 +674,7 @@ export class MyViewer extends DG.JsViewer {
     this.propMax = this.float('propMax', 16);
   }
 
-  onPropertyChanged(property: DG.Property | null) {
+  override onPropertyChanged(property: DG.Property | null): void {
     super.onPropertyChanged(property);
 
     if (property) {

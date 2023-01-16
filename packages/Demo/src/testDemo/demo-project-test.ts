@@ -36,7 +36,7 @@ category('Connections', () => {
       if (t == null)
         throw 'Result of ' + query.name + 'is not a DataFrame';
 
-      if (t.rowCount != query.options.testExpectedRows)
+      if (t.rowCount.toString() != query.options['testExpectedRows'])
         // eslint-disable-next-line no-throw-literal
         throw 'Rows number in' + query.name + 'table is not as expected';
     }

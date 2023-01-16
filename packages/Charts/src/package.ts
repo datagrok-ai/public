@@ -3,8 +3,8 @@ import {TreeMapViewer} from './tree-map-viewer';
 import {SunburstViewer} from './sunburst-viewer';
 import {RadarViewer} from './radar/radar-viewer';
 import {TimelinesViewer} from './timelines/timelines-viewer';
-import {SankeyViewer} from './sankey-viewer';
-import {ChordViewer} from './chord-viewer';
+// import {SankeyViewer} from './sankey-viewer';
+// import {ChordViewer} from './chord-viewer';
 import { WordCloudViewer } from './word-cloud-viewer';
 import {SurfacePlot} from './surface-plot';
 import '../css/styles.css';
@@ -63,19 +63,19 @@ export function _SunburstViewer() {
   return new SunburstViewer();
 }
 
-//name: SankeyViewer
-//tags: viewer
-//output: viewer result
-export function _SankeyViewer() {
-  return new SankeyViewer();
-}
+// //name: SankeyViewer
+// //tags: viewer
+// //output: viewer result
+// export function _SankeyViewer() {
+//   return new SankeyViewer();
+// }
 
-//name: ChordViewer
-//tags: viewer
-//output: viewer result
-export function _ChordViewer() {
-  return new ChordViewer();
-}
+// //name: ChordViewer
+// //tags: viewer
+// //output: viewer result
+// export function _ChordViewer() {
+//   return new ChordViewer();
+// }
 
 //name: WordCloudViewer
 //tags: viewer
@@ -103,4 +103,17 @@ export function _SurfacePlot() {
 //output: viewer result
 export function _SubstituentAnalysisViewer() {
   return new SubstituentAnalysisViewer();
+}
+
+//name: radarViewerDemo
+//meta.demoPath: Viewers | Radar
+export function _radarViewerDemo() {
+  radarViewerDemo();
+}
+
+//name: radarViewerDemo
+//meta.demoPath: Viewers | Timelines
+export function _timelinesViewerDemo() {
+  const tv = grok.shell.addTableView(grok.data.demo.demog());
+  tv.addViewer(DG.VIEWER.TIMELINES);
 }

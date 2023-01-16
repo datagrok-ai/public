@@ -54,7 +54,6 @@ export class MiscMethods {
         newHeight = $("#feature-viewer").outerHeight(true) + 55;
         newHeight = 1 / (rootNodeHeight / newHeight);
 
-        //@ts-ignore
-        return view.dockManager.dock(nodeContent, 'down', node, 'Sequence', newHeight.toFixed(2));
+        return view.dockManager.dock(nodeContent, 'down', node, 'Sequence', Math.floor(newHeight*100)/100);
     }
 }
