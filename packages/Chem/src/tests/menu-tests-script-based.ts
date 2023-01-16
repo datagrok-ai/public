@@ -52,7 +52,7 @@ category('top menu script based', () => {
   test('mutate', async () => {
     const mutations = 100;
     const t: DG.DataFrame = await grok.functions.call('Chem:Mutate', {
-      'smiles': 'CN1C(CC(O)C1=O)C1=CN=CC=C1', 
+      'molecule': 'CN1C(CC(O)C1=O)C1=CN=CC=C1', 
       'steps': 1,
       'randomize': true, 
       'maxRandomResults': mutations
