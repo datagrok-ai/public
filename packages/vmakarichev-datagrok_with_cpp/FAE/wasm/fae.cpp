@@ -44,22 +44,22 @@ namespace fae
 }; //fae
 
 //name: solveFAE
-//input: double t0 = 0 {units: minutes; caption: initial; category: Time}
-//input: double t1 = 1000 {units: minutes; caption: final; category: Time}
-//input: double h = 0.01 {units: minutes; caption: step; category: Time}
-//input: double FFox = 0.268 {caption: FFox; category: Initial values}
-//input: double KKox = 0.268 {caption: KKox; category: Initial values}
-//input: double FFred = 0.0 {caption: FFred; category: Initial values}
-//input: double KKred = 0.0 {caption: KKred; category: Initial values}
-//input: double Ffree = 0.0 {caption: Ffree; category: Initial values}
-//input: double Kfree = 0.0 {caption: Kfree; category: Initial values}
-//input: double FKred = 0.0 {caption: FKred; category: Initial values}
-//input: double FKox = 0.0 {caption: FKox; category: Initial values}
-//input: double MEAthiol = 34.0 {caption: MEAthiol; category: Initial values}
-//input: double CO2 = 0.22 {caption: CO2; category: Initial values}
-//input: double yO2P = 0.209 {caption: yO2P; category: Initial values}
-//input: double Cystamine = 0.0 {caption: Cystamine; category: Initial values}
-//input: double VL = 6.6 {caption: VL; category: Initial values}
+//input: double t0 =  {units: minutes; caption: initial; category: Time}
+//input: double t1 =  {units: minutes; caption: final; category: Time}
+//input: double h =  {units: minutes; caption: step; category: Time}
+//input: double FFox =  {caption: FFox; category: Initial values}
+//input: double KKox =  {caption: KKox; category: Initial values}
+//input: double FFred =  {caption: FFred; category: Initial values}
+//input: double KKred =  {caption: KKred; category: Initial values}
+//input: double Ffree =  {caption: Ffree; category: Initial values}
+//input: double Kfree =  {caption: Kfree; category: Initial values}
+//input: double FKred =  {caption: FKred; category: Initial values}
+//input: double FKox =  {caption: FKox; category: Initial values}
+//input: double MEAthiol =  {caption: MEAthiol; category: Initial values}
+//input: double CO2 =  {caption: CO2; category: Initial values}
+//input: double yO2P =  {caption: yO2P; category: Initial values}
+//input: double Cystamine =  {caption: Cystamine; category: Initial values}
+//input: double VL =  {caption: VL; category: Initial values}
 //input: int timesCount
 //input: int varsCount
 //output: column_list result [new(timesCount, varsCount); 't, time (minutes)'; 'FFox(t)'; 'KKox(t)'; 'FFred(t)'; 'KKred(t)'; 'Ffree(t)'; 'Kfree(t)'; 'FKred(t)'; 'FKox(t)'; 'MEAthiol(t)'; 'CO2(t)'; 'yO2P(t)'; 'Cystamine(t)'; 'VL(t)']
