@@ -58,7 +58,6 @@ import {_importSmi} from './file-importers/smi-importer';
 
 //script api
 import {generateScaffoldTree} from "./scripts-api";
-import {setupScaffold} from './scripts-api';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const DEFAULT_SKETCHER = 'openChemLibSketcher';
@@ -907,9 +906,4 @@ export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
   data.columns.add(smilesColumn);
   const scriptRes = await generateScaffoldTree(data, smilesColumn!.name);
   return scriptRes;
-}
-
-//name: installScaffoldGraph
-export async function installScaffoldGraph() : Promise<void> {
-  await setupScaffold();
 }
