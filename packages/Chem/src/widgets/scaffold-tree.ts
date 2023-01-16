@@ -8,7 +8,7 @@ import {chem} from "datagrok-api/grok";
 import {toJs, TreeViewGroup, TreeViewNode} from "datagrok-api/dg";
 import Sketcher = chem.Sketcher;
 import {chemSubstructureSearchLibrary} from "../chem-searches";
-import {getScaffoldTree, installScaffoldGraph} from "../package";
+import {getScaffoldTree} from "../package";
 import {drawRdKitMoleculeToOffscreenCanvas} from "../utils/chem-common-rdkit";
 
 const CELL_HEIGHT = 120;
@@ -327,7 +327,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     console.log('ScaffoldGraph Installed: ' + installed);
     if (installed !== 'true') {
       try {
-        await installScaffoldGraph();
+        //await installScaffoldGraph();
         await grok.dapi.userDataStorage.postValue(SCAFFOLD_GRAPH_INSTALLED, SCAFFOLD_GRAPH_INSTALLED, 'true', false);
       } catch (e) {
         console.error(e);
