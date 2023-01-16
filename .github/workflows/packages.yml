@@ -242,7 +242,7 @@ jobs:
         run: |
           image_ver=$(jq -r .version package.json)
           if [[ "${{ matrix.publish }}" != "true" ]]; then
-            image_ver+="-${{ steps.datagrok-image.outputs.commit_sha }}"
+            image_ver+="-$(echo ${{ github.sha }} | cut -c1-8)"
           fi
           echo "image_ver=$image_ver" >> $GITHUB_OUTPUT
           echo "package_name=$(jq -r .name package.json | sed -e 's,@datagrok/,,g')" >> $GITHUB_OUTPUT
