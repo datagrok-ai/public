@@ -203,11 +203,18 @@ export abstract class FunctionView extends DG.ViewBase {
     newHistoryBlock.onRunChosen.subscribe(async (id) => this.linkFunccall(await this.loadRun(id)));
 
     newHistoryBlock.beforeRunAddToFavorites.subscribe(async (funcCall) => {
+      ui.setUpdateIndicator(newHistoryBlock.historyTab, true);
+      ui.setUpdateIndicator(newHistoryBlock.favTab, true);
+
       funcCall = await this.addRunToFavorites(funcCall);
 
       newHistoryBlock.afterRunAddToFavorites.next(funcCall);
+
+      ui.setUpdateIndicator(newHistoryBlock.historyTab, false);
+      ui.setUpdateIndicator(newHistoryBlock.favTab, false);
     });
     newHistoryBlock.beforeRunAddToShared.subscribe(async (funcCall) => {
+      ui.setUpdateIndicator(newHistoryBlock.historyTab, true);
       ui.setUpdateIndicator(newHistoryBlock.sharedTab, true);
 
       funcCall = await this.addRunToShared(funcCall);
@@ -215,24 +222,38 @@ export abstract class FunctionView extends DG.ViewBase {
       newHistoryBlock.afterRunAddToShared.next(funcCall);
 
       ui.setUpdateIndicator(newHistoryBlock.sharedTab, false);
+      ui.setUpdateIndicator(newHistoryBlock.historyTab, false);
     });
 
     newHistoryBlock.beforeRunDeleted.subscribe(async (id) => {
+      ui.setUpdateIndicator(newHistoryBlock.tabs.root, true);
       await this.deleteRun(await historyUtils.loadRun(id, true));
 
       newHistoryBlock.afterRunDeleted.next(id);
+      ui.setUpdateIndicator(newHistoryBlock.tabs.root, false);
     });
 
     newHistoryBlock.beforeRunRemoveFromFavorites.subscribe(async (id) => {
+      ui.setUpdateIndicator(newHistoryBlock.historyTab, true);
+      ui.setUpdateIndicator(newHistoryBlock.favTab, true);
       await this.removeRunFromFavorites(await historyUtils.loadRun(id, true));
 
       newHistoryBlock.afterRunRemoveFromFavorites.next(id);
+
+      ui.setUpdateIndicator(newHistoryBlock.favTab, false);
+      ui.setUpdateIndicator(newHistoryBlock.historyTab, false);
     });
 
     newHistoryBlock.beforeRunRemoveFromShared.subscribe(async (id) => {
+      ui.setUpdateIndicator(newHistoryBlock.historyTab, true);
+      ui.setUpdateIndicator(newHistoryBlock.sharedTab, true);
+
       await this.removeRunFromShared(await historyUtils.loadRun(id, true));
 
       newHistoryBlock.afterRunRemoveFromShared.next(id);
+
+      ui.setUpdateIndicator(newHistoryBlock.historyTab, false);
+      ui.setUpdateIndicator(newHistoryBlock.sharedTab, false);
     });
 
     ui.empty(this.historyRoot);
