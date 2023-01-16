@@ -7,6 +7,7 @@ import * as C from '../utils/constants';
 import * as CR from '../utils/cell-renderer';
 import {PositionHeight, UnitsHandler, TAGS as bioTAGS} from '@datagrok-libraries/bio';
 import { getStats, MaskInfo, Stats } from '../utils/statistics';
+import wu from 'wu';
 
 export class LogoSummary extends DG.JsViewer {
   _titleHost = ui.divText('Logo Summary Table', {id: 'pep-viewer-title'});
@@ -48,7 +49,8 @@ export class LogoSummary extends DG.JsViewer {
     if (this.initialized) {
       $(this.root).empty();
       this.viewerGrid.root.style.width = 'auto';
-      const newClusterBtn = ui.button('New cluster...', () => this.clusterFromSelection(), 'Creates a new cluster from selection');
+      const newClusterBtn = ui.button('New cluster', () => this.clusterFromSelection(),
+        'Creates a new cluster from selection');
       this.root.appendChild(ui.divV([ui.divH([this._titleHost, newClusterBtn]), this.viewerGrid.root]));
       this.viewerGrid.invalidate();
     }
@@ -70,18 +72,26 @@ export class LogoSummary extends DG.JsViewer {
     const originalClustersColCategories = originalClustersCol.categories;
     const originalClustersColLength = originalClustersColData.length;
 
+    const customClustersColumnsList = wu(this.model.customClusters).toArray();
+
     let summaryTableBuilder = this.dataFrame.groupBy([clustersColName]);
     for (const [colName, aggregationFunc] of Object.entries(this.model.settings.columns ?? {}))
       summaryTableBuilder = summaryTableBuilder.add(aggregationFunc as any, colName, `${aggregationFunc}(${colName})`);
 
-    const summaryTable = summaryTableBuilder.aggregate();
+    const tempSummaryTable = summaryTableBuilder.aggregate();
+    const tempSummaryTableLength = tempSummaryTable.rowCount;
+    const tempClustersCol: DG.Column<string> = tempSummaryTable.getCol(clustersColName);
+    const summaryTableLength = tempSummaryTableLength + customClustersColumnsList.length;
+    const summaryTable = DG.DataFrame.create(summaryTableLength);
     const summaryTableCols = summaryTable.columns;
-    const summaryTableLength = summaryTable.rowCount;
 
-    const clustersCol: DG.Column<string> = summaryTable.getCol(clustersColName);
+    const clustersCol = summaryTableCols.addNewString(clustersColName);
+    for (let i = 0; i < summaryTableLength; ++i)
+      clustersCol.set(i,  i < tempSummaryTableLength ? tempClustersCol.get(i) :
+        customClustersColumnsList[i - tempSummaryTableLength].name);
     const clustersColData = clustersCol.getRawData();
     const clustersColCategories = clustersCol.categories;
-    
+
     const peptideCol: DG.Column<string> = this.dataFrame.getCol(this.model.settings.sequenceColumnName!);
     const peptideColData = peptideCol.getRawData();
     const peptideColCategories = peptideCol.categories;
@@ -98,16 +108,22 @@ export class LogoSummary extends DG.JsViewer {
     this.distributionDfPlot = new Array(summaryTableLength);
 
     for (let summaryTableRowIndex = 0; summaryTableRowIndex < summaryTableLength; ++summaryTableRowIndex) {
-      const indexes: number[] = [];
       const currentClusterCategoryIndex = clustersColData[summaryTableRowIndex];
-      const currentCluster = clustersColCategories[currentClusterCategoryIndex];
+      const currentCluster = clustersColCategories[currentClusterCategoryIndex];  // Cluster name
+      const customClusterColData = customClustersColumnsList.find((col) => col.name == currentCluster)?.toList();
+
+      const isValidIndex = summaryTableRowIndex < tempSummaryTableLength ?
+        (j: number) => originalClustersColCategories[originalClustersColData[j]] == currentCluster :
+        (j: number) => customClusterColData![j];
+        
+      const stats = this.model.clusterStats[currentClusterCategoryIndex];
+      const tCol = DG.Column.string('peptides', stats.count);
+      let tColIdx = 0;
       for (let j = 0; j < originalClustersColLength; ++j) {
-        if (originalClustersColCategories[originalClustersColData[j]] == currentCluster)
-          indexes.push(j);
+        if (isValidIndex(j))
+          tCol.set(tColIdx++, peptideColCategories[peptideColData[j]])
       }
 
-      const tCol = DG.Column.string('peptides', indexes.length);
-      tCol.init((i) => peptideColCategories[peptideColData[indexes[i]]]);
       for (const tag of peptideColTags)
         tCol.setTag(tag[0], tag[1]);
 
@@ -116,10 +132,13 @@ export class LogoSummary extends DG.JsViewer {
 
       //TODO: use bitset instead of splitCol
       const splitCol = DG.Column.bool(C.COLUMNS_NAMES.SPLIT_COL, activityCol.length);
-      splitCol.init((splitColIndex) => originalClustersColData[splitColIndex] == currentClusterCategoryIndex);
+      const getSplitColValueAt = summaryTableRowIndex < tempSummaryTableLength ?
+        (splitColIndex: number) => originalClustersColData[splitColIndex] == currentClusterCategoryIndex :
+        (splitColIndex: number) => customClusterColData![splitColIndex];
+      splitCol.init(getSplitColValueAt);
+
       const distributionTable = DG.DataFrame.fromColumns([activityCol, splitCol]);
       const dfSlice = DG.DataFrame.fromColumns([tCol]);
-      const stats = this.model.clusterStats[currentClusterCategoryIndex];
 
       this.webLogoDfPlot[summaryTableRowIndex] = dfSlice.plot;
       this.distributionDfPlot[summaryTableRowIndex] = distributionTable.plot;
@@ -270,5 +289,8 @@ export class LogoSummary extends DG.JsViewer {
     }
     viewerDf.rows.addNew(newClusterVals);
     this.newClusterNum++;
+
+    this.model.clusterStats.push(stats);
+    this.model.addNewCluster(newClusterName);
   }
 }

@@ -34,6 +34,7 @@ export enum TAGS {
   CLUSTER_SELECTION = 'clusterSelection',
   VISIBLE = 'visible',
   SETTINGS = 'settings',
+  CUSTOM_CLUSTER = 'customCluster',
 }
 
 export enum SEM_TYPES {
