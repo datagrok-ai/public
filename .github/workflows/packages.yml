@@ -260,9 +260,9 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: packages/${{ matrix.package }}/dockerfiles
-          load: true
           tags: datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}
           shm-size: 4g
+          outputs: type=docker,dest=/tmp/${{ steps.docker_name_ver.outputs.package_name }}-${{ steps.docker_name_ver.outputs.image_ver }}-${{ github.run_id }}-${{ github.run_attempt }}.tar
 
       - name: Publish to npm
         run: npm publish --access public
@@ -272,11 +272,13 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: github.ref == 'refs/heads/master' && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped') && steps.check.outcome == 'success' && steps.install.outcome == 'success' && (steps.test-package.outcome == 'success' || steps.test-package.outcome == 'skipped' || matrix.package == 'ApiTests')
 
-      - name: Upload Docker image as artifact
+      - name: Upload Artifact
         if: steps.build-docker.outcome == 'success' && (steps.publish.outcome == 'failure' || steps.publish.outcome == 'skipped')
-        uses: ishworkh/docker-image-artifact-upload@v1
+        uses: actions/upload-artifact@v2
         with:
-          image: "datagrok/${{ steps.docker_name_ver.outputs.package_name }}:${{ steps.docker_name_ver.outputs.image_ver }}"
+          name: ${{ steps.param.outputs.tar }}
+          path:   /tmp/${{ steps.docker_name_ver.outputs.package_name }}-${{ steps.docker_name_ver.outputs.image_ver }}-${{ github.run_id }}-${{ github.run_attempt }}.tar
+          retention-days: 7
 
       - name: Login to DockerHub
         if: steps.publish.outcome == 'success' && steps.build-docker.outcome == 'success'
