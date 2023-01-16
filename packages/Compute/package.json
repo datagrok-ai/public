@@ -4,7 +4,7 @@
 	"version": "0.12.5",
 	"author": {
 		"name": "Aufar Zakiev",
-		"email": "aufar.zakiev@arcadia.spb.ru"
+		"email": "aufar.zakiev@softwarecountry.com"
 	},
 	"description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)",
 	"repository": {
