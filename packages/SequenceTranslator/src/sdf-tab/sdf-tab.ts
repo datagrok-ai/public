@@ -164,11 +164,22 @@ export function getSdfTab(): HTMLDivElement {
 
   // choice inputs
   const ssDirection = ui.choiceInput('SS direction', straight, [straight, inverse]);
-  ssDirection.onChanged(() => { invertSS = ssDirection.value === inverse; });
+  ssDirection.onChanged(() => {
+    invertSS = ssDirection.value === inverse;
+    onInput.next();
+  });
+
   const asDirection = ui.choiceInput('AS direction', straight, [straight, inverse]);
-  asDirection.onChanged(() => { invertAS = asDirection.value === inverse; });
+  asDirection.onChanged(() => {
+    invertAS = asDirection.value === inverse;
+    onInput.next();
+  });
+
   const as2Direction = ui.choiceInput('AS2 direction', straight, [straight, inverse]);
-  as2Direction.onChanged(() => { invertAS = asDirection.value === inverse; });
+  as2Direction.onChanged(() => {
+    invertAS = asDirection.value === inverse;
+    onInput.next();
+  });
 
   // labels
   const ssLabel = ui.label('Sense Strand');
