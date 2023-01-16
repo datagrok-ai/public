@@ -3,6 +3,7 @@ FROM continuumio/miniconda3
 WORKDIR /app
 
 COPY environment.yml .
+COPY requirements.txt .
 RUN set -ex ; \
     conda install -n base conda-libmamba-solver -y ; \
     conda config --set solver libmamba ; \
