@@ -102,8 +102,6 @@ extensions.
 
 [datagrok-tools overview (part 2)]: https://www.youtube.com/watch?v=0QxzllnBreI&t=4657s
 
-[//]: # ([Building a UI]: ./ui.md)
-
 [VS Code Integration]: https://www.youtube.com/watch?v=zVVmlRorpjg&t=870s
 
 [Data access]: ../video-contents.md#data-access

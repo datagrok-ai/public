@@ -5,7 +5,7 @@
 
 [Datagrok JS API](https://datagrok.ai/js-api) allows to control all aspects of the Datagrok platform. The API can be
 used either from ad-hoc [scripts](../compute/scripting.md) (`Functions | Scripts | New JavaScript Script`)
-or from [packages](develop.md#packages).
+or from [packages](./develop.md#packages).
 
 This document covers the following areas:
 
@@ -200,7 +200,7 @@ Log" tab, and perform the action that you want to intercept. In the panel, you w
 on them to inspect event parameters. To simplify the development process, we also generate JavaScript code for handling
 this particular event, copy-paste it from the property panel into your code if needed.
 
-![inspector-events](tools/inspector-events.png)
+![inspector-events](./tools/inspector-events.png)
 
 ## User-defined types
 
@@ -271,5 +271,5 @@ Code snippets:
 
 See also:
 
-* [JavaScript development](develop.md)
+* [JavaScript development](./develop.md)
 * [JavaScript API Samples](https://public.datagrok.ai/js)

@@ -4,3 +4,4 @@
 src/**/*.js
 src/**/*.d.ts
 src/**/*.d.ts.map
+!docs/.gitkeep
