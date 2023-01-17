@@ -12,5 +12,7 @@ RUN set -ex ; \
 
 SHELL ["conda","run","-n","myenv","/bin/bash","-c"]
 
+EXPOSE 8000
+
 #start server inside container
-CMD ["conda", "run", "--no-capture-output","-n", "myenv", "python","ADMETox.py", "runserver","0.0.0.0:8000"]
+ENTRYPOINT ["conda", "run", "--no-capture-output","-n", "myenv", "python","ADMETox.py", "runserver","0.0.0.0:8000"]
