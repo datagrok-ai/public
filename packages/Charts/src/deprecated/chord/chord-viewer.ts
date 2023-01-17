@@ -1,25 +1,38 @@
-import { EChartViewer } from '../echart/echart-viewer';
+import * as DG from 'datagrok-api/dg';
+
+import { EChartViewer } from '../../viewers/echart/echart-viewer';
 import { TreeUtils } from '../../utils/tree-utils';
 
-/// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
-export class SankeyViewer extends EChartViewer {
+export class ChordViewer extends EChartViewer {
   constructor() {
     super();
 
-    this.initCommonProperties();
+    this.top = this.string('top', '50px');
+    this.left = this.string('left', '100px');
+    this.bottom = this.string('bottom', '50px');
+    this.right = this.string('right', '100px');
+
+    this.animationDuration = this.int('animationDuration', 500);
+    this.animationDurationUpdate = this.int('animationDurationUpdate', 750);
 
     this.option = {
       tooltip: {},
       series: [
         {
-          type: 'sankey',
-          emphasis: {
-            focus: 'adjacency',
+          type: 'graph',
+          layout: 'circular',
+          circular: {
+            rotateLabel: true,
           },
-          nodeAlign: 'left',
+          label: {
+            position: 'right',
+            formatter: '{b}',
+          },
+          roam: true,
+          focusNodeAdjacency: true,
           lineStyle: {
             color: 'source',
-            curveness: 0.5,
+            curveness: 0.3,
           },
         },
       ]};
@@ -34,7 +47,7 @@ export class SankeyViewer extends EChartViewer {
     this.chart.on('click', { dataType: 'node' }, (params: any) => {
       this.dataFrame.selection.handleClick((i) => {
         return dataFrameSourceColumn.get(i) === params.data.name ||
-          dataFrameTargetColumn.get(i) === params.data.name;
+        dataFrameTargetColumn.get(i) === params.data.name;
       }, params.event.event);
     });
 
@@ -66,8 +79,30 @@ export class SankeyViewer extends EChartViewer {
       targetList[i] = dataFrameTargetColumn.get(filteredIndexList[i]);
     }
 
-    for (const name of new Set(sourceList.concat(targetList)))
-      nodes.push({name: name});
+    const categories = Array.from(new Set(sourceList.concat(targetList)));
+    const map: { [key: string]: any } = {};
+    categories.forEach((cat, ind) => map[cat] = {id: ind, value: 0});
+    const rowCount = filteredIndexList.length;
+    for (let i = 0; i < rowCount; i++) {
+      map[sourceList[i]]['value']++;
+      map[targetList[i]]['value']++;
+    }
+
+    const min = 1; const max = rowCount * 2;
+    const minSize = 5; const maxSize = 150;
+    const scale = (n: number) => maxSize*(n - min)/(max - min) + minSize;
+
+    for (const name of categories) {
+      nodes.push({
+        name: name,
+        value: map[name]['value'],
+        symbolSize: scale(map[name]['value']),
+        itemStyle: {
+          color: DG.Color.toRgb(DG.Color.getCategoricalColor(map[name]['id'])),
+        },
+        label: { show: map[name]['value'] > min, color: 'inherit', fontSize: 12 },
+      });
+    };
 
     return nodes;
   }
