@@ -3,74 +3,74 @@ import * as DG from 'datagrok-api/dg';
 
 export const energyUK = DG.DataFrame.fromCsv(
   `value,source,target
-124.72899627685547,Agricultural 'waste',Bio-conversion
-0.597000002861023,Bio-conversion,Liquid
-26.86199951171875,Bio-conversion,Losses
-280.3219909667969,Bio-conversion,Solid
-81.14399719238281,Bio-conversion,Gas
-121.06600189208984,Liquid,Industry
-135.8350067138672,Liquid,Road transport
-3.640000104904175,Liquid,Agriculture
-4.413000106811523,Liquid,Rail transport
-128.69000244140625,Liquid,International shipping
-14.458000183105469,Liquid,Domestic aviation
-206.26699829101562,Liquid,International aviation
-33.21799850463867,Liquid,National navigation
-46.47700119018555,Solid,Industry
-0.8820000290870667,Solid,Agriculture
-400.1199951171875,Solid,Thermal generation
-1.4010000228881836,Gas,Losses
-48.58000183105469,Gas,Industry
-0.1289999932050705,Gas,Heating and cooling - commercial
-2.0959999561309814,Gas,Agriculture
-151.89100646972656,Gas,Thermal generation
-35.0,Biofuel imports,Liquid
-35.0,Biomass imports,Solid
-11.605999946594238,Coal imports,Coal
-75.57099914550781,Coal,Solid
-63.96500015258789,Coal reserves,Coal
-10.638999938964844,District heating,Industry
-22.5049991607666,District heating,Heating and cooling - commercial
-46.183998107910156,District heating,Heating and cooling - homes
-56.691001892089844,Electricity grid,Losses
-342.1650085449219,Electricity grid,Industry
-40.858001708984375,Electricity grid,Heating and cooling - commercial
-113.72599792480469,Electricity grid,Heating and cooling - homes
-104.4530029296875,Electricity grid,Over generation / exports
-27.139999389648438,Electricity grid,H2 conversion
-37.797000885009766,Electricity grid,Road transport
-4.4120001792907715,Electricity grid,Agriculture
-7.86299991607666,Electricity grid,Rail transport
-90.00800323486328,Electricity grid,Lighting & appliances - commercial
-93.49400329589844,Electricity grid,Lighting & appliances - homes
-6.242000102996826,H2 conversion,Losses
-20.89699935913086,H2 conversion,H2
-40.71900177001953,Gas imports,Ngas
-122.9520034790039,Ngas,Gas
-82.23300170898438,Gas reserves,Ngas
-787.1290283203125,Thermal generation,Losses
-79.3290023803711,Thermal generation,District heating
-525.531005859375,Thermal generation,Electricity grid
-7.013000011444092,Geothermal,Electricity grid
-20.89699935913086,H2,Road transport
-6.994999885559082,Hydro,Electricity grid
-4.375,Marine algae,Bio-conversion
-839.97802734375,Nuclear,Thermal generation
-504.2869873046875,Oil imports,Oil
-611.989990234375,Oil,Liquid
-107.7030029296875,Oil reserves,Oil
-77.80999755859375,Other waste,Bio-conversion
-56.58700180053711,Other waste,Solid
-70.6719970703125,Pumped heat,Heating and cooling - commercial
-193.0260009765625,Pumped heat,Heating and cooling - homes
-59.9010009765625,Solar PV,Electricity grid
-19.26300048828125,Solar Thermal,Heating and cooling - homes
-59.9010009765625,Solar,Solar PV
-19.26300048828125,Solar,Solar Thermal
-9.45199966430664,Tidal,Electricity grid
-182.00999450683594,UK land based bioenergy,Bio-conversion
-19.01300048828125,Wave,Electricity grid
-289.3659973144531,Wind,Electricity grid`);
+  124.72899627685547,Agricultural 'waste',Bio-conversion
+  0.597000002861023,Bio-conversion,Liquid
+  26.86199951171875,Bio-conversion,Losses
+  280.3219909667969,Bio-conversion,Solid
+  81.14399719238281,Bio-conversion,Gas
+  121.06600189208984,Liquid,Industry
+  135.8350067138672,Liquid,Road transport
+  3.640000104904175,Liquid,Agriculture
+  4.413000106811523,Liquid,Rail transport
+  128.69000244140625,Liquid,International shipping
+  14.458000183105469,Liquid,Domestic aviation
+  206.26699829101562,Liquid,International aviation
+  33.21799850463867,Liquid,National navigation
+  46.47700119018555,Solid,Industry
+  0.8820000290870667,Solid,Agriculture
+  400.1199951171875,Solid,Thermal generation
+  1.4010000228881836,Gas,Losses
+  48.58000183105469,Gas,Industry
+  0.1289999932050705,Gas,Heating and cooling - commercial
+  2.0959999561309814,Gas,Agriculture
+  151.89100646972656,Gas,Thermal generation
+  35.0,Biofuel imports,Liquid
+  35.0,Biomass imports,Solid
+  11.605999946594238,Coal imports,Coal
+  75.57099914550781,Coal,Solid
+  63.96500015258789,Coal reserves,Coal
+  10.638999938964844,District heating,Industry
+  22.5049991607666,District heating,Heating and cooling - commercial
+  46.183998107910156,District heating,Heating and cooling - homes
+  56.691001892089844,Electricity grid,Losses
+  342.1650085449219,Electricity grid,Industry
+  40.858001708984375,Electricity grid,Heating and cooling - commercial
+  113.72599792480469,Electricity grid,Heating and cooling - homes
+  104.4530029296875,Electricity grid,Over generation / exports
+  27.139999389648438,Electricity grid,H2 conversion
+  37.797000885009766,Electricity grid,Road transport
+  4.4120001792907715,Electricity grid,Agriculture
+  7.86299991607666,Electricity grid,Rail transport
+  90.00800323486328,Electricity grid,Lighting & appliances - commercial
+  93.49400329589844,Electricity grid,Lighting & appliances - homes
+  6.242000102996826,H2 conversion,Losses
+  20.89699935913086,H2 conversion,H2
+  40.71900177001953,Gas imports,Ngas
+  122.9520034790039,Ngas,Gas
+  82.23300170898438,Gas reserves,Ngas
+  787.1290283203125,Thermal generation,Losses
+  79.3290023803711,Thermal generation,District heating
+  525.531005859375,Thermal generation,Electricity grid
+  7.013000011444092,Geothermal,Electricity grid
+  20.89699935913086,H2,Road transport
+  6.994999885559082,Hydro,Electricity grid
+  4.375,Marine algae,Bio-conversion
+  839.97802734375,Nuclear,Thermal generation
+  504.2869873046875,Oil imports,Oil
+  611.989990234375,Oil,Liquid
+  107.7030029296875,Oil reserves,Oil
+  77.80999755859375,Other waste,Bio-conversion
+  56.58700180053711,Other waste,Solid
+  70.6719970703125,Pumped heat,Heating and cooling - commercial
+  193.0260009765625,Pumped heat,Heating and cooling - homes
+  59.9010009765625,Solar PV,Electricity grid
+  19.26300048828125,Solar Thermal,Heating and cooling - homes
+  59.9010009765625,Solar,Solar PV
+  19.26300048828125,Solar,Solar Thermal
+  9.45199966430664,Tidal,Electricity grid
+  182.00999450683594,UK land based bioenergy,Bio-conversion
+  19.01300048828125,Wave,Electricity grid
+  289.3659973144531,Wind,Electricity grid`);
 
 export const demog = DG.DataFrame.fromCsv(
   `USUBJID,AGE,SEX,RACE,DIS_POP,HEIGHT,WEIGHT,DEMOG,CONTROL,STARTED,SEVERITY

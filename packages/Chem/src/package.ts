@@ -58,7 +58,6 @@ import {_importSmi} from './file-importers/smi-importer';
 
 //script api
 import {generateScaffoldTree} from "./scripts-api";
-import {setupScaffold} from './scripts-api';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const DEFAULT_SKETCHER = 'openChemLibSketcher';
@@ -487,8 +486,10 @@ export function elementalAnalysis(table: DG.DataFrame, molCol: DG.Column, radarV
   const [elements, invalid]: [Map<string, Int32Array>, number[]] = getAtomsColumn(molCol);
   let columnNames: string[] = [];
 
-  if (invalid.length > 0)
+  if (invalid.filter((el) => el !== null).length > 0) {
     console.log(`Invalid rows ${invalid.map((i) => i.toString()).join(', ')}`);
+    grok.shell.warning('Dataset contains malformed data!');
+  }
 
   for (let elName of elementsTable) {
     const value = elements.get(elName);
@@ -907,9 +908,4 @@ export async function getScaffoldTree(data: DG.DataFrame): Promise<string>{
   data.columns.add(smilesColumn);
   const scriptRes = await generateScaffoldTree(data, smilesColumn!.name);
   return scriptRes;
-}
-
-//name: installScaffoldGraph
-export async function installScaffoldGraph() : Promise<void> {
-  await setupScaffold();
 }

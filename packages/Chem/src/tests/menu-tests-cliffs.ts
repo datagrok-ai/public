@@ -46,7 +46,7 @@ async function _testActivityCliffsOpen(dfName: string, numberCliffs: number) {
 
   expect(scatterPlot != null, true);
 
-  const cliffsLink = Array.from(scatterPlot!.root.children).filter((it) => it.className === 'ui-btn ui-btn-ok');
+  const cliffsLink = Array.from(scatterPlot!.root.children).filter((it) => it.className === 'ui-btn ui-btn-ok scatter_plot_link cliffs_grid');
   expect((cliffsLink[0] as HTMLElement).innerText.toLowerCase(), `${numberCliffs} cliffs`);
   actCliffsTableView.close();
 }
