@@ -21,7 +21,7 @@ type StrandData = {
   invert: boolean
 }
 
-const debugHighlight = false;
+const debugHighlight = true;
 
 /** Get a molfile for a single strand */
 function getMolfileForStrand(strand: string, invert: boolean): string {
@@ -139,20 +139,26 @@ export function getSdfTab(): HTMLDivElement {
       const highlights = ui.div([]);
       $(highlights).addClass('sdf-highlights');
       // highlights.innerHTML = '<mark> Some marked text </mark>';
-      const backdrop = ui.div([highlights]);
-      $(backdrop).addClass('sdf-backdrop');
-      inputBase.root.appendChild(backdrop);
+      // const backdrop = ui.div([highlights]);
+      // $(backdrop).addClass('sdf-backdrop');
+      inputBase.root.appendChild(highlights);
+      const textArea = inputBase.root.getElementsByTagName('textarea').item(0);
+      // const tooltip = ui.tooltip.bind(textArea!, 'Malformed part highlighted with red');
       inputBase.onInput(() => {
         if (debugHighlight) {
-          // dummy handler for malformed inputs
           const inputValue = inputBase.value;
-          const cutoff = 5;
-          if (inputValue.length >= cutoff) {
+          // validate sequence
+          const cutoff = isValidSequence(inputValue, null).indexOfFirstNotValidChar;
+          const isValid = cutoff < 0;
+          if (!isValid) {
             const transparentText = inputBase.value.slice(0, cutoff);
             const highlightedText = inputBase.value.slice(cutoff);
             highlights.innerHTML = transparentText + '<mark>' + highlightedText + '</mark>';
-            const mark = highlights.getElementsByTagName('mark').item(0);
-            ui.tooltip.bind(mark!, 'This part of the input is malformed');
+            // const mark = highlights.getElementsByTagName('mark').item(0);
+            // $(tooltip).show();
+          } else {
+            highlights.innerHTML = '';
+            // $(tooltip).hide();
           }
         }
       });

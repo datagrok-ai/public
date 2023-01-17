@@ -36,8 +36,14 @@ const enum RELEVANT_FIELD {
 
 export async function viewMonomerLib(): Promise<void> {
   const table = await parseMonomerLib(LIB_PATH, DEFAULT_LIB_FILENAME);
-  table.name = 'Monomer Lib Viewer';
-  grok.shell.addTableView(table);
+  table.name = 'Monomer Library';
+  const view = grok.shell.addTableView(table);
+  const onDoubleClick = view.grid.onCellDoubleClick;
+  onDoubleClick.subscribe((cell) => {
+    // alert('Hi');
+    // onDoubleClick.forEach((value) => {
+    // });
+  });
 }
 
 async function parseMonomerLib(path: string, fileName: string): Promise<DG.DataFrame> {
