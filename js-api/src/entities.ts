@@ -65,7 +65,7 @@ export class Entity {
   /** Who created entity **/
   get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
 
-  /** Entity properties */
+  /** Gets entity properties */
   getProperties(): Promise<{[index: string]: any}> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.dart, this.dart, (p: any) => resolve(p), (e: any) => reject(e)));
   }
@@ -186,8 +186,10 @@ export class Func extends Entity {
 
   get path(): string { return api.grok_Func_Get_Path(this.dart); }
 
+  /** Help URL. */
   get helpUrl(): string { return api.grok_Func_Get_HelpUrl(this.dart); }
 
+  /** A package this function belongs to. */
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
 
   /** Returns {@link FuncCall} object in a stand-by state */
