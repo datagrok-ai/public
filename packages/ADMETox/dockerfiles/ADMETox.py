@@ -70,13 +70,6 @@ class Smiles(models.Model):
         app_label = this
     __module__ = this
 
-try:
-    admin.site.register(Smiles)
-except admin.sites.AlreadyRegistered:
-    pass
-
-admin.autodiscover()
-
 from rest_framework import serializers
 
 class SmilesSerializer (serializers.ModelSerializer):
@@ -275,7 +268,7 @@ def handle_uploaded_file(f, models):
     return res_df.to_csv(index=False, quoting=csv.QUOTE_NONNUMERIC)
 
 from django.conf.urls import url, include 
-from django.contrib import admin
+#from django.contrib import admin
 from rest_framework import routers
 
 router = routers.DefaultRouter()
@@ -283,7 +276,7 @@ router.register(r'smiles', SmilesViewSet)
 
 urlpatterns = [
     url(r'^', include(router.urls)),
-    url(r'^admin/', admin.site.urls),
+    #url(r'^admin/', admin.site.urls),
 ]
 
 # CLI
