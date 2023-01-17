@@ -324,7 +324,7 @@ function getEmbeddingColsWithInsertedEmptyVals(coordinates: DG.ColumnList, empty
 async function createSimilaritiesMatrix(col: DG.Column, distance: Matrix, countFromDistance: boolean,
   simMatrixFunc: (dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[]) => Promise<DG.Column[]>):Promise<DG.Column[]> {
   const dfSeq = DG.DataFrame.fromColumns([col]);
-  dfSeq.name = 'seq';
+  dfSeq.columns.byIndex(0).name = 'seq';
   const dim = col.length;
   let simArr: DG.Column[] = Array(dim - 1);
 
