@@ -1,4 +1,5 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
@@ -49,9 +50,13 @@ export class LogoSummary extends DG.JsViewer {
     if (this.initialized) {
       $(this.root).empty();
       this.viewerGrid.root.style.width = 'auto';
-      const newClusterBtn = ui.button('New cluster', () => this.clusterFromSelection(),
+      const newClusterBtn = ui.button(ui.iconFA('plus'), () => this.clusterFromSelection(),
         'Creates a new cluster from selection');
-      this.root.appendChild(ui.divV([ui.divH([this._titleHost, newClusterBtn]), this.viewerGrid.root]));
+      $(newClusterBtn).addClass('pep-lst-button');
+      const removeClusterBtn = ui.button(ui.iconFA('trash'), () => this.removeCluster(),
+        'Removes currently selected custom cluster');
+      $(removeClusterBtn).addClass('pep-lst-button');
+      this.root.appendChild(ui.divV([ui.divH([this._titleHost, ui.divH([newClusterBtn, removeClusterBtn])]), this.viewerGrid.root]));
       this.viewerGrid.invalidate();
     }
   }
@@ -191,12 +196,11 @@ export class LogoSummary extends DG.JsViewer {
       if (!cell || !cell.isTableCell)
         return;
 
-      const clusterIdx = clustersColData[cell.tableRowIndex!];
       summaryTable.currentRowIdx = -1;
       if (ev.shiftKey)
-        this.model.modifyClusterSelection(clusterIdx);
+        this.model.modifyClusterSelection(cell.tableRowIndex!);
       else
-        this.model.initClusterSelection(clusterIdx);
+        this.model.initClusterSelection(cell.tableRowIndex!);
       this.viewerGrid.invalidate();
     });
     this.viewerGrid.onCellRender.subscribe((gridCellArgs) => {
@@ -209,14 +213,13 @@ export class LogoSummary extends DG.JsViewer {
       canvasContext.beginPath();
       canvasContext.rect(bound.x, bound.y, bound.width, bound.height);
       canvasContext.clip();
-      const cellRawData = clustersColData[gc.cell.rowIndex];
-      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, cellRawData, this.model.logoSummarySelection, bound);
+      CR.renderLogoSummaryCell(canvasContext, gc.cell.value, gc.cell.rowIndex, this.model.logoSummarySelection, bound);
       gridCellArgs.preventDefault();
       canvasContext.restore();
     });
     this.viewerGrid.onCellTooltip((cell, x, y) => {
       if (!cell.isColHeader && cell.tableColumn?.name === clustersColName)
-        this.model.showTooltipCluster(clustersColData[cell.cell.rowIndex], x, y);
+        this.model.showTooltipCluster(cell.cell.rowIndex, x, y);
       return true;
     });
     const webLogoGridCol = this.viewerGrid.columns.byName('WebLogo')!;
@@ -292,5 +295,29 @@ export class LogoSummary extends DG.JsViewer {
 
     this.model.clusterStats.push(stats);
     this.model.addNewCluster(newClusterName);
+  }
+
+  removeCluster(): void {
+    const lss = this.model.logoSummarySelection;
+
+    const viewerDf = this.viewerGrid.dataFrame;
+    const viewerClustersCol = viewerDf.getCol(this.model.settings.clustersColumnName!);
+    const originalClusterAmount = this.dataFrame.getCol(this.model.settings.clustersColumnName!).categories.length;
+
+    let anyRemoved = false;
+    const removeClusterIndexesList = lss.filter((clusterId) => clusterId + 1 > originalClusterAmount);
+    for (const clusterId of removeClusterIndexesList) {
+      lss.splice(clusterId, 1);
+      this.dataFrame.columns.remove(viewerClustersCol.get(clusterId));
+      anyRemoved = true;
+    }
+
+    if (!anyRemoved)
+      return grok.shell.info('Nothing removed. Please select a created cluster to remove');
+
+    this.model.logoSummarySelection = lss;
+    this.model.clusterStats = this.model.calculateClusterStatistics();
+    this.createLogoSummaryGrid();
+    this.render();
   }
 }
