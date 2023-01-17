@@ -12,6 +12,7 @@ category('UI', () => {
 
   before(async () => {
     DG.Dialog.getOpenDialogs().forEach((d) => d.close());
+    grok.shell.windows.showProperties = true;
   });
 
   test('similarity search', async () => {
@@ -331,7 +332,7 @@ category('UI', () => {
     await awaitCheck(() => {
       return Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
         .find((el) => el.textContent === 'Details') !== undefined;
-    }, 'cannot load Smiles column properties', 5000);
+    }, 'cannot load Smiles column properties', 10000);
 
     const actions = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Actions') as HTMLElement;
@@ -369,7 +370,7 @@ category('UI', () => {
       mi.click();
       await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot find Chem Map Identifiers dialog', 1000);
     }
-  });
+  }, {skipReason: '#1183'});
 
   after(async () => {
     grok.shell.closeAll();

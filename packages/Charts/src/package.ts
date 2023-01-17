@@ -1,19 +1,26 @@
-import {TreeViewer} from './tree-viewer';
-import {TreeMapViewer} from './tree-map-viewer';
-import {SunburstViewer} from './sunburst-viewer';
-import {RadarViewer} from './radar/radar-viewer';
-import {TimelinesViewer} from './timelines/timelines-viewer';
-// import {SankeyViewer} from './sankey-viewer';
-// import {ChordViewer} from './chord-viewer';
-import { WordCloudViewer } from './word-cloud-viewer';
-import {SurfacePlot} from './surface-plot';
-import '../css/styles.css';
-
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { SubstituentAnalysisViewer } from './substituent-analysis-viewer';
+import * as grok from 'datagrok-api/grok';
+
+import {TreeViewer} from './viewers/tree/tree-viewer';
+import {TreeMapViewer} from './viewers/tree-map/tree-map-viewer';
+import {SunburstViewer} from './viewers/sunburst/sunburst-viewer';
+import {RadarViewer} from './viewers/radar/radar-viewer';
+import {TimelinesViewer} from './viewers/timelines/timelines-viewer';
+import {SankeyViewer} from './viewers/sankey/sankey';
+import {ChordViewer} from './viewers/chord/chord-viewer';
+import {WordCloudViewer} from './viewers/word-cloud/word-cloud-viewer';
+import {SubstituentAnalysisViewer} from './viewers/substituent-analysis/substituent-analysis-viewer';
+import {SurfacePlot} from './viewers/surface-plot/surface-plot';
+import {GlobeViewer} from './viewers/globe/globe-viewer';
+
+import {FlagCellRenderer} from './renderers/flag-cell-renderer';
+
+import '../css/styles.css';
+import '../css/chord-viewer.css';
+import '../css/sankey.css';
 
 export const _package = new DG.Package();
+
 
 //name: timelinesViewerDemo
 export function timelinesViewerDemo() {
@@ -63,19 +70,19 @@ export function _SunburstViewer() {
   return new SunburstViewer();
 }
 
-// //name: SankeyViewer
-// //tags: viewer
-// //output: viewer result
-// export function _SankeyViewer() {
-//   return new SankeyViewer();
-// }
+//name: SankeyViewer
+//tags: viewer
+//output: viewer result
+export function _SankeyViewer() {
+  return new SankeyViewer();
+}
 
-// //name: ChordViewer
-// //tags: viewer
-// //output: viewer result
-// export function _ChordViewer() {
-//   return new ChordViewer();
-// }
+//name: ChordViewer
+//tags: viewer
+//output: viewer result
+export function _ChordViewer() {
+  return new ChordViewer();
+}
 
 //name: WordCloudViewer
 //tags: viewer
@@ -116,4 +123,20 @@ export function _radarViewerDemo() {
 export function _timelinesViewerDemo() {
   const tv = grok.shell.addTableView(grok.data.demo.demog());
   tv.addViewer(DG.VIEWER.TIMELINES);
+}
+
+//name: GlobeViewer
+//description: Creates a globe viewer
+//tags: viewer
+//output: viewer result
+export function _GlobeViewer() {
+  return new GlobeViewer();
+}
+
+//name: flagCellRenderer
+//tags: cellRenderer
+//meta-cell-renderer-sem-type: flag
+//output: grid_cell_renderer result
+export function flagCellRenderer() {
+  return new FlagCellRenderer();
 }

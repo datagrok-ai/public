@@ -100,14 +100,14 @@
   text-align: center;
   position: absolute;
   top: 45%;
-  font-size: 12px;
+  font-size: 13px;
   width: 100% !important;
   height: 30px !important;
   visibility: hidden;
 }
 
 
-.d4-scaffold-tree-viewer .d4-tree-view-group-host .d4-tree-view-group-host {
+.d4-scaffold-tree .d4-tree-view-group-host .d4-tree-view-group-host {
   margin-left: 30px;
 }
 

@@ -3,7 +3,7 @@
 #language: python
 #environment: channels: [conda-forge], dependencies: [python=3.8, rdkit, {pip: [ScaffoldGraphDG, networkx]}]
 #input: dataframe data [Input data table]
-#input: string smiles 
+#input: string smiles
 #output: string result
 
 import scaffoldgraph as sg
@@ -13,7 +13,7 @@ from rdkit.Chem import MolToMolBlock, MolFromSmiles
 
 #function that recursively adds child_nodes to hierarchies depending on the prev_scaffold value
 def recurs_append_nodes(key, value, node, obj):
-    if key in obj: 
+    if key in obj:
         if obj[key] == value:
             obj['child_nodes'].insert(0, node)
             return obj
@@ -68,17 +68,15 @@ def get_mols(sorted_scaffolds):
             if scaffolds[i][0] == scaffold:
                 result.append(scaffolds[i][1]['realmolecule'])
     return result
-    
 
 #function that returns dict for each hierarchy depending on the input data
 def get_hierarchy_dict(scaffold_str, smiles_str, child_nodes_list):
     hierarchy_dict = {
-        'scaffold': scaffold_str, 
+        'scaffold': scaffold_str,
         'smiles': smiles_str,
         'child_nodes': child_nodes_list
     }
     return hierarchy_dict
-
 
 #function that returns first hierarchy scaffolds
 def get_first_hierarchy(tree, scaffolds):
