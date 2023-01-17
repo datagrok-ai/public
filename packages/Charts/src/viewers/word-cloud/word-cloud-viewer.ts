@@ -1,7 +1,9 @@
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+
 import * as echarts from 'echarts';
 import 'echarts-wordcloud';
+
 import $ from 'cash-dom';
 
 

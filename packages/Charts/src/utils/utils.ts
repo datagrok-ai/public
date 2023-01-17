@@ -16,7 +16,8 @@ export namespace data {
     return (((x - min1) * range2) / range1) + min2;
   }
 
-  export function aggToStat(dataframe: DG.DataFrame, columnName: string, aggregation: DG.AggregationType): number | null {
+  export function aggToStat(dataframe: DG.DataFrame, columnName: string,
+    aggregation: DG.AggregationType): number | null {
     const colStatsCall = 'dataframe.getCol(columnName).stats.';
     const stats = {
       avg: colStatsCall + 'avg',
